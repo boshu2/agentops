@@ -33,6 +33,7 @@
 | `ao ci recent` | `manual-only` | `allowlisted` | Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture. |
 | `ao citation verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim bind` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao claim check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim list` | `public-stateful-fixture-needed` | `allowlisted` | Reads claim-evidence stores and needs an isolated claim fixture. |
 | `ao close` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex dispatch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

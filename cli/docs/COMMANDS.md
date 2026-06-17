@@ -291,6 +291,22 @@ ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|
       --path string          evidence file path (required, relative to repo root)
 ```
 
+#### `ao claim check`
+
+Report read-only proof cards for changed public claim markers.
+
+```
+ao claim check --changed [--base <ref>] [flags]
+```
+
+**Flags:**
+
+```
+      --base string   base ref for --changed comparison (default "origin/main")
+      --changed       check claim markers in files changed against --base plus worktree changes
+  -h, --help          help for check
+```
+
 #### `ao claim list`
 
 Emit all known claim→evidence bindings via the typed BC2 ClaimEvidenceBinderPort. Output is line-delimited JSON.

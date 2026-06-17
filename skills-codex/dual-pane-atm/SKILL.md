@@ -32,5 +32,7 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   Opus/Codex are panes 2/3. Opus: plain `atm send --pane=1 --file …`; AGY: `--pane=3 --file` (interactive TUI, not `agy -p`/`gemini -p`).
   Codex: poll `atm codex preflight` until `proceed` before `--codex-goal`; cold engage may need retry + `wait-goal-engaged`.
   Never use print-mode CLIs for the other-family pane.
-- Acceptance scenarios live in `references/dual-pane-atm.feature`; mirror spawn checklist and work-split matrix from the source skill.
+- Acceptance scenarios for preflight and work-split gates live in
+  `references/dual-pane-atm.feature`; mirror spawn checklist and work-split
+  matrix from the source skill.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
