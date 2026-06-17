@@ -1,6 +1,7 @@
 package yieldledger
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -670,5 +671,128 @@ func TestComputeGauges_EGUnadmittedSpendIsLoss(t *testing.T) {
 	}
 	if g.LCategory.Rejected != 800 {
 		t.Errorf("rejected loss = %d, want 800 (unadmitted bead spend is loss)", g.LCategory.Rejected)
+	}
+}
+
+// emitVerdict appends one gate-verdict through the PRODUCTION writer so the
+// catch-rate fixtures are built by round-tripping the real persisted shape, not
+// a hand-built in-memory Ledger (go.md Fixture Fidelity).
+func emitVerdict(t *testing.T, w Writer, root, bead, disp string, crossFamily bool) {
+	t.Helper()
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: bead, RunID: "r1", Difficulty: 1,
+		PawlVerdictRef:  PawlVerdictRef{BeadID: bead, HeadSHA: "sha-" + bead},
+		Disposition:     disp,
+		HeadSHA:         "sha-" + bead,
+		Attempt:         1,
+		AuthorContextID: "ctx-1",
+		AuthorFamily:    "claude",
+		RefuterFamilies: []string{"gpt"},
+		CrossFamily:     crossFamily,
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestGauge_CatchRate verifies catch_rate = REFUTED / (REFUTED + CONFIRMED) over
+// a round-tripped real fixture of 6 REFUTED + 3 CONFIRMED → 0.667 (the real
+// ledger's actual composition this session).
+func TestGauge_CatchRate(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	for i := 0; i < 6; i++ {
+		emitVerdict(t, w, root, fmt.Sprintf("ag-ref-%d", i), DispositionRefuted, true)
+	}
+	for i := 0; i < 3; i++ {
+		emitVerdict(t, w, root, fmt.Sprintf("ag-con-%d", i), DispositionConfirmed, true)
+	}
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.Refuted != 6 {
+		t.Errorf("Refuted = %d, want 6", g.Refuted)
+	}
+	if g.Confirmed != 3 {
+		t.Errorf("Confirmed = %d, want 3", g.Confirmed)
+	}
+	if g.CatchRate == nil {
+		t.Fatalf("CatchRate = nil, want ~0.667")
+	}
+	if !approx(*g.CatchRate, 6.0/9.0) {
+		t.Errorf("CatchRate = %v, want %v (6/9)", *g.CatchRate, 6.0/9.0)
+	}
+	if g.CatchRateNote != "" {
+		t.Errorf("CatchRateNote = %q, want empty (denom > 0)", g.CatchRateNote)
+	}
+}
+
+// TestGauge_CatchRate_DivGuard verifies the 0/0 guard: zero adjudicated verdicts
+// (only ESCALATE/HOLD) → CatchRate nil + note, never a divide-by-zero.
+func TestGauge_CatchRate_DivGuard(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	emitVerdict(t, w, root, "ag-esc", DispositionEscalate, false)
+	emitVerdict(t, w, root, "ag-hold", DispositionHold, false)
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.Refuted != 0 || g.Confirmed != 0 {
+		t.Errorf("Refuted/Confirmed = %d/%d, want 0/0", g.Refuted, g.Confirmed)
+	}
+	if g.CatchRate != nil {
+		t.Errorf("CatchRate = %v, want nil (0 adjudicated)", *g.CatchRate)
+	}
+	if g.CatchRateNote != "no confirmed+refuted gate-verdicts" {
+		t.Errorf("CatchRateNote = %q, want the divide-guard note", g.CatchRateNote)
+	}
+	if g.CatchRateCrossFamily != nil {
+		t.Errorf("CatchRateCrossFamily = %v, want nil", *g.CatchRateCrossFamily)
+	}
+}
+
+// TestGauge_CatchRate_CrossFamilySplit verifies the cross-family-restricted rate
+// differs correctly from the overall rate. Overall: 4 REFUTED + 2 CONFIRMED =
+// 0.667. Cross-family subset: 2 REFUTED + 2 CONFIRMED = 0.500.
+func TestGauge_CatchRate_CrossFamilySplit(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	// 2 cross-family REFUTED, 2 single-family REFUTED.
+	emitVerdict(t, w, root, "ag-rxf-0", DispositionRefuted, true)
+	emitVerdict(t, w, root, "ag-rxf-1", DispositionRefuted, true)
+	emitVerdict(t, w, root, "ag-rsf-0", DispositionRefuted, false)
+	emitVerdict(t, w, root, "ag-rsf-1", DispositionRefuted, false)
+	// 2 cross-family CONFIRMED.
+	emitVerdict(t, w, root, "ag-cxf-0", DispositionConfirmed, true)
+	emitVerdict(t, w, root, "ag-cxf-1", DispositionConfirmed, true)
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.Refuted != 4 || g.Confirmed != 2 {
+		t.Fatalf("Refuted/Confirmed = %d/%d, want 4/2", g.Refuted, g.Confirmed)
+	}
+	if g.CatchRate == nil || !approx(*g.CatchRate, 4.0/6.0) {
+		t.Errorf("CatchRate = %v, want %v (4/6)", g.CatchRate, 4.0/6.0)
+	}
+	if g.CatchRateCrossFamily == nil {
+		t.Fatalf("CatchRateCrossFamily = nil, want 0.5")
+	}
+	if !approx(*g.CatchRateCrossFamily, 0.5) {
+		t.Errorf("CatchRateCrossFamily = %v, want 0.5 (2 refuted / 4 adjudicated cross-family)", *g.CatchRateCrossFamily)
+	}
+	// The two rates MUST differ — this is the whole point of the split.
+	if approx(*g.CatchRate, *g.CatchRateCrossFamily) {
+		t.Errorf("overall (%v) and cross-family (%v) catch-rate should differ", *g.CatchRate, *g.CatchRateCrossFamily)
 	}
 }

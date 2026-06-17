@@ -153,6 +153,10 @@ func writeGaugeReport(out io.Writer, g yieldledger.Gauges, asJSON bool) error {
 	fmt.Fprintf(tw, "C (corpus delta)\t%s\tLEAD (consumed from ag-8p8o)\n", fmtC(g))
 	fmt.Fprintf(tw, "A/R (conversion)\t%s\tWATCH ONLY — Goodhart, never tune\n", fmtRatio(g.AOverR, g.AOverRDefined))
 	fmt.Fprintf(tw, "E (escalation rate)\t%s\tautonomy watch (%d ESCALATE/HOLD)\n", fmtRatio(g.E, g.EDefined), g.EEscalateHolds)
+	fmt.Fprintf(tw, "catch_rate (membrane)\t%s\tin-situ false-done catch (%d refuted / %d adjudicated)\n",
+		fmtCatchRate(g.CatchRate, g.CatchRateNote), g.Refuted, g.Refuted+g.Confirmed)
+	fmt.Fprintf(tw, "  cross-family catch_rate\t%s\tdiversity-gated subset\n",
+		fmtCatchRate(g.CatchRateCrossFamily, ""))
 	fmt.Fprintf(tw, "L (loss)\t%s\twaste watch\n", fmtRatio(g.L, g.LDefined))
 	fmt.Fprintf(tw, "  L breakdown (spend)\trejected=%d rework=%d coord=%d productive=%d\t\n",
 		g.LCategory.Rejected, g.LCategory.Rework, g.LCategory.Coordination, g.LCategory.Productive)
@@ -176,6 +180,18 @@ func fmtRatio(v float64, defined bool) string {
 		return "n/a (0 denominator)"
 	}
 	return fmt.Sprintf("%.3f", v)
+}
+
+// fmtCatchRate renders the in-situ membrane catch-rate, or the divide-guard note
+// when nil so a 0/0 reads as "no signal", not a misleading 0.000.
+func fmtCatchRate(v *float64, note string) string {
+	if v == nil {
+		if note != "" {
+			return "n/a (" + note + ")"
+		}
+		return "n/a (0 denominator)"
+	}
+	return fmt.Sprintf("%.3f", *v)
 }
 
 // fmtC renders the consumed corpus-delta gauge, distinguishing a published delta
