@@ -1690,6 +1690,7 @@ ao eval scenario-ab [flags]
 **Flags:**
 
 ```
+      --control-only       Run only the without-gold control arm and fail on ceiling/no-headroom
   -h, --help               help for scenario-ab
       --output string      Write the ScenarioDeltaScorecard JSON to this path
       --scenario string    Path to the scenario.v1 JSON file (required)

@@ -31,13 +31,18 @@ engage) set `runner_mode: "agentic"` on the scenario file — the agentic runner
 ## Running one
 
 ```sh
+ao eval scenario-ab --control-only \
+  --scenario evals/scenarios/applied-ood/s-2026-06-17-001-reinforcement-gate.json \
+  --output /tmp/headroom-scorecard.json
+
 ao eval scenario-ab --scenario evals/scenarios/applied-ood/s-2026-06-17-001-reinforcement-gate.json \
   --output /tmp/scorecard.json
 ```
 
 The control arm runs first under filesystem isolation (age-9a9). If it already
 clears the threshold the run aborts as a `ceiling_violation` (no headroom — a
-guessable scenario is caught here). A passing card carries
+guessable scenario is caught here). Use `--control-only` for CI/campaign
+headroom admission before spending the treatment arm. A passing full A/B card carries
 `verdict_class: applied-ood` + `moat_eligible: true`; read the publication rule
 before claiming a moat result from it. **n=1 over a stochastic judge is not a
 proof** — the moat stays UNPROVEN until a multi-scenario, multi-seed run.

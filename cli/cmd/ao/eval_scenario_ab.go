@@ -19,10 +19,11 @@ import (
 )
 
 var (
-	evalScenarioABScenario string
-	evalScenarioABOutput   string
-	evalScenarioABBudget   int
-	evalScenarioABTimeout  time.Duration
+	evalScenarioABScenario    string
+	evalScenarioABOutput      string
+	evalScenarioABBudget      int
+	evalScenarioABTimeout     time.Duration
+	evalScenarioABControlOnly bool
 )
 
 // scenarioABRunnerFactory / scenarioABJudgeFactory are the injectable seam:
@@ -71,6 +72,7 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 			Judge:        selectScenarioJudge(*sc),
 			Timeout:      evalScenarioABTimeout,
 			TokenBudget:  evalScenarioABBudget,
+			ControlOnly:  evalScenarioABControlOnly,
 		})
 		if err != nil {
 			return err
@@ -82,6 +84,11 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 			fmt.Fprintf(cmd.OutOrStdout(),
 				"scenario-ab %s [%s]: CEILING VIOLATION (without=%.4f >= threshold=%.4f) — invalid scenario, no delta emitted\n",
 				card.ScenarioID, card.VerdictClass, card.Without.Score, card.SatisfactionThreshold)
+		} else if card.ControlOnly {
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"scenario-ab %s [%s]: control-only headroom=PASS (without=%.4f < threshold=%.4f) tokens=%d gate=%s\n",
+				card.ScenarioID, card.VerdictClass, card.Without.Score, card.SatisfactionThreshold,
+				card.Without.TokenCost, gateLabel(card.Gate.Pass))
 		} else {
 			fmt.Fprintf(cmd.OutOrStdout(),
 				"scenario-ab %s [%s]: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s %s\n",
@@ -121,6 +128,7 @@ func init() {
 	evalScenarioABCmd.Flags().StringVar(&evalScenarioABOutput, "output", "", "Write the ScenarioDeltaScorecard JSON to this path")
 	evalScenarioABCmd.Flags().IntVar(&evalScenarioABBudget, "token-budget", 0, "Fail the gate if summed arm token cost exceeds this (0 = default 200000)")
 	evalScenarioABCmd.Flags().DurationVar(&evalScenarioABTimeout, "timeout", 0, "Per-arm timeout (0 = default 5m)")
+	evalScenarioABCmd.Flags().BoolVar(&evalScenarioABControlOnly, "control-only", false, "Run only the without-gold control arm and fail on ceiling/no-headroom")
 	evalCmd.AddCommand(evalScenarioABCmd)
 }
 
