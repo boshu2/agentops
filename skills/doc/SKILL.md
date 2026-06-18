@@ -1,6 +1,6 @@
 ---
 name: doc
-description: Generate and validate repo docs, READMEs, and OSS doc packs.
+description: 'Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".'
 practices:
 - wiki-knowledge-surface
 - code-complete

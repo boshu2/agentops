@@ -1,6 +1,6 @@
 ---
 name: flywheel
-description: Check knowledge flywheel health.
+description: 'Check knowledge flywheel health. Triggers: "flywheel", "check knowledge flywheel health.", "flywheel skill".'
 practices:
 - wiki-knowledge-surface
 - lean-startup

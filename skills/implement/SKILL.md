@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Implement one tracked issue.
+description: 'Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".'
 practices:
 - tdd
 - refactoring

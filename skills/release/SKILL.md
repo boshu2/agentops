@@ -1,6 +1,6 @@
 ---
 name: release
-description: Run release validation.
+description: 'Run release validation. Triggers: "run release validation", "cut a release", "check release readiness".'
 practices:
 - continuous-delivery
 - gitops

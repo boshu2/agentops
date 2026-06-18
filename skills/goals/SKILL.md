@@ -1,6 +1,6 @@
 ---
 name: goals
-description: Maintain AgentOps goals.
+description: 'Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".'
 practices:
 - dora-metrics
 - lean-startup

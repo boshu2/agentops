@@ -1,6 +1,6 @@
 ---
 name: status
-description: Show AgentOps work status.
+description: 'Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".'
 practices:
 - dora-metrics
 - sre

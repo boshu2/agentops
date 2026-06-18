@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Decompose goals into issue plans.
+description: 'Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".'
 practices:
 - adr
 - agile-manifesto

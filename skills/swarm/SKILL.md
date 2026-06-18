@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: Dispatch parallel agents.
+description: 'Dispatch parallel agents. Triggers: "swarm", "dispatch parallel agents.", "swarm skill".'
 practices:
 - microservices
 - team-topologies

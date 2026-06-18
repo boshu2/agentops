@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write compact session handoffs.
+description: 'Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".'
 practices:
 - adr
 - wiki-knowledge-surface

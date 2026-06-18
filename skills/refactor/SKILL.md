@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Execute safe refactors.
+description: 'Execute safe refactors. Triggers: "refactor", "execute safe refactors.", "refactor skill".'
 practices:
 - refactoring
 - legacy-code-seams

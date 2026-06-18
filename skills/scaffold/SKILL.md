@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.
+description: 'Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: "scaffold", "create project component or boilerplate", "scaffold skill".'
 practices:
 - pragmatic-programmer
 - design-patterns

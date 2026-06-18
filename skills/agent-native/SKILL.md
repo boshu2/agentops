@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.
+description: 'Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks. Triggers: "agent-native", "agent native", "make an out-of-session agent agentops-native".'
 skill_api_version: 1
 practices:
 - continuous-delivery

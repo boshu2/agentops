@@ -1,6 +1,6 @@
 ---
 name: pr-prep
-description: Prepare PR commits and body.
+description: 'Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".'
 practices:
 - continuous-integration
 - continuous-delivery

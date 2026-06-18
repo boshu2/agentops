@@ -1,6 +1,6 @@
 ---
 name: recover
-description: Recover session context.
+description: 'Recover session context. Triggers: "recover", "recover session context.", "recover skill".'
 practices:
 - sre
 - legacy-code-seams

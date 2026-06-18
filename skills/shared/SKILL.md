@@ -1,6 +1,6 @@
 ---
 name: shared
-description: Shared AgentOps skill contracts.
+description: 'Shared AgentOps skill contracts. Triggers: "shared", "shared agentops skill contracts.", "shared skill".'
 practices:
 - design-by-contract
 - pragmatic-programmer
