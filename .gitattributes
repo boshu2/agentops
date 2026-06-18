@@ -15,3 +15,12 @@ registry.json                          merge=union
 skills-codex/.agentops-manifest.json   merge=union
 docs/contracts/context-map.md          merge=union
 cli/docs/COMMANDS.md                   merge=union
+
+# Tracked runtime JSONL logs (next-work, findings/registry, provenance ledger) are
+# DELIBERATELY NOT union-merged (age-uqj). They are not pure append-logs: next-work
+# entries are rewritten in place (markEntryConsumed / markItemConsumedOwned flip
+# consumed/claim_status) and the ledger is a prev_hash chain — union-merge would
+# either resurrect consumed/claimed work or break the chain. A genuine divergence
+# on these files must surface as a real conflict, not be silently merged. The
+# "git pull --rebase fails on dirty runtime logs" friction is fixed instead by the
+# repo-local rebase.autoStash set in scripts/install-pre-push-gate.sh.

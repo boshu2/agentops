@@ -48,6 +48,17 @@ else
     echo "✓ appended gate chain to existing ${hook} (after beads section)"
 fi
 
+# Runtime-file rebase ergonomics (age-uqj). This repo tracks runtime audit logs
+# (.agents/rpi/next-work.jsonl, .agents/findings/registry.jsonl, the provenance
+# ledger) that tooling dirties mid-session, so a plain `git pull --rebase` fails
+# with "cannot rebase: you have unstaged changes". autoStash makes rebase
+# transparently stash the dirty tree and reapply it afterward. These logs are
+# intentionally NOT union-merged (they are mutated in place / hash-chained — see
+# .gitattributes), so a genuine divergence still surfaces as a real conflict on
+# reapply rather than being silently merged. Repo-local only; never touches global.
+git config --local rebase.autoStash true
+echo "✓ set rebase.autoStash=true (local) — pull --rebase no longer blocks on dirty runtime logs"
+
 echo ""
 echo "Cockpit pre-push gate active for this repo (all worktrees)."
 echo "Audited bypass (logged): AGENTOPS_GATE_DISABLED=1 git push ..."
