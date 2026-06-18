@@ -214,7 +214,7 @@ historical:
   reverse-engineer-rpi:
     state:        cut
     date:         2026-06-12
-    rationale:    "Niche meta tool; rarely fires (cut landed ag-s43tg S24, was cut-review)"
+    rationale:    "Cut 2026-06-12 (niche meta tool, rarely fired). REVIVED + renamed -> reverse-engineer 2026-06-18, upgraded with the steal-map discipline + duel routing (see dispositions: reverse-engineer)."
   scenario:
     state:        merged-into
     merged-into:  eval-outcomes
@@ -727,6 +727,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Knowledge acquisition entrypoint; add source/citation self-test"
+  - skill:            reverse-engineer
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/reverse-engineer/SKILL.md
+    aliases:          [reverse-engineer-rpi]
+    supersedes:       reverse-engineer-rpi
+    rationale:        "External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline."
   - skill:            review
     domain:           "BC2 Validation"
     hexagonal_role:   driving-adapter
