@@ -222,7 +222,26 @@ def iter_skill_files(repo_root: Path, skills: list[str]) -> list[Path]:
     return skill_files
 
 
-def find_findings(repo_root: Path, skill_file: Path, catalog: dict[str, dict]) -> list[dict]:
+def load_cross_runtime(repo_root: Path) -> set[str]:
+    """Skills exempt from the Claude-naming rules because they legitimately
+    document non-Codex runtimes. Shared source of truth with codex-sync and the
+    other Codex gates: scripts/lint/codex-cross-runtime-skills.txt."""
+    path = repo_root / "scripts" / "lint" / "codex-cross-runtime-skills.txt"
+    if not path.exists():
+        return set()
+    return {
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+
+
+def find_findings(
+    repo_root: Path,
+    skill_file: Path,
+    catalog: dict[str, dict],
+    cross_runtime: set[str] = frozenset(),
+) -> list[dict]:
     relative_path = skill_file.relative_to(repo_root)
     parts = relative_path.parts
     if len(parts) < 2:
@@ -235,6 +254,10 @@ def find_findings(repo_root: Path, skill_file: Path, catalog: dict[str, dict]) -
         for line_number, raw_line in enumerate(handle, start=1):
             line = raw_line.rstrip("\n")
             for rule in RULES:
+                # Cross-runtime skills may name Claude tools accurately (e.g. cass
+                # documents the Claude Code log format it parses).
+                if rule["code"] == "CLAUDE_TOOL_NAMING" and skill in cross_runtime:
+                    continue
                 ignore_patterns = rule.get("ignore_patterns", [])
                 if any(re.search(pattern, line) for pattern in ignore_patterns):
                     continue
@@ -262,11 +285,12 @@ def main() -> int:
     args = parse_args()
     repo_root = Path(args.repo_root).resolve()
     catalog = load_catalog(repo_root)
+    cross_runtime = load_cross_runtime(repo_root)
     skill_files = iter_skill_files(repo_root, args.skills)
 
     findings: list[dict] = []
     for skill_file in skill_files:
-        findings.extend(find_findings(repo_root, skill_file, catalog))
+        findings.extend(find_findings(repo_root, skill_file, catalog, cross_runtime))
 
     if args.json:
         json.dump(findings, sys.stdout, indent=2)

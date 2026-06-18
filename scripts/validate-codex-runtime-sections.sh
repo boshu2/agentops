@@ -17,8 +17,21 @@ if [[ ! -d "skills-codex" ]]; then
   exit 0
 fi
 
+cross_runtime_file="${repo_root}/scripts/lint/codex-cross-runtime-skills.txt"
+is_cross_runtime() {
+  [[ -f "${cross_runtime_file}" ]] || return 1
+  grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${cross_runtime_file}" | grep -qxF "$1"
+}
+
 skill_files=()
 while IFS= read -r file; do
+  skill_name="$(basename "$(dirname "${file}")")"
+  # Cross-runtime skills legitimately document non-Codex runtimes (cass parses
+  # Claude/Codex/Gemini logs, agy-native targets AGY, etc.). Exempt their SKILL.md
+  # from the no-Claude-mention scan — see scripts/lint/codex-cross-runtime-skills.txt.
+  if is_cross_runtime "${skill_name}"; then
+    continue
+  fi
   skill_files+=("${file}")
 done < <(find skills-codex -type f -name "SKILL.md" | sort)
 

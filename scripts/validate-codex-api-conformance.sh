@@ -8,6 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_ROOT="$REPO_ROOT/skills-codex"
 
+# Cross-runtime skills legitimately reference non-Codex runtimes/paths (cc-hooks
+# documents ~/.claude/settings.json). Shared exemption list with codex-sync and
+# the other Codex gates.
+CROSS_RUNTIME_FILE="$REPO_ROOT/scripts/lint/codex-cross-runtime-skills.txt"
+is_cross_runtime() {
+  [[ -f "$CROSS_RUNTIME_FILE" ]] || return 1
+  grep -vE '^[[:space:]]*#|^[[:space:]]*$' "$CROSS_RUNTIME_FILE" | grep -qxF "$1"
+}
+
 failures=0
 warnings=0
 
@@ -56,6 +65,11 @@ echo "=== Check 3: Claude-specific paths ==="
 while IFS= read -r skill_md; do
   skill_name="$(basename "$(dirname "$skill_md")")"
 
+  # Cross-runtime skills may reference ~/.claude accurately (cc-hooks documents
+  # the Claude Code hook config path); skip this check for them.
+  if is_cross_runtime "$skill_name"; then
+    continue
+  fi
   # shellcheck disable=SC2088  # intentional literal match of the documented path
   matches=$(grep -n '~/\.claude/' "$skill_md" 2>/dev/null || true)
   if [[ -n "$matches" ]]; then

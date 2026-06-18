@@ -108,6 +108,17 @@ bespoke = {
     if e.get("treatment") == "bespoke"
 }
 
+# Cross-runtime skills: exempt from the Claude->Codex / ~/.claude->~/.codex body
+# rewrites (they legitimately document non-Codex runtimes). Single source of truth
+# shared with the gates: scripts/lint/codex-cross-runtime-skills.txt.
+cross_runtime_path = root / "scripts" / "lint" / "codex-cross-runtime-skills.txt"
+cross_runtime = set()
+if cross_runtime_path.exists():
+    for line in cross_runtime_path.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        if s and not s.startswith("#"):
+            cross_runtime.add(s)
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -152,11 +163,17 @@ def split_frontmatter(skill_md: pathlib.Path) -> str:
     return parts[2].lstrip("\n") if len(parts) >= 3 else text
 
 
-def transform_body(body: str, known_skills: set[str]) -> str:
+def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> str:
     """Make a source skill body runtime-native for Codex (the lint-codex-native
     contract): slash-command invocations of KNOWN skills -> `$` prefix, Claude
     paths -> Codex paths, "Claude Code" -> "Codex". References are copied
-    byte-identical (lint scans only SKILL.md), so only the body is transformed."""
+    byte-identical (lint scans only SKILL.md), so only the body is transformed.
+
+    exempt=True (cross-runtime skill, see scripts/lint/codex-cross-runtime-skills.txt):
+    apply ONLY the slash->$ rewrite (Codex execution syntax is universal) and
+    PRESERVE runtime names/paths verbatim — the twin legitimately documents
+    Claude/AGY/etc., so rewriting "Claude Code"->"Codex" or ~/.claude->~/.codex
+    would make it inaccurate."""
     import re
 
     # /<known-skill> -> $<known-skill> for slash-COMMAND invocations only — never
@@ -167,20 +184,25 @@ def transform_body(body: str, known_skills: set[str]) -> str:
     for skill in sorted(known_skills, key=len, reverse=True):
         body = re.sub(rf"(?<![\w./_-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
 
+    if exempt:
+        return body
+
     body = body.replace("~/.claude/", "~/.codex/").replace("~/.claude", "~/.codex")
     body = body.replace(".claude/", ".codex/")
     body = body.replace("Claude Code", "Codex")
     return body
 
 
-def twin_skill_md(name: str, description: str, source_body: str, known_skills: set[str]) -> bytes:
+def twin_skill_md(
+    name: str, description: str, source_body: str, known_skills: set[str], exempt: bool = False
+) -> bytes:
     """A self-contained Codex twin: slim (name+description) frontmatter + the
     source body transformed runtime-native. Self-contained because the Codex
     runtime ships skills-codex/ ONLY (never skills/ source) — a twin must carry
     its own body + references (AGENTS-CODEX.md)."""
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
-    body = transform_body(source_body, known_skills)
+    body = transform_body(source_body, known_skills, exempt)
     return f"---\n{front}\n---\n{body.rstrip()}\n".encode("utf-8")
 
 
@@ -236,7 +258,9 @@ for name in source_skills:
     description = str(fm.get("description", "")).strip()
     source_body = split_frontmatter(source_root / name / "SKILL.md")
 
-    desired_skill = twin_skill_md(name, description, source_body, known_skills)
+    desired_skill = twin_skill_md(
+        name, description, source_body, known_skills, name in cross_runtime
+    )
     desired_prompt = twin_prompt_md(name, description)
 
     # A twin is "complete" iff its body files + marker exist AND it is registered

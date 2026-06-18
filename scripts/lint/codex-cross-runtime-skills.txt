@@ -1,0 +1,28 @@
+# Cross-runtime skills — exempt from the "no Claude/Anthropic mention" Codex-twin
+# rules (validate-codex-runtime-sections, lint-codex-native Claude/path checks,
+# audit-codex-parity CLAUDE_TOOL_NAMING).
+#
+# WHY: these skills legitimately document one or more NON-Codex runtimes, so an
+# accurate self-contained Codex twin MUST keep those references. The default
+# "0 Claude mentions" rule (right for an ordinary skill whose Codex twin should
+# read Codex-native) is WRONG for a tool that operates across runtimes — scrubbing
+# "Claude" out would gut the tool's actual content. codex-sync also skips the
+# Claude->Codex / ~/.claude->~/.codex transforms for these (preserving accuracy);
+# it still applies slash-command -> $ (Codex execution syntax is universal).
+#
+# Only the slash->$ transform applies; everything else is preserved verbatim.
+# One skill name per line. Keep this list SMALL and justified — it is a real
+# exemption from a real gate, not a convenience hatch.
+#
+# cass            — mines/parses session logs ACROSS Claude Code / Codex / Gemini
+# rch             — remote-compile-hook; documents its Claude Code PreToolUse integration
+# vibing-with-ntm — NTM swarm tending drives Claude + Codex panes; carries the claude -p LAW-0 ban
+# agent-native    — documents making an agent AgentOps-native on each runtime (incl. the Claude path)
+# cc-hooks        — about the Claude Code hook system itself (a non-Codex runtime's feature)
+# agy-native      — about the AGY / Gemini (Antigravity) harness (a non-Codex runtime)
+cass
+rch
+vibing-with-ntm
+agent-native
+cc-hooks
+agy-native
