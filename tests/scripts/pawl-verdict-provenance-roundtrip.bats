@@ -60,3 +60,39 @@ teardown() {
   # 3. Producer fired the sensor against the artifact it just wrote (the wiring).
   grep -q "provenance emit-verdict --file $out" "$AO_LOG"
 }
+
+@test "pawl-verdict rebind re-stamps head, preserves refuters, re-fires the sensor (age-standing-pawl-service-ml8.4)" {
+  local sha1="611615d9b78717eca0fa1b2d1eb75a54c9dc6970"
+  local sha2="aaaaaaaabbbbbbbbccccccccdddddddd00001111"
+  run bash "$SCRIPT" write age-rebind-test 0 \
+    --disposition CONFIRMED --head "$sha1" \
+    --author-context author-ctx --mode multi-model \
+    --refuter claude:CONFIRMED:opus-ctx --refuter gpt:CONFIRMED:codex-ctx \
+    --dir "$TMP/verdicts"
+  [ "$status" -eq 0 ]
+  local out="$TMP/verdicts/age-rebind-test.json"
+  [ "$(jq -r .head_sha "$out")" = "$sha1" ]
+  : > "$AO_LOG"   # clear so we can prove rebind ALSO fires the sensor
+
+  run bash "$SCRIPT" rebind age-rebind-test 0 --head "$sha2" --dir "$TMP/verdicts"
+  [ "$status" -eq 0 ]
+  # head moved to the new commit...
+  [ "$(jq -r .head_sha "$out")" = "$sha2" ]
+  # ...refuters + mode + disposition preserved (the review did not re-run)...
+  [ "$(jq -r '.refuters | length' "$out")" = "2" ]
+  [ "$(jq -r .mode "$out")" = "multi-model" ]
+  [ "$(jq -r .disposition "$out")" = "CONFIRMED" ]
+  # ...and the sensor fired again for the new head.
+  grep -q "provenance emit-verdict --file $out" "$AO_LOG"
+}
+
+@test "pawl-verdict rebind refuses a non-CONFIRMED or missing verdict (fail-closed)" {
+  # missing verdict
+  run bash "$SCRIPT" rebind age-absent 0 --head "611615d9b78717eca0fa1b2d1eb75a54c9dc6970" --dir "$TMP/verdicts"
+  [ "$status" -ne 0 ]
+  # REFUTED verdict is not landable -> rebind refuses
+  bash "$SCRIPT" write age-refuted 0 --disposition REFUTED --head "611615d9b78717eca0fa1b2d1eb75a54c9dc6970" \
+    --author-context a --refuter claude:REFUTED:ctx --dir "$TMP/verdicts" >/dev/null 2>&1 || true
+  run bash "$SCRIPT" rebind age-refuted 0 --head "aaaaaaaabbbbbbbbccccccccdddddddd00001111" --dir "$TMP/verdicts"
+  [ "$status" -ne 0 ]
+}
