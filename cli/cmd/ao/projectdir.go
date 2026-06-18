@@ -28,3 +28,24 @@ func resolveProjectDir() (string, error) {
 	}
 	return cwd, nil
 }
+
+// repoRootOrCwd returns the git repository top-level — correct from ANY
+// subdirectory (e.g. cli/) and inside linked worktrees — for commands that read
+// repo-rooted artifacts like docs/contracts/claim-registry.yaml. It resolves the
+// effective project dir first (honoring the testProjectDir override), then asks
+// git for that dir's top-level, and falls back to the dir itself when it is not
+// inside a repo or git is unavailable.
+//
+// Prefer this over resolveProjectDir for any handler that joins a repo-relative
+// path: resolveProjectDir returns the raw cwd, which breaks when the command is
+// run from a subdirectory (age-6sg.1).
+func repoRootOrCwd() (string, error) {
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return "", err
+	}
+	if root, err := resolveRepoRoot(cwd); err == nil && root != "" {
+		return root, nil
+	}
+	return cwd, nil
+}
