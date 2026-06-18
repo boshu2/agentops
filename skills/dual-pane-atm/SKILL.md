@@ -1,6 +1,6 @@
 ---
 name: dual-pane-atm
-description: 'Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".'
+description: 'Repeatable mixed-model ATM duel — Opus (Claude) + Codex (+AGY) panes, or an in-session variant for a one-shot one-way-door decision. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM", "mixed-model duel", "fan out competing theses / duel it out".'
 practices:
 - team-topologies
 - mythical-man-month
@@ -180,6 +180,21 @@ AGY; use tmux capture on pane 3 for AGY liveness.
 
 Checklist block: [references/spawn-checklist.md](references/spawn-checklist.md) § Tri-vendor (+AGY).
 
+## In-session duel (no durable panes)
+
+For a **one-shot one-way-door decision** ("duel it out"), you don't need
+persistent panes — run the same mixed-model duel **in-session**:
+
+- Spawn ≥3 perspective subagents via the **Agent tool with `model:` override**
+  (e.g. `opus` + `fable`) — each argues one opposed thesis, attacks the others,
+  names its own weakness. Independent contexts = a real duel.
+- Add the **cross-family voice** with `codex exec "<prompt>" </dev/null`
+  (`</dev/null` dodges the exec stdin-stall). Never `claude -p` (LAW 0).
+- Winnow to a SynthesisPacket; **opposed theses that converge on the same slice
+  are the signal**. This is the substrate **`/discovery`'s fanout gate** runs.
+
+Durable panes (above) for multi-session/long-running work; in-session for a
+single bounded decision. `/reverse-engineer` routes one-way-door steals here.
 
 ## Work-split patterns
 

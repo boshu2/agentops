@@ -32,6 +32,10 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   Opus/Codex are panes 2/3. Opus: plain `atm send --pane=1 --file …`; AGY: `atm send --agy --file …` (or `--pane=3`; interactive TUI, not `agy -p`/`gemini -p`) (interactive TUI, not `agy -p`/`gemini -p`).
   Codex: poll `atm codex preflight` until `proceed` before `--codex-goal`; cold engage may need retry + `wait-goal-engaged`.
   Never use print-mode CLIs for the other-family pane.
+- **In-session duel (no panes):** for a one-shot one-way-door decision, skip ATM
+  panes — run >=3 perspective subagents (Agent `model:` override) plus the
+  cross-family voice via `codex exec "<prompt>" </dev/null`, then winnow on the
+  converged slice. This is what `/discovery`'s fanout gate runs. Never `claude -p`.
 - Acceptance scenarios for preflight and work-split gates live in
   `references/dual-pane-atm.feature`; mirror spawn checklist and work-split
   matrix from the source skill.

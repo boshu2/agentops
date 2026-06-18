@@ -53,6 +53,14 @@ Council also fires for the use-cases of two folded-in skills:
   Canonical body:
   `~/dev/mt-olympus/.claude/skills/cross-vendor-trust-gate/SKILL.md`.
 
+## Mixed-model (cross-family) panel
+
+When the decision wants a **mixed-model / cross-family** panel rather than
+single-model judges, the duel substrate is **`/dual-pane-atm`** — durable
+Opus + Codex (+AGY) panes, or its in-session variant (Agent `model:` override +
+`codex exec`) that **`/discovery`'s fanout gate** runs. `/reverse-engineer`
+routes one-way-door steal decisions into council.
+
 ## Examples
 
 - `/council should we swap the policy engine to Cedar?` — runs at the canonical
