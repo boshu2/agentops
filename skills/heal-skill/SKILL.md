@@ -1,6 +1,6 @@
 ---
 name: heal-skill
-description: Repair skill hygiene.
+description: 'Repair skill hygiene. Triggers: "heal-skill", "heal skill", "repair skill hygiene.".'
 practices:
 - refactoring
 - code-complete

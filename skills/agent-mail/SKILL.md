@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs."
+description: 'Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".'
 practices:
 - pragmatic-programmer
 ---

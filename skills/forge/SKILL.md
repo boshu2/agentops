@@ -1,6 +1,6 @@
 ---
 name: forge
-description: Mine transcripts into learnings.
+description: 'Mine transcripts into learnings. Triggers: "forge", "mine transcripts into learnings.", "forge skill".'
 practices:
 - wiki-knowledge-surface
 - lean-startup

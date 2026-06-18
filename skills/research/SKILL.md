@@ -1,6 +1,6 @@
 ---
 name: research
-description: Explore and write findings.
+description: 'Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".'
 practices:
 - wiki-knowledge-surface
 - pragmatic-programmer

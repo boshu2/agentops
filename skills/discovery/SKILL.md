@@ -1,6 +1,6 @@
 ---
 name: discovery
-description: Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
+description: 'Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".'
 practices:
 - adr
 - lean-startup

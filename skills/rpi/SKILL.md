@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: Run discovery, crank, validation.
+description: 'Run discovery, crank, validation. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".'
 practices:
 - bdd-gherkin
 - ddd-bounded-context

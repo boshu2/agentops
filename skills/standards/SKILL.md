@@ -1,6 +1,6 @@
 ---
 name: standards
-description: Provide repo coding standards.
+description: 'Provide repo coding standards. Triggers: "standards", "provide repo coding standards.", "standards skill".'
 practices:
 - code-complete
 - design-patterns

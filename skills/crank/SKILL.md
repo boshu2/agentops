@@ -1,6 +1,6 @@
 ---
 name: crank
-description: Execute epics through waves.
+description: 'Execute epics through waves. Triggers: "crank an epic", "execute epics through waves", "drive the bead wave plan".'
 practices:
 - continuous-delivery
 - xp

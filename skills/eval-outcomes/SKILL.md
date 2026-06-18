@@ -1,6 +1,6 @@
 ---
 name: eval-outcomes
-description: Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.
+description: 'Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".'
 skill_api_version: 1
 practices:
 - continuous-delivery

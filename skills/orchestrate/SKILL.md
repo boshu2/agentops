@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.'
+description: 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure. Triggers: "orchestrate out-of-session", "route + preflight + verify a run", "orchestration preflight".'
 practices:
 - team-topologies
 - hexagonal-architecture

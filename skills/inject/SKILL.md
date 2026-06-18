@@ -1,6 +1,6 @@
 ---
 name: inject
-description: Load relevant .agents context.
+description: 'Load relevant .agents context. Triggers: "inject context", "load .agents context", "pull decay-ranked prior knowledge".'
 practices:
 - wiki-knowledge-surface
 - pragmatic-programmer

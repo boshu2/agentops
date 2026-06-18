@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues."
+description: 'Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".'
 practices:
 - pragmatic-programmer
 ---

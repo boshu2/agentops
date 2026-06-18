@@ -99,6 +99,7 @@ func init() {
 		// routed by change class
 		{ID: "go.command-test-pair", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-command-test-pair.sh"},
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
+		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
 		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh", RepairHint: "bash scripts/generate-registry.sh"},
 		{ID: "contract.bounded-contexts-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-bounded-contexts-drift.sh"},
 		{ID: "contract.disposition-schema", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "validate-skill-disposition-schema.sh"},

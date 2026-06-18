@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution."
+description: 'Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. Triggers: "beads-workflow", "beads workflow", "use when converting markdown plans".'
 practices:
 - pragmatic-programmer
 ---

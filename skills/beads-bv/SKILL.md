@@ -5,9 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Graph-aware task triage with bv and br. Use when prioritizing work, finding
-  bottlenecks, tracking dependencies, or managing local issues across projects.
+description: 'Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".'
 practices:
 - pragmatic-programmer
 ---
