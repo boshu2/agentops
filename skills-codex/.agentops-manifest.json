@@ -1019,7 +1019,7 @@
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
       "source_hash": "c46f6d240f86f40da23239226c92e80ff0716ac18f7be64c54011ba69b991b8e",
-      "generated_hash": "ba2f778efe37c2c5f663ebedd50df7f363c48ce0f42b7195120ebc8c04281b95"
+      "generated_hash": "48fcef7e3c20acbc9758f05c5d25e93622a2dc2cee6595ebecae0d842a01b071"
     },
     {
       "name": "agent-native",
@@ -1073,19 +1073,19 @@
       "name": "beads-br",
       "source_skill": "skills/beads-br",
       "source_hash": "0ad111490f3184f482ff336fdfc8c20a9e2b79cca049299d3cf211432c7c9331",
-      "generated_hash": "6d873fdaf237c2cee080ffb5dbae606e872842bebc3bf592c239fff337bedb40"
+      "generated_hash": "119e7a0dba136c72b198d2ec7c44bc526ca230955c6ebbc3c2d25cb67398e09d"
     },
     {
       "name": "beads-bv",
       "source_skill": "skills/beads-bv",
       "source_hash": "7e639b9d468e123c7106db3bff955e316c26a56a768a6a6f6d4ecf43b44f5698",
-      "generated_hash": "d01b999822c490694ee6dd65441b565b56fb9c44698d9e55f73930c012a4c2ed"
+      "generated_hash": "1ea72ab429cee3b67cd7da3cc8e02f979862d38880b101faa3b6a88e2036951c"
     },
     {
       "name": "beads-workflow",
       "source_skill": "skills/beads-workflow",
       "source_hash": "c80bad74d0c31308f06cbc1f8905f084d0418d6fe2755563a9549e6168631d37",
-      "generated_hash": "85127e19267aa6f5ade2b70b9bfb8d5183b7cc1e779867ca03dfb1693cd03fb4"
+      "generated_hash": "f3368333640b4a0e21b946e7d27aa9564fe7fe17f8b28ba5232d07a609853e48"
     },
     {
       "name": "behavior-first-planning",
@@ -1205,7 +1205,7 @@
       "name": "dcg",
       "source_skill": "skills/dcg",
       "source_hash": "5a7e5d960aa838b42261f4a787a790c56dd7d4f2420923b7f40f5943fc8a096d",
-      "generated_hash": "8bfbae30e2118babab736bea9c94215ed956250afc4208831989795586a239c8"
+      "generated_hash": "0e1e93d6df9901ae560e0ca47ddced9311864c89da9a33325bb97de2fe8cf824"
     },
     {
       "name": "discovery",
@@ -1361,7 +1361,7 @@
       "name": "ntm",
       "source_skill": "skills/ntm",
       "source_hash": "9c661533c990808d7b9948e359f82e26d7f86187617162355909336be6e358e8",
-      "generated_hash": "1747db0ee3a55faf8129371097ac1e21559cb034c669daafe1843dbb9fc8edce"
+      "generated_hash": "86522d9aec057e2ec2e21bba2eda863ad3f166da5ea108c2b1cc363f551efe30"
     },
     {
       "name": "operationalize",
@@ -1541,7 +1541,7 @@
       "name": "reverse-engineer",
       "source_skill": "skills/reverse-engineer",
       "source_hash": "413d89bd8b39b1531d437541f72184902a4aa69a5864e9d5c44508efc0071590",
-      "generated_hash": "cf36916532a2e3434fcce4a0714ae34facd66ba2869f4478fa5eeb2aed04926a"
+      "generated_hash": "d15f58bc4d8e27ca87302768e450c0ebd244a02f79ccdea74ff005ab7ca95ab7"
     },
     {
       "name": "review",
@@ -1697,7 +1697,7 @@
       "name": "toil-mining",
       "source_skill": "skills/toil-mining",
       "source_hash": "f15ee220e855ffca6e6c998030662cbc3340611e1e6fb0f2d4e3b02156a96f66",
-      "generated_hash": "d5d60c29f0de1a507c199ab8b41d72910c16c8874eb635ae42f5ccc243ee0499"
+      "generated_hash": "3167ea1737a49cf535d304eea01ebfffdd0075e22f727dd0d2770ff6e0ff68fe"
     },
     {
       "name": "using-atm",

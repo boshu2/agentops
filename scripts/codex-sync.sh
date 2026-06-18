@@ -38,21 +38,32 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHECK_ONLY=false
+FORCE=false
 ONLY=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check) CHECK_ONLY=true; shift ;;
+    --force) FORCE=true; shift ;;
     --only) ONLY="$2"; shift 2 ;;
     -h|--help)
-      sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     -*) echo "Unknown flag: $1" >&2; exit 2 ;;
     *) ONLY="$1"; shift ;;
   esac
 done
 
-export ROOT CHECK_ONLY ONLY
+# --force regenerates EXISTING twins (overwrite body + exact-mirror references/
+# scripts from source). It must be scoped (--only / a skill name) so it cannot
+# silently clobber the ~75 existing hand-tended twins in one shot.
+if [[ "$FORCE" == "true" && -z "$ONLY" ]]; then
+  echo "Refusing --force without scope: pass --only <skill[,...]> or a skill name." >&2
+  echo "(--force rewrites existing twins from source; an unscoped run would clobber all of them.)" >&2
+  exit 2
+fi
+
+export ROOT CHECK_ONLY FORCE ONLY
 
 python3 - <<'PY'
 import hashlib
@@ -66,6 +77,7 @@ import yaml
 
 root = pathlib.Path(os.environ["ROOT"]).resolve()
 check_only = os.environ.get("CHECK_ONLY") == "true"
+force = os.environ.get("FORCE") == "true"
 scope = {s.strip() for s in os.environ.get("ONLY", "").split(",") if s.strip()}
 
 source_root = root / "skills"
@@ -147,10 +159,13 @@ def transform_body(body: str, known_skills: set[str]) -> str:
     byte-identical (lint scans only SKILL.md), so only the body is transformed."""
     import re
 
-    # /<known-skill> -> $<known-skill> (longest names first so /pre-mortem wins
-    # over /pre). Word-boundary on the right; left edge is the slash.
+    # /<known-skill> -> $<known-skill> for slash-COMMAND invocations only — never
+    # a path segment. Longest names first (so /pre-mortem wins over /pre). Exclude
+    # when preceded by a path char (word/./-/_/slash, e.g. ../research/, foo/plan)
+    # or followed by '/' (a path like /research/SKILL.md), so markdown links and
+    # file paths are left intact (the bug that turned ../foo/ into ..$foo/).
     for skill in sorted(known_skills, key=len, reverse=True):
-        body = re.sub(rf"(?<![\w/])/{re.escape(skill)}\b", f"${skill}", body)
+        body = re.sub(rf"(?<![\w./_-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
 
     body = body.replace("~/.claude/", "~/.codex/").replace("~/.claude", "~/.codex")
     body = body.replace(".claude/", ".codex/")
@@ -238,7 +253,7 @@ for name in source_skills:
         and marker_path.exists()
         and in_ocat
     )
-    if complete:
+    if complete and not force:
         continue
 
     drift.append(name)
@@ -247,18 +262,27 @@ for name in source_skills:
 
     # --- Author the missing twin (self-contained: body + references) ---
     twin_dir.mkdir(parents=True, exist_ok=True)
-    if not skill_md.exists():
+    if force or not skill_md.exists():
         skill_md.write_bytes(desired_skill)
-    if not prompt_md.exists():
+    if force or not prompt_md.exists():
         prompt_md.write_bytes(desired_prompt)
 
-    # Copy source references/ + scripts/ byte-identical (lint scans only SKILL.md,
-    # so refs need no transform) so the Codex runtime artifact is self-contained.
-    for sub in ("references", "scripts"):
-        src_sub = source_root / name / sub
-        dst_sub = twin_dir / sub
-        if src_sub.is_dir() and not dst_sub.exists():
-            shutil.copytree(src_sub, dst_sub)
+    # Mirror ALL source content (references/, scripts/, fixtures/, templates/,
+    # agents/, any sibling files) EXCEPT SKILL.md — byte-identical, so every link
+    # in the body resolves and the Codex runtime artifact is fully self-contained.
+    # lint scans only SKILL.md, so copied content needs no transform. --force
+    # exact-mirrors (wipe then copy) to fully refresh a partial twin; default
+    # copies only what is missing. prompt.md/marker/manifest are twin-only and
+    # never sourced from skills/.
+    src_skill_dir = source_root / name
+    for entry in sorted(src_skill_dir.iterdir()):
+        if entry.name in ("SKILL.md", ".agentops-manifest.json", marker_name, ".DS_Store"):
+            continue
+        dst_entry = twin_dir / entry.name
+        if force and dst_entry.exists():
+            shutil.rmtree(dst_entry) if dst_entry.is_dir() else dst_entry.unlink()
+        if not dst_entry.exists():
+            shutil.copytree(entry, dst_entry) if entry.is_dir() else shutil.copy2(entry, dst_entry)
 
     source_hash = hash_tree_with(source_root / name, {})
     generated_hash = hash_tree_with(twin_dir, {})
@@ -297,8 +321,14 @@ for name in source_skills:
             f"of truth; no durable Codex-specific divergence yet."
         ),
     }
-    upsert(manifest_catalog_skills, name, catalog_entry)
-    upsert(overrides_skills, name, catalog_entry)
+    # Catalog entries are ADD-ONLY: an already-registered skill keeps its existing
+    # (often hand-written) reason/wave — never clobber curated catalog metadata on
+    # a regenerate. Only the manifest hash entry (above) is replaced, since hashes
+    # must track the regenerated content.
+    if not any(e.get("name") == name for e in manifest_catalog_skills):
+        manifest_catalog_skills.append(catalog_entry)
+    if not any(e.get("name") == name for e in overrides_skills):
+        overrides_skills.append(catalog_entry)
     generated.append(name)
 
 if check_only:

@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/ntm",
   "layout": "modular",
   "source_hash": "9c661533c990808d7b9948e359f82e26d7f86187617162355909336be6e358e8",
-  "generated_hash": "1747db0ee3a55faf8129371097ac1e21559cb034c669daafe1843dbb9fc8edce"
+  "generated_hash": "86522d9aec057e2ec2e21bba2eda863ad3f166da5ea108c2b1cc363f551efe30"
 }
