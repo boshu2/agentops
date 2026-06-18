@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "10adee118840bc929b520c2106afbad4454fefbc3c6d206cc24601b2dbd2b508",
+  "codex_override_catalog_hash": "8feca0934a63900c8b78b7e22d1caced8a605b890c329bd3c187bd76b9871792",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -993,6 +993,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Dual-pane ATM orchestration is documentation-led and portable across runtimes; Codex parity is sufficient until durable Codex-only divergence is proven."
+      },
+      {
+        "name": "reverse-engineer",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Revived + renamed from cut reverse-engineer-rpi; steal-map discipline (age-revive-reverse-engineer-0ll)"
       }
     ]
   },
@@ -1241,7 +1247,7 @@
       "name": "dual-pane-atm",
       "source_skill": "skills/dual-pane-atm",
       "source_hash": "de332a48d8fe363eb72f9d7d07eff2a4ea020d59d2756b18589038f0d1510ca6",
-      "generated_hash": "38f050e14a59cf440771422054dc8aef10df4b5a9a451c83766b206afb48abb9"
+      "generated_hash": "aefb4d38e04d1e464c496af533e828765e7c6ba6106a23ecf844c09f98726e7b"
     },
     {
       "name": "eval-outcomes",
@@ -1530,6 +1536,12 @@
       "source_skill": "skills/research",
       "source_hash": "029694ce1c65f7a88831608a4de073a28d536e6d42ea694cb15fa842e8116ff1",
       "generated_hash": "7c5ad29bb43413dd2aa7385697c72055f65eaaf2297d444229c1b33d69e0ceb3"
+    },
+    {
+      "name": "reverse-engineer",
+      "source_skill": "skills/reverse-engineer",
+      "source_hash": "413d89bd8b39b1531d437541f72184902a4aa69a5864e9d5c44508efc0071590",
+      "generated_hash": "cf36916532a2e3434fcce4a0714ae34facd66ba2869f4478fa5eeb2aed04926a"
     },
     {
       "name": "review",

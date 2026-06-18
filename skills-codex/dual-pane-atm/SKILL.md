@@ -35,7 +35,7 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
 - **In-session duel (no panes):** for a one-shot one-way-door decision, skip ATM
   panes — run >=3 perspective subagents (Agent `model:` override) plus the
   cross-family voice via `codex exec "<prompt>" </dev/null`, then winnow on the
-  converged slice. This is what `/discovery`'s fanout gate runs. Never `claude -p`.
+  converged slice. This is what `/discovery`'s fanout gate runs.
 - Acceptance scenarios for preflight and work-split gates live in
   `references/dual-pane-atm.feature`; mirror spawn checklist and work-split
   matrix from the source skill.
