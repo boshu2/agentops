@@ -125,6 +125,8 @@ if (!closeout.accepted)                                  // downstream caught a 
 
 The pairing (`attempt:1` CONFIRMED → `attempt:2` REFUTED, same bead+run) is what `DetectEscapes` surfaces; a clean run emits only the single CONFIRMED. The slow loop then runs `ao membrane derive-checks --run <id>` out-of-band. **Boundary:** the workflow emits; it never derives the check or tunes a gate mid-run (R3) — keep R4 strictly the emit, or it front-runs `age-cwo` and breaks the two-timescale separation.
 
+**Orphan-escape guard (the REFUTED@2 emit is fail-open).** The two emits are independent agent calls, so a failed upstream `CONFIRMED@1` append leaves a `REFUTED@2` with no pair — and `DetectEscapes` keys on the *pair*, so it silently drops a lone REFUTED, losing the escape. Make the downstream REFUTED@2 self-heal: before appending it, re-assert the attempt-1 CONFIRMED is in the yield ledger and re-emit that exact body first if absent (`ao yield emit` is append-safe, so re-emitting is idempotent-safe). Thread it as an optional `pairGuard` on the escape call — `emitVerdict('REFUTED', 2, …, 'r4:escape-emit', ORPHAN_GUARD)` — so a clean CONFIRMED path is unaffected. Carried by both `bdd-foundry.js` and `operating-loop.js`; landed `age-g0y` / `age-1vy`.
+
 ## Governance — the workflow must be born registered
 
 A new workflow `.js` is not done until `scripts/check-workflow-governance.sh` passes. That gate asserts a **bidirectional identity match** between every `.claude/workflows/*.js` and the top-level `workflows:` section of [`docs/contracts/skill-dispositions.yaml`](../contracts/skill-dispositions.yaml), and that each ledger row carries the DDD identity triple. Add a row keyed by your workflow's `meta.name`:
