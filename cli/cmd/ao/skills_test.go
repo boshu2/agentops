@@ -116,14 +116,7 @@ func skillsTestWrite(t *testing.T, p, s string) {
 
 func withCwd(t *testing.T, dir string, fn func()) {
 	t.Helper()
-	orig, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(orig) }()
+	t.Chdir(dir)
 	fn()
 }
 

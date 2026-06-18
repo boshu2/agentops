@@ -380,16 +380,7 @@ func TestContextAssemble_CommandWritesBriefingAndManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = os.Chdir(oldWD)
-	}()
+	t.Chdir(tmp)
 
 	outPath := filepath.Join(tmp, ".agents", "rpi", "smoke-briefing.md")
 	oldTask := assembleTask
@@ -691,16 +682,7 @@ func TestContextAssemble_CommandOutputsJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = os.Chdir(oldWD)
-	}()
+	t.Chdir(tmp)
 
 	outPath := filepath.Join(tmp, ".agents", "rpi", "smoke-briefing.json")
 	oldTask := assembleTask

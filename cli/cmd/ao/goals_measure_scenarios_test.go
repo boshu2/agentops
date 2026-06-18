@@ -63,13 +63,7 @@ func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool
 		}
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(dir)
 	// soc-hwgm/soc-xyt1: save+restore EVERY goalsMeasure package-level
 	// global the command body reads. Previously only goalsFile and
 	// goalsMeasureScenariosOnly were saved, leaving the other 4 measure
@@ -87,7 +81,6 @@ func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool
 	oldOutput := output
 	oldDryRun := dryRun
 	t.Cleanup(func() {
-		_ = os.Chdir(wd)
 		goalsFile = oldGoalsFile
 		goalsMeasureScenariosOnly = oldScenariosOnly
 		goalsMeasureGoalID = oldGoalID

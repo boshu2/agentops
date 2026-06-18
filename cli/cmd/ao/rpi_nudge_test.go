@@ -328,17 +328,7 @@ func rpiNudgeE2ELogContainsAll(log string, want []string) bool {
 
 func chdirRPINudgeE2EWorkdir(t *testing.T, tmp string) {
 	t.Helper()
-
-	oldCwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir tmp: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(oldCwd)
-	})
+	t.Chdir(tmp)
 }
 
 func assertRPINudgeE2EAudit(t *testing.T, tmp string, runID string) {

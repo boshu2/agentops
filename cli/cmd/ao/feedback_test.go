@@ -738,14 +738,7 @@ func TestPrintFeedbackJSON(t *testing.T) {
 
 func TestRunFeedback_DryRun(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	// Create a learning file
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
@@ -775,7 +768,7 @@ func TestRunFeedback_DryRun(t *testing.T) {
 		feedbackHarmful = origHarmful
 	})
 
-	err = runFeedback(feedbackCmd, []string{"L001"})
+	err := runFeedback(feedbackCmd, []string{"L001"})
 	if err != nil {
 		t.Fatalf("runFeedback() dry-run error = %v", err)
 	}
@@ -787,14 +780,7 @@ func TestRunFeedback_DryRun(t *testing.T) {
 
 func TestRunFeedback_ActualUpdate(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(learningsDir, 0755); err != nil {
@@ -825,7 +811,7 @@ func TestRunFeedback_ActualUpdate(t *testing.T) {
 		feedbackHarmful = origHarmful
 	})
 
-	err = runFeedback(feedbackCmd, []string{"L002"})
+	err := runFeedback(feedbackCmd, []string{"L002"})
 	if err != nil {
 		t.Fatalf("runFeedback() error = %v", err)
 	}
@@ -879,14 +865,7 @@ func TestRunFeedback_ValidationError(t *testing.T) {
 
 func TestRunFeedback_LearningNotFound(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	origReward := feedbackReward
 	origAlpha := feedbackAlpha
@@ -903,7 +882,7 @@ func TestRunFeedback_LearningNotFound(t *testing.T) {
 		feedbackHarmful = origHarmful
 	})
 
-	err = runFeedback(feedbackCmd, []string{"NONEXISTENT"})
+	err := runFeedback(feedbackCmd, []string{"NONEXISTENT"})
 	if err == nil {
 		t.Error("expected error for missing learning")
 	}
@@ -928,16 +907,9 @@ func TestRunMigrate_UnknownMigration(t *testing.T) {
 
 func TestRunMigrate_MemRL_NoLearnings(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
-	err = runMigrate(migrateCmd, []string{"memrl"})
+	err := runMigrate(migrateCmd, []string{"memrl"})
 	if err != nil {
 		t.Fatalf("runMigrate() error = %v", err)
 	}
@@ -945,14 +917,7 @@ func TestRunMigrate_MemRL_NoLearnings(t *testing.T) {
 
 func TestRunMigrate_MemRL_WithFiles(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(learningsDir, 0755); err != nil {
@@ -971,7 +936,7 @@ func TestRunMigrate_MemRL_WithFiles(t *testing.T) {
 	dryRun = false
 	t.Cleanup(func() { dryRun = origDryRun })
 
-	err = runMigrate(migrateCmd, []string{"memrl"})
+	err := runMigrate(migrateCmd, []string{"memrl"})
 	if err != nil {
 		t.Fatalf("runMigrate() error = %v", err)
 	}
@@ -992,14 +957,7 @@ func TestRunMigrate_MemRL_WithFiles(t *testing.T) {
 
 func TestRunMigrate_MemRL_DryRun(t *testing.T) {
 	tmp := t.TempDir()
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(learningsDir, 0755); err != nil {
@@ -1013,7 +971,7 @@ func TestRunMigrate_MemRL_DryRun(t *testing.T) {
 	dryRun = true
 	t.Cleanup(func() { dryRun = origDryRun })
 
-	err = runMigrate(migrateCmd, []string{"memrl"})
+	err := runMigrate(migrateCmd, []string{"memrl"})
 	if err != nil {
 		t.Fatalf("runMigrate() dry-run error = %v", err)
 	}

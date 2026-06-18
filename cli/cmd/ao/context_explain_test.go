@@ -88,14 +88,7 @@ Keep startup payloads small and explainable.
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	cmd := rootCmd
@@ -161,14 +154,7 @@ func TestContextExplainReportsProofBackedNextWorkSuppression(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(dir)
 
 	bundle := collectRankedContextBundle(dir, "proof-backed next work", defaultStigmergicPacketLimit)
 	result := buildContextExplainResult(dir, detectRepoName(dir), "proof-backed next work", "task", bundle)
@@ -189,14 +175,7 @@ func TestContextExplainCmdHumanOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	cmd := rootCmd

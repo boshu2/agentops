@@ -501,17 +501,10 @@ func TestRunHandoff_BasicFlow(t *testing.T) {
 	handoffNoKill = true // avoid tmux kill attempt
 
 	// Change to temp dir so runHandoff's os.Getwd() uses it
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origWd)
+	t.Chdir(dir)
 
 	// Call runHandoff — cmd parameter is unused by the function body
-	err = runHandoff(nil, []string{"basic flow summary"})
+	err := runHandoff(nil, []string{"basic flow summary"})
 	if err != nil {
 		t.Fatalf("runHandoff returned error: %v", err)
 	}
@@ -582,17 +575,10 @@ func TestRunHandoff_DryRunViaRunHandoff(t *testing.T) {
 	handoffRPIPhase = 0
 
 	// Change to temp dir
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origWd)
+	t.Chdir(dir)
 
 	// Call runHandoff with --dry-run set — cmd parameter unused
-	err = runHandoff(nil, []string{"dry run summary"})
+	err := runHandoff(nil, []string{"dry run summary"})
 	if err != nil {
 		t.Fatalf("runHandoff --dry-run returned error: %v", err)
 	}

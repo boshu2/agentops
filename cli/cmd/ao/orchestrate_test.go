@@ -34,9 +34,7 @@ func orchestrateTestChdir(t *testing.T) {
 	}
 	for {
 		if _, err := os.Stat(filepath.Join(wd, "docs/contracts/orchestration-tools.yaml")); err == nil {
-			if err := os.Chdir(wd); err != nil {
-				t.Fatal(err)
-			}
+			t.Chdir(wd) // auto-restores at the calling test's cleanup (was a non-restoring leak)
 			return
 		}
 		parent := filepath.Dir(wd)

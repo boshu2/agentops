@@ -75,14 +75,7 @@ func TestGateExitError_ExitCode(t *testing.T) {
 func gateTestHarness(t *testing.T) (*cobra.Command, *bytes.Buffer, *bytes.Buffer, string) {
 	t.Helper()
 	tmp := t.TempDir()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(wd) })
+	t.Chdir(tmp)
 
 	// Reset all package-level validate flags between cases.
 	validateGate = true

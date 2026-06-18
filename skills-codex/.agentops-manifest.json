@@ -1090,8 +1090,8 @@
     {
       "name": "behavior-first-planning",
       "source_skill": "skills/behavior-first-planning",
-      "source_hash": "3f9e5f31c80b060c530031cf3861256d6bdff7c3bff06f1e214b10b62f00036c",
-      "generated_hash": "6cd1bc856ab3d75d5906bc9a27b4bd42f32afafeee23eba0b56f051dcfeb4538"
+      "source_hash": "d22c1bc4e5f05009683d2bdf206d0a8275176e737d256e8201c8a6b40399f544",
+      "generated_hash": "2feead8d06f2bd3b9afda20a9c59c0e8a1dcc2314d25dbc7a071925a4df6bdb1"
     },
     {
       "name": "bootstrap",

@@ -273,16 +273,7 @@ func TestRunStatus_LoadsQualitySignalsFromAgentsRoot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		_ = os.Chdir(oldWd)
-	})
+	t.Chdir(tmp)
 
 	got, err := captureStdout(t, func() error {
 		return runStatus(statusCmd, nil)

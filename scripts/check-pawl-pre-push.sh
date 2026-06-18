@@ -29,15 +29,22 @@ extract_bead_from_commit() {
   local sha="$1"
   local msg
   msg="$(git -C "$GIT_REPO" log -1 --format=%B "$sha" 2>/dev/null || true)"
+  local bead
   if [[ "$msg" =~ \((age-[a-z0-9.-]+|ag-[a-z0-9.-]+)\) ]]; then
-    printf '%s\n' "${BASH_REMATCH[1]}"
-    return 0
+    bead="${BASH_REMATCH[1]}"
+  elif [[ "$msg" =~ (^|[[:space:][:punct:]])(age-[a-z0-9.-]+|ag-[a-z0-9.-]+)([[:space:][:punct:]]|$) ]]; then
+    bead="${BASH_REMATCH[2]}"
+  else
+    return 1
   fi
-  if [[ "$msg" =~ (^|[[:space:][:punct:]])(age-[a-z0-9.-]+|ag-[a-z0-9.-]+)([[:space:][:punct:]]|$) ]]; then
-    printf '%s\n' "${BASH_REMATCH[2]}"
-    return 0
-  fi
-  return 1
+  # A bead id never ends in a separator. The id char class allows '.' for
+  # sub-ids (age-3va.1), so a sentence-ending period — "Closes <id>." — gets
+  # greedily pulled in, yielding "<id>." and a hunt for the non-existent
+  # "<id>..json" verdict file (fail-closed on a normal commit message). Strip
+  # any trailing run of non-alphanumerics so "<id>." normalizes to "<id>".
+  bead="${bead%"${bead##*[a-z0-9]}"}"
+  printf '%s\n' "$bead"
+  return 0
 }
 
 is_main_push() {

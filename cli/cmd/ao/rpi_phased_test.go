@@ -1504,17 +1504,9 @@ func TestRunPhasedEngine_AutoCleanupStale_DryRunDoesNotMutate(t *testing.T) {
 }
 
 func TestRunPhasedEngine_DoesNotMutateProcessCWD(t *testing.T) {
-	origWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Getwd(): %v", err)
-	}
-
 	callerDir := t.TempDir()
 	targetDir := t.TempDir()
-	if err := os.Chdir(callerDir); err != nil {
-		t.Fatalf("Chdir(%s): %v", callerDir, err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origWD) })
+	t.Chdir(callerDir)
 
 	prevDryRun := dryRun
 	dryRun = true

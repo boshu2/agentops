@@ -499,11 +499,7 @@ func TestRatchetTrace_outputTraceText_withEntries(t *testing.T) {
 
 func TestRatchetTrace_runRatchetTrace_noAgentsDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	prev, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(prev) }()
+	t.Chdir(tmpDir)
 
 	// Create .agents dir so LoadChain doesn't fail but chain is empty
 	if err := os.MkdirAll(filepath.Join(tmpDir, ".agents", "ao"), 0755); err != nil {

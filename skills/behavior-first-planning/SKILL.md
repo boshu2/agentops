@@ -111,6 +111,8 @@ Use `br` from the main checkout (never a worktree — it forks the bead DB), eac
 
 `bdd-foundry` (`.claude/workflows/bdd-foundry.js`) is the **thin orchestrator** over this discipline: it dispatches each phase as a black-box agent, gates on the mechanical (computed-in-JS) checks above, and writes to the tracker only on the cleared verdict. This skill is the discipline; the workflow is the deterministic harness that runs it conformantly (see `docs/architecture/workflow-conformance-pattern.md`). When invoked directly (no workflow), you run the four phases yourself and apply the same gates by hand.
 
+The skill dogfoods its own rule: its behavior is pinned by an executable spec, [`references/behavior-first-planning.feature`](references/behavior-first-planning.feature) — the same Gherkin → runnable-acceptance shape it asks every plan to produce.
+
 ## Do NOT
 
 - Duplicate the *lighter* single-BDD-intent shape phase of the `operating-loop` — this is the **full** Gherkin → executed-red → acceptance-gated-DAG discipline, used when beads must be genuinely crank-ready.

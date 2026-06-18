@@ -58,17 +58,10 @@ func steerAutoEnv(t *testing.T) (dir, goalsPath string) {
 	if err := os.WriteFile(goalsPath, []byte(steerAutoFixtureMD), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(dir)
 	oldFile, oldOut := goalsFile, output
 	oldYes, oldAuto, oldPolicy := steerAutoYes, steerAutoAuto, steerAutoPolicyPath
 	t.Cleanup(func() {
-		_ = os.Chdir(wd)
 		goalsFile, output = oldFile, oldOut
 		steerAutoYes, steerAutoAuto, steerAutoPolicyPath = oldYes, oldAuto, oldPolicy
 	})

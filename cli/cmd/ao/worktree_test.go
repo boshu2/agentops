@@ -682,19 +682,12 @@ func TestRunWorktreeGC_DryRunInGitRepo(t *testing.T) {
 	if err := exec.Command("git", "init", tmp).Run(); err != nil {
 		t.Fatalf("git init: %v", err)
 	}
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
 	origDryRun := dryRun
 	origStaleAfter := worktreeGCStaleAfter
 	defer func() { dryRun = origDryRun; worktreeGCStaleAfter = origStaleAfter }()
 	dryRun = true
 	worktreeGCStaleAfter = time.Hour
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 	if err := runWorktreeGC(nil, nil); err != nil {
 		t.Fatalf("runWorktreeGC dry-run: %v", err)
 	}
@@ -755,11 +748,6 @@ func TestWorktree_runWorktreeGC_withStaleSiblings(t *testing.T) {
 	if err := os.Chtimes(wtPath, oldTime, oldTime); err != nil {
 		t.Fatal(err)
 	}
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
 	origDryRun := dryRun
 	origStaleAfter := worktreeGCStaleAfter
 	origPrune := worktreeGCPrune
@@ -777,9 +765,7 @@ func TestWorktree_runWorktreeGC_withStaleSiblings(t *testing.T) {
 	worktreeGCPrune = false
 	worktreeGCCleanTmux = false
 	worktreeGCIncludeDirty = false
-	if err := os.Chdir(repoRoot); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(repoRoot)
 	if err := runWorktreeGC(nil, nil); err != nil {
 		t.Errorf("runWorktreeGC with stale siblings: %v", err)
 	}
@@ -793,11 +779,6 @@ func TestWorktree_runWorktreeGC_withTmuxCleanup(t *testing.T) {
 	if err := exec.Command("git", "init", tmp).Run(); err != nil {
 		t.Fatalf("git init: %v", err)
 	}
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
 	origDryRun := dryRun
 	origStaleAfter := worktreeGCStaleAfter
 	origPrune := worktreeGCPrune
@@ -812,9 +793,7 @@ func TestWorktree_runWorktreeGC_withTmuxCleanup(t *testing.T) {
 	worktreeGCStaleAfter = time.Hour
 	worktreeGCPrune = false
 	worktreeGCCleanTmux = true
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 	if err := runWorktreeGC(nil, nil); err != nil {
 		t.Errorf("runWorktreeGC with tmux cleanup: %v", err)
 	}
@@ -861,11 +840,6 @@ func TestWorktree_runWorktreeGC_withDirtySiblings(t *testing.T) {
 	if err := os.Chtimes(wtPath, oldTime, oldTime); err != nil {
 		t.Fatal(err)
 	}
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
 	origDryRun := dryRun
 	origStaleAfter := worktreeGCStaleAfter
 	origPrune := worktreeGCPrune
@@ -883,9 +857,7 @@ func TestWorktree_runWorktreeGC_withDirtySiblings(t *testing.T) {
 	worktreeGCPrune = false
 	worktreeGCCleanTmux = false
 	worktreeGCIncludeDirty = false
-	if err := os.Chdir(repoRoot); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(repoRoot)
 	if err := runWorktreeGC(nil, nil); err != nil {
 		t.Errorf("runWorktreeGC with dirty siblings: %v", err)
 	}

@@ -1550,15 +1550,8 @@ func TestGitChangedFiles_NotGitRepo(t *testing.T) {
 func TestRunContextStatus_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
 
-	// Save and restore cwd
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir)
+	// change to temp dir
+	t.Chdir(dir)
 
 	// Capture stdout
 	oldStdout := os.Stdout
@@ -1571,7 +1564,7 @@ func TestRunContextStatus_EmptyDir(t *testing.T) {
 	defer func() { output = oldOutput }()
 
 	cmd := &cobra.Command{}
-	err = runContextStatus(cmd, nil)
+	err := runContextStatus(cmd, nil)
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -1592,14 +1585,7 @@ func TestRunContextStatus_EmptyDir(t *testing.T) {
 func TestRunContextStatus_JSONOutput(t *testing.T) {
 	dir := t.TempDir()
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	// Capture stdout
 	oldStdout := os.Stdout
@@ -1612,7 +1598,7 @@ func TestRunContextStatus_JSONOutput(t *testing.T) {
 	defer func() { output = oldOutput }()
 
 	cmd := &cobra.Command{}
-	err = runContextStatus(cmd, nil)
+	err := runContextStatus(cmd, nil)
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -1639,14 +1625,7 @@ func TestRunContextGuard_NoCritical(t *testing.T) {
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origDir)
+	t.Chdir(dir)
 
 	// Create a transcript file with low usage (well below CRITICAL threshold)
 	sessionID := "guard-test-session"
@@ -1721,7 +1700,7 @@ func TestRunContextGuard_NoCritical(t *testing.T) {
 	defer func() { output = oldOutput }()
 
 	cmd := &cobra.Command{}
-	err = runContextGuard(cmd, nil)
+	err := runContextGuard(cmd, nil)
 
 	w.Close()
 	os.Stdout = oldStdout
@@ -1833,11 +1812,7 @@ func TestRunContextStatus_TableWithStatuses(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	sessionID := "table-status-session"
 	transcriptDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
 	if err := os.MkdirAll(transcriptDir, 0755); err != nil {
@@ -1882,9 +1857,7 @@ func TestRunContextStatus_TableWithStatuses(t *testing.T) {
 
 func TestRunContextStatus_EmptyTelemetry(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	t.Setenv("HOME", t.TempDir())
 	oldOutput := output
 	output = "table"
@@ -1912,9 +1885,7 @@ func TestRunContextGuard_TableOutput(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	sessionID := "guard-table-session"
 	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
 	os.MkdirAll(projDir, 0755)
@@ -1955,9 +1926,7 @@ func TestRunContextGuard_TableOutput(t *testing.T) {
 
 func TestRunContextGuard_MissingSession(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	old := contextSessionID
 	contextSessionID = ""
 	t.Setenv("CLAUDE_SESSION_ID", "")
@@ -1975,9 +1944,7 @@ func TestRunContextGuard_AutoRestart(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	sessionID := "guard-ar"
 	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
 	os.MkdirAll(projDir, 0755)
@@ -2017,9 +1984,7 @@ func TestRunContextGuard_WithPromptOverride(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	sessionID := "guard-prompt"
 	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
 	os.MkdirAll(projDir, 0755)
@@ -2068,9 +2033,7 @@ func TestRunContextGuard_CollectError(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	old1, old2, old3, old4, old5, old6 := contextSessionID, contextMaxTokens, contextWatchdogMinute, contextAutoRestart, contextWriteHandoff, output
 	contextSessionID = "nonexistent-session-xyz"
 	contextMaxTokens = contextbudget.DefaultMaxTokens
@@ -2099,9 +2062,7 @@ func TestRunContextGuard_WriteHandoffCritical(t *testing.T) {
 	dir := t.TempDir()
 	tmpHome := t.TempDir()
 	t.Setenv("HOME", tmpHome)
-	origDir, _ := os.Getwd()
-	os.Chdir(dir)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(dir)
 	sessionID := "guard-handoff-crit"
 	projDir := filepath.Join(tmpHome, ".claude", "projects", "proj", "conversations")
 	os.MkdirAll(projDir, 0755)
