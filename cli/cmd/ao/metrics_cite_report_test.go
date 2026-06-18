@@ -169,14 +169,7 @@ func TestRunMetricsCiteReport_RespectsGlobalOutputJSON(t *testing.T) {
 	now := time.Now()
 	writeCitationsJSONL(t, dir, sampleCitations(now))
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "json"
@@ -205,14 +198,7 @@ func TestRunMetricsCiteReport_RespectsGlobalOutputJSON(t *testing.T) {
 func TestRunMetricsCiteReport_EmptyWithJSONOutput(t *testing.T) {
 	dir := t.TempDir()
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "json"

@@ -49,14 +49,7 @@ func TestBuildPacketStatusResult_ExperimentalByDefault(t *testing.T) {
 
 func TestContextPacketStatusJSONOutput(t *testing.T) {
 	tmp := t.TempDir()
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(oldWD) }()
+	t.Chdir(tmp)
 
 	oldOutput := output
 	output = "json"

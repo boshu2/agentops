@@ -143,11 +143,7 @@ func setupIngestAutoPromoteFixture(t *testing.T) ingestAutoPromoteFixture {
 	t.Helper()
 
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 
 	pendingDir := filepath.Join(tmp, ".agents", "knowledge", "pending")
 	if err := os.MkdirAll(pendingDir, 0700); err != nil {

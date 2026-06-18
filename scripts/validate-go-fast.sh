@@ -281,12 +281,31 @@ while IFS=$'\t' read -r module_root pattern; do
         fi
     fi
 
+    # Isolation-sensitive packages: force FULL-package execution under a fixed
+    # shuffle seed, never a -run subset. cli/cmd/ao is one flat `package main`
+    # with shared process-global state (cwd, ~400 global flag vars); a TEST-ONLY
+    # change can introduce cross-test pollution — a non-restoring os.Chdir, an
+    # unrestored global — that -run-scoped execution structurally CANNOT observe.
+    # That blind spot let cmd/ao ship deterministically RED under -shuffle to main
+    # (age-cmd-ao-test-floor-hvb). A fixed seed keeps the gate deterministic while
+    # still exercising ordering. Keep this list tight.
+    shuffle_flag=""
+    case "$pattern" in
+        ./cmd/ao|./cmd/ao/...)
+            shuffle_flag="-shuffle=1"
+            if [[ -n "$run_filter" ]]; then
+                echo "  isolation-sensitive: running FULL $pattern under $shuffle_flag (not just changed tests)"
+                run_filter=""
+            fi
+            ;;
+    esac
+
     (
         cd "$module_root"
         if [[ -n "$run_filter" ]]; then
-            go test -race -count=1 -json -run "$run_filter" "$pattern" 2>&1
+            go test -race -count=1 -json $shuffle_flag -run "$run_filter" "$pattern" 2>&1
         else
-            go test -race -count=1 -json "$pattern" 2>&1
+            go test -race -count=1 -json $shuffle_flag "$pattern" 2>&1
         fi
     ) > "$tmp_json" || race_exit=$?
 
@@ -297,9 +316,9 @@ while IFS=$'\t' read -r module_root pattern; do
         if (
             cd "$module_root"
             if [[ -n "$run_filter" ]]; then
-                go test -race -count=1 -json -p 1 -run "$run_filter" "$pattern" 2>&1
+                go test -race -count=1 -json -p 1 $shuffle_flag -run "$run_filter" "$pattern" 2>&1
             else
-                go test -race -count=1 -json -p 1 "$pattern" 2>&1
+                go test -race -count=1 -json -p 1 $shuffle_flag "$pattern" 2>&1
             fi
         ) > "$tmp_json"; then
             race_exit=0

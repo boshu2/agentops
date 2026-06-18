@@ -140,7 +140,7 @@ func init() {
 		{ID: "go.cli-reference", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "generate-cli-reference.sh", Args: []string{"--check"}},
 		{ID: "go.cli-surface-counts", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "update-cli-surface-counts.sh"},
 		{ID: "go.test-count-regression", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-count-regression.sh"},
-		{ID: "go.test-isolation", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},
+		{ID: "go.test-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},
 		{ID: "go.test-staleness", Tiers: gates.Full, Match: goPaths, Blocking: false, Backing: "check-test-staleness.sh"},
 
 		// contract / context-map / swarm classes

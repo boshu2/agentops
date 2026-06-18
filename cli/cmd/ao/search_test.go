@@ -159,15 +159,7 @@ func TestOutputSearchResults_JSONEmptyResults(t *testing.T) {
 
 func TestRunSearch_JSONNoResultsAfterTypeFilter(t *testing.T) {
 	tmp := t.TempDir()
-
-	prevWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prevWD) })
+	t.Chdir(tmp)
 
 	sessionsDir := filepath.Join(tmp, ".agents", "ao", "sessions")
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {

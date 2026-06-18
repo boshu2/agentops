@@ -34,11 +34,7 @@ func TestLoopHistory_Latest(t *testing.T) {
 		`{"cycle":2,"mode":"b","result":"improved"}`,
 		`{"cycle":3,"mode":"c","result":"unchanged"}`,
 	})
-	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	err := loopHistoryRun(context.Background(), loopHistoryOptions{
@@ -62,9 +58,7 @@ func TestLoopHistory_LimitTrimsToLast(t *testing.T) {
 	writeCycleHistoryFixture(t, dir, []string{
 		`{"cycle":1}`, `{"cycle":2}`, `{"cycle":3}`, `{"cycle":4}`, `{"cycle":5}`,
 	})
-	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
-	_ = os.Chdir(dir)
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	err := loopHistoryRun(context.Background(), loopHistoryOptions{
@@ -88,9 +82,7 @@ func TestLoopHistory_Range(t *testing.T) {
 	writeCycleHistoryFixture(t, dir, []string{
 		`{"cycle":1}`, `{"cycle":2}`, `{"cycle":3}`, `{"cycle":4}`,
 	})
-	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
-	_ = os.Chdir(dir)
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	err := loopHistoryRun(context.Background(), loopHistoryOptions{
@@ -110,9 +102,7 @@ func TestLoopHistory_Range(t *testing.T) {
 func TestLoopHistory_EmptyFile(t *testing.T) {
 	dir := t.TempDir()
 	// no fixture written — file missing
-	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
-	_ = os.Chdir(dir)
+	t.Chdir(dir)
 
 	var buf bytes.Buffer
 	err := loopHistoryRun(context.Background(), loopHistoryOptions{

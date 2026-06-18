@@ -42,14 +42,7 @@ func withEnv(t *testing.T, env map[string]string) {
 // chdir changes the working directory for the test and restores it.
 func chdir(t *testing.T, dir string) {
 	t.Helper()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir %s: %v", dir, err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	t.Chdir(dir)
 }
 
 func TestResolve_EnvPrecedence(t *testing.T) {

@@ -27,11 +27,7 @@ context: fork
 	}
 
 	// Change to tmpDir so resolveSkillPath finds local skills/
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	decl, err := parseContextDeclaration("testskill")
 	if err != nil {
@@ -81,11 +77,7 @@ context:
 		t.Fatal(err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	decl, err := parseContextDeclaration("fullctx")
 	if err != nil {
@@ -135,11 +127,7 @@ description: A skill without context
 		t.Fatal(err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	decl, err := parseContextDeclaration("noctx")
 	if err != nil {
@@ -361,11 +349,7 @@ func TestResolveSkillPath_LocalSkill(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	path, err := resolveSkillPath("testskill")
 	if err != nil {
@@ -401,11 +385,7 @@ func TestResolveSkillPath_InstalledSkill(t *testing.T) {
 
 	t.Setenv("HOME", fakeHome)
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	path, err := resolveSkillPath("myskill")
 	if err != nil {
@@ -419,11 +399,7 @@ func TestResolveSkillPath_InstalledSkill(t *testing.T) {
 func TestResolveSkillPath_NotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	origDir, _ := os.Getwd()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	_, err := resolveSkillPath("nonexistent-skill-xyz")
 	if err == nil {

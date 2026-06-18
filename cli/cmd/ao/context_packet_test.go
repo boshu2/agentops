@@ -54,16 +54,7 @@ id: "f-packet-001"
 		t.Fatal(err)
 	}
 
-	// Use t.Setenv to temporarily change working directory via chdir,
-	// with automatic cleanup. This is safer than bare os.Chdir.
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(dir)
 
 	out, err := executeCommand("context", "packet", "--json", "--goal", "packet cli inspection", "--epic", "ag-test", "--repo", "agentops")
 	if err != nil {
@@ -113,14 +104,7 @@ func TestContextPacketCmd_HumanOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(dir)
 
 	out, err := executeCommand("context", "packet")
 	if err != nil {

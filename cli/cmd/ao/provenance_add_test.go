@@ -32,14 +32,7 @@ func chdirRepoFixture(t *testing.T) string {
 			t.Fatalf("mkdir %s: %v", sub, err)
 		}
 	}
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	t.Chdir(dir)
 	return filepath.Join(dir, provenancegraph.LedgerRelativePath)
 }
 

@@ -9,7 +9,9 @@ Codex-native entry point for the `behavior-first-planning` discipline.
 
 The AgentOps source skill `../../skills/behavior-first-planning/SKILL.md` is the
 source of truth for the four phases, the mechanical gate, and the closing
-independent-review gate. Read it first, then use `prompt.md` for the Codex
+independent-review gate. Its own behavior is pinned by an executable spec,
+`behavior-first-planning.feature` — the same Gherkin → runnable-acceptance shape
+it asks every plan to produce. Read it first, then use `prompt.md` for the Codex
 runtime profile.
 
 ## Codex Runtime Contract

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -10,11 +9,7 @@ import (
 
 func TestResolveAutoPromoteThreshold_UsesConfigWhenFlagNotSet(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 
 	t.Setenv("HOME", tmp)
 	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "36h")
@@ -37,11 +32,7 @@ func TestResolveAutoPromoteThreshold_UsesConfigWhenFlagNotSet(t *testing.T) {
 
 func TestResolveAutoPromoteThreshold_FlagWinsOverConfig(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 
 	t.Setenv("HOME", tmp)
 	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "36h")
@@ -67,11 +58,7 @@ func TestResolveAutoPromoteThreshold_FlagWinsOverConfig(t *testing.T) {
 
 func TestResolveAutoPromoteThreshold_InvalidConfigValue(t *testing.T) {
 	tmp := t.TempDir()
-	prev, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
+	t.Chdir(tmp)
 
 	t.Setenv("HOME", tmp)
 	t.Setenv("AGENTOPS_FLYWHEEL_AUTO_PROMOTE_THRESHOLD", "not-a-duration")

@@ -773,11 +773,7 @@ func TestIntegration_SessionCloseExtractPipeline(t *testing.T) {
 	}
 
 	// Change to temp dir so runExtractAll can find the pending file
-	origDir, _ := os.Getwd()
-	defer func() { _ = os.Chdir(origDir) }()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmpDir)
 
 	// Capture stdout to prevent test pollution
 	oldStdout := os.Stdout

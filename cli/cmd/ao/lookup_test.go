@@ -86,9 +86,7 @@ func TestLookupByID_NotFound(t *testing.T) {
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "learnings"), 0755)
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "patterns"), 0755)
 
-	origDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
+	t.Chdir(tmpDir)
 
 	err := lookupByID(tmpDir, "nonexistent-id", nil)
 	if err == nil {

@@ -149,10 +149,7 @@ func TestRunFlywheelGateCommand_PassesWithHealthyWorkspace(t *testing.T) {
 		t.Fatalf("stat corpus: %v", err)
 	}
 
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir tmp: %v", err)
-	}
-	defer func() { _ = os.Chdir(origWD) }()
+	t.Chdir(tmp)
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(&bytes.Buffer{})

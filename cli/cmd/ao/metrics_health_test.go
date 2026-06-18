@@ -588,16 +588,7 @@ func TestMetricsHealth_PrintPath(t *testing.T) {
 		},
 	})
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = os.Chdir(oldWD)
-	}()
+	t.Chdir(dir)
 
 	oldOutput := output
 	output = "table"
@@ -630,16 +621,7 @@ func TestMetricsHealth_TablelessRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = os.Chdir(oldWD)
-	}()
+	t.Chdir(dir)
 
 	oldOutput := output
 	defer func() { output = oldOutput }()

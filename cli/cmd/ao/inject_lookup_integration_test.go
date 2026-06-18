@@ -53,9 +53,7 @@ Use specialized, independent judges for validation.
 `
 	os.WriteFile(filepath.Join(patternsDir, "council-judges.md"), []byte(patternContent), 0644)
 
-	origDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
+	t.Chdir(tmpDir)
 
 	// Phase 1: Test index-only output
 	t.Run("phase1_index_output", func(t *testing.T) {
@@ -145,9 +143,7 @@ func TestIntegration_LookupNotFound(t *testing.T) {
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "learnings"), 0755)
 	os.MkdirAll(filepath.Join(tmpDir, ".agents", "patterns"), 0755)
 
-	origDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
+	t.Chdir(tmpDir)
 
 	err := lookupByID(tmpDir, "nonexistent-learning", nil)
 	if err == nil {
