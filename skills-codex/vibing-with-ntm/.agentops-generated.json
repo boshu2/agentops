@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/vibing-with-ntm",
   "layout": "modular",
   "source_hash": "5b8867f4cdefaf19f30702881681e21c3f03375a178f75f5652df9687e4c8367",
-  "generated_hash": "d70a28b2d35af2af43cea03dedecc2e37acf50f55e8d1f445c2434045b923811"
+  "generated_hash": "5cbafeb3d292c6133743b21fd230fef327165250bd7fcfa6882b504fd7180c9f"
 }

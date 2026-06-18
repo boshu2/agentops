@@ -1024,14 +1024,14 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "d54880f144d966d14cd77baef2ac2a61941c925af764fb3e403486cf51047bc5",
-      "generated_hash": "1bbe19f6087257e2d92b30d437a63a8b34e116379a2cf99184aad0d618824b9e"
+      "source_hash": "5cdcef82715303283d1f6165cfe5aff2dc0a4a99ec4cfb54b35d982a3f7aaec6",
+      "generated_hash": "a42627213994df0cd7e6fe1b462fa2677aeef8aab6e33de2510d14c2385d155a"
     },
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
       "source_hash": "5cdcef82715303283d1f6165cfe5aff2dc0a4a99ec4cfb54b35d982a3f7aaec6",
-      "generated_hash": "1bbe19f6087257e2d92b30d437a63a8b34e116379a2cf99184aad0d618824b9e"
+      "generated_hash": "a42627213994df0cd7e6fe1b462fa2677aeef8aab6e33de2510d14c2385d155a"
     },
     {
       "name": "agy-headless-evidence",
@@ -1043,7 +1043,7 @@
       "name": "agy-native",
       "source_skill": "skills/agy-native",
       "source_hash": "beeffcf1c1397094bf974668274112102baa55c4c42dfe3f2df86ee5b5f5cc38",
-      "generated_hash": "8092dc7e99972d678670b13f01cdbb4ed6e6f16bb764ad7db5edf73117f3d3d3"
+      "generated_hash": "cc20581fc3013d5a5821e18fb7a2f7099a33593d135147a576d6404b8ee131f5"
     },
     {
       "name": "autodev",
@@ -1109,13 +1109,13 @@
       "name": "cass",
       "source_skill": "skills/cass",
       "source_hash": "16d4fcfe0be3f5ec39398a6d8d408ddc0de652e934614e844254762f64b25442",
-      "generated_hash": "2366885f9e6870164074a6ecb0f61c52bde0bc65040682ca562c018d1c1cefc9"
+      "generated_hash": "1397bdec17fc13c1ee7b0f10e258360733b96928d483901cebb489df96b2a113"
     },
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
       "source_hash": "8f4559b765bd261a0e2cae1910a6b65976911224ab6b86cdd9fdbfb6022a930a",
-      "generated_hash": "05bd2185f4cf071f230ae5febdf8c8bffd20cdff3c17dc5669821692167ecc20"
+      "generated_hash": "9fb3e77b8d75a446c0856ae4b601b57a6a3e7e693e915b2eb26195ff41836b88"
     },
     {
       "name": "codex-approval",
@@ -1469,7 +1469,7 @@
       "name": "rch",
       "source_skill": "skills/rch",
       "source_hash": "9a1736b281ca6e37b2ea99e9e57cdb6b184539c82dbd82323f7c7c4937ad22b5",
-      "generated_hash": "931a67d6b832fe9c2d8a957329ef23a7db99cc1720983a03574c1bd14f8134c4"
+      "generated_hash": "769ed05ae31a3b4cc4f1696e28b26ce4d1e64bd6e5840a8c5b9cb0aa4f2fa142"
     },
     {
       "name": "reality-check",
@@ -1721,7 +1721,7 @@
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
       "source_hash": "5b8867f4cdefaf19f30702881681e21c3f03375a178f75f5652df9687e4c8367",
-      "generated_hash": "d70a28b2d35af2af43cea03dedecc2e37acf50f55e8d1f445c2434045b923811"
+      "generated_hash": "5cbafeb3d292c6133743b21fd230fef327165250bd7fcfa6882b504fd7180c9f"
     },
     {
       "name": "workflow-builder",
