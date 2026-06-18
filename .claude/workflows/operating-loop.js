@@ -389,8 +389,13 @@ const slicesAllGreen = sliceResults.length > 0 && sliceResults.every((s) => s &&
 // Build a VALID gate-verdict emit prompt. The agent substitutes <SHA> with the real
 // `git rev-parse HEAD`; the body shape matches the ao yield gate-verdict contract
 // (deterministic tier: cross_family=false so it never inflates catch_rate_cross_family).
-const emitVerdict = (disposition, attempt, ctx, note, label) => agent(
-  `${DOCTRINE}\n\nR4 gate-verdict (workflow-side EMIT only). ${note}\nDo exactly this, nothing else: (1) capture the current commit with \`SHA=$(git rev-parse HEAD)\`; (2) run\n  ao yield emit gate-verdict --bead ${JSON.stringify(beadId)} --run ${JSON.stringify(runId)} --json '{"difficulty":2,"pawl_verdict_ref":{"bead_id":${JSON.stringify(beadId)},"head_sha":"'"$SHA"'"},"disposition":"${disposition}","head_sha":"'"$SHA"'","attempt":${attempt},"mode":"deterministic","author_context_id":"${ctx}","refuter_families":[],"author_family":"operating-loop-gate","cross_family":false,"author_ne_reviewer":true,"evidence_present":true}'\nReturn the command's exit code (0 = appended). Do NOT run \`ao membrane derive-checks\` or otherwise build/tune the sink — that is the slow loop's job (age-cwo).`,
+// pairGuard (optional) mirrors bdd-foundry.js's orphan-escape guard: the downstream
+// REFUTED@2 emit is fail-open — a failed upstream CONFIRMED@1 append would leave a
+// REFUTED@2 with no paired CONFIRMED@1, which DetectEscapes silently drops. When set,
+// the agent re-asserts the attempt-1 CONFIRMED is in the yield ledger before the REFUTED
+// (re-emitting is append-safe). Emit-only; derive/govern stays age-cwo.
+const emitVerdict = (disposition, attempt, ctx, note, label, pairGuard) => agent(
+  `${DOCTRINE}\n\nR4 gate-verdict (workflow-side EMIT only). ${note}\nDo exactly this, nothing else:${pairGuard ? ` (0) ${pairGuard}` : ''} (1) capture the current commit with \`SHA=$(git rev-parse HEAD)\`; (2) run\n  ao yield emit gate-verdict --bead ${JSON.stringify(beadId)} --run ${JSON.stringify(runId)} --json '{"difficulty":2,"pawl_verdict_ref":{"bead_id":${JSON.stringify(beadId)},"head_sha":"'"$SHA"'"},"disposition":"${disposition}","head_sha":"'"$SHA"'","attempt":${attempt},"mode":"deterministic","author_context_id":"${ctx}","refuter_families":[],"author_family":"operating-loop-gate","cross_family":false,"author_ne_reviewer":true,"evidence_present":true}'\nReturn the command's exit code (0 = appended). Do NOT run \`ao membrane derive-checks\` or otherwise build/tune the sink — that is the slow loop's job (age-cwo).`,
   { label, phase: 'Capture' })
 let escapeEmitted = false
 if (beadId && runId && slicesAllGreen) {
@@ -399,7 +404,7 @@ if (beadId && runId && slicesAllGreen) {
   if (!closeout.accepted) {
     // Downstream catch of an upstream-confirmed unit = an ESCAPE. Emit REFUTED at a higher attempt.
     const failed = (closeout.acceptanceMap || []).filter((m) => m && !m.passed).map((m) => m.example)
-    await emitVerdict('REFUTED', 2, 'operating-loop-acceptance-rollup', `The per-slice gate passed green but the DOWNSTREAM acceptance roll-up caught defect(s): ${JSON.stringify(failed)} (residual gaps: ${JSON.stringify(closeout.residualGaps || [])}). This is an escape — a unit an upstream gate CONFIRMED that a stricter downstream gate REFUTED at a higher attempt; the CONFIRMED→REFUTED pair is what the slow loop consumes.`, 'capture:r4-escape-emit')
+    await emitVerdict('REFUTED', 2, 'operating-loop-acceptance-rollup', `The per-slice gate passed green but the DOWNSTREAM acceptance roll-up caught defect(s): ${JSON.stringify(failed)} (residual gaps: ${JSON.stringify(closeout.residualGaps || [])}). This is an escape — a unit an upstream gate CONFIRMED that a stricter downstream gate REFUTED at a higher attempt; the CONFIRMED→REFUTED pair is what the slow loop consumes.`, 'capture:r4-escape-emit', `ORPHAN-ESCAPE GUARD: first confirm the attempt-1 CONFIRMED gate-verdict for bead ${JSON.stringify(beadId)} run ${JSON.stringify(runId)} is already in the yield ledger (it was just emitted upstream). If it is ABSENT (the upstream emit failed), re-emit that exact attempt-1 CONFIRMED body FIRST so this REFUTED@2 is never an orphan with no pair; re-emitting is append-safe.`)
     escapeEmitted = true
     log(`R4: escape emitted — acceptance roll-up caught ${failed.length} defect(s) the slice gate passed green; REFUTED gate-verdict (attempt 2) paired with the attempt-1 CONFIRMED for ${beadId}@${runId}. Slow loop (ao membrane derive-checks --run ${runId}) derives the catch.`)
   }
