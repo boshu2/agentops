@@ -487,6 +487,24 @@ run_reconcile() {
   grep -qx 'close ag-742' "$ACTION_LOG"
 }
 
+@test "multi-model with TWO families but BOTH in author's context: HOLD exit 5 (self-approval bypass closed, age-les)" {
+  # Closes the age-les bypass: multi-model is STRICTLY STRONGER than fresh-context,
+  # not a swap. Two distinct families (claude+codex) satisfy the family floor, but
+  # BOTH refuters ran in the author's own context ("author-session-0") — zero
+  # context-independence (the author reviewing their own work with two models
+  # loaded). The unconditional fresh-context floor now refuses it.
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  printf 'real review ran\n' > "$TMP/evidence.txt"
+  seed_raw_verdict ag-745 '{"schema_version":"pawl-verdict.v1","bead_id":"ag-745","pr":745,"head_sha":"cafef00dbabe1234","disposition":"CONFIRMED","generated_at":"2026-01-01T00:00:00Z","author_context_id":"author-session-0","mode":"multi-model","refuters":[{"family":"claude","verdict":"CONFIRMED","context_id":"author-session-0","evidence":"'"$TMP/evidence.txt"'"},{"family":"codex","verdict":"CONFIRMED","context_id":"author-session-0","evidence":"'"$TMP/evidence.txt"'"}]}'
+  run_reconcile 745 ag-745
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
+  ! grep -q '^close' "$ACTION_LOG"
+}
+
 @test "unknown mode value: HOLD exit 5, no merge (fail-closed)" {
   printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
   printf 'MERGED' > "$TMP/pr_state"

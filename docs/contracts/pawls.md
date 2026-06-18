@@ -55,15 +55,19 @@ ideal, never that a one-way door ships ungated.
 The gate's **diversity requirement is per-pawl and operator-tunable** — the same way the
 circuit-breaker thresholds (max-attempts, time/cost budgets) are tunable. Each pawl has a
 `mode`; the verdict records it (`schemas/pawl-verdict.v1.schema.json` → `mode`) and the merge
-path enforces it (`scripts/pawl-verdict.sh check`). **Only the diversity requirement changes
-with mode** — every other guarantee (CONFIRMED, `head_sha` == the PR's live head, real
-non-empty reviewer evidence, schema-validity, terminal green CI, roster-validated families) is
-**mode-independent and always enforced**.
+path enforces it (`scripts/pawl-verdict.sh check`). The **fresh-context floor is the foundation
+and is enforced in EVERY mode** — `multi-model` is strictly STRONGER than `fresh-context`, not a
+swap: it **adds** family-diversity **on top of** the fresh-context floor, it does not waive it.
+(A 2-family verdict whose refuters both ran in the author's own context is family-diverse but
+has zero context-independence — a self-approval bypass — so it is refused, age-les.) Every other
+guarantee (CONFIRMED, `head_sha` == the PR's live head, real non-empty reviewer evidence,
+schema-validity, terminal green CI, roster-validated families) is **mode-independent and always
+enforced**.
 
 | Mode | Requirement | Catches | Cost | Use for |
 |---|---|---|---|---|
 | **`fresh-context`** *(DEFAULT)* | ≥1 refuter whose `context_id` != the verdict's `author_context_id` — a genuine fresh red-team: a **separate invocation** that did not share the author's accumulated context. **Model-agnostic** — same model in a fresh context counts. | the author's **tunnel-vision / accumulated-context errors** — the dominant failure (a worker rubber-stamps its own work *because it has the author's context*). | one extra invocation | **every pawl, by default.** Cheap; keeps the ratchet's iteration cheap. |
-| **`multi-model`** *(OPT-IN)* | ≥2 **distinct, roster-validated model families**, all CONFIRMED (the prior cross-family rule, unchanged). | the above **plus** a single model's **systematic blind spots** (a whole family sharing a failure mode). | ≥2 family invocations (cross-vendor) | opt up only the **highest-irreversibility doors**. |
+| **`multi-model`** *(OPT-IN)* | the fresh-context floor (above) **AND** ≥2 **distinct, roster-validated model families**, all CONFIRMED — strictly stronger, not a swap. | the above **plus** a single model's **systematic blind spots** (a whole family sharing a failure mode). | ≥2 family invocations (cross-vendor) | opt up only the **highest-irreversibility doors**. |
 
 **Default to `fresh-context`.** A fresh-CONTEXT reviewer is the high-value, low-cost catch:
 most landing misses are the author not seeing what it was too close to, and a separate
@@ -105,7 +109,7 @@ The model has two layers: a **default auto-redo loop**, and a set of **tunable c
 
 This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl and auto-redoes on REFUTED; pulling a human in is the exception that fires only when a tunable circuit breaker trips — and until the human acts, the pawl **holds**.
 
-> **Scope note (threat model).** The pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by reviewer(s) meeting the pawl's **diversity mode** — fresh-context (≥1 fresh red-team, model-agnostic) by default, or multi-model (≥2 roster-validated families) where a pawl is opted up (see [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default)).
+> **Scope note (threat model).** The pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by reviewer(s) meeting the pawl's **diversity mode** — fresh-context (≥1 fresh red-team, model-agnostic) by default, or multi-model (the fresh-context floor **plus** ≥2 roster-validated families — strictly stronger) where a pawl is opted up (see [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default)).
 
 ## Adding a pawl
 

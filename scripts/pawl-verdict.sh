@@ -243,10 +243,19 @@ do_check() {
   local mode author_ctx
   mode="$(jq -r '.mode // "fresh-context"' "$f" 2>/dev/null)"
   author_ctx="$(jq -r '.author_context_id // ""' "$f" 2>/dev/null)"
+  # multi-model is STRICTLY STRONGER than fresh-context, not a swap (age-les):
+  # it ADDS >=2-family diversity ON TOP OF the fresh-context floor. The floor is
+  # the foundational independence property (it catches the DOMINANT failure — a
+  # worker rubber-stamping its own work because it shares the author's context);
+  # opting a pawl UP to multi-model must never WAIVE it. So the mode case only
+  # adds the multi-model family requirement, and the fresh-context floor below is
+  # enforced UNCONDITIONALLY for every mode. Without this, two distinct families
+  # whose refuters BOTH ran in the author's own context would authorize the merge
+  # — a self-approval bypass (family-diverse but zero context-independence).
   case "$mode" in
     multi-model)
-      # OPT-IN, strongest door: >=2 distinct CANONICAL families (catches a
-      # model's systematic blind spots, not just the author's context drift).
+      # OPT-IN, strongest door: ADDS >=2 distinct CANONICAL families (catches a
+      # model's systematic blind spots) on top of the unconditional floor below.
       local distinct
       distinct="$(printf '%s\n' "${fams[@]}" | sort -u | grep -c .)"
       if [[ "${distinct:-0}" -lt 2 ]]; then
@@ -255,28 +264,33 @@ do_check() {
       fi
       ;;
     fresh-context|"")
-      # DEFAULT, cheap door: >=1 refuter whose context_id != author_context_id —
-      # a genuine fresh red-team (separate invocation, no shared accumulated
-      # context), MODEL-AGNOSTIC. Same family in a fresh context still counts;
-      # a refuter that ran in the author's own context does NOT.
-      local fresh_count rctx
-      fresh_count=0
-      while IFS= read -r rctx; do
-        [[ -z "$rctx" ]] && continue
-        if [[ "$rctx" != "$author_ctx" ]]; then
-          fresh_count=$((fresh_count + 1))
-        fi
-      done < <(jq -r '.refuters[].context_id // ""' "$f" 2>/dev/null)
-      if [[ "$fresh_count" -lt 1 ]]; then
-        echo "PAWL-GATE: mode=fresh-context needs >=1 refuter whose context_id != author_context_id ($author_ctx) — a refuter that ran in the author's own context is not a fresh red-team — fail-closed" >&2
-        return 1
-      fi
+      : # no requirement beyond the unconditional fresh-context floor below
       ;;
     *)
       echo "PAWL-GATE: unknown mode '$mode' (expected fresh-context|multi-model) — fail-closed, merge refused" >&2
       return 1
       ;;
   esac
+
+  # Fresh-context floor — UNCONDITIONAL (every mode, incl. multi-model): >=1
+  # refuter whose context_id != author_context_id — a genuine fresh red-team
+  # (separate invocation, no shared accumulated context), MODEL-AGNOSTIC. Same
+  # family in a fresh context still counts; a refuter that ran in the author's
+  # own context does NOT. This is what closes the multi-model self-approval
+  # bypass (age-les): family diversity without context independence is not a
+  # real review.
+  local fresh_count rctx
+  fresh_count=0
+  while IFS= read -r rctx; do
+    [[ -z "$rctx" ]] && continue
+    if [[ "$rctx" != "$author_ctx" ]]; then
+      fresh_count=$((fresh_count + 1))
+    fi
+  done < <(jq -r '.refuters[].context_id // ""' "$f" 2>/dev/null)
+  if [[ "$fresh_count" -lt 1 ]]; then
+    echo "PAWL-GATE: mode=$mode needs >=1 refuter whose context_id != author_context_id ($author_ctx) — a refuter that ran in the author's own context is not a fresh red-team (the floor applies to multi-model too) — fail-closed" >&2
+    return 1
+  fi
 
   # --- evidence-binding: a real review must have run --------------------------
   # Each refuter SHOULD carry an evidence path; the verdict MAY instead reference
