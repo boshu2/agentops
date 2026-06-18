@@ -147,7 +147,7 @@ func runClaimList(cmd *cobra.Command, _ []string) error {
 func runClaimCheck(cmd *cobra.Command, _ []string) error {
 	changedOnly, _ := cmd.Flags().GetBool("changed")
 	base, _ := cmd.Flags().GetString("base")
-	repoRoot, err := resolveProjectDir()
+	repoRoot, err := repoRootOrCwd()
 	if err != nil {
 		return err
 	}
