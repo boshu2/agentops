@@ -28,9 +28,14 @@
 //      single bounded repair pass and stops (the manifest is left for operator
 //      re-validation). No unbounded loop.
 //   R3 no-self-modification-in-run ✓  — no gate is added/removed/retuned mid-run.
-//   R4 escapes→slow-loop — PENDING: a thin-pattern escape-emit step (age-3va.4) wires
-//      a downstream-caught defect to the escape→finding→membrane sink (age-zqc, now
-//      landed). Marked PENDING until that step lands; not yet fully §6-compliant on R4.
+//   R4 escapes→slow-loop ✓  — the Validate phase emits gate-verdicts to the yield
+//      ledger: a CONFIRMED at the UPSTREAM beadify gate (the JS-computed bead set passed
+//      runnable+valid-ref, cycle-free, fully-covering), and a REFUTED at attempt 2 when the
+//      DOWNSTREAM gate (cross-family validate score / mechanical drift-guard) catches a
+//      defect the beadify gate passed. That CONFIRMED-then-REFUTED pair for the same bead+run
+//      is the escape the slow loop (ao membrane derive-checks, age-zqc) compiles into the
+//      catch. EMIT only — derive/govern stays age-cwo. See workflow-conformance-pattern.md
+//      'The R4 escape-emit step'.
 //   R5 orchestrator-routes-never-reasons ✓  — every generative move is a dispatched
 //      agent executing the behavior-first-planning skill; the script body only parses
 //      inputs, computes the deterministic gates, and routes on the verdicts.
@@ -266,7 +271,51 @@ if (DRY_RUN) {
   log(`verdict ${score} below threshold ${SCORE_THRESHOLD} (or gate fail) — beads NOT written; manifest repaired for operator review`)
 }
 
+// ---- R4 escapes→slow-loop — EMIT only (the derive/govern half is age-cwo).
+// The yield ledger pairs an UPSTREAM CONFIRMED (the JS-computed beadify gate accepted the
+// bead set) with a DOWNSTREAM REFUTED at a higher attempt when the cross-family validate
+// score or the mechanical drift-guard catches a defect the beadify gate passed. That
+// CONFIRMED→REFUTED pair for the same bead+run is what `ao membrane derive-checks` (age-zqc)
+// surfaces and compiles into the check that would have caught it. The gate-verdict body is
+// COMMIT-BOUND (ao validates pawl_verdict_ref + head_sha ≥7 + mode + author_family), so the
+// emit agent captures the run's current HEAD as the sha. Skipped under DRY_RUN (pure
+// verification — no persistent-state mutation). EMIT only; never derive or tune a gate (R3).
+const r4Bead = `bdd-foundry-${RUN_TAG}`
+const beadifyGreen = passed.length > 0 && cycleFree && uncovered.length === 0
+// pairGuard (optional) is the orphan-escape guard for the downstream REFUTED@2: emit is
+// fail-open observability, so the orchestrator cannot branch on a prior emit's exit code
+// (the agent returns text, not a status). The robust place to prevent an orphaned escape
+// (a REFUTED@2 with no paired CONFIRMED@1, which DetectEscapes would silently drop) is the
+// emit layer itself — the agent re-asserts the attempt-1 CONFIRMED before the REFUTED, and
+// `ao yield emit` is append-idempotent-safe to re-run. (Strict improvement over the
+// operating-loop.js reference idiom; backport candidate.)
+const emitVerdict = (disposition, attempt, ctx, note, label, pairGuard) => agent(
+  `${REGISTER}\nR4 gate-verdict (workflow-side EMIT only). ${note}\nDo exactly this, nothing else:${pairGuard ? ` (0) ${pairGuard}` : ''} (1) capture the current commit with \`SHA=$(git rev-parse HEAD)\`; (2) run\n  ao yield emit gate-verdict --bead ${JSON.stringify(r4Bead)} --run ${JSON.stringify(r4Bead)} --json '{"difficulty":2,"pawl_verdict_ref":{"bead_id":${JSON.stringify(r4Bead)},"head_sha":"'"$SHA"'"},"disposition":"${disposition}","head_sha":"'"$SHA"'","attempt":${attempt},"mode":"deterministic","author_context_id":"${ctx}","refuter_families":[],"author_family":"bdd-foundry-gate","cross_family":false,"author_ne_reviewer":true,"evidence_present":true}'\nReturn the command's exit code (0 = appended). Do NOT run \`ao membrane derive-checks\` or otherwise build/tune the sink — that is the slow loop's job (age-cwo).`,
+  { label, phase: 'Validate' })
+let escapeEmitted = false
+if (DRY_RUN) {
+  log(`R4: DRY-RUN — gate-verdict emit skipped (no persistent-state mutation in verification mode)`)
+} else if (beadifyGreen) {
+  // Upstream confirm: the JS-computed beadify gate accepted the whole bead set.
+  await emitVerdict('CONFIRMED', 1, 'bdd-foundry-beadify-gate', `The beadify gate accepted the bead set for ${r4Bead} (runnable+valid-ref, cycle-free, fully covering) — record the upstream CONFIRM.`, 'r4:confirm')
+  if (!clears) {
+    // Downstream catch of an upstream-confirmed unit = an ESCAPE. Emit REFUTED at attempt 2.
+    const why = !driftOk ? `drift-guard REFUTED (${(drift && drift.failures || []).length} acceptance command(s) did not resolve 1:1)` : `cross-family validate score ${score} < ${SCORE_THRESHOLD}`
+    await emitVerdict('REFUTED', 2, 'bdd-foundry-validate', `The beadify gate accepted the bead set but the DOWNSTREAM validate phase caught a defect: ${why}. This is an escape — a unit the upstream beadify gate CONFIRMED that a stricter downstream gate REFUTED at a higher attempt; the CONFIRMED→REFUTED pair is what the slow loop consumes.`, 'r4:escape-emit', `ORPHAN-ESCAPE GUARD: first confirm the attempt-1 CONFIRMED gate-verdict for bead ${JSON.stringify(r4Bead)} run ${JSON.stringify(r4Bead)} is already in the yield ledger (it was just emitted upstream). If it is ABSENT (the upstream emit failed), re-emit that exact attempt-1 CONFIRMED body FIRST so this REFUTED@2 is never an orphan with no pair; re-emitting is append-safe.`)
+    escapeEmitted = true
+    log(`R4: escape emitted — the downstream validate phase caught a defect the beadify gate passed (${why}); REFUTED gate-verdict (attempt 2) paired with the attempt-1 CONFIRMED for ${r4Bead}. Slow loop (ao membrane derive-checks --run ${r4Bead}) derives the catch.`)
+  } else {
+    log(`R4: no escape — beadify gate accepted and the validate phase cleared for ${r4Bead}; single upstream CONFIRM recorded.`)
+  }
+} else {
+  // Beadify gate did NOT fully accept (coverage holes / cycles) — a direct fail, not an
+  // escape (no upstream CONFIRM to pair against). Record the downstream REFUTED at attempt 1
+  // so the deterministic catch still counts.
+  await emitVerdict('REFUTED', 1, 'bdd-foundry-validate', `The beadify gate did NOT accept the bead set for ${r4Bead} (coverage holes / cycles) — a direct fail, not an escape.`, 'r4:refute')
+}
+
 return {
+  escapeEmitted,
   verdict, score_threshold: SCORE_THRESHOLD, dry_run: DRY_RUN, tracker_written: !DRY_RUN && score >= SCORE_THRESHOLD && cycleFree && uncovered.length === 0 && driftOk, drift_guard: driftOk, drift_failures: (drift && drift.failures) || [],
   gate: { passed: passed.length, rejected: rejected.map((b) => b.title), coverage_holes: uncovered, cycle_free: cycleFree },
   red_run: redrun, scenarios: scenarioCount, gaps_dispositioned: dispositions.length, codex_gap_pass_ok: gapsOk,
