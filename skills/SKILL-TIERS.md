@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (69)
+### User-Facing Skills (70)
 
 **Judgment:**
 
@@ -331,6 +331,7 @@ These are how skills chain in practice:
 | **dual-pane-atm** | execution | 'Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".' |
 | **orchestrate** | execution | 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.' |
 | **behavior-first-planning** | execution | 'Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".' |
+| **reverse-engineer** | execution | 'Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".' |
 
 ### Internal Skills (5) — `metadata.internal: true`
 

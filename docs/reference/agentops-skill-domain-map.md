@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 74 |
+| Skills audited | 75 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 74 / 74 |
+| Dispositions assigned | 75 / 75 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -116,6 +116,7 @@ Disposition meanings:
 | `refactor` | BC3 Loop | supporting | update | Refactor generator; loop-side change execution (re-binned BC2→BC3, ag-j3ge0 — produces code changes inside the operating loop, not a validation gate). |
 | `release` | BC2 Validation | supporting | update | Release gate driver; keep tied to local CI and evidence export. |
 | `research` | BC1 Corpus | driving-adapter | update | Knowledge acquisition entrypoint; add source/citation self-test. |
+| `reverse-engineer` | BC1 Corpus | supporting | keep | External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline.. |
 | `review` | BC2 Validation | driving-adapter | update | Human-facing review gate; align to validator output contract. |
 | `rpi` | BC3 Loop | domain | refactor | Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper). |
 | `sbh` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |

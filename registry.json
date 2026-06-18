@@ -1,15 +1,16 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-18T16:26:20Z",
+  "generated_at": "2026-06-18T14:47:41Z",
   "summary": {
-    "skills": 74,
+    "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 87,
     "workflows": 4,
-    "capabilities": 175
+    "capabilities": 176
   },
   "surfaces": {
     "skills": [
@@ -292,6 +293,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 17
+      },
+      {
+        "name": "reverse-engineer",
+        "tier": "execution",
+        "path": "skills/reverse-engineer/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
       },
       {
         "name": "sbh",
@@ -1521,8 +1530,8 @@
     ]
   },
   "capability_summary": {
-    "total": 175,
-    "skills": 74,
+    "total": 176,
+    "skills": 75,
     "cli_commands": 87,
     "gates": 14,
     "reference_impls": 0
@@ -3431,6 +3440,36 @@
       ],
       "path": "skills/research/",
       "references": 17
+    },
+    {
+      "sku": "skill:reverse-engineer",
+      "name": "reverse-engineer",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "capability_class": "corpus",
+      "purpose": "Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [
+        "reverse-engineer-rpi"
+      ],
+      "supersedes": "reverse-engineer-rpi",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/reverse-engineer/",
+      "references": 0
     },
     {
       "sku": "skill:review",

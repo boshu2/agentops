@@ -82,6 +82,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors. Triggers: "refactor", "execute safe refactors.", "refactor skill".
 - `release` — Run release validation. Triggers: "run release validation", "cut a release", "check release readiness".
+- `refactor` — Execute safe refactors.
+- `release` — Run release validation.
+- `reverse-engineer` — Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
 - `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: "scaffold", "create project component or boilerplate", "scaffold skill".
 - `skill-auditor` — Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.
@@ -278,6 +281,7 @@ graph LR
 | `research` | consumes | repo-context |
 | `research` | produces | .agents/research/*.md |
 | `research` | produces | result.json |
+| `reverse-engineer` | produces | .agents/research/*.md |
 | `review` | consumes | github-pr |
 | `review` | consumes | validate |
 | `review` | produces | result.json |
