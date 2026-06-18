@@ -19,7 +19,7 @@ RUN_ID="dynamo-e2e-demo"
 BEAD="e2e-synthetic-1"
 AO_BIN="${AO_BIN:-ao}"          # override to a freshly-built binary in CI/tests
 KEEP=false
-SCENARIO="clean"               # clean = CONFIRMED first pass; rework = REFUTE -> rework -> CONFIRM (the ratchet)
+SCENARIO="clean"               # clean = CONFIRMED first pass; rework = REFUTE -> rework -> CONFIRM (the ratchet, phase-label loss); rework-order = same ratchet but attempt-1 spend is rework via the ATTEMPT-ORDERING join, no phase label
 C_DELTA=""                     # self-excitation: a PUBLISHED corpus delta (ag-8p8o/W1c). Omit -> C pending (never faked).
 for a in "$@"; do
   case "$a" in
@@ -30,7 +30,7 @@ for a in "$@"; do
     -h|--help)    sed -n '2,20p' "$0"; exit 0 ;;
   esac
 done
-case "$SCENARIO" in clean|rework) ;; *) echo "dynamo-e2e: --scenario must be clean|rework (got '$SCENARIO')" >&2; exit 2 ;; esac
+case "$SCENARIO" in clean|rework|rework-order) ;; *) echo "dynamo-e2e: --scenario must be clean|rework|rework-order (got '$SCENARIO')" >&2; exit 2 ;; esac
 [[ -z "$C_DELTA" || "$C_DELTA" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "dynamo-e2e: --c-delta must be a number (got '$C_DELTA')" >&2; exit 2; }
 
 command -v "$AO_BIN" >/dev/null 2>&1 || { echo "dynamo-e2e: '$AO_BIN' not on PATH (build + install ao, or set AO_BIN)" >&2; exit 2; }
@@ -57,7 +57,8 @@ echo "== DYNAMO E2E — scenario=$SCENARIO (run=$RUN_ID, bead=$BEAD) =="
 # 1. DISPATCH + PRODUCE (stub worker; deterministic, no LLM) -------------------
 echo "[1/6] dispatch+produce : stub worker produced work for $BEAD (no LLM)"
 
-if [[ "$SCENARIO" == "clean" ]]; then
+case "$SCENARIO" in
+clean)
   # Happy path: CONFIRMED on the first attempt.
   HEAD_SHA="e2e000feed"
   gv "$HEAD_SHA" CONFIRMED 1
@@ -66,21 +67,45 @@ if [[ "$SCENARIO" == "clean" ]]; then
   echo "[3/6] accept         : merged $HEAD_SHA (gated)"
   use 1000 implement
   echo "[4/6] usage          : 1000 tok productive (R fed)"
-else
-  # The RATCHET: attempt-1 REFUTED -> rework -> attempt-2 CONFIRMED -> accept.
-  # Proves reconcile-by-rejection: bad work is rejected, reworked, and only the
-  # good commit is accepted; the gauges must PENALIZE the rework (Q not-clean, L>0).
+  ;;
+rework)
+  # The RATCHET, PHASE-LABEL path: attempt-1 REFUTED -> rework -> attempt-2
+  # CONFIRMED -> accept. Here the loss comes from the EXPLICIT phase=rework row
+  # (classifyUsage's phase branch), NOT from the attempt-ordering join. The
+  # attempt-1 700-token spend is emitted AFTER its own REFUTE verdict, so
+  # usageAttempt attributes it FORWARD to the next gate-verdict (attempt-2) and
+  # it reads Productive — the ordering join never fires here. The rework-order
+  # scenario below covers the ordering mechanism explicitly. (age-vx0.)
   gv "e2e0v1bad" REFUTED 1
-  use 700 implement                       # attempt-1 spend (before the accept -> rework-loss)
+  use 700 implement                       # attempt-1 spend emitted post-REFUTE -> attributes to attempt-2 (productive)
   echo "[2/6] gate           : REFUTED attempt-1 -> reconcile: rework"
   HEAD_SHA="e2e0v2good"
   gv "$HEAD_SHA" CONFIRMED 2
-  use 500 rework                          # rework spend
+  use 500 rework                          # rework loss via the PHASE LABEL (not ordering)
   echo "      gate (re)      : CONFIRMED attempt-2 (after rework)"
   emit accept --bead "$BEAD" --run "$RUN_ID" --json "{\"merge_sha\":\"$HEAD_SHA\",\"merged_by\":\"dynamo-e2e\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"}}" >/dev/null
   echo "[3/6] accept         : merged $HEAD_SHA (gated, attempt-2)"
-  echo "[4/6] usage          : 700 attempt-1 + 500 rework (R fed; loss expected)"
-fi
+  echo "[4/6] usage          : 500 rework loss via phase label (R fed)"
+  ;;
+rework-order)
+  # The RATCHET, ATTEMPT-ORDERING path (age-vx0): same reject->rework->accept,
+  # but the attempt-1 spend is classified rework SOLELY by the attempt-ordering
+  # join — NO phase=rework label anywhere. The key is realistic emit order:
+  # production spend is emitted BEFORE its gate-verdict, so usageAttempt maps the
+  # 700-token attempt-1 spend to attempt-1 (< the accepting attempt-2) => rework.
+  # The attempt-2 spend is emitted after the accepting verdict => productive.
+  use 700 implement                       # attempt-1 production, BEFORE its verdict -> ordering attributes to attempt-1
+  gv "e2e0o1bad" REFUTED 1
+  echo "[2/6] gate           : REFUTED attempt-1 (attempt-1 spend already emitted)"
+  HEAD_SHA="e2e0o2good"
+  gv "$HEAD_SHA" CONFIRMED 2
+  use 500 implement                       # attempt-2 production, AFTER the accepting verdict -> productive
+  echo "      gate (re)      : CONFIRMED attempt-2 (after rework)"
+  emit accept --bead "$BEAD" --run "$RUN_ID" --json "{\"merge_sha\":\"$HEAD_SHA\",\"merged_by\":\"dynamo-e2e\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"}}" >/dev/null
+  echo "[3/6] accept         : merged $HEAD_SHA (gated, attempt-2)"
+  echo "[4/6] usage          : 700 attempt-1 rework via ORDERING (no phase label) + 500 productive"
+  ;;
+esac
 
 # 5. SENSE + 6. TUNE (real gauge: A/Q/A-R/E/L + C status + shadow hypotheses) --
 # Self-excitation C: only populated from a PUBLISHED corpus delta (ag-8p8o/W1c)
@@ -125,18 +150,34 @@ l_val="$(grep -E '^L \(loss\)' <<<"$GAUGE_OUT" | grep -oE '[0-9]+\.[0-9]+' | hea
 if [[ "$SCENARIO" == "clean" ]]; then
   grep -qE '\([1-9][0-9]*/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" || { echo "dynamo-e2e: clean run but 0 beads counted clean in Q ($clean_frac)" >&2; fail=1; }
 else
-  # ratchet: the reworked bead must NOT count clean, and rework spend must be loss
+  # ratchet (rework + rework-order): the reworked bead must NOT count clean, and
+  # rework spend must be loss.
   grep -qE '\(0/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" || { echo "dynamo-e2e: rework run but Q counted a reworked bead as clean ($clean_frac) — ratchet not penalizing" >&2; fail=1; }
   [[ "$l_val" != "0.000" && -n "$l_val" ]] || { echo "dynamo-e2e: rework run but L=$l_val (rework spend not counted as loss)" >&2; fail=1; }
+  # rework-order: the loss must come from the ATTEMPT-ORDERING join, not a phase
+  # label (the scenario emits NO phase=rework row). Assert the L breakdown's
+  # rework spend is non-zero — that can ONLY be the attempt-1 700-token spend
+  # classified rework by the ordering attribution. This is the assertion the old
+  # rework scenario lacked: it proves the ordering mechanism actually fires.
+  if [[ "$SCENARIO" == "rework-order" ]]; then
+    rework_spend="$(grep -oE 'rework=[0-9]+' <<<"$GAUGE_OUT" | grep -oE '[0-9]+' | head -1 || echo 0)"
+    [[ "${rework_spend:-0}" -gt 0 ]] || { echo "dynamo-e2e: rework-order run but L breakdown rework=$rework_spend — the attempt-ordering join did NOT classify the attempt-1 spend as rework (no phase label was used, so ordering is the ONLY thing that can produce this loss)" >&2; fail=1; }
+  fi
 fi
 
 if [[ "$fail" -ne 0 ]]; then
   echo "[6/6] VERDICT        : LOOP DID NOT CLOSE — organ/ratchet check failed" >&2
   exit 1
 fi
-if [[ "$SCENARIO" == "rework" ]]; then
-  echo "[6/6] verdict        : LOOP CLOSED + RATCHET HONEST — reject->rework->accept; Q penalized $clean_frac, L=$l_val"
-else
+case "$SCENARIO" in
+rework)
+  echo "[6/6] verdict        : LOOP CLOSED + RATCHET HONEST (phase-label loss) — reject->rework->accept; Q penalized $clean_frac, L=$l_val"
+  ;;
+rework-order)
+  echo "[6/6] verdict        : LOOP CLOSED + RATCHET HONEST (ordering-join loss, no phase label) — Q penalized $clean_frac, L=$l_val"
+  ;;
+*)
   echo "[6/6] verdict        : LOOP CLOSED — dispatch->gate->accept->sense->C->tune all wired ($clean_frac)"
-fi
+  ;;
+esac
 echo "== DYNAMO E2E OK =="
