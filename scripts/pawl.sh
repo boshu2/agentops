@@ -29,7 +29,7 @@ CC_PANE="${PAWL_CC_PANE:-1}"     # claude/opus pane (fresh-context refuter)
 COD_PANE="${PAWL_COD_PANE:-2}"   # codex pane (cross-family refuter)
 EVID_DIR="${PAWL_EVID_DIR:-/tmp/pawl-evidence}"
 STATE_DIR="${PAWL_STATE_DIR:-.agents/pawl}"
-ROUTE_TIMEOUT="${PAWL_ROUTE_TIMEOUT:-200}"   # seconds to wait per pane for a VERDICT
+ROUTE_TIMEOUT="${PAWL_ROUTE_TIMEOUT:-320}"   # seconds to wait per pane for a VERDICT
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 die() { echo "pawl: $*" >&2; exit 1; }
@@ -45,6 +45,113 @@ codex_state() {
 cc_ready() {
   # claude pane is route-ready when its input box is present (the ❯ prompt line)
   tmux capture-pane -p -t "${SESSION}.${CC_PANE}" 2>/dev/null | grep -qE '❯|Try "'
+}
+
+# claude pane is ALIVE (running the TUI) if its chrome is present — at the input box,
+# actively working, or showing the permissions/interrupt footer. If none of these, the
+# pane likely dropped to a bare shell (dead) and must be respawned. (A claude pane mid-work
+# is NOT at the input box, so cc_ready alone is not a liveness check.)
+cc_alive() {
+  tmux capture-pane -p -t "${SESSION}.${CC_PANE}" 2>/dev/null \
+    | grep -qE '❯|esc to interrupt|bypass permissions|⏵|Try "'
+}
+
+# codex pane is DEAD iff it has dropped to a bare shell. THIS IS LOAD-BEARING: `atm codex
+# preflight` reads the slash-palette from scrollback and reports a STALE "goal-completed" for a
+# pane that has actually dropped to a shell (proven live 2026-06-18 — the failure that aborted
+# routes all session), so liveness can't come from preflight. Death is detected POSITIVELY (a
+# shell prompt as the last non-empty line) rather than by ABSENCE of TUI chrome: a live pane
+# that transiently shows no chrome must NOT be misclassified dead and needlessly respawned
+# mid-review (the "false-dead recovery failure" the pawl refuter flagged on the absence-based
+# check). So: dead == no codex chrome ANYWHERE *and* the tail is a shell prompt.
+cod_dead() {
+  # DETERMINISTIC liveness via the pane's FOREGROUND PROCESS — not scraped scrollback text.
+  # Text-scraping is fundamentally fragile: a dropped pane retains the codex TUI's scrollback
+  # (splash, footer, "gpt-5.x" footer) ABOVE the new shell prompt, and a shell's cwd/output can
+  # contain any marker — the refuter demonstrated false-alives from both. `pane_current_command`
+  # is the real foreground command: the codex binary (codex-*) when the TUI is up, a shell
+  # (zsh/bash/…) when it has dropped. Immune to scrollback and path/output contents.
+  local cmd
+  cmd="$(tmux display-message -p -t "${SESSION}.${COD_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  case "$cmd" in
+    zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # foreground is a shell => DEAD
+    *) return 1 ;;  # codex binary (or empty/unknown read) => treat as alive (conservative)
+  esac
+}
+
+# --- S3 reliability: robust sends + degraded-pane respawn + reroute ---
+
+# Best-effort account rotation on a rate/usage limit. OPT-IN (PAWL_AUTO_ROTATE=1): rotating
+# switches the host's active account — a real side effect — so it is never silent. Routes by
+# vendor per TOOLS-TRUTH (macOS+Claude -> claude-acct, NEVER caam; codex -> caam).
+rotate_account() {
+  if [ "${PAWL_AUTO_ROTATE:-0}" != "1" ]; then
+    log "rate/usage limit on $1 — set PAWL_AUTO_ROTATE=1 to auto-rotate the account"
+    return 1
+  fi
+  case "$1" in
+    cod|codex) command -v caam        >/dev/null 2>&1 && caam rotate        >/dev/null 2>&1 && log "rotated codex account (caam)" || true ;;
+    cc|claude) command -v claude-acct >/dev/null 2>&1 && claude-acct rotate >/dev/null 2>&1 && log "rotated claude account (claude-acct)" || true ;;
+  esac
+}
+
+# Respawn a single degraded pane and re-gate its readiness (never the user pane).
+respawn_pane() {
+  local pane="$1" kind="$2"
+  log "respawning $kind pane $pane (degraded)"
+  atm respawn "$SESSION" --panes="$pane" --force >/dev/null 2>&1 || true
+  for _ in $(seq 1 20); do
+    if [ "$kind" = "cod" ]; then
+      case "$(codex_state || true)" in codex-live|goal-completed) return 0 ;; esac
+    else
+      cc_ready && return 0
+    fi
+    sleep 4
+  done
+  return 1
+}
+
+# Robust codex goal send: send, verify ENGAGEMENT (atm codex wait-goal-engaged), retry up to
+# 3x; on usage-limit rotate, on a dead/unknown/dialog pane respawn. Returns 0 once engaged.
+# Replaces the old `... || die "send to codex pane failed"` that aborted a whole route on a
+# benign flaky send (the bug S3 fixes).
+cod_send() {
+  local rp="$1" try st
+  for try in 1 2 3; do
+    atm send "$SESSION" --pane="$COD_PANE" --codex-goal \
+      "Follow the adversarial review instructions in the file $rp and obey its final VERDICT FORMAT line. Read the file now." \
+      --no-cass-check --force-non-interactive --json >/dev/null 2>&1 || true
+    sleep 3
+    if atm codex wait-goal-engaged --session "$SESSION" --pane "$COD_PANE" --json 2>/dev/null \
+         | grep -q '"outcome": *"engaged"'; then
+      return 0
+    fi
+    st="$(codex_state || echo unknown)"
+    log "codex send try $try did not engage (state=$st, dead=$(cod_dead && echo yes || echo no))"
+    if cod_dead; then
+      # Positively dropped to a shell — preflight may still say goal-completed; trust the shell check.
+      respawn_pane "$COD_PANE" cod || true
+    else
+      case "$st" in
+        # `|| true` is LOAD-BEARING: rotate_account intentionally returns 1 when PAWL_AUTO_ROTATE
+        # is off (the default), and under set -e an unprotected non-zero would abort the whole send.
+        usage-limit) rotate_account cod || true; respawn_pane "$COD_PANE" cod || true ;;
+        unknown|absent|stale-scrollback|replace-goal-dialog) respawn_pane "$COD_PANE" cod || true ;;
+      esac
+    fi
+  done
+  return 1
+}
+
+# Robust claude send: deliver the file; if not delivered or the pane is dead, respawn + retry.
+cc_send() {
+  local rp="$1" out
+  out="$(atm send "$SESSION" --pane="$CC_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+  printf '%s' "$out" | grep -q '"delivered":1' && return 0
+  log "claude send not delivered — respawning + retry"
+  respawn_pane "$CC_PANE" cc || true
+  out="$(atm send "$SESSION" --pane="$CC_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+  printf '%s' "$out" | grep -q '"delivered":1'
 }
 
 cmd_up() {
@@ -127,20 +234,42 @@ cmd_route() {
   { cat "$packet"; printf '\n\n--- VERDICT FORMAT (required) ---\nEnd your reply with ONE line exactly:\n  PAWL %s <the single word CONFIRMED or REFUTED>\n' "$nonce"; } > "$rp"
 
   log "route $bead -> both panes (packet=$packet, pr=$pr, nonce=$nonce)"
-  # Claude pane: file send. Codex pane: short /goal referencing the file (NEVER inline
-  # — the 4000-char /goal limit). Both read the SAME nonce-tagged packet.
-  atm send "$SESSION" --pane="$CC_PANE" --file "$rp" \
-    --no-cass-check --force-non-interactive --json >/dev/null 2>&1 || die "send to cc pane failed"
-  atm send "$SESSION" --pane="$COD_PANE" --codex-goal \
-    "Follow the adversarial review instructions in the file $rp and obey its final VERDICT FORMAT line. Read the file now." \
-    --no-cass-check --force-non-interactive --json >/dev/null 2>&1 || die "send to codex pane failed"
+  # Both read the SAME nonce-tagged packet. Robust sends (retry + respawn), never `die` on a
+  # flaky send — a failed send is recovered, not fatal.
+  cc_send "$rp"  || log "claude pane did not engage on send — poll/reroute will recover"
+  cod_send "$rp" || log "codex pane did not engage after retries — poll/reroute will recover"
 
-  # Poll both panes for THIS route's nonce-tagged verdict (bounded).
-  local waited=0 vc="" vd=""
+  # Poll both panes for THIS route's nonce-tagged verdict (bounded). A pane that goes
+  # DEGRADED mid-route (dead shell, usage-limit, stuck dialog) is respawned + re-routed once
+  # — otherwise it would silently time out into a false REFUTED (a fail-OPEN of the gate's
+  # intent). The reroute is the heart of S3's auto-respawn-and-reroute.
+  local waited=0 vc="" vd="" cc_rr=0 cod_rr=0 cs=""
   while [ "$waited" -lt "$ROUTE_TIMEOUT" ]; do
     [ -z "$vc" ] && vc="$(verdict_of "$CC_PANE" "$nonce")"
     [ -z "$vd" ] && vd="$(verdict_of "$COD_PANE" "$nonce")"
     [ -n "$vc" ] && [ -n "$vd" ] && break
+    if [ -z "$vd" ] && [ "$cod_rr" -lt 1 ]; then
+      cs="$(codex_state || echo unknown)"
+      if cod_dead; then
+        # Positively dropped to a shell — preflight misreads this as goal-completed, so the
+        # shell check is the only reliable signal. Respawn FIRST (cod_send alone would re-send
+        # into a shell). Positive detection avoids respawning a live-but-chrome-less pane.
+        log "codex pane dropped to a shell mid-route (preflight=$cs, misclassified) — respawn + reroute"
+        respawn_pane "$COD_PANE" cod || true; cod_send "$rp" || true; cod_rr=1
+      else
+        case "$cs" in
+          # `|| true` on rotate_account is LOAD-BEARING: it returns 1 when PAWL_AUTO_ROTATE is off
+          # (default), and an unprotected non-zero would abort the whole route under set -e before
+          # the respawn/reroute ever runs (proven: the route would die on a usage-limit).
+          usage-limit) log "codex usage-limit mid-route — rotate + respawn + reroute"; rotate_account cod || true; respawn_pane "$COD_PANE" cod || true; cod_send "$rp" || true; cod_rr=1 ;;
+          unknown|absent|stale-scrollback|replace-goal-dialog) log "codex degraded mid-route ($cs) — respawn + reroute"; respawn_pane "$COD_PANE" cod || true; cod_send "$rp" || true; cod_rr=1 ;;
+        esac
+      fi
+    fi
+    if [ -z "$vc" ] && [ "$cc_rr" -lt 1 ] && ! cc_alive; then
+      log "claude degraded mid-route (dropped to shell) — respawn + reroute"
+      respawn_pane "$CC_PANE" cc || true; cc_send "$rp" || true; cc_rr=1
+    fi
     sleep 5; waited=$((waited + 5))
   done
   tmux capture-pane -p -t "${SESSION}.${CC_PANE}" -S -60 > "$ev_cc" 2>&1 || true
@@ -164,6 +293,10 @@ cmd_route() {
   return 1
 }
 
+# Dispatch only when EXECUTED, not when SOURCED — so tests can source this file to exercise
+# the pure helpers (cod_dead, verdict_of, …) without running a command.
+[ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
+
 case "${1:-}" in
   up)     shift; cmd_up "$@" ;;
   down)   shift; cmd_down "$@" ;;
@@ -175,6 +308,12 @@ Usage: pawl.sh <up|down|health|route>
   down                        tear down the standing session
   health [--json]             per-pane liveness/readiness
   route <bead> <packet> [pr]  route a review packet to opus+codex, require agreement, record verdict
+
+route is self-healing (S3): sends retry with engagement verification (never aborts on a
+flaky codex send); a pane that goes degraded mid-route (dead shell, usage-limit, stuck
+dialog) is respawned and re-routed once, so it cannot silently time out into a false
+REFUTED. On a usage-limit set PAWL_AUTO_ROTATE=1 to rotate the account (caam / claude-acct)
+before respawn. Tunables: PAWL_ROUTE_TIMEOUT (default 320s), PAWL_AUTO_ROTATE.
 H
     exit 2 ;;
 esac
