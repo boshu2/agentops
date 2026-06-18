@@ -2,6 +2,7 @@
   "schema_version": 2,
   "generated_at": "2026-06-18T16:26:20Z",
   "generated_at": "2026-06-18T14:47:41Z",
+  "generated_at": "2026-06-18T14:53:24Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -2501,7 +2502,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: \"dual pane\", \"Opus and Codex together\", \"CEP duel/build\", \"two-pane ATM\", \"collaborative ATM\".",
+      "purpose": "Repeatable mixed-model ATM duel — Opus (Claude) + Codex (+AGY) panes, or an in-session variant for a one-shot one-way-door decision. Triggers: \"dual pane\", \"Opus and Codex together\", \"CEP duel/build\", \"two-pane ATM\", \"collaborative ATM\", \"mixed-model duel\", \"fan out competing theses / duel it out\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [

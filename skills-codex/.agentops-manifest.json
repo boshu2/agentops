@@ -1168,7 +1168,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "ee854b66ff2a834bdabc0fe2e71e7194ed82e7372e357591739c35ad863aaecf",
+      "source_hash": "6dfb100e59386c8753c316de9cccbe5da4fe1199fc06f2c330daa19dd8bc1b44",
       "generated_hash": "4ef82a83d08cb7f5cb12556dfc67d48bb1593f30e4de15345fd1058d008a1c39"
     },
     {
@@ -1240,8 +1240,8 @@
     {
       "name": "dual-pane-atm",
       "source_skill": "skills/dual-pane-atm",
-      "source_hash": "05936b5f8a859e401cba1f750de6744d007cfb27e69a5f95b3fe969bb7a029a8",
-      "generated_hash": "5fe52ce66f665130e3dde1f55f39199d415c962823282b035619486b10865aed"
+      "source_hash": "de332a48d8fe363eb72f9d7d07eff2a4ea020d59d2756b18589038f0d1510ca6",
+      "generated_hash": "38f050e14a59cf440771422054dc8aef10df4b5a9a451c83766b206afb48abb9"
     },
     {
       "name": "eval-outcomes",
