@@ -28,12 +28,14 @@ output_contract: feature inventory, feature-registry.yaml, spec set, steal-map.m
 
 Reverse-engineer an external system into two things: a **mechanically-verifiable teardown** (feature inventory + registry + specs, optionally a security audit) and a **steal-map** — what to adopt into our surfaces, what to leave behind. The teardown is the evidence; the steal-map is the decision. The original failure mode this skill exists to prevent: reading a competitor's README and "deciding" from vibes.
 
-## Hard Guardrails (MANDATORY)
+**Triggers:** "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 
-- Only operate on code/binaries you own or have **explicit written authorization** to analyze.
+## ⚠️ Constraints — Hard Guardrails (MANDATORY)
+
+- Only operate on code/binaries you own or have **explicit written authorization** to analyze — this matters because unauthorized teardown is the legal/IP line.
 - Do not provide steps to bypass protections/ToS or to extract proprietary source/system prompts.
-- Do not output reconstructed proprietary source or embedded prompts (index only; redact in reports).
-- Redact secrets/tokens/keys if encountered; run the secret-scan gate over outputs.
+- Do not output reconstructed proprietary source or embedded prompts (index only; redact in reports) — to prevent reproducing protected IP.
+- Redact secrets/tokens/keys if encountered; run the secret-scan gate over outputs to prevent credential leakage.
 - Always separate **docs say** vs **code proves** vs **hosted/control-plane**.
 
 ## Phase 1 — Mechanical teardown (the script)
@@ -113,6 +115,14 @@ Must show: feature inventory generated, registry generated, registry validator e
 | Fixture diff fails | Upstream changed / stale golden | Re-run pinned, refresh `fixtures/`, commit. |
 | `spec-cli-surface.md` missing | No Node/Python/Go CLI detected | Surface is documented in `spec-code-map.md` instead. |
 | Steal-map is all "steal" | Skipped the park/reject rules | Substrate we delegate is **park**; doctrine conflicts are **reject** — not everything novel is worth adopting. |
+
+## Quality Rubric
+
+- [ ] Every steal-map row cites teardown evidence **and** our matching surface (or "none").
+- [ ] Verdicts use the full set — `have`/`gap`/`steal`/`park`/`reject` — not everything marked "steal".
+- [ ] Facts on *how* they implement come from their code, cross-checked cross-family — not a README.
+- [ ] One-way-door adoptions are routed to `/discovery` or `/council`, not decided here.
+- [ ] Secret-scan gate passed over all outputs; no proprietary source/prompts reproduced.
 
 ## See Also
 
