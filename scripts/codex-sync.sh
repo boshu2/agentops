@@ -1,21 +1,28 @@
 #!/usr/bin/env bash
 # codex-sync.sh — generate parity_only Codex twins from their source skills.
 #
-# A parity_only twin is a pure FUNCTION of its source skill: its SKILL.md is a
-# slim frontmatter (name + description copied from source) plus a fixed pointer
-# body that names skills/<name>/SKILL.md as the source of truth; its prompt.md
-# is the standard pointer template. Because the twin carries no source *content*
-# beyond name+description, source body edits never require a hand-edit to the
-# twin — which is what kills the "add/touch a skill -> chase ~5 codex gates
-# serially" whack-a-mole (regen-all.sh historically only rehashed EXISTING
-# twins; it could not author a missing one).
+# A parity_only twin is a SELF-CONTAINED runtime artifact derived from its
+# source skill. The Codex runtime ships skills-codex/ ONLY (never skills/ source
+# — see install-codex-plugin.sh + plugin.json "skills": "./skills-codex"), so a
+# twin must carry its own body + references; a bare pointer to skills/<name>
+# would dangle at runtime (AGENTS-CODEX.md). The generated twin is therefore:
+#   - SKILL.md: slim (name + description) frontmatter + the source body
+#     transformed runtime-native (slash-command invocations of known skills ->
+#     `$` prefix, ~/.claude -> ~/.codex, "Claude Code" -> "Codex");
+#   - references/ + scripts/: copied byte-identical (lint scans only SKILL.md);
+#   - prompt.md: the standard codex pointer-to-sibling-SKILL.md template.
+# Because the twin is GENERATED from source, source edits never require a hand
+# mirror — re-running this (via regen-all) reproduces a correct twin, killing the
+# "add/touch a skill -> chase ~5 codex gates serially" whack-a-mole (regen-all.sh
+# historically only rehashed EXISTING twins; it could not author one).
 #
 # This generator authors the COMPLETE twin for any source skill that lacks one:
-# the two body files, the per-skill marker, and all three catalog surfaces
-# (manifest .skills[], manifest .codex_override_catalog.skills[], and
+# the body files + references, the per-skill marker, and all three catalog
+# surfaces (manifest .skills[], manifest .codex_override_catalog.skills[], and
 # skills-codex-overrides/catalog.json .skills[]), then fixes every hash. It is
 # idempotent: a source skill that already has a complete, registered twin is
-# left untouched.
+# left untouched (existing hand-tended twins are never clobbered — converting the
+# ~75 existing twins to generated form is a separate, reviewed step).
 #
 # bespoke twins (hand-authored Codex profiles) are the opt-out: they are never
 # generated or overwritten.
@@ -52,6 +59,7 @@ import hashlib
 import json
 import os
 import pathlib
+import shutil
 import sys
 
 import yaml
@@ -122,17 +130,43 @@ def parse_frontmatter(skill_md: pathlib.Path) -> dict:
     return yaml.safe_load(parts[1]) or {}
 
 
-def twin_skill_md(name: str, description: str) -> bytes:
+def split_frontmatter(skill_md: pathlib.Path) -> str:
+    """Return the markdown BODY of a SKILL.md (everything after the leading
+    --- ... --- frontmatter block)."""
+    text = skill_md.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return text
+    parts = text.split("---", 2)
+    return parts[2].lstrip("\n") if len(parts) >= 3 else text
+
+
+def transform_body(body: str, known_skills: set[str]) -> str:
+    """Make a source skill body runtime-native for Codex (the lint-codex-native
+    contract): slash-command invocations of KNOWN skills -> `$` prefix, Claude
+    paths -> Codex paths, "Claude Code" -> "Codex". References are copied
+    byte-identical (lint scans only SKILL.md), so only the body is transformed."""
+    import re
+
+    # /<known-skill> -> $<known-skill> (longest names first so /pre-mortem wins
+    # over /pre). Word-boundary on the right; left edge is the slash.
+    for skill in sorted(known_skills, key=len, reverse=True):
+        body = re.sub(rf"(?<![\w/])/{re.escape(skill)}\b", f"${skill}", body)
+
+    body = body.replace("~/.claude/", "~/.codex/").replace("~/.claude", "~/.codex")
+    body = body.replace(".claude/", ".codex/")
+    body = body.replace("Claude Code", "Codex")
+    return body
+
+
+def twin_skill_md(name: str, description: str, source_body: str, known_skills: set[str]) -> bytes:
+    """A self-contained Codex twin: slim (name+description) frontmatter + the
+    source body transformed runtime-native. Self-contained because the Codex
+    runtime ships skills-codex/ ONLY (never skills/ source) — a twin must carry
+    its own body + references (AGENTS-CODEX.md)."""
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
-    body = (
-        f"# {name} (Codex twin)\n\n"
-        f"The canonical skill is `skills/{name}/SKILL.md` — that is the source of "
-        f"truth. Read it there and follow it.\n\n"
-        f"Run via Codex with `$`-prefixed skill invocations and shell. Use "
-        f"`~/.codex/` paths. Return evidence for each step.\n"
-    )
-    return f"---\n{front}\n---\n{body}".encode("utf-8")
+    body = transform_body(source_body, known_skills)
+    return f"---\n{front}\n---\n{body.rstrip()}\n".encode("utf-8")
 
 
 def twin_prompt_md(name: str, description: str) -> bytes:
@@ -167,6 +201,7 @@ source_skills = sorted(
     for p in source_root.iterdir()
     if p.is_dir() and not p.name.startswith("_") and (p / "SKILL.md").exists()
 )
+known_skills = set(source_skills)
 
 drift = []
 generated = []
@@ -184,8 +219,9 @@ for name in source_skills:
 
     fm = parse_frontmatter(source_root / name / "SKILL.md")
     description = str(fm.get("description", "")).strip()
+    source_body = split_frontmatter(source_root / name / "SKILL.md")
 
-    desired_skill = twin_skill_md(name, description)
+    desired_skill = twin_skill_md(name, description, source_body, known_skills)
     desired_prompt = twin_prompt_md(name, description)
 
     # A twin is "complete" iff its body files + marker exist AND it is registered
@@ -209,12 +245,20 @@ for name in source_skills:
     if check_only:
         continue
 
-    # --- Author the missing twin ---
+    # --- Author the missing twin (self-contained: body + references) ---
     twin_dir.mkdir(parents=True, exist_ok=True)
     if not skill_md.exists():
         skill_md.write_bytes(desired_skill)
     if not prompt_md.exists():
         prompt_md.write_bytes(desired_prompt)
+
+    # Copy source references/ + scripts/ byte-identical (lint scans only SKILL.md,
+    # so refs need no transform) so the Codex runtime artifact is self-contained.
+    for sub in ("references", "scripts"):
+        src_sub = source_root / name / sub
+        dst_sub = twin_dir / sub
+        if src_sub.is_dir() and not dst_sub.exists():
+            shutil.copytree(src_sub, dst_sub)
 
     source_hash = hash_tree_with(source_root / name, {})
     generated_hash = hash_tree_with(twin_dir, {})
