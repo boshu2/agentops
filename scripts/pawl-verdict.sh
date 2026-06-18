@@ -415,9 +415,40 @@ do_write() {
   fi
 }
 
+# rebind <bead> <pr> --head NEWSHA [--dir D]
+# Re-stamp an existing CONFIRMED verdict's head_sha (preserving refuters/mode/evidence/
+# attempt) onto a new commit — the deterministic clean-land step. After a verdict's own
+# ledger edge is committed (which moves HEAD), the verdict must follow to the new head so
+# the head-bound pre-push gate stays satisfied in ONE push, with no manual re-pass of the
+# refuter args (the review already happened; only the commit it points at moves). See
+# scripts/pawl-land.sh and age-standing-pawl-service-ml8.4. Re-fires the verdict sensor.
+do_rebind() {
+  local bead="${1:-}" pr="${2:-}"; shift 2 2>/dev/null || true
+  local newhead=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --head) newhead="${2:-}"; shift 2 ;;
+      --dir)  VDIR="${2:-}"; shift 2 ;;
+      *) echo "pawl-verdict rebind: unknown flag $1" >&2; return 2 ;;
+    esac
+  done
+  [[ -n "$bead" && -n "$pr" ]] || { echo "pawl-verdict rebind: need <bead> <pr> --head SHA" >&2; return 2; }
+  [[ -n "$newhead" && ${#newhead} -ge 7 ]] || { echo "pawl-verdict rebind: need --head SHA (>=7 chars)" >&2; return 2; }
+  local out="$VDIR/$bead.json"
+  [[ -f "$out" ]] || { echo "pawl-verdict rebind: no verdict at $out" >&2; return 2; }
+  jq -e '.disposition == "CONFIRMED"' "$out" >/dev/null 2>&1 || { echo "pawl-verdict rebind: $out is not CONFIRMED — refusing to rebind" >&2; return 2; }
+  local tmp; tmp="$(mktemp "$VDIR/.$bead.XXXXXX")"
+  jq --arg h "$newhead" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     '.head_sha=$h | .generated_at=$ts' "$out" > "$tmp" || { rm -f "$tmp"; die "rebind: failed to render verdict json"; }
+  mv "$tmp" "$out"
+  echo "pawl-verdict: rebound $out -> head ${newhead:0:12}" >&2
+  if command -v ao >/dev/null 2>&1; then ao provenance emit-verdict --file "$out" >/dev/null 2>&1 || true; fi
+}
+
 case "$cmd" in
   check) do_check "$@" ;;
   write) do_write "$@" ;;
+  rebind) do_rebind "$@" ;;
   -h|--help|"") cat >&2 <<'H'
 Usage:
   pawl-verdict.sh check <bead-id> <pr> [--dir D] [--head CURRENT_SHA]
@@ -425,6 +456,9 @@ Usage:
       --author-context <id> [--mode <fresh-context|multi-model>] \
       --refuter <family>:<CONFIRMED|REFUTED>:<context_id>[:<evidence-path>] [--refuter ...] \
       [--dir D] [--council PATH] [--attempt N]
+  pawl-verdict.sh rebind <bead-id> <pr> --head NEWSHA [--dir D]
+      Re-stamp an existing CONFIRMED verdict onto a new head (refuters preserved) — the
+      deterministic clean-land step after the verdict's ledger edge is committed.
 
 Families normalize to the roster: claude(fable/anthropic) | gpt(codex/openai) | gemini(agy/google).
 DIVERSITY IS MODE-BASED:
