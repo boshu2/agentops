@@ -115,12 +115,11 @@ gate_status=$?
 if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
    && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ] \
    && awk '{print $3}' "$prepush_stdin" | grep -qE '^refs/heads/(main|master)$'; then
-    # Fixed seed, not -shuffle=on: a DETERMINISTIC gate. A flaky gate gets
-    # bypassed, and a random order that trips a latent isolation bug can leave
-    # the dev's repo corrupted (e.g. age-push-equals-ci-0ua's open core.bare
-    # pollution at shuffle=2). Multi-order coverage is nightly CI's job; restore
-    # -shuffle=on here once the trunk is fully shuffle-clean.
-    echo "pre-push: push-to-main — running FULL race suite (go test ./... -race -shuffle=1, ~77s)" >&2
+    # Randomized order is part of the local release membrane: the push-to-main
+    # door must catch cross-package isolation leaks that a fixed seed hides.
+    # The old seed-1 compromise was removed after age-cmdao proved shuffle=2 and
+    # multiple -shuffle=on cmd/ao runs no longer mutate core.bare.
+    echo "pre-push: push-to-main — running FULL race suite (go test ./... -race -shuffle=on, ~77s)" >&2
     # Scrub git's hook-injected discovery env (age-ngtc). git runs pre-push hooks
     # with GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/... pointing at the pushing repo —
     # and when the push ORIGINATES FROM A LINKED WORKTREE those point at the
@@ -132,7 +131,7 @@ if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" 
     # is idempotent (harmless for main-checkout pushes).
     if ! ( cd "${toplevel}/cli" \
         && unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE \
-        && go test ./... -race -shuffle=1 -count=1 ); then
+        && go test ./... -race -shuffle=on -count=1 ); then
         echo >&2 "✗ FULL race suite FAILED — a package outside the changed set is red; push refused (age-push-equals-ci-0ua.1)"
         gate_status=1
     fi
