@@ -190,16 +190,19 @@ If `HAS_PROGRAM` is true and `--force` is not set: skip. Report "PROGRAM.md/AUTO
 
 ### Step 6: Optional Hook Activation
 
-Do not activate hooks. AgentOps 3.0 is hookless: `ao quick-start`, execution
-packets, explicit validation, and knowledge compounding deliver first value
-with no runtime hooks, and CI is the authoritative gate. There is no `ao`
-command or flag that installs hooks — hooks were removed from the CLI.
+Do not activate runtime agent hooks. AgentOps 3.0 is runtime-hookless:
+`ao quick-start`, execution packets, explicit validation, and knowledge
+compounding deliver first value without Claude/Codex runtime hooks. Routine
+release authority is the local cockpit gate (`ao gate check` plus the installed
+Git pre-push/pawl proof path); GitHub Actions are PR/tag/manual backstop
+telemetry. There is no `ao` command or flag that installs runtime hooks —
+hooks were removed from the CLI.
 
 If the user explicitly requests hooks, they are opt-in and author-it-yourself:
 point them at the `hooks-authoring` skill, which scaffolds project-local hooks
 into `.claude/settings.json`. Bootstrap itself never writes hooks.
 
-If hooks were not explicitly requested: skip. Report "Hooks optional -- skipped. AgentOps 3.0 is hookless; CI is the authoritative gate. To author your own, use the `hooks-authoring` skill."
+If hooks were not explicitly requested: skip. Report "Runtime hooks optional -- skipped. AgentOps 3.0 is runtime-hookless; routine release authority is the local cockpit gate. To author your own, use the `hooks-authoring` skill."
 
 If `HAS_HOOKS` is true: report "Hooks already present in .claude/settings.json -- left untouched."
 

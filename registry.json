@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T15:00:22Z",
+  "generated_at": "2026-06-19T15:20:20Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -2010,6 +2010,7 @@
       "produces": [],
       "drives_commands": [
         "ao autodev init",
+        "ao gate check",
         "ao quick-start"
       ],
       "path": "skills/bootstrap/",
@@ -2490,6 +2491,7 @@
         "ao compile",
         "ao corpus inject",
         "ao eval run",
+        "ao gate check",
         "ao inject",
         "ao maturity",
         "ao mcp serve",

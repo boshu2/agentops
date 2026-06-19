@@ -291,5 +291,5 @@ When the gate fails, surface a concise summary to the operator:
 ### Why this gate exists
 
 - Commit `c587b361 ci(reconcile): wire factory-claim-ledger-strict into summary + AGENTS parity` is the manual fix that motivated this gate (soc-lmww1 drift). PR-F (this gate) is the formalization of `finding-2026-05-07-ci-parity-as-wave-acceptance`.
-- The validator (`scripts/validate-ci-policy-parity.sh`) is also wired into `scripts/pre-push-gate.sh`. Wave acceptance hits the same gate earlier — at wave-close time — so drift never escapes a wave.
+- The validator (`scripts/validate-ci-policy-parity.sh`) is also in the Go gate registry as `ci.policy-parity` (with legacy bash-gate coverage). Wave acceptance hits the same gate earlier — at wave-close time — so drift never escapes a wave.
 - Narrow trigger keeps the gate cheap and prevents false positives from CODEOWNERS, README, or non-workflow YAML changes.
