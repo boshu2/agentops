@@ -196,6 +196,20 @@ Record the decision rule in the council packet frontmatter as `decision_rule:` b
 
 **Why:** without a pre-registered decision rule, pre-mortem degenerates into "does this plan seem reasonable" — a question the author already answered yes to. The decision rule makes the pre-mortem falsifiable. Surfaced by a cross-family (Codex) pre-mortem that found real problems an inline review missed because the inline review had no kill conditions to test against.
 
+### Step 2.11: Plan-Pawl Duel Checklist (the cross-family invariant)
+
+Steps 2.9 + 2.10 are **one invariant** — *a plan's acceptance verdict must come from an independent, cross-family adversary, against pre-registered kill conditions.* That invariant has **two delivery forms of the same thing**, not two different gates:
+
+- **`/pre-mortem --mixed`** (this skill) — a cross-vendor council judges the plan artifact.
+- **The discovery plan-pawl duel** ([`discovery`](../discovery/SKILL.md) STEP 3.5 → `ao plan-pawl decide`, the [`plan-pawl` row](../../docs/contracts/pawls.md)) — two distinct-family judge panes duel over the `SynthesisPacket`; that duel verdict **IS** the pre-mortem verdict for fanout-class discovery (do not run a second council).
+
+For fanout class the duel **satisfies no-self-grading by construction**: the two judges are fresh, context-isolated, distinct-family panes, so `author_id ≠ judge_id` and `judge_family ≠ author_family` hold automatically. Before accepting ANY plan acceptance verdict (either form), check:
+
+- [ ] **Independent judge** — `judge_id` ≠ `author_id` (no inline self-review; `--allow-self` waives only for the no-subagent fallback, and stamps the verdict self-graded).
+- [ ] **Cross-family for one-way doors** — strategy / experiment / irreversible plan ⇒ `judge_family` ≠ `author_family` (≥2 distinct roster families; the duel's quorum floor).
+- [ ] **Pre-registered decision rule** — `decision_rule:` recorded BEFORE deliberation; judges evaluate the plan against its own kill conditions.
+- [ ] **Not a behavior substitute** — the plan-pawl gates plan SHAPE; it never replaces the acceptance-test layer (2026-06-12 auth-bypass learning).
+
 ### Step 3: Interpret Council Verdict
 
 | Council Verdict | Pre-Mortem Result | Action |
