@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-18T17:43:53Z",
+  "generated_at": "2026-06-19T12:53:30Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 87,
+    "cli_commands": 88,
     "workflows": 4,
-    "capabilities": 176
+    "capabilities": 177
   },
   "surfaces": {
     "skills": [
@@ -1453,6 +1453,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao worktree",
+        "path": "cli/cmd/ao/",
+        "purpose": "Worktree maintenance utilities",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao yield",
         "path": "cli/cmd/ao/",
         "purpose": "Record dynamo yield-ledger events (per-bead operational stream)",
@@ -1529,9 +1536,9 @@
     ]
   },
   "capability_summary": {
-    "total": 176,
+    "total": 177,
     "skills": 75,
-    "cli_commands": 87,
+    "cli_commands": 88,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1622,6 +1629,7 @@
     "version",
     "vibe-check",
     "wiki",
+    "worktree",
     "yield"
   ],
   "capabilities": [
@@ -5781,6 +5789,23 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Unified wiki knowledge surface (experimental)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.worktree",
+      "name": "ao worktree",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Worktree maintenance utilities",
       "status": "active",
       "driven_by_skills": [],
       "flags": [

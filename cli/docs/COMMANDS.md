@@ -3079,6 +3079,51 @@ ao notebook update [flags]
 
 ---
 
+### `ao worktree`
+
+Worktree maintenance utilities
+
+```
+ao worktree [command]
+```
+
+**Subcommands:**
+
+#### `ao worktree create`
+
+Create a detached git worktree off the current commit so concurrent
+
+```
+ao worktree create [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for create
+      --json   Emit {path, run_id} as JSON
+```
+
+#### `ao worktree gc`
+
+Safely remove stale AgentOps RPI worktrees and orphaned tmux sessions.
+
+```
+ao worktree gc [flags]
+```
+
+**Flags:**
+
+```
+      --clean-tmux             Clean stale ao-rpi tmux sessions without active run/worktree (default true)
+  -h, --help                   help for gc
+      --include-dirty          Also clean worktrees with uncommitted changes (unsafe)
+      --prune                  Run 'git worktree prune' after cleanup (default true)
+      --stale-after duration   Only clean worktrees/sessions older than this age (default 24h0m0s)
+```
+
+---
+
 ### `ao beads`
 
 Commands that help maintain the bd issue tracker alongside the main
