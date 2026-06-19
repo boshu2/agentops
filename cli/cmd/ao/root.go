@@ -108,6 +108,16 @@ func Execute() {
 			}
 			os.Exit(gateErr.ExitCode())
 		}
+		var planPawlErr *planPawlExitError
+		if errors.As(err, &planPawlErr) {
+			// The exit code IS the decision in `ao plan-pawl decide`: 3 REDO,
+			// 4 BLOCKED. The decision already went to stdout and the command
+			// silences cobra's error print; surface a reason only on a usage error.
+			if planPawlErr.ExitCode() == planPawlExitUsage && planPawlErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, "ao plan-pawl: "+planPawlErr.Error())
+			}
+			os.Exit(planPawlErr.ExitCode())
+		}
 		var beadsErr *beadsExitError
 		if errors.As(err, &beadsErr) {
 			// The exit code IS the verdict in `ao beads verify|lint|audit`:
