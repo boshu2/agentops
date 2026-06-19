@@ -75,6 +75,7 @@ func runScenarioABCmd(t *testing.T, scenarioPath, outPath string, budget int) (s
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	cmd.SetContext(context.Background())
 	evalScenarioABScenario = scenarioPath
 	evalScenarioABOutput = outPath
@@ -89,6 +90,7 @@ func runScenarioABControlOnlyCmd(t *testing.T, scenarioPath, outPath string, bud
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	cmd.SetContext(context.Background())
 	evalScenarioABScenario = scenarioPath
 	evalScenarioABOutput = outPath

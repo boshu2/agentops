@@ -79,6 +79,7 @@ func TestPrintPacketStatusHuman(t *testing.T) {
 	cmd := rootCmd
 	var sb strings.Builder
 	cmd.SetOut(&sb)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared rootCmd; don't leak the writer
 	printPacketStatusHuman(cmd, packetStatusResult{
 		Query:    "startup",
 		Phase:    "startup",

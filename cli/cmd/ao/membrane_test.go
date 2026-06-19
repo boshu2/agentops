@@ -39,6 +39,17 @@ func seedEscapeLedger(t *testing.T, root, run string) {
 	appendGV("age-solid", yieldledger.DispositionConfirmed, "5550000111", 1, nil)
 }
 
+// captureMembraneDerive points the shared membraneDeriveCmd's writer at a fresh
+// buffer and registers a t.Cleanup writer-reset (age-ztf8) so an unrestored writer
+// can't leak into later -shuffle tests via cmd.OutOrStdout().
+func captureMembraneDerive(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	membraneDeriveCmd.SetOut(&buf)
+	t.Cleanup(func() { membraneDeriveCmd.SetOut(nil); membraneDeriveCmd.SetErr(nil) })
+	return &buf
+}
+
 func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 	root := t.TempDir()
 	const run = "r-membrane-test"
@@ -53,8 +64,7 @@ func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 	membraneDeriveForce = false
 	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
 
-	var buf bytes.Buffer
-	membraneDeriveCmd.SetOut(&buf)
+	buf := captureMembraneDerive(t)
 	if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
 		t.Fatalf("runMembraneDeriveChecks: %v", err)
 	}
@@ -112,8 +122,7 @@ func TestMembraneDeriveChecks_Idempotent(t *testing.T) {
 	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
 
 	run1 := func() string {
-		var buf bytes.Buffer
-		membraneDeriveCmd.SetOut(&buf)
+		buf := captureMembraneDerive(t)
 		if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
 			t.Fatalf("run: %v", err)
 		}
@@ -142,8 +151,7 @@ func TestMembraneDeriveChecks_DryRunWritesNothing(t *testing.T) {
 	membraneDeriveDryRun = true
 	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
 
-	var buf bytes.Buffer
-	membraneDeriveCmd.SetOut(&buf)
+	buf := captureMembraneDerive(t)
 	if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
 		t.Fatalf("run: %v", err)
 	}
@@ -178,8 +186,7 @@ func TestMembraneDeriveChecks_RepairsMissingCheck(t *testing.T) {
 	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
 
 	run1 := func() string {
-		var buf bytes.Buffer
-		membraneDeriveCmd.SetOut(&buf)
+		buf := captureMembraneDerive(t)
 		if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
 			t.Fatalf("run: %v", err)
 		}
@@ -234,8 +241,7 @@ func TestMembraneDeriveChecks_CrossRunNoCollision(t *testing.T) {
 
 	for _, run := range []string{"run-a", "run-b"} {
 		membraneDeriveRun = run
-		var buf bytes.Buffer
-		membraneDeriveCmd.SetOut(&buf)
+		captureMembraneDerive(t) // redirect (and cleanup) the shared writer; output unread here
 		if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
 			t.Fatalf("run %s: %v", run, err)
 		}

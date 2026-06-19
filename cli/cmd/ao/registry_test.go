@@ -119,10 +119,12 @@ func captureRegistryOutput(t *testing.T, typeFilter string, useJSON bool) string
 		jsonFlag = origJSON
 	}()
 
-	old := registryListCmd.OutOrStdout()
 	buf := &strings.Builder{}
 	registryListCmd.SetOut(buf)
-	defer registryListCmd.SetOut(old)
+	// Reset to nil (the correct cobra baseline), NOT the saved OutOrStdout(): a
+	// saved value resolves to a concrete os.Stdout that can swallow a later
+	// os.Stdout-swap capture (age-ztf8).
+	defer func() { registryListCmd.SetOut(nil); registryListCmd.SetErr(nil) }()
 
 	if err := runRegistryListCommand(registryListCmd, nil); err != nil {
 		t.Fatalf("runRegistryListCommand: %v", err)

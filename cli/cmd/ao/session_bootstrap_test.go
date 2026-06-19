@@ -139,6 +139,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 	cmd := sessionBootstrapCmd
 	cmd.SetOut(&out)
 	cmd.SetErr(&bytes.Buffer{})
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	if err := printBootstrapSummary(cmd, s); err != nil {
 		t.Fatalf("printBootstrapSummary: %v", err)
 	}
