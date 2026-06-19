@@ -13,7 +13,10 @@ complete `$rpi --auto` cycles. Each cycle's post-mortem checkpoint is a
 add to the *remaining* queue/goal from what the cycle taught (`$rpi`'s
 [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md), one altitude up:
 agile across cycles, not a fixed backlog run to the letter).
-Treat retired CLI wrappers as terminal wrapper commands for humans or non-skill runtimes, not as the Codex skill default.
+Treat retired CLI wrappers as terminal wrapper commands for humans or non-skill
+runtimes, not as the Codex skill default. Substrates dispatch the whole
+`$evolve` skill loop as one unit through NTM, Agent Mail, or `ao agent`; former
+RPI CLI wrappers are retired under ADR-0009.
 
 **Operator cadence:** post-mortem finished work, analyze the current repo state,
 select or create the next highest-value work item, let `$rpi` handle research,

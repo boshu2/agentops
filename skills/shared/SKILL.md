@@ -67,7 +67,7 @@ fi
 |------------|-------------|-------------------|
 | `bd` | Issue tracking unavailable | Use TaskList for tracking. Note "install bd for persistent issue tracking" |
 | `ao` | Knowledge flywheel unavailable | Write learnings to `.agents/learnings/` directly. Skip flywheel metrics |
-| out-of-session substrate (`ntm` / `ao agent`) | Always-on orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). A substrate (an NTM tmux swarm or managed-agents via `ao agent`) only adds always-on dispatch of whole `ao rpi`/`/evolve` loops — see [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md) |
+| out-of-session substrate (`ntm` / `ao agent`) | Always-on orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). A substrate (an NTM tmux swarm or managed-agents via `ao agent`) only adds always-on dispatch of whole operating-loop or `/evolve` skill runs — see [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md) |
 | `gt` | Workspace management unavailable | Work in current directory. Skip convoy/sling operations |
 | `gh` | PR/CI automation unavailable | Open PRs via the web UI; skip automated PR status/merge steps |
 | `go` | Build-from-source unavailable | Install a prebuilt `ao` (Homebrew / install script / release binary); no Go needed |

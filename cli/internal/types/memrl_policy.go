@@ -279,12 +279,12 @@ func defaultMemRLRollbackMatrix() []MemRLRollbackTrigger {
 		{
 			TriggerID:           "enforce_escalation_rate_high",
 			Metric:              "escalation_rate",
-			MetricSourceCommand: "ao rpi status --output json",
+			MetricSourceCommand: "ao orchestrate status --json",
 			LookbackWindow:      "24h",
 			MinSampleSize:       10,
 			Threshold:           "escalation_rate > 0.35",
 			OperatorAction:      "set MEMRL_MODE=observe and rerun from validation",
-			VerificationCommand: "MEMRL_MODE=observe ao rpi status --output json",
+			VerificationCommand: "MEMRL_MODE=observe ao orchestrate status --json",
 		},
 		{
 			TriggerID:           "unknown_failure_class_ratio_high",
@@ -294,7 +294,7 @@ func defaultMemRLRollbackMatrix() []MemRLRollbackTrigger {
 			MinSampleSize:       5,
 			Threshold:           "unknown_failure_class_ratio > 0.10",
 			OperatorAction:      "set MEMRL_MODE=off and open corrective issue for failure-class mapping",
-			VerificationCommand: "MEMRL_MODE=off ao rpi status --output json",
+			VerificationCommand: "MEMRL_MODE=off ao orchestrate status --json",
 		},
 		{
 			TriggerID:           "missing_policy_metadata_detected",

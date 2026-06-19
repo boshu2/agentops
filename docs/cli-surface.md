@@ -223,18 +223,6 @@
 | `ao rehydrate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi cancel` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi cleanup` | `public-tested` | `allowlisted` | Covered by rpi cleanup tests. |
-| `ao rpi loop` | `unsafe-live` | `allowlisted` | Autonomous loop is long-running and state-modifying. |
-| `ao rpi mark-probed` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi nudge` | `unsafe-live` | `allowlisted` | Requires an active RPI tmux session. |
-| `ao rpi parallel` | `unsafe-live` | `allowlisted` | Parallel orchestration is long-running and state-modifying. |
-| `ao rpi phased` | `unsafe-live` | `allowlisted` | Full RPI lifecycle orchestration is long-running and state-modifying. |
-| `ao rpi serve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi stamp-shape` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao rpi stream` | `unsafe-live` | `allowlisted` | Requires an active RPI run event stream. |
-| `ao rpi verify` | `public-tested` | `allowlisted` | Covered by RPI status and verification tests. |
 | `ao scenario add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

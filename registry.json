@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T15:38:35Z",
+  "generated_at": "2026-06-19T16:16:15Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 88,
+    "cli_commands": 87,
     "workflows": 4,
-    "capabilities": 177
+    "capabilities": 176
   },
   "surfaces": {
     "skills": [
@@ -731,7 +731,9 @@
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
         "driven_by_skills": [
+          "autodev",
           "domain",
+          "evolve",
           "shared",
           "using-atm"
         ]
@@ -1313,20 +1315,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao rpi",
-        "path": "cli/cmd/ao/",
-        "purpose": "RPI lifecycle automation",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "agent-native",
-          "autodev",
-          "evolve",
-          "shared",
-          "standards",
-          "swarm"
-        ]
-      },
-      {
         "name": "ao scenario",
         "path": "cli/cmd/ao/",
         "purpose": "Manage holdout scenarios for behavioral validation",
@@ -1536,9 +1524,9 @@
     ]
   },
   "capability_summary": {
-    "total": 177,
+    "total": 176,
     "skills": 75,
-    "cli_commands": 88,
+    "cli_commands": 87,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1612,7 +1600,6 @@
     "rehydrate",
     "retrieval-bench",
     "robot-docs",
-    "rpi",
     "scenario",
     "scope",
     "search",
@@ -1748,7 +1735,6 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
-        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
@@ -1839,10 +1825,10 @@
       ],
       "produces": [],
       "drives_commands": [
+        "ao agent",
         "ao autodev",
         "ao autodev init",
-        "ao autodev validate",
-        "ao rpi"
+        "ao autodev validate"
       ],
       "path": "skills/autodev/",
       "references": 0
@@ -2328,7 +2314,6 @@
         "ao mine",
         "ao pool list",
         "ao ratchet",
-        "ao rpi phased",
         "ao version"
       ],
       "path": "skills/crank/",
@@ -2426,8 +2411,8 @@
       ],
       "drives_commands": [
         "ao lookup",
+        "ao orchestrate shape",
         "ao ratchet",
-        "ao rpi stamp-shape",
         "ao search"
       ],
       "path": "skills/discovery/",
@@ -2496,7 +2481,6 @@
         "ao inject",
         "ao maturity",
         "ao mcp serve",
-        "ao rpi phased",
         "ao session bootstrap"
       ],
       "path": "skills/domain/",
@@ -2603,6 +2587,7 @@
         "goals-fitness-delta"
       ],
       "drives_commands": [
+        "ao agent",
         "ao ci recent",
         "ao corpus inject",
         "ao defrag",
@@ -2620,8 +2605,6 @@
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
-        "ao rpi",
-        "ao rpi loop",
         "ao skills edit digest",
         "ao skills edit seal"
       ],
@@ -3024,9 +3007,8 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao rpi cleanup",
-        "ao rpi status",
-        "ao search"
+        "ao search",
+        "ao worktree gc"
       ],
       "path": "skills/plan/",
       "references": 14
@@ -3166,7 +3148,6 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao rpi phased",
         "ao search",
         "ao turn verify"
       ],
@@ -3445,8 +3426,7 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao metrics cite",
-        "ao rpi phased"
+        "ao metrics cite"
       ],
       "path": "skills/research/",
       "references": 17
@@ -3601,8 +3581,7 @@
         "converted-skill"
       ],
       "drives_commands": [
-        "ao goals",
-        "ao rpi phased"
+        "ao goals"
       ],
       "path": "skills/scaffold/",
       "references": 2
@@ -3695,8 +3674,6 @@
       "drives_commands": [
         "ao agent",
         "ao beads verify",
-        "ao rpi",
-        "ao rpi phased",
         "ao version"
       ],
       "path": "skills/shared/",
@@ -3788,8 +3765,7 @@
         "ao ci",
         "ao corpus inject",
         "ao loop",
-        "ao loop history",
-        "ao rpi"
+        "ao loop history"
       ],
       "path": "skills/standards/",
       "references": 23
@@ -3860,9 +3836,7 @@
         ".agents/swarm/results/*.json"
       ],
       "drives_commands": [
-        "ao lookup",
-        "ao rpi",
-        "ao rpi phased"
+        "ao lookup"
       ],
       "path": "skills/swarm/",
       "references": 21
@@ -3989,7 +3963,6 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao rpi phased",
         "ao search",
         "ao turn verify"
       ],
@@ -4058,7 +4031,9 @@
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
       "driven_by_skills": [
+        "autodev",
         "domain",
+        "evolve",
         "shared",
         "using-atm"
       ],
@@ -5459,30 +5434,6 @@
       "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
       "status": "active",
       "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.rpi",
-      "name": "ao rpi",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "RPI lifecycle automation",
-      "status": "active",
-      "driven_by_skills": [
-        "agent-native",
-        "autodev",
-        "evolve",
-        "shared",
-        "standards",
-        "swarm"
-      ],
       "flags": [
         "--config",
         "--dry-run",

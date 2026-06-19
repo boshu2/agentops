@@ -556,9 +556,9 @@ func showNextSteps(hasBeads bool) {
      $ bd ready
      $ bd create "My first task"
 
-  3. Terminal-native lifecycle:
-     $ ao rpi phased "your first objective"
-     $ ao rpi status
+  3. Orchestration instruments:
+     $ ao orchestrate status
+     $ ao orchestrate shape --help
 
   4. Close the learning loop:
      > /validation
@@ -572,9 +572,9 @@ func showNextSteps(hasBeads bool) {
      > /quickstart
      > /rpi "your first objective"
 
-  3. Terminal-native lifecycle:
-     $ ao rpi phased "your first objective"
-     $ ao rpi status
+  3. Orchestration instruments:
+     $ ao orchestrate status
+     $ ao orchestrate shape --help
 
   4. Add tracked execution when ready:
      $ bd init

@@ -14,7 +14,7 @@ var (
 	ErrDetachedSelfHealFailed = errors.New("detached HEAD self-heal failed")
 
 	// ErrNotGitRepo is returned when a command is run outside a git repository.
-	ErrNotGitRepo = errors.New("not a git repository (run ao rpi phased from inside a git repo)")
+	ErrNotGitRepo = errors.New("not a git repository (run from inside a git repo)")
 
 	// ErrResolveHEAD is returned when HEAD commit cannot be resolved.
 	ErrResolveHEAD = errors.New("unable to resolve HEAD commit for detached worktree creation")

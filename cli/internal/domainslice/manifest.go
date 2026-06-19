@@ -8,7 +8,7 @@
 // This package is explicitly DISTINCT from the phaseManifest in
 // cli/cmd/ao/rpi_phased_manifest.go.  phaseManifest is a per-phase context-budget
 // struct (token limits, handoff field selection); domainSliceManifest is a
-// domain-scope declaration.  The two compose during "ao rpi phased --domain":
+// domain-scope declaration. The two compose during scoped operating-loop runs:
 // phaseManifest controls context depth; domainSliceManifest controls context breadth.
 //
 // See docs/adr/ADR-0004-domain-slice-manifest-contract.md for design decisions.
@@ -43,7 +43,7 @@ type ValidationCommand struct {
 }
 
 // domainSliceManifest declares the bounded DDD domain slice that scopes an
-// "ao rpi phased --domain" run: owned directives, scenarios, context roots,
+// scoped operating-loop run: owned directives, scenarios, context roots,
 // read fence, and validation commands.
 //
 // This is DISTINCT from phaseManifest (rpi_phased_manifest.go), which is a

@@ -213,7 +213,7 @@ WARN — review concerns, accept risk, or apply fixes
 FAIL — block; revise artifact and rerun
 ```
 
-The exact heading `## Council Verdict: PASS / WARN / FAIL` is mandatory — `ao rpi phased` (when present) parses with anchored regex.
+The exact heading `## Council Verdict: PASS / WARN / FAIL` is mandatory — downstream validators and ledger readers parse it with anchored regex.
 
 ### Step 8: Persist findings (when applicable)
 

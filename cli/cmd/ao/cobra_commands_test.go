@@ -470,7 +470,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"rehydrate",
 		"retrieval-bench",
 		"robot-docs",
-		"rpi",
 		"scenario",
 		"scope",
 		"search",
@@ -619,7 +618,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"rehydrate",
 		"retrieval-bench",
 		"robot-docs",
-		"rpi",
 		"scenario",
 		"scope",
 		"search",
@@ -2704,17 +2702,6 @@ func TestCobraRatchetParentHelp(t *testing.T) {
 	}
 	if !strings.Contains(out, "Brownian Ratchet") {
 		t.Errorf("expected 'Brownian Ratchet' in output, got: %s", out)
-	}
-}
-
-// TestCobraRPIParentHelp ensures rpi parent help works.
-func TestCobraRPIParentHelp(t *testing.T) {
-	out, err := executeCommand("rpi", "--help")
-	if err != nil {
-		t.Fatalf("ao rpi --help failed: %v", err)
-	}
-	if !strings.Contains(out, "RPI") {
-		t.Errorf("expected 'RPI' in output, got: %s", out)
 	}
 }
 

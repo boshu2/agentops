@@ -85,7 +85,7 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 		t.Fatalf("SKILL.md after fix = %q, want %q", got, want)
 	}
 	gotDoc, _ := os.ReadFile(docMD)
-	if string(gotDoc) != "Use `ao rpi` to start.\n" {
+	if string(gotDoc) != "Use `ao orchestrate` to start.\n" {
 		t.Fatalf("docs/sample.md after fix = %q", gotDoc)
 	}
 

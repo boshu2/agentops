@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -525,129 +524,6 @@ func TestHelper_maturityToWeight(t *testing.T) {
 }
 
 // ===========================================================================
-// rpi_phased_processing.go helpers
-// ===========================================================================
-
-func TestHelper_classifyGateFailureClass(t *testing.T) {
-	tests := []struct {
-		name     string
-		phaseNum int
-		gateErr  *gateFailError
-		want     types.MemRLFailureClass
-	}{
-		{
-			name:     "nil gate error",
-			phaseNum: 1,
-			gateErr:  nil,
-			want:     "",
-		},
-		{
-			name:     "phase 1 FAIL",
-			phaseNum: 1,
-			gateErr:  &gateFailError{Phase: 1, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassPreMortemFail,
-		},
-		{
-			name:     "phase 2 BLOCKED",
-			phaseNum: 2,
-			gateErr:  &gateFailError{Phase: 2, Verdict: "BLOCKED"},
-			want:     types.MemRLFailureClassCrankBlocked,
-		},
-		{
-			name:     "phase 2 PARTIAL",
-			phaseNum: 2,
-			gateErr:  &gateFailError{Phase: 2, Verdict: "PARTIAL"},
-			want:     types.MemRLFailureClassCrankPartial,
-		},
-		{
-			name:     "phase 3 FAIL",
-			phaseNum: 3,
-			gateErr:  &gateFailError{Phase: 3, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassVibeFail,
-		},
-		{
-			// Note: failReason constants are lowercase; classifyGateFailureClass uppercases
-			// the verdict, so the switch in classifyByVerdict never matches these constants.
-			// They fall through to default: strings.ToLower(verdict).
-			name:     "timeout verdict falls to default lowercase",
-			phaseNum: 1,
-			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonTimeout)},
-			want:     types.MemRLFailureClass("timeout"),
-		},
-		{
-			name:     "stall verdict falls to default lowercase",
-			phaseNum: 1,
-			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonStall)},
-			want:     types.MemRLFailureClass("stall"),
-		},
-		{
-			name:     "exit_error verdict falls to default lowercase",
-			phaseNum: 1,
-			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonExit)},
-			want:     types.MemRLFailureClass("exit_error"),
-		},
-		{
-			name:     "unknown verdict lowercased",
-			phaseNum: 4,
-			gateErr:  &gateFailError{Phase: 4, Verdict: "CUSTOM_ERROR"},
-			want:     types.MemRLFailureClass("custom_error"),
-		},
-		{
-			name:     "phase 1 non-FAIL passes to classifyByVerdict",
-			phaseNum: 1,
-			gateErr:  &gateFailError{Phase: 1, Verdict: "WARN"},
-			want:     types.MemRLFailureClass("warn"),
-		},
-		{
-			name:     "verdict with whitespace is trimmed",
-			phaseNum: 3,
-			gateErr:  &gateFailError{Phase: 3, Verdict: "  FAIL  "},
-			want:     types.MemRLFailureClassVibeFail,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := classifyGateFailureClass(tc.phaseNum, tc.gateErr)
-			if got != tc.want {
-				t.Errorf("classifyGateFailureClass(%d, %+v) = %q, want %q",
-					tc.phaseNum, tc.gateErr, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestHelper_ledgerActionFromDetails(t *testing.T) {
-	tests := []struct {
-		name    string
-		details string
-		want    string
-	}{
-		{"empty", "", "event"},
-		{"whitespace only", "   ", "event"},
-		{"started prefix", "started phase 1", "started"},
-		{"completed prefix", "completed phase 2", "completed"},
-		{"failed prefix", "failed: some error", "failed"},
-		{"fatal prefix", "fatal: crash", "fatal"},
-		{"retry prefix", "retry attempt 2/3", "retry"},
-		{"dry-run prefix", "dry-run would do X", "dry-run"},
-		{"handoff prefix", "handoff to next session", "handoff"},
-		{"epic summary", "epic=ag-123 summary", "summary"},
-		{"unknown single word", "customaction more words", "customaction"},
-		{"colon stripped from first word", "some: detail", "some"},
-		{"case insensitive", "STARTED phase 1", "started"},
-		{"mixed case", "Started phase 1", "started"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := ledgerActionFromDetails(tc.details)
-			if got != tc.want {
-				t.Errorf("ledgerActionFromDetails(%q) = %q, want %q", tc.details, got, tc.want)
-			}
-		})
-	}
-}
-
-// ===========================================================================
 // metrics.go helpers
 // ===========================================================================
 
@@ -727,158 +603,6 @@ func TestHelper_countStaleInDir(t *testing.T) {
 			t.Errorf("countStaleInDir() = %d, want 0 (file was recently cited)", got)
 		}
 	})
-}
-
-// ===========================================================================
-// rpi_ledger.go helpers
-// ===========================================================================
-
-func TestHelper_validateLedgerRequiredFields(t *testing.T) {
-	validRecord := RPILedgerRecord{
-		EventID:     "evt-abc",
-		RunID:       "run-123",
-		Phase:       "discovery",
-		Action:      "started",
-		TS:          time.Now().UTC().Format(time.RFC3339Nano),
-		PayloadHash: "deadbeef",
-		Hash:        "cafebabe",
-	}
-
-	t.Run("valid record passes", func(t *testing.T) {
-		err := validateLedgerRequiredFields(validRecord)
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
-
-	requiredFields := []string{"EventID", "RunID", "Phase", "Action", "TS", "PayloadHash", "Hash"}
-	fieldMap := map[string]func(r RPILedgerRecord) RPILedgerRecord{
-		"EventID":     func(r RPILedgerRecord) RPILedgerRecord { r.EventID = ""; return r },
-		"RunID":       func(r RPILedgerRecord) RPILedgerRecord { r.RunID = ""; return r },
-		"Phase":       func(r RPILedgerRecord) RPILedgerRecord { r.Phase = ""; return r },
-		"Action":      func(r RPILedgerRecord) RPILedgerRecord { r.Action = ""; return r },
-		"TS":          func(r RPILedgerRecord) RPILedgerRecord { r.TS = ""; return r },
-		"PayloadHash": func(r RPILedgerRecord) RPILedgerRecord { r.PayloadHash = ""; return r },
-		"Hash":        func(r RPILedgerRecord) RPILedgerRecord { r.Hash = ""; return r },
-	}
-
-	for _, field := range requiredFields {
-		t.Run("missing "+field, func(t *testing.T) {
-			record := fieldMap[field](validRecord)
-			err := validateLedgerRequiredFields(record)
-			if err == nil {
-				t.Errorf("expected error for missing %s, got nil", field)
-			}
-		})
-	}
-
-	t.Run("whitespace-only field fails", func(t *testing.T) {
-		record := validRecord
-		record.RunID = "   "
-		err := validateLedgerRequiredFields(record)
-		if err == nil {
-			t.Error("expected error for whitespace-only RunID")
-		}
-	})
-}
-
-func TestHelper_validateLedgerTimestamp(t *testing.T) {
-	tests := []struct {
-		name    string
-		ts      string
-		wantErr bool
-	}{
-		{
-			name:    "valid UTC RFC3339Nano",
-			ts:      time.Now().UTC().Format(time.RFC3339Nano),
-			wantErr: false,
-		},
-		{
-			name:    "not RFC3339",
-			ts:      "2024-01-15 10:30:00",
-			wantErr: true,
-		},
-		{
-			name:    "empty string",
-			ts:      "",
-			wantErr: true,
-		},
-		{
-			name:    "non-UTC timezone",
-			ts:      "2024-01-15T10:30:00-05:00",
-			wantErr: true, // must be UTC
-		},
-		{
-			name:    "valid UTC with nanoseconds",
-			ts:      "2024-01-15T10:30:00.123456789Z",
-			wantErr: false,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateLedgerTimestamp(tc.ts)
-			if (err != nil) != tc.wantErr {
-				t.Errorf("validateLedgerTimestamp(%q) error = %v, wantErr %v", tc.ts, err, tc.wantErr)
-			}
-		})
-	}
-}
-
-func TestHelper_roundTripJSON(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:  "simple object",
-			input: `{"b":2,"a":1}`,
-			want:  `{"a":1,"b":2}`, // json.Marshal sorts keys
-		},
-		{
-			name:  "array",
-			input: `[1,2,3]`,
-			want:  `[1,2,3]`,
-		},
-		{
-			name:  "string value",
-			input: `"hello"`,
-			want:  `"hello"`,
-		},
-		{
-			name:  "null",
-			input: `null`,
-			want:  `null`,
-		},
-		{
-			name:    "invalid JSON",
-			input:   `{broken`,
-			wantErr: true,
-		},
-		{
-			name:  "nested object",
-			input: `{"outer":{"inner":"value"}}`,
-			want:  `{"outer":{"inner":"value"}}`,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := roundTripJSON([]byte(tc.input))
-			if tc.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if string(got) != tc.want {
-				t.Errorf("roundTripJSON(%q) = %q, want %q", tc.input, string(got), tc.want)
-			}
-		})
-	}
 }
 
 // ===========================================================================
@@ -1086,38 +810,10 @@ func TestHelper_mergeAssignmentFields(t *testing.T) {
 // Additional edge-case coverage
 // ===========================================================================
 
-func TestHelper_roundTripJSON_empty(t *testing.T) {
-	got, err := roundTripJSON([]byte(`{}`))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if string(got) != `{}` {
-		t.Errorf("roundTripJSON({}) = %q, want {}", string(got))
-	}
-}
-
-func TestHelper_classifyGateFailureClass_lowercaseVerdict(t *testing.T) {
-	// Verify that lowercase "fail" still matches (verdict is uppercased internally)
-	got := classifyGateFailureClass(1, &gateFailError{Phase: 1, Verdict: "fail"})
-	if got != types.MemRLFailureClassPreMortemFail {
-		t.Errorf("classifyGateFailureClass(1, 'fail') = %q, want %q", got, types.MemRLFailureClassPreMortemFail)
-	}
-}
-
 func TestHelper_filterUnprocessed_emptyPending(t *testing.T) {
 	remaining := filterUnprocessed(nil, []string{"s1"})
 	if len(remaining) != 0 {
 		t.Errorf("expected empty, got %d", len(remaining))
-	}
-}
-
-func TestHelper_validateLedgerTimestamp_RFC3339_basic(t *testing.T) {
-	// UTC RFC3339 without nanoseconds should also pass, since
-	// time.RFC3339Nano can parse it and the roundtrip check should hold.
-	ts := "2024-06-15T10:30:00Z"
-	err := validateLedgerTimestamp(ts)
-	if err != nil {
-		t.Errorf("validateLedgerTimestamp(%q) unexpected error: %v", ts, err)
 	}
 }
 
@@ -1168,26 +864,5 @@ func TestHelper_buildDoctorSummary_zeroTotal(t *testing.T) {
 	got := buildDoctorSummary(0, 0, 0, 0)
 	if got != "0/0 checks passed" {
 		t.Errorf("buildDoctorSummary(0,0,0,0) = %q, want %q", got, "0/0 checks passed")
-	}
-}
-
-func TestHelper_roundTripJSON_preservesBoolAndNumber(t *testing.T) {
-	input := `{"flag":true,"count":42,"name":"test"}`
-	got, err := roundTripJSON([]byte(input))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	var parsed map[string]any
-	if err := json.Unmarshal(got, &parsed); err != nil {
-		t.Fatalf("result is not valid JSON: %v", err)
-	}
-	if parsed["flag"] != true {
-		t.Errorf("flag = %v, want true", parsed["flag"])
-	}
-	if parsed["count"] != float64(42) {
-		t.Errorf("count = %v, want 42", parsed["count"])
-	}
-	if parsed["name"] != "test" {
-		t.Errorf("name = %v, want test", parsed["name"])
 	}
 }

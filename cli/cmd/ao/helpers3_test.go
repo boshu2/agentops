@@ -3,7 +3,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -939,85 +938,6 @@ func TestHelper3_formatDurationBrief(t *testing.T) {
 			}
 		})
 	}
-}
-
-// ---------------------------------------------------------------------------
-// 8. rpi_cleanup.go — findStaleRunsWithMinAge using t.TempDir()
-// ---------------------------------------------------------------------------
-
-func TestHelper3_findStaleRunsWithMinAge(t *testing.T) {
-	tmpDir := t.TempDir()
-	runsDir := filepath.Join(tmpDir, ".agents", "rpi", "runs")
-
-	// Create a stale run (worktree missing, non-terminal)
-	staleRunDir := filepath.Join(runsDir, "stale-1")
-	if err := os.MkdirAll(staleRunDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	staleState := map[string]any{
-		"schema_version": 1,
-		"run_id":         "stale-1",
-		"goal":           "test stale run",
-		"phase":          2,
-		"worktree_path":  "/nonexistent/worktree",
-		"started_at":     time.Now().Add(-2 * time.Hour).Format(time.RFC3339),
-	}
-	staleData, _ := json.Marshal(staleState)
-	if err := os.WriteFile(filepath.Join(staleRunDir, phasedStateFile), staleData, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a completed run (terminal, should be excluded)
-	completedRunDir := filepath.Join(runsDir, "completed-1")
-	if err := os.MkdirAll(completedRunDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	completedState := map[string]any{
-		"schema_version":  1,
-		"run_id":          "completed-1",
-		"goal":            "test completed run",
-		"phase":           3,
-		"started_at":      time.Now().Add(-3 * time.Hour).Format(time.RFC3339),
-		"terminal_status": "completed",
-	}
-	completedData, _ := json.Marshal(completedState)
-	if err := os.WriteFile(filepath.Join(completedRunDir, phasedStateFile), completedData, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("no min age finds stale", func(t *testing.T) {
-		stale := findStaleRunsWithMinAge(tmpDir, 0, time.Now())
-		found := false
-		for _, sr := range stale {
-			if sr.RunID == "stale-1" {
-				found = true
-			}
-			if sr.RunID == "completed-1" {
-				t.Error("completed runs should not appear as stale")
-			}
-		}
-		if !found {
-			t.Error("expected to find stale-1 in results")
-		}
-	})
-
-	t.Run("min age filters recent", func(t *testing.T) {
-		// Use minAge of 10 hours - the stale run is only 2h old
-		stale := findStaleRunsWithMinAge(tmpDir, 10*time.Hour, time.Now())
-		for _, sr := range stale {
-			if sr.RunID == "stale-1" {
-				t.Error("stale-1 is only 2h old, should be filtered with 10h minAge")
-			}
-		}
-	})
-
-	t.Run("empty runs dir", func(t *testing.T) {
-		emptyDir := t.TempDir()
-		stale := findStaleRunsWithMinAge(emptyDir, 0, time.Now())
-		if len(stale) != 0 {
-			t.Errorf("expected 0 stale runs for empty dir, got %d", len(stale))
-		}
-	})
 }
 
 // ---------------------------------------------------------------------------

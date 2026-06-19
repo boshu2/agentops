@@ -7,8 +7,8 @@ func FactoryRecommendedCommands(goal string) []string {
 	if goal == "" {
 		return []string{
 			"Set a concrete goal, then run `ao factory start --goal \"your goal\"` for a briefing-first startup.",
-			"Run `/rpi \"your goal\"` for the skill-first delivery lane, or `ao rpi phased \"your goal\"` for CLI-first phase isolation.",
-			"Use `ao rpi status` to monitor long-running phased work.",
+			"Run `/rpi \"your goal\"` for the skill-first delivery lane, or use NTM/Agent Mail for out-of-session execution.",
+			"Use `ao orchestrate status` to inspect orchestration readiness.",
 			"Run `ao codex stop` when the session ends so the flywheel closes explicitly.",
 		}
 	}
@@ -16,8 +16,8 @@ func FactoryRecommendedCommands(goal string) []string {
 	quotedGoal := fmt.Sprintf("%q", goal)
 	return []string{
 		fmt.Sprintf("Run `/rpi %s` for the skill-first software-factory lane.", quotedGoal),
-		fmt.Sprintf("Or run `ao rpi phased %s` for CLI-first phase isolation.", quotedGoal),
-		"Use `ao rpi status` to monitor long-running phased work.",
+		"Use NTM/Agent Mail for out-of-session execution when this must outlive the current session.",
+		"Use `ao orchestrate status` to inspect orchestration readiness.",
 		"Run `ao codex stop` when the session ends so the flywheel closes explicitly.",
 	}
 }

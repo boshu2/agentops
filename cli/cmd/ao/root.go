@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 
 Software Factory Lane:
   ao factory start --goal "fix auth startup"
-  /rpi "fix auth startup"   or   ao rpi phased "fix auth startup"
+  /rpi "fix auth startup"   or   ao orchestrate status
   ao codex stop
 
 The Knowledge Flywheel underneath it:

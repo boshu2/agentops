@@ -22,7 +22,7 @@ var DeprecatedCommands = map[string]string{
 	"ao know migrate":          "ao migrate",
 	"ao know batch-feedback":   "ao batch-feedback",
 	"ao know session-outcome":  "ao session-outcome",
-	"ao work rpi":              "ao rpi",
+	"ao work rpi":              "ao orchestrate",
 	"ao work ratchet":          "ao ratchet",
 	"ao work goals":            "ao goals",
 	"ao work session":          "ao session",
