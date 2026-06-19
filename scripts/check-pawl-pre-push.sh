@@ -27,15 +27,40 @@ truthy() {
 
 extract_bead_from_commit() {
   local sha="$1"
-  local msg
+  local msg bead
   msg="$(git -C "$GIT_REPO" log -1 --format=%B "$sha" 2>/dev/null || true)"
-  local bead
-  if [[ "$msg" =~ \((age-[a-z0-9.-]+|ag-[a-z0-9.-]+)\) ]]; then
-    bead="${BASH_REMATCH[1]}"
-  elif [[ "$msg" =~ (^|[[:space:][:punct:]])(age-[a-z0-9.-]+|ag-[a-z0-9.-]+)([[:space:][:punct:]]|$) ]]; then
-    bead="${BASH_REMATCH[2]}"
-  else
-    return 1
+
+  # Precedence (age-push-equals-ci-0ua.3): an explicit closing TRAILER
+  # (Closes/Fixes/Refs/Bead <id>) is the intent-bearing citation and wins over a
+  # bead merely MENTIONED in prose. Without this, the FIRST bead token in the
+  # message is taken, so "...after the ag-3l86 incident ... Closes age-foo"
+  # resolves to ag-3l86 and fails-closed against the wrong (absent) verdict —
+  # observed live 2026-06-18. Trailer match is case-insensitive.
+  # Trailer-BOUND (git-trailer convention): only a LINE that STARTS with the
+  # keyword counts — so "this fixes ag-old behaviour" (keyword mid-prose) does
+  # NOT match, but "Closes age-new" on its own line does. Last such line wins
+  # (trailers are appended at the end). A first-match scan got this wrong twice.
+  local had_nocase=0 line
+  shopt -q nocasematch && had_nocase=1
+  shopt -s nocasematch
+  while IFS= read -r line; do
+    # The WHOLE line must be essentially "keyword <bead>" (+ trailing
+    # punctuation): a sentence that merely STARTS with a keyword — "Fixed ag-old
+    # during earlier investigation." — has prose after the bead and is rejected.
+    if [[ "$line" =~ ^[[:space:]]*(closes|close|fixes|fixed|fix|resolves|resolve|refs|ref|bead)[:[:space:]]+(age-[a-z0-9.-]+|ag-[a-z0-9.-]+)[[:space:][:punct:]]*$ ]]; then
+      bead="${BASH_REMATCH[2]}"
+    fi
+  done <<< "$msg"
+  [[ "$had_nocase" -eq 0 ]] && shopt -u nocasematch
+
+  if [[ -z "${bead:-}" ]]; then
+    if [[ "$msg" =~ \((age-[a-z0-9.-]+|ag-[a-z0-9.-]+)\) ]]; then
+      bead="${BASH_REMATCH[1]}"
+    elif [[ "$msg" =~ (^|[[:space:][:punct:]])(age-[a-z0-9.-]+|ag-[a-z0-9.-]+)([[:space:][:punct:]]|$) ]]; then
+      bead="${BASH_REMATCH[2]}"
+    else
+      return 1
+    fi
   fi
   # A bead id never ends in a separator. The id char class allows '.' for
   # sub-ids (age-3va.1), so a sentence-ending period — "Closes <id>." — gets
