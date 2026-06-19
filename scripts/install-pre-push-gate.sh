@@ -59,12 +59,58 @@ _agentops_local=\"\${_agentops_common}/hooks/pre-push.local\"
 # Self-heal (age-4st3): a landed gate fix is inert until the installed copy is
 # refreshed, and NOTHING re-installs it automatically — so a stale gate runs
 # indefinitely. Before gating, refresh pre-push.local from TRUNK (origin/main)
-# when it drifts. Trust the trunk gate, never the pushed branch's working tree
-# (a branch must not weaken — or, off an old base, silently downgrade — its own
-# push gate). Best-effort: if trunk is unavailable the existing copy still runs.
-_agentops_trunk=\"\$(git show origin/main:scripts/hooks/pre-push.local 2>/dev/null)\"
-if [ -n \"\$_agentops_trunk\" ] && ! printf '%s' \"\$_agentops_trunk\" | cmp -s - \"\$_agentops_local\" 2>/dev/null; then
-  printf '%s' \"\$_agentops_trunk\" > \"\$_agentops_local\" && chmod +x \"\$_agentops_local\"
+# when it drifts. Trust the trunk gate by default. The only branch-side
+# exception is an explicit fast-forward push to main/master whose installed hook
+# already matches the pushed local SHA; that lets hook changes dogfood their own
+# landing push without letting stale or uninstalled branch hooks weaken the gate.
+# Best-effort: if trunk is unavailable the existing copy still runs.
+_agentops_push_local_sha=\"\"
+_agentops_push_remote_sha=\"\"
+if [ -n \"\${_agentops_pre_push_stdin:-}\" ] && [ -f \"\$_agentops_pre_push_stdin\" ]; then
+  _agentops_push_row=\"\$(awk '\$3 ~ /^refs\\/heads\\/(main|master)\$/ { print \$2 \" \" \$4; exit }' \"\$_agentops_pre_push_stdin\" 2>/dev/null)\"
+  case \"\$_agentops_push_row\" in
+    *' '*)
+      _agentops_push_local_sha=\${_agentops_push_row%% *}
+      _agentops_push_remote_sha=\${_agentops_push_row#* }
+      ;;
+  esac
+fi
+_agentops_trunk_ref=\"origin/main\"
+case \"\$_agentops_push_remote_sha\" in
+  ''|0000000000000000000000000000000000000000) ;;
+  *) _agentops_trunk_ref=\"\$_agentops_push_remote_sha\" ;;
+esac
+_agentops_candidate_ref=\"\$_agentops_push_local_sha\"
+_agentops_trunk_blob=\"\$(git rev-parse \"\${_agentops_trunk_ref}:scripts/hooks/pre-push.local\" 2>/dev/null)\"
+_agentops_candidate_blob=\"\"
+if [ -n \"\$_agentops_candidate_ref\" ]; then
+  _agentops_candidate_blob=\"\$(git rev-parse \"\${_agentops_candidate_ref}:scripts/hooks/pre-push.local\" 2>/dev/null)\"
+fi
+_agentops_local_blob=\"\"
+if [ -f \"\$_agentops_local\" ]; then
+  _agentops_local_blob=\"\$(git hash-object \"\$_agentops_local\" 2>/dev/null)\"
+fi
+_agentops_preserve_candidate_hook=0
+if [ -n \"\$_agentops_push_local_sha\" ] && [ -n \"\$_agentops_push_remote_sha\" ] \
+  && [ -n \"\$_agentops_trunk_blob\" ] && [ -n \"\$_agentops_candidate_blob\" ] \
+  && git merge-base --is-ancestor \"\$_agentops_push_remote_sha\" \"\$_agentops_push_local_sha\" 2>/dev/null \
+  && [ \"\$_agentops_local_blob\" = \"\$_agentops_candidate_blob\" ] \
+  && [ \"\$_agentops_local_blob\" != \"\$_agentops_trunk_blob\" ]; then
+  _agentops_preserve_candidate_hook=1
+  echo >&2 \"pre-push: hook-source=local-sha:\$_agentops_push_local_sha\"
+fi
+if [ \"\$_agentops_preserve_candidate_hook\" != \"1\" ] \
+  && [ -n \"\$_agentops_trunk_blob\" ] \
+  && [ \"\$_agentops_local_blob\" != \"\$_agentops_trunk_blob\" ]; then
+  _agentops_tmp_local=\"\$(mktemp \"\${_agentops_local}.XXXXXX\" 2>/dev/null)\" || _agentops_tmp_local=\"\"
+  if [ -n \"\$_agentops_tmp_local\" ]; then
+    if git show \"\${_agentops_trunk_ref}:scripts/hooks/pre-push.local\" > \"\$_agentops_tmp_local\" 2>/dev/null && chmod +x \"\$_agentops_tmp_local\"; then
+      mv \"\$_agentops_tmp_local\" \"\$_agentops_local\"
+      echo >&2 \"pre-push: hook-source=trunk:\$_agentops_trunk_ref\"
+    else
+      rm -f \"\$_agentops_tmp_local\"
+    fi
+  fi
 fi
 if [ -x \"\$_agentops_local\" ]; then
   if [ -n \"\${_agentops_pre_push_stdin:-}\" ] && [ -f \"\$_agentops_pre_push_stdin\" ]; then
