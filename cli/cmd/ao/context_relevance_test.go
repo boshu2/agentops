@@ -8,6 +8,20 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
+// TestScoreNextWorkForRuntime_RepointedRanking guards the layer-4 queue-cluster
+// migration (age-3pdt): scoreNextWorkForRuntime now ranks via
+// cliRPI.RepoAffinityRank + cliRPI.SeverityRank (migrated to internal/rpi). A
+// high-severity, repo-matching item must outscore a low-severity, off-repo one.
+func TestScoreNextWorkForRuntime_RepointedRanking(t *testing.T) {
+	ctx := runtimeRelevanceContext{repo: "agentops", phase: "implement"}
+	high := nextWorkItem{Title: "urgent", Severity: "critical", TargetRepo: "agentops"}
+	low := nextWorkItem{Title: "minor", Severity: "low", TargetRepo: "other-repo"}
+	if scoreNextWorkForRuntime(ctx, high) <= scoreNextWorkForRuntime(ctx, low) {
+		t.Fatalf("expected high-severity repo-matching item to outscore low/off-repo: high=%d low=%d",
+			scoreNextWorkForRuntime(ctx, high), scoreNextWorkForRuntime(ctx, low))
+	}
+}
+
 func TestRerankContextBundleForPhase_PrefersWidelyReusedLearning(t *testing.T) {
 	tmp := t.TempDir()
 	if err := writeCitations(tmp, []types.CitationEvent{

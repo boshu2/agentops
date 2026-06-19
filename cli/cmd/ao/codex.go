@@ -23,6 +23,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/bridge"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -1879,7 +1880,7 @@ func collectCodexStartupArtifacts(cwd, query string, limit int) ([]codexArtifact
 	if root := findGitRoot(cwd); root != "" {
 		repoFilter = filepath.Base(root)
 	}
-	nextWork, _ := readUnconsumedItems(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"), repoFilter)
+	nextWork, _ := cliRPI.ReadUnconsumedItems(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"), repoFilter)
 	if len(nextWork) > limit {
 		nextWork = nextWork[:limit]
 	}
@@ -2372,7 +2373,7 @@ func collectCodexRetrievalHealth(cwd string) codexRetrievalHealth {
 	if root := findGitRoot(cwd); root != "" {
 		repoFilter = filepath.Base(root)
 	}
-	nextWork, _ := readUnconsumedItems(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"), repoFilter)
+	nextWork, _ := cliRPI.ReadUnconsumedItems(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"), repoFilter)
 	return codexRetrievalHealth{
 		Learnings: countGlobMatches(filepath.Join(cwd, ".agents", "learnings", "*.md")),
 		Patterns:  countGlobMatches(filepath.Join(cwd, ".agents", "patterns", "*.md")),
