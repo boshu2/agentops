@@ -342,6 +342,20 @@ The pre-mortem verdict must NOT be graded by the plan's own author. A verdict pr
 
 **Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed.
 
+### Step 2.11: Plan-Pawl Duel Checklist (the cross-family invariant)
+
+No-self-grading + cross-family judging is **one invariant** — *a plan's acceptance verdict must come from an independent, cross-family adversary, against pre-registered kill conditions.* It has **two delivery forms of the same thing**, not two gates:
+
+- **`$pre-mortem --mixed`** (this skill) — a cross-vendor council judges the plan artifact.
+- **The discovery plan-pawl duel** ([discovery](../discovery/SKILL.md) STEP 3.5 → `ao plan-pawl decide`, the [`plan-pawl` row](../../docs/contracts/pawls.md)) — two distinct-family judge panes duel over the `SynthesisPacket`; that duel verdict **IS** the pre-mortem verdict for fanout-class discovery (do not run a second council).
+
+For fanout class the duel **satisfies no-self-grading by construction**: the two judges are fresh, context-isolated, distinct-family panes, so `author_id != judge_id` and `judge_family != author_family` hold automatically. Before accepting ANY plan acceptance verdict (either form), check:
+
+- [ ] **Independent judge** — `judge_id` != `author_id` (no inline self-review; `--allow-self` waives only for the no-subagent fallback, and stamps the verdict self-graded).
+- [ ] **Cross-family for one-way doors** — strategy / experiment / irreversible plan => `judge_family` != `author_family` (>=2 distinct roster families; the duel quorum floor).
+- [ ] **Pre-registered decision rule** — kill conditions recorded BEFORE deliberation; judges evaluate the plan against them, not just "is this plan good".
+- [ ] **Not a behavior substitute** — the plan-pawl gates plan SHAPE; it never replaces the acceptance-test layer (2026-06-12 auth-bypass learning).
+
 ### Step 3: Interpret Council Verdict
 
 | Council Verdict | Pre-Mortem Result | Action |

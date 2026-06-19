@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T20:35:55Z",
+  "generated_at": "2026-06-19T20:45:37Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -3156,6 +3156,7 @@
         "ao beads verify",
         "ao lookup",
         "ao metrics cite",
+        "ao plan-pawl decide",
         "ao ratchet",
         "ao search",
         "ao turn verify"
