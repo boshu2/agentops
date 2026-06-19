@@ -31,6 +31,25 @@ Codex is a first-class runtime in this repo.
 > `skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
 > codex-sync transform/template and regenerate.
 
+> **Bespoke twins are HAND-MAINTAINED in full — body AND references (age-0js4).**
+> A `treatment: bespoke` twin (catalog.json — `council`, `crank`, `evolve`,
+> `plan`, `pre-mortem`, `research`, `rpi`, … 19 total) is skipped ENTIRELY by
+> codex-sync, **including `--force`**. Its `SKILL.md` body and everything under
+> `references/`/`scripts/` are authored by hand: many bespoke references are
+> deliberate Codex-condensed rewrites of source (e.g. `research/references/
+> data-flow-from-entry-points.md` is a substantial hand-rewrite — 85 source lines
+> deleted, 56 added), so a source edit does **NOT** auto-propagate, and
+> `codex-sync --force --only <bespoke>` reporting "nothing to generate" is
+> CORRECT, not a bug. Refreshing a bespoke twin after a source change is a
+> deliberate human edit of the twin. **Do not** auto-mirror source over a bespoke
+> twin — it would clobber the hand-authored Codex copy. (Auto-refresh was
+> evaluated under age-0js4 and rejected: dozens of the bespoke reference files are
+> genuine hand-rewrites; only an explicit per-file tracked/bespoke manifest could
+> refresh safely, which is disproportionate to the low-frequency cost. *Accidental*
+> drift — a twin that should have tracked source but didn't — is the divergence
+> gate's job, tracked under age-odv to add an explicit bespoke exemption, not
+> codex-sync's.)
+
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
 1. Update the source skill under `skills/` when the shared contract changes.
