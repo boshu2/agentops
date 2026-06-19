@@ -142,10 +142,11 @@ bash scripts/install-pre-push-gate.sh
 ```
 
 That chains the shared `.git/hooks/pre-push` path to
-`scripts/hooks/pre-push.local`, which runs `ao gate check --fast` and, on
-pushes to `main`, the full race suite plus pawl proof. The tracked
-`.githooks/` directory is legacy dev-hook plumbing; do not treat it as the live
-release authority.
+`scripts/hooks/pre-push.local`, preserving Git's pre-push stdin even when an
+earlier legacy hook segment consumes it. On pushes to `main`, the hook runs the
+full race suite, then serializes the mutable `ao gate check --fast` and pawl
+proof path. The tracked `.githooks/` directory is legacy dev-hook plumbing; do
+not treat it as the live release authority.
 
 ### Where to put tests
 

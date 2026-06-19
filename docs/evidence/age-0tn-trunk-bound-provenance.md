@@ -10,8 +10,8 @@ Pre-push provenance emit recorded local commit OIDs before push; some never beca
 ## Fix
 
 1. `ao provenance emit-landed --trunk-ref origin/main` filters to trunk ancestors only.
-2. `scripts/post-land-provenance-emit.sh` runs after push (fetch + landed range + verdict emit).
-3. Pre-push emit disabled by default (`AGENTOPS_PROVENANCE_EMIT_PRE_PUSH=1` opt-in legacy).
+2. `scripts/post-land-provenance-emit.sh` runs after push (fetch + landed range + verdict emit); it is not part of the default pre-push path because it can create a commit.
+3. Pre-push emit disabled by default (`AGENTOPS_PROVENANCE_EMIT_PRE_PUSH=1` opt-in legacy; `AGENTOPS_PROVENANCE_EMIT_POST_LAND=1` deliberately runs the post-land reconciliation from the hook).
 4. `scripts/check-provenance-merge-sha.sh` warns/fails on off-trunk merge_shas.
 
 ## Proof
