@@ -22,25 +22,19 @@ Codex is a first-class runtime in this repo.
 - `skills-codex-overrides/catalog.json` is the machine-readable treatment map for the full catalog.
 - `skills-codex/<name>/` is the checked-in Codex runtime artifact. It is manually maintained, while the legacy manifest/marker files remain part of the validation contract.
 
-> **Editing an EXISTING skill needs a manual twin mirror — not just regen.**
-> `make regen-all` / `scripts/regen-codex-hashes.sh` only refresh the twin's
-> *hash record* (`.agentops-generated.json`), **not** its prose. If you edit
-> `skills/<name>/references/*.md` (or `SKILL.md`) and only run regen, the marker
-> becomes self-consistent with the **stale** twin and a green `✓ codex hashes`
-> looks handled while the twin still says the old thing. You MUST manually copy
-> the content change into `skills-codex/<name>/references/` (runtime-native — no
-> `.claude/...` tokens), THEN run `scripts/regen-codex-hashes.sh --only <name>`.
-> Verify with a content diff (`grep -c <new-token>` on both copies), not the hash
-> exit code. The content-divergence gate
-> (`scripts/validate-codex-generated-artifacts.sh`) now blocks a source
-> `references/**` edit that is not mirrored into the twin — a marker-only codex
-> change no longer satisfies it (age-yxl). The same manual-mirror requirement the
-> docs already state for **new** skills applies to **edits of existing** ones.
+> **Editing an EXISTING parity skill regenerates its Codex twin — not just hashes.**
+> `make regen-all` / `scripts/codex-sync.sh` refresh parity-only twins from
+> `skills/<name>/` whenever their generated body, prompt, or mirrored references
+> drift. `scripts/regen-codex-hashes.sh` remains the bookkeeping step after
+> content is current. Manual edits under `skills-codex/<name>/` are reserved for
+> bespoke skills or deliberate Codex-only divergence recorded in
+> `skills-codex-overrides/catalog.json`; otherwise fix the source skill or the
+> codex-sync transform/template and regenerate.
 
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
 1. Update the source skill under `skills/` when the shared contract changes.
-2. Update `skills-codex/<name>/SKILL.md` directly when the Codex runtime copy needs to change, or update `skills-codex-overrides/<name>/` when the Codex experience should differ from Claude.
+2. For parity-only skills, update source or the codex-sync transform/template and regenerate. Update `skills-codex/<name>/SKILL.md` directly only when the Codex runtime copy is bespoke, or update `skills-codex-overrides/<name>/` when the Codex experience should differ from Claude.
    - Prompt/operator-layer changes belong in `skills-codex-overrides/<name>/prompt.md`.
    - Durable Codex-only body rewrites belong in `skills-codex-overrides/<name>/SKILL.md`.
 3. Run the semantic audit if the checked-in Codex body looks suspicious:
@@ -61,4 +55,3 @@ When a skill change affects Codex behavior, phrasing, orchestration, or UX:
    ```
 
 Think of `skills/` as the shared contract, `skills-codex-overrides/` as the durable Codex-only tailoring layer, and `skills-codex/` as the checked-in Codex artifact shipped to users.
-

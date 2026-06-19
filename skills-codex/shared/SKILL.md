@@ -138,7 +138,7 @@ Skills that chain to other skills (e.g., `$rpi` calls `$research`, `$validate` c
 
 | Runtime | Tool | Behavior | Pattern |
 |---------|------|----------|---------|
-| Codex | `Skill(skill="X", args="...")` | **Executable** — skill runs as a sub-invocation | `Skill(skill="council", args="--quick validate recent")` |
+| Codex | `Skill(skill="X", args="...")` | **Executable** — skill runs as a sub-invocation | `$council --quick validate recent` |
 | Codex | N/A | Skills not available — inline the logic or skip | Check if `Skill` tool exists before calling |
 | OpenCode | `skill` tool (read-only) | **Load-only** — returns `<skill_content>` blocks into context | Call `skill(skill="council")`, then follow the loaded instructions inline |
 

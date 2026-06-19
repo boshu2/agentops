@@ -10,7 +10,8 @@
 #     transformed runtime-native (slash-command invocations of known skills ->
 #     `$` prefix, ~/.claude -> ~/.codex, "Claude Code" -> "Codex");
 #   - references/ + scripts/: copied byte-identical (lint scans only SKILL.md);
-#   - prompt.md: the standard codex pointer-to-sibling-SKILL.md template.
+#   - prompt.md: the standard codex pointer-to-sibling-SKILL.md template,
+#     optionally plus catalog-declared operator-contract markers.
 # Because the twin is GENERATED from source, source edits never require a hand
 # mirror — re-running this (via regen-all) reproduces a correct twin, killing the
 # "add/touch a skill -> chase ~5 codex gates serially" whack-a-mole (regen-all.sh
@@ -20,9 +21,8 @@
 # the body files + references, the per-skill marker, and all three catalog
 # surfaces (manifest .skills[], manifest .codex_override_catalog.skills[], and
 # skills-codex-overrides/catalog.json .skills[]), then fixes every hash. It is
-# idempotent: a source skill that already has a complete, registered twin is
-# left untouched (existing hand-tended twins are never clobbered — converting the
-# ~75 existing twins to generated form is a separate, reviewed step).
+# idempotent: a source skill that already matches the generated parity form is
+# left untouched; a complete but stale parity twin is refreshed from source.
 #
 # bespoke twins (hand-authored Codex profiles) are the opt-out: they are never
 # generated or overwritten.
@@ -176,6 +176,22 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
     would make it inaccurate."""
     import re
 
+    # Skill(skill="known", args="...") -> $known ... for declarative skill
+    # invocations in source skills. Preserve args when present so inline examples
+    # remain actionable in Codex.
+    known_alt = "|".join(re.escape(skill) for skill in sorted(known_skills, key=len, reverse=True))
+    if known_alt:
+        def repl_skill_call(match: re.Match) -> str:
+            skill = match.group(1)
+            args = match.group(2)
+            return f"${skill}{(' ' + args) if args else ''}"
+
+        body = re.sub(
+            rf'Skill\(skill="({known_alt})"(?:,\s*args="([^"]*)")?\)',
+            repl_skill_call,
+            body,
+        )
+
     # /<known-skill> -> $<known-skill> for slash-COMMAND invocations only — never
     # a path segment. Longest names first (so /pre-mortem wins over /pre). Exclude
     # when preceded by a path char (word/./-/_/slash, e.g. ../research/, foo/plan)
@@ -183,6 +199,7 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
     # file paths are left intact (the bug that turned ../foo/ into ..$foo/).
     for skill in sorted(known_skills, key=len, reverse=True):
         body = re.sub(rf"(?<![\w./_-])/{re.escape(skill)}\b(?!/)", f"${skill}", body)
+    body = re.sub(r"(?<![\w./_-])/skill\b(?!/)", "$skill", body)
 
     if exempt:
         return body
@@ -193,8 +210,83 @@ def transform_body(body: str, known_skills: set[str], exempt: bool = False) -> s
     return body
 
 
+def render_operator_contract_block(name: str, operator_contract: dict | None) -> str:
+    if not operator_contract:
+        return ""
+    sections = operator_contract.get("required_sections") or []
+    markers = operator_contract.get("required_markers") or []
+    if not sections or not markers:
+        return ""
+
+    out: list[str] = [
+        "<!-- BEGIN AGENTOPS OPERATOR CONTRACT -->",
+        f"<!-- Generated from skills-codex-overrides/catalog.json for {name}. -->",
+        "",
+    ]
+    marker_index = 0
+    remaining_markers = len(markers)
+    section_count = len(sections)
+
+    for section_index, section in enumerate(sections):
+        out.extend([str(section), ""])
+        sections_left = section_count - section_index
+        if remaining_markers == 0:
+            count = 0
+        elif sections_left == 1:
+            count = remaining_markers
+        else:
+            count = remaining_markers - (sections_left - 1)
+            if count < 1:
+                count = 1
+
+        for bullet_index in range(count):
+            out.append(f"{bullet_index + 1}. {markers[marker_index]}")
+            marker_index += 1
+            remaining_markers -= 1
+
+        if section_index < section_count - 1:
+            out.append("")
+
+    out.extend(["", "<!-- END AGENTOPS OPERATOR CONTRACT -->"])
+    return "\n".join(out)
+
+
+def needs_codex_start_guard(operator_contract: dict | None) -> bool:
+    markers = (operator_contract or {}).get("required_markers") or []
+    return any("ao codex ensure-start" in str(marker) for marker in markers)
+
+
+def insert_after_h1(body: str, block: str) -> str:
+    if not block:
+        return body
+    first_newline = body.find("\n")
+    if body.startswith("# ") and first_newline != -1:
+        title = body[: first_newline + 1]
+        rest = body[first_newline + 1 :].lstrip("\n")
+        return f"{title}\n{block.rstrip()}\n\n{rest}"
+    return f"{block.rstrip()}\n\n{body}"
+
+
+def codex_start_guard_block() -> str:
+    return """## Codex Lifecycle Guard
+
+When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
+`CODEX_INTERNAL_ORIGINATOR_OVERRIDE` is `Codex Desktop`), run:
+
+```bash
+ao codex ensure-start 2>/dev/null || true
+```
+
+The CLI records startup once per thread and skips duplicates automatically."""
+
+
 def twin_skill_md(
-    name: str, description: str, source_body: str, known_skills: set[str], exempt: bool = False
+    name: str,
+    description: str,
+    source_body: str,
+    known_skills: set[str],
+    exempt: bool = False,
+    operator_contract: dict | None = None,
 ) -> bytes:
     """A self-contained Codex twin: slim (name+description) frontmatter + the
     source body transformed runtime-native. Self-contained because the Codex
@@ -203,18 +295,26 @@ def twin_skill_md(
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
     body = transform_body(source_body, known_skills, exempt)
+    if needs_codex_start_guard(operator_contract) and "ao codex ensure-start" not in body:
+        body = insert_after_h1(body, codex_start_guard_block())
     return f"---\n{front}\n---\n{body.rstrip()}\n".encode("utf-8")
 
 
-def twin_prompt_md(name: str, description: str) -> bytes:
-    return (
+def twin_prompt_md(
+    name: str, description: str, operator_contract: dict | None = None
+) -> bytes:
+    prompt = (
         f"# {name}\n\n"
         f"{description}\n\n"
         f"## Instructions\n\n"
         f"Load and follow the skill instructions from the sibling `SKILL.md` file "
         f"for this skill.\n"
         f"Then read local files in `references/` and `scripts/` when needed.\n"
-    ).encode("utf-8")
+    )
+    contract = render_operator_contract_block(name, operator_contract)
+    if contract:
+        prompt = f"{prompt.rstrip()}\n\n\n{contract}\n"
+    return prompt.encode("utf-8")
 
 
 def upsert(entries: list, name: str, entry: dict) -> bool:
@@ -259,6 +359,32 @@ def mirror_reasons(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> list[str]:
     return reasons
 
 
+def exact_mirror_source_payload(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> None:
+    """Exact-copy source sibling content into a parity twin, excluding SKILL.md
+    and twin-only bookkeeping. This keeps references/scripts/fixtures generated
+    from source and removes stale copied files when source deletes them."""
+    twin_only = {"SKILL.md", "prompt.md", marker_name, ".agentops-manifest.json", ".DS_Store"}
+    source_names = {
+        entry.name
+        for entry in src_dir.iterdir()
+        if entry.name not in {"SKILL.md", ".agentops-manifest.json", marker_name, ".DS_Store"}
+    }
+
+    for entry in sorted(twin_dir.iterdir()):
+        if entry.name in twin_only:
+            continue
+        if entry.name not in source_names:
+            shutil.rmtree(entry) if entry.is_dir() else entry.unlink()
+
+    for entry in sorted(src_dir.iterdir()):
+        if entry.name in {"SKILL.md", ".agentops-manifest.json", marker_name, ".DS_Store"}:
+            continue
+        dst_entry = twin_dir / entry.name
+        if dst_entry.exists():
+            shutil.rmtree(dst_entry) if dst_entry.is_dir() else dst_entry.unlink()
+        shutil.copytree(entry, dst_entry) if entry.is_dir() else shutil.copy2(entry, dst_entry)
+
+
 source_skills = sorted(
     p.name
     for p in source_root.iterdir()
@@ -280,22 +406,31 @@ for name in source_skills:
     prompt_md = twin_dir / "prompt.md"
     marker_path = twin_dir / marker_name
 
+    catalog_source_entry = next((e for e in overrides_skills if e.get("name") == name), {})
+    operator_contract = catalog_source_entry.get("operator_contract")
+
     fm = parse_frontmatter(source_root / name / "SKILL.md")
     description = str(fm.get("description", "")).strip()
     source_body = split_frontmatter(source_root / name / "SKILL.md")
 
     desired_skill = twin_skill_md(
-        name, description, source_body, known_skills, name in cross_runtime
+        name,
+        description,
+        source_body,
+        known_skills,
+        name in cross_runtime,
+        operator_contract,
     )
-    desired_prompt = twin_prompt_md(name, description)
+    desired_prompt = twin_prompt_md(name, description, operator_contract)
 
     # A twin is "complete" iff its body files + marker exist AND it is registered
     # in the gate-enforced 1:1 surface (skills-codex-overrides/catalog.json — the
     # surface validate-codex-override-coverage.sh holds to source skills exactly).
-    # If complete, leave it ENTIRELY untouched: never clobber an existing,
-    # possibly-richer hand-tended twin body or relabel its marker. The bloated
-    # manifest .codex_override_catalog (which also carries stale phantom entries)
-    # is downstream and is NOT a generation trigger.
+    # Complete parity twins are still checked against the generated shape below;
+    # stale generated bodies, prompts, or mirrored references are refreshed.
+    # Bespoke twins opt out via the catalog and are skipped before this point.
+    # The bloated manifest .codex_override_catalog is downstream and is NOT a
+    # generation trigger.
     in_ocat = any(e.get("name") == name for e in overrides_skills)
 
     if check_only:
@@ -320,38 +455,32 @@ for name in source_skills:
             drift.append((name, reasons))
         continue
 
-    complete = (
-        skill_md.exists()
-        and prompt_md.exists()
-        and marker_path.exists()
-        and in_ocat
-    )
-    if complete and not force:
+    regen_reasons = []
+    if not in_ocat:
+        regen_reasons.append("unregistered in catalog.json")
+    if not marker_path.exists():
+        regen_reasons.append("missing marker")
+    if not skill_md.exists() or skill_md.read_bytes() != desired_skill:
+        regen_reasons.append("SKILL.md")
+    if not prompt_md.exists() or prompt_md.read_bytes() != desired_prompt:
+        regen_reasons.append("prompt.md")
+    regen_reasons += mirror_reasons(source_root / name, twin_dir)
+
+    if not force and not regen_reasons:
         continue
 
-    # --- Author the missing twin (self-contained: body + references) ---
+    # --- Author/refresh the parity twin (self-contained: body + references) ---
     twin_dir.mkdir(parents=True, exist_ok=True)
-    if force or not skill_md.exists():
+    if force or not skill_md.exists() or skill_md.read_bytes() != desired_skill:
         skill_md.write_bytes(desired_skill)
-    if force or not prompt_md.exists():
+    if force or not prompt_md.exists() or prompt_md.read_bytes() != desired_prompt:
         prompt_md.write_bytes(desired_prompt)
 
     # Mirror ALL source content (references/, scripts/, fixtures/, templates/,
     # agents/, any sibling files) EXCEPT SKILL.md — byte-identical, so every link
     # in the body resolves and the Codex runtime artifact is fully self-contained.
-    # lint scans only SKILL.md, so copied content needs no transform. --force
-    # exact-mirrors (wipe then copy) to fully refresh a partial twin; default
-    # copies only what is missing. prompt.md/marker/manifest are twin-only and
-    # never sourced from skills/.
-    src_skill_dir = source_root / name
-    for entry in sorted(src_skill_dir.iterdir()):
-        if entry.name in ("SKILL.md", ".agentops-manifest.json", marker_name, ".DS_Store"):
-            continue
-        dst_entry = twin_dir / entry.name
-        if force and dst_entry.exists():
-            shutil.rmtree(dst_entry) if dst_entry.is_dir() else dst_entry.unlink()
-        if not dst_entry.exists():
-            shutil.copytree(entry, dst_entry) if entry.is_dir() else shutil.copy2(entry, dst_entry)
+    # lint scans only SKILL.md, so copied content needs no transform.
+    exact_mirror_source_payload(source_root / name, twin_dir)
 
     source_hash = hash_tree_with(source_root / name, {})
     generated_hash = hash_tree_with(twin_dir, {})
@@ -391,10 +520,13 @@ for name in source_skills:
         ),
     }
     # Catalog entries are ADD-ONLY: an already-registered skill keeps its existing
-    # (often hand-written) reason/wave — never clobber curated catalog metadata on
-    # a regenerate. Only the manifest hash entry (above) is replaced, since hashes
-    # must track the regenerated content.
-    if not any(e.get("name") == name for e in manifest_catalog_skills):
+    # (often hand-written) reason/wave in the authoritative
+    # skills-codex-overrides/catalog.json. The manifest embeds that catalog for
+    # the shipped runtime artifact, so mirror the authoritative entry for skills
+    # touched by this generator.
+    if catalog_source_entry:
+        upsert(manifest_catalog_skills, name, catalog_source_entry)
+    elif not any(e.get("name") == name for e in manifest_catalog_skills):
         manifest_catalog_skills.append(catalog_entry)
     if not any(e.get("name") == name for e in overrides_skills):
         overrides_skills.append(catalog_entry)

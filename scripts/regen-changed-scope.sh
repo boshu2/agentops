@@ -268,9 +268,9 @@ if $NEED_CODEX; then
     codex_arg=" --only $codex_only"
   fi
   if [[ "$MODE" == "check" ]]; then
-    add_step "codex artifact drift|bash scripts/regen-codex-hashes.sh --check$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE && bash scripts/audit-codex-parity.sh|bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE"
+    add_step "codex artifact drift|bash scripts/codex-sync.sh --check$codex_arg && bash scripts/regen-codex-hashes.sh --check$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE && bash scripts/audit-codex-parity.sh|bash scripts/codex-sync.sh$codex_arg && bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE"
   else
-    add_step "codex artifacts|bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE|"
+    add_step "codex artifacts|bash scripts/codex-sync.sh$codex_arg && bash scripts/regen-codex-hashes.sh$codex_arg && bash scripts/validate-codex-generated-artifacts.sh --scope $SCOPE|"
   fi
 fi
 

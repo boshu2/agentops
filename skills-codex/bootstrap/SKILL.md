@@ -71,7 +71,7 @@ If `HAS_GOALS` is false (or `--force` is set):
 Run the goals skill to initialize GOALS.md interactively:
 
 ```
-Skill(skill="goals", args="init")
+$goals init
 ```
 
 If `HAS_GOALS` is true and `--force` is not set: skip. Report "GOALS.md exists -- skipped."
@@ -83,7 +83,7 @@ If `HAS_PRODUCT` is false (or `--force` is set):
 Run the product skill to generate PRODUCT.md interactively:
 
 ```
-Skill(skill="product")
+$product
 ```
 
 If `HAS_PRODUCT` is true and `--force` is not set: skip. Report "PRODUCT.md exists -- skipped."
@@ -95,7 +95,7 @@ If `HAS_README` is false (or `--force` is set) AND PRODUCT.md now exists:
 Run the doc skill in README mode to generate README.md:
 
 ```
-Skill(skill="doc", args="--mode=readme")
+$doc --mode=readme
 ```
 
 If `HAS_README` is true and `--force` is not set: skip. Report "README.md exists -- skipped."

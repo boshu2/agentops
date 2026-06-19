@@ -36,7 +36,7 @@ Ten checks, run in order:
 | `DEAD_REF` | SKILL.md references a non-existent references/ file | No -- warn only |
 | `SCRIPT_REF_MISSING` | SKILL.md references a scripts/ file that does not exist | No -- warn only |
 | `INVALID_AO_CMD` | SKILL.md references an `ao` subcommand that does not exist (only runs if `ao` is on PATH) | No -- warn only |
-| `DEAD_XREF` | SKILL.md references a `/skill-name` that has no matching skill directory | No -- warn only |
+| `DEAD_XREF` | SKILL.md references a `$skill-name` that has no matching skill directory | No -- warn only |
 | `CATALOG_MISSING` | A user-invocable skill is missing from the using-agentops catalog | No -- warn only |
 
 ---

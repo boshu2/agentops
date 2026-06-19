@@ -37,6 +37,10 @@ Load relevant prior knowledge into the current session as a legacy adapter.
   for orientation, then walk the on-demand surfaces here (`ao lookup`, `ao inject`,
   `ao knowledge brief`) for the workflow tour.
 
+Codex skill orchestration default is `$skill` chaining. Terminal CLI
+commands are compatibility adapters unless a workflow explicitly names the CLI
+as the execution surface.
+
 ## How It Works
 
 In the default hookless startup path, no startup injection occurs. Run `ao session bootstrap` for the standard orientation report, then prefer `ao lookup` / `ao inject` for on-demand retrieval and bounded per-phase packets. Use `$inject` or `ao inject` only for legacy compatibility.
