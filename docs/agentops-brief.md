@@ -143,9 +143,9 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 75 shared skills  │   `ao` Control Plane │   CI-gated (hookless) │
-│ plus runtime      │ repo-native retrieval│  validate.yml is the  │
-│    artifacts      │ goals, and automation│  authoritative gate   │
+│ 75 shared skills  │   `ao` Control Plane │ local pre-push gate  │
+│ plus runtime      │ repo-native retrieval│    + CI backstop     │
+│    artifacts      │ goals, and automation│ routine release path │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
 
@@ -194,7 +194,8 @@ GOALS.md
 ### Lifecycle — Hookless Enforcement
 
 AgentOps 3.0 is hookless: nothing auto-fires at session boundaries. The lifecycle
-runs through explicit skills and `ao` commands, with CI as the authoritative gate.
+runs through explicit skills and `ao` commands, with the installed local cockpit
+pre-push gate as routine authority and CI as tag/PR/manual backstop telemetry.
 (An opt-in `hooks-authoring` skill exists if you want to add your own hooks;
 AgentOps ships none by default.)
 
@@ -207,7 +208,7 @@ Session ends           /post-mortem + ao forge     Harvest learnings
 Loop closure           ao flywheel + /retro        Close the learning loop
 Plan review            /pre-mortem                 Require review before risky work
 Code review            /vibe + ao ratchet          Block over-complex / unready edits
-PR validation          validate.yml (CI)           Execute compiled validation gates
+Backstop validation    validate.yml (CI)           Re-run compiled validation gates
 ```
 
 ### CLI Command Groups
