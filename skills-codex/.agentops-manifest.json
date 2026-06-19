@@ -1175,8 +1175,8 @@
     {
       "name": "compile",
       "source_skill": "skills/compile",
-      "source_hash": "32a978a6d61340c21ecf326c900c1062cf33af9d057613a06d4650e04c811a9c",
-      "generated_hash": "7a54599538556657de6951d74b42fbd9083a381aa1abf549778740f03fbc78ef"
+      "source_hash": "4d15cceebc9fda186ae03cb02122dc5c3d3895fd85daea76d1404edc408587b8",
+      "generated_hash": "f174693f5886b22188ab3bade7d964626f78e8b677593076e4c9452344d96718"
     },
     {
       "name": "continuity-loop",
