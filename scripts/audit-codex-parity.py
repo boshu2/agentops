@@ -248,6 +248,13 @@ def find_findings(
         return []
     skill = parts[1]
     treatment = catalog.get(skill, {}).get("treatment", "unknown")
+
+    # parity_only twins under skills-codex/ are GENERATED and verified by the
+    # codex-sync byte-exact drift gate; re-auditing generated content is the
+    # whack-a-mole this removes. Audit bespoke twins + the override layer only.
+    if parts[0] == "skills-codex" and treatment != "bespoke":
+        return []
+
     findings: list[dict] = []
 
     with skill_file.open("r", encoding="utf-8") as handle:
