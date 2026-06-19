@@ -5,9 +5,9 @@
 # Installed copy: $(git rev-parse --git-common-dir)/hooks/pre-push.local
 # Install / reinstall: scripts/install-pre-push-gate.sh
 #
-# Runs the fast cockpit smoke (`ao gate check --fast`) before every push; on
-# pushes to main/master it also runs the full race suite and pawl verdict check.
-# BLOCKS the push on failure (gate exits 1).
+# Builds a fresh `ao`, validates pushes to main/master with the full race suite,
+# then serializes the mutable gate/provenance/pawl checks. BLOCKS the push on
+# failure (gate exits 1).
 #
 # Mechanical enforcement (pre-mortem HIGH "discipline is not a mechanism"):
 # the ONLY bypass is the audited AGENTOPS_GATE_DISABLED=1, which is logged.
@@ -22,6 +22,7 @@ common=$(git rev-parse --git-common-dir 2>/dev/null)
 # check skips cleanly in that case (age-58o).
 prepush_stdin=""
 _agentops_push_lock=""
+_agentops_ao_gate=""
 if [ ! -t 0 ]; then
     prepush_stdin=$(mktemp "${TMPDIR:-/tmp}/agentops-prepush-stdin.XXXXXX" 2>/dev/null) || prepush_stdin=""
     if [ -n "$prepush_stdin" ]; then
@@ -32,8 +33,38 @@ cleanup_prepush_stdin() {
     [ -n "$prepush_stdin" ] && rm -f "$prepush_stdin" 2>/dev/null || true
     # Release the serial push lock (age-2sog) if this run acquired it.
     [ -n "$_agentops_push_lock" ] && rmdir "$_agentops_push_lock" 2>/dev/null || true
+    [ -n "$_agentops_ao_gate" ] && rm -f "$_agentops_ao_gate" 2>/dev/null || true
 }
 trap cleanup_prepush_stdin EXIT
+
+is_push_to_main() {
+    [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] || return 1
+    awk '{print $3}' "$prepush_stdin" | grep -qE '^refs/heads/(main|master)$'
+}
+
+acquire_push_lock() {
+    # Serialize only mutable push-side effects (age-2sog / push-serial.sh).
+    # Build/test work is intentionally outside this host-wide critical section:
+    # it is CPU-bound and per-process, while the lock protects shared generated
+    # surfaces and runtime ledgers that can be corrupted by concurrent writers.
+    # FAIL-CLOSED: if the lock can't be acquired within the timeout, refuse the
+    # push rather than gate unserialized. Cross-host serialization is git's own
+    # atomic non-fast-forward rejection + rebase-retry.
+    _agentops_lock_dir="${TMPDIR:-/tmp}/agentops-push.lock"
+    _agentops_lock_timeout="${AGENTOPS_PUSH_LOCK_TIMEOUT:-300}"
+    _agentops_lock_waited=0
+    while ! mkdir "$_agentops_lock_dir" 2>/dev/null; do
+        if [ "$_agentops_lock_waited" -ge "$_agentops_lock_timeout" ]; then
+            echo >&2 "✗ pre-push: timed out after ${_agentops_lock_timeout}s waiting for the serial push lock (${_agentops_lock_dir})."
+            echo >&2 "  Another local push is gating. If none is, remove the stale lock dir and retry."
+            exit 1
+        fi
+        [ "$_agentops_lock_waited" -eq 0 ] && echo >&2 "pre-push: another local push is committing gate/provenance side effects — waiting for the serial lock (age-2sog)…"
+        sleep 2
+        _agentops_lock_waited=$((_agentops_lock_waited + 2))
+    done
+    _agentops_push_lock="$_agentops_lock_dir"
+}
 
 if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
@@ -46,36 +77,17 @@ if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     exit 0
 fi
 
-# Serialize concurrent local pushes (age-2sog / push-serial.sh). Two agents
-# pushing at the same instant run the gate — and touch shared generated surfaces
-# (registry.json, runtime ledgers) + the shared race-test build — simultaneously,
-# which can corrupt them. Hold a within-host advisory lock for the gate's duration
-# (mkdir is atomic; flock is absent on macOS); cleanup_prepush_stdin releases it.
-# FAIL-CLOSED: if the lock can't be acquired within the timeout, refuse the push
-# rather than gate unserialized. (Cross-host serialization is git's own atomic
-# non-fast-forward rejection + rebase-retry; no shared lock spans hosts.)
-_agentops_lock_dir="${TMPDIR:-/tmp}/agentops-push.lock"
-_agentops_lock_timeout="${AGENTOPS_PUSH_LOCK_TIMEOUT:-300}"
-_agentops_lock_waited=0
-while ! mkdir "$_agentops_lock_dir" 2>/dev/null; do
-    if [ "$_agentops_lock_waited" -ge "$_agentops_lock_timeout" ]; then
-        echo >&2 "✗ pre-push: timed out after ${_agentops_lock_timeout}s waiting for the serial push lock (${_agentops_lock_dir})."
-        echo >&2 "  Another local push is gating. If none is, remove the stale lock dir and retry."
-        exit 1
-    fi
-    [ "$_agentops_lock_waited" -eq 0 ] && echo >&2 "pre-push: another local push is gating — waiting for the serial lock (age-2sog)…"
-    sleep 2
-    _agentops_lock_waited=$((_agentops_lock_waited + 2))
-done
-_agentops_push_lock="$_agentops_lock_dir"
-
 # --- bash gate (escape hatch) ------------------------------------------------
 # AGENTOPS_GATE_BASH=1 routes through the legacy bash gate (scripts/pre-push-gate.sh)
 # instead of the Go orchestrator. Kept during the transition; remove once the bash
 # gate is retired (ag-3n71 PB2 tail).
 if [ "${AGENTOPS_GATE_BASH:-0}" = "1" ]; then
     gate="${toplevel}/scripts/pre-push-gate.sh"
-    [ -x "$gate" ] && exec "$gate" --fast
+    if [ -x "$gate" ]; then
+        acquire_push_lock
+        "$gate" --fast
+        exit $?
+    fi
     echo >&2 "AgentOps: bash gate requested but ${gate} missing — skipping"
     exit 0
 fi
@@ -90,31 +102,24 @@ if ! ( cd "${toplevel}/cli" && go build ./... ); then
     echo >&2 "✗ go build ./... failed — fix compilation before pushing (ao gate cannot run on broken Go)"
     exit 1
 fi
-if ! ( cd "${toplevel}/cli" && go build -o /tmp/ao-gate ./cmd/ao ); then
+_agentops_ao_gate=$(mktemp "${TMPDIR:-/tmp}/ao-gate.XXXXXX" 2>/dev/null) || {
+    echo >&2 "✗ could not allocate a per-run ao gate binary"
+    exit 1
+}
+if ! ( cd "${toplevel}/cli" && go build -o "$_agentops_ao_gate" ./cmd/ao ); then
     echo >&2 "✗ could not build ao for the gate"
     exit 1
 fi
 
-# Trunk-bound provenance for commits already on origin/main (age-0tn, one-push lag).
-if [ -x "${toplevel}/scripts/post-land-provenance-emit.sh" ]; then
-    AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/post-land-provenance-emit.sh" || true
-fi
-
-# Run the gate (no longer exec'd) so the SENSOR feed can fire after a PASS.
-/tmp/ao-gate gate check --fast
-gate_status=$?
-
 # FULL-SUITE race gate on push-to-main (age-push-equals-ci-0ua.1). The gate
-# above runs `--fast` = CHANGED-scope tests only, so a latent red in an
+# below runs `--fast` = CHANGED-scope tests only, so a latent red in an
 # UNTOUCHED package is invisible — exactly how cmd/ao shipped red for 281
 # commits. Push-to-main is the SOLE routine CI authority (GHA is a tag/PR/manual
 # backstop), so it must run the WHOLE suite, not just the diff. Measured ~77s
 # for all packages (-race parallelizes; cmd/ao is the long pole). The in-loop
 # `ao gate check --fast --scope head` path is unchanged (fast iteration).
 # Emergency bypass: AGENTOPS_PREPUSH_SKIP_FULL_RACE=1 (use only with cause).
-if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
-   && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ] \
-   && awk '{print $3}' "$prepush_stdin" | grep -qE '^refs/heads/(main|master)$'; then
+if is_push_to_main && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ]; then
     # Randomized order is part of the local release membrane: the push-to-main
     # door must catch cross-package isolation leaks that a fixed seed hides.
     # The old seed-1 compromise was removed after age-cmdao proved shuffle=2 and
@@ -137,6 +142,27 @@ if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" 
     fi
 fi
 
+gate_status="${gate_status:-0}"
+
+acquire_push_lock
+
+# Trunk-bound provenance for commits already on origin/main (age-0tn, one-push lag).
+# This is opt-in inside pre-push because a pre-push hook validates a local_sha
+# Git has already selected; creating a new commit here shifts HEAD and turns
+# landing into a stale-verdict/two-push loop. Run the script after a successful
+# push, or set AGENTOPS_PROVENANCE_EMIT_POST_LAND=1 when deliberately reconciling.
+if [ "$gate_status" -eq 0 ] \
+   && [ "${AGENTOPS_PROVENANCE_EMIT_POST_LAND:-0}" = "1" ] \
+   && [ -x "${toplevel}/scripts/post-land-provenance-emit.sh" ]; then
+    AO_BIN="$_agentops_ao_gate" bash "${toplevel}/scripts/post-land-provenance-emit.sh" || true
+fi
+
+# Run the gate (no longer exec'd) so the SENSOR feed can fire after a PASS.
+if [ "$gate_status" -eq 0 ]; then
+    "$_agentops_ao_gate" gate check --fast
+    gate_status=$?
+fi
+
 # Pawl gate (age-58o): push-to-main requires CONFIRMED pawl verdict bound to
 # the landing commit. Runs only when git supplied pre-push stdin (not during
 # standalone `ao gate check`). Skip: AGENTOPS_PREPUSH_SKIP_PAWL=1.
@@ -146,12 +172,12 @@ if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" 
 fi
 
 # Pre-push emit records local OIDs that may never reach origin/main (age-0tn).
-# Trunk-bound emission is the default via post-land-provenance-emit.sh above.
+# Trunk-bound emission is explicit after landing via post-land-provenance-emit.sh.
 # Legacy pre-push feed remains opt-in via AGENTOPS_PROVENANCE_EMIT_PRE_PUSH=1.
 if [ "$gate_status" -eq 0 ] \
    && [ "${AGENTOPS_PROVENANCE_EMIT_PRE_PUSH:-0}" = "1" ] \
    && [ -x "${toplevel}/scripts/emit-landed-provenance.sh" ]; then
-    AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/emit-landed-provenance.sh" || true
+    AO_BIN="$_agentops_ao_gate" bash "${toplevel}/scripts/emit-landed-provenance.sh" || true
 fi
 
 # DETERMINISTIC-TIER SENSOR feed (age-srl): symmetric to the PASS-branch
@@ -160,6 +186,6 @@ fi
 # catch-rate (ao yield gauge) stops undercounting the deterministic tier.
 # Non-blocking and skippable; never changes gate_status.
 if [ "$gate_status" -ne 0 ] && [ -x "${toplevel}/scripts/emit-deterministic-catch.sh" ]; then
-    AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/emit-deterministic-catch.sh" || true
+    AO_BIN="$_agentops_ao_gate" bash "${toplevel}/scripts/emit-deterministic-catch.sh" || true
 fi
 exit "$gate_status"

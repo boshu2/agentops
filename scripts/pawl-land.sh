@@ -16,9 +16,10 @@
 # fresh edge for that head, which re-dirties the ledger forever). It is simply to rebind the
 # already-reviewed verdict to the current HEAD immediately before pushing.
 #
-# The verdict's ledger edge is left to post-land-provenance-emit.sh, which emits it
-# idempotently on the next push (the intended trunk-bound one-push-lag); the working-tree
-# ledger churn that leaves is handled by rebase.autoStash (age-uqj).
+# The verdict's ledger edge is left to an explicit post-land-provenance-emit.sh
+# pass after a successful push. Do not create that commit inside pre-push: Git has
+# already selected the local_sha being validated, so shifting HEAD there is the
+# stale-verdict/two-push loop this wrapper exists to avoid.
 #
 # Preconditions: the bead's code is already committed (HEAD cites the bead) and a CONFIRMED
 # pawl verdict exists at .agents/pawl-verdicts/<bead>.json (e.g. via `pawl.sh route`).
@@ -51,8 +52,9 @@ esac
 # since the review ran.
 bash "$ROOT/scripts/pawl-verdict.sh" rebind "$BEAD" "$PR" --head "$HEAD_SHA" --dir "$VDIR"
 
-# Single-shot push. The pre-push pawl gate authorises on the first try because the verdict
-# now matches the pushed head; post-land-provenance-emit handles the ledger edge afterward.
+# Single-shot push. The pre-push pawl gate authorises on the first try because
+# the verdict now matches the pushed head; run post-land-provenance-emit.sh after
+# the push when ledger reconciliation is needed.
 echo "pawl-land: pushing $BEAD (head ${HEAD_SHA:0:12})" >&2
 git -C "$ROOT" push origin HEAD:main
 echo "pawl-land: LANDED $BEAD" >&2

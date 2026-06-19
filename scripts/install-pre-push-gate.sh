@@ -35,6 +35,22 @@ install -m 0755 "$src" "$dst"
 echo "✓ installed ${dst}"
 
 hook="${hooks_dir}/pre-push"
+preamble_marker="# --- AGENTOPS PRE-PUSH STDIN SNAPSHOT (managed by install-pre-push-gate.sh) ---"
+preamble_end_marker="# --- END AGENTOPS PRE-PUSH STDIN SNAPSHOT ---"
+preamble_block="${preamble_marker}
+_agentops_pre_push_stdin=\"\"
+_agentops_cleanup_pre_push_stdin() {
+  [ -n \"\${_agentops_pre_push_stdin:-}\" ] && rm -f \"\$_agentops_pre_push_stdin\" 2>/dev/null || true
+}
+trap _agentops_cleanup_pre_push_stdin EXIT HUP INT TERM
+if [ ! -t 0 ]; then
+  _agentops_pre_push_stdin=\"\$(mktemp \"\${TMPDIR:-/tmp}/agentops-installed-prepush-stdin.XXXXXX\" 2>/dev/null)\" || _agentops_pre_push_stdin=\"\"
+  if [ -n \"\$_agentops_pre_push_stdin\" ]; then
+    cat >\"\$_agentops_pre_push_stdin\" || _agentops_pre_push_stdin=\"\"
+    [ -n \"\$_agentops_pre_push_stdin\" ] && exec < \"\$_agentops_pre_push_stdin\"
+  fi
+fi
+${preamble_end_marker}"
 marker="# --- AGENTOPS PRE-PUSH GATE (managed by install-pre-push-gate.sh) ---"
 end_marker="# --- END AGENTOPS PRE-PUSH GATE ---"
 chain_block="${marker}
@@ -51,15 +67,41 @@ if [ -n \"\$_agentops_trunk\" ] && ! printf '%s' \"\$_agentops_trunk\" | cmp -s 
   printf '%s' \"\$_agentops_trunk\" > \"\$_agentops_local\" && chmod +x \"\$_agentops_local\"
 fi
 if [ -x \"\$_agentops_local\" ]; then
-  \"\$_agentops_local\" \"\$@\" || exit \$?
+  if [ -n \"\${_agentops_pre_push_stdin:-}\" ] && [ -f \"\$_agentops_pre_push_stdin\" ]; then
+    \"\$_agentops_local\" \"\$@\" < \"\$_agentops_pre_push_stdin\" || exit \$?
+  else
+    \"\$_agentops_local\" \"\$@\" || exit \$?
+  fi
 fi
 ${end_marker}"
 
 if [[ ! -f "$hook" ]]; then
-    printf '#!/usr/bin/env sh\n%s\n' "$chain_block" > "$hook"
+    printf '#!/usr/bin/env sh\n%s\n%s\n' "$preamble_block" "$chain_block" > "$hook"
     chmod +x "$hook"
     echo "✓ created ${hook} with gate chain"
-elif grep -qF "$marker" "$hook"; then
+else
+    if grep -qF "$preamble_marker" "$hook"; then
+        HOOK="$hook" MARKER="$preamble_marker" END_MARKER="$preamble_end_marker" CHAIN_BLOCK="$preamble_block" \
+            python3 - <<'PY'
+import os, re
+hook = os.environ["HOOK"]
+text = open(hook, encoding="utf-8").read()
+pattern = re.compile(re.escape(os.environ["MARKER"]) + r".*?" + re.escape(os.environ["END_MARKER"]), re.DOTALL)
+new, n = pattern.subn(os.environ["CHAIN_BLOCK"], text, count=1)
+if n:
+    open(hook, "w", encoding="utf-8").write(new)
+PY
+    else
+        tmp="$(mktemp "${hook}.XXXXXX")"
+        {
+            head -n 1 "$hook"
+            printf '%s\n' "$preamble_block"
+            tail -n +2 "$hook"
+        } > "$tmp"
+        mv "$tmp" "$hook"
+    fi
+
+    if grep -qF "$marker" "$hook"; then
     # Replace the existing block (between markers) so a stale chainer — e.g. one
     # without the self-heal above — is refreshed on reinstall instead of a no-op.
     # Python (not awk -v: that can't take a multi-line replacement value).
@@ -73,11 +115,13 @@ new, n = pattern.subn(os.environ["CHAIN_BLOCK"], text, count=1)
 if n:
     open(hook, "w", encoding="utf-8").write(new)
 PY
+	    chmod +x "$hook"
+	    echo "✓ refreshed gate chain in ${hook} (replaced managed block)"
+    else
+        printf '\n%s\n' "$chain_block" >> "$hook"
+        echo "✓ appended gate chain to existing ${hook} (after beads section)"
+    fi
     chmod +x "$hook"
-    echo "✓ refreshed gate chain in ${hook} (replaced managed block)"
-else
-    printf '\n%s\n' "$chain_block" >> "$hook"
-    echo "✓ appended gate chain to existing ${hook} (after beads section)"
 fi
 
 # Runtime-file rebase ergonomics (age-uqj). This repo tracks runtime audit logs

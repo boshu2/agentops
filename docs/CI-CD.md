@@ -1,6 +1,6 @@
 # CI/CD Architecture
 
-AgentOps uses a local push-as-CI gate for routine direct-main work. The release authority for a normal `main` push is the installed local cockpit gate: `.git/hooks/pre-push` chains to `scripts/hooks/pre-push.local`, builds a fresh `ao`, runs `ao gate check --fast`, runs the full `go test ./... -race -shuffle=on -count=1` suite for pushes to `main`, and then checks the head-bound pawl verdict. GitHub Actions remain useful telemetry and a tag/PR/manual backstop; they are not the routine release gate for direct-main pushes.
+AgentOps uses a local push-as-CI gate for routine direct-main work. The release authority for a normal `main` push is the installed local cockpit gate: `.git/hooks/pre-push` chains to `scripts/hooks/pre-push.local`, builds a fresh `ao`, runs the full `go test ./... -race -shuffle=on -count=1` suite for pushes to `main`, then serializes the mutable `ao gate check --fast` and head-bound pawl checks. GitHub Actions remain useful telemetry and a tag/PR/manual backstop; they are not the routine release gate for direct-main pushes.
 
 Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
@@ -11,8 +11,9 @@ git push origin HEAD:main
   -> .git/hooks/pre-push
   -> scripts/hooks/pre-push.local
   -> go build ./...
-  -> ao gate check --fast
   -> go test ./... -race -shuffle=on -count=1
+  -> acquire host-local lock for mutable gate/provenance/pawl surfaces
+  -> ao gate check --fast
   -> scripts/check-pawl-pre-push.sh
   -> remote main fast-forward
 ```
