@@ -21,6 +21,7 @@ common=$(git rev-parse --git-common-dir 2>/dev/null)
 # invokes this hook. Empty when run standalone (ao gate check path) — the pawl
 # check skips cleanly in that case (age-58o).
 prepush_stdin=""
+_agentops_push_lock=""
 if [ ! -t 0 ]; then
     prepush_stdin=$(mktemp "${TMPDIR:-/tmp}/agentops-prepush-stdin.XXXXXX" 2>/dev/null) || prepush_stdin=""
     if [ -n "$prepush_stdin" ]; then
@@ -29,6 +30,8 @@ if [ ! -t 0 ]; then
 fi
 cleanup_prepush_stdin() {
     [ -n "$prepush_stdin" ] && rm -f "$prepush_stdin" 2>/dev/null || true
+    # Release the serial push lock (age-2sog) if this run acquired it.
+    [ -n "$_agentops_push_lock" ] && rmdir "$_agentops_push_lock" 2>/dev/null || true
 }
 trap cleanup_prepush_stdin EXIT
 
@@ -42,6 +45,29 @@ if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     echo >&2 "⚠ AgentOps pre-push gate BYPASSED (AGENTOPS_GATE_DISABLED=1) — logged to agentops-gate-bypass.log"
     exit 0
 fi
+
+# Serialize concurrent local pushes (age-2sog / push-serial.sh). Two agents
+# pushing at the same instant run the gate — and touch shared generated surfaces
+# (registry.json, runtime ledgers) + the shared race-test build — simultaneously,
+# which can corrupt them. Hold a within-host advisory lock for the gate's duration
+# (mkdir is atomic; flock is absent on macOS); cleanup_prepush_stdin releases it.
+# FAIL-CLOSED: if the lock can't be acquired within the timeout, refuse the push
+# rather than gate unserialized. (Cross-host serialization is git's own atomic
+# non-fast-forward rejection + rebase-retry; no shared lock spans hosts.)
+_agentops_lock_dir="${TMPDIR:-/tmp}/agentops-push.lock"
+_agentops_lock_timeout="${AGENTOPS_PUSH_LOCK_TIMEOUT:-300}"
+_agentops_lock_waited=0
+while ! mkdir "$_agentops_lock_dir" 2>/dev/null; do
+    if [ "$_agentops_lock_waited" -ge "$_agentops_lock_timeout" ]; then
+        echo >&2 "✗ pre-push: timed out after ${_agentops_lock_timeout}s waiting for the serial push lock (${_agentops_lock_dir})."
+        echo >&2 "  Another local push is gating. If none is, remove the stale lock dir and retry."
+        exit 1
+    fi
+    [ "$_agentops_lock_waited" -eq 0 ] && echo >&2 "pre-push: another local push is gating — waiting for the serial lock (age-2sog)…"
+    sleep 2
+    _agentops_lock_waited=$((_agentops_lock_waited + 2))
+done
+_agentops_push_lock="$_agentops_lock_dir"
 
 # --- bash gate (escape hatch) ------------------------------------------------
 # AGENTOPS_GATE_BASH=1 routes through the legacy bash gate (scripts/pre-push-gate.sh)
