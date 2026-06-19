@@ -1685,14 +1685,14 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "a99bb71091741bd5e0a9eec03fd28bc00973332ec42c927756e315c240e4e303",
-      "generated_hash": "348174aee27817a565d9c6b7d5112c307a6d8eecb660248f716d82b3ac5f1600"
+      "source_hash": "333f1d28dbfd593a922f16caf3d8e885aae9f510d8f35020c0603b5c883aa33b",
+      "generated_hash": "a5af0a07d56f51580d150d7a378a0742589dd3378780db7d83f7fd00dff00303"
     },
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "a99bb71091741bd5e0a9eec03fd28bc00973332ec42c927756e315c240e4e303",
-      "generated_hash": "348174aee27817a565d9c6b7d5112c307a6d8eecb660248f716d82b3ac5f1600"
+      "source_hash": "333f1d28dbfd593a922f16caf3d8e885aae9f510d8f35020c0603b5c883aa33b",
+      "generated_hash": "a5af0a07d56f51580d150d7a378a0742589dd3378780db7d83f7fd00dff00303"
     },
     {
       "name": "status",
