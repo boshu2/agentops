@@ -78,6 +78,24 @@ fi
 /tmp/ao-gate gate check --fast
 gate_status=$?
 
+# FULL-SUITE race gate on push-to-main (age-push-equals-ci-0ua.1). The gate
+# above runs `--fast` = CHANGED-scope tests only, so a latent red in an
+# UNTOUCHED package is invisible — exactly how cmd/ao shipped red for 281
+# commits. Push-to-main is the SOLE routine CI authority (GHA is a tag/PR/manual
+# backstop), so it must run the WHOLE suite, not just the diff. Measured ~77s
+# for all packages (-race parallelizes; cmd/ao is the long pole). The in-loop
+# `ao gate check --fast --scope head` path is unchanged (fast iteration).
+# Emergency bypass: AGENTOPS_PREPUSH_SKIP_FULL_RACE=1 (use only with cause).
+if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
+   && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ] \
+   && awk '{print $3}' "$prepush_stdin" | grep -qE '^refs/heads/(main|master)$'; then
+    echo "pre-push: push-to-main — running FULL race suite (go test ./... -race -shuffle=on, ~77s)" >&2
+    if ! ( cd "${toplevel}/cli" && go test ./... -race -shuffle=on -count=1 ); then
+        echo >&2 "✗ FULL race suite FAILED — a package outside the changed set is red; push refused (age-push-equals-ci-0ua.1)"
+        gate_status=1
+    fi
+fi
+
 # Pawl gate (age-58o): push-to-main requires CONFIRMED pawl verdict bound to
 # the landing commit. Runs only when git supplied pre-push stdin (not during
 # standalone `ao gate check`). Skip: AGENTOPS_PREPUSH_SKIP_PAWL=1.
