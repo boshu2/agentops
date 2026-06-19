@@ -16,7 +16,7 @@ import (
 // scenario verdict. Without this the F5 re-steer engine sees an empty ledger.
 func TestGoalsMeasure_ProducerWritesVerdictLedger(t *testing.T) {
 	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 
 	if _, err := captureStdout(t, func() error {
 		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)
@@ -60,7 +60,7 @@ func TestGoalsMeasure_ProducerWritesVerdictLedger(t *testing.T) {
 // F5.2 failure-streak detection depends on.
 func TestGoalsMeasure_ProducerAppendsAcrossRuns(t *testing.T) {
 	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 
 	for i := 0; i < 3; i++ {
 		if _, err := captureStdout(t, func() error {
@@ -92,7 +92,7 @@ func TestGoalsMeasure_ProducerAppendsAcrossRuns(t *testing.T) {
 // ledger is a side artifact only).
 func TestGoalsMeasure_ProducerDoesNotChangeStdout(t *testing.T) {
 	dir := setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 
 	out, err := captureStdout(t, func() error {
 		return goalsMeasureCmd.RunE(goalsMeasureCmd, nil)

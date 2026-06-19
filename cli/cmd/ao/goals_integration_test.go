@@ -138,6 +138,10 @@ func TestGoals_Integration_SteerAddInvalidSteer(t *testing.T) {
 
 func TestGoals_Integration_MeasureDirectivesJSON(t *testing.T) {
 	dir := chdirTemp(t)
+	// This test asserts full-mode `goals measure --directives` output; it must not
+	// inherit scenarios-only mode leaked by an earlier test under a -shuffle order.
+	// The helper guarantees the flag + auto-restores it.
+	setGoalsMeasureScenariosOnly(t, false)
 
 	// Create GOALS.md
 	_, err := captureStdout(t, func() error {
