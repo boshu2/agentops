@@ -9,6 +9,20 @@ import (
 	"testing"
 )
 
+// setGoalsMeasureScenariosOnly sets the package-global `goals measure` cobra
+// flag and auto-restores it at test end via t.Cleanup. Without this, a test that
+// sets goalsMeasureScenariosOnly=true and never resets it leaks scenarios-only
+// mode into whatever goals test the -shuffle order runs next — the latent
+// isolation flake that intermittently broke TestGoals_Integration_MeasureDirectivesJSON
+// (its `goals measure --directives` silently ran in scenarios-only mode and the
+// "Establish baseline" directive title vanished from the output).
+func setGoalsMeasureScenariosOnly(t *testing.T, v bool) {
+	t.Helper()
+	old := goalsMeasureScenariosOnly
+	goalsMeasureScenariosOnly = v
+	t.Cleanup(func() { goalsMeasureScenariosOnly = old })
+}
+
 // goalsMDWithNoScenarios is a GOALS.md where both directives have no linked
 // scenarios — every directive should yield unknown verdict.
 const goalsMDWithNoScenarios = "# Goals\n\n" +
@@ -27,7 +41,7 @@ func TestGoalsMeasure_JSONStdoutCarriesNoHumanWarnings(t *testing.T) {
 	// into the JSON stdout stream. This test verifies that the raw bytes written
 	// to stdout parse as valid JSON with no preamble or trailing prose.
 	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, false) // no artifact → unknown
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 	oldOutput := output
 	t.Cleanup(func() { output = oldOutput })
 	output = "json"
@@ -61,7 +75,7 @@ func TestGoalsMeasure_ZeroLinkedScenariosYieldsUnknownWithWarning(t *testing.T) 
 	// A directive that links no scenarios must yield verdict "unknown" and carry
 	// a non-empty warning field in the JSON report (zero-linked warning).
 	setupMeasureScenarioProject(t, goalsMDWithNoScenarios, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 	oldOutput := output
 	t.Cleanup(func() { output = oldOutput })
 	output = "json"
@@ -97,7 +111,7 @@ func TestGoalsMeasure_ScenariosOnlyJSONModeField(t *testing.T) {
 	// when --scenarios-only is active. This is a contract that downstream
 	// consumers (CI parsers, dashboard collectors) depend on.
 	setupMeasureScenarioProject(t, goalsMDWithScenarioGate, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 	oldOutput := output
 	t.Cleanup(func() { output = oldOutput })
 	output = "json"
@@ -145,7 +159,7 @@ func TestGoalsMeasure_ContributingIsEmptySliceNotNil(t *testing.T) {
 	// when no scenarios contribute. JSON null for a list field breaks consumers
 	// that iterate over it without a nil check.
 	setupMeasureScenarioProject(t, goalsMDWithNoScenarios, true)
-	goalsMeasureScenariosOnly = true
+	setGoalsMeasureScenariosOnly(t, true)
 	oldOutput := output
 	t.Cleanup(func() { output = oldOutput })
 	output = "json"
