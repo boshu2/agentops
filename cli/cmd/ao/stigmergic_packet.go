@@ -86,7 +86,7 @@ func assembleStigmergicPacket(cwd string, target StigmergicTarget) (StigmergicPa
 }
 
 func loadVisibleNextWorkEntries(cwd, repoFilter string) ([]nextWorkEntry, error) {
-	entries, err := readQueueEntries(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"))
+	entries, err := cliRPI.ReadQueueEntries(filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl"))
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func loadVisibleNextWorkEntries(cwd, repoFilter string) ([]nextWorkEntry, error)
 		entryVisible := entry
 		entryVisible.Items = nil
 		for _, item := range entry.Items {
-			if !isQueueItemSelectable(item) {
+			if !cliRPI.IsQueueItemSelectable(item) {
 				continue
 			}
 			if repoFilter != "" && item.TargetRepo != "" && item.TargetRepo != "*" && item.TargetRepo != repoFilter {
@@ -137,7 +137,7 @@ func loadStigmergicScorecard(cwd string) (stigmergicScorecard, error) {
 		scorecard.QueueEntries++
 		scorecard.UnconsumedBatches++
 		for _, item := range entry.Items {
-			if !isQueueItemSelectable(item) {
+			if !cliRPI.IsQueueItemSelectable(item) {
 				continue
 			}
 			scorecard.UnconsumedItems++
@@ -207,7 +207,7 @@ func rankPriorFindings(cwd string, target StigmergicTarget) ([]nextWorkItem, err
 	candidates := make([]stigmergicQueueCandidate, 0)
 	for _, entry := range entries {
 		for _, item := range entry.Items {
-			affinity := repoAffinityRank(item, target.Repo)
+			affinity := cliRPI.RepoAffinityRank(item, target.Repo)
 			score := scoreQueueCandidate(item, needles, target, affinity)
 			if score <= 0 {
 				continue
@@ -215,10 +215,10 @@ func rankPriorFindings(cwd string, target StigmergicTarget) ([]nextWorkItem, err
 			candidates = append(candidates, stigmergicQueueCandidate{
 				item:      item,
 				score:     score,
-				severity:  severityRank(item.Severity),
+				severity:  cliRPI.SeverityRank(item.Severity),
 				affinity:  affinity,
-				freshness: freshnessRank(item),
-				typeRank:  workTypeRank(item),
+				freshness: cliRPI.FreshnessRank(item),
+				typeRank:  cliRPI.WorkTypeRank(item),
 			})
 		}
 	}
@@ -287,7 +287,7 @@ func scoreQueueCandidate(item nextWorkItem, needles []string, target StigmergicT
 	}, " "), needles)
 	score += changedFileOverlapScore(target.Files, item.Title, item.Description, item.Evidence)
 	score += affinity * 3
-	score += severityRank(item.Severity)
+	score += cliRPI.SeverityRank(item.Severity)
 	if target.IssueType != "" && strings.EqualFold(strings.TrimSpace(item.Type), target.IssueType) {
 		score += 2
 	}

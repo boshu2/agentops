@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // sessionSearchFn is the type for pluggable session search functions.
@@ -190,8 +192,8 @@ func scoreNextWorkForRuntime(ctx runtimeRelevanceContext, item nextWorkItem) int
 	score := trustTierWeight("next-work") +
 		phaseFitWeight("next-work", ctx.phase) +
 		lexicalSignalWeight(ctx.needles, item.Title, item.Description, item.Evidence, item.Source)
-	score += repoAffinityRank(item, ctx.repo) * 4
-	score += severityRank(item.Severity)
+	score += cliRPI.RepoAffinityRank(item, ctx.repo) * 4
+	score += cliRPI.SeverityRank(item.Severity)
 	if strings.EqualFold(strings.TrimSpace(item.ClaimStatus), "available") {
 		score++
 	}

@@ -279,7 +279,7 @@ func collectContextExplainNextWorkProofSuppressions(cwd string) []contextExplain
 		if line == "" {
 			continue
 		}
-		entry, err := parseNextWorkEntryLine(line)
+		entry, err := cliRPI.ParseNextWorkEntryLine(line)
 		if err != nil {
 			continue
 		}
