@@ -12,8 +12,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -263,3 +265,120 @@ func writeBootstrapLearning(t *testing.T, path, title, maturity, severity, utili
 
 // (equalStringSlices and mustWriteFile live in this package already —
 // agents_doctor_test.go and knowledge_files_test.go respectively.)
+
+func TestSessionBootstrapGateHookStatus_UnavailableOutsideRepo(t *testing.T) {
+	if got := sessionBootstrapGateHookStatus(""); got != "unavailable" {
+		t.Fatalf("empty cwd: want unavailable, got %q", got)
+	}
+	if got := sessionBootstrapGateHookStatus(t.TempDir()); got != "unavailable" {
+		t.Fatalf("temp dir: want unavailable, got %q", got)
+	}
+}
+
+func TestFileContainsSubstring(t *testing.T) {
+	dir := t.TempDir()
+	f := filepath.Join(dir, "hook")
+	if err := os.WriteFile(f, []byte("chain pre-push.local here\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !fileContainsSubstring(f, "pre-push.local") {
+		t.Fatal("want true for present substring")
+	}
+	if fileContainsSubstring(f, "absent-token") {
+		t.Fatal("want false for absent substring")
+	}
+	if fileContainsSubstring(filepath.Join(dir, "nope"), "x") {
+		t.Fatal("want false for missing file")
+	}
+}
+
+func TestSessionBootstrapIsAgentopsRepo(t *testing.T) {
+	dir := t.TempDir()
+	if sessionBootstrapIsAgentopsRepo(dir) {
+		t.Fatal("empty dir: want false")
+	}
+	cliDir := filepath.Join(dir, "cli")
+	if err := os.MkdirAll(cliDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cliDir, "go.mod"), []byte("module github.com/boshu2/agentops/cli\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !sessionBootstrapIsAgentopsRepo(dir) {
+		t.Fatal("agentops go.mod: want true")
+	}
+	if err := os.WriteFile(filepath.Join(cliDir, "go.mod"), []byte("module github.com/someone/else\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if sessionBootstrapIsAgentopsRepo(dir) {
+		t.Fatal("foreign go.mod: want false")
+	}
+}
+
+// Security regression: gate-hook status is DETECT-ONLY. Even a hostile repo
+// that SPOOFS the agentops cli/go.mod identity must never get its installer
+// executed (the cross-family refute that drove the detect-only redesign).
+func TestSessionBootstrapGateHookStatus_NeverExecutesInstaller(t *testing.T) {
+	dir := t.TempDir()
+	if out, err := exec.Command("git", "-C", dir, "init").CombinedOutput(); err != nil {
+		t.Skipf("git init unavailable: %v %s", err, out)
+	}
+	scripts := filepath.Join(dir, "scripts")
+	cliDir := filepath.Join(dir, "cli")
+	if err := os.MkdirAll(scripts, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(cliDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// SPOOF the identity: a hostile tree claims to be the agentops repo.
+	if err := os.WriteFile(filepath.Join(cliDir, "go.mod"), []byte("module github.com/boshu2/agentops/cli\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(dir, "EXECUTED")
+	installer := filepath.Join(scripts, "install-pre-push-gate.sh")
+	if err := os.WriteFile(installer, []byte("#!/usr/bin/env bash\ntouch '"+sentinel+"'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Spoofed identity -> status assesses the (markerless) hook as "inactive",
+	// but the installer must NEVER run.
+	if got := sessionBootstrapGateHookStatus(dir); got != "inactive" {
+		t.Fatalf("spoofed agentops repo, unwired hook: want inactive, got %q", got)
+	}
+	if fileExists(sentinel) {
+		t.Fatal("SECURITY: gate-hook status executed a working-tree installer script")
+	}
+}
+
+// Regression for the cross-family DoS refute: a FIFO (or any non-regular path)
+// must be skipped WITHOUT hanging, so a hostile repo cannot stall bootstrap.
+func TestReadRegularFileCapped_SkipsNonRegularNoHang(t *testing.T) {
+	dir := t.TempDir()
+	if _, ok := readRegularFileCapped(dir, 1<<10); ok {
+		t.Fatal("directory: want skip (false)")
+	}
+	reg := filepath.Join(dir, "f")
+	if err := os.WriteFile(reg, []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if data, ok := readRegularFileCapped(reg, 1<<10); !ok || string(data) != "hello" {
+		t.Fatalf("regular file: ok=%v data=%q", ok, data)
+	}
+	fifo := filepath.Join(dir, "pipe")
+	if err := syscall.Mkfifo(fifo, 0o644); err != nil {
+		t.Skipf("mkfifo unavailable: %v", err)
+	}
+	done := make(chan bool, 1)
+	go func() {
+		_, ok := readRegularFileCapped(fifo, 1<<10)
+		done <- ok
+	}()
+	select {
+	case ok := <-done:
+		if ok {
+			t.Fatal("FIFO: want skip (false)")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("DoS: readRegularFileCapped hung on a FIFO")
+	}
+}

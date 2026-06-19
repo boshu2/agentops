@@ -17,9 +17,15 @@
     "bootstrap_memory_budget_tokens",
     "bootstrap_memory_used_tokens",
     "bootstrap_memory_omitted_count",
-    "bootstrap_memory_over_budget"
+    "bootstrap_memory_over_budget",
+    "gate_hook"
   ],
   "properties": {
+    "gate_hook": {
+      "type": "string",
+      "enum": ["active", "inactive", "unavailable"],
+      "description": "Pre-push gate detection (detect-only; bootstrap never executes the installer): active (gate wired), inactive (agentops repo but gate missing — a warn nudges `bash scripts/install-pre-push-gate.sh`), or unavailable (not the agentops repo, or git absent)."
+    },
     "agents_md_read": {
       "type": "boolean",
       "description": "True when AGENTS.md is present and readable at the repo root."
