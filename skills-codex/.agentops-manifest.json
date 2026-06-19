@@ -1067,8 +1067,8 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "0ade04463b70c863d563ef274887030aa300f80a5ba6c90e27b37c40b12b6594",
-      "generated_hash": "e07b7fef453fcbe13eeb079cf8970253b18d74369bf8d1d491e716130b673c32"
+      "source_hash": "b52c7b0c18d4b582b2fdb67477361190face2d5a6870a30c59d66133bdea19f8",
+      "generated_hash": "0476ab9ab8b0be3d5fa04f002ef358fbe9a1d3b85beff2406223f5cf97245f1e"
     },
     {
       "name": "agy-headless-evidence",

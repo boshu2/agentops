@@ -93,7 +93,7 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 
 - [references/managed-agents-runtime.md](references/managed-agents-runtime.md) — Claude runtime recipe (Managed Agents + Agent SDK + self-hosted sandbox)
 - [references/codex-ntm-runtime.md](references/codex-ntm-runtime.md) — Codex/NTM runtime recipe (tmux pane swarms + agent-mail + direct `ao`)
-- [standards](../standards/SKILL.md) — the checklists the agent loads + CI enforces
+- [standards](../standards/SKILL.md) — the checklists the agent loads and deterministic gates enforce
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
 - [eval-outcomes](../eval-outcomes/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
 - [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `$rpi` skill loops (`ao agent bundle` produces the definition a managed-agents substrate runs)

@@ -519,7 +519,7 @@ build_cadence_recommendations() {
       "cadence": "per-push",
       "cron": null,
       "job_type": null,
-      "description": "CI validation before push to main",
+      "description": "Local cockpit validation before push to main",
       "skills": []
     },
     {
