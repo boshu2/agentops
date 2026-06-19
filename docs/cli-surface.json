@@ -1270,6 +1270,13 @@
     },
     {
       "category": "public-tested",
+      "command": "plan-pawl decide",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "pool auto-promote",
       "coverage_status": "allowlisted",
       "kind": "leaf",

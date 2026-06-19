@@ -4171,6 +4171,39 @@ ao next-work materialize [flags]
 
 ---
 
+### `ao plan-pawl`
+
+The plan-pawl is the multi-model pawl applied to a discovery PLAN artifact
+
+```
+ao plan-pawl [command]
+```
+
+**Subcommands:**
+
+#### `ao plan-pawl decide`
+
+Apply the deterministic quorum/round/breaker rules to one round of judge
+
+```
+ao plan-pawl decide [flags]
+```
+
+**Flags:**
+
+```
+      --dir string            directory of judge verdict *.json files
+  -h, --help                  help for decide
+      --json                  emit the decision as JSON
+      --judgment-flag         a reviewer raised an explicit value/irreversibility judgment (hard breaker)
+      --max-rounds int        max rounds before the max-attempts breaker trips (<=0 = unbounded) (default 3)
+      --oscillation           the same failure has repeated (hard breaker)
+      --round int             current round (1-based) (default 1)
+      --verdict stringArray   judge verdict: family:disposition[:warnclass] (repeatable)
+```
+
+---
+
 ### `ao provenance`
 
 Append-only write model for the SDLC provenance/intent graph

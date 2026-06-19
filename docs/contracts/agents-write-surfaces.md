@@ -40,6 +40,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `daemon` | persistent | cli | durable-ledger | Legacy ledger, queue/job projection, and activation state written by the load-bearing legacy RPI lane (the standalone daemon surface itself was retired in 3.0) |
 | `decisions` | persistent | operators, skills | decision-record | Durable decision records and review artifacts not owned by a single active skill |
 | `defrag` | rolling | cli, scripts | maintenance-run-state | Defrag run state and dry-run reports |
+| `duel` | rolling | cli, skills | plan-pawl-duel-state | Plan-pawl duel per-round judge verdicts read by `ao plan-pawl decide` (`--dir`); written by the duel skill (dual-pane-atm) |
 | `evals` | persistent | cli, scripts | eval-evidence | Eval run outputs, promoted baselines, and suite execution state |
 | `findings` | persistent | scripts, skills | promotion-inbox | Mined findings awaiting promotion |
 | `git` | persistent | cli | git-cache | Git-derived state cached for the runtime |
@@ -119,6 +120,7 @@ constraints
 context
 daemon
 defrag
+duel
 evals
 findings
 git
