@@ -227,6 +227,19 @@ func captureJSONStdout(t *testing.T, fn func()) string {
 func resetCommandState(t *testing.T) {
 	t.Helper()
 
+	// Reset any leaked cobra out/err writers to the default (nil → os.Stdout/Stderr).
+	// An earlier test's unrestored SetOut leaves a command's writer pointing at a
+	// dead buffer; cmd.OutOrStdout() parent-walks to it and silently swallows output
+	// captured via os.Stdout — the TestGoals_Integration_MeasureDirectivesJSON
+	// shuffle-order flake (age-2vzb). Writers have no meaningful saved state: nil is
+	// always the correct baseline, so clean (don't save/restore) them here.
+	rootCmd.SetOut(nil)
+	rootCmd.SetErr(nil)
+	goalsCmd.SetOut(nil)
+	goalsCmd.SetErr(nil)
+	goalsMeasureCmd.SetOut(nil)
+	goalsMeasureCmd.SetErr(nil)
+
 	// Save originals.
 	origDryRun := dryRun
 	origVerbose := verbose
