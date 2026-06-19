@@ -24,6 +24,19 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 | **schema / contract change** | Changing an interface, schema, or contract other code/agents depend on; regenerating a factory surface; repointing a contract test or canary | Downstream consumers break silently — "looks fine here" ≠ fine for them | [`scope`](../../skills/scope/SKILL.md) (frozen dirs) · contract-canary gates |
 | **credential / authority change** | Granting access, rotating or overwriting a credential, changing permissions or who-can-do-what | A granted/leaked credential or authority can't be cleanly un-granted; trust changes propagate | [`dcg`](../../skills/dcg/SKILL.md) · `claude-acct` fail-closed verify |
 | **spend** | Actions that cost real money or burn quota at scale: paid API runs, large agent fan-outs, deploys that bill | Money/quota is spent; you can't un-spend it | *(partial: fan-out consent)* |
+| **plan-pawl** *(`multi-model`)* | Committing a **fanout-class / irreversible discovery plan** — an architecture fork, a one-way-door decision, a contract/coordination change — *before* the fan-out builds on it | Once N agents (or one expensive wave) build on the wrong plan SHAPE, the direction is costly-to-impossible to reverse; the plan is the architecture, and the architecture is the one-way door | the SAME enforcement as every pawl — the [`multi-model` diversity mode](#diversity-mode--per-pawl-fresh-context-by-default) (fresh-context floor **plus** ≥2 families) + [REFUTED→auto-redo loop + circuit-breaker](#escalation--the-circuit-breaker-model) **verbatim**, written through `schemas/pawl-verdict.v1.schema.json`. Invoked by the [`discovery`](../../skills/discovery/SKILL.md) skill's plan-pawl **duel** over the plan artifact (the consumer-side wiring is delivered by epic `age-plan-pawl-9yib`) |
+
+> **Scope note (plan-pawl).** The plan-pawl gates the plan's **SHAPE**, never behavior — it is the
+> [`multi-model`](#diversity-mode--per-pawl-fresh-context-by-default) mode applied to the discovery
+> *plan artifact* instead of a code diff (recombination + naming, not a new engine). It **never**
+> replaces the acceptance-test layer: a clean cross-family plan review still misses defects only a
+> running test catches (the 2026-06-12 auth-bypass learning). It is **risk-class-gated** — ON for
+> fanout/irreversible discovery, OFF for cheap reversible MVP vertical slices (gating those is the
+> waterfall this file forbids). By design it **subsumes** the discovery skill's two redundant
+> cross-family-review gates (the single-judge fanout approval + the pre-mortem council) into one gate
+> — that consumer-side fusion is wired into the discovery skill by epic `age-plan-pawl-9yib` (this
+> contract row defines the pawl + its governance; it does not itself edit the discovery skill). The escalation governor (auto-redo on REFUTED;
+> human only on a tripped circuit breaker) is the [circuit-breaker model](#escalation--the-circuit-breaker-model) above, unchanged.
 
 ## The blast-radius rule (the list is examples, not the boundary)
 
