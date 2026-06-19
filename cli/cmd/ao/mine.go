@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 var (
@@ -253,10 +254,10 @@ func printMineSummary(w io.Writer, r *MineReport) {
 
 // mineEvents scans RPI C2 event streams for patterns. This helper stays
 // in cmd/ao because it depends on cmd/ao-internal helpers
-// (scanRegistryRuns, loadRPIC2Events, RPIC2Event). It is wired into
-// mine.Run via RunOpts.MineEventsFn.
+// (loadRPIC2Events, RPIC2Event); run discovery comes from internal/rpi
+// (cliRPI.ScanRegistryRuns). It is wired into mine.Run via RunOpts.MineEventsFn.
 func mineEvents(cwd string, window time.Duration) (*EventsFindings, error) {
-	runs := scanRegistryRuns(cwd)
+	runs := cliRPI.ScanRegistryRuns(cwd)
 	if len(runs) == 0 {
 		return &EventsFindings{}, nil
 	}
