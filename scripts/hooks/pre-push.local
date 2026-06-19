@@ -89,8 +89,13 @@ gate_status=$?
 if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
    && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ] \
    && awk '{print $3}' "$prepush_stdin" | grep -qE '^refs/heads/(main|master)$'; then
-    echo "pre-push: push-to-main — running FULL race suite (go test ./... -race -shuffle=on, ~77s)" >&2
-    if ! ( cd "${toplevel}/cli" && go test ./... -race -shuffle=on -count=1 ); then
+    # Fixed seed, not -shuffle=on: a DETERMINISTIC gate. A flaky gate gets
+    # bypassed, and a random order that trips a latent isolation bug can leave
+    # the dev's repo corrupted (e.g. age-push-equals-ci-0ua's open core.bare
+    # pollution at shuffle=2). Multi-order coverage is nightly CI's job; restore
+    # -shuffle=on here once the trunk is fully shuffle-clean.
+    echo "pre-push: push-to-main — running FULL race suite (go test ./... -race -shuffle=1, ~77s)" >&2
+    if ! ( cd "${toplevel}/cli" && go test ./... -race -shuffle=1 -count=1 ); then
         echo >&2 "✗ FULL race suite FAILED — a package outside the changed set is red; push refused (age-push-equals-ci-0ua.1)"
         gate_status=1
     fi

@@ -103,6 +103,7 @@ type SessionBootstrapStatus struct {
 	BootstrapMemoryUsedTokens   int                          `json:"bootstrap_memory_used_tokens"`
 	BootstrapMemoryOmittedCount int                          `json:"bootstrap_memory_omitted_count"`
 	BootstrapMemoryOverBudget   bool                         `json:"bootstrap_memory_over_budget"`
+	GateHook                    string                       `json:"gate_hook"`
 }
 
 // SessionBootstrapMemoryItem is a compact canon-gated T2 memory entry surfaced
@@ -191,7 +192,88 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 	status.BootstrapMemoryOmittedCount = omitted
 	status.BootstrapMemoryOverBudget = omitted > 0
 
+	status.GateHook = sessionBootstrapGateHookStatus(cwd)
+
 	return status
+}
+
+// sessionBootstrapGateHookStatus DETECTS whether the pre-push gate (the
+// push-as-CI release authority, wired into the untracked .git/hooks/ by
+// scripts/install-pre-push-gate.sh) is armed, so a fresh clone can't be
+// silently gate-less. It is DETECT-ONLY and never executes anything: auto-
+// running a working-tree script from bootstrap was refuted by cross-family
+// review as an arbitrary-code-execution vector — any tree-based "is this the
+// agentops repo" identity (go.mod, markers) is spoofable by a hostile checkout
+// the agent might `cd` into. Arming is done by the explicit setup/install step;
+// bootstrap's job is to make absence LOUD (the warn in printBootstrapSummary).
+// Returns "active" (gate wired) | "inactive" (agentops repo, gate missing) |
+// "unavailable" (not the repo, or git absent). (age-push-equals-ci-0ua.3)
+func sessionBootstrapGateHookStatus(cwd string) string {
+	if cwd == "" {
+		return "unavailable"
+	}
+	root := strings.TrimSpace(sessionBootstrapGitOut(cwd, "rev-parse", "--show-toplevel"))
+	if root == "" {
+		return "unavailable"
+	}
+	// Only ASSESS in the agentops repo (no spurious "inactive" warnings
+	// elsewhere). Spoofing this is harmless — nothing is ever executed.
+	if !sessionBootstrapIsAgentopsRepo(root) {
+		return "unavailable"
+	}
+	hookPath := strings.TrimSpace(sessionBootstrapGitOut(cwd, "rev-parse", "--git-path", "hooks/pre-push"))
+	if hookPath != "" && !filepath.IsAbs(hookPath) {
+		hookPath = filepath.Join(root, hookPath)
+	}
+	// The installer writes this specific marker only when it wires the gate.
+	if hookPath != "" && fileContainsSubstring(hookPath, "AGENTOPS PRE-PUSH GATE") {
+		return "active"
+	}
+	return "inactive"
+}
+
+// sessionBootstrapIsAgentopsRepo confirms root is THE agentops checkout, used
+// only to scope the gate-hook ASSESSMENT (never to gate execution — nothing is
+// executed). Spoofable by a hostile tree, but harmless here by construction.
+func sessionBootstrapIsAgentopsRepo(root string) bool {
+	data, ok := readRegularFileCapped(filepath.Join(root, "cli", "go.mod"), 1<<16)
+	return ok && strings.Contains(string(data), "module github.com/boshu2/agentops/cli")
+}
+
+// sessionBootstrapGitOut runs `git -C dir <args...>` and returns stdout (empty on error).
+func sessionBootstrapGitOut(dir string, args ...string) string {
+	out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
+// readRegularFileCapped reads up to maxBytes of a REGULAR file. Non-regular
+// paths (FIFO/device/socket/symlink/dir) are skipped WITHOUT opening, so a
+// hostile repo cannot hang bootstrap by planting a FIFO at a path we read
+// (cross-family DoS refute); the byte cap bounds a giant-file read.
+func readRegularFileCapped(path string, maxBytes int64) ([]byte, bool) {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, false
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, false
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, maxBytes))
+	if err != nil {
+		return nil, false
+	}
+	return data, true
+}
+
+// fileContainsSubstring reports whether the regular file at path contains substr.
+func fileContainsSubstring(path, substr string) bool {
+	data, ok := readRegularFileCapped(path, 1<<20)
+	return ok && strings.Contains(string(data), substr)
 }
 
 type sessionBootstrapMemoryCandidate struct {
@@ -418,9 +500,16 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 		fmt.Sprintf("onboard=%s", s.OnboardPhase),
 		fmt.Sprintf("ready=%s", ready),
 		fmt.Sprintf("mail=%s", mail),
+		fmt.Sprintf("gate=%s", s.GateHook),
 	}
 	if _, err := fmt.Fprintf(cmd.OutOrStdout(), "session bootstrap: %s\n", strings.Join(parts, " ")); err != nil {
 		return err
+	}
+	if s.GateHook == "inactive" {
+		if _, err := fmt.Fprintln(cmd.ErrOrStderr(),
+			"warn: pre-push gate not installed — run `bash scripts/install-pre-push-gate.sh` to arm the push-as-CI release authority (otherwise a push bypasses the gate)"); err != nil {
+			return err
+		}
 	}
 	if len(s.BootstrapMemory) > 0 {
 		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "bootstrap memory: %d item(s), %d/%d tokens\n",
