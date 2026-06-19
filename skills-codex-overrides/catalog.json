@@ -68,7 +68,16 @@
       "name": "autodev",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands."
+      "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands.",
+      "operator_contract": {
+        "required_sections": [
+          "## Codex Execution Profile",
+          "## Guardrails"
+        ],
+        "required_markers": [
+          "Do not shell out to a retired CLI wrapper as the Codex default; invoke `$evolve` or `$rpi` for skill handoff."
+        ]
+      }
     },
     {
       "name": "automation-shape-routing",
@@ -182,7 +191,17 @@
       "name": "discovery",
       "treatment": "parity_only",
       "wave": "backbone",
-      "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
+      "reason": "Discovery delegates to sub-skills; Codex hookless startup and phase-chaining guardrails are catalog-declared while the body stays source-generated.",
+      "operator_contract": {
+        "required_sections": [
+          "## Codex Execution Profile",
+          "## Guardrails"
+        ],
+        "required_markers": [
+          "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
+          "Delegate to `$research`, `$plan`, and `$pre-mortem` as separate skill invocations after internal brainstorm/design modes."
+        ]
+      }
     },
     {
       "name": "doc",

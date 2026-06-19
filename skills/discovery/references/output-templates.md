@@ -7,6 +7,8 @@ Write the current packet to:
 - `.agents/rpi/execution-packet.json` as the latest alias
 - `.agents/rpi/runs/<run-id>/execution-packet.json` as the per-run archive when `run_id` exists
 
+When no `epic_id` exists, this execution packet becomes the file-backed discovery-to-implementation handoff; the next phase invokes `/crank .agents/rpi/execution-packet.json` instead of inventing an epic.
+
 ```json
 {
   "schema_version": 1,

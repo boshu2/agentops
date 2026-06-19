@@ -70,9 +70,7 @@ skills (skill-prune phase 2). Fire `/discovery` for their use-cases:
 
 ## Strict Delegation Contract (default)
 
-Discovery delegates to `brainstorm` (conditional), `design` (conditional),
-`/research`, `/plan`, and `/pre-mortem` via declared skill invocations.
-Strict delegation is the **default**.
+Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `/research`, `/plan`, and `/pre-mortem` as **separate skill invocations**. Strict delegation is the **default**.
 
 **Anti-pattern to reject:** inlining `/research` work (grep + read + synthesize), collapsing `/plan` into an inline decomposition, skipping `/pre-mortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Pre-Mortem Anti-Rationalization Clause** (what does NOT count as a pre-mortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
 

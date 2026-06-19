@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "35243a5b0c82abbf120b30cab6eab0ac7986fca7c6fcc2ff6cd49cd4eb3509a5",
+  "codex_override_catalog_hash": "bdbf6a46ce50b036c8f421fd672805a089ffbf52ebb30159223417eb1dcc5afe",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -43,7 +43,16 @@
         "name": "autodev",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands."
+        "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands.",
+        "operator_contract": {
+          "required_sections": [
+            "## Codex Execution Profile",
+            "## Guardrails"
+          ],
+          "required_markers": [
+            "Do not shell out to a retired CLI wrapper as the Codex default; invoke `$evolve` or `$rpi` for skill handoff."
+          ]
+        }
       },
       {
         "name": "beads",
@@ -79,7 +88,17 @@
         "name": "discovery",
         "treatment": "parity_only",
         "wave": "backbone",
-        "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
+        "reason": "Discovery delegates to sub-skills; Codex hookless startup and phase-chaining guardrails are catalog-declared while the body stays source-generated.",
+        "operator_contract": {
+          "required_sections": [
+            "## Codex Execution Profile",
+            "## Guardrails"
+          ],
+          "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
+            "Delegate to `$research`, `$plan`, and `$pre-mortem` as separate skill invocations after internal brainstorm/design modes."
+          ]
+        }
       },
       {
         "name": "doc",
@@ -1066,14 +1085,14 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "55adc66de37c3e02a4fa2fe4e483dbaf7e8608fc22a99db51493644731467f51",
-      "generated_hash": "1669ffbc081189323b3aa2e6bddef0ffa4501f0b3ea4463c06bd14d820411739"
+      "source_hash": "1dcf82d0953a6be3e96911141902dd4ac0f3a5dc172f10b36243ed859eb31293",
+      "generated_hash": "64edb3c0a01271e14164189b36803b1b73abbde879559738edba8b7680ca2b80"
     },
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "55adc66de37c3e02a4fa2fe4e483dbaf7e8608fc22a99db51493644731467f51",
-      "generated_hash": "1669ffbc081189323b3aa2e6bddef0ffa4501f0b3ea4463c06bd14d820411739"
+      "source_hash": "1dcf82d0953a6be3e96911141902dd4ac0f3a5dc172f10b36243ed859eb31293",
+      "generated_hash": "64edb3c0a01271e14164189b36803b1b73abbde879559738edba8b7680ca2b80"
     },
     {
       "name": "automation-shape-routing",
@@ -1115,13 +1134,13 @@
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "28bded4cdee9da68150b4c9c37bc4845bb9d34e46d4302d09bc2c1438311a545",
-      "generated_hash": "aafa03b9ee9d4b160ae807fc261a270ecd9262b2b102ffb380bf42d0ca068315"
+      "generated_hash": "1b987a894945c6721cf298ef8c3980e15f854bab913fe948cf18d3c88f4db03e"
     },
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "28bded4cdee9da68150b4c9c37bc4845bb9d34e46d4302d09bc2c1438311a545",
-      "generated_hash": "aafa03b9ee9d4b160ae807fc261a270ecd9262b2b102ffb380bf42d0ca068315"
+      "generated_hash": "1b987a894945c6721cf298ef8c3980e15f854bab913fe948cf18d3c88f4db03e"
     },
     {
       "name": "cass",
@@ -1228,14 +1247,14 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "cc23599c268633b8b9742ea40278066041c67170f8c6634f9fd2d007dd63a933",
-      "generated_hash": "a25b278b3f8c394e2f9cb8d75848c4618e128863daaaea9fb1617a781e176c7f"
+      "source_hash": "b0b0e868a09082541fc4ffe954f739e90ed97625fec977a4f01c0ecd8f4be06d",
+      "generated_hash": "010450b0352300454431009ea05fbb3a306436c2e5fd4e79bf8e56bb5392edf9"
     },
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "cc23599c268633b8b9742ea40278066041c67170f8c6634f9fd2d007dd63a933",
-      "generated_hash": "a25b278b3f8c394e2f9cb8d75848c4618e128863daaaea9fb1617a781e176c7f"
+      "source_hash": "b0b0e868a09082541fc4ffe954f739e90ed97625fec977a4f01c0ecd8f4be06d",
+      "generated_hash": "010450b0352300454431009ea05fbb3a306436c2e5fd4e79bf8e56bb5392edf9"
     },
     {
       "name": "doc",
@@ -1343,13 +1362,13 @@
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
       "source_hash": "611c53a06cb2dceeb4193f63aea2dc00a13de11edf9eb21b379c7bc36781477c",
-      "generated_hash": "b223dc004db3400e79a3c9fcc16fdd4630a5687b4d6d16fc53792328d44f2e7a"
+      "generated_hash": "4a3c3e109681aadaaa477434676586b70843e00fd2ea034781c9193549e575ea"
     },
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
       "source_hash": "611c53a06cb2dceeb4193f63aea2dc00a13de11edf9eb21b379c7bc36781477c",
-      "generated_hash": "b223dc004db3400e79a3c9fcc16fdd4630a5687b4d6d16fc53792328d44f2e7a"
+      "generated_hash": "4a3c3e109681aadaaa477434676586b70843e00fd2ea034781c9193549e575ea"
     },
     {
       "name": "implement",
@@ -1366,14 +1385,14 @@
     {
       "name": "inject",
       "source_skill": "skills/inject",
-      "source_hash": "cf2418ca6e0536727d019e236975e56d30d4d28dfe4cba6b6d3f260c2a556d5b",
-      "generated_hash": "9f890b69a4ad5bc8a67ca4d2c238508829c41bc3d1b00b02a448d98f5772e427"
+      "source_hash": "ddf3780e9a5d6b99dfef0e40950af07f77d7dd41ea00245d20a05756912fdcc6",
+      "generated_hash": "28a80e0ca1f28bd4622d580d42b7848ca60e5a5499f8d473f8517bc980779ac0"
     },
     {
       "name": "inject",
       "source_skill": "skills/inject",
-      "source_hash": "cf2418ca6e0536727d019e236975e56d30d4d28dfe4cba6b6d3f260c2a556d5b",
-      "generated_hash": "9f890b69a4ad5bc8a67ca4d2c238508829c41bc3d1b00b02a448d98f5772e427"
+      "source_hash": "ddf3780e9a5d6b99dfef0e40950af07f77d7dd41ea00245d20a05756912fdcc6",
+      "generated_hash": "28a80e0ca1f28bd4622d580d42b7848ca60e5a5499f8d473f8517bc980779ac0"
     },
     {
       "name": "ntm",
@@ -1631,13 +1650,13 @@
       "name": "shared",
       "source_skill": "skills/shared",
       "source_hash": "1ffc35b6a1d4042ca2e8effee490e127628f14e3fcaa57d4812222d3636c3fb6",
-      "generated_hash": "e2156cefd3971f2225eecb0ab1c4a79ec043af4373c3a9aa7192ecd26b8dea90"
+      "generated_hash": "e25d69e4448c08d77f1ee25e24afbd01a777c44f0a63fb8455131dbf1e0fe620"
     },
     {
       "name": "shared",
       "source_skill": "skills/shared",
       "source_hash": "1ffc35b6a1d4042ca2e8effee490e127628f14e3fcaa57d4812222d3636c3fb6",
-      "generated_hash": "e2156cefd3971f2225eecb0ab1c4a79ec043af4373c3a9aa7192ecd26b8dea90"
+      "generated_hash": "e25d69e4448c08d77f1ee25e24afbd01a777c44f0a63fb8455131dbf1e0fe620"
     },
     {
       "name": "skill-auditor",

@@ -26,8 +26,8 @@
 # self-contained runtime artifact: slim frontmatter + the source body transformed
 # runtime-native + references copied (the Codex runtime ships skills-codex/ only).
 # Only bespoke (hand-authored) Codex profiles are manual; mark a skill bespoke in
-# skills-codex-overrides/catalog.json to opt out. (Existing twins are left as-is;
-# converting them all to generated form is a separate reviewed step.)
+# skills-codex-overrides/catalog.json to opt out. Existing parity twins are
+# refreshed when they drift from source.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -70,7 +70,7 @@ if [[ "$MODE" == "regen" ]]; then
   step "codex hashes"          bash scripts/regen-codex-hashes.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   echo
   echo "Regenerated. Review 'git status', then run: scripts/regen-all.sh --check"
-  echo "Note: a MISSING parity_only skills-codex/<name>/ twin is now AUTO-generated"
+  echo "Note: parity_only skills-codex/<name>/ twins are AUTO-generated/refreshed"
   echo "  by scripts/codex-sync.sh (self-contained, from source). Only a bespoke"
   echo "  (hand-authored) Codex profile needs manual authoring — add it to skills-codex-overrides/catalog.json."
   echo "Note: cobra expectedCmds + cli-command-surface counts are now AUTO-regenerated"

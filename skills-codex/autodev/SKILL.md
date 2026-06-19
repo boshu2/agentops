@@ -20,14 +20,18 @@ The config/intent layer the [operating loop](../../docs/architecture/operating-l
 
 ## Routing
 
+In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.
+Terminal wrappers remain for humans or non-skill runtimes; they are not the skill
+handoff default.
+
 Use this split when the user asks whether the old evolve flow should become a
 new command or skill:
 
 | Intent | Action |
 |--------|--------|
 | define or repair the repo-local autonomous policy | use `$autodev` and `ao autodev` |
-| run the autonomous improvement loop | use `evolve` or `evolve` |
-| run one bounded lifecycle | use `rpi` or `ao rpi` |
+| run the autonomous improvement loop | invoke `$evolve` |
+| run one bounded lifecycle | invoke `$rpi` |
 
 `PROGRAM.md` takes precedence over `AUTODEV.md`. Treat `AUTODEV.md` as the
 compatibility alias.
@@ -85,8 +89,8 @@ contract.
 
 After `ao autodev validate` passes:
 
-- For one lifecycle, run `$rpi "<goal>"` or `ao rpi ...`.
-- For the repeated autonomous loop, run `evolve` (skill-driven) or dispatch it via NTM for out-of-session runs.
+- For one lifecycle, invoke `$rpi "<goal>"`; use `ao rpi ...` only for terminal-native or non-skill runtimes.
+- For the repeated autonomous loop, invoke `$evolve` (skill-driven) or dispatch it via NTM for out-of-session runs.
 - If both `PROGRAM.md` and `GOALS.md` exist, `GOALS.md` is strategic fitness and
   `PROGRAM.md` is the operational execution layer.
 
