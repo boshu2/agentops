@@ -118,8 +118,14 @@ func init() {
 		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
 		{ID: "skill.codex-override-coverage", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-override-coverage.sh"},
 		{ID: "skill.codex-backbone-prompts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-backbone-prompts.sh"},
-		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
-		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
+		// age-2s5k: always-run (no Match) — these validators assert whole-twin
+		// contract invariants over hardcoded file lists, so latent drift in a twin
+		// must fail the NEXT push regardless of scope, not lie invisible on green
+		// main until an unrelated skills-codex touch triggers a scope-gated run and
+		// ambushes it (the age-huim / age-3pdt failure mode). Cheap (string greps),
+		// so the per-push cost is negligible against the anti-ambush guarantee.
+		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
+		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
 		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--strict"}},
