@@ -931,6 +931,42 @@ func TestWorktree_discoverActiveRPIRuns_WithRunDir(t *testing.T) {
 	_ = activeRuns
 }
 
+// TestWorktree_discoverActiveRPIRuns_RepointedToInternalRPI guards the layer-2
+// migration (age-uco1): discoverActiveRPIRuns now sources runs from
+// internal/rpi (cliRPI.DiscoverRuns) rather than a cmd/ao-local discoverRPIRuns.
+// A run whose worktree_path no longer exists must be classified inactive by the
+// migrated liveness logic and therefore excluded.
+func TestWorktree_discoverActiveRPIRuns_RepointedToInternalRPI(t *testing.T) {
+	tmp := t.TempDir()
+	runID := "test-vanished-worktree"
+	runDir := filepath.Join(tmp, ".agents", "rpi", "runs", runID)
+	if err := os.MkdirAll(runDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	state := map[string]interface{}{
+		"schema_version": 1,
+		"run_id":         runID,
+		"goal":           "vanished",
+		"phase":          2,
+		"started_at":     time.Now().Add(-5 * time.Minute).Format(time.RFC3339),
+		"worktree_path":  filepath.Join(tmp, "worktree-that-does-not-exist"),
+	}
+	data, err := json.Marshal(state)
+	if err != nil {
+		t.Fatalf("marshal state: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "phased-state.json"), data, 0644); err != nil {
+		t.Fatal(err)
+	}
+	activeRuns := discoverActiveRPIRuns(tmp)
+	if activeRuns == nil {
+		t.Fatal("discoverActiveRPIRuns returned nil map")
+	}
+	if activeRuns[runID] {
+		t.Fatalf("run with a vanished worktree_path must not be active, got active in %v", activeRuns)
+	}
+}
+
 func TestWorktree_discoverActiveRPIRuns_WithInactiveRun(t *testing.T) {
 	tmp := t.TempDir()
 	runID := "test-done-run"

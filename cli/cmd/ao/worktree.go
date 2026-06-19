@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 var (
@@ -188,7 +190,7 @@ func resolveRepoRoot(cwd string) (string, error) {
 
 func discoverActiveRPIRuns(repoRoot string) map[string]bool {
 	activeRuns := make(map[string]bool)
-	for _, run := range discoverRPIRuns(repoRoot) {
+	for _, run := range cliRPI.DiscoverRuns(repoRoot) {
 		if run.RunID != "" && run.IsActive {
 			activeRuns[run.RunID] = true
 		}
