@@ -18,6 +18,7 @@ func TestRunRedact_ScrubsStdinToStdout(t *testing.T) {
 	cmd.SetIn(strings.NewReader(in))
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil); cmd.SetIn(nil) }) // age-ztf8: shared command; don't leak the writer/reader
 
 	if err := runRedact(cmd, nil); err != nil {
 		t.Fatalf("runRedact: %v", err)

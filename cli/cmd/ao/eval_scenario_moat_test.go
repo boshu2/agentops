@@ -22,6 +22,7 @@ func runScenarioMoatCmd(t *testing.T, scorecards []string, outPath string) (stri
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	evalScenarioMoatScorecards = scorecards
 	evalScenarioMoatOutput = outPath
 	err := cmd.RunE(cmd, nil)

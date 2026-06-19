@@ -153,6 +153,10 @@ func invokeSkillsCheckCmd(t *testing.T, args []string) error {
 // state from one test doesn't leak into the next.
 func resetSkillsCheckFlags(t *testing.T) {
 	t.Helper()
+	// Restore the command's out/err writers after the test (age-ztf8): see
+	// resetSkillsResolveFlags — prevents a leaked writer from swallowing later
+	// -shuffle tests' captured output via cmd.OutOrStdout().
+	t.Cleanup(func() { skillsCheckCmd.SetOut(nil); skillsCheckCmd.SetErr(nil) })
 	skillsCheckJSON = false
 	skillsCheckStrict = false
 	skillsCheckOnly = ""

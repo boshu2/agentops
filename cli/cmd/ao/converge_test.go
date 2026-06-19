@@ -118,6 +118,7 @@ func TestConvergeCommandRunExercisesKernel(t *testing.T) {
 	}
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared converge cmd; don't leak the writer
 	if err := cmd.ParseFlags([]string{"--max-rounds", "4", "--min-contexts", "2"}); err != nil {
 		t.Fatalf("parse flags: %v", err)
 	}

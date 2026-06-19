@@ -63,6 +63,7 @@ func TestRunYieldGauge_Report(t *testing.T) {
 	cmd := yieldGaugeCmd
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	if err := cmd.Flags().Set("run", run); err != nil {
 		t.Fatal(err)
 	}
@@ -112,6 +113,7 @@ func TestRunYieldGauge_UnadmittedWarning(t *testing.T) {
 	cmd := yieldGaugeCmd
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	if err := cmd.Flags().Set("run", run); err != nil {
 		t.Fatal(err)
 	}
@@ -140,6 +142,7 @@ func TestRunYieldGauge_JSON(t *testing.T) {
 	cmd := yieldGaugeCmd
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	if err := cmd.Flags().Set("run", run); err != nil {
 		t.Fatal(err)
 	}
@@ -179,6 +182,7 @@ func TestRunYieldGauge_RequiresRun(t *testing.T) {
 	cmd := yieldGaugeCmd
 	var out bytes.Buffer
 	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	if err := cmd.Flags().Set("run", ""); err != nil {
 		t.Fatal(err)
 	}

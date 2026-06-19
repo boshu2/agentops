@@ -42,6 +42,7 @@ func TestScopeStatusJSON_EmptyLock(t *testing.T) {
 	}
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared scope-status cmd; don't leak the writer
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("RunE: %v", err)
 	}
@@ -65,6 +66,7 @@ func TestScopeFreezeThenStatus_NonJSON(t *testing.T) {
 	}
 	buf := &bytes.Buffer{}
 	freezeCmd.SetOut(buf)
+	t.Cleanup(func() { freezeCmd.SetOut(nil); freezeCmd.SetErr(nil) }) // age-ztf8: don't leak the writer
 	if err := freezeCmd.RunE(freezeCmd, []string{"cli/cmd/ao/"}); err != nil {
 		t.Fatalf("freeze RunE: %v", err)
 	}
@@ -82,6 +84,7 @@ func TestScopeFreezeThenStatus_NonJSON(t *testing.T) {
 	}
 	buf2 := &bytes.Buffer{}
 	statusCmd.SetOut(buf2)
+	t.Cleanup(func() { statusCmd.SetOut(nil); statusCmd.SetErr(nil) }) // age-ztf8: high blast radius (statusCmd has many callers)
 	if err := statusCmd.RunE(statusCmd, nil); err != nil {
 		t.Fatalf("status RunE: %v", err)
 	}
@@ -102,6 +105,7 @@ func TestScopeUnfreezeAll(t *testing.T) {
 	unfreezeCmd, _, _ := rootCmd.Find([]string{"scope", "unfreeze"})
 	buf := &bytes.Buffer{}
 	unfreezeCmd.SetOut(buf)
+	t.Cleanup(func() { unfreezeCmd.SetOut(nil); unfreezeCmd.SetErr(nil) }) // age-ztf8: don't leak the writer
 	if err := unfreezeCmd.RunE(unfreezeCmd, nil); err != nil {
 		t.Fatalf("unfreeze RunE: %v", err)
 	}

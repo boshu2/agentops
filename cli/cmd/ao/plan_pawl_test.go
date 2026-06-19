@@ -27,6 +27,7 @@ func runDecide(t *testing.T, verdicts []string, round, maxRounds int, dir string
 
 	var buf bytes.Buffer
 	planPawlDecideCmd.SetOut(&buf)
+	t.Cleanup(func() { planPawlDecideCmd.SetOut(nil); planPawlDecideCmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	err := planPawlDecideCmd.RunE(planPawlDecideCmd, nil)
 	code := 0
 	if err != nil {

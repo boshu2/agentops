@@ -138,6 +138,10 @@ func invokeSkillsResolveCmd(t *testing.T, args []string) error {
 // state from one test doesn't leak into the next.
 func resetSkillsResolveFlags(t *testing.T) {
 	t.Helper()
+	// Restore the command's out/err writers after the test (age-ztf8): the capture
+	// helpers SetOut(buf) on this shared package-global command; without this an
+	// unrestored writer leaks into later -shuffle tests' cmd.OutOrStdout().
+	t.Cleanup(func() { skillsResolveCmd.SetOut(nil); skillsResolveCmd.SetErr(nil) })
 	skillsResolveJSON = false
 	skillsResolveStrict = false
 	for _, name := range []string{"json", "strict"} {

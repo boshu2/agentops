@@ -28,6 +28,7 @@ func TestFinishInstrumentCommand_FailExit(t *testing.T) {
 	cmd := orchestrateToolsCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared command; don't leak the writer
 	result := orchestration.InstrumentResult{
 		SchemaVersion: orchestration.InstrumentSchemaVersionV1,
 		Command:       orchestration.InstrumentCommandTools,

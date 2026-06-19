@@ -116,6 +116,7 @@ Keep startup payloads small and explainable.
 	cmd := rootCmd
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared rootCmd; don't leak the writer
 	oldOutput := output
 	output = "table"
 	t.Cleanup(func() { output = oldOutput })
@@ -203,6 +204,7 @@ func TestContextExplainCmdHumanOutput(t *testing.T) {
 	cmd := rootCmd
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) }) // age-ztf8: shared rootCmd; don't leak the writer
 	oldOutput := output
 	output = "table"
 	t.Cleanup(func() { output = oldOutput })
