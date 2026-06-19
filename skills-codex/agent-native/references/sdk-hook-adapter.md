@@ -1,11 +1,13 @@
 # Optional Agent SDK hook adapter — `PreToolUse` / `Stop`
 
-> **OPTIONAL. The authoritative gate is CI** (`agent-output-validate.yml`, ag-mptr).
+> **OPTIONAL. The authoritative routine gate is the local cockpit/pawl path**;
+> `agent-output-validate.yml` (ag-mptr) is PR/tag/manual backstop telemetry.
 > Use this only if your team wants *in-loop* interception in an Agent SDK loop.
 > AgentOps 3.0 is **hookless-first** — this adapter is a convenience sample, **not**
 > a dependency, **not** a hook revival, and **not** required for an agent to be
-> AgentOps-native. A bypassed in-loop hook must never mean unvalidated work merges;
-> that is why CI — not this adapter — is the enforcement boundary.
+> AgentOps-native. A bypassed in-loop hook must never mean unvalidated work lands;
+> that is why the deterministic cockpit/proof path — not this adapter — is the
+> enforcement boundary.
 
 ## What it is
 
@@ -15,9 +17,10 @@ and/or `Stop` callback. It shells out to the `ao` CLI — `ao validate --gate`
 the agent surface the verdict in-loop. It wires into **no runtime by default**;
 copy it into your own SDK harness if you want it.
 
-**Default path (recommended):** do nothing here — let the agent run, open a PR,
-and let `agent-output-validate.yml` run `ao validate` in CI. The adapter only
-adds an *earlier, advisory* signal; it does not replace the CI gate.
+**Default path (recommended):** do nothing here — let the agent run, then land
+through the local cockpit/pre-push/pawl proof path. `agent-output-validate.yml`
+can run `ao validate` as PR/tag/manual backstop telemetry. The adapter only adds
+an *earlier, advisory* signal; it does not replace the gate of record.
 
 ## Reference samples
 
@@ -29,7 +32,8 @@ runtime. They are illustration, not infrastructure.
 ```ts
 import { execFileSync } from "node:child_process";
 
-// OPTIONAL in-loop advisory check. The authoritative gate is CI, not this hook.
+// OPTIONAL in-loop advisory check. The authoritative gate is the cockpit/pawl
+// proof path, not this hook.
 export function preToolUseValidate(changedFiles: string[]): {
   ok: boolean;
   verdict: string;
@@ -40,8 +44,8 @@ export function preToolUseValidate(changedFiles: string[]): {
     });
     return { ok: true, verdict: "PASS" };
   } catch (err: unknown) {
-    // exit 1 = FAIL, exit 2 = could-not-run. Advisory only — never block merge
-    // on this; CI (agent-output-validate.yml) is the real boundary.
+    // exit 1 = FAIL, exit 2 = could-not-run. Advisory only — never block landing
+    // on this; the cockpit/pawl proof path is the real boundary.
     const code = (err as { status?: number }).status ?? 1;
     return { ok: false, verdict: code === 2 ? "ERROR" : "FAIL" };
   }
@@ -54,7 +58,7 @@ export function preToolUseValidate(changedFiles: string[]): {
 import subprocess
 
 def stop_validate(changed_files: list[str]) -> tuple[bool, str]:
-    """OPTIONAL in-loop advisory check. CI is the default gate, not this hook."""
+    """OPTIONAL in-loop advisory check. The cockpit/pawl path is the default gate."""
     proc = subprocess.run(
         ["ao", "validate", "--gate", "--changes", *changed_files],
         capture_output=True,
@@ -63,8 +67,8 @@ def stop_validate(changed_files: list[str]) -> tuple[bool, str]:
     )
     if proc.returncode == 0:
         return True, "PASS"
-    # Advisory only — do NOT hard-block on this; agent-output-validate.yml is the
-    # authoritative CI boundary (Managed Agents are not ZDR; never inline holdout).
+    # Advisory only — do NOT hard-block on this; the cockpit/pawl proof path is
+    # authoritative (Managed Agents are not ZDR; never inline holdout).
     return False, "ERROR" if proc.returncode == 2 else "FAIL"
 ```
 
@@ -73,4 +77,4 @@ def stop_validate(changed_files: list[str]) -> tuple[bool, str]:
 - **Never** register an always-on hook anywhere in this repo; this stays a sample.
 - The adapter calls only `ao validate` / the `standards` checklist — it does not
   read holdout/eval corpus, and it must not be used to smuggle one in.
-- If you adopt it, document in your harness that **CI remains the merge gate**.
+- If you adopt it, document in your harness that the **cockpit/pawl proof path remains the gate of record**.

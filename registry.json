@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T15:20:20Z",
+  "generated_at": "2026-06-19T15:31:18Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -1722,7 +1722,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "execution",
-      "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
+      "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1744,6 +1744,7 @@
       "drives_commands": [
         "ao agent bundle",
         "ao corpus inject",
+        "ao gate check",
         "ao goals",
         "ao inject",
         "ao mcp serve",
