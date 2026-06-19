@@ -254,3 +254,118 @@ func TestMembraneDeriveChecks_CrossRunNoCollision(t *testing.T) {
 		t.Fatalf("cross-run escapes collided: got %d findings %v, want 2 distinct", len(entries), names)
 	}
 }
+
+// Slice 3 (age-membrane-memory-j9c6.3): the derived finding (gold) carries the
+// escape's domain + what-was-missed, in frontmatter and body, so it's a
+// domain-tagged "look out for this here" check.
+func TestDeriveFindingFromEscape_CarriesDomainAndMissed(t *testing.T) {
+	a := deriveFindingFromEscape(yieldledger.Escape{
+		BeadID: "age-racy", RunID: "r1",
+		ConfirmedHeadSHA: "aaaaaaa1", ConfirmedAttempt: 1,
+		RefutedHeadSHA: "bbbbbbb2", RefutedAttempt: 2,
+		RefuterFamilies: []string{"codex"},
+		Domain:          "concurrency",
+		Missed:          "data race on a shared counter",
+	})
+	if a.Frontmatter["escape_domain"] != "concurrency" {
+		t.Errorf("escape_domain = %q, want concurrency", a.Frontmatter["escape_domain"])
+	}
+	if a.Frontmatter["escape_missed"] != "data race on a shared counter" {
+		t.Errorf("escape_missed = %q, want the missed reason", a.Frontmatter["escape_missed"])
+	}
+	if !strings.Contains(a.Body, "concurrency") || !strings.Contains(a.Body, "data race on a shared counter") {
+		t.Errorf("finding body must surface domain + what-was-missed; got:\n%s", a.Body)
+	}
+	// domain and missed are INDEPENDENT optionals (a refuted reason is useful
+	// even when the emitter didn't tag a domain). A truly-legacy escape (neither)
+	// adds neither key; a missed-only escape adds only escape_missed.
+	legacy := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-x", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2"})
+	if _, ok := legacy.Frontmatter["escape_domain"]; ok {
+		t.Error("legacy escape (no domain) must not set escape_domain")
+	}
+	if _, ok := legacy.Frontmatter["escape_missed"]; ok {
+		t.Error("legacy escape (no missed) must not set escape_missed")
+	}
+	missedOnly := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-m", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2", Missed: "nil deref"})
+	if _, ok := missedOnly.Frontmatter["escape_domain"]; ok {
+		t.Error("missed-only escape must not set escape_domain")
+	}
+	if missedOnly.Frontmatter["escape_missed"] != "nil deref" {
+		t.Error("missed-only escape should still set escape_missed (independent optional)")
+	}
+}
+
+// Slice 4 (age-membrane-memory-j9c6.4): recall the membrane's memory for one
+// domain — the consumption side ("look out for this here").
+func TestRecallByDomain(t *testing.T) {
+	root := t.TempDir()
+	w := yieldledger.Writer{}
+	emit := func(run, bead, disp, sha, domain string, attempt int) {
+		t.Helper()
+		if _, err := w.AppendGateVerdict(root, yieldledger.GateVerdictInput{
+			BeadID: bead, RunID: run,
+			TS:         time.Date(2026, 6, 19, 15, attempt, 0, 0, time.UTC),
+			Difficulty: 1, PawlVerdictRef: yieldledger.PawlVerdictRef{BeadID: bead, HeadSHA: sha},
+			Disposition: disp, HeadSHA: sha, Attempt: attempt,
+			AuthorContextID: "ctx", AuthorFamily: "claude", Domain: domain,
+		}); err != nil {
+			t.Fatalf("emit: %v", err)
+		}
+	}
+	emit("r1", "age-c", yieldledger.DispositionConfirmed, "c0nc1111", "concurrency", 1)
+	emit("r1", "age-c", yieldledger.DispositionRefuted, "c0nc2222", "concurrency", 2)
+	emit("r1", "age-d", yieldledger.DispositionConfirmed, "d0cs1111", "docs", 1)
+	emit("r1", "age-d", yieldledger.DispositionRefuted, "d0cs2222", "docs", 2)
+
+	got, err := recallByDomain(root, "concurrency")
+	if err != nil {
+		t.Fatalf("recallByDomain: %v", err)
+	}
+	if len(got) != 1 || got[0].BeadID != "age-c" || got[0].Domain != "concurrency" {
+		t.Fatalf("recallByDomain(concurrency) = %+v, want [age-c@concurrency]", got)
+	}
+	if none, _ := recallByDomain(root, "nonexistent"); len(none) != 0 {
+		t.Errorf("recallByDomain(nonexistent) = %+v, want empty", none)
+	}
+}
+
+func TestRunMembraneRecall_TrimsDomain(t *testing.T) {
+	root := t.TempDir()
+	w := yieldledger.Writer{}
+	emit := func(disp, sha string, attempt int) {
+		t.Helper()
+		if _, err := w.AppendGateVerdict(root, yieldledger.GateVerdictInput{
+			BeadID: "age-c", RunID: "r1",
+			TS:         time.Date(2026, 6, 19, 16, attempt, 0, 0, time.UTC),
+			Difficulty: 1, PawlVerdictRef: yieldledger.PawlVerdictRef{BeadID: "age-c", HeadSHA: sha},
+			Disposition: disp, HeadSHA: sha, Attempt: attempt,
+			AuthorContextID: "ctx", AuthorFamily: "claude", Domain: "concurrency",
+		}); err != nil {
+			t.Fatalf("emit: %v", err)
+		}
+	}
+	emit(yieldledger.DispositionConfirmed, "c0nc1111", 1)
+	emit(yieldledger.DispositionRefuted, "c0nc2222", 2)
+
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	membraneRecallDomain = " concurrency "
+	membraneRecallJSON = false
+	t.Cleanup(func() { membraneRecallDomain, membraneRecallJSON = "", false })
+
+	var buf bytes.Buffer
+	membraneRecallCmd.SetOut(&buf)
+	t.Cleanup(func() { membraneRecallCmd.SetOut(nil) })
+	if err := runMembraneRecall(membraneRecallCmd, nil); err != nil {
+		t.Fatalf("runMembraneRecall: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "1 past escape") || !strings.Contains(out, `domain "concurrency"`) {
+		t.Fatalf("recall output = %q, want trimmed concurrency hit", out)
+	}
+	if strings.Contains(out, `" concurrency "`) {
+		t.Fatalf("recall output used untrimmed domain: %q", out)
+	}
+}
