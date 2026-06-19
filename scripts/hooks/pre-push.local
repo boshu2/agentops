@@ -5,9 +5,9 @@
 # Installed copy: $(git rev-parse --git-common-dir)/hooks/pre-push.local
 # Install / reinstall: scripts/install-pre-push-gate.sh
 #
-# Runs the fast cockpit smoke (scripts/pre-push-gate.sh --fast, ~10-20s:
-# go build/vet + race tests on changed packages + eval canaries + changed-file
-# shell-lint) before every push. BLOCKS the push on failure (gate exits 1).
+# Runs the fast cockpit smoke (`ao gate check --fast`) before every push; on
+# pushes to main/master it also runs the full race suite and pawl verdict check.
+# BLOCKS the push on failure (gate exits 1).
 #
 # Mechanical enforcement (pre-mortem HIGH "discipline is not a mechanism"):
 # the ONLY bypass is the audited AGENTOPS_GATE_DISABLED=1, which is logged.

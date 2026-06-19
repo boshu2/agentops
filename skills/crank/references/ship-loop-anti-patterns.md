@@ -14,7 +14,7 @@ Eight observed patterns to avoid when shipping in the bot-paired fast lane.
 - A new schema (`schemas/*.json`)
 - Any docs that get auto-indexed (`docs/learnings/`, `docs/architecture/`)
 
-`ship.sh` detects these surfaces and runs the regen sweep preemptively — it removes the operator's choice to skip the rule (mechanical enforcement). For non-inventory PRs (single-file logic change, doc typo, dependency bump), skip `ship.sh` and just push; CI is the sole authoritative gate per soc-g2r9 (PR #357).
+`ship.sh` detects these surfaces and runs the regen sweep preemptively — it removes the operator's choice to skip the rule (mechanical enforcement). For non-inventory PRs (single-file logic change, doc typo, dependency bump), skip `ship.sh` and just push; routine release authority is the local cockpit/pre-push proof path, with CI as PR/tag/manual backstop telemetry.
 
 **Evidence:** PR #332 (`soc-b0nn`, this skill's own first PR) hit 15 distinct registries-drift failures on CI. Each was mechanical, but the sequential discovery turned a 30-min PR into a 90-min PR. **The skill that codifies the discipline burned the discipline learning the lesson.** Mechanically fixed by `scripts/ship.sh` (soc-33uy, PR #346).
 

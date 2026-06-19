@@ -1139,8 +1139,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "28bded4cdee9da68150b4c9c37bc4845bb9d34e46d4302d09bc2c1438311a545",
-      "generated_hash": "1b987a894945c6721cf298ef8c3980e15f854bab913fe948cf18d3c88f4db03e"
+      "source_hash": "e9b1e6986b3cd81aa4302e793ee046bc6cb688e6bbac0394c96e5aae375a2af8",
+      "generated_hash": "c51a35058905c1526d96e0bf310d4d1ccf55bc4c0c09645d6a4121986fbee65a"
     },
     {
       "name": "cass",
@@ -1223,8 +1223,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "e438d82b215ba359bef64670e95e1b58fa59f767e46d7351f1499d77e6d44347",
-      "generated_hash": "b693ddda8df922475b55d25fb2e09c086c0270e0913dcea8c470b3bc0e3aa65a"
+      "source_hash": "321e7accbf4b72afd66c8351b896c3a0bff4b96d13170abbd73758ae1860fffa",
+      "generated_hash": "5125e1668f035edcae65cf243e7fe04c2609a4cde9fa44d1ce846e0851f695da"
     },
     {
       "name": "curate",
@@ -1277,8 +1277,8 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "5ca05746b47a2934b6e0015a298c17db2fbd1e2172c5e56eeed7d43e60ec9d41",
-      "generated_hash": "9d79ed5e19cfe1ae07e880f73e64861c48d88605e44514d36dc0c2529a258801"
+      "source_hash": "3a48fe22584c62c0b3e0db866689d93d22aadec75430a0e6b8689fc23b4231ef",
+      "generated_hash": "ef7db0fffc04e188c84cf3a22d28c46d882ac541fe25772c3cbebefa1c49b257"
     },
     {
       "name": "dual-pane-atm",

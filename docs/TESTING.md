@@ -42,8 +42,8 @@ Run a specific tier:
 | Quick static validation | `./tests/run-all.sh` | ~10s |
 | Full test suite | `./tests/run-all.sh --all` | 2-5 min |
 | Go unit tests | `cd cli && make test` | ~15s |
-| Push-time local gate | `scripts/pre-push-gate.sh` | ~30-90s |
-| Activate repo hooks | `bash scripts/install-dev-hooks.sh` | ~1s |
+| Fast local cockpit gate | `ao gate check --fast` | ~30-90s |
+| Install push-to-main cockpit gate | `bash scripts/install-pre-push-gate.sh` | ~1s |
 | Go build + vet + changed-scope race | `scripts/validate-go-fast.sh` | ~20s |
 | Changed-scope derived artifact repair | `bash scripts/regen-changed-scope.sh --check --scope head` | ~1-30s |
 | AgentOps contract canaries | `scripts/test-agentops-contract-canaries.sh` | ~2-5m |
@@ -53,7 +53,7 @@ Run a specific tier:
 | Skill integrity (heal) | `bash skills/heal-skill/scripts/heal.sh --strict` | ~15s |
 | Doc validation | `./tests/docs/validate-doc-release.sh` | ~10s |
 | Contract compatibility | `./scripts/check-contract-compatibility.sh` | ~10s |
-| Full CI gate (local) | `scripts/ci-local-release.sh` | 5-10 min |
+| Release-wide local sweep | `scripts/ci-local-release.sh` | 5-10 min |
 | Native Windows smoke | `powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1` | ~1-3 min |
 
 ### Changed-Scope Regeneration
@@ -83,7 +83,7 @@ The official blocking contract canary list lives at
 `tests/canaries/agentops-core-official.txt`. These are deterministic product
 contract tests, not model evals; they use `ao eval run` only as the execution
 and artifact substrate. Run them before changing selected canary suites, core
-contracts, or the CI gate that enforces them:
+contracts, or the local/backstop gate that enforces them:
 
 ```bash
 scripts/test-agentops-contract-canaries.sh
@@ -135,13 +135,17 @@ or fixture.
 
 ## Local Hooking
 
-Use the repo-managed hooks, not ad hoc `.git/hooks` symlinks:
+Install the shared Git pre-push cockpit gate explicitly:
 
 ```bash
-bash scripts/install-dev-hooks.sh
+bash scripts/install-pre-push-gate.sh
 ```
 
-That activates `.githooks/pre-commit` and `.githooks/pre-push` for the current clone/worktree. The pre-push hook runs `scripts/pre-push-gate.sh`.
+That chains the shared `.git/hooks/pre-push` path to
+`scripts/hooks/pre-push.local`, which runs `ao gate check --fast` and, on
+pushes to `main`, the full race suite plus pawl proof. The tracked
+`.githooks/` directory is legacy dev-hook plumbing; do not treat it as the live
+release authority.
 
 ### Where to put tests
 
