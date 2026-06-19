@@ -140,6 +140,18 @@ if is_push_to_main && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ]; then
         echo >&2 "✗ FULL race suite FAILED — a package outside the changed set is red; push refused (age-push-equals-ci-0ua.1)"
         gate_status=1
     fi
+    if [ "${gate_status:-0}" -eq 0 ]; then
+        # Keep slow/live cmd/ao command smokes out of the default unit-tier race
+        # lane while preserving them as explicit push-to-main proof.
+        cmdao_integration_tests='TestOrchestrate(Tools|Preflight)ExecuteJSON'
+        echo "pre-push: push-to-main — running cmd/ao integration race shard (-tags=integration)" >&2
+        if ! ( cd "${toplevel}/cli" \
+            && unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE \
+            && go test ./cmd/ao -tags=integration -run "$cmdao_integration_tests" -race -shuffle=on -count=1 ); then
+            echo >&2 "✗ cmd/ao integration race shard FAILED — push refused (age-push-equals-ci-0ua.2)"
+            gate_status=1
+        fi
+    fi
 fi
 
 gate_status="${gate_status:-0}"
