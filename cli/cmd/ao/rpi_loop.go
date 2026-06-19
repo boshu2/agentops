@@ -56,14 +56,14 @@ var (
 	rpiCompileDefrag         bool
 )
 
-// Type aliases — canonical definitions live in internal/rpi.
+// Type aliases — canonical definitions live in internal/rpi. The next-work
+// corpus aliases used by keeper commands (nextWorkEntry, nextWorkItem,
+// nextWorkProofDecision) were relocated to next_work_types.go (age-uco1 layer 3)
+// so they survive this file's deletion; the rest are engine-only.
 type (
-	nextWorkEntry             = rpi.NextWorkEntry
 	nextWorkProofRef          = rpi.NextWorkProofRef
-	nextWorkItem              = rpi.NextWorkItem
 	queueSelection            = rpi.QueueSelection
 	queuePreflightDecision    = rpi.QueuePreflightDecision
-	nextWorkProofDecision     = rpi.NextWorkProofDecision
 	evidenceOnlyClosureProof  = rpi.EvidenceOnlyClosureProof
 	evidenceOnlyClosurePacket = rpi.EvidenceOnlyClosurePacket
 	loopCycleResult           = rpi.LoopCycleResult

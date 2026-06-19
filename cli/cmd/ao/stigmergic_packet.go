@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 const defaultStigmergicPacketLimit = 5
@@ -100,7 +102,7 @@ func loadVisibleNextWorkEntries(cwd, repoFilter string) ([]nextWorkEntry, error)
 			if repoFilter != "" && item.TargetRepo != "" && item.TargetRepo != "*" && item.TargetRepo != repoFilter {
 				continue
 			}
-			if classifyNextWorkCompletionProof(cwd, entry.SourceEpic, item).Complete {
+			if cliRPI.ClassifyNextWorkCompletionProof(cwd, entry.SourceEpic, item).Complete {
 				continue
 			}
 			entryVisible.Items = append(entryVisible.Items, item)

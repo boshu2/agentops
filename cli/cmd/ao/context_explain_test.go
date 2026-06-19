@@ -10,6 +10,28 @@ import (
 	"testing"
 )
 
+// TestNextWorkExplainReason_RepointedProofReader guards the layer-3 migration
+// (age-uco1): nextWorkExplainReason now classifies completion via
+// cliRPI.ClassifyNextWorkCompletionProof (migrated to internal/rpi). A valid
+// execution_packet proof_ref must yield a proof-backed reason, not the backlog
+// default — proving the repointed cross-package call resolves correctly.
+func TestNextWorkExplainReason_RepointedProofReader(t *testing.T) {
+	cwd := t.TempDir()
+	const backlog = "Selected from the backlog by repo affinity, severity, and query overlap."
+
+	if got := nextWorkExplainReason(cwd, nextWorkItem{Title: "unstarted"}); got != backlog {
+		t.Fatalf("expected backlog reason for an unproven item, got %q", got)
+	}
+
+	if err := os.WriteFile(filepath.Join(cwd, "packet.json"), []byte(`{"objective":"x"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	item := nextWorkItem{Title: "done", ProofRef: &nextWorkProofRef{Kind: "execution_packet", Path: "packet.json"}}
+	if got := nextWorkExplainReason(cwd, item); got == backlog || got == "" {
+		t.Fatalf("expected a proof-backed reason for a completed item, got %q", got)
+	}
+}
+
 func TestContextExplainCmdJSONOutput(t *testing.T) {
 	resetCommandState(t)
 	dir := t.TempDir()
