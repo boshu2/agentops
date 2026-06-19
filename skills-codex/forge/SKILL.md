@@ -1,8 +1,10 @@
 ---
 name: forge
-description: "Run forge."
+description: 'Mine transcripts into learnings. Triggers: "forge", "mine transcripts into learnings.", "forge skill".'
 ---
 # Forge Skill
+
+> **Cross-vendor analog:** the capture half of Anthropic Managed Agents' memory + dreaming pair (May 2026). Forge mines transcripts; `$curate --mode=dream` curates between sessions. Off the API, local, cross-vendor.
 
 **Typically runs automatically via SessionEnd hook.**
 
@@ -214,5 +216,6 @@ invocation walkthrough and manual transcript-mining walkthrough.
 
 ## Reference Documents
 
+- [references/forge.feature](references/forge.feature) — Executable spec: mine transcripts → queued candidates, funnel-not-filter, --promote, consumes-transcripts-not-skills (soc-qk4b)
 - [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for transcript mining
 - [references/feedback-compiler-drafts.md](references/feedback-compiler-drafts.md) — auto-drafted learning workflow (F5.4 fail->pass ledger transitions, `cli/internal/feedbackcompiler`)

@@ -1,10 +1,10 @@
 ---
 name: bootstrap
-description: "Run bootstrap."
+description: 'Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".'
 ---
-# $bootstrap (Codex Native)
+# $bootstrap
 
-> **Quick Ref:** Product/operations layer around the `ao quick-start` core seed. Progressive -- bare repos get the golden path first, existing repos fill gaps only.
+> **Quick Ref:** Product/operations layer around the `ao quick-start` core seed. Progressive — bare repos get the golden path first, existing repos fill gaps only.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -14,12 +14,12 @@ description: "Run bootstrap."
 $bootstrap
 ```
 
-That is it. One command. Every step below is idempotent -- existing artifacts are never overwritten.
+That is it. One command. Every step below is idempotent — existing artifacts are never overwritten.
 
 ## External Tools
 
-- **ao** (optional) -- AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
-- **bd** (optional, recommended) -- beads CLI. Bootstrap probes for `bd` in Step 0.5 and, when missing, points the user at `scripts/install-bd.sh` with a copy-paste command. Bootstrap never installs `bd` on the user's behalf.
+- **ao** (optional) — AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
+- **bd** (optional, recommended) — beads CLI. Bootstrap probes for `bd` in Step 0.5 and, when missing, points the user at `scripts/install-bd.sh` with a copy-paste command. Bootstrap never installs `bd` on the user's behalf.
 
 ## Flags
 
@@ -39,7 +39,7 @@ HAS_PRODUCT=$([[ -f PRODUCT.md ]] && echo true || echo false)
 HAS_README=$([[ -f README.md ]] && echo true || echo false)
 HAS_PROGRAM=$([[ -f PROGRAM.md || -f AUTODEV.md ]] && echo true || echo false)
 HAS_AGENTS=$([[ -d .agents ]] && echo true || echo false)
-HAS_HOOKS=$(grep -rq "agentops" .git/hooks/ 2>/dev/null && echo true || echo false)
+HAS_HOOKS=$(grep -q "agentops" .codex/settings.json 2>/dev/null && echo true || echo false)
 HAS_AO=$(command -v ao >/dev/null && echo true || echo false)
 HAS_BD=$(command -v bd >/dev/null && echo true || echo false)
 ```
@@ -60,7 +60,7 @@ If the repo is **complete** and `--force` is not set: report "Repo is fully boot
 
 If `HAS_BD` is true: skip. Report "bd: present."
 
-If `HAS_BD` is false: report **"bd: not installed (recommended). Install with: `bash scripts/install-bd.sh`"** and continue. Bootstrap does NOT run the installer -- `bd` is optional, the user decides.
+If `HAS_BD` is false: report **"bd: not installed (recommended). Install with: `bash scripts/install-bd.sh`"** and continue. Bootstrap does NOT run the installer — `bd` is optional, the user decides.
 
 If `scripts/install-bd.sh` is absent at the repo root, drop the install hint and just report "bd: not installed (recommended). See https://github.com/steveyegge/beads".
 
@@ -68,13 +68,11 @@ If `scripts/install-bd.sh` is absent at the repo root, drop the install hint and
 
 If `HAS_GOALS` is false (or `--force` is set):
 
-Invoke the existing goals path. Prefer the skill when available; otherwise use the CLI:
+Run the goals skill to initialize GOALS.md interactively:
 
-```bash
-ao goals init
 ```
-
-If neither the goals skill nor `ao` is available, do not create a placeholder. Report the exact next command: `ao goals init`.
+Skill(skill="goals", args="init")
+```
 
 If `HAS_GOALS` is true and `--force` is not set: skip. Report "GOALS.md exists -- skipped."
 
@@ -82,7 +80,11 @@ If `HAS_GOALS` is true and `--force` is not set: skip. Report "GOALS.md exists -
 
 If `HAS_PRODUCT` is false (or `--force` is set):
 
-Invoke `$product` to generate PRODUCT.md from mission, personas, value props, and competitive landscape. Do not write placeholder content.
+Run the product skill to generate PRODUCT.md interactively:
+
+```
+Skill(skill="product")
+```
 
 If `HAS_PRODUCT` is true and `--force` is not set: skip. Report "PRODUCT.md exists -- skipped."
 
@@ -90,7 +92,11 @@ If `HAS_PRODUCT` is true and `--force` is not set: skip. Report "PRODUCT.md exis
 
 If `HAS_README` is false (or `--force` is set) AND PRODUCT.md now exists:
 
-Invoke `$doc --mode=readme` to generate README.md from PRODUCT.md content. Include project name, description, installation, usage, and contributing sections.
+Run the doc skill in README mode to generate README.md:
+
+```
+Skill(skill="doc", args="--mode=readme")
+```
 
 If `HAS_README` is true and `--force` is not set: skip. Report "README.md exists -- skipped."
 
@@ -106,7 +112,7 @@ Prefer the CLI golden path:
 ao quick-start --no-beads
 ```
 
-If `ao` is unavailable, create the minimal directory structure and report the exact repair command:
+If `ao` is unavailable, create the minimal directory structure and report the exact command to repair later:
 
 ```bash
 mkdir -p .agents/learnings .agents/council .agents/research .agents/plans .agents/rpi .agents/patterns .agents/retro .agents/handoff
@@ -163,9 +169,12 @@ with no runtime hooks, and CI is the authoritative gate. There is no `ao`
 command or flag that installs hooks — hooks were removed from the CLI.
 
 If the user explicitly requests hooks, they are opt-in and author-it-yourself:
-point them at the `hooks-authoring` skill. Bootstrap itself never installs hooks.
+point them at the `hooks-authoring` skill, which scaffolds project-local hooks
+into `.codex/settings.json`. Bootstrap itself never writes hooks.
 
 If hooks were not explicitly requested: skip. Report "Hooks optional -- skipped. AgentOps 3.0 is hookless; CI is the authoritative gate. To author your own, use the `hooks-authoring` skill."
+
+If `HAS_HOOKS` is true: report "Hooks already present in .codex/settings.json -- left untouched."
 
 ### Step 7: Report
 
@@ -187,21 +196,45 @@ Bootstrap complete.
 Repo is now AgentOps-ready. Next: $rpi "your first goal"
 ```
 
+## Examples
+
+### Bare Repo
+
+**User says:** `$bootstrap`
+
+**What happens:** Agent detects no AgentOps artifacts. Runs $goals init, $product, $doc --mode=readme, creates .agents/ structure, leaves hooks optional. Reports all five core artifacts created.
+
+### Partial Repo (has GOALS.md and .agents/)
+
+**User says:** `$bootstrap`
+
+**What happens:** Agent detects existing artifacts. Skips GOALS.md and .agents/. Runs $product, $doc --mode=readme. Leaves hooks optional unless explicitly requested. Reports two created, three skipped.
+
+### Dry Run
+
+**User says:** `$bootstrap --dry-run`
+
+**What happens:** Agent detects repo state and reports what would be created. No files are written.
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |
 |---------|-------|---------|
 | "Not a git repo" | No .git directory | Run `git init` first |
-| Goals step fails | No project context | Provide a one-line project description when prompted |
-| Product step fails | No goals defined | Run goals init manually first, then re-run `$bootstrap` |
+| Goals skill fails | No project context | Provide a one-line project description when prompted |
+| Product skill fails | No goals defined | Run `$goals init` manually first, then re-run `$bootstrap` |
 | Hooks not activating | ao CLI not installed | Install: `brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops` |
 | bd not installed | Recommended but optional | Install with `bash scripts/install-bd.sh` if you want issue tracking; otherwise ignore |
 | Want to start over | Existing artifacts blocking | Use `--force` to recreate all artifacts |
 
 ## See Also
 
-- `../goals/SKILL.md` -- Fitness specification and directive management
-- `../product/SKILL.md` -- Product definition generation
-- `../doc/SKILL.md` -- README generation (`--mode=readme`) + repo docs
-- `../status/SKILL.md` -- New user onboarding (lighter than bootstrap)
-- [references/related-runbooks.md](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
+- [goals](../goals/SKILL.md) -- Fitness specification and directive management
+- [product](../product/SKILL.md) -- Product definition generation
+- [doc](../doc/SKILL.md) -- README generation (`--mode=readme`) + repo docs
+- [status](../status/SKILL.md) -- New user onboarding (lighter than bootstrap)
+- [related operator runbooks](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
+
+## Reference Documents
+
+- [references/bootstrap.feature](references/bootstrap.feature) — Executable spec: bare repo gets golden path, existing repo fills gaps only, idempotent never-overwrite (soc-qk4b)

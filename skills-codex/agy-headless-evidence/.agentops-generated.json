@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/agy-headless-evidence",
   "layout": "modular",
   "source_hash": "397e97a42f044d020f560b1aaa6e0bec39020055aebc57399bab69482a83f8b1",
-  "generated_hash": "6e001dff97c93cfdfd0346b7f8af9beeb1e4149dd42122cc392da127757cd0cc"
+  "generated_hash": "73610f087e4f9c3108f279a9192d478e5cc4ee6625b7778f194a3484d9c9879c"
 }

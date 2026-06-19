@@ -1,6 +1,6 @@
 ---
 name: product
-description: "Run product."
+description: 'Create or refine PRODUCT.md. Triggers: "product", "create or refine product.md.", "product skill".'
 ---
 # $product — Interactive PRODUCT.md Generation
 
@@ -28,7 +28,7 @@ ls PRODUCT.md 2>/dev/null
 
 **If it exists:**
 
-Ask the user directly:
+Use AskUserQuestion:
 - **Question:** "PRODUCT.md already exists. What would you like to do?"
 - **Options:**
   - "Overwrite — start fresh" → continue to Step 2
@@ -50,7 +50,7 @@ Use what you find to draft initial suggestions for each section. If no files exi
 
 ### Step 3: Interview
 
-Ask the user about each section. For each question, offer pre-populated suggestions from Step 2 where available.
+Ask the user about each section using AskUserQuestion. For each question, offer pre-populated suggestions from Step 2 where available.
 
 #### 3a: Mission
 
@@ -70,7 +70,7 @@ For each persona, gather:
 - **Goal** — what they're trying to accomplish
 - **Pain point** — what makes this hard today
 
-Ask the user for the first persona's role, then follow up conversationally for details and additional personas. Stop when the user says they're done or after 3 personas.
+Use AskUserQuestion for the first persona's role, then follow up conversationally for details and additional personas. Stop when the user says they're done or after 3 personas.
 
 #### 3c: Core Value Propositions
 
@@ -353,8 +353,6 @@ Tell the user:
 | `gh api` fails or no GitHub remote | Private repo, no auth, or non-GitHub host | Skip auto-gather gracefully. Ask user to provide metrics manually. |
 | No .agents/ directory for principles | Project doesn't use AgentOps | Skip the validated principles section entirely. Include user-stated design principles instead. |
 
-## Local Resources
+## Reference Documents
 
-### scripts/
-
-- `scripts/validate.sh`
+- [references/product.feature](references/product.feature) — Executable spec: context gather, interview-driven PRODUCT.md, product-aware council unlock, quick-mode inline (soc-qk4b)

@@ -1,6 +1,6 @@
 ---
 name: heal-skill
-description: "Run heal skill."
+description: 'Repair skill hygiene. Triggers: "heal-skill", "heal skill", "repair skill hygiene.".'
 ---
 # $heal-skill — Automated Skill Maintenance
 
@@ -66,6 +66,7 @@ bash scripts/audit-codex-parity.sh
 bash scripts/audit-codex-parity.sh --skill swarm
 ```
 
+Use this when a checked-in Codex skill still contains Claude-era primitives (`TaskCreate`, `TaskList`, `Tool: Task`), Claude backend references, or obviously broken runtime rewrites.
 
 **Repair rule:** keep canonical shared behavior in `skills/<name>/SKILL.md`. Update `skills-codex/<name>/SKILL.md` when the shipped Codex artifact is wrong, and keep durable Codex-only tailoring in `skills-codex-overrides/<name>/SKILL.md`.
 
@@ -154,22 +155,11 @@ One line per finding:
 
 ## See Also
 
-- skill-auditor — extends heal's structural checks (Pass 1) with 8 content-discipline checks (Pass 2: rationale, output spec, quality rubric, etc.)
-- skill-builder — scaffolds new skills against the unified template; runs heal-skill + skill-auditor as self-checks
+- [skill-auditor](../skill-auditor/SKILL.md) — extends heal's structural checks (Pass 1) with 8 content-discipline checks (Pass 2: rationale, output spec, quality rubric, etc.)
+- [skill-builder](../skill-builder/SKILL.md) — scaffolds new skills against the unified template; runs heal-skill + skill-auditor as self-checks
 
 ## References
 
 - [references/skill-stocktake.md](references/skill-stocktake.md)
 - [references/codex-parity.md](references/codex-parity.md)
-
-## Local Resources
-
-### references/
-
-- [references/codex-parity.md](references/codex-parity.md)
-
-### scripts/
-
-- `scripts/heal.sh`
-- `scripts/validate.sh`
-
+- [references/heal-skill.feature](references/heal-skill.feature) — Executable spec: detect hygiene issues, flag Codex-parity drift, auto-fix + report, --strict fails on remaining findings (soc-qk4b)

@@ -1,0 +1,55 @@
+{
+  "name": "agy-headless-evidence",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.93,
+  "sections": [
+    { "id": "title",        "title": "agy-headless-evidence",       "type": "intro",       "priority": "required" },
+    { "id": "overview",     "title": "Overview / When to Use",      "type": "overview",    "priority": "required" },
+    { "id": "constraints",  "title": "⚠️ Critical Constraints",     "type": "constraints", "priority": "required" },
+    { "id": "workflow",     "title": "Workflow / Methodology",      "type": "procedure",   "priority": "required" },
+    { "id": "output",       "title": "Output Specification",        "type": "contract",    "priority": "required" },
+    { "id": "rubric",       "title": "Quality Rubric",              "type": "rubric",      "priority": "required" },
+    { "id": "examples",     "title": "Examples",                    "type": "examples",    "priority": "standard" },
+    { "id": "troubleshoot", "title": "Troubleshooting",             "type": "table",       "priority": "standard" },
+    { "id": "seealso",      "title": "See Also / References",       "type": "routing",     "priority": "required" }
+  ],
+  "references": [
+    { "file": "../agy-native/SKILL.md",                       "topic": "the AGY image + headless primitives this skill consumes" },
+    { "file": "~/dev/control-plane/migrations/gemini-to-agy.md", "topic": "AGY != gemini-cli migration contract (LAW 0)" }
+  ],
+  "metadata": {
+    "tier": "execution",
+    "stability": "experimental",
+    "dependencies": ["dcg", "agy-native"],
+    "hexagonal_role": "supporting",
+    "context_window": "inherit",
+    "triggers": [
+      "agy headless",
+      "agy -p",
+      "agy --print",
+      "agentapi sidecar",
+      "scheduled tick AGY",
+      "AGY evidence",
+      "events.jsonl AGY",
+      "headless validation proof",
+      "captured exit code",
+      "userFacing brain artifact"
+    ],
+    "token_estimate": {
+      "minimal": 90,
+      "overview": 420,
+      "standard": 2100,
+      "full": 4200
+    }
+  },
+  "output_contract": "A timestamped run directory containing events.jsonl (the headless event stream), last-message.{txt,json} (the final agent message), exit-code (captured $?), and command.txt (argv/cwd/mode/model/scopes) — the validator's proof surface — mirrored as a userFacing brain artifact under ~/.gemini/antigravity-cli/brain/<conversation-id>/. Scope in, evidence out: every headless AGY run leaves a durable, inspectable artifact a downstream context can trust.",
+  "evidence": {
+    "sources": [
+      "skills/agy-headless-evidence/SKILL.md (verified: agy -p/--print, --print-timeout, -c/--continue, --conversation, --add-dir, --dangerously-skip-permissions; agentapi sidecar headless server)",
+      "~/.gemini/settings.json BeforeTool->dcg hook on run_shell_command (the floor kept on even under skip-permissions)",
+      "~/.gemini/antigravity-cli/{brain,knowledge}/ durable memory + userFacing artifact path",
+      "LAW 0: claude -p banned for worker dispatch; runtime is agy -p"
+    ]
+  }
+}
