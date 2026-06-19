@@ -233,6 +233,32 @@ def upsert(entries: list, name: str, entry: dict) -> bool:
 
 
 # Discover source skills (ground truth), skip non-skill dirs and bespoke.
+def mirror_reasons(src_dir: pathlib.Path, twin_dir: pathlib.Path) -> list[str]:
+    """Drift reasons for a twin's mirrored content (references/scripts/fixtures/
+    etc.) vs source — missing, stale (content mismatch), or extra files. SKILL.md
+    is transformed (verified separately); prompt.md + marker are twin-only."""
+    twin_only = {"SKILL.md", "prompt.md", marker_name, ".agentops-manifest.json", ".DS_Store"}
+
+    def tree(root_dir: pathlib.Path) -> dict[str, bytes]:
+        out: dict[str, bytes] = {}
+        if not root_dir.is_dir():
+            return out
+        for p in root_dir.rglob("*"):
+            if not p.is_file() or p.name in twin_only:
+                continue
+            if "__pycache__" in p.parts or p.suffix == ".pyc":
+                continue
+            out[p.relative_to(root_dir).as_posix()] = p.read_bytes()
+        return out
+
+    src = tree(src_dir)
+    twin = tree(twin_dir)
+    reasons = [f"missing {r}" for r in src if r not in twin]
+    reasons += [f"stale {r}" for r in src if r in twin and twin[r] != src[r]]
+    reasons += [f"extra {r}" for r in twin if r not in src]
+    return reasons
+
+
 source_skills = sorted(
     p.name
     for p in source_root.iterdir()
@@ -271,6 +297,29 @@ for name in source_skills:
     # manifest .codex_override_catalog (which also carries stale phantom entries)
     # is downstream and is NOT a generation trigger.
     in_ocat = any(e.get("name") == name for e in overrides_skills)
+
+    if check_only:
+        # THE single drift gate for parity twins: the on-disk twin must EXACTLY
+        # match what the generator would emit — presence + registration +
+        # byte-identical transformed SKILL.md + generated prompt.md + mirrored
+        # references. Any drift forces a regen. This guarantee is what lets the
+        # content validators (lint-native, api-conformance, runtime-sections,
+        # audit-parity) skip parity twins entirely: a generated artifact is
+        # verified by regenerate-and-diff, not by re-checking content rules.
+        reasons = []
+        if not in_ocat:
+            reasons.append("unregistered in catalog.json")
+        if not marker_path.exists():
+            reasons.append("missing marker")
+        if not skill_md.exists() or skill_md.read_bytes() != desired_skill:
+            reasons.append("SKILL.md")
+        if not prompt_md.exists() or prompt_md.read_bytes() != desired_prompt:
+            reasons.append("prompt.md")
+        reasons += mirror_reasons(source_root / name, twin_dir)
+        if reasons:
+            drift.append((name, reasons))
+        continue
+
     complete = (
         skill_md.exists()
         and prompt_md.exists()
@@ -278,10 +327,6 @@ for name in source_skills:
         and in_ocat
     )
     if complete and not force:
-        continue
-
-    drift.append(name)
-    if check_only:
         continue
 
     # --- Author the missing twin (self-contained: body + references) ---
@@ -357,11 +402,12 @@ for name in source_skills:
 
 if check_only:
     if drift:
-        print(f"codex-sync drift: {len(drift)} source skill(s) lack a complete twin:")
-        for n in drift:
-            print(f"  - {n}")
+        print(f"codex-sync drift: {len(drift)} parity twin(s) differ from generator output:")
+        for n, reasons in drift:
+            print(f"  - {n}: {', '.join(reasons)}")
+        print("Fix: scripts/codex-sync.sh --force --only <name> (then regen hashes).")
         sys.exit(1)
-    print("codex-sync: all parity twins present and registered.")
+    print("codex-sync: all parity twins match generator output.")
     sys.exit(0)
 
 if generated:
