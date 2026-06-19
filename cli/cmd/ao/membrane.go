@@ -28,6 +28,8 @@ var (
 	membraneDeriveRun    string
 	membraneDeriveDryRun bool
 	membraneDeriveForce  bool
+	membraneRecallDomain string
+	membraneRecallJSON   bool
 )
 
 var membraneCmd = &cobra.Command{
@@ -51,14 +53,82 @@ var membraneDeriveCmd = &cobra.Command{
 	RunE:  runMembraneDeriveChecks,
 }
 
+var membraneRecallCmd = &cobra.Command{
+	Use:   "recall --domain <domain>",
+	Short: "Recall past escapes in a domain — the membrane's 'look out for this here' memory",
+	Long: `Recall the membrane's accumulated memory for one bounded context: every
+escape (a confirmed-then-refuted false-done) recorded in --domain, across all
+runs in the yield ledger. This is the consumption side of the self-improving
+membrane — before working in a domain, recall what has slipped past the gate
+here before so the same class of miss is caught one altitude earlier.`,
+	RunE: runMembraneRecall,
+}
+
 func init() {
 	membraneCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(membraneCmd)
 	membraneCmd.AddCommand(membraneDeriveCmd)
+	membraneCmd.AddCommand(membraneRecallCmd)
 
 	membraneDeriveCmd.Flags().StringVar(&membraneDeriveRun, "run", "", "Run id to scan for escapes (required)")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveDryRun, "dry-run", false, "Report what would be derived without writing files")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveForce, "force", false, "Overwrite existing derived artifacts")
+
+	membraneRecallCmd.Flags().StringVar(&membraneRecallDomain, "domain", "", "Bounded-context / work-class tag to recall escapes for (required)")
+	membraneRecallCmd.Flags().BoolVar(&membraneRecallJSON, "json", false, "Emit the recalled escapes as JSON")
+}
+
+// recallByDomain is the testable core of `ao membrane recall`: load the yield
+// ledger and return every escape recorded in domain, across all runs — the
+// membrane's "what has escaped here before" memory for one bounded context.
+// (age-membrane-memory-j9c6.4)
+func recallByDomain(root, domain string) ([]yieldledger.Escape, error) {
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	return yieldledger.EscapesByDomain(ledger, domain), nil
+}
+
+func runMembraneRecall(cmd *cobra.Command, args []string) error {
+	domain := strings.TrimSpace(membraneRecallDomain)
+	if domain == "" {
+		return fmt.Errorf("--domain is required")
+	}
+	// repoRootOrCwd (not resolveProjectDir) so recall from a subdirectory (cli/)
+	// reads the repo's real .agents/yield, not an empty one — a raw-cwd read
+	// would fail OPEN (silently "no escapes here"). (cross-family refute fix)
+	root, err := repoRootOrCwd()
+	if err != nil {
+		return err
+	}
+	escapes, err := recallByDomain(root, domain)
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+	if membraneRecallJSON {
+		if escapes == nil {
+			escapes = []yieldledger.Escape{} // emit [] not null for a clean no-match
+		}
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(escapes)
+	}
+	if len(escapes) == 0 {
+		fmt.Fprintf(out, "No past escapes recorded in domain %q — clean here (or no data yet).\n", domain)
+		return nil
+	}
+	fmt.Fprintf(out, "Membrane recall — %d past escape(s) in domain %q (look out for these here):\n\n", len(escapes), domain)
+	for _, e := range escapes {
+		missed := e.Missed
+		if missed == "" {
+			missed = "(no recorded reason)"
+		}
+		fmt.Fprintf(out, "- %s (run %s, refuted by %s): %s\n",
+			e.BeadID, e.RunID, strings.Join(e.RefuterFamilies, ","), missed)
+	}
+	return nil
 }
 
 // derivedCheck is one escape→finding→check result for reporting.
@@ -151,12 +221,18 @@ func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
 		fmt.Fprintf(&b, " — caught by %s", strings.Join(e.RefuterFamilies, ", "))
 	}
 	b.WriteString(". The membrane let a false-done through.\n\n")
+	if e.Domain != "" {
+		fmt.Fprintf(&b, "**Domain:** %s — look out for this class of miss when working here.\n\n", e.Domain)
+	}
+	if e.Missed != "" {
+		fmt.Fprintf(&b, "**What was missed:** %s\n\n", e.Missed)
+	}
 	b.WriteString("**Detection question:** before CONFIRMING a unit like this, has its acceptance ")
 	b.WriteString("been re-verified by a fresh-context refuter that does NOT trust the prior ")
 	b.WriteString("CONFIRMED verdict — re-running the deterministic acceptance check on the claimed ")
 	b.WriteString("head, not the verdict text?\n")
 
-	return ports.FindingArtifact{
+	art := ports.FindingArtifact{
 		ID: id,
 		Frontmatter: map[string]string{
 			"id":                   id,
@@ -175,6 +251,16 @@ func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
 		},
 		Body: b.String(),
 	}
+	// The domain dimension + what-was-missed are what make the gold layer
+	// queryable: a finding tagged with its domain is recallable as "look out for
+	// this here." (age-membrane-memory-j9c6.3)
+	if e.Domain != "" {
+		art.Frontmatter["escape_domain"] = e.Domain
+	}
+	if e.Missed != "" {
+		art.Frontmatter["escape_missed"] = e.Missed
+	}
+	return art
 }
 
 // deriveEscapeFindingID returns the deterministic finding id for an escape. The

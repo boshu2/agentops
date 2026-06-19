@@ -3547,6 +3547,22 @@ ao membrane derive-checks --run <id> [flags]
       --run string   Run id to scan for escapes (required)
 ```
 
+#### `ao membrane recall`
+
+Recall the membrane's accumulated memory for one bounded context: every
+
+```
+ao membrane recall --domain <domain> [flags]
+```
+
+**Flags:**
+
+```
+      --domain string   Bounded-context / work-class tag to recall escapes for (required)
+  -h, --help            help for recall
+      --json            Emit the recalled escapes as JSON
+```
+
 ---
 
 ### `ao mind`
