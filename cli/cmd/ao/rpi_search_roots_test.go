@@ -37,6 +37,30 @@ func TestCollectSearchRoots_UsesGitWorktreeList(t *testing.T) {
 	}
 }
 
+// TestSearchRootAliases_WiredToInternalRPI guards the migration wiring
+// (age-uco1 slice 5a layer 1): search-root discovery moved to
+// internal/rpi/search_roots.go and cmd/ao keeps thin var aliases. A behavioral
+// check confirms each alias resolves to a working migrated implementation.
+func TestSearchRootAliases_WiredToInternalRPI(t *testing.T) {
+	dir := t.TempDir()
+
+	roots := collectSearchRoots(dir)
+	if !containsPath(roots, dir) {
+		t.Fatalf("collectSearchRoots alias should include cwd %q, got %v", dir, roots)
+	}
+
+	if got := normalizeSearchRootPath(dir); !filepath.IsAbs(got) {
+		t.Fatalf("normalizeSearchRootPath alias should return an absolute path, got %q", got)
+	}
+
+	seen := map[string]struct{}{}
+	var collected []string
+	tryAddSearchRoot(dir, seen, &collected)
+	if !containsPath(collected, dir) {
+		t.Fatalf("tryAddSearchRoot alias should append cwd %q, got %v", dir, collected)
+	}
+}
+
 func TestCollectSearchRoots_FallbackSiblingGlob(t *testing.T) {
 	parent := t.TempDir()
 	cwd := filepath.Join(parent, "project")
