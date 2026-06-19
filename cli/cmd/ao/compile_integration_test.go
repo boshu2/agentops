@@ -119,8 +119,9 @@ CANNED
 		t.Fatalf("write codex shim: %v", err)
 	}
 
-	// Put the shim first on PATH and restore after test.
-	t.Setenv("PATH", shimDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	// Put the shim first on PATH and deliberately omit /sbin, where macOS
+	// provides md5. The installed pre-push hook runs with this narrower shape.
+	t.Setenv("PATH", strings.Join([]string{shimDir, "/usr/bin", "/bin"}, string(os.PathListSeparator)))
 	// Make sure we don't accidentally pick up an API key that would
 	// route the bash script down the HTTP path.
 	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "codex-cli")

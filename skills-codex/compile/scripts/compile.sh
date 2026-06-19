@@ -53,10 +53,28 @@ scrub_secrets() {
 }
 
 compute_hash() {
-  if command -v md5sum &>/dev/null; then
+  if command -v md5sum >/dev/null 2>&1; then
     md5sum "$1" | cut -d' ' -f1
-  else
+  elif command -v md5 >/dev/null 2>&1; then
     md5 -q "$1"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 - "$1" <<'PY'
+import hashlib
+import sys
+
+h = hashlib.md5()
+with open(sys.argv[1], "rb") as fh:
+    for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+        h.update(chunk)
+print(h.hexdigest())
+PY
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "$1" | awk '{print $NF}'
+  else
+    echo "ERROR: need md5sum, md5, python3, shasum, or openssl to compute source hashes" >&2
+    return 1
   fi
 }
 
