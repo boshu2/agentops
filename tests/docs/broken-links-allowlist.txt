@@ -1,3 +1,12 @@
+# Codex parity twins (self-contained) carry source cross-skill deep-links into
+# swarm's refs, but swarm's BESPOKE twin deliberately omits the Claude-coupled
+# target (shared-checkout-discipline.md -> worktree-isolation.md describes
+# `claude agents`/Claude teams). The link resolves in the canonical skills/ tree;
+# the Codex twin tree intentionally drops the Claude-specific target. Known,
+# accepted cross-skill limitation — not a real broken doc.
+skills-codex/using-atm/SKILL.md:../swarm/references/shared-checkout-discipline.md
+skills-codex/dual-pane-atm/SKILL.md:../swarm/references/shared-checkout-discipline.md
+
 # Meta-observer links (removed targets, kept for reference)
 docs/workflows/meta-observer/README.md:../commands/launch-meta-observer.md
 docs/workflows/meta-observer/README.md:../commands/start-worker.md
