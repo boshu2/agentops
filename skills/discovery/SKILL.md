@@ -110,56 +110,56 @@ for the boundary between Discovery and Plan:
 | Driving adapter | `/discovery` skill invocation |
 | Driven adapter | `/plan` skill invocation plus br/file persistence |
 | Context packet | density block, artifact links, acceptance examples, non-goals, constraints |
-| Guard adapter | `/pre-mortem` verdict before packet handoff |
+| Guard adapter | plan-pawl duel verdict (fanout) or `/pre-mortem` verdict (MVP-slice) before packet handoff |
 
 Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
-## Codex Fanout Approval Gate
+## Plan-Pawl Duel Gate
 
 ### Risk-class routing: MVP vertical slice vs fanout (decide FIRST)
 
-The fanout/Fable ceremony is for one-way doors, not every slice. Route first:
+The duel is for one-way doors, not every slice. Route first:
 
-- **Fanout + Fable approval** (the gate below): architecture forks, one-way-door
-  decisions, cross-agent coordination contracts, product decisions.
-- **MVP vertical slice** (default for routine runtime/CLI feature work): skip
-  fanout. Run the normal discovery DAG under a hard time-box — **~15 minutes
-  discovery, ~90 minutes vertical slice** — then stop and decide. New work
-  surfaced mid-slice becomes follow-up beads, never absorbed into the active bead.
+- **Fanout class** (architecture forks, one-way-door decisions, cross-agent
+  coordination contracts, product decisions): run the **plan-pawl duel** below — the
+  `multi-model` pawl over the PLAN artifact ([`docs/contracts/pawls.md`](../../docs/contracts/pawls.md)).
+  It SUBSUMES the old single-judge Codex fanout approval AND the `/pre-mortem`
+  council into one cross-family gate (`--duel`, auto-on for fanout/`--complexity=full`).
+- **MVP vertical slice** (default for routine runtime/CLI work): skip the duel
+  (`--no-duel`). Run the discovery DAG under a hard time-box — **~15 min discovery,
+  ~90 min slice** — then stop; the slice gets only the inline `--quick` pre-mortem.
+  Work surfaced mid-slice becomes follow-up beads, never absorbed into the active bead.
 
-Ceremony is not a substitute for adversarial acceptance tests: the 2026-06-12
-Codex runtime post-review found a coherent fanout + approval artifact set that
-still missed an auth bypass one adversarial test would have caught. Source:
-[`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
+The plan-pawl gates plan SHAPE, never behavior: the 2026-06-12 runtime review found a
+coherent fanout+approval set that still missed an auth bypass one adversarial test
+would have caught ([learning](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md)).
 
 ### The gate (fanout-class work only)
 
-For open-ended or high-risk Codex discovery, insert the fanout gate before
-`/plan` creates beads. The contract is
-[`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md).
-
-Required artifact sequence:
+Insert the duel before `/plan` creates beads. The two-judge `ApprovalEdge` shape is
+[`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md);
+the DAG step is STEP 3.5 in [`references/dag.md`](references/dag.md).
 
 1. Write at least three independent `PerspectivePlan` artifacts with different
-   lenses, normally product/user value, architecture/gate integrity, and
-   operations/migration risk.
-2. Winnow those plans into one `SynthesisPacket` that records the selected plan,
-   rejected alternatives, rationale, open questions, and risks.
-3. Invoke `codex-approval` so an idle Fable/Claude-family ATM/NTM pane reviews
-   the `SynthesisPacket` and every `PerspectivePlan` path directly.
-4. Persist an `ApprovalEdge` with the validator pane, tmux capture, normalized
-   Fable verdict artifact, verdict, required changes, and accepted risks.
+   lenses (product/user value, architecture/gate integrity, operations/migration).
+2. Winnow those into one `SynthesisPacket` (selected plan, rejected alternatives,
+   rationale, open questions, risks).
+3. Run the cross-family DUEL: two distinct-family judge panes (e.g. Claude + Codex
+   via [`dual-pane-atm`](../dual-pane-atm/SKILL.md), `--no-user`, fresh-context by
+   construction) each write one judge verdict to `.agents/duel/<run-id>/`.
+4. Decide deterministically — never read the panes yourself:
+   `ao plan-pawl decide --dir .agents/duel/<run-id> --round <N> --max-rounds <duel-rounds>`.
+   exit 0 `PASS` (quorum: no FAIL, >=2 distinct families) -> `/plan`; exit 3 `REDO`
+   -> auto-redo (a FAIL re-synthesizes; a mechanical WARN auto-applies + re-judges;
+   a judgment WARN is surfaced, non-blocking); exit 4 `BLOCKED` -> breaker tripped
+   (round > max / judgment flag / oscillation), stop (the andon).
+5. Persist a duel `ApprovalEdge` (both judge panes, the `duel_verdict_dir`, the
+   decision). For fanout this verdict IS the pre-mortem verdict — do not run a
+   second council.
 
-`PASS` permits bead creation. `WARN is not` a silent pass: update the packet and
-rerun approval, or record an explicit accepted-risk note in the `ApprovalEdge`.
-`FAIL` blocks bead creation and returns Discovery to fanout/synthesis, up to
-three approval attempts.
-
-Approval evidence must survive the worktree: before the gated bead/epic closes,
-the council artifact (or a compact proof packet) must be mirrored to a tracked
-durable surface — see the closeout rule in
-[`codex-approval`](../codex-approval/SKILL.md). `.agents/` state in a temporary
-worktree is ignored and strands the evidence.
+Approval evidence must survive the worktree: before the gated bead/epic closes, mirror
+the council/duel artifacts (or a compact proof packet) to a tracked durable surface
+(see [`codex-approval`](../codex-approval/SKILL.md)) — `.agents/` in a temp worktree is ignored.
 
 ## Open-Ended Path (generate-winnow → operationalize → refine)
 
@@ -168,7 +168,7 @@ worktree is ignored and strands the evidence.
 On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`references/bead-operationalization.md`](references/bead-operationalization.md) and [`references/ideation-mode.md`](references/ideation-mode.md).
 
 1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
-2. **Research + fanout approval + Plan + Pre-mortem.** Run research over the selected portfolio. For Codex-led open-ended/high-risk work, produce `PerspectivePlan` artifacts, a `SynthesisPacket`, and a Fable `ApprovalEdge` before `/plan` creates tracker rows. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
+2. **Research + plan-pawl duel + Plan.** Run research over the selected portfolio. Open-ended/high-risk work is fanout class: produce `PerspectivePlan` artifacts and a `SynthesisPacket`, then run the STEP 3.5 plan-pawl **duel** (two distinct families, `ao plan-pawl decide`) before `/plan` creates tracker rows — that duel verdict subsumes the pre-mortem. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `br` beads** — tasks, subtasks, dependency structure (`br dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`br list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `br ready`).
 
@@ -193,6 +193,9 @@ and the acceptance-criteria YAML contract.
 | `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
 | `--no-budget` | off | Disable phase time budgets |
 | `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |
+| `--duel` | auto | Run the plan-pawl cross-family duel at STEP 3.5. Auto-on for fanout class and `--complexity=full`; opt-in elsewhere. Subsumes the single-judge fanout approval + pre-mortem council. |
+| `--no-duel` | off | Skip the duel (MVP-slice class): single-Fable `ApprovalEdge` if approval is needed, plus the inline `--quick` pre-mortem at STEP 5. |
+| `--duel-rounds=<N>` | 3 | Max duel rounds before the max-attempts breaker trips (`ao plan-pawl decide --max-rounds`). |
 
 ## Quick Start
 
