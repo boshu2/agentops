@@ -36,6 +36,18 @@ setup() {
     [ "$race_line" -lt "$lock_line" ]
 }
 
+@test "pre-push.local runs cmd/ao integration shard before serial mutable lock" {
+    run grep -Fq 'go test ./cmd/ao -tags=integration -run "$cmdao_integration_tests" -race -shuffle=on -count=1' "$SCRIPT"
+    [ "$status" -eq 0 ]
+
+    shard_line="$(grep -Fn 'go test ./cmd/ao -tags=integration' "$SCRIPT" | tail -1 | cut -d: -f1)"
+    lock_line="$(grep -n '^acquire_push_lock$' "$SCRIPT" | tail -1 | cut -d: -f1)"
+
+    [ -n "$shard_line" ]
+    [ -n "$lock_line" ]
+    [ "$shard_line" -lt "$lock_line" ]
+}
+
 @test "pre-push.local makes post-land provenance opt-in inside pre-push" {
     run grep -q 'AGENTOPS_PROVENANCE_EMIT_POST_LAND:-0' "$SCRIPT"
     [ "$status" -eq 0 ]
