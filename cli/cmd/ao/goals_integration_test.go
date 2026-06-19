@@ -138,9 +138,11 @@ func TestGoals_Integration_SteerAddInvalidSteer(t *testing.T) {
 
 func TestGoals_Integration_MeasureDirectivesJSON(t *testing.T) {
 	dir := chdirTemp(t)
-	// This test asserts full-mode `goals measure --directives` output; it must not
-	// inherit scenarios-only mode leaked by an earlier test under a -shuffle order.
-	// The helper guarantees the flag + auto-restores it.
+	// Full isolation: resetCommandState clears leaked cobra out-writers (else
+	// measure's OutOrStdout() resolves to a dead buffer → empty captured output)
+	// and save/restores the goals flag globals. scenariosOnly is set explicitly
+	// because resetCommandState save/restores rather than cleaning inherited state.
+	resetCommandState(t)
 	setGoalsMeasureScenariosOnly(t, false)
 
 	// Create GOALS.md
