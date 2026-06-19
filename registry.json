@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T19:24:19Z",
+  "generated_at": "2026-06-19T20:08:39Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -2420,6 +2420,7 @@
       "drives_commands": [
         "ao lookup",
         "ao orchestrate shape",
+        "ao plan-pawl decide",
         "ao ratchet",
         "ao search"
       ],
