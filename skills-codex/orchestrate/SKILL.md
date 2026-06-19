@@ -1,8 +1,7 @@
 ---
 name: orchestrate
-description: 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.'
+description: 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure. Triggers: "orchestrate out-of-session", "route + preflight + verify a run", "orchestration preflight".'
 ---
-
 # Orchestrate — Out-of-Session Instrument Lane
 
 When work escalates **outside** the in-session loop, start with deterministic
@@ -36,6 +35,7 @@ Profiles contract is SOT; skills are drift-gated procedure, not CLI replacements
 
 ## References
 
+- Acceptance: `references/orchestrate.feature`
 - Contract: `docs/contracts/orchestration-profiles.yaml`
 - Playbook: `skills/dual-pane-atm/`
 - Substrate: `skills/using-atm/`

@@ -1,40 +1,50 @@
 ---
 name: discovery
-description: "Run discovery."
+description: 'Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".'
 ---
 # $discovery - Dense Discovery Phase Adapter
 
+## Absorbed skills (ag-s43tg)
+
+- **brainstorm** — Separate goals from implementation; clarify goals and explore the problem space before planning.
+- **design** — Validate product fit before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
+
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-Discovery turns a goal plus delegated child artifacts into one dense execution
-packet for `$crank` and `$validate`. It is also the **re-plan engine** for `$rpi`'s
-[Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
-boundary to mutate the *remaining* waves from what the last wave taught — not only at the start.
+> **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3
+> (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
+> Discovery turns a goal plus delegated child artifacts into one dense execution
+> packet for `$crank` and `$validate`. It is also the **re-plan engine** for `$rpi`'s
+> [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
+> boundary to mutate the *remaining* waves from what the last wave taught — not only at the start.
 
-## Strict Delegation Contract
+## Folded-In Trigger Surface (brainstorm, design)
 
-Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**. Strict delegation is the default.
+Discovery is the fold target for the retired standalone `brainstorm` and `design`
+skills (skill-prune phase 2). Fire `$discovery` for their use-cases:
 
-Reject these compression moves:
+- **Brainstorm — Separate goals from implementation.** Clarify goals before
+  planning: separate WHAT from HOW, explore the problem space before committing
+  to a solution, and capture Given/When/Then acceptance examples. Open-ended
+  ideation (generate-winnow, `--ideate`) is the [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine) below.
+- **Design — Validate product fit before discovery.** Use when framing a
+  problem, checking product/market fit, or pressure-testing user value before
+  writing a discovery packet or any code. The product-validation gate
+  (PRODUCT.md alignment, council `--preset=product`) runs as discovery's
+  conditional design delegation step.
 
-- inlining `$research` work;
-- collapsing `$plan` into an inline decomposition;
-- skipping `$pre-mortem`;
-- replacing child skills with direct Codex sub-agent work.
+## Strict Delegation Contract (default)
 
-See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md).
+Discovery delegates to `brainstorm` (conditional), `design` (conditional),
+`$research`, `$plan`, and `$pre-mortem` via declared skill invocations.
+Strict delegation is the **default**.
 
-## Codex Lifecycle Guard
+**Anti-pattern to reject:** inlining `$research` work (grep + read + synthesize), collapsing `$plan` into an inline decomposition, skipping `$pre-mortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Pre-Mortem Anti-Rationalization Clause** (what does NOT count as a pre-mortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
 
-When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
-`CODEX_INTERNAL_ORIGINATOR_OVERRIDE` is `Codex Desktop`), ensure startup context
-before entering the discovery DAG:
+**Re-baseline before you scope** (mandatory for "improve X" / "build the missing Y"): `$research` MUST confirm a capability doesn't already exist before scoping *new construction*. The `--auto` trap is author-as-researcher scoping "what's unbuilt" from memory without grepping — existing machinery gets re-estimated as net-new. Every "X is missing" claim carries the search that proved it; no search → `$pre-mortem`'s re-baseline check (2.4–2.8) WARN/FAILs it.
 
-```bash
-ao codex ensure-start 2>/dev/null || true
-```
-
-Leave `ao codex ensure-stop` to closeout skills; discovery owns startup only.
+See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
+See [`references/isolation-contract.md`](references/isolation-contract.md) for the mechanical four-lever model and the compression patterns flagged by `scripts/check-skill-isolation.sh`. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
 ## Narrow Waist
 
@@ -69,29 +79,40 @@ for the boundary between Discovery and Plan:
 | Context packet | density block, artifact links, acceptance examples, non-goals, constraints |
 | Guard adapter | `$pre-mortem` verdict before packet handoff |
 
-```gherkin
-Feature: Discovery hands dense intent to planning
-  Scenario: Discovery delegates to Plan
-    Given Discovery has a goal, research path, and design or brainstorm evidence
-    When it crosses the `plan_slices` port
-    Then it sends density fields and artifact links
-    And it does not inline the Plan decomposition in Discovery prose
-```
+Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
 ## Codex Fanout Approval Gate
 
-For open-ended or high-risk Codex discovery, insert this gate before `$plan`
-creates beads. The contract is
+### Risk-class routing: MVP vertical slice vs fanout (decide FIRST)
+
+The fanout/Fable ceremony is for one-way doors, not every slice. Route first:
+
+- **Fanout + Fable approval** (the gate below): architecture forks, one-way-door
+  decisions, cross-agent coordination contracts, product decisions.
+- **MVP vertical slice** (default for routine runtime/CLI feature work): skip
+  fanout. Run the normal discovery DAG under a hard time-box — **~15 minutes
+  discovery, ~90 minutes vertical slice** — then stop and decide. New work
+  surfaced mid-slice becomes follow-up beads, never absorbed into the active bead.
+
+Ceremony is not a substitute for adversarial acceptance tests: the 2026-06-12
+Codex runtime post-review found a coherent fanout + approval artifact set that
+still missed an auth bypass one adversarial test would have caught. Source:
+[`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
+
+### The gate (fanout-class work only)
+
+For open-ended or high-risk Codex discovery, insert the fanout gate before
+`$plan` creates beads. The contract is
 [`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md).
 
-Required sequence:
+Required artifact sequence:
 
 1. Write at least three independent `PerspectivePlan` artifacts with different
-   lenses: product/user value, architecture/gate integrity, and
+   lenses, normally product/user value, architecture/gate integrity, and
    operations/migration risk.
-2. Winnow those plans into one `SynthesisPacket` with selected plan, rejected
-   alternatives, rationale, open questions, and risks.
-3. Invoke `$codex-approval` so an idle Fable/Claude-family ATM/NTM pane reviews
+2. Winnow those plans into one `SynthesisPacket` that records the selected plan,
+   rejected alternatives, rationale, open questions, and risks.
+3. Invoke `codex-approval` so an idle Fable/Claude-family ATM/NTM pane reviews
    the `SynthesisPacket` and every `PerspectivePlan` path directly.
 4. Persist an `ApprovalEdge` with the validator pane, tmux capture, normalized
    Fable verdict artifact, verdict, required changes, and accepted risks.
@@ -101,18 +122,26 @@ rerun approval, or record an explicit accepted-risk note in the `ApprovalEdge`.
 `FAIL` blocks bead creation and returns Discovery to fanout/synthesis, up to
 three approval attempts.
 
+Approval evidence must survive the worktree: before the gated bead/epic closes,
+the council artifact (or a compact proof packet) must be mirrored to a tracked
+durable surface — see the closeout rule in
+[`codex-approval`](../codex-approval/SKILL.md). `.agents/` state in a temporary
+worktree is ignored and strands the evidence.
+
 ## Open-Ended Path (generate-winnow → operationalize → refine)
 
 > **Additive to the default flow — it does not replace the strict-delegation contract or the artifact-first DAG.** This path activates for open-ended "improve the project"-style goals (`"improve the project"`, `"what should we build next"`, `"make X more robust"`) OR when `--ideate` is passed. For a specific goal, the default flow (brainstorm-clarify → research → plan → pre-mortem) is unchanged.
 
-On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning:
+On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`references/bead-operationalization.md`](references/bead-operationalization.md) and [`references/ideation-mode.md`](references/ideation-mode.md).
 
-1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** as a separate skill invocation — strict delegation still applies; do NOT inline the 30-idea generation. It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
+1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
 2. **Research + fanout approval + Plan + Pre-mortem.** Run research over the selected portfolio. For Codex-led open-ended/high-risk work, produce `PerspectivePlan` artifacts, a `SynthesisPacket`, and a Fable `ApprovalEdge` before `$plan` creates tracker rows. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `br` beads** — tasks, subtasks, dependency structure (`br dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`br list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `$crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `br ready`).
 
-> Tracking is **`br`** with `bv` triage — this is AgentOps.
+> Tracking is **`br`** with `bv` triage — this is AgentOps. The operationalize and refine steps consume `brainstorm`'s ideation output; see [`references/bead-operationalization.md`](references/bead-operationalization.md).
+
+Executable acceptance for this path: [references/discovery.feature](references/discovery.feature) (ideation/operationalize/refine scenarios, ag-yw0).
 
 ## Execution
 
@@ -124,14 +153,22 @@ and the acceptance-criteria YAML contract.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--auto` | on | Fully autonomous; inverse of `--interactive`. Passed through to `$research` and `$plan`. |
-| `--interactive` | off | Human gates in research and plan. Does not affect pre-mortem. |
-| `--skip-brainstorm` | auto | Skip brainstorm when the goal is already specific. |
-| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `br` beads and refine 4-5x in plan space. Auto-on for open-ended goals. |
-| `--complexity=<level>` | auto | Force `fast`, `standard`, or `full`. |
-| `--no-budget` | off | Disable phase time budgets. |
-| `--no-scaffold` | off | Skip scaffold auto-invocation. |
-| `--no-lifecycle` | off | Deprecated alias for `--no-scaffold`. |
+| `--auto` | on | Fully autonomous (no human gates). Inverse of `--interactive`. Passed through to `$research` and `$plan`. |
+| `--interactive` | off | Human gates in research and plan (STEP 3, STEP 4). Does NOT affect pre-mortem gate. |
+| `--skip-brainstorm` | auto | Skip STEP 1 brainstorm when goal is already specific |
+| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `br` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
+| `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
+| `--no-budget` | off | Disable phase time budgets |
+| `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |
+
+## Quick Start
+
+```bash
+$discovery "add user authentication"              # full discovery
+$discovery --interactive "refactor payment module" # human gates in research + plan
+$discovery --skip-brainstorm "fix login bug"       # skip brainstorm for specific goals
+$discovery --complexity=full "migrate to v2 API"   # force full council ceremony
+```
 
 ## Output Specification
 
@@ -147,20 +184,31 @@ on disk.
 - `.agents/rpi/runs/<run-id>/execution-packet.json` - per-run archive when `run_id` is set
 - `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md` - compact discovery summary
 
+**Exit signal:** completion marker (`<promise>DONE</promise>` or `<promise>BLOCKED</promise>`) — see Completion Markers below.
+
 ## Completion Markers
 
-```text
-<promise>DONE</promise>      # Discovery complete, packet ready
-<promise>BLOCKED</promise>   # Design or pre-mortem gate blocked
+```
+<promise>DONE</promise>      # Discovery complete, epic-id + execution-packet ready
+<promise>BLOCKED</promise>   # Pre-mortem failed 3x, manual intervention needed
 ```
 
-## References
+## Troubleshooting
 
-- [references/dag.md](references/dag.md)
-- [references/output-templates.md](references/output-templates.md)
-- [references/phase-data-contracts.md](references/phase-data-contracts.md)
-- [references/isolation-contract.md](references/isolation-contract.md)
-- [references/complexity-auto-detect.md](references/complexity-auto-detect.md)
-- [references/idempotency-and-resume.md](references/idempotency-and-resume.md)
-- [references/phase-budgets.md](references/phase-budgets.md)
-- [references/troubleshooting.md](references/troubleshooting.md)
+Read `references/troubleshooting.md` for common problems and solutions.
+
+## Reference Documents
+
+- [references/goal-clarification-brainstorm.md](references/goal-clarification-brainstorm.md) — absorbed brainstorm body (four-phase clarification + ideation funnel)
+- [references/idea-rubric.md](references/idea-rubric.md) — absorbed brainstorm idea rubric
+- [references/brainstorm.feature](references/brainstorm.feature) — absorbed brainstorm executable spec
+- [references/red-team-checklist.md](references/red-team-checklist.md) — absorbed brainstorm red-team checklist
+- [references/dag.md](references/dag.md) — executable workflow, state shape, gate detail, per-step detail, acceptance-criteria YAML contract
+- [references/complexity-auto-detect.md](references/complexity-auto-detect.md) — precedence contract for keyword vs issue-count classification
+- [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run safety and resume behavior
+- [references/phase-budgets.md](references/phase-budgets.md) — time budgets per complexity level
+- [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
+- [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
+- [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
+
+**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)

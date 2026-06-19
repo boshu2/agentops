@@ -1,9 +1,14 @@
 ---
 name: review
-description: "Run review."
+description: 'Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: "review", "review diffs for risk find", "review skill".'
 ---
-
 # Review Skill
+
+## Absorbed skills (ag-s43tg)
+
+- **bug-hunt** — Investigate bugs and root causes.
+- **codebase-audit** — Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk); use when auditing or onboarding.
+- **ubs** — Reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
 
 > **Quick Ref:** `$review <PR>` reviews a PR, `$review --diff` reviews local changes, `$review --agent <path>` reviews agent output with extra scrutiny.
 
@@ -110,7 +115,7 @@ git apply --stat "$AGENT_PATH"
 Understand the intent behind the changes before reviewing the code:
 
 - **PR Mode:** Read PR title/body, check linked issues (`fixes #`, `closes #`), read commit messages.
-- **Diff Mode:** Check `git log --oneline -5`, branch name, open issues via `br list --status open`.
+- **Diff Mode:** Check `git log --oneline -5`, branch name, open issues via `bd list --status open`.
 - **Agent Mode:** Read execution logs in output directory, check `.agents/rpi/` artifacts.
 
 **Output a one-line intent summary before proceeding:**
@@ -127,6 +132,8 @@ If intent is unclear, flag it: "PR description does not explain the purpose of t
 
 Review every changed file against the SCORED checklist. For each category, actively look for problems. Do not skim -- read each changed line.
 
+For audit-style reviews, generated-code suspicion, mock leakage, or external-review-tool findings, load [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md) before writing final findings.
+
 #### S -- Security
 
 - [ ] No hardcoded secrets, API keys, tokens, or passwords
@@ -136,8 +143,6 @@ Review every changed file against the SCORED checklist. For each category, activ
 - [ ] Sensitive data not logged or exposed in error messages
 - [ ] Dependencies: no known-vulnerable versions added
 - [ ] File operations: path traversal prevention, safe temp file handling
-
-For audit-style reviews, generated-code suspicion, mock leakage, or external-review-tool findings, load [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md) before writing final findings.
 
 #### C -- Correctness
 
@@ -311,7 +316,29 @@ Merge council findings into the review document under a "## Council Findings" se
 
 ---
 
+## Absorbed Skills (skill-prune phase 2 fold-ins)
+
+This skill is the fold target for three retired skills. Their use-cases route here:
+
+- **bug-hunt** — investigate bugs and root causes. Use `$review --bugs` for the
+  scanner pass ([references/BUG_SCANNER.md](references/BUG_SCANNER.md)); for deep
+  investigation of a suspected bug, run the scanner findings through an
+  evidence-first root-cause loop (reproduce → isolate → fix → verify).
+- **codebase-audit** — Domain-parameterized codebase audits (security, UX, perf,
+  API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns,
+  risk). Use when auditing or onboarding: `$review --audit <domain>` and
+  `$review --deep-scan` ([references/DOMAIN_AUDIT.md](references/DOMAIN_AUDIT.md),
+  [references/DEEP_SCAN.md](references/DEEP_SCAN.md)).
+- **ubs** — use when reviewing code with UBS for bugs, security issues,
+  AI-generated quality, or pre-commit checks. If the `ubs` scanner binary is on
+  PATH, run it over the diff and triage its findings into the SCORED pass
+  (see [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)).
+
+---
+
 ## Reference Documents
+
+- [references/review.feature](references/review.feature) — Executable spec: risk-ranked diff review, mock/stub detection, bug scan, result.json (soc-qk4b)
 
 - [references/MOCK_FINDER.md](references/MOCK_FINDER.md) — Find stubs, mocks, placeholders, TODOs
 - [references/BUG_SCANNER.md](references/BUG_SCANNER.md) — Bug scanner: null derefs, leaks, security

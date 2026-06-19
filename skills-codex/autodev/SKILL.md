@@ -1,32 +1,22 @@
 ---
 name: autodev
-description: "Run autodev."
+description: 'Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: "manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick boundaries".'
 ---
 # $autodev
 
-`$autodev` manages the repo-local operational contract for autonomous
-development. It does not replace `$evolve` or `$rpi`.
+`$autodev` manages the repo-local operational contract for autonomous development.
+It does not replace `evolve` or `rpi`.
+
+## Loop position
+
+The config/intent layer the [operating loop](../../docs/architecture/operating-loop.md) reads each tick — NOT a loop itself. `$autodev` defines and validates the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions. The drivers ([`evolve`](../evolve/SKILL.md) and Factory, the daemon) consume that contract and run the loop; autodev does not run it. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
 
 - `PROGRAM.md` or `AUTODEV.md` defines the contract: mutable scope, immutable
   scope, experiment unit, validation commands, decision policy, escalation rules,
   and stop conditions.
 - `ao autodev` creates, inspects, and validates that contract.
-- `$evolve` runs the Codex v2 autonomous improvement loop.
-- `$rpi` runs one Codex research -> plan -> implement -> validate lifecycle.
-
-In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.
-Treat retired terminal CLIs as wrapper commands, not as the Codex
-default handoff path.
-
-## Codex Lifecycle Guard
-
-When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
-`CODEX_INTERNAL_ORIGINATOR_OVERRIDE` is `Codex Desktop`), ensure startup context
-before editing or validating the contract:
-
-```bash
-ao codex ensure-start 2>/dev/null || true
-```
+- `evolve` runs the v2 autonomous improvement loop.
+- `ao rpi` runs one research -> plan -> implement -> validate lifecycle.
 
 ## Routing
 
@@ -36,8 +26,8 @@ new command or skill:
 | Intent | Action |
 |--------|--------|
 | define or repair the repo-local autonomous policy | use `$autodev` and `ao autodev` |
-| run the autonomous improvement loop | use `$evolve` |
-| run one bounded lifecycle | use `$rpi` |
+| run the autonomous improvement loop | use `evolve` or `evolve` |
+| run one bounded lifecycle | use `rpi` or `ao rpi` |
 
 `PROGRAM.md` takes precedence over `AUTODEV.md`. Treat `AUTODEV.md` as the
 compatibility alias.
@@ -95,8 +85,8 @@ contract.
 
 After `ao autodev validate` passes:
 
-- For one lifecycle, run `$rpi "<goal>"`.
-- For the repeated autonomous loop, run `$evolve --max-cycles=<n>`.
+- For one lifecycle, run `$rpi "<goal>"` or `ao rpi ...`.
+- For the repeated autonomous loop, run `evolve` (skill-driven) or dispatch it via NTM for out-of-session runs.
 - If both `PROGRAM.md` and `GOALS.md` exist, `GOALS.md` is strategic fitness and
   `PROGRAM.md` is the operational execution layer.
 
@@ -108,14 +98,14 @@ program validation bundle and stop conditions must also be satisfied.
 ```text
 User: turn this postmortem/analyze/plan/pre-mortem/implement/validate loop into
 a v2 command.
-Agent: Explain that `$evolve` runs the Codex loop, then create or validate
+Agent: Explain that `evolve` runs the loop, then create or validate
 `PROGRAM.md` with `$autodev` so the loop has explicit scope and gates.
 ```
 
-```text
+```bash
 ao autodev init "Continuously improve AgentOps skills within explicit scope."
 ao autodev validate
-$evolve --max-cycles=1
+# then run the repeated loop: $evolve (skill-driven; $evolve CLI retired, ag-llni)
 ```
 
 ## Troubleshooting
@@ -126,3 +116,8 @@ $evolve --max-cycles=1
 | validation reports missing sections | Patch the missing required sections, then rerun `ao autodev validate --json`. |
 | requested work is outside immutable scope | Stop direct edits and create a bead or ask for an explicit contract change. |
 | user asks "is this evolve?" | Answer: `autodev` defines the loop contract; `evolve` runs the loop. |
+
+## Reference Documents
+
+- [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, manages-not-replaces evolve/rpi, loop-discipline-under-autonomy (soc-qk4b)
+- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: `ao autodev` CLI command behavior, linked to cmd tests (soc-jnfgi)

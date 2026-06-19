@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/inject",
   "layout": "modular",
   "source_hash": "cf2418ca6e0536727d019e236975e56d30d4d28dfe4cba6b6d3f260c2a556d5b",
-  "generated_hash": "7fb0af748bd3dfed2bc2a80a3b556a7ee9a330d0922bac5dd106a02d201ec756"
+  "generated_hash": "9f890b69a4ad5bc8a67ca4d2c238508829c41bc3d1b00b02a448d98f5772e427"
 }

@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/account-rotation",
   "layout": "modular",
   "source_hash": "3a30ed2d2a5f98e04ba279fb500e5699ab898e8e9844e555aa1e5eb00ef7e01a",
-  "generated_hash": "95754073cb05da0cf254768a798bcbd424a0719cf2d577522316e17b0f5a750b"
+  "generated_hash": "f5f610fbab2a3067c1da60e428bc8d987a3dedb868a06d296dd0aaabcffbf248"
 }

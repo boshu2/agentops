@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/dual-pane-atm",
   "layout": "modular",
   "source_hash": "de332a48d8fe363eb72f9d7d07eff2a4ea020d59d2756b18589038f0d1510ca6",
-  "generated_hash": "aefb4d38e04d1e464c496af533e828765e7c6ba6106a23ecf844c09f98726e7b"
+  "generated_hash": "14cae6d07ab3a8f283ba8f128b518db3a162896a5861c6e04765354bc339b80b"
 }

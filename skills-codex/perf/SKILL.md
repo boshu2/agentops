@@ -1,6 +1,6 @@
 ---
 name: perf
-description: "Run perf."
+description: 'Profile and optimize hotspots. Triggers: "perf", "profile and optimize hotspots.", "perf skill".'
 ---
 # Perf Skill
 
@@ -197,6 +197,8 @@ For each finding, state:
 
 **Critical rule: ONE optimization at a time.**
 
+For high-effort optimization work, load [references/optimization-proof-loop.md](references/optimization-proof-loop.md) before changing code. It defines the proof contract for isomorphic rewrites, benchmark deltas, and keep/revert decisions.
+
 For each optimization:
 
 1. **Describe** the change before making it
@@ -205,8 +207,6 @@ For each optimization:
 4. **Compare** results against baseline using `benchstat` (Go) or manual diff
 5. **Keep or revert** — only keep changes that measurably improve metrics
 6. **Commit** with message format: `perf(<scope>): <description> (+X% throughput)` or `perf(<scope>): <description> (-X% latency)`
-
-For high-effort optimization work, load [references/optimization-proof-loop.md](references/optimization-proof-loop.md) before changing code. It defines the proof contract for isomorphic rewrites, benchmark deltas, and keep/revert decisions.
 
 ### Acceptance Criteria
 
@@ -313,6 +313,8 @@ COMPARISON: baseline vs candidate
 - [validate](../validate/SKILL.md) — Validate optimized code quality (absorbs vibe)
 
 ## Reference Documents
+
+- [references/perf.feature](references/perf.feature) — Executable spec: profile hotspots with metrics, bench, compare-regression, optimize (soc-qk4b)
 
 - [references/profiling-playbook.md](references/profiling-playbook.md)
 - [references/system-pressure-triage.md](references/system-pressure-triage.md)

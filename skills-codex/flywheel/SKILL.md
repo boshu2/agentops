@@ -1,6 +1,6 @@
 ---
 name: flywheel
-description: "Run flywheel."
+description: 'Check knowledge flywheel health. Triggers: "flywheel", "check knowledge flywheel health.", "flywheel skill".'
 ---
 # Flywheel Skill
 
@@ -14,8 +14,18 @@ Sessions → Transcripts → Forge → Pool → Promote → Knowledge
                     Future sessions find it
 ```
 
-**Velocity** = Rate of knowledge flowing through
-**Friction** = Bottlenecks slowing the flywheel
+**Velocity** = rate of knowledge flowing through. **Friction** = bottlenecks slowing the flywheel.
+
+### Folded triggers (ag-s43tg wave 1): `ratchet` routes here
+
+- **`ratchet` → flywheel gate tracking.** Use when asked to record Brownian Ratchet gates —
+  tracking progress through the RPI workflow with permanent gates
+  (`Progress = Chaos × Filter → Ratchet`; merged/closed/stored progress can't be un-ratcheted).
+- Gate surface: `ao ratchet status` / `ao ratchet check <step>` / `ao ratchet record <step>
+  --output "<artifact-path>"` over the chain at `.agents/ao/chain.jsonl`
+  (steps: `research`, `plan`, `implement`, `vibe`, `post-mortem`).
+- Ratchet tracks and locks progress; it does not run the loop itself — pair with `$crank`
+  (epic loop) or `$swarm` (Ralph loop) to execute work.
 
 ## Execution Steps
 Given `$flywheel`:
@@ -33,24 +43,18 @@ echo "Retros: $RETROS"
 ```
 
 ### Step 2: Check Recent Activity
-
 ```bash
 # Recent learnings (last 7 days)
 find .agents/learnings -maxdepth 1 -type f -mtime -7 2>/dev/null | wc -l
-
 # Recent research
 find .agents/research -maxdepth 1 -type f -mtime -7 2>/dev/null | wc -l
 ```
-
 ### Step 3: Detect Staleness
-
 ```bash
 # Old artifacts (> 30 days without modification)
 find .agents/ -name "*.md" -mtime +30 2>/dev/null | wc -l
 ```
-
 ### Step 3.5: Check Cache Health
-
 ```bash
 if command -v ao &>/dev/null; then
   # Get citation report (cache metrics)
@@ -66,30 +70,15 @@ if command -v ao &>/dev/null; then
 else
   # ao-free fallback: compute approximate metrics from files
   echo "Cache health (ao-free fallback):"
-
-  # Learnings modified in last 30 days (active pool)
-  ACTIVE_30D=$(find .agents/learnings/ -name "*.md" -mtime -30 2>/dev/null | wc -l | tr -d ' ')
-  echo "Active learnings (30d): $ACTIVE_30D"
-
-  # Forge candidates awaiting promotion
-  FORGE_PENDING=$(ls .agents/forge/*.md 2>/dev/null | wc -l | tr -d ' ')
-  echo "Forge candidates pending: $FORGE_PENDING"
-
-  # Citation tracking (if citations.jsonl exists)
+  echo "Active learnings (30d): $(find .agents/learnings/ -name '*.md' -mtime -30 2>/dev/null | wc -l | tr -d ' ')"
+  echo "Forge candidates pending: $(ls .agents/forge/*.md 2>/dev/null | wc -l | tr -d ' ')"
   if [ -f .agents/ao/citations.jsonl ]; then
-    CITATION_COUNT=$(wc -l < .agents/ao/citations.jsonl | tr -d ' ')
-    UNIQUE_CITED=$(grep -o '"artifact_path":"[^"]*"' .agents/ao/citations.jsonl 2>/dev/null | sort -u | wc -l | tr -d ' ')
-    echo "Total citations: $CITATION_COUNT"
-    echo "Unique learnings cited: $UNIQUE_CITED"
+    echo "Total citations: $(wc -l < .agents/ao/citations.jsonl | tr -d ' ')"
+    echo "Unique learnings cited: $(grep -o '"artifact_path":"[^"]*"' .agents/ao/citations.jsonl 2>/dev/null | sort -u | wc -l | tr -d ' ')"
   else
     echo "No citation data (citations.jsonl not found)"
   fi
-
-  # Session outcomes (if outcomes.jsonl exists)
-  if [ -f .agents/ao/outcomes.jsonl ]; then
-    OUTCOME_COUNT=$(wc -l < .agents/ao/outcomes.jsonl | tr -d ' ')
-    echo "Session outcomes recorded: $OUTCOME_COUNT"
-  fi
+  [ -f .agents/ao/outcomes.jsonl ] && echo "Session outcomes recorded: $(wc -l < .agents/ao/outcomes.jsonl | tr -d ' ')"
 fi
 ```
 
@@ -122,20 +111,12 @@ if command -v ao &>/dev/null; then
   fi
 else
   echo "ao CLI not available — using file-based metrics"
-
-  # Pool inventory
   echo "Pool depths:"
   for pool in learnings patterns forge knowledge research retros; do
-    COUNT=$(ls .agents/${pool}/*.md 2>/dev/null | wc -l | tr -d ' ')
-    echo "  $pool: $COUNT"
+    echo "  $pool: $(ls .agents/${pool}/*.md 2>/dev/null | wc -l | tr -d ' ')"
   done
-
-  # Global patterns
-  GLOBAL_COUNT=$(ls ~/.codex/patterns/*.md 2>/dev/null | wc -l | tr -d ' ')
-  echo "  global patterns: $GLOBAL_COUNT"
-
-  # Check for promotion-ready learnings (see references/promotion-tiers.md)
-  echo "See: references/promotion-tiers.md for tier definitions"
+  echo "  global patterns: $(ls ~/.codex/patterns/*.md 2>/dev/null | wc -l | tr -d ' ')"
+  echo "See references/promotion-tiers.md for tier definitions"
 fi
 ```
 
@@ -220,6 +201,43 @@ Tell the user:
 | Research/plan ratio | >0.5 | 0.2-0.5 | <0.2 |
 | Cache hit rate | >80% | 50-80% | <50% |
 
+## Golden Signals
+
+Four golden signals (always shown) reveal whether knowledge is truly compounding or just accumulating noise.
+
+```bash
+ao flywheel status              # table output with golden signals
+ao flywheel status --json       # machine-readable
+```
+
+### The Four Signals
+
+| # | Signal | Question | Key Metric |
+|---|--------|----------|------------|
+| 1 | **Velocity Trend** | Is σρ-δ increasing? | Linear regression slope of baseline velocities (7d/30d) |
+| 2 | **Citation Pipeline** | Are citations useful? | % of feedback with reward > 0.6 |
+| 3 | **Research Closure** | Is research being mined? | % orphaned research (no learning backlink) |
+| 4 | **Reuse Concentration** | Is the whole pool active? | Gini coefficient of citation distribution |
+
+### Verdicts and Thresholds
+
+| Signal | Healthy | Warning | Critical |
+|--------|---------|---------|----------|
+| Velocity Trend | compounding (slope > +0.01) | stagnant | decaying (slope < -0.01) |
+| Citation Pipeline | reinforcing (>60% high-util) | inert (30-60%) | degrading (<30%) |
+| Research Closure | mining (<=10% orphans) | — | hoarding (>=10% orphans) |
+| Reuse Concentration | distributed (Gini<0.4, active>30%) | concentrated | dormant (Gini>0.7 or active<10%) |
+
+**Overall verdict:** 3+ healthy = **compounding**, 3+ critical = **decaying**, mixed = **accumulating**.
+
+### Recommended Actions
+
+| Verdict | Action |
+|---------|--------|
+| **decaying** | Run `$compile` cycle, archive stale artifacts, increase citation via `ao lookup` |
+| **accumulating** | Review orphaned research (`$research`→`$post-mortem --quick` pipeline), improve forge quality |
+| **compounding** | Maintain cadence. Consider capturing baselines (`ao metrics baseline`) for trend tracking |
+
 ## Cache Eviction
 Read `references/cache-eviction.md` for the full eviction pipeline (passive tracking → confidence decay → maturity scan → archive).
 
@@ -233,44 +251,23 @@ Phase 4 (soc-ytpq) governance for `~/.agents/learnings/` — all advisory, none 
 - **Re-bloat triage:** check `SkipGlobalHub` defaults to `true` (the agentops-b3v / soc-ujls fix), then `grep -h '^source_rig:' ~/.agents/learnings/*.md | sort | uniq -c | sort -rn` to identify the regressed writer. Use `--target-size`, never raw `rm`.
 
 ## Key Rules
-- **Monitor regularly** - flywheel needs attention
-- **Address friction** - bottlenecks slow compounding
+- **Monitor regularly** - flywheel needs attention; address bottlenecks early
 - **Feed the flywheel** - run $post-mortem (or $post-mortem --quick)
 - **Prune stale knowledge** - archive old artifacts
-
 ## Examples
-
 **User says:** `$flywheel` — Counts pool depths, checks recent activity, validates artifact consistency, writes health report to `.agents/flywheel-status.md`.
-
 **Hook trigger:** After `$post-mortem` — Compares current vs historical metrics, flags velocity drops and friction points.
-
 ## Troubleshooting
-
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| All pool counts zero | `.agents/` directory missing or empty | Run `$post-mortem` (or `$post-mortem --quick`) to seed knowledge pools |
-| Velocity always zero | No recent extractions (last 7 days) | Run `$post-mortem` (or `$post-mortem --quick`) to extract and index learnings |
+| All pool counts zero | `.agents/` directory missing or empty | Run `$post-mortem` (or `--quick`) to seed knowledge pools |
+| Velocity always zero | No recent extractions (last 7 days) | Run `$post-mortem` (or `--quick`) to extract and index learnings |
 | "ao CLI not available" | ao command not installed or not in PATH | Install ao CLI or use manual pool counting fallback |
-| Stale artifacts >50% | Long time since last session or inactive repo | Run `$provenance --stale` to audit and archive old artifacts |
+| Stale artifacts >50% | Long time since last session or inactive repo | Run `/provenance --stale` to audit and archive old artifacts |
 
 ## Reference Documents
-
 - [references/artifact-consistency.md](references/artifact-consistency.md)
 - [references/promotion-tiers.md](references/promotion-tiers.md)
 - [references/hub-budget.md](references/hub-budget.md)
 - [references/cache-eviction.md](references/cache-eviction.md)
-
-## Local Resources
-
-### references/
-
-- [references/artifact-consistency-allowlist.txt](references/artifact-consistency-allowlist.txt)
-- [references/artifact-consistency.md](references/artifact-consistency.md)
-- [references/cache-eviction.md](references/cache-eviction.md)
-- [references/hub-budget.md](references/hub-budget.md)
-- [references/promotion-tiers.md](references/promotion-tiers.md)
-
-### scripts/
-
-- `scripts/artifact-consistency.sh`
-- `scripts/validate.sh`
+- [references/flywheel-cli.feature](references/flywheel-cli.feature) — Executable spec: `ao flywheel` CLI command behavior, linked to cmd tests (soc-jnfgi)

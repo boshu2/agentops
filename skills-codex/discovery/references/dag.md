@@ -68,8 +68,11 @@ Classify complexity from explicit flag first, then goal shape:
 
 ### STEP 1 - Intent Clarification
 
-If the goal is vague and `--skip-brainstorm` is not set, run `brainstorm`
-with the current goal.
+If the goal is vague and `--skip-brainstorm` is not set:
+
+```text
+Skill(skill="brainstorm", args="<goal>")
+```
 
 Record only `brainstorm_path` and the refined objective. Do not carry the full
 brainstorm transcript.
@@ -80,8 +83,11 @@ recent matching brainstorm artifact exists.
 ### STEP 1.5 - Product Design Gate
 
 When `PRODUCT.md` exists and the goal is a feature/capability rather than a
-bug, docs task, chore, dependency bump, lint, or format task, run `design`
-with the bounded objective and quick mode.
+bug, docs task, chore, dependency bump, lint, or format task:
+
+```text
+Skill(skill="design", args="<objective> --quick")
+```
 
 Design FAIL blocks discovery. PASS/WARN records `design_path` and one
 decision line.
@@ -92,14 +98,20 @@ If `ao` is available, retrieve pointers, not full context:
 
 ```bash
 ao search "<objective keywords>" 2>/dev/null || true
-ao lookup --query "<objective keywords>" --limit 5 2>/dev/null || true
+# Decision-point pull: GOLD wiki, compact pointers (no bodies), hard top-K cap
+# (ADR-0002 bookend-bound). WARN — never silently — if the gold wiki is absent.
+if [ -d .ao/wiki ]; then
+    ao lookup --query "<objective keywords>" --gold --pointers --limit 3 2>/dev/null || true
+else
+    echo "WARN: gold wiki (.ao/wiki) absent — run 'ao wiki gold'; falling back to raw .agents/ corpus" >&2
+    ao lookup --query "<objective keywords>" --limit 3 2>/dev/null || true
+fi
 ```
 
 Apply each returned item explicitly:
 
 - applicable? yes/no
-- density field affected: intent, boundary, evidence, decision, constraint, or
-  next action
+- density field affected: intent, boundary, evidence, decision, constraint, or next action
 - citation path
 
 Write the ranked result path to `ranked_packet_path`. If no artifact exists,
@@ -107,8 +119,11 @@ record a short inline list of citation paths only.
 
 ### STEP 3 - Research Contract
 
-Run `$research` as its own skill contract with the bounded objective and
-`--auto` when discovery is in auto mode.
+Invoke research as its own skill contract:
+
+```text
+Skill(skill="research", args="<objective> [--auto]")
+```
 
 The research artifact is the source of detail. Discovery extracts only:
 
@@ -120,8 +135,8 @@ The research artifact is the source of detail. Discovery extracts only:
 
 ### STEP 3.5 - Codex Fanout Approval Gate
 
-Run this step for open-ended or high-risk Codex discovery before `$plan`
-creates or updates beads. The artifact shape is defined in
+Run this step for open-ended or high-risk Codex discovery before `/plan` creates
+or updates beads. The artifact shape is defined in
 [`docs/contracts/codex-fanout-approval-packet.md`](../../../docs/contracts/codex-fanout-approval-packet.md).
 
 Write at least three independent `PerspectivePlan` artifacts under
@@ -133,13 +148,13 @@ Write at least three independent `PerspectivePlan` artifacts under
 
 Then write one `SynthesisPacket` that selects or merges the winning plan,
 records rejected alternatives, and carries open questions for Fable. Invoke
-`$codex-approval` with the `SynthesisPacket` plus every `PerspectivePlan` path
+`codex-approval` with the `SynthesisPacket` plus every `PerspectivePlan` path
 so Fable reads the artifacts directly, then persist the resulting
 `ApprovalEdge`.
 
 Gate semantics:
 
-- `PASS`: continue to `$plan`.
+- `PASS`: continue to `/plan`.
 - `WARN is not` a silent pass: update the `SynthesisPacket` and rerun approval,
   or record an explicit accepted-risk note in the `ApprovalEdge` before
   continuing.
@@ -156,9 +171,11 @@ Discovery records only:
 
 ### STEP 4 - Plan Contract
 
-Run `$plan` as its own skill contract with the bounded objective, or the
-approved `synthesis_packet_path` when STEP 3.5 ran, and `--auto` when discovery
-is in auto mode.
+Invoke plan as its own skill contract:
+
+```text
+Skill(skill="plan", args="<objective or approved synthesis_packet_path> [--auto]")
+```
 
 The plan artifact is the source of slice detail. Discovery extracts only:
 
@@ -167,34 +184,48 @@ The plan artifact is the source of slice detail. Discovery extracts only:
 - issue count and wave count
 - the `## Scenarios` Gherkin block per bead
 - acceptance criteria YAML fences
-- next `$crank` target
+- next `/crank` target
 
-Every bead `$plan` emits MUST carry an embedded `## Scenarios` Gherkin block
+Every bead `/plan` emits MUST carry an embedded `## Scenarios` Gherkin block
 (Given/When/Then) by default — this is the behavior layer and is non-optional.
 Free-text-only acceptance is invalid (AGENTS.md). The plan output MUST also
 include `acceptance_criteria` fenced YAML at two levels (the machine-checkable
 layer): the parent epic body and each child bead body. Criterion shape is
 canonical in `schemas/execution-packet.schema.json` (`#/$defs/Criterion`).
-Discovery does NOT relax this requirement; if a returned bead lacks a
-`## Scenarios` block, send it back to `$plan` to be promoted before compiling
-the packet.
+Discovery does NOT relax this requirement; run the admission gate per
+returned bead:
+
+```bash
+BEADS_DIR=$PWD/_beads br show "$BEAD_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+```
+
+Exit 1 sends the bead back to `/plan` to be promoted before compiling the
+packet. Exit 2 is a tracker failure — stop and surface it; do not reject the
+bead.
 
 ### STEP 4.5 - Optional Scaffold
 
 If the plan creates a new project, package, module, service, or bootstrap
-surface, and `--no-scaffold` is not set, run `$scaffold` for the detected
-language and project name.
+surface, and `--no-scaffold` is not set:
+
+```text
+Skill(skill="scaffold", args="<detected-language> <project-name>")
+```
 
 Record only the scaffold artifact path and constraints that affect
 pre-mortem.
 
 ### STEP 5 - Pre-Mortem Contract
 
-Run `$pre-mortem` against the exact plan artifact.
+Invoke pre-mortem against the exact plan artifact:
 
-Use quick mode for fast/standard and full council for full. PASS/WARN
-continues. FAIL triggers re-plan with the pre-mortem findings, up to 3 total
-attempts. After 3 FAIL verdicts, write BLOCKED and stop.
+```text
+Skill(skill="pre-mortem", args="<plan_path> [--quick]")
+```
+
+Use `--quick` for fast/standard and full council for full. PASS/WARN continues.
+FAIL triggers re-plan with the pre-mortem findings, up to 3 total attempts.
+After 3 FAIL verdicts, write BLOCKED and stop.
 
 Before STEP 6, propagate required pre-mortem hardening into the plan issues or
 file-backed task specs. Workers read issues and specs, not the pre-mortem

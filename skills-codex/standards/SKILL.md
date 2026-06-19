@@ -1,6 +1,6 @@
 ---
 name: standards
-description: "Run standards."
+description: 'Provide repo coding standards. Triggers: "standards", "provide repo coding standards.", "standards skill".'
 ---
 # Standards Skill
 
@@ -20,6 +20,7 @@ references that other skills load based on file types being processed.
 | Go | `references/go.md` | vibe, implement, complexity |
 | Rust | `references/rust.md` | vibe, implement, complexity |
 | TypeScript | `references/typescript.md` | vibe, implement |
+| JavaScript | `references/javascript.md` | vibe, implement |
 | Shell | `references/shell.md` | vibe, implement |
 | YAML | `references/yaml.md` | vibe |
 | JSON | `references/json.md` | vibe |
@@ -129,9 +130,11 @@ Skills that use standards:
 
 ## Reference Documents
 
+- [references/architecture-terms.md](references/architecture-terms.md)
 - [references/common-standards.md](references/common-standards.md)
 - [references/behavioral-discipline.md](references/behavioral-discipline.md)
 - [references/examples-troubleshooting-template.md](references/examples-troubleshooting-template.md)
+- [references/cli-wireup-template.md](references/cli-wireup-template.md) — Reproducible cobra subcommand template (noun + verb, injectable Options, ~10 min/cycle)
 - [references/go.md](references/go.md)
 - [references/json.md](references/json.md)
 - [references/markdown.md](references/markdown.md)
@@ -141,6 +144,7 @@ Skills that use standards:
 - [references/skill-structure.md](references/skill-structure.md)
 - [references/standards-index.md](references/standards-index.md)
 - [references/typescript.md](references/typescript.md)
+- [references/javascript.md](references/javascript.md)
 - [references/sql-safety-checklist.md](references/sql-safety-checklist.md)
 - [references/llm-trust-boundary-checklist.md](references/llm-trust-boundary-checklist.md)
 - [references/race-condition-checklist.md](references/race-condition-checklist.md)
@@ -149,33 +153,3 @@ Skills that use standards:
 - [references/yaml.md](references/yaml.md)
 - [references/skill-tier-caps.md](references/skill-tier-caps.md)
 - [references/external-source-attribution.md](references/external-source-attribution.md)
-
-## Local Resources
-
-### references/
-
-- [references/codex-skill.md](references/codex-skill.md)
-- [references/behavioral-discipline.md](references/behavioral-discipline.md)
-- [references/common-standards.md](references/common-standards.md)
-- [references/examples-troubleshooting-template.md](references/examples-troubleshooting-template.md)
-- [references/go.md](references/go.md)
-- [references/json.md](references/json.md)
-- [references/llm-trust-boundary-checklist.md](references/llm-trust-boundary-checklist.md)
-- [references/markdown.md](references/markdown.md)
-- [references/python.md](references/python.md)
-- [references/race-condition-checklist.md](references/race-condition-checklist.md)
-- [references/rust.md](references/rust.md)
-- [references/shell.md](references/shell.md)
-- [references/skill-structure.md](references/skill-structure.md)
-- [references/sql-safety-checklist.md](references/sql-safety-checklist.md)
-- [references/standards-index.md](references/standards-index.md)
-- [references/test-pyramid.md](references/test-pyramid.md)
-- [references/typescript.md](references/typescript.md)
-- [references/yaml.md](references/yaml.md)
-- [references/skill-tier-caps.md](references/skill-tier-caps.md)
-- [references/external-source-attribution.md](references/external-source-attribution.md)
-
-### scripts/
-
-- `scripts/validate.sh`
-

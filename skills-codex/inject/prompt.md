@@ -1,9 +1,8 @@
 # inject
 
-Inject relevant knowledge into session context from .agents/ artifacts. Triggers: "inject knowledge", "recall context", SessionStart hook.
+Load relevant .agents context. Triggers: "inject context", "load .agents context", "pull decay-ranked prior knowledge".
 
 ## Instructions
 
 Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
 Then read local files in `references/` and `scripts/` when needed.
-
