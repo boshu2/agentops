@@ -23,12 +23,17 @@ is_cross_runtime() {
   grep -vE '^[[:space:]]*#|^[[:space:]]*$' "${cross_runtime_file}" | grep -qxF "$1"
 }
 
+# parity_only twins are generator-verified (codex-sync byte-exact drift gate);
+# only scan BESPOKE (hand-authored) twins for residual Claude mentions.
+bespoke_skills="$(python3 -c "import json; d=json.load(open('${repo_root}/skills-codex-overrides/catalog.json')); print(chr(10).join(e['name'] for e in d.get('skills',[]) if e.get('treatment')=='bespoke'))" 2>/dev/null || true)"
+is_bespoke() { grep -qxF "$1" <<<"${bespoke_skills}"; }
+
 skill_files=()
 while IFS= read -r file; do
   skill_name="$(basename "$(dirname "${file}")")"
-  # Cross-runtime skills legitimately document non-Codex runtimes (cass parses
-  # Claude/Codex/Gemini logs, agy-native targets AGY, etc.). Exempt their SKILL.md
-  # from the no-Claude-mention scan — see scripts/lint/codex-cross-runtime-skills.txt.
+  # Only bespoke twins reach the content scan; parity twins are drift-gated.
+  is_bespoke "${skill_name}" || continue
+  # Cross-runtime bespoke skills may still document non-Codex runtimes — exempt.
   if is_cross_runtime "${skill_name}"; then
     continue
   fi
