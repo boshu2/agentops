@@ -1,6 +1,6 @@
 //go:build !windows
 
-package rpi
+package worktree
 
 import (
 	"os"

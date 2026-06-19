@@ -1,4 +1,4 @@
-package rpi
+package worktree
 
 import (
 	"context"

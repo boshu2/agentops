@@ -1,6 +1,6 @@
 //go:build linux
 
-package rpi
+package worktree
 
 import (
 	"os"
