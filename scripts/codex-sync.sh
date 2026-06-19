@@ -25,7 +25,12 @@
 # left untouched; a complete but stale parity twin is refreshed from source.
 #
 # bespoke twins (hand-authored Codex profiles) are the opt-out: they are never
-# generated or overwritten.
+# generated or overwritten — body AND references/scripts are hand-maintained, so
+# even --force skips them. Source reference/body edits do NOT auto-propagate to a
+# bespoke twin (many bespoke references are deliberate Codex rewrites of source);
+# refreshing one is a deliberate human edit. Auto-mirroring source over a bespoke
+# twin would clobber the hand-authored copy (age-0js4). Accidental drift is the
+# divergence gate's job (age-odv), not this generator's.
 #
 # Usage:
 #   scripts/codex-sync.sh                 # generate any missing parity twin (writes)
