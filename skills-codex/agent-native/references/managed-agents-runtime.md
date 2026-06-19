@@ -2,8 +2,9 @@
 
 > The concrete Claude-side recipe behind the three-phase workflow in
 > [`../SKILL.md`](../SKILL.md). Doctrine lives in the SKILL; this is the
-> runtime how-to. **AgentOps 3.0 is hookless** — guardrails are skills + the
-> `ao` CLI + CI, never ported hooks.
+> runtime how-to. **AgentOps 3.0 is runtime-hookless** — guardrails are skills +
+> the `ao` CLI + the local cockpit/pawl proof path, with CI as PR/tag/manual
+> backstop telemetry, never ported hooks.
 >
 > **Mechanism status:** `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd)
 > are open, ready beads under epic ag-7s9fo — planned, not yet in the live CLI.
@@ -22,8 +23,8 @@ A **Claude** loop running *outside* an interactive Claude Code session:
   own MCP/tool surface.
 
 All three become AgentOps-native the same way: **bundle skills → expose `ao` →
-gate via CI**. The runtime differs only in *where* the loop executes and *how*
-`ao` is reached.
+land through the cockpit/proof gate**. The runtime differs only in *where* the
+loop executes and *how* `ao` is reached.
 
 ## Phase 1 — Bundle skills into an Agent definition
 
@@ -70,21 +71,24 @@ it can call `session_bootstrap`, `inject`, `corpus_inject`, `validate`,
 **Checkpoint:** the agent can call `ao session bootstrap` + `ao inject` itself
 before doing any work.
 
-## Phase 3 — Gate the output via CI
+## Phase 3 — Gate the output through the cockpit path
 
 A reusable workflow (`agent-output-validate.yml`, ag-mptr) runs `ao validate` +
 the standards/eval-outcomes gates against whatever the agent produced — a PR branch
-or an artifact bundle — the **same** authoritative gate as interactive work.
-Green CI is the merge gate; nothing merges red.
+or an artifact bundle — as PR/tag/manual backstop telemetry. Routine acceptance
+still happens through the same local cockpit/pre-push/pawl proof path as
+interactive work.
 
-**Checkpoint:** the agent's output passed the identical CI gate.
+**Checkpoint:** the agent's output passed the local cockpit/pawl gate; remote
+backstop evidence is green when that route is used.
 
 ## Optional — in-loop SDK adapter
 
 Agent SDK users who want an *earlier, advisory* signal can register the
 `PreToolUse` / `Stop` adapter in [`sdk-hook-adapter.md`](sdk-hook-adapter.md). It
 shells out to `ao validate` and surfaces the verdict in-loop. **Clearly
-optional** — CI is the boundary, the adapter never is.
+optional** — the deterministic cockpit/proof path is the boundary, the adapter
+never is.
 
 ## Boundaries (Claude/cloud-specific)
 
@@ -96,8 +100,8 @@ optional** — CI is the boundary, the adapter never is.
 - **No skill fork.** The hosted loop loads the same `skills/` files as
   interactive sessions; a divergent guardrail set drifts and defeats the corpus
   moat.
-- **CI is the gate, not the adapter.** A bypassed in-loop hook must never mean
-  unvalidated work merges.
+- **The deterministic gate is the boundary, not the adapter.** A bypassed in-loop
+  hook must never mean unvalidated work lands.
 
 ## See also
 

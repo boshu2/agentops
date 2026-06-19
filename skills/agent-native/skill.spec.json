@@ -44,7 +44,7 @@
       "full": 3600
     }
   },
-  "output_contract": "An AgentOps-native Agent definition (skills + ao tool surface) graded by the same CI gate as interactive work. Materializes a JSON Agent definition at agent-def.json (model + stitched-skill instructions + skills array + ao MCP descriptor, no holdout values) and a runtime profile at docs/contracts/agent-runtime-profile.md; the output is accepted only on a green CI run via agent-output-validate.yml. Guardrails come from skills + the ao CLI + CI, never hooks (AgentOps 3.0 is hookless).",
+  "output_contract": "An AgentOps-native Agent definition (skills + ao tool surface) graded by the same local cockpit/pawl proof path as interactive work, with agent-output-validate.yml as PR/tag/manual backstop telemetry. Materializes a JSON Agent definition at agent-def.json (model + stitched-skill instructions + skills array + ao MCP descriptor, no holdout values) and a runtime profile at docs/contracts/agent-runtime-profile.md; the output is accepted only after the local gate of record passes. Guardrails come from skills + the ao CLI + deterministic gates, never runtime hooks (AgentOps 3.0 is runtime-hookless).",
   "evidence": {
     "sources": [
       "skills/agent-native/SKILL.md (verified: ao agent bundle, ao mcp serve, ao session bootstrap/inject/corpus inject/validate/goals measure surface)",
