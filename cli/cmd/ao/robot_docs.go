@@ -73,7 +73,7 @@ ao capabilities                 # discover the contract
 ao status --json                # where am I, what's initialized
 ao doctor --robot-triage        # one-call health + remediation
 ao inject "<topic>"             # pull relevant prior knowledge
-ao rpi phased "<goal>"          # run the Research-Plan-Implement loop
+ao orchestrate status           # inspect orchestration readiness
 ` + "```" + `
 
 ## Environment

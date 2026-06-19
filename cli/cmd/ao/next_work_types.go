@@ -10,5 +10,6 @@ import cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 type (
 	nextWorkEntry         = cliRPI.NextWorkEntry
 	nextWorkItem          = cliRPI.NextWorkItem
+	nextWorkProofRef      = cliRPI.NextWorkProofRef
 	nextWorkProofDecision = cliRPI.NextWorkProofDecision
 )

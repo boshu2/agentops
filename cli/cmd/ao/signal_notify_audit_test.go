@@ -17,8 +17,6 @@ func TestSignalNotifySitesPairWithSignalStop(t *testing.T) {
 	baseDir := filepath.Dir(thisFile)
 
 	targets := []string{
-		filepath.Join(baseDir, "rpi_phased_setup.go"),
-		filepath.Join(baseDir, "rpi_status.go"),
 		filepath.Join(baseDir, "..", "..", "internal", "goals", "measure.go"),
 	}
 

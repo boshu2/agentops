@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/orchestration"
-	"github.com/spf13/cobra"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // amRunner runs an `am robot ...` invocation and returns its stdout. It is
@@ -187,7 +187,7 @@ func runArchivePacketPath(packetPath, runID string) string {
 	}
 	// packetPath = <root>/.agents/rpi/<file> → three Dir() hops yield <root>.
 	root := filepath.Dir(filepath.Dir(filepath.Dir(packetPath)))
-	return filepath.Join(rpiRunRegistryDir(root, runID), executionPacketFile)
+	return filepath.Join(cliRPI.RPIRunRegistryDir(root, runID), cliRPI.ExecutionPacketFile)
 }
 
 // stampShapeEverywhere stamps the verdict onto the alias packet and, when a run
@@ -250,7 +250,7 @@ func executeStampShape(opts stampShapeOptions) error {
 	}
 	packetPath := opts.PacketPath
 	if strings.TrimSpace(packetPath) == "" {
-		packetPath = filepath.Join(cwd, ".agents", "rpi", executionPacketFile)
+		packetPath = filepath.Join(cwd, ".agents", "rpi", cliRPI.ExecutionPacketFile)
 	}
 	project := opts.Project
 	if strings.TrimSpace(project) == "" {
@@ -285,49 +285,4 @@ func executeStampShape(opts stampShapeOptions) error {
 	}
 	fmt.Fprintf(out, "orchestration_decision stamped: shape=%s predicates_fired=%s%s\n", verdict.Shape, fired, archiveNote)
 	return nil
-}
-
-func newRPIStampShapeCmd() *cobra.Command {
-	var (
-		packetFlag   string
-		projectFlag  string
-		proposedFlag string
-		unattended   bool
-		noAM         bool
-	)
-	cmd := &cobra.Command{
-		Use:   "stamp-shape",
-		Short: "Stamp the orchestration-shape decision onto the execution packet (live /discovery wire)",
-		Long: `Compute the orchestration shape from observable ground truth (Agent Mail
-live-writer count + per-lane reservation write-sets + the unattended/durability
-signal) via orchestration.ValidateShape, and stamp the resulting
-orchestration_decision onto .agents/rpi/execution-packet.json.
-
-This is the live wire: /discovery STEP 6 hand-compiles the packet, then invokes
-this command so the LIVE path carries a validated orchestration_decision (the
-Go seed-writer only runs in the retired rpi_* engine). am failures degrade to
-the single-agent floor; the packet always gets a record.`,
-		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			printStampShapeDeprecation()
-			return executeStampShape(stampShapeOptions{
-				PacketPath: packetFlag,
-				Project:    projectFlag,
-				Proposed:   proposedFlag,
-				Unattended: unattended,
-				NoAM:       noAM,
-				Out:        cmd.OutOrStdout(),
-			})
-		},
-	}
-	cmd.Flags().StringVar(&packetFlag, "packet", "", "Path to the execution packet (default .agents/rpi/execution-packet.json)")
-	cmd.Flags().StringVar(&projectFlag, "project", "", "Agent Mail project key for live-writer/reservation gathering (default cwd)")
-	cmd.Flags().StringVar(&proposedFlag, "proposed", "", "Model-proposed shape to validate/override (default: the packet's existing chosen_shape)")
-	cmd.Flags().BoolVar(&unattended, "unattended", false, "Mark the durability axis: the run must outlive the session (→ ATM)")
-	cmd.Flags().BoolVar(&noAM, "no-am", false, "Skip Agent Mail gathering (single-agent floor unless --unattended)")
-	return cmd
-}
-
-func init() {
-	addRPISubcommand(newRPIStampShapeCmd())
 }

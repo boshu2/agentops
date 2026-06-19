@@ -97,7 +97,7 @@ mode where one is regenerated and the other isn't.
 ## Why This Shape Works
 
 1. **Parent noun + verb subcommands.** `ao loop history` reads better
-   than `ao loop-history`. The parent groups future subcommands
+   than the flat `loop-history` spelling. The parent groups future subcommands
    (`ao loop write`, `ao loop tail`) under one verb-space. cobra
    handles this natively.
 

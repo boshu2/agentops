@@ -210,7 +210,7 @@ Write to `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` using the full templ
 
 When Step 4.5 writes reusable findings, include `dedup_key` and refresh compiled findings with `finding-compiler.sh` when that hook exists.
 
-The generated report must preserve this exact heading because `ao rpi phased` extracts verdicts with a regex anchored to it:
+The generated report must preserve this exact heading because downstream validators and ledger readers extract verdicts with a regex anchored to it:
 
 ## Council Verdict: PASS / WARN / FAIL
 

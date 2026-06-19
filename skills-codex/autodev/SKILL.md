@@ -16,7 +16,7 @@ The config/intent layer the [operating loop](../../docs/architecture/operating-l
   and stop conditions.
 - `ao autodev` creates, inspects, and validates that contract.
 - `evolve` runs the v2 autonomous improvement loop.
-- `ao rpi` runs one research -> plan -> implement -> validate lifecycle.
+- The operating loop runs one research -> plan -> implement -> validate lifecycle.
 
 ## Routing
 
@@ -89,7 +89,7 @@ contract.
 
 After `ao autodev validate` passes:
 
-- For one lifecycle, invoke `$rpi "<goal>"`; use `ao rpi ...` only for terminal-native or non-skill runtimes.
+- For one lifecycle, run the operating loop in-session; use NTM/Agent Mail or `ao agent` when the loop must run out of session.
 - For the repeated autonomous loop, invoke `$evolve` (skill-driven) or dispatch it via NTM for out-of-session runs.
 - If both `PROGRAM.md` and `GOALS.md` exist, `GOALS.md` is strategic fitness and
   `PROGRAM.md` is the operational execution layer.

@@ -62,7 +62,7 @@ ssh bushido 'cd ~/dev/agentops && ao validate --gate --changes <files>'
 
 For a **whole out-of-session loop** (a swarm of panes, not a single pane),
 orchestration routes through the ATM substrate — `ao` does not own or wrap a
-substrate; each pane dispatches its own `ao rpi` loop. See
+substrate; each pane dispatches its own operating-loop skill run. See
 [`../../using-atm/SKILL.md`](../../using-atm/SKILL.md). Multi-pane coordination
 (file locks, inboxes, handoffs) uses **agent-mail**; see the `using-atm` and
 `agent-mail` skills.

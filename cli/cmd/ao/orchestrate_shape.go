@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -47,9 +44,4 @@ func initOrchestrateInstrumentLane() {
 	initOrchestrateRoute()
 	initOrchestrateStatus()
 	initOrchestrateShape()
-}
-
-// printStampShapeDeprecation warns rpi stamp-shape users to migrate.
-func printStampShapeDeprecation() {
-	fmt.Fprintln(os.Stderr, "note: ao rpi stamp-shape is deprecated; use ao orchestrate shape")
 }

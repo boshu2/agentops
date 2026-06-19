@@ -1,8 +1,8 @@
 # Shared-Checkout Discipline
 
 When `~/dev/<repo>` is contended — peer Codex agent in the same directory,
-NTM swarm pane, out-of-session scheduled loop (cron-driven `ao rpi` / `ao
-evolve` on the substrate), or operator parallel session — **never edit in the
+NTM swarm pane, out-of-session scheduled operating-loop or `/evolve` run on the
+substrate, or operator parallel session — **never edit in the
 shared tree and never leave work
 uncommitted between turns.** Use a `git worktree`. Commit-or-stash
 incrementally with explicit paths. Verify a clean baseline before spawning

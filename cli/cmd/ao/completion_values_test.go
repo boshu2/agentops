@@ -127,10 +127,6 @@ func TestFlagCompletions_Registered(t *testing.T) {
 		{"context assemble --phase", mustFindCompletionCommand(t, "context", "assemble"), "phase", phaseValues},
 		{"context explain --phase", mustFindCompletionCommand(t, "context", "explain"), "phase", phaseValues},
 		{"context packet-status --phase", mustFindCompletionCommand(t, "context", "packet-status"), "phase", phaseValues},
-		{"rpi phased --from", mustFindCompletionCommand(t, "rpi", "phased"), "from",
-			sortedCompletionValues("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem")},
-		{"rpi phased --runtime", mustFindCompletionCommand(t, "rpi", "phased"), "runtime",
-			sortedCompletionValues("auto", "direct", "stream", "tmux")},
 		{"feedback-loop --citation-type", feedbackLoopCmd, "citation-type",
 			sortedCompletionValues(
 				types.CitationTypeRetrieved,

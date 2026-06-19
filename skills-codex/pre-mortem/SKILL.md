@@ -354,6 +354,8 @@ The pre-mortem verdict must NOT be graded by the plan's own author. A verdict pr
 
 **Write to:** `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md`
 
+The generated report must preserve the exact Council Verdict heading because downstream validators and ledger readers extract verdicts with a regex anchored to it.
+
 ```markdown
 ---
 id: pre-mortem-YYYY-MM-DD-<topic-slug>

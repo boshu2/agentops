@@ -880,56 +880,6 @@ func TestJSONValidity_Index(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Tests: RPI subcommands
-// ---------------------------------------------------------------------------
-
-func TestJSONValidity_RPIVerify(t *testing.T) {
-	withOutputJSON(t)
-
-	payload := rpiVerifyOutput{
-		Status: "PASS",
-		rpiLedgerVerifyResult: rpiLedgerVerifyResult{
-			Pass:        true,
-			RecordCount: 10,
-		},
-	}
-
-	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
-			t.Fatalf("encode: %v", err)
-		}
-	})
-
-	assertValidJSON(t, "rpi verify --json", out)
-}
-
-func TestJSONValidity_RPIVerifyFail(t *testing.T) {
-	withOutputJSON(t)
-
-	payload := rpiVerifyOutput{
-		Status: "FAIL",
-		rpiLedgerVerifyResult: rpiLedgerVerifyResult{
-			Pass:             false,
-			RecordCount:      10,
-			FirstBrokenIndex: 5,
-			Message:          "hash mismatch",
-		},
-	}
-
-	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
-			t.Fatalf("encode: %v", err)
-		}
-	})
-
-	assertValidJSON(t, "rpi verify --json (fail)", out)
-}
-
-// ---------------------------------------------------------------------------
 // Tests: Ratchet trace
 // ---------------------------------------------------------------------------
 

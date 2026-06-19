@@ -17,7 +17,7 @@ Generate real files, run real commands, verify real output. Every invocation pro
 | **Project** | `$scaffold <language> <name>` | Full project directory with build, test, lint |
 | **Component** | `$scaffold component <type> <name>` | New module/package added to existing project |
 | **CI** | `$scaffold ci <platform>` | CI/CD pipeline configuration |
-| **Domain-Slice** | `$scaffold domain <name>` | Domain-slice manifest for a scoped `ao rpi phased --domain` run |
+| **Domain-Slice** | `$scaffold domain <name>` | Domain-slice manifest for a scoped operating-loop run |
 
 ## Step 0: Determine Mode
 
@@ -348,17 +348,15 @@ Include caching directives and artifact definitions.
 
 ## Domain-Slice Mode
 
-When invoked as `$scaffold domain <name>`, scaffold a **domain-slice manifest** — the bounded-context declaration that `ao rpi phased --domain` consumes to scope an RPI run.
+When invoked as `$scaffold domain <name>`, scaffold a **domain-slice manifest** — the bounded-context declaration used to scope an operating-loop run.
 
-> There is **no `scaffold` subcommand on the `ao` CLI**. Domain-slice scaffolding is the `--scaffold-domain` flag on `ao rpi phased`; `$scaffold` is this skill, which drives that flag.
+> There is **no `scaffold` subcommand on the `ao` CLI**. Domain-slice scaffolding is this skill's responsibility; the old phased-engine flags are superseded by ADR-0009.
 
 ### Workflow
 
 1. **Generate the manifest.** Run the write-and-exit flag — it creates the template and returns without starting an RPI run:
 
-   ```
-   ao rpi phased --scaffold-domain <name>
-   ```
+   Run `$scaffold domain <name>`.
 
    This writes `docs/domains/<name>/manifest.yaml` from a template that already validates against `schemas/domain-slice-manifest.v1.schema.json`. An existing manifest is **not** overwritten unless `--force` is passed.
 
@@ -372,23 +370,19 @@ When invoked as `$scaffold domain <name>`, scaffold a **domain-slice manifest** 
 
 3. **Verify it loads.** The scaffolded manifest already passes the F3.1 schema/loader. After editing, confirm it still validates:
 
-   ```
-   ao rpi phased --domain <name> --dry-run "<goal>"
-   ```
+   Dry-run the operating-loop plan against `docs/domains/<name>/manifest.yaml` before execution.
 
    A dry run loads the manifest, prints the scoped phase prompts, and exits — proving the slice attaches.
 
 4. **Run scoped RPI.** Once the manifest is real:
 
-   ```
-   ao rpi phased --domain <name> "<goal>"
-   ```
+   Run the operating loop with `docs/domains/<name>/manifest.yaml` as the explicit scope contract.
 
    Phase prompts carry the slice's boundaries; each run also writes a domain-scope audit artifact reporting any out-of-domain references visible in evidence.
 
 ### Next commands the scaffold names
 
-`ao rpi phased --scaffold-domain` prints the follow-up commands after writing the manifest: attach via `--domain`, preview with `--dry-run`, and lint executable-spec links with `ao goals scenarios --lint`. Run them in that order.
+After writing the manifest, lint executable-spec links with `ao goals scenarios --lint`, preview the scoped operating-loop plan, then execute with the manifest as the scope contract. Run them in that order.
 
 ## Error Recovery
 
@@ -420,4 +414,4 @@ Next steps:
 
 - [references/agent-facing-tool-scaffolds.md](references/agent-facing-tool-scaffolds.md)
 - [references/recommended-reading.md](references/recommended-reading.md) — forward-looking index of external skills (e.g., `mcp-server-design`) worth absorbing into scaffold when their trigger conditions arrive. Consult before designing a new scaffold mode that targets agent-facing tool surfaces.
-- [references/scaffold.feature](references/scaffold.feature) — Executable spec: project/component/CI scaffolding entry points + domain-slice routing through `ao rpi phased --scaffold-domain` (soc-qk4b)
+- [references/scaffold.feature](references/scaffold.feature) — Executable spec: project/component/CI scaffolding entry points + domain-slice manifest routing (soc-qk4b)

@@ -69,7 +69,7 @@ Environment variables:
   AGENTOPS_NO_SC      - Disable Smart Connections (true/1)
   AGENTOPS_RPI_WORKTREE_MODE - RPI worktree policy (auto|always|never)
   AGENTOPS_RPI_RUNTIME / AGENTOPS_RPI_RUNTIME_MODE - RPI runtime mode (auto|direct|stream)
-  AGENTOPS_RPI_RUNTIME_COMMAND - Runtime command used by ao rpi phased (default: claude)
+  AGENTOPS_RPI_RUNTIME_COMMAND - Runtime command used by legacy internal RPI paths (default: claude)
   AGENTOPS_RPI_AO_COMMAND - ao command used for ratchet/checkpoint calls (default: ao)
   AGENTOPS_RPI_BD_COMMAND - bd command used for epic/child checks (default: bd)
   AGENTOPS_RPI_TMUX_COMMAND - tmux command used for status liveness probes (default: tmux)
