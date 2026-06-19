@@ -1,9 +1,11 @@
-# Historical ADR: Local Pre-Push Gate Retirement
+# Superseded Historical ADR: Local Pre-Push Gate Retirement
 
 > Superseded on 2026-06-08 by `ag-3l86`: GitHub Actions became a quota SPOF,
 > so AgentOps returned release authority to the local cockpit gate and direct
 > pushes to `main`. Keep this document as historical context for the older
-> CI-only experiment, not as current workflow doctrine.
+> CI-only experiment, not as current workflow doctrine. If this file disagrees
+> with `scripts/hooks/pre-push.local`, `scripts/install-pre-push-gate.sh`, or
+> `docs/CI-CD.md`, those current-path surfaces win.
 
 `scripts/pre-push-gate.sh` is the local mirror of `.github/workflows/validate.yml`.
 The mirror has drifted three times in observable ways during the 2026-05-19
@@ -18,13 +20,13 @@ GitHub Actions workflows under `.github/workflows/`. Current doctrine reverses
 that: the local cockpit gate is the release authority for normal direct-main
 work.
 
-Authoritative gate:
+Historical authoritative gate in this superseded decision:
 
 - `.github/workflows/validate.yml`
 - `.github/workflows/release.yml`
 - the `claude-code-review` required check
 
-Non-authoritative (retiring):
+Historical non-authoritative surfaces in this superseded decision:
 
 - `scripts/pre-push-gate.sh`
 - the ~12 helper scripts under `scripts/check-*.sh` invoked only by the gate
@@ -32,8 +34,9 @@ Non-authoritative (retiring):
   isolation (the bats that test the gate itself stay until the gate is
   deleted)
 
-`.githooks/pre-push` keeps its `bd hooks run pre-push` invocation; that piece
-is `bd` issue-tracker plumbing, not a gate.
+`.githooks/pre-push` kept its `bd hooks run pre-push` invocation; that piece was
+tracker plumbing, not the AgentOps cockpit gate. Current installs use
+`.git/hooks/pre-push` chaining `scripts/hooks/pre-push.local`.
 
 ## Why this rather than the alternatives
 
@@ -51,10 +54,13 @@ loop per push instead of a 10-20s local one. The session of 2026-05-19 spent
 several multi-minute self-correction PR cycles per local-gate-was-wrong event,
 so the per-push cost is dominated by the per-incident cost we just removed.
 
-## What replaces local enforcement
+## What replaced the superseded decision
 
-Nothing immediate. The retirement is the point. Specific past concerns and
-how they map onto the new shape:
+The older CI-only experiment was reversed. Current normal `main` pushes are
+gated locally by `.git/hooks/pre-push -> scripts/hooks/pre-push.local -> ao gate
+check --fast -> go test ./... -race -shuffle=on -count=1 -> pawl pre-push`.
+GitHub Actions are tag/PR/manual backstop telemetry. Specific past concerns and
+how they map onto the old shape:
 
 - **Speed of feedback.** CI takes 30-90s on the fast path. Operators who
   want a local sanity check can run `cd cli && make test` or `bats
@@ -81,10 +87,10 @@ This PR locks in the decision without the deletion churn:
   tracking continues to work.
 - Files four follow-up beads for the actual removal waves.
 
-After this PR lands, `git push` will no longer run the local gate. CI is the
-sole gate. The orphaned files stay on disk until the follow-up waves delete
-them, which keeps each follow-up PR a single coherent arc with a single
-rollback semantic.
+After the historical PR landed, `git push` no longer ran the local gate and CI
+was treated as the sole gate. That is no longer true. The current local gate is
+installed by `scripts/install-pre-push-gate.sh` and sourced from
+`scripts/hooks/pre-push.local`.
 
 ## Follow-up work
 

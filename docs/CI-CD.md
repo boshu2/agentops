@@ -1,12 +1,29 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+AgentOps uses a local push-as-CI gate for routine direct-main work. The release authority for a normal `main` push is the installed local cockpit gate: `.git/hooks/pre-push` chains to `scripts/hooks/pre-push.local`, builds a fresh `ao`, runs `ao gate check --fast`, runs the full `go test ./... -race -shuffle=on -count=1` suite for pushes to `main`, and then checks the head-bound pawl verdict. GitHub Actions remain useful telemetry and a tag/PR/manual backstop; they are not the routine release gate for direct-main pushes.
+
+Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+
+## Live Main-Push Path
+
+```text
+git push origin HEAD:main
+  -> .git/hooks/pre-push
+  -> scripts/hooks/pre-push.local
+  -> go build ./...
+  -> ao gate check --fast
+  -> go test ./... -race -shuffle=on -count=1
+  -> scripts/check-pawl-pre-push.sh
+  -> remote main fast-forward
+```
+
+The tracked `.githooks/` directory is legacy `bd` hook plumbing. It is inert for the current AgentOps cockpit gate: Git uses `.git/hooks` unless `core.hooksPath` says otherwise, and `scripts/install-pre-push-gate.sh` installs/chains the live gate in the shared `.git/hooks` directory.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Primary quality gate; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
+| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Backstop telemetry for routine `main`; authoritative blocking gate for release tags, PRs, and manual validation; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
@@ -223,17 +240,22 @@ One CI check is intentionally **not** wired into the local gate:
 
 ## Hookless by default - local gate is the release authority
 
-AgentOps 3.0 ships **zero hooks**. The hooks were deleted, not demoted. What a
-pre-commit, pre-push, or session hook used to enforce implicitly is now enforced
-by explicit local commands, primarily `scripts/pre-push-gate.sh` and
-`ao gate check`. GitHub Actions remain available as manual or release-tag
-backstops, but they are not the routine release authority.
+AgentOps 3.0 ships **zero runtime hooks by default**. Repository contributors can
+opt into the local cockpit gate by running `scripts/install-pre-push-gate.sh`,
+which installs the current gate into the shared `.git/hooks` directory for the
+main checkout and linked worktrees. What a session hook used to enforce
+implicitly is now enforced by explicit local commands and this installed
+pre-push chain, primarily `ao gate check --fast`, the push-to-main full race
+suite, and the pawl pre-push check. GitHub Actions remain available as manual,
+PR, and release-tag backstops, but they are not the routine release authority.
 The workflow is guided by skills plus the `ao` CLI; context flows through explicit
 channels (`ao inject` / context packets through ports), not hook side effects.
 
 If you want a bounded gate of your own (block a dangerous operation, bootstrap a
-session, run a parity check), author it with the `hooks-authoring` skill.
-AgentOps does not ship one.
+session, run a parity check), author it with the `hooks-authoring` skill. Do not
+infer live gate behavior from tracked `.githooks/`; use `git config --get
+core.hooksPath` and `scripts/install-pre-push-gate.sh` to inspect or refresh the
+actual hook chain.
 
 ## Security Gate
 

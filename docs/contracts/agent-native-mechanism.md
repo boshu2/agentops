@@ -17,16 +17,19 @@ hooks:
 2. **The `ao` CLI** — the deterministic tool surface (`ao session bootstrap`,
    `ao inject`, `ao corpus inject --query`, `ao validate`, `ao goals measure`),
    reachable in two ways: shell (Codex/NTM) or **MCP** (`ao mcp serve`, hosted/SDK).
-3. **CI as the authoritative gate** — `.github/workflows/validate.yml` runs the
-   standards/scenario/holdout checks as CI jobs, **not** as PreToolUse hooks.
+3. **Local cockpit gate as routine authority** — the installed `.git/hooks/pre-push`
+   path runs `scripts/hooks/pre-push.local`; `.github/workflows/validate.yml` runs
+   standards/scenario/holdout checks as tag/PR/manual backstop telemetry, **not**
+   as PreToolUse hooks.
 
 A runtime-specific Agent definition is emitted by `ao agent bundle` (`--managed`
-| `--codex-ntm`) and graded by the **same** CI gate as interactive work
-(`.github/workflows/agent-output-validate.yml`).
+| `--codex-ntm`) and can be graded by the agent-output backstop workflow
+(`.github/workflows/agent-output-validate.yml`) when run through PR/tag/manual
+validation.
 
 ## 1. Hook-intent → hookless equivalent (zero hooks required)
 
-| Old hook *intent* | Claude (Managed Agent / SDK / MCP-`ao`) | Codex / NTM (shell-`ao` / tmux / ssh bushido) | CI gate (authoritative) |
+| Old hook *intent* | Claude (Managed Agent / SDK / MCP-`ao`) | Codex / NTM (shell-`ao` / tmux / ssh bushido) | Local gate / CI backstop |
 |---|---|---|---|
 | **Orientation** (SessionStart) | `ao session bootstrap` + `session-bootstrap` skill in instructions | `ssh bushido 'cd repo && ao session bootstrap'` | n/a (read-path) |
 | **Standards injection** (Edit) | `standards` skill loaded into instructions; `ao validate` | same skill text via `ao agent bundle --codex-ntm` | `validate.yml` standards/scenario jobs |
@@ -34,9 +37,10 @@ A runtime-specific Agent definition is emitted by `ao agent bundle` (`--managed`
 | **Commit / output review** (commit-review) | the PR + `agent-output-validate.yml` | same (Codex output bundled, then validated) | `claude-review` + `agent-output-validate.yml` |
 | **Holdout isolation** (holdout-isolation-gate) | rubric projection strips ground truth *by construction*; payloads never carry holdout | same — the Outcomes/local score is the only thing that crosses | `Outcomes holdout-leak gate` (`check-outcomes-holdout-leak.sh`, deny-by-default) |
 
-**Conclusion: zero hooks are required.** Every old-hook intent maps onto a skill,
-an `ao` subcommand, and a CI job. The CI gate is the enforcement boundary; the
-skill/`ao` layer is advisory-by-design (an agent that ignores them simply fails CI).
+**Conclusion: zero runtime hooks are required.** Every old-hook intent maps onto a
+skill, an `ao` subcommand, the local cockpit pre-push gate, and a CI backstop. The
+installed local gate is the routine enforcement boundary; CI replays the contract
+for tag/PR/manual validation.
 
 ## 2. Managed Agents Agent definition + self-hosted sandbox
 
@@ -73,12 +77,13 @@ surfaces. AgentOps treats these strictly as an **optional adapter** — the wiri
 lives in [`skills/agent-native/references/sdk-hook-adapter.md`](https://github.com/boshu2/agentops/blob/main/skills/agent-native/references/sdk-hook-adapter.md),
 never as the primary guardrail.
 
-**Why CI is the default gate, not these hooks:** a hook runs *inside* the agent's
-own process — the same actor it is meant to police — so it is advisory and
-bypassable, and it drifts per-runtime (Claude SDK ≠ Codex ≠ Managed Agent). CI
-runs *after* the agent, on a neutral host, against the PR — one gate, every
-runtime, non-bypassable. The SDK hook adapter is a convenience (fail fast in the
-loop); the CI gate is the contract.
+**Why the local cockpit gate is the default enforcement boundary, not these
+hooks:** a hook runs *inside* the agent's own process — the same actor it is
+meant to police — so it is advisory and bypassable, and it drifts per-runtime
+(Claude SDK ≠ Codex ≠ Managed Agent). The installed local cockpit gate binds
+routine main pushes before they leave the workstation; CI replays the contract
+for tag/PR/manual validation. The SDK hook adapter is a convenience (fail fast in
+the loop), not the release authority.
 
 ## 4. Non-goals (explicit)
 
@@ -94,7 +99,7 @@ loop); the CI gate is the contract.
 
 - [`/agent-native` skill](https://github.com/boshu2/agentops/blob/main/skills/agent-native/SKILL.md) — the how-to (this doc is the why/mechanism).
 - `cli/cmd/ao/agent.go` (`ao agent bundle`), `cli/cmd/ao/mcp_serve.go` (`ao mcp serve`).
-- `.github/workflows/agent-output-validate.yml` — the authoritative output gate.
+- `.github/workflows/agent-output-validate.yml` — backstop output validation.
 - Fleet topology (bushido sandbox, tailnet `100.109.17.108`, Dolt 3306): operator hub.
 - Open follow-ons: the managed-dispatch CLI (`ao managed dispatch`) and the
   self-hosted bushido Managed-Agents sandbox registration are the code/ops slices

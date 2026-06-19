@@ -4,10 +4,12 @@
 #
 # Pre-push hook: delegates to bd for issue tracking.
 #
-# The previous shared push-gate invocation (scripts/pre-push-gate.sh) was
-# retired by soc-g2r9. CI (.github/workflows/validate.yml + claude-code-review)
-# is the sole authoritative push gate. See:
-#   docs/contracts/local-pre-push-gate-retirement.md
+# Historical bd shim. This tracked .githooks directory is not the live AgentOps
+# cockpit gate on current installs; core.hooksPath points at .git/hooks, where
+# scripts/install-pre-push-gate.sh chains scripts/hooks/pre-push.local.
+# The old CI-only gate decision in local-pre-push-gate-retirement.md is
+# superseded. Current direct-main release authority is local pre-push + ao gate
+# + full randomized race + pawl check; GitHub Actions are tag/PR/manual backstop.
 
 set -euo pipefail
 

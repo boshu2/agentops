@@ -8,7 +8,7 @@ This guide lists what was removed in 3.0 and what to use instead.
 
 `ao hooks install`, `--with-hooks`, and the embedded hook surface are gone. AgentOps no longer installs or runs hooks.
 
-**Use instead:** skills + the `ao` CLI guide the workflow; **CI is the authoritative gate** (`.github/workflows/validate.yml`). What a PreToolUse/PostToolUse hook used to enforce locally, a CI job now enforces on push. For the in-session knowledge loop, the skills (`/rpi`, `/evolve`, `/post-mortem`) call the `ao` commands directly instead of relying on hook side effects.
+**Use instead:** skills + the `ao` CLI guide the workflow; the **installed local cockpit pre-push gate is routine release authority** (`scripts/install-pre-push-gate.sh` -> `.git/hooks/pre-push` -> `scripts/hooks/pre-push.local`), while `.github/workflows/validate.yml` remains tag/PR/manual backstop telemetry. What a PreToolUse/PostToolUse hook used to enforce locally is now enforced by the explicit local gate before main pushes. For the in-session knowledge loop, the skills (`/rpi`, `/evolve`, `/post-mortem`) call the `ao` commands directly instead of relying on hook side effects.
 
 ## Removed: the daemon (`ao daemon` / `agentopsd`)
 
