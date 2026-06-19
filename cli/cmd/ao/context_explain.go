@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	aocontext "github.com/boshu2/agentops/cli/internal/context"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 var contextExplainFlags struct {
@@ -250,7 +251,7 @@ func collectContextExplainSuppressions(cwd string, bundle rankedContextBundle, p
 }
 
 func nextWorkExplainReason(cwd string, item nextWorkItem) string {
-	if proof := classifyNextWorkCompletionProof(cwd, "", item); proof.Complete {
+	if proof := cliRPI.ClassifyNextWorkCompletionProof(cwd, "", item); proof.Complete {
 		return proofBackedNextWorkReason(proof)
 	}
 	return "Selected from the backlog by repo affinity, severity, and query overlap."
@@ -283,7 +284,7 @@ func collectContextExplainNextWorkProofSuppressions(cwd string) []contextExplain
 			continue
 		}
 		for _, item := range entry.Items {
-			proof := classifyNextWorkCompletionProof(cwd, entry.SourceEpic, item)
+			proof := cliRPI.ClassifyNextWorkCompletionProof(cwd, entry.SourceEpic, item)
 			if !proof.Complete {
 				continue
 			}
