@@ -31,6 +31,8 @@ discovery_state = {
     research_path: null,
     perspective_plan_paths: [],
     synthesis_packet_path: null,
+    duel_verdict_dir: null,
+    duel_decision: null,
     fable_approval_path: null,
     approval_edge_path: null,
     plan_path: null,
@@ -133,41 +135,62 @@ The research artifact is the source of detail. Discovery extracts only:
 - applicable test levels
 - constraints that must affect the plan
 
-### STEP 3.5 - Codex Fanout Approval Gate
+### STEP 3.5 - Plan-Pawl Duel Gate (fanout class)
 
-Run this step for open-ended or high-risk Codex discovery before `/plan` creates
-or updates beads. The artifact shape is defined in
-[`docs/contracts/codex-fanout-approval-packet.md`](../../../docs/contracts/codex-fanout-approval-packet.md).
+**Risk-class router.** Run the **plan-pawl duel** for **fanout-class** discovery —
+architecture forks, one-way doors, contract/coordination changes (the `plan-pawl`
+row in [`docs/contracts/pawls.md`](../../../docs/contracts/pawls.md)). For an **MVP
+vertical slice** (cheap, reversible work), SKIP this step — gating it is the
+waterfall `pawls.md` forbids; the slice gets only the inline `--quick` pre-mortem
+at STEP 5.
 
-Write at least three independent `PerspectivePlan` artifacts under
-`.agents/discovery/<run-id>/`, normally using these lenses:
+The plan-pawl is the `multi-model` pawl applied to the PLAN artifact instead of a
+code diff. It SUBSUMES the two redundant cross-family-review gates discovery used to
+run — the single-judge Codex fanout approval and the STEP 5 pre-mortem council —
+into ONE gate. For fanout class this duel verdict IS the pre-mortem verdict; STEP 5
+is already satisfied.
 
-- product/user value
-- architecture and gate integrity
-- operations, migration, and failure recovery
+Generate, then duel:
 
-Then write one `SynthesisPacket` that selects or merges the winning plan,
-records rejected alternatives, and carries open questions for Fable. Invoke
-`codex-approval` with the `SynthesisPacket` plus every `PerspectivePlan` path
-so Fable reads the artifacts directly, then persist the resulting
-`ApprovalEdge`.
+1. Write at least three independent `PerspectivePlan` artifacts under
+   `.agents/discovery/<run-id>/`, normally using these lenses:
+   - product/user value
+   - architecture and gate integrity
+   - operations, migration, and failure recovery
+   Then write one `SynthesisPacket` that selects or merges the winning plan,
+   records rejected alternatives, and carries open questions.
+2. Run the cross-family DUEL over the `SynthesisPacket`: two judge panes from
+   DISTINCT model families (e.g. Claude + Codex via
+   [`dual-pane-atm`](../../dual-pane-atm/SKILL.md), `--no-user`, fresh-context by
+   construction). Each pane writes one judge verdict
+   (`{family,disposition,warn_class,judgment_flag}`) to `.agents/duel/<run-id>/`.
+3. Decide deterministically — never by reading the panes yourself:
 
-Gate semantics:
+   ```bash
+   ao plan-pawl decide --dir .agents/duel/<run-id> --round <N> --max-rounds 3
+   ```
 
-- `PASS`: continue to `/plan`.
-- `WARN is not` a silent pass: update the `SynthesisPacket` and rerun approval,
-  or record an explicit accepted-risk note in the `ApprovalEdge` before
-  continuing.
-- `FAIL`: do not create beads; return to fanout/synthesis. After three failed
-  approval attempts, write BLOCKED and stop.
+Gate semantics (the exit code IS the decision):
+
+- exit 0 `PASS` (quorum: no FAIL AND >= 2 distinct roster families) -> continue to
+  `/plan`.
+- exit 3 `REDO` (auto-redo, no human) -> a FAIL re-runs fanout/synthesis with the
+  findings; a mechanical WARN is auto-applied then re-judged; re-run with `--round`
+  incremented. A judgment WARN is surfaced but does not block PASS.
+- exit 4 `BLOCKED` -> a circuit breaker tripped (round > max, an explicit judgment
+  flag, or oscillation): write BLOCKED and stop (the andon — rare and earned).
 
 Discovery records only:
 
 - `perspective_plan_paths`
 - `synthesis_packet_path`
-- `fable_approval_path`
-- `approval_edge_path`
+- `duel_verdict_dir` and the `ao plan-pawl decide` decision (PASS/REDO/BLOCKED)
+- `approval_edge_path` (the `ApprovalEdge` records BOTH judge panes for the duel
+  form; the single-Fable form remains valid under `--no-duel`)
 - one decision line explaining the selected plan
+
+The artifact shapes are defined in
+[`docs/contracts/codex-fanout-approval-packet.md`](../../../docs/contracts/codex-fanout-approval-packet.md).
 
 ### STEP 4 - Plan Contract
 
@@ -215,21 +238,25 @@ Skill(skill="scaffold", args="<detected-language> <project-name>")
 Record only the scaffold artifact path and constraints that affect
 pre-mortem.
 
-### STEP 5 - Pre-Mortem Contract
+### STEP 5 - Pre-Mortem Contract (MVP-slice class)
 
-Invoke pre-mortem against the exact plan artifact:
+**Fanout class:** the pre-mortem is SUBSUMED by the STEP 3.5 plan-pawl duel — that
+cross-family verdict IS the pre-mortem verdict. Do not run a second council; skip
+to STEP 6.
+
+**MVP-slice class** (the STEP 3.5 duel was skipped): invoke the inline `--quick`
+pre-mortem against the exact plan artifact:
 
 ```text
-Skill(skill="pre-mortem", args="<plan_path> [--quick]")
+Skill(skill="pre-mortem", args="<plan_path> --quick")
 ```
 
-Use `--quick` for fast/standard and full council for full. PASS/WARN continues.
-FAIL triggers re-plan with the pre-mortem findings, up to 3 total attempts.
-After 3 FAIL verdicts, write BLOCKED and stop.
+PASS/WARN continues. FAIL triggers re-plan with the pre-mortem findings, up to 3
+total attempts. After 3 FAIL verdicts, write BLOCKED and stop.
 
-Before STEP 6, propagate required pre-mortem hardening into the plan issues or
-file-backed task specs. Workers read issues and specs, not the pre-mortem
-report.
+Before STEP 6, propagate required hardening — from the STEP 3.5 duel verdict
+(fanout) or this pre-mortem (MVP-slice) — into the plan issues or file-backed task
+specs. Workers read issues and specs, not the report.
 
 ### STEP 6 - Compile Execution Packet
 
