@@ -1955,6 +1955,20 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "public-tested",
+      "command": "worktree create",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "worktree gc",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "public-stateful-fixture-needed",
       "command": "yield emit",
       "coverage_status": "allowlisted",
