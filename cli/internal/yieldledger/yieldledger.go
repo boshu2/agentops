@@ -116,6 +116,13 @@ type GateVerdictBody struct {
 	CrossFamily      bool           `json:"cross_family"`
 	AuthorNeReviewer bool           `json:"author_ne_reviewer"`
 	EvidencePresent  bool           `json:"evidence_present"`
+	// Domain is the bounded-context / work-class tag the verdict happened in
+	// (e.g. "concurrency", "gate-policy", "docs"). It gives the slow loop a
+	// dimension to query escapes by — "what escaped in THIS domain." Reason is
+	// the verdict's rationale; on a REFUTED verdict it is the what-was-missed
+	// signal a derived check is built from. (age-membrane-memory-j9c6.1)
+	Domain string `json:"domain,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }
 
 // UsageBody is the typed payload of a usage event. Feeds gauges R, L, and A/R.
@@ -177,6 +184,8 @@ type GateVerdictInput struct {
 	CrossFamily      bool
 	AuthorNeReviewer bool
 	EvidencePresent  bool
+	Domain           string
+	Reason           string
 }
 
 // UsageInput holds the fields needed to append a usage event.
@@ -275,6 +284,8 @@ func newGateVerdictEvent(in GateVerdictInput) Event {
 			CrossFamily:      in.CrossFamily,
 			AuthorNeReviewer: in.AuthorNeReviewer,
 			EvidencePresent:  in.EvidencePresent,
+			Domain:           in.Domain,
+			Reason:           in.Reason,
 		},
 	}
 }

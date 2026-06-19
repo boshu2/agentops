@@ -9,6 +9,34 @@ import (
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
+// TestEmitYieldEvent_GateVerdictCarriesDomainAndReason is the regression for the
+// cross-family refute (age-membrane-memory-j9c6): the emit path parsed domain+
+// reason into the body but DROPPED them when building GateVerdictInput, so the
+// membrane's new memory fields were a no-op in production. They must survive
+// emit -> load end-to-end.
+func TestEmitYieldEvent_GateVerdictCarriesDomainAndReason(t *testing.T) {
+	root := t.TempDir()
+	ts := time.Date(2026, 6, 19, 14, 0, 0, 0, time.UTC)
+	body := `{"difficulty":1,"pawl_verdict_ref":{"bead_id":"ag-r","head_sha":"abc1234"},"disposition":"REFUTED","head_sha":"abc1234","attempt":2,"author_context_id":"ctx","refuter_families":["codex"],"author_family":"claude","cross_family":true,"author_ne_reviewer":true,"evidence_present":true,"domain":"concurrency","reason":"data race on a shared counter"}`
+	if err := emitYieldEvent(root, yieldledger.EventGateVerdict, "ag-r", "r1", ts, body); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	gvs := ledger.GateVerdictsFor("ag-r")
+	if len(gvs) != 1 || gvs[0].GateVerdict == nil {
+		t.Fatalf("want 1 gate-verdict with a body, got %d", len(gvs))
+	}
+	if gvs[0].GateVerdict.Domain != "concurrency" {
+		t.Errorf("Domain = %q, want concurrency (emit path dropped it)", gvs[0].GateVerdict.Domain)
+	}
+	if gvs[0].GateVerdict.Reason != "data race on a shared counter" {
+		t.Errorf("Reason = %q, want the missed reason (emit path dropped it)", gvs[0].GateVerdict.Reason)
+	}
+}
+
 // TestEmitYieldEvent_AllKinds verifies each event kind decodes its JSON body and
 // appends through the ledger, and that the bead-keyed projections see it.
 func TestEmitYieldEvent_AllKinds(t *testing.T) {

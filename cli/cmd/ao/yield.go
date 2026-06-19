@@ -267,6 +267,7 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 			AuthorContextID: b.AuthorContextID, RefuterFamilies: b.RefuterFamilies,
 			AuthorFamily: b.AuthorFamily, CrossFamily: b.CrossFamily,
 			AuthorNeReviewer: b.AuthorNeReviewer, EvidencePresent: b.EvidencePresent,
+			Domain: b.Domain, Reason: b.Reason,
 		}); err != nil {
 			return err
 		}

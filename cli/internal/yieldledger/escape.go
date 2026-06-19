@@ -34,6 +34,13 @@ type Escape struct {
 	RefutedAttempt  int      `json:"refuted_attempt"`
 	RefutedTS       string   `json:"refuted_ts"`
 	RefuterFamilies []string `json:"refuter_families,omitempty"`
+
+	// Domain is the bounded-context the escape happened in (from the confirmed
+	// false-done) — the dimension the slow loop queries by. Missed is what the
+	// refuting catch found (the refuted verdict's reason) — the signal a derived
+	// membrane-check is built from. (age-membrane-memory-j9c6.1)
+	Domain string `json:"domain,omitempty"`
+	Missed string `json:"missed,omitempty"`
 }
 
 // verdictRow is a flattened gate-verdict carrying the envelope TS for ordering.
@@ -43,6 +50,8 @@ type verdictRow struct {
 	attempt     int
 	ts          string
 	families    []string
+	domain      string
+	reason      string
 }
 
 // DetectEscapes returns the escapes in runID, one per escaping bead (v1
@@ -76,6 +85,8 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			attempt:     ev.GateVerdict.Attempt,
 			ts:          ev.TS,
 			families:    ev.GateVerdict.RefuterFamilies,
+			domain:      ev.GateVerdict.Domain,
+			reason:      ev.GateVerdict.Reason,
 		})
 	}
 
@@ -123,7 +134,43 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			RefutedAttempt:   refuted.attempt,
 			RefutedTS:        refuted.ts,
 			RefuterFamilies:  refuted.families,
+			Domain:           confirmed.domain,
+			Missed:           refuted.reason,
 		})
 	}
 	return escapes
+}
+
+// EscapesByDomain returns every escape in the ledger whose Domain == domain,
+// across ALL runs — the slow loop's accumulated "what has escaped here before"
+// memory for one bounded context (the seed for a domain-scoped derived check or
+// a "look out for this here" warning). Deterministically ordered by run, then
+// by bead. An empty domain or nil ledger yields nothing.
+// (age-membrane-memory-j9c6.2)
+func EscapesByDomain(l *Ledger, domain string) []Escape {
+	if l == nil || domain == "" {
+		return nil
+	}
+	seen := map[string]struct{}{}
+	var runs []string
+	for _, ev := range l.Events {
+		if ev.Event != EventGateVerdict {
+			continue
+		}
+		if _, ok := seen[ev.RunID]; !ok {
+			seen[ev.RunID] = struct{}{}
+			runs = append(runs, ev.RunID)
+		}
+	}
+	sort.Strings(runs)
+
+	var out []Escape
+	for _, run := range runs {
+		for _, e := range DetectEscapes(l, run) {
+			if e.Domain == domain {
+				out = append(out, e)
+			}
+		}
+	}
+	return out
 }
