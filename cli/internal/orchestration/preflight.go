@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -100,6 +102,12 @@ func RunPreflight(ctx context.Context, opts PreflightOptions) (InstrumentResult,
 	}
 	checks = append(checks, sessCS)
 
+	// Concurrency safety: the two shared-state hazards that bit fan-out runs.
+	// NTM has no notion of either — this is the AgentOps admission gate's job.
+	// WARN-tier: preflight READS the hazard; the pre-push hook + worktree guard
+	// ENFORCE it (fail-closed) in their own lanes.
+	checks = append(checks, concurrencyChecks(opts.RepoRoot)...)
+
 	verdict := AggregateVerdictFromChecks(checks)
 	return InstrumentResult{
 		SchemaVersion:        InstrumentSchemaVersionV1,
@@ -111,6 +119,43 @@ func RunPreflight(ctx context.Context, opts PreflightOptions) (InstrumentResult,
 		Checks:               checks,
 		Panes:                profile.Panes,
 	}, nil
+}
+
+// concurrencyChecks surfaces the two shared-state hazards that bite fan-out runs
+// (proven live 2026-06-18): mutating work in the bare canonical checkout instead
+// of an isolated worktree (a concurrent session's `git reset` wipes uncommitted
+// work), and a concurrent serialized push already holding the lock on main. Both
+// are deterministic local checks; the substrate (NTM) has no notion of either.
+func concurrencyChecks(repoRoot string) []CheckStatus {
+	var checks []CheckStatus
+
+	// Worktree isolation: a linked git worktree carries a .git FILE (a gitdir
+	// pointer); the shared canonical checkout carries a .git DIRECTORY. Spawning
+	// from the canonical checkout means N sessions share one mutable working tree.
+	wt := CheckStatus{ID: "worktree_isolation", Status: VerdictStatusPass}
+	if info, err := os.Stat(filepath.Join(repoRoot, ".git")); err != nil {
+		wt.Status = VerdictStatusWarn
+		wt.Detail = "cannot determine worktree isolation"
+	} else if info.IsDir() {
+		wt.Status = VerdictStatusWarn
+		wt.Detail = "spawning from the shared canonical checkout — use an isolated worktree so a concurrent reset cannot wipe uncommitted work"
+	}
+	checks = append(checks, wt)
+
+	// Push lock: push-serial.sh holds ${TMPDIR:-/tmp}/agentops-push.lock for the
+	// duration of a serialized push. Its presence means main is being written now.
+	pl := CheckStatus{ID: "push_lock", Status: VerdictStatusPass}
+	tmp := os.Getenv("TMPDIR")
+	if tmp == "" {
+		tmp = "/tmp"
+	}
+	if _, err := os.Stat(filepath.Join(tmp, "agentops-push.lock")); err == nil {
+		pl.Status = VerdictStatusWarn
+		pl.Detail = "a serialized push to main is in progress (push-serial lock held) — main is being written"
+	}
+	checks = append(checks, pl)
+
+	return checks
 }
 
 func findToolSpec(c ToolsContract, id string) *ToolSpec {
