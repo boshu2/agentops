@@ -342,6 +342,20 @@ The pre-mortem verdict must NOT be graded by the plan's own author. A verdict pr
 
 **Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed.
 
+### Step 2.10: Pre-Registered Decision Rule (strategy / experiment / one-way-door plans)
+
+When the plan under review is a **strategy**, **experiment-driven** plan, or a **one-way-door** decision (irreversible: schema migration, public API change, architecture fork, security posture change, data deletion), the pre-mortem MUST require and record a **pre-registered decision rule** — defined BEFORE the council judges deliberate.
+
+A pre-registered decision rule answers three questions:
+
+1. **What result changes the decision?** Name the specific finding, metric, or evidence that would cause the plan to be rejected or materially altered. (Not "if judges say FAIL" — that's tautological.)
+2. **What threshold or CI gate kills the claim?** Name a concrete, mechanically verifiable condition: a test that must pass, a metric that must stay within bounds, a property that must hold. If no such gate exists, the plan is unfalsifiable — FAIL.
+3. **What negative result redirects?** Name what happens on a real negative: pivot to alternative X, defer to next cycle, escalate to human. "Try harder" is not a redirect.
+
+Record the decision rule in the council packet frontmatter as `decision_rule:` before judges deliberate. Judges evaluate the plan AGAINST the decision rule — not just "is this plan good" but "does this plan survive its own kill conditions."
+
+**Why:** without a pre-registered decision rule, pre-mortem degenerates into "does this plan seem reasonable" — a question the author already answered yes to. The decision rule makes the pre-mortem falsifiable. Surfaced by a cross-family (Codex) pre-mortem that found real problems an inline review missed because the inline review had no kill conditions to test against.
+
 ### Step 2.11: Plan-Pawl Duel Checklist (the cross-family invariant)
 
 No-self-grading + cross-family judging is **one invariant** — *a plan's acceptance verdict must come from an independent, cross-family adversary, against pre-registered kill conditions.* It has **two delivery forms of the same thing**, not two gates:
