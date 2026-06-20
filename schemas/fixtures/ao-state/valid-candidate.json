@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "ao_state_finding_candidate",
+  "id": "finding-age-membrane-valid",
+  "title": "Fresh non-author finding can enter admitted AO state",
+  "status": "candidate",
+  "created_at": "2026-06-19T19:00:00Z",
+  "updated_at": "2026-06-19T19:05:00Z",
+  "source": {
+    "bead_id": "age-membrane-memory-arch-tz2s.2.8.2",
+    "run_id": "run-state-valid",
+    "author_id": "codex:worker-a",
+    "author_context_id": "ctx-author-a",
+    "author_family": "codex",
+    "repo": "agentops",
+    "path": ".agents/findings/finding-age-membrane-valid.md",
+    "source_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "severity": "significant",
+  "category": "validation-gap",
+  "summary": "Admission requires a fresh independent review and deterministic evidence.",
+  "evidence": [
+    "go test ./cli/internal/aostate -run TestAdmissionCore"
+  ],
+  "body": "A finding becomes durable AO state only after a separate reviewer confirms it against fresh evidence."
+}

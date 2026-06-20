@@ -3795,19 +3795,36 @@ ao state [command]
 
 #### `ao state admit`
 
-Admit one confirmed state finding into .agents/state/findings
+Admit one independently reviewed Finding candidate into .ao/accepted
 
 ```
-ao state admit --finding <path> [flags]
+ao state admit --candidate <path> --verdict <path> [flags]
 ```
 
 **Flags:**
 
 ```
-      --destination string   Destination under .agents/state/findings/ (default: finding id)
-      --finding string       Path to a state_finding JSON file (required)
+      --candidate string     Path to an .ao Finding candidate JSON file (required)
+      --destination string   Destination under .ao/accepted/findings/ (default: finding id)
   -h, --help                 help for admit
       --max-age-days int     Maximum age for reviewed findings (default 30)
+      --verdict string       Path to an independent admission verdict JSON file (required)
+```
+
+#### `ao state candidate`
+
+Inspect inert .ao state candidates
+
+```
+ao state candidate [command]
+```
+
+##### `ao state candidate validate`
+
+Validate an inert .ao Finding candidate and print its digest
+
+```
+ao state candidate validate <path> [flags]
 ```
 
 #### `ao state doctor`
@@ -3816,6 +3833,14 @@ Diagnose state memory health
 
 ```
 ao state doctor [flags]
+```
+
+#### `ao state review-request`
+
+Emit the digest-bound review request for a Finding candidate
+
+```
+ao state review-request <candidate> [flags]
 ```
 
 #### `ao state validate`
@@ -3828,10 +3853,17 @@ ao state validate <file> [file...] [flags]
 
 #### `ao state verify`
 
-Verify state memory schemas, fixtures, and admitted findings
+Verify .ao state schemas, fixtures, accepted findings, and ledger rows
 
 ```
 ao state verify [flags]
+```
+
+**Flags:**
+
+```
+      --all    Verify all .ao state authority surfaces
+  -h, --help   help for verify
 ```
 
 ---
