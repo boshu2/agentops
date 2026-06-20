@@ -32,12 +32,11 @@ import (
 )
 
 var (
-	wikiPublishDryRun  bool
-	wikiPublishJSON    bool
-	wikiPublishFloor   float64
-	wikiPublishBead    string
-	wikiPublishOut     string
-	wikiPublishExpect  string
+	wikiPublishDryRun bool
+	wikiPublishJSON   bool
+	wikiPublishFloor  float64
+	wikiPublishBead   string
+	wikiPublishExpect string
 )
 
 // checkPawlVerdict reports whether a CONFIRMED, commit-current pawl verdict
@@ -74,9 +73,9 @@ It FAILS CLOSED on any leak — nothing is published.
 Real publish (--bead <id>) is gated on a CONFIRMED pawl verdict bound to the
 current commit (cross-family decision age-xf9r): it recomputes the digest,
 re-runs the leak scan (fail-closed), requires ` + "`pawl-verdict.sh check`" + ` to pass for
-(bead, HEAD), then writes the EXACT reviewed candidate to the gold dir
-(--out, default .ao/wiki). --expect-digest <hex> additionally fails closed
-unless the recomputed digest matches (publish exactly what dry-run reviewed).`,
+(bead, HEAD), then writes the EXACT reviewed candidate to the canonical gold
+dir (.ao/wiki). --expect-digest <hex> additionally fails closed unless the
+recomputed digest matches (publish exactly what dry-run reviewed).`,
 	Args: cobra.NoArgs,
 	RunE: runWikiPublish,
 }
@@ -171,45 +170,34 @@ func runWikiPublish(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Publish the EXACT reviewed candidate (byte-identical to what was scanned +
-	// digested + verdict-gated). Resolve --out relative to the repo base.
-	outDir := wikiPublishOut
-	if !filepath.IsAbs(outDir) {
-		outDir = filepath.Join(base, outDir)
+	// digested + verdict-gated) to the CANONICAL gold dir (base/.ao/wiki — the
+	// same location `ao wiki gold` owns). There is deliberately NO operator-
+	// supplied --out: a user-controlled RemoveAll target is a destructive-escape
+	// class (lexical `..`, then in-repo symlinks to outside — both caught by
+	// cross-family review). Removing the surface eliminates the class; the
+	// canonical .ao/wiki inherits only the gold compiler's existing behavior.
+	outDir := filepath.Join(base, goldWikiRelDir)
+	if err := os.RemoveAll(outDir); err != nil {
+		return fmt.Errorf("clear gold dir %s: %w", outDir, err)
 	}
-	// Guard the destructive clear (RemoveAll): the gold dir MUST resolve to a
-	// path STRICTLY INSIDE the repo base. Rejecting only "/", ".", and base let
-	// `--out ../victim` escape the repo and RemoveAll an arbitrary external path
-	// (cross-family REFUTE). Containment via Rel catches every ".." escape.
-	absBase, err := filepath.Abs(base)
-	if err != nil {
-		return err
+	if err := os.CopyFS(outDir, os.DirFS(cand.OutDir)); err != nil {
+		return fmt.Errorf("publish to %s: %w", outDir, err)
 	}
-	absOut, err := filepath.Abs(outDir)
-	if err != nil {
-		return err
-	}
-	rel, err := filepath.Rel(absBase, absOut)
-	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-		return fmt.Errorf("refusing to publish into --out %q: %q is not strictly inside the repo (%q)", wikiPublishOut, absOut, absBase)
-	}
-	if err := os.RemoveAll(absOut); err != nil {
-		return fmt.Errorf("clear gold dir %s: %w", absOut, err)
-	}
-	if err := os.CopyFS(absOut, os.DirFS(cand.OutDir)); err != nil {
-		return fmt.Errorf("publish to %s: %w", absOut, err)
-	}
-	outDir = absOut
 	fmt.Fprintf(out, "PUBLISHED digest %s -> %s (verdict-gated on bead=%s HEAD=%s)\n",
 		cand.Digest[:min(12, len(cand.Digest))], outDir, wikiPublishBead, head[:min(7, len(head))])
 	return nil
 }
+
+// goldWikiRelDir is the canonical gold wiki location (repo-relative), the same
+// directory `ao wiki gold` writes. Publish has no --out so there is no
+// operator-controlled destructive path.
+const goldWikiRelDir = ".ao/wiki"
 
 func init() {
 	wikiPublishCmd.Flags().BoolVar(&wikiPublishDryRun, "dry-run", false, "compute + leak-scan the candidate without publishing")
 	wikiPublishCmd.Flags().BoolVar(&wikiPublishJSON, "json", false, "emit the candidate report as JSON")
 	wikiPublishCmd.Flags().Float64Var(&wikiPublishFloor, "confidence-floor", 0, "override the promotion confidence floor")
 	wikiPublishCmd.Flags().StringVar(&wikiPublishBead, "bead", "", "bead whose CONFIRMED verdict for HEAD authorizes real publish (required without --dry-run)")
-	wikiPublishCmd.Flags().StringVar(&wikiPublishOut, "out", ".ao/wiki", "gold wiki output directory for real publish")
 	wikiPublishCmd.Flags().StringVar(&wikiPublishExpect, "expect-digest", "", "fail closed unless the recomputed digest matches this (publish exactly what dry-run reviewed)")
 	wikiCmd.AddCommand(wikiPublishCmd)
 }
