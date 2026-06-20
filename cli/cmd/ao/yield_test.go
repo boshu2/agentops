@@ -79,6 +79,42 @@ func TestDeriveTranscriptTokens_CodexTranscript(t *testing.T) {
 	}
 }
 
+func TestDeriveTranscriptTokens_WorkButNoUsageErrors(t *testing.T) {
+	// A transcript with a real model turn but NO usage in any recognized shape
+	// (unrecognized/missing usage) must ERROR, not silently report a derived 0 —
+	// that 0 is the same silent-0 this command kills. reconcile then fail-opens.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "no-usage.jsonl")
+	jsonl := `{"type":"user","timestamp":"2026-04-11T12:00:00Z","content":"do the thing"}
+{"type":"assistant","timestamp":"2026-04-11T12:00:05Z","message":{"role":"assistant","content":"did the thing"}}
+`
+	if err := os.WriteFile(path, []byte(jsonl), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, _, err := deriveTranscriptTokens(path); err == nil {
+		t.Fatal("expected error for transcript with a model turn but no usage data, got nil")
+	}
+}
+
+func TestDeriveTranscriptTokens_ZeroUsageIsNotAbsent(t *testing.T) {
+	// A transcript that genuinely reports zero usage carries a usage block, so it
+	// is NOT treated as absent — returns (0,0) success, no error.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "zero-usage.jsonl")
+	jsonl := `{"type":"assistant","timestamp":"2026-04-11T12:00:05Z","message":{"role":"assistant","content":"x","usage":{"input_tokens":0,"output_tokens":0}}}
+`
+	if err := os.WriteFile(path, []byte(jsonl), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	in, out, err := deriveTranscriptTokens(path)
+	if err != nil {
+		t.Fatalf("zero-usage transcript should not error: %v", err)
+	}
+	if in != 0 || out != 0 {
+		t.Errorf("got (%d,%d), want (0,0)", in, out)
+	}
+}
+
 func TestDeriveTranscriptTokens_RealFixtureDedups(t *testing.T) {
 	// Regression for the cross-family REFUTE: real Claude Code transcripts
 	// repeat the same usage block across multiple rows of one response. The
