@@ -131,6 +131,38 @@ func TestParser_Parse_ClaudeTranscriptShape(t *testing.T) {
 	}
 }
 
+func TestParser_Parse_CapturesAssistantUsage(t *testing.T) {
+	// Producer truth (age-membrane-memory-arch-tz2s.3.1): assistant messages
+	// in Claude Code transcripts carry a per-turn usage block under "message".
+	// The parser must preserve it so the bronze ingest captures real tokens
+	// instead of the hardcoded 0.
+	jsonl := `{"type":"assistant","timestamp":"2026-02-22T03:56:39.705Z","message":{"role":"assistant","content":"done","usage":{"input_tokens":100,"cache_read_input_tokens":900,"output_tokens":50}}}
+{"type":"user","timestamp":"2026-02-22T03:56:40.705Z","content":"next"}
+`
+	p := NewParser()
+	result, err := p.Parse(strings.NewReader(jsonl))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if len(result.Messages) != 2 {
+		t.Fatalf("Messages count = %d, want 2", len(result.Messages))
+	}
+	u := result.Messages[0].Usage
+	if u == nil {
+		t.Fatalf("assistant message Usage is nil, want captured usage")
+	}
+	if u.InputTokens != 100 || u.CacheReadInputTokens != 900 || u.OutputTokens != 50 {
+		t.Fatalf("Usage = %+v, want input=100 cacheRead=900 output=50", *u)
+	}
+	if got := u.TotalInputTokens(); got != 1000 {
+		t.Errorf("TotalInputTokens() = %d, want 1000", got)
+	}
+	// User message carries no usage block.
+	if result.Messages[1].Usage != nil {
+		t.Errorf("user message Usage = %+v, want nil", result.Messages[1].Usage)
+	}
+}
+
 func TestParser_Parse_CodexArchivedSessionShape(t *testing.T) {
 	jsonl := `{"timestamp":"2026-03-05T20:20:42.160Z","type":"session_meta","payload":{"id":"019cbfa8-9155-7121-b18a-dfa3783cdd9e","timestamp":"2026-03-05T20:20:21.464Z"}}
 {"timestamp":"2026-03-05T20:20:42.163Z","type":"event_msg","payload":{"type":"user_message","message":"find recruiter chat"}}

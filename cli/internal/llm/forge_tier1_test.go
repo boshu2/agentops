@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
+	"github.com/boshu2/agentops/cli/internal/parser"
 )
 
 // writeFixtureJSONL writes a minimal Claude JSONL fixture at path and returns
@@ -280,5 +281,31 @@ func TestRunForgeTier1_AgentWorkerGenerator(t *testing.T) {
 	}
 	if !strings.Contains(string(body), "model: codex-headless") {
 		t.Fatalf("session page missing worker model:\n%s", string(body))
+	}
+}
+
+func TestDeriveSessionMeta_SumsRealTokens(t *testing.T) {
+	// Producer truth (age-membrane-memory-arch-tz2s.3.1): the bronze ingest
+	// must sum the real per-message usage blocks, not emit a hardcoded 0.
+	// Fixture is parsed with the production reader (fixture fidelity).
+	jsonl := `{"type":"assistant","sessionId":"sess-tok","timestamp":"2026-04-11T12:00:00Z","message":{"role":"assistant","content":"part one","usage":{"input_tokens":100,"cache_read_input_tokens":400,"output_tokens":30}}}
+{"type":"assistant","sessionId":"sess-tok","timestamp":"2026-04-11T12:00:05Z","message":{"role":"assistant","content":"part two","usage":{"input_tokens":50,"cache_creation_input_tokens":200,"output_tokens":20}}}
+{"type":"user","sessionId":"sess-tok","timestamp":"2026-04-11T12:00:10Z","content":"thanks"}
+`
+	p := parser.NewParser()
+	parsed, err := p.Parse(strings.NewReader(jsonl))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	meta := deriveSessionMeta("sess-tok.jsonl", parsed, Tier1Options{Model: "test"}, &fakeLLM{})
+
+	// TokensIn = sum of full input footprints: (100+400) + (50+200) = 750.
+	if meta.TokensIn != 750 {
+		t.Errorf("TokensIn = %d, want 750", meta.TokensIn)
+	}
+	// TokensOut = 30 + 20 = 50.
+	if meta.TokensOut != 50 {
+		t.Errorf("TokensOut = %d, want 50", meta.TokensOut)
 	}
 }

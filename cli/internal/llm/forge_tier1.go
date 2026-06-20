@@ -260,9 +260,18 @@ func deriveSessionMeta(path string, parsed *parser.ParseResult, opts Tier1Option
 	}
 
 	turns := 0
+	tokensIn := 0
+	tokensOut := 0
 	for _, m := range parsed.Messages {
 		if m.Type == "user" {
 			turns++
+		}
+		// Producer truth (age-membrane-memory-arch-tz2s.3.1): sum the real
+		// per-message usage blocks so the bronze tier carries true token
+		// counts instead of a hardcoded 0.
+		if m.Usage != nil {
+			tokensIn += m.Usage.TotalInputTokens()
+			tokensOut += m.Usage.OutputTokens
 		}
 	}
 
@@ -273,8 +282,8 @@ func deriveSessionMeta(path string, parsed *parser.ParseResult, opts Tier1Option
 		StartedAt:    started,
 		EndedAt:      ended,
 		Turns:        turns,
-		TokensIn:     0, // not tracked in v1 (requires usage block parsing)
-		TokensOut:    0,
+		TokensIn:     tokensIn,
+		TokensOut:    tokensOut,
 		ModelPrimary: "",
 		Model:        opts.Model,
 		ModelDigest:  gen.Digest(),

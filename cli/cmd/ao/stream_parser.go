@@ -48,6 +48,9 @@ func applyEventToProgress(p *PhaseProgress, ev StreamEvent) {
 	case EventTypeResult:
 		p.CostUSD = ev.CostUSD
 		p.TurnCount = ev.NumTurns
+		if t := ev.Usage.TotalTokens(); t > 0 {
+			p.Tokens = t
+		}
 		if ev.DurationMS > 0 {
 			p.Elapsed = time.Duration(ev.DurationMS * float64(time.Millisecond))
 		}

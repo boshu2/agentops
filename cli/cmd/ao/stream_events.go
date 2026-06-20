@@ -48,6 +48,40 @@ var (
 	reQuotaError   = regexp.MustCompile(`(?i)\b(quota exceeded|billing|insufficient.+credits?|payment required)\b`)
 )
 
+// StreamUsage holds the token-usage accounting Claude Code reports in a
+// result event's "usage" block. Parsing it is the first seam of producer
+// truth (age-membrane-memory-arch-tz2s.3.1): without it, per-bead token
+// capture silently defaults to 0 and the medallion's bronze tier is lossy.
+//
+// Anthropic reports cached input separately from fresh input, so the full
+// input footprint is InputTokens + CacheCreationInputTokens +
+// CacheReadInputTokens (see TotalInputTokens).
+type StreamUsage struct {
+	// InputTokens is fresh (non-cached) prompt tokens.
+	InputTokens int `json:"input_tokens,omitempty"`
+
+	// OutputTokens is generated completion tokens.
+	OutputTokens int `json:"output_tokens,omitempty"`
+
+	// CacheCreationInputTokens is prompt tokens written to the cache.
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
+
+	// CacheReadInputTokens is prompt tokens served from the cache.
+	CacheReadInputTokens int `json:"cache_read_input_tokens,omitempty"`
+}
+
+// TotalInputTokens returns the full input footprint: fresh prompt tokens plus
+// cache-creation and cache-read tokens. This is the honest "tokens_in" for the
+// yield ledger, since cached tokens are still real input the model processed.
+func (u StreamUsage) TotalInputTokens() int {
+	return u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens
+}
+
+// TotalTokens returns the full conversational footprint (all input + output).
+func (u StreamUsage) TotalTokens() int {
+	return u.TotalInputTokens() + u.OutputTokens
+}
+
 // StreamEvent is the top-level envelope for every JSON line emitted by
 // Claude Code's streaming output (--output-format stream-json).
 // The Type field determines which payload fields are populated.
@@ -100,6 +134,9 @@ type StreamEvent struct {
 
 	// NumTurns is the number of conversation turns in a result event.
 	NumTurns int `json:"num_turns,omitempty"`
+
+	// Usage is the token-usage accounting reported in result events.
+	Usage StreamUsage `json:"usage,omitempty"`
 }
 
 // ParseStreamEvent unmarshals a single JSON line into a StreamEvent.

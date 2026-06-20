@@ -55,6 +55,23 @@ func TestParseStreamEvents(t *testing.T) {
 	}
 }
 
+func TestParseStreamEvents_CapturesTokens(t *testing.T) {
+	// Producer truth (age-membrane-memory-arch-tz2s.3.1): the result event's
+	// usage block must flow into PhaseProgress.Tokens, not stay at 0.
+	input := strings.Join([]string{
+		`{"type":"init","session_id":"sess-tok","model":"claude-opus-4-8"}`,
+		`{"type":"result","cost_usd":0.05,"num_turns":2,"duration_ms":3000,"usage":{"input_tokens":1000,"cache_read_input_tokens":500,"output_tokens":250}}`,
+	}, "\n")
+
+	progress, err := ParseStreamEvents(strings.NewReader(input), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := 1000 + 500 + 250; progress.Tokens != want {
+		t.Errorf("Tokens = %d, want %d (full input+output footprint)", progress.Tokens, want)
+	}
+}
+
 func TestParseStreamEvents_SkipsMalformed(t *testing.T) {
 	input := "not json\n{\"type\":\"init\",\"session_id\":\"s2\"}\n"
 
