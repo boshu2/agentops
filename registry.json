@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-19T20:45:37Z",
+  "generated_at": "2026-06-20T00:36:38Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 88,
+    "cli_commands": 89,
     "workflows": 4,
-    "capabilities": 177
+    "capabilities": 178
   },
   "surfaces": {
     "skills": [
@@ -1378,6 +1378,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao state",
+        "path": "cli/cmd/ao/",
+        "purpose": "Validate, admit, verify, and doctor AgentOps state memory",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao status",
         "path": "cli/cmd/ao/",
         "purpose": "Show AgentOps status",
@@ -1531,9 +1538,9 @@
     ]
   },
   "capability_summary": {
-    "total": 177,
+    "total": 178,
     "skills": 75,
-    "cli_commands": 88,
+    "cli_commands": 89,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1615,6 +1622,7 @@
     "session",
     "sessions",
     "skills",
+    "state",
     "status",
     "tick",
     "trace",
@@ -5598,6 +5606,23 @@
       "type": "cli-command",
       "bounded_context": "BC4",
       "purpose": "Inspect and validate the skills/ tree",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.state",
+      "name": "ao state",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Validate, admit, verify, and doctor AgentOps state memory",
       "status": "active",
       "driven_by_skills": [],
       "flags": [

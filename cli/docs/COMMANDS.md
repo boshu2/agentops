@@ -3768,6 +3768,59 @@ ao sessions spawn <template-path> [flags]
 
 ---
 
+### `ao state`
+
+Manage the durable AgentOps state-memory contract.
+
+```
+ao state [command]
+```
+
+**Subcommands:**
+
+#### `ao state admit`
+
+Admit one confirmed state finding into .agents/state/findings
+
+```
+ao state admit --finding <path> [flags]
+```
+
+**Flags:**
+
+```
+      --destination string   Destination under .agents/state/findings/ (default: finding id)
+      --finding string       Path to a state_finding JSON file (required)
+  -h, --help                 help for admit
+      --max-age-days int     Maximum age for reviewed findings (default 30)
+```
+
+#### `ao state doctor`
+
+Diagnose state memory health
+
+```
+ao state doctor [flags]
+```
+
+#### `ao state validate`
+
+Validate state memory JSON files against their schemas
+
+```
+ao state validate <file> [file...] [flags]
+```
+
+#### `ao state verify`
+
+Verify state memory schemas, fixtures, and admitted findings
+
+```
+ao state verify [flags]
+```
+
+---
+
 ### `ao trace`
 
 Trace the provenance of an artifact back to its source transcript.
