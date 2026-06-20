@@ -50,6 +50,23 @@ Codex is a first-class runtime in this repo.
 > gate's job, tracked under age-odv to add an explicit bespoke exemption, not
 > codex-sync's.)
 
+> **Pointer twins are exempt from the mirror requirement (`parity_policy: pointer`).**
+> Distinct from bespoke: some twins are deliberately THIN POINTERS — they carry no
+> mirrored prose, just "the source skill is the source of truth — read it first"
+> plus a short Codex Runtime Contract (e.g. `pre-land-refuters`, `agent-mail`,
+> `ntm`; ~16 of them). For these there is nothing to mirror, so a source-only prose
+> edit must NOT demand twin churn. Declare it once in the twin's frontmatter:
+> ```yaml
+> parity_policy: pointer   # twin defers to the source body; exempt from source-divergence
+> ```
+> `validate-codex-generated-artifacts.sh` (`twin_is_pointer`) then skips the
+> SKILL.md-body and references divergence gates for that twin. Use this ONLY for a
+> genuine pointer — a twin that duplicates source prose must stay a full mirror and
+> keep the marker off, so its divergence gate still fires. The twin's own content
+> (incl. its Codex Runtime Contract) is still validated by the source→codex
+> existence check and the manifest/hash audit. Marking the existing ~16 pointer
+> twins is tracked under age-backfill-pointer-twin-markers-uco.
+
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
 1. Update the source skill under `skills/` when the shared contract changes.
