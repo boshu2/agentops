@@ -3982,6 +3982,23 @@ ao wiki promote [flags]
       --vault string   Vault root (default: current directory)
 ```
 
+#### `ao wiki publish`
+
+ao wiki publish is the membrane gate over the gold wiki.
+
+```
+ao wiki publish [flags]
+```
+
+**Flags:**
+
+```
+      --confidence-floor float   override the promotion confidence floor
+      --dry-run                  compute + leak-scan the candidate without publishing (required; real publish is gated on age-xf9r)
+  -h, --help                     help for publish
+      --json                     emit the candidate report as JSON
+```
+
 #### `ao wiki query`
 
 Answer a pending wiki question into wiki/synthesis/.
