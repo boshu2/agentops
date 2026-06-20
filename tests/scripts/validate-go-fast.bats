@@ -14,6 +14,7 @@ setup() {
 }
 
 teardown() {
+    rm -rf "$REPO_ROOT/cli/internal/validate-go-fast-deletedpkg"
     rm -rf "$TMP_DIR"
 }
 
@@ -141,7 +142,7 @@ GO
 #!/usr/bin/env bash
 case "$*" in
     *"rev-parse --git-dir"*) echo ".git"; exit 0 ;;
-    *"diff --name-only --cached"*) echo "cli/cmd/ao/doctor.go"; exit 0 ;;
+    *"diff --name-only --cached"*) echo "cli/internal/adapters/agentsdoctor/doctor.go"; exit 0 ;;
     *"diff --name-only"*) echo ""; exit 0 ;;
     *"ls-files --others"*) echo ""; exit 0 ;;
 esac
@@ -155,5 +156,37 @@ GIT
     run bash "$SCRIPT" --scope worktree
     [ "$status" -eq 0 ]
     grep -q -- '-run ^(' "$GO_LOG"
-    grep -q -- './cmd/ao' "$GO_LOG"
+    grep -q -- './internal/adapters/agentsdoctor' "$GO_LOG"
+}
+
+@test "validate-go-fast.sh skips deleted package directories" {
+    GO_LOG="$TMP_DIR/go.log"
+    mkdir -p "$REPO_ROOT/cli/internal/validate-go-fast-deletedpkg"
+
+    cat > "$MOCK_BIN/go" <<'GO'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$GO_LOG"
+exit 0
+GO
+    chmod +x "$MOCK_BIN/go"
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+case "$*" in
+    *"rev-parse --git-dir"*) echo ".git"; exit 0 ;;
+    *"diff --name-only --cached"*) echo "cli/internal/validate-go-fast-deletedpkg/deleted.go"; exit 0 ;;
+    *"diff --name-only"*) echo ""; exit 0 ;;
+    *"ls-files --others"*) echo ""; exit 0 ;;
+esac
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    export PATH="$MOCK_BIN:$PATH"
+    export GO_LOG
+
+    run bash "$SCRIPT" --scope worktree
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SKIP: Go changes detected but no resolvable module/package paths"* ]]
+    [ ! -s "$GO_LOG" ]
 }
