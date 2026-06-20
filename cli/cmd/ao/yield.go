@@ -138,7 +138,44 @@ func deriveTranscriptTokens(path string) (tokensIn, tokensOut int, err error) {
 	// TokenTotals picks the right aggregation per runtime: Codex cumulative
 	// total, or Claude per-message usage de-duped by response id.
 	tokensIn, tokensOut = parsed.TokenTotals()
+
+	// Usage-absent vs usage-zero: if the transcript carried real work (an
+	// assistant/agent turn) but NO usage data was found in any recognized shape
+	// (no Codex FinalUsage, no Claude per-message usage), the format's usage went
+	// unrecognized — a derived 0 here would be the same silent-0 this command
+	// exists to kill, just for an unknown shape. Error so reconcile-pr.sh takes a
+	// VISIBLE fail-open path. A transcript that genuinely reports zero usage still
+	// carries a usage block (FinalUsage set, or a message.Usage), so it is NOT
+	// caught here. forge_tier1 (historical mining) deliberately does NOT apply
+	// this — it records 0 for usage-less old sessions rather than failing ingest.
+	if parsed.FinalUsage == nil && tokensIn == 0 && tokensOut == 0 && !anyMessageUsage(parsed) {
+		if transcriptHasAssistantTurn(parsed) {
+			return 0, 0, fmt.Errorf("transcript %s: %d messages with an assistant turn but no usage data found (unrecognized format?)",
+				path, len(parsed.Messages))
+		}
+	}
 	return tokensIn, tokensOut, nil
+}
+
+// anyMessageUsage reports whether any parsed message carried a usage block.
+func anyMessageUsage(parsed *parser.ParseResult) bool {
+	for i := range parsed.Messages {
+		if parsed.Messages[i].Usage != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// transcriptHasAssistantTurn reports whether the transcript contains a model
+// turn — the signal that work happened and usage should have been recorded.
+func transcriptHasAssistantTurn(parsed *parser.ParseResult) bool {
+	for i := range parsed.Messages {
+		if parsed.Messages[i].Type == "assistant" || parsed.Messages[i].Role == "assistant" {
+			return true
+		}
+	}
+	return false
 }
 
 func runYieldTokens(cmd *cobra.Command, _ []string) error {
