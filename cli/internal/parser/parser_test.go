@@ -183,6 +183,36 @@ func TestParser_Parse_CapturesMessageIDForDedup(t *testing.T) {
 	}
 }
 
+func TestParser_Parse_CodexTokenCountTotals(t *testing.T) {
+	// Codex transcripts report a CUMULATIVE token total on each token_count
+	// event; the LAST one is the session total (not summed). TokenTotals must
+	// use FinalUsage, not the per-message sum. (cross-family REFUTE: a Codex
+	// transcript was returning 0 because only message.usage was read.)
+	jsonl := `{"timestamp":"2026-04-25T23:39:50.000Z","type":"session_meta","payload":{"id":"sess-cx","timestamp":"2026-04-25T23:39:49.000Z"}}
+{"timestamp":"2026-04-25T23:39:52.000Z","type":"event_msg","payload":{"type":"agent_message","message":"working"}}
+{"timestamp":"2026-04-25T23:39:54.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":200,"output_tokens":50,"total_tokens":1050}}}}
+{"timestamp":"2026-04-25T23:39:56.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":3000,"cached_input_tokens":900,"output_tokens":120,"total_tokens":3120}}}}
+`
+	p := NewParser()
+	result, err := p.Parse(strings.NewReader(jsonl))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if result.FinalUsage == nil {
+		t.Fatal("FinalUsage is nil; Codex token_count total not captured")
+	}
+	in, out := result.TokenTotals()
+	if in != 3000 || out != 120 {
+		t.Errorf("TokenTotals = (%d,%d), want (3000,120) — last cumulative total", in, out)
+	}
+	// token_count events must NOT pollute the summed message list.
+	for _, m := range result.Messages {
+		if m.Type == "codex_token_count" {
+			t.Error("token_count sentinel leaked into Messages")
+		}
+	}
+}
+
 func TestParser_Parse_CodexArchivedSessionShape(t *testing.T) {
 	jsonl := `{"timestamp":"2026-03-05T20:20:42.160Z","type":"session_meta","payload":{"id":"019cbfa8-9155-7121-b18a-dfa3783cdd9e","timestamp":"2026-03-05T20:20:21.464Z"}}
 {"timestamp":"2026-03-05T20:20:42.163Z","type":"event_msg","payload":{"type":"user_message","message":"find recruiter chat"}}

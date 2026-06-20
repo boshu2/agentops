@@ -57,6 +57,28 @@ func TestDeriveTranscriptTokens_MalformedErrors(t *testing.T) {
 	}
 }
 
+func TestDeriveTranscriptTokens_CodexTranscript(t *testing.T) {
+	// Codex is the default runtime on this machine; its transcript reports a
+	// cumulative total_token_usage (last wins), NOT per-message usage. The
+	// derivation must read it, not return 0. (cross-family REFUTE fix)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "codex.jsonl")
+	jsonl := `{"timestamp":"2026-04-25T23:39:50.000Z","type":"session_meta","payload":{"id":"sess-cx","timestamp":"2026-04-25T23:39:49.000Z"}}
+{"timestamp":"2026-04-25T23:39:54.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"output_tokens":50,"total_tokens":1050}}}}
+{"timestamp":"2026-04-25T23:39:56.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":32397,"cached_input_tokens":7040,"output_tokens":40,"total_tokens":32437}}}}
+`
+	if err := os.WriteFile(path, []byte(jsonl), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	in, out, err := deriveTranscriptTokens(path)
+	if err != nil {
+		t.Fatalf("deriveTranscriptTokens: %v", err)
+	}
+	if in != 32397 || out != 40 {
+		t.Errorf("Codex tokens = (%d,%d), want (32397,40) — last cumulative total", in, out)
+	}
+}
+
 func TestDeriveTranscriptTokens_RealFixtureDedups(t *testing.T) {
 	// Regression for the cross-family REFUTE: real Claude Code transcripts
 	// repeat the same usage block across multiple rows of one response. The

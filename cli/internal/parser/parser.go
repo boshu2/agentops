@@ -26,6 +26,9 @@ const (
 	msgTypeAssistant  = "assistant"
 	msgTypeToolUse    = "tool_use"
 	msgTypeToolResult = "tool_result"
+	// msgTypeCodexTokenCount is an internal sentinel: a Codex token_count event
+	// folded into ParseResult.FinalUsage rather than the message list.
+	msgTypeCodexTokenCount = "codex_token_count"
 )
 
 // Error classification constants for parse errors.
@@ -93,6 +96,19 @@ type codexSessionMeta struct {
 type codexEventPayload struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
+	// Info carries the cumulative token accounting on a "token_count" event.
+	Info *struct {
+		TotalTokenUsage *codexTokenUsage `json:"total_token_usage"`
+	} `json:"info,omitempty"`
+}
+
+// codexTokenUsage is the Codex transcript's running token total. Unlike Claude
+// (per-message usage), Codex emits a CUMULATIVE total on each token_count event,
+// so the LAST one is the session total. input_tokens already includes cached
+// input, and total_tokens == input_tokens + output_tokens.
+type codexTokenUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
 }
 
 type codexResponseItem struct {
@@ -123,6 +139,22 @@ type ParseResult struct {
 
 	// ParsedAt is when parsing completed.
 	ParsedAt time.Time
+
+	// FinalUsage is the Codex cumulative session token total (the last
+	// token_count event). When set, it is authoritative and supersedes the
+	// per-message Claude usage sum — see TokenTotals.
+	FinalUsage *types.TokenUsage
+}
+
+// TokenTotals returns the session's real token footprint, choosing the right
+// aggregation per runtime: Codex emits a cumulative total (FinalUsage, last
+// wins), while Claude emits per-message usage that SumUsage de-dups by response
+// id. Producer truth (age-membrane-memory-arch-tz2s.3.1/.3.2).
+func (r *ParseResult) TokenTotals() (tokensIn, tokensOut int) {
+	if r.FinalUsage != nil {
+		return r.FinalUsage.TotalInputTokens(), r.FinalUsage.OutputTokens
+	}
+	return types.SumUsage(r.Messages)
 }
 
 // ParseError provides structured error information for transcript parsing failures.
@@ -191,6 +223,12 @@ func (p *Parser) processLine(line []byte, lineNum int, result *ParseResult) {
 		return
 	}
 	if msg != nil {
+		// Codex token_count events carry the CUMULATIVE session total; keep the
+		// last one as FinalUsage and never add it to the summed message list.
+		if msg.Type == msgTypeCodexTokenCount {
+			result.FinalUsage = msg.Usage
+			return
+		}
 		result.Messages = append(result.Messages, *msg)
 	}
 }
@@ -474,6 +512,23 @@ func (p *Parser) parseCodexEvent(raw rawMessage, lineNum int) (*types.Transcript
 	case "agent_message":
 		msgType = msgTypeAssistant
 		role = msgTypeAssistant
+	case "token_count":
+		// Codex's cumulative session total. Surfaced as a sentinel message that
+		// processLine folds into ParseResult.FinalUsage (last wins), never into
+		// the summed message list.
+		if payload.Info == nil || payload.Info.TotalTokenUsage == nil {
+			return nil, nil
+		}
+		return &types.TranscriptMessage{
+			Type:         msgTypeCodexTokenCount,
+			Timestamp:    parseTimestamp(raw.Timestamp),
+			SessionID:    raw.SessionID,
+			MessageIndex: lineNum,
+			Usage: &types.TokenUsage{
+				InputTokens:  payload.Info.TotalTokenUsage.InputTokens,
+				OutputTokens: payload.Info.TotalTokenUsage.OutputTokens,
+			},
+		}, nil
 	default:
 		return nil, nil
 	}
