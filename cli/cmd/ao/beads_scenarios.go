@@ -57,10 +57,14 @@ var beadsScenariosFetch = func(id string) (fetchedBead, error) {
 
 var beadsScenariosCmd = &cobra.Command{
 	Use:   "scenarios",
-	Short: "Convert bead acceptance criteria into Gherkin scenarios",
+	Short: "[DEPRECATED — use 'ao beads verify-acceptance'] Convert bead acceptance criteria into Gherkin scenarios",
 	Args:  cobra.NoArgs,
 	Long: `Turn a bead's free-text acceptance criteria into structured Gherkin
 Given/When/Then scenarios.
+
+DEPRECATED: this surface shells the retired 'bd' binary and applies a single
+Gherkin contract to every bead. Prefer 'ao beads verify-acceptance', which is
+br-native and applies the right acceptance contract per issue_type.
 
 The 'extract' subcommand is a dry-run: it prints a candidate '## Scenarios'
 block to stdout for review and never modifies the bead. The 'validate'
