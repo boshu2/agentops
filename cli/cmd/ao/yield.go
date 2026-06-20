@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -129,14 +128,16 @@ func deriveTranscriptTokens(path string) (tokensIn, tokensOut int, err error) {
 	// The parser skips malformed lines, so a non-JSONL file parses "successfully"
 	// to zero messages. Treat content-that-yields-nothing as an error so a caller
 	// (reconcile-pr.sh) takes a VISIBLE fail-open path instead of silently
-	// emitting a derived 0 that looks real.
-	if len(parsed.Messages) == 0 && (parsed.MalformedLines > 0 || parsed.TotalLines > 0) {
+	// emitting a derived 0 that looks real. A Codex transcript can carry token
+	// totals (FinalUsage) with few/no summed messages, so that counts as parseable.
+	if len(parsed.Messages) == 0 && parsed.FinalUsage == nil &&
+		(parsed.MalformedLines > 0 || parsed.TotalLines > 0) {
 		return 0, 0, fmt.Errorf("transcript %s: no parseable messages (%d lines, %d malformed)",
 			path, parsed.TotalLines, parsed.MalformedLines)
 	}
-	// SumUsage de-dups by response id: one Claude response spans several rows
-	// that repeat the same usage block, so a naive per-row sum overcounts 2-3x.
-	tokensIn, tokensOut = types.SumUsage(parsed.Messages)
+	// TokenTotals picks the right aggregation per runtime: Codex cumulative
+	// total, or Claude per-message usage de-duped by response id.
+	tokensIn, tokensOut = parsed.TokenTotals()
 	return tokensIn, tokensOut, nil
 }
 
