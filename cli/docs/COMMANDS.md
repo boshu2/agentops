@@ -3023,6 +3023,22 @@ ao beads verify <bead-id> [flags]
       --verbose   Include FRESH citations in the output (default: stale only)
 ```
 
+#### `ao beads verify-acceptance`
+
+Read beads via br (never the retired bd) and check each bead carries the
+
+```
+ao beads verify-acceptance <bead-id>... [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for verify-acceptance
+      --json     Emit verdicts as JSON
+      --strict   Exit non-zero on any FAIL or UNDEFINED verdict
+```
+
 ---
 
 ### `ao compile`
