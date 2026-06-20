@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "kind": "ao_state_admission_verdict",
+  "candidate_id": "finding-age-membrane-valid",
+  "candidate_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "reviewer_id": "codex:validator-b",
+  "reviewer_context_id": "ctx-reviewer-b",
+  "reviewer_family": "codex",
+  "reviewed_at": "2026-06-19T19:08:00Z",
+  "verdict": "CONFIRMED",
+  "head_sha": "0123456789abcdef",
+  "evidence_ref": ".agents/evidence/ao-state-plane/s2-admission-core.log",
+  "proof_ref": "docs/evidence/age-membrane-memory-arch-tz2s.2.8-pawl.md",
+  "summary": "Independent reviewer confirmed the candidate."
+}

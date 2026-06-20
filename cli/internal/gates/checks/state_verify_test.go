@@ -10,7 +10,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-func TestStateVerifyCheckRegistered(t *testing.T) {
+func TestAoStateVerifyGateRegistered(t *testing.T) {
 	check, ok := gates.Default.Get("state.verify")
 	if !ok {
 		t.Fatal("state.verify gate is not registered")
@@ -29,7 +29,7 @@ func TestStateVerifyCheckRegistered(t *testing.T) {
 	}
 }
 
-func TestRunStateVerifyGatePassesCheckedInContracts(t *testing.T) {
+func TestAoStateVerifyGatePassesCheckedInContracts(t *testing.T) {
 	verdict, err := runStateVerifyGate(context.Background(), gates.RunContext{RepoRoot: repoRootForChecksTest(t)})
 	if err != nil {
 		t.Fatalf("runStateVerifyGate: %v", err)
