@@ -3999,7 +3999,6 @@ ao wiki publish [flags]
       --expect-digest string     fail closed unless the recomputed digest matches this (publish exactly what dry-run reviewed)
   -h, --help                     help for publish
       --json                     emit the candidate report as JSON
-      --out string               gold wiki output directory for real publish (default ".ao/wiki")
 ```
 
 #### `ao wiki query`

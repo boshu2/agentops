@@ -80,32 +80,6 @@ func TestWikiPublish_DryRunLeakFailsClosed(t *testing.T) {
 	}
 }
 
-// TestWikiPublish_RefusesUnsafeOut: an --out that does not resolve strictly
-// inside the repo (root, repo-base, or a ".." escape) is refused BEFORE any
-// destructive clear. The ".." case is the cross-family REFUTE: `--out ../victim`
-// must not RemoveAll an external path.
-func TestWikiPublish_RefusesUnsafeOut(t *testing.T) {
-	for _, unsafe := range []string{"/", ".", "../victim", "../../etc"} {
-		t.Run(unsafe, func(t *testing.T) {
-			base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
-			t.Chdir(base)
-			stubVerdict(t, true)
-			wikiPublishDryRun = false
-			wikiPublishBead = "ag-test"
-			wikiPublishOut = unsafe
-			t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
-
-			_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
-			if err == nil {
-				t.Fatalf("expected refusal of unsafe --out %q", unsafe)
-			}
-			if !strings.Contains(err.Error(), "not strictly inside the repo") {
-				t.Errorf("error should name the containment failure, got: %v", err)
-			}
-		})
-	}
-}
-
 // stubVerdict overrides the verdict gate + HEAD resolver for a test and restores
 // them after. confirmed=true => the gate passes.
 func stubVerdict(t *testing.T, confirmed bool) {
@@ -129,8 +103,7 @@ func TestWikiPublish_RealPublishConfirmedWrites(t *testing.T) {
 	stubVerdict(t, true)
 	wikiPublishDryRun = false
 	wikiPublishBead = "ag-test"
-	wikiPublishOut = ".ao/wiki"
-	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
 
 	out, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
 	if err != nil {
@@ -146,15 +119,14 @@ func TestWikiPublish_RealPublishConfirmedWrites(t *testing.T) {
 }
 
 // TestWikiPublish_RealPublishNoVerdictFailsClosed: a clean candidate WITHOUT a
-// CONFIRMED verdict for HEAD is refused, and nothing is written to --out.
+// CONFIRMED verdict for HEAD is refused, and nothing is written to the gold dir.
 func TestWikiPublish_RealPublishNoVerdictFailsClosed(t *testing.T) {
 	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
 	t.Chdir(base)
 	stubVerdict(t, false)
 	wikiPublishDryRun = false
 	wikiPublishBead = "ag-test"
-	wikiPublishOut = ".ao/wiki"
-	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
 
 	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
 	if err == nil {
