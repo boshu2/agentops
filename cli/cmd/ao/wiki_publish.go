@@ -176,16 +176,29 @@ func runWikiPublish(cmd *cobra.Command, _ []string) error {
 	if !filepath.IsAbs(outDir) {
 		outDir = filepath.Join(base, outDir)
 	}
-	// Guard the destructive clear: never RemoveAll a root/cwd/repo-base path.
-	if clean := filepath.Clean(outDir); clean == "/" || clean == "." || clean == filepath.Clean(base) {
-		return fmt.Errorf("refusing to publish into unsafe --out %q (resolves to %q)", wikiPublishOut, clean)
+	// Guard the destructive clear (RemoveAll): the gold dir MUST resolve to a
+	// path STRICTLY INSIDE the repo base. Rejecting only "/", ".", and base let
+	// `--out ../victim` escape the repo and RemoveAll an arbitrary external path
+	// (cross-family REFUTE). Containment via Rel catches every ".." escape.
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return err
 	}
-	if err := os.RemoveAll(outDir); err != nil {
-		return fmt.Errorf("clear gold dir %s: %w", outDir, err)
+	absOut, err := filepath.Abs(outDir)
+	if err != nil {
+		return err
 	}
-	if err := os.CopyFS(outDir, os.DirFS(cand.OutDir)); err != nil {
-		return fmt.Errorf("publish to %s: %w", outDir, err)
+	rel, err := filepath.Rel(absBase, absOut)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("refusing to publish into --out %q: %q is not strictly inside the repo (%q)", wikiPublishOut, absOut, absBase)
 	}
+	if err := os.RemoveAll(absOut); err != nil {
+		return fmt.Errorf("clear gold dir %s: %w", absOut, err)
+	}
+	if err := os.CopyFS(absOut, os.DirFS(cand.OutDir)); err != nil {
+		return fmt.Errorf("publish to %s: %w", absOut, err)
+	}
+	outDir = absOut
 	fmt.Fprintf(out, "PUBLISHED digest %s -> %s (verdict-gated on bead=%s HEAD=%s)\n",
 		cand.Digest[:min(12, len(cand.Digest))], outDir, wikiPublishBead, head[:min(7, len(head))])
 	return nil
