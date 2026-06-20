@@ -260,20 +260,16 @@ func deriveSessionMeta(path string, parsed *parser.ParseResult, opts Tier1Option
 	}
 
 	turns := 0
-	tokensIn := 0
-	tokensOut := 0
 	for _, m := range parsed.Messages {
 		if m.Type == "user" {
 			turns++
 		}
-		// Producer truth (age-membrane-memory-arch-tz2s.3.1): sum the real
-		// per-message usage blocks so the bronze tier carries true token
-		// counts instead of a hardcoded 0.
-		if m.Usage != nil {
-			tokensIn += m.Usage.TotalInputTokens()
-			tokensOut += m.Usage.OutputTokens
-		}
 	}
+	// Producer truth (age-membrane-memory-arch-tz2s.3.1): sum the real
+	// per-message usage blocks so the bronze tier carries true token counts
+	// instead of a hardcoded 0. SumUsage de-dups by response id — one Claude
+	// response spans several rows repeating the same usage block.
+	tokensIn, tokensOut := types.SumUsage(parsed.Messages)
 
 	return SessionMeta{
 		SessionID:    sid,

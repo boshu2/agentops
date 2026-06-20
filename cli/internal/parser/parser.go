@@ -62,6 +62,7 @@ type rawMessage struct {
 	Timestamp  string          `json:"timestamp"`
 	UUID       string          `json:"uuid"`
 	ParentUUID string          `json:"parentUuid,omitempty"`
+	RequestID  string          `json:"requestId,omitempty"`
 	Role       string          `json:"role,omitempty"`
 	Content    any             `json:"content,omitempty"`
 	ToolName   string          `json:"tool_name,omitempty"`
@@ -69,6 +70,7 @@ type rawMessage struct {
 	ToolOutput any             `json:"tool_output,omitempty"`
 	Payload    json.RawMessage `json:"payload,omitempty"`
 	Message    *struct {
+		ID      string `json:"id,omitempty"`
 		Type    string `json:"type,omitempty"`
 		Role    string `json:"role"`
 		Content any    `json:"content"` // Can be string or array
@@ -352,6 +354,14 @@ func (p *Parser) parseClaudeMessage(raw rawMessage, lineNum int) *types.Transcri
 		p.extractMessageContent(raw.Message.Content, msg)
 		if raw.Message.Usage != nil {
 			msg.Usage = raw.Message.Usage
+		}
+		// Response identity for usage de-dup: prefer message.id, fall back to
+		// the top-level requestId. One response spans several rows that repeat
+		// the same usage; SumUsage counts each id once.
+		if raw.Message.ID != "" {
+			msg.MessageID = raw.Message.ID
+		} else if raw.RequestID != "" {
+			msg.MessageID = raw.RequestID
 		}
 	}
 	if raw.Content != nil {

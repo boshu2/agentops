@@ -8,6 +8,42 @@ import (
 	"time"
 )
 
+func TestSumUsage_DedupsByMessageID(t *testing.T) {
+	// Real Claude Code transcripts write ONE model response as several rows
+	// (thinking, text, tool_use) that ALL repeat the same usage block under the
+	// same message id. Counting each row overcounts 2-3x — SumUsage must count
+	// each unique MessageID once. (cross-family REFUTE, age-membrane-memory-arch-tz2s.3.1)
+	u := &TokenUsage{InputTokens: 9, CacheCreationInputTokens: 13568, CacheReadInputTokens: 24853, OutputTokens: 1}
+	msgs := []TranscriptMessage{
+		{Type: "assistant", MessageID: "msg_A", Usage: u},
+		{Type: "assistant", MessageID: "msg_A", Usage: u}, // same response, repeated
+		{Type: "assistant", MessageID: "msg_A", Usage: u}, // same response, repeated
+		{Type: "assistant", MessageID: "msg_B", Usage: &TokenUsage{InputTokens: 100, OutputTokens: 50}},
+		{Type: "user"}, // no usage
+	}
+	in, out := SumUsage(msgs)
+	// msg_A counted once: (9+13568+24853)=38430 in, 1 out. msg_B: 100 in, 50 out.
+	if want := 38430 + 100; in != want {
+		t.Errorf("tokensIn = %d, want %d (msg_A deduped to one)", in, want)
+	}
+	if want := 1 + 50; out != want {
+		t.Errorf("tokensOut = %d, want %d", out, want)
+	}
+}
+
+func TestSumUsage_EmptyMessageIDsNotDeduped(t *testing.T) {
+	// Rows without a response id (synthetic fixtures, non-Claude formats) carry
+	// no identity to dedup on, so each is counted distinctly.
+	msgs := []TranscriptMessage{
+		{Usage: &TokenUsage{InputTokens: 100, OutputTokens: 30}},
+		{Usage: &TokenUsage{InputTokens: 50, OutputTokens: 20}},
+	}
+	in, out := SumUsage(msgs)
+	if in != 150 || out != 50 {
+		t.Errorf("SumUsage = (%d,%d), want (150,50)", in, out)
+	}
+}
+
 func TestTranscriptMessageJSONRoundTrip(t *testing.T) {
 	original := TranscriptMessage{
 		Type:         "assistant",

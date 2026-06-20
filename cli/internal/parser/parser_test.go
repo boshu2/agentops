@@ -163,6 +163,26 @@ func TestParser_Parse_CapturesAssistantUsage(t *testing.T) {
 	}
 }
 
+func TestParser_Parse_CapturesMessageIDForDedup(t *testing.T) {
+	// One Claude response is written as several rows sharing message.id and
+	// repeating the same usage; the parser must capture message.id (fallback
+	// requestId) so SumUsage can dedup. (cross-family REFUTE fix)
+	jsonl := `{"type":"assistant","message":{"id":"msg_X","role":"assistant","content":"think","usage":{"input_tokens":10,"output_tokens":2}}}
+{"type":"assistant","requestId":"req_Y","message":{"role":"assistant","content":"text","usage":{"input_tokens":5,"output_tokens":1}}}
+`
+	p := NewParser()
+	result, err := p.Parse(strings.NewReader(jsonl))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if got := result.Messages[0].MessageID; got != "msg_X" {
+		t.Errorf("Messages[0].MessageID = %q, want msg_X", got)
+	}
+	if got := result.Messages[1].MessageID; got != "req_Y" {
+		t.Errorf("Messages[1].MessageID = %q, want req_Y (requestId fallback)", got)
+	}
+}
+
 func TestParser_Parse_CodexArchivedSessionShape(t *testing.T) {
 	jsonl := `{"timestamp":"2026-03-05T20:20:42.160Z","type":"session_meta","payload":{"id":"019cbfa8-9155-7121-b18a-dfa3783cdd9e","timestamp":"2026-03-05T20:20:21.464Z"}}
 {"timestamp":"2026-03-05T20:20:42.163Z","type":"event_msg","payload":{"type":"user_message","message":"find recruiter chat"}}
