@@ -112,6 +112,13 @@ find skills -type l  # must be empty — zero symlinks allowed
  # 14. AgentOps contract canaries (official deterministic test gate)
  scripts/test-agentops-contract-canaries.sh
 
+ # 15. Installed-binary smoke (USER-FACING CLI CHANGES ONLY): the `ao` on PATH
+ #     must match the just-built binary, else UAT/closeout exercises the STALE
+ #     product path (a same-version binary can still differ in content until
+ #     `make install` refreshes it). Run before declaring the product path
+ #     usable. Local-only — needs an installed ao, so it is not a CI gate. (age-6sg.3)
+ cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh
+
 # Full gate (runs everything above and more):
 scripts/ci-local-release.sh
 ```
@@ -141,7 +148,7 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
+2. **Run quality gates** (if code changed) - Tests, linters, builds. For **user-facing CLI changes**, also run the installed-binary smoke (`cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh`) so the closeout proves the installed `ao` matches the build — not the stale product path — before declaring it usable.
 3. **Update issue status** - Close finished work, update in-progress items
 4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through its own PRIVATE repo, never this public one:
    ```bash
@@ -271,7 +278,7 @@ For more details, see README.md and docs/QUICKSTART.md.
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
+2. **Run quality gates** (if code changed) - Tests, linters, builds. For **user-facing CLI changes**, also run the installed-binary smoke (`cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh`) so the closeout proves the installed `ao` matches the build — not the stale product path — before declaring it usable.
 3. **Update issue status** - Close finished work, update in-progress items
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
