@@ -46,7 +46,7 @@ N-way bead queues ([`$using-atm`](../using-atm/SKILL.md)).
 
 ```
 1. ROUTE    → confirm dual-pane fits (table above); pick work-split pattern
-2. BEAD     → optional: BEADS_DIR=$PWD/_beads br create/claim; bead_id = join-key
+2. BEAD     → optional: BEADS_DIR="$(ao beads dir)" br create/claim; bead_id = join-key
 3. SPAWN    → atm spawn with --reserve paths (see references/spawn-checklist.md)
 3b. VERIFY   → `atm mapping --session="$SESSION"` — confirm pane numbers before any send
 4. DISPATCH → verify first lane engaged; then second lane (--codex-goal for Codex)

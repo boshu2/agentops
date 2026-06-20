@@ -83,7 +83,7 @@ Before the validation-block check, run the mechanical scenario admission gate ov
 if command -v br &>/dev/null; then
     INADMISSIBLE=()
     for ISSUE_ID in $ALL_CREATED_ISSUES; do
-        BEADS_DIR=$PWD/_beads br show "$ISSUE_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+        BEADS_DIR="$(ao beads dir)" br show "$ISSUE_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
         RC=$?
         if [[ $RC -eq 1 ]]; then
             INADMISSIBLE+=("$ISSUE_ID")

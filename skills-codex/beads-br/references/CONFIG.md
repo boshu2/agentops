@@ -4,7 +4,7 @@
 
 1. **CLI flags** (highest priority)
 2. **Environment variables**
-3. **Project config**: `.beads/config.yaml`
+3. **Project config**: `_beads/config.yaml` in the resolved private ledger
 4. **User config**: `~/.config/beads/config.yaml`
 5. **Defaults** (lowest priority)
 
@@ -13,7 +13,7 @@
 ## Example Config File
 
 ```yaml
-# .beads/config.yaml
+# _beads/config.yaml
 
 # Issue ID prefix (default: "bd")
 id:
@@ -52,19 +52,19 @@ sync:
 ## Config Commands
 
 ```bash
-br config --list                     # Show all config
-br config --get id.prefix            # Get specific value
-br config --set defaults.priority=1  # Set value
+BEADS_DIR="$(ao beads dir)" br config --list
+BEADS_DIR="$(ao beads dir)" br config --get id.prefix
+BEADS_DIR="$(ao beads dir)" br config --set defaults.priority=1
 ```
 
 ---
 
 ## Storage Paths
 
-Default storage is in `.beads/` relative to project root:
+AgentOps stores live tracker data in the resolved private `_beads/` ledger:
 
 ```
-.beads/
+_beads/
 ├── beads.db        # SQLite database (primary storage)
 ├── beads.db-shm    # SQLite shared memory (WAL mode)
 ├── beads.db-wal    # SQLite write-ahead log

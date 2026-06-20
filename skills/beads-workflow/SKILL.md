@@ -54,11 +54,11 @@ Operating in "plan space" is far cheaper than correcting in implementation space
 
 Use this when you see legacy `bd` references in AGENTS.md or docs.
 
-**Behavioral difference (only one):** `br sync` never runs git commands. After `br sync --flush-only`, you must `git add .beads/`, `git commit` (and `git push`) yourself.
+**Behavioral difference (only one):** `br sync` never runs git commands. After `BEADS_DIR="$(ao beads dir)" br sync --flush-only`, you must commit and push the private ledger with `git -C "$(ao beads dir)" add -A`, `git -C "$(ao beads dir)" commit`, and `git -C "$(ao beads dir)" push`.
 
 **Transform checklist (order matters):**
 1. `bd` commands → `br` commands
-2. `bd sync` → `br sync --flush-only` + `git add .beads/` + `git commit`
+2. `bd sync` → `BEADS_DIR="$(ao beads dir)" br sync --flush-only` + `git -C "$(ao beads dir)" add -A` + `git -C "$(ao beads dir)" commit`
 3. Do NOT assume issue IDs must change `bd-*` → `br-*` — the prefix is configurable (often remains `bd-*`).
 4. Remove daemon/auto-commit references
 
@@ -117,17 +117,17 @@ Your beads are ready for implementation when:
 ## Validation
 
 ```bash
-br dep cycles                            # must be empty
+BEADS_DIR="$(ao beads dir)" br dep cycles # must be empty
 bv --robot-insights | jq '.Cycles'       # graph health
 bv --robot-insights | jq '.bottlenecks'  # wave shaping: what gates the most work
-br list --json | jq '.issues[]? | select(.description == "")'  # no empty descriptions
+BEADS_DIR="$(ao beads dir)" br list --json | jq '.issues[]? | select(.description == "")'  # no empty descriptions
 ```
 
-After any bead mutation session, flush and commit: `br sync --flush-only && git add .beads/ && git commit`.
+After any bead mutation session, flush and commit the private ledger: `BEADS_DIR="$(ao beads dir)" br sync --flush-only && git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit`.
 
 ## Troubleshooting
 
-For worktree/sync-branch errors, health checks, and full diagnostics, see [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). Quick health check: `br config list`, `br dep cycles`, `which br`.
+For worktree/sync-branch errors, health checks, and full diagnostics, see [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). Quick health check: `BEADS_DIR="$(ao beads dir)" br config list`, `BEADS_DIR="$(ao beads dir)" br dep cycles`, `which br`.
 
 ## References
 

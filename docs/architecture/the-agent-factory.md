@@ -2,8 +2,8 @@
 
 > **Store binding corrected (2026-06-17).** This spine originally named the state store / etcd-analog as
 > **bd/Dolt** — that is **retired**. The etcd-analog is now **two ledgers** that together play etcd: the
-> **bead ledger** (`br`, git-JSONL — work / desired state; `BEADS_DIR=$PWD/_beads br …`, synced via
-> `git -C _beads push`) and the **proof / verdict ledger** (`docs/provenance/ledger.jsonl` + yield
+> **bead ledger** (`br`, git-JSONL — work / desired state; `BEADS_DIR="$(ao beads dir)" br …`, synced via
+> `git -C "$(ao beads dir)" push`) and the **proof / verdict ledger** (`docs/provenance/ledger.jsonl` + yield
 > `gate-verdict` events — admission state). The control-plane *shape* (acceptance store → scheduler →
 > reconcile → membrane), the cost law, and the role/primitive model still stand — only the concrete store
 > binding changed. See the **2026-06-17 delta** at the foot of this doc and AGENTS.md / CLAUDE.md for
@@ -378,8 +378,8 @@ here → ports-and-adapters.md for the runtime altitude.)
 
 The etcd-analog is **two ledgers**, deliberately not flattened into one:
 
-- **Bead ledger** — `br` (git-JSONL, `BEADS_DIR=$PWD/_beads br …`): **work / desired state** (the
-  declarative workload objects + the dependency DAG). Synced via `git -C _beads push`; never `git add _beads`.
+- **Bead ledger** — `br` (git-JSONL, `BEADS_DIR="$(ao beads dir)" br …`): **work / desired state** (the
+  declarative workload objects + the dependency DAG). Synced via `git -C "$(ao beads dir)" push`; never staged from the public repo.
 - **Proof / verdict ledger** — `docs/provenance/ledger.jsonl` + the yield `gate-verdict` events:
   **admission state** (what has been verified and admitted; the in-situ catch-rate reads from here).
 

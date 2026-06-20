@@ -39,7 +39,7 @@ Secondary adapters are driven *by* the domain through a port interface — the d
 Future driven adapters (not delivered in v1, kept here as a design forecast):
 
 - **Git adapter** — packet history, ratchet snapshots, ADR provenance.
-- **Beads / tasklist adapter** — `br` (beads_rust) via shell invocation (`BEADS_DIR=$PWD/_beads br …`) in handoff and session bootstrap; legacy `tracker_bd` port adapter remains for other paths until the full IssueTracker port migrates.
+- **Beads / tasklist adapter** — `br` (beads_rust) via shell invocation (`BEADS_DIR="$(ao beads dir)" br …`) in handoff and session bootstrap; legacy `tracker_bd` port adapter remains for other paths until the full IssueTracker port migrates.
 - **LLM-provider adapters** — `ports.LLMClient` against Claude, Codex, or local providers.
 
 ## Ports

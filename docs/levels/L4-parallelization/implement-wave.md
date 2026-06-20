@@ -22,7 +22,7 @@ At L4, parallelization speeds execution:
 
 ## How It Works
 
-1. Claude runs `BEADS_DIR=$PWD/_beads br ready` to find unblocked issues
+1. Claude runs `BEADS_DIR="$(ao beads dir)" br ready` to find unblocked issues
 2. Spawns sub-agent for each issue (max 3 per wave)
 3. Sub-agents work in parallel via Task tool
 4. Results merged and validated
@@ -52,7 +52,7 @@ $ git commit -m "feat: add auth UI components
 
 Closes: agentops-abc, agentops-def, agentops-ghi"
 
-$ BEADS_DIR=$PWD/_beads br close agentops-abc agentops-def agentops-ghi
+$ BEADS_DIR="$(ao beads dir)" br close agentops-abc agentops-def agentops-ghi
 
 Wave 1 complete. Run `br ready` for Wave 2.
 ```
@@ -64,7 +64,7 @@ You: /implement-wave
 
 Claude: Checking ready issues...
 
-$ BEADS_DIR=$PWD/_beads br ready
+$ BEADS_DIR="$(ao beads dir)" br ready
 1. [P1] agentops-xyz: Create user model
 2. [P1] agentops-abc: Create order model
 3. [P2] agentops-def: Add database migrations
@@ -76,7 +76,7 @@ Launching 3 sub-agents...
 ✓ All complete. Tests passing.
 
 $ git commit -m "feat: add data models and migrations"
-$ BEADS_DIR=$PWD/_beads br close agentops-xyz agentops-abc agentops-def
+$ BEADS_DIR="$(ao beads dir)" br close agentops-xyz agentops-abc agentops-def
 
 Done. Next wave has 2 issues ready.
 ```
@@ -89,6 +89,6 @@ Done. Next wave has 2 issues ready.
 
 ## Next
 
-- `BEADS_DIR=$PWD/_beads br ready` - See next wave
+- `BEADS_DIR="$(ao beads dir)" br ready` - See next wave
 - `/implement-wave` - Run next wave
 - `/retro` - Extract learnings after completing plan

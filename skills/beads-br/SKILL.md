@@ -21,8 +21,8 @@ practices:
 |------|-----|
 | **ALWAYS use `--json`** | Structured output for parsing |
 | **NEVER run bare `bv`** | Blocks session in TUI mode |
-| **Sync is EXPLICIT** | `br sync --flush-only` after changes |
-| **Git is YOUR job** | br only touches `.beads/` directory |
+| **Sync is EXPLICIT** | `BEADS_DIR="$(ao beads dir)" br sync --flush-only` after changes |
+| **Git is YOUR job** | br never runs git; `_beads/` sync is explicit |
 | **No cycles allowed** | `br dep cycles` must return empty |
 
 ## Private-ledger repos — the persist_intent port contract
@@ -33,9 +33,9 @@ skill (without the repo CLAUDE.md) must still honor these invariants:
 
 | Invariant | Rule |
 |---|---|
-| **Indirection** | Invoke as `BEADS_DIR=$PWD/_beads br <cmd>` — the ledger lives at `_beads/`, not `.beads/` (legacy `.beads/` holds retired tracker config; `br init` there would clobber it). |
-| **Private repo** | `_beads/` is its **own git repository** (separate remote). Sync = `git -C _beads push`. |
-| **Never leak** | never run `git add _beads` in the host repo — bead bodies carry private context; the host repo is public and gitignores the ledger. |
+| **Indirection** | Resolve first with `ao beads dir`, then invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. A worktree-local ledger path is valid only in the canonical checkout; linked worktrees use git's common dir to reach the canonical private ledger. |
+| **Private repo** | `_beads/` is its **own git repository** (separate remote). Sync = `git -C "$(ao beads dir)" push`. |
+| **Never leak** | never stage the private ledger from the host repo — bead bodies carry private context; the host repo is public and gitignores the ledger. |
 | **bd is retired** | because the bd/Dolt remote-server lane was retired (2026-06-11) — do not run `bd` in a br repo; it appears only in explicitly-marked legacy notes. |
 | **Prefix filter** | to prevent cross-project leakage in shared DBs, filter queries by the repo's issue prefix (e.g. `ag-`) before trusting `br ready` output. |
 
@@ -46,50 +46,49 @@ intent owns the rules that keep that intent private and uncorrupted.
 
 ```bash
 # 1. Find work
-br ready --json
+BEADS_DIR="$(ao beads dir)" br ready --json
 
 # 2. Claim it
-br update bd-abc123 --status in_progress
+BEADS_DIR="$(ao beads dir)" br update ag-abc123 --claim --json
 
 # 3. Do work...
 
 # 4. Complete
-br close bd-abc123 --reason "Implemented X"
+BEADS_DIR="$(ao beads dir)" br close ag-abc123 --reason "Implemented X"
 
 # 5. Sync to git (EXPLICIT!)
-br sync --flush-only
-git add .beads/ && git commit -m "feat: X (bd-abc123)"
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: close ag-abc123" && git -C "$(ao beads dir)" push
 ```
 
 ## Essential Commands
 
 ```bash
 # Lifecycle
-br init                              # Initialize .beads/
-br create "Title" -p 1 -t task       # Create (priority 0-4)
-br update <id> --status in_progress  # Claim work
-br close <id> --reason "Done"        # Complete
-br reopen <id>                       # Reopen if needed
+BEADS_DIR="$(ao beads dir)" br create "Title" -p 1 -t task --json
+BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
+BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"
+BEADS_DIR="$(ao beads dir)" br reopen <id>
 
 # Querying (always use --json for agents)
-br ready --json                      # Actionable work (not blocked)
-br list --json                       # All issues
-br blocked --json                    # What's blocked
-br search "keyword"                  # Full-text search
-br show <id> --json                  # Issue details
+BEADS_DIR="$(ao beads dir)" br ready --json
+BEADS_DIR="$(ao beads dir)" br list --json
+BEADS_DIR="$(ao beads dir)" br blocked --json
+BEADS_DIR="$(ao beads dir)" br search "keyword"
+BEADS_DIR="$(ao beads dir)" br show <id> --json
 
 # Dependencies
-br dep add <child> <parent>          # child depends on parent
-br dep cycles                        # MUST be empty!
-br dep tree <id>                     # Visualize dependencies
+BEADS_DIR="$(ao beads dir)" br dep add <child> <parent>
+BEADS_DIR="$(ao beads dir)" br dep cycles
+BEADS_DIR="$(ao beads dir)" br dep tree <id>
 
 # Sync (EXPLICIT - never automatic)
-br sync --flush-only                 # DB → JSONL (before git commit)
-br sync --import-only                # JSONL → DB (after git pull)
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+BEADS_DIR="$(ao beads dir)" br sync --import-only
 
 # System
-br doctor                            # Health check
-br config --list                     # Show configuration
+BEADS_DIR="$(ao beads dir)" br doctor
+BEADS_DIR="$(ao beads dir)" br config --list
 ```
 
 ## Priority Scale
@@ -119,10 +118,10 @@ bv --robot-insights | jq '.Cycles'   # Check graph health
 Use bead ID as thread_id for multi-agent coordination:
 
 ```python
-file_reservation_paths(..., reason="bd-123")
-send_message(..., thread_id="bd-123", subject="[bd-123] Starting...")
+file_reservation_paths(..., reason="ag-123")
+send_message(..., thread_id="ag-123", subject="[ag-123] Starting...")
 # Work...
-br close bd-123 --reason "Completed"
+BEADS_DIR="$(ao beads dir)" br close ag-123 --reason "Completed"
 release_file_reservations(...)
 ```
 
@@ -130,8 +129,8 @@ release_file_reservations(...)
 
 ```bash
 git pull --rebase
-br sync --flush-only
-git add .beads/ && git commit -m "Update issues"
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: update issues" && git -C "$(ao beads dir)" push
 git push
 git status  # Verify clean
 ```
@@ -141,11 +140,11 @@ git status  # Verify clean
 Folded from the retired `beads` umbrella (ag-ez7y6) — operating doctrine, not
 the command surface above. These keep the tracker graph honest across sessions:
 
-- **Live reads are authoritative.** Treat live `br show` / `br ready` / `br list`
+- **Live reads are authoritative.** Treat live `BEADS_DIR="$(ao beads dir)" br show` / `ready` / `list`
   output as the source of truth for current tracker state. Do NOT treat the
   exported `issues.jsonl` as the primary decision source when live `br` data is
   available — the JSONL is a git-friendly export artifact, refreshed on
-  `br sync --flush-only`.
+  `BEADS_DIR="$(ao beads dir)" br sync --flush-only`.
 - **Scoped closure proof on every close.** `br close <id> --reason` must name the
   touched files (or explicit no-file evidence artifact), the validation
   command(s) run, and the parent-reconciliation outcome. Never close a child
@@ -154,7 +153,7 @@ the command surface above. These keep the tracker graph honest across sessions:
   updating a child bead, reconcile the open parent: update stale "remaining gap"
   notes immediately, and close the parent when the child resolved its last real
   gap.
-- **Narrow the umbrella issue before implementing.** If `br ready` surfaces a
+- **Narrow the umbrella issue before implementing.** If `BEADS_DIR="$(ao beads dir)" br ready --json` surfaces a
   broad umbrella bead, do not implement against vague parent wording — first
   narrow the remaining gap into an execution-ready child bead, land the child,
   then reconcile the parent.
@@ -173,7 +172,7 @@ the command surface above. These keep the tracker graph honest across sessions:
 ## Storage
 
 ```
-.beads/
+_beads/
 ├── beads.db        # SQLite (primary)
 ├── issues.jsonl    # Git-friendly export
 └── config.yaml     # Optional config
@@ -182,9 +181,9 @@ the command surface above. These keep the tracker graph honest across sessions:
 ## Troubleshooting
 
 ```bash
-br doctor                    # Full diagnostics
-br dep cycles                # Must be empty
-br config --list             # Check settings
+BEADS_DIR="$(ao beads dir)" br doctor       # Full diagnostics
+BEADS_DIR="$(ao beads dir)" br dep cycles   # Must be empty
+BEADS_DIR="$(ao beads dir)" br config --list
 ```
 
 **Worktree error** (`'main' is already checked out`):

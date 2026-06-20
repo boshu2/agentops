@@ -1,6 +1,6 @@
 # Runbook: beads (bd) failure recovery
 
-> **RETIRED / HISTORICAL (as of 2026-06-11).** bd/Dolt is retired; the live tracker is `br` at `_beads/` (invoke `BEADS_DIR=$PWD/_beads br <cmd>`), and the ledger syncs via `git -C _beads push` — there is no remote Dolt server to recover. This runbook documents bd/Dolt-server failure recovery and is kept for historical reference only — see AGENTS.md and `docs/runbooks/bd-server-mode-closeout.md`.
+> **RETIRED / HISTORICAL (as of 2026-06-11).** bd/Dolt is retired; the live tracker is `br` at the private ledger resolved by `ao beads dir` (invoke `BEADS_DIR="$(ao beads dir)" br <cmd>`), and the ledger syncs via `git -C "$(ao beads dir)" push` — there is no remote Dolt server to recover. This runbook documents bd/Dolt-server failure recovery and is kept for historical reference only — see AGENTS.md and `docs/runbooks/bd-server-mode-closeout.md`.
 
 > **Bead:** cp-4jac (control-plane). **Scope:** what an agent or operator does when `bd`/beads
 > operations fail mid-work in this repo — including the one audited way past a blocked push.

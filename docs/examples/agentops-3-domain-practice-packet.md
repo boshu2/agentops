@@ -49,7 +49,7 @@ weak review evidence, and cold starts between sessions.
 | `.agents/rpi/briefing-current.md` | Phase-scoped context assembled from the packet and repo state. |
 | `.agents/council/<run-id>/verdict.md` | Judge output that records whether the shared intent passed, warned, or blocked. |
 | `.agents/rpi/execution-packet.json` | Handoff artifact if the verdict becomes implementation work. |
-| `BEADS_DIR=$PWD/_beads br create "Apply council verdict to launch demo" ...` | Tracked follow-up work created from the verdict. |
+| `BEADS_DIR="$(ao beads dir)" br create "Apply council verdict to launch demo" ...` | Tracked follow-up work created from the verdict. |
 
 ## Evidence Rules
 

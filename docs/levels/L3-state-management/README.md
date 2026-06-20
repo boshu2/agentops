@@ -13,7 +13,7 @@ Add issue tracking with beads for structured work.
 
 - Completed L2-persistence
 - Comfortable with `.agents/` directory
-- br (beads_rust) CLI installed; invoke as `BEADS_DIR=$PWD/_beads br`
+- br (beads_rust) CLI installed; invoke as `BEADS_DIR="$(ao beads dir)" br`
 
 ## Available Commands
 
@@ -26,22 +26,22 @@ Add issue tracking with beads for structured work.
 
 ## Beads Commands
 
-All commands take `BEADS_DIR=$PWD/_beads` (the br ledger lives at `_beads/`):
+All commands take `BEADS_DIR="$(ao beads dir)"` so linked worktrees use the canonical private ledger:
 
 ```bash
-BEADS_DIR=$PWD/_beads br ready                    # Show unblocked issues
-BEADS_DIR=$PWD/_beads br list --status open       # All open issues
-BEADS_DIR=$PWD/_beads br show <id>                # View issue details
-BEADS_DIR=$PWD/_beads br update <id> --status in_progress
-BEADS_DIR=$PWD/_beads br close <id> --reason "Done"
-BEADS_DIR=$PWD/_beads br sync                      # Sync the git-JSONL ledger (never touches git itself)
+BEADS_DIR="$(ao beads dir)" br ready --json             # Show unblocked issues
+BEADS_DIR="$(ao beads dir)" br list --status open --json # All open issues
+BEADS_DIR="$(ao beads dir)" br show <id> --json         # View issue details
+BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
+BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"
+BEADS_DIR="$(ao beads dir)" br sync --flush-only        # Export the git-JSONL ledger (never touches git itself)
 ```
 
 ## Key Concepts
 
 - **Issues**: Atomic units of work
 - **Dependencies**: Issues can block each other
-- **Session close**: `br sync` after your issue updates, then `git -C _beads push` to share the ledger
+- **Session close**: `BEADS_DIR="$(ao beads dir)" br sync --flush-only` after issue updates, then `git -C "$(ao beads dir)" push` to share the private ledger
 
 ## What's NOT at This Level
 

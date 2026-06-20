@@ -192,9 +192,9 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 Git-native issue tracking operations.
 
 ```bash
-BEADS_DIR=$PWD/_beads br ready      # Unblocked issues
-BEADS_DIR=$PWD/_beads br show <id>  # Issue details
-BEADS_DIR=$PWD/_beads br close <id> # Close issue
+BEADS_DIR="$(ao beads dir)" br ready      # Unblocked issues
+BEADS_DIR="$(ao beads dir)" br show <id>  # Issue details
+BEADS_DIR="$(ao beads dir)" br close <id> # Close issue
 ```
 
 ### /review (absorbs /bug-hunt)

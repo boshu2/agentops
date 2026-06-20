@@ -4,7 +4,8 @@
 # Ratchet from the 2026-06-17 docs staleness sweep (epic
 # age-docs-staleness-remediation-cko). Fails if a LIVE doc reintroduces a
 # command/phrase for a retired subsystem:
-#   - bd/Dolt tracker      → use `BEADS_DIR=$PWD/_beads br <cmd>`
+#   - bd/Dolt tracker      → use `BEADS_DIR="$(ao beads dir)" br <cmd>`
+#   - worktree-local beads → use `ao beads dir`, never `$PWD/_beads` or `git -C _beads`
 #   - Gas City / gastown   → out-of-session substrate is NTM + MCP Agent Mail
 #   - agentopsd / in-repo daemon (ADR-0009 deleted it)
 #   - runtime=gc / gc bridge (removed from the CLI)
@@ -37,7 +38,7 @@ mapfile -t DOCS < <(find docs -name '*.md' \
   | sort)
 
 # Command/phrase-precise live-staleness patterns.
-PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b|pip install beads|brew upgrade beads|\bgt sling\b|gas[ -]?city|gastown|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
+PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b|BEADS_DIR=\$PWD/_beads|git -C _beads|pip install beads|brew upgrade beads|\bgt sling\b|gas[ -]?city|gastown|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
 
 # Doc-type exemptions: migration / upgrade / retirement records and the catalog
 # index legitimately name retired subsystems while describing the move off them.

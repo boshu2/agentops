@@ -39,7 +39,7 @@ Crank (orchestrator)           Swarm (executor)
 
 The FIRE Loop:
 
-1. **FIND**: `BEADS_DIR=$PWD/_beads br ready` - get unblocked beads issues
+1. **FIND**: `BEADS_DIR="$(ao beads dir)" br ready` - get unblocked beads issues
 2. **IGNITE**: Create TaskList tasks, invoke `/swarm`
 3. **REAP**: Swarm collects results, crank syncs to beads
 4. **ESCALATE**: Fix blockers, retry failures

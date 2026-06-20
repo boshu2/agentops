@@ -200,6 +200,6 @@ Promotion from "learning signal" to "public claim support" requires:
 The loop should produce:
 
 - Redacted evidence records in `docs/releases/agentops-3-pmf-evidence/`.
-- Follow-up `br` issues (`BEADS_DIR=$PWD/_beads br`) for repeated setup friction.
+- Follow-up `br` issues (`BEADS_DIR="$(ao beads dir)" br`) for repeated setup friction.
 - Copy changes only when claim posture allows them.
 - Product changes when repeated users fail before first verdict.

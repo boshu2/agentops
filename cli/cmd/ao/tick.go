@@ -63,8 +63,14 @@ func newTickRuntime(cmd *cobra.Command) tickRuntime {
 func (rt tickRuntime) run(name string, args ...string) ([]byte, int, error) {
 	c := exec.Command(name, args...)
 	c.Dir = rt.workDir
-	if len(rt.env) > 0 {
-		c.Env = append(os.Environ(), rt.env...)
+	env := append(os.Environ(), rt.env...)
+	if name == "br" {
+		if _, ok := beadsEnvValue(env); !ok {
+			env = append(env, "BEADS_DIR="+resolveBeadsDir(rt.workDir, env).Path)
+		}
+	}
+	if len(env) > 0 {
+		c.Env = env
 	}
 	out, err := c.CombinedOutput()
 	if err == nil {
@@ -521,18 +527,14 @@ func tickResolvePath(root, path string) string {
 }
 
 // tickLedgerDir resolves the tracker ledger directory used for close
-// verification and staging. Resolution order matches what the spawned br
-// child processes see: an explicit BEADS_DIR (rt.env overrides the inherited
-// process environment, mirroring rt.run), then the br workspace `_beads/`
-// when it exists, then legacy `.beads/` (transition-safe fallback).
+// verification and staging. Resolution order matches what spawned `br`
+// child processes see: explicit BEADS_DIR (rt.env overrides inherited process
+// env), then the canonical git-common-dir `_beads` ledger for linked worktrees.
 func tickLedgerDir(rt tickRuntime) string {
 	if dir := tickEnvValue(rt, "BEADS_DIR"); dir != "" {
 		return tickResolvePath(rt.workDir, dir)
 	}
-	if info, err := os.Stat(filepath.Join(rt.workDir, "_beads")); err == nil && info.IsDir() {
-		return filepath.Join(rt.workDir, "_beads")
-	}
-	return filepath.Join(rt.workDir, ".beads")
+	return resolveBeadsDir(rt.workDir, append(os.Environ(), rt.env...)).Path
 }
 
 // tickEnvValue mirrors the environment a tickRuntime child process receives:

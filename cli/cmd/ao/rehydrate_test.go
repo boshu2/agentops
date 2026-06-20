@@ -44,11 +44,11 @@ func TestPickLatestHandoff_None(t *testing.T) {
 }
 
 // TestRenderRehydrateBrief asserts the brief carries the lane's restore-essentials:
-// goal, active bead (+ br show), reservations to re-acquire, continuation, commits.
+// goal, active bead (+ resolved br show), reservations to re-acquire, continuation, commits.
 func TestRenderRehydrateBrief(t *testing.T) {
 	a := &handoffArtifact{
 		Goal:         "operability lane",
-		Continuation: "Resume ag-7k2g2 (run br show ag-7k2g2).",
+		Continuation: "Resume ag-7k2g2 (run resolved bead lookup for ag-7k2g2).",
 		Summary:      "did things",
 		State: &handoffState{
 			ActiveBead:    "ag-7k2g2",
@@ -58,12 +58,12 @@ func TestRenderRehydrateBrief(t *testing.T) {
 	}
 	brief := renderRehydrateBrief(a)
 	for _, want := range []string{
-		"operability lane",     // goal
-		"ag-7k2g2",             // active bead
-		"br show ag-7k2g2",     // the resume verb
-		"cli/ [EmeraldJaguar]", // reservation to re-acquire
-		"Resume ag-7k2g2",      // continuation / next action
-		"ff4102167",            // recent commit
+		"operability lane", // goal
+		"ag-7k2g2",         // active bead
+		`BEADS_DIR="$(ao beads dir)" br show ag-7k2g2 --json`, // the resume verb
+		"cli/ [EmeraldJaguar]",                                // reservation to re-acquire
+		"Resume ag-7k2g2",                                     // continuation / next action
+		"ff4102167",                                           // recent commit
 	} {
 		if !strings.Contains(brief, want) {
 			t.Errorf("brief missing %q\n--- got ---\n%s", want, brief)

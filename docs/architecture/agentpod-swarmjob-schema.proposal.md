@@ -118,7 +118,7 @@ fungibility-charter (single-model default; diversity is reached for *only* at a 
 
 `watch-event.v1` already ships the append-only event surface — but its enum is swarm-scoped
 (`wave.*`, `worker.*`). A reconcile controller (`ag-v1xk`) that wants to react to *bead* state has
-nothing to subscribe to and must poll `BEADS_DIR=$PWD/_beads br ready` — the exact anti-pattern k8s's watch API kills.
+nothing to subscribe to and must poll `BEADS_DIR="$(ao beads dir)" br ready` — the exact anti-pattern k8s's watch API kills.
 Because the schema is `additionalProperties:true` and consumers already tolerate unknown fields, this
 is a pure enum extension (no breaking change):
 

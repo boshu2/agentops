@@ -125,7 +125,7 @@ evidence rules.
 
 1. Open the sample verdict.
 2. Show PASS/WARN/BLOCK shape.
-3. Run `BEADS_DIR=$PWD/_beads br create ... --body "From .agents/council/<run-id>/verdict.md"`.
+3. Run `BEADS_DIR="$(ao beads dir)" br create ... --body "From .agents/council/<run-id>/verdict.md"`.
 4. Show `_beads/issues.jsonl`.
 5. Re-run `ao context assemble` with the new issue as the task.
 
@@ -162,7 +162,7 @@ with clearer context.
    `ao rpi <bead>` executor (one cycle), `ao evolve` (many).
 3. To run it out of session, hand the loop to the substrate
    (NTM + MCP Agent Mail); e.g. an NTM tmux swarm (or a lead agent) runs
-   `BEADS_DIR=$PWD/_beads br ready` and dispatches ready beads to workers.
+   `BEADS_DIR="$(ao beads dir)" br ready` and dispatches ready beads to workers.
 4. Schedule corpus maintenance via the substrate (a driver or cron
    running `ao compile`, `ao maturity --scan`).
 5. Explain wiki/forge as compounding jobs, not unattended source mutation.

@@ -37,6 +37,8 @@ roots = [repo_root / "skills", repo_root / "skills-codex"]
 allowed_suffixes = {".md", ".sh"}
 wordish = re.compile(r"^[a-z][a-z0-9-]*$")
 control_tokens = {"|", "||", "&&", ";", "&"}
+stale_beads_resolver = re.compile(r"BEADS_DIR=\$PWD/_beads|git -C _beads|git add \.beads|git add _beads")
+stale_beads_allowed = re.compile(r"\b(anti-pattern|do not|don't|must not|never|reject|fails?|historical|retired)\b", re.IGNORECASE)
 
 failures = []
 help_cache = {}
@@ -166,6 +168,15 @@ for root in roots:
             continue
         if path.suffix not in allowed_suffixes:
             continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if stale_beads_resolver.search(line) and not stale_beads_allowed.search(line):
+                failures.append(
+                    f"{path.relative_to(repo_root)}:{lineno}: stale beads resolver; use BEADS_DIR=\"$(ao beads dir)\" and git -C \"$(ao beads dir)\""
+                )
         for lineno, snippet in iter_snippets(path):
             validate_snippet(path, lineno, snippet)
 

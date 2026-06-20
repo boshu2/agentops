@@ -10,8 +10,9 @@
 //      readable. Read by the agent itself, not pre-loaded into the report.
 //   2. Run `ao onboard --auto` if it exists (soc-vuu6.9 — currently a P3
 //      stub). Falls back to phase="skipped:not-implemented" if absent.
-//   3. Call `br ready --json` and count claimable items. Falls back to
-//      ready_beads_count=null if br is missing or errors.
+//   3. Resolve the live br ledger directory and call `br ready --json` with
+//      BEADS_DIR wired. Falls back to ready_beads_count=null if br is missing
+//      or errors.
 //   4. mcp-agent-mail register/check — fully optional. Phase reports
 //      `present` / `absent`; never fails the bootstrap.
 //
@@ -93,6 +94,8 @@ type SessionBootstrapStatus struct {
 	AgentsMDRead                bool                         `json:"agents_md_read"`
 	AgentsSiblingsRead          []string                     `json:"agents_siblings_read"`
 	OnboardPhase                string                       `json:"onboard_phase"`
+	BeadsDir                    string                       `json:"beads_dir"`
+	BeadsDirSource              string                       `json:"beads_dir_source"`
 	ReadyBeadsCount             *int                         `json:"ready_beads_count"`
 	MailUnreadCount             *int                         `json:"mail_unread_count"`
 	Runtime                     string                       `json:"runtime"`
@@ -132,7 +135,11 @@ const sessionBootstrapMemoryTokenBudget = 1200
 
 func runSessionBootstrap(cmd *cobra.Command, _ []string) error {
 	robot := sessionBootstrapRobot || sessionBootstrapJSON
-	status := computeBootstrapStatus(cmd.Context(), os.Getenv("PWD"), sessionBootstrapNoMail)
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = os.Getenv("PWD")
+	}
+	status := computeBootstrapStatus(cmd.Context(), cwd, sessionBootstrapNoMail)
 	if err := writeBootstrapMemoryWarning(cmd.ErrOrStderr(), status); err != nil {
 		return err
 	}
@@ -168,6 +175,9 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 		BootstrapMemory:             []SessionBootstrapMemoryItem{},
 		BootstrapMemoryBudgetTokens: sessionBootstrapMemoryTokenBudget,
 	}
+	beadsDir := resolveBeadsDir(cwd, os.Environ())
+	status.BeadsDir = beadsDir.Path
+	status.BeadsDirSource = beadsDir.Source
 
 	status.AgentsMDRead = fileExists(filepath.Join(cwd, "AGENTS.md"))
 	for _, sib := range agentsMDSiblings {
@@ -498,6 +508,7 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 		fmt.Sprintf("agents_md=%s", mdMark),
 		fmt.Sprintf("siblings=%d/%d", len(s.AgentsSiblingsRead), len(agentsMDSiblings)),
 		fmt.Sprintf("onboard=%s", s.OnboardPhase),
+		fmt.Sprintf("beads=%s", s.BeadsDirSource),
 		fmt.Sprintf("ready=%s", ready),
 		fmt.Sprintf("mail=%s", mail),
 		fmt.Sprintf("gate=%s", s.GateHook),
@@ -508,6 +519,11 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 	if s.GateHook == "inactive" {
 		if _, err := fmt.Fprintln(cmd.ErrOrStderr(),
 			"warn: pre-push gate not installed — run `bash scripts/install-pre-push-gate.sh` to arm the push-as-CI release authority (otherwise a push bypasses the gate)"); err != nil {
+			return err
+		}
+	}
+	if s.BeadsDir != "" {
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "tracker: BEADS_DIR=%s br ready --json\n", s.BeadsDir); err != nil {
 			return err
 		}
 	}
@@ -530,7 +546,7 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 	}
 	if !s.AgentsMDRead {
 		_, err := fmt.Fprintln(cmd.ErrOrStderr(),
-			"warn: AGENTS.md missing — start with `cat AGENTS.md` if it exists, or `BEADS_DIR=$PWD/_beads br ready` for repo orientation")
+			"warn: AGENTS.md missing — start with `cat AGENTS.md` if it exists, or `BEADS_DIR=\"$(ao beads dir)\" br ready --json` for repo orientation")
 		return err
 	}
 	return nil

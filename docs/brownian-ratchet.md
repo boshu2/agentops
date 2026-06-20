@@ -98,9 +98,9 @@ FIRE is the reconciliation engine that implements the Brownian Ratchet:
 Survey the battlefield. What's ready to ignite? What's currently burning? What's been reaped?
 
 ```bash
-BEADS_DIR=$PWD/_beads br ready --parent=<epic>      # Ready to ignite
-BEADS_DIR=$PWD/_beads br list --status=in_progress  # Currently burning
-BEADS_DIR=$PWD/_beads br list --status=closed       # Already reaped
+BEADS_DIR="$(ao beads dir)" br ready --parent=<epic>      # Ready to ignite
+BEADS_DIR="$(ao beads dir)" br list --status=in_progress  # Currently burning
+BEADS_DIR="$(ao beads dir)" br list --status=closed       # Already reaped
 ```
 
 ### IGNITE - Spark Chaos
@@ -128,7 +128,7 @@ Not everything succeeds. Failed attempts have two paths:
 
 ```bash
 # Escalate
-BEADS_DIR=$PWD/_beads br update <issue> --labels=BLOCKER
+BEADS_DIR="$(ao beads dir)" br update <issue> --labels=BLOCKER
 # notify the human via Agent Mail (am) or the swarm inbox
 ```
 
@@ -428,7 +428,7 @@ This is why `/post-mortem` is mandatory. Skipping it breaks the compounding.
 
 ## Validation Status
 
-**Epic:** `ol-rg3p` — Rigorous Flywheel Math Validation (run `BEADS_DIR=$PWD/_beads br show ol-rg3p`)
+**Epic:** `ol-rg3p` — Rigorous Flywheel Math Validation (run `BEADS_DIR="$(ao beads dir)" br show ol-rg3p`)
 
 The core Knowledge Flywheel equation:
 

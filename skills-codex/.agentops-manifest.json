@@ -1109,8 +1109,8 @@
     {
       "name": "beads-br",
       "source_skill": "skills/beads-br",
-      "source_hash": "0ad111490f3184f482ff336fdfc8c20a9e2b79cca049299d3cf211432c7c9331",
-      "generated_hash": "119e7a0dba136c72b198d2ec7c44bc526ca230955c6ebbc3c2d25cb67398e09d"
+      "source_hash": "38be7078ddf61bf34e40a58592a1b8ad7d0d3a2fe0303332280b98e1106e7195",
+      "generated_hash": "62d88a8528cc7ab5b261ddfa57cb6c74f45b607858b27907f93c1fa3c82266aa"
     },
     {
       "name": "beads-bv",
@@ -1121,8 +1121,8 @@
     {
       "name": "beads-workflow",
       "source_skill": "skills/beads-workflow",
-      "source_hash": "c80bad74d0c31308f06cbc1f8905f084d0418d6fe2755563a9549e6168631d37",
-      "generated_hash": "f3368333640b4a0e21b946e7d27aa9564fe7fe17f8b28ba5232d07a609853e48"
+      "source_hash": "8369c72412aab145d8497996acffe95d68ede836ae996cbcebe8d3e4f7bc33ee",
+      "generated_hash": "e5061c86b05abcdb8e3ac9cdc463e513825d589176c380592988df0442694338"
     },
     {
       "name": "behavior-first-planning",
@@ -1223,8 +1223,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "bf646a47fc4068eab6a9a5d4fb9539dd9858460ff4ce4ee0ebaaa27d7cea8225",
-      "generated_hash": "c0c1864dabbc761bf82be7ca0de1f422b6d7aedb3cdd3fbe398a7bbdc761f945"
+      "source_hash": "51eb788db1fdd948b79dc055508a4f154a74b69175507ec5774fbcdcb4ec948a",
+      "generated_hash": "a0815832e4d08da57a1255d375cb14798f625f7bc742794ed6747c3051f87cd4"
     },
     {
       "name": "curate",
@@ -1253,8 +1253,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "52c5b57dc06b64156bce3e3adb2df52250b87d4bf6f4ba573ce8c6af573a3dcb",
-      "generated_hash": "96903bcc7b94e037c49fac7883e0d68220c0c1fe7e59b4b47dc7d2bf71fe6d65"
+      "source_hash": "4e15cca03e2425a8006b4ac408aa4fe58d63d94eef838aa21c7f325785ea881b",
+      "generated_hash": "70bed61a82d209373f31005b2c9187fa826df40026b83a046637e57d2b9c1713"
     },
     {
       "name": "doc",
@@ -1283,8 +1283,8 @@
     {
       "name": "dual-pane-atm",
       "source_skill": "skills/dual-pane-atm",
-      "source_hash": "de332a48d8fe363eb72f9d7d07eff2a4ea020d59d2756b18589038f0d1510ca6",
-      "generated_hash": "14cae6d07ab3a8f283ba8f128b518db3a162896a5861c6e04765354bc339b80b"
+      "source_hash": "332daf3228f50edeb94e80096c7f83026223d654cbd1948c367601b48c83540e",
+      "generated_hash": "8f0bda6aae17cc55ac3d2dc40eed18b66e0a4dc799f4fef552437857046f25dd"
     },
     {
       "name": "eval-outcomes",
@@ -1433,8 +1433,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "c8939cc48c1f7fc801c9d24c4be6b2c60e792b3d01e99fc432c51d7485a66dc3",
-      "generated_hash": "f234daab975e9a21532d955935559861b1a099711c77065a7fbdec9b5d90cdcd"
+      "source_hash": "c2cd9c700987e215bdf7735aaff382cd4ba08f736ad8b48979cd3860d5d5be23",
+      "generated_hash": "f616dee5cf30c2e580d7ef51467a962a98c59f72de628c3fd2fefc103b35402f"
     },
     {
       "name": "post-mortem",
@@ -1727,8 +1727,8 @@
     {
       "name": "test",
       "source_skill": "skills/test",
-      "source_hash": "2a2886464a3bd63fb1238192dbbe84daa9afe474ad2af3f7906a49e8c3b08fee",
-      "generated_hash": "e1cf6a87f0f227ae7436ee6b87d5c4340891ce70e3f8f260e209819db307835b"
+      "source_hash": "589191a626dccb4ed907c4e51850be8ce472939e2f9d05ede56b29225467d141",
+      "generated_hash": "3ec84695bf66b99d4fc4d1046cc2fc50bd6e5226b76772deeaa0098c50ef21c2"
     },
     {
       "name": "toil-mining",
@@ -1757,8 +1757,8 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "5b8867f4cdefaf19f30702881681e21c3f03375a178f75f5652df9687e4c8367",
-      "generated_hash": "5cbafeb3d292c6133743b21fd230fef327165250bd7fcfa6882b504fd7180c9f"
+      "source_hash": "e67f858b339f0d31f9b1487a6502a508f6af5a880028d1b55621db80ab33e72d",
+      "generated_hash": "45b7726f149d52f6548aac26455f21812dc9c2288b001498d777ecbfb14ca10d"
     },
     {
       "name": "workflow-builder",

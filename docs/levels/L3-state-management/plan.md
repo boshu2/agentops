@@ -17,12 +17,12 @@ Breaks down a goal into beads issues. Use when work spans multiple sessions or h
 At L3, planning creates trackable issues:
 - Issues stored in the `_beads/` ledger (br, beads_rust)
 - Dependencies tracked (what blocks what)
-- Progress visible with `BEADS_DIR=$PWD/_beads br ready`, `br list`
+- Progress visible with `BEADS_DIR="$(ao beads dir)" br ready`, `br list`
 
 ## Steps
 
 1. Claude researches what's needed
-2. Claude creates issues with `BEADS_DIR=$PWD/_beads br create`
+2. Claude creates issues with `BEADS_DIR="$(ao beads dir)" br create`
 3. Claude sets dependencies with `br dep add`
 4. Plan saved to `.agents/plans/`
 
@@ -50,7 +50,7 @@ Claude: I'll research and plan dark mode implementation.
 
 Creating issues:
 
-$ BEADS_DIR=$PWD/_beads br create "Add theme context provider" -p 1
+$ BEADS_DIR="$(ao beads dir)" br create "Add theme context provider" -p 1
 Created: agentops-xyz
 
 $ br create "Create dark mode toggle" -p 2
@@ -65,5 +65,5 @@ Next: `br ready` to see what's unblocked, then `/implement`
 
 ## Next
 
-- `BEADS_DIR=$PWD/_beads br ready` - See unblocked issues
+- `BEADS_DIR="$(ao beads dir)" br ready` - See unblocked issues
 - `/implement agentops-xyz` - Work on specific issue

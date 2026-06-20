@@ -175,7 +175,7 @@ As you work, use `/retro` or `/post-mortem` to extract learnings for future sess
 
 **Purpose:** What this agent specifically needs to do right now. The immediate work assignment with acceptance criteria.
 
-**Source:** Bead description (from `BEADS_DIR=$PWD/_beads br show <id>`), epic context, or the task assignment from `/crank` wave planning. For `/evolve`, this is the current goal target and its failing check command.
+**Source:** Bead description (from `BEADS_DIR="$(ao beads dir)" br show <id>`), epic context, or the task assignment from `/crank` wave planning. For `/evolve`, this is the current goal target and its failing check command.
 
 **Content:**
 

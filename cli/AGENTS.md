@@ -8,13 +8,13 @@ This file is **not** the issue-tracker or workflow source of truth. Read the rep
 ## Issue tracker (br only)
 
 ```bash
-BEADS_DIR=$PWD/_beads br ready              # Find available work
-BEADS_DIR=$PWD/_beads br show <id>          # View issue details
-BEADS_DIR=$PWD/_beads br update <id> --claim  # Claim work
-BEADS_DIR=$PWD/_beads br close <id> -r "Done" # Complete work
+BEADS_DIR="$(ao beads dir)" br ready              # Find available work
+BEADS_DIR="$(ao beads dir)" br show <id>          # View issue details
+BEADS_DIR="$(ao beads dir)" br update <id> --claim  # Claim work
+BEADS_DIR="$(ao beads dir)" br close <id> -r "Done" # Complete work
 ```
 
-**bd/Dolt is retired legacy (2026-06-11).** Do not run `bd` here. Sync the private ledger with `git -C _beads push` — never `git add _beads`.
+**bd/Dolt is retired legacy (2026-06-11).** Do not run `bd` here. Sync the private ledger with `git -C "$(ao beads dir)" push`; never stage that ledger from the public repo.
 
 ## CLI development
 

@@ -21,7 +21,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 **This is the doctrine. All work runs through one repeatable loop — not a phased waterfall of documents.** Every process skill is one move within it; no artifact exists unless it advances the loop. The *map* (these moves, their legal transitions, their gates) is fixed; the *route* a goal takes through it is re-planned on failure. When in doubt, you are somewhere in these seven moves — find where, and take the next one.
 
 1. **Shape intent as BDD** — capability name + Given/When/Then (one happy path, ≥1 edge) + non-goals + rollback + evidence-for-done. Not ready until the acceptance examples are testable. → `/discovery`, `/product`, `/plan`
-2. **Track as a bead** when it leaves your head — the linked-intent packet carrying acceptance, BC tag, slice list, wave plan, accruing evidence. One-shot in-prompt work needs no bead. → `BEADS_DIR=$PWD/_beads br …`
+2. **Track as a bead** when it leaves your head — the linked-intent packet carrying acceptance, BC tag, slice list, wave plan, accruing evidence. One-shot in-prompt work needs no bead. → `ao beads dir` then `BEADS_DIR=<that path> br …`
 3. **Slice vertically** through behavior — each slice cuts through whatever layers demonstrate one Given/When/Then, never a horizontal layer.
 4. **TDD per slice** — first the failing test (the slice's contract), then implementation. Code without a failing test has no acceptance surface. → `/implement`
 5. **Group into a wave only when write scopes do not collide** — parallelism is explicit ownership; default to sequential. ≥2 writers on a shared path ⇒ Agent Mail reserve first. → `/swarm`, `/crank`
@@ -30,7 +30,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). Which skill runs which move → [`docs/SKILL-ROUTER.md`](docs/SKILL-ROUTER.md). `/rpi` is one turn's executor over this loop, **not** the primary navigation. The rest of this file is the mechanics each move uses; full workflow phases (claim → scope → ship → land), branch shape, and provenance live in [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md).
 
-**Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Interim: until legacy `.beads/` is retired, invoke as `BEADS_DIR=$PWD/_beads br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C _beads push`, **never** `git add _beads`. **`bd`/Dolt is RETIRED LEGACY** (single-host SPOF with no offline lane) — do not run `bd`.
+**Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Resolve the live private ledger with `ao beads dir` before every direct `br` read/write, especially in linked worktrees where `$PWD/_beads` is usually absent. Invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C "$(ao beads dir)" push`, **never** `git add _beads`. **`bd`/Dolt is RETIRED LEGACY** (single-host SPOF with no offline lane) — do not run `bd`.
 
 **Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. `ao rpi` CLI code is load-bearing legacy, not the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
 
@@ -88,7 +88,7 @@ ao session bootstrap → ao inject → operating loop → ao gate check --fast -
 |-------|-------|
 | **Navigation** | [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — primary; `/rpi` is one turn's executor, not primary |
 | **Release authority** | Go gate in `cli/internal/gates/` (pre-push hook); legacy bash only via `AGENTOPS_GATE_BASH=1` |
-| **Tracker** | `BEADS_DIR=$PWD/_beads br …` — `bd`/Dolt retired |
+| **Tracker** | `BEADS_DIR="$(ao beads dir)" br …` — `bd`/Dolt retired |
 | **Skills SSOT** | `skills/<slug>/SKILL.md` — never `~/.claude/skills/` |
 | **Runtime corpus** | `.agents/` gitignored; provenance in `docs/provenance/ledger.jsonl` |
 | **Out-of-session** | NTM + Agent Mail + `ao agent` — optional; AgentOps ships no daemon |
@@ -138,10 +138,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 ao session bootstrap
 ao inject "<query>"              # or: ao corpus inject --query "<query>"
 
-# Issue tracking (interim: BEADS_DIR until .beads/ retired)
-BEADS_DIR=$PWD/_beads br ready
-BEADS_DIR=$PWD/_beads br update <id> --claim
-BEADS_DIR=$PWD/_beads br close <id> -r "Done"
+# Issue tracking (resolve first; linked worktrees do not carry _beads)
+BEADS_DIR="$(ao beads dir)" br ready
+BEADS_DIR="$(ao beads dir)" br update <id> --claim
+BEADS_DIR="$(ao beads dir)" br close <id> -r "Done"
 bv --robot-insights              # graph triage
 
 # Release gate (routine authority — before push)
@@ -160,9 +160,9 @@ Run the local cockpit gate before pushing, then push the coherent bead arc direc
 | Mistake | Correct behavior |
 |---|---|
 | Edit `~/.claude/skills/` | Edit `skills/` in **this repo** |
-| Run `bd` / Dolt | `BEADS_DIR=$PWD/_beads br …` |
+| Run `bd` / Dolt | `BEADS_DIR="$(ao beads dir)" br …` |
 | Edit the shared canonical checkout under swarm load | **Git worktree** per bead |
-| `git add _beads` | Never — sync with `git -C _beads push` |
+| `git add _beads` | Never — sync with `git -C "$(ao beads dir)" push` |
 | Hand-edit `registry.json` / generated maps | `make regen-all` from sources |
 | Route new work through the `ao rpi` loop | Operating loop + NTM/Agent Mail substrate |
 | Trust stale narrative over executable behavior | Check `cli/`, generated docs, gates first |

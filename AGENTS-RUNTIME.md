@@ -9,6 +9,10 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 - Keep the canonical root clean and attached to `main`.
 - Do not use the canonical root as scratch space for task work.
 - Create task branches in linked worktrees and do the actual edits there.
+- Do not expect linked worktrees to contain `_beads/`; that private ledger lives
+  at the canonical root. Run `ao session bootstrap` or `ao beads dir` after
+  entering a worktree, then use `BEADS_DIR="$(ao beads dir)" br show <id> --json`
+  before implementing any bead-named task.
 - Every foreign worktree must end the session as `merged`, `preserved`, `exported`, or `deleted`.
 - Preserve unfinished branch work on `codex/preserve-*` when it is not ready to merge.
 - Every surviving `codex/preserve-*` ref must have an entry in `docs/preserved-refs.tsv` with owner and retirement rule.
@@ -56,4 +60,3 @@ scripts/generate-cli-reference.sh
 **No TODOs in SKILL.md files.** The smoke test greps for `TODO` and `FIXME` in `skills/*/SKILL.md`. Use issue tracking (`br`) for follow-up work instead.
 
 **Validate before proposing.** Before suggesting a new capability or safeguard, verify it doesn't already exist: check the `ao` command surface (`cli/cmd/ao/`, generated `cli/docs/COMMANDS.md`), `.github/workflows/validate.yml`, `GOALS.md`, and existing SKILL.md files. Three suggested features in our March 2026 validation review were already implemented.
-

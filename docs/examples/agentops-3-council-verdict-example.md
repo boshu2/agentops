@@ -48,7 +48,7 @@ productivity, PMF, or autonomous-factory claims.
 1. Point README and launch content at the first-value path.
 2. Show `.agents/council/<run-id>/verdict.md` before any out-of-session
    substrate automation.
-3. Use `BEADS_DIR=$PWD/_beads br create ... --body "From .agents/council/<run-id>/verdict.md"`
+3. Use `BEADS_DIR="$(ao beads dir)" br create ... --body "From .agents/council/<run-id>/verdict.md"`
    for tracked follow-up work.
 4. Keep `ao activate product-council` deferred until repeated PMF runs prove the
    profile is stable.

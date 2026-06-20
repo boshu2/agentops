@@ -14,7 +14,7 @@ For product doctrine read [AgentOps 3.0 — the north star](../3.0.md). For *how
 |------|-------|
 | Product | In-session autonomous code validation for coding agents |
 | Active waist | `ao session bootstrap` → `ao inject` → operating loop → `ao gate check --fast` → push to `main` |
-| Issue tracker | **br** (beads_rust) in `_beads/` — `BEADS_DIR=$PWD/_beads br <cmd>` until legacy `.beads/` retires |
+| Issue tracker | **br** (beads_rust) in `_beads/` — `BEADS_DIR="$(ao beads dir)" br <cmd>` until legacy `.beads/` retires |
 | Skills SSOT | `skills/<slug>/SKILL.md` — never edit `~/.claude/skills/` |
 | Release gate | Local cockpit: `ao gate check --fast --scope head` (Go registry in `cli/internal/gates/`) |
 | CI | Backstop only — not routine release authority for every `main` push |
@@ -99,7 +99,7 @@ BC6 Orchestration ──▶ dispatches whole skills (never decomposes RPI intern
 | `schemas/` | JSON schemas for config, provenance, packets |
 | `docs/` | Narrative architecture, ADRs, contracts, MkDocs site |
 | `.agents/` | **Runtime knowledge** (gitignored) — learnings, council, RPI queue |
-| `_beads/` | **Private br ledger** (nested git repo) — never `git add _beads` |
+| `_beads/` | **Private br ledger** (nested git repo) — never stage it from the public repo |
 | `.beads/` | Legacy bd/Dolt config — preserved, not authoritative |
 | `registry.json` | Generated SKU catalog — **do not hand-edit** |
 | `.claude/workflows/` | Claude-only workflow scripts (kind: `workflow`) |
@@ -286,7 +286,7 @@ Read the right layer for your question:
 
 ## Work lifecycle (contributor path)
 
-1. **Claim** — `BEADS_DIR=$PWD/_beads br ready` → `br update <id> --claim`
+1. **Claim** — `BEADS_DIR="$(ao beads dir)" br ready --json` → `BEADS_DIR="$(ao beads dir)" br update <id> --claim --json`
 2. **Scope** — read bead acceptance (`.feature` or embedded `## Scenarios`)
 3. **Implement in worktree** — `git worktree add wt-<bead-id> -b <type>/<bead-id>-<slug>`
 4. **Verify** — `ao gate check --fast --scope head` (+ targeted tests for touched surfaces)
@@ -303,9 +303,9 @@ These recur in audits and findings registries:
 | Footgun | Correct behavior |
 |---------|------------------|
 | Editing `~/.claude/skills/` | Edit `skills/` in **this repo** only |
-| Using `bd` / Dolt | Use **`br`** with `BEADS_DIR=$PWD/_beads` — bd is retired legacy |
+| Using `bd` / Dolt | Use **`br`** with `BEADS_DIR="$(ao beads dir)"` — bd is retired legacy |
 | Editing canonical root under swarm load | Use a **worktree** per bead |
-| `git add _beads` | Never — private nested repo; sync with `git -C _beads push` |
+| Staging the private ledger from the parent repo | Never — private nested repo; sync with `git -C "$(ao beads dir)" push` |
 | Hand-editing `registry.json` or context-map | Run `make regen-all` from source edits |
 | Assuming CI blocks every `main` push | **Local gate** is routine authority; CI is backstop |
 | Treating `/rpi` as the live orchestration substrate | NTM + Agent Mail for out-of-session; operating loop for in-session navigation |

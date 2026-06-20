@@ -219,7 +219,7 @@ Discovery does NOT relax this requirement; run the admission gate per
 returned bead:
 
 ```bash
-BEADS_DIR=$PWD/_beads br show "$BEAD_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+BEADS_DIR="$(ao beads dir)" br show "$BEAD_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
 ```
 
 Exit 1 sends the bead back to `/plan` to be promoted before compiling the

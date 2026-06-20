@@ -2887,6 +2887,21 @@ ao beads cluster [flags]
       --json    Emit cluster report as JSON
 ```
 
+#### `ao beads dir`
+
+Print the BEADS_DIR path AgentOps will use for br subprocesses.
+
+```
+ao beads dir [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for dir
+      --json   Emit {beads_dir, source} as JSON
+```
+
 #### `ao beads harvest`
 
 Reads a closed bead via 'bd show <id>' and writes its closure reason

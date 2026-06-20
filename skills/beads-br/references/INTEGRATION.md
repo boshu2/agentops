@@ -31,24 +31,24 @@ Use bead IDs as coordination threads for multi-agent work:
 
 | Concept | Value |
 |---------|-------|
-| Mail `thread_id` | `bd-###` |
-| Mail subject | `[bd-###] ...` |
-| File reservation `reason` | `bd-###` |
-| Commit messages | Include `bd-###` for traceability |
+| Mail `thread_id` | `ag-###` or the full bead id |
+| Mail subject | `[ag-###] ...` |
+| File reservation `reason` | `ag-###` |
+| Commit messages | Include the bead id for traceability |
 
 ### Agent Mail Workflow
 
 ```python
 # 1. Reserve files for bead
-file_reservation_paths(..., reason="bd-123")
+file_reservation_paths(..., reason="ag-123")
 
 # 2. Announce work in thread
-send_message(..., thread_id="bd-123", subject="[bd-123] Starting...")
+send_message(..., thread_id="ag-123", subject="[ag-123] Starting...")
 
 # 3. Do work...
 
 # 4. Close bead when done
-br close bd-123 --reason "Completed"
+BEADS_DIR="$(ao beads dir)" br close ag-123 --reason "Completed"
 
 # 5. Release reservations
 release_file_reservations(...)
@@ -62,7 +62,7 @@ When multiple agents work on the same project:
 
 1. **Use Agent Mail file reservations** to avoid conflicts
 2. **Use bead ID as thread_id** for communication
-3. **Check `br ready --json`** to see unblocked work
+3. **Check `BEADS_DIR="$(ao beads dir)" br ready --json`** to see unblocked work
 4. **Close beads when done** to unblock dependents
 
 ### Finding Parallel Work
@@ -79,25 +79,22 @@ bv --robot-plan
 ## Standard Agent Workflow
 
 ```bash
-# 1. Initialize (one-time per project)
-cd my-project
-br init
+# 1. Find work
+BEADS_DIR="$(ao beads dir)" br ready --json
 
-# 2. Find work
-br ready --json
+# 2. Claim work
+BEADS_DIR="$(ao beads dir)" br update ag-abc123 --claim --actor "$(git config user.email)" --json
 
-# 3. Claim work
-br update bd-abc123 --status in_progress --assignee "$(git config user.email)"
+# 3. Do work...
 
-# 4. Do work...
+# 4. Complete
+BEADS_DIR="$(ao beads dir)" br close ag-abc123 --reason "Implemented feature X"
 
-# 5. Complete
-br close bd-abc123 --reason "Implemented feature X"
-
-# 6. Sync to git
-br sync --flush-only
-git add .beads/
-git commit -m "feat: implement X (bd-abc123)"
+# 5. Sync the private tracker repo
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A
+git -C "$(ao beads dir)" commit -m "tracker: close ag-abc123"
+git -C "$(ao beads dir)" push
 ```
 
 ---
@@ -108,8 +105,8 @@ Before ending any session:
 
 ```bash
 git pull --rebase
-br sync --flush-only
-git add .beads/ && git commit -m "Update issues"
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: update issues" && git -C "$(ao beads dir)" push
 git push
 git status  # MUST show "up to date with origin"
 ```
@@ -119,9 +116,10 @@ git status  # MUST show "up to date with origin"
 ## Creating Good Beads
 
 ```bash
-br create "Title that explains the task" \
+BEADS_DIR="$(ao beads dir)" br create "Title that explains the task" \
   --type task \
   --priority 1 \
+  --json \
   --description "Detailed description with acceptance criteria"
 ```
 

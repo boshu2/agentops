@@ -81,7 +81,7 @@ Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skil
 
 ### 2. Track as a bead when it leaves the head
 
-A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `beads-br` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR=$PWD/_beads br ...`).
+A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `beads-br` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR="$(ao beads dir)" br ...`).
 
 ### 3. Slice vertically through behavior
 

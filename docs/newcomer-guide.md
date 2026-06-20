@@ -75,8 +75,8 @@ Use the router in [Skills Reference](SKILLS.md) to choose the right entry point:
 Tracked work lives in **`_beads/`** (private nested repo). Until legacy `.beads/` is retired, invoke:
 
 ```bash
-BEADS_DIR=$PWD/_beads br ready
-BEADS_DIR=$PWD/_beads br update <id> --claim
+BEADS_DIR="$(ao beads dir)" br ready
+BEADS_DIR="$(ao beads dir)" br update <id> --claim
 ```
 
 Do not use `bd` or Dolt — retired as of 2026-06-11. See [Dependencies](dependencies.md).

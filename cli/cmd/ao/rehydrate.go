@@ -25,7 +25,7 @@ artifact in .agents/handoff/ — the read-side complement to ` + "`ao handoff`" 
 
 In the self-healing context loop, an agent (or a peer orchestrator that just
 cleared this pane) runs ` + "`ao rehydrate`" + ` to restore the working thread without
-re-deriving it: the goal, the active bead (with the ` + "`br show`" + ` to read its
+re-deriving it: the goal, the active bead (with ` + "`BEADS_DIR=\"$(ao beads dir)\" br show`" + ` to read its
 acceptance), the file reservations to re-acquire, the next action, and recent
 commits. For full corpus orientation, follow with ` + "`ao session bootstrap`" + `.
 
@@ -122,7 +122,7 @@ func renderRehydrateBrief(a *handoffArtifact) string {
 	}
 	if a.State != nil {
 		if a.State.ActiveBead != "" {
-			fmt.Fprintf(&b, "Active bead: %s — run `br show %s` for its acceptance + notes.\n",
+			fmt.Fprintf(&b, "Active bead: %s — run `BEADS_DIR=\"$(ao beads dir)\" br show %s --json` for its acceptance + notes.\n",
 				a.State.ActiveBead, a.State.ActiveBead)
 		}
 		if len(a.State.Reservations) > 0 {

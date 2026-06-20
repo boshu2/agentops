@@ -27,7 +27,7 @@ ao quick-start
 ```
 
 Optional layers are deliberately separate: `/bootstrap` adds PRODUCT.md,
-README.md, and PROGRAM.md/AUTODEV.md; `BEADS_DIR=$PWD/_beads br init --prefix <prefix>` adds
+README.md, and PROGRAM.md/AUTODEV.md; `BEADS_DIR="$(ao beads dir)" br init --prefix <prefix>` adds
 tracking; the `hooks-authoring` skill lets you author your own optional runtime
 hooks (AgentOps 3.0 ships none); an out-of-session substrate (NTM + MCP +
 managed-agents) adds continuous scheduling.

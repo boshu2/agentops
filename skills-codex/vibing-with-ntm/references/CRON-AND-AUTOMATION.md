@@ -174,9 +174,10 @@ ntm --robot-markdown --md-compact > "/tmp/swarm-$(date +%Y%m%d-%H%M)-final.md"
 
 # 4. Push everything
 cd "$REPO"
-br sync --flush-only
-git add .beads/
-git commit -m "sync beads" || true
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A
+git -C "$(ao beads dir)" commit -m "sync beads" || true
+git -C "$(ao beads dir)" push
 git push
 
 # 5. Kill the session (confirm first)

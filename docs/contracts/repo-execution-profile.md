@@ -60,7 +60,7 @@ Agents should select the smallest lane set that proves the slice:
 - If a command is not represented by a lane, treat `go test -race`, `-shuffle`, `-count=N` where `N > 1`, eval runners, retrieval bench, headless runtime smoke, and release gates as explicit-only.
 
 ### `tracker_commands`
-Repo-scoped command wrappers for issue tracking. This is where shell/runtime requirements such as `zsh -lc 'cd <repo> && BEADS_DIR=$PWD/_beads br ...'` live when a tracker needs a specific execution environment.
+Repo-scoped command wrappers for issue tracking. This is where shell/runtime requirements such as `zsh -lc 'cd <repo> && BEADS_DIR="$(ao beads dir)" br ...'` live when a tracker needs a specific execution environment.
 
 ### `work_selection_order`
 Optional source ladder for autonomous prioritization. When omitted, consumers should default to the repo's existing ladder.
@@ -141,7 +141,7 @@ This keeps repo policy additive and phase-stable without replacing the current g
     }
   ],
   "tracker_commands": {
-    "shell_prefix": "zsh -lc 'cd <repo> && BEADS_DIR=$PWD/_beads '",
+    "shell_prefix": "zsh -lc 'cd <repo> && BEADS_DIR=\"$(ao beads dir)\" '",
     "ready": "br ready --json",
     "show": "br show <id> --json",
     "update": "br update <id> --status in_progress --json",

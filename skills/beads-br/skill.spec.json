@@ -41,7 +41,7 @@
       "beads_rust",
       "find ready work",
       "manage dependencies",
-      "br sync --flush-only",
+      "BEADS_DIR br sync --flush-only",
       "br create",
       "br close",
       "sync issues to git"

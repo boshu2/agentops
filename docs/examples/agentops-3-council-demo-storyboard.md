@@ -28,8 +28,8 @@ Pre-flight:
 
 ```bash
 ao version
-BEADS_DIR=$PWD/_beads br show soc-m6v5.9.7
-BEADS_DIR=$PWD/_beads br ready
+BEADS_DIR="$(ao beads dir)" br show soc-m6v5.9.7
+BEADS_DIR="$(ao beads dir)" br ready
 ```
 
 Screen setup:
@@ -150,7 +150,7 @@ engineering judgment, not just producing agreement.
 Show the existing tracked work:
 
 ```bash
-BEADS_DIR=$PWD/_beads br show soc-m6v5.9.7.8
+BEADS_DIR="$(ao beads dir)" br show soc-m6v5.9.7.8
 ```
 
 Then show how the verdict becomes implementation context:
@@ -178,7 +178,7 @@ coordinated by Agent Mail (locks, inboxes, handoffs):
 ```bash
 # An NTM swarm runs the operating loop over the ready bead queue; Agent Mail
 # coordinates locks and handoffs between panes. See the ntm and agent-mail skills.
-BEADS_DIR=$PWD/_beads br ready          # the queue the swarm pulls from
+BEADS_DIR="$(ao beads dir)" br ready          # the queue the swarm pulls from
 ```
 
 Narration:

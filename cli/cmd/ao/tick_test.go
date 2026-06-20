@@ -81,7 +81,6 @@ func TestTickClosePortAlreadyClosedIsIdempotent(t *testing.T) {
 		ledgerDir string
 	}{
 		{name: "br workspace _beads", ledgerDir: "_beads"},
-		{name: "legacy .beads fallback", ledgerDir: ".beads"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -115,18 +114,18 @@ func TestTickLedgerDirResolution(t *testing.T) {
 		want       func(workDir string) string
 	}{
 		{
-			name:   "prefers _beads when it exists",
+			name:   "uses _beads when it exists",
 			mkdirs: []string{"_beads", ".beads"},
 			want:   func(d string) string { return filepath.Join(d, "_beads") },
 		},
 		{
-			name:   "falls back to legacy .beads",
+			name:   "ignores retired .beads fallback",
 			mkdirs: []string{".beads"},
-			want:   func(d string) string { return filepath.Join(d, ".beads") },
+			want:   func(d string) string { return filepath.Join(d, "_beads") },
 		},
 		{
-			name: "defaults to .beads when nothing exists",
-			want: func(d string) string { return filepath.Join(d, ".beads") },
+			name: "defaults to _beads when nothing exists",
+			want: func(d string) string { return filepath.Join(d, "_beads") },
 		},
 		{
 			name:       "process BEADS_DIR wins over directory probe",
@@ -202,10 +201,6 @@ func TestTickClose_PersistsLedgerInOwnRepoNotPublic(t *testing.T) {
 		{
 			name:      "br workspace _beads",
 			ledgerDir: "_beads",
-		},
-		{
-			name:      "legacy .beads fallback",
-			ledgerDir: ".beads",
 		},
 		{
 			name:      "explicit BEADS_DIR override",
@@ -338,6 +333,107 @@ esac
 				t.Fatalf("tickClose() stdout = %q, want %q", stdout.String(), want)
 			}
 		})
+	}
+}
+
+func TestTickCloseLinkedWorktreeUsesCanonicalBeadsLedger(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
+	root, lane := makeGitRepoWithLinkedWorktree(t)
+	ledger := filepath.Join(root, "_beads")
+	if err := os.MkdirAll(ledger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-linked", "closed")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledger, "metadata.json"), []byte(`{"database":"beads"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(lane, "evidence"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(lane, "evidence", "proof.md"), []byte("proof"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fakebin := filepath.Join(t.TempDir(), "fakebin")
+	if err := os.MkdirAll(fakebin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	publicHeadFile := filepath.Join(fakebin, "fake-public-head")
+	ledgerHeadFile := filepath.Join(fakebin, "fake-ledger-head")
+	gitLog := filepath.Join(fakebin, "fake-git.log")
+	if err := os.WriteFile(publicHeadFile, []byte("public1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ledgerHeadFile, []byte("ledger1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in close|sync|update) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
+	fakeGit := `#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${TICK_TEST_GIT_LOG:?}"
+if [ "${1:-}" = "-C" ]; then
+  dir="$2"
+  shift 2
+  if [ "$dir" = "${TICK_TEST_WORKDIR:?}" ] && [ "${1:-}" = "rev-parse" ] && [ "${2:-}" = "--git-common-dir" ]; then
+    printf '%s\n' "${TICK_TEST_GIT_COMMON_DIR:?}"
+    exit 0
+  fi
+  if [ "$dir" = "${TICK_TEST_WORKDIR:?}" ] && [ "${1:-}" = "rev-parse" ] && [ "${2:-}" = "--show-toplevel" ]; then
+    printf '%s\n' "${TICK_TEST_WORKDIR:?}"
+    exit 0
+  fi
+  case "${1:-}" in
+    rev-parse) cat "${TICK_TEST_LEDGER_HEAD_FILE:?}" ;;
+    add) exit 0 ;;
+    commit) echo ledger2 > "${TICK_TEST_LEDGER_HEAD_FILE:?}" ;;
+    *) : ;;
+  esac
+  exit 0
+fi
+case "${1:-}" in
+  rev-parse) cat "${TICK_TEST_PUBLIC_HEAD_FILE:?}" ;;
+  add) exit 0 ;;
+  commit) echo public2 > "${TICK_TEST_PUBLIC_HEAD_FILE:?}" ;;
+  *) : ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fakebin, "git"), []byte(fakeGit), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TICK_TEST_WORKDIR", lane)
+	t.Setenv("TICK_TEST_GIT_COMMON_DIR", filepath.Join(root, ".git"))
+	t.Setenv("TICK_TEST_PUBLIC_HEAD_FILE", publicHeadFile)
+	t.Setenv("TICK_TEST_LEDGER_HEAD_FILE", ledgerHeadFile)
+	t.Setenv("TICK_TEST_GIT_LOG", gitLog)
+
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{workDir: lane, stdout: &stdout, stderr: &stderr}
+	if err := tickClose(rt, "cp-linked", "close msg", "evidence/proof.md", []string{"docs/close.md"}); err != nil {
+		t.Fatalf("tickClose() error: %v (stderr=%q)", err, stderr.String())
+	}
+	got, err := os.ReadFile(gitLog)
+	if err != nil {
+		t.Fatalf("git was never invoked: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(got)), "\n")
+	wantCommonDir := "-C " + lane + " rev-parse --git-common-dir"
+	if !tickTestLinesContain(lines, wantCommonDir) {
+		t.Fatalf("git calls missing linked-worktree common-dir lookup %q; got %q", wantCommonDir, strings.TrimSpace(string(got)))
+	}
+	wantLedgerAdd := "-C " + ledger + " add -- issues.jsonl metadata.json"
+	if !tickTestLinesContain(lines, wantLedgerAdd) {
+		t.Fatalf("git calls missing canonical ledger add %q; got %q", wantLedgerAdd, strings.TrimSpace(string(got)))
+	}
+	for _, line := range lines {
+		if strings.HasPrefix(line, "add ") && (strings.Contains(line, "_beads") ||
+			strings.Contains(line, "issues.jsonl") || strings.Contains(line, "metadata.json")) {
+			t.Fatalf("public git add staged ledger path: %q", line)
+		}
 	}
 }
 

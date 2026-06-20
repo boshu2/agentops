@@ -92,34 +92,38 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
 ## `br` errors or RPI falls back to tasklist mode
 
 > **Note (2026-06-11):** the tracker is **`br` (beads_rust)** at `_beads/`,
-> invoked `BEADS_DIR=$PWD/_beads br <cmd>`. `bd`/Dolt is retired. If you came from
-> an older guide that ran `bd`/`brew upgrade beads`, that procedure is gone.
+> invoked through the resolved private ledger path: `BEADS_DIR="$(ao beads dir)" br <cmd>`.
+> `bd`/Dolt is retired. If you came from an older guide that ran `bd`/`brew upgrade
+> beads`, that procedure is gone.
 
-If `BEADS_DIR=$PWD/_beads br ready --json` fails or the legacy `.beads/` config
-shadows the live `_beads/` ledger, you likely have a tracker config mismatch
-(`br init` in `.beads/` would clobber the legacy bd config, so the live ledger
-deliberately lives in `_beads/`).
+If `BEADS_DIR="$(ao beads dir)" br ready --json` fails or the legacy `.beads/`
+config shadows the live `_beads/` ledger, you likely have a tracker config
+mismatch. Linked worktrees normally do not contain `_beads/`; `ao beads dir`
+resolves through git's common directory back to the canonical private ledger.
 
 **Diagnosis:**
 
 ```bash
 br --version
-BEADS_DIR=$PWD/_beads br ready --json
-BEADS_DIR=$PWD/_beads br list --type epic --status open --json
+ao beads dir
+ao session bootstrap
+BEADS_DIR="$(ao beads dir)" br ready --json
+BEADS_DIR="$(ao beads dir)" br list --type epic --status open --json
 ```
 
-If commands resolve the wrong directory, confirm `BEADS_DIR=$PWD/_beads` is set —
-without it `br` may pick up the retired `.beads/` config.
+If commands resolve the wrong directory, confirm `BEADS_DIR` matches `ao beads dir`.
+Without it, direct `br` invocations may pick up retired `.beads/` config or a
+missing worktree-local `_beads/` path.
 
 **Fixes:**
 
 1. Always invoke with the explicit ledger dir until `.beads/` is retired:
    ```bash
-   BEADS_DIR=$PWD/_beads br ready --json
+   BEADS_DIR="$(ao beads dir)" br ready --json
    ```
 2. Sync the ledger (it is a private nested git repo, not part of this public repo):
    ```bash
-   git -C _beads push      # never `git add _beads` from the parent repo
+   git -C "$(ao beads dir)" push      # never stage the private ledger from the parent repo
    ```
 3. If you cannot repair the tracker immediately, Codex phased RPI degrades
    honestly to tasklist mode instead of silently assuming the tracker is healthy.
@@ -285,7 +289,7 @@ If you see an error for a command that is documented as planned, it does not exi
 
 | Check | What it verifies | How to fix |
 |-------|-----------------|------------|
-| **CLI Dependencies** | `br` is on your PATH (the beads_rust issue tracker, invoked `BEADS_DIR=$PWD/_beads br`). | Install `br` (beads_rust); see AGENTS.md for the tracker setup. |
+| **CLI Dependencies** | `br` is on your PATH (the beads_rust issue tracker, invoked `BEADS_DIR="$(ao beads dir)" br`). | Install `br` (beads_rust); see AGENTS.md for the tracker setup. |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
 | **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |

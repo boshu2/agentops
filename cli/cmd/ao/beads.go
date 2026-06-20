@@ -9,6 +9,7 @@
 //
 //	ao beads audit           — backlog hygiene audit for open/in-progress beads
 //	ao beads cluster         — consolidation suggestions for overlapping open beads
+//	ao beads dir             — print the resolved live br ledger directory
 //	ao beads verify <id>     — stale-citation detector for a single bead
 //	ao beads lint            — batch-verify every open bead
 //	ao beads harvest <id>    — materialize a closed bead's reason into a learning
@@ -86,6 +87,19 @@ session acts on them and harvesting closure reasons into durable learnings.
 None of these commands replace bd itself — they complement it.`,
 }
 
+var beadsDirJSON bool
+
+var beadsDirCmd = &cobra.Command{
+	Use:   "dir",
+	Short: "Print the resolved live br ledger directory",
+	Long: `Print the BEADS_DIR path AgentOps will use for br subprocesses.
+
+In linked git worktrees, this resolves through git's common directory back to
+the canonical private _beads ledger instead of assuming $PWD/_beads exists.`,
+	Args: cobra.NoArgs,
+	RunE: runBeadsDir,
+}
+
 var (
 	beadsVerifyJSON    bool
 	beadsVerifyVerbose bool
@@ -153,11 +167,15 @@ Exit codes:
 func init() {
 	beadsCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(beadsCmd)
+	beadsCmd.AddCommand(beadsDirCmd)
 	beadsCmd.AddCommand(beadsVerifyCmd)
 	beadsCmd.AddCommand(beadsLintCmd)
 	beadsCmd.AddCommand(beadsHarvestCmd)
 	beadsCmd.AddCommand(beadsStaleCmd)  // soc-vuu6.27 slice 2
 	beadsCmd.AddCommand(beadsResumeCmd) // soc-vuu6.27 slice 3
+
+	beadsDirCmd.Flags().BoolVar(&beadsDirJSON, "json", false,
+		"Emit {beads_dir, source} as JSON")
 
 	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyJSON, "json", false,
 		"Emit verification report as JSON instead of human-readable text")
@@ -173,6 +191,22 @@ func init() {
 		"Directory to write the learning file into")
 	beadsHarvestCmd.Flags().BoolVar(&beadsHarvestDryRun, "dry-run", false,
 		"Print the learning content to stdout without writing a file")
+}
+
+func runBeadsDir(cmd *cobra.Command, _ []string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	resolved := resolveBeadsDir(cwd, os.Environ())
+	if beadsDirJSON {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{
+			"beads_dir": resolved.Path,
+			"source":    resolved.Source,
+		})
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), resolved.Path)
+	return nil
 }
 
 // ------------------------------------------------------------------------
