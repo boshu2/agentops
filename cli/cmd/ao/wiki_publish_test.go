@@ -80,23 +80,29 @@ func TestWikiPublish_DryRunLeakFailsClosed(t *testing.T) {
 	}
 }
 
-// TestWikiPublish_RefusesUnsafeOut: --out resolving to a root/repo-base path is
-// refused before any destructive clear.
+// TestWikiPublish_RefusesUnsafeOut: an --out that does not resolve strictly
+// inside the repo (root, repo-base, or a ".." escape) is refused BEFORE any
+// destructive clear. The ".." case is the cross-family REFUTE: `--out ../victim`
+// must not RemoveAll an external path.
 func TestWikiPublish_RefusesUnsafeOut(t *testing.T) {
-	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
-	t.Chdir(base)
-	stubVerdict(t, true)
-	wikiPublishDryRun = false
-	wikiPublishBead = "ag-test"
-	wikiPublishOut = "/"
-	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+	for _, unsafe := range []string{"/", ".", "../victim", "../../etc"} {
+		t.Run(unsafe, func(t *testing.T) {
+			base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+			t.Chdir(base)
+			stubVerdict(t, true)
+			wikiPublishDryRun = false
+			wikiPublishBead = "ag-test"
+			wikiPublishOut = unsafe
+			t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
 
-	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
-	if err == nil {
-		t.Fatal("expected refusal of unsafe --out /")
-	}
-	if !strings.Contains(err.Error(), "unsafe --out") {
-		t.Errorf("error should name the unsafe out, got: %v", err)
+			_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+			if err == nil {
+				t.Fatalf("expected refusal of unsafe --out %q", unsafe)
+			}
+			if !strings.Contains(err.Error(), "not strictly inside the repo") {
+				t.Errorf("error should name the containment failure, got: %v", err)
+			}
+		})
 	}
 }
 
