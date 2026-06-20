@@ -70,12 +70,13 @@ var wikiPublishCmd = &cobra.Command{
 content digest, and runs the canonical leak scan (the same marker registry as ` + "`ao corpus scan`" + `).
 It FAILS CLOSED on any leak — nothing is published.
 
-Real publish (--bead <id>) is gated on a CONFIRMED pawl verdict bound to the
-current commit (cross-family decision age-xf9r): it recomputes the digest,
-re-runs the leak scan (fail-closed), requires ` + "`pawl-verdict.sh check`" + ` to pass for
-(bead, HEAD), then writes the EXACT reviewed candidate to the canonical gold
-dir (.ao/wiki). --expect-digest <hex> additionally fails closed unless the
-recomputed digest matches (publish exactly what dry-run reviewed).`,
+Real publish (--bead <id> --expect-digest <hex>) is gated three ways: it
+re-runs the leak scan (hard safety gate, fail-closed); requires the recomputed
+digest to match --expect-digest (the digest you reviewed via --dry-run — since
+.agents is gitignored, the digest, not the commit, binds the published content);
+and requires ` + "`pawl-verdict.sh check`" + ` to pass for (bead, HEAD) (the release authority,
+cross-family decision age-xf9r). It then writes the EXACT reviewed candidate to
+the canonical gold dir (.ao/wiki).`,
 	Args: cobra.NoArgs,
 	RunE: runWikiPublish,
 }
@@ -156,9 +157,20 @@ func runWikiPublish(cmd *cobra.Command, _ []string) error {
 	if wikiPublishBead == "" {
 		return fmt.Errorf("real publish requires --bead <id> (the bead whose CONFIRMED verdict authorizes this commit); or use --dry-run")
 	}
-	// Optional digest pinning: publish exactly what dry-run reviewed.
-	if wikiPublishExpect != "" && wikiPublishExpect != cand.Digest {
-		return fmt.Errorf("digest mismatch: --expect-digest %s != recomputed %s — corpus changed since dry-run; not publishing", wikiPublishExpect, cand.Digest)
+	// REQUIRED content binding. The candidate is compiled from the LIVE .agents
+	// corpus, which is gitignored — so the commit verdict (bead+HEAD) authorizes
+	// the code/release but does NOT cover the corpus content. Without pinning,
+	// uncommitted/changed .agents could publish UNREVIEWED content under a
+	// CONFIRMED HEAD verdict (cross-family REFUTE). So real publish requires
+	// --expect-digest: the digest the operator reviewed in --dry-run. Any corpus
+	// change alters the recomputed digest -> mismatch -> fail closed, so
+	// published == exactly what was reviewed. (The leak scan remains the hard
+	// safety gate; the commit verdict the release authority.)
+	if wikiPublishExpect == "" {
+		return fmt.Errorf("real publish requires --expect-digest <hex> (the candidate digest you reviewed via --dry-run) — the .agents corpus is gitignored, so the digest, not the commit, binds the published content")
+	}
+	if wikiPublishExpect != cand.Digest {
+		return fmt.Errorf("digest mismatch: --expect-digest %s != recomputed %s — the .agents corpus changed since dry-run; not publishing", wikiPublishExpect, cand.Digest)
 	}
 	head, err := resolveHeadSHA(base)
 	if err != nil {
