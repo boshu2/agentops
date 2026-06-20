@@ -27,7 +27,7 @@ At L3, implementation is issue-driven:
 2. Claude reads issue details and makes changes
 3. Validation runs (tests, lint)
 4. Changes committed with issue reference
-5. Claude closes issue with `BEADS_DIR=$PWD/_beads br close`
+5. Claude closes issue with `BEADS_DIR="$(ao beads dir)" br close`
 
 ## Output
 
@@ -40,7 +40,7 @@ $ git commit -m "feat: add theme context provider
 
 Closes: agentops-abc"
 
-$ BEADS_DIR=$PWD/_beads br close agentops-abc --reason "Theme context implemented"
+$ BEADS_DIR="$(ao beads dir)" br close agentops-abc --reason "Theme context implemented"
 
 ✓ agentops-abc closed
 Next ready: agentops-def (was blocked by abc)
@@ -53,7 +53,7 @@ You: /implement agentops-abc
 
 Claude: Working on agentops-abc: "Add theme context provider"
 
-$ BEADS_DIR=$PWD/_beads br update agentops-abc --claim
+$ BEADS_DIR="$(ao beads dir)" br update agentops-abc --claim --json
 
 [Reads requirements, creates src/theme/context.tsx...]
 
@@ -61,20 +61,21 @@ $ npm test
 4 passed
 
 $ git commit -m "feat: add theme context provider"
-$ BEADS_DIR=$PWD/_beads br close agentops-abc
+$ BEADS_DIR="$(ao beads dir)" br close agentops-abc --reason "Theme context implemented"
 
-✓ Done. Run `BEADS_DIR=$PWD/_beads br ready` for next issue.
+✓ Done. Run `BEADS_DIR="$(ao beads dir)" br ready --json` for next issue.
 ```
 
 ## Session Close Protocol
 
 Before ending, always run:
 ```
-git -C _beads push   # sync the br ledger (git-JSONL)
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" push   # sync the private br ledger (git-JSONL)
 git push
 ```
 
 ## Next
 
-- `BEADS_DIR=$PWD/_beads br ready` - See newly unblocked issues
+- `BEADS_DIR="$(ao beads dir)" br ready --json` - See newly unblocked issues
 - `/implement <next-id>` - Continue through the plan

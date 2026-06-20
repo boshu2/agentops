@@ -8,6 +8,8 @@
     "agents_md_read",
     "agents_siblings_read",
     "onboard_phase",
+    "beads_dir",
+    "beads_dir_source",
     "ready_beads_count",
     "mail_unread_count",
     "runtime",
@@ -53,6 +55,15 @@
         "fresh",
         "task-routed"
       ]
+    },
+    "beads_dir": {
+      "type": "string",
+      "description": "Absolute BEADS_DIR path used for br subprocesses. In linked worktrees this resolves through git's common directory to the canonical private _beads ledger."
+    },
+    "beads_dir_source": {
+      "type": "string",
+      "enum": ["env", "git-common-dir", "repo-root", "cwd"],
+      "description": "How beads_dir was resolved: explicit BEADS_DIR, git common dir, git repo root fallback, or cwd fallback."
     },
     "ready_beads_count": {
       "type": ["integer", "null"],

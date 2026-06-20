@@ -8,12 +8,12 @@
 
 **Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of one shipped arc; session-scope governs the *count* of consecutive arcs. **Default: 2-4 arcs per autonomous session.** At >=5 shipped or in-flight arcs in one session, **stop and run a post-mortem before continuing**. The old PR-count signal is now interpreted as arc count because the repo no longer uses PRs as the normal landing path. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; items #5-#6 each fixed fallout from #1-3. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (council-gated, cannot be bypassed; `skills/evolve/references/postmortem-checkpoint.md`). That checkpoint is a **re-plan point, not just stop/continue** — it may refactor, reorder, drop, or add to the *remaining* arcs from what the session taught (`/rpi`'s [Agile Re-Plan Loop](skills/rpi/references/agile-replan-loop.md); `--auto` pivots without an operator prompt). (soc-waxr, ag-o5xp)
 
-**Tracker = br (beads_rust) + bv, as of 2026-06-11.** Issue tracking is **br** — offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache; `br sync` never runs git). Interim: until legacy `.beads/` is retired, invoke as `BEADS_DIR=$PWD/_beads br <cmd>`. Triage with **bv** (`bv --robot-insights`, `--robot-plan`, `--robot-priority`). **bd/Dolt is RETIRED LEGACY (2026-06-11):** delivery was coupled to a remote single-host Dolt server — a SPOF with no offline lane; circuit breaker observed open in the 2026-06-11 recon (P1 finding, `docs/audits/codebase-skills-2026-06-11/codebase-risk-audit.md`). Do not run `bd` here. Legacy `.beads/` bd/Dolt data is preserved pending reconciliation; migration record: `.agents/swarm/results/br-migration.json`.
+**Tracker = br (beads_rust) + bv, as of 2026-06-11.** Issue tracking is **br** — offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache; `br sync` never runs git). The private ledger lives in the canonical checkout, not in every linked worktree. Resolve it with `ao beads dir` and invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`; do not rely on `$PWD/_beads` from linked worktrees. Triage with **bv** (`bv --robot-insights`, `--robot-plan`, `--robot-priority`). **bd/Dolt is RETIRED LEGACY (2026-06-11):** delivery was coupled to a remote single-host Dolt server — a SPOF with no offline lane; circuit breaker observed open in the 2026-06-11 recon (P1 finding, `docs/audits/codebase-skills-2026-06-11/codebase-risk-audit.md`). Do not run `bd` here. Legacy `.beads/` bd/Dolt data is preserved pending reconciliation; migration record: `.agents/swarm/results/br-migration.json`.
 
 ### Phases
 
-1. **Claim.** `br ready` → pick a bead → `br update <id> --claim`. **No bead, no push.** If the work is genuinely new, `br create "Title" -t task -p 2 --body "..."` first (deps: `--deps blocks:<id>` or `br dep add <child> <parent>`).
-2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
+1. **Claim.** `BEADS_DIR="$(ao beads dir)" br ready --json` → pick a bead → `BEADS_DIR="$(ao beads dir)" br update <id> --claim --json`. **No bead, no push.** If the work is genuinely new, `BEADS_DIR="$(ao beads dir)" br create "Title" -t task -p 2 --body "..." --json` first (deps: `--deps blocks:<id>` or `BEADS_DIR="$(ao beads dir)" br dep add <child> <parent>`).
+2. **Scope.** Read the live bead body with `BEADS_DIR="$(ao beads dir)" br show <id> --json` before editing. Its acceptance is the contract: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
 3. **Ship.** `git worktree add wt-<bead-id> -b <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout (canonical-root rules: [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)). Implement. The pre-push gate runs automatically on push (the hook); run `ao gate check --fast --scope head` manually first to fail fast.
 4. **Land.** Push to `main` (the gate runs in the hook; rebase-on-reject). GitHub Actions are not part of the routine landing path; run them manually or through release tags only when explicitly needed. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
 
@@ -155,8 +155,8 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through its own PRIVATE repo, never this public one:
    ```bash
    git pull --rebase
-   br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
-   git -C _beads add -A && git -C _beads commit -m "tracker: <summary>" && git -C _beads push  # if tracker changes are pending
+   BEADS_DIR="$(ao beads dir)" br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
+   git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: <summary>" && git -C "$(ao beads dir)" push  # if tracker changes are pending
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -174,14 +174,16 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 - Run `bash scripts/check-worktree-disposition.sh` before push and session close.
 - The tracker ledger is a PRIVATE nested git repo (`_beads/` → `boshu2/agentops-beads`),
   gitignored by this PUBLIC repo — bead bodies carry private fleet/client context and must
-  NEVER land on the public remote. `git -C _beads push` IS the tracker sync. If
-  `br sync --flush-only` reports nothing to export, that is fine; continue with the
+  NEVER land on the public remote. `git -C "$(ao beads dir)" push` IS the tracker sync. If
+  `BEADS_DIR="$(ao beads dir)" br sync --flush-only` reports nothing to export, that is fine; continue with the
   mandatory git push.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:full (hand-converted bd→br 2026-06-11; no longer generator-managed) -->
 ## Issue Tracking with br (beads_rust)
 
 **IMPORTANT**: This project uses **br (beads_rust)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, other tracking methods — or the retired `bd`.
+
+Linked worktrees intentionally do not contain their own `_beads` directory. Run `ao beads dir` at session start and use that value for `BEADS_DIR` on every direct `br` invocation. `ao session bootstrap` prints the same path as `tracker: BEADS_DIR=...`.
 
 ### Why br?
 
@@ -195,27 +197,27 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 **Check for ready work:**
 
 ```bash
-br ready --json
+BEADS_DIR="$(ao beads dir)" br ready --json
 ```
 
 **Create new issues:**
 
 ```bash
-br create "Issue title" --body "Detailed context" -t bug|feature|task -p 0-4 --json
-br create "Issue title" --body "What this issue is about" -p 1 --deps discovered-from:<parent-id> --json
+BEADS_DIR="$(ao beads dir)" br create "Issue title" --body "Detailed context" -t bug|feature|task -p 0-4 --json
+BEADS_DIR="$(ao beads dir)" br create "Issue title" --body "What this issue is about" -p 1 --deps discovered-from:<parent-id> --json
 ```
 
 **Claim and update:**
 
 ```bash
-br update <id> --claim --json
-br update <id> --priority 1 --json
+BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
+BEADS_DIR="$(ao beads dir)" br update <id> --priority 1 --json
 ```
 
 **Complete work:**
 
 ```bash
-br close <id> --reason "Completed" --json
+BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json
 ```
 
 ### Issue Types
@@ -236,12 +238,12 @@ br close <id> --reason "Completed" --json
 
 ### Workflow for AI Agents
 
-1. **Check ready work**: `br ready` shows unblocked issues (graph triage: `bv --robot-insights` / `bv --robot-plan`)
-2. **Claim your task atomically**: `br update <id> --claim`
+1. **Check ready work**: `BEADS_DIR="$(ao beads dir)" br ready --json` shows unblocked issues (graph triage: `bv --robot-insights` / `bv --robot-plan`)
+2. **Claim your task atomically**: `BEADS_DIR="$(ao beads dir)" br update <id> --claim --json`
 3. **Work on it**: Implement, test, document
 4. **Discover new work?** Create linked issue:
-   - `br create "Found bug" --body "Details about what was found" -p 1 --deps discovered-from:<parent-id>`
-5. **Complete**: `br close <id> --reason "Done"`
+   - `BEADS_DIR="$(ao beads dir)" br create "Found bug" --body "Details about what was found" -p 1 --deps discovered-from:<parent-id> --json`
+5. **Complete**: `BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"`
 
 ### Quality
 - Use `br update <id> --acceptance-criteria "..."` and `--design "..."` to fill structured fields
@@ -257,15 +259,15 @@ br close <id> --reason "Completed" --json
 br syncs through git, not a server:
 
 - Each write auto-flushes the SQLite DB to `_beads/issues.jsonl` (disable with `--no-auto-flush`)
-- `br sync --flush-only` / `--import-only` / `--status` for explicit control; br NEVER runs git commands itself
-- Remote sync = `git -C _beads add -A && git -C _beads commit && git -C _beads push` (private remote `boshu2/agentops-beads`)
+- `BEADS_DIR="$(ao beads dir)" br sync --flush-only` / `--import-only` / `--status` for explicit control; br NEVER runs git commands itself
+- Remote sync = `git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit && git -C "$(ao beads dir)" push` (private remote `boshu2/agentops-beads`)
 
 ### Important Rules
 
 - ✅ Use br for ALL task tracking
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `br ready` before asking "what should I work on?"
+- ✅ Check `BEADS_DIR="$(ao beads dir)" br ready --json` before asking "what should I work on?"
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
@@ -285,7 +287,8 @@ For more details, see README.md and docs/QUICKSTART.md.
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   br sync --flush-only && git -C _beads add -A && git -C _beads commit -m "tracker: <summary>" && git -C _beads push  # if tracker changed
+   BEADS_DIR="$(ao beads dir)" br sync --flush-only
+   git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: <summary>" && git -C "$(ao beads dir)" push  # if tracker changed
    git push
    git status  # MUST show "up to date with origin"
    ```

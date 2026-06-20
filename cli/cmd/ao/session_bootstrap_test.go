@@ -21,6 +21,7 @@ import (
 )
 
 func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
 	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
@@ -43,11 +44,57 @@ func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
 	if got.BootstrapVersion != "v1" {
 		t.Fatalf("BootstrapVersion: want v1, got %s", got.BootstrapVersion)
 	}
+	if got.BeadsDir != filepath.Join(dir, "_beads") {
+		t.Fatalf("BeadsDir: want cwd _beads, got %q", got.BeadsDir)
+	}
+	if got.BeadsDirSource != beadsDirSourceRepoRoot && got.BeadsDirSource != beadsDirSourceCWD {
+		t.Fatalf("BeadsDirSource: want repo-root/cwd fallback, got %q", got.BeadsDirSource)
+	}
 	if got.StartedAt == "" {
 		t.Fatalf("StartedAt: want non-empty RFC3339 timestamp")
 	}
 	if got.MailUnreadCount != nil {
 		t.Fatalf("MailUnreadCount: want nil when noMail=true, got %v", *got.MailUnreadCount)
+	}
+}
+
+func TestRunSessionBootstrapUsesActualCWDWhenPWDIsStale(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
+	realDir := t.TempDir()
+	staleDir := t.TempDir()
+	mustWriteFile(t, filepath.Join(realDir, "AGENTS.md"), "# real")
+	mustWriteFile(t, filepath.Join(staleDir, "AGENTS.md"), "# stale")
+	t.Chdir(realDir)
+	t.Setenv("PWD", staleDir)
+	actualDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	origJSON, origRobot, origNoMail := sessionBootstrapJSON, sessionBootstrapRobot, sessionBootstrapNoMail
+	t.Cleanup(func() {
+		sessionBootstrapJSON, sessionBootstrapRobot, sessionBootstrapNoMail = origJSON, origRobot, origNoMail
+	})
+	sessionBootstrapJSON = true
+	sessionBootstrapRobot = false
+	sessionBootstrapNoMail = true
+
+	var out, errOut bytes.Buffer
+	cmd := sessionBootstrapCmd
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) })
+	if err := runSessionBootstrap(cmd, nil); err != nil {
+		t.Fatalf("runSessionBootstrap: %v (stderr=%s)", err, errOut.String())
+	}
+
+	var got SessionBootstrapStatus
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("decode status: %v\n%s", err, out.String())
+	}
+	want := filepath.Join(actualDir, "_beads")
+	if got.BeadsDir != want {
+		t.Fatalf("BeadsDir = %q, want actual cwd path %q (stale PWD was %q)", got.BeadsDir, want, staleDir)
 	}
 }
 
@@ -127,6 +174,7 @@ func TestSessionBootstrap_RuntimeFallbackClaudeCode(t *testing.T) {
 }
 
 func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# A")
 	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
@@ -149,6 +197,8 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 		"agents_md=ok",
 		"siblings=1/4",
 		"onboard=skipped",
+		"beads=",
+		"tracker: BEADS_DIR=",
 		"bootstrap memory: 1 item(s)",
 		"Canon Human",
 		"human bootstrap canon memory should be visible",

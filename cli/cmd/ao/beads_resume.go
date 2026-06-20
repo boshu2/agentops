@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -210,7 +209,11 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	}
 
 	// 7. Resolve ledger path relative to repo root.
-	root, err := repoRootForBeads()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("resolve cwd: %w", err)
+	}
+	root, err := repoRootForBeads(cwd)
 	if err != nil {
 		return fmt.Errorf("resolve repo root: %w", err)
 	}
@@ -263,58 +266,6 @@ func fingerprint(r staleBeadRecord) string {
 		u = "_"
 	}
 	return a + "@" + u
-}
-
-func beadsTrackerCommandContext(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, "br", args...)
-	cmd.Env = beadsTrackerEnv()
-	return cmd
-}
-
-func beadsTrackerEnv() []string {
-	if os.Getenv("BEADS_DIR") != "" {
-		return os.Environ()
-	}
-	env := make([]string, 0, len(os.Environ())+1)
-	for _, entry := range os.Environ() {
-		if strings.HasPrefix(entry, "BEADS_DIR=") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, "BEADS_DIR="+defaultBeadsDir())
-}
-
-func defaultBeadsDir() string {
-	root, rootErr := repoRootForBeads()
-	out, err := exec.Command("git", "rev-parse", "--git-common-dir").Output()
-	if err != nil {
-		if rootErr == nil {
-			return filepath.Join(root, "_beads")
-		}
-		return "_beads"
-	}
-	common := string(bytes_trim_trailing_ws(out))
-	if !filepath.IsAbs(common) {
-		if rootErr == nil {
-			common = filepath.Join(root, common)
-		}
-	}
-	return filepath.Join(filepath.Dir(common), "_beads")
-}
-
-// repoRootForBeads finds the git repo root, falling back to cwd. Kept local
-// so this file doesn't depend on internal helpers being in scope.
-func repoRootForBeads() (string, error) {
-	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		cwd, cwdErr := os.Getwd()
-		if cwdErr != nil {
-			return "", cwdErr
-		}
-		return cwd, nil
-	}
-	return string(bytes_trim_trailing_ws(out)), nil
 }
 
 // bytes_trim_leading_ws / trailing_ws — tiny local helpers to avoid pulling

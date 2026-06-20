@@ -27,17 +27,40 @@ teardown() {
 # Agent Instructions
 Use bd ready for work tracking.
 Read ../AGENTS.md and docs/architecture/codebase-overview.md
-BEADS_DIR=$PWD/_beads br ready
+BEADS_DIR="$(ao beads dir)" br ready
 EOF
     run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"
     [ "$status" -ne 0 ]
     [[ "$output" == *"bd"* ]]
 }
 
-@test "red: missing root AGENTS link fails" {
+@test "red: stale worktree-local BEADS_DIR fails" {
     cat > "$FIXTURE/AGENTS.md" <<'EOF'
 # CLI
 BEADS_DIR=$PWD/_beads br ready
+Read ../AGENTS.md and docs/architecture/codebase-overview.md
+EOF
+    run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"BEADS_DIR="* ]]
+}
+
+@test "red: hard-coded private ledger git path fails" {
+    cat > "$FIXTURE/AGENTS.md" <<'EOF'
+# CLI
+BEADS_DIR="$(ao beads dir)" br ready
+git -C _beads push
+Read ../AGENTS.md and docs/architecture/codebase-overview.md
+EOF
+    run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"git -C _beads"* ]]
+}
+
+@test "red: missing root AGENTS link fails" {
+    cat > "$FIXTURE/AGENTS.md" <<'EOF'
+# CLI
+BEADS_DIR="$(ao beads dir)" br ready
 See docs/architecture/codebase-overview.md
 EOF
     run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"

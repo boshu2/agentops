@@ -9,7 +9,7 @@ A session showing autonomous epic execution via the ODMCR loop.
 Epic created with `/plan`:
 
 ```
-$ BEADS_DIR=$PWD/_beads br show agentops-epic-xyz
+$ BEADS_DIR="$(ao beads dir)" br show agentops-epic-xyz
 Epic: "Add real-time notifications"
 Status: open
 Children: 6 issues
@@ -111,7 +111,7 @@ Summary:
 - Mode: crew (sequential)
 - All tests passing
 
-$ BEADS_DIR=$PWD/_beads br sync   # Optional ledger sync check
+$ BEADS_DIR="$(ao beads dir)" br sync   # Optional ledger sync check
 $ git push
 ```
 

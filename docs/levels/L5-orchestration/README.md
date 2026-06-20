@@ -38,7 +38,7 @@ Full autonomous operation with `/crank`.
 ```
 /crank <epic>
     ↓
-Observe (BEADS_DIR=$PWD/_beads br show, br ready)
+Observe (BEADS_DIR="$(ao beads dir)" br show, br ready)
     ↓
 Dispatch (NTM swarm pane or /implement)
     ↓

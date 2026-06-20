@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# check-cli-agents-tracker-drift.sh — Fail when cli/AGENTS.md drifts back to bd-era tracker text.
+# check-cli-agents-tracker-drift.sh — Fail when cli/AGENTS.md drifts back to stale tracker text.
 #
 # cli/AGENTS.md is a pointer stub to root AGENTS.md + br invocation. This gate
-# blocks live bd/Dolt examples and requires the br quick-reference prefix.
+# blocks live bd/Dolt examples, stale linked-worktree `$PWD/_beads` examples,
+# and hard-coded private-ledger git paths.
 #
 # Usage:
 #   bash scripts/check-cli-agents-tracker-drift.sh [--agents-file PATH]
@@ -52,12 +53,24 @@ if grep -Eiq '\bbd dolt\b' "$agents_file"; then
     fail "$agents_file must not document bd dolt commands (retired legacy tracker)"
 fi
 
+if grep -Fq 'BEADS_DIR=$PWD/_beads' "$agents_file"; then
+    fail "$agents_file must not hard-code BEADS_DIR=\$PWD/_beads; use BEADS_DIR=\"\$(ao beads dir)\""
+fi
+
+if grep -Fq 'git -C _beads' "$agents_file"; then
+    fail "$agents_file must not hard-code git -C _beads; use git -C \"\$(ao beads dir)\""
+fi
+
+if grep -Fq 'git add _beads' "$agents_file"; then
+    fail "$agents_file must not stage _beads from the public repo"
+fi
+
 if ! grep -Fq '../AGENTS.md' "$agents_file"; then
     fail "$agents_file must link to root AGENTS.md as source of truth"
 fi
 
-if ! grep -Fq 'BEADS_DIR=$PWD/_beads br ready' "$agents_file"; then
-    fail "$agents_file must document BEADS_DIR=\$PWD/_beads br ready"
+if ! grep -Fq 'BEADS_DIR="$(ao beads dir)" br ready' "$agents_file"; then
+    fail "$agents_file must document BEADS_DIR=\"\$(ao beads dir)\" br ready"
 fi
 
 if ! grep -Fq 'codebase-overview.md' "$agents_file"; then

@@ -166,7 +166,7 @@ Consolidated checklist of rules enforced by the pipeline:
 6. **Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`. Checked by `contract-compatibility-gate`.
 7. **Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15). Checked by `go-build` via `check-go-complexity.sh`.
 8. **Windows installer smoke must pass.** PowerShell installers need to parse, temp installs need to work, and focused Windows-sensitive Go tests must pass on `windows-latest`. Checked by `windows-smoke`.
-9. **No TODOs in SKILL.md.** Use **br** issue tracking instead (`BEADS_DIR=$PWD/_beads br create …`). Checked by `skill-lint`.
+9. **No TODOs in SKILL.md.** Use **br** issue tracking instead (`BEADS_DIR="$(ao beads dir)" br create …`). Checked by `skill-lint`.
 10. **No secrets in code.** `security-scan` greps for hardcoded passwords, API keys, and tokens in non-test files.
 11. **No dangerous shell patterns.** `security-scan` rejects `rm -rf /`, `curl | sh`, etc. in scripts (with explicit exceptions for installer scripts).
 

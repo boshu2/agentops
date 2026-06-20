@@ -204,7 +204,7 @@ Run compounding on the substrate's schedule, then Evolve in the morning against 
 
 1. **[Install](#install)** — pick your runtime.
 2. **Seed** your repo with `ao quick-start` (`ao quickstart` also works), then run `/quickstart` in your agent chat.
-3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `ao reconcile --json` then `BEADS_DIR=$PWD/_beads br ready` to continue tracked work.
+3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `ao reconcile --json` then `BEADS_DIR="$(ao beads dir)" br ready` to continue tracked work.
 
 Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.
 

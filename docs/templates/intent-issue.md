@@ -4,7 +4,7 @@
 >
 > See [`docs/architecture/operating-loop.md`](../architecture/operating-loop.md) for why this template exists and where it sits in the loop.
 >
-> Fast path: `scripts/render-intent-bead.sh --help` renders a Directive 12 compliant dry-run body and labels for `BEADS_DIR=$PWD/_beads br create`.
+> Fast path: `scripts/render-intent-bead.sh --help` renders a Directive 12 compliant dry-run body and labels for `BEADS_DIR="$(ao beads dir)" br create`.
 
 ---
 

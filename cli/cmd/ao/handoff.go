@@ -233,8 +233,7 @@ func collectHandoffState(cwd string) *handoffState {
 func runBeadsTracker(cwd string, timeout time.Duration, args ...string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	c := beadsTrackerCommandContext(ctx, args...)
-	c.Dir = cwd
+	c := beadsTrackerCommandContextInDir(ctx, cwd, args...)
 	out, err := c.Output()
 	if err != nil {
 		return ""
@@ -336,7 +335,7 @@ func deriveContinuation(state *handoffState) string {
 	if state == nil || state.ActiveBead == "" {
 		return ""
 	}
-	return fmt.Sprintf("Resume %s (run `br show %s` for the full acceptance + notes). %d bead(s) ready.",
+	return fmt.Sprintf("Resume %s (run `BEADS_DIR=\"$(ao beads dir)\" br show %s --json` for the full acceptance + notes). %d bead(s) ready.",
 		state.ActiveBead, state.ActiveBead, state.OpenBeadsCount)
 }
 

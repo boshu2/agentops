@@ -29,8 +29,8 @@ write_doc() {
 
 @test "passes when doc has br flush discipline and no bd dolt instructions" {
     doc="$(write_doc \
-        'Closeout: br sync --flush-only   # export DB -> _beads JSONL' \
-        'br sync --flush-only && git -C _beads add -A && git -C _beads push  # if tracker changed')"
+        'Closeout: BEADS_DIR="$(ao beads dir)" br sync --flush-only   # export DB -> _beads JSONL' \
+        'BEADS_DIR="$(ao beads dir)" br sync --flush-only && git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" push  # if tracker changed')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 0 ]
     [[ "$output" == *"BR_CLOSEOUT_CONTRACT: PASS"* ]]
@@ -38,7 +38,7 @@ write_doc() {
 
 @test "fails when doc still carries bd dolt push closeout instructions" {
     doc="$(write_doc \
-        'br sync --flush-only && git -C _beads add -A' \
+        'BEADS_DIR="$(ao beads dir)" br sync --flush-only && git -C "$(ao beads dir)" add -A' \
         'bd dolt push  # only if a real Dolt remote is configured')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 1 ]
@@ -48,7 +48,7 @@ write_doc() {
 
 @test "fails when doc still carries bd dolt commit closeout instructions" {
     doc="$(write_doc \
-        'br sync --flush-only && git -C _beads add -A' \
+        'BEADS_DIR="$(ao beads dir)" br sync --flush-only && git -C "$(ao beads dir)" add -A' \
         'then bd dolt commit before push')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 1 ]
@@ -56,17 +56,17 @@ write_doc() {
 }
 
 @test "fails when br flush discipline is missing" {
-    doc="$(write_doc 'git -C _beads add -A')"
+    doc="$(write_doc 'git -C "$(ao beads dir)" add -A')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"must document the br flush discipline (br sync --flush-only)"* ]]
 }
 
 @test "fails when ledger staging instruction is missing" {
-    doc="$(write_doc 'br sync --flush-only')"
+    doc="$(write_doc 'BEADS_DIR="$(ao beads dir)" br sync --flush-only')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"must document the private-ledger sync (git -C _beads add/commit/push)"* ]]
+    [[ "$output" == *"must document the private-ledger sync"* ]]
 }
 
 @test "fails when the workflow doc is missing" {
@@ -76,8 +76,17 @@ write_doc() {
 }
 
 @test "fails when doc stages _beads into the public repo" {
-    doc="$(write_doc 'br sync --flush-only && git -C _beads add -A' 'git add _beads/*.jsonl')"
+    doc="$(write_doc 'BEADS_DIR="$(ao beads dir)" br sync --flush-only && git -C "$(ao beads dir)" add -A' 'git add _beads/*.jsonl')"
     CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
     [ "$status" -eq 1 ]
     [[ "$output" == *"stages _beads/ into the PUBLIC repo"* ]]
+}
+
+@test "fails when doc hard-codes _beads for private ledger git operations" {
+    doc="$(write_doc \
+        'BEADS_DIR="$(ao beads dir)" br sync --flush-only' \
+        'git -C _beads add -A && git -C _beads push')"
+    CLOSEOUT_CONTRACT_WORKFLOW_DOC="$doc" run "$SCRIPT"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"hard-codes _beads/ and breaks linked worktrees"* ]]
 }

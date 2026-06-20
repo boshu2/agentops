@@ -55,7 +55,7 @@ ao context assemble --phase planning --task "Evaluate the AgentOps 3.0 launch de
 ```
 
 ```bash
-BEADS_DIR=$PWD/_beads br create "Apply council verdict to launch demo" --body "From .agents/council/<run-id>/verdict.md"
+BEADS_DIR="$(ao beads dir)" br create "Apply council verdict to launch demo" --body "From .agents/council/<run-id>/verdict.md"
 ```
 
 Expected artifacts:

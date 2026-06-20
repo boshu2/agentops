@@ -47,7 +47,7 @@ These control AO CLI configuration loading and RPI control-plane command customi
 | `AGENTOPS_RPI_RUNTIME_MODE` | `auto` | Preferred runtime mode variable (`auto`, `direct`, `stream`). Overrides `AGENTOPS_RPI_RUNTIME` when both are set. |
 | `AGENTOPS_RPI_RUNTIME_COMMAND` | `claude` | Runtime command used for phase prompt execution. |
 | `AGENTOPS_RPI_AO_COMMAND` | `ao` | `ao` command used for ratchet/checkpoint operations in RPI control plane. |
-| `AGENTOPS_RPI_BD_COMMAND` | `br` | Beads command used for epic and child issue queries in the (legacy) RPI control plane. Default is `br` (the current tracker; `bd`/Dolt is retired). Invoke br with `BEADS_DIR=$PWD/_beads`. |
+| `AGENTOPS_RPI_BD_COMMAND` | `br` | Beads command used for epic and child issue queries in the (legacy) RPI control plane. Default is `br` (the current tracker; `bd`/Dolt is retired). Invoke br with `BEADS_DIR="$(ao beads dir)"`. |
 | `AGENTOPS_RPI_TMUX_COMMAND` | `tmux` | `tmux` command used for status liveness probes in RPI control plane. |
 | `AGENTOPS_DREAM_REPORT_DIR` | `.agents/overnight/latest` | Default output directory for private overnight Dream reports. |
 | `AGENTOPS_DREAM_RUN_TIMEOUT` | `8h` | Default maximum duration for a Dream run. |

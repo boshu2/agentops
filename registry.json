@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-20T00:36:38Z",
+  "generated_at": "2026-06-20T01:58:04Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -1897,7 +1897,9 @@
       "supersedes": null,
       "consumes": [],
       "produces": [],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads dir"
+      ],
       "path": "skills/beads-br/",
       "references": 4
     },

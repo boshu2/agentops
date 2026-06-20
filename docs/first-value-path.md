@@ -31,7 +31,7 @@ need to see one agent decision become an inspectable engineering artifact.
 | Packet setup | 2 min | `.agents/packets/<name>.md` exists and is readable. |
 | Context assembly | 1 min | `.agents/rpi/briefing-current.md` exists. |
 | Council run | 5-10 min | `.agents/council/<run-id>/verdict.md` exists. |
-| Verdict to work | 2 min | `BEADS_DIR=$PWD/_beads br show <issue-id>` cites the verdict path. |
+| Verdict to work | 2 min | `BEADS_DIR="$(ao beads dir)" br show <issue-id>` cites the verdict path. |
 | Optional out-of-session lane | 5 min | A substrate (NTM / managed-agents) dispatch is registered to run the loop unattended. |
 
 ## Commands And Expected Outputs
@@ -140,7 +140,7 @@ single-runtime fallback. The artifact must show the same packet was used.
 ### 6. Turn The Verdict Into Work
 
 ```bash
-BEADS_DIR=$PWD/_beads br create "Apply council verdict to launch demo" \
+BEADS_DIR="$(ao beads dir)" br create "Apply council verdict to launch demo" \
   --body "From .agents/council/<run-id>/verdict.md" \
   --json
 ```
@@ -171,7 +171,7 @@ delegated to a substrate. The reference is the trio AgentOps actually runs on â€
 **NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents**
 (`ao agent`) â€” none of it AgentOps-owned.
 
-On the reference substrate, an NTM swarm (or a lead agent) runs `BEADS_DIR=$PWD/_beads br ready` and
+On the reference substrate, an NTM swarm (or a lead agent) runs `BEADS_DIR="$(ao beads dir)" br ready` and
 dispatches the next bead to a worker that runs `ao rpi <bead>`; scheduled
 maintenance (`ao compile`, `ao maturity --scan`) runs via a managed-agent driver
 or cron. The agents inherit the AgentOps skills via an overlay and run the same
