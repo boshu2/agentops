@@ -101,6 +101,34 @@ func TestCompilePublishCandidate_LeakSurvivesToScan(t *testing.T) {
 	}
 }
 
+// TestCompilePublishCandidate_PrivateDuringScan is the regression for the
+// cross-family REFUTE: GoldCompiler.emit recreates OutDir as 0755, so a publish
+// candidate (which may carry unsanitized private spans — that is why it is
+// scanned) must be nested under a 0700 parent that gates traversal. Assert the
+// candidate's containing dir denies group/other access.
+func TestCompilePublishCandidate_PrivateDuringScan(t *testing.T) {
+	base := t.TempDir()
+	agents := filepath.Join(base, ".agents")
+	writeAgent(t, filepath.Join(agents, "findings"), "f.md",
+		"---\ntype: finding\nid: f\nmaturity: established\nconfidence: 0.9\n---\n\nA durable finding kept in the gold layer for reuse.\n")
+
+	c, err := CompilePublishCandidate(agents, 0)
+	if err != nil {
+		t.Fatalf("compile: %v", err)
+	}
+	defer c.Cleanup()
+
+	// The 0700 parent that gates access to the (possibly-0755) candidate tree.
+	parent := filepath.Dir(c.OutDir)
+	fi, err := os.Stat(parent)
+	if err != nil {
+		t.Fatalf("stat parent: %v", err)
+	}
+	if perm := fi.Mode().Perm(); perm&0o077 != 0 {
+		t.Errorf("candidate parent %s is %o; want no group/other access (0700) — leak window", parent, perm)
+	}
+}
+
 // TestCompilePublishCandidate_Cleanup confirms the temp tree is removed.
 func TestCompilePublishCandidate_Cleanup(t *testing.T) {
 	base := t.TempDir()

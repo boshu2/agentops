@@ -35,15 +35,18 @@ type PublishCandidate struct {
 	Digest string
 	// Stats is the gold compiler's promotion/redaction report.
 	Stats GoldStats
-	// OutDir is the temp directory the candidate was compiled into.
+	// OutDir is the directory the candidate was compiled into (leak-scan target).
 	OutDir string
+	// root is the 0700 temp parent that contains OutDir. The gold compiler's
+	// emit() recreates OutDir as 0755, so the candidate is kept private by
+	// nesting it under this restricted-mode parent; Cleanup removes the parent.
+	root string
 }
 
-// Cleanup removes the candidate's temp output tree. Safe to call on a zero
-// value (no-op when OutDir is empty).
+// Cleanup removes the candidate's temp tree. Safe to call on a zero value.
 func (c PublishCandidate) Cleanup() {
-	if c.OutDir != "" {
-		_ = os.RemoveAll(c.OutDir)
+	if c.root != "" {
+		_ = os.RemoveAll(c.root)
 	}
 }
 
@@ -52,28 +55,36 @@ func (c PublishCandidate) Cleanup() {
 // .ao/wiki output. The caller scans OutDir for leaks (fail-closed) and calls
 // Cleanup. confidenceFloor of 0 uses the compiler's default.
 func CompilePublishCandidate(agentsDir string, confidenceFloor float64) (PublishCandidate, error) {
-	tmp, err := os.MkdirTemp("", "ao-wiki-publish-*")
+	// MkdirTemp creates the parent at 0700. The candidate is compiled into a
+	// SUBDIR of it, because GoldCompiler.emit() does RemoveAll(OutDir) +
+	// MkdirAll(OutDir, 0755) — recreating OutDir world-readable. A publish
+	// candidate can carry unsanitized private spans (that is precisely why it is
+	// leak-scanned), so nesting it under the 0700 parent keeps it private even
+	// during the scan window: other users cannot traverse the parent to reach
+	// the 0755 inner dir.
+	root, err := os.MkdirTemp("", "ao-wiki-publish-*")
 	if err != nil {
 		return PublishCandidate{}, fmt.Errorf("create temp output: %w", err)
 	}
+	outDir := filepath.Join(root, "gold")
 	gc := &GoldCompiler{
 		AgentsDir:       agentsDir,
-		OutDir:          tmp,
+		OutDir:          outDir,
 		ConfidenceFloor: confidenceFloor,
 		// Pin the clock so the digest is content-derived, not date-of-run.
 		Now: func() time.Time { return publishDigestEpoch },
 	}
 	stats, err := gc.Compile(false)
 	if err != nil {
-		_ = os.RemoveAll(tmp)
+		_ = os.RemoveAll(root)
 		return PublishCandidate{}, fmt.Errorf("compile gold: %w", err)
 	}
-	digest, err := digestTree(tmp)
+	digest, err := digestTree(outDir)
 	if err != nil {
-		_ = os.RemoveAll(tmp)
+		_ = os.RemoveAll(root)
 		return PublishCandidate{}, fmt.Errorf("digest gold tree: %w", err)
 	}
-	return PublishCandidate{Digest: digest, Stats: stats, OutDir: tmp}, nil
+	return PublishCandidate{Digest: digest, Stats: stats, OutDir: outDir, root: root}, nil
 }
 
 // digestTree returns a stable sha256 (hex) over the sorted (relpath, content)
