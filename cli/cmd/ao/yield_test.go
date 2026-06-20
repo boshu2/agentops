@@ -2,12 +2,83 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
+
+func TestDeriveTranscriptTokens_SumsRealUsage(t *testing.T) {
+	// E4.2 bronze->silver bridge (age-membrane-memory-arch-tz2s.3.2): the real
+	// tokens for a bead-tied yield-usage event are derived from the session
+	// transcript, not the env default of 0. Fixture parsed by the production
+	// reader (fixture fidelity).
+	dir := t.TempDir()
+	path := filepath.Join(dir, "session.jsonl")
+	jsonl := `{"type":"assistant","timestamp":"2026-04-11T12:00:00Z","message":{"role":"assistant","content":"a","usage":{"input_tokens":100,"cache_read_input_tokens":400,"output_tokens":30}}}
+{"type":"assistant","timestamp":"2026-04-11T12:00:05Z","message":{"role":"assistant","content":"b","usage":{"input_tokens":50,"cache_creation_input_tokens":200,"output_tokens":20}}}
+{"type":"user","timestamp":"2026-04-11T12:00:10Z","content":"thanks"}
+`
+	if err := os.WriteFile(path, []byte(jsonl), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	in, out, err := deriveTranscriptTokens(path)
+	if err != nil {
+		t.Fatalf("deriveTranscriptTokens: %v", err)
+	}
+	if in != 750 { // (100+400) + (50+200)
+		t.Errorf("tokens_in = %d, want 750", in)
+	}
+	if out != 50 { // 30 + 20
+		t.Errorf("tokens_out = %d, want 50", out)
+	}
+}
+
+func TestDeriveTranscriptTokens_MissingFile(t *testing.T) {
+	if _, _, err := deriveTranscriptTokens("/nonexistent/transcript.jsonl"); err == nil {
+		t.Fatal("expected error for missing transcript, got nil")
+	}
+}
+
+// TestYieldTokensCmd_JSON exercises the `ao yield tokens` command end-to-end
+// (cobra invocation), asserting the JSON output shape the bronze->silver bridge
+// in reconcile-pr.sh consumes.
+func TestYieldTokensCmd_JSON(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "session.jsonl")
+	jsonl := `{"type":"assistant","message":{"role":"assistant","content":"a","usage":{"input_tokens":100,"cache_read_input_tokens":900,"output_tokens":50}}}
+`
+	if err := os.WriteFile(path, []byte(jsonl), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var buf bytes.Buffer
+	yieldTokensCmd.SetOut(&buf)
+	t.Cleanup(func() { yieldTokensCmd.SetOut(nil) })
+	if err := yieldTokensCmd.Flags().Set("transcript", path); err != nil {
+		t.Fatalf("set transcript: %v", err)
+	}
+	if err := yieldTokensCmd.Flags().Set("json", "true"); err != nil {
+		t.Fatalf("set json: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = yieldTokensCmd.Flags().Set("transcript", "")
+		_ = yieldTokensCmd.Flags().Set("json", "false")
+	})
+
+	if err := runYieldTokens(yieldTokensCmd, nil); err != nil {
+		t.Fatalf("runYieldTokens: %v", err)
+	}
+	got := strings.TrimSpace(buf.String())
+	want := `{"tokens_in":1000,"tokens_out":50}`
+	if got != want {
+		t.Errorf("output = %q, want %q", got, want)
+	}
+}
 
 // TestEmitYieldEvent_GateVerdictCarriesDomainAndReason is the regression for the
 // cross-family refute (age-membrane-memory-j9c6): the emit path parsed domain+

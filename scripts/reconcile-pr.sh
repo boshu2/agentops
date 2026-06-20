@@ -364,6 +364,13 @@ fi
 # Emit a per-bead usage event so the dynamo's R / A-R / L gauges have an
 # automated source (ag-grcz3). The orchestrator supplies per-bead spend via the
 # AO_YIELD_* env (model + tokens/cost/wall-clock); absent metrics default to 0.
+#
+# Producer truth (age-membrane-memory-arch-tz2s.3.2, bronze->silver): when the
+# tokens aren't supplied directly but a session transcript IS (AO_YIELD_TRANSCRIPT),
+# derive the real tokens_in/tokens_out from the transcript's usage blocks via
+# `ao yield tokens` instead of defaulting to 0. The producer that sets
+# AO_YIELD_TRANSCRIPT is the orchestrator (`ao orchestrate`, age-tlj6); until then
+# this stays a latent-but-correct seam that fires whenever a transcript is passed.
 # phase is ALWAYS present (defaults to implement). Guarded — never blocks close.
 emit_yield_usage() {
   command -v ao >/dev/null 2>&1 || return 0
@@ -372,6 +379,17 @@ emit_yield_usage() {
   local phase="${AO_YIELD_PHASE:-implement}"
   local tokens_in="${AO_YIELD_TOKENS_IN:-0}"
   local tokens_out="${AO_YIELD_TOKENS_OUT:-0}"
+  # Derive real tokens from the session transcript when one is available and
+  # tokens weren't supplied explicitly. Fail-open: any error keeps the 0 default.
+  if [[ -z "${AO_YIELD_TOKENS_IN:-}" && -n "${AO_YIELD_TRANSCRIPT:-}" && -f "${AO_YIELD_TRANSCRIPT}" ]]; then
+    local _ti _to
+    if read -r _ti _to < <(ao yield tokens --transcript "$AO_YIELD_TRANSCRIPT" --pair 2>/dev/null); then
+      if [[ "$_ti" =~ ^[0-9]+$ && "$_to" =~ ^[0-9]+$ ]]; then
+        tokens_in="$_ti"
+        tokens_out="$_to"
+      fi
+    fi
+  fi
   local cost_usd="${AO_YIELD_COST_USD:-0}"
   local wall_clock_s="${AO_YIELD_WALL_CLOCK_S:-0}"
   local body
