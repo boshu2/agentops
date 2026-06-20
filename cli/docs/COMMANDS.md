@@ -4926,5 +4926,22 @@ ao yield gauge --run <id> [--json] [--c-delta <float>] [flags]
       --run string      factory run/cycle id to compute gauges for (required)
 ```
 
+#### `ao yield tokens`
+
+Parse a Claude Code or Codex session transcript and sum the real token
+
+```
+ao yield tokens --transcript <path> [--json] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for tokens
+      --json                emit {"tokens_in":N,"tokens_out":M} as JSON
+      --pair                emit two whitespace-separated values: tokens_in tokens_out
+      --transcript string   path to a session transcript (JSONL) to sum tokens from (required)
+```
+
 ---
 

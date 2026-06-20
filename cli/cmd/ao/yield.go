@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/parser"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -84,6 +86,79 @@ delta; omit it to report C as pending.
 	RunE: runYieldGauge,
 }
 
+// yieldTokensCmd derives a session's real token footprint from its transcript.
+// It is the bronze->silver bridge (age-membrane-memory-arch-tz2s.3.2): a
+// bead-tied usage event needs real tokens_in/tokens_out, and the truth lives in
+// the session transcript's per-message usage blocks (captured by the parser in
+// E4.1). A caller (e.g. reconcile-pr.sh, or `ao orchestrate` once age-tlj6
+// lands) feeds the resulting numbers into `ao yield emit usage` instead of the
+// env default of 0.
+var yieldTokensCmd = &cobra.Command{
+	Use:   "tokens --transcript <path> [--json]",
+	Short: "Sum the real tokens_in/tokens_out from a session transcript (for a usage event)",
+	Long: `Parse a Claude Code or Codex session transcript and sum the real token
+footprint from its per-message usage blocks. tokens_in is the full input
+footprint (fresh + cache-creation + cache-read); tokens_out is generated tokens.
+
+This derives the truth a bead-tied yield-usage event should carry, replacing the
+hardcoded 0 default. Pipe into 'ao yield emit usage':
+
+  read ti to < <(ao yield tokens --transcript "$T" --pair)
+  ao yield emit usage --bead "$BEAD" --run "$RUN" \
+    --json "{\"tokens_in\":$ti,\"tokens_out\":$to,...}"`,
+	Args: cobra.NoArgs,
+	RunE: runYieldTokens,
+}
+
+// deriveTranscriptTokens parses a session transcript and returns the summed
+// real token footprint: tokensIn is the full input footprint across all
+// messages (fresh + cache-creation + cache-read), tokensOut is generated
+// tokens. It is the testable core of `ao yield tokens`.
+func deriveTranscriptTokens(path string) (tokensIn, tokensOut int, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, 0, fmt.Errorf("open transcript: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	parsed, err := parser.NewParser().Parse(f)
+	if err != nil {
+		return 0, 0, fmt.Errorf("parse transcript: %w", err)
+	}
+	for _, m := range parsed.Messages {
+		if m.Usage != nil {
+			tokensIn += m.Usage.TotalInputTokens()
+			tokensOut += m.Usage.OutputTokens
+		}
+	}
+	return tokensIn, tokensOut, nil
+}
+
+func runYieldTokens(cmd *cobra.Command, _ []string) error {
+	path, _ := cmd.Flags().GetString("transcript")
+	if path == "" {
+		return fmt.Errorf("--transcript <path> is required")
+	}
+	asJSON, _ := cmd.Flags().GetBool("json")
+	asPair, _ := cmd.Flags().GetBool("pair")
+
+	in, out, err := deriveTranscriptTokens(path)
+	if err != nil {
+		return err
+	}
+	switch {
+	case asJSON:
+		b, _ := json.Marshal(map[string]int{"tokens_in": in, "tokens_out": out})
+		fmt.Fprintln(cmd.OutOrStdout(), string(b))
+	case asPair:
+		// Two whitespace-separated values for `read ti to < <(...)`.
+		fmt.Fprintf(cmd.OutOrStdout(), "%d %d\n", in, out)
+	default:
+		fmt.Fprintf(cmd.OutOrStdout(), "tokens_in=%d tokens_out=%d\n", in, out)
+	}
+	return nil
+}
+
 func init() {
 	yieldEmitCmd.Flags().String("bead", "", "bead id this event is keyed to (required)")
 	yieldEmitCmd.Flags().String("run", "", "factory run/cycle id (required)")
@@ -95,6 +170,11 @@ func init() {
 	yieldGaugeCmd.Flags().Bool("json", false, "emit the computed gauges as JSON for machine consumption")
 	yieldGaugeCmd.Flags().Float64("c-delta", 0, "ag-8p8o's published corpus delta (C); omit to report C as pending")
 	yieldCmd.AddCommand(yieldGaugeCmd)
+
+	yieldTokensCmd.Flags().String("transcript", "", "path to a session transcript (JSONL) to sum tokens from (required)")
+	yieldTokensCmd.Flags().Bool("json", false, "emit {\"tokens_in\":N,\"tokens_out\":M} as JSON")
+	yieldTokensCmd.Flags().Bool("pair", false, "emit two whitespace-separated values: tokens_in tokens_out")
+	yieldCmd.AddCommand(yieldTokensCmd)
 
 	rootCmd.AddCommand(yieldCmd)
 }
