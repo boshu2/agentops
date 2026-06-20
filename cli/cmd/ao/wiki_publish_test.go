@@ -6,7 +6,21 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
+
+// candidateDigest compiles the fixture's candidate and returns its stable
+// digest, so tests can pass a correct --expect-digest.
+func candidateDigest(t *testing.T, base string) string {
+	t.Helper()
+	cand, err := wiki.CompilePublishCandidate(wiki.AgentsDirIn(base), 0)
+	if err != nil {
+		t.Fatalf("candidateDigest: %v", err)
+	}
+	defer cand.Cleanup()
+	return cand.Digest
+}
 
 // writeWikiPublishFixture lays out a minimal .agents/ corpus under a fresh temp
 // dir and returns the base (so a test can t.Chdir into it; `ao wiki publish`
@@ -80,6 +94,31 @@ func TestWikiPublish_DryRunLeakFailsClosed(t *testing.T) {
 	}
 }
 
+// TestWikiPublish_RealPublishRequiresExpectDigest: real publish without
+// --expect-digest is refused — the gitignored .agents corpus must be pinned by
+// the reviewed digest, not just the commit (cross-family REFUTE).
+func TestWikiPublish_RealPublishRequiresExpectDigest(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
+	stubVerdict(t, true)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	wikiPublishExpect = ""
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishExpect = "" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err == nil {
+		t.Fatal("expected real publish to require --expect-digest")
+	}
+	if !strings.Contains(err.Error(), "--expect-digest") {
+		t.Errorf("error should require --expect-digest, got: %v", err)
+	}
+	// Must not have published.
+	if _, err := os.Stat(filepath.Join(base, ".ao", "wiki")); !os.IsNotExist(err) {
+		t.Errorf("nothing should be published without --expect-digest, stat err=%v", err)
+	}
+}
+
 // stubVerdict overrides the verdict gate + HEAD resolver for a test and restores
 // them after. confirmed=true => the gate passes.
 func stubVerdict(t *testing.T, confirmed bool) {
@@ -103,7 +142,8 @@ func TestWikiPublish_RealPublishConfirmedWrites(t *testing.T) {
 	stubVerdict(t, true)
 	wikiPublishDryRun = false
 	wikiPublishBead = "ag-test"
-	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
+	wikiPublishExpect = candidateDigest(t, base)
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishExpect = "" })
 
 	out, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
 	if err != nil {
@@ -126,7 +166,8 @@ func TestWikiPublish_RealPublishNoVerdictFailsClosed(t *testing.T) {
 	stubVerdict(t, false)
 	wikiPublishDryRun = false
 	wikiPublishBead = "ag-test"
-	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
+	wikiPublishExpect = candidateDigest(t, base)
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishExpect = "" })
 
 	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
 	if err == nil {
