@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "kind": "state_admission",
+  "candidate_path": "schemas/fixtures/state-memory/valid-finding.json",
+  "destination": ".agents/state/findings/finding-age-membrane-valid.json",
+  "operator_id": "codex:validator-b",
+  "reason": "Fixture admission proves the state memory contract."
+}

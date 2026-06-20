@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "kind": "state_finding",
+  "id": "finding-age-membrane-extra-field",
+  "title": "Unknown fields should be rejected",
+  "status": "active",
+  "created_at": "2026-06-19T19:00:00Z",
+  "updated_at": "2026-06-19T19:05:00Z",
+  "source": {
+    "bead_id": "age-membrane-memory-arch-tz2s.2.8.1",
+    "run_id": "run-state-bad",
+    "author_id": "codex:worker-a",
+    "repo": "agentops",
+    "path": ".agents/findings/finding-age-membrane-extra-field.md"
+  },
+  "review": {
+    "reviewer_id": "codex:validator-b",
+    "reviewed_at": "2026-06-19T19:08:00Z",
+    "verdict": "CONFIRMED",
+    "head_sha": "0123456789abcdef"
+  },
+  "severity": "significant",
+  "category": "validation-gap",
+  "summary": "This fixture intentionally adds an unknown property.",
+  "evidence": ["schema fixture"],
+  "body": "Bad fixture.",
+  "unexpected": true
+}

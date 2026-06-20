@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "state_finding",
+  "id": "finding-age-membrane-valid",
+  "title": "Fresh non-author finding can enter state memory",
+  "status": "active",
+  "created_at": "2026-06-19T19:00:00Z",
+  "updated_at": "2026-06-19T19:05:00Z",
+  "source": {
+    "bead_id": "age-membrane-memory-arch-tz2s.2.8.2",
+    "run_id": "run-state-valid",
+    "author_id": "codex:worker-a",
+    "repo": "agentops",
+    "path": ".agents/findings/finding-age-membrane-valid.md"
+  },
+  "review": {
+    "reviewer_id": "codex:validator-b",
+    "reviewed_at": "2026-06-19T19:08:00Z",
+    "verdict": "CONFIRMED",
+    "head_sha": "0123456789abcdef"
+  },
+  "severity": "significant",
+  "category": "validation-gap",
+  "summary": "Admission requires a fresh non-author review and deterministic evidence.",
+  "evidence": [
+    "go test ./cli/internal/statememory -run TestAdmissionCore"
+  ],
+  "body": "A finding becomes durable state only after a separate reviewer confirms it against fresh evidence."
+}

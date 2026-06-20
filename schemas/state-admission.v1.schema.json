@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/state-admission.v1.schema.json",
+  "title": "AgentOps State Admission Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "candidate_path",
+    "destination",
+    "operator_id",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "state_admission" },
+    "candidate_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "not": { "pattern": "(^|/)\\.\\.(/|$)" }
+    },
+    "destination": {
+      "type": "string",
+      "pattern": "^\\.agents/state/findings/[A-Za-z0-9._-]+\\.json$",
+      "not": { "pattern": "(^|/)\\.\\.(/|$)" },
+      "maxLength": 300
+    },
+    "operator_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+  }
+}

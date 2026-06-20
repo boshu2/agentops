@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "kind": "state_admission",
+  "candidate_path": "schemas/fixtures/state-memory/valid-finding.json",
+  "destination": ".agents/state/findings/../../outside.json",
+  "operator_id": "codex:validator-b",
+  "reason": "This fixture intentionally attempts a path escape."
+}
