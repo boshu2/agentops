@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,16 +25,21 @@ func writeWikiPublishFixture(t *testing.T, findingBody string) string {
 	return base
 }
 
-// TestWikiPublish_RealPublishRefusedWithoutDryRun: `ao wiki publish` without
-// --dry-run is refused (real publish is gated on the verdict design, age-xf9r).
-func TestWikiPublish_RealPublishRefusedWithoutDryRun(t *testing.T) {
+// TestWikiPublish_RealPublishRequiresBead: real publish (no --dry-run) without
+// --bead is refused (the bead's CONFIRMED verdict for HEAD is the gate).
+func TestWikiPublish_RealPublishRequiresBead(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
 	wikiPublishDryRun = false
-	err := runWikiPublish(wikiPublishCmd, nil)
+	wikiPublishBead = ""
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
 	if err == nil {
-		t.Fatal("expected real publish to be refused without --dry-run")
+		t.Fatal("expected real publish to be refused without --bead")
 	}
-	if !strings.Contains(err.Error(), "age-xf9r") {
-		t.Errorf("error should point at the verdict-gate design bead, got: %v", err)
+	if !strings.Contains(err.Error(), "--bead") {
+		t.Errorf("error should require --bead, got: %v", err)
 	}
 }
 
@@ -71,5 +77,128 @@ func TestWikiPublish_DryRunLeakFailsClosed(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "leak scan") {
 		t.Errorf("error should name the leak scan, got: %v", err)
+	}
+}
+
+// TestWikiPublish_RefusesUnsafeOut: --out resolving to a root/repo-base path is
+// refused before any destructive clear.
+func TestWikiPublish_RefusesUnsafeOut(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
+	stubVerdict(t, true)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	wikiPublishOut = "/"
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err == nil {
+		t.Fatal("expected refusal of unsafe --out /")
+	}
+	if !strings.Contains(err.Error(), "unsafe --out") {
+		t.Errorf("error should name the unsafe out, got: %v", err)
+	}
+}
+
+// stubVerdict overrides the verdict gate + HEAD resolver for a test and restores
+// them after. confirmed=true => the gate passes.
+func stubVerdict(t *testing.T, confirmed bool) {
+	t.Helper()
+	origCheck, origHead := checkPawlVerdict, resolveHeadSHA
+	resolveHeadSHA = func(string) (string, error) { return "deadbeefcafe1234", nil }
+	checkPawlVerdict = func(_, _, _ string) error {
+		if confirmed {
+			return nil
+		}
+		return fmt.Errorf("no confirmed verdict")
+	}
+	t.Cleanup(func() { checkPawlVerdict, resolveHeadSHA = origCheck, origHead })
+}
+
+// TestWikiPublish_RealPublishConfirmedWrites: with a CONFIRMED verdict for HEAD
+// and a clean candidate, real publish writes the gold tree to --out.
+func TestWikiPublish_RealPublishConfirmedWrites(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
+	stubVerdict(t, true)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	wikiPublishOut = ".ao/wiki"
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+
+	out, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err != nil {
+		t.Fatalf("confirmed publish should succeed: %v", err)
+	}
+	if !strings.Contains(out, "PUBLISHED") {
+		t.Errorf("expected PUBLISHED line, got: %q", out)
+	}
+	// The gold tree must now exist on disk.
+	if _, err := os.Stat(filepath.Join(base, ".ao", "wiki", "index.md")); err != nil {
+		t.Errorf("expected published gold wiki index.md, got: %v", err)
+	}
+}
+
+// TestWikiPublish_RealPublishNoVerdictFailsClosed: a clean candidate WITHOUT a
+// CONFIRMED verdict for HEAD is refused, and nothing is written to --out.
+func TestWikiPublish_RealPublishNoVerdictFailsClosed(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
+	stubVerdict(t, false)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	wikiPublishOut = ".ao/wiki"
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishOut = ".ao/wiki" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err == nil {
+		t.Fatal("expected publish to FAIL CLOSED without a confirmed verdict")
+	}
+	if !strings.Contains(err.Error(), "no CONFIRMED pawl verdict") {
+		t.Errorf("error should name the missing verdict, got: %v", err)
+	}
+	// Fail-closed must NOT have written the gold tree.
+	if _, err := os.Stat(filepath.Join(base, ".ao", "wiki")); !os.IsNotExist(err) {
+		t.Errorf("gold dir must not exist after a refused publish, stat err=%v", err)
+	}
+}
+
+// TestWikiPublish_RealPublishLeakBeatsVerdict: a leaky candidate fails closed on
+// the leak scan BEFORE the verdict gate is even consulted (verdict stub would
+// pass, but the leak must still refuse).
+func TestWikiPublish_RealPublishLeakBeatsVerdict(t *testing.T) {
+	base := writeWikiPublishFixture(t, "The shield cluster topology must never reach published gold.")
+	t.Chdir(base)
+	stubVerdict(t, true)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = "" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err == nil {
+		t.Fatal("a leaky candidate must fail closed even with a confirmed verdict")
+	}
+	if !strings.Contains(err.Error(), "leak scan") {
+		t.Errorf("leak must be refused before the verdict gate, got: %v", err)
+	}
+}
+
+// TestWikiPublish_ExpectDigestMismatchFailsClosed: --expect-digest that doesn't
+// match the recomputed digest refuses publish (publish exactly what dry-run reviewed).
+func TestWikiPublish_ExpectDigestMismatchFailsClosed(t *testing.T) {
+	base := writeWikiPublishFixture(t, "Gates must fail closed when a condition cannot be proven true.")
+	t.Chdir(base)
+	stubVerdict(t, true)
+	wikiPublishDryRun = false
+	wikiPublishBead = "ag-test"
+	wikiPublishExpect = "0000000000000000000000000000000000000000000000000000000000000000"
+	t.Cleanup(func() { wikiPublishDryRun = false; wikiPublishBead = ""; wikiPublishExpect = "" })
+
+	_, err := captureStdout(t, func() error { return runWikiPublish(wikiPublishCmd, nil) })
+	if err == nil {
+		t.Fatal("expected digest mismatch to fail closed")
+	}
+	if !strings.Contains(err.Error(), "digest mismatch") {
+		t.Errorf("error should name the digest mismatch, got: %v", err)
 	}
 }
