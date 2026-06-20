@@ -189,7 +189,10 @@ for skill_md in "$SKILLS_ROOT"/*/SKILL.md; do
   if ! echo "$frontmatter" | grep -q '^description:'; then
     fail "$skill_name missing 'description' in frontmatter"
   fi
-  extra_fields="$(printf '%s\n' "$frontmatter_fields" | grep -vE '^(name|description)$' || true)"
+  # `parity_policy: pointer` is an allowed twin marker — it declares the twin defers to the
+  # source skill body (exempting it from the source-divergence gates below), so a source-only
+  # prose edit needs no twin churn. See twin_is_pointer().
+  extra_fields="$(printf '%s\n' "$frontmatter_fields" | grep -vE '^(name|description|parity_policy)$' || true)"
   if [[ -n "$extra_fields" ]]; then
     fail "$skill_name has non-Codex frontmatter fields: $(printf '%s' "$extra_fields" | tr '\n' ',' | sed 's/,$//')"
   fi
@@ -256,6 +259,19 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
     fi
   done
 
+  # A POINTER twin (skills-codex/<skill>/SKILL.md frontmatter `parity_policy: pointer`)
+  # deliberately carries NO mirrored prose — it defers to the source skill as the canonical
+  # body ("the source skill is the source of truth — read it first") plus a short Codex
+  # Runtime Contract. A source body/references edit therefore has nothing to mirror into it,
+  # so the content-divergence gates below would be pure churn. Pointer twins are exempt from
+  # those gates ONLY; their own content is still covered by the source->codex existence check
+  # above and the manifest/hash audit. (Default — full-mirror — twins are unaffected.)
+  twin_is_pointer() {
+    local twin="$SKILLS_ROOT/$1/SKILL.md"
+    [[ -f "$twin" ]] || return 1
+    awk 'NR==1 && /^---/{f=1; next} f && /^---/{exit} f && /^parity_policy:[[:space:]]*pointer([[:space:]]+#.*|[[:space:]]*)$/{found=1} END{exit !found}' "$twin"
+  }
+
   # Codex-twin content-divergence gate (age-yxl). regen-all only refreshes the
   # twin's hash record, NOT its prose: editing skills/<skill>/references/** and
   # running regen makes the marker self-consistent with the STALE twin, so the
@@ -264,8 +280,8 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   # references edit; a marker-only codex change does not count.
   for skill_name in "${!changed_source_refs[@]}"; do
     is_bespoke "$skill_name" || continue  # parity: codex-sync regenerates + drift-gates
-    if [[ -z "${changed_codex_content[$skill_name]+x}" ]]; then
-      fail "Codex twin content divergence: skills/$skill_name/references/ changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the edit into skills-codex/$skill_name/references/, then run scripts/regen-codex-hashes.sh --only $skill_name."
+    if [[ -z "${changed_codex_content[$skill_name]+x}" ]] && ! twin_is_pointer "$skill_name"; then
+      fail "Codex twin content divergence: skills/$skill_name/references/ changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the edit into skills-codex/$skill_name/references/, then run scripts/regen-codex-hashes.sh --only $skill_name. (A pointer twin may instead declare \`parity_policy: pointer\` in its frontmatter to defer to the source.)"
     fi
   done
 
@@ -277,8 +293,8 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   # NOT flagged, so legitimate frontmatter-only pushes stay green.
   for skill_name in "${!changed_source_skillmd[@]}"; do
     is_bespoke "$skill_name" || continue  # parity: codex-sync regenerates + drift-gates
-    if source_skill_body_changed "$SCOPE" "$skill_name" && [[ -z "${changed_codex_content[$skill_name]+x}" ]]; then
-      fail "Codex twin content divergence: skills/$skill_name/SKILL.md body changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the body edit into skills-codex/$skill_name/SKILL.md, then run scripts/regen-codex-hashes.sh --only $skill_name. (Frontmatter-only edits need no twin change.)"
+    if source_skill_body_changed "$SCOPE" "$skill_name" && [[ -z "${changed_codex_content[$skill_name]+x}" ]] && ! twin_is_pointer "$skill_name"; then
+      fail "Codex twin content divergence: skills/$skill_name/SKILL.md body changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the body edit into skills-codex/$skill_name/SKILL.md, then run scripts/regen-codex-hashes.sh --only $skill_name. (Frontmatter-only edits need no twin change; a pointer twin may declare \`parity_policy: pointer\` to defer to the source.)"
     fi
   done
 fi
