@@ -1445,8 +1445,8 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "5bc69adf033ffea11b6546b3a78f89e33f9e2666a3627d04e0ec96ad722089ab",
-      "generated_hash": "a2291ceda1dd75efd5313046d7265964671c17290fbdc5bf57a1c4432e4aa661"
+      "source_hash": "1fdc1ad3981385687edc05a3ded3e7ac27caf8e19a692028bb856d5b3acd4d56",
+      "generated_hash": "77f08dad03649d30309ef299eded97737df848eaaba2d4454259c35da8250325"
     },
     {
       "name": "pr-prep",
