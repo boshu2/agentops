@@ -131,6 +131,17 @@ collect_test_names_from_file() {
     ' "$test_file"
 }
 
+package_has_go_sources() {
+    local dir="$1"
+    local sources=()
+
+    shopt -s nullglob
+    sources=("$dir"/*.go)
+    shopt -u nullglob
+
+    [[ "${#sources[@]}" -gt 0 ]]
+}
+
 tmp_files="$(mktemp)"
 tmp_pairs="$(mktemp)"
 tmp_runs="$(mktemp)"
@@ -172,6 +183,7 @@ while IFS= read -r file; do
     dir_path="$(dirname "$abs_path")"
     dir_path="$(cd "$dir_path" 2>/dev/null && pwd -P 2>/dev/null || true)"
     [[ -z "$dir_path" ]] && continue
+    package_has_go_sources "$dir_path" || continue
 
     rel="${dir_path#"$module_root"/}"
     if [[ "$dir_path" == "$module_root" ]]; then
@@ -232,6 +244,7 @@ while IFS= read -r file; do
     dir_path="$(dirname "$abs_path")"
     dir_path="$(cd "$dir_path" 2>/dev/null && pwd -P 2>/dev/null || true)"
     [[ -z "$dir_path" ]] && continue
+    package_has_go_sources "$dir_path" || continue
 
     rel="${dir_path#"$module_root"/}"
     pattern="."
