@@ -135,8 +135,11 @@ type StreamEvent struct {
 	// NumTurns is the number of conversation turns in a result event.
 	NumTurns int `json:"num_turns,omitempty"`
 
-	// Usage is the token-usage accounting reported in result events.
-	Usage StreamUsage `json:"usage,omitempty"`
+	// Usage is the token-usage accounting reported in result events. It is a
+	// value type (not a pointer), so omitempty would be a no-op — encoding/json
+	// does not omit zero structs — and is deliberately omitted to avoid a
+	// misleading tag.
+	Usage StreamUsage `json:"usage"`
 }
 
 // ParseStreamEvent unmarshals a single JSON line into a StreamEvent.

@@ -237,6 +237,31 @@ fi
 pawl_status=0
 "$SCRIPT_DIR/pawl-verdict.sh" check "$BEAD" "$PR" --dir "$VERDICT_DIR" --head "$cur_head" || pawl_status=$?
 
+# derive_yield_tokens echoes "tokens_in tokens_out" for a usage emit. It prefers
+# the explicit AO_YIELD_TOKENS_* env; when those are unset but a session
+# transcript IS available (AO_YIELD_TRANSCRIPT), it derives the real footprint
+# from the transcript's usage blocks via `ao yield tokens` (de-duped per
+# response). Producer truth (age-membrane-memory-arch-tz2s.3.2, bronze->silver);
+# the producer that sets AO_YIELD_TRANSCRIPT is the orchestrator (age-tlj6).
+# Fail-open by construction: a missing ao, an unparseable transcript (ao yield
+# tokens errors -> empty read), or non-numeric output all keep the 0 default —
+# this NEVER blocks. Used by BOTH the accepted-path and rejected/HOLD-path emits
+# so rejected spend is also derived, not silently 0 (L/R loss accounting).
+derive_yield_tokens() {
+  local ti="${AO_YIELD_TOKENS_IN:-0}" to="${AO_YIELD_TOKENS_OUT:-0}"
+  if [[ -z "${AO_YIELD_TOKENS_IN:-}" && -n "${AO_YIELD_TRANSCRIPT:-}" && -f "${AO_YIELD_TRANSCRIPT}" ]] \
+     && command -v ao >/dev/null 2>&1; then
+    local _ti _to
+    if read -r _ti _to < <(ao yield tokens --transcript "$AO_YIELD_TRANSCRIPT" --pair 2>/dev/null); then
+      if [[ "$_ti" =~ ^[0-9]+$ && "$_to" =~ ^[0-9]+$ ]]; then
+        ti="$_ti"
+        to="$_to"
+      fi
+    fi
+  fi
+  printf '%s %s\n' "$ti" "$to"
+}
+
 # --- yield-ledger: gate-verdict (fail-open observability, NEVER a gate) -------
 # Project the pawl-verdict into a bead-keyed yield event so the dynamo's Q/E
 # gauges are computable from data (ag-grcz3). This emit fires for EVERY
@@ -289,8 +314,12 @@ if [[ "$pawl_status" -ne 0 ]]; then
   # rejected spend is invisible. Synchronous + guarded + pre-exit; this path never
   # merges, so a fast local append cannot delay anything. (codex review attempt-2 BLOCKING.)
   if command -v ao >/dev/null 2>&1; then
+    # Derive real tokens (incl. from AO_YIELD_TRANSCRIPT) so rejected spend is
+    # recorded truthfully, not a silent 0 — symmetric with the accepted path.
+    rej_ti=0; rej_to=0
+    read -r rej_ti rej_to < <(derive_yield_tokens)
     ao yield emit usage --bead "$BEAD" --run "${AO_YIELD_RUN_ID:-reconcile-$BEAD}" \
-      --json "{\"tokens_in\":${AO_YIELD_TOKENS_IN:-0},\"tokens_out\":${AO_YIELD_TOKENS_OUT:-0},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" \
+      --json "{\"tokens_in\":${rej_ti},\"tokens_out\":${rej_to},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" \
       >/dev/null 2>&1 || true
   fi
   echo "PAWL-HOLD: green CI but no CONFIRMED pawl verdict (fresh-context default; multi-model opt-in) for bead=$BEAD PR=$PR (pawl-verdict.sh check exit=$pawl_status) — did NOT merge, did NOT close. Fail-closed; surface for human on non-convergence." >&2
@@ -362,34 +391,17 @@ fi
 
 # --- yield-ledger: usage (fail-open observability, NEVER a gate) --------------
 # Emit a per-bead usage event so the dynamo's R / A-R / L gauges have an
-# automated source (ag-grcz3). The orchestrator supplies per-bead spend via the
-# AO_YIELD_* env (model + tokens/cost/wall-clock); absent metrics default to 0.
-#
-# Producer truth (age-membrane-memory-arch-tz2s.3.2, bronze->silver): when the
-# tokens aren't supplied directly but a session transcript IS (AO_YIELD_TRANSCRIPT),
-# derive the real tokens_in/tokens_out from the transcript's usage blocks via
-# `ao yield tokens` instead of defaulting to 0. The producer that sets
-# AO_YIELD_TRANSCRIPT is the orchestrator (`ao orchestrate`, age-tlj6); until then
-# this stays a latent-but-correct seam that fires whenever a transcript is passed.
+# automated source (ag-grcz3). Tokens come from derive_yield_tokens (explicit
+# AO_YIELD_TOKENS_*, else derived from AO_YIELD_TRANSCRIPT, else 0 — see above).
 # phase is ALWAYS present (defaults to implement). Guarded — never blocks close.
 emit_yield_usage() {
   command -v ao >/dev/null 2>&1 || return 0
   local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
   local model="${AO_YIELD_MODEL:-unknown}"
   local phase="${AO_YIELD_PHASE:-implement}"
-  local tokens_in="${AO_YIELD_TOKENS_IN:-0}"
-  local tokens_out="${AO_YIELD_TOKENS_OUT:-0}"
-  # Derive real tokens from the session transcript when one is available and
-  # tokens weren't supplied explicitly. Fail-open: any error keeps the 0 default.
-  if [[ -z "${AO_YIELD_TOKENS_IN:-}" && -n "${AO_YIELD_TRANSCRIPT:-}" && -f "${AO_YIELD_TRANSCRIPT}" ]]; then
-    local _ti _to
-    if read -r _ti _to < <(ao yield tokens --transcript "$AO_YIELD_TRANSCRIPT" --pair 2>/dev/null); then
-      if [[ "$_ti" =~ ^[0-9]+$ && "$_to" =~ ^[0-9]+$ ]]; then
-        tokens_in="$_ti"
-        tokens_out="$_to"
-      fi
-    fi
-  fi
+  # Real tokens (explicit env, else derived from AO_YIELD_TRANSCRIPT, else 0).
+  local tokens_in tokens_out
+  read -r tokens_in tokens_out < <(derive_yield_tokens)
   local cost_usd="${AO_YIELD_COST_USD:-0}"
   local wall_clock_s="${AO_YIELD_WALL_CLOCK_S:-0}"
   local body

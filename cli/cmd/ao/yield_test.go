@@ -44,9 +44,44 @@ func TestDeriveTranscriptTokens_MissingFile(t *testing.T) {
 	}
 }
 
+func TestDeriveTranscriptTokens_MalformedErrors(t *testing.T) {
+	// A non-JSONL file parses to zero messages; that must ERROR so reconcile-pr.sh
+	// takes a visible fail-open path, not silently emit a derived 0. (REFUTE fix)
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad.jsonl")
+	if err := os.WriteFile(bad, []byte("not json\nstill not json\n"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if _, _, err := deriveTranscriptTokens(bad); err == nil {
+		t.Fatal("expected error for unparseable transcript, got nil")
+	}
+}
+
+func TestDeriveTranscriptTokens_RealFixtureDedups(t *testing.T) {
+	// Regression for the cross-family REFUTE: real Claude Code transcripts
+	// repeat the same usage block across multiple rows of one response. The
+	// committed real fixture's naive per-row sum is 26781956/559; the correct
+	// per-response-deduped total is 10946330/228. Locking the deduped value
+	// guards against the overcount returning. Fixture parsed by the production reader.
+	const fixture = "testdata/transcripts/real-2.4mb.jsonl"
+	if _, err := os.Stat(fixture); err != nil {
+		t.Skipf("real fixture not present: %v", err)
+	}
+	in, out, err := deriveTranscriptTokens(fixture)
+	if err != nil {
+		t.Fatalf("deriveTranscriptTokens: %v", err)
+	}
+	if in != 10946330 {
+		t.Errorf("tokens_in = %d, want 10946330 (deduped; naive overcount was 26781956)", in)
+	}
+	if out != 228 {
+		t.Errorf("tokens_out = %d, want 228 (deduped; naive overcount was 559)", out)
+	}
+}
+
 // TestYieldTokensCmd_JSON exercises the `ao yield tokens` command end-to-end
-// (cobra invocation), asserting the JSON output shape the bronze->silver bridge
-// in reconcile-pr.sh consumes.
+// (cobra invocation), asserting the --json output shape. (reconcile-pr.sh
+// consumes the --pair form; --json is for other machine consumers.)
 func TestYieldTokensCmd_JSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "session.jsonl")

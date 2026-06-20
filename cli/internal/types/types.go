@@ -37,6 +37,38 @@ type TranscriptMessage struct {
 	// Capturing this is producer truth (age-membrane-memory-arch-tz2s.3.1) —
 	// without it the bronze tier ingests a hardcoded 0.
 	Usage *TokenUsage `json:"usage,omitempty"`
+
+	// MessageID is the model-response identity (Claude Code transcript
+	// message.id, falling back to requestId). One model response is written
+	// as several transcript rows (thinking, text, tool_use) that ALL repeat
+	// the SAME usage block, so SumUsage de-duplicates token accounting by this
+	// id to avoid 2-3x overcounting. Empty for rows without a response id
+	// (e.g. user turns or synthetic fixtures), which are never deduped.
+	MessageID string `json:"message_id,omitempty"`
+}
+
+// SumUsage returns the total input/output token footprint across messages,
+// de-duplicating by model-response identity (MessageID). Claude Code writes one
+// model response as several transcript rows that all repeat the same usage
+// block; counting each row would inflate the total 2-3x. Each unique MessageID's
+// usage is counted once; rows with an empty MessageID are treated as distinct
+// (counted each) since they carry no response identity to dedup on.
+func SumUsage(msgs []TranscriptMessage) (tokensIn, tokensOut int) {
+	seen := make(map[string]struct{})
+	for _, m := range msgs {
+		if m.Usage == nil {
+			continue
+		}
+		if m.MessageID != "" {
+			if _, ok := seen[m.MessageID]; ok {
+				continue
+			}
+			seen[m.MessageID] = struct{}{}
+		}
+		tokensIn += m.Usage.TotalInputTokens()
+		tokensOut += m.Usage.OutputTokens
+	}
+	return tokensIn, tokensOut
 }
 
 // TokenUsage holds token accounting parsed from a transcript message's usage
