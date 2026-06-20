@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Regression test: close-before-commit grace window
-# Verifies that a bead closed BEFORE its qualifying commit still passes
-# when the commit lands within the 24h grace window.
+# Regression test: close-before-commit grace window + br (beads_rust) semantics.
+# Verifies that a bead closed BEFORE its qualifying commit still passes when the
+# commit lands within the 24h grace window, and that the audit reads children
+# from `br show <epic> --json` .dependents (bd/Dolt retired). Also covers the
+# single-epic-closure path: a closed epic with no children but commit-backed
+# closure PASSES, an invalid no-child epic FAILS as collection_failed.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,34 +20,49 @@ trap cleanup EXIT
 pass() { PASS=$((PASS + 1)); echo "PASS: $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "FAIL: $1"; }
 
-# Setup: isolated git repo with bd mock
-BD_DIR="$WORK_DIR/bd-data"
+# Setup: isolated git repo with a br mock
+BR_DIR="$WORK_DIR/br-data"
 BIN_DIR="$WORK_DIR/bin"
 REPO_DIR="$WORK_DIR/repo"
-mkdir -p "$BD_DIR" "$BIN_DIR" "$REPO_DIR"
+mkdir -p "$BR_DIR" "$BIN_DIR" "$REPO_DIR"
 
-# Create a mock bd that reads from JSON files
-cat > "$BIN_DIR/bd" <<'MOCK'
+# Mock br: serves `show <id> --json` (one-element array) and `show <id>` (human)
+# from fixture files. The audit derives children from the epic's --json
+# .dependents, so the epic fixture must carry a dependents array.
+cat > "$BIN_DIR/br" <<'MOCK'
 #!/usr/bin/env bash
 case "$1" in
-  children)
-    cat "$BD_DIR/children.json" 2>/dev/null || echo '[]'
-    ;;
   show)
+    id="$2"
     if [[ "${3:-}" == "--json" ]]; then
-      cat "$BD_DIR/show-${2}.json" 2>/dev/null || echo '[]'
+      cat "$BR_DIR/show-${id}.json" 2>/dev/null || echo '[]'
     else
-      cat "$BD_DIR/show-${2}.txt" 2>/dev/null || echo "NOT FOUND"
+      cat "$BR_DIR/show-${id}.txt" 2>/dev/null || echo "NOT FOUND"
     fi
     ;;
 esac
 MOCK
-chmod +x "$BIN_DIR/bd"
-sed -i.bak "s|\$BD_DIR|$BD_DIR|g" "$BIN_DIR/bd" 2>/dev/null || \
-  sed -i '' "s|\$BD_DIR|$BD_DIR|g" "$BIN_DIR/bd"
+chmod +x "$BIN_DIR/br"
+sed -i.bak "s|\$BR_DIR|$BR_DIR|g" "$BIN_DIR/br" 2>/dev/null || \
+  sed -i '' "s|\$BR_DIR|$BR_DIR|g" "$BIN_DIR/br"
 
 export PATH="$BIN_DIR:$PATH"
-export BD_DIR
+export BR_DIR
+
+# Helper: write the epic fixture so its parent-child dependents are the given ids.
+write_epic_with_children() {
+  local epic="$1"; shift
+  local deps=""
+  local sep=""
+  local id
+  for id in "$@"; do
+    deps+="${sep}{\"id\":\"${id}\",\"dependency_type\":\"parent-child\"}"
+    sep=","
+  done
+  cat > "$BR_DIR/show-${epic}.json" <<JSON
+[{"id":"${epic}","issue_type":"epic","status":"closed","dependents":[${deps}]}]
+JSON
+}
 
 # Initialize isolated repo
 (
@@ -65,12 +83,9 @@ mkdir -p "$REPO_DIR/cli/cmd/ao"
 CLOSE_TIME="2026-03-20T10:00:00+00:00"
 COMMIT_TIME="2026-03-20T12:00:00+00:00"
 
-# Setup bd mock data for test-epic
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.1"}]
-JSON
+write_epic_with_children test-epic test-epic.1
 
-cat > "$BD_DIR/show-test-epic.1.json" <<JSON
+cat > "$BR_DIR/show-test-epic.1.json" <<JSON
 [{
   "id": "test-epic.1",
   "status": "closed",
@@ -124,7 +139,7 @@ else
 fi
 
 # Test 3: Issue with no scoped files should be parser_miss
-cat > "$BD_DIR/show-test-epic.1.json" <<JSON
+cat > "$BR_DIR/show-test-epic.1.json" <<JSON
 [{
   "id": "test-epic.1",
   "status": "closed",
@@ -144,11 +159,9 @@ else
 fi
 
 # Test 4: Bead with no scoped files AND no evidence-only packet should FAIL
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.2"}]
-JSON
+write_epic_with_children test-epic test-epic.2
 
-cat > "$BD_DIR/show-test-epic.2.json" <<JSON
+cat > "$BR_DIR/show-test-epic.2.json" <<JSON
 [{
   "id": "test-epic.2",
   "status": "closed",
@@ -171,12 +184,11 @@ else
   fail "no scoped files + no evidence-only packet should be parser_miss (got status=$verdict failure_type=$ftype)"
 fi
 
-# Test 5: Bead with evidence-only packet but invalid schema should WARN (pass with packet mode but packet_is_valid rejects it)
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.3"}]
-JSON
+# Test 5: Bead with evidence-only packet but invalid schema should fall through
+# to parser_miss (packet_is_valid rejects it).
+write_epic_with_children test-epic test-epic.3
 
-cat > "$BD_DIR/show-test-epic.3.json" <<JSON
+cat > "$BR_DIR/show-test-epic.3.json" <<JSON
 [{
   "id": "test-epic.3",
   "status": "closed",
@@ -207,12 +219,10 @@ else
 fi
 
 # Test 6: Bead with expired grace window should FAIL
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.1"}]
-JSON
+write_epic_with_children test-epic test-epic.1
 
 EXPIRED_CLOSE="2026-03-15T10:00:00+00:00"
-cat > "$BD_DIR/show-test-epic.1.json" <<JSON
+cat > "$BR_DIR/show-test-epic.1.json" <<JSON
 [{
   "id": "test-epic.1",
   "status": "closed",
@@ -247,34 +257,21 @@ else
 fi
 
 # Test 7: Discovery-phase seed that was never persisted (.agents/brainstorm/,
-# .agents/research/, .agents/discovery/) on a CLOSED bead with a non-trivial
-# close reason should WARN as discovery_miss, NOT hard-fail as timing_miss.
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.7"}]
-JSON
+# .agents/research/, .agents/discovery/) on a CLOSED bead with a substantive
+# close_reason should WARN as discovery_miss, NOT hard-fail as timing_miss.
+# (close_reason now read from --json, not human output.)
+write_epic_with_children test-epic test-epic.7
 
-cat > "$BD_DIR/show-test-epic.7.json" <<JSON
+cat > "$BR_DIR/show-test-epic.7.json" <<JSON
 [{
   "id": "test-epic.7",
   "status": "closed",
   "created_at": "2026-04-14T10:00:00+00:00",
   "closed_at": "2026-04-14T20:00:00+00:00",
-  "description": "Add opt-in long-haul controller.\n\nSeed: .agents/brainstorm/2026-04-14-long-haul-value.md"
+  "description": "Add opt-in long-haul controller.\n\nSeed: .agents/brainstorm/2026-04-14-long-haul-value.md",
+  "close_reason": "Completed: landed the controller plus regression coverage; parent remains open for follow-up."
 }]
 JSON
-
-# Also emit a human-readable show with a Close reason: the shell audit reads
-# the human output for the close_reason_len fallback.
-cat > "$BD_DIR/show-test-epic.7.txt" <<TXT
-✓ test-epic.7 · Add opt-in long-haul controller   [● P1 · CLOSED]
-Owner: Test · Type: feature
-Close reason: Completed: landed the controller plus tests in cli/internal; parent remains open for follow-up.
-
-DESCRIPTION
-Add opt-in long-haul controller.
-
-Seed: .agents/brainstorm/2026-04-14-long-haul-value.md
-TXT
 
 (
   cd "$REPO_DIR"
@@ -298,30 +295,18 @@ fi
 # Test 8: Non-discovery scoped file (cli/foo.go) that doesn't exist in git
 # must still hard-fail as timing_miss — the discovery downgrade is NOT a
 # generic escape hatch.
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.8"}]
-JSON
+write_epic_with_children test-epic test-epic.8
 
-cat > "$BD_DIR/show-test-epic.8.json" <<JSON
+cat > "$BR_DIR/show-test-epic.8.json" <<JSON
 [{
   "id": "test-epic.8",
   "status": "closed",
   "created_at": "2026-04-14T10:00:00+00:00",
   "closed_at": "2026-04-14T20:00:00+00:00",
-  "description": "Refactor handler.\n\nFiles:\n- \`cli/cmd/ao/nonexistent_handler.go\`"
+  "description": "Refactor handler.\n\nFiles:\n- \`cli/cmd/ao/nonexistent_handler.go\`",
+  "close_reason": "Completed: refactored handler thoroughly across the codebase."
 }]
 JSON
-
-cat > "$BD_DIR/show-test-epic.8.txt" <<TXT
-✓ test-epic.8 · Refactor handler   [● P1 · CLOSED]
-Close reason: Completed: refactored handler thoroughly across the codebase.
-
-DESCRIPTION
-Refactor handler.
-
-Files:
-- \`cli/cmd/ao/nonexistent_handler.go\`
-TXT
 
 result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto test-epic 2>&1)"
 verdict="$(echo "$result" | jq -r '.children[0].status')"
@@ -336,27 +321,18 @@ fi
 # Test 9: Bead with NO scoped files but a valid evidence-only packet
 # (containing both `evidence_mode` and `repo_state`) should PASS via the
 # evidence-only-packet short-circuit, NOT trip parser_miss or timing_miss.
-cat > "$BD_DIR/children.json" <<JSON
-[{"id": "test-epic.9"}]
-JSON
+write_epic_with_children test-epic test-epic.9
 
-cat > "$BD_DIR/show-test-epic.9.json" <<JSON
+cat > "$BR_DIR/show-test-epic.9.json" <<JSON
 [{
   "id": "test-epic.9",
   "status": "closed",
   "created_at": "2026-04-14T10:00:00+00:00",
   "closed_at": "2026-04-14T20:00:00+00:00",
-  "description": "Maintenance closure with no code delta. Proven via evidence-only packet."
+  "description": "Maintenance closure with no code delta. Proven via evidence-only packet.",
+  "close_reason": "Completed: maintenance closure backed by evidence-only packet."
 }]
 JSON
-
-cat > "$BD_DIR/show-test-epic.9.txt" <<TXT
-test-epic.9 - Maintenance closure   [P1 - CLOSED]
-Close reason: Completed: maintenance closure backed by evidence-only packet.
-
-DESCRIPTION
-Maintenance closure with no code delta. Proven via evidence-only packet.
-TXT
 
 (
   cd "$REPO_DIR"
@@ -412,6 +388,119 @@ if [[ "$verdict" == "pass" ]] && [[ "$mode" == "evidence-only-packet" ]]; then
   pass "evidence-only packet short-circuits under --scope commit too"
 else
   fail "evidence-only packet should short-circuit under --scope commit (got status=$verdict mode=$mode)"
+fi
+
+# Test 11: single-epic closure — a CLOSED epic with NO children whose closure is
+# commit-backed (a commit references the epic id) must PASS via the single-epic
+# path with closure_mode single-epic, NOT trip collection_failed.
+cat > "$BR_DIR/show-solo-epic.json" <<JSON
+[{
+  "id": "solo-epic",
+  "issue_type": "epic",
+  "status": "closed",
+  "created_at": "2026-05-01T10:00:00+00:00",
+  "closed_at": "2026-05-01T20:00:00+00:00",
+  "description": "Single-epic closure tracked directly on the epic.",
+  "close_reason": "Completed directly on the epic.",
+  "dependents": []
+}]
+JSON
+
+(
+  cd "$REPO_DIR"
+  echo "package ao" > "cli/cmd/ao/solo.go"
+  git add "cli/cmd/ao/solo.go"
+  git commit -q -m "feat: land solo-epic work directly"
+)
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto solo-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+cmode="$(echo "$result" | jq -r '.children[0].closure_mode // "none"')"
+cfailed="$(echo "$result" | jq -r '.summary.collection_failed // false')"
+
+if [[ "$verdict" == "pass" ]] && [[ "$cmode" == "single-epic" ]] && [[ "$cfailed" == "false" ]]; then
+  pass "commit-backed single-epic closure PASSES via single-epic path"
+else
+  fail "commit-backed single-epic closure should PASS single-epic (got status=$verdict closure_mode=$cmode collection_failed=$cfailed)"
+fi
+
+# Test 12: invalid no-child epic — a CLOSED epic with NO children, NO commit
+# reference, and only a generic close reason (no SHA) must FAIL as
+# collection_failed (the single-epic path must NOT rubber-stamp it).
+cat > "$BR_DIR/show-empty-epic.json" <<JSON
+[{
+  "id": "empty-epic",
+  "issue_type": "epic",
+  "status": "closed",
+  "created_at": "2026-05-02T10:00:00+00:00",
+  "closed_at": "2026-05-02T20:00:00+00:00",
+  "description": "Closed with no children and no proof.",
+  "close_reason": "done",
+  "dependents": []
+}]
+JSON
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto empty-epic 2>&1)" || true
+cfailed="$(echo "$result" | jq -r '.summary.collection_failed // false')"
+
+if [[ "$cfailed" == "true" ]]; then
+  pass "invalid no-child epic correctly fails as collection_failed"
+else
+  fail "invalid no-child epic should fail as collection_failed (got collection_failed=$cfailed)"
+fi
+
+# Test 13: single-epic closure proven via a close_reason that cites a REAL landed
+# commit SHA (no commit references the epic id, no children) must PASS via the
+# close-reason path with evidence_mode close-reason.
+REAL_SHA="$(cd "$REPO_DIR" && git rev-parse HEAD)"
+cat > "$BR_DIR/show-sha-epic.json" <<JSON
+[{
+  "id": "sha-epic",
+  "issue_type": "epic",
+  "status": "closed",
+  "created_at": "2026-05-03T10:00:00+00:00",
+  "closed_at": "2026-05-03T20:00:00+00:00",
+  "description": "Single-epic closure proven by a landed commit SHA.",
+  "close_reason": "Completed: landed in ${REAL_SHA}.",
+  "dependents": []
+}]
+JSON
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto sha-epic 2>&1)"
+verdict="$(echo "$result" | jq -r '.children[0].status')"
+mode="$(echo "$result" | jq -r '.children[0].evidence_mode')"
+cmode="$(echo "$result" | jq -r '.children[0].closure_mode // "none"')"
+
+if [[ "$verdict" == "pass" ]] && [[ "$mode" == "close-reason" ]] && [[ "$cmode" == "single-epic" ]]; then
+  pass "single-epic closure with close_reason citing a REAL commit SHA PASSES"
+else
+  fail "real-SHA close_reason should PASS close-reason single-epic (got status=$verdict mode=$mode closure_mode=$cmode)"
+fi
+
+# Test 14: close_reason citing a hex token that is NOT a real commit must NOT
+# false-pass — a bare hex token is not proof. This guards the fail-open a
+# cross-family review caught (an incidental hex word would otherwise rubber-stamp
+# an unproven epic closure).
+cat > "$BR_DIR/show-fakesha-epic.json" <<JSON
+[{
+  "id": "fakesha-epic",
+  "issue_type": "epic",
+  "status": "closed",
+  "created_at": "2026-05-04T10:00:00+00:00",
+  "closed_at": "2026-05-04T20:00:00+00:00",
+  "description": "Closed with an incidental hex word but no real commit.",
+  "close_reason": "Completed: cleaned up deadbeefdeadbeef cafef00d references.",
+  "dependents": []
+}]
+JSON
+
+result="$(cd "$REPO_DIR" && bash "$AUDIT_SCRIPT" --scope auto fakesha-epic 2>&1)" || true
+cfailed="$(echo "$result" | jq -r '.summary.collection_failed // false')"
+
+if [[ "$cfailed" == "true" ]]; then
+  pass "close_reason with a non-resolvable hex token does NOT false-pass (collection_failed)"
+else
+  fail "non-resolvable hex token must NOT pass single-epic (got collection_failed=$cfailed)"
 fi
 
 echo ""
