@@ -15,4 +15,12 @@ if [[ $# -gt 0 ]]; then
 fi
 
 echo "PASS: Release cadence policy removed; releases may ship whenever maintainers decide they are ready."
+
+# No spacing is enforced, but surface a 'release due' NUDGE so an overdue release
+# (many commits / days since the last vX.Y.Z tag) stays visible. Informational
+# only — never blocks (age-push-equals-ci-0ua.5).
+_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "$_here/check-release-due.sh" ]]; then
+    "$_here/check-release-due.sh" || true
+fi
 exit 0

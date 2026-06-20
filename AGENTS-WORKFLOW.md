@@ -126,9 +126,11 @@ scripts/ci-local-release.sh
 
 ## Releasing
 
+**Is a release due?** Run `scripts/check-release-due.sh` (also surfaced by `scripts/release-cadence-check.sh`) — a non-blocking nudge that reports commits + days since the last `vX.Y.Z` tag and flags when a release looks overdue (defaults: 50 commits / 14 days; override with `RELEASE_DUE_COMMITS` / `RELEASE_DUE_DAYS`). It only surfaces the signal — distribution stays pull-based; nothing auto-releases.
+
 Standard release flow:
 
-1. Run `scripts/ci-local-release.sh` to validate
+1. Validate. For a routine pre-tag sanity pass use the fast lane `scripts/ci-local-release.sh --quick` (<5min, code-correctness subset); run the full `scripts/ci-local-release.sh` (~78min) only for the actual tag.
 2. Tag and push: `git tag v2.X.0 && git push origin v2.X.0`
 3. GitHub Actions runs GoReleaser — builds binaries, creates release, updates Homebrew tap
 4. Upgrade locally: `brew update && brew upgrade agentops`
