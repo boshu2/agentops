@@ -69,6 +69,49 @@ func TestStreamEvents_ParseStreamEvent_Result(t *testing.T) {
 	}
 }
 
+func TestStreamEvents_ParseStreamEvent_ResultUsage(t *testing.T) {
+	// Real Claude Code result events carry a usage block. Producer truth
+	// (age-membrane-memory-arch-tz2s.3.1) requires these be parsed, not
+	// silently dropped to the hardcoded 0.
+	data := `{"type":"result","cost_usd":0.042,"usage":{"input_tokens":120,"output_tokens":45}}`
+	ev, err := ParseStreamEvent([]byte(data))
+	if err != nil {
+		t.Fatalf("ParseStreamEvent error: %v", err)
+	}
+	if ev.Usage.InputTokens != 120 {
+		t.Errorf("Usage.InputTokens = %d, want 120", ev.Usage.InputTokens)
+	}
+	if ev.Usage.OutputTokens != 45 {
+		t.Errorf("Usage.OutputTokens = %d, want 45", ev.Usage.OutputTokens)
+	}
+	if got := ev.Usage.TotalTokens(); got != 165 {
+		t.Errorf("Usage.TotalTokens() = %d, want 165", got)
+	}
+}
+
+func TestStreamEvents_ParseStreamEvent_ResultUsageWithCache(t *testing.T) {
+	// Richer transcripts include cache accounting; the full input footprint
+	// counts cache-creation and cache-read input tokens too.
+	data := `{"type":"result","usage":{"input_tokens":9,"cache_creation_input_tokens":13568,"cache_read_input_tokens":24853,"output_tokens":200}}`
+	ev, err := ParseStreamEvent([]byte(data))
+	if err != nil {
+		t.Fatalf("ParseStreamEvent error: %v", err)
+	}
+	if ev.Usage.CacheCreationInputTokens != 13568 {
+		t.Errorf("CacheCreationInputTokens = %d, want 13568", ev.Usage.CacheCreationInputTokens)
+	}
+	if ev.Usage.CacheReadInputTokens != 24853 {
+		t.Errorf("CacheReadInputTokens = %d, want 24853", ev.Usage.CacheReadInputTokens)
+	}
+	// TotalInputTokens includes raw + cache-creation + cache-read.
+	if got := ev.Usage.TotalInputTokens(); got != 9+13568+24853 {
+		t.Errorf("TotalInputTokens() = %d, want %d", got, 9+13568+24853)
+	}
+	if got := ev.Usage.TotalTokens(); got != 9+13568+24853+200 {
+		t.Errorf("TotalTokens() = %d, want %d", got, 9+13568+24853+200)
+	}
+}
+
 func TestStreamEvents_ParseStreamEvent_ErrorResult(t *testing.T) {
 	data := `{"type":"result","is_error":true,"message":"something went wrong"}`
 	ev, err := ParseStreamEvent([]byte(data))

@@ -77,6 +77,7 @@ type rawMessage struct {
 			Input  map[string]any `json:"input"`
 			Output any            `json:"output"`
 		} `json:"tools,omitempty"`
+		Usage *types.TokenUsage `json:"usage,omitempty"`
 	} `json:"message,omitempty"`
 	// ToolUseResult contains structured tool output (e.g., for TodoWrite)
 	ToolUseResult any `json:"toolUseResult,omitempty"`
@@ -349,6 +350,9 @@ func (p *Parser) parseClaudeMessage(raw rawMessage, lineNum int) *types.Transcri
 	if raw.Message != nil {
 		msg.Role = raw.Message.Role
 		p.extractMessageContent(raw.Message.Content, msg)
+		if raw.Message.Usage != nil {
+			msg.Usage = raw.Message.Usage
+		}
 	}
 	if raw.Content != nil {
 		p.extractMessageContent(raw.Content, msg)

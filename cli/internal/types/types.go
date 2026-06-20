@@ -31,6 +31,41 @@ type TranscriptMessage struct {
 
 	// MessageIndex is the position of this message in the transcript.
 	MessageIndex int `json:"message_index,omitempty"`
+
+	// Usage holds per-message token accounting. Assistant messages in Claude
+	// Code transcripts carry a usage block; nil when the message has none.
+	// Capturing this is producer truth (age-membrane-memory-arch-tz2s.3.1) —
+	// without it the bronze tier ingests a hardcoded 0.
+	Usage *TokenUsage `json:"usage,omitempty"`
+}
+
+// TokenUsage holds token accounting parsed from a transcript message's usage
+// block. Anthropic reports cached input separately from fresh input, so the
+// full input footprint is InputTokens + CacheCreationInputTokens +
+// CacheReadInputTokens (see TotalInputTokens).
+type TokenUsage struct {
+	// InputTokens is fresh (non-cached) prompt tokens.
+	InputTokens int `json:"input_tokens,omitempty"`
+
+	// OutputTokens is generated completion tokens.
+	OutputTokens int `json:"output_tokens,omitempty"`
+
+	// CacheCreationInputTokens is prompt tokens written to the cache.
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
+
+	// CacheReadInputTokens is prompt tokens served from the cache.
+	CacheReadInputTokens int `json:"cache_read_input_tokens,omitempty"`
+}
+
+// TotalInputTokens returns the full input footprint: fresh prompt tokens plus
+// cache-creation and cache-read tokens.
+func (u TokenUsage) TotalInputTokens() int {
+	return u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens
+}
+
+// TotalTokens returns the full conversational footprint (all input + output).
+func (u TokenUsage) TotalTokens() int {
+	return u.TotalInputTokens() + u.OutputTokens
 }
 
 // ToolCall represents a single tool invocation within a message.
