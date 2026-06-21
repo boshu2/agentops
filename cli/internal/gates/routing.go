@@ -34,6 +34,15 @@ func matchAny(patterns []string, path string) bool {
 	return ok
 }
 
+// PathMatchesAny reports whether a repo-relative path matches any of the glob
+// patterns, using the gate's own glob semantics (matchGlob). Exported so the
+// constraint-enforcement check (package checks) routes constraint
+// applies_to.path_globs against changed files with the identical semantics the
+// orchestrator uses to route check Match globs — one source of glob truth.
+func PathMatchesAny(patterns []string, path string) bool {
+	return matchAny(patterns, path)
+}
+
 // matchAnyPattern reports the first pattern matched by path.
 func matchAnyPattern(patterns []string, path string) (string, bool) {
 	for _, p := range patterns {
