@@ -12,6 +12,34 @@ import (
 	"time"
 )
 
+// TestIsIsolated covers the single-source worktree-isolation detector: a linked
+// worktree's .git is a gitdir-pointer FILE (isolated), the canonical checkout's
+// .git is a DIRECTORY (not isolated), and a missing .git is an error.
+func TestIsIsolated(t *testing.T) {
+	// Canonical checkout: .git is a directory → NOT isolated.
+	bare := t.TempDir()
+	if err := os.Mkdir(filepath.Join(bare, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if iso, err := IsIsolated(bare); err != nil || iso {
+		t.Fatalf("bare checkout (.git dir): IsIsolated=%v err=%v, want false/nil", iso, err)
+	}
+
+	// Linked worktree: .git is a gitdir-pointer file → isolated.
+	linked := t.TempDir()
+	if err := os.WriteFile(filepath.Join(linked, ".git"), []byte("gitdir: /repo/.git/worktrees/x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if iso, err := IsIsolated(linked); err != nil || !iso {
+		t.Fatalf("linked worktree (.git file): IsIsolated=%v err=%v, want true/nil", iso, err)
+	}
+
+	// No .git at all → error (cannot determine).
+	if _, err := IsIsolated(t.TempDir()); err == nil {
+		t.Fatal("missing .git: want error, got nil")
+	}
+}
+
 func TestEnsureAttachedBranch_DetachedHEAD(t *testing.T) {
 	repo := initGitRepo(t)
 	initialBranch, err := GetCurrentBranch(repo, 30*time.Second)

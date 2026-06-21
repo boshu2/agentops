@@ -26,6 +26,21 @@ func GenerateRunID() string {
 	return hex.EncodeToString(b)
 }
 
+// IsIsolated reports whether repoRoot is an ISOLATED linked git worktree (its
+// .git is a gitdir-pointer FILE) rather than the shared canonical checkout (its
+// .git is a DIRECTORY). Spawning concurrent sessions from the canonical checkout
+// means they share one mutable working tree — the hazard a `git stash`/reset in
+// one lane uses to wipe another's uncommitted work. This is the single source of
+// truth for that distinction; preflight (and any other caller) reuses it instead
+// of re-implementing the .git stat.
+func IsIsolated(repoRoot string) (bool, error) {
+	info, err := os.Stat(filepath.Join(repoRoot, ".git"))
+	if err != nil {
+		return false, fmt.Errorf("stat .git in %s: %w", repoRoot, err)
+	}
+	return !info.IsDir(), nil
+}
+
 // GetCurrentBranch returns the current branch name, or an error for detached HEAD.
 func GetCurrentBranch(repoRoot string, timeout time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

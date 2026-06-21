@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/worktree"
 )
 
 // PreflightOptions configures a preflight run.
@@ -133,10 +135,10 @@ func concurrencyChecks(repoRoot string) []CheckStatus {
 	// pointer); the shared canonical checkout carries a .git DIRECTORY. Spawning
 	// from the canonical checkout means N sessions share one mutable working tree.
 	wt := CheckStatus{ID: "worktree_isolation", Status: VerdictStatusPass}
-	if info, err := os.Stat(filepath.Join(repoRoot, ".git")); err != nil {
+	if isolated, err := worktree.IsIsolated(repoRoot); err != nil {
 		wt.Status = VerdictStatusWarn
 		wt.Detail = "cannot determine worktree isolation"
-	} else if info.IsDir() {
+	} else if !isolated {
 		wt.Status = VerdictStatusWarn
 		wt.Detail = "spawning from the shared canonical checkout — use an isolated worktree so a concurrent reset cannot wipe uncommitted work"
 	}
@@ -178,7 +180,7 @@ func findToolReport(reports []ToolReport, id string) *ToolReport {
 
 func amHealthOK(out []byte) bool {
 	var env struct {
-		OK     bool `json:"ok"`
+		OK     bool   `json:"ok"`
 		Status string `json:"status"`
 	}
 	if err := json.Unmarshal(out, &env); err != nil {
