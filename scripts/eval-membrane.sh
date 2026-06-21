@@ -51,6 +51,13 @@ Options:
                          --producer-cmd 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write -m gpt-5-mini "$2" >/dev/null 2>&1'
                        Nonzero exit => degraded (excluded from metrics).
   --producer-label <s> Label recorded in the scorecard "producer" field.
+  --membrane-cmd <c>   Membrane (verifier) command. Invoked as: bash -c "<c>" _ \
+                       "$reviewer_prompt"; must print a line 'VERDICT: ACK' or
+                       'VERDICT: REFUTE'. Default is agy/gemini; use codex when
+                       agy is down (codex is cross-family with a non-codex
+                       producer):
+                         --membrane-cmd 'codex exec --skip-git-repo-check "$1" 2>/dev/null'
+  --membrane-label <s> Label recorded in the scorecard "verifier" field.
   --dry-run            Producer is a no-op; setup.sh + score.sh STILL run so the
                        oracle/task wiring is exercised. Verdict = DRY.
   -h, --help           Show this help
@@ -66,6 +73,14 @@ SELECTED_TASKS=()
 DEFAULT_PRODUCER_CMD='timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1'
 PRODUCER_CMD="${PRODUCER_CMD:-$DEFAULT_PRODUCER_CMD}"
 PRODUCER_LABEL="${PRODUCER_LABEL:-codex}"
+# Default membrane verifier = agy/gemini (a different family than a codex
+# producer). $1 = the reviewer prompt; the command must print a line matching
+# 'VERDICT: ACK' or 'VERDICT: REFUTE'. --membrane-cmd swaps the reviewer (e.g.
+# codex when agy is unavailable, or to pair with a non-codex producer). The
+# operator owns keeping producer and membrane in DIFFERENT model families.
+DEFAULT_MEMBRANE_CMD='agy -p "$1"'
+MEMBRANE_CMD="${MEMBRANE_CMD:-$DEFAULT_MEMBRANE_CMD}"
+MEMBRANE_LABEL="${MEMBRANE_LABEL:-agy-gemini}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -75,6 +90,8 @@ while [[ $# -gt 0 ]]; do
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --producer-cmd) PRODUCER_CMD="$2"; shift 2 ;;
     --producer-label) PRODUCER_LABEL="$2"; shift 2 ;;
+    --membrane-cmd) MEMBRANE_CMD="$2"; shift 2 ;;
+    --membrane-label) MEMBRANE_LABEL="$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
@@ -96,11 +113,14 @@ fi
 [[ ${#TASKS[@]} -gt 0 ]] || { echo "error: no tasks found under $TASKS_DIR" >&2; exit 1; }
 
 if [[ "$DRY_RUN" == "false" ]]; then
-  command -v agy >/dev/null 2>&1 || { echo "error: agy not found (membrane verifier)" >&2; exit 1; }
-  # codex is only required by the DEFAULT producer; a custom --producer-cmd owns
-  # its own binary check (it just degrades the task if the binary is missing).
-  if [[ "$PRODUCER_LABEL" == "codex" && "$PRODUCER_CMD" == "$DEFAULT_PRODUCER_CMD" ]]; then
-    command -v codex >/dev/null 2>&1 || { echo "error: codex not found (producer)" >&2; exit 1; }
+  # Each role's binary is only hard-required when its DEFAULT command is in use;
+  # a custom --producer-cmd / --membrane-cmd owns its own binary (a missing one
+  # just degrades the task, never a hard error).
+  if [[ "$MEMBRANE_CMD" == "$DEFAULT_MEMBRANE_CMD" ]]; then
+    command -v agy >/dev/null 2>&1 || { echo "error: agy not found (default membrane verifier)" >&2; exit 1; }
+  fi
+  if [[ "$PRODUCER_CMD" == "$DEFAULT_PRODUCER_CMD" ]]; then
+    command -v codex >/dev/null 2>&1 || { echo "error: codex not found (default producer)" >&2; exit 1; }
   fi
 fi
 
@@ -189,7 +209,7 @@ Independently and skeptically decide whether the task is ACTUALLY, FULLY, correc
 line 1: VERDICT: ACK   (if truly complete and correct)  OR  VERDICT: REFUTE (if anything is wrong, incomplete, or missing)
 line 2: WHY: <one sentence>"
 
-    review_out="$(agy -p "$reviewer_prompt" 2>/dev/null || true)"
+    review_out="$(bash -c "$MEMBRANE_CMD" _ "$reviewer_prompt" 2>/dev/null || true)"
     # Parse the verdict; default REFUTE if unparseable (and log it).
     if printf '%s' "$review_out" | grep -Eqi 'VERDICT:[[:space:]]*ACK'; then
       verdict="ACK"
@@ -277,6 +297,7 @@ if [[ "$T_TRUE_DONE" -eq 0 ]]; then
 fi
 RATE_NOTE_JSON="$(printf '%s' "$RATE_NOTE" | json_escape)"
 PRODUCER_LABEL_JSON="$(printf '%s' "$PRODUCER_LABEL" | json_escape)"
+MEMBRANE_LABEL_JSON="$(printf '%s' "$MEMBRANE_LABEL" | json_escape)"
 
 # --- scorecard ----------------------------------------------------------------
 SCORECARD="$(cat <<EOF
@@ -284,8 +305,7 @@ SCORECARD="$(cat <<EOF
   "schema": "agentops-membrane-eval.v1",
   "generated_at": "GENERATED_AT_PLACEHOLDER",
   "producer": $PRODUCER_LABEL_JSON,
-  "verifier": "agy-gemini",
-  "cross_family": true,
+  "verifier": $MEMBRANE_LABEL_JSON,
   "dry_run": $DRY_RUN,
   "per_task": [$PER_TASK_JSON],
   "totals": {
