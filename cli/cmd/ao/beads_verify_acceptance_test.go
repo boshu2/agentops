@@ -63,7 +63,7 @@ func TestParseBeadsFromBRJSON_EmptyArray(t *testing.T) {
 }
 
 func TestCheckAcceptanceContract(t *testing.T) {
-	featureGood := "Intro prose\n\n## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n\n## Acceptance Criteria\n```yaml\nacceptance_criteria:\n  - check_type: test_pass\n```"
+	featureGood := "Intro prose\n\n## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n\n## Acceptance Criteria\n```yaml\nacceptance_criteria:\n  - id: ac-feat.1\n    description: the feature works end to end\n    check_type: test_pass\n    check_command: go test ./...\n```"
 	tests := []struct {
 		name        string
 		bead        acceptBead
@@ -82,7 +82,26 @@ func TestCheckAcceptanceContract(t *testing.T) {
 		{"test: bullet under a DIFFERENT heading does not satisfy Assertions (section-scope guard)", acceptBead{IssueType: "test", Description: "## Assertions\nTBD\n\n## Notes\n- setup note only"}, acFail, "assertion"},
 		{"cutover pass", acceptBead{IssueType: "cutover", Description: "## Migration Checklist\n- [ ] step one\n- [x] step two"}, acPass, ""},
 		{"cutover fail no checkbox", acceptBead{IssueType: "cutover", Description: "## Migration\njust prose"}, acFail, "checklist"},
-		{"task with acceptance passes", acceptBead{IssueType: "task", Description: "do X\n\n## Acceptance Criteria\nacceptance_criteria:\n  - check_command: go test ./..."}, acPass, ""},
+		{"cutover: a marker-only checkbox ('- [ ]') is empty content, FAILs", acceptBead{IssueType: "cutover", Description: "## Migration\n- [ ]"}, acFail, "checklist"},
+		{"cutover: a checkbox with a '*' bullet and real text passes", acceptBead{IssueType: "cutover", Description: "## Migration\n* [ ] migrate the database"}, acPass, ""},
+		// age-xmkn root fix: every heading-based contract needs non-placeholder body,
+		// not just the heading (the recurring placeholder surface, closed uniformly).
+		{"spike: heading over a placeholder body FAILs", acceptBead{IssueType: "spike", Description: "## Decision Criteria\nTBD"}, acFail, "decision"},
+		{"design: heading over a placeholder body FAILs", acceptBead{IssueType: "design", Description: "## Specification\nTBD"}, acFail, "spec"},
+		{"task: Acceptance heading over a placeholder bullet FAILs", acceptBead{IssueType: "task", Description: "## Acceptance\n- TBD"}, acFail, "acceptance"},
+		{"epic: Acceptance heading over a placeholder body FAILs", acceptBead{IssueType: "epic", Description: "## Acceptance\nTBD"}, acFail, "acceptance"},
+		{"design: ordered-list placeholder body ('1. TBD') FAILs", acceptBead{IssueType: "design", Description: "## Specification\n1. TBD"}, acFail, "spec"},
+		{"design: ordered-list with REAL content passes", acceptBead{IssueType: "design", Description: "## Specification\n1. the API returns 200"}, acPass, ""},
+		{"task with acceptance passes", acceptBead{IssueType: "task", Description: "do X\n\n## Acceptance Criteria\nacceptance_criteria:\n  - id: ac-task.1\n    description: X is verified by the script\n    check_type: command_exit_zero\n    check_command: ./x.sh"}, acPass, ""},
+		// age-xmkn content-quality: structurally-present but placeholder bodies FAIL.
+		{"test: Assertions section with only a TBD bullet FAILs (placeholder content)", acceptBead{IssueType: "test", Description: "## Assertions\n- TBD"}, acFail, "assertion"},
+		{"test: real assertion bullet still passes alongside guidance", acceptBead{IssueType: "test", Description: "## Assertions\n- asserts the exit code is 0"}, acPass, ""},
+		{"test: an ellipsis-only bullet is a placeholder, FAILs", acceptBead{IssueType: "test", Description: "## Assertions\n- ..."}, acFail, "assertion"},
+		{"test: a REAL ordered assertion list passes (not rejected)", acceptBead{IssueType: "test", Description: "## Assertions\n1. asserts the exit code is 0\n2. asserts the output"}, acPass, ""},
+		{"test: a non-list line ('-not a list', no space) does NOT satisfy the contract (overmatch guard)", acceptBead{IssueType: "test", Description: "## Assertions\n-not a markdown list item"}, acFail, "assertion"},
+		{"test: '1.real' (no space after ordinal) is not a list item", acceptBead{IssueType: "test", Description: "## Assertions\n1.real assertion"}, acFail, "assertion"},
+		{"feature: acceptance_criteria with a placeholder description FAILs", acceptBead{IssueType: "feature", Description: "## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n\n```yaml\nacceptance_criteria:\n  - id: ac-x.1\n    description: TBD\n    check_type: test_pass\n    check_command: go test ./...\n```"}, acFail, "placeholder description"},
+		{"feature: custom_rubric criterion without agent_judge FAILs", acceptBead{IssueType: "feature", Description: "## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n\n```yaml\nacceptance_criteria:\n  - id: ac-x.1\n    description: judged by the panel\n    check_type: custom_rubric\n```"}, acFail, "agent_judge"},
 		{"task without acceptance fails (not a free pass)", acceptBead{IssueType: "task", Description: "anything"}, acFail, "acceptance"},
 		{"task with prose denying acceptance fails (loose-match guard)", acceptBead{IssueType: "task", Description: "No acceptance criteria yet, TBD"}, acFail, "acceptance"},
 		{"task: bare 'acceptance_criteria' word (no colon) in prose fails", acceptBead{IssueType: "task", Description: "No acceptance_criteria yet."}, acFail, "acceptance"},
@@ -104,6 +123,55 @@ func TestCheckAcceptanceContract(t *testing.T) {
 				joined := strings.ToLower(strings.Join(missing, " | "))
 				if !strings.Contains(joined, strings.ToLower(tt.wantMissing)) {
 					t.Errorf("missing messages %v should mention %q", missing, tt.wantMissing)
+				}
+			}
+		})
+	}
+}
+
+// TestVerifyAcceptance_CriteriaContentQuality is age-xmkn ac.2: the fenced
+// acceptance_criteria block is parsed and each criterion validated against the
+// canonical authored contract. (Named to match `go test -run VerifyAcceptance`.)
+func TestVerifyAcceptance_CriteriaContentQuality(t *testing.T) {
+	const validBlock = "```yaml\nacceptance_criteria:\n  - id: ac-x.1\n    description: the parser rejects placeholders\n    check_type: test_pass\n    check_command: go test ./...\n```"
+	tests := []struct {
+		name    string
+		desc    string
+		wantBad bool
+		wantSub string // substring expected in a problem (when wantBad)
+	}{
+		{"no block present is not a content failure", "just prose, no block", false, ""},
+		{"a valid criterion has no problems", validBlock, false, ""},
+		{"placeholder description", "acceptance_criteria:\n  - id: ac-x.1\n    description: TBD\n    check_type: test_pass\n    check_command: go test ./...", true, "placeholder description"},
+		{"missing check_type", "acceptance_criteria:\n  - id: ac-x.1\n    description: a real measurable thing", true, "missing check_type"},
+		{"invalid check_type", "acceptance_criteria:\n  - id: ac-x.1\n    description: a real measurable thing\n    check_type: vibes", true, "invalid check_type"},
+		{"runnable check_type without check_command", "acceptance_criteria:\n  - id: ac-x.1\n    description: a real measurable thing\n    check_type: grep_match", true, "requires a check_command"},
+		{"custom_rubric without agent_judge", "acceptance_criteria:\n  - id: ac-x.1\n    description: judged by a panel\n    check_type: custom_rubric", true, "agent_judge"},
+		{"missing id fails (authored, schema-required)", "acceptance_criteria:\n  - description: a real measurable thing\n    check_type: test_pass\n    check_command: go test", true, "invalid id"},
+		{"malformed id fails the ac- pattern", "acceptance_criteria:\n  - id: nope\n    description: a real measurable thing\n    check_type: test_pass\n    check_command: go test", true, "invalid id"},
+		{"TBD with trailing colon is a placeholder description", "acceptance_criteria:\n  - id: ac-x.1\n    description: \"TBD:\"\n    check_type: test_pass\n    check_command: go test", true, "placeholder description"},
+		{"ellipsis-only description is a placeholder", "acceptance_criteria:\n  - id: ac-x.1\n    description: \"...\"\n    check_type: test_pass\n    check_command: go test", true, "placeholder description"},
+		{"parenthesized (TBD) description is a placeholder", "acceptance_criteria:\n  - id: ac-x.1\n    description: \"(TBD)\"\n    check_type: test_pass\n    check_command: go test", true, "placeholder description"},
+		{"angle-bracket <TBD> description is a placeholder", "acceptance_criteria:\n  - id: ac-x.1\n    description: \"<TBD>\"\n    check_type: test_pass\n    check_command: go test", true, "placeholder description"},
+		{"description with internal punctuation is real", "acceptance_criteria:\n  - id: ac-x.1\n    description: \"the well-formed output (JSON) parses\"\n    check_type: test_pass\n    check_command: go test", false, ""},
+		{"custom_rubric WITH agent_judge passes", "acceptance_criteria:\n  - id: ac-x.1\n    description: judged by a panel\n    check_type: custom_rubric\n    agent_judge: council:standards", false, ""},
+		{"manual needs no check_command", "acceptance_criteria:\n  - id: ac-x.1\n    description: a human confirms the UX\n    check_type: manual", false, ""},
+		{"malformed yaml block", "acceptance_criteria:\n  - id: ac-x.1\n   description: bad indent\n  check_type: : :", true, ""},
+		{"key present but no items", "acceptance_criteria:\n\n## Notes\nnothing", true, "no criteria"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			problems := validateAcceptanceCriteriaContent(tt.desc)
+			if tt.wantBad && len(problems) == 0 {
+				t.Fatalf("expected content-quality problems, got none")
+			}
+			if !tt.wantBad && len(problems) > 0 {
+				t.Fatalf("expected no problems, got %v", problems)
+			}
+			if tt.wantBad && tt.wantSub != "" {
+				joined := strings.ToLower(strings.Join(problems, " | "))
+				if !strings.Contains(joined, strings.ToLower(tt.wantSub)) {
+					t.Errorf("problems %v should mention %q", problems, tt.wantSub)
 				}
 			}
 		})
@@ -188,7 +256,7 @@ func TestRunBeadsVerifyAcceptance_PartialResponseErrors(t *testing.T) {
 func TestRunBeadsVerifyAcceptance_PassExitsZeroStrict(t *testing.T) {
 	withStubbedBR(t, func(args ...string) ([]byte, error) {
 		// A task that carries a measurable acceptance signal passes even in strict mode.
-		return []byte(`[{"id":"age-t","issue_type":"task","description":"do X\n\n## Acceptance Criteria\nacceptance_criteria:\n  - check_command: go test"}]`), nil
+		return []byte(`[{"id":"age-t","issue_type":"task","description":"do X\n\n## Acceptance Criteria\nacceptance_criteria:\n  - id: ac-t.1\n    description: X is verified by the test\n    check_type: test_pass\n    check_command: go test"}]`), nil
 	})
 	cmd := newBeadsVerifyAcceptanceCmd()
 	cmd.SetOut(&bytes.Buffer{})
