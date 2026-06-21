@@ -90,10 +90,20 @@ check_one_push() {
   is_main_push "$remote_ref" || return 0
   is_delete_push "$local_sha" && return 0
 
-  local bead head msg
+  local bead head subject body
   head="$local_sha"
-  msg="$(git -C "$GIT_REPO" log -1 --format=%B "$head" 2>/dev/null || true)"
-  if grep -qi '#trivial' <<<"$msg"; then
+  # age-w2ny: waive ONLY when #trivial is an explicit marker — a TRAILING tag at
+  # the END of the subject line (the established convention, e.g.
+  # "chore(...): ... #trivial") or a standalone trailer line in the body. A
+  # #trivial merely MENTIONED in prose — anywhere in the body, OR mid-subject
+  # (e.g. "fix(pawl): prevent #trivial from bypassing pawl") — must NOT waive the
+  # cross-family pawl. That was a fail-open: any non-trivial commit could bypass
+  # the gate by naming #trivial (cross-family REFUTE: the original subject anchor
+  # still waived mid-subject prose mentions).
+  subject="$(git -C "$GIT_REPO" log -1 --format=%s "$head" 2>/dev/null || true)"
+  body="$(git -C "$GIT_REPO" log -1 --format=%b "$head" 2>/dev/null || true)"
+  if grep -qiE '(^|[[:space:]])#trivial[[:space:]]*$' <<<"$subject" \
+     || grep -qiE '^[[:space:]]*#trivial[[:space:]]*$' <<<"$body"; then
     echo "pawl-pre-push: #trivial commit at ${head:0:12} — pawl waived" >&2
     return 0
   fi
