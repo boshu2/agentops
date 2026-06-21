@@ -126,3 +126,26 @@ func TestDetectRepoName_ReturnsBaseDirWithoutGit(t *testing.T) {
 		t.Errorf("detectRepoName(%q) = %q, want %q", dir, name, base)
 	}
 }
+
+// TestDetectRepoName_GitDirAndGitFile pins that BOTH repo-root markers resolve to
+// the directory name: a .git DIRECTORY (the canonical checkout) and a .git FILE
+// (a linked worktree's gitdir pointer). Locks in the single-stat refactor.
+func TestDetectRepoName_GitDirAndGitFile(t *testing.T) {
+	// .git is a directory → canonical checkout root.
+	repo := t.TempDir()
+	if err := os.Mkdir(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := detectRepoName(repo); got != filepath.Base(repo) {
+		t.Errorf(".git dir: detectRepoName = %q, want %q", got, filepath.Base(repo))
+	}
+
+	// .git is a file (gitdir pointer) → linked worktree root.
+	wt := t.TempDir()
+	if err := os.WriteFile(filepath.Join(wt, ".git"), []byte("gitdir: /x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := detectRepoName(wt); got != filepath.Base(wt) {
+		t.Errorf(".git file: detectRepoName = %q, want %q", got, filepath.Base(wt))
+	}
+}

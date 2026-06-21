@@ -9,11 +9,10 @@ import (
 func DetectRepoName(cwd string) string {
 	dir := cwd
 	for {
-		if info, err := os.Stat(dir + "/.git"); err == nil && info.IsDir() {
-			return FileBase(dir)
-		}
-		if info, err := os.Stat(dir + "/.git"); err == nil && !info.IsDir() {
-			// worktree: .git is a file
+		// A repo root has a .git — a DIRECTORY in the canonical checkout, a FILE
+		// (gitdir pointer) in a linked worktree. Either marks the root, so a single
+		// existence check suffices (the prior code stat'd twice for the same result).
+		if _, err := os.Stat(dir + "/.git"); err == nil {
 			return FileBase(dir)
 		}
 		parent := dir[:max(strings.LastIndex(dir, "/"), 0)]
