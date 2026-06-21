@@ -140,6 +140,14 @@ func Execute() {
 			// report already went to stdout/stderr, so nothing more to surface.
 			os.Exit(scanErr.ExitCode())
 		}
+		var wikiHealthErr *wikiHealthExitError
+		if errors.As(err, &wikiHealthErr) {
+			// The exit code IS the verdict for `ao wiki lint`: 1 means blocking
+			// structural defects were found. The report already went to stdout
+			// and the command silences cobra's error print, so nothing more to
+			// surface — just map to the process exit code.
+			os.Exit(wikiHealthErr.ExitCode())
+		}
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}

@@ -4001,7 +4001,7 @@ ao wiki inject [flags]
 
 #### `ao wiki lint`
 
-Walk the wiki tree and write a dated lint report.
+Run the OpenKB-style structural health check over the active wiki workspace:
 
 ```
 ao wiki lint [flags]
@@ -4010,8 +4010,29 @@ ao wiki lint [flags]
 **Flags:**
 
 ```
-  -h, --help           help for lint
-      --vault string   Vault root (default: current directory)
+      --fix              Apply safe deterministic repairs (strip dangling wikilinks); read-only without this flag
+  -h, --help             help for lint
+      --json             Emit JSON
+      --path string      Workspace path (default: the active workspace)
+      --pipeline-stage   Run the legacy WikiPipeline LINT stage instead of the structural health check
+      --vault string     Vault root (default: current directory)
+```
+
+#### `ao wiki list`
+
+Enumerate every compiled wiki page (summaries, concepts, entities, ...) plus
+
+```
+ao wiki list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for list
+      --json          Emit JSON
+      --path string   Workspace path (default: the active workspace)
+      --type string   Filter to one frontmatter type (e.g. concept, entity, summary)
 ```
 
 #### `ao wiki promote`
@@ -4114,6 +4135,22 @@ ao wiki search <query> [flags]
   -h, --help          help for search
       --limit int     Maximum results to print (default 20)
       --reindex       Rebuild the index before searching
+```
+
+#### `ao wiki status`
+
+Report per-type page counts and a structural-health summary (defect totals by
+
+```
+ao wiki status [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for status
+      --json          Emit JSON
+      --path string   Workspace path (default: the active workspace)
 ```
 
 #### `ao wiki use`

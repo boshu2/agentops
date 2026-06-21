@@ -280,12 +280,14 @@
 | `ao wiki init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki inject` | `public-stateful-fixture-needed` | `allowlisted` | Reads and writes wiki/corpus state and needs an isolated wiki fixture. |
 | `ao wiki lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki promote` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki query` | `public-stateful-fixture-needed` | `allowlisted` | Queries wiki/corpus indexes and needs a representative wiki fixture. |
 | `ao wiki recompile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki remove` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki use` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao worktree create` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao worktree gc` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
