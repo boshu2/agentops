@@ -4,12 +4,24 @@
 # Measures whether an INDEPENDENT cross-family membrane catches the false-dones a
 # frontier coding agent ships.
 #
-#   PRODUCER (arm A):  codex exec runs a task to its own "done".
+#   PRODUCER (arm A):  a coding agent runs a task to its own "done". Default is
+#                      codex exec; --producer-cmd swaps in a WEAK producer (e.g.
+#                      `codex exec -m <small-model>`, a local llama) so it
+#                      actually ships false-dones the membrane can miss. A
+#                      frontier producer aces the tasks and yields zero escapes —
+#                      the weak producer is what generates real escape data
+#                      (age-cwo.1 / unblocks age-1gl). Escapes stay in this
+#                      scorecard (a quarantined measurement lane), NOT the
+#                      production yield ledger.
 #   ORACLE  (truth):   the task's score.sh (deterministic, no LLM) — ground truth.
 #   MEMBRANE (arm B):  agy/gemini (different model family), BLIND to the oracle,
 #                      reviews the producer's final source and emits ACK / REFUTE.
 #
-# Metric: catch_rate of false-dones + false_refute_rate on true-dones.
+# An ESCAPE = oracle says FAIL (the producer shipped a false-done) AND the
+# membrane said ACK (it missed it). That is the real CONFIRMED-then-wrong signal.
+#
+# Metric: catch_rate of false-dones + false_refute_rate on true-dones, plus the
+# escaped count (the harvested escapes).
 #
 # POSIX/macOS-portable bash (no GNU-only flags). Build + --dry-run only here;
 # the orchestrator runs it live.
@@ -31,7 +43,14 @@ Options:
   --task <id>          Task id under the tasks dir (repeatable)
   --tasks-dir <dir>    Directory of task dirs (default: evals/membrane/tasks)
   --output <path>      Write the scorecard JSON here (default: stdout)
-  --timeout <secs>     Producer (codex) timeout (default: 180)
+  --timeout <secs>     Producer timeout (default: 180)
+  --producer-cmd <c>   Producer command template. Invoked as: bash -c "<c>" _ \
+                       "$workspace" "$prompt" "$timeout" (so $1=workspace,
+                       $2=prompt, $3=timeout). Default runs frontier codex; a
+                       WEAK producer is e.g.:
+                         --producer-cmd 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write -m gpt-5-mini "$2" >/dev/null 2>&1'
+                       Nonzero exit => degraded (excluded from metrics).
+  --producer-label <s> Label recorded in the scorecard "producer" field.
   --dry-run            Producer is a no-op; setup.sh + score.sh STILL run so the
                        oracle/task wiring is exercised. Verdict = DRY.
   -h, --help           Show this help
@@ -43,6 +62,10 @@ OUTPUT=""
 TIMEOUT="${TIMEOUT:-180}"
 DRY_RUN=false
 SELECTED_TASKS=()
+# Default producer = frontier codex. $1=workspace $2=prompt $3=timeout.
+DEFAULT_PRODUCER_CMD='timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1'
+PRODUCER_CMD="${PRODUCER_CMD:-$DEFAULT_PRODUCER_CMD}"
+PRODUCER_LABEL="${PRODUCER_LABEL:-codex}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,6 +73,8 @@ while [[ $# -gt 0 ]]; do
     --tasks-dir) TASKS_DIR="$2"; shift 2 ;;
     --output) OUTPUT="$2"; shift 2 ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
+    --producer-cmd) PRODUCER_CMD="$2"; shift 2 ;;
+    --producer-label) PRODUCER_LABEL="$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
@@ -71,8 +96,12 @@ fi
 [[ ${#TASKS[@]} -gt 0 ]] || { echo "error: no tasks found under $TASKS_DIR" >&2; exit 1; }
 
 if [[ "$DRY_RUN" == "false" ]]; then
-  command -v codex >/dev/null 2>&1 || { echo "error: codex not found (producer)" >&2; exit 1; }
-  command -v agy   >/dev/null 2>&1 || { echo "error: agy not found (membrane verifier)" >&2; exit 1; }
+  command -v agy >/dev/null 2>&1 || { echo "error: agy not found (membrane verifier)" >&2; exit 1; }
+  # codex is only required by the DEFAULT producer; a custom --producer-cmd owns
+  # its own binary check (it just degrades the task if the binary is missing).
+  if [[ "$PRODUCER_LABEL" == "codex" && "$PRODUCER_CMD" == "$DEFAULT_PRODUCER_CMD" ]]; then
+    command -v codex >/dev/null 2>&1 || { echo "error: codex not found (producer)" >&2; exit 1; }
+  fi
 fi
 
 # --- per-task accumulators (emitted into the scorecard) -----------------------
@@ -123,8 +152,9 @@ for task in "${TASKS[@]}"; do
   if [[ "$DRY_RUN" == "true" ]]; then
     : # no-op producer; the staged workspace stands in for "the producer's code"
   else
-    timeout "$TIMEOUT" codex exec --skip-git-repo-check -C "$workspace" \
-      -s workspace-write "$prompt" >/dev/null 2>&1 || agent_rc=$?
+    # Pluggable producer: $1=workspace $2=prompt $3=timeout. A weak producer here
+    # is what generates real escapes (a frontier producer aces the tasks).
+    bash -c "$PRODUCER_CMD" _ "$workspace" "$prompt" "$TIMEOUT" || agent_rc=$?
     # nonzero / timeout (124) / SIGKILL (137) => degraded; excluded from metrics.
     if [[ "$agent_rc" -ne 0 ]]; then
       degraded=true
@@ -239,13 +269,14 @@ if [[ "$T_TRUE_DONE" -eq 0 ]]; then
   RATE_NOTE="${RATE_NOTE}no true-dones observed (false_refute_rate undefined)"
 fi
 RATE_NOTE_JSON="$(printf '%s' "$RATE_NOTE" | json_escape)"
+PRODUCER_LABEL_JSON="$(printf '%s' "$PRODUCER_LABEL" | json_escape)"
 
 # --- scorecard ----------------------------------------------------------------
 SCORECARD="$(cat <<EOF
 {
   "schema": "agentops-membrane-eval.v1",
   "generated_at": "GENERATED_AT_PLACEHOLDER",
-  "producer": "codex",
+  "producer": $PRODUCER_LABEL_JSON,
   "verifier": "agy-gemini",
   "cross_family": true,
   "dry_run": $DRY_RUN,
