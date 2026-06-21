@@ -273,6 +273,7 @@
 | `ao verdict-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao vibe-check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki gold` | `public-stateful-fixture-needed` | `allowlisted` | Reads .agents and writes the .ao/wiki OKF gold wiki; compiler logic covered by cli/internal/wiki/gold_test.go. |
 | `ao wiki index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -282,6 +283,8 @@
 | `ao wiki promote` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki query` | `public-stateful-fixture-needed` | `allowlisted` | Queries wiki/corpus indexes and needs a representative wiki fixture. |
+| `ao wiki recompile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki remove` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki use` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao worktree create` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
