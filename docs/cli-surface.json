@@ -1935,6 +1935,13 @@
     },
     {
       "category": "public-tested",
+      "command": "wiki list",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "wiki promote",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1971,6 +1978,13 @@
     {
       "category": "public-tested",
       "command": "wiki search",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "wiki status",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

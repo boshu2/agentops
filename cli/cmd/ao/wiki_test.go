@@ -155,8 +155,12 @@ func TestWikiLintCommand_WritesLintReport(t *testing.T) {
 	vault := t.TempDir()
 
 	out, err := captureStdout(t, func() error {
-		wikiLintCmd.Flags().Set("vault", vault) //nolint:errcheck // test setup
-		defer wikiLintCmd.Flags().Set("vault", "")
+		// --pipeline-stage selects the legacy WikiPipeline LINT stage; the
+		// structural health check is the new default (see wiki_health_test.go).
+		wikiLintCmd.Flags().Set("pipeline-stage", "true")        //nolint:errcheck // test setup
+		wikiLintCmd.Flags().Set("vault", vault)                  //nolint:errcheck // test setup
+		defer wikiLintCmd.Flags().Set("pipeline-stage", "false") //nolint:errcheck // test setup
+		defer wikiLintCmd.Flags().Set("vault", "")               //nolint:errcheck // test setup
 		return runWikiLint(wikiLintCmd, nil)
 	})
 	if err != nil {
@@ -164,6 +168,28 @@ func TestWikiLintCommand_WritesLintReport(t *testing.T) {
 	}
 	if !strings.Contains(out, "wiki lint: complete") {
 		t.Fatalf("expected lint completion, got: %q", out)
+	}
+}
+
+// TestWikiLintCommand_VaultRoutesToLegacyStage pins that an explicit --vault (a
+// legacy pipeline flag) routes to the legacy LINT stage even WITHOUT
+// --pipeline-stage. Before the fix, --vault was silently ignored on the new
+// structural path (it linted the active workspace, exited 0, wrote no report) —
+// a silent backward-compat break.
+func TestWikiLintCommand_VaultRoutesToLegacyStage(t *testing.T) {
+	vault := t.TempDir()
+	out, err := captureStdout(t, func() error {
+		wikiLintCmd.Flags().Set("vault", vault)    //nolint:errcheck // test setup
+		defer wikiLintCmd.Flags().Set("vault", "") //nolint:errcheck // test setup
+		return runWikiLint(wikiLintCmd, nil)
+	})
+	if err != nil {
+		t.Fatalf("runWikiLint --vault returned error: %v", err)
+	}
+	// The legacy stage emits "wiki lint: complete"; the structural path does not,
+	// so this output proves --vault routed to the legacy stage (not silently ignored).
+	if !strings.Contains(out, "wiki lint: complete") {
+		t.Fatalf("--vault did not route to the legacy lint stage (structural path ran silently): %q", out)
 	}
 }
 

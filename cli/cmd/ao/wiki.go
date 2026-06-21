@@ -97,12 +97,17 @@ remains supported and behavior-identical. ao wiki inject delegates to it.`,
 var wikiLintCmd = &cobra.Command{
 	Use:   "lint",
 	Short: "Run the wiki pipeline LINT stage (experimental)",
-	Long: `Walk the wiki tree and write a dated lint report.
+	Long: `Run the OpenKB-style structural health check over the active wiki workspace:
+broken wikilinks, missing/invalid frontmatter, missing required fields, and
+orphan pages. Exits non-zero when blocking defects are found. With --fix, apply
+the safe deterministic repairs (strip dangling wikilinks); read-only otherwise.
+With --pipeline-stage, run the legacy WikiPipeline LINT stage (dated report)
+instead.
 
-Delegates to wiki.WikiPipeline's LINT stage. The vault root defaults to the
-current directory; override with --vault.`,
-	RunE:         runWikiLint,
-	SilenceUsage: true,
+The workspace is the one selected by ao wiki init/use, or --path.`,
+	RunE:          runWikiLint,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // wikiQueryCmd runs the pipeline QUERY stage.
@@ -385,9 +390,22 @@ func runWikiStage(cmd *cobra.Command, stage wiki.PipelineStage) error {
 	return nil
 }
 
-// runWikiLint runs the WikiPipeline LINT stage.
-func runWikiLint(cmd *cobra.Command, _ []string) error {
-	return runWikiStage(cmd, wiki.StageLint)
+// runWikiLint runs the structural wiki health check (default) over the resolved
+// workspace, or — with --pipeline-stage — the legacy WikiPipeline LINT stage.
+// The structural check is the OpenKB-style lint (broken links, frontmatter,
+// orphans); see wiki_health.go. The pipeline stage is preserved for callers
+// that drove the dated-lint-report flow.
+func runWikiLint(cmd *cobra.Command, args []string) error {
+	pipeline, _ := cmd.Flags().GetBool("pipeline-stage")
+	// --vault is a legacy pipeline-stage flag. The structural path ignores it, so
+	// honoring it there would SILENTLY lint the wrong target (the active
+	// workspace, exit 0, no report). Route an explicit --vault to the legacy
+	// stage so the long-standing `ao wiki lint --vault <v>` behavior is preserved.
+	vault, _ := cmd.Flags().GetString("vault")
+	if pipeline || strings.TrimSpace(vault) != "" {
+		return runWikiStage(cmd, wiki.StageLint)
+	}
+	return runWikiStructuralLint(cmd, args)
 }
 
 // runWikiQuery runs the WikiPipeline QUERY stage.
