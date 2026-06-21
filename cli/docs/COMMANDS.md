@@ -3960,6 +3960,22 @@ ao wiki index [flags]
   -h, --help          help for index
 ```
 
+#### `ao wiki init`
+
+Create an OpenKB-style wiki workspace at [path] (default: current directory).
+
+```
+ao wiki init [path] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for init
+      --language string   Primary language for the wiki (recorded in config) (default "en")
+      --model string      Model the wiki is initialized for (recorded in config)
+```
+
 #### `ao wiki inject`
 
 Assemble just-in-time .agents/ context.
@@ -4048,6 +4064,14 @@ ao wiki search <query> [flags]
   -h, --help          help for search
       --limit int     Maximum results to print (default 20)
       --reindex       Rebuild the index before searching
+```
+
+#### `ao wiki use`
+
+With <path>: record it as the active wiki workspace. With no argument:
+
+```
+ao wiki use [path] [flags]
 ```
 
 ---
