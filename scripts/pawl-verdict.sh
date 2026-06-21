@@ -335,6 +335,7 @@ do_check() {
 do_write() {
   local bead="${1:-}" pr="${2:-}"; shift 2 || true
   local disposition="" head="" council="" attempt="1" mode="" author_ctx=""
+  local difficulty="1" author_family="unknown" domain="" reason=""
   local refuters=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -346,6 +347,14 @@ do_write() {
       --attempt)        attempt="${2:-}"; shift 2 ;;
       --mode)           mode="${2:-}"; shift 2 ;;
       --author-context) author_ctx="${2:-}"; shift 2 ;;
+      # yield-ledger enrichment (age-uxva) — all optional; the emit is best-effort.
+      # NOTE: deliberately NO --run flag. The run_id MUST resolve identically to
+      # reconcile-pr.sh's accept emit (which has no --run either), or gauge A
+      # can't join them. The symmetric override both honor is AGENTOPS_RUN_ID.
+      --difficulty)     difficulty="${2:-}"; shift 2 ;;
+      --author-family)  author_family="${2:-}"; shift 2 ;;
+      --domain)         domain="${2:-}"; shift 2 ;;
+      --reason)         reason="${2:-}"; shift 2 ;;
       *)                echo "pawl-verdict write: unknown flag $1" >&2; return 2 ;;
     esac
   done
@@ -413,6 +422,92 @@ do_write() {
   if command -v ao >/dev/null 2>&1; then
     ao provenance emit-verdict --file "$out" 2>/dev/null || true
   fi
+
+  # Emit a yield-ledger gate-verdict (age-uxva): the membrane event log of every
+  # PANEL/refuter catch, not just merge-path ones. Best-effort, non-blocking,
+  # fail-open — never affects the verdict write. head_sha is the REVIEWED head
+  # (rebind, which restamps to the landed head, is a head-update not a review, so
+  # it does NOT re-emit). The deterministic tier emits separately.
+  # Run-id resolution MUST be byte-identical to reconcile-pr.sh's accept emit, or
+  # gauge A cannot join the accept to this CONFIRMED (same-run join) and a real
+  # merge counts as unadmitted (cross-family REFUTE). Both: AGENTOPS_RUN_ID >
+  # AO_YIELD_RUN_ID > $bead. No per-call override here — that asymmetry would
+  # reintroduce the mismatch.
+  emit_yield_gate_verdict "$bead" "$disposition" "$head" "$attempt" "$mode" \
+    "$author_ctx" "$out" "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$bead}}" "$difficulty" \
+    "$author_family" "$domain" "$reason"
+}
+
+# emit_yield_gate_verdict appends one gate-verdict event to the yield ledger for
+# a panel verdict. Derives refuter_families/cross_family from NORMALIZED families
+# (so codex+gpt don't read as cross-family), and is idempotent on
+# (bead, head_sha, attempt, disposition, reason) via a best-effort ledger scan.
+emit_yield_gate_verdict() {
+  local bead="$1" disposition="$2" head="$3" attempt="$4" mode="$5" \
+    author_ctx="$6" vfile="$7" run_id="$8" difficulty="$9" author_family="${10}" \
+    domain="${11}" reason="${12}"
+  command -v ao >/dev/null 2>&1 || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  # head_sha is required (>=7) by the schema; without it, skip (fail-open).
+  [[ -n "$head" && ${#head} -ge 7 ]] || return 0
+  [[ -s "$vfile" ]] || return 0
+  [[ -n "$mode" ]] || mode="fresh-context"
+
+  # Normalized, unique refuter families read FROM the verdict file (reuse the
+  # canonical roster so codex+gpt collapse to one family).
+  local fams=() fam nf
+  while IFS= read -r fam; do
+    [[ -n "$fam" ]] || continue
+    nf="$(normalize_family "$fam")"
+    [[ -n "$nf" ]] && fams+=("$nf")
+  done < <(jq -r '.refuters[]?.family // empty' "$vfile" 2>/dev/null)
+  local fams_json="[]" cross="false" n_distinct=0
+  if [[ ${#fams[@]} -gt 0 ]]; then
+    fams_json="$(printf '%s\n' "${fams[@]}" | sort -u | jq -R . | jq -cs '.')"
+    n_distinct="$(printf '%s\n' "${fams[@]}" | sort -u | grep -c .)"
+  fi
+  [[ "$n_distinct" -ge 2 ]] && cross="true"
+
+  # Best-effort idempotency (the ledger is O_APPEND — dedup at emit time, not in
+  # the writer). The key INCLUDES run_id: gauge A joins per-run, so a later run
+  # re-emitting at the same head/attempt/disposition MUST still log (else its
+  # accept is unadmitted — cross-family REFUTE). Only an exact same-RUN dup is
+  # suppressed (a literal re-run). The ledger lives at REPO_ROOT; the emit below
+  # runs with cwd=REPO_ROOT so ao writes the SAME ledger this scan reads.
+  local ledger="$REPO_ROOT/.agents/yield/yield-ledger.jsonl"
+  if [[ -f "$ledger" ]] && jq -e --arg run "$run_id" --arg b "$bead" --arg h "$head" \
+      --argjson at "${attempt:-1}" --arg d "$disposition" --arg r "$reason" '
+      select(.event=="gate-verdict" and .run_id==$run and .bead_id==$b
+        and (.body.head_sha==$h) and (.body.attempt==$at) and (.body.disposition==$d)
+        and ((.body.reason // "")==$r))' "$ledger" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local body
+  body="$(jq -c \
+    --arg head "$head" --argjson diff "${difficulty:-1}" --arg af "$author_family" \
+    --argjson fams "$fams_json" --argjson cross "$cross" \
+    --arg dom "$domain" --arg rsn "$reason" '
+    {
+      difficulty: $diff,
+      pawl_verdict_ref: {bead_id: .bead_id, head_sha: (.head_sha // $head)},
+      disposition: .disposition,
+      head_sha: (.head_sha // $head),
+      attempt: (.attempt // 1),
+      mode: (.mode // "fresh-context"),
+      author_context_id: .author_context_id,
+      refuter_families: $fams,
+      author_family: $af,
+      cross_family: $cross,
+      author_ne_reviewer: (.author_context_id as $a | ([.refuters[]?.context_id] | index($a) | not)),
+      evidence_present: ([.refuters[]?.evidence // empty] | length > 0)
+    }
+    + (if $dom != "" then {domain: $dom} else {} end)
+    + (if $rsn != "" then {reason: $rsn} else {} end)' "$vfile" 2>/dev/null)" || return 0
+  [[ -n "$body" ]] || return 0
+  # Run with cwd=REPO_ROOT so ao resolves the ledger at the same root the dedup
+  # scan reads (and where the verdict file lives), independent of the caller cwd.
+  ( cd "$REPO_ROOT" && ao yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
 
 # rebind <bead> <pr> --head NEWSHA [--dir D]

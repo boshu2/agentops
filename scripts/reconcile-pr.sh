@@ -273,39 +273,12 @@ derive_yield_tokens() {
 # verdict cannot block the gate. difficulty + author_family are emit-time
 # inputs the script does not know; the orchestrator supplies them via
 # AO_YIELD_DIFFICULTY / AO_YIELD_AUTHOR_FAMILY.
-emit_yield_gate_verdict() {
-  command -v ao >/dev/null 2>&1 || return 0
-  command -v jq >/dev/null 2>&1 || return 0
-  local vfile="$VERDICT_DIR/$BEAD.json"
-  [[ -s "$vfile" ]] || return 0
-  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
-  local difficulty="${AO_YIELD_DIFFICULTY:-1}"
-  local author_family="${AO_YIELD_AUTHOR_FAMILY:-unknown}"
-  local body
-  body="$(jq -c \
-    --arg head "$cur_head" --argjson diff "$difficulty" --arg af "$author_family" '
-    {
-      difficulty: $diff,
-      pawl_verdict_ref: {bead_id: .bead_id, head_sha: (.head_sha // $head)},
-      disposition: .disposition,
-      head_sha: (.head_sha // $head),
-      attempt: (.attempt // 1),
-      mode: (.mode // "fresh-context"),
-      author_context_id: .author_context_id,
-      refuter_families: ([.refuters[]?.family] | unique),
-      author_family: $af,
-      cross_family: (([.refuters[]?.family] | unique | length) >= 2),
-      author_ne_reviewer: ([.refuters[]?.context_id] | index(.author_context_id) | not),
-      evidence_present: ([.refuters[]?.evidence // empty] | length > 0)
-    }' "$vfile" 2>/dev/null)" || return 0
-  [[ -n "$body" ]] || return 0
-  ao yield emit gate-verdict --bead "$BEAD" --run "$run_id" --json "$body" >/dev/null 2>&1 || true
-}
-# Run SYNCHRONOUSLY (not backgrounded): on the exit-5 path this emit must finish
-# recording the REFUTED/ESCALATE/HOLD disposition before the script exits — that
-# is the whole point of B3 (Q's denominator + E count). It is pre-merge, so it
-# cannot delay a merge; the gate already gates the merge.
-emit_yield_gate_verdict || true
+# gate-verdict emission MOVED to the pawl-verdict.sh `write` chokepoint (age-uxva):
+# every panel verdict now emits its yield-ledger gate-verdict when the verdict is
+# WRITTEN — not only on the merge path — so panel catches that never reach a merge
+# are still logged. The verdict reconcile reads here was written via that chokepoint,
+# so it is already in the ledger; re-emitting here would double-count. (The `accept`
+# and rejected-`usage` emits below stay — they ARE merge-path-specific.)
 
 if [[ "$pawl_status" -ne 0 ]]; then
   # yield-ledger: emit USAGE for the rejected/HOLD attempt too, so its spend is
@@ -318,8 +291,10 @@ if [[ "$pawl_status" -ne 0 ]]; then
     # recorded truthfully, not a silent 0 — symmetric with the accepted path.
     rej_ti=0; rej_to=0
     read -r rej_ti rej_to < <(derive_yield_tokens)
-    ao yield emit usage --bead "$BEAD" --run "${AO_YIELD_RUN_ID:-reconcile-$BEAD}" \
-      --json "{\"tokens_in\":${rej_ti},\"tokens_out\":${rej_to},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" \
+    # cd REPO_ROOT so ao writes the canonical repo-root ledger (ao yield resolves
+    # by cwd) — MUST match the chokepoint emit, or events split across cwds.
+    ( cd "$REPO_ROOT" && ao yield emit usage --bead "$BEAD" --run "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$BEAD}}" \
+      --json "{\"tokens_in\":${rej_ti},\"tokens_out\":${rej_to},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" ) \
       >/dev/null 2>&1 || true
   fi
   echo "PAWL-HOLD: green CI but no CONFIRMED pawl verdict (fresh-context default; multi-model opt-in) for bead=$BEAD PR=$PR (pawl-verdict.sh check exit=$pawl_status) — did NOT merge, did NOT close. Fail-closed; surface for human on non-convergence." >&2
@@ -365,12 +340,15 @@ echo "MERGED: PR $PR" >&2
 # squash sha is not resolvable. Guarded — never blocks the close path.
 emit_yield_accept() {
   command -v ao >/dev/null 2>&1 || return 0
-  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
+  local run_id="${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$BEAD}}"
   local merge_sha
   merge_sha="$(gh pr view "$PR" --json mergeCommit -q .mergeCommit.oid 2>/dev/null || true)"
   [[ -n "$merge_sha" ]] || merge_sha="$cur_head"
-  ao yield emit accept --bead "$BEAD" --run "$run_id" \
-    --json "{\"merge_sha\":\"$merge_sha\",\"merged_by\":\"reconcile-pr\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$cur_head\"}}" \
+  # cd REPO_ROOT so this accept lands in the SAME canonical ledger as the
+  # chokepoint's CONFIRMED gate-verdict (ao yield resolves the ledger by cwd);
+  # without it, a reconcile run from a subdir splits the accept↔verdict join.
+  ( cd "$REPO_ROOT" && ao yield emit accept --bead "$BEAD" --run "$run_id" \
+    --json "{\"merge_sha\":\"$merge_sha\",\"merged_by\":\"reconcile-pr\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$cur_head\"}}" ) \
     >/dev/null 2>&1 || true
 }
 # Post-decision (the merge is already confirmed MERGED above), so backgrounded:
@@ -396,7 +374,7 @@ fi
 # phase is ALWAYS present (defaults to implement). Guarded — never blocks close.
 emit_yield_usage() {
   command -v ao >/dev/null 2>&1 || return 0
-  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
+  local run_id="${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$BEAD}}"
   local model="${AO_YIELD_MODEL:-unknown}"
   local phase="${AO_YIELD_PHASE:-implement}"
   # Real tokens (explicit env, else derived from AO_YIELD_TRANSCRIPT, else 0).
@@ -416,7 +394,7 @@ emit_yield_usage() {
     body="{\"tokens_in\":$tokens_in,\"tokens_out\":$tokens_out,\"cost_usd\":$cost_usd,\"wall_clock_s\":$wall_clock_s,\"model\":\"$model\",\"phase\":\"$phase\"}"
   fi
   [[ -n "$body" ]] || return 0
-  ao yield emit usage --bead "$BEAD" --run "$run_id" --json "$body" >/dev/null 2>&1 || true
+  ( cd "$REPO_ROOT" && ao yield emit usage --bead "$BEAD" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
 emit_yield_usage & disown 2>/dev/null || true
 
