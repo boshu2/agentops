@@ -95,6 +95,60 @@ make_repo_with_commit() {
   [[ "$output" == *"pawl waived"* ]]
 }
 
+# age-w2ny: build a commit whose body (after the subject + blank line) is fully
+# operator-controlled, so we can place #trivial in prose vs. on its own line.
+make_repo_with_body_commit() {
+  local subject="$1" body="$2"
+  REPO="$TMP/repo"
+  rm -rf "$REPO"
+  mkdir -p "$REPO"
+  cd "$REPO"
+  git init --quiet
+  git config user.email test@example.com
+  git config user.name Test
+  echo ok > README.md
+  git add README.md
+  git commit --quiet -m "init"
+  echo change >> README.md
+  git add README.md
+  printf '%s\n\n%s\n' "$subject" "$body" | git commit --quiet -F -
+  HEAD_SHA="$(git rev-parse HEAD)"
+  export AGENTOPS_REPO_ROOT="$REPO" HEAD_SHA
+}
+
+@test "check-pawl-pre-push does NOT waive #trivial mentioned only in body prose (age-w2ny)" {
+  make_repo_with_body_commit \
+    "feat(x): real feature (age-w2ny-test-a)" \
+    "This explains code that marks something #trivial in an inline sentence."
+  status=0
+  output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  [[ "$output" != *"pawl waived"* ]]
+}
+
+@test "check-pawl-pre-push does NOT waive #trivial mentioned mid-subject as prose (age-w2ny)" {
+  # The #trivial token is NOT a trailing tag — it is prose inside the subject.
+  make_repo_with_commit age-w2ny-test-c "fix(pawl): prevent #trivial from bypassing the gate (age-w2ny-test-c)"
+  status=0
+  output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  [[ "$output" != *"pawl waived"* ]]
+}
+
+@test "check-pawl-pre-push waives #trivial as a standalone trailer line in the body (age-w2ny)" {
+  make_repo_with_body_commit \
+    "chore(x): provenance-only edge (age-w2ny-test-b)" \
+    "some body explanation here
+
+#trivial"
+  status=0
+  output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"pawl waived"* ]]
+}
+
 @test "check-pawl-pre-push honors AGENTOPS_PREPUSH_SKIP_PAWL=1" {
   make_repo_with_commit age-58o-test-f
   status=0
