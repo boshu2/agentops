@@ -1906,6 +1906,13 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "public-tested",
+      "command": "wiki init",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "public-stateful-fixture-needed",
       "command": "wiki inject",
       "coverage_status": "allowlisted",
@@ -1943,6 +1950,13 @@
     {
       "category": "public-tested",
       "command": "wiki search",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "wiki use",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
