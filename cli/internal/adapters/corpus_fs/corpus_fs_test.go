@@ -197,7 +197,8 @@ func TestWriter_CaptureScrubsSecrets(t *testing.T) {
 	w := NewWriter(root)
 
 	const safe = "This learning is about caching strategy."
-	anthropic := "sk-ant-api03-0123456789012345678901234567890123456789AB"
+	// Split prefix from body so secret scanners don't flag this synthetic fixture.
+	anthropic := "sk-ant-" + "api03-0123456789012345678901234567890123456789AB"
 	awsKey := "AKIAIOSFODNN7EXAMPLE"
 	pem := "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAKtttt\n-----END RSA PRIVATE KEY-----"
 	in := safe + "\nkey1: " + anthropic + "\nkey2: " + awsKey + "\n" + pem + "\n"

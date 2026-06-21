@@ -19,7 +19,7 @@ func TestRedact_AWSAccessKey(t *testing.T) {
 }
 
 func TestRedact_GitHubToken(t *testing.T) {
-	in := "the token is ghp_abcdefghijklmnopqrstuvwxyz0123456789XY here"
+	in := "the token is " + "ghp_" + "abcdefghijklmnopqrstuvwxyz0123456789XY here"
 	out := Redact(in)
 	if strings.Contains(out, "ghp_abcdefghijklmnopqrstuvwxyz") {
 		t.Errorf("GH token leaked: %q", out)
@@ -27,7 +27,7 @@ func TestRedact_GitHubToken(t *testing.T) {
 }
 
 func TestRedact_AnthropicKey(t *testing.T) {
-	in := "anthropic key: sk-ant-api03-abcdefghijklmnop_qrstuvwxyz0123456789ABCDEFGHIJ"
+	in := "anthropic key: " + "sk-ant-" + "api03-abcdefghijklmnop_qrstuvwxyz0123456789ABCDEFGHIJ"
 	out := Redact(in)
 	if strings.Contains(out, "sk-ant-api03-") {
 		t.Errorf("Anthropic key leaked: %q", out)
@@ -35,7 +35,7 @@ func TestRedact_AnthropicKey(t *testing.T) {
 }
 
 func TestRedact_OpenAIKey(t *testing.T) {
-	in := "openai key is sk-abcdefghijklmnopqrstuvwxyz1234567890ABCDEF"
+	in := "openai key is " + "sk-" + "abcdefghijklmnopqrstuvwxyz1234567890ABCDEF"
 	out := Redact(in)
 	if strings.Contains(out, "sk-abcdefghijklmnopqrstuvwxyz") {
 		t.Errorf("OpenAI key leaked: %q", out)
@@ -72,7 +72,7 @@ func TestRedact_ExtendedProviderTokens(t *testing.T) {
 		},
 		{
 			name: "gitlab token",
-			in:   "gitlab token glpat-abcdefghijklmnopQRST123456",
+			in:   "gitlab token " + "glpat-" + "abcdefghijklmnopQRST123456",
 			leak: "glpat-abcdefgh",
 		},
 		{
@@ -155,7 +155,7 @@ func TestRedact_KeepsNonSensitiveContent(t *testing.T) {
 }
 
 func TestRedactBytes_ScrubsSecrets(t *testing.T) {
-	msgs := []byte("ghp_abcdefghijklmnopqrstuvwxyz0123456789XY")
+	msgs := []byte("ghp_" + "abcdefghijklmnopqrstuvwxyz0123456789XY")
 	out := RedactBytes(msgs)
 	if strings.Contains(string(out), "ghp_abcdefghijk") {
 		t.Errorf("RedactBytes leaked: %q", out)

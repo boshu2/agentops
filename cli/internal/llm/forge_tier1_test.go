@@ -28,7 +28,7 @@ func writeFixtureJSONL(t *testing.T, dir, name string) (string, string) {
 			"timestamp": "2026-04-11T12:00:00Z",
 			"message": map[string]any{
 				"role":    "user",
-				"content": "Please implement the turn chunker for the forge tier1 path. My key is ghp_abcdefghijklmnopqrstuvwxyz0123456789XY.",
+				"content": "Please implement the turn chunker for the forge tier1 path. My key is " + "ghp_" + "abcdefghijklmnopqrstuvwxyz0123456789XY.",
 			},
 		},
 		{
