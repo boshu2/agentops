@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -296,37 +297,55 @@ func sanitizeIDPart(s string) string {
 // finding present with its compiled check deleted is REPAIRED, not silently
 // reported as already-done. Returns true if any file was written.
 func writeDerivedArtifacts(root string, artifact ports.FindingArtifact, outputs []ports.CompiledOutput, force bool) (bool, error) {
-	type target struct {
-		abs   string
-		body  []byte
-		label string
-	}
-	targets := []target{{
-		abs:   filepath.Join(root, ".agents", "findings", artifact.ID+".md"),
-		body:  renderFindingArtifact(artifact),
-		label: "finding " + artifact.ID,
-	}}
-	for _, out := range outputs {
-		targets = append(targets, target{
-			abs:   filepath.Join(root, filepath.FromSlash(out.Path)),
-			body:  out.Body,
-			label: "compiled " + out.Path,
-		})
-	}
-
 	wroteAny := false
-	for _, t := range targets {
-		if !force {
-			if _, err := os.Stat(t.abs); err == nil {
-				continue // present — leave it (idempotent); only missing targets are (re)written
-			}
-		}
-		if err := writeFindingFileAtomic(t.abs, t.body, 0o644); err != nil {
-			return wroteAny, fmt.Errorf("write %s: %w", t.label, err)
-		}
+	findingAbs := filepath.Join(root, ".agents", "findings", artifact.ID+".md")
+	if wrote, err := writeFileTargetIdempotent(findingAbs, renderFindingArtifact(artifact), force); err != nil {
+		return wroteAny, fmt.Errorf("write finding %s: %w", artifact.ID, err)
+	} else if wrote {
 		wroteAny = true
 	}
+
+	for _, out := range outputs {
+		// A constraint output is a structured ConstraintEntry MERGED into the
+		// shared .agents/constraints/index.json (the gate's executable surface),
+		// not a standalone file — upsert under lock instead of file-replace.
+		if out.Kind == ports.CompiledOutputConstraint {
+			var entry search.ConstraintEntry
+			if err := json.Unmarshal(out.Body, &entry); err != nil {
+				return wroteAny, fmt.Errorf("decode compiled constraint for %s: %w", artifact.ID, err)
+			}
+			wrote, err := search.UpsertConstraintAt(root, entry, force)
+			if err != nil {
+				return wroteAny, fmt.Errorf("merge constraint %s: %w", entry.ID, err)
+			}
+			if wrote {
+				wroteAny = true
+			}
+			continue
+		}
+		abs := filepath.Join(root, filepath.FromSlash(out.Path))
+		if wrote, err := writeFileTargetIdempotent(abs, out.Body, force); err != nil {
+			return wroteAny, fmt.Errorf("write compiled %s: %w", out.Path, err)
+		} else if wrote {
+			wroteAny = true
+		}
+	}
 	return wroteAny, nil
+}
+
+// writeFileTargetIdempotent writes body to abs atomically, leaving an existing
+// file untouched unless force is set (so a present artifact with a deleted
+// sibling is repaired, not silently skipped). Returns whether it wrote.
+func writeFileTargetIdempotent(abs string, body []byte, force bool) (bool, error) {
+	if !force {
+		if _, err := os.Stat(abs); err == nil {
+			return false, nil
+		}
+	}
+	if err := writeFindingFileAtomic(abs, body, 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // renderFindingArtifact serializes a FindingArtifact to the on-disk finding
