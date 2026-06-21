@@ -21,6 +21,7 @@ type Stage string
 
 const (
 	StageIngest  Stage = "ingest"
+	StageCompile Stage = "compile"
 	StageQuery   Stage = "query"
 	StageLint    Stage = "lint"
 	StagePromote Stage = "promote"

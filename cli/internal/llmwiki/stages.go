@@ -149,6 +149,18 @@ func slugify(s string) string {
 type IngestStage struct {
 	// Now is injected for deterministic frontmatter timestamps in tests.
 	Now func() time.Time
+	// Compiler distills the raw source into a real summary for the source
+	// page body. When nil, a DeterministicCompiler is used so the body is
+	// always derived mechanically (never the old placeholder).
+	Compiler Compiler
+}
+
+// compiler returns the configured Compiler or a DeterministicCompiler default.
+func (s *IngestStage) compiler() Compiler {
+	if s.Compiler != nil {
+		return s.Compiler
+	}
+	return NewDeterministicCompiler()
 }
 
 // Run scans vault/raw/ and emits wiki/sources/<slug>.md for each new entry.
@@ -241,7 +253,7 @@ func (s *IngestStage) ingestCandidates(
 			continue
 		}
 		skippedAll = false
-		body, err := buildIngestBody(rawPath, now, attempt)
+		body, err := s.buildIngestBody(ctx, rawPath, now, attempt)
 		if err != nil {
 			return nil, false, fmt.Errorf("ingest: build body for %s: %w", name, err)
 		}
@@ -261,10 +273,23 @@ func isIngestableExt(name string) bool {
 	return strings.HasSuffix(lower, ".md") || strings.HasSuffix(lower, ".txt")
 }
 
-// buildIngestBody produces the placeholder distillation body for a raw file.
-// Future issues replace the body content with real NLP extraction; the
-// frontmatter contract stays stable.
-func buildIngestBody(rawPath string, now time.Time, attempt int) (string, error) {
+// buildIngestBody produces a distilled source page for a raw file. The body
+// carries a real Compiler-derived summary (no longer the old placeholder); the
+// frontmatter contract is unchanged. The full concept/entity extraction is the
+// CompileStage's job (see compile.go) — Ingest only seeds the source page.
+func (s *IngestStage) buildIngestBody(ctx context.Context, rawPath string, now time.Time, attempt int) (string, error) {
+	raw, err := os.ReadFile(rawPath)
+	if err != nil {
+		return "", fmt.Errorf("read raw %s: %w", rawPath, err)
+	}
+	summary, err := s.compiler().Summarize(ctx, string(raw))
+	if err != nil {
+		return "", fmt.Errorf("summarize %s: %w", rawPath, err)
+	}
+	if strings.TrimSpace(summary) == "" {
+		summary = "_(no summary extracted)_"
+	}
+
 	header := renderFrontmatter(stageFrontmatter{
 		Type:    "source",
 		Stage:   StageIngest,
@@ -273,8 +298,8 @@ func buildIngestBody(rawPath string, now time.Time, attempt int) (string, error)
 		Attempt: attempt,
 	})
 	title := strings.TrimSuffix(filepath.Base(rawPath), filepath.Ext(rawPath))
-	body := fmt.Sprintf("%s\n# %s\n\n_Distilled placeholder — full extraction pending._\n\n- raw: `%s`\n",
-		header, title, rawPath)
+	body := fmt.Sprintf("%s\n# %s\n\n%s\n\n- raw: `%s`\n",
+		header, title, summary, rawPath)
 	return body, nil
 }
 
