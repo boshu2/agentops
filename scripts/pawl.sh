@@ -287,7 +287,19 @@ cmd_route() {
     echo "CONFIRMED"
     return 0
   fi
-  # Fail-closed: any non-CONFIRMED or timeout.
+  # Fail-closed: any non-CONFIRMED or timeout. STILL record the REFUTED verdict
+  # (age-uxva) — a REFUTE is the membrane catch we MOST want in the yield ledger,
+  # and the log emit lives in `pawl-verdict.sh write`. Without this, every
+  # standing-pawl REFUTE bypassed the chokepoint and was never logged. Mirrors
+  # the CONFIRMED branch; non-blocking (the gate signal is still `return 1`).
+  # Per-pane verdicts carry their actual result; a timeout maps to REFUTED.
+  local rhead; rhead="$(git rev-parse HEAD)"
+  bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
+    --disposition REFUTED --head "$rhead" \
+    --author-context "pawl-route-author-${bead}" --mode multi-model \
+    --refuter "claude:${vc:-REFUTED}:opus-pawl-pane-fresh:${ev_cc}" \
+    --refuter "gpt:${vd:-REFUTED}:codex-pawl-pane-gpt55:${ev_cod}" \
+    --reason "standing-pawl route: no agreement (opus=${vc:-timeout} codex=${vd:-timeout})" >&2 || true
   log "ROUTE $bead: REFUTED/HOLD — opus=${vc:-timeout} codex=${vd:-timeout} (no agreement; evidence in $EVID_DIR)"
   echo "REFUTED"
   return 1
