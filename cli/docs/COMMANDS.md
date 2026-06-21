@@ -3911,6 +3911,21 @@ ao wiki [command]
 
 **Subcommands:**
 
+#### `ao wiki add`
+
+Copy supported source files (.md/.txt — what the ingest processes) into the
+
+```
+ao wiki add <file|dir>... [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for add
+      --path string   Workspace path (default: the active workspace)
+```
+
 #### `ao wiki doctor`
 
 Report on the wiki corpus directory and the persistent index.
@@ -4046,6 +4061,41 @@ ao wiki query [flags]
 ```
   -h, --help           help for query
       --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki recompile`
+
+Re-run the ingest/compile stage over the active wiki workspace, distilling
+
+```
+ao wiki recompile [flags]
+```
+
+**Flags:**
+
+```
+      --all              Recompile the whole workspace (default true)
+      --dry-run          List sources that would be recompiled without writing
+  -h, --help             help for recompile
+      --path string      Workspace path (default: the active workspace)
+      --refresh-schema   Also rewrite the workspace config/schema
+```
+
+#### `ao wiki remove`
+
+Remove a registered source (by id or raw filename) and its derived wiki
+
+```
+ao wiki remove <doc> [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run       Report artifacts that would be removed without deleting
+  -h, --help          help for remove
+      --keep-raw      Leave the raw/ source file in place
+      --path string   Workspace path (default: the active workspace)
 ```
 
 #### `ao wiki search`

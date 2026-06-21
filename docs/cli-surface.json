@@ -1886,6 +1886,13 @@
     },
     {
       "category": "public-tested",
+      "command": "wiki add",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "wiki doctor",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1946,6 +1953,20 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Queries wiki/corpus indexes and needs a representative wiki fixture."
+    },
+    {
+      "category": "public-tested",
+      "command": "wiki recompile",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "wiki remove",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
