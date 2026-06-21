@@ -1,4 +1,4 @@
-.PHONY: build test lint clean install sync-hooks inner
+.PHONY: build test lint clean install sync-hooks inner membrane-parity
 
 # Build variables
 BINARY_NAME=ao
@@ -48,6 +48,13 @@ clean:
 install: build
 	@GOBIN=$$(go env GOBIN); [ -z "$$GOBIN" ] && GOBIN=$$(go env GOPATH)/bin; \
 	/bin/cp $(BUILD_DIR)/$(BINARY_NAME) "$$GOBIN/$(BINARY_NAME)"
+
+# Membrane demo preflight (epic age-cwo, bead age-membrane-memory-arch-tz2s.2.5):
+# fail if the demo-path `ao` lacks the current source's membrane surface, so the
+# e2e demo can never run against a stale binary and emit a false proof.
+# Override the binary under test with AO_BIN=/path/to/ao.
+membrane-parity:
+	bash ../scripts/check-membrane-parity.sh
 
 # Run the binary
 run: build
