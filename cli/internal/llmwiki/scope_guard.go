@@ -17,11 +17,17 @@ import (
 // architecture.md load-bearing (research §2.4).
 var allowedWritePaths = []string{
 	"wiki/sources/",
+	"wiki/summaries/",
 	"wiki/entities/",
 	"wiki/concepts/",
 	"wiki/synthesis/",
 	"wiki/INDEX.md",
 	"wiki/LOG.md",
+	// OpenKB-style compile artifacts (age-port-openkb-...-5qw.3): the
+	// CompileStage writes the lowercase index/log the wiki scaffold seeds
+	// (internal/wiki/scaffold.go), alongside the legacy capitalized pair.
+	"wiki/index.md",
+	"wiki/log.md",
 }
 
 // WriteScopeError indicates a stage tried to write outside its allowlist.
