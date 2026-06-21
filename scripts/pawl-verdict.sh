@@ -74,6 +74,13 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_DIR="$REPO_ROOT/.agents/pawl-verdicts"
+# YIELD_ROOT is where the (gitignored) yield ledger lives for the best-effort
+# gate-verdict emit. It honors AGENTOPS_REPO_ROOT (the same override the sibling
+# check-pawl-pre-push.sh uses) so tests can isolate the yield side-effect into a
+# temp repo. REPO_ROOT stays script-relative for SCHEMA + script assets, which
+# must resolve to the real checkout regardless. Production (env unset) =>
+# YIELD_ROOT == REPO_ROOT, so behavior is identical. (age-obae)
+YIELD_ROOT="${AGENTOPS_REPO_ROOT:-$REPO_ROOT}"
 
 die() { echo "pawl-verdict: ERROR: $*" >&2; exit 2; }
 
@@ -474,7 +481,7 @@ emit_yield_gate_verdict() {
   # accept is unadmitted — cross-family REFUTE). Only an exact same-RUN dup is
   # suppressed (a literal re-run). The ledger lives at REPO_ROOT; the emit below
   # runs with cwd=REPO_ROOT so ao writes the SAME ledger this scan reads.
-  local ledger="$REPO_ROOT/.agents/yield/yield-ledger.jsonl"
+  local ledger="$YIELD_ROOT/.agents/yield/yield-ledger.jsonl"
   if [[ -f "$ledger" ]] && jq -e --arg run "$run_id" --arg b "$bead" --arg h "$head" \
       --argjson at "${attempt:-1}" --arg d "$disposition" --arg r "$reason" '
       select(.event=="gate-verdict" and .run_id==$run and .bead_id==$b
@@ -507,7 +514,7 @@ emit_yield_gate_verdict() {
   [[ -n "$body" ]] || return 0
   # Run with cwd=REPO_ROOT so ao resolves the ledger at the same root the dedup
   # scan reads (and where the verdict file lives), independent of the caller cwd.
-  ( cd "$REPO_ROOT" && ao yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
+  ( cd "$YIELD_ROOT" && ao yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
 
 # rebind <bead> <pr> --head NEWSHA [--dir D]

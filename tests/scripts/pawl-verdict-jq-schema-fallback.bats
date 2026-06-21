@@ -21,6 +21,18 @@ EOF
   export PATH="$TMP/bin:$PATH"
   SHA="cafef00dbabe1234cafef00dbabe1234cafef00d"
   printf 'fresh-context review evidence\n' > "$TMP/evidence.txt"
+  # age-obae: pawl-verdict.sh `write` has side-effects — `ao provenance
+  # emit-verdict` (resolveLedgerPath walks up for .git or docs/+schemas/) and
+  # `ao yield emit` (cwd-walk). Run from an isolated git workspace so those
+  # ledgers resolve into TMP, never the real repo's TRACKED docs/provenance/.
+  git -C "$TMP" init -q
+  git -C "$TMP" config user.email t@t
+  git -C "$TMP" config user.name t
+  cd "$TMP"
+  # The provenance emit isolates via cwd (resolveLedgerPath walks up to $TMP/.git);
+  # the yield emit is forced to cd to the script's root, so it needs the
+  # AGENTOPS_REPO_ROOT override to land in TMP too. (age-obae)
+  export AGENTOPS_REPO_ROOT="$TMP"
 }
 
 teardown() {
@@ -40,6 +52,31 @@ teardown() {
   run bash "$SCRIPT" check age-anc-jq 0 --dir "$TMP/verdicts" --head "$SHA"
   [ "$status" -eq 0 ]
   [[ "$output" == *"merge authorized"* ]]
+}
+
+@test "pawl-verdict write does not pollute the repo's real provenance OR yield ledgers (age-obae)" {
+  prov="$REPO_ROOT/docs/provenance/ledger.jsonl"
+  yield="$REPO_ROOT/.agents/yield/yield-ledger.jsonl"
+  prov_before="$(shasum -a 256 "$prov" 2>/dev/null | awk '{print $1}')"
+  yield_before="$(shasum -a 256 "$yield" 2>/dev/null | awk '{print $1}')"
+  run bash "$SCRIPT" write age-obae-iso 0 \
+    --disposition CONFIRMED --head "$SHA" \
+    --author-context author-ctx \
+    --refuter claude:CONFIRMED:fresh-reviewer-ctx:"$TMP/evidence.txt" \
+    --dir "$TMP/verdicts"
+  [ "$status" -eq 0 ]
+  # Core guarantee — holds whether or not `ao` is installed (the Bats CI job runs
+  # before `ao` is built; both emits are best-effort): the real repo's TRACKED
+  # provenance ledger AND its (gitignored) yield ledger are byte-identical.
+  [ "$prov_before" = "$(shasum -a 256 "$prov" 2>/dev/null | awk '{print $1}')" ]
+  [ "$yield_before" = "$(shasum -a 256 "$yield" 2>/dev/null | awk '{print $1}')" ]
+  # When `ao` IS present the emits fire — assert they landed in the ISOLATED temp
+  # repo (provenance via cwd, yield via AGENTOPS_REPO_ROOT). Conditional so a thin
+  # env (no `ao`) doesn't false-fail; the byte-identical checks are the invariant.
+  if command -v ao >/dev/null 2>&1; then
+    [ -f "$TMP/docs/provenance/ledger.jsonl" ]
+    [ -f "$TMP/.agents/yield/yield-ledger.jsonl" ]
+  fi
 }
 
 @test "jq schema-fallback rejects invalid disposition when jsonschema validators are absent" {
