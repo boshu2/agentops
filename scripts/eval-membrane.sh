@@ -122,6 +122,22 @@ if [[ "$DRY_RUN" == "false" ]]; then
   if [[ "$PRODUCER_CMD" == "$DEFAULT_PRODUCER_CMD" ]]; then
     command -v codex >/dev/null 2>&1 || { echo "error: codex not found (default producer)" >&2; exit 1; }
   fi
+
+  # Membrane SMOKE probe: the binary can EXIST yet be non-functional — e.g. agy
+  # installed but auth-down returns empty — which silently degrades EVERY task to
+  # no-verdict (a whole eval run wasted). Probe the membrane once up front and
+  # fail fast with an actionable message instead of discovering it task-by-task.
+  # The probe prompt DESCRIBES the verdict format without containing a literal
+  # "VERDICT: ACK" line, and the check is LINE-ANCHORED — so a broken membrane
+  # that merely echoes/logs its prompt cannot false-pass (it has to GENERATE the
+  # verdict line). A working membrane produces it; a dead one (empty/echo) fails.
+  smoke="$(bash -c "$MEMBRANE_CMD" _ "Smoke check for an independent code reviewer. Output exactly two lines and nothing else.
+First line: the word VERDICT in capitals, then a colon, a space, then the token ACK.
+Second line: the word WHY in capitals, a colon, a space, then the word ok." 2>/dev/null || true)"
+  if ! printf '%s\n' "$smoke" | grep -Eqi '^[[:space:]]*VERDICT:[[:space:]]*(ACK|REFUTE)'; then
+    echo "error: membrane ($MEMBRANE_LABEL) returned no parseable VERDICT on a smoke probe — it is unavailable (auth-down / offline?). Re-auth it, or pass a working --membrane-cmd, e.g. --membrane-cmd 'codex exec --skip-git-repo-check \"\$1\"'." >&2
+    exit 1
+  fi
 fi
 
 # --- per-task accumulators (emitted into the scorecard) -----------------------
@@ -210,10 +226,14 @@ line 1: VERDICT: ACK   (if truly complete and correct)  OR  VERDICT: REFUTE (if 
 line 2: WHY: <one sentence>"
 
     review_out="$(bash -c "$MEMBRANE_CMD" _ "$reviewer_prompt" 2>/dev/null || true)"
-    # Parse the verdict; default REFUTE if unparseable (and log it).
-    if printf '%s' "$review_out" | grep -Eqi 'VERDICT:[[:space:]]*ACK'; then
+    # Parse the verdict from the membrane's OWN output. The grep is LINE-ANCHORED
+    # so the verdict must be on its own line (^VERDICT: ...) — a membrane that
+    # echoes/logs the reviewer_prompt (whose format line reads "line 1: VERDICT:
+    # ACK ... OR VERDICT: REFUTE") cannot be mis-parsed as a real verdict, since
+    # that text is not at line start. Unparseable -> degraded (below).
+    if printf '%s\n' "$review_out" | grep -Eqi '^[[:space:]]*VERDICT:[[:space:]]*ACK'; then
       verdict="ACK"
-    elif printf '%s' "$review_out" | grep -Eqi 'VERDICT:[[:space:]]*REFUTE'; then
+    elif printf '%s\n' "$review_out" | grep -Eqi '^[[:space:]]*VERDICT:[[:space:]]*REFUTE'; then
       verdict="REFUTE"
     else
       # Unparseable verdict = we do NOT know what the membrane decided. Defaulting
