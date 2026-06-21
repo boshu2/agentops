@@ -3,12 +3,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/search"
 )
 
 // productionFindingCompiler satisfies ports.FindingCompilerPort by
@@ -54,6 +56,29 @@ func (c *productionFindingCompiler) Compile(ctx context.Context, artifact ports.
 	}
 	out := make([]ports.CompiledOutput, 0, len(kinds))
 	for _, kind := range kinds {
+		if kind == ports.CompiledOutputConstraint {
+			// A constraint is a MECHANICAL output: a structured ConstraintEntry
+			// merged into .agents/constraints/index.json (what the gate enforces),
+			// NOT an advisory markdown file. Emit it ONLY when the finding carries
+			// valid mechanical detector metadata; an advisory finding (no detector)
+			// correctly produces no constraint rather than a dead artifact the gate
+			// ignores. (finding-compiler.md: "constraint only when detector metadata
+			// is present and valid".)
+			entry, ok := search.BuildConstraintEntry(artifact.ID, artifact.Frontmatter)
+			if !ok {
+				continue
+			}
+			body, err := json.Marshal(entry)
+			if err != nil {
+				return nil, fmt.Errorf("productionFindingCompiler %q: marshal constraint: %w", artifact.ID, err)
+			}
+			out = append(out, ports.CompiledOutput{
+				Kind: ports.CompiledOutputConstraint,
+				Path: search.ConstraintIndexPath(),
+				Body: body,
+			})
+			continue
+		}
 		out = append(out, ports.CompiledOutput{
 			Kind: kind,
 			Path: compiledPath(kind, artifact.ID),

@@ -2,14 +2,63 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
+
+// A mechanical finding's compiled constraint must MERGE into the root
+// .agents/constraints/index.json as a draft entry (the gate's surface) rather
+// than land as a per-id markdown file — the producer↔gate seam of EM-ENF.
+func TestWriteDerivedArtifacts_MergesConstraintIntoIndex(t *testing.T) {
+	root := t.TempDir()
+	outs, err := newProductionFindingCompiler().Compile(context.Background(), ports.FindingArtifact{
+		ID: "f-merge",
+		Frontmatter: map[string]string{
+			"compiler_targets":      "constraint",
+			"detectability":         "mechanical",
+			"detector_kind":         "regex",
+			"detector_pattern":      "panic\\(",
+			"constraint_path_globs": "cli/**",
+			"compiled_at":           "2026-06-21T00:00:00Z",
+		},
+		Body: "x",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrote, err := writeDerivedArtifacts(root, ports.FindingArtifact{ID: "f-merge"}, outs, false)
+	if err != nil || !wrote {
+		t.Fatalf("writeDerivedArtifacts: wrote=%v err=%v", wrote, err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, ".agents", "constraints", "index.json"))
+	if err != nil {
+		t.Fatalf("index.json not written: %v", err)
+	}
+	var idx search.ConstraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("index.json malformed: %v", err)
+	}
+	if len(idx.Constraints) != 1 {
+		t.Fatalf("want 1 constraint, got %d", len(idx.Constraints))
+	}
+	e := idx.Constraints[0]
+	if e.ID != "f-merge" || e.Status != "draft" || e.Detector.Pattern != "panic\\(" {
+		t.Fatalf("merged entry = %+v, want f-merge/draft/panic\\(", e)
+	}
+	// No per-id markdown constraint file should exist (the old dead artifact).
+	if _, err := os.Stat(filepath.Join(root, ".agents", "constraints", "f-merge.md")); err == nil {
+		t.Fatalf("dead per-id constraint markdown was written")
+	}
+}
 
 // seedEscapeLedger writes a yield ledger under root containing one escape
 // (age-flaky CONFIRMED@1 then REFUTED@2) plus a clean confirmed bead, using the

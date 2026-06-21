@@ -48,6 +48,15 @@ func (c *InMemoryFindingCompiler) Compile(ctx context.Context, artifact FindingA
 	out := make([]CompiledOutput, 0, len(requested))
 	seen := map[string]struct{}{}
 	for _, kind := range requested {
+		// A constraint is emitted ONLY for findings carrying valid mechanical
+		// detector metadata; an advisory finding emits no constraint. This fake
+		// mirrors the production compiler's SELECTION rule (the contract behavior
+		// callers assert) — see search.BuildConstraintEntry for the structured
+		// production emit. The precondition here must stay in lockstep with it;
+		// both adapters' tests pin "advisory finding -> no constraint".
+		if kind == CompiledOutputConstraint && !hasMechanicalDetectorMetadata(artifact.Frontmatter) {
+			continue
+		}
 		var p string
 		switch kind {
 		case CompiledOutputPlanningRule:
@@ -67,6 +76,28 @@ func (c *InMemoryFindingCompiler) Compile(ctx context.Context, artifact FindingA
 		out = append(out, CompiledOutput{Kind: kind, Path: p, Body: []byte(body)})
 	}
 	return out, nil
+}
+
+// hasMechanicalDetectorMetadata reports whether a finding's frontmatter carries
+// the metadata required to compile a mechanical constraint: detectability =
+// mechanical, a non-empty detector_pattern, non-empty constraint_path_globs, a
+// compiled_at, and (when set) a "regex" detector_kind. Mirrors the precondition
+// in search.BuildConstraintEntry — the two MUST agree (the fake must not claim a
+// constraint the production builder would skip, and vice versa).
+func hasMechanicalDetectorMetadata(fm map[string]string) bool {
+	if strings.TrimSpace(fm["detectability"]) != "mechanical" {
+		return false
+	}
+	if strings.TrimSpace(fm["detector_pattern"]) == "" {
+		return false
+	}
+	if k := strings.TrimSpace(fm["detector_kind"]); k != "" && k != "regex" {
+		return false
+	}
+	if strings.TrimSpace(fm["constraint_path_globs"]) == "" {
+		return false
+	}
+	return strings.TrimSpace(fm["compiled_at"]) != ""
 }
 
 // parseCompilerTargets parses the comma-separated value from the

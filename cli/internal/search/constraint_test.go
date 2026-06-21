@@ -163,3 +163,40 @@ func TestWithConstraintLock_PropagatesError(t *testing.T) {
 		t.Errorf("err = %v", err)
 	}
 }
+
+func TestUpsertConstraintAt_InsertIdempotentForce(t *testing.T) {
+	root := t.TempDir()
+	idxPath := filepath.Join(root, ConstraintIndexPath())
+	e := ConstraintEntry{
+		ID: "f-1", Title: "t", Status: "draft", CompiledAt: "2026-06-21T00:00:00Z",
+		AppliesTo: ConstraintAppliesTo{PathGlobs: []string{"cli/**"}},
+		Detector:  ConstraintDetector{Kind: "regex", Pattern: "panic"},
+	}
+	// insert into a non-existent index (load-or-init)
+	wrote, err := UpsertConstraintAt(root, e, false)
+	if err != nil || !wrote {
+		t.Fatalf("insert: wrote=%v err=%v", wrote, err)
+	}
+	idx, err := loadConstraintIndexAtPath(idxPath)
+	if err != nil || len(idx.Constraints) != 1 || idx.Constraints[0].Status != "draft" {
+		t.Fatalf("after insert: %+v err=%v", idx, err)
+	}
+	// idempotent: same id, force=false -> no write, original kept
+	e2 := e
+	e2.Title = "changed"
+	if wrote, err = UpsertConstraintAt(root, e2, false); err != nil || wrote {
+		t.Fatalf("idempotent: wrote=%v err=%v (want no write)", wrote, err)
+	}
+	idx, _ = loadConstraintIndexAtPath(idxPath)
+	if idx.Constraints[0].Title != "t" {
+		t.Fatalf("idempotent upsert overwrote title: %q", idx.Constraints[0].Title)
+	}
+	// force=true -> replaces in place, still one entry
+	if wrote, err = UpsertConstraintAt(root, e2, true); err != nil || !wrote {
+		t.Fatalf("force: wrote=%v err=%v", wrote, err)
+	}
+	idx, _ = loadConstraintIndexAtPath(idxPath)
+	if len(idx.Constraints) != 1 || idx.Constraints[0].Title != "changed" {
+		t.Fatalf("force didn't replace in place: %+v", idx.Constraints)
+	}
+}

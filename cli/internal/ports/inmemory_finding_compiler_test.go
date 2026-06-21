@@ -12,17 +12,53 @@ import (
 // shape — table-driven where helpful, L1-style assertions for
 // behavior + port contract, no external collaborators.
 
-func TestInMemoryFindingCompiler_CompileDefaultEmitsAllThreeTargets(t *testing.T) {
+// mechanicalFM is a finding frontmatter carrying valid mechanical detector
+// metadata (the only shape that compiles to a constraint), optionally constrained
+// to specific compiler_targets.
+func mechanicalFM(targets string) map[string]string {
+	fm := map[string]string{
+		"detectability":         "mechanical",
+		"detector_kind":         "regex",
+		"detector_pattern":      "panic",
+		"constraint_path_globs": "cli/**",
+		"compiled_at":           "2026-06-21T00:00:00Z",
+	}
+	if targets != "" {
+		fm["compiler_targets"] = targets
+	}
+	return fm
+}
+
+// An ADVISORY finding (no detector metadata) defaults to plan + pre-mortem only;
+// the constraint is skipped, not emitted as a dead artifact (EM-ENF property:
+// constraint only with valid mechanical detector metadata).
+func TestInMemoryFindingCompiler_AdvisoryDefaultEmitsTwoTargets(t *testing.T) {
+	c := NewInMemoryFindingCompiler()
+	got, err := c.Compile(context.Background(), FindingArtifact{ID: "fnd-xyz", Body: "body content"})
+	if err != nil {
+		t.Fatalf("Compile: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("advisory default emitted %d outputs, want 2 (plan + pre-mortem)", len(got))
+	}
+	if contains(collectKinds(got), CompiledOutputConstraint) {
+		t.Fatalf("advisory finding must emit no constraint; got %v", collectKinds(got))
+	}
+}
+
+// A MECHANICAL finding (valid detector metadata) defaults to all three targets.
+func TestInMemoryFindingCompiler_MechanicalDefaultEmitsThreeTargets(t *testing.T) {
 	c := NewInMemoryFindingCompiler()
 	got, err := c.Compile(context.Background(), FindingArtifact{
-		ID:   "fnd-xyz",
-		Body: "body content",
+		ID:          "fnd-xyz",
+		Frontmatter: mechanicalFM(""),
+		Body:        "body content",
 	})
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
 	}
 	if len(got) != 3 {
-		t.Fatalf("default Compile emitted %d outputs, want 3 (plan + pre-mortem + constraint)", len(got))
+		t.Fatalf("mechanical default emitted %d outputs, want 3", len(got))
 	}
 	kinds := collectKinds(got)
 	for _, want := range []CompiledOutputKind{
@@ -31,7 +67,7 @@ func TestInMemoryFindingCompiler_CompileDefaultEmitsAllThreeTargets(t *testing.T
 		CompiledOutputConstraint,
 	} {
 		if !contains(kinds, want) {
-			t.Fatalf("missing kind %q in default emit; got kinds: %v", want, kinds)
+			t.Fatalf("missing kind %q in mechanical default emit; got kinds: %v", want, kinds)
 		}
 	}
 }
@@ -46,7 +82,7 @@ func TestInMemoryFindingCompiler_CompileEmptyIDIsRejected(t *testing.T) {
 
 func TestInMemoryFindingCompiler_CompilePathsAreNamespacedByID(t *testing.T) {
 	c := NewInMemoryFindingCompiler()
-	got, err := c.Compile(context.Background(), FindingArtifact{ID: "fnd-pathing", Body: "x"})
+	got, err := c.Compile(context.Background(), FindingArtifact{ID: "fnd-pathing", Frontmatter: mechanicalFM(""), Body: "x"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +148,7 @@ func TestInMemoryFindingCompiler_CompileTargetsHonorFrontmatter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := c.Compile(context.Background(), FindingArtifact{
 				ID:          "fnd-targeted",
-				Frontmatter: map[string]string{"compiler_targets": tc.targets},
+				Frontmatter: mechanicalFM(tc.targets),
 			})
 			if err != nil {
 				t.Fatalf("Compile: %v", err)
@@ -152,7 +188,7 @@ func TestInMemoryFindingCompiler_CompileOutputPathsAreUnique(t *testing.T) {
 	// Pass the same target twice — adapter must deduplicate.
 	got, err := c.Compile(context.Background(), FindingArtifact{
 		ID:          "fnd-dedup",
-		Frontmatter: map[string]string{"compiler_targets": "plan, plan, constraint"},
+		Frontmatter: mechanicalFM("plan, plan, constraint"),
 	})
 	if err != nil {
 		t.Fatal(err)

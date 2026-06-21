@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -150,6 +151,195 @@ func SaveConstraintIndex(idx *ConstraintIndex) error {
 	return WithConstraintLock(func() error {
 		return SaveConstraintIndexUnlocked(idx)
 	})
+}
+
+// BuildConstraintEntry builds a draft ConstraintEntry from a finding's
+// mechanical detector metadata (its frontmatter), or (zero, false) when the
+// finding is advisory or its detector metadata is incomplete/invalid. It is the
+// SINGLE source of the "finding frontmatter -> draft constraint" rule, shared by
+// every FindingCompilerPort implementation so they cannot drift.
+//
+// Required frontmatter: detectability=mechanical, detector_pattern (non-empty),
+// constraint_path_globs (non-empty), compiled_at; detector_kind defaults to and
+// must be "regex". The entry is ALWAYS status="draft" — a derived detector must
+// be reviewed and explicitly `ao constraint activate`d before it gates releases
+// (auto-active would let the compiler block every push). Field names match the
+// enforcement gate exactly (kind=regex / pattern / path_globs).
+func BuildConstraintEntry(id string, fm map[string]string) (ConstraintEntry, bool) {
+	if strings.TrimSpace(fm["detectability"]) != "mechanical" {
+		return ConstraintEntry{}, false
+	}
+	pattern := strings.TrimSpace(fm["detector_pattern"])
+	if pattern == "" {
+		return ConstraintEntry{}, false
+	}
+	kind := strings.TrimSpace(fm["detector_kind"])
+	if kind == "" {
+		kind = "regex"
+	}
+	if kind != "regex" {
+		return ConstraintEntry{}, false
+	}
+	globs := splitConstraintCSV(fm["constraint_path_globs"])
+	if len(globs) == 0 {
+		return ConstraintEntry{}, false
+	}
+	compiledAt := strings.TrimSpace(fm["compiled_at"])
+	if compiledAt == "" {
+		return ConstraintEntry{}, false
+	}
+	title := strings.TrimSpace(fm["title"])
+	if title == "" {
+		title = id
+	}
+	return ConstraintEntry{
+		ID:              id,
+		FindingID:       id,
+		Title:           title,
+		Source:          "finding",
+		SourceArtifact:  ".agents/findings/" + id + ".md",
+		SourceType:      strings.TrimSpace(fm["source"]),
+		CompilerTargets: []string{"constraint"},
+		Detectability:   "mechanical",
+		Status:          "draft",
+		CompiledAt:      compiledAt,
+		ReviewFile:      ".agents/constraints/" + id + ".sh",
+		File:            ".agents/constraints/" + id + ".sh",
+		AppliesTo:       ConstraintAppliesTo{PathGlobs: globs},
+		Detector: ConstraintDetector{
+			Kind:    "regex",
+			Mode:    strings.TrimSpace(fm["detector_mode"]),
+			Pattern: pattern,
+			Exclude: strings.TrimSpace(fm["detector_exclude"]),
+			Message: strings.TrimSpace(fm["detector_message"]),
+		},
+	}, true
+}
+
+// splitConstraintCSV splits a comma-separated value into trimmed, non-empty
+// entries.
+func splitConstraintCSV(raw string) []string {
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// UpsertConstraintAt merges a single constraint entry into the index rooted at
+// root (root-aware so callers like membrane derive-checks, which resolve a
+// project dir distinct from CWD, write the correct index). It loads-or-inits the
+// index, then: if an entry with the same ID exists and force is false, it is a
+// no-op (idempotent re-run); otherwise the entry is inserted/replaced. The save
+// is atomic and lock-guarded. Returns whether the index was written.
+//
+// A compiled constraint is ALWAYS persisted as status="draft": a freshly derived
+// detector must be reviewed and explicitly `ao constraint activate`d before it
+// gates releases — auto-activating would let the compiler block every push.
+func UpsertConstraintAt(root string, entry ConstraintEntry, force bool) (bool, error) {
+	indexPath := filepath.Join(root, ConstraintIndexPath())
+	lockPath := filepath.Join(root, ConstraintLockPath())
+	wrote := false
+	err := withConstraintLockAt(lockPath, func() error {
+		idx, err := loadConstraintIndexAtPath(indexPath)
+		if err != nil {
+			return err
+		}
+		if existing := FindConstraint(idx, entry.ID); existing != nil {
+			if !force {
+				return nil // idempotent: present, leave it
+			}
+			*existing = entry
+		} else {
+			idx.Constraints = append(idx.Constraints, entry)
+		}
+		if err := saveConstraintIndexAtPath(indexPath, idx); err != nil {
+			return err
+		}
+		wrote = true
+		return nil
+	})
+	return wrote, err
+}
+
+// loadConstraintIndexAtPath reads/parses an index at an explicit path, returning
+// an empty index when the file is absent (the legitimate empty state).
+func loadConstraintIndexAtPath(path string) (*ConstraintIndex, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &ConstraintIndex{SchemaVersion: 1}, nil
+		}
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	var idx ConstraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
+	}
+	if idx.SchemaVersion == 0 {
+		idx.SchemaVersion = 1
+	}
+	return &idx, nil
+}
+
+// saveConstraintIndexAtPath atomically writes the index to an explicit path.
+func saveConstraintIndexAtPath(path string, idx *ConstraintIndex) error {
+	data, err := json.MarshalIndent(idx, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshalling index: %w", err)
+	}
+	data = append(data, '\n')
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create constraints dir: %w", err)
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), "index.json.tmp.*")
+	if err != nil {
+		return fmt.Errorf("create temp constraint index: %w", err)
+	}
+	tmpPath := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("write temp constraint index: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("close temp constraint index: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("rename constraint index: %w", err)
+	}
+	return nil
+}
+
+// withConstraintLockAt is the root-aware twin of WithConstraintLock.
+func withConstraintLockAt(lockPath string, fn func() error) error {
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
+		return fmt.Errorf("create constraints dir: %w", err)
+	}
+	var lockFile *os.File
+	var err error
+	for attempt := 0; attempt < 20; attempt++ {
+		lockFile, err = os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			break
+		}
+		if !os.IsExist(err) {
+			return fmt.Errorf("acquire constraint lock: %w", err)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err != nil {
+		return fmt.Errorf("acquire constraint lock: %w", err)
+	}
+	defer func() {
+		_ = lockFile.Close()
+		_ = os.Remove(lockPath)
+	}()
+	return fn()
 }
 
 // FindConstraint locates a constraint by ID and returns its pointer.
