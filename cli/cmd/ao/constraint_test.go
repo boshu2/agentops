@@ -691,3 +691,47 @@ func TestConstraintPublish_NoLocalIndex_PublishesEmptyNoError(t *testing.T) {
 		t.Fatalf("empty published index must carry schema_version 1, got %d", idx.SchemaVersion)
 	}
 }
+
+// age-az6n: ao constraint publish must MERGE-PRESERVE a hand-authored STANDARDS
+// rule (source != "finding") across a publish that has 0 local escape constraints —
+// without it, publishing would wipe every manually-seeded repo rule.
+func TestConstraintPublish_PreservesStandardsAcrossPublish(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	pubDir := filepath.Join(dir, "docs", "constraints")
+	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	existing := `{"schema_version":1,"constraints":[{"id":"std-x","title":"t","source":"standards","status":"active","compiled_at":"2026-06-22T00:00:00Z","applies_to":{"path_globs":["**/*.go"]},"detector":{"kind":"regex","pattern":"forbidden"}}]}`
+	if err := os.WriteFile(filepath.Join(pubDir, "published.json"), []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := constraintPublishCmd.RunE(constraintPublishCmd, nil); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	data, _ := os.ReadFile(filepath.Join(pubDir, "published.json"))
+	var idx constraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatal(err)
+	}
+	if len(idx.Constraints) != 1 || idx.Constraints[0].ID != "std-x" || idx.Constraints[0].Source != "standards" {
+		t.Fatalf("the standards rule must SURVIVE a publish with 0 local escape constraints: %+v", idx.Constraints)
+	}
+}
+
+// age-az6n: a CORRUPT existing published.json fails the publish (never silently
+// wipes hand-authored standards rules).
+func TestConstraintPublish_MalformedExistingPublished_FailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	pubDir := filepath.Join(dir, "docs", "constraints")
+	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pubDir, "published.json"), []byte("NOT JSON"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := constraintPublishCmd.RunE(constraintPublishCmd, nil); err == nil {
+		t.Fatal("publish must FAIL (not silently wipe) on a corrupt existing published.json")
+	}
+}
