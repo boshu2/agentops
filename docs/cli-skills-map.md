@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 91 generated CLI command headings, 69 source skills. (AgentOps 3.0 is hookless — there is no runtime hook surface; lifecycle work is driven by skills + the `ao` CLI, with the installed local cockpit pre-push gate as routine authority and CI as tag/PR/manual backstop telemetry.)
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 92 generated CLI command headings, 69 source skills. (AgentOps 3.0 is hookless — there is no runtime hook surface; lifecycle work is driven by skills + the `ao` CLI, with the installed local cockpit pre-push gate as routine authority and CI as tag/PR/manual backstop telemetry.)
 
 Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mortem` now also read or write `.agents/findings/registry.jsonl` directly via skill contract. Those file-native prevention reads are intentionally not counted as `ao` command invocations in the tables below.
 

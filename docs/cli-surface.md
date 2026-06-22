@@ -135,6 +135,7 @@
 | `ao goals steer remove` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated goal fixture. |
 | `ao goals trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao governor budget` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao guard-status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao handoff` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao harness status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

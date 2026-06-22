@@ -4328,6 +4328,36 @@ ao extract [flags]
 
 ---
 
+### `ao governor`
+
+The slow-loop setpoint that keeps the self-improving membrane from oscillating
+
+```
+ao governor [command]
+```
+
+**Subcommands:**
+
+#### `ao governor budget`
+
+SPC.1 (control-loop-model.md §4). The ERROR BUDGET is the top governor: inside
+
+```
+ao governor budget [--json] [--window N] [--tolerance T] [--min-confirmed N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for budget
+      --json                Emit the verdict as JSON
+      --min-confirmed int   Special-cause floor: min confirmed in window before harden can fire; 0 = default
+      --tolerance float     Tolerated escape rate T; 0 = default
+      --window int          Rolling window size (gate-verdicts); 0 = default
+```
+
+---
+
 ### `ao guard-status`
 
 Verify guard hook and validator launcher installation

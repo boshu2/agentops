@@ -140,6 +140,14 @@ func Execute() {
 			// report already went to stdout/stderr, so nothing more to surface.
 			os.Exit(scanErr.ExitCode())
 		}
+		var govErr *governorExitError
+		if errors.As(err, &govErr) {
+			// The exit code IS the decision for `ao governor budget`: 3 means HARDEN
+			// (error budget burned — stop the line). The verdict already went to
+			// stdout and the command silences cobra's error print, so nothing more
+			// to surface — just map to the process exit code.
+			os.Exit(govErr.ExitCode())
+		}
 		var wikiHealthErr *wikiHealthExitError
 		if errors.As(err, &wikiHealthErr) {
 			// The exit code IS the verdict for `ao wiki lint`: 1 means blocking
