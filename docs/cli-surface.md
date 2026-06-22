@@ -190,6 +190,7 @@
 | `ao orchestrate tools` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao orchestrate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao pawl review` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao plan-pawl decide` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |

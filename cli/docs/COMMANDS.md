@@ -4472,6 +4472,26 @@ ao next-work materialize [flags]
 
 ---
 
+### `ao pawl`
+
+The pawl is AgentOps's acceptance gate: a change reaches "done" only with an
+
+```
+ao pawl [command]
+```
+
+**Subcommands:**
+
+#### `ao pawl review`
+
+Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
+
+```
+ao pawl review <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>] [flags]
+```
+
+---
+
 ### `ao plan-pawl`
 
 The plan-pawl is the multi-model pawl applied to a discovery PLAN artifact

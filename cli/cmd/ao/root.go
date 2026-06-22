@@ -118,6 +118,13 @@ func Execute() {
 			}
 			os.Exit(planPawlErr.ExitCode())
 		}
+		var pawlReviewErr *pawlReviewExitError
+		if errors.As(err, &pawlReviewErr) {
+			// The exit code IS the verdict in `ao pawl review` (0 CONFIRMED · 3 REFUTED ·
+			// 4 --converge advisory-only · 2 usage). The script already printed the
+			// verdict + defects; propagate the code with no extra cobra noise.
+			os.Exit(pawlReviewErr.ExitCode())
+		}
 		var beadsErr *beadsExitError
 		if errors.As(err, &beadsErr) {
 			// The exit code IS the verdict in `ao beads verify|lint|audit`:
