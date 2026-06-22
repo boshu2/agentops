@@ -88,6 +88,32 @@ A skeptical cross-family reviewer (Codex/GPT) judged this **VALID** for the
   Escapes here are strict (CONFIRMED-then-wrong) but lab-sourced; watch for
   lab-pathology bias vs production escapes.
 
+## Strengthening: does the derived check TRANSFER, or is it overfit? (2026-06-21)
+
+The one caveat the cross-family council raised was **overfit** — the derive step
+saw the ground truth, so re-judging the *same* escape could be circular. Two
+held-out probes answer it (real Haiku membrane measurement; the held-out code is
+*constructed*, since the 3.8B producer could not emit clean nested/optional
+schemas, but the membrane miss/catch is the real signal):
+
+| Held-out probe (a DIFFERENT case the check was NOT derived from) | BEFORE (no check) | AFTER (derived check) |
+|---|---|---|
+| **optional-field omitted from `required`** (different author intent than the subset escape; same underlying strict rule) | caught **1/3** — a genuine blindspot (2/3 missed) | caught **3/3** — **TRANSFERS** |
+| **nested object left loose** (recursion — the check never named it) | caught **3/3** unaided — **not a blindspot** | 3/3 (unchanged) |
+
+Reading:
+- **The check transfers, not overfits.** Derived from "caller passed a `required`
+  subset," it also catches "a field was omitted as optional" — a *different
+  manifestation* it was never shown — closing a real blindspot 1/3 → 3/3. It
+  generalizes the *rule* (every property must be in `required`), not the instance.
+- **The membrane is robust to obvious violations.** A loose nested object is
+  caught 3/3 unaided — the check is not needed there and does not over-fire. The
+  flywheel targets the *narrow, counterintuitive* blindspots (the strict-mode
+  required-completeness rule), which is exactly where escapes come from.
+- **Honest limit:** the transfer is across *manifestations of the same rule*, not
+  a fully-orthogonal contract; the held-out fixtures are constructed. A wild
+  second-contract escape from a stronger weak producer would strengthen further.
+
 ## Reproduce
 
 ```bash
