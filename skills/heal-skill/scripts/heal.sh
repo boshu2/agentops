@@ -413,6 +413,10 @@ for skill_dir in "${TARGETS[@]}"; do
     case "$ref" in
       dev|tmp|usr|bin|etc|opt|var|home|proc|sys|path|null|dev/null|skill-name) continue ;;
       agents|hooks|mcp|memory|output-style|permissions|allowed-tools|approved-tools|health|healthz|readyz|name) continue ;;
+      # Built-in CLI / Codex slash-commands that are deliberately NOT AgentOps
+      # skills: /clear (Claude built-in), /goal (Codex --codex-goal flow), /skill
+      # (the generic Skill tool). Referencing them is correct, not a dead xref.
+      clear|goal|skill|help|compact) continue ;;
     esac
     if [[ ! -d "$SKILLS_ROOT/$ref" ]]; then
       report "DEAD_XREF" "$skill_dir" "references /$ref but skill directory not found"
