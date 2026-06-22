@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	rpilib "github.com/boshu2/agentops/cli/internal/rpi"
+	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 )
 
 const (
@@ -100,7 +100,7 @@ func (a staticLiveRuntimeAdapter) VersionArgs() []string {
 }
 
 func (a staticLiveRuntimeAdapter) DirectArgs(command, prompt string) []string {
-	return rpilib.RuntimeDirectCommandArgs(command, prompt)
+	return runtimecmd.DirectArgs(command, prompt)
 }
 
 // RunLiveRuntime executes an optional Claude or Codex adapter run and returns a
@@ -153,7 +153,7 @@ func RunLiveRuntime(ctx context.Context, opts LiveRuntimeOptions) (*RunRecord, e
 	if command == "" {
 		command = adapter.DefaultCommand()
 	}
-	executable, _ := rpilib.SplitRuntimeCommand(command)
+	executable, _ := runtimecmd.Split(command)
 	if executable == "" {
 		markRuntimeSkipped(record, suite, "runtime command is empty")
 		return finishLiveRuntimeRun(opts, record, now)
@@ -630,7 +630,7 @@ func liveRuntimePrompt(opts LiveRuntimeOptions, suite Suite) string {
 }
 
 func runtimeMetadataFromCommand(command string) (string, string) {
-	_, args := rpilib.SplitRuntimeCommand(command)
+	_, args := runtimecmd.Split(command)
 	var model string
 	var profile string
 	for i := 0; i < len(args); i++ {
