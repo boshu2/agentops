@@ -16,7 +16,7 @@
 #     flywheel reads them out-of-band, not via a declared skill edge) ---
 curate                    # mine transcripts/.agents/bd/git into knowledge diffs
 dream                     # retired pointer; out-of-session compounding via Gas City
-reverse-engineer-rpi      # reverse-engineer product specs into research notes
+reverse-engineer          # reverse-engineer product specs into research notes (renamed from reverse-engineer-rpi)
 
 # --- external-boundary adapters (driven adapters to systems outside the corpus) ---
 openai-docs               # reads upstream OpenAI docs (external-api)
