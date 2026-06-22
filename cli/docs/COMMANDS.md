@@ -4550,6 +4550,23 @@ ao provenance list [flags]
       --relation string   Filter to edges with this relation
 ```
 
+#### `ao provenance mine-session`
+
+Parse a Claude Code or Codex session transcript and emit the per-inference
+
+```
+ao provenance mine-session --file <session.jsonl> [flags]
+```
+
+**Flags:**
+
+```
+      --file string    Path to the session transcript (.jsonl) to mine (required)
+  -h, --help           help for mine-session
+      --json           Emit events as JSONL on stdout (default true)
+      --state string   Path to the incremental watermark state JSON (created/updated; omit for a full one-shot mine)
+```
+
 #### `ao provenance position`
 
 Read the provenance ledger and report the navigator's current position:

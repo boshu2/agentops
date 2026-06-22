@@ -1389,6 +1389,13 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance mine-session",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance position",
       "coverage_status": "covered",
       "kind": "leaf",

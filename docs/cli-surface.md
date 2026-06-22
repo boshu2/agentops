@@ -202,6 +202,7 @@
 | `ao provenance emit-verdict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance export` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao provenance mine-session` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance position` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
