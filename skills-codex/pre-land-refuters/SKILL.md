@@ -12,6 +12,15 @@ description: 'Dispatch fresh-context refuters (model-agnostic; multi-model opt-i
 > delete/modify conflict. Self-review is biased toward "looks good"; refuters
 > are prompted to win by finding what's wrong.
 
+> **One-command path (default fresh-context mode):** `scripts/pawl-review.sh <bead>`
+> dispatches the **codex** refuter against the commit — cross-family for a Claude/Gemini
+> author; it **refuses a same-family codex author** (review codex-authored work with a
+> different-family reviewer) — and, on CONFIRMED, writes the commit-bound verdict the
+> pre-push gate enforces (REFUTED prints the defects to fix + re-run; LAW 0: never
+> `claude -p`). Use it for the common single fresh-context refuter; the manual steps
+> below add the `multi-model` opt-up (≥2 distinct families) for the highest-
+> irreversibility doors.
+
 ## When to fire
 
 Fire at a **pawl** — a one-way door on the canonical static list
