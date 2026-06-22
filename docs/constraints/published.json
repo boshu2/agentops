@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "constraints": [
+    {
+      "id": "std-nosemgrep-qualified",
+      "finding_id": "",
+      "title": "Qualified nosemgrep does not suppress — use a bare // nosemgrep",
+      "source": "standards",
+      "source_type": "go-convention",
+      "detectability": "mechanical",
+      "status": "active",
+      "compiled_at": "2026-06-22T00:00:00Z",
+      "applies_to": { "path_globs": ["**/*.go", "**/*.sh"] },
+      "detector": {
+        "kind": "regex",
+        "mode": "match",
+        "pattern": "nosemgrep:",
+        "message": "qualified 'nosemgrep: <rule>' does NOT suppress semgrep — only a bare '// nosemgrep' does (go.md). Remove the ': <rule>'."
+      },
+      "file": ""
+    }
+  ]
+}

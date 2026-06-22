@@ -184,14 +184,33 @@ gate). ao gate check unions the published set with the local .agents/ index, so 
 				}
 			}
 		}
-		published := &search.ConstraintIndex{SchemaVersion: schemaVersion, Constraints: active}
+		path := search.PublishedConstraintIndexRelPath()
+		// Merge-preserve: a hand-authored STANDARDS rule (source != "finding") already
+		// in the published surface must SURVIVE a publish — publish only refreshes the
+		// escape-derived (source="finding") entries it owns. Without this, publishing
+		// would wipe every manually-seeded repo rule. (age-az6n)
+		preserved, err := preservedStandardsConstraints(path)
+		if err != nil {
+			return err
+		}
+		seen := make(map[string]bool, len(active)+len(preserved))
+		merged := make([]constraintEntry, 0, len(active)+len(preserved))
+		for _, c := range active { // the fresh escape-derived set owns its ids
+			merged = append(merged, c)
+			seen[c.ID] = true
+		}
+		for _, c := range preserved {
+			if !seen[c.ID] {
+				merged = append(merged, c)
+			}
+		}
+		published := &search.ConstraintIndex{SchemaVersion: schemaVersion, Constraints: merged}
 		// Defense in depth behind the allowlist: refuse to write rather than leak a
 		// residual private .agents/ path that rode along in a kept field.
 		if leaked := search.PublishedLeaks(published); len(leaked) > 0 {
 			return fmt.Errorf("refusing to publish: constraint(s) %v still carry a private .agents/ path "+
 				"(fix the constraint's title/message/globs before publishing)", leaked)
 		}
-		path := search.PublishedConstraintIndexRelPath()
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			return fmt.Errorf("create published constraints dir: %w", err)
 		}
@@ -208,9 +227,36 @@ gate). ao gate check unions the published set with the local .agents/ index, so 
 			enc.SetIndent("", "  ")
 			return enc.Encode(published)
 		}
-		fmt.Printf("Published %d active constraint(s) to %s — commit it so CI / clean clones enforce them.\n", len(active), path)
+		fmt.Printf("Published %d constraint(s) to %s (%d escape-derived, %d standards preserved) — commit it so CI / clean clones enforce them.\n",
+			len(merged), path, len(active), len(merged)-len(active))
 		return nil
 	},
+}
+
+// preservedStandardsConstraints reads the STANDARDS (source != "finding") entries
+// from the existing published surface so `ao constraint publish` refreshes only its
+// own escape-derived entries and never wipes a hand-authored repo rule. A missing
+// file means nothing to preserve; a present-but-CORRUPT file is an error (fail
+// closed — never silently drop hand-authored rules). (age-az6n)
+func preservedStandardsConstraints(path string) ([]constraintEntry, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("reading published constraints: %w", err)
+	}
+	var idx constraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		return nil, fmt.Errorf("existing published constraints malformed (fix or remove %s before publishing): %w", path, err)
+	}
+	var out []constraintEntry
+	for _, c := range idx.Constraints {
+		if c.Source != "finding" {
+			out = append(out, c)
+		}
+	}
+	return out, nil
 }
 
 // ----- review -----
