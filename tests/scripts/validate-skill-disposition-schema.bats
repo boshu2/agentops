@@ -176,13 +176,21 @@ PY
 }
 
 @test "the additive change leaves renamed-consumer parsers byte-untouched" {
-    # resolve-skill-path.sh, skills_retire.go, heal.sh must match origin/main.
+    # resolve-skill-path.sh, skills_retire.go, heal.sh must match mainline.
+    # Resolve a mainline ref defensively: CI checks out shallow (fetch-depth: 2)
+    # with no origin/main remote-tracking ref, so skip rather than erroring with
+    # "bad revision 'origin/main'" when no mainline tip is reachable. The guard
+    # still runs on local/pre-push checkouts where origin/main exists.
+    base="$(git -C "$REPO_ROOT" rev-parse --verify --quiet origin/main \
+        || git -C "$REPO_ROOT" rev-parse --verify --quiet main \
+        || true)"
+    [ -n "$base" ] || skip "no mainline ref (origin/main|main) reachable in this checkout"
     for f in \
         scripts/lib/resolve-skill-path.sh \
         cli/cmd/ao/skills_retire.go \
         skills/heal-skill/scripts/heal.sh \
         skills-codex/heal-skill/scripts/heal.sh; do
-        run git -C "$REPO_ROOT" diff --quiet origin/main -- "$f"
+        run git -C "$REPO_ROOT" diff --quiet "$base" -- "$f"
         [ "$status" -eq 0 ]
     done
     # The filename + row key + domain-string format are unchanged.

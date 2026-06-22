@@ -29,7 +29,9 @@
 #                      removal itself — must keep naming hooks)
 #   opt-in subsystem : contracts/ (hooks-authoring opt-in subsystem specs),
 #                      runbooks/ (diagnostic hook enumeration),
-#                      code-map/   (point-in-time code audits)
+#                      code-map/   (point-in-time code audits),
+#                      audits/     (point-in-time recon/docsweep findings that
+#                                   catalogue stale hook refs in order to fix them)
 # These are deliberately out of the live-facing risk class. The gate keeps the
 # onboarding / operator / architecture narrative hookless.
 set -euo pipefail
@@ -49,7 +51,7 @@ PAT='hooks/hooks\.json|hooks/[A-Za-z0-9_-]+\.sh|\bao hooks\b|\b[a-z0-9-]*session
 HEDGE='hookless|hooks-authoring|ships (zero|no) hooks|no hooks|no `?ao hooks|removed|are gone|is gone|gone by design|retired|no longer|deleted|teardown|historical|legacy|formerly|used to|previously|was wired|pre-existed|opt-in|optional|if you author|author one|author via|author your own|example|when installed|hook-capable|can be triggered|injected|curated|replaced|instead|→|not wired|inactive|zero matches|grep yields|\.githooks|git-hook|git hook'
 
 # Archival + opt-in-subsystem surfaces (basenames; unique under docs/).
-EXCLUDE_DIRS=(releases learnings plans adr convergence sovereignty-proof contracts runbooks code-map)
+EXCLUDE_DIRS=(releases learnings plans adr convergence sovereignty-proof contracts runbooks code-map audits)
 
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
