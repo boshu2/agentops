@@ -52,6 +52,60 @@ func runGovBudget(t *testing.T, root string) (string, error) {
 	return buf.String(), err
 }
 
+// runGovNoiseBand runs the noise-band command against root, restoring flag state.
+func runGovNoiseBand(t *testing.T, root string) (string, error) {
+	t.Helper()
+	prev := testProjectDir
+	testProjectDir = root
+	origJSON, origWin, origLim := govNoiseJSON, govNoiseWindow, govNoiseLimit
+	t.Cleanup(func() {
+		testProjectDir = prev
+		govNoiseJSON, govNoiseWindow, govNoiseLimit = origJSON, origWin, origLim
+		governorNoiseBandCmd.SetOut(nil)
+	})
+	govNoiseJSON = true
+	govNoiseWindow, govNoiseLimit = 0, 0
+	var buf bytes.Buffer
+	governorNoiseBandCmd.SetOut(&buf)
+	err := runGovernorNoiseBand(governorNoiseBandCmd, nil)
+	return buf.String(), err
+}
+
+func TestGovernorNoiseBand_SpecialCauseAdjusts(t *testing.T) {
+	root := t.TempDir()
+	// 3 escapes in the same domain -> special-cause -> adjust.
+	for _, b := range []string{"e1", "e2", "e3"} {
+		w := yieldledger.Writer{}
+		for _, d := range []struct {
+			disp    string
+			attempt int
+		}{{yieldledger.DispositionConfirmed, 1}, {yieldledger.DispositionRefuted, 2}} {
+			headSHA := b + "-headsha0"
+			if _, err := w.AppendGateVerdict(root, yieldledger.GateVerdictInput{
+				BeadID: b, RunID: "r", Difficulty: 1,
+				TS:              time.Date(2026, 6, 22, 15, 0, d.attempt, 0, time.UTC),
+				PawlVerdictRef:  yieldledger.PawlVerdictRef{BeadID: b, HeadSHA: headSHA},
+				Disposition:     d.disp,
+				AuthorContextID: "ctx-" + b, AuthorFamily: "claude",
+				HeadSHA: headSHA, Attempt: d.attempt, Domain: "concurrency",
+			}); err != nil {
+				t.Fatalf("append: %v", err)
+			}
+		}
+	}
+	out, err := runGovNoiseBand(t, root)
+	if err != nil {
+		t.Fatalf("noise-band err: %v", err)
+	}
+	var v governor.AdjustVerdict
+	if uerr := json.Unmarshal([]byte(out), &v); uerr != nil {
+		t.Fatalf("unmarshal %q: %v", out, uerr)
+	}
+	if v.Decision != governor.Adjust {
+		t.Fatalf("decision = %q, want adjust (%+v)", v.Decision, v)
+	}
+}
+
 func TestGovernorBudget_CleanLedgerShips(t *testing.T) {
 	root := t.TempDir()
 	for i := range 6 {

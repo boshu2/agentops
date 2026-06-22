@@ -4356,6 +4356,23 @@ ao governor budget [--json] [--window N] [--tolerance T] [--min-confirmed N] [fl
       --window int          Rolling window size (gate-verdicts); 0 = default
 ```
 
+#### `ao governor noise-band`
+
+SPC.2 (control-loop-model.md §4). The membrane adjusts ONLY on a special-cause
+
+```
+ao governor noise-band [--json] [--window N] [--limit K] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for noise-band
+      --json         Emit the verdict as JSON
+      --limit int    Special-cause control limit K (escapes per domain in window); 0 = default
+      --window int   Rolling window size (gate-verdicts); 0 = default
+```
+
 ---
 
 ### `ao guard-status`

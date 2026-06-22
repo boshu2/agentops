@@ -54,13 +54,70 @@ mechanical for a calling gate/loop).`,
 	RunE: runGovernorBudget,
 }
 
+var (
+	govNoiseJSON   bool
+	govNoiseWindow int
+	govNoiseLimit  int
+)
+
+var governorNoiseBandCmd = &cobra.Command{
+	Use:   "noise-band [--json] [--window N] [--limit K]",
+	Short: "Special-cause noise-band: should the membrane ADJUST, or is this common-cause noise?",
+	Long: `SPC.2 (control-loop-model.md §4). The membrane adjusts ONLY on a special-cause
+signal — a repeated escape pattern past a control limit — never on common-cause
+noise (a one-off), which is tampering that makes the membrane oscillate (cry-wolf).
+
+Reads the yield ledger and, over the rolling window of the most-recent
+gate-verdicts across all runs, counts escapes per DOMAIN (one escape per bead).
+A domain with >= K escapes is a special-cause pattern -> ADJUST (a derived gate
+is warranted for that domain). Otherwise -> HOLD.
+
+Informational (exit 0); the decision is in the output. This is a recommendation
+to the slow loop, not a stop-the-line gate.`,
+	RunE: runGovernorNoiseBand,
+}
+
 func init() {
 	governorBudgetCmd.Flags().BoolVar(&govBudgetJSON, "json", false, "Emit the verdict as JSON")
 	governorBudgetCmd.Flags().IntVar(&govBudgetWindow, "window", 0, "Rolling window size (gate-verdicts); 0 = default")
 	governorBudgetCmd.Flags().Float64Var(&govBudgetTolerance, "tolerance", 0, "Tolerated escape rate T; 0 = default")
 	governorBudgetCmd.Flags().IntVar(&govBudgetMinConf, "min-confirmed", 0, "Special-cause floor: min confirmed in window before harden can fire; 0 = default")
 	governorCmd.AddCommand(governorBudgetCmd)
+
+	governorNoiseBandCmd.Flags().BoolVar(&govNoiseJSON, "json", false, "Emit the verdict as JSON")
+	governorNoiseBandCmd.Flags().IntVar(&govNoiseWindow, "window", 0, "Rolling window size (gate-verdicts); 0 = default")
+	governorNoiseBandCmd.Flags().IntVar(&govNoiseLimit, "limit", 0, "Special-cause control limit K (escapes per domain in window); 0 = default")
+	governorCmd.AddCommand(governorNoiseBandCmd)
+
 	rootCmd.AddCommand(governorCmd)
+}
+
+func runGovernorNoiseBand(cmd *cobra.Command, _ []string) error {
+	root, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return err
+	}
+	v := governor.ShouldAdjust(ledger, governor.NoiseBandConfig{
+		WindowSize:        govNoiseWindow,
+		SpecialCauseLimit: govNoiseLimit,
+	})
+	out := cmd.OutOrStdout()
+	if govNoiseJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(v)
+	}
+	fmt.Fprintf(out, "governor noise-band: %s\n", v.Decision)
+	fmt.Fprintf(out, "  window %d verdicts, control limit K=%d escapes/domain\n", v.WindowSize, v.SpecialCauseLimit)
+	if len(v.SpecialCauseDomains) > 0 {
+		fmt.Fprintf(out, "  special-cause domains: %v\n", v.SpecialCauseDomains)
+	}
+	fmt.Fprintf(out, "  %s\n", v.Reason)
+	return nil
 }
 
 // hardenExitCode is returned when the budget is burned, so a calling gate/loop can
