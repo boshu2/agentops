@@ -91,6 +91,29 @@ Illustrative shape:
 }
 ```
 
+## Detector Precision (authoring a sound regex gate)
+
+A `regex` detector is matched against **whole-file text** — it cannot tell code from a comment,
+string, or docstring. An `active` constraint is a **blocking** gate, so a false positive fails a
+legitimate push. Author detectors so the pattern is **rare in non-code positions**, and prefer the
+narrowest precise form (lessons hardened across the 2026-06-22 seeding — every rule below was a real
+cross-family-pawl catch):
+
+- **Anchor over substring.** A bare substring has an unbounded false-positive tail. Line-anchor with
+  `(?m)^...` and use `[ \t]` (space/tab) rather than `[[:space:]]` (which includes `\n` and can match
+  across lines onto a valid separate-line form). Match a path/identifier *segment*, not a fragment that
+  also appears mid-word (e.g. `gate` matches `aggregate`).
+- **Some anti-patterns are NOT regex-gatable.** A pattern that *commonly* appears in strings/comments
+  (e.g. Python bare `except:` inside a docstring code example) cannot be distinguished from real code
+  without an AST. Do **not** ship it as a blocking regex constraint — it will false-positive. Leave it
+  advisory, or implement a language-aware check.
+- **Scope to code with a SUPPORTED glob.** Use `**/*.go` / `**/*.sh` / `**/*.py` (the gate accepts
+  `base/**`, `**/*.ext`, `*.ext`, exact, and a single-`*` segment — `cli/**/*.go` is REJECTED and
+  fails closed). Code-only globs also keep the doc that *documents* the footgun (a `.md`) out of scope.
+- **Verify ZERO existing violations** with the exact regex before activating — an active constraint
+  with a current violation fails the repo's own gate. Probe the enforce/PASS+violation/FAIL transition
+  on the built binary, not just by eye.
+
 ## Applicability Inputs
 
 Active constraint applicability is resolved from concrete runtime inputs, not abstract scope tags.
