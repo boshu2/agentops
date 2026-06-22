@@ -1364,6 +1364,12 @@ jobs:
           chmod +x tests/e2e/membrane-mine-session-incremental.sh
           bash tests/e2e/membrane-mine-session-incremental.sh
 
+      - name: SPC.TEST governor conformance e2e (epic age-wy3.4)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x tests/e2e/membrane-governor-conformance.sh
+          bash tests/e2e/membrane-governor-conformance.sh
+
       - name: Run three-gap super-gates (GOALS.md gate id three-gap-supergate, weight 5)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
         run: |
