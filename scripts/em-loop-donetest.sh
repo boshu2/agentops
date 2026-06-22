@@ -111,8 +111,21 @@ ok "5. SAFE: violation removed -> constraints.enforce PASS (active rule, clean t
 FINDING="$(find "$PROJ/.agents/findings" -maxdepth 1 -name '*.md' 2>/dev/null | head -1)"
 [ -n "$FINDING" ] || fail cite "no derived finding written"
 grep -q "age-demo" "$FINDING" || fail cite "derived finding does not cite the escape bead"
-ok "6. CITE: derived finding written + cites the escape (the next pre-mortem's input; LOAD is EM.4)"
+ok "6. CITE: derived finding written + cites the escape"
+
+# 7. LOAD — the COGNITION half (EM.4 / .2.4). The DETERMINISTIC loader the next
+# in-domain pre-mortem calls (`ao lookup --query <domain>`, per skills/pre-mortem
+# SKILL.md) must SURFACE the escape-derived check by domain, CITING the escape —
+# proving the membrane's memory is mechanically RETRIEVABLE, not just written to
+# disk. Together with step 5's gate-BLOCK this is the FULL EM-parent claim
+# ("the next in-domain pre-mortem auto-loads + cites + blocks").
+LOOKED="$("$AO" lookup --query demo 2>&1 || true)"
+printf '%s' "$LOOKED" | grep -q "age-demo" \
+  || fail load "ao lookup --query <domain> must surface the escape-derived finding (the pre-mortem's load path)"
+printf '%s' "$LOOKED" | grep -qiE "Escape:|false-done" \
+  || fail load "the loaded entry must be the derived escape finding (cites the escape)"
+ok "7. LOAD: ao lookup --query demo surfaces the derived check citing the escape (cognition half — EM.4)"
 
 echo
-echo "✓✓ EM LOOP CLOSED on the shipped ao binary: escape -> mechanical constraint -> active -> blocks re-introduction. The membrane self-improved."
+echo "✓✓ EM LOOP CLOSED on the shipped ao binary: escape -> mechanical constraint -> active -> blocks re-introduction, AND the derived check is retrievable by the next in-domain pre-mortem (load+cite+block). The membrane self-improved."
 exit 0
