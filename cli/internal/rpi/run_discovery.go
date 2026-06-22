@@ -261,16 +261,6 @@ func liveTmuxSessions() map[string]struct{} {
 	return rpiTmuxSessions
 }
 
-// resetTmuxSessionCache clears the memoized snapshot so the next
-// liveTmuxSessions call re-probes. Only tests that swap the tmux binary or PATH
-// need this; production never calls it.
-func resetTmuxSessionCache() {
-	rpiTmuxMu.Lock()
-	defer rpiTmuxMu.Unlock()
-	rpiTmuxLoaded = false
-	rpiTmuxSessions = nil
-}
-
 // probeTmuxSessions runs a single `tmux ls` and parses the session names.
 func probeTmuxSessions() map[string]struct{} {
 	sessions := map[string]struct{}{}
