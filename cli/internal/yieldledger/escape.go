@@ -41,17 +41,28 @@ type Escape struct {
 	// membrane-check is built from. (age-membrane-memory-j9c6.1)
 	Domain string `json:"domain,omitempty"`
 	Missed string `json:"missed,omitempty"`
+
+	// Detector* fields, when present, make the escape MECHANICALLY re-introducible:
+	// deriveFindingFromEscape compiles them into a draft constraint the gate
+	// enforces (escape -> regex + path globs -> gate blocks the class next time).
+	// Empty -> the escape is a process-gap; its finding stays advisory. (EM.2.10)
+	DetectorPattern     string `json:"detector_pattern,omitempty"`
+	ConstraintPathGlobs string `json:"constraint_path_globs,omitempty"`
+	DetectorKind        string `json:"detector_kind,omitempty"`
 }
 
 // verdictRow is a flattened gate-verdict carrying the envelope TS for ordering.
 type verdictRow struct {
-	disposition string
-	headSHA     string
-	attempt     int
-	ts          string
-	families    []string
-	domain      string
-	reason      string
+	disposition         string
+	headSHA             string
+	attempt             int
+	ts                  string
+	families            []string
+	domain              string
+	reason              string
+	detectorPattern     string
+	constraintPathGlobs string
+	detectorKind        string
 }
 
 // DetectEscapes returns the escapes in runID, one per escaping bead (v1
@@ -80,13 +91,16 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			beadOrder = append(beadOrder, ev.BeadID)
 		}
 		byBead[ev.BeadID] = append(byBead[ev.BeadID], verdictRow{
-			disposition: ev.GateVerdict.Disposition,
-			headSHA:     ev.GateVerdict.HeadSHA,
-			attempt:     ev.GateVerdict.Attempt,
-			ts:          ev.TS,
-			families:    ev.GateVerdict.RefuterFamilies,
-			domain:      ev.GateVerdict.Domain,
-			reason:      ev.GateVerdict.Reason,
+			disposition:         ev.GateVerdict.Disposition,
+			headSHA:             ev.GateVerdict.HeadSHA,
+			attempt:             ev.GateVerdict.Attempt,
+			ts:                  ev.TS,
+			families:            ev.GateVerdict.RefuterFamilies,
+			domain:              ev.GateVerdict.Domain,
+			reason:              ev.GateVerdict.Reason,
+			detectorPattern:     ev.GateVerdict.DetectorPattern,
+			constraintPathGlobs: ev.GateVerdict.ConstraintPathGlobs,
+			detectorKind:        ev.GateVerdict.DetectorKind,
 		})
 	}
 
@@ -144,6 +158,11 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			RefuterFamilies:  refuted.families,
 			Domain:           domain,
 			Missed:           refuted.reason,
+			// Detector metadata comes from the REFUTED catch (the moment the bad
+			// pattern is identified), mirroring Missed=refuted.reason. (EM.2.10)
+			DetectorPattern:     refuted.detectorPattern,
+			ConstraintPathGlobs: refuted.constraintPathGlobs,
+			DetectorKind:        refuted.detectorKind,
 		})
 	}
 	return escapes

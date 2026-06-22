@@ -160,6 +160,59 @@ func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 	}
 }
 
+// EM.2.10 ACCEPTANCE: a MECHANICAL escape, run through `ao membrane derive-checks`,
+// lands a draft ConstraintEntry in .agents/constraints/index.json (the empty index
+// the whole direction was unblocking). This is the product-path proof at the
+// command level: the loop's compile half fires end-to-end on a real ledger input.
+func TestMembraneDeriveChecks_MechanicalEscape_WritesConstraint(t *testing.T) {
+	root := t.TempDir()
+	const run = "r-mech-e2e"
+	w := yieldledger.Writer{}
+	mk := func(disp, sha string, attempt int, in yieldledger.GateVerdictInput) {
+		in.BeadID, in.RunID, in.Disposition, in.HeadSHA, in.Attempt = "age-mech", run, disp, sha, attempt
+		in.TS = time.Date(2026, 6, 22, 12, attempt, 0, 0, time.UTC)
+		in.Difficulty = 1
+		in.PawlVerdictRef = yieldledger.PawlVerdictRef{BeadID: "age-mech", HeadSHA: sha}
+		in.AuthorContextID = "ctx"
+		in.AuthorFamily = "claude"
+		if _, err := w.AppendGateVerdict(root, in); err != nil {
+			t.Fatalf("append %s: %v", disp, err)
+		}
+	}
+	mk(yieldledger.DispositionConfirmed, "aaa1111aaa", 1, yieldledger.GateVerdictInput{})
+	mk(yieldledger.DispositionRefuted, "bbb2222bbb", 2, yieldledger.GateVerdictInput{
+		Domain: "validation", Reason: "forbidden eval()",
+		DetectorPattern: `\beval\(`, ConstraintPathGlobs: "cli/**", DetectorKind: "regex",
+	})
+
+	orig := testProjectDir
+	testProjectDir = root
+	defer func() { testProjectDir = orig }()
+	membraneDeriveRun = run
+	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
+
+	captureMembraneDerive(t)
+	if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
+		t.Fatalf("derive-checks: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(root, ".agents", "constraints", "index.json"))
+	if err != nil {
+		t.Fatalf("index.json not written — the loop did not fire: %v", err)
+	}
+	var idx search.ConstraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("index.json malformed: %v", err)
+	}
+	if len(idx.Constraints) != 1 {
+		t.Fatalf("mechanical escape must yield exactly 1 draft constraint, got %d", len(idx.Constraints))
+	}
+	c := idx.Constraints[0]
+	if c.Status != "draft" || c.Detector.Pattern != `\beval\(` || len(c.AppliesTo.PathGlobs) == 0 {
+		t.Fatalf("constraint not compiled from the escape's detector: %+v", c)
+	}
+}
+
 func TestMembraneDeriveChecks_Idempotent(t *testing.T) {
 	root := t.TempDir()
 	const run = "r-idem"
@@ -359,8 +412,8 @@ func TestDeriveFindingFromEscape_SentinelsRenderAsDebt(t *testing.T) {
 		BeadID: "age-unc", RunID: "r1",
 		ConfirmedHeadSHA: "aaaaaaa1", ConfirmedAttempt: 1,
 		RefutedHeadSHA: "bbbbbbb2", RefutedAttempt: 2,
-		Domain:         yieldledger.DomainUnclassified,
-		Missed:         yieldledger.ReasonUnspecified,
+		Domain: yieldledger.DomainUnclassified,
+		Missed: yieldledger.ReasonUnspecified,
 	}, domainsignal.Record{})
 	// The body must call out the debt, NOT present the placeholders as real signal.
 	if !strings.Contains(a.Body, "UNCLASSIFIED") || !strings.Contains(a.Body, "never classified") {
@@ -378,9 +431,9 @@ func TestDeriveFindingFromEscape_SentinelsRenderAsDebt(t *testing.T) {
 // when they disagree, a DOMAIN MISMATCH note — all queryable via frontmatter.
 func TestDeriveFindingFromEscape_ThreeSignalRecord(t *testing.T) {
 	rec := domainsignal.Build(
-		domainsignal.BC2Validation,                                  // intended BC2
-		[]string{"cli/cmd/ao/x.go", "cli/internal/swarm/y.go"},      // code in BC5 + BC6
-		"concurrency",                                               // escape domain (free text)
+		domainsignal.BC2Validation,                             // intended BC2
+		[]string{"cli/cmd/ao/x.go", "cli/internal/swarm/y.go"}, // code in BC5 + BC6
+		"concurrency", // escape domain (free text)
 	)
 	if !rec.Mismatch {
 		t.Fatalf("precondition: BC2 intent vs BC5/BC6 changes must mismatch; %+v", rec)
@@ -406,6 +459,64 @@ func TestDeriveFindingFromEscape_ThreeSignalRecord(t *testing.T) {
 	b := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-y", RunID: "r1", ConfirmedHeadSHA: "c", RefutedHeadSHA: "r"}, domainsignal.Record{})
 	if strings.Contains(b.Body, "Domain signals:") {
 		t.Errorf("empty record must not render a domain-signals block; got:\n%s", b.Body)
+	}
+}
+
+// EM.2.10 — THE CUT WIRE, reconnected. A MECHANICAL escape (one carrying a
+// detector pattern + path globs) must now compile, through the SHARED
+// search.BuildConstraintEntry contract, into a real draft constraint — proving
+// the membrane can BLOCK a re-introduction, not merely remember the escape.
+func TestDeriveFindingFromEscape_MechanicalEscape_CompilesToConstraint(t *testing.T) {
+	a := deriveFindingFromEscape(yieldledger.Escape{
+		BeadID: "age-mech", RunID: "r1",
+		ConfirmedHeadSHA: "aaaaaaa1", ConfirmedAttempt: 1, ConfirmedTS: "2026-06-22T10:00:00Z",
+		RefutedHeadSHA: "bbbbbbb2", RefutedAttempt: 2, RefutedTS: "2026-06-22T11:00:00Z",
+		Domain: "validation",
+		Missed: "unanchored substring rule misclassified aggregate as a gate",
+		// the re-introducible pattern + where it applies:
+		DetectorPattern:     `contains:\s*"(gate|pawl)"`,
+		ConstraintPathGlobs: "cli/internal/domainsignal/**",
+	}, domainsignal.Record{})
+
+	// Frontmatter is upgraded to mechanical with the constraint compile target.
+	if a.Frontmatter["detectability"] != "mechanical" {
+		t.Fatalf("mechanical escape must set detectability=mechanical, got %q", a.Frontmatter["detectability"])
+	}
+	if !strings.Contains(a.Frontmatter["compiler_targets"], "constraint") {
+		t.Fatalf("compiler_targets must include constraint, got %q", a.Frontmatter["compiler_targets"])
+	}
+	// THE PROOF: it compiles through the shared contract into a real draft constraint.
+	entry, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter)
+	if !ok {
+		t.Fatalf("mechanical finding must compile to a constraint via BuildConstraintEntry; frontmatter=%v", a.Frontmatter)
+	}
+	if entry.Status != "draft" {
+		t.Errorf("derived constraint must be status=draft (human activates), got %q", entry.Status)
+	}
+	if entry.Detector.Pattern != `contains:\s*"(gate|pawl)"` {
+		t.Errorf("detector pattern not carried through: %q", entry.Detector.Pattern)
+	}
+	if len(entry.AppliesTo.PathGlobs) == 0 || entry.AppliesTo.PathGlobs[0] != "cli/internal/domainsignal/**" {
+		t.Errorf("path globs not carried through: %v", entry.AppliesTo.PathGlobs)
+	}
+	if entry.CompiledAt != "2026-06-22T11:00:00Z" {
+		t.Errorf("compiled_at should be the refuted (catch) TS, got %q", entry.CompiledAt)
+	}
+}
+
+// A process-gap escape (no detector) stays ADVISORY and compiles to NO constraint —
+// the membrane remembers it (pre-mortem note) but cannot mechanically block it.
+func TestDeriveFindingFromEscape_ProcessGapEscape_StaysAdvisory(t *testing.T) {
+	a := deriveFindingFromEscape(yieldledger.Escape{
+		BeadID: "age-proc", RunID: "r1",
+		ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2",
+		Domain: "validation", Missed: "missing fresh-context re-verification",
+	}, domainsignal.Record{})
+	if a.Frontmatter["detectability"] != "advisory" {
+		t.Fatalf("process-gap escape must stay advisory, got %q", a.Frontmatter["detectability"])
+	}
+	if _, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter); ok {
+		t.Fatal("an advisory escape must NOT compile to a constraint")
 	}
 }
 
