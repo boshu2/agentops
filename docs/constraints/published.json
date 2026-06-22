@@ -4,18 +4,45 @@
     {
       "id": "std-nosemgrep-qualified",
       "finding_id": "",
-      "title": "Qualified nosemgrep does not suppress — use a bare // nosemgrep",
+      "title": "Qualified nosemgrep does not suppress \u2014 use a bare // nosemgrep",
       "source": "standards",
       "source_type": "go-convention",
       "detectability": "mechanical",
       "status": "active",
       "compiled_at": "2026-06-22T00:00:00Z",
-      "applies_to": { "path_globs": ["**/*.go", "**/*.sh"] },
+      "applies_to": {
+        "path_globs": [
+          "**/*.go",
+          "**/*.sh"
+        ]
+      },
       "detector": {
         "kind": "regex",
         "mode": "match",
         "pattern": "nosemgrep:",
-        "message": "qualified 'nosemgrep: <rule>' does NOT suppress semgrep — only a bare '// nosemgrep' does (go.md). Remove the ': <rule>'."
+        "message": "qualified 'nosemgrep: <rule>' does NOT suppress semgrep \u2014 only a bare '// nosemgrep' does (go.md). Remove the ': <rule>'."
+      },
+      "file": ""
+    },
+    {
+      "id": "std-shellcheck-disable-inline",
+      "finding_id": "",
+      "title": "shellcheck disable inline '-- comment' is invalid \u2014 put it on a separate line",
+      "source": "standards",
+      "source_type": "shell-convention",
+      "detectability": "mechanical",
+      "status": "active",
+      "compiled_at": "2026-06-22T00:00:00Z",
+      "applies_to": {
+        "path_globs": [
+          "**/*.sh"
+        ]
+      },
+      "detector": {
+        "kind": "regex",
+        "mode": "match",
+        "pattern": "shellcheck disable=[A-Z0-9, ]+[ \\t]+--",
+        "message": "a 'shellcheck disable=<codes> -- comment' INLINE is invalid \u2014 the '--' comment must be on a SEPARATE line (go.md/shellcheck)."
       },
       "file": ""
     }
