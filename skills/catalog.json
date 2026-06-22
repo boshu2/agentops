@@ -1,11 +1,11 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-16T21:38:22Z",
-  "skill_count": 72,
+  "generated_at": "2026-06-22T18:42:37Z",
+  "skill_count": 75,
   "skills": [
     {
       "name": "account-rotation",
-      "description": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam.",
+      "description": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -36,7 +36,7 @@
     },
     {
       "name": "agent-mail",
-      "description": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.",
+      "description": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: \"agent-mail\", \"agent mail\", \"use when coordinating agents with\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -50,7 +50,7 @@
     },
     {
       "name": "agent-native",
-      "description": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.",
+      "description": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -116,7 +116,7 @@
     },
     {
       "name": "autodev",
-      "description": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair.",
+      "description": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: \"manage PROGRAM.md/AUTODEV.md\", \"autodev loop rules\", \"evolve/factory tick boundaries\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [
@@ -164,7 +164,7 @@
     },
     {
       "name": "beads-br",
-      "description": ">-",
+      "description": "Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. Triggers: \"beads-br\", \"beads br\", \"local-first issue tracker beads rust\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -178,7 +178,7 @@
     },
     {
       "name": "beads-bv",
-      "description": ">-",
+      "description": "Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -192,7 +192,7 @@
     },
     {
       "name": "beads-workflow",
-      "description": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.",
+      "description": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. Triggers: \"beads-workflow\", \"beads workflow\", \"use when converting markdown plans\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -205,36 +205,34 @@
       "codex_override_present": true
     },
     {
-      "name": "beads",
-      "description": "Track issues with bd/br, triage with bv, and convert plans to beads.",
-      "hexagonal_role": "driven-adapter",
+      "name": "behavior-first-planning",
+      "description": "Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: \"plan behavior-first\", \"acceptance-first planning\", \"give these beads runnable done-criteria\".",
+      "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
-        "bd-issue"
+        "standards"
       ],
       "produces": [
-        "bd-issue"
+        ".agents/plans/*.md",
+        "br-issue"
       ],
       "practices": [
-        "agile-manifesto",
-        "pragmatic-programmer"
+        "bdd-gherkin",
+        "tdd",
+        "adr"
       ],
       "context_rel": [
         {
-          "kind": "supplier-to",
-          "with": "crank"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "ratchet"
+          "kind": "shared-kernel",
+          "with": "standards"
         }
       ],
-      "references_count": 19,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
       "name": "bootstrap",
-      "description": "Initialize AgentOps project files.",
+      "description": "Initialize AgentOps project files. Triggers: \"initialize AgentOps\", \"bootstrap project files\", \"set up .agents scaffolding\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [
@@ -255,7 +253,7 @@
     },
     {
       "name": "cass",
-      "description": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history.",
+      "description": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history. Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -269,7 +267,7 @@
     },
     {
       "name": "cc-hooks",
-      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.",
+      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -278,7 +276,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 6,
+      "references_count": 7,
       "codex_override_present": true
     },
     {
@@ -334,7 +332,7 @@
     },
     {
       "name": "compile",
-      "description": "Compile .agents knowledge wiki.",
+      "description": "Compile .agents knowledge wiki. Triggers: \"compile the knowledge wiki\", \"build the LLM wiki\", \"compile .agents into the wiki\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -394,7 +392,7 @@
     },
     {
       "name": "converge",
-      "description": "Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go.",
+      "description": "Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: \"converge\", \"drive a fix re-run-judge-panel loop\", \"converge skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -413,7 +411,7 @@
     },
     {
       "name": "converter",
-      "description": "Convert AgentOps skill formats.",
+      "description": "Convert AgentOps skill formats. Triggers: \"converter\", \"convert agentops skill formats.\", \"converter skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -456,11 +454,11 @@
     },
     {
       "name": "crank",
-      "description": "Execute epics through waves.",
+      "description": "Execute epics through waves. Triggers: \"crank an epic\", \"execute epics through waves\", \"drive the bead wave plan\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
-        "beads",
+        "beads-br",
         "implement",
         "post-mortem",
         "swarm",
@@ -486,7 +484,7 @@
     },
     {
       "name": "curate",
-      "description": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
+      "description": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -503,7 +501,7 @@
     },
     {
       "name": "dcg",
-      "description": ">-",
+      "description": "Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -517,7 +515,7 @@
     },
     {
       "name": "discovery",
-      "description": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).",
+      "description": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
@@ -547,7 +545,7 @@
     },
     {
       "name": "doc",
-      "description": "Generate and validate repo docs, READMEs, and OSS doc packs.",
+      "description": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -567,7 +565,7 @@
     },
     {
       "name": "domain",
-      "description": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.",
+      "description": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -584,8 +582,42 @@
       "codex_override_present": true
     },
     {
+      "name": "dual-pane-atm",
+      "description": "Repeatable mixed-model ATM duel — Opus (Claude) + Codex (+AGY) panes, or an in-session variant for a one-shot one-way-door decision. Triggers: \"dual pane\", \"Opus and Codex together\", \"CEP duel/build\", \"two-pane ATM\", \"collaborative ATM\", \"mixed-model duel\", \"fan out competing theses / duel it out\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [
+        "using-atm",
+        "agent-mail"
+      ],
+      "produces": [
+        ".agents/dual-pane/*.md"
+      ],
+      "practices": [
+        "team-topologies",
+        "mythical-man-month",
+        "llm-eval-harness"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "using-atm"
+        },
+        {
+          "kind": "customer-of",
+          "with": "automation-shape-routing"
+        },
+        {
+          "kind": "partnership",
+          "with": "vibing-with-ntm"
+        }
+      ],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
       "name": "eval-outcomes",
-      "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.",
+      "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: \"eval-outcomes\", \"eval outcomes\", \"grade agent or model output\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -634,7 +666,7 @@
     },
     {
       "name": "flywheel",
-      "description": "Check knowledge flywheel health.",
+      "description": "Check knowledge flywheel health. Triggers: \"flywheel\", \"check knowledge flywheel health.\", \"flywheel skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -657,7 +689,7 @@
     },
     {
       "name": "forge",
-      "description": "Mine transcripts into learnings.",
+      "description": "Mine transcripts into learnings. Triggers: \"forge\", \"mine transcripts into learnings.\", \"forge skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -679,7 +711,7 @@
     },
     {
       "name": "goals",
-      "description": "Maintain AgentOps goals.",
+      "description": "Maintain AgentOps goals. Triggers: \"goals\", \"maintain agentops goals.\", \"goals skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -702,7 +734,7 @@
     },
     {
       "name": "handoff",
-      "description": "Write compact session handoffs.",
+      "description": "Write compact session handoffs. Triggers: \"handoff\", \"write compact session handoffs.\", \"handoff skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -720,7 +752,7 @@
     },
     {
       "name": "heal-skill",
-      "description": "Repair skill hygiene.",
+      "description": "Repair skill hygiene. Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene.\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -740,7 +772,7 @@
     },
     {
       "name": "implement",
-      "description": "Implement one tracked issue.",
+      "description": "Implement one tracked issue. Triggers: \"implement\", \"implement one tracked issue.\", \"implement skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -765,7 +797,7 @@
     },
     {
       "name": "inject",
-      "description": "Load relevant .agents context.",
+      "description": "Load relevant .agents context. Triggers: \"inject context\", \"load .agents context\", \"pull decay-ranked prior knowledge\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [],
@@ -780,7 +812,7 @@
     },
     {
       "name": "ntm",
-      "description": ">-",
+      "description": "Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: \"ntm\", \"orchestrates ntm tmux agent swarms\", \"ntm skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -843,8 +875,32 @@
       "codex_override_present": true
     },
     {
+      "name": "orchestrate",
+      "description": "Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure. Triggers: \"orchestrate out-of-session\", \"route + preflight + verify a run\", \"orchestration preflight\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [
+        "automation-shape-routing"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "team-topologies",
+        "hexagonal-architecture"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "using-atm"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "perf",
-      "description": "Profile and optimize hotspots.",
+      "description": "Profile and optimize hotspots. Triggers: \"perf\", \"profile and optimize hotspots.\", \"perf skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -869,7 +925,7 @@
     },
     {
       "name": "plan",
-      "description": "Decompose goals into issue plans.",
+      "description": "Decompose goals into issue plans. Triggers: \"plan\", \"decompose goals into issue plans.\", \"plan skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -922,7 +978,7 @@
     },
     {
       "name": "pr-prep",
-      "description": "Prepare PR commits and body.",
+      "description": "Prepare PR commits and body. Triggers: \"pr-prep\", \"pr prep\", \"prepare pr commits and body.\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1002,7 +1058,7 @@
     },
     {
       "name": "product",
-      "description": "Create or refine PRODUCT.md.",
+      "description": "Create or refine PRODUCT.md. Triggers: \"product\", \"create or refine product.md.\", \"product skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -1045,7 +1101,7 @@
     },
     {
       "name": "rch",
-      "description": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues.",
+      "description": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: \"rch\", \"use when offloading slow builds\", \"rch skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1083,7 +1139,7 @@
     },
     {
       "name": "recover",
-      "description": "Recover session context.",
+      "description": "Recover session context. Triggers: \"recover\", \"recover session context.\", \"recover skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1129,7 +1185,7 @@
     },
     {
       "name": "refactor",
-      "description": "Execute safe refactors.",
+      "description": "Execute safe refactors. Triggers: \"refactor\", \"execute safe refactors.\", \"refactor skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1149,7 +1205,7 @@
     },
     {
       "name": "release",
-      "description": "Run release validation.",
+      "description": "Run release validation. Triggers: \"run release validation\", \"cut a release\", \"check release readiness\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -1172,7 +1228,7 @@
     },
     {
       "name": "research",
-      "description": "Explore and write findings.",
+      "description": "Explore and write findings. Triggers: \"research\", \"explore and write findings.\", \"research skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1193,8 +1249,26 @@
       "codex_override_present": true
     },
     {
+      "name": "reverse-engineer",
+      "description": "Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "legacy-code-seams",
+        "ddd-bounded-context",
+        "adr"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "review",
-      "description": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.",
+      "description": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: \"review\", \"review diffs for risk find\", \"review skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1220,7 +1294,7 @@
     },
     {
       "name": "rpi",
-      "description": "Run discovery, crank, validation.",
+      "description": "Run discovery, crank, validation. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
@@ -1275,7 +1349,7 @@
     },
     {
       "name": "scaffold",
-      "description": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.",
+      "description": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\", \"scaffold skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1293,7 +1367,7 @@
     },
     {
       "name": "scope",
-      "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes.",
+      "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: \"scope\", \"hard-block edits outside declared frozen\", \"scope skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -1316,7 +1390,7 @@
     },
     {
       "name": "security",
-      "description": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.",
+      "description": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1341,7 +1415,7 @@
     },
     {
       "name": "shared",
-      "description": "Shared AgentOps skill contracts.",
+      "description": "Shared AgentOps skill contracts. Triggers: \"shared\", \"shared agentops skill contracts.\", \"shared skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -1408,12 +1482,12 @@
           "with": "skill-auditor"
         }
       ],
-      "references_count": 3,
+      "references_count": 4,
       "codex_override_present": true
     },
     {
       "name": "standards",
-      "description": "Provide repo coding standards.",
+      "description": "Provide repo coding standards. Triggers: \"standards\", \"provide repo coding standards.\", \"standards skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -1431,7 +1505,7 @@
     },
     {
       "name": "status",
-      "description": "Show AgentOps work status.",
+      "description": "Show AgentOps work status. Triggers: \"status\", \"show agentops work status.\", \"status skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1450,7 +1524,7 @@
     },
     {
       "name": "swarm",
-      "description": "Dispatch parallel agents.",
+      "description": "Dispatch parallel agents. Triggers: \"swarm\", \"dispatch parallel agents.\", \"swarm skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1476,7 +1550,7 @@
     },
     {
       "name": "test",
-      "description": "Generate tests and coverage plans.",
+      "description": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1519,7 +1593,7 @@
     },
     {
       "name": "using-atm",
-      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
+      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -1542,7 +1616,7 @@
     },
     {
       "name": "validate",
-      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.",
+      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [],
