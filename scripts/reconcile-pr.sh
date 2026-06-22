@@ -77,6 +77,11 @@ Options:
                      (default .agents/pawl-verdicts). Green CI is necessary
                      but NOT sufficient — a CONFIRMED pawl verdict tied
                      to this bead+PR must exist or the merge is refused (HOLD).
+  --yield-transcript <jsonl>
+                     Path to the ENDED agent session transcript (Claude Code or
+                     Codex). Activates the real-token producer seam (age-ptts):
+                     the bead-close yield-usage event carries REAL tokens_in/out
+                     derived from the transcript instead of the hardcoded 0.
   --dry-run          Print actions; do not merge or mutate beads.
   -h, --help         Show this help.
 
@@ -95,6 +100,7 @@ while [[ $# -gt 0 ]]; do
     --poll-max)   POLL_MAX="${2:-}"; shift 2 || die "--poll-max needs a value" ;;
     --poll-sleep) POLL_SLEEP="${2:-}"; shift 2 || die "--poll-sleep needs a value" ;;
     --verdict-dir) VERDICT_DIR="${2:-}"; shift 2 || die "--verdict-dir needs a value" ;;
+    --yield-transcript) YIELD_TRANSCRIPT_OPT="${2:-}"; shift 2 || die "--yield-transcript needs a value" ;;
     --dry-run)    DRY_RUN=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     --*)          usage; die "unknown flag: $1" ;;
@@ -108,6 +114,19 @@ BEAD="${positional[1]}"
 
 [[ "$PR" =~ ^[0-9]+$ ]] || die "pr-number must be numeric, got: $PR"
 [[ -n "$BEAD" ]] || die "bead-id must be non-empty"
+
+# --yield-transcript activates the bronze->silver real-token producer seam
+# (age-ptts): set AO_YIELD_TRANSCRIPT to the ENDED agent session transcript so
+# the (pre-built) derive_yield_tokens path emits real tokens at bead-close,
+# instead of the hardcoded 0. Validate it is a readable file and resolve to an
+# absolute path (the emit cd's elsewhere). Explicit pass-in only — never ambient
+# auto-discovery, which could grab the wrong/stale transcript.
+if [[ -n "${YIELD_TRANSCRIPT_OPT:-}" ]]; then
+  [[ -f "$YIELD_TRANSCRIPT_OPT" && -r "$YIELD_TRANSCRIPT_OPT" ]] \
+    || die "--yield-transcript: not a readable file: $YIELD_TRANSCRIPT_OPT"
+  AO_YIELD_TRANSCRIPT="$(cd "$(dirname "$YIELD_TRANSCRIPT_OPT")" && pwd)/$(basename "$YIELD_TRANSCRIPT_OPT")"
+  export AO_YIELD_TRANSCRIPT
+fi
 
 command -v gh >/dev/null 2>&1 || die "gh CLI not on PATH"
 command -v br >/dev/null 2>&1 || die "br CLI not on PATH"
@@ -241,8 +260,10 @@ pawl_status=0
 # the explicit AO_YIELD_TOKENS_* env; when those are unset but a session
 # transcript IS available (AO_YIELD_TRANSCRIPT), it derives the real footprint
 # from the transcript's usage blocks via `ao yield tokens` (de-duped per
-# response). Producer truth (age-membrane-memory-arch-tz2s.3.2, bronze->silver);
-# the producer that sets AO_YIELD_TRANSCRIPT is the orchestrator (age-tlj6).
+# response). Producer truth (age-membrane-memory-arch-tz2s.3.2, bronze->silver).
+# The setter is THIS script's --yield-transcript flag (age-ptts) — the bead-close
+# path, where the ended session transcript exists — NOT `ao orchestrate`, which
+# is an instrument lane with no bead-close/producer step.
 # Fail-open by construction: a missing ao, an unparseable transcript (ao yield
 # tokens errors -> empty read), or non-numeric output all keep the 0 default —
 # this NEVER blocks. Used by BOTH the accepted-path and rejected/HOLD-path emits
@@ -291,9 +312,10 @@ if [[ "$pawl_status" -ne 0 ]]; then
     # recorded truthfully, not a silent 0 — symmetric with the accepted path.
     rej_ti=0; rej_to=0
     read -r rej_ti rej_to < <(derive_yield_tokens)
-    # cd REPO_ROOT so ao writes the canonical repo-root ledger (ao yield resolves
-    # by cwd) — MUST match the chokepoint emit, or events split across cwds.
-    ( cd "$REPO_ROOT" && ao yield emit usage --bead "$BEAD" --run "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$BEAD}}" \
+    # cd to the ledger root so ao writes the canonical repo-root ledger (ao yield
+    # resolves by cwd) — MUST match the chokepoint emit, or events split across
+    # cwds. AO_YIELD_LEDGER_ROOT overrides $REPO_ROOT for test isolation only.
+    ( cd "${AO_YIELD_LEDGER_ROOT:-$REPO_ROOT}" && ao yield emit usage --bead "$BEAD" --run "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$BEAD}}" \
       --json "{\"tokens_in\":${rej_ti},\"tokens_out\":${rej_to},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" ) \
       >/dev/null 2>&1 || true
   fi
@@ -394,9 +416,16 @@ emit_yield_usage() {
     body="{\"tokens_in\":$tokens_in,\"tokens_out\":$tokens_out,\"cost_usd\":$cost_usd,\"wall_clock_s\":$wall_clock_s,\"model\":\"$model\",\"phase\":\"$phase\"}"
   fi
   [[ -n "$body" ]] || return 0
-  ( cd "$REPO_ROOT" && ao yield emit usage --bead "$BEAD" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
+  # AO_YIELD_LEDGER_ROOT overrides $REPO_ROOT for test isolation only.
+  ( cd "${AO_YIELD_LEDGER_ROOT:-$REPO_ROOT}" && ao yield emit usage --bead "$BEAD" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
-emit_yield_usage & disown 2>/dev/null || true
+# Fire-and-forget by default (never blocks close). AO_YIELD_EMIT_SYNC=1 runs it
+# synchronously — used by tests to assert the emitted event deterministically.
+if [[ "${AO_YIELD_EMIT_SYNC:-0}" == "1" ]]; then
+  emit_yield_usage
+else
+  emit_yield_usage & disown 2>/dev/null || true
+fi
 
 if [[ "$close_failed" == "true" ]]; then
   exit 6

@@ -169,6 +169,44 @@ run_reconcile() {
   grep -qx 'close ag-700' "$ACTION_LOG"
 }
 
+@test "yield-transcript: a confirmed close emits a usage event with REAL non-zero tokens (age-ptts)" {
+  printf '%s' '[{"name":"correctness (ubuntu-latest)","state":"SUCCESS"},{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  seed_verdict ag-ptts 800 CONFIRMED claude:CONFIRMED codex:CONFIRMED
+  # Faithful transcript fixture — the production parser's shape (input + cache ->
+  # tokens_in; output -> tokens_out), identical to cli/cmd/ao/yield_test.go.
+  cat > "$TMP/session.jsonl" <<'EOF'
+{"type":"assistant","timestamp":"2026-04-11T12:00:00Z","message":{"role":"assistant","content":"a","usage":{"input_tokens":100,"cache_read_input_tokens":400,"output_tokens":30}}}
+{"type":"assistant","timestamp":"2026-04-11T12:00:05Z","message":{"role":"assistant","content":"b","usage":{"input_tokens":50,"cache_creation_input_tokens":200,"output_tokens":20}}}
+EOF
+  # Expected real tokens from the SAME ao the emit uses (skip if ao can't parse).
+  read -r EXP_IN EXP_OUT < <(ao yield tokens --transcript "$TMP/session.jsonl" --pair 2>/dev/null || echo "0 0")
+  [ "${EXP_IN:-0}" -gt 0 ] || skip "ao yield tokens did not parse the fixture (ao unavailable/old)"
+  LROOT="$TMP/lroot"; mkdir -p "$LROOT"
+  export AO_YIELD_EMIT_SYNC=1 AO_YIELD_LEDGER_ROOT="$LROOT"
+  run_reconcile 800 ag-ptts --yield-transcript "$TMP/session.jsonl"
+  [ "$status" -eq 0 ]
+  grep -qx 'merge 800' "$ACTION_LOG"
+  grep -qx 'close ag-ptts' "$ACTION_LOG"
+  # The emitted usage event carries the REAL derived tokens (NOT the hardcoded 0).
+  LEDGER="$LROOT/.agents/yield/yield-ledger.jsonl"
+  [ -f "$LEDGER" ]
+  run python3 -c "
+import json
+ti=to=None
+for l in open('$LEDGER'):
+    l=l.strip()
+    if not l: continue
+    e=json.loads(l)
+    if e.get('event')=='usage' and e.get('bead_id')=='ag-ptts':
+        b=e.get('body',{}) or {}; ti=b.get('tokens_in'); to=b.get('tokens_out')
+print('%s %s' % (ti, to))
+"
+  [ "$output" = "$EXP_IN $EXP_OUT" ]
+  [ "$output" != "0 0" ]
+}
+
 @test "all-green but NO pawl verdict: HOLD exit 5, no merge, no close (green CI is NOT sufficient)" {
   printf '%s' '[{"name":"correctness (ubuntu-latest)","state":"SUCCESS"},{"name":"validate","state":"SUCCESS"},{"name":"claude-review","state":"SUCCESS"}]' > "$TMP/checks"
   printf 'MERGED' > "$TMP/pr_state"
