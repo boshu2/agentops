@@ -23,8 +23,13 @@
 #   1. ~/.config/evolve/KILL (fresh)        -> kill           (operator global)
 #   2. .agents/evolve/STOP   (fresh)        -> user_halt      (operator repo)
 #   3. .agents/evolve/DORMANT + no ready    -> dormant        (auto-clears if ready>0)
+#   3.5 SPC governor error budget burned    -> governor_budget_burned (slow-loop setpoint, exit 3)
 #   4. cycle-history goals_passing dropped  -> goal_regression (last < prior productive)
 #   5. cycle-history latest result FAIL     -> prior_cycle_fail (restorative signal)
+#
+# Env (continued):
+#   EVOLVE_GOVERNOR_CMD   slow-loop budget probe (default "ao governor budget");
+#                         halt iff it exits 3 (harden), else fail-open.
 #
 # Non-sticky HANDOFF is always cleared (context-handoff, not a halt).
 # Stale KILL/STOP (older than TTL) are surfaced loudly and NOT honored.
@@ -99,6 +104,23 @@ fi
 
 # HANDOFF is non-sticky context-handoff, never a halt — always clear it.
 [[ -f "$EVOLVE_DIR/HANDOFF" ]] && rm -f "$EVOLVE_DIR/HANDOFF"
+
+# 3.5 SPC governor error budget (the slow-loop setpoint — SPC.1, age-wy3.1). The
+# governor reads the yield ledger and decides ship-vs-harden; "harden" (exit 3)
+# means the error budget is burned -> stop the outer loop and harden before more
+# work flows (control-loop-model.md §4: this is the canonical slow-loop owner; the
+# coherence wire from age-wy3.3). Halt ONLY on the explicit harden code 3; ship (0)
+# continues, and any OTHER non-zero is a tool error (governor unavailable / not
+# built) that must FAIL OPEN — a broken governor must never wedge the evolve loop.
+GOVERNOR_CMD="${EVOLVE_GOVERNOR_CMD:-ao governor budget}"
+governor_rc=0
+timeout "$PROBE_TIMEOUT" bash -c "$GOVERNOR_CMD" >/dev/null 2>&1 || governor_rc=$?
+if (( governor_rc == 3 )); then
+  emit_result true "governor_budget_burned"
+  exit 1
+elif (( governor_rc != 0 )); then
+  echo "WARN: governor budget check unavailable (rc=${governor_rc}) — failing open, not halting." >&2
+fi
 
 # The canonical cycle ledger written by scripts/evolve-log-cycle.sh / `ao loop
 # append`. Each line carries `result` and, on productive cycles, `goals_passing`

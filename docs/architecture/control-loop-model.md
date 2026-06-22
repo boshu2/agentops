@@ -52,7 +52,7 @@ Importing all ten control-theory patterns would be vocabulary-instead-of-mechani
 |---|---|---|---|
 | 1 | **Circuit breaker + no-delta-stop** | fast (stability) | **Mostly exists** — 3-attempt cap + circuit-breaker escalation ([pawls.md](../contracts/pawls.md) §Escalation), dry/no-delta stop. Gap: the cap should be the *backstop*, the grounded verdict the *terminator*. |
 | 2 | **Escape → shift-left check** | slow (engine) | **Open** — `age-cwo` (escape-tracking → finding → one-altitude-earlier gate); the post-mortem→finding-compiler shape exists, the escape→gate closure does not. |
-| 3 | **SPC governor** (special-cause-only, two-sided fitness, error budget) | slow (setpoint) | **Missing** — circuit breakers are scattered (pawls §Escalation, `scripts/evolve/halt-check.sh`, `rpi_loop_supervisor.go`); there is no error-budget burn-rate ledger and no SPC noise-band. This is the one new primitive to build. |
+| 3 | **SPC governor** (special-cause-only, two-sided fitness, error budget) | slow (setpoint) | **Built** (`age-wy3`). `cli/internal/governor`: the error-budget burn-rate (`ao governor budget`, ship-vs-harden — SPC.1) and the special-cause noise-band + two-sided-fitness gate + `DetectFalseAlarms` (`ao governor noise-band` — SPC.2). The governor is the canonical SLOW-loop owner; it does NOT merge the fast/outer breakers (different timescales by design — `planpawl/decide.go` is the fast loop, `scripts/evolve/halt-check.sh` the evolve outer loop). The coherence wire (SPC.3): `halt-check.sh` consults `ao governor budget`, so a burned budget halts the evolve cycle (`governor_budget_burned`). `rpi_loop_supervisor.go` was deleted by ADR-0009/soc-2rtm0; the old "3 scattered breakers" framing is obsolete. |
 
 ## 6. Conformance contract
 

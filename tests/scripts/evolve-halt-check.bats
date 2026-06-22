@@ -13,6 +13,11 @@ setup() {
   SKILL="$REPO_ROOT/skills/evolve/SKILL.md"
   TMP="$(mktemp -d)"
   mkdir -p "$TMP/.agents/evolve"
+  # Isolate the SPC-governor budget probe (age-wy3.3 coherence wire) from the real
+  # `ao governor budget` + repo yield ledger: default to ship (exit 0 = continue),
+  # so the marker/regression tests below are deterministic. The governor-wire tests
+  # override EVOLVE_GOVERNOR_CMD explicitly.
+  export EVOLVE_GOVERNOR_CMD="exit 0"
 }
 
 teardown() {
@@ -133,4 +138,35 @@ teardown() {
   run env EVOLVE_DIR="$TMP/.agents/evolve" bash "$GATE"
   [ "$status" -eq 0 ]
   [ "$output" = "OK: continue" ]
+}
+
+# --- (a continued) SPC governor coherence wire (age-wy3.3) -------------------
+
+@test "governor budget burned (exit 3) halts as governor_budget_burned" {
+  run env EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_GOVERNOR_CMD="exit 3" bash "$GATE" --json
+  [ "$status" -eq 1 ]
+  [ "$output" = '{"halt":true,"halt_reason":"governor_budget_burned"}' ]
+}
+
+@test "governor budget ship (exit 0) continues" {
+  run env EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_GOVERNOR_CMD="exit 0" bash "$GATE" --json
+  [ "$status" -eq 0 ]
+  [ "$output" = '{"halt":false,"halt_reason":null}' ]
+}
+
+@test "governor tool error (non-3 non-zero) fails open, does not halt" {
+  # A broken/absent governor must NEVER wedge the evolve loop — only exit 3 halts.
+  # A WARN goes to stderr (bats merges it into $output), so match the JSON as a substring.
+  run env EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_GOVERNOR_CMD="exit 1" bash "$GATE" --json
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'{"halt":false,"halt_reason":null}'* ]]
+  [[ "$output" == *"failing open"* ]]
+}
+
+@test "operator KILL/STOP outranks a burned governor budget (priority order)" {
+  # An explicit operator halt must win over the governor verdict; reason stays user_halt.
+  touch "$TMP/.agents/evolve/STOP"
+  run env EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_GOVERNOR_CMD="exit 3" bash "$GATE" --json
+  [ "$status" -eq 1 ]
+  [ "$output" = '{"halt":true,"halt_reason":"user_halt"}' ]
 }
