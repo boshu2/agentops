@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domainsignal"
 	"github.com/boshu2/agentops/cli/internal/ports"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
@@ -321,7 +322,7 @@ func TestDeriveFindingFromEscape_CarriesDomainAndMissed(t *testing.T) {
 		RefuterFamilies: []string{"codex"},
 		Domain:          "concurrency",
 		Missed:          "data race on a shared counter",
-	})
+	}, domainsignal.Record{})
 	if a.Frontmatter["escape_domain"] != "concurrency" {
 		t.Errorf("escape_domain = %q, want concurrency", a.Frontmatter["escape_domain"])
 	}
@@ -334,14 +335,14 @@ func TestDeriveFindingFromEscape_CarriesDomainAndMissed(t *testing.T) {
 	// domain and missed are INDEPENDENT optionals (a refuted reason is useful
 	// even when the emitter didn't tag a domain). A truly-legacy escape (neither)
 	// adds neither key; a missed-only escape adds only escape_missed.
-	legacy := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-x", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2"})
+	legacy := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-x", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2"}, domainsignal.Record{})
 	if _, ok := legacy.Frontmatter["escape_domain"]; ok {
 		t.Error("legacy escape (no domain) must not set escape_domain")
 	}
 	if _, ok := legacy.Frontmatter["escape_missed"]; ok {
 		t.Error("legacy escape (no missed) must not set escape_missed")
 	}
-	missedOnly := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-m", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2", Missed: "nil deref"})
+	missedOnly := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-m", RunID: "r1", ConfirmedHeadSHA: "c1", RefutedHeadSHA: "r2", Missed: "nil deref"}, domainsignal.Record{})
 	if _, ok := missedOnly.Frontmatter["escape_domain"]; ok {
 		t.Error("missed-only escape must not set escape_domain")
 	}
@@ -360,7 +361,7 @@ func TestDeriveFindingFromEscape_SentinelsRenderAsDebt(t *testing.T) {
 		RefutedHeadSHA: "bbbbbbb2", RefutedAttempt: 2,
 		Domain:         yieldledger.DomainUnclassified,
 		Missed:         yieldledger.ReasonUnspecified,
-	})
+	}, domainsignal.Record{})
 	// The body must call out the debt, NOT present the placeholders as real signal.
 	if !strings.Contains(a.Body, "UNCLASSIFIED") || !strings.Contains(a.Body, "never classified") {
 		t.Errorf("UNCLASSIFIED domain must render as classification debt; got:\n%s", a.Body)
@@ -370,6 +371,41 @@ func TestDeriveFindingFromEscape_SentinelsRenderAsDebt(t *testing.T) {
 	}
 	if !strings.Contains(a.Body, "unspecified") || !strings.Contains(a.Body, "set --reason") {
 		t.Errorf("unspecified reason must render as classification debt; got:\n%s", a.Body)
+	}
+}
+
+// EM.2.2: the three-signal domain record renders intent + changed-file domains and,
+// when they disagree, a DOMAIN MISMATCH note — all queryable via frontmatter.
+func TestDeriveFindingFromEscape_ThreeSignalRecord(t *testing.T) {
+	rec := domainsignal.Build(
+		domainsignal.BC2Validation,                                  // intended BC2
+		[]string{"cli/cmd/ao/x.go", "cli/internal/swarm/y.go"},      // code in BC5 + BC6
+		"concurrency",                                               // escape domain (free text)
+	)
+	if !rec.Mismatch {
+		t.Fatalf("precondition: BC2 intent vs BC5/BC6 changes must mismatch; %+v", rec)
+	}
+	a := deriveFindingFromEscape(yieldledger.Escape{
+		BeadID: "age-xdom", RunID: "r1",
+		ConfirmedHeadSHA: "aaaaaaa1", RefutedHeadSHA: "bbbbbbb2",
+		Domain: "concurrency",
+	}, rec)
+	if a.Frontmatter["intent_domain"] != domainsignal.BC2Validation {
+		t.Errorf("intent_domain frontmatter = %q", a.Frontmatter["intent_domain"])
+	}
+	if a.Frontmatter["changed_file_domains"] != "BC5 Runtime, BC6 Orchestration" {
+		t.Errorf("changed_file_domains frontmatter = %q", a.Frontmatter["changed_file_domains"])
+	}
+	if a.Frontmatter["domain_mismatch"] != "true" {
+		t.Errorf("domain_mismatch frontmatter = %q, want true", a.Frontmatter["domain_mismatch"])
+	}
+	if !strings.Contains(a.Body, "DOMAIN MISMATCH") || !strings.Contains(a.Body, "crossed bounded contexts") {
+		t.Errorf("body must surface the cross-context mismatch; got:\n%s", a.Body)
+	}
+	// A no-signal record renders no domain-signals block (graceful degrade).
+	b := deriveFindingFromEscape(yieldledger.Escape{BeadID: "age-y", RunID: "r1", ConfirmedHeadSHA: "c", RefutedHeadSHA: "r"}, domainsignal.Record{})
+	if strings.Contains(b.Body, "Domain signals:") {
+		t.Errorf("empty record must not render a domain-signals block; got:\n%s", b.Body)
 	}
 }
 
