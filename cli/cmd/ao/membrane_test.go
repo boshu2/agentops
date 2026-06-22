@@ -350,6 +350,29 @@ func TestDeriveFindingFromEscape_CarriesDomainAndMissed(t *testing.T) {
 	}
 }
 
+// EM.2.1: the UNCLASSIFIED domain / unspecified reason sentinels are visible DEBT,
+// never real signal — the derived finding must flag them for classification, not
+// render them as a routable "look out for this here" / "what was missed".
+func TestDeriveFindingFromEscape_SentinelsRenderAsDebt(t *testing.T) {
+	a := deriveFindingFromEscape(yieldledger.Escape{
+		BeadID: "age-unc", RunID: "r1",
+		ConfirmedHeadSHA: "aaaaaaa1", ConfirmedAttempt: 1,
+		RefutedHeadSHA: "bbbbbbb2", RefutedAttempt: 2,
+		Domain:         yieldledger.DomainUnclassified,
+		Missed:         yieldledger.ReasonUnspecified,
+	})
+	// The body must call out the debt, NOT present the placeholders as real signal.
+	if !strings.Contains(a.Body, "UNCLASSIFIED") || !strings.Contains(a.Body, "never classified") {
+		t.Errorf("UNCLASSIFIED domain must render as classification debt; got:\n%s", a.Body)
+	}
+	if strings.Contains(a.Body, "look out for this class of miss when working here") {
+		t.Errorf("UNCLASSIFIED must NOT render as a routable domain signal; got:\n%s", a.Body)
+	}
+	if !strings.Contains(a.Body, "unspecified") || !strings.Contains(a.Body, "set --reason") {
+		t.Errorf("unspecified reason must render as classification debt; got:\n%s", a.Body)
+	}
+}
+
 // Slice 4 (age-membrane-memory-j9c6.4): recall the membrane's memory for one
 // domain — the consumption side ("look out for this here").
 func TestRecallByDomain(t *testing.T) {

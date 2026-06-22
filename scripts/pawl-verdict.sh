@@ -368,6 +368,16 @@ do_write() {
   [[ -n "$bead" && -n "$pr" && -n "$disposition" ]] || { echo "pawl-verdict write: need <bead> <pr> --disposition" >&2; return 2; }
   [[ -n "$author_ctx" ]] || { echo "pawl-verdict write: need --author-context <id> (the authoring session id; fresh-context is verified against it)" >&2; return 2; }
   [[ ${#refuters[@]} -ge 1 ]] || { echo "pawl-verdict write: need >=1 --refuter fam:verdict:context_id[:evidence]" >&2; return 2; }
+  # EM.2.1: a REFUTED verdict is a candidate ESCAPE (a membrane catch). The
+  # membrane EXPLAINS escapes by reason and ROUTES them by domain, so require a
+  # non-empty --reason here (what was missed) on any REFUTED — the conscious
+  # `write` is where that belongs. The domain is GUARANTEED downstream by the Go
+  # writer's UNCLASSIFIED sentinel (never lost), so it is not hard-required here:
+  # the standing-pawl auto-logger cannot always resolve a domain and is fail-open,
+  # and an exit here would silently DROP the very catch we most want logged.
+  if [[ "$disposition" == "REFUTED" ]]; then
+    [[ -n "$reason" ]] || { echo "pawl-verdict write: a REFUTED verdict is a candidate escape — --reason is REQUIRED (what was missed). Classify it." >&2; return 2; }
+  fi
 
   # Build the refuters JSON array from `fam:verdict:context_id[:evidence-path]`
   # tokens. context_id (3rd field, REQUIRED) records the invocation the refuter

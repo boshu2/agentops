@@ -90,9 +90,13 @@ teardown() {
   # missing verdict
   run bash "$SCRIPT" rebind age-absent 0 --head "611615d9b78717eca0fa1b2d1eb75a54c9dc6970" --dir "$TMP/verdicts"
   [ "$status" -ne 0 ]
-  # REFUTED verdict is not landable -> rebind refuses
+  # REFUTED verdict is not landable -> rebind refuses. --reason is REQUIRED on a
+  # REFUTED write (EM.2.1, a candidate escape); supply it so the verdict file IS
+  # written and rebind refuses it for being non-CONFIRMED (the intent), not merely
+  # for being absent.
   bash "$SCRIPT" write age-refuted 0 --disposition REFUTED --head "611615d9b78717eca0fa1b2d1eb75a54c9dc6970" \
-    --author-context a --refuter claude:REFUTED:ctx --dir "$TMP/verdicts" >/dev/null 2>&1 || true
+    --author-context a --refuter claude:REFUTED:ctx --reason "no agreement" --dir "$TMP/verdicts" >/dev/null 2>&1 || true
+  [ -f "$TMP/verdicts/age-refuted.json" ]   # the REFUTED verdict was actually written
   run bash "$SCRIPT" rebind age-refuted 0 --head "aaaaaaaabbbbbbbbccccccccdddddddd00001111" --dir "$TMP/verdicts"
   [ "$status" -ne 0 ]
 }

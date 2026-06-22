@@ -222,10 +222,19 @@ func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
 		fmt.Fprintf(&b, " — caught by %s", strings.Join(e.RefuterFamilies, ", "))
 	}
 	b.WriteString(". The membrane let a false-done through.\n\n")
-	if e.Domain != "" {
+	if e.Domain == yieldledger.DomainUnclassified {
+		// EM.2.1: an UNCLASSIFIED escape is visible debt, never a real domain — do
+		// not present it as a routable "look out for this here" signal; flag it for
+		// classification so the derived check can eventually route by domain.
+		b.WriteString("**Domain:** UNCLASSIFIED — ⚠ this escape was never classified; classify it (set --domain on the overturning REFUTED) so the derived check can route by domain.\n\n")
+	} else if e.Domain != "" {
 		fmt.Fprintf(&b, "**Domain:** %s — look out for this class of miss when working here.\n\n", e.Domain)
 	}
-	if e.Missed != "" {
+	if e.Missed == yieldledger.ReasonUnspecified {
+		// EM.2.1: an unspecified reason is visible debt, not a usable "what was
+		// missed" — flag it for classification rather than rendering the placeholder.
+		b.WriteString("**What was missed:** ⚠ unspecified — this escape's reason was never recorded; set --reason on the overturning REFUTED.\n\n")
+	} else if e.Missed != "" {
 		fmt.Fprintf(&b, "**What was missed:** %s\n\n", e.Missed)
 	}
 	b.WriteString("**Detection question:** before CONFIRMING a unit like this, has its acceptance ")
