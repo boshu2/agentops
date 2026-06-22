@@ -181,7 +181,11 @@ func TestYieldTokensCmd_JSON(t *testing.T) {
 func TestEmitYieldEvent_GateVerdictCarriesDomainAndReason(t *testing.T) {
 	root := t.TempDir()
 	ts := time.Date(2026, 6, 19, 14, 0, 0, 0, time.UTC)
-	body := `{"difficulty":1,"pawl_verdict_ref":{"bead_id":"ag-r","head_sha":"abc1234"},"disposition":"REFUTED","head_sha":"abc1234","attempt":2,"author_context_id":"ctx","refuter_families":["codex"],"author_family":"claude","cross_family":true,"author_ne_reviewer":true,"evidence_present":true,"domain":"concurrency","reason":"data race on a shared counter"}`
+	// EM.2.10 extends this seam: the mechanical detector fields are the SAME class
+	// of body->input drop (the installed-binary e2e caught them missing here — the
+	// emit command, not the writer, was the gap; this test existed for Domain/Reason
+	// but wasn't extended for the detector fields).
+	body := `{"difficulty":1,"pawl_verdict_ref":{"bead_id":"ag-r","head_sha":"abc1234"},"disposition":"REFUTED","head_sha":"abc1234","attempt":2,"author_context_id":"ctx","refuter_families":["codex"],"author_family":"claude","cross_family":true,"author_ne_reviewer":true,"evidence_present":true,"domain":"concurrency","reason":"data race on a shared counter","detector_pattern":"sync.Mutex\\{","constraint_path_globs":"cli/**","detector_kind":"regex"}`
 	if err := emitYieldEvent(root, yieldledger.EventGateVerdict, "ag-r", "r1", ts, body); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
@@ -193,11 +197,21 @@ func TestEmitYieldEvent_GateVerdictCarriesDomainAndReason(t *testing.T) {
 	if len(gvs) != 1 || gvs[0].GateVerdict == nil {
 		t.Fatalf("want 1 gate-verdict with a body, got %d", len(gvs))
 	}
-	if gvs[0].GateVerdict.Domain != "concurrency" {
-		t.Errorf("Domain = %q, want concurrency (emit path dropped it)", gvs[0].GateVerdict.Domain)
+	gv := gvs[0].GateVerdict
+	if gv.Domain != "concurrency" {
+		t.Errorf("Domain = %q, want concurrency (emit path dropped it)", gv.Domain)
 	}
-	if gvs[0].GateVerdict.Reason != "data race on a shared counter" {
-		t.Errorf("Reason = %q, want the missed reason (emit path dropped it)", gvs[0].GateVerdict.Reason)
+	if gv.Reason != "data race on a shared counter" {
+		t.Errorf("Reason = %q, want the missed reason (emit path dropped it)", gv.Reason)
+	}
+	if gv.DetectorPattern != `sync.Mutex\{` {
+		t.Errorf("DetectorPattern = %q, want the pattern (emit path dropped it — EM.2.10 seam)", gv.DetectorPattern)
+	}
+	if gv.ConstraintPathGlobs != "cli/**" {
+		t.Errorf("ConstraintPathGlobs = %q, want cli/** (emit path dropped it)", gv.ConstraintPathGlobs)
+	}
+	if gv.DetectorKind != "regex" {
+		t.Errorf("DetectorKind = %q, want regex (emit path dropped it)", gv.DetectorKind)
 	}
 }
 
