@@ -13,7 +13,14 @@ setup() {
   BIN="$TMP/bin"; mkdir -p "$BIN"
   cat > "$BIN/codex" <<'STUB'
 #!/usr/bin/env bash
-cat >/dev/null   # consume the refuter prompt
+prompt="$(cat)"   # the refuter prompt
+# CONVERGE_AWARE: model the real flow — REFUTE the adversarial pass (cosmetic tail), but
+# CONFIRM the calibrated convergence pass (so adversarial records lineage, converge certifies).
+if [[ "${CODEX_CONVERGE_AWARE:-0}" == "1" ]]; then
+  if grep -qi 'CONVERGENCE pass' <<<"$prompt"; then printf 'codex\nVERDICT: CONFIRMED\n'
+  else printf 'codex\nVERDICT: REFUTED\nDEFECTS:\n - cosmetic tail nit\n'; fi
+  exit 0
+fi
 printf 'codex\n%s\n' "${CODEX_STUB:-VERDICT: CONFIRMED}"
 exit "${CODEX_EXIT:-0}"
 STUB
@@ -120,4 +127,53 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   run env PATH="$BIN:$PATH" bash "$SCRIPT" --scope head
   [ "$status" -eq 2 ]
   [[ "$output" == *"need <bead-id>"* ]]
+}
+
+# --- convergence protocol (age-cwo.8 / council C) ---
+
+@test "pawl-review: an ADVERSARIAL run records lineage (diff-hash) for converge" {
+  CODEX_STUB="VERDICT: CONFIRMED" run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 0 ]
+  [ -f "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" ]
+  grep -q '"diff_hash"' "$REPO/.agents/pawl-review/age-rev-test.adversarial.json"
+}
+
+@test "pawl-review: --converge WITHOUT adversarial lineage is advisory-only (exit 4, no verdict)" {
+  CODEX_STUB="VERDICT: CONFIRMED" run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"NO adversarial lineage"* ]]
+  [ ! -f "$VFILE" ]
+}
+
+@test "pawl-review: --converge after the diff CHANGED is advisory-only (exit 4, no verdict)" {
+  CODEX_STUB="VERDICT: CONFIRMED" env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head >/dev/null 2>&1
+  rm -f "$VFILE"
+  echo changed >> README.md; git add README.md; git commit --quiet --amend -m "feat(x): a change (age-rev-test)"
+  CODEX_STUB="VERDICT: CONFIRMED" run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"diff CHANGED"* ]]
+  [ ! -f "$VFILE" ]
+}
+
+@test "pawl-review: --converge requires --scope head (exit 2)" {
+  run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope staged --converge
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"requires --scope head"* ]]
+}
+
+@test "pawl-review: the FULL convergence flow — adversarial REFUTES tail (records lineage), --converge CONFIRMS + writes the verdict" {
+  # adversarial REFUTES (cosmetic tail) -> exit 3, NO verdict, but lineage IS recorded
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 3 ]
+  [ -f "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" ]
+  [ ! -f "$VFILE" ]
+  # converge on the SAME diff: calibrated real-safety bar CONFIRMS over the lineaged diff
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 0 ]
+  [ -f "$VFILE" ]
+  grep -q '"disposition": "CONFIRMED"' "$VFILE"
+  # BOTH bars recorded: the adversarial findings are folded into the converge evidence as
+  # ACCEPTED-AS-TAIL (the dogfood-caught flaw fix — a REFUTED lineage's defects are auditable).
+  grep -q 'ACCEPTED AS TAIL' "$REPO/.agents/pawl-evidence/age-rev-test-pawl-review.txt"
+  grep -q 'cosmetic tail nit' "$REPO/.agents/pawl-evidence/age-rev-test-pawl-review.txt"
 }
