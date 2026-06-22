@@ -1,0 +1,12 @@
+{
+  "run": "catchfuel-transfer-test (catch-fuel value half / cwo.1 transfer test)",
+  "date": "2026-06-22",
+  "premise": "Haiku PANEL caught 2 compiling subtle schema bugs (rfd-codex-schema, rfd-nested-schema) 3/3. Does a catch-derived check help a CHEAPER tier (single terse 'fast skim' Haiku) catch what it misses unaided?",
+  "result": "NO_LIFT",
+  "bug_caught_without_check": "6/6",
+  "bug_caught_with_check": "6/6",
+  "transfer_lift": 0,
+  "control_false_alarm_without": "0/3",
+  "control_false_alarm_with": "0/3",
+  "finding": "The cheap single-reviewer tier already caught both schema bugs 6/6 WITHOUT the check — the bugs are NOT a cheap-tier blindspot, so catch-derived checks add no demonstrable catch-rate value. Empirically confirms the council's Goodhart lens ('most catches encode failure-modes the membrane already catches reliably'). Catch-fuel is precision-safe (separate probe) but value-null on available data: it would seed already-handled cases. Catch-fuel becomes worthwhile only when a catch is a genuine blindspot for the deployed tier — none appeared. Same root as the escape floor: a competent membrane (even cheap) catches the subtle bugs."
+}

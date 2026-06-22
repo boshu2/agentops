@@ -7,7 +7,10 @@
 > 31 REFUTEDs are *catches* (the membrane working). **Should catch-derived checks
 > ALSO fuel E5's domain memory, or keep the corpus escape-only?**
 >
-> **Decision: TIERED_MIDDLE (cross-family council, unanimous). Precision falsification: PASSED.**
+> **Decision: TIERED_MIDDLE (cross-family council, unanimous). Precision falsification:
+> PASSED (small). Value falsification (transfer test, on real subtle samples): NO LIFT —
+> the catches were already caught by even a cheap tier, so catch-fuel is precision-safe
+> but value-null on available data (escape-only-in-practice is the right default).**
 
 ## Council decision — TIERED_MIDDLE (Claude 4-lens panel + Codex, independent, agreed)
 
@@ -59,13 +62,38 @@ true-dones, 1 round, Haiku panel only** — catch-derived advisory findings were
 conclusive; it shows the dominant risk did not fire on the cases tested, and
 supports (does not prove) TIERED_MIDDLE.
 
-## Honest limits — the value half is UNTESTED (blocked on subtle samples)
+## Value half — TRANSFER TEST: NO LIFT (the catches are already-caught)
 
-The probe is **small** (n=2 true-dones, 1 round, Haiku panel) and tests only
-**precision** (catch-fuel doesn't hurt correct work on the cases tried), NOT
-**value** (does a catch-derived check help a *cheaper* membrane catch a subtle miss
-it would otherwise pass — the cwo.1 transfer test?). The value half needs
-**compiling-but-subtly-wrong** samples, which is the session's root blocker:
+The value half was **subsequently tested** once a stronger producer
+(Qwen2.5-Coder-32B) supplied real compiling-but-subtly-wrong samples (see
+[the stronger-producer run](./membrane-escape-harvest-no-escape.md#update--stronger-producer-qwen25-coder-32b-the-substrate-exists-but-the-membrane-still-catches)).
+Qwen shipped two compiling subtle schema bugs (`rfd-codex-schema`,
+`rfd-nested-schema`) that the Haiku **panel** caught 3/3. The transfer test:
+does a catch-derived check help a **cheaper tier** (a single, terse "fast skim"
+reviewer) catch them when it would otherwise miss?
+
+| | cheap tier WITHOUT check | cheap tier WITH the derived check |
+|---|---|---|
+| catch on the 2 schema bugs | **6/6** | **6/6** (`transfer_lift = 0`) |
+| false-alarm on a true-done control | 0/3 | 0/3 |
+
+**NO LIFT.** The cheap single-reviewer tier already caught both bugs 6/6 *without*
+the check — the bugs are **not a cheap-tier blindspot**. So catch-derived checks for
+them add **no demonstrable catch-rate value**. This empirically confirms the
+council's **Goodhart lens**, which predicted exactly this: "most catches encode
+failure-modes the membrane ALREADY catches reliably." On the real data available,
+catch-fuel is **precision-safe but value-null** — it would seed the corpus with
+already-handled cases. Catch-fuel's value depends on finding a catch that is a
+genuine *blindspot for the deployed tier*; none appeared here (the deployed tier,
+even cheap, was competent).
+
+## Earlier limit (now resolved): the precision probe was small
+
+The precision probe is **small** (n=2 true-dones, 1 round, Haiku panel) and tested
+only **precision** (catch-fuel doesn't hurt correct work). The **value** half — the
+cwo.1 transfer test above — was the gap; it needed **compiling-but-subtly-wrong**
+samples, which were the session's root blocker until the stronger producer supplied
+them:
 
 - Production: **0 escapes**, and the 31 catches are **signal-less husks** (0/31
   carry domain/reason in the ledger row; none carry the reviewed code).
@@ -80,9 +108,15 @@ it would otherwise pass — the cwo.1 transfer test?). The value half needs
 
 Catch-fuel is **council-blessed (TIERED_MIDDLE)** and **precision-safe on a small
 probe**, and the mechanical-vs-advisory **seam it would ride already exists in code**
-(the source-tagging policy does not). The un-starving path for E5 is clear and, so
-far, safe on the precision axis. The remaining gate is **empirical value** (the
-transfer-lift half), blocked on the same subtle-sample scarcity that blocks escape
-harvest. When E5 is built, catch-derived advisory domain-memory (source-tagged,
-gauge-isolated, decayed) is the candidate way to fuel it; blocking constraints stay
-escape-only.
+(the source-tagging policy does not). But the **value half now has a result, and it
+is a null**: on real subtle samples, the catches were already caught by even a cheap
+tier (`transfer_lift = 0`), so catch-fuel would seed the corpus with already-handled
+cases — empirically confirming the Goodhart concern. **Net:** the DESIGN (if you ever
+add catches, advisory-only + gauge-isolated) is sound and ready in the seam, but the
+DATA does not (yet) justify adding catch-fuel — it is safe-but-valueless on what
+exists. Catch-fuel becomes worthwhile only when a catch is a genuine *blindspot for
+the deployed tier* (a strong tier catches what the deployed cheap tier misses); until
+such a catch appears, **escape-only-in-practice** is the right default, and blocking
+constraints stay escape-only regardless. This is the same root as the escape-harvest
+floor: a competent membrane (even cheap) catches the subtle bugs, so neither escapes
+nor *valuable* catches accrue.
