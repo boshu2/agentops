@@ -227,6 +227,38 @@ func TestIsOverturningRefuted_Predicate(t *testing.T) {
 	}
 }
 
+// EM.2.10: detector metadata on the overturning REFUTED (the catch) flows through
+// DetectEscapes onto the Escape, so deriveFindingFromEscape can compile it into a
+// mechanical constraint. Mirrors how Missed comes from the refuted verdict.
+func TestDetectEscapes_CarriesDetectorMetadata(t *testing.T) {
+	root := t.TempDir()
+	gvDom(t, root, "run-1", "ag-x", DispositionConfirmed, "", 1)
+	// REFUTED carrying a detector — appended via the real Writer.
+	w := Writer{}
+	headSHA := "ag-x-h2"
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-x", RunID: "run-1", TS: time.Date(2026, 6, 22, 13, 0, 2, 0, time.UTC),
+		Difficulty: 1, PawlVerdictRef: PawlVerdictRef{BeadID: "ag-x", HeadSHA: headSHA},
+		Disposition: DispositionRefuted, HeadSHA: headSHA, Attempt: 2,
+		AuthorContextID: "ctx", AuthorFamily: "claude", Domain: "validation", Reason: "caught",
+		DetectorPattern: `eval\(`, ConstraintPathGlobs: "cli/**", DetectorKind: "regex",
+	}); err != nil {
+		t.Fatalf("append: %v", err)
+	}
+	led, err := LoadPath(LedgerPath(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	escapes := DetectEscapes(led, "run-1")
+	if len(escapes) != 1 {
+		t.Fatalf("want 1 escape, got %d", len(escapes))
+	}
+	e := escapes[0]
+	if e.DetectorPattern != `eval\(` || e.ConstraintPathGlobs != "cli/**" || e.DetectorKind != "regex" {
+		t.Fatalf("detector metadata not carried from the refuted catch: %+v", e)
+	}
+}
+
 func TestDetectEscapes_DomainFallsBackToRefuted(t *testing.T) {
 	root := t.TempDir()
 	// CONFIRMED carries no domain; the overturning REFUTED tags domain="db".

@@ -305,6 +305,30 @@ func deriveFindingFromEscape(e yieldledger.Escape, dom domainsignal.Record) port
 	if dom.Mismatch {
 		art.Frontmatter["domain_mismatch"] = "true"
 	}
+	// EM.2.10 — THE CUT WIRE, reconnected. When the escape carries a mechanical
+	// detector (a re-introducible pattern + the paths it applies to), upgrade the
+	// finding from advisory to MECHANICAL and add the constraint compile target, so
+	// productionFindingCompiler -> search.BuildConstraintEntry emits a real draft
+	// constraint into .agents/constraints/index.json that the gate enforces. Until
+	// this, every escape was hardcoded advisory and the index stayed empty — the
+	// membrane remembered escapes but never BLOCKED their re-introduction. A
+	// process-gap escape (no detector) keeps the advisory pre-mortem path above.
+	if e.DetectorPattern != "" {
+		kind := e.DetectorKind
+		if kind == "" {
+			kind = "regex"
+		}
+		compiledAt := e.RefutedTS
+		if compiledAt == "" {
+			compiledAt = e.ConfirmedTS
+		}
+		art.Frontmatter["detectability"] = "mechanical"
+		art.Frontmatter["detector_pattern"] = e.DetectorPattern
+		art.Frontmatter["detector_kind"] = kind
+		art.Frontmatter["constraint_path_globs"] = e.ConstraintPathGlobs
+		art.Frontmatter["compiled_at"] = compiledAt
+		art.Frontmatter["compiler_targets"] = string(ports.CompiledOutputPreMortemCheck) + "," + string(ports.CompiledOutputConstraint)
+	}
 	return art
 }
 

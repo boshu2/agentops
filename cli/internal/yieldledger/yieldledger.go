@@ -123,6 +123,14 @@ type GateVerdictBody struct {
 	// signal a derived check is built from. (age-membrane-memory-j9c6.1)
 	Domain string `json:"domain,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Detector* fields, when present on an overturning-REFUTED, make the escape
+	// MECHANICALLY re-introducible: deriveFindingFromEscape compiles them into a
+	// draft constraint (regex pattern + path globs) the gate enforces, so the
+	// membrane doesn't just remember the escape — it BLOCKS its re-introduction.
+	// Absent (process-gap escapes) -> the finding stays advisory. (EM.2.10)
+	DetectorPattern     string `json:"detector_pattern,omitempty"`
+	ConstraintPathGlobs string `json:"constraint_path_globs,omitempty"`
+	DetectorKind        string `json:"detector_kind,omitempty"`
 }
 
 // UsageBody is the typed payload of a usage event. Feeds gauges R, L, and A/R.
@@ -169,23 +177,26 @@ type AcceptInput struct {
 
 // GateVerdictInput holds the fields needed to append a gate-verdict event.
 type GateVerdictInput struct {
-	BeadID           string
-	RunID            string
-	TS               time.Time
-	Difficulty       float64
-	PawlVerdictRef   PawlVerdictRef
-	Disposition      string
-	HeadSHA          string
-	Attempt          int
-	Mode             string
-	AuthorContextID  string
-	RefuterFamilies  []string
-	AuthorFamily     string
-	CrossFamily      bool
-	AuthorNeReviewer bool
-	EvidencePresent  bool
-	Domain           string
-	Reason           string
+	BeadID              string
+	RunID               string
+	TS                  time.Time
+	Difficulty          float64
+	PawlVerdictRef      PawlVerdictRef
+	Disposition         string
+	HeadSHA             string
+	Attempt             int
+	Mode                string
+	AuthorContextID     string
+	RefuterFamilies     []string
+	AuthorFamily        string
+	CrossFamily         bool
+	AuthorNeReviewer    bool
+	EvidencePresent     bool
+	Domain              string
+	Reason              string
+	DetectorPattern     string
+	ConstraintPathGlobs string
+	DetectorKind        string
 }
 
 // UsageInput holds the fields needed to append a usage event.
@@ -272,20 +283,23 @@ func newGateVerdictEvent(in GateVerdictInput) Event {
 		RunID:  in.RunID,
 		TS:     in.TS.UTC().Format(time.RFC3339),
 		GateVerdict: &GateVerdictBody{
-			Difficulty:       in.Difficulty,
-			PawlVerdictRef:   in.PawlVerdictRef,
-			Disposition:      in.Disposition,
-			HeadSHA:          in.HeadSHA,
-			Attempt:          in.Attempt,
-			Mode:             in.Mode,
-			AuthorContextID:  in.AuthorContextID,
-			RefuterFamilies:  in.RefuterFamilies,
-			AuthorFamily:     in.AuthorFamily,
-			CrossFamily:      in.CrossFamily,
-			AuthorNeReviewer: in.AuthorNeReviewer,
-			EvidencePresent:  in.EvidencePresent,
-			Domain:           in.Domain,
-			Reason:           in.Reason,
+			Difficulty:          in.Difficulty,
+			PawlVerdictRef:      in.PawlVerdictRef,
+			Disposition:         in.Disposition,
+			HeadSHA:             in.HeadSHA,
+			Attempt:             in.Attempt,
+			Mode:                in.Mode,
+			AuthorContextID:     in.AuthorContextID,
+			RefuterFamilies:     in.RefuterFamilies,
+			AuthorFamily:        in.AuthorFamily,
+			CrossFamily:         in.CrossFamily,
+			AuthorNeReviewer:    in.AuthorNeReviewer,
+			EvidencePresent:     in.EvidencePresent,
+			Domain:              in.Domain,
+			Reason:              in.Reason,
+			DetectorPattern:     in.DetectorPattern,
+			ConstraintPathGlobs: in.ConstraintPathGlobs,
+			DetectorKind:        in.DetectorKind,
 		},
 	}
 }
