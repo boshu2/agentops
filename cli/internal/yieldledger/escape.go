@@ -124,6 +124,14 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			continue
 		}
 
+		// The escape's domain prefers the CONFIRMED's tag, but falls back to the
+		// REFUTED's: the overturning-REFUTED is the conscious "I caught an escape
+		// in domain X" moment, so a reviewer who tags only the REFUTED (or the
+		// writer's UNCLASSIFIED sentinel) still classifies the escape. (EM.2.1)
+		domain := confirmed.domain
+		if domain == "" {
+			domain = refuted.domain
+		}
 		escapes = append(escapes, Escape{
 			BeadID:           bead,
 			RunID:            runID,
@@ -134,7 +142,7 @@ func DetectEscapes(l *Ledger, runID string) []Escape {
 			RefutedAttempt:   refuted.attempt,
 			RefutedTS:        refuted.ts,
 			RefuterFamilies:  refuted.families,
-			Domain:           confirmed.domain,
+			Domain:           domain,
 			Missed:           refuted.reason,
 		})
 	}

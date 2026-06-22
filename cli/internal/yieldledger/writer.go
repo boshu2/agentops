@@ -31,8 +31,19 @@ func (w Writer) AppendAccept(projectRoot string, in AcceptInput) (*Ledger, error
 }
 
 // AppendGateVerdict appends one gate-verdict event and returns the resulting
-// ledger view.
+// ledger view. Before appending it stamps the escape sentinels (EM.2.1): if in is
+// an overturning-REFUTED (an escape), an empty domain becomes DomainUnclassified
+// and an empty reason becomes ReasonUnspecified, so an escape is never recorded
+// without BOTH. This runs at the writer chokepoint so EVERY emitter (CLI, tests,
+// future Go callers) gets the guarantee, not just the producer scripts. Best-
+// effort: a load failure (e.g. no ledger yet, so no prior CONFIRMED to overturn)
+// just skips the stamp.
 func (w Writer) AppendGateVerdict(projectRoot string, in GateVerdictInput) (*Ledger, error) {
+	existing, loadErr := LoadPath(LedgerPath(projectRoot))
+	// A load error here is a corrupt/unreadable EXISTING ledger (a missing ledger
+	// loads as empty, not an error) — StampEscapeSentinels fails SAFE in that case
+	// so a degraded ledger can never let an escape through without domain+reason.
+	in, _ = StampEscapeSentinels(existing, loadErr, in)
 	return w.appendValidated(projectRoot, newGateVerdictEvent(in), "gate-verdict")
 }
 

@@ -384,7 +384,7 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 		if err := strictUnmarshalBody(jsonBody, &b); err != nil {
 			return fmt.Errorf("parse gate-verdict body: %w", err)
 		}
-		if _, err := w.AppendGateVerdict(root, yieldledger.GateVerdictInput{
+		in := yieldledger.GateVerdictInput{
 			BeadID: bead, RunID: run, TS: ts,
 			Difficulty: b.Difficulty, PawlVerdictRef: b.PawlVerdictRef,
 			Disposition: b.Disposition, HeadSHA: b.HeadSHA, Attempt: b.Attempt, Mode: b.Mode,
@@ -392,7 +392,19 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 			AuthorFamily: b.AuthorFamily, CrossFamily: b.CrossFamily,
 			AuthorNeReviewer: b.AuthorNeReviewer, EvidencePresent: b.EvidencePresent,
 			Domain: b.Domain, Reason: b.Reason,
-		}); err != nil {
+		}
+		// EM.2.1: the writer stamps the escape sentinels (UNCLASSIFIED domain /
+		// unspecified reason) when this is an overturning-REFUTED missing either —
+		// including the fail-safe path on a degraded ledger. Mirror that here to
+		// surface the stamp as visible debt: an unclassified escape is NOT success;
+		// it must be classified so derive-checks can route by domain.
+		existing, lerr := yieldledger.LoadPath(yieldledger.LedgerPath(root))
+		if _, substituted := yieldledger.StampEscapeSentinels(existing, lerr, in); substituted {
+			fmt.Fprintf(os.Stderr,
+				"⚠ yield: escape recorded with placeholder domain/reason (bead %s, attempt %d) — classify it: ao membrane recall --domain %s\n",
+				in.BeadID, in.Attempt, yieldledger.DomainUnclassified)
+		}
+		if _, err := w.AppendGateVerdict(root, in); err != nil {
 			return err
 		}
 	case yieldledger.EventUsage:
