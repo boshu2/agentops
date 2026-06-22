@@ -225,6 +225,28 @@ jobs:
           path: ao-gate-report.json
           if-no-files-found: error
 
+      # i4m part 2 — CI direct-persist of deterministic catches. Hooks don't fire
+      # in CI, so a deterministic gate FAIL here would never reach the in-situ
+      # catch-rate gauge. On a gate FAIL, emit the same REFUTED / mode=deterministic
+      # gate-verdict the local pre-push hook would, into the (gitignored, ephemeral)
+      # CI yield ledger, and upload it. A maintainer folds it into their LOCAL gauge
+      # with scripts/ingest-ci-deterministic-catches.sh — no commit-back (the gauge
+      # ledger is local). Non-blocking: never changes the gate verdict.
+      - name: Record CI deterministic catch on gate FAIL (i4m)
+        if: always() && steps.go_gate.outcome == 'failure'
+        shell: bash
+        run: |
+          AO_BIN="$PWD/bin/ao" AO_YIELD_RUN_ID=ci-deterministic \
+            bash scripts/emit-deterministic-catch.sh || true
+
+      - name: Upload CI deterministic catch
+        if: always() && steps.go_gate.outcome == 'failure'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-deterministic-catch
+          path: .agents/yield/yield-ledger.jsonl
+          if-no-files-found: ignore
+
   # ─────────────────────────────────────────────────────────────────────────
   # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
   # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
