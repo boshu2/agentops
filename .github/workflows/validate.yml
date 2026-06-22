@@ -1358,6 +1358,12 @@ jobs:
           chmod +x tests/e2e/goals-steer-auto.sh
           bash tests/e2e/goals-steer-auto.sh
 
+      - name: E6.TEST session-log miner e2e (epic age-membrane-memory-arch-tz2s.6.3)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x tests/e2e/membrane-mine-session-incremental.sh
+          bash tests/e2e/membrane-mine-session-incremental.sh
+
       - name: Run three-gap super-gates (GOALS.md gate id three-gap-supergate, weight 5)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
         run: |
