@@ -104,8 +104,37 @@ check_one_push() {
   body="$(git -C "$GIT_REPO" log -1 --format=%b "$head" 2>/dev/null || true)"
   if grep -qiE '(^|[[:space:]])#trivial[[:space:]]*$' <<<"$subject" \
      || grep -qiE '^[[:space:]]*#trivial[[:space:]]*$' <<<"$body"; then
-    echo "pawl-pre-push: #trivial commit at ${head:0:12} — pawl waived" >&2
-    return 0
+    # age-u43w: #trivial is an AUTHOR ASSERTION, not a fact — do not waive the
+    # cross-family pawl on the message alone. Verify the DIFF is ACTUALLY trivial:
+    # every changed file within the provenance-ledger allowlist (the sole
+    # established #trivial use — post-land sensor / pawl-verdict edges; 100% of
+    # historical #trivial commits touch only docs/provenance/). A #trivial-tagged
+    # commit touching ANY other path (code, scripts, skills, other docs) must
+    # still face the pawl, else "no verdict = not done" is bypassable by
+    # mislabeling any change #trivial. Fail-closed: an empty/unreadable file list
+    # cannot prove triviality, so it does NOT waive.
+    # --no-renames: force a rename to show as delete(old)+add(new) so a rename FROM
+    # a non-provenance path INTO docs/provenance/ exposes the non-allowlisted old
+    # path (rather than --name-only reporting only the allowlisted destination).
+    # Capture the exit status explicitly: a FAILED diff-tree is fail-closed (we
+    # cannot prove triviality), never trusted as authoritative.
+    local changed nontrivial
+    if ! changed="$(git -C "$GIT_REPO" diff-tree --no-commit-id --no-renames --name-only -r "$head" 2>/dev/null)"; then
+      echo "PAWL-HOLD: #trivial at ${head:0:12} — diff-tree failed; cannot prove triviality — fail-closed, pawl required" >&2
+      return 1
+    fi
+    if [[ -z "$changed" ]]; then
+      echo "PAWL-HOLD: #trivial at ${head:0:12} has an empty changed-file list — cannot prove triviality — fail-closed, pawl required" >&2
+      return 1
+    fi
+    nontrivial="$(grep -vE '^docs/provenance/' <<<"$changed" || true)"
+    if [[ -z "$nontrivial" ]]; then
+      echo "pawl-pre-push: #trivial commit at ${head:0:12} (provenance-ledger only) — pawl waived" >&2
+      return 0
+    fi
+    echo "PAWL-HOLD: #trivial at ${head:0:12} touches non-trivial path(s) — waiver REFUSED, cross-family pawl still required:" >&2
+    while IFS= read -r _f; do [[ -n "$_f" ]] && echo "  $_f" >&2; done <<<"$nontrivial"
+    # fall through to the normal pawl requirement (do NOT return 0)
   fi
 
   if ! bead="$(extract_bead_from_commit "$head")"; then

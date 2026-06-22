@@ -46,6 +46,48 @@ make_repo_with_commit() {
   export AGENTOPS_REPO_ROOT="$REPO" HEAD_SHA
 }
 
+# age-u43w: a legitimately-trivial commit touches ONLY the provenance ledger.
+make_repo_with_provenance_commit() {
+  local msg="$1"
+  REPO="$TMP/repo"
+  rm -rf "$REPO"
+  mkdir -p "$REPO"
+  cd "$REPO"
+  git init --quiet
+  git config user.email test@example.com
+  git config user.name Test
+  echo ok > README.md
+  git add README.md
+  git commit --quiet -m "init"
+  mkdir -p docs/provenance
+  echo '{"edge":1}' >> docs/provenance/ledger.jsonl
+  git add docs/provenance/ledger.jsonl
+  git commit --quiet -m "$msg"
+  HEAD_SHA="$(git rev-parse HEAD)"
+  export AGENTOPS_REPO_ROOT="$REPO" HEAD_SHA
+}
+
+# age-u43w: like make_repo_with_body_commit but the change is provenance-only.
+make_repo_with_provenance_body_commit() {
+  local subject="$1" body="$2"
+  REPO="$TMP/repo"
+  rm -rf "$REPO"
+  mkdir -p "$REPO"
+  cd "$REPO"
+  git init --quiet
+  git config user.email test@example.com
+  git config user.name Test
+  echo ok > README.md
+  git add README.md
+  git commit --quiet -m "init"
+  mkdir -p docs/provenance
+  echo '{"edge":1}' >> docs/provenance/ledger.jsonl
+  git add docs/provenance/ledger.jsonl
+  printf '%s\n\n%s\n' "$subject" "$body" | git commit --quiet -F -
+  HEAD_SHA="$(git rev-parse HEAD)"
+  export AGENTOPS_REPO_ROOT="$REPO" HEAD_SHA
+}
+
 @test "check-pawl-pre-push skips when no pre-push stdin" {
   run bash "$SCRIPT" </dev/null
   [ "$status" -eq 0 ]
@@ -87,12 +129,37 @@ make_repo_with_commit() {
   [[ "$output" == *"cites no bead id"* ]]
 }
 
-@test "check-pawl-pre-push waives #trivial commits on main" {
-  make_repo_with_commit age-58o-test-e "chore: trivial doc #trivial"
+@test "check-pawl-pre-push waives #trivial commits on main (provenance-only)" {
+  make_repo_with_provenance_commit "chore(provenance): edge (age-58o-test-e) #trivial"
   status=0
   output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
   [ "$status" -eq 0 ]
   [[ "$output" == *"pawl waived"* ]]
+}
+
+@test "check-pawl-pre-push does NOT waive #trivial that touches non-provenance paths (age-u43w)" {
+  # The bypass this closes: a substantive change mislabeled #trivial. README.md is
+  # NOT in the provenance allowlist, so the waiver must be REFUSED and the pawl
+  # required — even with a perfectly-formed trailing #trivial tag.
+  make_repo_with_commit age-u43w-test "chore(x): sneak a real change past the gate #trivial"
+  status=0
+  output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"waiver REFUSED"* ]]
+  [[ "$output" != *"pawl waived"* ]]
+}
+
+@test "check-pawl-pre-push: refused #trivial FALLS THROUGH to the pawl, authorizes WITH a verdict (age-u43w)" {
+  # Proves the refuse branch does NOT hard-HOLD: a #trivial commit touching a
+  # non-provenance path, cited bead + CONFIRMED verdict, must REFUSE the waiver yet
+  # still AUTHORIZE via the normal pawl path (fall-through, not return 1).
+  make_repo_with_commit age-u43w-fallthrough "feat(x): real change (age-u43w-fallthrough) #trivial"
+  seed_verdict age-u43w-fallthrough "$HEAD_SHA"
+  status=0
+  output="$(printf 'refs/heads/main %s refs/heads/main 0000000000000000000000000000000000000000\n' "$HEAD_SHA" | bash "$SCRIPT" 2>&1)" || status=$?
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"waiver REFUSED"* ]]
+  [[ "$output" == *"push authorized"* ]]
 }
 
 # age-w2ny: build a commit whose body (after the subject + blank line) is fully
@@ -138,7 +205,7 @@ make_repo_with_body_commit() {
 }
 
 @test "check-pawl-pre-push waives #trivial as a standalone trailer line in the body (age-w2ny)" {
-  make_repo_with_body_commit \
+  make_repo_with_provenance_body_commit \
     "chore(x): provenance-only edge (age-w2ny-test-b)" \
     "some body explanation here
 
