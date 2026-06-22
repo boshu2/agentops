@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentops-provenance-mine-event.v1",
+  "title": "AgentOps provenance mine-event (E6, ADR-0010)",
+  "description": "One deterministic per-inference provenance event mined from a session transcript by `ao provenance mine-session`. Only events the transcript deterministically evidences are emitted (today: tool_call); kind is extensible to context_entered / context_missed once their deterministic evidence is defined.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "id", "session_id", "source_line"],
+  "properties": {
+    "schema_version": {
+      "const": "agentops-provenance-mine-event.v1"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["tool_call", "context_entered", "context_missed"]
+    },
+    "id": {
+      "type": "string",
+      "description": "Stable, idempotent id: sha256(session_id:source_line:kind:tool:ordinal)[:16], where ordinal is the tool's position within its source-line message. A re-mine over identical input yields the identical id (trivial downstream dedup); the ordinal keeps several same-tool calls on one line uniquely identified.",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_line": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "tool": {
+      "type": "string",
+      "description": "The tool identifier for a tool_call event (e.g. Read, Bash, exec_command)."
+    }
+  }
+}
