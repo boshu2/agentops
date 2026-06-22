@@ -1,0 +1,29 @@
+{
+  "run": "membrane-flywheel-harvest (stronger producer)",
+  "date": "2026-06-22",
+  "producer": "mlx-community/Qwen2.5-Coder-32B-Instruct-4bit (best local coder, MLX :8100)",
+  "membrane": "Claude Haiku panel x3 (cross-family to producer), blind to oracle",
+  "oracle": "per-task score.sh (deterministic)",
+  "result": "NULL_MEMBRANE_CAUGHT_SUBTLE",
+  "result_note": "No clean escape harvest or self-improvement cycle. The workflow's raw return was 'HARVEST' because its mechanical threshold (>=1 ACK on an oracle-FAIL) fired on ONE noisy escape (hard-deep-merge, non-compiling, 1/3); the honest outcome is a null — the membrane CAUGHT both genuinely-subtle compiling bugs 3/3, and the lone escape's re-measure regressed (2/3 -> 0/3).",
+  "workflow_raw_result": "HARVEST (1 noisy escape)",
+  "n_tasks": 9,
+  "n_true_dones": 4,
+  "n_false_dones": 5,
+  "n_false_dones_compiling": 2,
+  "n_escapes": 1,
+  "escape_quality": "weak/noisy — the lone escape (hard-deep-merge) is NON-COMPILING and missed by only 1/3 reviewers; its derive->re-measure went 2/3 -> 0/3 (WORSE), an inconclusive null, not a self-improvement demo",
+  "headline_finding": "Qwen produced 2 COMPILING-but-subtly-wrong schema bugs (rfd-codex-schema, rfd-nested-schema, the OpenAI strict-mode class) — the subtle substrate Phi-4-mini could not — and the cross-family Haiku membrane CAUGHT BOTH 3/3. Escape-rarity is now confirmed against subtle compiling code, not just inferred from loud weak-producer failures: the membrane catches subtle bugs, so a good membrane structurally self-starves its escape-fueled improvement loop.",
+  "false_alarm_on_true_dones": "1/12 (fd-buried-req: 1 of 3 reviewers wrongly REFUTEd correct code)",
+  "before": [
+    {"task":"cleaner-median","oracle_pass":true,"compiles":"yes","acks":3,"refutes":0},
+    {"task":"fd-buried-req","oracle_pass":true,"compiles":"yes","acks":2,"refutes":1},
+    {"task":"fd-no-mutate","oracle_pass":true,"compiles":"yes","acks":3,"refutes":0},
+    {"task":"fd-regression","oracle_pass":true,"compiles":"yes","acks":3,"refutes":0},
+    {"task":"hard-deep-merge","oracle_pass":false,"compiles":"no","acks":1,"refutes":2},
+    {"task":"hard-utf8-truncate","oracle_pass":false,"compiles":"no","acks":0,"refutes":3},
+    {"task":"rfd-codex-schema","oracle_pass":false,"compiles":"yes","acks":0,"refutes":3},
+    {"task":"rfd-nested-schema","oracle_pass":false,"compiles":"yes","acks":0,"refutes":3},
+    {"task":"rfd-silent-fallback","oracle_pass":false,"compiles":"no","acks":0,"refutes":3}
+  ]
+}
