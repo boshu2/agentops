@@ -33,4 +33,5 @@ setup() {
   [[ "$output" == *"BLOCK"* ]]                                  # re-introduction is gate-blocked (the "blocks" half)
   [[ "$output" == *"activate guard"* ]]                         # a draft gates nothing (no false-green)
   [[ "$output" == *"LOAD: ao lookup"* ]]                        # derived check retrievable by domain (the "auto-loads+cites" half, EM.4)
+  [[ "$output" == *"TRAVEL: published constraint enforces"* ]]  # learning travels to a clean CI checkout (EM.2.9)
 }

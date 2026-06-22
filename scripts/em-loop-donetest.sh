@@ -126,6 +126,23 @@ printf '%s' "$LOOKED" | grep -qiE "Escape:|false-done" \
   || fail load "the loaded entry must be the derived escape finding (cites the escape)"
 ok "7. LOAD: ao lookup --query demo surfaces the derived check citing the escape (cognition half — EM.4)"
 
+# 8. TRAVEL — the loop fires for EVERYONE, not just this box (EM.2.9). Publish the
+# active constraint to the TRACKED surface (sanitized — no private .agents paths),
+# then HIDE .agents/ entirely to simulate a clean CI checkout / fresh clone, and
+# confirm the published constraint STILL enforces the re-introduction. The membrane's
+# learning travels with the repo instead of dying on one developer's machine.
+"$AO" constraint publish >/dev/null 2>&1 || fail travel "ao constraint publish"
+[ -s "$PROJ/docs/constraints/published.json" ] || fail travel "published surface not written"
+grep -q '\.agents' "$PROJ/docs/constraints/published.json" \
+  && fail travel "published surface LEAKS a private .agents path (no private evidence may travel)"
+mv "$PROJ/.agents" "$PROJ/.agents.hidden"   # simulate a clean CI checkout: no local index at all
+WRITE_BAD
+[ "$(constraint_verdict)" = "FAIL" ] \
+  || fail travel "the PUBLISHED constraint must enforce with NO local .agents/ (CI / clean clone)"
+mv "$PROJ/.agents.hidden" "$PROJ/.agents"
+rm -f "$BAD"
+ok "8. TRAVEL: published constraint enforces in a clean checkout with no .agents/ — the learning travels (EM.2.9)"
+
 echo
-echo "✓✓ EM LOOP CLOSED on the shipped ao binary: escape -> mechanical constraint -> active -> blocks re-introduction, AND the derived check is retrievable by the next in-domain pre-mortem (load+cite+block). The membrane self-improved."
+echo "✓✓ EM LOOP CLOSED on the shipped ao binary: escape -> mechanical constraint -> active -> blocks re-introduction; the derived check is retrievable by the next in-domain pre-mortem (load+cite+block); and a published constraint TRAVELS to a clean CI checkout. The membrane self-improved — for everyone."
 exit 0

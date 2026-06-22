@@ -200,3 +200,72 @@ func TestUpsertConstraintAt_InsertIdempotentForce(t *testing.T) {
 		t.Fatalf("force didn't replace in place: %+v", idx.Constraints)
 	}
 }
+
+// EM.2.9: SanitizeForPublish strips every PRIVATE field (finding id + the
+// .agents/-pointing artifact/review/file paths) so the tracked published surface
+// never leaks private findings/evidence, while preserving the enforceable detector.
+func TestSanitizeForPublish_StripsPrivateNoLeak(t *testing.T) {
+	in := ConstraintEntry{
+		ID: "f-x", Title: "Escape: age-demo confirmed then refuted", Status: "active",
+		Source: "finding", SourceType: "escape",
+		FindingID:      "f-x",
+		SourceArtifact: ".agents/findings/f-x.md",
+		ReviewFile:     ".agents/constraints/review/f-x.md",
+		File:           ".agents/constraints/f-x.json",
+		AppliesTo:      ConstraintAppliesTo{PathGlobs: []string{"cli/**"}},
+		Detector:       ConstraintDetector{Kind: "regex", Pattern: `eval\(`, Message: "no eval"},
+	}
+	out := SanitizeForPublish(in)
+	if out.FindingID != "" || out.SourceArtifact != "" || out.ReviewFile != "" || out.File != "" {
+		t.Fatalf("private fields not stripped: %+v", out)
+	}
+	data, _ := json.Marshal(out)
+	if strings.Contains(string(data), ".agents") {
+		t.Fatalf("published entry leaks a .agents path: %s", data)
+	}
+	// enforceable surface preserved
+	if out.Detector.Pattern != `eval\(` || len(out.AppliesTo.PathGlobs) != 1 || out.Status != "active" {
+		t.Fatalf("enforceable detector surface not preserved: %+v", out)
+	}
+}
+
+// EM.2.9: the allowlist drops EVERY non-enforceable field (not just the known
+// private ones), and PublishedLeaks catches a residual .agents/ path that rode
+// along in a KEPT field (Title/Message/glob) — defense in depth.
+func TestSanitizeForPublish_AllowlistAndLeakGuard(t *testing.T) {
+	// A path snuck into a kept field (the detector message) survives the allowlist...
+	leaky := ConstraintEntry{
+		ID: "f-leak", Title: "t", Status: "active",
+		AppliesTo: ConstraintAppliesTo{PathGlobs: []string{"cli/**"}},
+		Detector:  ConstraintDetector{Kind: "regex", Pattern: `x`, Message: "see .agents/findings/secret.md"},
+		// private structural fields the allowlist must drop:
+		FindingID: "f-leak", SourceArtifact: ".agents/findings/f-leak.md", File: ".agents/constraints/f-leak.json",
+	}
+	out := SanitizeForPublish(leaky)
+	if out.FindingID != "" || out.SourceArtifact != "" || out.File != "" {
+		t.Fatalf("allowlist must drop structural private fields: %+v", out)
+	}
+	// ...but PublishedLeaks catches the residual path so publish can refuse.
+	idx := &ConstraintIndex{SchemaVersion: 1, Constraints: []ConstraintEntry{out}}
+	if leaks := PublishedLeaks(idx); len(leaks) != 1 || leaks[0] != "f-leak" {
+		t.Fatalf("PublishedLeaks must catch the residual .agents path, got %v", leaks)
+	}
+	// separator variants are all caught (the marker is the bare ".agents" segment).
+	for _, p := range []string{".agents/findings/x.md", ".agents\\findings\\x.md", "see .agents (bare)"} {
+		ve := SanitizeForPublish(ConstraintEntry{ID: "f-v", Title: "t", Status: "active",
+			AppliesTo: ConstraintAppliesTo{PathGlobs: []string{"cli/**"}},
+			Detector:  ConstraintDetector{Kind: "regex", Pattern: "x", Message: p}})
+		if l := PublishedLeaks(&ConstraintIndex{Constraints: []ConstraintEntry{ve}}); len(l) != 1 {
+			t.Fatalf("separator variant %q must be caught, got %v", p, l)
+		}
+	}
+	// A clean entry has no leaks.
+	clean := SanitizeForPublish(ConstraintEntry{
+		ID: "f-ok", Title: "Escape: age-x", Status: "active",
+		AppliesTo: ConstraintAppliesTo{PathGlobs: []string{"cli/**"}},
+		Detector:  ConstraintDetector{Kind: "regex", Pattern: `eval\(`, Message: "no eval"},
+	})
+	if leaks := PublishedLeaks(&ConstraintIndex{Constraints: []ConstraintEntry{clean}}); len(leaks) != 0 {
+		t.Fatalf("a clean entry must have no leaks, got %v", leaks)
+	}
+}

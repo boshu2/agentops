@@ -50,6 +50,7 @@
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao constraint activate` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao constraint list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao constraint publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao constraint retire` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao contradict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

@@ -623,3 +623,71 @@ func TestConstraintLifecycle_DraftActivateRetire(t *testing.T) {
 		t.Fatalf("after retire: status = %q, want retired", got)
 	}
 }
+
+// EM.2.9: `ao constraint publish` writes ONLY the active constraints to the
+// tracked surface, sanitized (no private .agents paths / finding ids).
+func TestConstraintPublish_WritesSanitizedActiveOnly(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	idxDir := filepath.Join(dir, ".agents", "constraints")
+	if err := os.MkdirAll(idxDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	local := `{"schema_version":1,"constraints":[` +
+		`{"id":"f-active","title":"Escape: age-x","status":"active","compiled_at":"2026-06-21T00:00:00Z","finding_id":"f-active","source_artifact":".agents/findings/f-active.md","file":".agents/constraints/f-active.json","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"eval\\("}},` +
+		`{"id":"f-draft","title":"t","status":"draft","compiled_at":"2026-06-21T00:00:00Z","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic\\("}}` +
+		`]}`
+	if err := os.WriteFile(filepath.Join(idxDir, "index.json"), []byte(local), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := constraintPublishCmd.RunE(constraintPublishCmd, nil); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "constraints", "published.json"))
+	if err != nil {
+		t.Fatalf("published.json not written: %v", err)
+	}
+	var idx constraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("published malformed: %v", err)
+	}
+	if len(idx.Constraints) != 1 || idx.Constraints[0].ID != "f-active" {
+		t.Fatalf("publish must include ONLY the active constraint, got %+v", idx.Constraints)
+	}
+	c := idx.Constraints[0]
+	if c.FindingID != "" || c.SourceArtifact != "" || c.File != "" {
+		t.Fatalf("private fields not stripped on publish: %+v", c)
+	}
+	if strings.Contains(string(data), ".agents") {
+		t.Fatalf("published.json leaks a .agents path: %s", data)
+	}
+	if c.Detector.Pattern != `eval\(` || len(c.AppliesTo.PathGlobs) == 0 {
+		t.Fatalf("enforceable detector not preserved: %+v", c)
+	}
+}
+
+// EM.2.9: `ao constraint publish` with NO local index is a graceful NO-OP — it
+// writes an empty tracked set, never errors (a CI publish on a fresh repo, or
+// un-publishing everything). (cross-family pawl catch)
+func TestConstraintPublish_NoLocalIndex_PublishesEmptyNoError(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	// no .agents/constraints/index.json at all
+	if err := constraintPublishCmd.RunE(constraintPublishCmd, nil); err != nil {
+		t.Fatalf("publish with no local index must not error, got: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "docs", "constraints", "published.json"))
+	if err != nil {
+		t.Fatalf("published.json should still be written (empty): %v", err)
+	}
+	var idx constraintIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		t.Fatalf("published malformed: %v", err)
+	}
+	if len(idx.Constraints) != 0 {
+		t.Fatalf("no local index -> empty published set, got %d", len(idx.Constraints))
+	}
+	if idx.SchemaVersion != 1 {
+		t.Fatalf("empty published index must carry schema_version 1, got %d", idx.SchemaVersion)
+	}
+}

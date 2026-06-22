@@ -153,6 +153,58 @@ func TestConstraintGate_ActiveDetectorMissingKind_FailsClosed(t *testing.T) {
 	}
 }
 
+// writePublished writes a tracked published constraint surface into rc's repo root
+// (docs/constraints/published.json), so tests can exercise the CI/clean-clone path.
+func writePublished(t *testing.T, root, publishedJSON string) {
+	t.Helper()
+	dir := filepath.Join(root, "docs", "constraints")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir published: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "published.json"), []byte(publishedJSON), 0o644); err != nil {
+		t.Fatalf("write published: %v", err)
+	}
+}
+
+// EM.2.9: a TRACKED published constraint is enforced in a clean checkout that has
+// NO local .agents/ index at all (the CI / fresh-clone case the gitignored index
+// could never reach). This is the make-it-travel acceptance.
+func TestConstraintGate_PublishedTravels_NoLocalIndex(t *testing.T) {
+	rc := writeConstraintFixture(t, "", // NO local index — simulate a clean CI checkout
+		map[string]string{"cli/internal/foo.go": "func x() {\n\tpanic(\"boom\")\n}\n"},
+		[]string{"cli/internal/foo.go"})
+	writePublished(t, rc.RepoRoot, forbidConstraint)
+	v := runConstraintGate(t, rc)
+	if v.Status != ports.GateStatusFail {
+		t.Fatalf("a published constraint must enforce with no local index (CI/clean clone), got %s: %s", v.Status, v.Reason)
+	}
+}
+
+// EM.2.9: a malformed published surface fails CLOSED (consistent with the local
+// index) — a broken tracked file never silently disables enforcement.
+func TestConstraintGate_MalformedPublished_FailsClosed(t *testing.T) {
+	rc := writeConstraintFixture(t, "", nil, []string{"cli/internal/foo.go"})
+	writePublished(t, rc.RepoRoot, "NOT JSON")
+	v := runConstraintGate(t, rc)
+	if v.Status != ports.GateStatusFail {
+		t.Fatalf("a malformed published index must FAIL CLOSED, got %s: %s", v.Status, v.Reason)
+	}
+}
+
+// EM.2.9: merge is active-wins — a constraint draft locally but active in the
+// published surface enforces (the published set is the authoritative travel
+// surface; to stop it you un-publish, a tracked change, not a silent local edit).
+func TestMergeConstraintIndexes_ActiveWins(t *testing.T) {
+	draftLocal := `{"schema_version":1,"constraints":[{"id":"f-x","title":"t","status":"draft","compiled_at":"2026-06-21T00:00:00Z","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","mode":"match","pattern":"panic\\("}}]}`
+	activePublished := `{"schema_version":1,"constraints":[{"id":"f-x","title":"t","status":"active","compiled_at":"2026-06-21T00:00:00Z","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","mode":"match","pattern":"panic\\("}}]}`
+	rc := writeConstraintFixture(t, draftLocal, map[string]string{"cli/a.go": "panic(\"x\")"}, []string{"cli/a.go"})
+	writePublished(t, rc.RepoRoot, activePublished)
+	v := runConstraintGate(t, rc)
+	if v.Status != ports.GateStatusFail {
+		t.Fatalf("active-in-published must win over draft-in-local and enforce, got %s: %s", v.Status, v.Reason)
+	}
+}
+
 func TestConstraintGate_DraftConstraint_NotEnforced(t *testing.T) {
 	idx := `{"schema_version":1,"constraints":[{"id":"f-x","title":"t","status":"draft","compiled_at":"2026-06-21T00:00:00Z","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","mode":"match","pattern":"panic\\("}}]}`
 	rc := writeConstraintFixture(t, idx, map[string]string{"cli/a.go": "panic(\"x\")"}, []string{"cli/a.go"})
@@ -291,13 +343,13 @@ func TestConstraintGate_BlankGlob_FailsClosed(t *testing.T) {
 // enforced constraints. Close the whole class, not the three instances.
 func TestConstraintGate_StructurallyIncompleteIndex_FailsClosed(t *testing.T) {
 	cases := map[string]string{
-		"missing constraints array": `{"schema_version":1}`,
-		"constraints null":          `{"schema_version":1,"constraints":null}`,
-		"entry missing status":      `{"schema_version":1,"constraints":[{"id":"f","title":"t","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
-		"entry unknown status":       `{"schema_version":1,"constraints":[{"id":"f","title":"t","status":"bogus","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
-		"entry missing id":           `{"schema_version":1,"constraints":[{"title":"t","status":"active","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
-		"trailing brace":             `{"schema_version":1,"constraints":[]}}`,
-		"duplicate constraints key":  `{"schema_version":1,"constraints":[{"id":"f","title":"t","status":"active","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}],"constraints":[]}`,
+		"missing constraints array":   `{"schema_version":1}`,
+		"constraints null":            `{"schema_version":1,"constraints":null}`,
+		"entry missing status":        `{"schema_version":1,"constraints":[{"id":"f","title":"t","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
+		"entry unknown status":        `{"schema_version":1,"constraints":[{"id":"f","title":"t","status":"bogus","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
+		"entry missing id":            `{"schema_version":1,"constraints":[{"title":"t","status":"active","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
+		"trailing brace":              `{"schema_version":1,"constraints":[]}}`,
+		"duplicate constraints key":   `{"schema_version":1,"constraints":[{"id":"f","title":"t","status":"active","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}],"constraints":[]}`,
 		"duplicate nested status key": `{"schema_version":1,"constraints":[{"id":"f","title":"t","status":"active","status":"draft","compiled_at":"x","applies_to":{"path_globs":["cli/**"]},"detector":{"kind":"regex","pattern":"panic"}}]}`,
 	}
 	for name, idx := range cases {
