@@ -15,6 +15,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ports"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/runtimecmd"
+	"github.com/boshu2/agentops/cli/internal/worktree"
 )
 
 // lookFn is the type for exec.LookPath-compatible functions. It is an injectable
@@ -78,7 +79,7 @@ const worktreeTimeout = 30 * time.Second
 
 // getCurrentBranch returns the current branch name, or error if detached HEAD.
 func getCurrentBranch(repoRoot string) (string, error) {
-	return cliRPI.GetCurrentBranch(repoRoot, worktreeTimeout)
+	return worktree.GetCurrentBranch(repoRoot, worktreeTimeout)
 }
 
 // preserveWorktreeCommits inspects the worktree's HEAD and, if it points at a
