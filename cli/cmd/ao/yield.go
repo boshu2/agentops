@@ -392,6 +392,12 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 			AuthorFamily: b.AuthorFamily, CrossFamily: b.CrossFamily,
 			AuthorNeReviewer: b.AuthorNeReviewer, EvidencePresent: b.EvidencePresent,
 			Domain: b.Domain, Reason: b.Reason,
+			// EM.2.10: thread the mechanical-detector fields from the JSON body to the
+			// input, or `ao yield emit gate-verdict --json '{...detector_pattern...}'`
+			// silently drops them and the escape never compiles to a constraint
+			// (caught by the installed-binary e2e, which the struct-level unit test
+			// missed — the producer's CLI seam, not the writer, was the gap).
+			DetectorPattern: b.DetectorPattern, ConstraintPathGlobs: b.ConstraintPathGlobs, DetectorKind: b.DetectorKind,
 		}
 		// EM.2.1: the writer stamps the escape sentinels (UNCLASSIFIED domain /
 		// unspecified reason) when this is an overturning-REFUTED missing either —
