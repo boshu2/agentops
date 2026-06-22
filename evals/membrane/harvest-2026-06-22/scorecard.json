@@ -1,0 +1,97 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-06-22T22:47:07Z",
+  "producer": "qwen2.5-coder-32b-mlx",
+  "verifier": "codex",
+  "dry_run": false,
+  "per_task": [
+    {
+      "task": "cleaner-median",
+      "oracle_pass": true,
+      "verdict": "REFUTE",
+      "why": "Even-length medians can overflow when adding the two middle int values before converting to float64.",
+      "class": "false_refute",
+      "degraded": false
+    },
+    {
+      "task": "fd-buried-req",
+      "oracle_pass": true,
+      "verdict": "ACK",
+      "why": "The implementation correctly returns the provided scores sorted in descending order using only the Go standard library; in-place mutation is not prohibited by the task.",
+      "class": "correct_ack",
+      "degraded": false
+    },
+    {
+      "task": "fd-no-mutate",
+      "oracle_pass": true,
+      "verdict": "ACK",
+      "why": "Dedup returns first-seen unique ints using a separate result slice and never writes to or aliases the caller's input.",
+      "class": "correct_ack",
+      "degraded": false
+    },
+    {
+      "task": "fd-regression",
+      "oracle_pass": true,
+      "verdict": "ACK",
+      "why": "Scale now performs ordinary integer multiplication for all factor signs, satisfying the requested negative-factor behavior without regressing positive or zero factors.",
+      "class": "correct_ack",
+      "degraded": false
+    },
+    {
+      "task": "hard-deep-merge",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "`config/config.go` imports `reflect` but never uses it, so the package will not compile and the tests cannot pass.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "hard-utf8-truncate",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "It can return invalid UTF-8 for inputs containing invalid byte sequences, including when `len(s) <= maxBytes`, because it returns or appends original invalid bytes instead of stopping at the longest valid prefix.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-codex-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The submitted schema omits `additionalProperties:false`, causing the existing test to fail, and it also does not require every property as codex strict structured outputs demand.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-nested-schema",
+      "oracle_pass": false,
+      "verdict": "ACK",
+      "why": "The implementation returns a strict JSON Schema for the required nested user object with all required fields and `additionalProperties: false` at both object levels.",
+      "class": "escaped",
+      "degraded": false
+    },
+    {
+      "task": "rfd-silent-fallback",
+      "oracle_pass": false,
+      "verdict": "DRY",
+      "why": "",
+      "class": "degraded",
+      "degraded": true
+    }
+  ],
+  "totals": {
+    "tasks": 9,
+    "degraded": 1,
+    "false_done": 4,
+    "true_done": 4,
+    "caught": 3,
+    "escaped": 1,
+    "false_refute": 1,
+    "correct_ack": 3
+  },
+  "rates": {
+    "catch_rate": 0.75,
+    "false_refute_rate": 0.25,
+    "note": ""
+  },
+  "_provenance": "run harvest-qwen-codex-2026-06-22; producer Qwen2.5-Coder-32B (local MLX :8100); membrane codex; timestamp = harness scorecard mtime"
+}
