@@ -110,6 +110,11 @@ The ladder governs how autonomously an agent produces *validated build-time
 change*; it never converts a draft into an external action. Those remain
 draft-and-queue at every level.
 
+Symmetrically, **no autonomous-drive directive crosses a ceiling either**: a
+`/goal` Stop-hook ("do not pause to ask"), a `/loop`, or an unattended run moves
+the reasoning core's leash, never the boundary — a human STOP marker and a pawl
+HOLD outrank any drive directive. See [`pawls.md` § Directive precedence](../contracts/pawls.md#directive-precedence--autonomy-never-overrides-a-human-gate).
+
 ## See also
 
 - [Operating Loop](operating-loop.md) — the seven moves of one tick
