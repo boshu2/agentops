@@ -19,6 +19,7 @@ func TestSplitRuntimeCommand(t *testing.T) {
 		{"env -i claude", "env", []string{"-i", "claude"}},
 		{"  codex   exec ", "codex", []string{"exec"}},
 		{"/usr/local/bin/claude --flag", "/usr/local/bin/claude", []string{"--flag"}},
+		{"codex exec", "codex", []string{"exec"}},
 		{"", "", nil},
 	}
 	for _, tt := range tests {
