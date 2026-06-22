@@ -30,6 +30,7 @@ setup() {
   [[ "$output" == *"EM LOOP CLOSED"* ]]
   # the load-bearing transitions are each asserted by the harness:
   [[ "$output" == *"COMPILE: escape -> draft constraint"* ]]   # the cut wire fires
-  [[ "$output" == *"BLOCK"* ]]                                  # re-introduction is gate-blocked
+  [[ "$output" == *"BLOCK"* ]]                                  # re-introduction is gate-blocked (the "blocks" half)
   [[ "$output" == *"activate guard"* ]]                         # a draft gates nothing (no false-green)
+  [[ "$output" == *"LOAD: ao lookup"* ]]                        # derived check retrievable by domain (the "auto-loads+cites" half, EM.4)
 }
