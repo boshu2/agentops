@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-22T13:14:55Z",
+  "generated_at": "2026-06-22T21:58:33Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 90,
+    "cli_commands": 91,
     "workflows": 4,
-    "capabilities": 179
+    "capabilities": 180
   },
   "surfaces": {
     "skills": [
@@ -1219,6 +1219,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao pawl",
+        "path": "cli/cmd/ao/",
+        "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao plan-pawl",
         "path": "cli/cmd/ao/",
         "purpose": "The plan-pawl duel gate over discovery plans (docs/contracts/pawls.md)",
@@ -1545,9 +1552,9 @@
     ]
   },
   "capability_summary": {
-    "total": 179,
+    "total": 180,
     "skills": 75,
-    "cli_commands": 90,
+    "cli_commands": 91,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1610,6 +1617,7 @@
     "operator",
     "orchestrate",
     "patterns",
+    "pawl",
     "plan-pawl",
     "pool",
     "provenance",
@@ -5236,6 +5244,23 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Inspect and repair .agents/patterns/ artifacts",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.pawl",
+      "name": "ao pawl",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
