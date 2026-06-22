@@ -2413,7 +2413,13 @@ func TestTmuxStartDetachedSession_CmdFail_NoOutput(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "exit status") {
+	// The fake tmux exits 1 -> "exit status 1". Under heavy parallel -race load the
+	// 1200ms production timeout in TmuxStartDetachedSession can fire before the
+	// fork/exec completes, surfacing "signal: killed" instead. Both are valid
+	// command-FAILURE errors; the contract under test is "a failing tmux is an error,
+	// not a false success" (already asserted by err != nil above). Accepting either
+	// mode removes a -race-suite flake that spuriously refused a push (age-yy24 land).
+	if e := err.Error(); !strings.Contains(e, "exit status") && !strings.Contains(e, "signal: killed") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
