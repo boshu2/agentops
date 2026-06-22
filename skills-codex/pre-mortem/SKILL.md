@@ -109,6 +109,17 @@ In `--quick` mode, skip Steps 1a and 1b as standalone pre-processing phases. If 
 
 To escalate to full multi-judge council, use `--deep` (4 judges) or `--mixed` (cross-vendor).
 
+### Step 1.5.1: Reversibility self-check — size the gate to the stakes (Mandatory)
+
+Before selecting gate depth, **state the plan's blast radius and reversibility in one sentence.** If the plan is
+reversible (content recoverable, deletion non-destructive, no shared schema/CLI/contract/migration surface), **say so and
+default to the lightest gate** — inline `--quick` plus a single blind sub-agent for the no-self-grading floor (Step 2.9).
+Escalate to `--deep` / `--mixed` / full council **only on a named irreversible surface** — a one-way door per the
+blast-radius rule (schema migration, public API, architecture fork, security posture, deletion, mutate-shared-trunk).
+This is the de-escalation dual of Step 2.10's escalation rule: 2.10 says *add* rigor for one-way doors; this says *notice
+and drop* rigor when the op is reversible. Running a cross-family duel on a reversible doc/refactor is the waterfall the
+ratchet exists to avoid.
+
 ### Step 1.6: Scope Mode Selection
 
 Before running council, determine the review posture. Three modes:

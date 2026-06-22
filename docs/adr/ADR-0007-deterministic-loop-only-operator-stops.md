@@ -23,6 +23,7 @@
 - An empty claimable queue produces honest **operator-wait** (idle/sanity cycles), never false dormancy.
 - A genuine regression halts the loop so a human looks — the loop never papers over red.
 - The guarantee is testable: `tests/scripts/evolve-halt-check.bats` asserts both the gate's behavior and that the skill actually invokes it (no orphaned-primitive regression).
+- The same operator-markers-are-authoritative principle generalizes to the **in-session** path: an autonomous-drive directive (a `/goal` Stop-hook, a `/loop`) cannot override a human STOP marker or a pawl HOLD any more than it can self-halt the evolve loop here. See [`pawls.md` § Directive precedence](../contracts/pawls.md#directive-precedence--autonomy-never-overrides-a-human-gate).
 
 ## Evidence this is needed
 

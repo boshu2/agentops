@@ -124,6 +124,17 @@ This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and 
 
 > **Scope note (threat model).** The pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by reviewer(s) meeting the pawl's **diversity mode** — fresh-context (≥1 fresh red-team, model-agnostic) by default, or multi-model (the fresh-context floor **plus** ≥2 roster-validated families — strictly stronger) where a pawl is opted up (see [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default)).
 
+## Directive precedence — autonomy never overrides a human gate
+
+A pawl **HOLD** (the merge held on a breaker trip, above) and a **human STOP/KILL marker** both live in the
+**deterministic boundary**. An **autonomous-drive directive** — `/goal`'s "do not pause to ask" Stop-hook, `/loop`'s
+"keep driving", on-the-loop / ATM unattended runs — lives in the **stochastic reasoning core**. The core cannot relax
+the boundary: **no drive directive overrides a HOLD or a human STOP**, and "be autonomous" is *never* authorization to
+self-approve a door a human deliberately gated.
+
+- The two HOLD senses are distinct: a **breaker-HOLD** holds the *merge* until a breaker clears (the [Escalation](#escalation--the-circuit-breaker-model) model above); a **human STOP marker** halts the *loop* (the evolve Red Button / [`halt-check.sh`](../../scripts/evolve/halt-check.sh) — pre-cycle, mechanical, "not prose the agent can rationalize past"). Neither is overridable by a drive directive.
+- This **generalizes the evolve Red Button to the in-session path**: an explicit human-authorization gate (a typed ACK on an irreversible action) is a marker in the boundary — an active drive directive does not consume or satisfy it. A drive loop may re-enter and re-present the gate; it does not cross it. Crossing requires the marker cleared by the human, not by the directive that said "keep going".
+
 ## Adding a pawl
 
 A new pawl earns its place **only** if the action is genuinely irreversible — data lost, money spent, something left the machine, or a shared contract changed. If it's recoverable, it's chaos, and it stays ungated. Keep this list short: every pawl is a tread you now validate, i.e. a step back toward waterfall.
