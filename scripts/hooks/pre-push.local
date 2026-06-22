@@ -102,6 +102,15 @@ if ! ( cd "${toplevel}/cli" && go build ./... ); then
     echo >&2 "✗ go build ./... failed — fix compilation before pushing (ao gate cannot run on broken Go)"
     exit 1
 fi
+# age-yy24: the build above validates the WORKING TREE, not the COMMIT(s) being
+# pushed. A partial commit (a multi-path `git add` that dropped files) builds in the
+# worktree but is build-broken as committed — it landed origin/main red once. When the
+# worktree differs from HEAD for tracked source, this builds each pushed commit in an
+# ISOLATED temp worktree (clean-tree pushes skip it; zero false alarms). Fail-closed
+# only on a definitive build failure; bypass: AGENTOPS_PREPUSH_SKIP_COMMIT_BUILD=1.
+if [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ]; then
+    "${toplevel}/scripts/verify-pushed-commit-builds.sh" < "$prepush_stdin" || exit $?
+fi
 _agentops_ao_gate=$(mktemp "${TMPDIR:-/tmp}/ao-gate.XXXXXX" 2>/dev/null) || {
     echo >&2 "✗ could not allocate a per-run ao gate binary"
     exit 1
