@@ -55,7 +55,7 @@ try:
 except Exception as e:
     sys.stderr.write("producer: unparseable model response: %s\n" % e); sys.exit(1)
 
-blocks = re.findall(r"=== FILE: (.+?) ===\n(.*?)\n=== END ===", content, re.S)
+blocks = re.findall(r"=== FILE:\s*(.+?)\s*===\s*\n(.*?)\n=== END ===", content, re.S)
 if not blocks:
     # Weak models ignore the FILE schema and just emit a fenced code block.
     # Fallback: target path = first backticked token in the PROMPT that looks
