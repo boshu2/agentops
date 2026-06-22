@@ -66,6 +66,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `packets` | rolling | cli | context-packet-cache | Source manifests and promoted packets feeding the context-explain surface |
 | `patterns` | persistent | cli, skills | promoted-pattern | Promoted pattern artifacts |
 | `pawl` | persistent | scripts | service-state | Standing cross-family pawl-service session state (pane map + readiness, `session.json`) written by `scripts/pawl.sh up` and read by `route`/`health`/`down`; see `age-standing-pawl-service-ml8` |
+| `pawl-evidence` | rolling | scripts | decision-record | Refuter review evidence — the codex cross-family review output proving the review actually ran — written per bead by `scripts/pawl-review.sh` (and the `/pre-land-refuters` flow) and read by `scripts/pawl-verdict.sh check`, which fail-closes if a refuter's `evidence` path is missing/empty |
 | `pawl-verdicts` | persistent | scripts, skills | decision-record | Machine-checkable pawl verdicts (fresh-context default; multi-model opt-in; schema `schemas/pawl-verdict.v1.schema.json`) written by `/pre-land-refuters` via `scripts/pawl-verdict.sh write` and read by `scripts/reconcile-pr.sh` to gate merge-to-main (fail-closed: no CONFIRMED verdict, no merge) |
 | `planning-rules` | persistent | cli | generated-policy | Planning rules sourced from skills/contracts |
 | `plans` | persistent | skills, scripts | planning-artifact | Planning artifacts |
@@ -144,6 +145,7 @@ overnight
 packets
 patterns
 pawl
+pawl-evidence
 pawl-verdicts
 planning-rules
 plans
