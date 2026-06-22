@@ -143,8 +143,62 @@ func runConstraintEnforceGate(_ context.Context, rc gates.RunContext) (ports.Gat
 // drops every constraint) fails closed instead of silently passing. It does not
 // use search.LoadConstraintIndex because that resolves a CWD-relative path and
 // is permissive.
+// loadConstraintIndexAt loads the constraints to enforce: the UNION of the local
+// (gitignored .agents/) index and the TRACKED published surface (docs/constraints/
+// published.json, which travels with the repo so CI / a clean clone enforces what
+// was published — EM.2.9). Either source missing is fine; a malformed/unreadable
+// EITHER source fails CLOSED. Entries are merged by id with active-wins precedence
+// (a constraint active in either source enforces), so retiring a published rule is
+// a tracked change to the published file, not a silent local override.
 func loadConstraintIndexAt(root string) (idx *search.ConstraintIndex, missing bool, parseErr error) {
-	path := filepath.Join(root, search.ConstraintIndexPath())
+	local, localMissing, err := loadIndexFile(filepath.Join(root, search.ConstraintIndexPath()))
+	if err != nil {
+		return nil, false, err
+	}
+	published, pubMissing, err := loadIndexFile(filepath.Join(root, search.PublishedConstraintIndexRelPath()))
+	if err != nil {
+		return nil, false, fmt.Errorf("published constraints: %w", err)
+	}
+	if localMissing && pubMissing {
+		return nil, true, nil
+	}
+	return mergeConstraintIndexes(local, published), false, nil
+}
+
+// mergeConstraintIndexes unions two indexes by constraint id with active-wins
+// precedence: when the same id appears in both, the merged entry is active if it
+// is active in EITHER source (the safe direction — toward enforcement). Order is
+// stable: local entries first, then published-only entries.
+func mergeConstraintIndexes(local, published *search.ConstraintIndex) *search.ConstraintIndex {
+	byID := map[string]search.ConstraintEntry{}
+	var order []string
+	add := func(idx *search.ConstraintIndex) {
+		if idx == nil {
+			return
+		}
+		for _, c := range idx.Constraints {
+			if existing, ok := byID[c.ID]; ok {
+				if existing.Status != "active" && c.Status == "active" {
+					byID[c.ID] = c // active-wins
+				}
+				continue
+			}
+			byID[c.ID] = c
+			order = append(order, c.ID)
+		}
+	}
+	add(local)
+	add(published)
+	out := &search.ConstraintIndex{SchemaVersion: constraintSchemaVersion}
+	for _, id := range order {
+		out.Constraints = append(out.Constraints, byID[id])
+	}
+	return out
+}
+
+// loadIndexFile reads + strictly parses one constraint-index JSON file. missing=true
+// when the file does not exist (no feature in use); a read/parse error fails closed.
+func loadIndexFile(path string) (idx *search.ConstraintIndex, missing bool, parseErr error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {

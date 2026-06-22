@@ -62,6 +62,61 @@ func ConstraintLockPath() string {
 	return filepath.Join(".agents", "constraints", "compile.lock")
 }
 
+// PublishedConstraintIndexRelPath returns the canonical path to the TRACKED,
+// committed constraint surface (relative to the repo root). ConstraintIndexPath
+// lives under the gitignored .agents/, so a clean CI checkout / fresh clone
+// enforces nothing; the published surface travels with the repo so a constraint
+// learned on one box hardens it for everyone. It carries ONLY the enforceable
+// detector surface (see SanitizeForPublish) — no private findings/evidence. (EM.2.9)
+func PublishedConstraintIndexRelPath() string {
+	return filepath.Join("docs", "constraints", "published.json")
+}
+
+// SanitizeForPublish returns a published projection of e built from an ALLOWLIST
+// of only the enforceable fields — NOT a denylist that strips known-private ones.
+// An allowlist is the robust guarantee: any field NOT listed here (the private
+// finding_id + the .agents/-pointing source_artifact/review_file/file, AND any
+// field added in the future) is dropped by construction, so it can never leak
+// private findings/evidence into the tracked surface. The detector + applies_to +
+// status is all the enforcement gate needs. A residual private path that somehow
+// rode along in a KEPT field (Title/Message/a glob) is caught by PublishedLeaks at
+// write time (defense in depth). (EM.2.9)
+func SanitizeForPublish(e ConstraintEntry) ConstraintEntry {
+	return ConstraintEntry{
+		ID:              e.ID,
+		Title:           e.Title,
+		Source:          e.Source,
+		SourceType:      e.SourceType,
+		CompilerTargets: e.CompilerTargets,
+		Detectability:   e.Detectability,
+		Status:          e.Status,
+		CompiledAt:      e.CompiledAt,
+		AppliesTo:       e.AppliesTo,
+		Detector:        e.Detector,
+	}
+}
+
+// PublishedLeaks returns the ids of constraints in idx whose serialized form still
+// contains the private ".agents" runtime marker (a residual leak in a kept field
+// such as a detector message or a path glob). It is a DEFENSE-IN-DEPTH backstop
+// behind SanitizeForPublish's allowlist (which is the real guarantee: the private
+// path-bearing fields are dropped by construction). The marker is matched on the
+// bare segment ".agents" — NOT a specific separator — so it catches every variant
+// (forward slash, backslash, or a bare reference) rather than chasing each one.
+// publish refuses to write rather than leak. (EM.2.9)
+func PublishedLeaks(idx *ConstraintIndex) []string {
+	if idx == nil {
+		return nil
+	}
+	var leaked []string
+	for _, c := range idx.Constraints {
+		if data, err := json.Marshal(c); err == nil && strings.Contains(string(data), ".agents") {
+			leaked = append(leaked, c.ID)
+		}
+	}
+	return leaked
+}
+
 // LoadConstraintIndex reads and parses the constraint index.
 func LoadConstraintIndex() (*ConstraintIndex, error) {
 	path := ConstraintIndexPath()

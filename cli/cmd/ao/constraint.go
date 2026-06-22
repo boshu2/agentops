@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/formatter"
@@ -42,6 +43,7 @@ func init() {
 	constraintCmd.AddCommand(constraintRetireCmd)
 	constraintCmd.AddCommand(constraintReviewCmd)
 	constraintCmd.AddCommand(constraintListCmd)
+	constraintCmd.AddCommand(constraintPublishCmd)
 }
 
 func constraintIndexPath() string { return search.ConstraintIndexPath() }
@@ -143,6 +145,70 @@ var constraintRetireCmd = &cobra.Command{
 			return enc.Encode(retired)
 		}
 		fmt.Printf("Constraint %q retired\n", id)
+		return nil
+	},
+}
+
+// ----- publish -----
+
+var constraintPublishCmd = &cobra.Command{
+	Use:   "publish",
+	Short: "Publish active constraints to the tracked surface so CI / clean clones enforce them",
+	Long: `Export the ACTIVE constraints to docs/constraints/published.json (tracked + committed),
+carrying ONLY the enforceable detector surface — finding ids and the .agents/ artifact/review paths
+are stripped, so no private findings or evidence leak.
+
+This is a DELIBERATE act, not auto-on-activate: a derived rule that hardens the whole repo for
+everyone should be a conscious, reviewable, committed change (mirroring the draft->activate human
+gate). ao gate check unions the published set with the local .agents/ index, so a clean CI checkout
+(which has no .agents/) enforces exactly what you publish. Commit the file to make it travel.`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		// A MISSING local index means there are simply no constraints to publish —
+		// publish is then a graceful NO-OP that writes an EMPTY tracked set, never an
+		// error (a CI publish step on a fresh repo, or "un-publish everything", must
+		// not fail). Only a present-but-unreadable index is a real error.
+		schemaVersion := 1
+		var active []constraintEntry
+		if _, statErr := os.Stat(constraintIndexPath()); statErr == nil {
+			idx, err := loadConstraintIndex()
+			if err != nil {
+				return err
+			}
+			if idx.SchemaVersion != 0 {
+				schemaVersion = idx.SchemaVersion
+			}
+			for _, c := range idx.Constraints {
+				if c.Status == "active" {
+					active = append(active, search.SanitizeForPublish(c))
+				}
+			}
+		}
+		published := &search.ConstraintIndex{SchemaVersion: schemaVersion, Constraints: active}
+		// Defense in depth behind the allowlist: refuse to write rather than leak a
+		// residual private .agents/ path that rode along in a kept field.
+		if leaked := search.PublishedLeaks(published); len(leaked) > 0 {
+			return fmt.Errorf("refusing to publish: constraint(s) %v still carry a private .agents/ path "+
+				"(fix the constraint's title/message/globs before publishing)", leaked)
+		}
+		path := search.PublishedConstraintIndexRelPath()
+		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+			return fmt.Errorf("create published constraints dir: %w", err)
+		}
+		data, err := json.MarshalIndent(published, "", "  ")
+		if err != nil {
+			return err
+		}
+		data = append(data, '\n')
+		if err := os.WriteFile(path, data, 0o644); err != nil { // #nosec G306 -- tracked, committed surface; world-readable is intended.
+			return fmt.Errorf("write published constraints: %w", err)
+		}
+		if GetOutput() == "json" {
+			enc := json.NewEncoder(os.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(published)
+		}
+		fmt.Printf("Published %d active constraint(s) to %s — commit it so CI / clean clones enforce them.\n", len(active), path)
 		return nil
 	},
 }

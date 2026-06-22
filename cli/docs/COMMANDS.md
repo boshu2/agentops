@@ -343,6 +343,14 @@ List all constraints with status
 ao constraint list [flags]
 ```
 
+#### `ao constraint publish`
+
+Export the ACTIVE constraints to docs/constraints/published.json (tracked + committed),
+
+```
+ao constraint publish [flags]
+```
+
 #### `ao constraint retire`
 
 Change constraint status from active to retired
