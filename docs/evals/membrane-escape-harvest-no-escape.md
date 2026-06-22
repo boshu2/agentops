@@ -66,3 +66,54 @@ codify the producer→oracle→harvest_dir step (which cwo.1 ran ad-hoc) and a
 *find-ALL-escapes* membrane workflow (cwo.1's derived from only the single clearest).
 A future calibration run is now one command + one workflow invocation, with the
 producer a swappable knob (`MLX_MODEL` / `MLX_ENDPOINT`).
+
+## UPDATE — stronger producer (Qwen2.5-Coder-32B): the substrate exists, but the membrane still catches (2026-06-22)
+
+The "stronger weak producer" the cwo.1 doc named as the next strengthening **was
+locally runnable after all** — `Qwen2.5-Coder-32B-Instruct-4bit` (the best coder
+the Mac holds, ~17 GB) runs fine via MLX (the earlier "memory-infeasible" read was
+too conservative — macOS reclaims cache; the Mac had already been running a 35B).
+Re-ran the harvest with it. Scorecard:
+[`membrane-harvest-qwen-coder-2026-06-22-scorecard.json`](./membrane-harvest-qwen-coder-2026-06-22-scorecard.json).
+
+**Qwen produced the subtle samples Phi could not.** It got 4/9 tasks *correct*
+(genuine true-dones) and shipped **2 compiling-but-subtly-wrong** false-dones —
+`rfd-codex-schema` and `rfd-nested-schema`, the OpenAI strict-mode bugs (the *same
+class* as the lone cwo.1 escape). That is the compiling-but-plausible-yet-wrong
+substrate every fuel path needs, and it now demonstrably exists locally.
+
+**But the cross-family Haiku membrane caught BOTH subtle-compiling bugs 3/3.** Unlike
+Phi's loud (non-compiling) failures, these were subtle, plausible, compiling schema
+code — and the membrane still REFUTED them unanimously. Full tally (panel ×3):
+
+| Task | oracle | compiles | membrane (ACK / REFUTE) | result |
+|---|---|---|---|---|
+| `rfd-codex-schema` | FAIL | yes | 0 / 3 | **caught** (subtle, compiling) |
+| `rfd-nested-schema` | FAIL | yes | 0 / 3 | **caught** (subtle, compiling) |
+| `hard-utf8-truncate` | FAIL | no | 0 / 3 | caught |
+| `rfd-silent-fallback` | FAIL | no | 0 / 3 | caught |
+| `hard-deep-merge` | FAIL | no | **1 / 2** | **1 escape** (noisy, non-compiling) |
+| 4 true-dones | PASS | yes | 11 ACK / 1 REFUTE | 1/12 false-alarm |
+
+**Reading (honest):**
+- **Escape-rarity is now confirmed against SUBTLE code, not just assumed.** A strong
+  producer's compiling, plausible, non-obvious-rule-violating bugs were caught 3/3 by
+  a *cheap cross-family* membrane. The membrane catches subtle failures, not only loud
+  ones — the strongest evidence yet for the product, and it explains the structural
+  starvation: escapes are rare *because the membrane is competent*, even on subtle
+  samples from a 32B coder.
+- **The one "escape" is weak and noisy:** `hard-deep-merge` is *non-compiling* and was
+  missed by only 1 of 3 reviewers. Its derive→re-measure went the WRONG way (caught
+  2/3 BEFORE → 0/3 AFTER the derived check) — **not** a self-improvement demonstration;
+  inconclusive (n=1, likely the logic-check redirected reviewers off the compile
+  error). Recorded as a negative/null, not spun as a win.
+- **False-alarm stayed low** (1/12 on genuine true-dones).
+
+**Net:** the user-directed correction (run the best model, not Phi) worked — the
+subtle-sample substrate exists locally. The result it produced is that the membrane
+*catches* even subtle compiling bugs, so harvested escapes remain rare and the lone
+escape was non-compiling noise. The structural finding (a good membrane self-starves
+its escape-fueled improvement loop) holds, now tested against a strong producer rather
+than inferred from a weak one. No clean new self-improvement cycle was harvested; the
+honest yield is stronger *membrane-competence* evidence + a confirmed (not assumed)
+escape-rarity.
