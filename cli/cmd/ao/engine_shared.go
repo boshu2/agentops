@@ -14,6 +14,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/adapters/workspace_git"
 	"github.com/boshu2/agentops/cli/internal/ports"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
+	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 )
 
 // lookFn is the type for exec.LookPath-compatible functions. It is an injectable
@@ -25,7 +26,7 @@ func effectiveBDCommand(command string) string {
 }
 
 func splitRuntimeCommand(command string) (string, []string) {
-	return cliRPI.SplitRuntimeCommand(command)
+	return runtimecmd.Split(command)
 }
 
 // defaultLookPath returns exec.LookPath if fn is nil.
