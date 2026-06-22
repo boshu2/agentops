@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domainsignal"
 	"github.com/boshu2/agentops/cli/internal/ports"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
@@ -173,8 +175,14 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 		Compiler: string(ports.CompiledOutputPreMortemCheck),
 	}
 
+	// cmd.Context() is nil when a test invokes the RunE directly (no SetContext);
+	// exec.CommandContext panics on a nil context, so default to Background.
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	for _, e := range escapes {
-		artifact := deriveFindingFromEscape(e)
+		artifact := deriveFindingFromEscape(e, buildDomainRecord(ctx, root, e))
 		outputs, err := compiler.Compile(context.Background(), artifact)
 		if err != nil {
 			return fmt.Errorf("compile finding %s: %w", artifact.ID, err)
@@ -210,7 +218,7 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 // was re-verified by a fresh-context refuter before the membrane confirmed it.
 // The id is deterministic (escape bead + confirmed head sha) so re-running is
 // idempotent.
-func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
+func deriveFindingFromEscape(e yieldledger.Escape, dom domainsignal.Record) ports.FindingArtifact {
 	id := deriveEscapeFindingID(e)
 
 	var b strings.Builder
@@ -236,6 +244,23 @@ func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
 		b.WriteString("**What was missed:** ⚠ unspecified — this escape's reason was never recorded; set --reason on the overturning REFUTED.\n\n")
 	} else if e.Missed != "" {
 		fmt.Fprintf(&b, "**What was missed:** %s\n\n", e.Missed)
+	}
+	// EM.2.2: the three-signal domain record. intent_domain (where the work was
+	// meant to be) + changed_file_domains (where the code actually changed) are
+	// PRESERVED alongside escape_domain so a cross-context escape is visible.
+	if dom.IntentDomain != "" || len(dom.ChangedFileDomains) > 0 {
+		b.WriteString("**Domain signals:** ")
+		if dom.IntentDomain != "" {
+			fmt.Fprintf(&b, "intended `%s`", dom.IntentDomain)
+		}
+		if len(dom.ChangedFileDomains) > 0 {
+			fmt.Fprintf(&b, ", code changed in `%s`", strings.Join(dom.ChangedFileDomains, "`, `"))
+		}
+		b.WriteString(".\n\n")
+		if dom.Mismatch {
+			fmt.Fprintf(&b, "**⚠ DOMAIN MISMATCH:** the work was intended for `%s` but the code changed outside it (%s) — this escape crossed bounded contexts; weight the cross-domain blast radius.\n\n",
+				dom.IntentDomain, strings.Join(dom.ChangedFileDomains, ", "))
+		}
 	}
 	b.WriteString("**Detection question:** before CONFIRMING a unit like this, has its acceptance ")
 	b.WriteString("been re-verified by a fresh-context refuter that does NOT trust the prior ")
@@ -270,7 +295,87 @@ func deriveFindingFromEscape(e yieldledger.Escape) ports.FindingArtifact {
 	if e.Missed != "" {
 		art.Frontmatter["escape_missed"] = e.Missed
 	}
+	// EM.2.2: the other two domain signals, queryable for cross-context analysis.
+	if dom.IntentDomain != "" {
+		art.Frontmatter["intent_domain"] = dom.IntentDomain
+	}
+	if len(dom.ChangedFileDomains) > 0 {
+		art.Frontmatter["changed_file_domains"] = strings.Join(dom.ChangedFileDomains, ", ")
+	}
+	if dom.Mismatch {
+		art.Frontmatter["domain_mismatch"] = "true"
+	}
 	return art
+}
+
+// buildDomainRecord assembles the three-signal domain record for an escape at
+// DERIVE time (EM.2.2, council Option C — no emit-time burden, no schema change).
+// Both reads are BEST-EFFORT and degrade to "": a GC'd SHA yields no changed-file
+// domains, and a bead without an intent tag yields no intent_domain. escape_domain
+// comes from the escape itself (EM.2.1).
+func buildDomainRecord(ctx context.Context, root string, e yieldledger.Escape) domainsignal.Record {
+	return domainsignal.Build(
+		beadIntentDomain(ctx, root, e.BeadID),
+		escapeChangedFiles(ctx, root, e),
+		e.Domain,
+	)
+}
+
+// escapeChangedFiles returns the repo-relative paths that changed between the
+// escape's confirmed and refuted heads. Empty on any error (e.g. a GC'd SHA).
+func escapeChangedFiles(ctx context.Context, root string, e yieldledger.Escape) []string {
+	if e.ConfirmedHeadSHA == "" || e.RefutedHeadSHA == "" {
+		return nil
+	}
+	// #nosec G204 -- fixed git binary; refs are SHAs from the local yield ledger.
+	out, err := exec.CommandContext(ctx, "git", "-C", root, "diff", "--name-only",
+		e.ConfirmedHeadSHA+".."+e.RefutedHeadSHA).Output()
+	if err != nil {
+		return nil
+	}
+	var paths []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			paths = append(paths, line)
+		}
+	}
+	return paths
+}
+
+// beadIntentDomain reads agent_context.intent_domain for a bead via `br show
+// --json` (the agent_context value is itself a JSON string). Empty on any error
+// or when the bead carries no intent tag.
+func beadIntentDomain(ctx context.Context, root, beadID string) string {
+	if beadID == "" {
+		return ""
+	}
+	out, err := beadsTrackerCommandContextInDir(ctx, root, "show", beadID, "--json").Output()
+	if err != nil {
+		return ""
+	}
+	var rows []struct {
+		AgentContext string `json:"agent_context"`
+	}
+	// br show --json may return an object or a single-element array; try both.
+	var one struct {
+		AgentContext string `json:"agent_context"`
+	}
+	ac := ""
+	if json.Unmarshal(out, &rows) == nil && len(rows) > 0 {
+		ac = rows[0].AgentContext
+	} else if json.Unmarshal(out, &one) == nil {
+		ac = one.AgentContext
+	}
+	if ac == "" {
+		return ""
+	}
+	var parsed struct {
+		IntentDomain string `json:"intent_domain"`
+	}
+	if json.Unmarshal([]byte(ac), &parsed) != nil {
+		return ""
+	}
+	return parsed.IntentDomain
 }
 
 // deriveEscapeFindingID returns the deterministic finding id for an escape. The
