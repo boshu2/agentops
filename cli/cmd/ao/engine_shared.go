@@ -142,7 +142,7 @@ func preserveWorktreeCommits(repoRoot, worktreePath, runID string) (string, erro
 // commits in git fsck) is already as bad as a lost preserve attempt.
 func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
 	// Safety validation is delegated to internal/rpi.
-	if err := cliRPI.ValidateWorktreeSibling(repoRoot, worktreePath); err != nil {
+	if err := worktree.ValidateWorktreeSibling(repoRoot, worktreePath); err != nil {
 		return err
 	}
 
