@@ -61,7 +61,9 @@ bounded behavior is what addresses the codex-stall tax on clean eval volume.
   past crude escapes — but the *subtlest* case (the `rfd-nested-schema` defect codex
   itself **missed** on the stronger Qwen-32B *produced* output, in
   `harvest-2026-06-22-escape-series-for-e5.md`) remains untested (that artifact was
-  reaped). Samples are small (4 + 3 false-dones).
+  reaped). Distinct false-done reviews: 4 (crude Phi producer) + 9 (full-corpus
+  baselines; the 3 `rfd-*` subtle baselines are a subset of the 9, also run
+  standalone) — all concordant.
 - **It is not a production-gate claim.** Concordance on an eval set is not license
   to let a local model authorize merges; the pawl gate stays codex-only.
 
@@ -80,23 +82,27 @@ Run: no-op producer × {local Qwen-32B, codex} over 3 subtle `rfd-*` baselines.
 Evidence: [`A-local.json`](../../evals/membrane/subtle-escape-2026-06-23/A-local.json),
 [`B-codex.json`](../../evals/membrane/subtle-escape-2026-06-23/B-codex.json).
 
-| task (subtle baseline) | local Qwen-32B | codex | agree |
-|---|---|---|---|
-| rfd-codex-schema (required-subset) | caught (REFUTE) | caught (REFUTE) | ✓ |
-| rfd-nested-schema (nested required) | caught (REFUTE) | caught (REFUTE) | ✓ |
-| rfd-silent-fallback (typed path stub) | caught (REFUTE) | caught (REFUTE) | ✓ |
+**3 subtle `rfd-*` baselines: both caught 3/3**, and the local membrane's reasons are
+sound (on rfd-nested-schema: *"does not include the address object … and does not
+include address in the required array"*).
 
-**Both caught 3/3** of the canonical subtle traps, and the local membrane's reasons
-are sound (on rfd-nested-schema: *"does not include the address object … and does not
-include address in the required array"*). So the local Qwen-32B membrane matches codex
-on **canonical subtle escapes**, not only crude ones.
+**Extended to the FULL trap corpus (divergence search):** the no-op-baseline run was
+then repeated over **all 9 trap-task baselines** with both membranes
+([`full-A-local.json`](../../evals/membrane/subtle-escape-2026-06-23/full-A-local.json),
+[`full-B-codex.json`](../../evals/membrane/subtle-escape-2026-06-23/full-B-codex.json)).
+**Result: both caught 9/9, ZERO per-task divergence.** Across every test in this doc —
+the 4 crude false-dones (Phi producer) and the 9 full-corpus baselines (which include
+the 3 `rfd-*` subtle baselines, also run standalone) — the local Qwen-32B membrane and
+codex **never disagreed on a single task**. That is strong, consistent evidence the
+local membrane is a viable eval membrane on this corpus.
 
 **Still bounded — honestly:** this is the *staged canonical* subtle baseline, not the
 *subtler produced variant* that codex itself missed in the harvest
 (`harvest-2026-06-22-escape-series-for-e5.md`: codex ACKed Qwen-32B's produced
 nested-schema). That specific artifact was reaped and can't be re-reviewed; the
-absolute-subtlest parity is narrower now but not fully closed. Sample is small
-(3+4 false-dones across both runs).
+absolute-subtlest parity is narrower now but not fully closed. The samples are
+modest (4 crude-producer + 9 full-corpus baseline false-dones; the 3 `rfd-*`
+subtle baselines are within the 9), though fully concordant across all.
 
 ## Recommendation
 
