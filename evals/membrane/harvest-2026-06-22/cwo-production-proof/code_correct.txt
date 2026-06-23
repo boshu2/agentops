@@ -1,0 +1,19 @@
+func CompileUserSchema() []byte {
+	return []byte(`{
+	  "type": "object",
+	  "properties": {
+	    "name": {"type": "string"},
+	    "address": {
+	      "type": "object",
+	      "properties": {
+	        "street": {"type": "string"},
+	        "city": {"type": "string"}
+	      },
+	      "required": ["street", "city"],
+	      "additionalProperties": false
+	    }
+	  },
+	  "required": ["name", "address"],
+	  "additionalProperties": false
+	}`)
+}
