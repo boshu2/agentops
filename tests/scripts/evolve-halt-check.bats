@@ -7,6 +7,14 @@
 # skills/evolve/SKILL.md actually CALLS the gate. (b) is the regression guard
 # against the soc-g2qd failure mode: shipping a primitive no consumer invokes.
 
+# Portable file-backdating. GNU `touch -d "N days ago"` is unsupported on BSD/macOS,
+# and the prior `touch -A -240000` fallback only adjusts 24h (NOT the intended 10
+# days) — leaving the marker fresher than the TTL, so the gate halted (exit 1)
+# instead of continuing (exit 0) on macOS. Set the mtime directly via python.
+backdate_days() { # $1=file $2=days
+  python3 -c "import os,sys,time; t=time.time()-int(sys.argv[2])*86400; os.utime(sys.argv[1],(t,t))" "$1" "$2"
+}
+
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
   GATE="$REPO_ROOT/scripts/evolve/halt-check.sh"
@@ -52,7 +60,7 @@ teardown() {
 @test "stale STOP marker (older than TTL) is bypassed, loop continues" {
   touch "$TMP/.agents/evolve/STOP"
   # Backdate the marker 10 days; TTL set to 7.
-  touch -d "10 days ago" "$TMP/.agents/evolve/STOP" 2>/dev/null || touch -A -240000 "$TMP/.agents/evolve/STOP"
+  backdate_days "$TMP/.agents/evolve/STOP" 10
   # WARN about staleness goes to stderr (bats merges it into $output); assert the
   # gate continues (exit 0) and the no-halt JSON is present.
   run env EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_KILL_TTL_DAYS=7 bash "$GATE" --json
@@ -76,7 +84,7 @@ teardown() {
   mkdir -p "$TMP/.config/evolve"
   touch "$TMP/.config/evolve/KILL"
   # Backdate 10 days; TTL set to 7.
-  touch -d "10 days ago" "$TMP/.config/evolve/KILL" 2>/dev/null || touch -A -240000 "$TMP/.config/evolve/KILL"
+  backdate_days "$TMP/.config/evolve/KILL" 10
   run env HOME="$TMP" EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_KILL_TTL_DAYS=7 bash "$GATE" --json
   [ "$status" -eq 0 ]
   [[ "$output" == *'{"halt":false,"halt_reason":null}'* ]]
