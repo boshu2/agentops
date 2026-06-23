@@ -108,8 +108,31 @@ subtle baselines are within the 9), though fully concordant across all.
 
 Use the local membrane for **eval/harvest volume** (free, no rate-limits,
 bounded review latency) where its measured quality holds; keep codex as the
-production push-gate reviewer. Before
-trusting the local membrane on the subtlest escapes, repeat this comparison with a
-**stronger producer** (Qwen-32B or codex output) so the false-dones are subtle
-enough to separate the two membranes — that is the follow-up that would either
-promote or bound the local membrane.
+production push-gate reviewer.
+
+**Operationalized (how to actually use it).** The harvest volume runner takes a
+membrane switch:
+
+```bash
+# reliable local membrane (no codex stall tax) — the operator owns keeping
+# HARVEST_MEMBRANE_MODEL in a DIFFERENT family than the producer:
+HARVEST_MEMBRANE=local \
+  bash evals/membrane/harvest-2026-06-22/run-harvest-series.sh <label> <endpoint> <model> <series>
+# default stays codex (for measuring the production gate's own miss rate).
+```
+
+Tunables: `HARVEST_MEMBRANE_ENDPOINT` / `HARVEST_MEMBRANE_MODEL` (default Qwen-32B
+on `:8100`). The series rows record which membrane produced them (`"membrane"`
+field), so a mixed series stays auditable. Any direct `scripts/eval-membrane.sh`
+caller can equivalently pass
+`--membrane-cmd 'bash evals/membrane/membranes/local-mlx-membrane.sh "$1"'`.
+
+**Caveat for measurement vs volume.** Use **codex** when the *thing being measured
+is the production membrane's own miss rate* (e.g. the E5 governor series); use
+**local** for cheap reliable volume where the producer/escape-corpus is the object
+of study and the reviewer just needs to be a capable cross-family check.
+
+Before trusting the local membrane on the *subtlest* escapes, repeat the comparison
+with a **stronger producer** so the false-dones are subtle enough to separate the
+two membranes — the one bound this corpus could not close (the reaped produced
+variant).

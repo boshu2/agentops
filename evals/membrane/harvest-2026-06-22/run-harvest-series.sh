@@ -49,24 +49,54 @@ LROOT="$WORK/ledger"
 echo "run-harvest-series: run=$RUN_ID producer=$LABEL model=$MODEL" >&2
 
 PRODUCER_CMD="MLX_ENDPOINT=$ENDPOINT MLX_MODEL=$MODEL bash evals/membrane/producers/local-mlx-producer.sh \"\$1\" \"\$2\" \"\$3\""
-# Wrap the membrane (codex) call in a hard timeout: eval-membrane.sh puts NO
-# timeout on the membrane review, so a stalled `codex exec` (seen live: a 22-min
-# hang) freezes the whole run forever. gtimeout kills a hung review after 240s →
-# eval-membrane sees empty output → that task is excluded as degraded → the run
-# continues. This makes the unattended batch self-healing on codex stalls.
+
+# Membrane choice (HARVEST_MEMBRANE=codex|local, default codex):
+#   codex — frontier cross-family reviewer, wrapped in a hard timeout (eval-membrane
+#           puts NONE on the membrane call, so a stalled `codex exec` — seen live, a
+#           22-min hang — would freeze the run; gtimeout kills it → degraded → continue).
+#   local — the validated local-MLX membrane (docs/evals/local-membrane-vs-codex-2026-06-23.md:
+#           9/9 trap-corpus concordance with codex, no API cost, no stall tax). The OPERATOR
+#           owns keeping HARVEST_MEMBRANE_MODEL in a DIFFERENT family than the producer.
+# For measuring CODEX's (the production gate's) miss rate, use codex; for cheap reliable
+# eval volume when that distinction doesn't matter, use local.
 TO_BIN="$(command -v gtimeout || command -v timeout || true)"
-# shellcheck disable=SC2016  # the "$1" is intentionally literal here — eval-membrane.sh expands it via `bash -c "$MEMBRANE_CMD" _ "$prompt"`.
-MEMBRANE_CMD='codex exec --skip-git-repo-check "$1"'
-if [ -n "$TO_BIN" ]; then
-  MEMBRANE_CMD="$TO_BIN 240 codex exec --skip-git-repo-check \"\$1\""
-else
-  # No timeout binary => the self-heal is OFF. Do NOT pretend to be self-healing:
-  # warn loudly so the operator knows a stalled codex review can hang indefinitely.
-  echo "run-harvest-series: WARNING — no gtimeout/timeout on PATH; membrane self-heal DISABLED. A stalled 'codex exec' review can hang this run indefinitely. Install coreutils (gtimeout) for unattended use." >&2
-fi
+# Fail-closed on the membrane choice: an UNKNOWN value (typo like 'locl') must NOT
+# silently fall through to codex — that would run the wrong reviewer (API cost /
+# stall) and mislabel the auditable row. Accept ONLY codex|local; else abort.
+case "${HARVEST_MEMBRANE:-codex}" in
+  local)
+    MEMBRANE_LABEL="local-mlx"
+    # EXPORT the tunables (quoted assignment — safe for spaces/metacharacters) so the
+    # wrapper reads them from the environment. Do NOT interpolate values into the
+    # command string (that would word-split / shell-interpret them). The producer's
+    # own inline `MLX_ENDPOINT=…` overrides these for the producer command, so the
+    # membrane gets the membrane endpoint/model and the producer gets its own.
+    export MLX_ENDPOINT="${HARVEST_MEMBRANE_ENDPOINT:-http://127.0.0.1:8100/v1/chat/completions}"
+    export MLX_MODEL="${HARVEST_MEMBRANE_MODEL:-mlx-community/Qwen2.5-Coder-32B-Instruct-4bit}"
+    # shellcheck disable=SC2016  # the "$1" is intentionally literal — eval-membrane expands it via `bash -c "$MEMBRANE_CMD" _ "$prompt"`.
+    MEMBRANE_CMD='bash evals/membrane/membranes/local-mlx-membrane.sh "$1"'
+    echo "run-harvest-series: membrane=LOCAL ($MLX_MODEL) — validated concordant w/ codex on the trap corpus; no codex stall tax." >&2
+    ;;
+  codex)
+    MEMBRANE_LABEL="codex"
+    # shellcheck disable=SC2016  # the "$1" is intentionally literal here — eval-membrane.sh expands it via `bash -c "$MEMBRANE_CMD" _ "$prompt"`.
+    MEMBRANE_CMD='codex exec --skip-git-repo-check "$1"'
+    if [ -n "$TO_BIN" ]; then
+      MEMBRANE_CMD="$TO_BIN 240 codex exec --skip-git-repo-check \"\$1\""
+    else
+      # No timeout binary => the self-heal is OFF. Do NOT pretend to be self-healing:
+      # warn loudly so the operator knows a stalled codex review can hang indefinitely.
+      echo "run-harvest-series: WARNING — no gtimeout/timeout on PATH; membrane self-heal DISABLED. A stalled 'codex exec' review can hang this run indefinitely. Install coreutils (gtimeout) for unattended use." >&2
+    fi
+    ;;
+  *)
+    echo "run-harvest-series: unknown HARVEST_MEMBRANE='${HARVEST_MEMBRANE}' — want 'codex' or 'local'. Refusing to fall back to a wrong reviewer." >&2
+    exit 2
+    ;;
+esac
 if ! bash scripts/eval-membrane.sh \
       --producer-cmd "$PRODUCER_CMD" --producer-label "$LABEL" \
-      --membrane-cmd "$MEMBRANE_CMD" --membrane-label codex \
+      --membrane-cmd "$MEMBRANE_CMD" --membrane-label "$MEMBRANE_LABEL" \
       --timeout 240 --output "$SC" >"$WORK/eval.log" 2>&1; then
   echo "run-harvest-series: eval-membrane FAILED for $RUN_ID — no row appended" >&2
   tail -3 "$WORK/eval.log" >&2; exit 1
@@ -80,7 +110,7 @@ bash "$HARVEST_DIR/harvest-to-ledger.sh" "$SC" "$LROOT" "$RUN_ID" >"$WORK/flow.l
   || echo "run-harvest-series: WARN harvest-to-ledger non-zero for $RUN_ID (see series anyway)" >&2
 
 # Compute the series row straight from the scorecard (the deterministic truth).
-ROW="$(RUN_ID="$RUN_ID" LABEL="$LABEL" python3 -c '
+ROW="$(RUN_ID="$RUN_ID" LABEL="$LABEL" MEMBRANE_LABEL="$MEMBRANE_LABEL" python3 -c '
 import os, json, sys
 d = json.load(open(sys.argv[1]))
 t = d.get("totals")
@@ -106,7 +136,7 @@ print(json.dumps({
   "run_id": os.environ["RUN_ID"],
   "ts": sys.argv[2],
   "producer": os.environ["LABEL"],
-  "membrane": "codex",
+  "membrane": os.environ["MEMBRANE_LABEL"],
   "n_tasks": int(t.get("tasks", 0)),
   "degraded": int(t.get("degraded", 0)),
   "n_false_dones": fd,
