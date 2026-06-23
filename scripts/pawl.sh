@@ -227,6 +227,7 @@ cmd_route() {
   # Per-route nonce scopes verdict parsing to THIS route (kills stale-scrollback +
   # echoed-instruction false positives).
   local nonce; nonce="r$(printf '%x' "$$")$(date +%s | tail -c 6)"
+  local _route_t0; _route_t0="$(date +%s)"   # ml8.6: route latency clock
   # Single source of truth for both panes: a per-route packet copy with the nonce-tag
   # appended (so the verdict line carries this route's nonce). The tag deliberately
   # avoids a bare "<nonce> CONFIRMED/REFUTED" pair, so an echo of it can't match the parser.
@@ -276,6 +277,16 @@ cmd_route() {
   tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -80 > "$ev_cod" 2>&1 || true
 
   log "opus=${vc:-<timeout>} codex=${vd:-<timeout>}"
+  # ml8.6: record one SLO datapoint per route (latency + agreement) for `pawl metrics`.
+  # Non-blocking + fail-safe — metrics must NEVER affect the verdict (the `|| true`).
+  { _lat=$(( $(date +%s) - _route_t0 ))
+    _mdisp="REFUTED"; [ "$vc" = "CONFIRMED" ] && [ "$vd" = "CONFIRMED" ] && _mdisp="CONFIRMED"
+    _magree="disagree"; [ -n "$vc" ] && [ "$vc" = "$vd" ] && _magree="agree"
+    mkdir -p "$ROOT/$STATE_DIR"
+    printf '{"ts":"%s","bead":"%s","latency_s":%d,"opus":"%s","codex":"%s","disposition":"%s","agreement":"%s"}\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bead" "$_lat" "${vc:-timeout}" "${vd:-timeout}" "$_mdisp" "$_magree" \
+      >> "$ROOT/$STATE_DIR/metrics.jsonl"
+  } 2>/dev/null || true
   if [ "$vc" = "CONFIRMED" ] && [ "$vd" = "CONFIRMED" ]; then
     local head; head="$(git rev-parse HEAD)"
     bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
@@ -305,6 +316,44 @@ cmd_route() {
   return 1
 }
 
+# ml8.6: SLO surface over the recorded routes — p50/p95 round-trip latency + agreement rate
+# (both-CONFIRMED vs disagreement). Reads the append-only metrics.jsonl cmd_route writes.
+cmd_metrics() {
+  local mf="$ROOT/$STATE_DIR/metrics.jsonl" json=0
+  [ "${1:-}" = "--json" ] && json=1
+  if [ ! -s "$mf" ]; then
+    [ "$json" = 1 ] && echo '{"routes":0}' || echo "pawl metrics: no routed beads recorded yet ($mf)"
+    return 0
+  fi
+  python3 - "$mf" "$json" <<'PY'
+import json,sys
+mf,asjson=sys.argv[1],sys.argv[2]=="1"
+# Fail-SOFT: a corrupt/partial append (e.g. a route killed mid-write) must not crash the
+# SLO surface — skip unparseable lines, report on the rest.
+rows=[]
+for l in open(mf):
+    l=l.strip()
+    if not l: continue
+    try: rows.append(json.loads(l))
+    except Exception: continue
+n=len(rows)
+lat=sorted(int(r.get("latency_s",0)) for r in rows)
+def pct(p):
+    if not lat: return 0
+    return lat[min(len(lat)-1,int(round((p/100.0)*(len(lat)-1))))]
+agree=sum(1 for r in rows if r.get("agreement")=="agree")
+dis=n-agree
+out={"routes":n,"latency_p50_s":pct(50),"latency_p95_s":pct(95),
+     "agreement_rate":round(agree/n,3) if n else 0,"agree":agree,"disagreements":dis}
+if asjson:
+    print(json.dumps(out))
+else:
+    print(f"pawl metrics: {n} routed beads")
+    print(f"  latency p50={out['latency_p50_s']}s p95={out['latency_p95_s']}s")
+    print(f"  agreement {agree}/{n} ({out['agreement_rate']}); disagreements={dis}")
+PY
+}
+
 # Dispatch only when EXECUTED, not when SOURCED — so tests can source this file to exercise
 # the pure helpers (cod_dead, verdict_of, …) without running a command.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
@@ -314,12 +363,14 @@ case "${1:-}" in
   down)   shift; cmd_down "$@" ;;
   health) shift; cmd_health "$@" ;;
   route)  shift; cmd_route "$@" ;;
+  metrics) shift; cmd_metrics "$@" ;;
   *) cat >&2 <<'H'
-Usage: pawl.sh <up|down|health|route>
+Usage: pawl.sh <up|down|health|route|metrics>
   up                          spawn + readiness-gate the standing pawl session (idempotent)
   down                        tear down the standing session
   health [--json]             per-pane liveness/readiness
   route <bead> <packet> [pr]  route a review packet to opus+codex, require agreement, record verdict
+  metrics [--json]            SLO surface over recorded routes: p50/p95 latency + agreement rate
 
 route is self-healing (S3): sends retry with engagement verification (never aborts on a
 flaky codex send); a pane that goes degraded mid-route (dead shell, usage-limit, stuck
