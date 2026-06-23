@@ -106,7 +106,11 @@ build_goals_section() {
     fi
   elif [[ -d "$baseline_dir" ]]; then
     local latest_label
-    latest_label="$(find "$baseline_dir" -maxdepth 1 -mindepth 1 -type d -printf '%f\n' 2>/dev/null | sort | tail -1)"
+    # `-printf '%f\n'` is a GNU-find extension; BSD/macOS find errors on it
+    # ("unknown primary"), and with `set -euo pipefail` the suppressed-stderr
+    # failure still propagates (pipefail) and kills this assignment -> exit 1.
+    # `-exec basename {} \;` is the POSIX-portable equivalent (one basename/line).
+    latest_label="$(find "$baseline_dir" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort | tail -1)"
     if [[ -n "$latest_label" ]]; then
       local latest_file
       latest_file="$(find "$baseline_dir/$latest_label" -name '*.json' 2>/dev/null | sort | tail -1)"
