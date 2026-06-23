@@ -4482,12 +4482,52 @@ ao pawl [command]
 
 **Subcommands:**
 
+#### `ao pawl down`
+
+Tear down the standing pawl-service (no orphan panes)
+
+```
+ao pawl down [flags]
+```
+
+#### `ao pawl health`
+
+Per-pane liveness/readiness of the standing pawl-service
+
+```
+ao pawl health [--json] [flags]
+```
+
+#### `ao pawl metrics`
+
+p50/p95 route latency + agreement-rate SLOs over the recorded routes
+
+```
+ao pawl metrics [--json] [flags]
+```
+
 #### `ao pawl review`
 
 Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 
 ```
 ao pawl review <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>] [flags]
+```
+
+#### `ao pawl route`
+
+Route a review packet to the warm opus+codex duel; require agreement, record the verdict
+
+```
+ao pawl route <bead> <packet> [pr] [flags]
+```
+
+#### `ao pawl up`
+
+Stand up the standing pawl-service (opus+codex), readiness-gated (idempotent)
+
+```
+ao pawl up [flags]
 ```
 
 ---

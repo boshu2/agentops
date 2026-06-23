@@ -190,7 +190,12 @@
 | `ao orchestrate tools` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao orchestrate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao pawl down` | `unsafe-live` | `allowlisted` | Kills the live standing opus+codex ATM pawl-service; ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh down live-proven (ml8.1). |
+| `ao pawl health` | `unsafe-live` | `allowlisted` | Probes a live standing ATM pawl-service; ao wrapper exit-code-tested; pawl.sh health live-proven. |
+| `ao pawl metrics` | `public-tested` | `allowlisted` | Read-only SLO surface over recorded routes; covered by tests/scripts/pawl-metrics.bats (6 tests) + ao-wrapper exit-code test (TestPawlServiceCmd). |
 | `ao pawl review` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao pawl route` | `unsafe-live` | `allowlisted` | Routes a packet to live opus+codex model panes (requires a standing service); ao wrapper exit-code-tested; pawl.sh route live-proven across 4 routes (ml8.2). |
+| `ao pawl up` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao plan-pawl decide` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |
