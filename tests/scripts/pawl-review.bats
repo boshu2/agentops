@@ -36,6 +36,46 @@ STUB
   export AGENTOPS_PAWL_VERDICT_DIR="$TMP/verdicts"
   mkdir -p "$AGENTOPS_PAWL_VERDICT_DIR"
   VFILE="$AGENTOPS_PAWL_VERDICT_DIR/age-rev-test.json"
+  # Default ALL tests to the COLD codex-exec path: the ml8.7 routed branch checks a live
+  # pawl-service, and a real standing service may be up on the dev box — without this, the
+  # cold-path tests below would spuriously route to it. The routed tests re-enable + stub it.
+  export PAWL_NO_SERVICE=1
+}
+
+# A stub standing-pawl service. `health` honors STUB_HEALTH_RC. `route <route> <bead> <pkt> <pr>`:
+#   - STUB_ROUTE_WRITES=0 -> writes nothing;
+#   - STUB_VALID=1        -> writes a GATE-VALID multi-model verdict via the REAL pawl-verdict.sh
+#                           write (so pawl-verdict.sh check PASSES);
+#   - else (default)      -> writes a MINIMAL/invalid verdict shape (check must REJECT it);
+#   exits STUB_ROUTE_RC.
+_pawl_service_stub() {
+  cat > "$TMP/pawl-stub.sh" <<STUB
+#!/usr/bin/env bash
+case "\$1" in
+  health) exit \${STUB_HEALTH_RC:-0} ;;
+  route)
+    bead="\$2"; pr="\${4:-0}"; disp="\${STUB_ROUTE_DISP:-CONFIRMED}"
+    if [ "\${STUB_ROUTE_WRITES:-1}" = "1" ]; then
+      if [ "\${STUB_VALID:-0}" = "1" ]; then
+        printf 'opus pane: real review, CONFIRMED\n'  > "$TMP/ev-o.txt"
+        printf 'codex pane: real review, CONFIRMED\n' > "$TMP/ev-c.txt"
+        bash "$REPO_ROOT/scripts/pawl-verdict.sh" write "\$bead" "\$pr" \
+          --disposition "\$disp" --head "$HEAD_SHA" \
+          --author-context "pawl-route-author-\$bead" --mode multi-model \
+          --refuter "claude:\$disp:opus-pane:$TMP/ev-o.txt" \
+          --refuter "gpt:\$disp:codex-pane:$TMP/ev-c.txt" \
+          --dir "$AGENTOPS_PAWL_VERDICT_DIR" >/dev/null 2>&1 || true
+      else
+        printf '{"bead_id":"%s","disposition":"%s","head_sha":"%s","mode":"multi-model"}\n' \
+          "\$bead" "\$disp" "$HEAD_SHA" > "$AGENTOPS_PAWL_VERDICT_DIR/\$bead.json"
+      fi
+    fi
+    exit \${STUB_ROUTE_RC:-0} ;;
+  *) exit 2 ;;
+esac
+STUB
+  chmod +x "$TMP/pawl-stub.sh"
+  echo "$TMP/pawl-stub.sh"
 }
 
 teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
@@ -176,4 +216,71 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   # ACCEPTED-AS-TAIL (the dogfood-caught flaw fix — a REFUTED lineage's defects are auditable).
   grep -q 'ACCEPTED AS TAIL' "$REPO/.agents/pawl-evidence/age-rev-test-pawl-review.txt"
   grep -q 'cosmetic tail nit' "$REPO/.agents/pawl-evidence/age-rev-test-pawl-review.txt"
+}
+
+# --- ml8.7: route the default pawl through the standing service (opus+codex duel) ---
+
+@test "pawl-review: routes; a CONFIRMED route whose verdict PASSES pawl-verdict.sh check exits 0 (ml8.7)" {
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 STUB_ROUTE_RC=0 STUB_ROUTE_DISP=CONFIRMED STUB_VALID=1 \
+    bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"routing through the standing pawl-service"* ]]
+  [[ "$output" == *"VERIFIED by pawl-verdict.sh check"* ]]
+  [ -f "$VFILE" ]
+  grep -q CONFIRMED "$VFILE"
+}
+
+@test "pawl-review: a routed CONFIRMED with an INVALID verdict FAILS the real check and falls back — never fail-open (ml8.7)" {
+  # The route claims rc=0 but writes a minimal/invalid verdict (STUB_VALID=0). The shallow
+  # head+disposition test would wrongly accept it; pawl-verdict.sh check REJECTS it, so the
+  # routed branch must fall back to the cold codex-exec, not exit 0 on the bad verdict.
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 STUB_ROUTE_RC=0 STUB_ROUTE_DISP=CONFIRMED STUB_VALID=0 CODEX_STUB="VERDICT: CONFIRMED" \
+    bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"falling back to cold codex-exec"* ]]
+}
+
+@test "pawl-review: --scope staged is NEVER routed (review-only, no commit to bind) even with a healthy service (ml8.7)" {
+  echo more >> README.md; git add README.md   # an uncommitted staged change
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 CODEX_STUB="VERDICT: CONFIRMED" \
+    bash "$SCRIPT" age-rev-test --scope staged
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"routing through the standing pawl-service"* ]]   # routed branch skipped for staged
+  [[ "$output" == *"review-only"* ]]
+  [ ! -f "$VFILE" ]   # staged never writes a HEAD-bound verdict
+}
+
+@test "pawl-review: a routed REFUTED (panes disagree) exits 3 (ml8.7)" {
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 STUB_ROUTE_RC=1 STUB_ROUTE_DISP=REFUTED \
+    bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"PAWL ROUTE: REFUTED"* ]]
+}
+
+@test "pawl-review: route success-rc but NO head-bound verdict falls back to cold codex-exec — never fail-open (ml8.7)" {
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 STUB_ROUTE_RC=0 STUB_ROUTE_WRITES=0 CODEX_STUB="VERDICT: CONFIRMED" \
+    bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"falling back to cold codex-exec"* ]]
+  [ -f "$VFILE" ]
+}
+
+@test "pawl-review: PAWL_NO_SERVICE=1 uses the cold path, never routes (ml8.7 opt-out)" {
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=1 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 CODEX_STUB="VERDICT: CONFIRMED" \
+    bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"routing through the standing pawl-service"* ]]
+  [ -f "$VFILE" ]
 }

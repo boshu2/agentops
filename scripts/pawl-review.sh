@@ -32,6 +32,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
+# The standing-pawl service script (overridable for tests). Always the real script next
+# to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
+PAWL_SH="${PAWL_SERVICE_SCRIPT:-$SCRIPT_DIR/pawl.sh}"
 # The repo UNDER REVIEW (overridable for tests / alt worktrees); PAWL itself is always
 # the real script next to this one.
 REPO_ROOT="${AGENTOPS_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -143,6 +146,54 @@ DEFECTS:
 PROMPT
   printf '%s\n' "$diff"
 } > "$prompt_file"
+
+# ml8.7: route the DEFAULT adversarial pawl through the standing pawl-service (the warm
+# opus+codex DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is up.
+# The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
+# warm (no per-bead subprocess spin-up — the anti-pattern this deprecates). Fail SAFE: any
+# routing error falls through to the codex-exec path below (never fail-open). --converge
+# (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
+# routing would wrongly write a HEAD-bound verdict for an uncommitted diff) stay on the cold
+# path. Opt out: PAWL_NO_SERVICE=1.
+if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
+   && bash "$PAWL_SH" health >/dev/null 2>&1; then
+  route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
+  # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
+  # pawl.sh route appends its own nonce-tagged verdict format ("PAWL <nonce> CONFIRMED|REFUTED").
+  { printf '%s\n' "$posture"
+    [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
+    printf '\n=== DIFF UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
+    printf '%s\n' "$diff"
+  } > "$route_pkt"
+  echo "pawl-review: routing through the standing pawl-service (opus+codex duel, ml8.7)…" >&2
+  route_rc=0
+  # Pass the REAL PR ($PR, from AGENTOPS_PAWL_PR) — NOT a hardcoded 0 — so the routed
+  # verdict binds to the right PR (push-to-main is PR 0; a PR review is its number).
+  bash "$PAWL_SH" route "$bead" "$route_pkt" "$PR" >&2 || route_rc=$?
+  rm -f "$route_pkt"
+  # Trust the route ONLY if it actually wrote a verdict bound to THIS head (fail-safe: a
+  # routing error must not be read as a clean pass, and an absent/stale verdict falls back).
+  # The routed path deliberately does NOT write --converge lineage: --converge is a cold,
+  # codex-only bounded re-review that folds in the COLD adversarial run's preserved defects;
+  # a routed duel is a different mode, so leaving no lineage makes --converge correctly
+  # require a genuine cold adversarial run first (closes the auditability gap codex flagged).
+  # Trust the route's CONFIRMED ONLY if the written verdict PASSES the REAL gate — the same
+  # `pawl-verdict.sh check` the push gate runs (schema + PR + head-binding + cross-family
+  # evidence/diversity). A shallow head+disposition jq is NOT enough: a malformed verdict
+  # could slip through (codex caught exactly this). A REFUTED route is a real HOLD; anything
+  # else (no gate-valid verdict) falls back to the cold codex-exec — never fail-open.
+  if [[ "$route_rc" -eq 0 ]] && "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
+    echo "pawl-review: CONFIRMED (routed opus+codex duel) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
+    exit 0
+  fi
+  routed_disp="$(jq -r 'select(.head_sha=="'"$head"'") | .disposition // empty' \
+                  "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
+  if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
+    echo "=== PAWL ROUTE: REFUTED — opus+codex did not both CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
+    exit 3
+  fi
+  echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
+fi
 
 # Run the refuter, CAPTURING the exit status: a timeout/crash must NOT be trusted as a
 # clean review (a partial output containing 'VERDICT: CONFIRMED' from a killed run could
