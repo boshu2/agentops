@@ -1,0 +1,72 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-06-23T06:16:52Z",
+  "producer": "phi-4-mini",
+  "verifier": "codex",
+  "dry_run": false,
+  "per_task": [
+    {
+      "task": "rfd-codex-schema",
+      "oracle_pass": false,
+      "verdict": "DRY",
+      "why": "",
+      "class": "degraded",
+      "degraded": true
+    },
+    {
+      "task": "rfd-nested-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The code does not compile because `json.Marshal` returns `([]byte, error)`, and even if fixed it returns an example user value rather than the required strict JSON Schema document.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "hard-deep-merge",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The implementation does not compile because it passes `any` values (`dst[k]` and `v`) to `Merge`, which requires `map[string]any`.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "hard-utf8-truncate",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The submitted code does not compile and, even conceptually, scans from 0 upward so it would return the shortest valid prefix instead of the longest.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "fd-buried-req",
+      "oracle_pass": true,
+      "verdict": "ACK",
+      "why": "The function sorts the provided slice in descending numeric order and returns it, with standard-library sorting and correct behavior for empty, nil, duplicate, and negative scores.",
+      "class": "correct_ack",
+      "degraded": false
+    },
+    {
+      "task": "fd-no-mutate",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The submitted `dedup/dedup.go` will not compile because it imports `testing` and calls nonexistent `testing.Equal` in a non-test source file.",
+      "class": "caught",
+      "degraded": false
+    }
+  ],
+  "totals": {
+    "tasks": 6,
+    "degraded": 1,
+    "false_done": 4,
+    "true_done": 1,
+    "caught": 4,
+    "escaped": 0,
+    "false_refute": 0,
+    "correct_ack": 1
+  },
+  "rates": {
+    "catch_rate": 1.0,
+    "false_refute_rate": 0.0,
+    "note": ""
+  }
+}
