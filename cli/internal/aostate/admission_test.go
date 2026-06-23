@@ -70,6 +70,26 @@ func TestAoStateAdmissionSchemasValidateFixtures(t *testing.T) {
 	}
 }
 
+// ValidateCandidateFile is the production candidate-file validator (used by
+// cmd/ao state at two call sites) but was entirely untested. Pin its contract:
+// a valid candidate passes, a schema-invalid one is rejected, and a missing file
+// gives a clear read error — the membrane validates a candidate before use.
+func TestValidateCandidateFileAcceptsValidRejectsInvalid(t *testing.T) {
+	tmp := copyAOStateSchemasAndFixtures(t)
+	fixtures := filepath.Join(tmp, "schemas", "fixtures", "ao-state")
+
+	if err := ValidateCandidateFile(tmp, filepath.Join(fixtures, "valid-candidate.json")); err != nil {
+		t.Fatalf("ValidateCandidateFile(valid-candidate) = %v, want nil", err)
+	}
+	if err := ValidateCandidateFile(tmp, filepath.Join(fixtures, "bad-candidate-extra-field.json")); err == nil {
+		t.Fatal("ValidateCandidateFile accepted a schema-invalid candidate; it must reject")
+	}
+	err := ValidateCandidateFile(tmp, filepath.Join(fixtures, "no-such-candidate.json"))
+	if err == nil || !strings.Contains(err.Error(), "read candidate") {
+		t.Fatalf("ValidateCandidateFile(missing) = %v, want a 'read candidate' error", err)
+	}
+}
+
 func TestAdmissionCoreRejectsSelfReviewContext(t *testing.T) {
 	tmp := copyAOStateSchemasAndFixtures(t)
 	_, _, candidateBytes, verdictBytes := writeValidAdmissionFiles(t, tmp, nil, func(v *AdmissionVerdict) {
