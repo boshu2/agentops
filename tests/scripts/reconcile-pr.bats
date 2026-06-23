@@ -135,9 +135,14 @@ seed_verdict() {
   local r i=0
   # Token order is family:verdict:context_id:evidence — distinct context per refuter.
   for r in "$@"; do i=$((i + 1)); args+=(--refuter "$r:ctx-$i:$ev"); done
+  # A REFUTED disposition is a candidate escape; the writer REQUIRES --reason
+  # (what was missed). Supply a default so the seed is valid — tests asserting on
+  # reason content pass their own.
+  local reason_args=()
+  [ "$disp" = "REFUTED" ] && reason_args=(--reason "seeded test refutation")
   "$REPO_ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
     --disposition "$disp" --head "$head" --author-context "$AUTHOR_CTX" \
-    "${mode_args[@]}" "${args[@]}" --dir "$TMP/verdicts" >/dev/null
+    "${mode_args[@]}" "${reason_args[@]}" "${args[@]}" --dir "$TMP/verdicts" >/dev/null
 }
 
 # Write a RAW verdict JSON straight to the per-test verdict dir (bypassing the
