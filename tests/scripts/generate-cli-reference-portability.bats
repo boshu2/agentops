@@ -52,6 +52,10 @@ setup() {
     local input
     input=$(printf 'unindented\n single-space\n  double-space\n')
     local out
-    out="$(echo "$input" | gawk "$pattern { print \$1 }")"
+    # Use the SYSTEM awk (what generate-cli-reference.sh actually runs) — portable
+    # across gawk (CI), mawk (Ubuntu), and BSD awk (macOS dev). The prior `gawk`
+    # hard-coding errored ("gawk: command not found") on macOS instead of testing
+    # the pattern's semantics. (The sibling test still exercises gawk when present.)
+    out="$(echo "$input" | awk "$pattern { print \$1 }")"
     [ "$out" = "double-space" ]
 }

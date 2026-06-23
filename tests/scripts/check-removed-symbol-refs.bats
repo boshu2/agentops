@@ -60,7 +60,10 @@ commit_fixture() {
     printf 'fixture old-command --flag\n' > "$WORK_REPO/tests/fixture.txt"
     commit_fixture
 
-    run bash -c "cd '$WORK_REPO' && bash scripts/check-removed-symbol-refs.sh --regex --exclude 'tests/**' -- 'old-command\\s+--flag'"
+    # --regex is POSIX ERE (git grep -E); use a POSIX class, not the GNU/PCRE `\s`
+    # shorthand, which is out-of-contract and matches only on Linux git-grep (it
+    # silently fails to match on macOS, flipping the expected exit 1 -> 0).
+    run bash -c "cd '$WORK_REPO' && bash scripts/check-removed-symbol-refs.sh --regex --exclude 'tests/**' -- 'old-command[[:space:]]+--flag'"
     [ "$status" -eq 1 ]
     [[ "$output" == *"scripts/run.sh"* ]]
     [[ "$output" != *"tests/fixture.txt"* ]]
