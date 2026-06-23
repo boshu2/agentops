@@ -100,3 +100,69 @@ func TestRunPawlReview_MissingScriptErrors(t *testing.T) {
 		t.Fatalf("missing script should be a plain error, not a propagated exit code, got %v", err)
 	}
 }
+
+// writePawlServiceTestRepo is writePawlTestRepo's sibling for the standing-service script:
+// a stub scripts/pawl.sh that exits with the given code. pawlServiceCmd builds a FRESH
+// cobra command per call (no package-global mutation), so only testProjectDir needs restore.
+func writePawlServiceTestRepo(t *testing.T, exitCode int) {
+	t.Helper()
+	repo := t.TempDir()
+	mk := func(rel string, b []byte, m os.FileMode) {
+		t.Helper()
+		p := filepath.Join(repo, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, b, m); err != nil {
+			t.Fatal(err)
+		}
+	}
+	mk(filepath.Join("docs", "contracts", "agents-write-surfaces.md"), []byte("ok"), 0o644)
+	if err := os.MkdirAll(filepath.Join(repo, "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mk(filepath.Join("scripts", "pawl.sh"), []byte("#!/usr/bin/env bash\nexit "+strconv.Itoa(exitCode)+"\n"), 0o755)
+	prevDir := testProjectDir
+	testProjectDir = repo
+	t.Cleanup(func() { testProjectDir = prevDir })
+}
+
+// ml8: `ao pawl up/down/health/route/metrics` forward to scripts/pawl.sh and propagate
+// its exit code verbatim (so e.g. a REFUTED route exits non-zero through ao).
+func TestPawlServiceCmd_DelegatesAndPropagatesExitCode(t *testing.T) {
+	for _, code := range []int{0, 1, 2} {
+		t.Run("exit-"+strconv.Itoa(code), func(t *testing.T) {
+			writePawlServiceTestRepo(t, code)
+			cmd := pawlServiceCmd("metrics", "metrics", "SLOs")
+			err := cmd.RunE(cmd, nil)
+			if code == 0 {
+				if err != nil {
+					t.Fatalf("exit 0: want nil, got %v", err)
+				}
+				return
+			}
+			var exitErr *pawlReviewExitError
+			if !errors.As(err, &exitErr) {
+				t.Fatalf("exit %d: want *pawlReviewExitError, got %T: %v", code, err, err)
+			}
+			if exitErr.ExitCode() != code {
+				t.Fatalf("ExitCode() = %d, want %d", exitErr.ExitCode(), code)
+			}
+		})
+	}
+}
+
+// The `ao pawl` surface exposes the full standing-service contract, not just `review`.
+func TestPawlCmd_HasServiceSubcommands(t *testing.T) {
+	want := map[string]bool{"up": false, "down": false, "health": false, "route": false, "metrics": false, "review": false}
+	for _, c := range pawlCmd.Commands() {
+		if _, ok := want[c.Name()]; ok {
+			want[c.Name()] = true
+		}
+	}
+	for name, found := range want {
+		if !found {
+			t.Errorf("ao pawl is missing subcommand %q", name)
+		}
+	}
+}
