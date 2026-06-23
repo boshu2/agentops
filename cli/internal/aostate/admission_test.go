@@ -3,6 +3,7 @@ package aostate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,6 +83,62 @@ func TestAdmissionCoreRejectsSelfReviewContext(t *testing.T) {
 	}, admissionTestOptions(tmp, true))
 	if err == nil || !strings.Contains(err.Error(), "self-review") {
 		t.Fatalf("error = %v, want self-review rejection", err)
+	}
+}
+
+// Fail-closed property: a cancelled context must abort admission BEFORE anything
+// is written — the membrane never admits when its caller has given up.
+func TestAdmissionCoreFailsClosedOnCancelledContext(t *testing.T) {
+	tmp := copyAOStateSchemasAndFixtures(t)
+	candidatePath, verdictPath, candidateBytes, verdictBytes := writeValidAdmissionFiles(t, tmp, nil, nil)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel BEFORE the call: a valid candidate+verdict must still be refused.
+
+	report, err := AdmitFinding(ctx, candidateBytes, verdictBytes, AdmissionRequest{
+		CandidatePath: candidatePath,
+		VerdictPath:   verdictPath,
+		OperatorID:    "codex:operator",
+		Reason:        "unit test admission",
+	}, admissionTestOptions(tmp, true))
+	if err == nil {
+		t.Fatal("AdmitFinding admitted under a cancelled context; the membrane must fail closed")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context.Canceled", err)
+	}
+	if report.Wrote {
+		t.Fatal("report.Wrote is true under a cancelled context")
+	}
+	acceptedPath := filepath.Join(tmp, ".ao", "accepted", "findings", "finding-age-membrane-valid.json")
+	if _, statErr := os.Stat(acceptedPath); statErr == nil {
+		t.Fatal("a finding was written despite the cancelled context")
+	}
+}
+
+// Fail-closed property: a syntactically-valid-JSON but schema-INVALID verdict
+// must be refused (validateVerdictBytes), never admitted. Guards against a future
+// change loosening verdict validation — the membrane's whole job is to reject
+// unproven work.
+func TestAdmissionCoreFailsClosedOnInvalidVerdictBytes(t *testing.T) {
+	tmp := copyAOStateSchemasAndFixtures(t)
+	candidatePath, verdictPath, candidateBytes, _ := writeValidAdmissionFiles(t, tmp, nil, nil)
+
+	report, err := AdmitFinding(context.Background(), candidateBytes, []byte(`{"kind":"not_a_verdict"}`), AdmissionRequest{
+		CandidatePath: candidatePath,
+		VerdictPath:   verdictPath,
+		OperatorID:    "codex:operator",
+		Reason:        "unit test admission",
+	}, admissionTestOptions(tmp, true))
+	if err == nil {
+		t.Fatal("AdmitFinding accepted a schema-invalid verdict; the membrane must fail closed")
+	}
+	if report.Wrote {
+		t.Fatal("report.Wrote is true for an invalid verdict")
+	}
+	acceptedPath := filepath.Join(tmp, ".ao", "accepted", "findings", "finding-age-membrane-valid.json")
+	if _, statErr := os.Stat(acceptedPath); statErr == nil {
+		t.Fatal("a finding was written despite an invalid verdict")
 	}
 }
 
