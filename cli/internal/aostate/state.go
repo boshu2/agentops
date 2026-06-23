@@ -439,7 +439,10 @@ func AdmitFinding(ctx context.Context, candidateBytes, verdictBytes []byte, req 
 	}
 	if _, err := os.Stat(destAbs); err == nil {
 		return AdmissionReport{}, fmt.Errorf("duplicate admit rejected: %s already exists", destRel)
-	} else if err != nil && !os.IsNotExist(err) {
+	} else if !os.IsNotExist(err) {
+		// In this branch err is necessarily non-nil (the `err == nil` case is
+		// handled above), so a bare `!os.IsNotExist` is the real stat-error test;
+		// the prior `err != nil &&` was tautological.
 		return AdmissionReport{}, fmt.Errorf("stat accepted destination: %w", err)
 	}
 	ledgerAbs := filepath.Join(root, filepath.FromSlash(ledgerRel))
