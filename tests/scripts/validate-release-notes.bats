@@ -1,6 +1,13 @@
 #!/usr/bin/env bats
 # Tests for scripts/validate-release-notes.sh — the release-notes standard gate.
 
+# Portable in-place edit: `sed -i <expr>` is GNU-only and FAILS on BSD/macOS sed
+# ("invalid command code"), while `sed -i '' <expr>` is BSD-only. Route both through
+# a temp file so the fixture mutations run identically on Linux CI and macOS dev.
+sed_inplace() { # $1=sed-expr $2=file
+  sed "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
+}
+
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   SCRIPT="$REPO_ROOT/scripts/validate-release-notes.sh"
@@ -66,7 +73,7 @@ EOF
 @test "fails when a required section is missing" {
   write_patch_notes "9.9.9"
   # Remove the Known Issues section heading.
-  sed -i '/^## Known Issues$/d' "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md"
+  sed_inplace '/^## Known Issues$/d' "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md"
   run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
   [ "$status" -ne 0 ]
   [[ "$output" == *"missing required section: ## Known Issues"* ]]
@@ -117,7 +124,7 @@ EOF
 
 @test "fails a non-canonical product-area heading" {
   write_patch_notes "9.9.9"
-  sed -i 's/^### Eval, Validation, and Release Gates$/### Made Up Area/' \
+  sed_inplace 's/^### Eval, Validation, and Release Gates$/### Made Up Area/' \
     "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md"
   run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
   [ "$status" -ne 0 ]
@@ -126,7 +133,7 @@ EOF
 
 @test "fails a product-area bullet without a canonical action label" {
   write_patch_notes "9.9.9"
-  sed -i 's/^- Fixed: a release gate no longer misfires.$/- a release gate no longer misfires./' \
+  sed_inplace 's/^- Fixed: a release gate no longer misfires.$/- a release gate no longer misfires./' \
     "$SANDBOX/docs/releases/2026-05-25-v9.9.9-notes.md"
   run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
   [ "$status" -ne 0 ]
