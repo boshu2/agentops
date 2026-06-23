@@ -101,6 +101,19 @@ exit 0
 EOS
     chmod +x "$repo/scripts/check-pawl-pre-push.sh"
 
+    # age-yy24 added a hook call to scripts/verify-pushed-commit-builds.sh when
+    # stdin carries push refs (this test feeds them), resolved under $toplevel —
+    # i.e. THIS sandbox repo. Without a stub the hook hit "No such file" -> exit
+    # 127 (the build-each-pushed-commit verify has its own coverage; here it must
+    # be an inert no-op that drains stdin and never mutates the repo).
+    cat >"$repo/scripts/verify-pushed-commit-builds.sh" <<'EOS'
+#!/usr/bin/env bash
+cat >/dev/null   # drain the piped push-ref stdin
+echo "verify-commit-builds" >> "$AGENTOPS_TEST_LOG"
+exit 0
+EOS
+    chmod +x "$repo/scripts/verify-pushed-commit-builds.sh"
+
     touch "$repo/docs/provenance/ledger.jsonl"
     git -C "$repo" init -q
     git -C "$repo" config user.email test@example.com
