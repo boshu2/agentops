@@ -187,9 +187,11 @@ EOF
   run "$DRIVER" "$FIX" "$RCPT"
   [ "$status" -eq 0 ]
   echo "$output" | grep -q "no .*trigger_probes.* phrases declared"
-  # No receipts written.
+  # No receipts written. (Arithmetic compare, not string: BSD/macOS `wc -l` pads
+  # its count with leading spaces — "       0" — so `= "0"` fails there; `-eq`
+  # tolerates the padding. grep -c above does not pad, so line 149 is fine.)
   run bash -c "ls '$RCPT'/*.json 2>/dev/null | wc -l"
-  [ "$output" = "0" ]
+  [ "$output" -eq 0 ]
 }
 
 @test "i0-probe: a NON-DETERMINISTIC probe is caught by the determinism assertion (warning, non-zero exit)" {
