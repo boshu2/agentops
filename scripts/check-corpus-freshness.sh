@@ -24,7 +24,17 @@ if [ ! -d "$SNAPSHOT_DIR" ]; then
   exit 0
 fi
 
-LATEST=$(find "$SNAPSHOT_DIR" -maxdepth 1 -name '*.tar.gz' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
+# `-printf` is GNU-only; on BSD/macOS find errors ("unknown primary") -> empty
+# LATEST -> this check silently false-SKIPs even when snapshots exist. Replace
+# with a portable, TRUE-global mtime sort: emit "<mtime>\t<path>" per match (BSD
+# `stat -f %m` / GNU `stat -c %Y` fallback), then a single global `sort -n | tail`
+# (ascending + tail = newest; tail consumes all input, avoiding the head+pipefail
+# SIGPIPE trap; no per-batch mis-sort). No `-type f` — match the original so
+# symlinked snapshots still count; zero matches -> empty LATEST (correct SKIP).
+LATEST=$(find "$SNAPSHOT_DIR" -maxdepth 1 -name '*.tar.gz' 2>/dev/null \
+  | while IFS= read -r _f; do
+      printf '%s\t%s\n' "$(stat -f %m "$_f" 2>/dev/null || stat -c %Y "$_f" 2>/dev/null)" "$_f"
+    done | sort -n | tail -n 1 | cut -f2-)
 
 if [ -z "$LATEST" ]; then
   echo "check-corpus-freshness: SKIP (no *.tar.gz snapshots under $SNAPSHOT_DIR)"

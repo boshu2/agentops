@@ -27,8 +27,17 @@ DEFRAG_LATEST="${COMPILE_OUTPUT_DIR:-$AGENTS_DIR}/defrag/latest.json"
 if [[ ! -f "$DEFRAG_LATEST" && -z "${COMPILE_OUTPUT_DIR:-}" ]]; then
     overnight_root="$AGENTS_DIR/overnight"
     if [[ -d "$overnight_root" ]]; then
-        fallback="$(find "$overnight_root" -path '*/defrag/latest.json' -type f -printf '%T@ %p\n' 2>/dev/null \
-            | sort -n | tail -n 1 | awk '{print $2}')"
+        # `-printf` is GNU-only; on BSD/macOS find errors and (under set -euo
+        # pipefail) the suppressed failure propagates -> this assignment crashes
+        # the script when the fallback path is hit. Portable TRUE-global mtime
+        # sort: emit "<mtime>\t<path>" per match (BSD `stat -f %m` / GNU `stat -c
+        # %Y` fallback), then a single global `sort -n | tail` (ascending + tail
+        # = newest; tail consumes all input, avoiding the head+pipefail SIGPIPE
+        # trap; no per-batch mis-sort). Zero matches -> empty fallback.
+        fallback="$(find "$overnight_root" -path '*/defrag/latest.json' -type f 2>/dev/null \
+            | while IFS= read -r _f; do
+                printf '%s\t%s\n' "$(stat -f %m "$_f" 2>/dev/null || stat -c %Y "$_f" 2>/dev/null)" "$_f"
+              done | sort -n | tail -n 1 | cut -f2-)"
         if [[ -n "$fallback" && -f "$fallback" ]]; then
             echo "INFO: $DEFRAG_LATEST not found; falling back to overnight preview $fallback"
             DEFRAG_LATEST="$fallback"
