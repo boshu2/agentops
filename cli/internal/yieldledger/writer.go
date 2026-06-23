@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 // Writer appends yield-ledger events as append-only JSONL: ONE json line per
@@ -12,18 +11,7 @@ import (
 // without read-modify-write contention or a shared tmp collision (spec §D).
 // Emission is fail-open observability — callers guard each append (`|| true`)
 // so it can never block a merge.
-type Writer struct {
-	// Now supplies the generated_at timestamp; defaults to time.Now when nil.
-	Now func() time.Time
-}
-
-// nowUTC returns the writer's clock in UTC, defaulting to the wall clock.
-func (w Writer) nowUTC() time.Time {
-	if w.Now != nil {
-		return w.Now().UTC()
-	}
-	return time.Now().UTC()
-}
+type Writer struct{}
 
 // AppendAccept appends one accept event and returns the resulting ledger view.
 func (w Writer) AppendAccept(projectRoot string, in AcceptInput) (*Ledger, error) {
