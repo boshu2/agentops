@@ -1,0 +1,48 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-06-23T06:49:12Z",
+  "producer": "noop-baseline",
+  "verifier": "qwen32b-local",
+  "dry_run": false,
+  "per_task": [
+    {
+      "task": "rfd-codex-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The function does not handle cases where the `required` slice contains property names not present in the `props` slice, which would result in an invalid schema.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-nested-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The implementation is incomplete as it does not include the \"address\" object with \"street\" and \"city\" properties, and it does not include \"address\" in the \"required\" array.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-silent-fallback",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The `typedBackend` function is a stub that returns `nil`, which means the typed mode will never actually be used as intended, and the task requires the typed mode to be fully implemented and used when `useTyped=true`.",
+      "class": "caught",
+      "degraded": false
+    }
+  ],
+  "totals": {
+    "tasks": 3,
+    "degraded": 0,
+    "false_done": 3,
+    "true_done": 0,
+    "caught": 3,
+    "escaped": 0,
+    "false_refute": 0,
+    "correct_ack": 0
+  },
+  "rates": {
+    "catch_rate": 1.0,
+    "false_refute_rate": null,
+    "note": "no true-dones observed (false_refute_rate undefined)"
+  }
+}
