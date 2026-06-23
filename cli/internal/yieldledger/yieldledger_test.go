@@ -203,7 +203,7 @@ func TestValidateEvent(t *testing.T) {
 func TestWriterAppendsWithoutClobber(t *testing.T) {
 	root := t.TempDir()
 	at := func(h int) time.Time { return time.Date(2026, 6, 14, h, 0, 0, 0, time.UTC) }
-	w := Writer{Now: func() time.Time { return at(23) }}
+	w := Writer{}
 	ref := PawlVerdictRef{BeadID: "ag-x", HeadSHA: "abc1234"}
 
 	first, err := w.AppendGateVerdict(root, GateVerdictInput{
