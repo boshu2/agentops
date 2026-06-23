@@ -1,0 +1,48 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-06-23T06:50:57Z",
+  "producer": "noop-baseline",
+  "verifier": "codex",
+  "dry_run": false,
+  "per_task": [
+    {
+      "task": "rfd-codex-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The implementation leaves `required` as the caller-provided subset, but OpenAI/Codex strict structured outputs require every property key to appear in `required`, so subset or empty inputs still produce an invalid schema.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-nested-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "`CompileUserSchema` still omits the required nested `address` object with `street` and `city`, and `address` is not listed in `required`.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "rfd-silent-fallback",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "`typedBackend` still returns nil and `Process` still silently falls back to plain, so `useTyped=true` does not return a typed result.",
+      "class": "caught",
+      "degraded": false
+    }
+  ],
+  "totals": {
+    "tasks": 3,
+    "degraded": 0,
+    "false_done": 3,
+    "true_done": 0,
+    "caught": 3,
+    "escaped": 0,
+    "false_refute": 0,
+    "correct_ack": 0
+  },
+  "rates": {
+    "catch_rate": 1.0,
+    "false_refute_rate": null,
+    "note": "no true-dones observed (false_refute_rate undefined)"
+  }
+}
