@@ -44,6 +44,14 @@ output_contract: .agents/council/YYYY-MM-DD-pre-land-*.md
 > `claude -p`). Use it for the common single fresh-context refuter; the manual steps
 > below add the `multi-model` opt-up (≥2 distinct families) for the highest-
 > irreversibility doors.
+>
+> **Warm path (ml8):** when a standing pawl-service is up (`ao pawl up`), `ao pawl review`
+> **auto-routes the `multi-model` opus+codex DUEL** through warm panes (`ao pawl route`) —
+> the encoded form of the manual `multi-model` steps below, no cold per-pawl `codex exec`
+> spin-up. It trusts a routed CONFIRMED only if it passes the real `pawl-verdict.sh check`,
+> and **fails safe** to the cold `codex exec` path when no service is up (`PAWL_NO_SERVICE=1`
+> forces cold). So the hand-rolled `codex exec` dance below is the **cold fallback**, not the
+> default when a service is warm.
 
 ## When to fire
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-23T22:20:26Z",
+  "generated_at": "2026-06-23T22:40:27Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -3147,7 +3147,11 @@
       "produces": [
         ".agents/council/*.md"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao pawl review",
+        "ao pawl route",
+        "ao pawl up"
+      ],
       "path": "skills/pre-land-refuters/",
       "references": 0
     },
