@@ -146,14 +146,82 @@ adjudicated; `DRY` is never an escape). The escape series above is post-fix. Thi
 is the product thesis applied to its own measurement plumbing: a green-looking
 emit that was silently wrong, caught by checking the data against the contract.
 
+## Volume series (2026-06-23) — n=6, the real SPC dataset
+
+The single run above is one point. E5 is a *statistical*-process-control governor;
+one snapshot can't set control limits, so the run was repeated to build a real
+time-series of the **same process** (same producer, membrane, oracle, task set —
+repeated samples, the correct shape for an I-MR control chart). Series at
+[`escape-rate-series.jsonl`](../../evals/membrane/harvest-2026-06-22/escape-rate-series.jsonl);
+runner at [`run-harvest-series.sh`](../../evals/membrane/harvest-2026-06-22/run-harvest-series.sh);
+I-MR analysis at [`summarize-series.py`](../../evals/membrane/harvest-2026-06-22/summarize-series.py).
+
+| run | n_false_dones | caught | missed | miss_rate | degraded |
+|---|---|---|---|---|---|
+| original | 4 | 3 | 1 | 0.25 | 1 |
+| vol1 | 4 | 3 | 1 | 0.25 | 1 |
+| vol2 | 5 | 4 | 1 | **0.20** | **0** |
+| vol3 | 3 | 3 | 0 | 0.00 | 2 |
+| vol4 | 5 | 4 | 1 | **0.20** | **0** |
+| vol6 | 5 | 4 | 1 | 0.20 | 1 |
+
+> **Run 5 is absent — and that is itself a membrane catch.** Run 5's append was
+> lost to an operator mis-kill (I killed `eval-membrane.sh`, mistaking it for a
+> hung codex because its command line *contains* the string "codex exec"). My
+> recovery then grabbed the wrong leftover scorecard and re-appended a row that was
+> a **byte-identical duplicate of vol3** (same timestamp + metrics). The
+> cross-family pawl on this very change caught the duplicate and the fabricated
+> "7th observation"; the row was removed. Run 5's measurement is genuinely lost,
+> not reconstructed. The product thesis, applied to the eval's own data.
+
+**The metric is computed over CLEAN runs only** (`degraded=0`), because a degraded
+run lost tasks to stalls — changing the denominator and possibly removing the
+systematically-missed escape — so its rate is **not comparable** to a clean run
+(the direction isn't even consistent: `original`/`vol1` lost a *caught* task and
+read *higher* at 0.25, while `vol3` lost the *missed* task and read *lower* at
+0.00). `summarize-series.py` excludes degraded rows from the control chart and
+flags them. The result:
+
+- **Clean runs (vol2, vol4): both exactly `miss=0.20`** (the membrane misses ~1 of
+  5 false-dones — the *same* `rfd-nested-schema` blind spot — every clean run).
+  Pooled over clean = 2/10 = **0.20**. Cross-family catch rate **0.80**.
+- **A raw all-run average would be meaningless** (not merely biased low) because the
+  degraded runs are non-comparable — they mix denominators and can move either way.
+  vol3's `0.00` is low; `original`/`vol1`'s `0.25` is high; neither is a clean
+  observation of the process. The tool does
+  not average raw per-run rates across degraded runs; it reports the clean metric.
+
+**The binding finding: 4 of 6 runs were degraded.** The producer/membrane stall
+rate (the no-membrane-timeout bug, `age-9h3d`) meant only 2 runs adjudicated all 9
+tasks cleanly. The two clean runs are *consistent* — both `miss=0.20`, the same
+`rfd-nested-schema` escape — which is **suggestive** of a stable miss rate, but
+**n=2 with degenerate I-MR limits (σ=0) cannot establish statistical control**; no
+"stable/characterizable" conclusion is warranted from this dataset. The defensible
+finding is narrower: **clean volume is starved by harness flakiness, not by the
+membrane** — fixing `age-9h3d` is the prerequisite for a calibrated chart, more than
+just running more batches. The tool reports the degenerate limits as such rather
+than implying a usable control band.
+
+> This is a **usable first dataset and a proven, repeatable generator**, not a
+> calibrated chart. The path to calibration is: fix `age-9h3d` (cut the degraded
+> rate) → run more batches → ~8–10 *clean* subgroups. The tool flags n<8 and the
+> degraded fraction on every run.
+
 ## Honest caveats (carry-forward from cwo.1 + this run)
 
 - **Manufactured, not organic.** These escapes come from a deliberately weak
   producer on trap tasks; they prove the *mechanism and series shape* E5 governs,
   **not** that organic production escapes occur at this rate (ADR-0011: they
   don't — that's the whole point of needing this fixture).
-- **Single membrane, single run.** codex only (agy blocked); one pass per task.
-  No claim of generalization beyond the 9 trap tasks.
+- **Single membrane, 6 runs.** codex only (agy blocked); the series is 6 repeats
+  of one 9-task set (run 5 lost to an operator mis-kill — see the note above). No
+  claim of generalization beyond these trap tasks; n<8 so control limits are
+  provisional.
+- **Degraded subgroups are non-comparable.** Producer/membrane stalls (excluded as
+  degraded via the `gtimeout` self-heal) change a run's false-done denominator and
+  may drop the missed escape — moving the rate *either* way (up if a caught task is
+  lost, down if the missed one is). They are not "biased low"; they are simply not
+  clean observations of the process. Use clean runs, not degraded ones.
 - **The frontier membrane mostly catches.** Where codex catches the trap (likely
   most), the escape is the *producer-level* CONFIRMED→REFUTED, not a membrane
   miss — honest, but it means membrane-MISS fuel (the `escaped` class) may be
