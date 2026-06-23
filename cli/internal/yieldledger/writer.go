@@ -83,9 +83,16 @@ func appendEventLine(path string, ev Event) error {
 	if err != nil {
 		return fmt.Errorf("open yield ledger for append: %w", err)
 	}
-	defer f.Close()
 	if _, err := f.Write(line); err != nil {
+		_ = f.Close() // best-effort; the write error is the one to report
 		return fmt.Errorf("append yield event: %w", err)
+	}
+	// Check Close, do not swallow it: on many filesystems a write error (e.g.
+	// ENOSPC) is reported only at Close, so a bare `defer f.Close()` would let
+	// this return nil while the yield event (a verdict/escape — the membrane's
+	// evidence) silently never lands. Propagate it so callers see the failure.
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close yield ledger after append: %w", err)
 	}
 	return nil
 }
