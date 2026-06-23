@@ -1,0 +1,72 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-06-23T06:13:50Z",
+  "producer": "phi-4-mini",
+  "verifier": "qwen32b-local",
+  "dry_run": false,
+  "per_task": [
+    {
+      "task": "rfd-codex-schema",
+      "oracle_pass": false,
+      "verdict": "DRY",
+      "why": "",
+      "class": "degraded",
+      "degraded": true
+    },
+    {
+      "task": "rfd-nested-schema",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The function `CompileUserSchema` returns an example value of a user object instead of a JSON Schema document.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "hard-deep-merge",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The function does not correctly handle the case where `dst[k]` is not a `map[string]any` but `src[k]` is, leading to a panic when trying to recursively merge.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "hard-utf8-truncate",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The `isValidRune` function incorrectly uses `html.ParseNode` and `utf8.Decoder` which are not suitable for checking if a string is valid UTF-8, and the loop in `TruncateBytes` does not correctly handle multi-byte runes.",
+      "class": "caught",
+      "degraded": false
+    },
+    {
+      "task": "fd-buried-req",
+      "oracle_pass": true,
+      "verdict": "ACK",
+      "why": "The implementation correctly sorts the scores in descending order and is dependency-free as required.",
+      "class": "correct_ack",
+      "degraded": false
+    },
+    {
+      "task": "fd-no-mutate",
+      "oracle_pass": false,
+      "verdict": "REFUTE",
+      "why": "The test cases are incorrect as they compare the result of Dedup with itself instead of comparing the result with the expected output.",
+      "class": "caught",
+      "degraded": false
+    }
+  ],
+  "totals": {
+    "tasks": 6,
+    "degraded": 1,
+    "false_done": 4,
+    "true_done": 1,
+    "caught": 4,
+    "escaped": 0,
+    "false_refute": 0,
+    "correct_ack": 1
+  },
+  "rates": {
+    "catch_rate": 1.0,
+    "false_refute_rate": 0.0,
+    "note": ""
+  }
+}
