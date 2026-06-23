@@ -86,6 +86,12 @@ func init() {
 		{ID: "always.agents-write-surfaces", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agents-write-surfaces.sh"},
 		{ID: "always.door9-no-claude-p", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-door9-no-claude-p.sh"},
 		{ID: "always.no-tracked-agents", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-no-tracked-agents.sh"},
+		// static portability guard for the never-safe `find -printf` (GNU-only)
+		// class — four real instances shipped because no gate caught it and Linux
+		// CI succeeds at runtime; only BSD/macOS find errors. Always-run: it scans
+		// ALL tracked first-party shell (incl. extensionless hooks no *.sh Match
+		// glob would catch), and the fast grep makes a path-class trigger needless.
+		{ID: "always.shell-portability", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-shell-portability.sh"},
 		// always-run + fail-closed PATH guard: a private artifact (corpus,
 		// tracker, untraceable wiki) must never reach the PUBLIC repo. No Match
 		// glob — a force-added private path might not match any corpus glob, so
