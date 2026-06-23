@@ -143,11 +143,23 @@ if is_push_to_main && [ "${AGENTOPS_PREPUSH_SKIP_FULL_RACE:-0}" != "1" ]; then
     # makes those git ops hit the REAL repo (exit 128), so the gate refused every
     # worktree-origin push — hostile to the worktree-isolation workflow. Unsetting
     # is idempotent (harmless for main-checkout pushes).
+    # Persist the race-suite output. An INTERMITTENT failure here is an order-
+    # dependent test-isolation flake surfaced by one specific shuffle seed; the
+    # seed + FAIL package + test are the ONLY handle on it, and a bare terminal
+    # run loses them on the next push. Capturing makes the flake class diagnosable
+    # (re-run `go test ./<pkg> -race -shuffle=<seed>` for a deterministic repro).
+    race_log="${TMPDIR:-/tmp}/agentops-prepush-race-$(date +%Y%m%d-%H%M%S).log"
     if ! ( cd "${toplevel}/cli" \
         && unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR GIT_NAMESPACE \
-        && go test ./... -race -shuffle=on -count=1 ); then
+        && go test ./... -race -shuffle=on -count=1 ) > "$race_log" 2>&1; then
         echo >&2 "✗ FULL race suite FAILED — a package outside the changed set is red; push refused (age-push-equals-ci-0ua.1)"
+        echo >&2 "  full output saved for repro: $race_log"
+        echo >&2 "  --- shuffle seed + failing package/test (re-run: go test ./<pkg> -race -shuffle=<seed> -count=1) ---"
+        grep -E '^(FAIL|--- FAIL|panic:)|-test\.shuffle|DATA RACE' "$race_log" | head -20 >&2
         gate_status=1
+    else
+        tail -2 "$race_log" >&2          # show the pass summary
+        rm -f "$race_log"                # green: no flake to diagnose, don't litter
     fi
     if [ "${gate_status:-0}" -eq 0 ]; then
         # Keep slow/live cmd/ao command smokes out of the default unit-tier race

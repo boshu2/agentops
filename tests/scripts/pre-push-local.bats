@@ -142,3 +142,72 @@ EOS
     run grep -q '^pawl$' "$log"
     [ "$status" -eq 0 ]
 }
+
+@test "pre-push.local persists race-suite output + surfaces seed/package on a race failure" {
+    repo="$BATS_TEST_TMPDIR/rrepo"
+    stubbin="$BATS_TEST_TMPDIR/rbin"
+    tmpdir="$BATS_TEST_TMPDIR/rtmp"
+    log="$BATS_TEST_TMPDIR/rhook.log"
+    mkdir -p "$repo/cli" "$repo/scripts" "$repo/docs/provenance" "$stubbin" "$tmpdir"
+
+    # Stub go: builds succeed; the FULL-SUITE race invocation FAILS, emitting a
+    # realistic shuffle seed + FAIL package (simulating an order-dependent
+    # isolation flake). The hook must capture this to a log, not lose it.
+    cat >"$stubbin/go" <<'EOS'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "build" && "${2:-}" == "-o" ]]; then
+    out="$3"
+    cat >"$out" <<'AO'
+#!/usr/bin/env bash
+echo "ao:$*" >> "$AGENTOPS_TEST_LOG"
+exit 0
+AO
+    chmod +x "$out"
+    exit 0
+fi
+if [[ "${1:-}" == "build" ]]; then exit 0; fi
+if [[ "${1:-}" == "test" ]]; then
+    if [[ "$*" == *"./..."* && "$*" == *"-race"* ]]; then
+        echo "-test.shuffle 1782334455"
+        echo "--- FAIL: TestLeak (0.01s)"
+        echo "FAIL github.com/x/internal/leakpkg 1.2s"
+        exit 1
+    fi
+    exit 0
+fi
+exit 0
+EOS
+    chmod +x "$stubbin/go"
+
+    printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 0\n' > "$repo/scripts/verify-pushed-commit-builds.sh"
+    chmod +x "$repo/scripts/verify-pushed-commit-builds.sh"
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$repo/scripts/check-pawl-pre-push.sh"
+    chmod +x "$repo/scripts/check-pawl-pre-push.sh"
+
+    touch "$repo/docs/provenance/ledger.jsonl"
+    git -C "$repo" init -q
+    git -C "$repo" config user.email test@example.com
+    git -C "$repo" config user.name Test
+    git -C "$repo" add docs/provenance/ledger.jsonl
+    git -C "$repo" commit -m initial >/dev/null
+    head_before="$(git -C "$repo" rev-parse HEAD)"
+
+    # No AGENTOPS_PREPUSH_SKIP_FULL_RACE: the race gate runs (and fails).
+    run env PATH="$stubbin:$PATH" \
+        TMPDIR="$tmpdir" \
+        AGENTOPS_TEST_LOG="$log" \
+        sh -c 'cd "$1" && printf "%s %s %s %s\n" refs/heads/main "$2" refs/heads/main 0000000000000000000000000000000000000000 | "$3"' \
+        _ "$repo" "$head_before" "$SCRIPT"
+
+    # Push refused, with the seed + failing package surfaced (not lost to scroll).
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"FULL race suite FAILED"* ]]
+    [[ "$output" == *"saved for repro"* ]]
+    [[ "$output" == *"-test.shuffle 1782334455"* ]]
+    [[ "$output" == *"github.com/x/internal/leakpkg"* ]]
+
+    # And the full output was actually persisted to a log under TMPDIR.
+    run bash -c "ls '$tmpdir'/agentops-prepush-race-*.log 2>/dev/null | wc -l | tr -d ' '"
+    [ "$output" -ge 1 ]
+}
