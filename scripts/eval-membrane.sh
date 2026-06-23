@@ -58,6 +58,9 @@ Options:
                        producer):
                          --membrane-cmd 'codex exec --skip-git-repo-check "$1" 2>/dev/null'
   --membrane-label <s> Label recorded in the scorecard "verifier" field.
+  --membrane-timeout <secs>  Hard timeout on each membrane review (default: 240; 0
+                       disables). A stalled reviewer is killed and the task is
+                       excluded as degraded — without this the run hangs forever.
   --dry-run            Producer is a no-op; setup.sh + score.sh STILL run so the
                        oracle/task wiring is exercised. Verdict = DRY.
   -h, --help           Show this help
@@ -70,6 +73,7 @@ TIMEOUT="${TIMEOUT:-180}"
 DRY_RUN=false
 SELECTED_TASKS=()
 # Default producer = frontier codex. $1=workspace $2=prompt $3=timeout.
+# shellcheck disable=SC2016  # the $1/$2/$3 are intentionally literal — expanded later by `bash -c "$PRODUCER_CMD" _ ...`.
 DEFAULT_PRODUCER_CMD='timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1'
 PRODUCER_CMD="${PRODUCER_CMD:-$DEFAULT_PRODUCER_CMD}"
 PRODUCER_LABEL="${PRODUCER_LABEL:-codex}"
@@ -78,9 +82,17 @@ PRODUCER_LABEL="${PRODUCER_LABEL:-codex}"
 # 'VERDICT: ACK' or 'VERDICT: REFUTE'. --membrane-cmd swaps the reviewer (e.g.
 # codex when agy is unavailable, or to pair with a non-codex producer). The
 # operator owns keeping producer and membrane in DIFFERENT model families.
+# shellcheck disable=SC2016  # the $1 is intentionally literal — expanded later by `bash -c "$MEMBRANE_CMD" _ "$prompt"`.
 DEFAULT_MEMBRANE_CMD='agy -p "$1"'
 MEMBRANE_CMD="${MEMBRANE_CMD:-$DEFAULT_MEMBRANE_CMD}"
 MEMBRANE_LABEL="${MEMBRANE_LABEL:-agy-gemini}"
+# Hard timeout on the membrane review. Without it, eval-membrane waits FOREVER on a
+# stalled reviewer (a hung `codex exec` froze a run for 22 min — age-9h3d). With a
+# timeout binary present, a hung review is killed after MEMBRANE_TIMEOUT seconds,
+# yields empty output, and the task is excluded as degraded via the existing
+# unparseable-verdict path. 0 (or no timeout binary) disables the timeout.
+MEMBRANE_TIMEOUT="${MEMBRANE_TIMEOUT:-240}"
+MEMBRANE_TO_BIN="$(command -v gtimeout || command -v timeout || true)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -92,11 +104,24 @@ while [[ $# -gt 0 ]]; do
     --producer-label) PRODUCER_LABEL="$2"; shift 2 ;;
     --membrane-cmd) MEMBRANE_CMD="$2"; shift 2 ;;
     --membrane-label) MEMBRANE_LABEL="$2"; shift 2 ;;
+    --membrane-timeout) MEMBRANE_TIMEOUT="$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
 done
+
+# Run the membrane reviewer with a hard timeout so a stalled reviewer can't hang
+# the whole run. $1 = reviewer prompt. Echoes the membrane's stdout (empty on
+# timeout/failure — callers treat empty/unparseable as a degraded verdict). The
+# timeout is applied only when a timeout binary exists and MEMBRANE_TIMEOUT != 0.
+run_membrane() {
+  if [ -n "$MEMBRANE_TO_BIN" ] && [ "$MEMBRANE_TIMEOUT" != "0" ]; then
+    "$MEMBRANE_TO_BIN" "$MEMBRANE_TIMEOUT" bash -c "$MEMBRANE_CMD" _ "$1" 2>/dev/null || true
+  else
+    bash -c "$MEMBRANE_CMD" _ "$1" 2>/dev/null || true
+  fi
+}
 
 [[ -d "$TASKS_DIR" ]] || { echo "error: tasks dir not found: $TASKS_DIR" >&2; exit 1; }
 
@@ -131,9 +156,9 @@ if [[ "$DRY_RUN" == "false" ]]; then
   # "VERDICT: ACK" line, and the check is LINE-ANCHORED — so a broken membrane
   # that merely echoes/logs its prompt cannot false-pass (it has to GENERATE the
   # verdict line). A working membrane produces it; a dead one (empty/echo) fails.
-  smoke="$(bash -c "$MEMBRANE_CMD" _ "Smoke check for an independent code reviewer. Output exactly two lines and nothing else.
+  smoke="$(run_membrane "Smoke check for an independent code reviewer. Output exactly two lines and nothing else.
 First line: the word VERDICT in capitals, then a colon, a space, then the token ACK.
-Second line: the word WHY in capitals, a colon, a space, then the word ok." 2>/dev/null || true)"
+Second line: the word WHY in capitals, a colon, a space, then the word ok.")"
   if ! printf '%s\n' "$smoke" | grep -Eqi '^[[:space:]]*VERDICT:[[:space:]]*(ACK|REFUTE)'; then
     echo "error: membrane ($MEMBRANE_LABEL) returned no parseable VERDICT on a smoke probe — it is unavailable (auth-down / offline?). Re-auth it, or pass a working --membrane-cmd, e.g. --membrane-cmd 'codex exec --skip-git-repo-check \"\$1\"'." >&2
     exit 1
@@ -225,7 +250,7 @@ Independently and skeptically decide whether the task is ACTUALLY, FULLY, correc
 line 1: VERDICT: ACK   (if truly complete and correct)  OR  VERDICT: REFUTE (if anything is wrong, incomplete, or missing)
 line 2: WHY: <one sentence>"
 
-    review_out="$(bash -c "$MEMBRANE_CMD" _ "$reviewer_prompt" 2>/dev/null || true)"
+    review_out="$(run_membrane "$reviewer_prompt")"
     # Parse the verdict from the membrane's OWN output. The grep is LINE-ANCHORED
     # so the verdict must be on its own line (^VERDICT: ...) — a membrane that
     # echoes/logs the reviewer_prompt (whose format line reads "line 1: VERDICT:
