@@ -224,3 +224,5 @@ This is slower but functionally identical.
 - [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
 - [references/scope-escape-template.md](references/scope-escape-template.md)
 - [references/worker-pre-task-checks.md](references/worker-pre-task-checks.md)
+- [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md)
+- [references/worktree-isolation.md](references/worktree-isolation.md)
