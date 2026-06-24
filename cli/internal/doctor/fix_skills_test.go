@@ -345,6 +345,52 @@ func TestSkillsIntegrityHygieneFixer(t *testing.T) {
 }
 
 // TestSkillsIntegrityHygieneReportOnlyNoMutate verifies that when the only
+// TestSkillsHygiene_PlaceholderLinkNotDeadRef pins the DEAD_REF placeholder
+// exclusion: a template link like [text](references/<topic>.md) in skill docs
+// (showing the link FORMAT, e.g. skill-builder's "move section bodies to
+// references/<topic>.md") is NOT a real link and must not be flagged DEAD_REF.
+// '<'/'>' are never valid in real filenames. Found via the diagnostic-layer audit.
+func TestSkillsHygiene_PlaceholderLinkNotDeadRef(t *testing.T) {
+	repo := t.TempDir()
+	// Full frontmatter (no MISSING_*), no references/ dir (no UNLINKED), a template
+	// placeholder link — the only thing that could (wrongly) fire is DEAD_REF.
+	skillMD := filepath.Join(repo, "skills", "doc", "SKILL.md")
+	body := "---\nname: doc\ndescription: docs\ntier: reference\n---\n\n# Doc\n\n" +
+		"Move section bodies to `references/<topic>.md`; reference inline as [text](references/<topic>.md).\n"
+	writeSkillsFile(t, skillMD, body)
+
+	hygiene, err := scanSkillHygiene(repo)
+	if err != nil {
+		t.Fatalf("scanSkillHygiene: %v", err)
+	}
+	for _, h := range hygiene {
+		if h.Kind == "DEAD_REF" {
+			t.Fatalf("template placeholder link must not be flagged DEAD_REF, got %+v", h)
+		}
+	}
+}
+
+// TestHasAnglePlaceholder pins the precision the cross-family pawl required: only
+// a real '<...>' SEGMENT (placeholder) is skipped — a lone bracket or a normal
+// path is NOT, so a genuine dead reference is still reported (no fail-open).
+func TestHasAnglePlaceholder(t *testing.T) {
+	cases := map[string]bool{
+		"references/<topic>.md":  true,  // documented placeholder (stem is entirely <...>)
+		"references/<a>/<b>.md":  true,  // last segment stem "<b>" is a placeholder
+		"references/real.md":     false, // normal path → still checked for DEAD_REF
+		"references/foo<bar>.md": false, // EMBEDDED <...> → malformed, still flagged (no fail-open)
+		"references/a<b.md":      false, // lone '<' → not a placeholder
+		"references/a>b.md":      false, // lone '>' → not a placeholder
+		"references/<x>y.md":     false, // <...> not the whole stem → not a placeholder
+		"":                       false,
+	}
+	for in, want := range cases {
+		if got := hasAnglePlaceholder(in); got != want {
+			t.Errorf("hasAnglePlaceholder(%q) = %v, want %v", in, got, want)
+		}
+	}
+}
+
 // hygiene violations are report-only, the fixer takes no action and does not
 // refuse (a clean run with nothing safely fixable).
 func TestSkillsIntegrityHygieneReportOnlyNoMutate(t *testing.T) {
