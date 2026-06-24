@@ -75,7 +75,14 @@ func (g *gitLogParser) flush() {
 // processLine handles a single line of git log output.
 func (g *gitLogParser) processLine(line string) error {
 	if strings.TrimSpace(line) == "" {
-		g.flush()
+		// `git log --format=… --numstat` emits a blank line AFTER each header,
+		// before that commit's numstat block; commits are delimited by the next
+		// header (tryParseHeader below), not by blank lines. So a blank line is
+		// intra-commit — skip it WITHOUT flushing. Flushing here drops the event
+		// with an empty Files list before its numstat lines are parsed (the bug
+		// behind vibe-check's tests-passing-lie false positives: every commit had
+		// empty Files, so filesRelated's empty/empty case over-correlated
+		// temporally-adjacent but unrelated claim→fix commits). age-mr1c.
 		return nil
 	}
 

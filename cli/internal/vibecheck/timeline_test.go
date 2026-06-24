@@ -9,15 +9,19 @@ import (
 )
 
 func TestParseTimeline_Format(t *testing.T) {
-	// Simulate git log --format="%H|||%aI|||%an|||%s" --numstat output.
+	// Real git log --format="%H|||%aI|||%an|||%s" --numstat output: git emits a
+	// BLANK LINE after each header, before that commit's numstat block, and the
+	// next commit's header follows directly after the numstat (no blank between).
+	// (The prior fixture put numstat directly after the header — a shape git never
+	// emits — so it failed to catch the premature-flush bug. age-mr1c.)
 	const delim = "|||"
 	raw := `abc123|||2026-02-15T10:00:00-05:00|||Alice|||feat: add vibecheck types
+
 3	1	cli/internal/vibecheck/types.go
 2	0	cli/internal/vibecheck/timeline.go
-
 def456|||2026-02-15T09:30:00-05:00|||Bob|||fix: correct timestamp parsing
-1	1	cli/internal/vibecheck/timeline.go
 
+1	1	cli/internal/vibecheck/timeline.go
 `
 
 	events, err := parseGitLog(raw, delim)

@@ -110,11 +110,14 @@ func DetectTestsLie(events []TimelineEvent) []Finding {
 	return findings
 }
 
-// filesRelated returns true if two events share files or both have empty file lists.
+// filesRelated returns true only if two events share at least one file. When
+// either file list is empty (an empty commit, or file data unavailable), the
+// same-file relation CANNOT be confirmed, so it returns false — a fix only
+// "contradicts" a success claim if it provably touches the same file (the
+// detector's documented contract). The prior empty/empty => true fail-open
+// over-correlated temporally-adjacent but unrelated commits whenever file data
+// was missing (age-mr1c). hasFileOverlap already returns false on any empty list.
 func filesRelated(a, b []string) bool {
-	if len(a) == 0 && len(b) == 0 {
-		return true
-	}
 	return hasFileOverlap(a, b)
 }
 

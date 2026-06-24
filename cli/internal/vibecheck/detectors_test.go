@@ -64,6 +64,22 @@ func TestDetectTestsLie_DifferentFilesNoLie(t *testing.T) {
 	}
 }
 
+func TestDetectTestsLie_EmptyFilesNoLie(t *testing.T) {
+	// File data unavailable (empty lists): the same-file relation cannot be
+	// confirmed, so a fix must NOT be treated as contradicting the claim. This
+	// pins the fix for age-mr1c: the prior empty/empty => true fail-open, combined
+	// with a timeline parser bug that left every commit's Files empty, produced
+	// tests-passing-lie false positives on unrelated temporally-adjacent commits.
+	events := []TimelineEvent{
+		makeEvent("aaa", 0, "feat: auth done", nil, 10, 2),
+		makeEvent("bbb", 15, "fix: auth edge case", nil, 3, 1),
+	}
+	findings := DetectTestsLie(events)
+	if len(findings) != 0 {
+		t.Errorf("expected no findings when file data is empty (cannot confirm same-file), got %d", len(findings))
+	}
+}
+
 func TestDetectTestsLie_OutsideWindow(t *testing.T) {
 	events := []TimelineEvent{
 		makeEvent("aaa", 0, "feat: all tests pass", []string{"auth.go"}, 10, 2),
@@ -355,12 +371,15 @@ func TestDetectTestsLie_NonFixFollowUp(t *testing.T) {
 }
 
 func TestFilesRelated_BothEmpty(t *testing.T) {
-	// Exercise the len(a)==0 && len(b)==0 branch.
-	if !filesRelated(nil, nil) {
-		t.Error("expected filesRelated(nil, nil) == true")
+	// Both empty: the same-file relation cannot be confirmed, so filesRelated is
+	// FALSE. Corrected from a prior empty/empty => true fail-open that (with the
+	// timeline parser leaving Files empty) produced tests-passing-lie false
+	// positives on unrelated temporally-adjacent commits (age-mr1c).
+	if filesRelated(nil, nil) {
+		t.Error("expected filesRelated(nil, nil) == false (cannot confirm same-file relation)")
 	}
-	if !filesRelated([]string{}, []string{}) {
-		t.Error("expected filesRelated([], []) == true")
+	if filesRelated([]string{}, []string{}) {
+		t.Error("expected filesRelated([], []) == false (cannot confirm same-file relation)")
 	}
 }
 
