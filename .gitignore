@@ -226,3 +226,6 @@ wt-*/
 # build binary (compiled, not source) + run-output dumps
 bin/ao
 outputs/
+
+# Provenance ledger advisory-lock sidecar (cross-process append lock; never committed)
+docs/provenance/*.lock

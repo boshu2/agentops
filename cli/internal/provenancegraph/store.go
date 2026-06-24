@@ -100,38 +100,92 @@ type AppendResult struct {
 // returned with Skipped=true. The schema_version is forced and the edge is
 // validated before any write, so a malformed edge never reaches disk.
 func (s *Store) Append(e Edge) (AppendResult, error) {
-	existing, err := s.Read()
+	var result AppendResult
+	// The whole read-seal-write is one critical section under a cross-process
+	// advisory lock: the seal links onto the CURRENT chain tip, so two
+	// concurrent appenders that each read the same tip would both seal onto it
+	// and FORK the hash chain. The lock serializes appenders across goroutines
+	// AND separate `ao` processes (each opens its own lock fd; flock is keyed on
+	// the open file description, so it is mutually exclusive either way).
+	err := s.withAppendLock(func() error {
+		existing, err := s.Read()
+		if err != nil {
+			return err
+		}
+
+		// Idempotency: skip if an identical edge already exists.
+		identity := EdgeIdentity(Edge{
+			SchemaVersion: SchemaVersion,
+			FromID:        e.FromID, FromType: e.FromType,
+			ToID: e.ToID, ToType: e.ToType,
+			Relation: e.Relation, EvidenceRef: e.EvidenceRef, TrustTier: e.TrustTier,
+		})
+		for _, ex := range existing {
+			if EdgeIdentity(ex) == identity {
+				result = AppendResult{Edge: ex, Skipped: true}
+				return nil
+			}
+		}
+
+		prevHash := ""
+		if len(existing) > 0 {
+			prevHash = existing[len(existing)-1].Hash
+		}
+
+		sealed, err := Seal(e, prevHash)
+		if err != nil {
+			return err
+		}
+
+		if err := s.writeLine(sealed); err != nil {
+			return err
+		}
+		result = AppendResult{Edge: sealed}
+		return nil
+	})
 	if err != nil {
 		return AppendResult{}, err
 	}
+	return result, nil
+}
 
-	// Idempotency: skip if an identical edge already exists.
-	identity := EdgeIdentity(Edge{
-		SchemaVersion: SchemaVersion,
-		FromID:        e.FromID, FromType: e.FromType,
-		ToID: e.ToID, ToType: e.ToType,
-		Relation: e.Relation, EvidenceRef: e.EvidenceRef, TrustTier: e.TrustTier,
-	})
-	for _, ex := range existing {
-		if EdgeIdentity(ex) == identity {
-			return AppendResult{Edge: ex, Skipped: true}, nil
+// withAppendLock runs fn while holding an exclusive cross-process advisory lock
+// on a sidecar lock file beside the ledger. Acquiring the lock serializes the
+// read-seal-write critical section so concurrent appends cannot fork the
+// hash chain. The lock file is created on first append and is never written
+// to (it is only a lock token); it is gitignored alongside the ledger.
+func (s *Store) withAppendLock(fn func() error) (err error) {
+	lockPath := s.Path + ".lock"
+	if dir := filepath.Dir(lockPath); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create ledger dir: %w", err)
 		}
 	}
-
-	prevHash := ""
-	if len(existing) > 0 {
-		prevHash = existing[len(existing)-1].Hash
-	}
-
-	sealed, err := Seal(e, prevHash)
+	f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return AppendResult{}, err
+		return fmt.Errorf("open ledger lock: %w", err)
 	}
+	locked := false
+	// Deferred cleanup: unlock (if locked) then close. The first error is
+	// propagated only when fn would otherwise return nil, so the caller always
+	// sees the most significant error.
+	defer func() {
+		if locked {
+			if unlockErr := unlockFile(f); unlockErr != nil && err == nil {
+				err = fmt.Errorf("unlock ledger: %w", unlockErr)
+			}
+		}
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close ledger lock: %w", closeErr)
+		}
+	}()
 
-	if err := s.writeLine(sealed); err != nil {
-		return AppendResult{}, err
+	if err := lockFile(f); err != nil {
+		return fmt.Errorf("lock ledger: %w", err)
 	}
-	return AppendResult{Edge: sealed}, nil
+	locked = true
+
+	return fn()
 }
 
 // writeLine appends one edge as a compact JSON line, creating parent dirs and

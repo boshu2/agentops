@@ -2,9 +2,11 @@ package provenancegraph
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -45,6 +47,66 @@ func TestStore_AppendThenReadRoundTrips(t *testing.T) {
 	}
 	if idx, err := VerifyChain(edges); err != nil || idx != 0 {
 		t.Fatalf("persisted chain: idx=%d err=%v, want 0/nil", idx, err)
+	}
+}
+
+// TestStore_ConcurrentAppendDoesNotForkChain is the E3.CC contract
+// (age-membrane-memory-arch-tz2s.4.5): the read-seal-append critical section
+// must be serialized so concurrent appenders cannot both seal onto the same
+// chain tip and FORK the hash chain. The provenance ledger is the membrane's
+// verdict audit authority ("no verdict = not done"), and ml8's standing
+// pawl-service is a new concurrent writer to it (concurrent routes -> concurrent
+// emits). Each goroutine opens its own lock fd, so this exercises the same
+// advisory-lock path a separate `ao` process would take.
+func TestStore_ConcurrentAppendDoesNotForkChain(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "docs", "provenance", "ledger.jsonl")
+	store := NewStore(path)
+
+	const n = 32
+	var wg sync.WaitGroup
+	errCh := make(chan error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			e := validEdge()
+			// Distinct identity per goroutine so none is idempotently skipped.
+			e.ToID = fmt.Sprintf("cli/cmd/ao/gen_%03d.go", i)
+			if _, err := store.Append(e); err != nil {
+				errCh <- err
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		t.Fatalf("concurrent append errored: %v", err)
+	}
+
+	edges, err := store.Read()
+	if err != nil {
+		t.Fatalf("read after concurrent appends: %v", err)
+	}
+	// 1) No append lost or collided away.
+	if len(edges) != n {
+		t.Fatalf("after %d concurrent appends, ledger has %d edges (lost/collided)", n, len(edges))
+	}
+	// 2) The chain is intact in file order: each prev_hash links to the prior
+	// hash. A fork (two edges sealed onto the same tip) breaks VerifyChain.
+	if idx, err := VerifyChain(edges); err != nil || idx != 0 {
+		t.Fatalf("chain forked by concurrent append: first break at record %d: %v", idx, err)
+	}
+	// 3) Every distinct identity is present exactly once.
+	seen := make(map[string]int, n)
+	for _, e := range edges {
+		seen[e.ToID]++
+	}
+	for i := 0; i < n; i++ {
+		id := fmt.Sprintf("cli/cmd/ao/gen_%03d.go", i)
+		if seen[id] != 1 {
+			t.Fatalf("identity %s present %d times, want exactly 1", id, seen[id])
+		}
 	}
 }
 
