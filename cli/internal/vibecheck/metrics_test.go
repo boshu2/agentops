@@ -132,6 +132,25 @@ func TestMetricTrust_WithTests(t *testing.T) {
 	}
 }
 
+func TestMetricTrust_CountsTestFilesInFeatCommits(t *testing.T) {
+	// AgentOps TDD: the test ships in the feat:/fix: commit, not a separate test:
+	// commit. A feat commit that TOUCHES a _test.go file must count toward trust
+	// (age-mr1c — the prior message-prefix-only heuristic scored TDD work ~0).
+	base := baseTime()
+	events := []TimelineEvent{
+		{SHA: "a1", Message: "feat: add login", Timestamp: base, Files: []string{"cli/auth.go", "cli/auth_test.go"}},
+		{SHA: "a2", Message: "feat: add dashboard", Timestamp: base.Add(time.Hour), Files: []string{"cli/dash.go"}},
+	}
+	m := MetricTrust(events)
+	// a1 is test-bearing (touches auth_test.go); a2 is code-only -> ratio 1/1 = 1.0.
+	if !m.Passed {
+		t.Errorf("expected passed: a feat commit touching _test.go must count toward trust, got value=%f", m.Value)
+	}
+	if m.Value != 1.0 {
+		t.Errorf("expected trust 1.0 (1 test-bearing / 1 code-only), got %f", m.Value)
+	}
+}
+
 func TestMetricTrust_NoTests(t *testing.T) {
 	base := baseTime()
 	events := []TimelineEvent{
