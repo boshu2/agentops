@@ -12,8 +12,13 @@ const amnesiaWindow = 60 * time.Minute
 // within the window to trigger a finding.
 const amnesiaMinEdits = 3
 
-// DetectContextAmnesia detects files that are modified repeatedly within a
-// short timeframe, suggesting the agent lost context and re-did work.
+// DetectContextAmnesia flags files modified repeatedly within a short window.
+// High edit churn MAY be context loss (re-doing work) OR legitimate forward
+// iteration (TDD red-green-refactor, addressing review). The detector only sees
+// the edit count, not which — so it reports the observable churn and prompts
+// verification rather than asserting "lost context" it cannot determine.
+// (age-c30w: the principled future signal is diff oscillation/reverts, not raw
+// count; until then, honest framing avoids the false "lost context" claim.)
 // fileEdit records a single edit to a file.
 type fileEdit struct {
 	ts  time.Time
@@ -21,7 +26,8 @@ type fileEdit struct {
 	msg string
 }
 
-// DetectContextAmnesia finds repeated rapid edits to the same file, indicating the agent lost context.
+// DetectContextAmnesia finds repeated rapid edits to the same file — high edit
+// churn worth verifying (forward iteration vs rework), not an assertion of loss.
 func DetectContextAmnesia(events []TimelineEvent) []Finding {
 	if len(events) < amnesiaMinEdits {
 		return nil
@@ -80,7 +86,7 @@ func detectAmnesiaInFile(file string, edits []fileEdit) (Finding, bool) {
 			return Finding{
 				Severity: SeverityWarning,
 				Category: "context-amnesia",
-				Message:  file + " modified " + itoa(count) + " times within 1 hour, suggesting lost context",
+				Message:  file + " modified " + itoa(count) + " times within 1 hour — high edit churn; confirm it's forward iteration, not rework",
 				File:     file,
 			}, true
 		}
