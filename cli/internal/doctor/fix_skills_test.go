@@ -278,101 +278,6 @@ func TestSkillsMissingNoFindingWhenPopulated(t *testing.T) {
 	}
 }
 
-// --- fm-skills-hash-drift ---------------------------------------------------
-
-// TestSkillsHashDriftFixer verifies drifted hash fields are rewritten to the
-// recomputed values while other JSON keys are preserved.
-func TestSkillsHashDriftFixer(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	writeSkillsFile(t, filepath.Join(repo, "skills", "demo", "SKILL.md"), "skill body\n")
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", "demo", "SKILL.md"), "codex body\n")
-	zero := "0000000000000000000000000000000000000000000000000000000000000000"
-	genPath := filepath.Join(repo, "skills-codex", "demo", ".agentops-generated.json")
-	writeSkillsFile(t, genPath, `{"skill":"demo","source_hash":"`+zero+`","generated_hash":"`+zero+`"}`)
-	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
-	writeSkillsFile(t, manifestPath, `{"version":1,"codex_override_catalog_hash":"`+zero+`"}`)
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex-overrides", "demo", "note.md"), "override\n")
-
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
-
-	findings, err := skillsHashDriftDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 hash-drift finding, got %+v", findings)
-	}
-
-	mctx, _, closer := skillsTestCtx(t, repo, home)
-	defer closer()
-	res, err := skillsHashDriftFixer{}.Fix(mctx.WithFixer("fm-skills-hash-drift"), env, findings)
-	if err != nil {
-		t.Fatalf("Fix: %v", err)
-	}
-	if !res.Fixed || res.ActionsTaken != 2 {
-		t.Fatalf("Fix Fixed=%t ActionsTaken=%d, want true/2", res.Fixed, res.ActionsTaken)
-	}
-
-	// source_hash no longer the all-zero constant; non-hash keys preserved.
-	genData, _ := os.ReadFile(genPath)
-	if strings.Contains(string(genData), zero) {
-		t.Fatalf("generated.json still has zero hash: %s", genData)
-	}
-	if !strings.Contains(string(genData), `"skill": "demo"`) {
-		t.Fatalf("generated.json lost the skill key: %s", genData)
-	}
-	manData, _ := os.ReadFile(manifestPath)
-	if strings.Contains(string(manData), zero) {
-		t.Fatalf("manifest still has zero catalog hash: %s", manData)
-	}
-	if !strings.Contains(string(manData), `"version": 1`) {
-		t.Fatalf("manifest lost the version key: %s", manData)
-	}
-
-	// Detector no longer fires.
-	post, _ := skillsHashDriftDetector{}.Detect(env)
-	if len(post) != 0 {
-		t.Fatalf("expected no hash-drift finding after fix, got %+v", post)
-	}
-
-	// Idempotent second run.
-	res2, err := skillsHashDriftFixer{}.Fix(mctx.WithFixer("fm-skills-hash-drift"), env, nil)
-	if err != nil {
-		t.Fatalf("second Fix: %v", err)
-	}
-	if res2.ActionsTaken != 0 {
-		t.Fatalf("second-run ActionsTaken = %d, want 0", res2.ActionsTaken)
-	}
-}
-
-// TestSkillsHashDriftNoFindingWhenAligned verifies no finding when recorded
-// hashes already equal the recomputed values.
-func TestSkillsHashDriftNoFindingWhenAligned(t *testing.T) {
-	repo := t.TempDir()
-	home := t.TempDir()
-	writeSkillsFile(t, filepath.Join(repo, "skills", "demo", "SKILL.md"), "skill body\n")
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", "demo", "SKILL.md"), "codex body\n")
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
-
-	srcH := hashDirRecursive(filepath.Join(repo, "skills", "demo"))
-	genDir := filepath.Join(repo, "skills-codex", "demo")
-	genH := hashDirRecursive(genDir, ".agentops-generated.json")
-	writeSkillsFile(t, filepath.Join(genDir, ".agentops-generated.json"),
-		`{"source_hash":"`+srcH+`","generated_hash":"`+genH+`"}`)
-	catalogH := hashDirRecursive(filepath.Join(repo, "skills-codex-overrides"))
-	writeSkillsFile(t, filepath.Join(repo, "skills-codex", ".agentops-manifest.json"),
-		`{"codex_override_catalog_hash":"`+catalogH+`"}`)
-
-	findings, err := skillsHashDriftDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(findings) != 0 {
-		t.Fatalf("aligned hashes produced %d findings", len(findings))
-	}
-}
-
 // --- fm-skills-integrity-hygiene -------------------------------------------
 
 // TestSkillsIntegrityHygieneFixer verifies the partial fixer appends a link for
@@ -657,12 +562,11 @@ func TestSkillsDuplicateInstallNoOverlap(t *testing.T) {
 
 // --- registration -----------------------------------------------------------
 
-// TestSkillsRegistration verifies all six detectors and six fixers are
+// TestSkillsRegistration verifies all five detectors and five fixers are
 // registered and that fm-skills-duplicate-install is the only non-auto-fixable.
 func TestSkillsRegistration(t *testing.T) {
 	want := []string{
 		"fm-skills-duplicate-install",
-		"fm-skills-hash-drift",
 		"fm-skills-integrity-hygiene",
 		"fm-skills-missing",
 		"fm-skills-stale-codex-sync",
@@ -702,6 +606,24 @@ func TestSkillsRegistration(t *testing.T) {
 		}
 		if !autoFixable[id] {
 			t.Fatalf("%s should be auto-fixable", id)
+		}
+	}
+}
+
+// TestSkillsHashDriftDetectorIsRemoved pins age-aau9: the codex hash-drift
+// detector+fixer was REMOVED because its Go re-implementation diverged from the
+// canonical scripts/regen-codex-hashes.sh hash (false-positiving on all skills,
+// and its --fix would corrupt the canonical hashes and red regen-check). Codex
+// hash validation is owned by `make regen-check`. This guard fails if anyone
+// re-registers a divergent reimplementation.
+func TestSkillsHashDriftDetectorIsRemoved(t *testing.T) {
+	const id = "fm-skills-hash-drift"
+	if FixerByID(id) != nil {
+		t.Fatal("fm-skills-hash-drift fixer must NOT be registered (age-aau9: owned by make regen-check)")
+	}
+	for _, d := range Detectors() {
+		if d.ID() == id {
+			t.Fatal("fm-skills-hash-drift detector must NOT be registered (age-aau9: owned by make regen-check)")
 		}
 	}
 }

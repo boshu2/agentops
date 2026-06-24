@@ -2,15 +2,18 @@ package doctor
 
 // Skills subsystem detectors and fixers.
 //
-// This file implements the six skills failure modes from the Phase 2 analysis.
-// Five are auto-fixable (one partially), one is detect-only:
+// This file implements the five skills failure modes from the Phase 2 analysis.
+// Four are auto-fixable (one partially), one is detect-only:
 //
 //	fm-skills-missing            (auto)    — mirror repo skills/<name>/** into ~/.claude/skills
 //	fm-skills-stale-codex-sync   (auto)    — re-sync drift surfaces into the Codex native cache
-//	fm-skills-hash-drift         (auto)    — rewrite drifted hash fields in codex metadata JSON
 //	fm-skills-stale-command-refs (auto)    — substitute deprecated `ao` namespace commands
 //	fm-skills-integrity-hygiene  (partial) — append links for unlinked references/ files
 //	fm-skills-duplicate-install  (detect)  — overlapping installs; needs an operator decision
+//
+// Codex hash drift is intentionally NOT a doctor FM: it is owned by the canonical
+// `make regen-check` gate (scripts/regen-codex-hashes.sh), which runs pre-push. A
+// Go re-implementation diverged from the canonical hash (age-aau9) and was removed.
 //
 // Detectors are PURE: they stat and read only. Every fixer disk write flows
 // through Mutate — there is no os.WriteFile/os.Remove/os.Rename/os.Create in
@@ -33,18 +36,20 @@ import (
 // skillsSubsystem is the canonical subsystem name for every skills FM.
 const skillsSubsystem = "skills"
 
-// init registers all six skills detectors and six skills fixers.
+// init registers all five skills detectors and five skills fixers. Codex hash
+// drift is NOT validated here — it is owned by the canonical `make regen-check`
+// gate (scripts/regen-codex-hashes.sh), which runs in the pre-push gate. A Go
+// re-implementation diverged from the canonical hash and false-positived on all
+// skills, so it was removed (age-aau9) rather than maintained in two languages.
 func init() {
 	RegisterDetector(skillsMissingDetector{})
 	RegisterDetector(skillsStaleCodexSyncDetector{})
-	RegisterDetector(skillsHashDriftDetector{})
 	RegisterDetector(skillsStaleCommandRefsDetector{})
 	RegisterDetector(skillsIntegrityHygieneDetector{})
 	RegisterDetector(skillsDuplicateInstallDetector{})
 
 	RegisterFixer(skillsMissingFixer{})
 	RegisterFixer(skillsStaleCodexSyncFixer{})
-	RegisterFixer(skillsHashDriftFixer{})
 	RegisterFixer(skillsStaleCommandRefsFixer{})
 	RegisterFixer(skillsIntegrityHygieneFixer{})
 	RegisterFixer(skillsDuplicateInstallFixer{})
@@ -530,250 +535,6 @@ func jsonSetFields(raw []byte, fields map[string]any) ([]byte, error) {
 		return nil, fmt.Errorf("doctor: marshal JSON object: %w", err)
 	}
 	return append(out, '\n'), nil
-}
-
-// ---------------------------------------------------------------------------
-// FM: fm-skills-hash-drift (auto-fixable)
-// ---------------------------------------------------------------------------
-
-// skillsHashDriftDetector flags Codex skill artifact metadata whose recorded
-// source/generated/catalog hashes drift from the recomputed values.
-type skillsHashDriftDetector struct{}
-
-func (skillsHashDriftDetector) ID() string           { return "fm-skills-hash-drift" }
-func (skillsHashDriftDetector) Subsystem() string    { return skillsSubsystem }
-func (skillsHashDriftDetector) Severity() string     { return "P2" }
-func (skillsHashDriftDetector) EstimatedCostMS() int { return 14 }
-func (skillsHashDriftDetector) OnlineRequired() bool { return false }
-func (skillsHashDriftDetector) QuickPath() bool      { return false }
-func (skillsHashDriftDetector) Describe() string {
-	return "Codex skill artifact hashes drift from the skills-codex source"
-}
-
-// generatedMeta is the minimal projection of a .agentops-generated.json file.
-type generatedMeta struct {
-	SourceHash    string `json:"source_hash"`
-	GeneratedHash string `json:"generated_hash"`
-}
-
-// hashDirRecursive returns a deterministic SHA-256 over the sorted set of
-// (relpath, content) pairs of every regular file under root, excluding the
-// named basenames. A missing root hashes the empty input. It is pure.
-func hashDirRecursive(root string, exclude ...string) string {
-	skip := make(map[string]bool, len(exclude))
-	for _, e := range exclude {
-		skip[e] = true
-	}
-	h := sha256.New()
-	for _, rel := range walkRelFiles(root) {
-		if skip[filepath.Base(rel)] {
-			continue
-		}
-		content, err := os.ReadFile(filepath.Join(root, rel))
-		if err != nil {
-			continue
-		}
-		h.Write([]byte(rel))
-		h.Write([]byte{0})
-		h.Write(content)
-		h.Write([]byte{0})
-	}
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// hashDrift is one drifted hash artifact.
-type hashDrift struct {
-	skill string
-	path  string
-	field string
-}
-
-// generatedJSONPaths returns the sorted skills-codex/*/.agentops-generated.json
-// paths under repo.
-func generatedJSONPaths(repo string) []string {
-	codexRoot := filepath.Join(repo, "skills-codex")
-	var out []string
-	for _, name := range listSubdirs(codexRoot) {
-		p := filepath.Join(codexRoot, name, ".agentops-generated.json")
-		if fileExists(p) {
-			out = append(out, p)
-		}
-	}
-	sort.Strings(out)
-	return out
-}
-
-// computeHashDrift returns the drifted hash artifacts for repo. It is pure.
-func computeHashDrift(repo string) []hashDrift {
-	var drifted []hashDrift
-	for _, genPath := range generatedJSONPaths(repo) {
-		raw, err := os.ReadFile(genPath)
-		if err != nil {
-			continue
-		}
-		var g generatedMeta
-		if json.Unmarshal(raw, &g) != nil {
-			continue
-		}
-		name := filepath.Base(filepath.Dir(genPath))
-		srcH := hashDirRecursive(filepath.Join(repo, "skills", name))
-		genH := hashDirRecursive(filepath.Dir(genPath), ".agentops-generated.json")
-		if g.SourceHash != srcH || g.GeneratedHash != genH {
-			drifted = append(drifted, hashDrift{skill: name, path: genPath, field: "source_hash|generated_hash"})
-		}
-	}
-	manifestPath := repoCodexManifestPath(repo)
-	if raw, err := os.ReadFile(manifestPath); err == nil {
-		var manifest map[string]json.RawMessage
-		if json.Unmarshal(raw, &manifest) == nil {
-			catalogH := hashDirRecursive(filepath.Join(repo, "skills-codex-overrides"))
-			var recorded string
-			if rc, ok := manifest["codex_override_catalog_hash"]; ok {
-				// Best-effort: a malformed value leaves recorded == "", which
-				// correctly registers as drift below; no error to propagate.
-				_ = json.Unmarshal(rc, &recorded) //nolint:errcheck // malformed value falls through to drift detection
-			}
-			if recorded != catalogH {
-				drifted = append(drifted, hashDrift{skill: "<catalog>", path: manifestPath, field: "codex_override_catalog_hash"})
-			}
-		}
-	}
-	return drifted
-}
-
-func (d skillsHashDriftDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	if !fileExists(repoCodexManifestPath(env.RepoRoot)) {
-		return nil, nil
-	}
-	drifted := computeHashDrift(env.RepoRoot)
-	if len(drifted) == 0 {
-		return nil, nil
-	}
-	var names []string
-	for _, dr := range drifted {
-		names = append(names, dr.skill)
-	}
-	return []Finding{{
-		ID:         d.ID(),
-		Severity:   d.Severity(),
-		Subsystem:  d.Subsystem(),
-		Title:      fmt.Sprintf("%d Codex skill artifact hash(es) drifted", len(drifted)),
-		Confidence: 1.0,
-		Evidence: Evidence{
-			File:  "skills-codex/.agentops-manifest.json",
-			Query: "drifted: " + strings.Join(names, ", "),
-		},
-		Remediation: remediation(d.ID(), true, len(drifted)),
-	}}, nil
-}
-
-// skillsHashDriftFixer rewrites only the drifted hash fields in each affected
-// metadata JSON file through Mutate; all other keys are preserved verbatim.
-type skillsHashDriftFixer struct{}
-
-func (skillsHashDriftFixer) ID() string { return "fm-skills-hash-drift" }
-func (skillsHashDriftFixer) Preconditions() []string {
-	return []string{
-		"repo.root/skills-codex/ catalog exists and is valid JSON",
-		"every drifted .agentops-generated.json is valid JSON",
-	}
-}
-func (skillsHashDriftFixer) WritesTo() []string { return []string{"skills-codex"} }
-func (skillsHashDriftFixer) Ops() []string      { return []string{"WriteFile"} }
-func (skillsHashDriftFixer) Reversible() bool   { return true }
-func (skillsHashDriftFixer) Idempotent() bool   { return true }
-func (skillsHashDriftFixer) AutoFixable() bool  { return true }
-
-func (f skillsHashDriftFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
-	// 1. Re-read current state.
-	if len(computeHashDrift(env.RepoRoot)) == 0 {
-		res.Fixed = true
-		return res, nil
-	}
-	// 2. Precondition.
-	if !dirExists(filepath.Join(env.RepoRoot, "skills-codex")) {
-		res.Err = fmt.Errorf("doctor: %s: no skills-codex/ catalog (refused_unsafe)", f.ID())
-		return res, res.Err
-	}
-	// 3/4. Rewrite each drifted JSON file.
-	for _, genPath := range generatedJSONPaths(env.RepoRoot) {
-		raw, err := os.ReadFile(genPath)
-		if err != nil {
-			res.Err = fmt.Errorf("doctor: %s: read %s: %w", f.ID(), genPath, err)
-			return res, res.Err
-		}
-		var g generatedMeta
-		if json.Unmarshal(raw, &g) != nil {
-			continue
-		}
-		name := filepath.Base(filepath.Dir(genPath))
-		srcH := hashDirRecursive(filepath.Join(env.RepoRoot, "skills", name))
-		genH := hashDirRecursive(filepath.Dir(genPath), ".agentops-generated.json")
-		if g.SourceHash == srcH && g.GeneratedHash == genH {
-			continue
-		}
-		newRaw, err := jsonSetFields(raw, map[string]any{
-			"source_hash":    srcH,
-			"generated_hash": genH,
-		})
-		if err != nil {
-			res.Err = err
-			return res, err
-		}
-		if r, merr := Mutate(ctx, genPath, WriteFile{Content: newRaw, Mode: 0o644}); merr != nil {
-			res.Err = fmt.Errorf("doctor: %s: rewrite %s: %w", f.ID(), genPath, merr)
-			return res, res.Err
-		} else if r.OK {
-			res.ActionsTaken++
-		}
-	}
-	if err := f.fixCatalogHash(ctx, env, &res); err != nil {
-		res.Err = err
-		return res, err
-	}
-	// 5. Verify post-state.
-	if !ctx.DryRun && len(computeHashDrift(env.RepoRoot)) != 0 {
-		res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
-		return res, res.Err
-	}
-	res.Fixed = true
-	return res, nil
-}
-
-// fixCatalogHash rewrites the manifest's codex_override_catalog_hash if drifted.
-func (f skillsHashDriftFixer) fixCatalogHash(ctx *MutateContext, env *DetectEnv, res *FixResult) error {
-	manifestPath := repoCodexManifestPath(env.RepoRoot)
-	raw, err := os.ReadFile(manifestPath)
-	if err != nil {
-		return nil //nolint:nilerr // no manifest => nothing to rewrite
-	}
-	var manifest map[string]json.RawMessage
-	if json.Unmarshal(raw, &manifest) != nil {
-		return nil
-	}
-	catalogH := hashDirRecursive(filepath.Join(env.RepoRoot, "skills-codex-overrides"))
-	var recorded string
-	if rc, ok := manifest["codex_override_catalog_hash"]; ok {
-		// Best-effort: a malformed value leaves recorded == "", which
-		// correctly drives the rewrite below; no error to propagate.
-		_ = json.Unmarshal(rc, &recorded) //nolint:errcheck // malformed value falls through to rewrite
-	}
-	if recorded == catalogH {
-		return nil
-	}
-	newRaw, err := jsonSetFields(raw, map[string]any{"codex_override_catalog_hash": catalogH})
-	if err != nil {
-		return err
-	}
-	r, merr := Mutate(ctx, manifestPath, WriteFile{Content: newRaw, Mode: 0o644})
-	if merr != nil {
-		return fmt.Errorf("doctor: %s: rewrite manifest: %w", f.ID(), merr)
-	}
-	if r.OK {
-		res.ActionsTaken++
-	}
-	return nil
 }
 
 // ---------------------------------------------------------------------------
