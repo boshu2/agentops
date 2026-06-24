@@ -1,6 +1,7 @@
 package vibecheck
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -122,6 +123,15 @@ func TestDetectContextAmnesia_RepeatedEdits(t *testing.T) {
 	}
 	if findings[0].File != "handler.go" {
 		t.Errorf("expected file handler.go, got %s", findings[0].File)
+	}
+	// Honest framing (age-c30w): the detector observes edit churn, not context
+	// loss — it must NOT assert "lost context" (a conclusion it cannot determine
+	// from a count), and should prompt verification instead.
+	if strings.Contains(findings[0].Message, "lost context") {
+		t.Errorf("message must not assert 'lost context' (unverifiable from edit count): %q", findings[0].Message)
+	}
+	if !strings.Contains(findings[0].Message, "edit churn") {
+		t.Errorf("message should report observable edit churn + prompt verification, got %q", findings[0].Message)
 	}
 }
 
