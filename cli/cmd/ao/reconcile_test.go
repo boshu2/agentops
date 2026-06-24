@@ -77,6 +77,73 @@ func TestReconcileFindsReleaseTagFailureAndOpenReleaseBeads(t *testing.T) {
 	}
 }
 
+// TestReconcileMainCIMissingIsNotNeedsAttention pins age-yyse: under the 3.0
+// CI-off model main is NOT CI-gated (validate.yml is a tag/PR/manual backstop;
+// the local pre-push gate is release authority). A missing main Validate run is
+// therefore informational (low), not HIGH — reconcile must NOT report
+// needs_attention solely because main has no GitHub Actions run.
+func TestReconcileMainCIMissingIsNotNeedsAttention(t *testing.T) {
+	tmp := t.TempDir()
+	now := time.Date(2026, 6, 24, 20, 0, 0, 0, time.UTC)
+	writeRecentAgentEvidence(t, tmp, now)
+
+	report := buildReconcileReport(context.Background(), reconcileOptions{
+		Cwd:   tmp,
+		Limit: 80,
+		Since: 48 * time.Hour,
+		Now:   now,
+		Run: func(_ context.Context, name string, args ...string) ([]byte, error) {
+			key := name + " " + strings.Join(args, " ")
+			switch {
+			case key == "git rev-parse HEAD":
+				return []byte("f077c6bfbc21d0e9db466364f9b852b666b1324f\n"), nil
+			case key == "git rev-parse --abbrev-ref HEAD":
+				return []byte("main\n"), nil
+			case key == "git rev-parse --abbrev-ref --symbolic-full-name @{u}":
+				return []byte("origin/main\n"), nil
+			case key == "git rev-parse --show-toplevel":
+				return []byte(tmp + "\n"), nil
+			case key == "git ls-remote origin refs/heads/main":
+				return []byte("f077c6bfbc21d0e9db466364f9b852b666b1324f\trefs/heads/main\n"), nil
+			case key == "git status --porcelain":
+				return []byte(""), nil
+			case key == "git rev-list --left-right --count HEAD...origin/main":
+				return []byte("0\t0\n"), nil
+			case strings.HasPrefix(key, "gh run list --branch main"):
+				return []byte(`[]`), nil // no main Validate run — expected under CI-off
+			case strings.HasPrefix(key, "gh release view"):
+				return []byte(`{"tagName":"v3.1.0","name":"v3.1.0","publishedAt":"2026-06-20T13:02:06Z","url":"https://example.test/release","targetCommitish":"main"}`), nil
+			case strings.HasPrefix(key, "gh run list --branch v3.1.0 --workflow Validate"):
+				return []byte(`[{"databaseId":2,"workflowName":"Validate","status":"completed","conclusion":"success","headSha":"tagsha","displayTitle":"tag validate","url":"https://example.test/tag"}]`), nil // green release tag
+			case strings.HasPrefix(key, "bd list"):
+				return []byte(`[]`), nil
+			case strings.HasPrefix(key, "bd ready"):
+				return []byte(`[]`), nil
+			default:
+				t.Fatalf("unexpected command: %s", key)
+			}
+			return nil, nil
+		},
+	})
+
+	ci := findFinding(t, report, "ci-main-validate-missing")
+	if ci.Severity != "low" {
+		t.Fatalf("ci-main-validate-missing severity = %q, want low (CI-off model)", ci.Severity)
+	}
+	// Pin the EXACT documented contract: the low CI finding is present AND drives
+	// green_with_warnings — not needs_attention (regression up), and not plain
+	// green (regression down: the finding silently dropped).
+	if report.OverallStatus != "green_with_warnings" {
+		t.Fatalf("OverallStatus = %q, want green_with_warnings (one low CI finding, no high/medium); findings: %+v", report.OverallStatus, report.Findings)
+	}
+	if report.Summary.High != 0 || report.Summary.Medium != 0 {
+		t.Fatalf("High=%d Medium=%d, want 0/0 (clean main + green release tag); the only finding must be the low main-CI note: %+v", report.Summary.High, report.Summary.Medium, report.Findings)
+	}
+	if report.Summary.Low != 1 {
+		t.Fatalf("Low findings = %d, want exactly 1 (the main-CI note): %+v", report.Summary.Low, report.Findings)
+	}
+}
+
 func TestReconcileGracefullyHandlesUnavailableExternalTools(t *testing.T) {
 	report := buildReconcileReport(context.Background(), reconcileOptions{
 		Cwd:   t.TempDir(),

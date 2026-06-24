@@ -559,9 +559,14 @@ func buildReconcileFindings(report reconcileReport) []reconcileFinding {
 	if !report.CI.Available {
 		add("ci-unavailable", "medium", "ci", "GitHub Actions state unavailable", report.CI.Error, "", "Run gh auth status or inspect GitHub Actions in browser.")
 	} else if report.CI.Latest == nil {
-		add("ci-main-validate-missing", "high", "ci", "No recent main Validate run found", "Could not identify a Validate workflow run on main.", "", "Inspect GitHub Actions before treating main as green.")
+		// Informational, not HIGH: in AgentOps 3.0 main is NOT CI-gated —
+		// validate.yml is a tag/PR/manual backstop, and the local pre-push gate
+		// (cockpit + cross-family pawl verdict) is release authority on main. So
+		// "no main Validate run" is expected by design, not a health problem
+		// (age-yyse: flagging it HIGH made reconcile permanently needs_attention).
+		add("ci-main-validate-missing", "low", "ci", "No recent main Validate run (expected: main is gated by the local pre-push gate, not CI)", "validate.yml is a tag/PR/manual backstop in 3.0; main pushes are gated by the local cockpit + pawl gate, not GitHub Actions.", "", "No action on main — the local pre-push gate is release authority. CI Validate is a backstop.")
 	} else if report.CI.Latest.Status != "completed" || report.CI.Latest.Conclusion != "success" {
-		add("ci-main-validate-not-green", "high", "ci", "Main Validate is not green", statusLabel(report.CI.Latest.Status, report.CI.Latest.Conclusion), report.CI.Latest.URL, "Fix or classify the latest main Validate run before backlog work.")
+		add("ci-main-validate-not-green", "low", "ci", "A main Validate run is not green (informational; CI is a backstop on main)", statusLabel(report.CI.Latest.Status, report.CI.Latest.Conclusion), report.CI.Latest.URL, "Informational — main is gated by the local pre-push gate, not CI. Classify only if a manual/PR Validate run was expected to pass.")
 	}
 	if !report.Release.Available {
 		add("release-unavailable", "medium", "release", "Latest release state unavailable", report.Release.Error, "", "Inspect releases before making release-health claims.")
