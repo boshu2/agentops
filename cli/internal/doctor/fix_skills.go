@@ -846,6 +846,21 @@ func listRefFiles(dir string) []string {
 
 // extractReferenceLinks returns the distinct "references/<f>.md" tokens linked
 // from text via Markdown link syntax.
+// hasAnglePlaceholder reports whether a reference link token is a documented
+// template placeholder — its FILENAME STEM is ENTIRELY angle-bracketed, e.g.
+// "references/<topic>.md" (stem "<topic>"). That is the form skill docs use to show
+// the link FORMAT (skill-builder), and such a filename can never exist. A path with
+// merely an EMBEDDED '<...>' (e.g. "references/foo<bar>.md") is NOT a placeholder —
+// it is a malformed link and is still reported as DEAD_REF (no fail-open).
+func hasAnglePlaceholder(token string) bool {
+	base := token
+	if i := strings.LastIndexByte(base, '/'); i >= 0 {
+		base = base[i+1:]
+	}
+	stem := strings.TrimSuffix(base, ".md")
+	return strings.HasPrefix(stem, "<") && strings.HasSuffix(stem, ">")
+}
+
 func extractReferenceLinks(text string) []string {
 	seen := make(map[string]bool)
 	var out []string
@@ -861,7 +876,13 @@ func extractReferenceLinks(text string) []string {
 			break
 		}
 		token := rest[:end]
-		if strings.HasSuffix(token, ".md") && !seen[token] {
+		// Skip template placeholders like references/<topic>.md — these appear in
+		// skill documentation showing the link FORMAT (e.g. skill-builder's "move
+		// section bodies to references/<topic>.md"). Match the angle-bracket
+		// SEGMENT '<...>' specifically (a '<' followed by a later '>'), not any
+		// stray bracket: a real file can never contain a '<...>' segment, so this
+		// only suppresses genuine placeholders, never a real dead-reference link.
+		if strings.HasSuffix(token, ".md") && !hasAnglePlaceholder(token) && !seen[token] {
 			seen[token] = true
 			out = append(out, token)
 		}
