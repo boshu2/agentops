@@ -2,13 +2,88 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+// TestConfigFlag_MaterializesAndIsHonored proves the END-TO-END --config chain
+// (the cross-family pawl's concern on age-or2c) by executing the REAL
+// rootCmd.PersistentPreRunE — NOT syncConfigFlagToEnv directly. If PersistentPreRunE
+// is absent or stops materializing --config into AGENTOPS_CONFIG, this test fails,
+// guarding the actual flag-threading wiring. It then verifies config.Load honors the
+// explicit file and the ambient home config does NOT leak underneath it.
+func TestConfigFlag_MaterializesAndIsHonored(t *testing.T) {
+	// A home config that sets output=json — the explicit file is silent on it.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	homeDir := filepath.Join(home, ".agentops")
+	if err := os.MkdirAll(homeDir, 0o755); err != nil {
+		t.Fatalf("mkdir home: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(homeDir, "config.yaml"), []byte("output: json\n"), 0o644); err != nil {
+		t.Fatalf("write home config: %v", err)
+	}
+
+	// The explicit --config file sets base_dir, silent on output.
+	explicit := filepath.Join(t.TempDir(), "explicit.yaml")
+	if err := os.WriteFile(explicit, []byte("base_dir: /explicit/base\n"), 0o644); err != nil {
+		t.Fatalf("write explicit config: %v", err)
+	}
+
+	// Run from an empty, non-git temp cwd so PersistentPreRunE's worktree/git
+	// repair is a safe no-op; isolate ambient env.
+	t.Chdir(t.TempDir())
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_CONFIG", "")
+
+	// Save/restore the package globals + rootCmd context PersistentPreRunE mutates
+	// (cmd.Context() is nil when no command has run, and WithValue panics on a nil
+	// parent — so seed a context first).
+	origCfg, origOutput, origJSON := cfgFile, output, jsonFlag
+	origCtx := rootCmd.Context()
+	rootCmd.SetContext(context.Background())
+	t.Cleanup(func() {
+		cfgFile, output, jsonFlag = origCfg, origOutput, origJSON
+		rootCmd.SetContext(origCtx)
+	})
+
+	// Set --config through the REAL rootCmd flag set, then run the REAL pre-run hook.
+	if err := rootCmd.PersistentFlags().Set("config", explicit); err != nil {
+		t.Fatalf("set --config flag: %v", err)
+	}
+	t.Cleanup(func() { _ = rootCmd.PersistentFlags().Set("config", "") })
+
+	if rootCmd.PersistentPreRunE == nil {
+		t.Fatal("rootCmd has no PersistentPreRunE — the --config flag chain is unwired")
+	}
+	if err := rootCmd.PersistentPreRunE(rootCmd, nil); err != nil {
+		t.Fatalf("PersistentPreRunE: %v", err)
+	}
+
+	// The real pre-run must have materialized --config into AGENTOPS_CONFIG...
+	if got := os.Getenv("AGENTOPS_CONFIG"); got != explicit {
+		t.Fatalf("PersistentPreRunE did not materialize --config into AGENTOPS_CONFIG: got %q, want %q", got, explicit)
+	}
+	// ...so config.Load honors the explicit file and home does NOT leak.
+	cfg, err := config.Load(nil)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.BaseDir != "/explicit/base" {
+		t.Errorf("BaseDir = %q, want /explicit/base — --config not honored via the real pre-run", cfg.BaseDir)
+	}
+	if cfg.Output != "table" {
+		t.Errorf("Output = %q, want \"table\" — home leaked under --config via the real pre-run", cfg.Output)
+	}
+}
 
 func TestRunConfig_NoFlags_ShowsHelp(t *testing.T) {
 	// When configShow is false, runConfig should call cmd.Help()
