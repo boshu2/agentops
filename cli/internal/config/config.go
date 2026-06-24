@@ -359,6 +359,30 @@ func Default() *Config {
 func Load(flagOverrides *Config) (*Config, error) {
 	cfg := Default()
 
+	// An explicit --config / AGENTOPS_CONFIG override IS the config file (per the
+	// documented contract "the config file (default: ~/.agentops/config.yaml)"):
+	// load ONLY that file over defaults, and skip the ambient home + cwd-project
+	// discovery. Otherwise home settings the explicit file is silent on would leak
+	// underneath it (fm-cli-config-config-flag-not-threaded).
+	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
+		oc, err := loadFromPath(override)
+		if err != nil {
+			// The user explicitly named THIS file as the config; a load failure
+			// (missing/unreadable/invalid) must fail CLOSED, never silently fall
+			// back to defaults+env — otherwise --config proves nothing was read.
+			// (Auto-discovered home/project configs below keep warn+fallback.)
+			return nil, fmt.Errorf("config: explicit --config %q could not be loaded: %w", override, err)
+		}
+		if oc != nil {
+			cfg = merge(cfg, oc)
+		}
+		cfg = applyEnv(cfg)
+		if flagOverrides != nil {
+			cfg = merge(cfg, flagOverrides)
+		}
+		return cfg, nil
+	}
+
 	// Load home config
 	homeConfig, _ := loadFromPath(homeConfigPath())
 	if homeConfig != nil {
@@ -950,8 +974,22 @@ func resolveBoolField(
 // Resolve returns configuration with source tracking.
 // Uses precedence chain: flags > env > project > home > defaults.
 func Resolve(flagOutput, flagBaseDir string, flagVerbose bool) *ResolvedConfig {
-	home := extractFields(loadHomeConfig())
-	project := extractFields(loadProjectConfig())
+	// An explicit --config / AGENTOPS_CONFIG override IS the config file: load ONLY
+	// that file as the project layer and skip the home layer, so home settings the
+	// explicit file is silent on do not leak underneath (matches Load()). Resolve
+	// has no error channel, so a failed explicit override is surfaced as a warning
+	// here (Load() is the authoritative fail-closed loader).
+	var home, project configFields
+	if override := strings.TrimSpace(os.Getenv("AGENTOPS_CONFIG")); override != "" {
+		oc, err := loadFromPath(override)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: explicit --config %q could not be loaded: %v\n", override, err)
+		}
+		project = extractFields(oc)
+	} else {
+		home = extractFields(loadHomeConfig())
+		project = extractFields(loadProjectConfig())
+	}
 	env := loadEnvFields()
 
 	return &ResolvedConfig{

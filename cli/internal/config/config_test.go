@@ -594,6 +594,87 @@ func TestLoad_WithFlagOverrides(t *testing.T) {
 	}
 }
 
+// TestLoad_ExplicitConfigDoesNotLeakHomeConfig pins the documented contract that
+// --config (AGENTOPS_CONFIG) is THE config file: when an explicit override is set,
+// the ambient home config (~/.agentops/config.yaml) must NOT merge underneath it.
+// The bug (fm-cli-config-config-flag-not-threaded): projectConfigPath honored the
+// override but homeConfigPath did not, so home settings the explicit file is silent
+// on leaked through.
+func TestLoad_ExplicitConfigDoesNotLeakHomeConfig(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+
+	// A home config that sets output=json — a NON-default the explicit file is silent on.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	homeCfgDir := filepath.Join(home, ".agentops")
+	if err := os.MkdirAll(homeCfgDir, 0o755); err != nil {
+		t.Fatalf("mkdir home cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(homeCfgDir, "config.yaml"), []byte("output: json\n"), 0o644); err != nil {
+		t.Fatalf("write home cfg: %v", err)
+	}
+
+	// An explicit --config file that sets base_dir but is SILENT on output.
+	override := filepath.Join(t.TempDir(), "explicit.yaml")
+	if err := os.WriteFile(override, []byte("base_dir: /explicit/base\n"), 0o644); err != nil {
+		t.Fatalf("write override cfg: %v", err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", override)
+
+	cfg, err := Load(nil)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	// The explicit file's value applies.
+	if cfg.BaseDir != "/explicit/base" {
+		t.Errorf("BaseDir = %q, want /explicit/base (from the explicit --config)", cfg.BaseDir)
+	}
+	// output must be the DEFAULT, not the home value — home must NOT leak under an
+	// explicit --config (the documented "the config file" contract).
+	if cfg.Output != "table" {
+		t.Errorf("Output = %q, want \"table\" (default) — home config leaked under explicit --config", cfg.Output)
+	}
+}
+
+// TestResolve_ExplicitConfigDoesNotLeakHomeConfig pins the same contract for the
+// Resolve() path (parallel to Load): an explicit --config IS the config file, so
+// the home layer is skipped and cannot leak underneath.
+func TestResolve_ExplicitConfigDoesNotLeakHomeConfig(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_VERBOSE", "")
+	t.Setenv("AGENTOPS_NO_SC", "")
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	homeCfgDir := filepath.Join(home, ".agentops")
+	if err := os.MkdirAll(homeCfgDir, 0o755); err != nil {
+		t.Fatalf("mkdir home cfg: %v", err)
+	}
+	// home sets output=json — a non-default the explicit file is silent on.
+	if err := os.WriteFile(filepath.Join(homeCfgDir, "config.yaml"), []byte("output: json\n"), 0o644); err != nil {
+		t.Fatalf("write home cfg: %v", err)
+	}
+
+	override := filepath.Join(t.TempDir(), "explicit.yaml")
+	if err := os.WriteFile(override, []byte("base_dir: /explicit/base\n"), 0o644); err != nil {
+		t.Fatalf("write override cfg: %v", err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", override)
+
+	rc := Resolve("", "", false)
+	if rc.BaseDir.Value != "/explicit/base" {
+		t.Errorf("BaseDir = %q, want /explicit/base (from explicit --config)", rc.BaseDir.Value)
+	}
+	if rc.Output.Value != "table" {
+		t.Errorf("Output = %q, want \"table\" (default) — home leaked under explicit --config via Resolve", rc.Output.Value)
+	}
+}
+
 func TestLoad_NilOverrides(t *testing.T) {
 	t.Setenv("AGENTOPS_CONFIG", "")
 	t.Setenv("AGENTOPS_OUTPUT", "")
@@ -673,11 +754,18 @@ func TestLoadFromPath_InvalidYAML(t *testing.T) {
 // defaults. This gives users visibility into silently broken configs.
 func TestLoadConfig_SurfacesYAMLErrorToStderr(t *testing.T) {
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "broken.yaml")
-
+	t.Chdir(tmpDir)
+	// Invalid YAML in an AUTO-DISCOVERED project config (cwd/.agentops/config.yaml).
+	// Auto-discovered configs warn + fall back to defaults; an EXPLICIT --config
+	// fails closed instead (see TestLoad_ExplicitConfigInvalidFailsClosed).
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Setenv("HOME", tmpDir) // no home config under the temp home
+	configPath := projectConfigPath()
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatalf("mkdir project cfg dir: %v", err)
+	}
 	// Invalid YAML: unclosed flow sequence.
-	content := "foo: [unclosed\n"
-	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte("foo: [unclosed\n"), 0o644); err != nil {
 		t.Fatalf("write temp config: %v", err)
 	}
 
@@ -689,21 +777,13 @@ func TestLoadConfig_SurfacesYAMLErrorToStderr(t *testing.T) {
 	}
 	os.Stderr = w
 
-	// Drive the loader via the public Load() entry point with a project
-	// config override so we exercise the fallback path (file exists,
-	// yaml.Unmarshal fails, warning printed, auto-detect/defaults applied).
-	t.Setenv("AGENTOPS_CONFIG", configPath)
-	// Isolate from any ambient home config so the fallback path yields
-	// stable, defaulted values.
-	t.Setenv("HOME", tmpDir)
-
 	cfg, loadErr := Load(nil)
 
 	_ = w.Close()
 	os.Stderr = origStderr
 
 	if loadErr != nil {
-		t.Fatalf("Load should not fail when project config has invalid YAML; got: %v", loadErr)
+		t.Fatalf("auto-discovered invalid config should warn + fall back, not fail; got: %v", loadErr)
 	}
 
 	var buf bytes.Buffer
@@ -733,6 +813,32 @@ func TestLoadConfig_SurfacesYAMLErrorToStderr(t *testing.T) {
 	}
 	if cfg.BaseDir != ".agents/ao" {
 		t.Errorf("expected fallback default BaseDir=%q, got %q", ".agents/ao", cfg.BaseDir)
+	}
+}
+
+// TestLoad_ExplicitConfigMissingFailsClosed: an explicit --config naming a file
+// that does not exist must fail closed — the user demanded THAT file, so silently
+// falling back to defaults+env would hide the error (pawl catch on age-or2c).
+func TestLoad_ExplicitConfigMissingFailsClosed(t *testing.T) {
+	t.Setenv("AGENTOPS_OUTPUT", "")
+	t.Setenv("AGENTOPS_BASE_DIR", "")
+	t.Setenv("AGENTOPS_CONFIG", filepath.Join(t.TempDir(), "does-not-exist.yaml"))
+	if _, err := Load(nil); err == nil {
+		t.Fatal("Load must fail closed when the explicit --config file is missing")
+	}
+}
+
+// TestLoad_ExplicitConfigInvalidFailsClosed: an explicit --config that exists but
+// has invalid YAML must also fail closed (unlike an auto-discovered config, which
+// warns + falls back).
+func TestLoad_ExplicitConfigInvalidFailsClosed(t *testing.T) {
+	override := filepath.Join(t.TempDir(), "broken.yaml")
+	if err := os.WriteFile(override, []byte("foo: [unclosed\n"), 0o644); err != nil {
+		t.Fatalf("write override: %v", err)
+	}
+	t.Setenv("AGENTOPS_CONFIG", override)
+	if _, err := Load(nil); err == nil {
+		t.Fatal("Load must fail closed when the explicit --config file has invalid YAML")
 	}
 }
 
@@ -1389,8 +1495,12 @@ rpi:
 		}
 	})
 
-	// Clear env vars and project config
-	t.Setenv("AGENTOPS_CONFIG", "/nonexistent/project.yaml") // force no project config
+	// Clear env vars and isolate from any cwd project config. No AGENTOPS_CONFIG
+	// override (an explicit --config IS the config file and would skip home, per
+	// the documented contract); instead chdir to an empty dir so cwd/.agentops/
+	// config.yaml is absent, leaving the home config as the sole source under test.
+	t.Setenv("AGENTOPS_CONFIG", "")
+	t.Chdir(t.TempDir())
 	for _, key := range []string{
 		"AGENTOPS_OUTPUT", "AGENTOPS_BASE_DIR", "AGENTOPS_VERBOSE",
 		"AGENTOPS_NO_SC",
@@ -1435,7 +1545,11 @@ rpi:
   bd_command: home-bd
   tmux_command: home-tmux
 `)
-	clearConfigResolutionEnv(t, "/nonexistent/project.yaml")
+	// No AGENTOPS_CONFIG override (an explicit --config IS the config file and
+	// would skip home per the documented contract); chdir to an empty dir so
+	// cwd/.agentops/config.yaml is absent, leaving home as the sole source.
+	clearConfigResolutionEnv(t, "")
+	t.Chdir(t.TempDir())
 
 	// Test Resolve picks up home config values (covers lines 453-463 and 509-511)
 	rc := Resolve("", "", false)
