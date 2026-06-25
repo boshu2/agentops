@@ -1073,14 +1073,14 @@
     {
       "name": "agy-headless-evidence",
       "source_skill": "skills/agy-headless-evidence",
-      "source_hash": "397e97a42f044d020f560b1aaa6e0bec39020055aebc57399bab69482a83f8b1",
-      "generated_hash": "73610f087e4f9c3108f279a9192d478e5cc4ee6625b7778f194a3484d9c9879c"
+      "source_hash": "bbf7ee0ee62a984cd1dec79f1d84385993e775fe84da349ee5e1dc8abd774b3f",
+      "generated_hash": "76f4038bdaf56bbf97a8a7bab8e09c4dbef7213e9a062776b980ad47737cf172"
     },
     {
       "name": "agy-native",
       "source_skill": "skills/agy-native",
-      "source_hash": "beeffcf1c1397094bf974668274112102baa55c4c42dfe3f2df86ee5b5f5cc38",
-      "generated_hash": "cc20581fc3013d5a5821e18fb7a2f7099a33593d135147a576d6404b8ee131f5"
+      "source_hash": "bead8a82c2c2dceb651eeaec1d0e2e5e07c9168a6e5a6e1a02a0788a0c0bab39",
+      "generated_hash": "a11431bbcb7d80f5c0984ed55db3bebd9bfd9a283098e964baf12911da0321ce"
     },
     {
       "name": "autodev",
@@ -1757,8 +1757,8 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "e67f858b339f0d31f9b1487a6502a508f6af5a880028d1b55621db80ab33e72d",
-      "generated_hash": "45b7726f149d52f6548aac26455f21812dc9c2288b001498d777ecbfb14ca10d"
+      "source_hash": "995001c06605dd0e4c4378b8e608c7038752bde76dadf51b0b4fb8f045555434",
+      "generated_hash": "19fb78631b9f69a402382b70f30fa2b5b48fea28f6205df1a2d35cfe137cfd26"
     },
     {
       "name": "workflow-builder",

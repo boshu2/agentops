@@ -184,7 +184,7 @@ compression so the evidence is discoverable downstream.
 
 - **Read-only validator, sidecar tick:** `agy -p "Validate bead AG-123 read-only. VERDICT: PASS|FAIL." --conversation "$CONV_ID" --add-dir "$REPO" > run/events.jsonl 2> run/stderr.log; echo $? > run/exit-code`
 - **One-shot author, scoped worktree:** `agy -p "Implement AG-123 in this worktree; commit scoped; evidence to brain; do not close." --add-dir "$WT" --dangerously-skip-permissions > run/events.jsonl; echo $? > run/exit-code`
-- **Cross-vendor author!=judge:** author `agy -p --model "Gemini 3.1 Pro (High)"`, judge `agy -p --model "Claude Opus 4.6 (Thinking)"` — two contexts, one loop, no shared session.
+- **Cross-vendor author!=judge:** author `agy -p --model "Gemini 3.5 Flash (High)"`, judge `agy -p --model "Claude Opus 4.6 (Thinking)"` — two contexts, one loop, no shared session.
 
 ## Troubleshooting
 

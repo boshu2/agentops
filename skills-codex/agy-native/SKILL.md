@@ -131,8 +131,8 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 ## Examples
 
-- **Fallback tick when the Claude image is rate-limited:** import a plugin (`agy plugin import claude`), run Phase 3–4 on Gemini 3.1 Pro, persist, hand the next bead back to the Claude image.
-- **Cross-vendor author!=judge:** author with `agy --print --model "Gemini 3.1 Pro (High)"`, judge with `agy --print --model "Claude Opus 4.6 (Thinking)"` — two vendors, one loop, no shared context.
+- **Fallback tick when the Claude image is rate-limited:** import a plugin (`agy plugin import claude`), run Phase 3–4 on Gemini 3.5 Flash, persist, hand the next bead back to the Claude image.
+- **Cross-vendor author!=judge:** author with `agy --print --model "Gemini 3.5 Flash (High)"`, judge with `agy --print --model "Claude Opus 4.6 (Thinking)"` — two vendors, one loop, no shared context.
 - **Expose a new AgentOps skill to AGY (dev):** `agy plugin link ~/dev/agentops/skills/<name>` (or drop a portable `SKILL.md` in `~/.gemini/skills/<name>/`), then `agy plugin list` to confirm discovery; rollback `agy plugin uninstall <name>`.
 
 ## Troubleshooting
