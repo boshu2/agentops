@@ -26,11 +26,14 @@ cd "$REPO_ROOT"
 # cannot use t.Chdir: internal/goals/measure_cwd_test.go (asserts os.Getwd resolution from a
 # manipulated cwd) and internal/rpi/worktree_test.go (deliberately deletes the cwd to force
 # os.Getwd to fail). They restore correctly via t.Cleanup and are shuffle-safe.
-# os.Setenv lowered 22->12 on 2026-06-06 (ag-k38x #bulk-migration). The remaining 12
+# os.Setenv lowered 22->12 on 2026-06-06 (ag-k38x #bulk-migration). The remaining
 # are intentional and cannot use t.Setenv: TestMain sites (no *testing.T), string-literal
 # fixtures in fix_cliconfig_test.go, and unset-semantics helpers (t.Setenv cannot unset).
+# 12->14 on 2026-06-25: cmd/ao/main_test.go TestMain sets+restores TMUX_TMPDIR to isolate
+# the tmux socket (a test poisoned the dev's real tmux server with HOME=tempdir). TestMain
+# has no *testing.T, so t.Setenv is unavailable — these two are intentional, like HOME above.
 BASELINE_CHDIR=7
-BASELINE_SETENV=12
+BASELINE_SETENV=14
 
 chdir=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Chdir(' cli 2>/dev/null | wc -l | tr -d ' ')
 setenv=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Setenv(' cli 2>/dev/null | wc -l | tr -d ' ')
