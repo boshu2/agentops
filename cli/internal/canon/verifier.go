@@ -41,6 +41,12 @@ type CommandVerifier struct {
 	// Command is a shell command (run via `sh -c`) that receives the claim
 	// prompt on stdin. Empty Command makes Judge fail loudly rather than
 	// silently fabricating a verdict.
+	//
+	// TRUST BOUNDARY (recon 2026-06-24 audit M-1): because Command is executed
+	// via `sh -c`, it MUST be sourced from operator configuration
+	// (AGENTOPS_CANON_VERIFIER_CMD), never from a less-trusted source such as a
+	// corpus entry, a Claim, or remote config. Enforced structurally by
+	// TestCommandVerifier_CommandSourcedFromOperatorConfig.
 	Command string
 	// JudgeID attributes the verdict to the cross-vendor judge (e.g. the model
 	// name). It must denote a vantage distinct from any learning author.
