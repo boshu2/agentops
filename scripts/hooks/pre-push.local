@@ -36,6 +36,15 @@ cleanup_prepush_stdin() {
     [ -n "$_agentops_ao_gate" ] && rm -f "$_agentops_ao_gate" 2>/dev/null || true
 }
 trap cleanup_prepush_stdin EXIT
+# A push killed by SIGINT/SIGTERM (operator/CI timeout, Ctrl-C) must ALSO release
+# the serial mkdir-lock: an uncaught signal does NOT run the EXIT trap in sh, so a
+# killed push stranded the lock and made the NEXT push spin the full
+# AGENTOPS_PUSH_LOCK_TIMEOUT (~300s) on a lock nobody owned (age-genn). Run cleanup
+# then abort; the ensuing EXIT trap re-runs cleanup idempotently (rm -f / rmdir).
+# Exit with the conventional 128+signo per signal (SIGINT=130, SIGTERM=143) so
+# CI/operator logic can still distinguish a Ctrl-C from a timeout-kill.
+trap 'cleanup_prepush_stdin; exit 130' INT
+trap 'cleanup_prepush_stdin; exit 143' TERM
 
 is_push_to_main() {
     [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] || return 1
