@@ -251,85 +251,33 @@ validate_skill() {
     skill_md="$skill_dir/SKILL.md"
 
     if [[ "$skill_name" == "council" ]]; then
-        local techniques_ref profiles_ref
-        techniques_ref="$skill_dir/references/brainstorm-techniques.md"
-        profiles_ref="$skill_dir/references/model-profiles.md"
-
-        # Extract allowlisted technique slugs from the canonical table in brainstorm-techniques.md
-        local allowed_techniques
-        if [[ -f "$techniques_ref" ]]; then
-            allowed_techniques="$(grep -E '^\|[[:space:]]*`[a-zA-Z0-9_-]+`[[:space:]]*\|' "$techniques_ref" 2>/dev/null | sed -E 's/^\|[[:space:]]*`([^`]+)`.*/\1/' | sort -u)"
-            if [[ -n "${allowed_techniques:-}" ]]; then
-                echo -e "  ${GREEN}✓${NC} Council: extracted technique allowlist from references"
-                local_checks=$((local_checks + 1))
-            else
-                echo -e "  ${RED}✗${NC} Council: extracted technique allowlist from references"
-                local_errors=$((local_errors + 1))
-                local_checks=$((local_checks + 1))
-            fi
+        # council was refactored (0c7ef56c0 "extract 6 outer-gate skills to mt-olympus";
+        # a81b67869 "fold in-session mixed-model duel into dual-pane-atm; council points
+        # to it for mixed panels"): the --technique/--profile flags and the
+        # references/{brainstorm-techniques,model-profiles}.md allowlist tables were
+        # moved out of council, which is now a multi-judge-consensus skill that
+        # delegates the mixed-model duel substrate to /dual-pane-atm. Assert that
+        # delegation pointer rather than the removed flag allowlists (the old check
+        # asserted deleted content and was the recurring nightly Static-Validation red).
+        # (a) delegation pointer present — match the deliberate skill-link form
+        #     `/dual-pane-atm`, not a bare incidental mention.
+        if grep -qE '/dual-pane-atm\b' "$skill_md" 2>/dev/null; then
+            echo -e "  ${GREEN}✓${NC} Council: delegates the mixed-model duel substrate to /dual-pane-atm"
+            local_checks=$((local_checks + 1))
         else
-            echo -e "  ${RED}✗${NC} Council: references/brainstorm-techniques.md exists"
+            echo -e "  ${RED}✗${NC} Council: delegates the mixed-model duel substrate to /dual-pane-atm"
             local_errors=$((local_errors + 1))
             local_checks=$((local_checks + 1))
         fi
-
-        # Extract allowlisted profile slugs from model-profiles.md (first column backticks)
-        local allowed_profiles
-        if [[ -f "$profiles_ref" ]]; then
-            allowed_profiles="$(grep -E '^\|[[:space:]]*`[a-zA-Z0-9_-]+`[[:space:]]*\|' "$profiles_ref" 2>/dev/null | sed -E 's/^\|[[:space:]]*`([^`]+)`.*/\1/' | sort -u)"
-            if [[ -n "${allowed_profiles:-}" ]]; then
-                echo -e "  ${GREEN}✓${NC} Council: extracted profile allowlist from references"
-                local_checks=$((local_checks + 1))
-            else
-                echo -e "  ${RED}✗${NC} Council: extracted profile allowlist from references"
-                local_errors=$((local_errors + 1))
-                local_checks=$((local_checks + 1))
-            fi
-        else
-            echo -e "  ${RED}✗${NC} Council: references/model-profiles.md exists"
+        # (b) regression guard — the relocated --technique/--profile flag rows must NOT
+        #     reappear in council (their reference allowlists were deleted with the
+        #     refactor, so a re-added row would be a silent, unvalidated contract).
+        if grep -qE '`--technique=<name>`|`--profile=<name>`' "$skill_md" 2>/dev/null; then
+            echo -e "  ${RED}✗${NC} Council: obsolete --technique/--profile flag rows must not return (moved to /dual-pane-atm)"
             local_errors=$((local_errors + 1))
             local_checks=$((local_checks + 1))
-        fi
-
-        # Verify council SKILL.md documents allowlisted technique names in the --technique row
-        local technique_row documented_techniques
-        technique_row="$(grep -F '| `--technique=<name>` |' "$skill_md" 2>/dev/null | head -n 1 || true)"
-        if [[ -n "${technique_row:-}" ]]; then
-            documented_techniques="$(echo "$technique_row" | sed -n 's/.*technique (\([^)]*\)).*/\1/p' | tr ',' $'\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -E '^[a-zA-Z0-9_-]+$' | sort -u)"
-            if [[ -n "${documented_techniques:-}" ]] && [[ -n "${allowed_techniques:-}" ]] && diff -u <(echo "$allowed_techniques") <(echo "$documented_techniques") >/dev/null 2>&1; then
-                echo -e "  ${GREEN}✓${NC} Council: --technique allowlist matches references"
-                local_checks=$((local_checks + 1))
-            else
-                echo -e "  ${RED}✗${NC} Council: --technique allowlist matches references"
-                [[ -n "${allowed_techniques:-}" ]] && echo "    expected:" && echo "$allowed_techniques" | sed 's/^/      - /'
-                [[ -n "${documented_techniques:-}" ]] && echo "    documented:" && echo "$documented_techniques" | sed 's/^/      - /'
-                local_errors=$((local_errors + 1))
-                local_checks=$((local_checks + 1))
-            fi
         else
-            echo -e "  ${RED}✗${NC} Council: documents --technique=<name> flag row"
-            local_errors=$((local_errors + 1))
-            local_checks=$((local_checks + 1))
-        fi
-
-        # Verify council SKILL.md documents allowlisted profile names in the --profile row
-        local profile_row documented_profiles
-        profile_row="$(grep -F '| `--profile=<name>` |' "$skill_md" 2>/dev/null | head -n 1 || true)"
-        if [[ -n "${profile_row:-}" ]]; then
-            documented_profiles="$(echo "$profile_row" | sed -n 's/.*profile (\([^)]*\)).*/\1/p' | tr ',' $'\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -E '^[a-zA-Z0-9_-]+$' | sort -u)"
-            if [[ -n "${documented_profiles:-}" ]] && [[ -n "${allowed_profiles:-}" ]] && diff -u <(echo "$allowed_profiles") <(echo "$documented_profiles") >/dev/null 2>&1; then
-                echo -e "  ${GREEN}✓${NC} Council: --profile allowlist matches references"
-                local_checks=$((local_checks + 1))
-            else
-                echo -e "  ${RED}✗${NC} Council: --profile allowlist matches references"
-                [[ -n "${allowed_profiles:-}" ]] && echo "    expected:" && echo "$allowed_profiles" | sed 's/^/      - /'
-                [[ -n "${documented_profiles:-}" ]] && echo "    documented:" && echo "$documented_profiles" | sed 's/^/      - /'
-                local_errors=$((local_errors + 1))
-                local_checks=$((local_checks + 1))
-            fi
-        else
-            echo -e "  ${RED}✗${NC} Council: documents --profile=<name> flag row"
-            local_errors=$((local_errors + 1))
+            echo -e "  ${GREEN}✓${NC} Council: obsolete --technique/--profile flag rows absent (delegated to /dual-pane-atm)"
             local_checks=$((local_checks + 1))
         fi
     fi
