@@ -51,11 +51,17 @@ func TestWorkerProcessGroupIsolation_StartsInOwnProcessGroup(t *testing.T) {
 func TestWorkerProcessGroupIsolation_KillsHungProcessGroup(t *testing.T) {
 	pidFile := filepath.Join(t.TempDir(), "child.pid")
 	script := `sleep 10 & echo $! > "$PIDFILE"; wait`
+	// age-l45b: the wall-clock timeout must comfortably exceed the time it takes
+	// the shell to fork `sleep` and write $PIDFILE, or the process group is killed
+	// before the pid file exists and the read below fails ("no such file"). A 20ms
+	// budget raced shell startup under the full -race -shuffle suite's parallel
+	// load; 2s is far above worst-case shell fork+write yet still proves the hung
+	// group is killed promptly (vs the 10s `sleep` it would otherwise wait on).
 	worker, err := NewCLIFallbackWorker(CLIFallbackWorkerOptions{
 		Command:          "/bin/sh",
 		Args:             []string{"-c", script},
 		Env:              []string{"PIDFILE=" + pidFile},
-		WallClockTimeout: 20 * time.Millisecond,
+		WallClockTimeout: 2 * time.Second,
 	})
 	if err != nil {
 		t.Fatalf("NewCLIFallbackWorker: %v", err)
@@ -69,8 +75,8 @@ func TestWorkerProcessGroupIsolation_KillsHungProcessGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Start: %v", err)
 	}
-	if time.Since(started) > time.Second {
-		t.Fatalf("worker timeout took too long")
+	if time.Since(started) > 5*time.Second {
+		t.Fatalf("worker timeout took too long (hung process group not killed?)")
 	}
 	terminal, err := session.TerminalState(context.Background())
 	if err != nil {
