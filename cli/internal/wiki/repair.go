@@ -14,9 +14,10 @@ package wiki
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // FixResult summarizes what FixWiki repaired.
@@ -143,32 +144,13 @@ func wikilinkTarget(tok string) string {
 var inlineLinkSpan = regexp.MustCompile(`( ?)(\[\[[A-Za-z0-9][A-Za-z0-9_/.-]*\]\])( ?)`)
 
 // atomicRewrite writes contents to path via a temp file + rename so a crash
-// never leaves a torn page. The destination directory is assumed to exist (we
-// only ever rewrite files we just read).
+// never leaves a torn page, delegating to the canonical storage.AtomicWriteFile
+// (same-dir temp + fsync + chmod + rename). Wiki pages are world-readable like
+// the compile stage's 0644 artifacts. The destination directory already exists
+// (we only ever rewrite files we just read); AtomicWriteFile creates it if not.
 func atomicRewrite(path, contents string) error {
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".wiki-fix-*.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp: %w", err)
-	}
-	tmpName := tmp.Name()
-	defer func() { _ = os.Remove(tmpName) }() // no-op after a successful rename
-	if _, err := tmp.WriteString(contents); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("write temp: %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("sync temp: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close temp: %w", err)
-	}
-	if err := os.Chmod(tmpName, 0o644); err != nil { //nolint:gosec // wiki pages are world-readable like the compile stage's 0644 artifacts
-		return fmt.Errorf("chmod temp: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("rename temp into place: %w", err)
+	if err := storage.AtomicWriteFile(path, []byte(contents), 0o644); err != nil {
+		return fmt.Errorf("atomic rewrite %s: %w", path, err)
 	}
 	return nil
 }

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // MutateContext carries the per-run state every Mutate call needs. It is built
@@ -262,7 +264,7 @@ func executeAtomic(path string, op Op) error {
 	parent := filepath.Dir(path)
 	switch v := op.(type) {
 	case WriteFile:
-		return atomicWrite(parent, path, v.Content, v.Mode)
+		return atomicWrite(path, v.Content, v.Mode)
 	case AppendFile:
 		if err := os.MkdirAll(parent, 0o755); err != nil {
 			return err
@@ -300,37 +302,13 @@ func executeAtomic(path string, op Op) error {
 	}
 }
 
-// atomicWrite writes content to path via a same-dir temp file + rename.
-// WriteFile has create-or-overwrite semantics, so a missing parent directory
-// is created here (same as the Rename op does for its destination).
-func atomicWrite(dir, path string, content []byte, mode os.FileMode) error {
+// atomicWrite writes content to path durably and atomically, delegating to the
+// canonical storage.AtomicWriteFile (same-dir temp + fsync + chmod + rename, and
+// it creates a missing parent dir — matching WriteFile's create-or-overwrite
+// semantics). A WriteFile op with an unset mode defaults to 0o644, preserved here.
+func atomicWrite(path string, content []byte, mode os.FileMode) error {
 	if mode == 0 {
 		mode = 0o644
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, ".doctor.tmp.*")
-	if err != nil {
-		return err
-	}
-	if _, err := tmp.Write(content); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmp.Name())
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmp.Name())
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmp.Name())
-		return err
-	}
-	if err := os.Chmod(tmp.Name(), mode); err != nil {
-		_ = os.Remove(tmp.Name())
-		return err
-	}
-	return os.Rename(tmp.Name(), path)
+	return storage.AtomicWriteFile(path, content, mode)
 }
