@@ -58,7 +58,7 @@ jobs:
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
       corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Detect release tag push or merge-queue (force full run)
         id: release
         shell: bash
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -267,7 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go (skill-body-refs + regen-all against live CLI)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
@@ -364,7 +364,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -625,7 +625,7 @@ jobs:
       needs.changes.outputs.markdown == 'true' || needs.changes.outputs.skills == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Run markdownlint
         if: needs.changes.outputs.markdown == 'true' || needs.changes.outputs.ci == 'true'
@@ -674,7 +674,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Scan for secrets
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -838,7 +838,7 @@ jobs:
       needs.changes.outputs.corpus == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go (skill-body-refs against live CLI)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
@@ -1016,7 +1016,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Go
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
@@ -1228,7 +1228,7 @@ jobs:
       needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python (parity-drift)
         uses: actions/setup-python@v6
@@ -1293,7 +1293,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # fetch-depth: 0 required so the three-gap-supergate Gap 1
           # --strict-coverage advisory step can resolve `main..HEAD`.
@@ -1523,7 +1523,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # eval-skill-delta diffs HEAD~1 for skills/ changes.
           fetch-depth: 2
@@ -1679,7 +1679,7 @@ jobs:
     # like a flaky red rather than the deterministic hard-fail this gate owns).
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # The changed-skill diff is computed against the PR merge base, so the
           # full history (or at least the base ref) must be present.
@@ -1843,7 +1843,7 @@ jobs:
       needs.changes.outputs.shell == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # validate-test-count-noregress needs the PR base ref for the
           # before/after per-package test-count diff.
@@ -1962,7 +1962,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check results
         run: |
