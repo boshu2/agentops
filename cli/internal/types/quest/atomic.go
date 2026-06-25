@@ -3,9 +3,10 @@ package quest
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // AtomicWriteYAML marshals v to YAML and atomically writes the result to
@@ -23,80 +24,24 @@ func AtomicWriteYAML(path string, v interface{}) error {
 
 // AtomicWriteFile atomically writes data to path via a same-directory
 // temp file plus os.Rename. fsync is called before rename so the bytes
-// are durable. The target directory is created with 0755 if needed.
+// are durable. The target directory is created with 0755 if needed. The
+// file lands with the restrictive temp-file mode (0o600 on Unix); callers
+// that need a specific mode use AtomicWriteFileWithPerm.
+//
+// This is the documented fleet-lease writer (see atomic_fault_test.go); it
+// delegates to the canonical storage.AtomicWriteFile so the temp+fsync+rename
+// algorithm has a single implementation across the CLI.
 func AtomicWriteFile(path string, data []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("creating directory %s: %w", dir, err)
-	}
-	f, err := os.CreateTemp(dir, ".tmp-*")
-	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
-	}
-	tmpPath := f.Name()
-	if _, err := f.Write(data); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("writing temp file: %w", err)
-	}
-	if err := f.Sync(); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("syncing temp file: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("closing temp file: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("renaming temp file: %w", err)
-	}
-	return nil
+	return storage.AtomicWriteFile(path, data, 0o600)
 }
 
 // AtomicWriteFileWithPerm atomically writes data to path with the given
-// file permissions. Uses the same temp-file + fsync + rename algorithm
-// as AtomicWriteFile, but applies perm to the file before rename so the
-// final entry lands with exactly the requested mode.
-//
-// The intermediate temp file is created via os.CreateTemp, which uses a
-// restrictive mode (0o600 on Unix) so the requested perm is never
-// observable on the filesystem until the atomic rename completes.
-// Chmod is applied after Sync so durability is preserved. The target
+// file permissions, using the same temp-file + fsync + rename algorithm as
+// AtomicWriteFile so the final entry lands with exactly the requested mode
+// and no wider perm is observable until the rename completes. The target
 // directory is created with 0755 if needed.
+//
+// Delegates to the canonical storage.AtomicWriteFile.
 func AtomicWriteFileWithPerm(path string, data []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("creating directory %s: %w", dir, err)
-	}
-	f, err := os.CreateTemp(dir, ".tmp-*")
-	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
-	}
-	tmpPath := f.Name()
-	if _, err := f.Write(data); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("writing temp file: %w", err)
-	}
-	if err := f.Sync(); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("syncing temp file: %w", err)
-	}
-	if err := f.Chmod(perm); err != nil {
-		_ = f.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("chmod temp file: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("closing temp file: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("renaming temp file: %w", err)
-	}
-	return nil
+	return storage.AtomicWriteFile(path, data, perm)
 }

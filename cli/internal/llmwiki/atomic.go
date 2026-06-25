@@ -22,43 +22,24 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // AtomicWriteFile writes contents to path atomically by creating a temporary
 // file in the same directory, fsyncing it, and renaming over the destination.
 // A partial write never leaves a corrupted file visible to readers.
 //
-// Per pre-mortem amendment A3.
+// Per pre-mortem amendment A3. Rejects an empty path (llmwiki never writes to
+// the working directory) and otherwise delegates the temp+fsync+chmod+rename
+// mechanics to the canonical storage.AtomicWriteFile so there is a single
+// implementation of the algorithm across the CLI.
 func AtomicWriteFile(path string, contents []byte, mode os.FileMode) error {
 	if path == "" {
 		return fmt.Errorf("llmwiki: atomic write requires non-empty path")
 	}
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".tmp-*")
-	if err != nil {
-		return fmt.Errorf("llmwiki: create temp file in %s: %w", dir, err)
-	}
-	tmpName := tmp.Name()
-	// Cleanup on error path; if rename succeeds, this Remove is a no-op
-	// because the path no longer exists under tmpName.
-	defer func() { _ = os.Remove(tmpName) }()
-
-	if _, err := tmp.Write(contents); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("llmwiki: write temp file: %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("llmwiki: fsync temp file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("llmwiki: close temp file: %w", err)
-	}
-	if err := os.Chmod(tmpName, mode); err != nil {
-		return fmt.Errorf("llmwiki: chmod temp file: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		return fmt.Errorf("llmwiki: rename temp file to %s: %w", path, err)
+	if err := storage.AtomicWriteFile(path, contents, mode); err != nil {
+		return fmt.Errorf("llmwiki: %w", err)
 	}
 	return nil
 }
