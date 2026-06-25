@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,38 @@ func TestMain(m *testing.M) {
 	origHome, hadOrigHome := os.LookupEnv("HOME")
 	os.Setenv("HOME", tmpHome)
 
+	// Isolate the tmux socket. Several production paths (context-budget
+	// session-ensure in internal/context, session spawn in
+	// internal/adapters/sessionspawn) shell out to the real `tmux` binary on
+	// tmux's DEFAULT socket (/tmp/tmux-$UID/default). Without isolation, a test
+	// that reaches one of those paths starts (or attaches to) a tmux SERVER on
+	// the developer's real socket — and because a tmux server bakes the process
+	// environment ONCE at startup, it captures HOME=<tmpHome above> and then
+	// hands that poisoned HOME to every shell the developer opens afterward
+	// (bare prompt, $HOME pointing at a since-deleted temp dir). TMUX_TMPDIR
+	// relocates the socket dir into a throwaway location so test tmux can never
+	// collide with the real server. Diagnosed 2026-06-25 (real session poisoned).
+	tmpTmux, err := os.MkdirTemp("", "cmd-ao-test-tmux-*")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create test TMUX_TMPDIR: %v\n", err)
+		os.RemoveAll(tmpHome)
+		os.Exit(1)
+	}
+	origTmuxDir, hadOrigTmuxDir := os.LookupEnv("TMUX_TMPDIR")
+	os.Setenv("TMUX_TMPDIR", tmpTmux)
+
 	code := m.Run()
+
+	// Tear down any tmux server the tests started on the isolated socket before
+	// removing its dir, so no orphan server lingers. Inherits the TMUX_TMPDIR
+	// set above, so this targets only the test socket, never the real one.
+	_ = exec.Command("tmux", "kill-server").Run()
+	os.RemoveAll(tmpTmux)
+	if hadOrigTmuxDir {
+		os.Setenv("TMUX_TMPDIR", origTmuxDir)
+	} else {
+		os.Unsetenv("TMUX_TMPDIR")
+	}
 
 	os.RemoveAll(tmpHome)
 	if hadOrigHome {
