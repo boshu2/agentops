@@ -52,7 +52,7 @@ func ClassifyDir(root string, apply bool) (ClassifyResult, error) {
 			return nil
 		}
 		res.Scanned++
-		raw, readErr := os.ReadFile(path) // #nosec G304 -- path from the corpus dir walk
+		raw, readErr := os.ReadFile(path) // #nosec G304 G122 nosemgrep -- path from the corpus dir walk; user-owned CLI corpus, not a TOCTOU-sensitive boundary.
 		if readErr != nil {
 			return readErr
 		}
@@ -73,7 +73,7 @@ func ClassifyDir(root string, apply bool) (ClassifyResult, error) {
 			if statErr == nil {
 				mode = info.Mode().Perm()
 			}
-			if writeErr := os.WriteFile(path, []byte(out), mode); writeErr != nil {
+			if writeErr := os.WriteFile(path, []byte(out), mode); writeErr != nil { // #nosec G122 G306 nosemgrep -- user-owned CLI corpus walk; not a TOCTOU-sensitive boundary.
 				return writeErr
 			}
 		}

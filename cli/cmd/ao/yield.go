@@ -192,7 +192,10 @@ func runYieldTokens(cmd *cobra.Command, _ []string) error {
 	}
 	switch {
 	case asJSON:
-		b, _ := json.Marshal(map[string]int{"tokens_in": in, "tokens_out": out})
+		b, err := json.Marshal(map[string]int{"tokens_in": in, "tokens_out": out})
+		if err != nil {
+			return fmt.Errorf("marshaling token counts: %w", err)
+		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(b))
 	case asPair:
 		// Two whitespace-separated values for `read ti to < <(...)`.

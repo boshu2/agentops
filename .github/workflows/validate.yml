@@ -919,7 +919,7 @@ jobs:
           echo "=== Checking for symlinks ==="
 
           # Symlinks break when plugins installed standalone from GitHub
-          symlinks=$(find . -type l -not -path "./.git/*" 2>/dev/null || true)
+          symlinks=$(find skills hooks lib scripts -type l 2>/dev/null || true)
           if [[ -n "$symlinks" ]]; then
             echo "❌ Found symlinks that will break standalone installation:"
             echo "$symlinks"

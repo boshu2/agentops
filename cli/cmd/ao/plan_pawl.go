@@ -90,7 +90,10 @@ Examples:
 		})
 
 		if planPawlJSON {
-			b, _ := json.MarshalIndent(out, "", "  ")
+			b, err := json.MarshalIndent(out, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshaling plan-pawl decision: %w", err)
+			}
 			fmt.Fprintln(cmd.OutOrStdout(), string(b))
 		} else {
 			fmt.Fprintf(cmd.OutOrStdout(), "decision: %s (round %d/%d, families=%s)\n",

@@ -142,10 +142,10 @@ wrong thing. The window made the claims true.
   (kind/runtime_targets/parity_policy/capability_class/path/aliases/supersedes)
   backfilled onto all 71 active rows — *no rename*, quorum-ratified.
 - **Schema-validated disposition ledger** (`validate-skill-disposition-schema.sh`
-  + bats): the disposition YAML now has a rejecting schema gate.
+  plus bats): the disposition YAML now has a rejecting schema gate.
 - **Validators resolve skill paths via the dispositions ledger** (`85b7b97b1`,
   `ag-2vz5v`): removed hard-coded skill paths from validators (`resolve-skill-path`
-  + 240-line bats) — a real decoupling so the next cull doesn't break validators.
+  plus 240-line bats) — a real decoupling so the next cull doesn't break validators.
 - **errcheck** lint rule + fixes for unchecked `json.Marshal/Unmarshal`
   (`845b31446`, cross-family gated).
 
