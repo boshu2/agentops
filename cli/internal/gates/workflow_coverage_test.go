@@ -74,7 +74,7 @@ jobs:
 }
 
 func TestDeferredWorkflowScriptCount(t *testing.T) {
-	if got := len(deferredWorkflowScripts); got != 12 {
-		t.Fatalf("deferredWorkflowScripts count = %d, want 12 (Wave E drain + applied-OOD model preflight)", got)
+	if got := len(deferredWorkflowScripts); got != 16 {
+		t.Fatalf("deferredWorkflowScripts count = %d, want 16 (Wave E drain + applied-OOD model preflight + 4 post-parity job-scoped scripts)", got)
 	}
 }

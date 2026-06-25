@@ -83,15 +83,32 @@ func TestPlanPawlDecide_JSONOutput(t *testing.T) {
 	if code != planPawlExitPass {
 		t.Fatalf("want PASS exit, got %d", code)
 	}
+	// Exercise the --json output path (json.MarshalIndent): assert the full
+	// indented contract — two-space-indented, complete, and round-trippable —
+	// not merely that the Decision field parses. The marshal error return is now
+	// checked rather than blank-discarded, but a plain decision struct (strings,
+	// ints, []string) cannot fail to marshal, so that error branch is not
+	// separately exercisable here; this guards the success-path output shape.
+	if !strings.Contains(out, "\n  \"decision\": \"PASS\"") {
+		t.Fatalf("want two-space MarshalIndent output, got: %s", out)
+	}
 	var decoded struct {
-		Decision string `json:"decision"`
-		Families []string
+		Decision  string   `json:"decision"`
+		Round     int      `json:"round"`
+		MaxRounds int      `json:"max_rounds"`
+		Families  []string `json:"families"`
 	}
 	if err := json.Unmarshal([]byte(out), &decoded); err != nil {
 		t.Fatalf("output is not valid JSON: %v\n%s", err, out)
 	}
 	if decoded.Decision != "PASS" {
 		t.Fatalf("want PASS, got %s", decoded.Decision)
+	}
+	if decoded.Round != 1 || decoded.MaxRounds != 3 {
+		t.Fatalf("want round 1/3, got %d/%d", decoded.Round, decoded.MaxRounds)
+	}
+	if len(decoded.Families) != 2 || decoded.Families[0] != "claude" || decoded.Families[1] != "gpt" {
+		t.Fatalf("want families [claude gpt], got %v", decoded.Families)
 	}
 }
 

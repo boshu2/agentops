@@ -28,7 +28,7 @@ const (
 	msgTypeToolResult = "tool_result"
 	// msgTypeCodexTokenCount is an internal sentinel: a Codex token_count event
 	// folded into ParseResult.FinalUsage rather than the message list.
-	msgTypeCodexTokenCount = "codex_token_count"
+	msgTypeCodexTokenCount = "codex_token_count" // #nosec G101 nosemgrep -- message-type sentinel string, not a credential.
 )
 
 // Error classification constants for parse errors.

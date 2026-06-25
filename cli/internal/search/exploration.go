@@ -2,7 +2,7 @@ package search
 
 import (
 	"math"
-	"math/rand"
+	"math/rand" // #nosec G404 nosemgrep -- ε-exploration sampler for retrieval ranking; not a security primitive.
 	"os"
 	"strconv"
 )
@@ -79,7 +79,7 @@ func ExploreSelect[T any](ranked []T, limit int, epsilon float64, rng *rand.Rand
 		if rng != nil {
 			return rng.Intn(n)
 		}
-		return rand.Intn(n)
+		return rand.Intn(n) // #nosec G404 nosemgrep -- ε-exploration sampler; not a security primitive.
 	}
 	for r := 0; r < reserve && len(trueTail) > 0; r++ {
 		j := intn(len(trueTail))
