@@ -180,6 +180,7 @@
 | `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao next-work materialize` | `public-tested` | `allowlisted` | Covered by nextworkmaterialize adapter tests and command registration tests. |
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao omnigent dispatch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator record` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao orchestrate preflight` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

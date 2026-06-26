@@ -163,6 +163,8 @@ func runtimeAliases(rt, blob string) bool {
 		return strings.Contains(blob, "cc") || strings.Contains(blob, "opus")
 	case "codex":
 		return strings.Contains(blob, "cod")
+	case "omnigent":
+		return strings.Contains(blob, "olympus") || strings.Contains(blob, "olympus-trinity")
 	case "agy":
 		return strings.Contains(blob, "agy") || strings.Contains(blob, "antigravity")
 	default:

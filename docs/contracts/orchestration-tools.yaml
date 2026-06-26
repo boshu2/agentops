@@ -28,6 +28,10 @@ tools:
     binary: codex
     probe_args: ["--version"]
     required_for: [dual-pane, tri-vendor]
+  - id: omnigent
+    binary: omnigent
+    probe_args: ["server", "status"]
+    required_for: [olympus-trinity]
   - id: agy
     binary: agy
     probe_args: ["--version"]

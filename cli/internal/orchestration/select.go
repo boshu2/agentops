@@ -45,7 +45,7 @@ var _ ports.OrchestrationPort = (*Selector)(nil)
 //
 //  1. work.Pin set -> that backend.
 //  2. AGENTOPS_ORCHESTRATION env: "off"/"beads" -> beads;
-//     "ntm"/"claude"/"codex" -> that backend (explicit pin/opt-out).
+//     "ntm"/"claude"/"codex"/"omnigent" -> that backend (explicit pin/opt-out).
 //  3. work.OptOut -> beads.
 //  4. ProbeNTM reports Available -> ntm.
 //  5. else -> claude.
@@ -93,6 +93,12 @@ func (s *Selector) Select(ctx context.Context, work ports.WorkSpec) (ports.Selec
 			return ports.SelectionTrace{
 				Chosen:     ports.BackendCodex,
 				Reason:     fmt.Sprintf("%s=codex (env pin)", selectEnvVar),
+				Considered: considered,
+			}, nil
+		case "omnigent":
+			return ports.SelectionTrace{
+				Chosen:     ports.BackendOmnigent,
+				Reason:     fmt.Sprintf("%s=omnigent (env pin)", selectEnvVar),
 				Considered: considered,
 			}, nil
 		default:

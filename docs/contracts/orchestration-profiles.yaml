@@ -57,3 +57,28 @@ profiles:
         - "--cc=1:opus"
         - "--cod=1:gpt-5.5"
         - "--agy=1"
+
+  olympus-trinity:
+    profile_id: olympus-trinity
+    shape: omnigent-bundle
+    engine: omnigent
+    backend: omnigent
+    required_tools: [omnigent]
+    panes:
+      - slot: 1
+        runtime: omnigent
+        model: olympus-trinity
+        role: cross-vendor-pantheon-dispatch
+    spawn_argv:
+      - ["run"]
+      - ["/Users/bo/dev/omnigent-agents/agents/olympus-trinity"]
+      - ["-p", "<task>"]
+      - ["--log"]
+    checklist_markers:
+      preflight_step: "ao orchestrate preflight --profile olympus-trinity"
+      verify_step: "ao orchestrate verify --profile olympus-trinity --session <session>"
+      spawn_argv_tokens:
+        - "run"
+        - "/Users/bo/dev/omnigent-agents/agents/olympus-trinity"
+        - "-p"
+        - "--log"
