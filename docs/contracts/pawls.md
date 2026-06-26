@@ -138,3 +138,16 @@ self-approve a door a human deliberately gated.
 ## Adding a pawl
 
 A new pawl earns its place **only** if the action is genuinely irreversible — data lost, money spent, something left the machine, or a shared contract changed. If it's recoverable, it's chaos, and it stays ungated. Keep this list short: every pawl is a tread you now validate, i.e. a step back toward waterfall.
+
+## Operating the warm pawl-service: idle reaping
+
+The cross-family pawl can run as a **standing warm service** (`ao pawl up` — capability-adaptive over the installed families; see [`scripts/pawl.sh`](../../scripts/pawl.sh)) so reviews route to warm panes instead of spinning a cold `codex exec` each time. Warm panes hold a model-account slot, so the service has an idle reaper:
+
+- **`ao pawl reap`** tears the session down **iff** it has been idle longer than `PAWL_IDLE_TTL` (default 1800s); otherwise it is a no-op. The next review's lazy-auto-up brings the service back.
+- AgentOps ships **no in-repo daemon or scheduler** ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)): out-of-session orchestration is a swappable substrate, never in-repo. So the reap *schedule* lives in your substrate, not the repo:
+  - **cron:** `*/30 * * * * cd /path/to/agentops && ao pawl reap >> /tmp/pawl-reap.log 2>&1`
+  - **launchd:** a `StartInterval=1800` agent that runs `ao pawl reap` in the repo dir.
+  - **NTM:** call `ao pawl reap` on a tending tick.
+- Without a schedule, the panes stay warm until an explicit `ao pawl down`. That is safe — the membrane gates on the recorded verdict, never on a live pane — it just holds account slots.
+
+**Tier transparency.** A routed verdict is stamped `multi-model` (≥2 families — the real cross-family gate) or `fresh-context` (1 family — a single fresh-context refuter, weaker). A high-irreversibility door (push-to-main) demands `multi-model` and refuses a `fresh-context` verdict; `ao pawl review` and the pre-push gate surface the achieved tier so a single-family land is a conscious choice, not silent.
