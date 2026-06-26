@@ -105,16 +105,11 @@ ao metrics health         # flywheel health
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 The whole loop runs in a plain session — no daemon, no scheduler, no cloud. For always-on work it opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole loop per ready bead. Details: [docs/3.0.md](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md).
 
-## What's proven, and what isn't
+## The honest version
 
-The verification is the proven product: no verdict, not done. Everything that *compounds* on top of it is an honest, measured bet — not a marketing claim:
+AgentOps proves the work. It doesn't write the code; your agent still does that, and the cross-checks cost tokens. The `.agents/` folder is plain markdown your agents keep up as they go. Whether all that saved history makes the next session measurably better, we're still testing. We won't claim it until the numbers say so.
 
-- The `.agents/` corpus is an LLM wiki of markdown that agents read and write as they work. Whether it measurably beats the same models with no corpus is unproven ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)).
-- When a verdict says CONFIRMED but the code later turns out wrong, that's an *escape*; the membrane compiles each escape into a check that catches it next time. That mechanism is proven; whether the **escape-corpus** compounds into a durable edge is not — a good membrane catches most things at review, so real escapes are structurally rare ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)).
-
-**Other limits, plainly:** it doesn't write the code (the harness still does); multi-model councils cost tokens; the corpus needs hygiene (`ao defrag`, `ao maturity`) or it rots like any markdown vault.
-
-**What if the labs ship this natively?** They will. Two things don't follow the vendor: the verification discipline you run on every change, and the `.agents/` corpus — plain markdown in your repo, forkable, portable, Apache-2.0.
+When the labs ship their own version of this, your `.agents/` folder comes with you. It's in your repo, in plain markdown, Apache-2.0.
 
 ---
 
