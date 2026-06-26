@@ -231,7 +231,9 @@ func performOmnigentDispatch(opts omnigentDispatchOptions) (omnigentRunReceipt, 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(opts.TimeoutSeconds)*time.Second)
 	defer cancel()
 
-	argv := []string{"omnigent", "run", strings.TrimSpace(opts.Bundle), "-p", strings.TrimSpace(opts.Task), "--log"}
+	// NOTE: no --log — it is REPL-only and conflicts with headless -p. The agent's
+	// full final report (incl. the "VERDICT:" sentinel) goes to stdout, which we capture.
+	argv := []string{"omnigent", "run", strings.TrimSpace(opts.Bundle), "-p", strings.TrimSpace(opts.Task)}
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = cwd
 	devNull, err := os.Open(os.DevNull)
