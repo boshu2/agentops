@@ -4492,7 +4492,7 @@ ao pawl down [flags]
 
 #### `ao pawl health`
 
-Per-pane liveness/readiness of the standing pawl-service
+Per-pane liveness/readiness of the standing pawl-service + the membrane tier
 
 ```
 ao pawl health [--json] [flags]
@@ -4506,6 +4506,14 @@ p50/p95 route latency + agreement-rate SLOs over the recorded routes
 ao pawl metrics [--json] [flags]
 ```
 
+#### `ao pawl reap`
+
+Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)
+
+```
+ao pawl reap [flags]
+```
+
 #### `ao pawl review`
 
 Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
@@ -4516,7 +4524,7 @@ ao pawl review <bead-id> [--scope head|staged] [--converge] [--author-family <fa
 
 #### `ao pawl route`
 
-Route a review packet to the warm opus+codex duel; require agreement, record the verdict
+Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict
 
 ```
 ao pawl route <bead> <packet> [pr] [flags]
@@ -4524,10 +4532,10 @@ ao pawl route <bead> <packet> [pr] [flags]
 
 #### `ao pawl up`
 
-Stand up the standing pawl-service (opus+codex), readiness-gated (idempotent)
+Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent
 
 ```
-ao pawl up [flags]
+ao pawl up [--dual|--tri|--models a,b,c] [flags]
 ```
 
 ---

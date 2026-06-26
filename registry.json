@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-26T01:29:27Z",
+  "generated_at": "2026-06-26T19:40:59Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -5270,8 +5270,11 @@
       "flags": [
         "--config",
         "--dry-run",
+        "--dual",
         "--json",
+        "--models",
         "--output",
+        "--tri",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

@@ -3,15 +3,29 @@
 #
 # Encodes the manual opus+codex "duel" dogfooded on 2026-06-18 (landing age-1vy +
 # age-uqj) into a deterministic lifecycle so the cross-family pawl is a SERVICE you
-# route requests to, not a hand-spun codex-exec per bead. `ao pawl` will wrap this;
+# route requests to, not a hand-spun codex-exec per bead. `ao pawl` wraps this;
 # the deterministic core lives here (CLI-for-deterministic, skills-are-instructions).
 #
 # Subcommands:
-#   up                       spawn the standing session + readiness-gate both panes (idempotent)
+#   up [--dual|--tri|--models a,b,c]   spawn the standing session + readiness-gate the
+#                                      ENABLED panes (idempotent). Default: probe what's
+#                                      installed and stand up the strongest membrane possible.
 #   down                     kill the standing session (no orphan panes)
-#   health [--json]          per-pane liveness/readiness probe
-#   route <bead> <packet> [pr]   route a review packet to BOTH panes, require opus+codex
-#                                agreement, capture evidence, record the verdict (pr default 0 = push-to-main)
+#   reap                     tear down the session iff idle longer than PAWL_IDLE_TTL (no-op otherwise)
+#   health [--json]          per-pane liveness/readiness probe + the session's membrane tier
+#   route <bead> <packet> [pr]   route a review packet to the ENABLED panes, require tier-
+#                                appropriate agreement, capture evidence, record the verdict
+#                                (pr default 0 = push-to-main)
+#
+# Capability-adaptive (age-4o33): the warm membrane stands up the STRONGEST reviewer panel the
+# host's installed CLIs can form, over the three paid cross-family families (one pane each):
+#   cc = claude/opus   cod = codex/gpt   agy = antigravity/Gemini 3.5 Flash
+# (Local llama is eval-only by decision — never probed into the warm service.) Each verdict is
+# stamped with the TIER it achieved, so a door decides sufficiency, not the service:
+#   tier=multi  >=2 families  -> the real cross-family gate (mode=multi-model)
+#   tier=fresh  1 family      -> a single fresh-context refuter (mode=fresh-context) — valid for
+#                                normal doors (pawls.md fresh-context default); a high-irreversibility
+#                                door (e.g. push-to-main) still demands multi-model and refuses it.
 #
 # Hard rules learned in the dogfood (do not regress):
 #  - codex /goal caps the objective at ~4000 chars -> ALWAYS send the packet as a FILE
@@ -19,9 +33,9 @@
 #  - gate readiness before the first route (boot race): spawn returns before panes boot.
 #  - codex 'codex exec --model gpt-5.3-codex' is rejected on a ChatGPT account; the
 #    interactive ATM codex pane resolves gpt-5.5 and works.
-#  - agreement is fail-closed & ALL-CONFIRM across 3 cross-family panes (opus/codex/agy):
-#    any REFUTED -> REFUTED; pass needs every replier to CONFIRM and >=2 of them; a single
-#    model unavailable after retries degrades to the remaining >=2 cross-family (never <2).
+#  - agreement is fail-closed & ALL-CONFIRM over the ENABLED panes: any REFUTED -> REFUTED;
+#    a pass needs every replier to CONFIRM and >= the tier's min (2 for multi, 1 for fresh);
+#    a model unavailable after retries degrades to the remaining repliers (never below the min).
 set -euo pipefail
 
 SESSION="${PAWL_SESSION:-agentops--pawl-service}"
@@ -33,10 +47,132 @@ AGY_PANE="${PAWL_AGY_PANE:-3}"   # AGY/Antigravity pane (3rd cross-family refute
 EVID_DIR="${PAWL_EVID_DIR:-/tmp/pawl-evidence}"
 STATE_DIR="${PAWL_STATE_DIR:-.agents/pawl}"
 ROUTE_TIMEOUT="${PAWL_ROUTE_TIMEOUT:-320}"   # seconds to wait per pane for a VERDICT
+PAWL_IDLE_TTL="${PAWL_IDLE_TTL:-1800}"       # idle seconds before `reap` tears the session down
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+ENABLED="${ENABLED:-}"           # resolved family list (space-sep, canonical order); set by up/load_session
+TIER="${TIER:-}"                 # multi (>=2 families) | fresh (1) | "" (none)
 
 die() { echo "pawl: $*" >&2; exit 1; }
 log() { echo "pawl: $*" >&2; }
+
+# ── Capability layer (age-4o33): turn "what's installed" into "which panes, tier, decision" ──
+# All pure (no tmux/atm) — locked by tests/scripts/pawl-adaptive.bats.
+PAWL_CANON_FAMILIES="cc cod agy"
+
+# family token -> its CLI binary name (for the install probe).
+_family_bin() { case "$1" in cc) echo claude ;; cod) echo codex ;; agy) echo agy ;; *) echo "$1" ;; esac; }
+
+# Indirection so tests can stub presence without touching PATH.
+_cli_present() { command -v "$1" >/dev/null 2>&1; }
+
+# Installed families, canonical order, one per line. A family is "available" iff its CLI binary
+# is on PATH — the dominant real signal for "I don't have that account"; a present-but-logged-out
+# CLI is caught later by the readiness gate, not here.
+probe_families() {
+  local f
+  for f in $PAWL_CANON_FAMILIES; do _cli_present "$(_family_bin "$f")" && echo "$f"; done
+}
+
+# Normalize a pin (--dual/--tri or a --models csv of family tokens/aliases) to canonical family
+# tokens (space-sep, canonical order). Empty input -> empty (caller uses the probe). An unknown
+# token -> exit 2 (fail-fast on a typo'd pin, never a silent drop).
+parse_pin() {
+  local raw="${1:-}" req="" f tok
+  [ -z "$raw" ] && return 0
+  case "$raw" in dual) raw="cc,cod" ;; tri) raw="cc,cod,agy" ;; esac
+  local _toks; IFS=',' read -ra _toks <<< "$raw"
+  for tok in "${_toks[@]}"; do
+    case "$(printf '%s' "$tok" | tr 'A-Z' 'a-z' | tr -d ' ')" in
+      cc|claude|opus|sonnet)   f=cc ;;
+      cod|codex|gpt|openai)    f=cod ;;
+      agy|gemini|antigravity)  f=agy ;;
+      "") continue ;;
+      *) echo "pawl: unknown model '$tok' (use cc/cod/agy, dual, or tri)" >&2; return 2 ;;
+    esac
+    case " $req " in *" $f "*) : ;; *) req="$req $f" ;; esac
+  done
+  for f in $PAWL_CANON_FAMILIES; do case " $req " in *" $f "*) echo "$f" ;; esac; done
+}
+
+# 1-based pane index of a family within the ORDERED enabled set (panes are spawned in canonical
+# order, so a missing family shifts the tail up). Empty if the family is absent.
+pane_index() {
+  local target="$1"; shift
+  local i=0 f
+  for f in "$@"; do i=$((i + 1)); [ "$f" = "$target" ] && { echo "$i"; return 0; }; done
+  return 0
+}
+
+# Membrane tier from the enabled family count: multi (>=2, real cross-family) | fresh (1,
+# single-family fresh-context) | "" (0, cannot run).
+tier_of() {
+  if [ "$#" -ge 2 ]; then echo multi; elif [ "$#" -eq 1 ]; then echo fresh; else echo ""; fi
+}
+
+# Min confirmers for a tier to PASS: multi needs >=2 (cross-family), fresh needs 1. An empty tier
+# returns an unreachable-high threshold so it can never pass.
+min_confirm_for_tier() { case "$1" in multi) echo 2 ;; fresh) echo 1 ;; *) echo 99 ;; esac; }
+
+# Resolve the per-family pane vars + ENABLED + TIER from an ordered family list. A disabled
+# family's pane var is "" so every send/poll/recovery/refuter site skips it.
+_set_panes_from_enabled() {
+  ENABLED="$*"
+  CC_PANE="$(pane_index cc "$@")"
+  COD_PANE="$(pane_index cod "$@")"
+  AGY_PANE="$(pane_index agy "$@")"
+  TIER="$(tier_of "$@")"
+}
+
+_now() { date +%s; }
+
+# Persist the resolved session so health/route/reap (fresh processes) operate over the same set.
+_write_session_json() {
+  mkdir -p "$ROOT/$STATE_DIR"
+  local now; now="$(_now)"
+  printf '{"session":"%s","families":"%s","tier":"%s","cc_pane":"%s","cod_pane":"%s","agy_pane":"%s","ready":true,"up_ts":%s,"last_route_ts":%s}\n' \
+    "$SESSION" "$ENABLED" "$TIER" "$CC_PANE" "$COD_PANE" "$AGY_PANE" "$now" "$now" > "$ROOT/$STATE_DIR/session.json"
+}
+
+# Load families/tier/panes from session.json into the globals. A missing/legacy file defaults to
+# the full 3-family layout (back-compat with pre-age-4o33 sessions).
+load_session() {
+  local sj="$ROOT/$STATE_DIR/session.json" fams=""
+  if [ -f "$sj" ]; then
+    # Tolerate optional whitespace after the colon (age-nomq): a reader must parse the file
+    # regardless of which writer (compact printf or any JSON formatter) last touched it.
+    fams="$(grep -oE '"families": *"[^"]*"' "$sj" 2>/dev/null | sed -E 's/.*: *"([^"]*)".*/\1/')"
+  fi
+  if [ -n "$fams" ]; then _set_panes_from_enabled $fams; else _set_panes_from_enabled cc cod agy; fi
+}
+
+# Idle seconds since the last route (-1 if no session.json or no timestamp).
+_session_idle() {
+  local sj="$ROOT/$STATE_DIR/session.json" last
+  [ -f "$sj" ] || { echo -1; return 0; }
+  last="$(grep -oE '"last_route_ts": *[0-9]+' "$sj" 2>/dev/null | grep -oE '[0-9]+' | tail -1)"
+  [ -n "$last" ] || { echo -1; return 0; }
+  echo $(( $(_now) - last ))
+}
+
+# Reset the idle clock (best-effort; never affects the verdict).
+_touch_route_ts() {
+  local sj="$ROOT/$STATE_DIR/session.json"
+  [ -f "$sj" ] || return 0
+  command -v python3 >/dev/null 2>&1 || return 0
+  python3 - "$sj" "$(_now)" <<'PY' 2>/dev/null || true
+import json,sys
+sj,now=sys.argv[1],int(sys.argv[2])
+try:
+    d=json.load(open(sj)); d["last_route_ts"]=now
+    # COMPACT separators (age-nomq): match _write_session_json's printf format exactly. Python's
+    # default json.dump emits "key": "val" (space after colon), which the grep readers in
+    # load_session / _session_idle (compact "key":"val") then fail to parse — silently reverting
+    # the session to the 3-family default + a permanently-stale idle clock after the first route.
+    json.dump(d,open(sj,"w"),separators=(",",":"))
+except Exception:
+    pass
+PY
+}
 
 session_exists() { tmux has-session -t "$SESSION" 2>/dev/null; }
 
@@ -218,31 +354,88 @@ cc_send() {
   printf '%s' "$out" | grep -q '"delivered":1'
 }
 
+# True iff every ENABLED family's pane is route-ready.
+_enabled_ready() {
+  case " $ENABLED " in *" cc "*) cc_ready || return 1 ;; esac
+  case " $ENABLED " in *" cod "*) local cs; cs="$(codex_state || true)"; { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } || return 1 ;; esac
+  case " $ENABLED " in *" agy "*) agy_ready || return 1 ;; esac
+  return 0
+}
+
+# Per-enabled-family readiness summary for the timeout diagnostic.
+_ready_debug() {
+  local out=""
+  case " $ENABLED " in *" cc "*) out="$out cc=$(cc_ready && echo yes || echo no)" ;; esac
+  case " $ENABLED " in *" cod "*) out="$out codex=$(codex_state || echo '?')" ;; esac
+  case " $ENABLED " in *" agy "*) out="$out agy=$(agy_ready && echo yes || echo no)" ;; esac
+  printf '%s' "${out# }"
+}
+
+# Human phrase for the tier achieved (printed on `up`).
+_tier_phrase() {
+  case "$TIER" in
+    multi) echo "cross-family gate" ;;
+    fresh) echo "single-family fresh-context — weaker; add codex or agy for the cross-family gate" ;;
+    *) echo "no reviewers" ;;
+  esac
+}
+
 cmd_up() {
+  # Optional pin: --dual (cc,cod) | --tri (all) | --models <csv>. Default: probe what's installed.
+  local pin=""
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --dual) pin="dual" ;;
+      --tri)  pin="tri" ;;
+      --models) shift; pin="${1:-}" ;;
+      --models=*) pin="${1#--models=}" ;;
+      *) ;;
+    esac
+    shift || true
+  done
+
+  # Resolve the enabled family set: an explicit pin (validated against what's installed) or the
+  # install probe. Fail-fast on a pin that names a CLI the host doesn't have.
+  local probe enabled f
+  probe="$(probe_families | tr '\n' ' ')"
+  if [ -n "$pin" ]; then
+    enabled="$(parse_pin "$pin")" || die "bad model pin '$pin'"
+    [ -n "$(printf '%s' "$enabled" | tr -d '[:space:]')" ] || die "pin '$pin' resolved to no families"
+    for f in $enabled; do
+      case " $probe " in *" $f "*) : ;; *) die "pinned family '$f' (CLI '$(_family_bin "$f")') is not installed — drop it from --models or install it" ;; esac
+    done
+  else
+    enabled="$probe"
+  fi
+  set -- $enabled
+  [ "$#" -ge 1 ] || die "no pawl families installed — need at least one of: claude, codex, agy"
+  _set_panes_from_enabled "$@"
+
+  # Build the atm spawn flags from the enabled set (canonical order: cc, then cod, then agy).
+  local -a spawn_flags=(--no-user)
+  case " $ENABLED " in *" cc "*) spawn_flags+=(--cc=1:opus) ;; esac
+  case " $ENABLED " in *" cod "*) spawn_flags+=(--cod=1) ;; esac
+  case " $ENABLED " in *" agy "*) spawn_flags+=(--agy=1) ;; esac
+
   if session_exists; then
     log "session $SESSION already exists — gating readiness (idempotent up)"
   else
-    log "spawning standing pawl session $SESSION (opus + codex + agy, no-user)"
-    atm spawn "$PROJECT" --label "$LABEL" --no-user --cc=1:opus --cod=1 --agy=1 \
+    log "spawning standing pawl session $SESSION (families: $ENABLED, tier=$TIER, no-user)"
+    atm spawn "$PROJECT" --label "$LABEL" "${spawn_flags[@]}" \
       --no-cass-context --ready-timeout=2m --json >/dev/null 2>&1 \
       || die "atm spawn failed"
   fi
-  # Readiness gate (boot race): all THREE panes must reach a route-ready state.
-  # agy boots slower (Gemini 3.5 Flash + the trust-gate clear), so the gate is
-  # widened to 45 ticks. agy_ready clears the trust-gate as a side effect.
-  local cs
+
+  # Readiness gate over ONLY the enabled panes (boot race). agy boots slower; keep 45 ticks.
   for _ in $(seq 1 45); do
-    cs="$(codex_state || true)"
-    if cc_ready && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } && agy_ready; then
-      mkdir -p "$ROOT/$STATE_DIR"
-      printf '{"session":"%s","cc_pane":%s,"cod_pane":%s,"agy_pane":%s,"ready":true}\n' \
-        "$SESSION" "$CC_PANE" "$COD_PANE" "$AGY_PANE" > "$ROOT/$STATE_DIR/session.json"
-      log "UP: all 3 panes route-ready (codex=$cs, agy=ready)"
+    if _enabled_ready; then
+      _write_session_json
+      log "UP: ready — families: $ENABLED, tier=$TIER ($(_tier_phrase))"
       return 0
     fi
     sleep 4
   done
-  die "readiness gate timed out (codex=$(codex_state || echo '?'), cc_ready=$(cc_ready && echo yes || echo no), agy_ready=$(agy_ready && echo yes || echo no))"
+  die "readiness gate timed out (families=$ENABLED; $(_ready_debug))"
 }
 
 cmd_down() {
@@ -255,46 +448,82 @@ cmd_down() {
   fi
 }
 
-cmd_health() {
-  local json="${1:-}"
-  local cs cc agy
-  cs="$(codex_state || echo absent)"
-  if cc_ready; then cc="ready"; else cc="not-ready"; fi
-  if agy_ready; then agy="ready"; else agy="not-ready"; fi
-  if [ "$json" = "--json" ]; then
-    printf '{"session":"%s","exists":%s,"cc_pane":{"pane":%s,"state":"%s"},"cod_pane":{"pane":%s,"state":"%s"},"agy_pane":{"pane":%s,"state":"%s"}}\n' \
-      "$SESSION" "$(session_exists && echo true || echo false)" "$CC_PANE" "$cc" "$COD_PANE" "$cs" "$AGY_PANE" "$agy"
+# Idle reaper (Bo's "idle-TTL auto-down"): tear the session down iff it has been idle longer than
+# PAWL_IDLE_TTL. No-op if no session, not-idle, or unmeasurable. AgentOps ships no in-repo daemon
+# (ADR-0009), so reaping is schedule/event-driven: a substrate (NTM/cron) calls `ao pawl reap` on
+# a cadence, and the shared lazy-auto-up re-ups the service on the next review.
+cmd_reap() {
+  session_exists || { log "REAP: no session (no-op)"; return 0; }
+  local idle; idle="$(_session_idle)"
+  if [ "$idle" -ge 0 ] && [ "$idle" -gt "$PAWL_IDLE_TTL" ]; then
+    log "REAP: session idle ${idle}s > TTL ${PAWL_IDLE_TTL}s — tearing down"
+    cmd_down
   else
-    echo "session=$SESSION exists=$(session_exists && echo yes || echo no) cc[$CC_PANE]=$cc codex[$COD_PANE]=$cs agy[$AGY_PANE]=$agy"
+    log "REAP: session active (idle=${idle}s, TTL=${PAWL_IDLE_TTL}s) — keeping warm"
   fi
-  session_exists && [ "$cc" = "ready" ] && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } && [ "$agy" = "ready" ]
+}
+
+cmd_health() {
+  load_session
+  local json="${1:-}"
+  local cc="n/a" cs="n/a" agy="n/a"
+  case " $ENABLED " in *" cc "*) cc_ready && cc="ready" || cc="not-ready" ;; esac
+  case " $ENABLED " in *" cod "*) cs="$(codex_state || echo absent)" ;; esac
+  case " $ENABLED " in *" agy "*) agy_ready && agy="ready" || agy="not-ready" ;; esac
+  if [ "$json" = "--json" ]; then
+    printf '{"session":"%s","exists":%s,"families":"%s","tier":"%s","cc_pane":{"pane":"%s","state":"%s"},"cod_pane":{"pane":"%s","state":"%s"},"agy_pane":{"pane":"%s","state":"%s"}}\n' \
+      "$SESSION" "$(session_exists && echo true || echo false)" "$ENABLED" "$TIER" "$CC_PANE" "$cc" "$COD_PANE" "$cs" "$AGY_PANE" "$agy"
+  else
+    echo "session=$SESSION exists=$(session_exists && echo yes || echo no) tier=$TIER cc[${CC_PANE:-–}]=$cc codex[${COD_PANE:-–}]=$cs agy[${AGY_PANE:-–}]=$agy"
+  fi
+  # Healthy iff the session exists AND every ENABLED family is ready.
+  session_exists || return 1
+  case " $ENABLED " in *" cc "*) [ "$cc" = "ready" ] || return 1 ;; esac
+  case " $ENABLED " in *" cod "*) { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } || return 1 ;; esac
+  case " $ENABLED " in *" agy "*) [ "$agy" = "ready" ] || return 1 ;; esac
+  return 0
 }
 
 # Parse THIS route's verdict from a pane capture. Scoped by a per-route nonce so a
 # prior route's verdict still in the scrollback can never be read as this one's
 # (the stale-scrollback bug the self-review caught). The reviewer is asked to tag
-# its verdict line `PAWL <nonce> <CONFIRMED|REFUTED>`; the nonce makes both the
-# staleness AND the echoed-instruction false-positive impossible (the prompt never
-# contains the reviewer's actual nonce+verdict pair).
+# its verdict line `PAWL <nonce> <CONFIRMED|REFUTED>`; the nonce makes the staleness
+# false-positive impossible (the prompt never contains the reviewer's actual
+# nonce+verdict pair).
+#
+# WHOLE-LINE ANCHOR (age-nomq): the nonce alone does NOT defeat a reviewer that NARRATES the
+# format with the concrete words — codex wrote "the final line must be PAWL <nonce> CONFIRMED or
+# PAWL <nonce> REFUTED. I'm keeping notes…" mid-review, and an un-anchored regex matched "PAWL
+# <nonce> REFUTED" inside that prose → a FALSE verdict. The symmetric narrated-CONFIRMED case is a
+# FAIL-OPEN. An END-anchor alone is ALSO insufficient: a sentence that ENDS at the token (e.g.
+# "so my answer is PAWL <nonce> CONFIRMED") still false-matches (the cross-family review caught
+# this). The instruction is "End your reply with ONE line exactly", so we require the WHOLE LINE
+# to be the verdict: only non-alphanumeric chrome (whitespace + an optional TUI prefix like "• "
+# or "│ ") may precede PAWL, and only whitespace may follow the verdict. Any PROSE before PAWL
+# (letters/digits) or after the token rejects the line. Strictly safer — a miss fails CLOSED (no
+# verdict → timeout → re-route), and narration can never produce a verdict in EITHER direction.
 verdict_of() {
   local pane="$1" nonce="$2"
-  # Must NEVER fail (returns empty until the verdict appears): a non-zero grep under
-  # the caller's `set -euo pipefail` would abort the whole route on the first empty
-  # poll. The `|| true` keeps the substitution status 0 while still emitting any match.
+  # Must NEVER fail (returns empty until the verdict appears): a non-zero grep under the caller's
+  # `set -euo pipefail` would abort the whole route on the first empty poll. `|| true` keeps the
+  # substitution status 0 while still emitting any match. awk prints the LAST field (the verdict),
+  # which is correct regardless of any leading TUI prefix shifting the column positions.
   { tmux capture-pane -p -t "${SESSION}.${pane}" -S -120 2>/dev/null \
-    | grep -oE "PAWL ${nonce} (CONFIRMED|REFUTED)" || true; } | tail -1 | awk '{print $3}'
+    | grep -E "^[^[:alnum:]]*PAWL ${nonce} (CONFIRMED|REFUTED)[[:space:]]*$" || true; } | tail -1 | awk '{print $NF}'
 }
 
-# Pure 3-way agreement decision over the per-pane verdicts (each "CONFIRMED", "REFUTED", or
-# ""=timeout/unavailable). Echoes "<DISPOSITION>:<detail>:<confirmed-count>":
-#   CONFIRMED:full:3       all three CONFIRMED
-#   CONFIRMED:degraded:2   2 of 3 CONFIRMED, the third unavailable (still >=2 cross-family)
-#   REFUTED:refuted:N      at least one model REFUTED (a defect ANY model catches blocks)
-#   REFUTED:insufficient:N fewer than 2 CONFIRMED (cannot form a >=2 cross-family pass) — fail-closed
-# ALL-CONFIRM + recall-biased: any REFUTE blocks; a pass needs every REPLIER to CONFIRM and
-# >=2 of them (the 3 panes are claude/gpt/gemini, so any 2 confirmers are cross-family).
-pawl_decide_agreement() {
-  local confirmed=0 refuted=0 replied=0 _v
+# Pure agreement decision over the ENABLED panes' verdicts (each "CONFIRMED", "REFUTED", or
+# ""=timeout/unavailable). <min> is the tier's minimum confirmers (2 multi, 1 fresh). Echoes
+# "<DISPOSITION>:<detail>:<confirmed-count>":
+#   CONFIRMED:full:N       every enabled pane CONFIRMED
+#   CONFIRMED:degraded:N   >=min CONFIRMED but a pane was unavailable (still meets the tier min)
+#   REFUTED:refuted:N      at least one pane REFUTED (a defect ANY model catches blocks)
+#   REFUTED:insufficient:N fewer than <min> CONFIRMED — cannot form a tier-valid pass (fail-closed)
+# ALL-CONFIRM + recall-biased: any REFUTE blocks; a pass needs every REPLIER to CONFIRM and >=min
+# of them. The enabled panes are one-per-family, so >=2 confirmers are always cross-family.
+pawl_decide() {
+  local min="$1"; shift
+  local total="$#" confirmed=0 refuted=0 replied=0 _v
   for _v in "$@"; do
     [ -n "$_v" ] && replied=$((replied + 1))
     [ "$_v" = "CONFIRMED" ] && confirmed=$((confirmed + 1))
@@ -302,49 +531,58 @@ pawl_decide_agreement() {
   done
   if [ "$refuted" -ge 1 ]; then
     echo "REFUTED:refuted:$confirmed"
-  elif [ "$confirmed" -ge 2 ] && [ "$confirmed" -eq "$replied" ]; then
-    if [ "$confirmed" -ge 3 ]; then echo "CONFIRMED:full:$confirmed"; else echo "CONFIRMED:degraded:$confirmed"; fi
+  elif [ "$replied" -ge 1 ] && [ "$confirmed" -ge "$min" ] && [ "$confirmed" -eq "$replied" ]; then
+    if [ "$confirmed" -eq "$total" ]; then echo "CONFIRMED:full:$confirmed"; else echo "CONFIRMED:degraded:$confirmed"; fi
   else
     echo "REFUTED:insufficient:$confirmed"
   fi
 }
 
+# Back-compat: the original 3-pane all-CONFIRM rule == pawl_decide with min 2.
+pawl_decide_agreement() { pawl_decide 2 "$@"; }
+
 cmd_route() {
+  load_session
   local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
   [ -f "$packet" ] || die "packet file not found: $packet"
   session_exists || die "no standing session — run 'pawl up' first"
+  [ -n "$ENABLED" ] || die "session has no enabled families — re-run 'pawl up'"
   mkdir -p "$EVID_DIR"
   local ev_cc="$EVID_DIR/${bead}-opus.txt" ev_cod="$EVID_DIR/${bead}-codex.txt" ev_agy="$EVID_DIR/${bead}-agy.txt"
   # Per-route nonce scopes verdict parsing to THIS route (kills stale-scrollback +
   # echoed-instruction false positives).
   local nonce; nonce="r$(printf '%x' "$$")$(date +%s | tail -c 6)"
-  local _route_t0; _route_t0="$(date +%s)"   # ml8.6: route latency clock
-  # Single source of truth for both panes: a per-route packet copy with the nonce-tag
+  local _route_t0; _route_t0="$(date +%s)"   # route latency clock
+  # Single source of truth for every pane: a per-route packet copy with the nonce-tag
   # appended (so the verdict line carries this route's nonce). The tag deliberately
   # avoids a bare "<nonce> CONFIRMED/REFUTED" pair, so an echo of it can't match the parser.
   local rp="$EVID_DIR/${bead}.packet.md"
   { cat "$packet"; printf '\n\n--- VERDICT FORMAT (required) ---\nEnd your reply with ONE line exactly:\n  PAWL %s <the single word CONFIRMED or REFUTED>\n' "$nonce"; } > "$rp"
 
-  log "route $bead -> all 3 panes opus+codex+agy (packet=$packet, pr=$pr, nonce=$nonce)"
-  # Both read the SAME nonce-tagged packet. Robust sends (retry + respawn), never `die` on a
-  # flaky send — a failed send is recovered, not fatal.
-  cc_send "$rp"  || log "claude pane did not engage on send — poll/reroute will recover"
-  cod_send "$rp" || log "codex pane did not engage after retries — poll/reroute will recover"
-  agy_send "$rp" || log "agy pane did not engage on send — poll/reroute will recover"
+  local minc; minc="$(min_confirm_for_tier "$TIER")"
+  log "route $bead -> [$ENABLED] tier=$TIER min=$minc (packet=$packet, pr=$pr, nonce=$nonce)"
 
-  # Poll both panes for THIS route's nonce-tagged verdict (bounded). A pane that goes
-  # DEGRADED mid-route (dead shell, usage-limit, stuck dialog) is respawned + re-routed once
-  # — otherwise it would silently time out into a false REFUTED (a fail-OPEN of the gate's
-  # intent). The reroute is the heart of S3's auto-respawn-and-reroute.
-  local waited=0 vc="" vd="" va="" cc_rr=0 cod_rr=0 agy_rr=0 cs=""
+  # Send to ONLY the enabled panes. Robust sends (retry + respawn); never `die` on a flaky send.
+  case " $ENABLED " in *" cc "*) cc_send "$rp"  || log "claude pane did not engage on send — poll/reroute will recover" ;; esac
+  case " $ENABLED " in *" cod "*) cod_send "$rp" || log "codex pane did not engage after retries — poll/reroute will recover" ;; esac
+  case " $ENABLED " in *" agy "*) agy_send "$rp" || log "agy pane did not engage on send — poll/reroute will recover" ;; esac
+
+  # A disabled family is the sentinel "n/a" (never polled, never counted). An enabled family
+  # starts "" (awaiting a verdict) and is filled by verdict_of.
+  local vc="n/a" vd="n/a" va="n/a"
+  case " $ENABLED " in *" cc "*) vc="" ;; esac
+  case " $ENABLED " in *" cod "*) vd="" ;; esac
+  case " $ENABLED " in *" agy "*) va="" ;; esac
+  local waited=0 cc_rr=0 cod_rr=0 agy_rr=0 cs=""
   while [ "$waited" -lt "$ROUTE_TIMEOUT" ]; do
     [ -z "$vc" ] && vc="$(verdict_of "$CC_PANE" "$nonce")"
     [ -z "$vd" ] && vd="$(verdict_of "$COD_PANE" "$nonce")"
     [ -z "$va" ] && va="$(verdict_of "$AGY_PANE" "$nonce")"
-    # Done when all three have replied; OR short-circuit the moment ANY pane REFUTES,
-    # since a single refute determines the all-CONFIRM verdict (no point waiting for a slow pane).
+    # Done when every enabled pane has resolved (the n/a sentinel is non-empty = resolved); OR
+    # short-circuit the moment ANY pane REFUTES (a single refute decides the all-CONFIRM verdict).
     [ -n "$vc" ] && [ -n "$vd" ] && [ -n "$va" ] && break
     { [ "$vc" = "REFUTED" ] || [ "$vd" = "REFUTED" ] || [ "$va" = "REFUTED" ]; } && break
+    # Per-family mid-route recovery — ONLY for enabled + still-awaiting panes (vd="" etc.).
     if [ -z "$vd" ] && [ "$cod_rr" -lt 1 ]; then
       cs="$(codex_state || echo unknown)"
       if cod_dead; then
@@ -373,65 +611,78 @@ cmd_route() {
     fi
     sleep 5; waited=$((waited + 5))
   done
-  tmux capture-pane -p -t "${SESSION}.${CC_PANE}" -S -60 > "$ev_cc" 2>&1 || true
-  tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -80 > "$ev_cod" 2>&1 || true
-  tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" -S -80 > "$ev_agy" 2>&1 || true
+  [ -n "$CC_PANE" ]  && tmux capture-pane -p -t "${SESSION}.${CC_PANE}"  -S -60 > "$ev_cc"  2>&1 || true
+  [ -n "$COD_PANE" ] && tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -80 > "$ev_cod" 2>&1 || true
+  [ -n "$AGY_PANE" ] && tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" -S -80 > "$ev_agy" 2>&1 || true
 
   log "opus=${vc:-<timeout>} codex=${vd:-<timeout>} agy=${va:-<timeout>}"
 
-  # --- 3-way agreement: ALL-CONFIRM, recall-biased, degrade-on-outage (age tri-model) ---
-  # Delegate the decision to the pure pawl_decide_agreement (unit-tested); derive the human
-  # reason + the confirmed count for logging/metrics from its "DISPOSITION:detail:count" reply.
+  # --- agreement over the ENABLED panes: ALL-CONFIRM, recall-biased, degrade-on-outage ---
+  # Build the verdict list from ONLY the enabled panes (drop the "n/a" sentinels), then delegate
+  # to the pure pawl_decide with the tier's min confirmers.
+  local -a verds=()
+  [ "$vc" != "n/a" ] && verds+=("$vc")
+  [ "$vd" != "n/a" ] && verds+=("$vd")
+  [ "$va" != "n/a" ] && verds+=("$va")
+  local total="${#verds[@]}"
   local _decision disposition detail confirmed degraded=""
-  _decision="$(pawl_decide_agreement "$vc" "$vd" "$va")"
+  _decision="$(pawl_decide "$minc" "${verds[@]}")"
   disposition="${_decision%%:*}"; detail="$(printf '%s' "$_decision" | cut -d: -f2)"; confirmed="${_decision##*:}"
   case "$detail" in
-    degraded)     degraded="degraded: ${confirmed}/3 cross-family models CONFIRMED (1 unavailable)" ;;
-    insufficient) degraded="insufficient reviewers: ${confirmed}/3 CONFIRMED (need >=2 cross-family)" ;;
+    degraded)     degraded="degraded: ${confirmed}/${total} families CONFIRMED (tier=$TIER min=${minc} still met)" ;;
+    insufficient) degraded="insufficient reviewers: ${confirmed}/${total} CONFIRMED (tier=$TIER needs >=${minc})" ;;
   esac
 
-  # ml8.6: one SLO datapoint per route — non-blocking + fail-safe (must NEVER affect the verdict).
+  # One SLO datapoint per route — non-blocking + fail-safe (must NEVER affect the verdict).
   { _lat=$(( $(date +%s) - _route_t0 ))
-    _agree="disagree"; [ "$confirmed" -eq 3 ] && _agree="agree"
+    _agree="disagree"; { [ "$disposition" = "CONFIRMED" ] && [ "$confirmed" -eq "$total" ]; } && _agree="agree"
     mkdir -p "$ROOT/$STATE_DIR"
-    printf '{"ts":"%s","bead":"%s","latency_s":%d,"opus":"%s","codex":"%s","agy":"%s","confirmed":%d,"disposition":"%s","agreement":"%s"}\n' \
-      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bead" "$_lat" "${vc:-timeout}" "${vd:-timeout}" "${va:-timeout}" "$confirmed" "$disposition" "$_agree" \
+    printf '{"ts":"%s","bead":"%s","tier":"%s","families":"%s","latency_s":%d,"opus":"%s","codex":"%s","agy":"%s","confirmed":%d,"total":%d,"disposition":"%s","agreement":"%s"}\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bead" "$TIER" "$ENABLED" "$_lat" "${vc:-timeout}" "${vd:-timeout}" "${va:-timeout}" "$confirmed" "$total" "$disposition" "$_agree" \
       >> "$ROOT/$STATE_DIR/metrics.jsonl"
   } 2>/dev/null || true
 
+  _touch_route_ts   # reset the idle-TTL clock: this route is real use
+
+  # mode reflects the tier achieved: multi-model (>=2 families) vs fresh-context (single family).
+  # A fresh-context verdict is recorded honestly; a high-irreversibility door (pawl-verdict.sh /
+  # the push gate) decides whether that tier is sufficient.
+  local mode="multi-model"; [ "$TIER" = "fresh" ] && mode="fresh-context"
   local head; head="$(git rev-parse HEAD)"
   if [ "$disposition" = "CONFIRMED" ]; then
-    # Record ONLY the CONFIRMED cross-family refuters (>=2 families always); a degraded
-    # (unavailable) pane is omitted, not recorded as a false CONFIRM.
+    # Record ONLY the CONFIRMED enabled refuters; an unavailable/disabled pane is omitted, never
+    # recorded as a false CONFIRM.
     local -a rf=()
     [ "$vc" = "CONFIRMED" ] && rf+=(--refuter "claude:CONFIRMED:opus-pawl-pane-fresh:${ev_cc}")
     [ "$vd" = "CONFIRMED" ] && rf+=(--refuter "gpt:CONFIRMED:codex-pawl-pane-gpt55:${ev_cod}")
     [ "$va" = "CONFIRMED" ] && rf+=(--refuter "gemini:CONFIRMED:agy-pawl-pane-flash35:${ev_agy}")
     bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
       --disposition CONFIRMED --head "$head" \
-      --author-context "pawl-route-author-${bead}" --mode multi-model \
+      --author-context "pawl-route-author-${bead}" --mode "$mode" \
       "${rf[@]}" >&2
-    log "ROUTE $bead: CONFIRMED (${confirmed}/3 cross-family agree${degraded:+; $degraded}) — verdict recorded for head $head"
+    log "ROUTE $bead: CONFIRMED (${confirmed}/${total} agree, tier=$TIER${degraded:+; $degraded}) — verdict recorded for head $head"
     echo "CONFIRMED"
     return 0
   fi
   # Fail-closed REFUTED/HOLD: STILL record the verdict (age-uxva — the membrane catch we MOST
-  # want logged; the chokepoint emit lives in pawl-verdict.sh write). All 3 panes' actual
-  # results are recorded (a timeout maps to the REFUTED token).
+  # want logged; the chokepoint emit lives in pawl-verdict.sh write). Record ONLY the enabled
+  # panes' actual results (a timeout maps to the REFUTED token).
+  local -a rf=()
+  [ "$vc" != "n/a" ] && rf+=(--refuter "claude:${vc:-REFUTED}:opus-pawl-pane-fresh:${ev_cc}")
+  [ "$vd" != "n/a" ] && rf+=(--refuter "gpt:${vd:-REFUTED}:codex-pawl-pane-gpt55:${ev_cod}")
+  [ "$va" != "n/a" ] && rf+=(--refuter "gemini:${va:-REFUTED}:agy-pawl-pane-flash35:${ev_agy}")
   bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
     --disposition REFUTED --head "$head" \
-    --author-context "pawl-route-author-${bead}" --mode multi-model \
-    --refuter "claude:${vc:-REFUTED}:opus-pawl-pane-fresh:${ev_cc}" \
-    --refuter "gpt:${vd:-REFUTED}:codex-pawl-pane-gpt55:${ev_cod}" \
-    --refuter "gemini:${va:-REFUTED}:agy-pawl-pane-flash35:${ev_agy}" \
-    --reason "standing-pawl route: ${degraded:-no agreement} (opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout})" >&2 || true
-  log "ROUTE $bead: REFUTED/HOLD — opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout} (${degraded:-no agreement}; evidence in $EVID_DIR)"
+    --author-context "pawl-route-author-${bead}" --mode "$mode" \
+    "${rf[@]}" \
+    --reason "standing-pawl route: ${degraded:-no agreement} (tier=$TIER; opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout})" >&2 || true
+  log "ROUTE $bead: REFUTED/HOLD — tier=$TIER ${degraded:-no agreement} (evidence in $EVID_DIR)"
   echo "REFUTED"
   return 1
 }
 
-# ml8.6: SLO surface over the recorded routes — p50/p95 round-trip latency + agreement rate
-# (both-CONFIRMED vs disagreement). Reads the append-only metrics.jsonl cmd_route writes.
+# SLO surface over the recorded routes — p50/p95 round-trip latency + agreement rate (all-enabled
+# CONFIRMED vs disagreement). Reads the append-only metrics.jsonl cmd_route writes.
 cmd_metrics() {
   local mf="$ROOT/$STATE_DIR/metrics.jsonl" json=0
   [ "${1:-}" = "--json" ] && json=1
@@ -469,28 +720,38 @@ PY
 }
 
 # Dispatch only when EXECUTED, not when SOURCED — so tests can source this file to exercise
-# the pure helpers (cod_dead, verdict_of, …) without running a command.
+# the pure helpers (probe_families, pawl_decide, …) without running a command.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
 
 case "${1:-}" in
   up)     shift; cmd_up "$@" ;;
   down)   shift; cmd_down "$@" ;;
+  reap)   shift; cmd_reap "$@" ;;
   health) shift; cmd_health "$@" ;;
   route)  shift; cmd_route "$@" ;;
   metrics) shift; cmd_metrics "$@" ;;
   *) cat >&2 <<'H'
-Usage: pawl.sh <up|down|health|route|metrics>
-  up                          spawn + readiness-gate the standing pawl session (idempotent)
-  down                        tear down the standing session
-  health [--json]             per-pane liveness/readiness
-  route <bead> <packet> [pr]  route a review packet to opus+codex, require agreement, record verdict
-  metrics [--json]            SLO surface over recorded routes: p50/p95 latency + agreement rate
+Usage: pawl.sh <up|down|reap|health|route|metrics>
+  up [--dual|--tri|--models a,b,c]  spawn + readiness-gate the standing pawl session (idempotent).
+                                    Default: probe installed CLIs (claude/codex/agy) and stand up
+                                    the STRONGEST membrane possible. --dual=cc,cod; --tri=all;
+                                    --models is an explicit family list (cc/cod/agy or aliases).
+  down                              tear down the standing session
+  reap                              tear down iff idle > PAWL_IDLE_TTL (substrate/cron schedules it)
+  health [--json]                   per-pane liveness/readiness + the membrane tier
+  route <bead> <packet> [pr]        route to the enabled panes, require tier-appropriate agreement,
+                                    record the verdict (mode=multi-model for >=2 families, else fresh-context)
+  metrics [--json]                  SLO surface over recorded routes: p50/p95 latency + agreement rate
 
-route is self-healing (S3): sends retry with engagement verification (never aborts on a
-flaky codex send); a pane that goes degraded mid-route (dead shell, usage-limit, stuck
-dialog) is respawned and re-routed once, so it cannot silently time out into a false
-REFUTED. On a usage-limit set PAWL_AUTO_ROTATE=1 to rotate the account (caam / claude-acct)
-before respawn. Tunables: PAWL_ROUTE_TIMEOUT (default 320s), PAWL_AUTO_ROTATE.
+The membrane is capability-adaptive: a host with only Claude gets a single fresh-context refuter
+(tier=fresh, valid for normal doors); >=2 families give the cross-family gate (tier=multi). A
+high-irreversibility door (push-to-main) still demands multi-model and refuses a fresh-context verdict.
+
+route is self-healing (S3): sends retry with engagement verification (never aborts on a flaky
+codex send); a pane that goes degraded mid-route (dead shell, usage-limit, stuck dialog) is
+respawned and re-routed once, so it cannot silently time out into a false REFUTED. On a
+usage-limit set PAWL_AUTO_ROTATE=1 to rotate the account (caam / claude-acct) before respawn.
+Tunables: PAWL_ROUTE_TIMEOUT (default 320s), PAWL_IDLE_TTL (default 1800s), PAWL_AUTO_ROTATE.
 H
     exit 2 ;;
 esac

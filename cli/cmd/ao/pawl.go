@@ -53,10 +53,11 @@ func init() {
 	pawlCmd.AddCommand(pawlReviewCmd)
 	// ml8: surface the standing pawl-service (scripts/pawl.sh) on the ao CLI so the bead
 	// intent ("ao pawl up/route/metrics") is the real command, not "bash scripts/pawl.sh".
-	pawlCmd.AddCommand(pawlServiceCmd("up", "up", "Stand up the standing pawl-service (opus+codex), readiness-gated (idempotent)"))
+	pawlCmd.AddCommand(pawlServiceCmd("up", "up [--dual|--tri|--models a,b,c]", "Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent"))
 	pawlCmd.AddCommand(pawlServiceCmd("down", "down", "Tear down the standing pawl-service (no orphan panes)"))
-	pawlCmd.AddCommand(pawlServiceCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service"))
-	pawlCmd.AddCommand(pawlServiceCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm opus+codex duel; require agreement, record the verdict"))
+	pawlCmd.AddCommand(pawlServiceCmd("reap", "reap", "Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)"))
+	pawlCmd.AddCommand(pawlServiceCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service + the membrane tier"))
+	pawlCmd.AddCommand(pawlServiceCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict"))
 	pawlCmd.AddCommand(pawlServiceCmd("metrics", "metrics [--json]", "p50/p95 route latency + agreement-rate SLOs over the recorded routes"))
 }
 
