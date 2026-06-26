@@ -9,16 +9,17 @@
 # be committed alongside the SKILL.md edit.
 #
 # Behaviour:
-#   - Exit 0 if regenerating yields no diff against the committed context-map.
+#   - Exit 0 if regenerating yields the same bytes as the current committed
+#     context-map.
 #   - Exit 1 if drift is detected, with a helpful "how to fix" message on stderr.
 #
-# Safety: the script never leaves the working tree dirty. The committed
+# Safety: the script never leaves the working tree dirty. The current
 # context-map.md is backed up to a temp file and restored on exit (trap),
 # whether the script exits cleanly or via error.
 set -euo pipefail
 
-CONTEXT_MAP="docs/contracts/context-map.md"
-GENERATOR="scripts/generate-context-map.sh"
+CONTEXT_MAP="${CONTEXT_MAP:-docs/contracts/context-map.md}"
+GENERATOR="${GENERATOR:-scripts/generate-context-map.sh}"
 
 if [[ ! -f "$CONTEXT_MAP" ]]; then
     echo "validate-context-map-drift: missing $CONTEXT_MAP" >&2
@@ -33,6 +34,7 @@ fi
 TMP_BACKUP="$(mktemp -t context-map-backup.XXXXXX.md)"
 cp -f "$CONTEXT_MAP" "$TMP_BACKUP"
 
+# shellcheck disable=SC2329 # invoked indirectly via trap
 cleanup() {
     # Always restore the original committed context-map so partial failures
     # (or a real drift detection) never leave the working tree dirty.
@@ -45,8 +47,18 @@ trap cleanup EXIT
 
 bash "$GENERATOR" >/dev/null
 
-if git diff --exit-code -- "$CONTEXT_MAP" >/dev/null 2>&1; then
-    # No drift. Cleanup runs via trap.
+if cmp -s "$CONTEXT_MAP" "$TMP_BACKUP"; then
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+        && git ls-files --error-unmatch -- "$CONTEXT_MAP" >/dev/null 2>&1; then
+        if ! git diff --quiet -- "$CONTEXT_MAP" \
+            || ! git diff --cached --quiet -- "$CONTEXT_MAP"; then
+            cat >&2 <<'EOF'
+Context map matches the generator but has uncommitted changes.
+Commit the regenerated docs/contracts/context-map.md, then rerun this gate.
+EOF
+            exit 1
+        fi
+    fi
     exit 0
 fi
 

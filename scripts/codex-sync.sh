@@ -285,6 +285,30 @@ ao codex ensure-start 2>/dev/null || true
 The CLI records startup once per thread and skips duplicates automatically."""
 
 
+def codex_catalog_description(name: str, source_description: str) -> str:
+    """Terse but skill-specific always-loaded Codex catalog text.
+
+    The full source description remains available in prompt.md; SKILL.md
+    frontmatter is loaded as an activation catalog, so keep enough routing
+    signal to choose the skill while staying under the average token budget.
+    """
+    import re
+
+    desc = re.sub(r"\s+[Tt]riggers?:.*", "", source_description).strip()
+    desc = re.sub(r"\s+", " ", desc).strip(" '\"")
+    if not desc:
+        return f"Run {name}."
+
+    max_chars = 44
+    if len(desc) <= max_chars:
+        return desc
+
+    shortened = desc[: max_chars + 1].rsplit(" ", 1)[0].strip(" ,;:-")
+    if len(shortened) < 18:
+        shortened = desc[:max_chars].rstrip(" ,;:-")
+    return shortened
+
+
 def twin_skill_md(
     name: str,
     description: str,
@@ -293,10 +317,10 @@ def twin_skill_md(
     exempt: bool = False,
     operator_contract: dict | None = None,
 ) -> bytes:
-    """A self-contained Codex twin: slim (name+description) frontmatter + the
-    source body transformed runtime-native. Self-contained because the Codex
-    runtime ships skills-codex/ ONLY (never skills/ source) — a twin must carry
-    its own body + references (AGENTS-CODEX.md)."""
+    """A self-contained Codex twin: slim (name + terse catalog description)
+    frontmatter + the source body transformed runtime-native. Self-contained
+    because the Codex runtime ships skills-codex/ ONLY (never skills/ source) —
+    a twin must carry its own body + references (AGENTS-CODEX.md)."""
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
     body = transform_body(source_body, known_skills, exempt)
@@ -415,18 +439,19 @@ for name in source_skills:
     operator_contract = catalog_source_entry.get("operator_contract")
 
     fm = parse_frontmatter(source_root / name / "SKILL.md")
-    description = str(fm.get("description", "")).strip()
+    source_description = str(fm.get("description", "")).strip()
+    codex_description = codex_catalog_description(name, source_description)
     source_body = split_frontmatter(source_root / name / "SKILL.md")
 
     desired_skill = twin_skill_md(
         name,
-        description,
+        codex_description,
         source_body,
         known_skills,
         name in cross_runtime,
         operator_contract,
     )
-    desired_prompt = twin_prompt_md(name, description, operator_contract)
+    desired_prompt = twin_prompt_md(name, source_description, operator_contract)
 
     # A twin is "complete" iff its body files + marker exist AND it is registered
     # in the gate-enforced 1:1 surface (skills-codex-overrides/catalog.json — the

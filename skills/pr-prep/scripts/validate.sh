@@ -59,8 +59,9 @@ echo ""
 # Verify git is available
 check "git binary exists" "which git" "git"
 
-# Verify dependent skill exists
-check_exists "Beads skill exists" "$SKILL_DIR/../beads/SKILL.md"
+# Verify current tracker skill surfaces exist (`beads` was retired).
+check_exists "beads-br skill exists" "$SKILL_DIR/../beads-br/SKILL.md"
+check_exists "beads-workflow skill exists" "$SKILL_DIR/../beads-workflow/SKILL.md"
 
 # Verify pr-prep workflow patterns in SKILL.md
 check_pattern "SKILL.md has git archaeology" "$SKILL_DIR/SKILL.md" "git|[Aa]rchaeology"

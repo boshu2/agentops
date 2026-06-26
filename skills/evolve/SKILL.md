@@ -44,8 +44,6 @@ output_contract: code changes, GOALS.md fitness deltas
 ---
 # /evolve — Goal-Driven Compounding Loop
 
-> **Cross-vendor analog:** Anthropic Managed Agents Outcomes (May 2026). Both close the loop "agent runs → grader scores → agent retries"; AgentOps does it locally against any model.
-
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.
 
 > **Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (full council, `/validate --mixed`, `/pre-land-refuters`) fires at that cycle's **bead-acceptance / merge-to-main pawl** — once per bead, not per slice or wave. The per-cycle regression gate (Step 5) and lightweight in-cycle checks are **chaos**: cheap, run freely, wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe" — that re-creates the waterfall the ratchet exists to avoid (`--mixed` is reserved for strategic decisions; see `references/postmortem-checkpoint.md`). The bead is fully validated at its acceptance pawl — that is the ratchet's lock.

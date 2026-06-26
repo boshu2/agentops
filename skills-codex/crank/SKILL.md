@@ -1,6 +1,6 @@
 ---
 name: crank
-description: "Run crank."
+description: "Execute implementation waves."
 ---
 # $crank - Autonomous Epic Execution (Codex Native)
 

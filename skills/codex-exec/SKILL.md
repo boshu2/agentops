@@ -169,20 +169,6 @@ A loop should branch on the process exit code, not on scraped text.
 - [ ] Long/multi-turn work uses `resume` (not `--ephemeral`) so it can be recovered
 - [ ] Multi-account lanes dispatched via `caam exec codex <profile> --`
 
-## Examples
-
-```bash
-# Factory validator lane (read-only, schema-constrained verdict)
-codex exec -C "$REPO" -s read-only \
-  --output-schema /tmp/verdict.schema.json \
-  -o /tmp/verdict.json \
-  "Validate bead $BEAD independently. Emit {verdict, reasons}."
-
-# caam-isolated Pro lane, then continue it
-caam exec codex pro-2 -- exec -C "$REPO" -s workspace-write "Start ag-77."
-cd "$REPO" && codex exec resume --last "Fix the failing test from the prior turn."
-```
-
 ## Validator dispatch rules (learned 2026-06-10, cp-4jac/cp-801l; extended cp-hhd7 cards 6–10)
 
 - **Network-touching validators need `-s danger-full-access`.** A codex VALIDATOR that must read a Dolt-mode bd ledger, run `git fetch`, or reach any network MUST be dispatched with `-s danger-full-access`. `-s workspace-write` blocks network (`connect: operation not permitted`) and blocks FETCH_HEAD writes. A fail-closed FAIL caused purely by sandbox denial is an **infrastructure artifact, not a verdict**: fix the dispatch and re-run the judge. NEVER hand-verify the missing item yourself and upgrade the verdict — that breaks judge independence (author ≠ judge).
