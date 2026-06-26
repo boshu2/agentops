@@ -19,7 +19,9 @@
 #  - gate readiness before the first route (boot race): spawn returns before panes boot.
 #  - codex 'codex exec --model gpt-5.3-codex' is rejected on a ChatGPT account; the
 #    interactive ATM codex pane resolves gpt-5.5 and works.
-#  - agreement is fail-closed: BOTH panes must CONFIRM; any REFUTED/timeout -> REFUTED.
+#  - agreement is fail-closed & ALL-CONFIRM across 3 cross-family panes (opus/codex/agy):
+#    any REFUTED -> REFUTED; pass needs every replier to CONFIRM and >=2 of them; a single
+#    model unavailable after retries degrades to the remaining >=2 cross-family (never <2).
 set -euo pipefail
 
 SESSION="${PAWL_SESSION:-agentops--pawl-service}"
@@ -27,6 +29,7 @@ LABEL="${PAWL_LABEL:-pawl-service}"
 PROJECT="${PAWL_PROJECT:-agentops}"
 CC_PANE="${PAWL_CC_PANE:-1}"     # claude/opus pane (fresh-context refuter)
 COD_PANE="${PAWL_COD_PANE:-2}"   # codex pane (cross-family refuter)
+AGY_PANE="${PAWL_AGY_PANE:-3}"   # AGY/Antigravity pane (3rd cross-family refuter, Gemini 3.5 Flash)
 EVID_DIR="${PAWL_EVID_DIR:-/tmp/pawl-evidence}"
 STATE_DIR="${PAWL_STATE_DIR:-.agents/pawl}"
 ROUTE_TIMEOUT="${PAWL_ROUTE_TIMEOUT:-320}"   # seconds to wait per pane for a VERDICT
@@ -103,6 +106,8 @@ respawn_pane() {
   for _ in $(seq 1 20); do
     if [ "$kind" = "cod" ]; then
       case "$(codex_state || true)" in codex-live|goal-completed) return 0 ;; esac
+    elif [ "$kind" = "agy" ]; then
+      agy_ready && return 0
     else
       cc_ready && return 0
     fi
@@ -143,6 +148,65 @@ cod_send() {
   return 1
 }
 
+# --- AGY / Antigravity (Gemini 3.5 Flash) pane: 3rd cross-family refuter ---
+
+# agy pane is DEAD iff its FOREGROUND PROCESS is a shell (mirrors cod_dead's
+# deterministic pane_current_command check — immune to scrollback contents). A
+# live agy pane runs the `agy` binary as the foreground command.
+agy_dead() {
+  local cmd
+  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  case "$cmd" in
+    zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # shell => DEAD
+    *) return 1 ;;  # agy binary (or empty/unknown read) => treat as alive (conservative)
+  esac
+}
+
+# agy shows a "trust this folder" gate on first launch in an untrusted dir, and
+# --dangerously-skip-permissions does NOT skip it (it skips tool perms, not the
+# folder-trust gate). Accept it (Enter selects the default "Yes, I trust this
+# folder") so the pane reaches its ready input state. Idempotent: only sends a
+# key when the gate is actually showing, so it can't perturb a ready pane.
+agy_clear_trust_gate() {
+  if tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null \
+       | grep -qiE "trust this folder|trust this directory|requires permission to read"; then
+    tmux send-keys -t "${SESSION}.${AGY_PANE}" Enter 2>/dev/null || true
+    sleep 2
+    return 0
+  fi
+  return 1
+}
+
+# agy pane is READY when the agy binary is POSITIVELY the foreground process AND it is not
+# sitting on the trust gate. Fail-CLOSED on every uncertainty so a missing/unreadable pane, a
+# shell, or any other program is NEVER reported ready — otherwise health/up would green-light a
+# two-pane or wrong-program session as tri-model and route packets to the wrong place.
+agy_ready() {
+  local cmd pane_txt
+  # Positive foreground check: require exactly the agy binary. A display-message failure
+  # (pane absent/unreadable) returns non-zero -> NOT ready. (agy_dead's "unknown => alive"
+  # bias is right for respawn decisions but wrong for a readiness gate, so check directly.)
+  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  [ "$cmd" = "agy" ] || return 1
+  agy_clear_trust_gate || true
+  # Require a SUCCESSFUL capture that does not show the trust gate; a capture failure -> NOT
+  # ready (the prior `! ... | grep` returned ready when capture-pane itself failed — fail-open).
+  pane_txt="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null)" || return 1
+  ! printf '%s\n' "$pane_txt" | grep -qiE "trust this folder|trust this directory|requires permission to read"
+}
+
+# Robust agy send: deliver the packet file; if not delivered or the pane is dead,
+# respawn + retry (mirrors cc_send). agy reads the file and emits the verdict line.
+agy_send() {
+  local rp="$1" out
+  out="$(atm send "$SESSION" --pane="$AGY_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+  printf '%s' "$out" | grep -q '"delivered":1' && return 0
+  log "agy send not delivered — respawning + retry"
+  respawn_pane "$AGY_PANE" agy || true
+  out="$(atm send "$SESSION" --pane="$AGY_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+  printf '%s' "$out" | grep -q '"delivered":1'
+}
+
 # Robust claude send: deliver the file; if not delivered or the pane is dead, respawn + retry.
 cc_send() {
   local rp="$1" out
@@ -158,25 +222,27 @@ cmd_up() {
   if session_exists; then
     log "session $SESSION already exists — gating readiness (idempotent up)"
   else
-    log "spawning standing pawl session $SESSION (opus + codex, no-user)"
-    atm spawn "$PROJECT" --label "$LABEL" --no-user --cc=1:opus --cod=1 \
+    log "spawning standing pawl session $SESSION (opus + codex + agy, no-user)"
+    atm spawn "$PROJECT" --label "$LABEL" --no-user --cc=1:opus --cod=1 --agy=1 \
       --no-cass-context --ready-timeout=2m --json >/dev/null 2>&1 \
       || die "atm spawn failed"
   fi
-  # Readiness gate (boot race): both panes must reach a route-ready state.
+  # Readiness gate (boot race): all THREE panes must reach a route-ready state.
+  # agy boots slower (Gemini 3.5 Flash + the trust-gate clear), so the gate is
+  # widened to 45 ticks. agy_ready clears the trust-gate as a side effect.
   local cs
-  for _ in $(seq 1 30); do
+  for _ in $(seq 1 45); do
     cs="$(codex_state || true)"
-    if cc_ready && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; }; then
+    if cc_ready && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } && agy_ready; then
       mkdir -p "$ROOT/$STATE_DIR"
-      printf '{"session":"%s","cc_pane":%s,"cod_pane":%s,"ready":true}\n' \
-        "$SESSION" "$CC_PANE" "$COD_PANE" > "$ROOT/$STATE_DIR/session.json"
-      log "UP: both panes route-ready (codex=$cs)"
+      printf '{"session":"%s","cc_pane":%s,"cod_pane":%s,"agy_pane":%s,"ready":true}\n' \
+        "$SESSION" "$CC_PANE" "$COD_PANE" "$AGY_PANE" > "$ROOT/$STATE_DIR/session.json"
+      log "UP: all 3 panes route-ready (codex=$cs, agy=ready)"
       return 0
     fi
     sleep 4
   done
-  die "readiness gate timed out (codex=$(codex_state || echo '?'), cc_ready=$(cc_ready && echo yes || echo no))"
+  die "readiness gate timed out (codex=$(codex_state || echo '?'), cc_ready=$(cc_ready && echo yes || echo no), agy_ready=$(agy_ready && echo yes || echo no))"
 }
 
 cmd_down() {
@@ -191,16 +257,17 @@ cmd_down() {
 
 cmd_health() {
   local json="${1:-}"
-  local cs cc
+  local cs cc agy
   cs="$(codex_state || echo absent)"
   if cc_ready; then cc="ready"; else cc="not-ready"; fi
+  if agy_ready; then agy="ready"; else agy="not-ready"; fi
   if [ "$json" = "--json" ]; then
-    printf '{"session":"%s","exists":%s,"cc_pane":{"pane":%s,"state":"%s"},"cod_pane":{"pane":%s,"state":"%s"}}\n' \
-      "$SESSION" "$(session_exists && echo true || echo false)" "$CC_PANE" "$cc" "$COD_PANE" "$cs"
+    printf '{"session":"%s","exists":%s,"cc_pane":{"pane":%s,"state":"%s"},"cod_pane":{"pane":%s,"state":"%s"},"agy_pane":{"pane":%s,"state":"%s"}}\n' \
+      "$SESSION" "$(session_exists && echo true || echo false)" "$CC_PANE" "$cc" "$COD_PANE" "$cs" "$AGY_PANE" "$agy"
   else
-    echo "session=$SESSION exists=$(session_exists && echo yes || echo no) cc[$CC_PANE]=$cc codex[$COD_PANE]=$cs"
+    echo "session=$SESSION exists=$(session_exists && echo yes || echo no) cc[$CC_PANE]=$cc codex[$COD_PANE]=$cs agy[$AGY_PANE]=$agy"
   fi
-  session_exists && [ "$cc" = "ready" ] && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; }
+  session_exists && [ "$cc" = "ready" ] && { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } && [ "$agy" = "ready" ]
 }
 
 # Parse THIS route's verdict from a pane capture. Scoped by a per-route nonce so a
@@ -218,12 +285,36 @@ verdict_of() {
     | grep -oE "PAWL ${nonce} (CONFIRMED|REFUTED)" || true; } | tail -1 | awk '{print $3}'
 }
 
+# Pure 3-way agreement decision over the per-pane verdicts (each "CONFIRMED", "REFUTED", or
+# ""=timeout/unavailable). Echoes "<DISPOSITION>:<detail>:<confirmed-count>":
+#   CONFIRMED:full:3       all three CONFIRMED
+#   CONFIRMED:degraded:2   2 of 3 CONFIRMED, the third unavailable (still >=2 cross-family)
+#   REFUTED:refuted:N      at least one model REFUTED (a defect ANY model catches blocks)
+#   REFUTED:insufficient:N fewer than 2 CONFIRMED (cannot form a >=2 cross-family pass) — fail-closed
+# ALL-CONFIRM + recall-biased: any REFUTE blocks; a pass needs every REPLIER to CONFIRM and
+# >=2 of them (the 3 panes are claude/gpt/gemini, so any 2 confirmers are cross-family).
+pawl_decide_agreement() {
+  local confirmed=0 refuted=0 replied=0 _v
+  for _v in "$@"; do
+    [ -n "$_v" ] && replied=$((replied + 1))
+    [ "$_v" = "CONFIRMED" ] && confirmed=$((confirmed + 1))
+    [ "$_v" = "REFUTED" ] && refuted=$((refuted + 1))
+  done
+  if [ "$refuted" -ge 1 ]; then
+    echo "REFUTED:refuted:$confirmed"
+  elif [ "$confirmed" -ge 2 ] && [ "$confirmed" -eq "$replied" ]; then
+    if [ "$confirmed" -ge 3 ]; then echo "CONFIRMED:full:$confirmed"; else echo "CONFIRMED:degraded:$confirmed"; fi
+  else
+    echo "REFUTED:insufficient:$confirmed"
+  fi
+}
+
 cmd_route() {
   local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
   [ -f "$packet" ] || die "packet file not found: $packet"
   session_exists || die "no standing session — run 'pawl up' first"
   mkdir -p "$EVID_DIR"
-  local ev_cc="$EVID_DIR/${bead}-opus.txt" ev_cod="$EVID_DIR/${bead}-codex.txt"
+  local ev_cc="$EVID_DIR/${bead}-opus.txt" ev_cod="$EVID_DIR/${bead}-codex.txt" ev_agy="$EVID_DIR/${bead}-agy.txt"
   # Per-route nonce scopes verdict parsing to THIS route (kills stale-scrollback +
   # echoed-instruction false positives).
   local nonce; nonce="r$(printf '%x' "$$")$(date +%s | tail -c 6)"
@@ -234,21 +325,26 @@ cmd_route() {
   local rp="$EVID_DIR/${bead}.packet.md"
   { cat "$packet"; printf '\n\n--- VERDICT FORMAT (required) ---\nEnd your reply with ONE line exactly:\n  PAWL %s <the single word CONFIRMED or REFUTED>\n' "$nonce"; } > "$rp"
 
-  log "route $bead -> both panes (packet=$packet, pr=$pr, nonce=$nonce)"
+  log "route $bead -> all 3 panes opus+codex+agy (packet=$packet, pr=$pr, nonce=$nonce)"
   # Both read the SAME nonce-tagged packet. Robust sends (retry + respawn), never `die` on a
   # flaky send — a failed send is recovered, not fatal.
   cc_send "$rp"  || log "claude pane did not engage on send — poll/reroute will recover"
   cod_send "$rp" || log "codex pane did not engage after retries — poll/reroute will recover"
+  agy_send "$rp" || log "agy pane did not engage on send — poll/reroute will recover"
 
   # Poll both panes for THIS route's nonce-tagged verdict (bounded). A pane that goes
   # DEGRADED mid-route (dead shell, usage-limit, stuck dialog) is respawned + re-routed once
   # — otherwise it would silently time out into a false REFUTED (a fail-OPEN of the gate's
   # intent). The reroute is the heart of S3's auto-respawn-and-reroute.
-  local waited=0 vc="" vd="" cc_rr=0 cod_rr=0 cs=""
+  local waited=0 vc="" vd="" va="" cc_rr=0 cod_rr=0 agy_rr=0 cs=""
   while [ "$waited" -lt "$ROUTE_TIMEOUT" ]; do
     [ -z "$vc" ] && vc="$(verdict_of "$CC_PANE" "$nonce")"
     [ -z "$vd" ] && vd="$(verdict_of "$COD_PANE" "$nonce")"
-    [ -n "$vc" ] && [ -n "$vd" ] && break
+    [ -z "$va" ] && va="$(verdict_of "$AGY_PANE" "$nonce")"
+    # Done when all three have replied; OR short-circuit the moment ANY pane REFUTES,
+    # since a single refute determines the all-CONFIRM verdict (no point waiting for a slow pane).
+    [ -n "$vc" ] && [ -n "$vd" ] && [ -n "$va" ] && break
+    { [ "$vc" = "REFUTED" ] || [ "$vd" = "REFUTED" ] || [ "$va" = "REFUTED" ]; } && break
     if [ -z "$vd" ] && [ "$cod_rr" -lt 1 ]; then
       cs="$(codex_state || echo unknown)"
       if cod_dead; then
@@ -271,47 +367,65 @@ cmd_route() {
       log "claude degraded mid-route (dropped to shell) — respawn + reroute"
       respawn_pane "$CC_PANE" cc || true; cc_send "$rp" || true; cc_rr=1
     fi
+    if [ -z "$va" ] && [ "$agy_rr" -lt 1 ] && agy_dead; then
+      log "agy degraded mid-route (dropped to shell) — respawn + reroute"
+      respawn_pane "$AGY_PANE" agy || true; agy_send "$rp" || true; agy_rr=1
+    fi
     sleep 5; waited=$((waited + 5))
   done
   tmux capture-pane -p -t "${SESSION}.${CC_PANE}" -S -60 > "$ev_cc" 2>&1 || true
   tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -80 > "$ev_cod" 2>&1 || true
+  tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" -S -80 > "$ev_agy" 2>&1 || true
 
-  log "opus=${vc:-<timeout>} codex=${vd:-<timeout>}"
-  # ml8.6: record one SLO datapoint per route (latency + agreement) for `pawl metrics`.
-  # Non-blocking + fail-safe — metrics must NEVER affect the verdict (the `|| true`).
+  log "opus=${vc:-<timeout>} codex=${vd:-<timeout>} agy=${va:-<timeout>}"
+
+  # --- 3-way agreement: ALL-CONFIRM, recall-biased, degrade-on-outage (age tri-model) ---
+  # Delegate the decision to the pure pawl_decide_agreement (unit-tested); derive the human
+  # reason + the confirmed count for logging/metrics from its "DISPOSITION:detail:count" reply.
+  local _decision disposition detail confirmed degraded=""
+  _decision="$(pawl_decide_agreement "$vc" "$vd" "$va")"
+  disposition="${_decision%%:*}"; detail="$(printf '%s' "$_decision" | cut -d: -f2)"; confirmed="${_decision##*:}"
+  case "$detail" in
+    degraded)     degraded="degraded: ${confirmed}/3 cross-family models CONFIRMED (1 unavailable)" ;;
+    insufficient) degraded="insufficient reviewers: ${confirmed}/3 CONFIRMED (need >=2 cross-family)" ;;
+  esac
+
+  # ml8.6: one SLO datapoint per route — non-blocking + fail-safe (must NEVER affect the verdict).
   { _lat=$(( $(date +%s) - _route_t0 ))
-    _mdisp="REFUTED"; [ "$vc" = "CONFIRMED" ] && [ "$vd" = "CONFIRMED" ] && _mdisp="CONFIRMED"
-    _magree="disagree"; [ -n "$vc" ] && [ "$vc" = "$vd" ] && _magree="agree"
+    _agree="disagree"; [ "$confirmed" -eq 3 ] && _agree="agree"
     mkdir -p "$ROOT/$STATE_DIR"
-    printf '{"ts":"%s","bead":"%s","latency_s":%d,"opus":"%s","codex":"%s","disposition":"%s","agreement":"%s"}\n' \
-      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bead" "$_lat" "${vc:-timeout}" "${vd:-timeout}" "$_mdisp" "$_magree" \
+    printf '{"ts":"%s","bead":"%s","latency_s":%d,"opus":"%s","codex":"%s","agy":"%s","confirmed":%d,"disposition":"%s","agreement":"%s"}\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$bead" "$_lat" "${vc:-timeout}" "${vd:-timeout}" "${va:-timeout}" "$confirmed" "$disposition" "$_agree" \
       >> "$ROOT/$STATE_DIR/metrics.jsonl"
   } 2>/dev/null || true
-  if [ "$vc" = "CONFIRMED" ] && [ "$vd" = "CONFIRMED" ]; then
-    local head; head="$(git rev-parse HEAD)"
+
+  local head; head="$(git rev-parse HEAD)"
+  if [ "$disposition" = "CONFIRMED" ]; then
+    # Record ONLY the CONFIRMED cross-family refuters (>=2 families always); a degraded
+    # (unavailable) pane is omitted, not recorded as a false CONFIRM.
+    local -a rf=()
+    [ "$vc" = "CONFIRMED" ] && rf+=(--refuter "claude:CONFIRMED:opus-pawl-pane-fresh:${ev_cc}")
+    [ "$vd" = "CONFIRMED" ] && rf+=(--refuter "gpt:CONFIRMED:codex-pawl-pane-gpt55:${ev_cod}")
+    [ "$va" = "CONFIRMED" ] && rf+=(--refuter "gemini:CONFIRMED:agy-pawl-pane-flash35:${ev_agy}")
     bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
       --disposition CONFIRMED --head "$head" \
       --author-context "pawl-route-author-${bead}" --mode multi-model \
-      --refuter "claude:CONFIRMED:opus-pawl-pane-fresh:${ev_cc}" \
-      --refuter "gpt:CONFIRMED:codex-pawl-pane-gpt55:${ev_cod}" >&2
-    log "ROUTE $bead: CONFIRMED (opus+codex agree) — verdict recorded for head $head"
+      "${rf[@]}" >&2
+    log "ROUTE $bead: CONFIRMED (${confirmed}/3 cross-family agree${degraded:+; $degraded}) — verdict recorded for head $head"
     echo "CONFIRMED"
     return 0
   fi
-  # Fail-closed: any non-CONFIRMED or timeout. STILL record the REFUTED verdict
-  # (age-uxva) — a REFUTE is the membrane catch we MOST want in the yield ledger,
-  # and the log emit lives in `pawl-verdict.sh write`. Without this, every
-  # standing-pawl REFUTE bypassed the chokepoint and was never logged. Mirrors
-  # the CONFIRMED branch; non-blocking (the gate signal is still `return 1`).
-  # Per-pane verdicts carry their actual result; a timeout maps to REFUTED.
-  local rhead; rhead="$(git rev-parse HEAD)"
+  # Fail-closed REFUTED/HOLD: STILL record the verdict (age-uxva — the membrane catch we MOST
+  # want logged; the chokepoint emit lives in pawl-verdict.sh write). All 3 panes' actual
+  # results are recorded (a timeout maps to the REFUTED token).
   bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
-    --disposition REFUTED --head "$rhead" \
+    --disposition REFUTED --head "$head" \
     --author-context "pawl-route-author-${bead}" --mode multi-model \
     --refuter "claude:${vc:-REFUTED}:opus-pawl-pane-fresh:${ev_cc}" \
     --refuter "gpt:${vd:-REFUTED}:codex-pawl-pane-gpt55:${ev_cod}" \
-    --reason "standing-pawl route: no agreement (opus=${vc:-timeout} codex=${vd:-timeout})" >&2 || true
-  log "ROUTE $bead: REFUTED/HOLD — opus=${vc:-timeout} codex=${vd:-timeout} (no agreement; evidence in $EVID_DIR)"
+    --refuter "gemini:${va:-REFUTED}:agy-pawl-pane-flash35:${ev_agy}" \
+    --reason "standing-pawl route: ${degraded:-no agreement} (opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout})" >&2 || true
+  log "ROUTE $bead: REFUTED/HOLD — opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout} (${degraded:-no agreement}; evidence in $EVID_DIR)"
   echo "REFUTED"
   return 1
 }
