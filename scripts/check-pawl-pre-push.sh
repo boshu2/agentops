@@ -145,7 +145,13 @@ check_one_push() {
   [[ -x "$PAWL" ]] || die "pawl-verdict.sh not executable at $PAWL"
 
   if "$PAWL" check "$bead" "$PUSH_TO_MAIN_PR" --dir "$VERDICT_DIR" --head "$head"; then
-    echo "pawl-pre-push: CONFIRMED verdict for bead=$bead head=${head:0:12} — push authorized" >&2
+    # age-bb5l: surface the tier so a fresh-context (single-family, weaker) land is a conscious
+    # choice, not silent. (The check above already prints mode=…; this adds the explicit nudge.)
+    _vmode="$(jq -r '.mode // ""' "$VERDICT_DIR/${bead}.json" 2>/dev/null || true)"
+    echo "pawl-pre-push: CONFIRMED verdict for bead=$bead head=${head:0:12} (mode=${_vmode:-?}) — push authorized" >&2
+    if [[ "$_vmode" == "fresh-context" ]]; then
+      echo "pawl-pre-push: NOTE — fresh-context tier (a SINGLE family, weaker than the cross-family gate); add codex or agy for a multi-model verdict." >&2
+    fi
     return 0
   fi
   echo "PAWL-HOLD: no CONFIRMED pawl verdict for bead=$bead push-to-main head=${head:0:12} — push refused (age-58o)" >&2

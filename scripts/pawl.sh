@@ -48,6 +48,9 @@ EVID_DIR="${PAWL_EVID_DIR:-/tmp/pawl-evidence}"
 STATE_DIR="${PAWL_STATE_DIR:-.agents/pawl}"
 ROUTE_TIMEOUT="${PAWL_ROUTE_TIMEOUT:-320}"   # seconds to wait per pane for a VERDICT
 PAWL_IDLE_TTL="${PAWL_IDLE_TTL:-1800}"       # idle seconds before `reap` tears the session down
+PAWL_STALL_GIVEUP="${PAWL_STALL_GIVEUP:-150}"  # age-djfo: a pane showing NO new output for this
+                                               # long is given up (alive-but-stuck) -> degrade fast
+                                               # instead of burning the full ROUTE_TIMEOUT. 0 disables.
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ENABLED="${ENABLED:-}"           # resolved family list (space-sep, canonical order); set by up/load_session
 TIER="${TIER:-}"                 # multi (>=2 families) | fresh (1) | "" (none)
@@ -243,7 +246,7 @@ respawn_pane() {
     if [ "$kind" = "cod" ]; then
       case "$(codex_state || true)" in codex-live|goal-completed) return 0 ;; esac
     elif [ "$kind" = "agy" ]; then
-      agy_ready && return 0
+      clear_known_prompts "$AGY_PANE" || true; agy_ready && return 0
     else
       cc_ready && return 0
     fi
@@ -298,20 +301,69 @@ agy_dead() {
   esac
 }
 
-# agy shows a "trust this folder" gate on first launch in an untrusted dir, and
-# --dangerously-skip-permissions does NOT skip it (it skips tool perms, not the
-# folder-trust gate). Accept it (Enter selects the default "Yes, I trust this
-# folder") so the pane reaches its ready input state. Idempotent: only sends a
-# key when the gate is actually showing, so it can't perturb a ready pane.
-agy_clear_trust_gate() {
-  if tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null \
-       | grep -qiE "trust this folder|trust this directory|requires permission to read"; then
-    tmux send-keys -t "${SESSION}.${AGY_PANE}" Enter 2>/dev/null || true
-    sleep 2
-    return 0
+# --- age-djfo: detect + dismiss the known CLI interruption prompts that BLOCK a warm pane ---
+# A warm pane can be ALIVE (foreground = the binary) yet stuck on a periodic prompt that is NOT
+# the trust gate: codex's "Update available … Press enter to continue" dialog and agy's "How's
+# the CLI experience? [0] Skip" survey. Unhandled, they leave health falsely green and make the
+# route burn the full ROUTE_TIMEOUT then degrade. These three helpers (the first two PURE) detect
+# the known blockers and clear them with the default-accept / skip key.
+
+# Classify a known blocking prompt from a pane's captured text. Echoes the type, or "" if none.
+detect_blocking_prompt() {
+  local t="$1"
+  if printf '%s' "$t" | grep -qiE "trust this folder|trust this directory|requires permission to read"; then
+    echo trust-gate
+  elif printf '%s' "$t" | grep -qiE "update available|press enter to continue|a new version|update & restart"; then
+    echo codex-update
+  elif printf '%s' "$t" | grep -qiE "how('?s| is| was) (the|your) cli experience|\[0\][[:space:]]*skip|rate (the|your) experience"; then
+    echo agy-survey
+  else
+    echo ""
   fi
-  return 1
 }
+
+# The tmux send-keys argument(s) that dismiss a given prompt type (default-accept / skip).
+prompt_dismiss_key() {
+  case "$1" in
+    trust-gate)   echo "Enter" ;;    # Enter = "Yes, I trust this folder"
+    codex-update) echo "Enter" ;;    # "Press enter to continue"
+    agy-survey)   echo "0 Enter" ;;  # "[0] Skip"
+    *)            echo "" ;;
+  esac
+}
+
+# Detect + dismiss any known blocking prompt on a pane (generalizes the old agy trust-gate clear
+# to every pane + every known prompt). Idempotent: sends keys ONLY when a prompt is showing, so it
+# cannot perturb a ready pane. Returns 0 if it dismissed something, 1 if none (or unreadable).
+clear_known_prompts() {
+  local pane="$1" txt typ keys
+  # BOTTOM-ANCHOR (cross-family review catch): an interactive prompt is the ACTIVE bottom UI of the
+  # pane; the diff/packet a reviewer is reading sits in the scrollback BODY above it. Inspecting the
+  # whole capture let a reviewed diff that merely CONTAINS "press enter to continue" / "[0] Skip" /
+  # "trust this folder" trigger a key-injection into a working reviewer pane (a lost-verdict fail-open).
+  # Only the last few lines (the live prompt region) are inspected. The route also gates this on STALL
+  # (it only calls clear on a pane producing NO new output), so keys can never hit a producing pane.
+  txt="$(tmux capture-pane -p -t "${SESSION}.${pane}" 2>/dev/null | tail -n 10)" || return 1
+  typ="$(detect_blocking_prompt "$txt")"
+  [ -n "$typ" ] || return 1
+  keys="$(prompt_dismiss_key "$typ")"
+  [ -n "$keys" ] || return 1
+  log "clearing '$typ' prompt on pane $pane"
+  # $keys is a deliberate multi-key sequence (e.g. "0 Enter") — word-splitting is intended.
+  # shellcheck disable=SC2086
+  tmux send-keys -t "${SESSION}.${pane}" $keys 2>/dev/null || true
+  sleep 2
+  return 0
+}
+
+# Back-compat wrapper: the agy trust-gate clear is now the general prompt clear on the agy pane.
+agy_clear_trust_gate() { clear_known_prompts "$AGY_PANE"; }
+
+# age-djfo (c): PURE — a pane is "given up" once it has shown NO new output for the stall budget
+# (it is alive but stuck on an unclearable hang). Returns 0 (give up) iff budget>0 and the stall
+# seconds have reached it. A pane that is making progress (or whose known prompt got cleared, which
+# CHANGES its output) resets its stall counter and is never given up.
+_stall_over_budget() { [ "${2:-0}" -gt 0 ] && [ "${1:-0}" -ge "${2}" ]; }
 
 # agy pane is READY when the agy binary is POSITIVELY the foreground process AND it is not
 # sitting on the trust gate. Fail-CLOSED on every uncertainty so a missing/unreadable pane, a
@@ -324,11 +376,16 @@ agy_ready() {
   # bias is right for respawn decisions but wrong for a readiness gate, so check directly.)
   cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
   [ "$cmd" = "agy" ] || return 1
-  agy_clear_trust_gate || true
-  # Require a SUCCESSFUL capture that does not show the trust gate; a capture failure -> NOT
-  # ready (the prior `! ... | grep` returned ready when capture-pane itself failed — fail-open).
-  pane_txt="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null)" || return 1
-  ! printf '%s\n' "$pane_txt" | grep -qiE "trust this folder|trust this directory|requires permission to read"
+  # READ-ONLY predicate (cross-family review catch, round 2): agy_ready must NOT send keys. It is
+  # called by cmd_health/_enabled_ready/respawn, and cmd_health can run WHILE the agy pane is mid-
+  # review — an unconditional clear here could inject dismiss keys into a producing reviewer pane
+  # (the same lost-verdict fail-open, off the route's stall protection). Detect-only here; the
+  # CLEARING happens at the safe action sites (the readiness gate _enabled_ready, respawn_pane, and
+  # the stall-gated route poll) — never in this predicate.
+  # Require a SUCCESSFUL capture that shows NO known blocking prompt (trust-gate OR the agy survey,
+  # age-djfo) in the live bottom region; a capture failure -> NOT ready (fail-closed).
+  pane_txt="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null | tail -n 10)" || return 1
+  [ -z "$(detect_blocking_prompt "$pane_txt")" ]
 }
 
 # Robust agy send: deliver the packet file; if not delivered or the pane is dead,
@@ -356,9 +413,11 @@ cc_send() {
 
 # True iff every ENABLED family's pane is route-ready.
 _enabled_ready() {
-  case " $ENABLED " in *" cc "*) cc_ready || return 1 ;; esac
-  case " $ENABLED " in *" cod "*) local cs; cs="$(codex_state || true)"; { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } || return 1 ;; esac
-  case " $ENABLED " in *" agy "*) agy_ready || return 1 ;; esac
+  # age-djfo: dismiss any known blocking prompt during boot too (a codex update dialog at launch
+  # would otherwise keep the pane un-ready for the full gate). agy_ready already clears its pane.
+  case " $ENABLED " in *" cc "*) clear_known_prompts "$CC_PANE" || true; cc_ready || return 1 ;; esac
+  case " $ENABLED " in *" cod "*) clear_known_prompts "$COD_PANE" || true; local cs; cs="$(codex_state || true)"; { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } || return 1 ;; esac
+  case " $ENABLED " in *" agy "*) clear_known_prompts "$AGY_PANE" || true; agy_ready || return 1 ;; esac
   return 0
 }
 
@@ -470,6 +529,17 @@ cmd_health() {
   case " $ENABLED " in *" cc "*) cc_ready && cc="ready" || cc="not-ready" ;; esac
   case " $ENABLED " in *" cod "*) cs="$(codex_state || echo absent)" ;; esac
   case " $ENABLED " in *" agy "*) agy_ready && agy="ready" || agy="not-ready" ;; esac
+  # age-djfo: codex preflight can report 'codex-live' while the pane is actually BLOCKED on the
+  # update dialog (falsely green). Detect the known blocker directly so health is honest + the
+  # verdict below (which only accepts codex-live|goal-completed) refuses a stuck pane.
+  case " $ENABLED " in *" cod "*)
+    if [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; then
+      local _ct _cb
+      _ct="$(tmux capture-pane -p -t "${SESSION}.${COD_PANE}" 2>/dev/null || true)"
+      _cb="$(detect_blocking_prompt "$_ct")"
+      [ -n "$_cb" ] && cs="stuck:$_cb"
+    fi ;;
+  esac
   if [ "$json" = "--json" ]; then
     printf '{"session":"%s","exists":%s,"families":"%s","tier":"%s","cc_pane":{"pane":"%s","state":"%s"},"cod_pane":{"pane":"%s","state":"%s"},"agy_pane":{"pane":"%s","state":"%s"}}\n' \
       "$SESSION" "$(session_exists && echo true || echo false)" "$ENABLED" "$TIER" "$CC_PANE" "$cc" "$COD_PANE" "$cs" "$AGY_PANE" "$agy"
@@ -574,16 +644,57 @@ cmd_route() {
   case " $ENABLED " in *" cod "*) vd="" ;; esac
   case " $ENABLED " in *" agy "*) va="" ;; esac
   local waited=0 cc_rr=0 cod_rr=0 agy_rr=0 cs=""
+  # age-djfo (c): per-pane stall give-up. cksum (POSIX, always present — a change-detector, not
+  # crypto) of recent output; unchanged for PAWL_STALL_GIVEUP seconds => alive-but-stuck => give
+  # up (degrade) instead of burning the full ROUTE_TIMEOUT. Clearing a known prompt CHANGES the
+  # output, so a CLEARABLE block resets the stall (the pane unblocks) rather than being given up.
+  local cc_h="" cod_h="" agy_h="" cc_st=0 cod_st=0 agy_st=0 cc_gu=0 cod_gu=0 agy_gu=0 _h
   while [ "$waited" -lt "$ROUTE_TIMEOUT" ]; do
     [ -z "$vc" ] && vc="$(verdict_of "$CC_PANE" "$nonce")"
     [ -z "$vd" ] && vd="$(verdict_of "$COD_PANE" "$nonce")"
     [ -z "$va" ] && va="$(verdict_of "$AGY_PANE" "$nonce")"
-    # Done when every enabled pane has resolved (the n/a sentinel is non-empty = resolved); OR
+    # age-djfo (a)+(c): for each enabled, still-awaiting, not-given-up pane — track output stall and
+    # ONLY when STALLED (no new output this tick) try to dismiss a known blocking prompt + count the
+    # stall toward give-up. Gating the clear on stall is the cross-family-review fix: a pane that is
+    # actively producing review output changes its cksum every tick, so it is NEVER stalled and thus
+    # NEVER gets keys injected — keys can only reach a pane that has genuinely stopped (maybe on a
+    # prompt). A clearable prompt CHANGES the output next tick, resetting the stall (unblock, not give up).
+    # STALL-TRACKING ONLY — the route NEVER sends keys to a pane (cross-family review, rounds 1-4).
+    # Content-pattern prompt-dismissal CANNOT be made safe on a pane that might be reviewing: the
+    # reviewed diff/output can itself contain a trigger phrase, so injecting Enter/"0 Enter" risks
+    # derailing a producing reviewer and LOSING its verdict (a degraded false-pass). Keys are sent
+    # ONLY where the pane is provably idle: the boot readiness gate (_enabled_ready) and respawn_pane.
+    # Mid-route, a pane that genuinely stops (a real blocking dialog, an unknown hang) shows no new
+    # output -> stalls -> is GIVEN UP (degrade, fail-closed) at PAWL_STALL_GIVEUP, never dismissed in
+    # place. The cksum subshell is `|| true`-guarded so a DISAPPEARING pane (capture-pane exits
+    # non-zero under pipefail) can never abort the whole route before recovery/give-up.
+    if [ -z "$vc" ] && [ "$cc_gu" -eq 0 ]; then
+      _h="$(tmux capture-pane -p -t "${SESSION}.${CC_PANE}" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true)"
+      if [ -n "$_h" ] && [ "$_h" = "$cc_h" ]; then
+        cc_st=$((cc_st + 5))
+        if _stall_over_budget "$cc_st" "$PAWL_STALL_GIVEUP"; then log "claude pane stalled ${cc_st}s (no new output) — giving up (degrade)"; cc_gu=1; fi
+      else cc_h="$_h"; cc_st=0; fi
+    fi
+    if [ -z "$vd" ] && [ "$cod_gu" -eq 0 ]; then
+      _h="$(tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true)"
+      if [ -n "$_h" ] && [ "$_h" = "$cod_h" ]; then
+        cod_st=$((cod_st + 5))
+        if _stall_over_budget "$cod_st" "$PAWL_STALL_GIVEUP"; then log "codex pane stalled ${cod_st}s (no new output) — giving up (degrade)"; cod_gu=1; fi
+      else cod_h="$_h"; cod_st=0; fi
+    fi
+    if [ -z "$va" ] && [ "$agy_gu" -eq 0 ]; then
+      _h="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true)"
+      if [ -n "$_h" ] && [ "$_h" = "$agy_h" ]; then
+        agy_st=$((agy_st + 5))
+        if _stall_over_budget "$agy_st" "$PAWL_STALL_GIVEUP"; then log "agy pane stalled ${agy_st}s (no new output) — giving up (degrade)"; agy_gu=1; fi
+      else agy_h="$_h"; agy_st=0; fi
+    fi
+    # Done when every enabled pane is RESOLVED — a verdict (n/a sentinel counts) OR given-up; OR
     # short-circuit the moment ANY pane REFUTES (a single refute decides the all-CONFIRM verdict).
-    [ -n "$vc" ] && [ -n "$vd" ] && [ -n "$va" ] && break
+    if { [ -n "$vc" ] || [ "$cc_gu" -eq 1 ]; } && { [ -n "$vd" ] || [ "$cod_gu" -eq 1 ]; } && { [ -n "$va" ] || [ "$agy_gu" -eq 1 ]; }; then break; fi
     { [ "$vc" = "REFUTED" ] || [ "$vd" = "REFUTED" ] || [ "$va" = "REFUTED" ]; } && break
-    # Per-family mid-route recovery — ONLY for enabled + still-awaiting panes (vd="" etc.).
-    if [ -z "$vd" ] && [ "$cod_rr" -lt 1 ]; then
+    # Per-family mid-route recovery — ONLY for enabled, still-awaiting, NOT-given-up panes.
+    if [ -z "$vd" ] && [ "$cod_gu" -eq 0 ] && [ "$cod_rr" -lt 1 ]; then
       cs="$(codex_state || echo unknown)"
       if cod_dead; then
         # Positively dropped to a shell — preflight misreads this as goal-completed, so the
@@ -601,11 +712,11 @@ cmd_route() {
         esac
       fi
     fi
-    if [ -z "$vc" ] && [ "$cc_rr" -lt 1 ] && ! cc_alive; then
+    if [ -z "$vc" ] && [ "$cc_gu" -eq 0 ] && [ "$cc_rr" -lt 1 ] && ! cc_alive; then
       log "claude degraded mid-route (dropped to shell) — respawn + reroute"
       respawn_pane "$CC_PANE" cc || true; cc_send "$rp" || true; cc_rr=1
     fi
-    if [ -z "$va" ] && [ "$agy_rr" -lt 1 ] && agy_dead; then
+    if [ -z "$va" ] && [ "$agy_gu" -eq 0 ] && [ "$agy_rr" -lt 1 ] && agy_dead; then
       log "agy degraded mid-route (dropped to shell) — respawn + reroute"
       respawn_pane "$AGY_PANE" agy || true; agy_send "$rp" || true; agy_rr=1
     fi
@@ -751,7 +862,16 @@ route is self-healing (S3): sends retry with engagement verification (never abor
 codex send); a pane that goes degraded mid-route (dead shell, usage-limit, stuck dialog) is
 respawned and re-routed once, so it cannot silently time out into a false REFUTED. On a
 usage-limit set PAWL_AUTO_ROTATE=1 to rotate the account (caam / claude-acct) before respawn.
-Tunables: PAWL_ROUTE_TIMEOUT (default 320s), PAWL_IDLE_TTL (default 1800s), PAWL_AUTO_ROTATE.
+Tunables: PAWL_ROUTE_TIMEOUT (default 320s), PAWL_IDLE_TTL (default 1800s),
+PAWL_STALL_GIVEUP (default 150s; 0 disables), PAWL_AUTO_ROTATE.
+
+Scheduling the idle reaper (age-mc3s): `reap` is the TEARDOWN half of the lazy-auto-up lifecycle,
+but AgentOps ships NO in-repo daemon/scheduler (ADR-0009) — the schedule lives in your substrate:
+  cron:    */30 * * * * cd /path/to/agentops && ao pawl reap >> /tmp/pawl-reap.log 2>&1
+  launchd: a StartInterval=1800 agent running `ao pawl reap` in the repo dir
+  NTM:     call `ao pawl reap` on a tending tick
+Without a schedule the warm panes stay up until an explicit `ao pawl down`; the next review's
+lazy-auto-up brings the service back. Operator pattern + rationale: docs/contracts/pawls.md.
 H
     exit 2 ;;
 esac

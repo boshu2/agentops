@@ -42,9 +42,53 @@ VERDICT_DIR="${AGENTOPS_PAWL_VERDICT_DIR:-$REPO_ROOT/.agents/pawl-verdicts}"
 EVIDENCE_DIR="$REPO_ROOT/.agents/pawl-evidence"
 PR="${AGENTOPS_PAWL_PR:-0}"          # 0 = push-to-main landing (matches the pre-push gate)
 TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
+# age-mwhj: above this packet-byte cap, inlining the full diff reliably times the review out
+# (a 41KB packet timed an opus pane out; a 62KB cold codex was killed) and then fails CLOSED —
+# safe but unusable on exactly the large refactors/generated churn where review matters most.
+MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-24576}"   # ~24KB
 
 bead=""; scope="head"; extra=""; author_family="claude"; converge=0
 need_val() { [[ -n "${2:-}" ]] || { echo "pawl-review: $1 needs a value" >&2; exit 2; }; }
+
+# age-mwhj: assemble the review body. At/below the byte cap, the full inline diff (unchanged).
+# Above it, a READ-FILES-NOT-INLINE body — a size note + git --stat + the changed-file ABSOLUTE
+# paths — and the reviewer reads the files directly (read-only) instead of choking on a huge
+# inline blob. Pure (no git of its own): the caller passes the stat + newline-separated file list,
+# so this is unit-testable. Echoes the body.
+build_review_body() {
+  local diff="$1" max="$2" stat="$3" files="$4" root="$5" bytes f
+  bytes="$(printf '%s' "$diff" | wc -c | tr -d ' ')"
+  if [ "$bytes" -le "$max" ]; then printf '%s' "$diff"; return 0; fi
+  printf 'NOTE: this change is LARGE (%s bytes > %s inline cap) — the ADDED lines are NOT inlined.\n' "$bytes" "$max"
+  printf 'READ THE CHANGED FILES DIRECTLY (read-only) at the absolute paths below for the full ADDED content.\n'
+  printf 'The diff STRUCTURE (file headers, @@ hunks, and ALL DELETED/removed lines — which you CANNOT\n'
+  printf 'recover by reading the current files) is shown inline below, with long added blocks elided.\n\n'
+  printf '=== git --stat ===\n%s\n\n' "$stat"
+  printf '=== diff: deletions + structure (added content elided — read the files for it) ===\n'
+  # Drop ONLY added-content lines (^+ but not the ^+++ file header); keep deletions (^-), hunk
+  # headers (@@), file headers, and context — so removed code is never lost (reading the CURRENT
+  # file cannot show what was deleted; that was the cross-family review's read-files fidelity catch).
+  printf '%s\n' "$diff" | grep -vE '^\+([^+]|$)' || true
+  printf '\n=== changed files (read each for the added content) ===\n'
+  while IFS= read -r f; do [ -n "$f" ] && printf '  %s/%s\n' "$root" "$f"; done <<< "$files"
+  return 0   # the trailing `while read` / grep exits non-zero at EOF — the function itself succeeded
+}
+
+# age-bb5l: a human phrase for the tier a routed verdict actually ACHIEVED, so the review/push
+# surfaces stop hardcoding "opus+codex duel" (a lie on a single-family or non-opus+codex route).
+# multi-model = the real cross-family gate; fresh-context = a SINGLE family (weaker) and carries
+# the "add a 2nd family" nudge so a fresh-context land is a conscious choice, not silent.
+pawl_tier_note() {
+  case "$1" in
+    multi-model)   printf 'multi-model cross-family' ;;
+    fresh-context) printf 'fresh-context — a SINGLE family, WEAKER than the cross-family gate; add codex or agy and re-run for a multi-model verdict' ;;
+    *)             printf '%s' "${1:-unknown-tier}" ;;
+  esac
+}
+
+# Source-guard: tests source this file to exercise build_review_body / pawl_tier_note; the
+# codex-running flow below only executes when the script is run directly.
+[ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope)         need_val "$1" "${2:-}"; scope="$2"; shift 2 ;;
@@ -100,6 +144,24 @@ head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
 [[ -n "$head" && "${#head}" -ge 7 ]] || { echo "pawl-review: cannot resolve HEAD sha" >&2; exit 1; }
 
+# age-mwhj: choose inline vs read-files-not-inline by packet size. Above the cap, the reviewer
+# (cold codex --sandbox read-only OR the warm panes) reads the changed files directly.
+diff_bytes="$(printf '%s' "$diff" | wc -c | tr -d ' ')"
+review_stat=""; review_files=""
+if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
+  case "$scope" in
+    head)   review_stat="$(git -C "$REPO_ROOT" show HEAD --stat --format= --no-color 2>/dev/null)"; review_files="$(git -C "$REPO_ROOT" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    staged) review_stat="$(git -C "$REPO_ROOT" diff --cached --stat --no-color 2>/dev/null)"; review_files="$(git -C "$REPO_ROOT" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+  esac
+fi
+review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$review_files" "$REPO_ROOT")"
+if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
+  read_instr="This change is LARGE and is NOT inlined. READ the changed files listed below directly (read-only); they are the change under review. Do not modify anything."
+  echo "pawl-review: large diff (${diff_bytes}B > ${MAX_INLINE_BYTES}B cap) — packet uses read-files-not-inline (age-mwhj)" >&2
+else
+  read_instr="Do NOT use tools. Do NOT read files. Review ONLY the change below and reply with a verdict."
+fi
+
 # Lineage key: the content hash of the reviewed diff. The adversarial run records it;
 # --converge requires a prior adversarial run on the IDENTICAL diff (no fuzzy "material
 # change" — an exact-hash match, which is unambiguous and safe). (age-cwo.8)
@@ -128,8 +190,7 @@ fi
 # interpolated) so $(...) / backticks in the diff are not evaluated.
 {
   cat <<PROMPT
-You are a fresh-context, cross-family reviewer — the REFUTER in a two-model pawl. Do NOT use tools. Do NOT
-read files. Review ONLY the diff below and reply with a verdict.
+You are a fresh-context, cross-family reviewer — the REFUTER in a two-model pawl. $read_instr
 $posture
 ${extra:+
 EXTRA CONTEXT FROM THE AUTHOR:
@@ -142,9 +203,9 @@ VERDICT: REFUTED
 DEFECTS:
  - <one concrete defect per line: the symptom and why it matters>
 
-=== DIFF UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
+=== CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
 PROMPT
-  printf '%s\n' "$diff"
+  printf '%s\n' "$review_body"
 } > "$prompt_file"
 
 # Lazy auto-start (the "membrane is never silently cold again" fix): when routing is
@@ -156,7 +217,7 @@ PROMPT
 # PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
 if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
    && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
-  echo "pawl-review: standing pawl-service not up — starting it once (warm opus+codex+agy duel)…" >&2
+  echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
   bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
 fi
 
@@ -173,12 +234,13 @@ if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" 
   route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
   # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
   # pawl.sh route appends its own nonce-tagged verdict format ("PAWL <nonce> CONFIRMED|REFUTED").
-  { printf '%s\n' "$posture"
+  { printf '%s\n' "$read_instr"
+    printf '%s\n' "$posture"
     [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
-    printf '\n=== DIFF UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
-    printf '%s\n' "$diff"
+    printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
+    printf '%s\n' "$review_body"
   } > "$route_pkt"
-  echo "pawl-review: routing through the standing pawl-service (opus+codex duel, ml8.7)…" >&2
+  echo "pawl-review: routing through the standing pawl-service (warm cross-family panel, ml8.7)…" >&2
   route_rc=0
   # Pass the REAL PR ($PR, from AGENTOPS_PAWL_PR) — NOT a hardcoded 0 — so the routed
   # verdict binds to the right PR (push-to-main is PR 0; a PR review is its number).
@@ -196,13 +258,14 @@ if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" 
   # could slip through (codex caught exactly this). A REFUTED route is a real HOLD; anything
   # else (no gate-valid verdict) falls back to the cold codex-exec — never fail-open.
   if [[ "$route_rc" -eq 0 ]] && "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
-    echo "pawl-review: CONFIRMED (routed opus+codex duel) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
+    routed_mode="$(jq -r '.mode // "multi-model"' "$VERDICT_DIR/${bead}.json" 2>/dev/null)"
+    echo "pawl-review: CONFIRMED (routed: $(pawl_tier_note "$routed_mode")) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
     exit 0
   fi
   routed_disp="$(jq -r 'select(.head_sha=="'"$head"'") | .disposition // empty' \
                   "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
   if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
-    echo "=== PAWL ROUTE: REFUTED — opus+codex did not both CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
+    echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
     exit 3
   fi
   echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
