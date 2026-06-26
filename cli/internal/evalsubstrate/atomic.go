@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // WriteAtomic implements the §4 Run-manifest atomic-write contract:
@@ -44,21 +46,8 @@ func WriteAtomic(path string, data []byte) error {
 		_ = os.Remove(tmp)
 		return fmt.Errorf("WriteAtomic: rename: %w", err)
 	}
-	if err := fsyncDir(parent); err != nil {
+	if err := storage.FsyncDir(parent); err != nil {
 		return fmt.Errorf("WriteAtomic: fsync parent: %w", err)
-	}
-	return nil
-}
-
-func fsyncDir(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = d.Close() }()
-	if err := d.Sync(); err != nil {
-		// macOS APFS sometimes returns EINVAL on dir Sync — accept as no-op.
-		return nil
 	}
 	return nil
 }

@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 // AtomicWriteFile is the canonical atomic file writer for the repo. It writes
@@ -54,5 +56,46 @@ func AtomicWriteFile(path string, data []byte, perm os.FileMode) error {
 		_ = os.Remove(tmpPath)
 		return fmt.Errorf("renaming temp file: %w", err)
 	}
+	// fsync the parent directory so the rename itself survives power loss: the
+	// file body is durable (f.Sync above), but the directory entry that makes
+	// the new name observable is not guaranteed on disk until the dir is synced.
+	if err := FsyncDir(dir); err != nil {
+		return fmt.Errorf("syncing parent dir %s: %w", dir, err)
+	}
 	return nil
+}
+
+// FsyncDir flushes a directory's metadata to disk by opening it and calling
+// fsync, making a prior rename into that directory durable across power loss.
+// It is the single dir-fsync implementation for the CLI; the atomic writers
+// that do their own rename (storage.FileStorage, internal/pool, internal/llmwiki,
+// internal/evalsubstrate) call this after the rename completes.
+//
+// A directory fsync that reports the operation as unsupported is treated as a
+// no-op: some filesystems (notably macOS APFS) reject fsync on a directory
+// handle with EINVAL/ENOTSUP, and the rename is already durable there, so that
+// error is not one the caller can act on. A genuine I/O error (e.g. EIO) is
+// returned rather than swallowed, so a real durability failure is not hidden.
+// An open failure (e.g. the directory does not exist) is also returned so
+// callers surface a genuinely missing path.
+func FsyncDir(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = d.Close() }()
+	if err := d.Sync(); err != nil && !dirFsyncUnsupported(err) {
+		return err
+	}
+	return nil
+}
+
+// dirFsyncUnsupported reports whether err indicates the filesystem does not
+// support fsync on a directory handle (and the rename is therefore already
+// durable). macOS APFS returns EINVAL; other platforms may report ENOTSUP or
+// ENOTTY. Real I/O errors are deliberately excluded so they propagate.
+func dirFsyncUnsupported(err error) bool {
+	return errors.Is(err, syscall.EINVAL) ||
+		errors.Is(err, syscall.ENOTSUP) ||
+		errors.Is(err, syscall.ENOTTY)
 }

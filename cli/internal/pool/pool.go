@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -1179,10 +1180,25 @@ func atomicMove(srcPath, destPath string) error {
 		return fmt.Errorf("rename to destination: %w", err)
 	}
 
+	// fsync the destination directory so the rename survives power loss: the
+	// file body is durable (writeTempFile syncs it), but the directory entry
+	// for the new name is not guaranteed on disk until the dir is synced.
+	if err := storage.FsyncDir(filepath.Dir(destPath)); err != nil {
+		return fmt.Errorf("fsync destination dir: %w", err)
+	}
+
 	// Remove source file
 	if err := os.Remove(srcPath); err != nil {
 		// Non-fatal: the move succeeded, just cleanup failed
 		fmt.Fprintf(os.Stderr, "Warning: failed to remove source file %s: %v\n", srcPath, err)
+	} else {
+		// fsync the source directory so the source-name removal is durable: for
+		// a cross-directory move (the common case here) the destination fsync
+		// above does not cover srcDir, and a crash could otherwise resurrect
+		// srcPath or leave duplicate entries despite the move reporting success.
+		if err := storage.FsyncDir(filepath.Dir(srcPath)); err != nil {
+			return fmt.Errorf("fsync source dir: %w", err)
+		}
 	}
 
 	return nil

@@ -155,6 +155,43 @@ func TestAtomicWriteFile_FsyncSurvivesRoundTrip(t *testing.T) {
 	}
 }
 
+func TestFsyncDir_SyncsExistingDir(t *testing.T) {
+	// A real directory fsyncs cleanly: the durability barrier for a rename.
+	dir := t.TempDir()
+	if err := FsyncDir(dir); err != nil {
+		t.Fatalf("FsyncDir(existing dir): %v", err)
+	}
+}
+
+func TestFsyncDir_ErrorsOnMissingDir(t *testing.T) {
+	// Discriminating: FsyncDir must actually open the directory, so a path
+	// that does not exist must surface an error rather than silently no-op.
+	// (A no-op stub would pass TestFsyncDir_SyncsExistingDir; this one proves
+	// the open+sync work is real.)
+	missing := filepath.Join(t.TempDir(), "does-not-exist")
+	if err := FsyncDir(missing); err == nil {
+		t.Fatalf("FsyncDir(missing dir): got nil error, want a non-nil open error")
+	}
+}
+
+func TestAtomicWriteFile_ParentDirIntactAfterWrite(t *testing.T) {
+	// Regression for the parent-dir fsync step: after AtomicWriteFile the
+	// parent directory still resolves and lists exactly the written file —
+	// the added dir-fsync must not disturb directory state.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "durable.txt")
+	if err := AtomicWriteFile(path, []byte("payload"), 0o644); err != nil {
+		t.Fatalf("AtomicWriteFile: %v", err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("ReadDir after write: %v", err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "durable.txt" {
+		t.Fatalf("parent dir entries after write: got %v, want [durable.txt]", entries)
+	}
+}
+
 func TestAtomicWriteFile_ConcurrentWritersConverge(t *testing.T) {
 	// With N concurrent writers racing on one path, the final content must
 	// equal exactly one writer's payload — never truncated or interleaved.
