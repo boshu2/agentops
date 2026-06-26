@@ -80,5 +80,10 @@ func AtomicWriteFromReader(path string, r io.Reader, mode os.FileMode) error {
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("llmwiki: rename temp file to %s: %w", path, err)
 	}
+	// fsync the parent directory so the rename itself is durable across power
+	// loss (the file body is already fsynced above).
+	if err := storage.FsyncDir(dir); err != nil {
+		return fmt.Errorf("llmwiki: fsync parent dir: %w", err)
+	}
 	return nil
 }

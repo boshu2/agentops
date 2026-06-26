@@ -298,6 +298,12 @@ func (fs *FileStorage) atomicWrite(path string, writeFunc func(io.Writer) error)
 		return fmt.Errorf("rename to final: %w", err)
 	}
 
+	// fsync the parent directory so the rename survives power loss (the file
+	// body is durable via writeSyncClose above).
+	if err := FsyncDir(dir); err != nil {
+		return fmt.Errorf("fsync parent dir: %w", err)
+	}
+
 	success = true
 	return nil
 }
