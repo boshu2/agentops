@@ -55,7 +55,7 @@ When files disagree, trust in this order — stated inline so a lower-precedence
 2. **Declared contracts** — `skills/**/SKILL.md`, `schemas/**`
 3. **Narrative docs** — `docs/**`, `README.md`
 
-Always report mismatches; never silently prefer a lower-precedence doc over executable behavior. Some older docs (e.g. `docs/architecture/ports-and-adapters.md`) still mention hooks, `bd`, or PR-per-change — treat as historical unless reconciled.
+Always report mismatches; never silently prefer a lower-precedence doc over executable behavior. Some older narrative docs may still carry pre-3.0 wording (hook-enforced gates, `bd`, PR-per-change) — treat such wording as historical unless reconciled.
 
 ## Project structure
 
