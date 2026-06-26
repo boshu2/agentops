@@ -154,7 +154,7 @@ func TestPawlServiceCmd_DelegatesAndPropagatesExitCode(t *testing.T) {
 
 // The `ao pawl` surface exposes the full standing-service contract, not just `review`.
 func TestPawlCmd_HasServiceSubcommands(t *testing.T) {
-	want := map[string]bool{"up": false, "down": false, "health": false, "route": false, "metrics": false, "review": false}
+	want := map[string]bool{"up": false, "down": false, "reap": false, "health": false, "route": false, "metrics": false, "review": false}
 	for _, c := range pawlCmd.Commands() {
 		if _, ok := want[c.Name()]; ok {
 			want[c.Name()] = true

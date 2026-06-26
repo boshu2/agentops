@@ -1325,6 +1325,13 @@
       "reason": "Read-only SLO surface over recorded routes; covered by tests/scripts/pawl-metrics.bats (6 tests) + ao-wrapper exit-code test (TestPawlServiceCmd)."
     },
     {
+      "category": "unsafe-live",
+      "command": "pawl reap",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Conditionally tears down the live standing pawl-service iff idle > PAWL_IDLE_TTL (else no-op); ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh reap idle-TTL logic unit-tested + cmd_down live-proven (age-4o33)."
+    },
+    {
       "category": "public-tested",
       "command": "pawl review",
       "coverage_status": "covered",

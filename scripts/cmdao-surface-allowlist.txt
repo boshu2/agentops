@@ -143,6 +143,7 @@ public-stateful-fixture-needed|wiki inject|Reads and writes wiki/corpus state an
 public-stateful-fixture-needed|wiki query|Queries wiki/corpus indexes and needs a representative wiki fixture.
 public-stateful-fixture-needed|yield emit|Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm).
 unsafe-live|pawl down|Kills the live standing opus+codex ATM pawl-service; ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh down live-proven (ml8.1).
+unsafe-live|pawl reap|Conditionally tears down the live standing pawl-service iff idle > PAWL_IDLE_TTL (else no-op); ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh reap idle-TTL logic unit-tested + cmd_down live-proven (age-4o33).
 unsafe-live|pawl health|Probes a live standing ATM pawl-service; ao wrapper exit-code-tested; pawl.sh health live-proven.
 unsafe-live|pawl route|Routes a packet to live opus+codex model panes (requires a standing service); ao wrapper exit-code-tested; pawl.sh route live-proven across 4 routes (ml8.2).
 public-tested|pawl metrics|Read-only SLO surface over recorded routes; covered by tests/scripts/pawl-metrics.bats (6 tests) + ao-wrapper exit-code test (TestPawlServiceCmd).
