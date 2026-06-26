@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/omnigent-run-receipt.schema.json",
+  "title": "Omnigent Run Receipt",
+  "description": "Evidence contract emitted after an AgentOps Omnigent bundle dispatch runs.",
+  "practices": ["design-by-contract", "pragmatic-programmer"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "run_id",
+    "bundle",
+    "task",
+    "started_at",
+    "ended_at",
+    "cwd",
+    "argv",
+    "timeout_seconds",
+    "exit_code",
+    "timed_out",
+    "stdout_path",
+    "receipt_path",
+    "log_dir",
+    "verdict",
+    "changed_files"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bundle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task": {
+      "type": "string",
+      "minLength": 1
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "argv": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "timed_out": {
+      "type": "boolean"
+    },
+    "stdout_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "receipt_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "log_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verdict": {
+      "$ref": "#/$defs/Verdict"
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "failure_reason": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "Verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "judge", "judge_model_family", "summary"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["WORTHY", "UNWORTHY", "BLOCKED", "UNKNOWN"]
+        },
+        "branch": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "judge": {
+          "type": "string",
+          "const": "themis"
+        },
+        "judge_model_family": {
+          "type": "string",
+          "const": "codex/openai"
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

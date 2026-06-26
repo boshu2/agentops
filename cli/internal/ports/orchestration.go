@@ -6,8 +6,8 @@ import "context"
 // Backend names an orchestration engine that can execute a unit of
 // agent work. The values form a safe-degradation ladder: NTM is the
 // preferred swarm runtime, Claude-native is the fallback when NTM is
-// unavailable, and beads is the always-available floor. Codex is a
-// pinnable engine that is never auto-selected by the default ladder.
+// unavailable, and beads is the always-available floor. Codex and Omnigent are
+// pinnable engines that are never auto-selected by the default ladder.
 type Backend string
 
 const (
@@ -20,6 +20,9 @@ const (
 	// BackendCodex is the Codex runtime — selectable only via an
 	// explicit Pin; the default ladder never auto-selects it.
 	BackendCodex Backend = "codex"
+	// BackendOmnigent is the Omnigent runtime — selectable only via an
+	// explicit Pin; the default ladder never auto-selects it.
+	BackendOmnigent Backend = "omnigent"
 	// BackendBeads is the beads floor — the always-available engine
 	// that every degradation path terminates in.
 	BackendBeads Backend = "beads"

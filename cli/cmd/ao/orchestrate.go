@@ -35,7 +35,7 @@ NTM availability is detected by capability — this shells out to
 ` + "`ntm --robot-capabilities`" + ` and degrades gracefully when ntm is
 absent. Resolution order (first match wins):
 
-  1. --pin <ntm|claude|codex|beads>  forces that backend.
+  1. --pin <ntm|claude|codex|omnigent|beads>  forces that backend.
   2. AGENTOPS_ORCHESTRATION env       acts as an explicit pin / opt-out.
   3. --opt-out                        routes to the beads floor.
   4. NTM probe reports available      -> ntm.
@@ -51,11 +51,11 @@ func init() {
 	orchestrateSelectCmd.Flags().BoolVar(&orchestrateSelectJSON, "json", false,
 		"Emit the selection trace as JSON")
 	orchestrateSelectCmd.Flags().StringVar(&orchestrateSelectPin, "pin", "",
-		"Force a backend: ntm|claude|codex|beads (overrides --opt-out and availability)")
+		"Force a backend: ntm|claude|codex|omnigent|beads (overrides --opt-out and availability)")
 	orchestrateSelectCmd.Flags().BoolVar(&orchestrateSelectOptOut, "opt-out", false,
 		"Bypass swarm engines and run on the beads floor")
 	_ = orchestrateSelectCmd.RegisterFlagCompletionFunc("pin",
-		staticCompletionFunc("ntm", "claude", "codex", "beads"))
+		staticCompletionFunc("ntm", "claude", "codex", "omnigent", "beads"))
 }
 
 // runOrchestrateSelect builds the production Selector over an exec-backed

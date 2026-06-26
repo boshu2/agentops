@@ -2227,6 +2227,43 @@ ao handoff [summary] [flags]
 
 ---
 
+### `ao omnigent`
+
+Omnigent orchestration commands for running first-class AgentOps
+
+```
+ao omnigent [command]
+```
+
+**Subcommands:**
+
+#### `ao omnigent dispatch`
+
+Run an Omnigent bundle task and write a receipt
+
+```
+ao omnigent dispatch [flags]
+```
+
+**Aliases:**
+
+```
+  dispatch, run
+```
+
+**Flags:**
+
+```
+      --bundle string         Omnigent bundle directory (default "/Users/bo/dev/omnigent-agents/agents/olympus-trinity")
+  -h, --help                  help for dispatch
+      --packet string         Optional Omnigent task packet JSON file
+      --receipt string        Receipt output path (default ".agents/ao/omnigent/<run-id>-receipt.json")
+      --task string           Task prompt to run (required unless --packet supplies task)
+      --timeout-seconds int   Timeout budget for the Omnigent run (default 1800)
+```
+
+---
+
 ### `ao orchestrate`
 
 Instrument lane for out-of-session multi-model orchestration: tools,
@@ -2285,7 +2322,7 @@ ao orchestrate select [flags]
   -h, --help         help for select
       --json         Emit the selection trace as JSON
       --opt-out      Bypass swarm engines and run on the beads floor
-      --pin string   Force a backend: ntm|claude|codex|beads (overrides --opt-out and availability)
+      --pin string   Force a backend: ntm|claude|codex|omnigent|beads (overrides --opt-out and availability)
 ```
 
 #### `ao orchestrate shape`
