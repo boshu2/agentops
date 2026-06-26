@@ -317,17 +317,17 @@ func parseOmnigentVerdict(stdout string) omnigentReceiptVerdict {
 		return verdict
 	}
 
+	// FALLBACK — fail-CLOSED. Only the canonical VERDICT: sentinel above can mark a
+	// PASS. A bare "WORTHY" in prose is NOT trusted: a model can write "not yet
+	// worthy of merge" / "worthy of more review", and promoting that to a pass is a
+	// fail-OPEN hole. We DO still honor a clear UNWORTHY in prose, because failing
+	// closed is always safe. No sentinel and no clear UNWORTHY -> stays UNKNOWN
+	// (non-zero exit), forcing a real sentinel rather than guessing a pass.
 	tail := stdout
 	if len(tail) > 2048 {
 		tail = tail[len(tail)-2048:]
 	}
-	hasWorthy := regexp.MustCompile(`(?i)\bWORTHY\b`).MatchString(tail)
-	hasUnworthy := regexp.MustCompile(`(?i)\bUNWORTHY\b`).MatchString(tail)
-	switch {
-	case hasWorthy && !hasUnworthy:
-		verdict.Status = "WORTHY"
-		verdict.Summary = omnigentVerdictSummary(tail)
-	case hasUnworthy && !hasWorthy:
+	if regexp.MustCompile(`(?i)\bUNWORTHY\b`).MatchString(tail) {
 		verdict.Status = "UNWORTHY"
 		verdict.Summary = omnigentVerdictSummary(tail)
 	}

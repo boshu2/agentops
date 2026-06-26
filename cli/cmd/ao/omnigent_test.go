@@ -25,9 +25,17 @@ func TestParseOmnigentVerdict(t *testing.T) {
 			wantBranch: "fix/reject",
 		},
 		{
-			name:       "fallback prose worthy",
+			// Fail-closed: a bare "WORTHY" in prose without the sentinel is NOT a
+			// pass (a model can write "worthy of more review"). Stays UNKNOWN.
+			name:       "fallback prose worthy is NOT trusted (fail-closed)",
 			stdout:     "After review, the completed branch is WORTHY of landing.",
-			wantStatus: "WORTHY",
+			wantStatus: "UNKNOWN",
+		},
+		{
+			// Fail-closed still honors a clear UNWORTHY in prose — failing is safe.
+			name:       "fallback prose unworthy still fails",
+			stdout:     "The diff is UNWORTHY; blocking issues remain.",
+			wantStatus: "UNWORTHY",
 		},
 		{
 			name:       "unknown without sentinel or prose",
