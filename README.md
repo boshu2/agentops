@@ -6,7 +6,7 @@
 
 ### Autonomous code validation for coding agents
 
-Coding agents can produce plausible code that is still wrong. AgentOps helps answer the two questions that decide whether you can trust the work: **is the code right, and is the agent output proven enough to grant more autonomy?** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the validation membrane, evidence trail, and repo-local corpus that make that judgment repeatable.
+Coding agents declare "done" on code that is still wrong. AgentOps is the membrane that catches that: every change is independently verified by a fresh-context reviewer — cross-family or deterministic — and reaches *done* only with a proof artifact. **No verdict = not done.** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and turns "looks good" into a recorded verdict you can trust before you grant the next run more autonomy.
 
 </div>
 
@@ -22,16 +22,16 @@ Coding agents can produce plausible code that is still wrong. AgentOps helps ans
 
 </div>
 
-AgentOps breaks intent into bounded slices, gives each a failing test and a write scope, and makes every phase boundary a gate that records evidence. The agent starts loaded with prior decisions and learnings instead of cold:
+The membrane breaks intent into bounded slices, gives each a failing test and a write scope, and makes every phase boundary a gate that records a verdict. When the agent says it's finished, a reviewer that never saw it write the code gets the last word:
 
 ```text
-> /council --mixed validate this PR
+> /validate --mixed   # the agent reported this PR done
 
-[council] evidence sealed → 6 judges across Claude Code + Codex CLI
-[claude/judge-1] WARN  rate limiting missing on /login
-[codex/judge-1]  WARN  token bucket lacks jitter under burst
-[claude/judge-2] PASS  redis integration follows pattern
-Consensus: WARN, fix /login limit + refill jitter before shipping
+[membrane] evidence sealed → fresh-context judges, Claude Code + Codex CLI
+[claude/judge-1] REFUTE  /login has no rate limit — claimed "covered", isn't
+[codex/judge-1]  REFUTE  token-bucket refill lacks jitter under burst
+[claude/judge-2] PASS    redis integration follows the repo pattern
+Verdict: HOLD — not done. Fix /login limit + refill jitter, then re-verify.
 Recorded → .agents/council/<run-id>/verdict.md
 ```
 
@@ -41,18 +41,22 @@ Recorded → .agents/council/<run-id>/verdict.md
 
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 
-The center is validation: prove the agent output, keep the proof, and use that record to decide how much autonomy the next run earns. The supporting layers all stay local in `.agents/` (no telemetry, no hosted control plane):
+The product is the membrane: prove the agent output, keep the proof, and let that record decide how much autonomy the next run earns. That part is proven. The other three layers feed it and all stay local in `.agents/` (no telemetry, no hosted control plane) — but whether they *compound* into a quality edge is an open, measured bet, not a claim ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)):
 
 | Layer | The problem | What AgentOps adds |
 |---|---|---|
-| **Validation membrane** | agent output can look correct while being wrong | tests, local gates, `/pre-mortem`, `/vibe`, `/council`, and pawl verdicts prove or reject the work |
+| **Validation membrane** (the product) | agent output can look correct while being wrong | tests, local gates, `/pre-mortem`, `/validate`, `/council`, and pawl verdicts prove or reject the work — no verdict, not done |
 | **Evidence trail** | "looks good" does not survive handoff | `.agents/` captures runs, decisions, findings, citations, verdicts, retros, and closeout proof |
 | **Context compiler** | validators and implementers start cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge |
 | **Knowledge ratchet** | lessons vanish between sessions | `/forge` mines learnings, `/evolve` reconciles, and durable lessons become constraints before more autonomy is granted |
 
-The corpus is an LLM wiki of markdown. Agents read it natively and write to it as they work, so it maintains itself instead of becoming another doc you keep up by hand. Public citations of measurable flywheel or corpus outcomes use promoted artifacts under `docs/evidence/` (e.g. [2026-04-02 flywheel case study](docs/evidence/2026-04-02-flywheel-case-study.md)); `.agents/` remains the local operating substrate. Why that beats Notion or Confluence: [docs/wiki-for-agents.md](docs/wiki-for-agents.md). The full theory (context as the lifecycle, the CDLC): [docs/cdlc.md](docs/cdlc.md).
+The corpus is an LLM wiki of markdown. Agents read it natively and write to it as they work, so the bookkeeping happens mechanically instead of becoming another doc you keep up by hand. Whether that compounding corpus measurably beats the same models with no corpus is unproven — the honest status is [ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md). Public citations of flywheel or corpus outcomes use promoted artifacts under `docs/evidence/` (e.g. [2026-04-02 flywheel case study](docs/evidence/2026-04-02-flywheel-case-study.md)); `.agents/` remains the local operating substrate. Why that beats Notion or Confluence: [docs/wiki-for-agents.md](docs/wiki-for-agents.md). The full theory (context as the lifecycle, the CDLC): [docs/cdlc.md](docs/cdlc.md).
 
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
+
+### The self-improving part (candidate edge, unproven)
+
+When a verdict says CONFIRMED but the code later turns out wrong, that's an *escape*. The membrane compiles each escape into a deterministic check that catches it next time — that mechanism is proven end-to-end. Whether the accumulated **escape-corpus** *compounds* into a durable edge is the open question, and the honest answer is "probably starved": a competent membrane catches most things at review, so real escapes are structurally rare ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)). The fail-closed cross-family gate itself is table stakes — CodeRabbit, Qodo, and Copilot already ship binding pre-merge review — so AgentOps ships the proven verification and measures the compounding claim in the open instead of marketing ahead of it.
 
 ---
 
@@ -97,7 +101,7 @@ Installs hookless: skills and the `ao` CLI guide the workflow, and the local coc
 |---|---|---|
 | set up a repo | `ao quick-start`, then `/quickstart` | AgentOps reports readiness and a next action |
 | ship one validated change | `/rpi "a small goal"` | discovery, build, validation, and learnings all leave evidence in `.agents/` |
-| review something now | `/council validate this PR` · `/vibe recent` | a consolidated verdict and a record before you ship |
+| review something now | `/council validate this PR` · `/validate recent` | a consolidated verdict and a record before you ship |
 
 Already installed? Ask your agent: `/quickstart`. Or run `ao doctor` and `ao demo`. First-session walkthrough: [docs/first-value-path.md](docs/first-value-path.md).
 
@@ -130,14 +134,14 @@ ao quick-start            # set up AgentOps in a repo
 ao search "query"         # search history and local knowledge
 ao lookup --query "topic" # retrieve curated learnings
 ao context assemble       # build a task briefing
-ao rpi phased "fix X"     # run the phased loop from the terminal
+ao gate check --fast      # the release gate — verify before you push
 ao compile                # rebuild the corpus
 ao metrics health         # flywheel health
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
-**In session vs. out of session.** The whole loop runs in a plain session: no daemon, no scheduler, no cloud (the sovereignty floor). For always-on work, the same loop opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole `ao rpi` per ready bead. Details: [docs/3.0.md](docs/3.0.md); component routing: [docs/architecture/component-map.md](docs/architecture/component-map.md). (The knowledge flywheel is an unproven hypothesis — [ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md); the proven product is the validation membrane.)
+**In session vs. out of session.** The whole loop runs in a plain session: no daemon, no scheduler, no cloud (the sovereignty floor). For always-on work, the same loop opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole AgentOps loop per ready bead. Details: [docs/3.0.md](docs/3.0.md); component routing: [docs/architecture/component-map.md](docs/architecture/component-map.md). (The knowledge flywheel and the escape-corpus's compounding are unproven hypotheses — [ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md); the proven product is the verification itself.)
 
 ---
 
@@ -148,13 +152,14 @@ ao metrics health         # flywheel health
 - **Multi-model councils cost tokens.** Six judges per PR isn't free; running them on a substrate makes the cost predictable, not zero.
 - **The corpus needs hygiene.** `ao defrag` and `ao maturity` keep it healthy; neglected, it rots like any markdown vault.
 - **There are many skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front; current inventory is generated from `skills/**/SKILL.md`.
+- **The compounding is unproven.** The verification is proven; whether the corpus or the escape-corpus *compounds* into a quality edge is a measured-in-the-open hypothesis ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)), not a marketing claim.
 
-**What if the labs ship this natively?** They will. The durable value is the `.agents/` corpus you build, not the tool that builds it: plain markdown in your repo, it carries forward to whatever ships next, stays forkable, and is Apache-2.0 with no lock-in.
+**What if the labs ship this natively?** They will — the cross-family gate itself is already table stakes (CodeRabbit, Qodo, and Copilot all ship binding pre-merge review). Two things don't follow the vendor: the *verification discipline* you run on every change, and the `.agents/` corpus — plain markdown in your repo, forkable, Apache-2.0, portable to whatever model wins next quarter. That portability is a durable edge, not a proven quality one; we don't claim the corpus makes your agent smarter until the A/B says so.
 
 ---
 
 ## Docs & contributing
 
-[What 3.1 adds](docs/3.1.md) · [What 3.0 is](docs/3.0.md) · [component map](docs/architecture/component-map.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
+[What 3.1 adds](docs/3.1.md) · [What 3.0 is](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md) · [component map](docs/architecture/component-map.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `br`). License: Apache-2.0.
