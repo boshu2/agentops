@@ -41,11 +41,11 @@ Recorded → .agents/council/<run-id>/verdict.md
 
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 
-The product is the membrane: prove the agent output, keep the proof, and let that record decide how much autonomy the next run earns. That part is proven. The other three layers feed it and all stay local in `.agents/` (no telemetry, no hosted control plane) — but whether they *compound* into a quality edge is an open, measured bet, not a claim ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)):
+AgentOps is the membrane: prove the agent output, keep the proof, and let that record decide how much autonomy the next run earns. That part is proven. The other three layers feed it and all stay local in `.agents/` — but whether they *compound* into a quality edge is an open, measured bet ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)):
 
 | Layer | The problem | What AgentOps adds |
 |---|---|---|
-| **Validation membrane** (the product) | agent output can look correct while being wrong | tests, local gates, `/pre-mortem`, `/validate`, `/council`, and pawl verdicts prove or reject the work — no verdict, not done |
+| **Validation membrane** | agent output can look correct while being wrong | tests, local gates, `/pre-mortem`, `/validate`, `/council`, and pawl verdicts prove or reject the work — no verdict, not done |
 | **Evidence trail** | "looks good" does not survive handoff | `.agents/` captures runs, decisions, findings, citations, verdicts, retros, and closeout proof |
 | **Context compiler** | validators and implementers start cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge |
 | **Knowledge ratchet** | lessons vanish between sessions | `/forge` mines learnings, `/evolve` reconciles, and durable lessons become constraints before more autonomy is granted |
@@ -54,9 +54,9 @@ The corpus is an LLM wiki of markdown. Agents read it natively and write to it a
 
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
-### The self-improving part (candidate edge, unproven)
+### The self-improving part 
 
-When a verdict says CONFIRMED but the code later turns out wrong, that's an *escape*. The membrane compiles each escape into a deterministic check that catches it next time — that mechanism is proven end-to-end. Whether the accumulated **escape-corpus** *compounds* into a durable edge is the open question, and the honest answer is "probably starved": a competent membrane catches most things at review, so real escapes are structurally rare ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)). The fail-closed cross-family gate itself is table stakes — CodeRabbit, Qodo, and Copilot already ship binding pre-merge review — so AgentOps ships the proven verification and measures the compounding claim in the open instead of marketing ahead of it.
+When a verdict says CONFIRMED but the code later turns out wrong, that's an *escape*. The membrane compiles each escape into a deterministic check that catches it next time — that mechanism is proven end-to-end. Whether the accumulated **escape-corpus** *compounds* into a durable edge is the open question, and the honest answer is "probably starved": a competent membrane catches most things at review, so real escapes are structurally rare ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)).
 
 ---
 
