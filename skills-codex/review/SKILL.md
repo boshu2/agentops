@@ -143,6 +143,7 @@ For audit-style reviews, generated-code suspicion, mock leakage, or external-rev
 - [ ] Sensitive data not logged or exposed in error messages
 - [ ] Dependencies: no known-vulnerable versions added
 - [ ] File operations: path traversal prevention, safe temp file handling
+- [ ] **Guard failure semantics declared + visible:** every guard, validator, or gate states fail-open vs fail-closed in a comment, and a fail-open emits a VISIBLE marker (log/warn/exit note) — never fails silently. A guard that silently fails open is a control bypass. (This is the exact class the cross-family pawl keeps re-finding by hand; catch it here instead.)
 
 #### C -- Correctness
 
