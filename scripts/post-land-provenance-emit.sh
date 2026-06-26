@@ -20,10 +20,31 @@
 #     provenance-only commit instead of demanding a bead verdict.
 #
 # Non-blocking by default (exit 0). Skip with AGENTOPS_PROVENANCE_EMIT_SKIP=1.
+# Set AGENTOPS_PROVENANCE_EMIT_STRICT=1 when a caller intends to close work on
+# successful provenance reconciliation; strict mode turns skipped/failed emit
+# preconditions into non-zero exits.
 set -uo pipefail
 
-if [[ "${AGENTOPS_PROVENANCE_EMIT_SKIP:-0}" == "1" ]]; then
+warn() { echo "post-land-provenance: $*" >&2; }
+
+truthy() {
+  case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|y|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+STRICT=0
+truthy "${AGENTOPS_PROVENANCE_EMIT_STRICT:-0}" && STRICT=1
+
+skip_or_fail() {
+  warn "$1"
+  [[ "$STRICT" -eq 1 ]] && exit 1
   exit 0
+}
+
+if truthy "${AGENTOPS_PROVENANCE_EMIT_SKIP:-0}"; then
+  skip_or_fail "skip requested via AGENTOPS_PROVENANCE_EMIT_SKIP"
 fi
 
 # Scrub inherited git environment FIRST (cross-family REFUTE): this script may be
@@ -36,10 +57,8 @@ fi
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_PREFIX \
   GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE GIT_QUARANTINE_PATH
 
-warn() { echo "post-land-provenance: $*" >&2; }
-
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { warn "not in a git repo; skipping"; exit 0; }
-cd "$ROOT" || exit 0
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || skip_or_fail "not in a git repo; skipping"
+cd "$ROOT" || skip_or_fail "cannot cd into repo root; skipping"
 
 # Resolve the ao binary to an ABSOLUTE path: the loop cd's into the worktree, so a
 # relative binary path would not resolve there.
@@ -48,8 +67,7 @@ if [[ -z "$AO" && -x "$ROOT/cli/bin/ao" ]]; then
   AO="$ROOT/cli/bin/ao"
 fi
 if [[ -z "$AO" || ! -x "$AO" ]]; then
-  warn "ao binary not found; skipping"
-  exit 0
+  skip_or_fail "ao binary not found; skipping"
 fi
 case "$AO" in /*) ;; *) AO="$ROOT/$AO" ;; esac
 
@@ -65,9 +83,28 @@ LEDGER="docs/provenance/ledger.jsonl"
 # path, since they are absent inside the worktree. The ledger WRITE still resolves
 # from the worktree cwd, keeping landed + verdict edges in one chain.
 VDIR="${AGENTOPS_PAWL_VERDICTS_DIR:-$ROOT/.agents/pawl-verdicts}"
+REQUIRED_VERDICT_BEAD="${AGENTOPS_PROVENANCE_REQUIRED_VERDICT_BEAD:-}"
+REQUIRED_VERDICT_HEAD="${AGENTOPS_PROVENANCE_REQUIRED_VERDICT_HEAD:-}"
 
-git fetch "$REMOTE" "$BRANCH" --quiet 2>/dev/null || { warn "could not fetch $TRUNK; skipping"; exit 0; }
-git rev-parse --verify --quiet "$TRUNK" >/dev/null || { warn "trunk ref $TRUNK not resolvable; skipping"; exit 0; }
+validate_required_verdict() {
+  [[ -n "$REQUIRED_VERDICT_BEAD" ]] || return 0
+  required_vf="$VDIR/$REQUIRED_VERDICT_BEAD.json"
+  [[ -f "$required_vf" ]] || skip_or_fail "required pawl verdict missing: $required_vf"
+  if ! jq -e --arg bead "$REQUIRED_VERDICT_BEAD" \
+      '.bead_id == $bead and .disposition == "CONFIRMED"' "$required_vf" >/dev/null 2>&1; then
+    skip_or_fail "required pawl verdict is not CONFIRMED for $REQUIRED_VERDICT_BEAD: $required_vf"
+  fi
+  if [[ -n "$REQUIRED_VERDICT_HEAD" ]]; then
+    verdict_head="$(jq -r '.head_sha // ""' "$required_vf" 2>/dev/null || true)"
+    [[ "$verdict_head" == "$REQUIRED_VERDICT_HEAD" ]] \
+      || skip_or_fail "required pawl verdict is stale: ${verdict_head:-missing} != $REQUIRED_VERDICT_HEAD"
+  fi
+}
+
+validate_required_verdict
+
+git fetch "$REMOTE" "$BRANCH" --quiet 2>/dev/null || skip_or_fail "could not fetch $TRUNK; skipping"
+git rev-parse --verify --quiet "$TRUNK" >/dev/null || skip_or_fail "trunk ref $TRUNK not resolvable; skipping"
 
 # Fixed-SHA range for the just-landed commits, computed ONCE so retries don't drift
 # (a ref-relative range would shift each time the trunk moves). emit-landed dedups
@@ -99,18 +136,18 @@ while IFS= read -r w; do
 done < <(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2}')
 git worktree prune 2>/dev/null || true
 
-WT="$(mktemp -d "${TMPDIR:-/tmp}/agentops-prov-emit.$$.XXXXXX")" || { warn "mktemp failed; skipping"; exit 0; }
+WT="$(mktemp -d "${TMPDIR:-/tmp}/agentops-prov-emit.$$.XXXXXX")" || skip_or_fail "mktemp failed; skipping"
 rmdir "$WT" 2>/dev/null || true
+# shellcheck disable=SC2329 # invoked by trap below
 cleanup() { cd "$ROOT" 2>/dev/null || true; git worktree remove --force "$WT" 2>/dev/null || true; git worktree prune 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 if ! git worktree add --detach "$WT" "$TRUNK" --quiet 2>/dev/null; then
-  warn "could not create worktree at $WT; skipping"
-  exit 0
+  skip_or_fail "could not create worktree at $WT; skipping"
 fi
 
 for ((attempt = 1; attempt <= RETRIES; attempt++)); do
-  cd "$WT" || { warn "cannot cd into worktree; skipping"; exit 0; }
+  cd "$WT" || skip_or_fail "cannot cd into worktree; skipping"
   git fetch "$REMOTE" "$BRANCH" --quiet 2>/dev/null || true
   git reset --hard "$TRUNK" --quiet 2>/dev/null || true   # disposable worktree — safe
 
@@ -122,11 +159,28 @@ for ((attempt = 1; attempt <= RETRIES; attempt++)); do
     warn "emit-landed failed (attempt $attempt); retrying"
     continue
   fi
-  if [[ -d "$VDIR" ]]; then
-    for vf in "$VDIR"/*.json; do
-      [[ -f "$vf" ]] || continue
+  verdict_files=()
+  if [[ -n "$REQUIRED_VERDICT_BEAD" ]]; then
+    required_vf="$VDIR/$REQUIRED_VERDICT_BEAD.json"
+    [[ -f "$required_vf" ]] || skip_or_fail "required pawl verdict missing: $required_vf"
+    verdict_files=("$required_vf")
+  elif [[ -d "$VDIR" ]]; then
+    shopt -s nullglob
+    verdict_files=("$VDIR"/*.json)
+    shopt -u nullglob
+  elif [[ "$STRICT" -eq 1 ]]; then
+    skip_or_fail "pawl verdict directory missing: $VDIR"
+  fi
+
+  if [[ "${#verdict_files[@]}" -gt 0 ]]; then
+    for vf in "${verdict_files[@]}"; do
       if jq -e '.disposition == "CONFIRMED"' "$vf" >/dev/null 2>&1; then
-        "$AO" provenance emit-verdict --file "$vf" >/dev/null 2>&1 || true
+        if ! "$AO" provenance emit-verdict --file "$vf" >/dev/null 2>&1; then
+          warn "emit-verdict failed for $vf (attempt $attempt)"
+          [[ "$STRICT" -eq 1 ]] && exit 1
+        fi
+      elif [[ "$STRICT" -eq 1 && -n "$REQUIRED_VERDICT_BEAD" ]]; then
+        skip_or_fail "required pawl verdict is not CONFIRMED: $vf"
       fi
     done
   fi
@@ -136,7 +190,7 @@ for ((attempt = 1; attempt <= RETRIES; attempt++)); do
     exit 0   # nothing new to record — clean exit, no commit (cleanup trap fires)
   fi
 
-  git add "$LEDGER" 2>/dev/null || { warn "could not stage $LEDGER"; exit 0; }
+  git add "$LEDGER" 2>/dev/null || skip_or_fail "could not stage $LEDGER"
   if ! git commit -m "chore(provenance): post-land sensor edges (age-0tn trunk-bound emit) #trivial" --quiet 2>/dev/null; then
     warn "commit failed (attempt $attempt); retrying"
     continue
@@ -154,4 +208,5 @@ for ((attempt = 1; attempt <= RETRIES; attempt++)); do
 done
 
 warn "could not land provenance after $RETRIES attempts; nothing stranded (worktree discarded)"
+[[ "$STRICT" -eq 1 ]] && exit 1
 exit 0

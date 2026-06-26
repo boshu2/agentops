@@ -14,14 +14,14 @@
 #      domain-map, context-map, registry, sync-hooks) preemptively so the
 #      gates see consistent state
 #   3. Run pre-push-gate.sh in full mode (inventory diff) or --fast (routine)
-#   4. On green: stage all changes (regens included), exit 0 with a clean
-#      "ready to commit + push" next-step report
+#   4. On green: exit 0 with a clean next-step report pointing at the current
+#      proof-aware land wrapper
 #   5. On red: exit 2 with a clear reason — same as the gate itself
 #
 # What it does NOT do (yet):
 #   - commit (operator writes the message; tracked separately)
-#   - push (one extra command after green)
-#   - close the bead
+#   - push or close the bead; use scripts/land.sh <bead-id> for the full
+#     gate -> pawl -> push -> provenance -> br close path
 #
 # Usage:
 #   scripts/ship.sh                    # auto-detect, auto-regen, auto-gate
@@ -199,9 +199,8 @@ if bash scripts/pre-push-gate.sh "${gate_args[@]}"; then
     echo ""
     echo "Next steps (operator):"
     echo "  1. Review changes:           git status && git diff"
-    echo "  2. Commit:                   git add -A && git commit -m '...'"
-    echo "  3. Push to main:             git push origin HEAD:refs/heads/main"
-    echo "  4. Close bead on main:       bd close <bead-id> --reason 'Landed on main at <sha>'"
+    echo "  2. Commit with bead cite:    git add -A && git commit -m 'type(scope): subject (<bead-id>)'"
+    echo "  3. Land proof path:          scripts/land.sh <bead-id>"
     exit 0
 else
     rc=$?
