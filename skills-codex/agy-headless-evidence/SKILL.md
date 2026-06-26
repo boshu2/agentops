@@ -1,6 +1,6 @@
 ---
 name: agy-headless-evidence
-description: Run AGY headlessly via scheduled ticks or `agy -p`, capture agentapi JSONL evidence, and validate automated AGY loops or event streams.
+description: Run AGY headlessly via scheduled ticks or
 ---
 # agy-headless-evidence
 

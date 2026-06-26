@@ -6,6 +6,8 @@
 # Thresholds:
 #   Per-skill SKILL.md: FAIL > 10,000 tokens, WARN > 8,000 tokens
 #   SessionStart total:  FAIL > 8,000 tokens
+#   Description budgets count only description prose. `Triggers:` clauses are
+#   routing metadata and are budgeted by the alias-collision gate.
 #
 # Token estimation: 4 characters per token (conservative average)
 
@@ -146,16 +148,25 @@ echo -e "${BLUE}--- Skill Description Budget ---${NC}"
 echo ""
 
 desc_failures=0
+desc_quality_failures=0
 codex_desc_total=0
 codex_desc_count=0
 while IFS= read -r skill_md; do
-    desc_chars=$(awk '
+    desc_text=$(awk '
+        function normalize_desc(s) {
+            sub(/[[:space:]]+[Tt]riggers?:.*/, "", s)
+            sub(/^'\''/, "", s)
+            sub(/'\''$/, "", s)
+            sub(/^"/, "", s)
+            sub(/"$/, "", s)
+            return s
+        }
         /^---$/ {
             if (!in_fm) {
                 in_fm = 1
                 next
             }
-            print length(desc)
+            print normalize_desc(desc)
             found = 1
             exit
         }
@@ -176,16 +187,23 @@ while IFS= read -r skill_md; do
         }
         END {
             if (!found) {
-                print length(desc)
+                print normalize_desc(desc)
             }
         }
     ' "$skill_md")
+    desc_chars=${#desc_text}
     if [[ "$desc_chars" -gt "$DESC_FAIL_CHARS" ]]; then
         echo -e "  ${RED}[FAIL]${NC} ${skill_md#"$REPO_ROOT"/}: ${desc_chars} chars > ${DESC_FAIL_CHARS} description limit"
         ((desc_failures++)) || true
     fi
     case "${skill_md#"$REPO_ROOT"/}" in
         skills-codex/*)
+            skill_slug="$(basename "$(dirname "$skill_md")")"
+            generic_desc="Run ${skill_slug//-/ }."
+            if [[ "$desc_text" == "$generic_desc" ]]; then
+                echo -e "  ${RED}[FAIL]${NC} ${skill_md#"$REPO_ROOT"/}: generic Codex description loses activation signal: ${desc_text}"
+                ((desc_quality_failures++)) || true
+            fi
             codex_desc_total=$((codex_desc_total + desc_chars))
             codex_desc_count=$((codex_desc_count + 1))
             ;;
@@ -197,6 +215,13 @@ if [[ "$desc_failures" -eq 0 ]]; then
     ((passed++)) || true
 else
     failed=$((failed + desc_failures))
+fi
+
+if [[ "$desc_quality_failures" -eq 0 ]]; then
+    echo -e "  ${GREEN}[PASS]${NC} skills-codex descriptions avoid exact generic Run <skill>. stubs"
+    ((passed++)) || true
+else
+    failed=$((failed + desc_quality_failures))
 fi
 
 if [[ "$codex_desc_count" -gt 0 ]]; then

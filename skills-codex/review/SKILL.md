@@ -1,6 +1,6 @@
 ---
 name: review
-description: 'Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: "review", "review diffs for risk find", "review skill".'
+description: Review diffs for risk, find mocks, scan for
 ---
 # Review Skill
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2016
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -74,7 +75,7 @@ require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$
 # the chaining contract now names only surviving skills; absorbed modes are internal.
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
-require_contains "skills-codex/validate/SKILL.md" 'absorbs vibe' \
+require_contains "skills-codex/validate/SKILL.md" 'vibe` → `--mode=post-impl`' \
   'validate must document the absorbed vibe quick mode'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'

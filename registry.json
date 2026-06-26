@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-23T22:40:27Z",
+  "generated_at": "2026-06-26T01:29:27Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -3480,7 +3480,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "corpus",
-      "purpose": "Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "purpose": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3605,7 +3605,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "authoring",
-      "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\", \"scaffold skill\".",
+      "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [

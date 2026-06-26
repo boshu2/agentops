@@ -1,8 +1,6 @@
 ---
 name: agy-native
-description: 'Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees.
-
-  Triggers: agy, antigravity, agy plugin, AGY evidence.'
+description: 'Drive AgentOps in AGY: loop, plugins'
 ---
 # agy-native
 
