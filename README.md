@@ -154,7 +154,7 @@ ao metrics health         # flywheel health
 - **There are many skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front; current inventory is generated from `skills/**/SKILL.md`.
 - **The compounding is unproven.** The verification is proven; whether the corpus or the escape-corpus *compounds* into a quality edge is a measured-in-the-open hypothesis ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)), not a marketing claim.
 
-**What if the labs ship this natively?** They will — the cross-family gate itself is already table stakes (CodeRabbit, Qodo, and Copilot all ship binding pre-merge review). Two things don't follow the vendor: the *verification discipline* you run on every change, and the `.agents/` corpus — plain markdown in your repo, forkable, Apache-2.0, portable to whatever model wins next quarter. That portability is a durable edge, not a proven quality one; we don't claim the corpus makes your agent smarter until the A/B says so.
+**What if the labs ship this natively?** They will. Two things don't follow the vendor: the *verification discipline* you run on every change, and the `.agents/` corpus — plain markdown in your repo, forkable, Apache-2.0, portable to whatever model wins next quarter. That portability is a durable edge, not a proven quality one; we don't claim the corpus makes your agent smarter until the A/B says so.
 
 ---
 
