@@ -6,7 +6,7 @@
 
 ### Autonomous code validation for coding agents
 
-Coding agents declare "done" on code that is still wrong. AgentOps catches that: every change is independently verified by a fresh-context reviewer — cross-family or deterministic — and reaches *done* only with a proof artifact. **No verdict = not done.** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode).
+Coding agents declare "done" on code that is still wrong. AgentOps catches that. Before a change counts as done, something that didn't write it has to check it: a different model, or a test that actually runs. **No verdict = not done.** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode).
 
 </div>
 
@@ -41,7 +41,7 @@ brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew ins
 # Or release binaries / build from source (cli/README.md).
 ```
 
-Installs hookless — the only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Dependencies: [docs/dependencies.md](docs/dependencies.md) · Day-2 ops (update, backup, recovery): [docs/install-day2-ops.md](docs/install-day2-ops.md).
+Installs hookless. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Dependencies: [docs/dependencies.md](docs/dependencies.md) · Day-2 ops (update, backup, recovery): [docs/install-day2-ops.md](docs/install-day2-ops.md).
 
 ---
 
@@ -50,9 +50,9 @@ Installs hookless — the only hard requirement is an agent runtime and `git`; e
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
-- **A validation membrane.** Tests, gates, `/pre-mortem`, `/validate`, `/council`, and cross-family pawl verdicts prove or reject the work before you trust it. No verdict, not done.
-- **An evidence trail that's yours.** Every run, decision, and verdict lands in `.agents/` in your repo — grep-able, diff-able, portable to whatever model wins next quarter. AgentOps adds no hosted control plane and no telemetry; the corpus lives in your repo, not on our servers. Apache-2.0.
-- **It runs on the agent you already pay for.** Claude Code, Codex, Cursor, OpenCode — same skills, same corpus.
+- **A validation membrane.** Tests, gates, `/pre-mortem`, `/validate`, and `/council` prove or reject the work before you trust it. No verdict, not done.
+- **An evidence trail that's yours.** Every run, decision, and verdict lands in `.agents/` in your repo: grep-able, diff-able, portable to whatever model wins next quarter. AgentOps adds no hosted control plane and no telemetry; the corpus lives in your repo, not on our servers. Apache-2.0.
+- **It runs on the agent you already pay for.** Claude Code, Codex, Cursor, OpenCode. Same skills, same corpus.
 
 ```text
 > /validate --mixed   # the agent reported this PR done
@@ -66,7 +66,7 @@ Recorded → .agents/council/<run-id>/verdict.md
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
-Already installed? Ask your agent `/quickstart`, or run `/rpi "a small goal"` to take one change through discovery, build, and validation end to end — the evidence lands in `.agents/`.
+Already installed? Ask your agent `/quickstart`, or run `/rpi "a small goal"` to take one change through discovery, build, and validation end to end. The evidence lands in `.agents/`.
 
 ---
 
@@ -103,7 +103,7 @@ ao metrics health         # flywheel health
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
-The whole loop runs in a plain session — no daemon, no scheduler, no cloud. For always-on work it opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole loop per ready bead. Details: [docs/3.0.md](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md).
+The whole loop runs in a plain session. No daemon, no scheduler, no cloud. For always-on work, it can hand each task to a background runner instead. Details: [docs/3.0.md](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md).
 
 ## The honest version
 
