@@ -147,9 +147,22 @@ PROMPT
   printf '%s\n' "$diff"
 } > "$prompt_file"
 
-# ml8.7: route the DEFAULT adversarial pawl through the standing pawl-service (the warm
-# opus+codex DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is up.
-# The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
+# Lazy auto-start (the "membrane is never silently cold again" fix): when routing is
+# eligible (head scope, not --converge, not opted out) but the standing service is DOWN,
+# stand it up ONCE here so this and every later review in the session run WARM through the
+# tri-model duel instead of paying a cold codex-exec each time (the gap that left ~13 reviews
+# cold in a single session). One-time ~couple-min warmup; fail-safe — if `up` fails the
+# health check below stays false and we fall through to the cold path. Opt out:
+# PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
+if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
+   && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
+  echo "pawl-review: standing pawl-service not up — starting it once (warm opus+codex+agy duel)…" >&2
+  bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
+fi
+
+# ml8.7 + tri-model: route the DEFAULT adversarial pawl through the standing pawl-service (the
+# warm opus+codex+agy DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is
+# up. The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
 # warm (no per-bead subprocess spin-up — the anti-pattern this deprecates). Fail SAFE: any
 # routing error falls through to the codex-exec path below (never fail-open). --converge
 # (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
