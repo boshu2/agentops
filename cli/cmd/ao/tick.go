@@ -424,8 +424,8 @@ func tickAnyOpenOrInProgress(list []tickBead) bool {
 
 func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 	evFirst := tickFirstEvidenceToken(evidence)
-	if evFirst == "" || (!tickPathExists(rt.workDir, evFirst) && !strings.Contains(evidence, "evidence/")) {
-		fmt.Fprintf(rt.stderr, "REFUSED close %s: evidence ref %q resolves to no real artifact\n", id, evidence)
+	if reason := tickEvidenceRefusal(rt, evidence, evFirst); reason != "" {
+		fmt.Fprintf(rt.stderr, "REFUSED close %s: evidence %q %s\n", id, evidence, reason)
 		return &tickExitError{code: tickExitCloseRef}
 	}
 
@@ -501,6 +501,191 @@ func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) err
 		return nil
 	}
 	return tickClose(rt, id, msg, evidence, paths)
+}
+
+// tickEvidenceRefusal applies the close-evidence gate and returns a non-empty
+// reason if the close must be refused, or "" if it may proceed.
+//
+// Durable git-blob binding (age-l7yh): a repo-internal evidence path must be a
+// committed git blob in HEAD (an ancestor of the close commit tickClose is about
+// to create). Evidence that is present in the working tree but not in history
+// looks durable yet isn't — refuse it. The gate uses git itself for every
+// classification (repo-root relativization, cat-file, ls-tree, diff,
+// check-ignore) rather than string heuristics on the cited text, so it cannot be
+// bypassed by an absolute path inside the repo, a subdirectory-relative path, a
+// crafted substring, a committed directory (tree), a dirty tracked file, a
+// committed symlink, or a symlink/component whose target escapes the repo.
+//
+// Only two classes are allowed:
+//   - a committed, clean, regular-file blob in HEAD (the durable ideal);
+//   - the gitignored AgentOps runtime corpus (.agents/**), confirmed via
+//     git check-ignore — ephemeral by design (admitted state under .ao/ is
+//     tracked and so passes the committed-blob check directly).
+//
+// Everything else is refused, INCLUDING evidence that resolves outside the repo:
+// it cannot be a durable in-repo git blob, and exempting outside paths was the
+// fail-open that crafted symlinks exploited.
+//
+// No Agent-Mail lookup is involved, so Agent-Mail availability never blocks a
+// close. This strengthens "no verdict = not done" without replacing main's
+// ContextID-independence verdict model. Where there is no git history to bind to
+// (not a repo, before the first commit) or repo placement is undeterminable
+// (a stubbed harness), the binding falls back to plain existence so a legit
+// close is not blocked.
+func tickEvidenceRefusal(rt tickRuntime, evidence, evFirst string) string {
+	_ = evidence // classification is by the cited token + git, not the raw text
+	if evFirst == "" {
+		return "resolves to no real artifact"
+	}
+	// Resolve once: tickResolvePath returns evFirst unchanged when it is already
+	// absolute, else joins it under rt.workDir. os.Stat on that absolute path is
+	// the existence check — an absolute evidence path is never falsely treated as
+	// missing by being re-joined under workDir.
+	abs := tickResolvePath(rt.workDir, evFirst)
+	if _, err := os.Stat(abs); err != nil {
+		return "resolves to no real artifact"
+	}
+	if !tickHasGitHead(rt) {
+		return "" // no history to bind to — existence is the only available check
+	}
+	root, rel, ok := tickRepoRelEvidence(rt, evFirst)
+	if !ok {
+		return "" // repo placement undeterminable (e.g. a stubbed test harness)
+	}
+	if rel == ".." || strings.HasPrefix(rel, "../") {
+		// Resolves outside the repo (including via a symlink whose target escapes
+		// it). Such evidence cannot be a durable in-repo git blob, so refuse it
+		// rather than exempt it — exempting outside paths was the fail-open that
+		// let crafted symlinks bypass the binding.
+		return "resolves outside the repository; durable evidence must be a committed file tracked in this repo"
+	}
+	if tickEvidenceCommittedRel(rt, root, rel) {
+		return "" // durable: a committed regular-file blob, ancestor of the close commit
+	}
+	if tickEvidenceRuntimeCorpus(rt, root, rel) {
+		return "" // gitignored .agents/** runtime corpus — ephemeral by design
+	}
+	return "is present but not a committed git blob in history (durable-evidence binding); commit the evidence before closing"
+}
+
+// tickHasGitHead reports whether rt.workDir is inside a git repo with at least
+// one commit (a resolvable HEAD). Used to gate the durable-evidence binding so
+// it never fires where there is no history to bind to.
+func tickHasGitHead(rt tickRuntime) bool {
+	_, code, err := rt.run("git", "rev-parse", "--verify", "-q", "HEAD")
+	return err == nil && code == 0
+}
+
+// tickRepoRelEvidence maps the cited evidence token to the repo top-level plus a
+// clean repo-root-relative slash path. The bool reports only whether repo
+// placement could be DETERMINED (a real git top-level was resolved) — not
+// whether the path is inside; the returned rel may begin with "../" when the
+// path escapes the repo, and the caller refuses that. Relativizing against the
+// repo top-level — rather than trusting the caller's spelling — is what makes the
+// binding immune to absolute-inside-repo and subdirectory bypasses.
+//
+// The parent directory is symlink-resolved (so a symlinked prefix like macOS
+// /var -> /private/var, or any symlinked component that escapes the repo,
+// resolves to its real location and is then correctly judged inside or outside)
+// while the leaf name is kept as-is. A leaf or component symlink that escapes the
+// repo yields a "../" rel and is refused by the caller — escaping is never
+// exempted.
+func tickRepoRelEvidence(rt tickRuntime, evFirst string) (root, rel string, ok bool) {
+	out, code, err := rt.run("git", "rev-parse", "--show-toplevel")
+	if err != nil || code != 0 {
+		return "", "", false
+	}
+	root = strings.TrimSpace(string(out))
+	// A real git top-level is an absolute path; anything else (e.g. a stubbed
+	// test harness echoing a token) means placement is undeterminable.
+	if !filepath.IsAbs(root) {
+		return "", "", false
+	}
+	if resolved, e := filepath.EvalSymlinks(root); e == nil {
+		root = resolved
+	}
+	var lexAbs string
+	if filepath.IsAbs(evFirst) {
+		// Resolve the parent directory (so a symlinked prefix like /var ->
+		// /private/var matches the resolved root) but keep the leaf name as-is, so
+		// a leaf symlink is not followed out of the repo.
+		clean := filepath.Clean(evFirst)
+		parent := filepath.Dir(clean)
+		if resolved, e := filepath.EvalSymlinks(parent); e == nil {
+			parent = resolved
+		}
+		lexAbs = filepath.Join(parent, filepath.Base(clean))
+	} else {
+		base := rt.workDir
+		if resolved, e := filepath.EvalSymlinks(base); e == nil {
+			base = resolved
+		}
+		lexAbs = filepath.Clean(filepath.Join(base, evFirst))
+	}
+	r, err := filepath.Rel(root, lexAbs)
+	if err != nil {
+		return root, "", false // cannot relativize (e.g. different volume) — undeterminable
+	}
+	// Determinable: r is the repo-relative path. It may begin with "../" when the
+	// path (or a resolved symlink target) escapes the repo; the caller refuses
+	// that rather than exempting it.
+	return root, filepath.ToSlash(r), true
+}
+
+// tickEvidenceCommittedRel reports whether the repo-root-relative path rel is
+// durable evidence: a committed FILE in HEAD whose working-tree content matches
+// HEAD exactly. Two checks:
+//
+//   - `git cat-file -t HEAD:<rel>` must report type "blob" — `-e` alone also
+//     succeeds for a tree, which would let a close cite a whole committed
+//     directory (e.g. docs/) instead of a specific durable artifact. rel is
+//     root-relative, which is what the HEAD:<path> form expects.
+//   - `git -C root diff --quiet HEAD -- <rel>` must report no difference — a
+//     committed path with uncommitted or staged content changes is NOT durably
+//     in history, so the cited working-tree artifact must equal the committed
+//     blob. diff runs with -C root because its pathspec is cwd-relative whereas
+//     rel is root-relative.
+//
+// A clean committed regular-file blob is durable evidence reachable from (an
+// ancestor of) the close commit. A committed SYMLINK is also a blob, but its
+// bytes are just the target path — the pointed-at content is not in history — so
+// it is rejected via its tree mode (120000).
+func tickEvidenceCommittedRel(rt tickRuntime, root, rel string) bool {
+	if rel == "" {
+		return false
+	}
+	out, code, err := rt.run("git", "cat-file", "-t", "HEAD:"+rel)
+	if err != nil || code != 0 || strings.TrimSpace(string(out)) != "blob" {
+		return false
+	}
+	// Reject a committed symlink: ls-tree reports its mode as 120000. Require a
+	// regular file (100644/100755) so the durable bytes ARE the evidence, not a
+	// pointer to an untracked, possibly-external, mutable target.
+	lt, ltcode, lterr := rt.run("git", "-C", root, "ls-tree", "HEAD", "--", rel)
+	if lterr != nil || ltcode != 0 {
+		return false
+	}
+	if mode := strings.TrimSpace(string(lt)); !strings.HasPrefix(mode, "100") {
+		return false
+	}
+	_, dcode, derr := rt.run("git", "-C", root, "diff", "--quiet", "HEAD", "--", rel)
+	return derr == nil && dcode == 0
+}
+
+// tickEvidenceRuntimeCorpus reports whether the repo-root-relative path rel is
+// in the AgentOps runtime corpus (.agents/**) AND is actually gitignored. Both
+// conditions are required: scoping to .agents/** keeps other gitignored paths
+// (build artifacts, logs, temp files) from serving as durable evidence, and
+// confirming via git check-ignore honors the documented exemption being for the
+// *gitignored* corpus (a force-added, tracked .agents path is not exempt — it is
+// committed and so passes the blob check anyway). check-ignore runs with -C root
+// so the root-relative rel resolves correctly regardless of rt.workDir.
+func tickEvidenceRuntimeCorpus(rt tickRuntime, root, rel string) bool {
+	if rel != ".agents" && !strings.HasPrefix(rel, ".agents/") {
+		return false
+	}
+	_, code, err := rt.run("git", "-C", root, "check-ignore", "-q", "--", rel)
+	return err == nil && code == 0
 }
 
 func tickFirstEvidenceToken(evidence string) string {

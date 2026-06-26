@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -334,6 +335,220 @@ esac
 			}
 		})
 	}
+}
+
+// TestTickEvidenceRefusal_DurableBinding pins the durable close-evidence
+// binding (age-l7yh): a close is refused when the cited evidence is a
+// repo-internal path present in the working tree but NOT a committed git blob
+// in HEAD (an ancestor of the close commit). Committed blobs are durable and
+// allowed; the only exempt class is the gitignored .agents/** runtime corpus
+// (ephemeral by design). Everything else is refused — uncommitted, modified,
+// directory (tree), committed symlink, evidence/-substring, and anything that
+// resolves outside the repo (including via a crafted symlink). Uses a real git
+// repo to exercise the actual git incantations.
+func TestTickEvidenceRefusal_DurableBinding(t *testing.T) {
+	dir := t.TempDir()
+	runGit := func(args ...string) {
+		t.Helper()
+		c := exec.Command("git", args...)
+		c.Dir = dir
+		c.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	runGit("init", "-q")
+	// A committed evidence blob (durable, an ancestor of any future commit).
+	if err := os.WriteFile(filepath.Join(dir, "committed.md"), []byte("proof"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "committed.md")
+	runGit("commit", "-q", "-m", "seed")
+	// A repo-internal file present on disk but NOT committed (and not ignored).
+	if err := os.WriteFile(filepath.Join(dir, "uncommitted.md"), []byte("proof"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// A gitignored runtime-corpus evidence file (.agents/** — ephemeral by
+	// design, exempt) and a gitignored NON-corpus build artifact (logs/ — NOT
+	// exempt: must be committed to serve as durable evidence).
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".agents/\nlogs/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".agents", "ev.md"), []byte("proof"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "logs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "logs", "build.log"), []byte("artifact"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// An uncommitted file under an evidence/ staging dir — the old leaky
+	// substring exemption let this through; the durable binding now refuses it.
+	if err := os.MkdirAll(filepath.Join(dir, "evidence"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "evidence", "staged.md"), []byte("staged"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// An evidence file OUTSIDE the repo (the git-blob binding cannot govern it).
+	external := filepath.Join(t.TempDir(), "external.md")
+	if err := os.WriteFile(external, []byte("external"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+	cases := []struct {
+		name       string
+		evidence   string
+		wantRefuse bool
+	}{
+		{"committed blob is durable -> allowed", "committed.md", false},
+		{"uncommitted repo file -> refused (durable binding)", "uncommitted.md", true},
+		{"absolute path inside repo, uncommitted -> refused (no abs bypass)", filepath.Join(dir, "uncommitted.md"), true},
+		{"gitignored .agents evidence -> allowed (exempt)", ".agents/ev.md", false},
+		{"gitignored non-corpus artifact -> refused (no fail-open)", "logs/build.log", true},
+		{"uncommitted evidence/ staging file -> refused (no substring bypass)", "evidence/staged.md", true},
+		{"evidence/ substring on uncommitted file -> refused (token, not text)", "uncommitted.md (see evidence/)", true},
+		{"external (out-of-repo) absolute path -> refused (not in repo)", external, true},
+		{"missing artifact -> refused", "nope.md", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			evFirst := tickFirstEvidenceToken(tc.evidence)
+			reason := tickEvidenceRefusal(rt, tc.evidence, evFirst)
+			if (reason != "") != tc.wantRefuse {
+				t.Fatalf("tickEvidenceRefusal(%q) reason=%q, wantRefuse=%v", tc.evidence, reason, tc.wantRefuse)
+			}
+		})
+	}
+
+	// Regression (pawl REFUTED round 1): evidence cited from a SUBDIRECTORY must
+	// bind cwd-relative, not root-relative. A file committed inside sub/ and
+	// cited as its subdir-relative name from rt.workDir=sub/ must be recognized
+	// as committed (durable) and allowed — not falsely refused because HEAD:name
+	// looked at the repo root.
+	t.Run("committed evidence in subdir binds cwd-relative (allowed)", func(t *testing.T) {
+		sub := filepath.Join(dir, "sub")
+		if err := os.MkdirAll(sub, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(sub, "subproof.md"), []byte("proof"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		runGit("add", "sub/subproof.md")
+		runGit("commit", "-q", "-m", "subdir evidence")
+		subRT := tickRuntime{workDir: sub, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+		if reason := tickEvidenceRefusal(subRT, "subproof.md", "subproof.md"); reason != "" {
+			t.Fatalf("committed subdir evidence cited cwd-relative = %q, want allowed", reason)
+		}
+	})
+
+	// Regression (pawl REFUTED round 8): a tracked file that is committed but has
+	// uncommitted working-tree changes is NOT durably in history — the cited
+	// content differs from HEAD — and must be refused.
+	t.Run("committed-but-modified file -> refused (dirty != durable)", func(t *testing.T) {
+		if err := os.WriteFile(filepath.Join(dir, "committed.md"), []byte("MODIFIED uncommitted"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = os.WriteFile(filepath.Join(dir, "committed.md"), []byte("proof"), 0o644) }()
+		if reason := tickEvidenceRefusal(rt, "committed.md", "committed.md"); reason == "" {
+			t.Fatalf("committed-but-modified evidence = allowed, want refused (working tree != HEAD)")
+		}
+	})
+
+	// Regression (pawl REFUTED round 6): a committed DIRECTORY (tree) is not a
+	// durable evidence blob. Citing a committed directory must be refused — the
+	// gate requires a committed file (blob), not a whole directory.
+	t.Run("committed directory (tree) -> refused (blob required)", func(t *testing.T) {
+		treedir := filepath.Join(dir, "treedir")
+		if err := os.MkdirAll(treedir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(treedir, "inner.md"), []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		runGit("add", "treedir/inner.md")
+		runGit("commit", "-q", "-m", "tree evidence")
+		if reason := tickEvidenceRefusal(rt, "treedir", "treedir"); reason == "" {
+			t.Fatalf("committed directory cited as evidence = allowed, want refused (tree is not a blob)")
+		}
+	})
+
+	// Regression (pawl REFUTED round 7): an in-repo SYMLINK whose target is
+	// outside the repo must not bypass the binding. The evidence path is
+	// classified lexically (the leaf symlink is not followed), so it stays
+	// in-repo and — being uncommitted — is refused.
+	t.Run("in-repo symlink to external target -> refused (no symlink escape)", func(t *testing.T) {
+		external := filepath.Join(t.TempDir(), "outside.md")
+		if err := os.WriteFile(external, []byte("outside"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		link := filepath.Join(dir, "linkout.md")
+		if err := os.Symlink(external, link); err != nil {
+			t.Skipf("symlink unsupported: %v", err)
+		}
+		if reason := tickEvidenceRefusal(rt, "linkout.md", "linkout.md"); reason == "" {
+			t.Fatalf("in-repo symlink to external = allowed, want refused (symlink escape)")
+		}
+	})
+
+	// Regression (pawl REFUTED round 10): a COMMITTED SYMLINK is a blob, but its
+	// bytes are only the target path — the pointed-at content is not in history.
+	// Citing a committed symlink must be refused (tree mode 120000, not 100xxx).
+	t.Run("committed symlink -> refused (target not in history)", func(t *testing.T) {
+		linktarget := filepath.Join(t.TempDir(), "target.md")
+		if err := os.WriteFile(linktarget, []byte("target"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		syml := filepath.Join(dir, "committed-link.md")
+		if err := os.Symlink(linktarget, syml); err != nil {
+			t.Skipf("symlink unsupported: %v", err)
+		}
+		runGit("add", "committed-link.md")
+		runGit("commit", "-q", "-m", "commit symlink evidence")
+		if reason := tickEvidenceRefusal(rt, "committed-link.md", "committed-link.md"); reason == "" {
+			t.Fatalf("committed symlink cited as evidence = allowed, want refused (mode 120000)")
+		}
+	})
+
+	// Regression (pawl REFUTED round 10): an ABSOLUTE evidence path routed through
+	// an in-repo SYMLINKED DIRECTORY whose target is outside the repo must not be
+	// exempted as "outside" — the parent is resolved, the path resolves outside,
+	// and outside now means refused (not allowed).
+	t.Run("absolute path via in-repo symlinked dir -> refused", func(t *testing.T) {
+		outdir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(outdir, "proof.md"), []byte("proof"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		linkdir := filepath.Join(dir, "linkdir")
+		if err := os.Symlink(outdir, linkdir); err != nil {
+			t.Skipf("symlink unsupported: %v", err)
+		}
+		abs := filepath.Join(linkdir, "proof.md")
+		if reason := tickEvidenceRefusal(rt, abs, abs); reason == "" {
+			t.Fatalf("absolute path via symlinked dir = allowed, want refused (escapes repo)")
+		}
+	})
+
+	// Guard: outside a git repo (no resolvable HEAD) the durable binding must
+	// NOT fire — there is no history to bind to, so an on-disk repo-internal
+	// evidence file falls back to the existence check and is allowed.
+	t.Run("no git history -> binding skipped (allowed)", func(t *testing.T) {
+		plain := t.TempDir()
+		if err := os.WriteFile(filepath.Join(plain, "proof.md"), []byte("proof"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		plainRT := tickRuntime{workDir: plain, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+		if reason := tickEvidenceRefusal(plainRT, "proof.md", "proof.md"); reason != "" {
+			t.Fatalf("tickEvidenceRefusal in non-git dir = %q, want allowed", reason)
+		}
+	})
 }
 
 func TestTickCloseLinkedWorktreeUsesCanonicalBeadsLedger(t *testing.T) {
