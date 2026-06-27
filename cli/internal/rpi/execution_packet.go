@@ -3,6 +3,14 @@ package rpi
 // ExecutionPacketFile is the canonical filename for execution packets.
 const ExecutionPacketFile = "execution-packet.json"
 
+// ExecutionPacket is the typed workpacket projection used by RPI code. The
+// domain packet aggregate carries the slim persisted form.
+type ExecutionPacket struct {
+	Routing        map[string]ExecutionPacketRouting `json:"routing,omitempty"`
+	DefaultVerdict ExecutionPacketVerdict            `json:"default_verdict,omitempty"`
+	Spec           ExecutionPacketSpec               `json:"spec,omitempty"`
+}
+
 // ExecutionPacketProgram describes an autodev program embedded in an execution packet.
 type ExecutionPacketProgram struct {
 	Path               string   `json:"path"`
@@ -35,6 +43,21 @@ const (
 
 	DefaultExecutionPacketVerdict = ExecutionPacketVerdictFail
 )
+
+// EffectiveVerdict is the canonical packet verdict read: missing
+// default_verdict resolves fail-closed instead of relying on schema default
+// annotations.
+func (p ExecutionPacket) EffectiveVerdict() ExecutionPacketVerdict {
+	switch p.DefaultVerdict {
+	case ExecutionPacketVerdictPass, ExecutionPacketVerdictWarn, ExecutionPacketVerdictFail:
+		return p.DefaultVerdict
+	default:
+		// Absent OR unrecognized/malformed -> fail-closed to FAIL. Since .1 adds no
+		// schema-on-load, a loaded packet may carry a junk default_verdict; never treat
+		// an unvalidated value as authoritative.
+		return DefaultExecutionPacketVerdict
+	}
+}
 
 // ExecutionPacketRouting records the typed implementer/reviewer assignment for
 // a bead or slice. The packet stores these values keyed by bead ID.

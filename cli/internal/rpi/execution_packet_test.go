@@ -58,15 +58,7 @@ func TestExecutionPacketLoopDensityTypesRoundTrip(t *testing.T) {
 }
 
 func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
-	if DefaultExecutionPacketVerdict != ExecutionPacketVerdictFail {
-		t.Fatalf("default verdict = %q, want %q", DefaultExecutionPacketVerdict, ExecutionPacketVerdictFail)
-	}
-
-	original := struct {
-		Routing        map[string]ExecutionPacketRouting `json:"routing"`
-		DefaultVerdict ExecutionPacketVerdict            `json:"default_verdict,omitempty"`
-		Spec           ExecutionPacketSpec               `json:"spec"`
-	}{
+	original := ExecutionPacket{
 		Routing: map[string]ExecutionPacketRouting{
 			"agentops-dhk.1": {
 				Implementer: ExecutionPacketModelCodex,
@@ -85,15 +77,38 @@ func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	var decoded struct {
-		Routing        map[string]ExecutionPacketRouting `json:"routing"`
-		DefaultVerdict ExecutionPacketVerdict            `json:"default_verdict,omitempty"`
-		Spec           ExecutionPacketSpec               `json:"spec"`
-	}
+	var decoded ExecutionPacket
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
 	if !reflect.DeepEqual(original, decoded) {
 		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
+	}
+}
+
+func TestExecutionPacketEffectiveVerdictFailsClosedWhenAbsent(t *testing.T) {
+	packet := ExecutionPacket{}
+
+	if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictFail)
+	}
+}
+
+func TestExecutionPacketEffectiveVerdictHonorsExplicitPass(t *testing.T) {
+	packet := ExecutionPacket{DefaultVerdict: ExecutionPacketVerdictPass}
+
+	if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictPass {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictPass)
+	}
+}
+
+func TestExecutionPacketEffectiveVerdictFailsClosedWhenMalformed(t *testing.T) {
+	// .1 adds no schema-on-load, so a loaded packet can carry a junk value; an
+	// unrecognized default_verdict must fail-closed to FAIL, not be trusted.
+	for _, bad := range []ExecutionPacketVerdict{"MAYBE", "pass", "ok", "garbage", " FAIL"} {
+		packet := ExecutionPacket{DefaultVerdict: bad}
+		if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
+			t.Fatalf("EffectiveVerdict() with malformed %q = %q, want %q", bad, got, ExecutionPacketVerdictFail)
+		}
 	}
 }

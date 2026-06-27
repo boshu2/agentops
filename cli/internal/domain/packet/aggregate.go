@@ -13,6 +13,7 @@ type ExecutionPacket struct {
 	EpicID           string      `json:"epic_id,omitempty"`
 	Complexity       Complexity  `json:"complexity"`
 	TestLevels       []TestLevel `json:"test_levels"`
+	DefaultVerdict   Verdict     `json:"default_verdict,omitempty"`
 	RankedPacketPath string      `json:"ranked_packet_path,omitempty"`
 	Provenance       Provenance  `json:"provenance"`
 }
@@ -33,6 +34,29 @@ const (
 	L2 TestLevel = "L2"
 	L3 TestLevel = "L3"
 )
+
+type Verdict string
+
+const (
+	VerdictPass Verdict = "PASS"
+	VerdictWarn Verdict = "WARN"
+	VerdictFail Verdict = "FAIL"
+
+	DefaultVerdict = VerdictFail
+)
+
+// EffectiveVerdict is the canonical verdict read for loaded packets. Missing
+// default_verdict resolves fail-closed instead of relying on schema defaults.
+func (p ExecutionPacket) EffectiveVerdict() Verdict {
+	switch p.DefaultVerdict {
+	case VerdictPass, VerdictWarn, VerdictFail:
+		return p.DefaultVerdict
+	default:
+		// Absent OR unrecognized/malformed -> fail-closed to FAIL. A loaded packet may
+		// carry a junk default_verdict; never treat an unvalidated value as authoritative.
+		return DefaultVerdict
+	}
+}
 
 type Provenance struct {
 	CreatedAt string `json:"created_at"` // RFC3339

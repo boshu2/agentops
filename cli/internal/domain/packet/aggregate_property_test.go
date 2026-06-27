@@ -1,6 +1,8 @@
 package packet
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"pgregory.net/rapid"
@@ -111,4 +113,32 @@ func TestExecutionPacket_ValidateAcceptsAllValidCombinations_Property(t *testing
 			t.Fatalf("expected nil, got %v (packet=%+v)", err, p)
 		}
 	})
+}
+
+func TestExecutionPacket_EffectiveVerdictFailsClosedWhenAbsent(t *testing.T) {
+	p := validBase()
+
+	if got := p.EffectiveVerdict(); got != VerdictFail {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, VerdictFail)
+	}
+}
+
+func TestExecutionPacket_DefaultVerdictRoundTripsAndResolves(t *testing.T) {
+	original := validBase()
+	original.DefaultVerdict = VerdictPass
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var decoded ExecutionPacket
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !reflect.DeepEqual(decoded, original) {
+		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
+	}
+	if got := decoded.EffectiveVerdict(); got != VerdictPass {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, VerdictPass)
+	}
 }
