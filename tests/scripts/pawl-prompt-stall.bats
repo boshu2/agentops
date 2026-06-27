@@ -37,6 +37,16 @@ teardown() { export PATH="$ORIG_PATH"; rm -rf "$TMP"; }
   [ "$output" = "codex-update" ]
 }
 
+@test "detect_blocking_prompt: codex update MENU -> codex-update-menu (not codex-update)" {
+  # The menu form defaults to "Update now" (runs brew upgrade), so it MUST classify distinctly
+  # from the plain continue form — a plain Enter on this menu selects the destructive default.
+  run detect_blocking_prompt "✨ Update available! 0.141 -> 0.142
+› 1. Update now (runs brew upgrade --cask codex)
+  2. Skip
+  3. Skip until next version"
+  [ "$output" = "codex-update-menu" ]
+}
+
 @test "detect_blocking_prompt: agy feedback survey -> agy-survey" {
   run detect_blocking_prompt "How's the CLI experience? [1]Good [2]Fine [3]Bad [0]Skip"
   [ "$output" = "agy-survey" ]
@@ -59,6 +69,12 @@ teardown() { export PATH="$ORIG_PATH"; rm -rf "$TMP"; }
   [ "$(prompt_dismiss_key codex-update)" = "Enter" ]
   [ "$(prompt_dismiss_key agy-survey)" = "0 Enter" ]
   [ -z "$(prompt_dismiss_key something-else)" ]
+}
+
+@test "prompt_dismiss_key: codex-update-menu navigates to Skip, never a bare Enter on 'Update now'" {
+  local keys; keys="$(prompt_dismiss_key codex-update-menu)"
+  [ "$keys" = "Down Enter" ]      # Down to "Skip", then Enter — not the default "Update now"
+  [ "$keys" != "Enter" ]          # the anti-regression: must NOT select the destructive default
 }
 
 # --- _stall_over_budget (early-give-up decision) ---

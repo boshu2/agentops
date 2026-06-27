@@ -313,6 +313,14 @@ detect_blocking_prompt() {
   local t="$1"
   if printf '%s' "$t" | grep -qiE "trust this folder|trust this directory|requires permission to read"; then
     echo trust-gate
+  elif printf '%s' "$t" | grep -qiE "update now|skip until next version"; then
+    # MENU form of codex's update prompt: "› 1. Update now (runs brew upgrade --cask codex) /
+    # 2. Skip / 3. Skip until next version". The default-highlighted option is "Update now", so a
+    # plain Enter (the codex-update key below) SELECTS it -> runs the brew upgrade and stalls the
+    # warm pane (the exact degradation this guards against; observed 2026-06-26). Classify it
+    # distinctly so it gets a navigate-to-Skip key, not Enter. Checked BEFORE codex-update because
+    # the menu also contains "update available".
+    echo codex-update-menu
   elif printf '%s' "$t" | grep -qiE "update available|press enter to continue|a new version|update & restart"; then
     echo codex-update
   elif printf '%s' "$t" | grep -qiE "how('?s| is| was) (the|your) cli experience|\[0\][[:space:]]*skip|rate (the|your) experience"; then
@@ -325,9 +333,11 @@ detect_blocking_prompt() {
 # The tmux send-keys argument(s) that dismiss a given prompt type (default-accept / skip).
 prompt_dismiss_key() {
   case "$1" in
-    trust-gate)   echo "Enter" ;;    # Enter = "Yes, I trust this folder"
-    codex-update) echo "Enter" ;;    # "Press enter to continue"
-    agy-survey)   echo "0 Enter" ;;  # "[0] Skip"
+    trust-gate)        echo "Enter" ;;        # Enter = "Yes, I trust this folder"
+    codex-update)      echo "Enter" ;;        # plain "Press enter to continue" form
+    codex-update-menu) echo "Down Enter" ;;   # arrow-select menu: Down to "Skip", Enter to take it
+                                              # (NOT Enter on the default, which is "Update now")
+    agy-survey)        echo "0 Enter" ;;      # "[0] Skip"
     *)            echo "" ;;
   esac
 }
