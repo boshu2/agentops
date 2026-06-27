@@ -32,6 +32,17 @@ type Catch struct {
 	DetectorPattern     string
 	ConstraintPathGlobs string
 	DetectorKind        string
+	// Instances is one entry per DISTINCT (bead, head) occurrence of the class — the
+	// per-instance (head_sha + paths) data the all-instances TP-replay needs (S4): a
+	// detector is ASSESSED-COMPILABLE only if it hits EVERY stored bad instance.
+	Instances []CatchInstance
+}
+
+// CatchInstance is one recorded occurrence of a catch class: the head_sha it was caught
+// at and the files it touched. (epic age-zpj5, S4)
+type CatchInstance struct {
+	HeadSHA       string
+	AffectedPaths []string
 }
 
 // classKeyVersion prefixes every class key so the normalization can evolve later
@@ -52,15 +63,18 @@ func ClassKeyFor(domain, reason, detectorPattern string) string {
 	return key
 }
 
-// classKeyIfCatch returns the class key for a REFUTED verdict that carries a
-// reason AND a domain (a real catch), else "". Stamped onto the body at emit so a
-// catch row carries its class identity; DetectCatches recomputes the SAME key on
-// read for historical rows that predate the stored field.
+// classKeyIfCatch returns the class key for a REFUTED verdict that carries REAL
+// classifiable content (non-empty, NON-sentinel domain+reason), else "". Stamped
+// onto the body at emit so a catch row carries its class identity; DetectCatches
+// recomputes the SAME key on read for historical rows that predate the stored field.
+// Uses the SAME isClassifiableCatch predicate as the read side so a sentinel-stamped
+// row (DomainUnclassified / ReasonUnspecified) is NEVER persisted with a fabricated
+// class_key — floor-only at the ledger contract, not just in triage. (epic age-zpj5, S4)
 func classKeyIfCatch(disposition, domain, reason, detectorPattern string) string {
 	if disposition != DispositionRefuted {
 		return ""
 	}
-	if strings.TrimSpace(reason) == "" || strings.TrimSpace(domain) == "" {
+	if !isClassifiableCatch(domain, reason) {
 		return ""
 	}
 	return ClassKeyFor(domain, reason, detectorPattern)
@@ -130,6 +144,17 @@ func slugify(s string) string {
 // REFUTED rounds on the SAME (bead, head) — i.e. review rounds — count as ONE hit
 // for the class, never as class recurrence. AffectedPaths are unioned across the
 // class. The result is ordered by first appearance for determinism.
+// isClassifiableCatch reports whether a REFUTED gate-verdict carries REAL (non-empty,
+// NON-sentinel) domain+reason — the content a catch class is keyed from. The writer
+// stamps DomainUnclassified / ReasonUnspecified on a reason-less overturning-REFUTED
+// (StampEscapeSentinels); those sentinels are NOT real classifiable content — they
+// belong in the unclassified floor, never a synthesized class. (epic age-zpj5, S4)
+func isClassifiableCatch(domain, reason string) bool {
+	d := strings.TrimSpace(domain)
+	r := strings.TrimSpace(reason)
+	return d != "" && r != "" && d != DomainUnclassified && r != ReasonUnspecified
+}
+
 func DetectCatches(l *Ledger) []Catch {
 	if l == nil {
 		return nil
@@ -147,9 +172,11 @@ func DetectCatches(l *Ledger) []Catch {
 		if gv.Disposition != DispositionRefuted {
 			continue
 		}
-		// A catch must carry the classifiable content; a bare REFUTED with no
-		// reason/domain is an unclassified floor, never a class.
-		if strings.TrimSpace(gv.Reason) == "" || strings.TrimSpace(gv.Domain) == "" {
+		// A catch must carry REAL classifiable content. A bare REFUTED with no
+		// reason/domain — OR one the writer SENTINEL-stamped (DomainUnclassified /
+		// ReasonUnspecified) for a reason-less overturn — is an unclassified floor,
+		// NEVER a fabricated class (no-fabrication; epic age-zpj5, S4).
+		if !isClassifiableCatch(gv.Domain, gv.Reason) {
 			continue
 		}
 		ck := ClassKeyFor(gv.Domain, gv.Reason, gv.DetectorPattern)
@@ -173,6 +200,10 @@ func DetectCatches(l *Ledger) []Catch {
 			counted[ck][o] = true
 			c.HitCount++
 			c.Beads = appendUnique(c.Beads, ev.BeadID)
+			c.Instances = append(c.Instances, CatchInstance{
+				HeadSHA:       gv.HeadSHA,
+				AffectedPaths: append([]string(nil), gv.AffectedPaths...),
+			})
 		}
 	}
 

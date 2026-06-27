@@ -48,6 +48,8 @@ var (
 	membraneCatchMode     string
 	membraneCatchHead     string
 	membraneCatchRun      string
+
+	membraneTriageJSON bool
 )
 
 var membraneCmd = &cobra.Command{
@@ -96,12 +98,29 @@ This is the manual twin of the pawl-review REFUTED branch. (epic age-zpj5, S2)`,
 	RunE: runMembraneCatch,
 }
 
+var membraneTriageCmd = &cobra.Command{
+	Use:   "triage",
+	Short: "Triage the catch corpus: the HONEST recurrence + compilability read (today: INSUFFICIENT-DATA)",
+	Long: `Read the CATCH corpus and report whether the compiler thesis has fuel — with a
+PRE-REGISTERED NUMERIC rule, never a fabricated number. Two axes over the catch
+class_keys: Axis-1 RECURRENCE (recurring/distinct) and Axis-2 COMPILABILITY
+(assessed_compilable / ALL recurring, via an all-instances TP-replay of each
+class's detector). The decision: INSUFFICIENT-DATA (below the 15-class power floor
+OR any recurring class unassessed) | MEMORY-ONLY (axis1<0.20) | CURATED (axis2<0.33)
+| GO. Reason-less REFUTEDs are an UNCLASSIFIED floor — counted, never synthesized
+into a class. Today the corpus is far below the floor, so the honest verdict is
+INSUFFICIENT-DATA — which is the PROVE-FIRST point: do not build the compiler on
+faith. (epic age-zpj5, S4)`,
+	RunE: runMembraneTriage,
+}
+
 func init() {
 	membraneCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(membraneCmd)
 	membraneCmd.AddCommand(membraneDeriveCmd)
 	membraneCmd.AddCommand(membraneRecallCmd)
 	membraneCmd.AddCommand(membraneCatchCmd)
+	membraneCmd.AddCommand(membraneTriageCmd)
 
 	membraneDeriveCmd.Flags().StringVar(&membraneDeriveRun, "run", "", "Run id to scan for escapes (required)")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveDryRun, "dry-run", false, "Report what would be derived without writing files")
@@ -122,6 +141,8 @@ func init() {
 	membraneCatchCmd.Flags().StringVar(&membraneCatchMode, "mode", "", "Pawl diversity mode: fresh-context (default) | multi-model | deterministic")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchHead, "head", "", "Commit sha the catch was found at (default: git HEAD)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchRun, "run", "", "Run id (default: membrane-catch)")
+
+	membraneTriageCmd.Flags().BoolVar(&membraneTriageJSON, "json", false, "Emit the triage result as JSON")
 }
 
 // recallByDomain is the testable core of `ao membrane recall`: load the yield
@@ -247,6 +268,92 @@ func gitHeadSHA(root string) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// runMembraneTriage computes + prints the honest catch-corpus triage. (epic age-zpj5, S4)
+func runMembraneTriage(cmd *cobra.Command, _ []string) error {
+	root, err := repoRootOrCwd()
+	if err != nil {
+		return err
+	}
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return err
+	}
+	res := yieldledger.TriageCorpus(ledger, gitAssessCompilability(root))
+	out := cmd.OutOrStdout()
+	if membraneTriageJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(res)
+	}
+	fmt.Fprintf(out, "Membrane triage — DECISION: %s\n", res.Decision)
+	fmt.Fprintf(out, "  classes: %d distinct (%d with a stored reason), %d recurring; unclassified floor: %d\n",
+		res.DistinctClasses, res.ClassesWithStoredReason, res.RecurringClasses, res.UnclassifiedFloor)
+	fmt.Fprintf(out, "  axis-1 recurrence:    %.2f (recurring/distinct)\n", res.Axis1Recurrence)
+	fmt.Fprintf(out, "  axis-2 compilability: %.2f (compilable/recurring); coverage %.0f%% (%d compilable, %d not, %d unassessed)\n",
+		res.Axis2Compilable, res.Axis2Coverage*100, res.AssessedCompilable, res.AssessedNotCompilable, res.Unassessed)
+	switch res.Decision {
+	case yieldledger.DecisionInsufficientData:
+		fmt.Fprintf(out, "  -> need >=%d stored-reason classes AND 100%% assessment coverage before a GO/NO-GO; do NOT build the compiler on faith.\n", yieldledger.TriagePowerFloor)
+	case yieldledger.DecisionMemoryOnly:
+		fmt.Fprintln(out, "  -> catches are one-off-dominated; keep them as recall-only MEMORY, no compiler.")
+	case yieldledger.DecisionCurated:
+		fmt.Fprintln(out, "  -> recurrence is real but mostly judgment-class; CURATED manual mechanical-only compiler behind shadow-bake.")
+	case yieldledger.DecisionGo:
+		fmt.Fprintln(out, "  -> enough mechanical recurrence to justify the auto-compiler tier (still shadow-baked).")
+	}
+	return nil
+}
+
+// gitAssessCompilability returns the all-instances TP-replay assessment closure: for a
+// recurring class with a detector, replay it against the file content at EVERY stored bad
+// instance (must hit all) AND the clean HEAD (must not hit). No detector -> not_compilable;
+// any un-replayable instance -> unassessed (conservative: never a false GO). (epic age-zpj5, S4)
+func gitAssessCompilability(root string) func(yieldledger.Catch) string {
+	return func(c yieldledger.Catch) string {
+		if strings.TrimSpace(c.DetectorPattern) == "" {
+			return yieldledger.AssessNotCompilable
+		}
+		bad := make([]string, 0, len(c.Instances))
+		for _, inst := range c.Instances {
+			content, ok := gitShowFiles(root, inst.HeadSHA, inst.AffectedPaths)
+			if !ok {
+				return yieldledger.AssessUnassessed // un-replayable instance -> conservative
+			}
+			bad = append(bad, content)
+		}
+		clean, cleanOK := gitShowFiles(root, "HEAD", c.AffectedPaths)
+		if !cleanOK {
+			// Can't read clean HEAD (paths deleted/renamed) -> can't PROVE zero-FP ->
+			// unassessed, never a vacuously-passing false compilable (codex S4 refute).
+			return yieldledger.AssessUnassessed
+		}
+		return yieldledger.AssessCompilability(c.DetectorPattern, bad, clean)
+	}
+}
+
+// gitShowFiles concatenates the content of paths at commit ref. Returns false when none of
+// the paths can be read at ref (an un-replayable instance).
+func gitShowFiles(root, ref string, paths []string) (string, bool) {
+	if strings.TrimSpace(ref) == "" || len(paths) == 0 {
+		return "", false
+	}
+	var b strings.Builder
+	readAny := false
+	for _, p := range paths {
+		out, err := exec.Command("git", "-C", root, "show", ref+":"+p).Output()
+		if err != nil {
+			continue // a path absent at this ref is tolerated; need at least one readable
+		}
+		b.Write(out)
+		b.WriteByte('\n')
+		readAny = true
+	}
+	if !readAny {
+		return "", false
+	}
+	return b.String(), true
 }
 
 func runMembraneRecall(cmd *cobra.Command, args []string) error {
