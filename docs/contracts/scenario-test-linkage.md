@@ -98,7 +98,7 @@ gated on changes to `skills/**`, `**/*.sh`, or `.github/**`.
 |---|---|
 | `skills/rpi/references/rpi.feature` | `tests/e2e/rpi-phased-domain.sh` |
 | `skills/goals/references/goals.feature` | `tests/e2e/goals-measure-scenarios.sh`, `goals-steer-auto.sh`, `goals-trace-chain.sh` |
-| `skills/scenario/references/scenario.feature` | `tests/e2e/goals-scenarios-link.sh` |
+| ~~`skills/scenario/references/scenario.feature`~~ (removed: `scenario` folded into `eval-outcomes`, 2026-06-12) | `tests/e2e/goals-scenarios-link.sh` |
 
 The remaining 68 files are allowlisted in `scripts/.scenario-linkage-allow` with
 the standing goal to drain the list as skills gain executing tests.
