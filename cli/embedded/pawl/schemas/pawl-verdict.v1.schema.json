@@ -1,0 +1,107 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agentops.dev/schemas/pawl-verdict.v1.schema.json",
+    "title": "AgentOps Pawl Verdict v1",
+    "description": "The machine-checkable, EVIDENCE-BOUND and COMMIT-BOUND fresh-context-by-default (multi-model opt-in) verdict that authorizes a mutate-shared-trunk pawl (merge/push to main). Written by the /pre-land-refuters (or /council) gate after the panel runs; read by scripts/reconcile-pr.sh BEFORE it merges. Green CI is necessary but NOT sufficient: a merge requires this artifact to exist, be tied to THIS bead+PR+head_sha, carry ALL refuters CONFIRMED, meet the pawl's per-MODE diversity floor (fresh-context DEFAULT = >=1 refuter whose context_id != author_context_id, model-agnostic; multi-model OPT-IN = >=2 distinct KNOWN-roster families), and carry real reviewer evidence (a transcript/evidence path that exists and is non-empty, or a council_artifact that exists). Fail-closed by construction: absent artifact, wrong bead/PR, stale-or-unknown head_sha, the per-mode diversity floor unmet (no fresh-context refuter, or — in multi-model — fewer than two KNOWN-roster distinct families), any non-CONFIRMED refuter, missing reviewer evidence, or an escalate/hold disposition => the gate refuses the merge. THREAT MODEL: this defends against a SLOPPY agent that skips the real review and self-stamps CONFIRMED — it requires that a review ACTUALLY RAN (evidence) against the CURRENT commit (head_sha) by reviewer(s) meeting the pawl's diversity mode. It is NOT cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation. Cryptographic un-forgeability against a hostile forger is INTENTIONALLY OUT OF SCOPE (single-operator trusted loop; the cut cathedral). The companion free-form council narrative lives at .agents/council/YYYY-MM-DD-pre-land-*.md; THIS file is the checkable summary the merge path enforces against. Runtime artifact lives at .agents/pawl-verdicts/<bead-id>.json (untracked); this schema and its fixtures are tracked.",
+    "practices": ["llm-eval-harness", "adr"],
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "schema_version",
+        "bead_id",
+        "pr",
+        "head_sha",
+        "disposition",
+        "generated_at",
+        "author_context_id",
+        "refuters"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "pawl-verdict.v1",
+            "description": "Schema discriminator."
+        },
+        "bead_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The bead this verdict authorizes. reconcile-pr.sh requires this to equal the bead it is closing."
+        },
+        "pr": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The PR number this verdict was produced against (>=1), or 0 for push-to-main landings without a PR. reconcile-pr.sh requires this to equal the PR it is merging; check-pawl-pre-push.sh requires pr=0 for direct push-to-main."
+        },
+        "head_sha": {
+            "type": "string",
+            "minLength": 7,
+            "description": "REQUIRED: the PR head commit the panel actually reviewed. reconcile-pr.sh fetches the PR's CURRENT head sha (gh pr view <PR> --json headRefOid) and refuses the merge if this != current — a verdict goes STALE the moment a new commit is pushed, so it can never be reused across a re-push. This is the COMMIT-BINDING half of the gate."
+        },
+        "disposition": {
+            "type": "string",
+            "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD"],
+            "description": "Panel-level disposition. CONFIRMED = ALL refuters confirmed, the per-mode diversity floor is met, and the panel authorizes the door. REFUTED = at least one refuter refuted; the gate REJECTED. The default REFUTED path is AUTO-REJECT -> AUTO-REDO: the loop sends the work back to be re-done with the findings and re-gates, with no human — continuous self-correction. ESCALATE / HOLD = a tunable CIRCUIT BREAKER tripped (max-attempts, time budget, cost/quota budget, or oscillation/no-forward-progress); the loop stops auto-redoing and HOLDs for a human. The disposition is ESCALATE/HOLD ONLY on a breaker trip, NOT on plain REFUTED. Only CONFIRMED authorizes the merge; everything else fail-closed HOLDs at the merge path."
+        },
+        "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when the panel recorded this verdict."
+        },
+        "mode": {
+            "type": "string",
+            "enum": ["fresh-context", "multi-model"],
+            "default": "fresh-context",
+            "description": "Which diversity requirement the gate enforces for THIS pawl. fresh-context (DEFAULT) = a genuine fresh red-team: require >=1 refuter whose context_id != author_context_id (a separate invocation that did NOT share the author's accumulated context/tunnel-vision). Family is NOT required to differ — same model in a fresh context catches the author's context-accumulation errors, which is the dominant failure. multi-model (OPT-IN, per-pawl, operator-tunable like the circuit-breaker thresholds) = the stronger door: require >=2 distinct, roster-validated CANONICAL families (all CONFIRMED), which ALSO catches a model's systematic blind spots. Opt up only the highest-irreversibility pawls; keep the default cheap. Absent => fresh-context (default). Everything else in the gate (CONFIRMED, head_sha match, evidence present, schema-valid, terminal CI) is mode-INDEPENDENT."
+        },
+        "author_context_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "REQUIRED: the authoring worker session's context identifier (its invocation/session id). The fresh-context check compares each refuter's context_id against this: a refuter is a genuine fresh red-team only when refuter.context_id != author_context_id. This is what makes 'fresh-context' VERIFIABLE rather than asserted — a refuter that ran in the author's own context (context_id == author_context_id) cannot satisfy the default diversity requirement."
+        },
+        "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Which re-gate attempt produced this verdict (default 1). A plain REFUTED auto-redoes (no human); the disposition only flips to ESCALATE/HOLD when a circuit breaker trips — e.g. the max-attempts breaker after N (default 3) re-work/re-gate cycles, or the time/cost/oscillation breakers. Never CONFIRMED on a streak of REFUTEDs."
+        },
+        "refuters": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The refuter panel. EVERY refuter must be CONFIRMED, each prompted to refute, each read-only and stake-free. The DIVERSITY requirement is mode-based (see `mode`): in fresh-context (default) at least ONE refuter must carry context_id != author_context_id (a genuine fresh red-team, model-agnostic) — one fresh refuter suffices; in multi-model (opt-in) at least TWO distinct canonical families must appear. minItems is 1 so a single fresh-context refuter is schema-valid; the per-mode floor (>=1 fresh refuter, or >=2 families) is enforced in pawl-verdict.sh `check`.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["family", "verdict", "context_id"],
+                "properties": {
+                    "family": {
+                        "type": "string",
+                        "enum": ["claude", "fable", "anthropic", "gpt", "codex", "openai", "gemini", "agy", "google"],
+                        "description": "The reviewer's model family, recorded as a label from the KNOWN alias roster (the writer stores the raw label as given). Aliases collapse to three CANONICAL families: fable/anthropic -> claude; codex/openai -> gpt; agy/google -> gemini. This enum admits the full alias set; pawl-verdict.sh `check` then lowercases + normalizes each label to its canonical family and rejects anything off-roster, so a fake/unknown label ('totally-real-family', 'x') is refused at check time — the multi-model '>=2 distinct families' floor cannot be gamed with junk strings (roster validation is mode-INDEPENDENT). In the OPT-IN multi-model mode at least two DISTINCT CANONICAL families must appear across the refuters (e.g. claude + codex passes; claude + fable does not — both canonicalize to claude); the DEFAULT fresh-context mode is model-agnostic and does not require distinct families."
+                    },
+                    "reviewer": {
+                        "type": "string",
+                        "description": "Optional reviewer/session identifier (must differ from the authoring worker session)."
+                    },
+                    "context_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "REQUIRED: the context/invocation id this refuter ran in. fresh-context mode (the default) requires >=1 refuter whose context_id != the verdict's author_context_id — proving this refuter was a SEPARATE invocation with no shared accumulated context, not the author re-grading itself. The same model in a fresh context still satisfies fresh-context; a refuter whose context_id == author_context_id is NOT a fresh red-team and does not count toward the requirement."
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "enum": ["CONFIRMED", "REFUTED"],
+                        "description": "This refuter's verdict. EVERY refuter must be CONFIRMED for the panel to authorize the door."
+                    },
+                    "evidence": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Path to this refuter's grounding evidence — the real reviewer run output (transcript), the pinned-fixture sweep, or the council narrative anchor. reconcile-pr.sh requires this file to EXIST and be NON-EMPTY (or the verdict's top-level council_artifact to exist). A verdict with no reviewer evidence anywhere is fail-closed: it reflects an assertion, not a review that actually ran. This is the EVIDENCE-BINDING half of the gate."
+                    }
+                }
+            }
+        },
+        "council_artifact": {
+            "type": "string",
+            "description": "Optional path to the free-form council narrative (.agents/council/YYYY-MM-DD-pre-land-<slug>.md) this summary was distilled from."
+        }
+    }
+}
