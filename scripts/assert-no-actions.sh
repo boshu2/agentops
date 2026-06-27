@@ -69,8 +69,30 @@ json_escape() {
 
 # api_is_read_only: true iff a `gh api ...` invocation is a safe GET read.
 # Blocks: any explicit non-GET method (-X/--method POST|PUT|PATCH|DELETE), any
-# request-body flag (-f/-F/--input/--raw-field/--field), and any Actions-mutating
-# or dispatch endpoint (.../dispatches, /actions/, repository_dispatch, etc.).
+# request-body flag (-f/-F/--input/--raw-field/--field) IN EITHER the space form
+# (`--field x=y`) OR the equals form (`--field=x=y`), and any Actions-mutating or
+# dispatch endpoint (.../dispatches, /actions/, repository_dispatch, etc.).
+#
+# The equals-form of the body flags was the agentops-2pl.11 reviewer hole: the old
+# case arms matched only the bare long flags (`--field`/`--raw-field`/`--input`),
+# so `gh api --field=x=y` / `--raw-field=x=y` / `--input=f.json` were delegated to
+# the real gh and could POST to a dispatch endpoint. A body flag token now counts
+# if it EQUALS the flag OR STARTS WITH `flag=`, closing both forms.
+#
+# is_body_flag: a token is a request-body flag (→ implies a write) in any form.
+is_body_flag() {
+  case "$1" in
+    # long forms — bare (space form) or equals form
+    --field|--field=*) return 0 ;;
+    --raw-field|--raw-field=*) return 0 ;;
+    --input|--input=*) return 0 ;;
+    # short forms — bare (space form) or attached value (`-ffield=value`)
+    -f|-f*) return 0 ;;
+    -F|-F*) return 0 ;;
+  esac
+  return 1
+}
+
 api_is_read_only() {
   # args here are the tokens AFTER the leading `api`.
   local joined=" $* " tok next i=1 method="GET"
@@ -79,6 +101,11 @@ api_is_read_only() {
     return 1
   fi
   for tok in "$@"; do
+    # any request body / field flag implies a write — match BOTH space and equals
+    # forms (`--field x=y` and `--field=x=y`) and the short attached form.
+    if is_body_flag "$tok"; then
+      return 1
+    fi
     case "$tok" in
       -X|--method)
         # next token is the method
@@ -87,9 +114,6 @@ api_is_read_only() {
         ;;
       -X*) method="${tok#-X}" ;;
       --method=*) method="${tok#--method=}" ;;
-      # any request body / field flag implies a write
-      -f|-F|--field|--raw-field|--input) return 1 ;;
-      -f*|-F*) return 1 ;;
     esac
     i=$((i + 1))
   done

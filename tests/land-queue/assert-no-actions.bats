@@ -365,6 +365,7 @@ assert_blocked() {
   assert_allowed pr diff 5
   assert_allowed api repos/o/r
   assert_allowed api -X GET repos/o/r
+  assert_allowed api --method GET repos/o/r
   assert_allowed auth status
   assert_allowed --version
   assert_allowed workflow list
@@ -391,6 +392,15 @@ assert_blocked() {
   assert_blocked api --method PUT repos/o/r/x
   assert_blocked api repos/o/r/actions/runs/1/rerun
   assert_blocked api repos/o/r -f field=value   # request body → write
+  # The agentops-2pl.11 equals-form hole: body/method flags in `--flag=value` form
+  # were delegated to real gh, letting a body-bearing `gh api` POST to a dispatch
+  # endpoint. Default-deny must BLOCK them in BOTH the space and equals forms.
+  assert_blocked api --field=x=y repos/o/r       # equals-form body flag → write
+  assert_blocked api --raw-field=x=y repos/o/r   # equals-form raw body → write
+  assert_blocked api --input=f.json repos/o/r    # equals-form input file → write
+  assert_blocked api --method=POST repos/o/r     # equals-form method override → write
+  # Actions/workflow dispatch endpoint is blocked regardless of method form.
+  assert_blocked api repos/o/r/actions/workflows/x/dispatches
   assert_blocked frobnicate the widget    # totally unknown verb → denied
 
   # Every blocked call logged blocked; the real gh stub was NEVER delegated to.
