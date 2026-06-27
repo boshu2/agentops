@@ -34,9 +34,9 @@ const DOCTRINE = `You are an agent inside the AgentOps ship-beads orchestration 
 
 // ---------------------------------------------------------------------------
 // SCHEMAS — structured JSON is what makes the workflow resumable + deterministic.
-// The post-mortem's #1 reliability lesson: batch `bd --json` status was flaky
+// The post-mortem's #1 reliability lesson: batch `br --json` status was flaky
 // (null/0), so the workflow carries its OWN structured state, never trusting a
-// single bd batch query for control flow.
+// single br batch query for control flow.
 // ---------------------------------------------------------------------------
 
 // PLAN-GRAPH output: the wave plan + per-bead surface fingerprint.
@@ -115,7 +115,7 @@ const AGENT_RETURN_SCHEMA = {
 
 // RECONCILE return: the authoritative per-PR ledger line (post-mortem §6 state
 // machine). `confirmed_merged` is the ONLY source of truth for bead-close — never
-// a bd batch query, never a parsed log line.
+// a br batch query, never a parsed log line.
 const RECONCILE_SCHEMA = {
   type: 'object',
   required: ['bead_id', 'pr_number', 'terminal_state', 'confirmed_merged', 'bead_closed'],

@@ -47,6 +47,14 @@ var (
 		"scripts/check-skill-redirects.sh",
 		"tests/scripts/check-skill-redirects.bats",
 	}
+	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
+	// the most-viewed content artifact on the public repo — shipped a prompt
+	// telling agents to run `bd ready` with no gate to catch it.
+	workflowTrackerPaths = []string{
+		".claude/workflows/**",
+		"scripts/check-workflow-no-retired-tracker.sh",
+		"tests/scripts/check-workflow-no-retired-tracker.bats",
+	}
 	archDocDriftPaths = []string{
 		"docs/architecture/ports-and-adapters.md",
 		"docs/contracts/bounded-contexts.yaml",
@@ -121,6 +129,7 @@ func init() {
 		{ID: "contract.bounded-contexts-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-bounded-contexts-drift.sh"},
 		{ID: "contract.disposition-schema", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "validate-skill-disposition-schema.sh"},
 		{ID: "contract.skill-redirects", Tiers: gates.Fast | gates.Full, Match: skillRedirectPaths, Blocking: true, Backing: "check-skill-redirects.sh"},
+		{ID: "workflow.no-retired-tracker", Tiers: gates.Fast | gates.Full, Match: workflowTrackerPaths, Blocking: true, Backing: "check-workflow-no-retired-tracker.sh"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},
 		{ID: "eval.corpus-freshness", Tiers: gates.Fast | gates.Full, Match: evalPaths, Blocking: true, Backing: "check-corpus-freshness.sh"},
