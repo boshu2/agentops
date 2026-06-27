@@ -35,11 +35,11 @@ export const meta = {
 
 // ---- The capability to run through the loop -------------------------------
 // args may be a string (the intent text) or {intent, beadId}. If absent, the
-// shape agents fall back to `bd ready` and pick the top item.
+// shape agents fall back to the ready queue and pick the top item.
 const intent = (args && (typeof args === 'string' ? args : args.intent)) || null
 const intentClause = intent
   ? `The capability/intent to run through the loop is:\n\n${intent}`
-  : `No intent was passed. Run \`bd ready\`, pick the highest-priority unblocked bead, and treat its title+description as the intent. State which bead id you picked.`
+  : `No intent was passed. Run \`BEADS_DIR="$(ao beads dir)" br ready\` (bd/Dolt is retired), pick the highest-priority unblocked bead, and treat its title+description as the intent. State which bead id you picked.`
 
 // S2: run mode — 'full' (default) runs all five phases; 'plan' stops after
 // Pre-flight, returning the hardened plan + verdicts (the safe planning half).
@@ -65,7 +65,7 @@ const INTENT_SCHEMA = {
   required: ['feature', 'acceptance', 'boundedContext', 'nonGoals', 'rollback', 'evidenceNeeded'],
   properties: {
     feature: { type: 'string', description: 'Feature/capability name' },
-    beadId: { type: 'string', description: 'bd bead id if one was picked/created, else empty' },
+    beadId: { type: 'string', description: 'br bead id if one was picked/created, else empty' },
     acceptance: {
       type: 'array',
       minItems: 2,
