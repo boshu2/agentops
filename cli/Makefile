@@ -17,6 +17,9 @@ sync-hooks:
 	@cp ../lib/chain-parser.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
 	@cp ../skills/compile/scripts/compile.sh embedded/skills/compile/scripts/compile.sh
+	@mkdir -p embedded/pawl/scripts embedded/pawl/schemas
+	@cp ../scripts/pawl-review.sh ../scripts/pawl-verdict.sh ../scripts/pawl.sh embedded/pawl/scripts/
+	@cp ../schemas/pawl-verdict.v1.schema.json embedded/pawl/schemas/
 
 # Build the binary
 build: sync-hooks

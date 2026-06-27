@@ -87,8 +87,8 @@ emit_pawl_catch() {
   # $review_files (which pawl-review only populates for LARGE diffs > MAX_INLINE_BYTES),
   # so a NORMAL small-diff catch is still path-recallable.
   case "${scope:-head}" in
-    staged) files="$(git -C "${REPO_ROOT:-.}" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
-    *)      files="$(git -C "${REPO_ROOT:-.}" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
   [[ -n "$domain" ]] || domain="pawl-review"
@@ -112,8 +112,8 @@ recall_prior_catches() {
   local ao_bin domain files recalled
   ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   case "${scope:-head}" in
-    staged) files="$(git -C "${REPO_ROOT:-.}" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
-    *)      files="$(git -C "${REPO_ROOT:-.}" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
   [[ -n "$domain" ]] || return 0
@@ -249,8 +249,8 @@ diff_bytes="$(printf '%s' "$diff" | wc -c | tr -d ' ')"
 review_stat=""; review_files=""
 if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   case "$scope" in
-    head)   review_stat="$(git -C "$REPO_ROOT" show HEAD --stat --format= --no-color 2>/dev/null)"; review_files="$(git -C "$REPO_ROOT" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
-    staged) review_stat="$(git -C "$REPO_ROOT" diff --cached --stat --no-color 2>/dev/null)"; review_files="$(git -C "$REPO_ROOT" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    head)   review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" show HEAD --no-ext-diff --no-textconv --stat --format= --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    staged) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
 fi
 review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$review_files" "$REPO_ROOT")"

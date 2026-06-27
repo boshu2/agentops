@@ -4,10 +4,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
+	"github.com/boshu2/agentops/cli/embedded"
 	"github.com/spf13/cobra"
 )
 
@@ -109,20 +112,199 @@ func runPawlReview(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		}
 	}
-	repoRoot, err := resolveAgentsRepoRoot()
+	// EDGE 1 — GENUINE in-AgentOps dogfood: run the LIVE scripts so a script edit is
+	// immediately exercised. SECURITY: "has the AgentOps marker files" is NOT enough —
+	// a repo under review can FORGE docs/contracts/agents-write-surfaces.md + skills/ +
+	// scripts/pawl-review.sh, which would make an installed `ao pawl review` execute the
+	// repo's PLANTED script (RCE). The trust test is therefore stronger: take the live
+	// path only when the running ao BINARY physically lives inside the resolved checkout
+	// (i.e. we are running THIS repo's own build). An installed ao on a foreign/forged
+	// repo fails this test → the embedded + untrusted-guard path. (If a user runs a repo's
+	// OWN cli/bin/ao they have already chosen to execute that repo's code — not our boundary.)
+	if repoRoot, err := resolveAgentsRepoRoot(); err == nil && aoBinaryInside(repoRoot) {
+		script := filepath.Join(repoRoot, defaultPawlReviewScript)
+		if _, statErr := os.Stat(script); statErr != nil {
+			return fmt.Errorf("pawl-review script not found at %s: %w", script, statErr)
+		}
+		return runForwardedPawlScript(cmd, script, repoRoot, "", args, nil)
+	}
+	// Stranger path: not a genuine AgentOps checkout (installed ao, or forged markers).
+	// Run the EMBEDDED scripts against the user's OWN git repo so the cross-family catch
+	// works zero-config — decoupled from resolveAgentsRepoRoot, never executing a script
+	// from the untrusted repo under review.
+	return runPawlReviewEmbedded(cmd, args)
+}
+
+// aoBinaryInside reports whether the running ao binary physically lives inside repoRoot —
+// the trust test for "this is genuinely our own checkout" (forge-proof, unlike marker
+// files). Symlinks are resolved on both sides so a symlinked install/checkout compares
+// correctly. On any resolution error it returns false (fail-safe → embedded path).
+func aoBinaryInside(repoRoot string) bool {
+	self, err := pawlSelfBinary()
+	if err != nil || self == "" {
+		return false
+	}
+	return pathInside(realpathOrSelf(self), realpathOrSelf(repoRoot))
+}
+
+// realpathOrSelf returns p as an absolute, symlink-resolved path. When p (or a leaf of it)
+// doesn't exist, it resolves symlinks on the LONGEST existing prefix and keeps the rest, so
+// a non-existent entry still compares consistently against an existing root (e.g. macOS
+// /var -> /private/var) — required for correct containment checks.
+func realpathOrSelf(p string) string {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		abs = filepath.Clean(p)
+	}
+	cur, remaining := abs, ""
+	for {
+		if resolved, err := filepath.EvalSymlinks(cur); err == nil {
+			if remaining == "" {
+				return resolved
+			}
+			return filepath.Join(resolved, remaining)
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return abs
+		}
+		remaining = filepath.Join(filepath.Base(cur), remaining)
+		cur = parent
+	}
+}
+
+// pathInside reports whether child is at or below root (both should be realpath'd).
+func pathInside(child, root string) bool {
+	rel, err := filepath.Rel(root, child)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && !filepath.IsAbs(rel))
+}
+
+// trustedPATH returns the process PATH with every entry dropped that the untrusted repo
+// could control: empty, ".", any relative entry (resolves against cwd = the repo), AND any
+// absolute entry that lives INSIDE excludeRoot (e.g. a user who put $PWD/bin on PATH while
+// reviewing). excludeRoot "" only strips the relative entries. This is what stops a bare
+// git/bash/codex/jq/timeout resolving to a repo-planted binary.
+func trustedPATH(excludeRoot string) string {
+	sep := string(os.PathListSeparator)
+	var rootReal string
+	if excludeRoot != "" {
+		rootReal = realpathOrSelf(excludeRoot)
+	}
+	var kept []string
+	for _, p := range strings.Split(os.Getenv("PATH"), sep) {
+		if p == "" || p == "." || !filepath.IsAbs(p) {
+			continue
+		}
+		if rootReal != "" && pathInside(realpathOrSelf(p), rootReal) {
+			continue
+		}
+		kept = append(kept, p)
+	}
+	return strings.Join(kept, sep)
+}
+
+// trustedLookPath finds an executable named name on the trusted PATH (excludeRoot's dirs
+// removed), returning an absolute path. It never consults `.`/relative or repo-internal
+// dirs, so the resolved binary is never one the untrusted repo controls.
+func trustedLookPath(name, excludeRoot string) (string, error) {
+	sep := string(os.PathListSeparator)
+	for _, dir := range strings.Split(trustedPATH(excludeRoot), sep) {
+		cand := filepath.Join(dir, name)
+		if info, err := os.Stat(cand); err == nil && !info.IsDir() && info.Mode().Perm()&0o111 != 0 {
+			return cand, nil
+		}
+	}
+	return "", fmt.Errorf("%s not found on a trusted PATH (repo-internal/relative entries excluded)", name)
+}
+
+// runPawlReviewEmbedded runs the embedded pawl scripts against the user's own git
+// repository. It extracts the scripts/ + schemas/ sibling bundle from the binary to a
+// temp dir and points the scripts at the user's repo via the existing env seams
+// (AGENTOPS_REPO_ROOT for git ops + verdict/yield dir; PAWL_NO_SERVICE so a cold
+// stranger run never tries to stand up a warm review pane).
+//
+// cwd is the user's repo so the read-only codex refuter can READ the changed files there
+// (large diffs elide added lines and require reading the files); the bare-binary RCE class
+// is closed instead by a SANITIZED PATH (pawlReviewColdEnv) that drops every `.`/relative
+// entry, so a bare codex/git/jq/timeout can never resolve a planted `./binary` from the
+// repo — plus the per-binary AO_BIN guards for the subshells that cd into the repo.
+func runPawlReviewEmbedded(cmd *cobra.Command, args []string) error {
+	startDir, err := resolveProjectDir()
 	if err != nil {
 		return err
 	}
-	script := filepath.Join(repoRoot, defaultPawlReviewScript)
-	if _, statErr := os.Stat(script); statErr != nil {
-		return fmt.Errorf("pawl-review script not found at %s: %w", script, statErr)
+	userRoot, err := gitToplevel(startDir)
+	if err != nil {
+		return fmt.Errorf("ao pawl review must run inside a git repository (it reviews your latest commit): %w", err)
 	}
+	cacheDir, cleanup, err := extractPawlBundle()
+	if err != nil {
+		return fmt.Errorf("preparing embedded pawl scripts: %w", err)
+	}
+	defer cleanup()
+	script := filepath.Join(cacheDir, "scripts", filepath.Base(defaultPawlReviewScript))
+	return runForwardedPawlScript(cmd, script, userRoot, userRoot, args, pawlReviewColdEnv(userRoot))
+}
 
-	c := exec.Command("bash", append([]string{script}, args...)...) // #nosec G204 -- args are operator-supplied pawl flags forwarded to a fixed in-repo script.
-	c.Dir = repoRoot
+// pawlReviewColdEnv is the env overlay for the stranger (embedded) path. It re-roots the
+// scripts onto the user's repo (git ops, verdict + yield ledger writes) and disables the
+// standing-service probe so a one-shot cold run never spins up a warm pane. EDGE 2: the
+// schema is resolved script-relative from the extracted bundle, so no override is needed
+// for it — only the user-repo seams.
+//
+// SECURITY: the repo under review is UNTRUSTED while it is cwd, so:
+//   - PATH is SANITIZED (every empty/"."/relative entry dropped) so a bare codex/git/jq
+//     the scripts invoke can never resolve a planted `./binary` from the repo;
+//   - PAWL_UNTRUSTED_REPO=1 stops the scripts executing anything from $REPO_ROOT/cli/*;
+//   - AO_BIN pins the membrane catch/recall/emits to THIS trusted invoking binary.
+func pawlReviewColdEnv(userRoot string) []string {
+	env := []string{
+		"AGENTOPS_REPO_ROOT=" + userRoot,
+		"PAWL_NO_SERVICE=1",
+		"PAWL_UNTRUSTED_REPO=1",
+		"PATH=" + trustedPATH(userRoot),
+		// Neutralize shell-startup injection: non-interactive bash sources $BASH_ENV (and
+		// $ENV in POSIX mode) BEFORE the script, so a repo-controlled value would run code
+		// despite the PATH guard. Empty disables it.
+		"BASH_ENV=",
+		"ENV=",
+		// Belt-and-suspenders for git diff-helper code-exec: the script also passes
+		// --no-ext-diff; clearing GIT_EXTERNAL_DIFF closes the env route too.
+		"GIT_EXTERNAL_DIFF=",
+	}
+	if self, err := pawlSelfBinary(); err == nil && self != "" {
+		env = append(env, "AO_BIN="+self)
+	}
+	return env
+}
+
+// pawlSelfBinary resolves the trusted invoking ao binary (production: os.Executable()).
+// It is a seam so tests can point AO_BIN at a benign fake ao — the test binary itself
+// would re-run the whole suite when the script invokes it with `membrane recall …`.
+var pawlSelfBinary = os.Executable
+
+// runForwardedPawlScript runs a pawl script under bash, forwarding stdio + args and
+// propagating the script's exit code verbatim (the exit code IS the verdict). extraEnv,
+// when non-nil, is appended to the process environment (the stranger-path seams).
+func runForwardedPawlScript(cmd *cobra.Command, script, dir, untrustedRoot string, args, extraEnv []string) error {
+	// Resolve bash to an ABSOLUTE path on a TRUSTED PATH (no `.`/relative entries, no dir
+	// inside untrustedRoot) so the Go-side launch can never pick a planted bash the repo
+	// controls. untrustedRoot is "" on the in-checkout path (PATH is trusted there).
+	bashBin, err := trustedLookPath("bash", untrustedRoot)
+	if err != nil {
+		return fmt.Errorf("locating bash: %w", err)
+	}
+	c := exec.Command(bashBin, append([]string{script}, args...)...) // #nosec G204 -- args are operator-supplied pawl flags forwarded to a fixed in-repo/embedded script.
+	c.Dir = dir
 	c.Stdin = cmd.InOrStdin()
 	c.Stdout = cmd.OutOrStdout()
 	c.Stderr = cmd.ErrOrStderr()
+	if extraEnv != nil {
+		c.Env = append(os.Environ(), extraEnv...)
+	}
 	runErr := c.Run()
 	if runErr == nil {
 		return nil
@@ -136,4 +318,70 @@ func runPawlReview(cmd *cobra.Command, args []string) error {
 		return &pawlReviewExitError{code: exitErr.ExitCode()}
 	}
 	return runErr
+}
+
+// gitToplevel returns the working-tree root containing dir — the review target on the
+// stranger path. It walks up for a `.git` entry (a directory for a normal clone, a file for
+// a worktree/submodule) in PURE Go, executing NO binary, so a git the repo planted can
+// never run during root discovery (the chicken-and-egg: you can't trust a PATH-resolved git
+// to find the very repo whose trust you're establishing). The result is symlink-resolved so
+// it compares correctly against PATH entries in trustedPATH.
+func gitToplevel(dir string) (string, error) {
+	cur := realpathOrSelf(dir)
+	for {
+		if _, err := os.Stat(filepath.Join(cur, ".git")); err == nil {
+			return cur, nil
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			return "", fmt.Errorf("not inside a git repository (no .git found from %s)", dir)
+		}
+		cur = parent
+	}
+}
+
+// extractPawlBundle materializes the embedded pawl bundle (scripts/ + schemas/) to a
+// fresh temp dir, preserving the sibling layout pawl-verdict.sh depends on (it reads
+// its schema as $SCRIPT_DIR/../schemas/pawl-verdict.v1.schema.json). Returns the dir
+// and a cleanup func. Shell scripts are written executable + CRLF-normalized.
+func extractPawlBundle() (string, func(), error) {
+	dir, err := os.MkdirTemp("", "ao-pawl-*")
+	if err != nil {
+		return "", func() {}, fmt.Errorf("create pawl cache dir: %w", err)
+	}
+	cleanup := func() { _ = os.RemoveAll(dir) }
+	walkErr := fs.WalkDir(embedded.PawlFS, "pawl", func(p string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, relErr := filepath.Rel("pawl", p)
+		if relErr != nil {
+			return relErr
+		}
+		if rel == "." {
+			return nil
+		}
+		dest := filepath.Join(dir, rel)
+		if d.IsDir() {
+			return os.MkdirAll(dest, 0o755)
+		}
+		data, readErr := fs.ReadFile(embedded.PawlFS, p)
+		if readErr != nil {
+			return readErr
+		}
+		mode := os.FileMode(0o600)
+		if strings.HasSuffix(rel, ".sh") {
+			data = normalizeShellScript(data)
+			mode = 0o700
+		}
+		if mkErr := os.MkdirAll(filepath.Dir(dest), 0o755); mkErr != nil {
+			return mkErr
+		}
+		return os.WriteFile(dest, data, mode)
+	})
+	if walkErr != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("extract embedded pawl bundle: %w", walkErr)
+	}
+	return dir, cleanup, nil
 }
