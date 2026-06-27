@@ -233,6 +233,83 @@ gate_runs() {
   [ -d "$QUEUE_DIR/.lane.lock" ]
 }
 
+# --watch + signal handling (agentops-2pl.9, refuted-defect fix). The INT/TERM
+# trap must RELEASE the lane lock AND TERMINATE the process — not merely release
+# the lock and let the watch loop keep running. The old behavior freed the lock
+# but the loop stayed alive, so a second lane could acquire the SAME lock while
+# the first was still running: two concurrent writers to `main`. This test makes
+# the hole explicit:
+#   - a 2nd lane started WHILE the 1st is alive (before TERM) is REFUSED;
+#   - after TERM the 1st process actually EXITS within a short bound (no looping);
+#   - the lane lock is released;
+#   - a 2nd lane started AFTER the 1st has exited acquires the lock fine.
+# On the OLD trap (release-only, no exit) the watch loop survives TERM, so the
+# process would NOT exit within the bound and assertion (a) fails.
+@test "watch lane exits on TERM, frees the lock, and only then admits a successor" {
+  # Empty queue: the watch lane drains (nothing to do) then sits in its poll
+  # sleep holding the singleton lane lock — the steady state where the
+  # single-writer invariant must hold.
+  LANE_LOCK_DIR="$QUEUE_DIR/.lane.lock"
+
+  # Start a --watch lane in the background with a short poll. Capture its PID.
+  ( cd "$REPO" && \
+    AGENTOPS_LAND_QUEUE_DIR="$QUEUE_DIR" \
+    LAND_LANE_GATE_CMD="bash '$GATE'" \
+    LAND_LANE_PAWL_LAND_SCRIPT="$REPO/scripts/pawl-land.sh" \
+    exec bash "$LANE" --watch --poll 1 ) &
+  WATCH_PID=$!
+
+  # Wait (bounded) for the watch lane to acquire the singleton lock.
+  acquired=0
+  for _ in $(seq 1 50); do
+    if [ -d "$LANE_LOCK_DIR" ]; then acquired=1; break; fi
+    sleep 0.1
+  done
+  [ "$acquired" -eq 1 ]
+  # Sanity: the watch process is alive and holding the lock.
+  kill -0 "$WATCH_PID" 2>/dev/null
+
+  # (refusal) A SECOND lane started WHILE the first is still alive must be
+  # refused fast (exit 1, lock held by the live watcher).
+  run env AGENTOPS_LAND_QUEUE_DIR="$QUEUE_DIR" AGENTOPS_PUSH_LOCK_TIMEOUT=1 \
+      bash "$LANE" --once
+  echo "concurrent-attempt output: $output"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"single-writer invariant"* ]] || [[ "$output" == *"already holds"* ]]
+  # The lock is still the live watcher's — the refusing lane did not steal it.
+  [ -d "$LANE_LOCK_DIR" ]
+  kill -0 "$WATCH_PID" 2>/dev/null
+
+  # Send TERM to the watch lane.
+  kill -TERM "$WATCH_PID" 2>/dev/null
+
+  # (a) The lane PROCESS actually exits within a short bound (it does NOT keep
+  # looping). On the old release-only trap this never happens — the watch loop
+  # survives the signal.
+  exited=0
+  for _ in $(seq 1 50); do        # up to ~5s
+    if ! kill -0 "$WATCH_PID" 2>/dev/null; then exited=1; break; fi
+    sleep 0.1
+  done
+  if [ "$exited" -ne 1 ]; then
+    kill -KILL "$WATCH_PID" 2>/dev/null || true
+    wait "$WATCH_PID" 2>/dev/null || true
+  fi
+  [ "$exited" -eq 1 ]
+  wait "$WATCH_PID" 2>/dev/null || true
+
+  # (b) The lane lock is released now that the process has exited.
+  [ ! -d "$LANE_LOCK_DIR" ]
+
+  # (c) A second lane started AFTER the first has exited acquires the lock fine
+  # (here: drains the empty queue and exits 0, which requires acquiring the lock).
+  run run_lane bash "$LANE" --drain
+  echo "successor output: $output"
+  [ "$status" -eq 0 ]
+  # And it left the lock released on its own clean exit.
+  [ ! -d "$LANE_LOCK_DIR" ]
+}
+
 @test "drain is crash-safe: a re-run does not re-land already-done beads" {
   queue_bead age-2pl9a alpha.txt alpha
   queue_bead age-2pl9b bravo.txt bravo
