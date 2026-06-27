@@ -18,8 +18,13 @@ Usage:
 
 check runs the static land-script scan (the lane scripts must invoke no
 Actions-dispatching gh verbs). install-shim writes a gh executable that delegates
-back to guard-gh, the runtime PATH shim that hard-errors on an Actions-invoking
-gh subcommand during a landing.
+back to guard-gh, the runtime PATH shim. guard-gh is DEFAULT-DENY (an allowlist):
+it delegates to the real gh ONLY for explicitly enumerated read-only / safe
+subcommands (gh run view|list|watch, gh pr view|list|checks|diff, gh api GET,
+gh auth status, gh --version, ...) and hard-errors on everything else — so an
+UNKNOWN or new gh verb (e.g. a future `gh run <x>`) is BLOCKED, not allowed. This
+closes the prior blocklist hole where un-enumerated Actions-invoking verbs such
+as `gh run rerun` slipped through (agentops-2pl.11).
 
 This guard asserts only that THE LAND LANE never invokes GitHub Actions — it does
 NOT police the repo's CI config. validate.yml legitimately carries pull_request /
@@ -46,28 +51,97 @@ json_escape() {
   printf '%s' "$s"
 }
 
-is_forbidden_gh() {
-  local joined=" $* "
-  case "${1:-}" in
-    pr)
-      case "${2:-}" in
-        create|merge) return 0 ;;
-      esac
-      ;;
-    workflow)
-      [[ "${2:-}" == "run" ]] && return 0
-      ;;
-    api)
-      if printf '%s\n' "$joined" | grep -Eqi '(^|[[:space:]])[^[:space:]]*/dispatches([[:space:]]|$)|repository_dispatch|workflow_dispatch'; then
-        return 0
-      fi
-      ;;
-  esac
+# --------------------------------------------------------------------------- #
+# RUNTIME SHIM POSTURE: DEFAULT-DENY (allowlist), not blocklist.
+#
+# A blocklist (enumerate the bad verbs, allow the rest) is structurally unsafe:
+# any Actions-invoking verb NOT enumerated slips through. The refuted defect
+# (agentops-2pl.11) was exactly this — `gh run rerun 123` re-runs a workflow run
+# (which INVOKES GitHub Actions) yet was logged 'allowed' and delegated to the
+# real gh, because only `gh workflow run` / `gh pr create|merge` were enumerated.
+#
+# The fix flips the posture: the shim ALLOWS only an explicit allowlist of
+# clearly read-only / safe gh subcommands, and BLOCKS everything else — so an
+# UNKNOWN or future `gh run *` / `gh workflow *` verb is denied by default and
+# can't reopen this hole. is_allowed_gh below is the single source of truth for
+# what the land lane may delegate to the real gh.
+# --------------------------------------------------------------------------- #
 
-  if printf '%s\n' "$joined" | grep -Eqi 'merge[_ -]?group|merge[_ -]?queue|enqueue[[:space:]].*(merge|queue)|queue[[:space:]]+merge'; then
-    return 0
+# api_is_read_only: true iff a `gh api ...` invocation is a safe GET read.
+# Blocks: any explicit non-GET method (-X/--method POST|PUT|PATCH|DELETE), any
+# request-body flag (-f/-F/--input/--raw-field/--field), and any Actions-mutating
+# or dispatch endpoint (.../dispatches, /actions/, repository_dispatch, etc.).
+api_is_read_only() {
+  # args here are the tokens AFTER the leading `api`.
+  local joined=" $* " tok next i=1 method="GET"
+  # Endpoint-shape denials (covers /actions/ mutations + dispatch triggers).
+  if printf '%s\n' "$joined" | grep -Eqi '(^|[[:space:]])[^[:space:]]*/dispatches([[:space:]]|$)|repository_dispatch|workflow_dispatch|/actions/'; then
+    return 1
   fi
+  for tok in "$@"; do
+    case "$tok" in
+      -X|--method)
+        # next token is the method
+        next="${@:$((i + 1)):1}"
+        method="$next"
+        ;;
+      -X*) method="${tok#-X}" ;;
+      --method=*) method="${tok#--method=}" ;;
+      # any request body / field flag implies a write
+      -f|-F|--field|--raw-field|--input) return 1 ;;
+      -f*|-F*) return 1 ;;
+    esac
+    i=$((i + 1))
+  done
+  case "$(printf '%s' "$method" | tr '[:lower:]' '[:upper:]')" in
+    GET|HEAD) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# is_allowed_gh: DEFAULT-DENY allowlist. Returns 0 (allow → delegate to real gh)
+# ONLY for explicitly enumerated read-only / safe subcommands. Everything else
+# returns 1 (deny → blocked + logged). New/unknown verbs are denied by default.
+is_allowed_gh() {
+  local cmd="${1:-}" sub="${2:-}"
+  case "$cmd" in
+    # bare informational flags / no-op
+    --version|version|--help|-h|help|"") return 0 ;;
+    auth)
+      case "$sub" in status|"") return 0 ;; *) return 1 ;; esac ;;
+    run)
+      # READ-ONLY run inspection only. rerun/cancel/delete/download (and any
+      # unknown verb) are DENIED — rerun was the refuted hole.
+      case "$sub" in view|list|watch) return 0 ;; *) return 1 ;; esac ;;
+    workflow)
+      # view/list inspect; run/enable/disable INVOKE or arm Actions → denied.
+      case "$sub" in view|list) return 0 ;; *) return 1 ;; esac ;;
+    pr)
+      # create/merge/ready/close/edit/comment/review all mutate → denied.
+      case "$sub" in view|list|checks|diff|status) return 0 ;; *) return 1 ;; esac ;;
+    api)
+      shift || true
+      api_is_read_only "$@" && return 0
+      return 1 ;;
+    # Plainly read-only top-level groups (no Actions reach).
+    repo)
+      case "$sub" in view|list) return 0 ;; *) return 1 ;; esac ;;
+    release)
+      case "$sub" in view|list|download) return 0 ;; *) return 1 ;; esac ;;
+    issue)
+      case "$sub" in view|list|status) return 0 ;; *) return 1 ;; esac ;;
+    cache)
+      case "$sub" in list) return 0 ;; *) return 1 ;; esac ;;
+    label|search|status|browse) return 0 ;;
+  esac
   return 1
+}
+
+# is_forbidden_gh: retained as the negation of the allowlist so the runtime shim
+# is DEFAULT-DENY. Anything not explicitly allowed is forbidden.
+is_forbidden_gh() {
+  is_allowed_gh "$@" && return 1
+  return 0
 }
 
 scan_static_file() {
@@ -82,8 +156,13 @@ scan_static_file() {
     if printf '%s\n' "$line" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+(create|merge)([[:space:]]|$)'; then
       echo "assert-no-actions: forbidden gh PR mutation in $file:$n" >&2
       bad=1
-    elif printf '%s\n' "$line" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+workflow[[:space:]]+run([[:space:]]|$)'; then
+    elif printf '%s\n' "$line" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+workflow[[:space:]]+(run|enable|disable)([[:space:]]|$)'; then
       echo "assert-no-actions: forbidden gh workflow dispatch in $file:$n" >&2
+      bad=1
+    elif printf '%s\n' "$line" | grep -Eq '(^|[;&|[:space:]])gh[[:space:]]+run[[:space:]]+(rerun|cancel)([[:space:]]|$)'; then
+      # gh run rerun re-INVOKES a workflow run (the agentops-2pl.11 reviewer hole);
+      # gh run cancel mutates an in-flight Actions run. Both are Actions paths.
+      echo "assert-no-actions: forbidden gh run mutation in $file:$n" >&2
       bad=1
     elif printf '%s\n' "$line" | grep -Eqi '(^|[;&|[:space:]])gh[[:space:]]+api[[:space:]].*/dispatches([[:space:]]|$)|repository_dispatch|workflow_dispatch'; then
       echo "assert-no-actions: forbidden gh api dispatch in $file:$n" >&2
@@ -139,7 +218,7 @@ guard_gh() {
     mkdir -p "$(dirname "$log_file")"
     printf '{"timestamp":"%s","status":"blocked","argv":"%s"}\n' \
       "$(json_escape "$ts")" "$(json_escape "gh $argv")" >>"$log_file"
-    echo "BLOCKED (assert-no-actions): gh $argv would invoke GitHub Actions / PR merge path; land lane must stay local." >&2
+    echo "BLOCKED (assert-no-actions): gh $argv is not on the land-lane read-only allowlist (default-deny); it may invoke GitHub Actions / a PR-merge path. The land lane must stay local." >&2
     exit 2
   fi
 

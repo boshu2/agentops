@@ -124,6 +124,25 @@ set -euo pipefail
 gh pr create --title blocked --body blocked --base main
 EOS
       ;;
+    rerun)
+      # The refuted hole (agentops-2pl.11): `gh run rerun` re-INVOKES a workflow
+      # run but is NOT enumerated by the old blocklist, so it slipped through as
+      # 'allowed'. Default-deny must BLOCK it.
+      cat >"$GATE" <<'EOS'
+#!/usr/bin/env bash
+set -euo pipefail
+gh run rerun 123
+EOS
+      ;;
+    unknown)
+      # An un-enumerated / future `gh run <verb>`: default-deny must BLOCK it so a
+      # new verb cannot reopen the hole.
+      cat >"$GATE" <<'EOS'
+#!/usr/bin/env bash
+set -euo pipefail
+gh run frobnicate 123
+EOS
+      ;;
     *)
       return 1
       ;;
@@ -237,4 +256,144 @@ gh_run_count() {
   [ "$status" -eq 0 ]
   [[ "$output" == gh\ pr\ create* ]]
   ! grep -q 'pr create' "$TMP/real-gh.log"
+}
+
+@test "runtime gh shim rejects gh run rerun from inside the land path (the refuted hole)" {
+  # agentops-2pl.11 reviewer hole: `gh run rerun 123` re-INVOKES a workflow run
+  # (which runs GitHub Actions) yet was logged 'allowed' and delegated to the real
+  # gh under the old BLOCKLIST. Default-deny must BLOCK it and never reach real gh.
+  write_gate rerun
+  queue_bead age-noactions-rerun blocked-rerun.txt blocked
+
+  run run_lane
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"BLOCKED (assert-no-actions): gh run rerun 123"* ]]
+
+  [ -s "$QUEUE_DIR/dead-letter.jsonl" ]
+  run jq -r 'select(.bead == "age-noactions-rerun") | .status' "$QUEUE_DIR/dead-letter.jsonl"
+  [ "$status" -eq 0 ]
+  [ "$output" = "dead-letter" ]
+
+  run jq -r 'select(.status == "blocked") | .argv' "$QUEUE_DIR/no-actions-guard.jsonl"
+  [ "$status" -eq 0 ]
+  [ "$output" = "gh run rerun 123" ]
+  # The real gh was NEVER invoked for the rerun (it would have re-run Actions).
+  ! grep -q 'run rerun' "$TMP/real-gh.log"
+}
+
+@test "runtime gh shim rejects an UNKNOWN gh run subcommand (default-deny posture)" {
+  # A future / un-enumerated `gh run <verb>` must be DENIED by default so a new
+  # verb cannot reopen the hole. This is the structural guarantee of the flip from
+  # blocklist to allowlist.
+  write_gate unknown
+  queue_bead age-noactions-unknown blocked-unknown.txt blocked
+
+  run run_lane
+  echo "$output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"BLOCKED (assert-no-actions): gh run frobnicate 123"* ]]
+
+  run jq -r 'select(.bead == "age-noactions-unknown") | .status' "$QUEUE_DIR/dead-letter.jsonl"
+  [ "$status" -eq 0 ]
+  [ "$output" = "dead-letter" ]
+
+  run jq -r 'select(.status == "blocked") | .argv' "$QUEUE_DIR/no-actions-guard.jsonl"
+  [ "$status" -eq 0 ]
+  [ "$output" = "gh run frobnicate 123" ]
+  ! grep -q 'run frobnicate' "$TMP/real-gh.log"
+}
+
+@test "static guard rejects gh run rerun planted in a land script" {
+  # Defense-in-depth: the static scan now also knows the Actions-invoking
+  # gh run verbs (the runtime default-deny is the real backstop).
+  lane="$TMP/land-lane-run.sh"
+  submit="$TMP/land-submit.sh"
+  cp "$REPO_ROOT/scripts/land-lane-run.sh" "$lane"
+  cp "$REPO_ROOT/scripts/land-submit.sh" "$submit"
+  printf '\ngh run rerun 123\n' >>"$lane"
+
+  run "$GUARD" check --land-lane "$lane" --land-submit "$submit"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"forbidden gh run mutation"* ]]
+}
+
+# --------------------------------------------------------------------------- #
+# Direct guard-gh allow/block matrix — exercises the DEFAULT-DENY allowlist at
+# the unit level (no land lane). real-gh is a delegate stub that prints when
+# invoked, so "delegated" (allowed) vs "blocked" is unambiguous.
+# --------------------------------------------------------------------------- #
+setup_guard_unit() {
+  REAL_GH="$TMP/real-gh-stub"
+  GUARD_LOG="$TMP/guard-unit.log"
+  cat >"$REAL_GH" <<'EOS'
+#!/usr/bin/env bash
+echo "DELEGATED: $*"
+exit 0
+EOS
+  chmod +x "$REAL_GH"
+  : >"$GUARD_LOG"
+}
+
+# Assert the given gh args are ALLOWED: delegated to real gh, exit 0, logged allowed.
+assert_allowed() {
+  run "$GUARD" guard-gh "$GUARD_LOG" "$REAL_GH" -- "$@"
+  echo "args: $*"
+  echo "out: $output"
+  [ "$status" -eq 0 ]
+  [[ "$output" == DELEGATED:* ]]
+}
+
+# Assert the given gh args are BLOCKED: hard-error exit 2, never delegated, logged blocked.
+assert_blocked() {
+  run "$GUARD" guard-gh "$GUARD_LOG" "$REAL_GH" -- "$@"
+  echo "args: $*"
+  echo "out: $output"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"BLOCKED (assert-no-actions):"* ]]
+  [[ "$output" != DELEGATED:* ]]
+}
+
+@test "guard-gh ALLOWS read-only gh subcommands (delegated to real gh)" {
+  setup_guard_unit
+  assert_allowed run view 123
+  assert_allowed run list
+  assert_allowed run watch 1
+  assert_allowed pr view 5
+  assert_allowed pr list
+  assert_allowed pr checks 5
+  assert_allowed pr diff 5
+  assert_allowed api repos/o/r
+  assert_allowed api -X GET repos/o/r
+  assert_allowed auth status
+  assert_allowed --version
+  assert_allowed workflow list
+  assert_allowed workflow view validate.yml
+
+  # Every allowed call delegated, none blocked.
+  run jq -rs 'map(.status) | unique | join(",")' "$GUARD_LOG"
+  [ "$output" = "allowed" ]
+}
+
+@test "guard-gh BLOCKS Actions-invoking / mutating gh paths (default-deny)" {
+  setup_guard_unit
+  # The exact refuted hole, plus the full default-deny matrix.
+  assert_blocked run rerun 123
+  assert_blocked run cancel 123
+  assert_blocked run delete 123
+  assert_blocked run madeup 123          # UNKNOWN run verb → denied by default
+  assert_blocked workflow run validate.yml
+  assert_blocked workflow enable validate.yml
+  assert_blocked workflow disable validate.yml
+  assert_blocked pr create --title x --base main
+  assert_blocked pr merge --auto 5       # merge-queue enqueue
+  assert_blocked api -X POST repos/o/r/dispatches
+  assert_blocked api --method PUT repos/o/r/x
+  assert_blocked api repos/o/r/actions/runs/1/rerun
+  assert_blocked api repos/o/r -f field=value   # request body → write
+  assert_blocked frobnicate the widget    # totally unknown verb → denied
+
+  # Every blocked call logged blocked; the real gh stub was NEVER delegated to.
+  run jq -rs 'map(.status) | unique | join(",")' "$GUARD_LOG"
+  [ "$output" = "blocked" ]
 }
