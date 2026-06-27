@@ -40,6 +40,13 @@
 #                                from a checked-out land-work branch already
 #                                rebased onto origin/main. It MUST run the gate
 #                                exactly once and, on success, leave main pushed.
+#   LAND_LANE_GATE_ONLY_CMD     test/advanced injection point for the gate-only
+#                                step. When set, LAND_LANE_LAND_CMD (or the
+#                                default pawl land step) is run separately after
+#                                the gate passes or retry classifies a flake.
+#   LAND_LANE_LAND_CMD          optional land-only command, invoked as:
+#                                <cmd> <bead> <branch-ref>.
+#   LAND_LANE_FLAKY_RETRY_MAX   retry attempts per failing Go package (default 2)
 #   LAND_LANE_AUTHOR_FAMILY     author family for the gate (default operator)
 #   BR_BIN / bd                 issue tracker close on a green land (best-effort)
 #
@@ -73,11 +80,15 @@ LANE_LOCK="${AGENTOPS_LAND_LANE_LOCK:-$QUEUE_DIR/.lane.lock}"
 LOCK_TIMEOUT="${AGENTOPS_PUSH_LOCK_TIMEOUT:-${PUSH_LOCK_TIMEOUT:-300}}"
 
 GATE_CMD="${LAND_LANE_GATE_CMD:-}"
+GATE_ONLY_CMD="${LAND_LANE_GATE_ONLY_CMD:-}"
+LAND_CMD="${LAND_LANE_LAND_CMD:-}"
 AUTHOR_FAMILY="${LAND_LANE_AUTHOR_FAMILY:-operator}"
 BR_BIN="${BR_BIN:-$(command -v br 2>/dev/null || command -v bd 2>/dev/null || true)}"
+FLAKY_RETRY_SCRIPT="${LAND_LANE_FLAKY_RETRY_SCRIPT:-$SCRIPT_DIR/land-lane-flaky-retry.sh}"
 
 POLL_SECONDS=10
 MODE="drain"   # drain | once | watch
+PROCESS_FAILURE_REASON=""
 
 die() { echo "land-lane: ERROR: $*" >&2; exit 2; }
 log() { echo "land-lane: $*" >&2; }
@@ -303,15 +314,137 @@ mark_request_claimed() {
 # checked out, built from origin/land-queue/<bead> and already rebased onto
 # origin/main, with HEAD citing the bead.
 # --------------------------------------------------------------------------- #
-default_gate_and_land() {
+default_gate() {
   local bead="$1"
   # 1) Gate ONCE: ship's inventory-aware pre-push gate, then the cross-family
   #    pawl review (writes the CONFIRMED verdict pawl-land requires).
   "$SHIP_SCRIPT"
   "$PAWL_REVIEW_SCRIPT" "$bead" --scope head --author-family "$AUTHOR_FAMILY"
-  # 2) Land: the .7-patched pawl-land.sh re-fetches origin/main, rebases, rebinds
+}
+
+default_land() {
+  local bead="$1"
+  # Land: the .7-patched pawl-land.sh re-fetches origin/main, rebases, rebinds
   #    the verdict to the post-rebase head, and pushes HEAD:main in one shot.
   "$PAWL_LAND_SCRIPT" "$bead"
+}
+
+default_gate_and_land() {
+  local bead="$1"
+  default_gate "$bead"
+  default_land "$bead"
+}
+
+run_eval_cmd() {
+  local cmd="$1" bead="$2" branch="$3"
+  eval "$cmd \"\$bead\" \"\$branch\""
+}
+
+run_gate_only() {
+  local bead="$1" branch="$2"
+  if [[ -n "$GATE_ONLY_CMD" ]]; then
+    run_eval_cmd "$GATE_ONLY_CMD" "$bead" "$branch"
+  else
+    default_gate "$bead"
+  fi
+}
+
+run_land_only() {
+  local bead="$1" branch="$2"
+  if [[ -n "$LAND_CMD" ]]; then
+    run_eval_cmd "$LAND_CMD" "$bead" "$branch"
+  else
+    default_land "$bead"
+  fi
+}
+
+run_logged() {
+  local log_file="$1"; shift
+  : >"$log_file"
+  if "$@" >"$log_file" 2>&1; then
+    return 0
+  fi
+  cat "$log_file" >&2
+  return 1
+}
+
+extract_retry_summary() {
+  local output="$1"
+  local summary
+  summary="$(printf '%s\n' "$output" | grep -E 'deterministic gate failure|no failing Go package found|could not resolve failed package|retry still failing' | tail -1 || true)"
+  if [[ -n "$summary" ]]; then
+    printf '%s' "$summary"
+  else
+    printf '%s' "$output" | tail -1
+  fi
+}
+
+classify_failed_gate() {
+  local bead="$1" gate_log="$2" retry_output
+  if [[ ! -x "$FLAKY_RETRY_SCRIPT" ]]; then
+    PROCESS_FAILURE_REASON="gate failed; flaky retry helper missing: $FLAKY_RETRY_SCRIPT"
+    return 1
+  fi
+
+  if retry_output="$(LAND_LANE_QUARANTINE_FILE="${LAND_LANE_QUARANTINE_FILE:-$QUEUE_DIR/quarantine.jsonl}" \
+      "$FLAKY_RETRY_SCRIPT" retry "$gate_log" "$bead" 2>&1)"; then
+    printf '%s\n' "$retry_output" >&2
+    PROCESS_FAILURE_REASON=""
+    return 0
+  fi
+
+  printf '%s\n' "$retry_output" >&2
+  PROCESS_FAILURE_REASON="$(extract_retry_summary "$retry_output")"
+  [[ -n "$PROCESS_FAILURE_REASON" ]] || PROCESS_FAILURE_REASON="gate failed; flaky retry did not pass"
+  return 1
+}
+
+run_gate_with_flaky_retry_then_land() {
+  local bead="$1" branch="$2" gate_log land_log retry_log
+  mkdir -p "$QUEUE_DIR/logs"
+  gate_log="$QUEUE_DIR/logs/${bead}.gate.log"
+  land_log="$QUEUE_DIR/logs/${bead}.land.log"
+  retry_log="$QUEUE_DIR/logs/${bead}.gate-retry.log"
+
+  if run_logged "$gate_log" run_gate_only "$bead" "$branch"; then
+    if ! run_logged "$land_log" run_land_only "$bead" "$branch"; then
+      PROCESS_FAILURE_REASON="land failed after green gate; see $land_log"
+      return 1
+    fi
+    return 0
+  fi
+
+  log "gate failed for $bead; retrying failing package(s) under -race"
+  if classify_failed_gate "$bead" "$gate_log" 2> >(tee "$retry_log" >&2); then
+    log "FLAKE $bead: retry passed; proceeding to land"
+    if ! run_logged "$land_log" run_land_only "$bead" "$branch"; then
+      PROCESS_FAILURE_REASON="land failed after flaky retry passed; see $land_log"
+      return 1
+    fi
+    return 0
+  fi
+  return 1
+}
+
+run_legacy_gate_cmd_with_flaky_retry() {
+  local bead="$1" branch="$2" gate_log retry_log
+  mkdir -p "$QUEUE_DIR/logs"
+  gate_log="$QUEUE_DIR/logs/${bead}.gate.log"
+  retry_log="$QUEUE_DIR/logs/${bead}.gate-retry.log"
+
+  if run_logged "$gate_log" run_eval_cmd "$GATE_CMD" "$bead" "$branch"; then
+    return 0
+  fi
+
+  log "gate/land command failed for $bead; retrying failing package(s) under -race"
+  if classify_failed_gate "$bead" "$gate_log" 2> >(tee "$retry_log" >&2); then
+    log "FLAKE $bead: retry passed; re-running legacy gate+land command"
+    if run_logged "$gate_log" run_eval_cmd "$GATE_CMD" "$bead" "$branch"; then
+      return 0
+    fi
+    PROCESS_FAILURE_REASON="legacy gate+land command failed after flaky retry passed; see $gate_log"
+  fi
+  return 1
 }
 
 # --------------------------------------------------------------------------- #
@@ -321,6 +454,7 @@ default_gate_and_land() {
 process_one() {
   local bead="$1" branch="$2"
   local short="${branch#refs/heads/}"
+  PROCESS_FAILURE_REASON=""
   log "claimed $bead ($branch) — fetching + rebasing onto origin/main"
 
   # Always start from a known-clean main; abandon any leftover land-work.
@@ -340,6 +474,7 @@ process_one() {
   fi
   if ! git checkout -q -B land-work "$src_ref" 2>/dev/null; then
     log "FAIL $bead: cannot check out queued branch ($branch / $src_ref)"
+    PROCESS_FAILURE_REASON="cannot check out queued branch ($branch / $src_ref)"
     return 1
   fi
 
@@ -348,18 +483,19 @@ process_one() {
   if ! git rebase origin/main >/dev/null 2>&1; then
     git rebase --abort >/dev/null 2>&1 || true
     log "FAIL $bead: rebase onto origin/main conflicted"
+    PROCESS_FAILURE_REASON="rebase onto origin/main conflicted"
     return 1
   fi
 
-  # Gate ONCE + land (push HEAD:main). The gate command is responsible for the
-  # single gate run and the push; a non-zero exit dead-letters the request.
-  if [[ -n "$GATE_CMD" ]]; then
-    if ! eval "$GATE_CMD \"\$bead\" \"\$branch\""; then
+  # Gate ONCE, then land (push HEAD:main). On a failed Go gate, retry only the
+  # failing package(s) under -race; if retry passes, classify as a flake and land.
+  if [[ -n "$GATE_CMD" && -z "$GATE_ONLY_CMD" && -z "$LAND_CMD" ]]; then
+    if ! run_legacy_gate_cmd_with_flaky_retry "$bead" "$branch"; then
       log "FAIL $bead: gate/land command failed"
       return 1
     fi
   else
-    if ! default_gate_and_land "$bead"; then
+    if ! run_gate_with_flaky_retry_then_land "$bead" "$branch"; then
       log "FAIL $bead: default gate/land failed"
       return 1
     fi
@@ -393,7 +529,7 @@ process_tick() {
     close_bead "$bead"
     log "LANDED $bead"
   else
-    append_record "$DEADLETTER_FILE" "dead-letter" "$bead" "$branch" "land failed; see lane log"
+    append_record "$DEADLETTER_FILE" "dead-letter" "$bead" "$branch" "${PROCESS_FAILURE_REASON:-land failed; see lane log}"
     log "DEAD-LETTERED $bead — lane continues"
   fi
   # Return to a clean main between requests.
