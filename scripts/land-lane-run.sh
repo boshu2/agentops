@@ -47,6 +47,9 @@
 #   LAND_LANE_LAND_CMD          optional land-only command, invoked as:
 #                                <cmd> <bead> <branch-ref>.
 #   LAND_LANE_FLAKY_RETRY_MAX   retry attempts per failing Go package (default 2)
+#   LAND_LANE_ASSERT_NO_ACTIONS_SCRIPT
+#                               guard script that blocks GitHub Actions/PR/merge
+#                               paths from the land lane (default bundled guard)
 #   LAND_LANE_AUTHOR_FAMILY     author family for the gate (default operator)
 #   BR_BIN / bd                 issue tracker close on a green land (best-effort)
 #
@@ -85,10 +88,12 @@ LAND_CMD="${LAND_LANE_LAND_CMD:-}"
 AUTHOR_FAMILY="${LAND_LANE_AUTHOR_FAMILY:-operator}"
 BR_BIN="${BR_BIN:-$(command -v br 2>/dev/null || command -v bd 2>/dev/null || true)}"
 FLAKY_RETRY_SCRIPT="${LAND_LANE_FLAKY_RETRY_SCRIPT:-$SCRIPT_DIR/land-lane-flaky-retry.sh}"
+ASSERT_NO_ACTIONS_SCRIPT="${LAND_LANE_ASSERT_NO_ACTIONS_SCRIPT:-$SCRIPT_DIR/assert-no-actions.sh}"
 
 POLL_SECONDS=10
 MODE="drain"   # drain | once | watch
 PROCESS_FAILURE_REASON=""
+NO_ACTIONS_GH_SHIM_DIR=""
 
 die() { echo "land-lane: ERROR: $*" >&2; exit 2; }
 log() { echo "land-lane: $*" >&2; }
@@ -399,6 +404,39 @@ classify_failed_gate() {
   return 1
 }
 
+assert_no_actions_lane_start() {
+  if [[ "${LAND_LANE_NO_ACTIONS_GUARD:-1}" == "0" ]]; then
+    log "WARN: no-actions guard disabled by LAND_LANE_NO_ACTIONS_GUARD=0"
+    return 0
+  fi
+  [[ -x "$ASSERT_NO_ACTIONS_SCRIPT" ]] || die "no-actions guard missing or not executable: $ASSERT_NO_ACTIONS_SCRIPT"
+  "$ASSERT_NO_ACTIONS_SCRIPT" check
+}
+
+install_no_actions_runtime_guard() {
+  [[ "${LAND_LANE_NO_ACTIONS_GUARD:-1}" != "0" ]] || return 0
+  local shim_dir log_file real_gh
+  shim_dir="${AGENTOPS_NO_ACTIONS_SHIM_DIR:-$QUEUE_DIR/.no-actions-gh}"
+  log_file="${AGENTOPS_NO_ACTIONS_LOG:-$QUEUE_DIR/no-actions-guard.jsonl}"
+  real_gh="$(command -v gh 2>/dev/null || true)"
+  "$ASSERT_NO_ACTIONS_SCRIPT" install-shim "$shim_dir" "$log_file" "$real_gh" >/dev/null
+  NO_ACTIONS_GH_SHIM_DIR="$shim_dir"
+}
+
+with_no_actions_runtime() {
+  local old_path="$PATH" rc
+  install_no_actions_runtime_guard
+  if [[ -n "$NO_ACTIONS_GH_SHIM_DIR" ]]; then
+    PATH="$NO_ACTIONS_GH_SHIM_DIR:$PATH"
+  fi
+  set +e
+  "$@"
+  rc=$?
+  set -e
+  PATH="$old_path"
+  return "$rc"
+}
+
 run_gate_with_flaky_retry_then_land() {
   local bead="$1" branch="$2" gate_log land_log retry_log
   mkdir -p "$QUEUE_DIR/logs"
@@ -490,12 +528,12 @@ process_one() {
   # Gate ONCE, then land (push HEAD:main). On a failed Go gate, retry only the
   # failing package(s) under -race; if retry passes, classify as a flake and land.
   if [[ -n "$GATE_CMD" && -z "$GATE_ONLY_CMD" && -z "$LAND_CMD" ]]; then
-    if ! run_legacy_gate_cmd_with_flaky_retry "$bead" "$branch"; then
+    if ! with_no_actions_runtime run_legacy_gate_cmd_with_flaky_retry "$bead" "$branch"; then
       log "FAIL $bead: gate/land command failed"
       return 1
     fi
   else
-    if ! run_gate_with_flaky_retry_then_land "$bead" "$branch"; then
+    if ! with_no_actions_runtime run_gate_with_flaky_retry_then_land "$bead" "$branch"; then
       log "FAIL $bead: default gate/land failed"
       return 1
     fi
@@ -540,6 +578,7 @@ process_tick() {
 }
 
 main() {
+  assert_no_actions_lane_start
   acquire_lane_lock
 
   case "$MODE" in
