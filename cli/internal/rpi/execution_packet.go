@@ -14,6 +14,43 @@ type ExecutionPacketProgram struct {
 	StopConditions     []string `json:"stop_conditions,omitempty"`
 }
 
+// ExecutionPacketModelFamily is the rostered model family label used for typed
+// per-bead routing inside an execution packet.
+type ExecutionPacketModelFamily string
+
+const (
+	ExecutionPacketModelClaude ExecutionPacketModelFamily = "claude"
+	ExecutionPacketModelCodex  ExecutionPacketModelFamily = "codex"
+	ExecutionPacketModelGemini ExecutionPacketModelFamily = "gemini"
+)
+
+// ExecutionPacketVerdict is the packet verdict vocabulary. The packet defaults
+// to FAIL when no explicit verdict is present.
+type ExecutionPacketVerdict string
+
+const (
+	ExecutionPacketVerdictPass ExecutionPacketVerdict = "PASS"
+	ExecutionPacketVerdictWarn ExecutionPacketVerdict = "WARN"
+	ExecutionPacketVerdictFail ExecutionPacketVerdict = "FAIL"
+
+	DefaultExecutionPacketVerdict = ExecutionPacketVerdictFail
+)
+
+// ExecutionPacketRouting records the typed implementer/reviewer assignment for
+// a bead or slice. The packet stores these values keyed by bead ID.
+type ExecutionPacketRouting struct {
+	Implementer ExecutionPacketModelFamily `json:"implementer"`
+	Reviewer    ExecutionPacketModelFamily `json:"reviewer"`
+	Rationale   string                     `json:"rationale"`
+}
+
+// ExecutionPacketSpec links the work packet to the behavior-first red test that
+// encodes the implementation contract.
+type ExecutionPacketSpec struct {
+	TestPath string `json:"test_path"`
+	RedTest  string `json:"red_test"`
+}
+
 // Criterion is a single acceptance criterion attached to an epic or bead in an
 // execution packet. CheckType is a closed enum:
 //
