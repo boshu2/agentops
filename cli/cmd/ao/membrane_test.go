@@ -717,3 +717,26 @@ func TestRecall_IsAdvisoryNeverAGate(t *testing.T) {
 		t.Fatal("found 0 recall call sites — the scan isn't matching, so this invariant would pass vacuously")
 	}
 }
+
+// `ao membrane triage` on a below-floor corpus emits the HONEST INSUFFICIENT-DATA
+// verdict (the PROVE-FIRST point: do not build the compiler on faith). (epic age-zpj5, S4)
+func TestRunMembraneTriage_InsufficientDataBelowFloor(t *testing.T) {
+	root := t.TempDir()
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	var buf bytes.Buffer
+	membraneTriageCmd.SetOut(&buf)
+	t.Cleanup(func() { membraneTriageCmd.SetOut(nil) })
+	if err := runMembraneTriage(membraneTriageCmd, nil); err != nil {
+		t.Fatalf("runMembraneTriage: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "DECISION: INSUFFICIENT-DATA") {
+		t.Fatalf("an empty/below-floor corpus must triage to INSUFFICIENT-DATA, got:\n%s", out)
+	}
+	if !strings.Contains(out, "do NOT build the compiler on faith") {
+		t.Fatalf("INSUFFICIENT-DATA must explain the honest stance, got:\n%s", out)
+	}
+}

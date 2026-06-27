@@ -3628,6 +3628,21 @@ ao membrane recall --domain <domain> [flags]
       --paths strings     With --include-catches, narrow to catches whose affected_paths overlap these files
 ```
 
+#### `ao membrane triage`
+
+Read the CATCH corpus and report whether the compiler thesis has fuel — with a
+
+```
+ao membrane triage [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for triage
+      --json   Emit the triage result as JSON
+```
+
 ---
 
 ### `ao mind`
