@@ -118,7 +118,24 @@ release_lane_lock() {
     LANE_LOCK_HELD=0
   fi
 }
-trap release_lane_lock EXIT INT TERM
+# EXIT trap releases the lock (idempotently — release_lane_lock no-ops if the
+# lock was already freed). INT/TERM get a SEPARATE handler that releases the lock
+# AND terminates the process: a bare `release_lane_lock` on INT/TERM would free
+# the lock but let the `--watch` loop keep running, so a second lane could acquire
+# the SAME lane lock while this one is still alive — two concurrent writers to
+# `main`, violating the single-writer invariant. Exiting with the conventional
+# signal code (130 INT / 143 TERM) re-fires the EXIT trap once more, but
+# release_lane_lock is idempotent so the lock is freed exactly once. The lock is
+# genuinely gone only AFTER this process has exited, so the next lane can start.
+on_signal() {
+  local code="$1"
+  release_lane_lock
+  trap - EXIT INT TERM   # disarm so the imminent `exit` does not re-recurse
+  exit "$code"
+}
+trap release_lane_lock EXIT
+trap 'on_signal 130' INT
+trap 'on_signal 143' TERM
 
 acquire_lane_lock() {
   local waited=0
