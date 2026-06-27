@@ -594,3 +594,54 @@ func TestRunMembraneRecall_TrimsDomain(t *testing.T) {
 		t.Fatalf("recall output used untrimmed domain: %q", out)
 	}
 }
+
+// `ao membrane catch` records a judgment-class catch (no detector) that is
+// path-recallable and carries a v1 class_key. (epic age-zpj5, S2)
+func TestMembraneCatch_RecordsPathRecallableJudgmentClass(t *testing.T) {
+	root := t.TempDir()
+	in := buildCatchInput("age-x", "pawl", "content-pattern key-injection fail-open",
+		[]string{"scripts/pawl.sh"}, "", "", "", "", "abcdef0", "",
+		time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC))
+	w := yieldledger.Writer{}
+	if _, err := w.AppendGateVerdict(root, in); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+	l, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("want 1 catch class, got %d", len(catches))
+	}
+	c := catches[0]
+	if c.Domain != "pawl" || c.Reason == "" {
+		t.Fatalf("catch missing domain/reason: %+v", c)
+	}
+	if len(c.AffectedPaths) != 1 || c.AffectedPaths[0] != "scripts/pawl.sh" {
+		t.Fatalf("catch must be path-recallable, got %v", c.AffectedPaths)
+	}
+	if !strings.HasPrefix(c.ClassKey, "v1:") {
+		t.Fatalf("catch must carry a v1 class_key, got %q", c.ClassKey)
+	}
+	if cc := yieldledger.CompileCandidates(catches); len(cc) != 0 {
+		t.Fatalf("a judgment-class catch (no detector) must NOT be a compile candidate; got %d", len(cc))
+	}
+}
+
+// A detector-bearing catch becomes a compile candidate. (epic age-zpj5, S2)
+func TestMembraneCatch_DetectorMakesCompileCandidate(t *testing.T) {
+	root := t.TempDir()
+	in := buildCatchInput("age-y", "shell", "unguarded cmdsub aborts under set -e",
+		[]string{"scripts/x.sh"}, "assign-cmdsub-no-guard", "scripts/**", "regex", "deterministic", "abcdef0", "",
+		time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC))
+	w := yieldledger.Writer{}
+	if _, err := w.AppendGateVerdict(root, in); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+	l, _ := yieldledger.Load(root)
+	cc := yieldledger.CompileCandidates(yieldledger.DetectCatches(l))
+	if len(cc) != 1 || cc[0].DetectorPattern != "assign-cmdsub-no-guard" {
+		t.Fatalf("detector-bearing catch must be a compile candidate; got %+v", cc)
+	}
+}

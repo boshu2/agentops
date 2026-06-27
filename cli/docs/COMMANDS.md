@@ -3569,6 +3569,30 @@ ao membrane [command]
 
 **Subcommands:**
 
+#### `ao membrane catch`
+
+Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
+
+```
+ao membrane catch --bead <id> --domain <bc> --reason <what> [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
+```
+
+**Flags:**
+
+```
+      --bead string               Bead id the catch was found on (required)
+      --detector-kind string      Optional detector kind (e.g. regex)
+      --detector-pattern string   Optional regex that mechanically detects this class (makes it a compile candidate)
+      --domain string             Bounded-context / work-class tag (required)
+      --globs string              Optional path globs scoping the detector pattern
+      --head string               Commit sha the catch was found at (default: git HEAD)
+  -h, --help                      help for catch
+      --mode string               Pawl diversity mode: fresh-context (default) | multi-model | deterministic
+      --paths strings             Concrete repo-relative file paths the catch touches (comma-separated or repeated)
+      --reason string             What was caught — the defect (required; becomes the class reason)
+      --run string                Run id (default: membrane-catch)
+```
+
 #### `ao membrane derive-checks`
 
 Derive membrane checks from escapes in a run
