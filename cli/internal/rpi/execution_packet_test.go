@@ -56,3 +56,44 @@ func TestExecutionPacketLoopDensityTypesRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
 	}
 }
+
+func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
+	if DefaultExecutionPacketVerdict != ExecutionPacketVerdictFail {
+		t.Fatalf("default verdict = %q, want %q", DefaultExecutionPacketVerdict, ExecutionPacketVerdictFail)
+	}
+
+	original := struct {
+		Routing        map[string]ExecutionPacketRouting `json:"routing"`
+		DefaultVerdict ExecutionPacketVerdict            `json:"default_verdict,omitempty"`
+		Spec           ExecutionPacketSpec               `json:"spec"`
+	}{
+		Routing: map[string]ExecutionPacketRouting{
+			"agentops-dhk.1": {
+				Implementer: ExecutionPacketModelCodex,
+				Reviewer:    ExecutionPacketModelGemini,
+				Rationale:   "separate implementation and review families",
+			},
+		},
+		DefaultVerdict: DefaultExecutionPacketVerdict,
+		Spec: ExecutionPacketSpec{
+			TestPath: "cli/cmd/ao/execution_packet_schema_test.go",
+			RedTest:  "TestExecutionPacketSchemaValidatesTypedWorkPacketFields",
+		},
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var decoded struct {
+		Routing        map[string]ExecutionPacketRouting `json:"routing"`
+		DefaultVerdict ExecutionPacketVerdict            `json:"default_verdict,omitempty"`
+		Spec           ExecutionPacketSpec               `json:"spec"`
+	}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !reflect.DeepEqual(original, decoded) {
+		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
+	}
+}

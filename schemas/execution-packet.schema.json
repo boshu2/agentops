@@ -98,12 +98,28 @@
         }
       }
     },
+    "routing": {
+      "type": "object",
+      "description": "Typed implementer/reviewer routing keyed by bead ID.",
+      "additionalProperties": {
+        "$ref": "#/$defs/Routing"
+      }
+    },
+    "spec": {
+      "$ref": "#/$defs/Spec"
+    },
     "complexity": {
       "type": "string"
     },
     "pre_mortem_verdict": {
       "type": "string",
       "enum": ["PASS", "WARN", "FAIL"]
+    },
+    "default_verdict": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"],
+      "default": "FAIL",
+      "description": "Fail-closed verdict applied when a criterion or reviewer has not produced an explicit verdict."
     },
     "test_levels": {
       "$ref": "#/$defs/TestLevels"
@@ -316,6 +332,51 @@
     "TestLevel": {
       "type": "string",
       "enum": ["L0", "L1", "L2", "L3"]
+    },
+    "ModelFamily": {
+      "type": "string",
+      "enum": ["claude", "codex", "gemini"]
+    },
+    "Routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementer",
+        "reviewer",
+        "rationale"
+      ],
+      "properties": {
+        "implementer": {
+          "$ref": "#/$defs/ModelFamily"
+        },
+        "reviewer": {
+          "$ref": "#/$defs/ModelFamily"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "Spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "test_path",
+        "red_test"
+      ],
+      "properties": {
+        "test_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the behavior-first test file that encodes the contract."
+        },
+        "red_test": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reference to the pre-written failing test that proves the contract before implementation."
+        }
+      }
     },
     "DiscoveryArtifactScope": {
       "type": "object",
