@@ -41,6 +41,20 @@ REPO_ROOT="${AGENTOPS_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 VERDICT_DIR="${AGENTOPS_PAWL_VERDICT_DIR:-$REPO_ROOT/.agents/pawl-verdicts}"
 EVIDENCE_DIR="$REPO_ROOT/.agents/pawl-evidence"
 
+# resolve_ao: print the ao binary path, preferring the REPO's build over a possibly
+# STALE installed `ao`. A globally-installed ao can lag the repo and lack a newly-added
+# subcommand/flag (e.g. `membrane recall --include-catches`, `membrane catch`), which
+# would silently no-op the membrane catch/recall (epic age-zpj5; codex S3 round-3).
+# Order: $AO_BIN, repo build ($REPO_ROOT/cli/bin/ao then $REPO_ROOT/cli/ao), then PATH.
+# Prints nothing + returns 1 when none is executable (callers treat that as skip).
+resolve_ao() {
+  local c
+  for c in "${AO_BIN:-}" "${REPO_ROOT:-.}/cli/bin/ao" "${REPO_ROOT:-.}/cli/ao"; do
+    if [[ -n "$c" && -x "$c" ]]; then printf '%s\n' "$c"; return 0; fi
+  done
+  command -v ao 2>/dev/null
+}
+
 # emit_pawl_catch <mode>: record this REFUTE as a structured membrane catch (epic
 # age-zpj5, S2) so DetectCatches/recall can group recurring classes — domain from
 # the changed-files' top dir, reason from the REFUTED verdict text, paths from the
@@ -50,7 +64,7 @@ EVIDENCE_DIR="$REPO_ROOT/.agents/pawl-evidence"
 emit_pawl_catch() {
   local mode="${1:-fresh-context}" ao_bin reason domain paths files
   local -a catch_args=()
-  ao_bin="$(command -v ao 2>/dev/null)" || return 0
+  ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   [[ -n "${bead:-}" && -n "${head:-}" ]] || return 0
   reason="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*REFUTED' "${evidence:-/dev/null}" 2>/dev/null | tail -1 \
             | sed -E 's/^[[:space:]]*VERDICT:[[:space:]]*REFUTED[[:space:]:—-]*//I' | cut -c1-200)"
@@ -73,6 +87,32 @@ emit_pawl_catch() {
   # cd so the rest of the script's cwd is untouched.
   ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane catch --bead "$bead" --domain "$domain" \
       --reason "$reason" --head "$head" --mode "$mode" "${catch_args[@]}" ) >/dev/null 2>&1 || true
+}
+
+# recall_prior_catches: print the MEMBRANE MEMORY block (prior catches in this change's
+# domain + touched files) for injection into the reviewer prompt — the consumption side
+# of membrane memory (epic age-zpj5, S3). Fail-safe: prints NOTHING (and never errors)
+# when ao is absent, no domain resolves, or there are no recorded catches. Output is
+# `ao membrane recall` text (controlled, not diff content).
+recall_prior_catches() {
+  local ao_bin domain files recalled
+  ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
+  case "${scope:-head}" in
+    staged) files="$(git -C "${REPO_ROOT:-.}" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -C "${REPO_ROOT:-.}" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+  esac
+  domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
+  [[ -n "$domain" ]] || return 0
+  # Recall by DOMAIN only (no --paths): surface EVERY catch in this bounded context so
+  # the injection never misses one (a path filter would need every touched file, and a
+  # cap on that list silently drops catches for files past the cap — codex S3 round-2).
+  # The path-overlap narrowing stays available on `ao membrane recall --paths` for
+  # explicit queries (and is unit-tested), but the auto-injection wants never-miss.
+  recalled="$( ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane recall --domain "$domain" --include-catches ) 2>/dev/null )" || return 0
+  # Only inject when there are ACTUAL catches (skip the "No past catches" line).
+  if printf '%s' "$recalled" | grep -q 'past catch class'; then
+    printf '\n=== MEMBRANE MEMORY — PRIOR CATCHES IN THIS AREA (domain %s; verify the change does NOT reintroduce these) ===\n%s\n' "$domain" "$recalled"
+  fi
 }
 PR="${AGENTOPS_PAWL_PR:-0}"          # 0 = push-to-main landing (matches the pre-push gate)
 TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
@@ -222,6 +262,7 @@ fi
 
 # The refuter prompt: posture + diff. Diff is appended from a FILE (never shell-
 # interpolated) so $(...) / backticks in the diff are not evaluated.
+prior_catches="$(recall_prior_catches)"   # membrane memory: prior catches in this area (S3), empty if none
 {
   cat <<PROMPT
 You are a fresh-context, cross-family reviewer — the REFUTER in a two-model pawl. $read_instr
@@ -236,7 +277,7 @@ VERDICT: CONFIRMED
 VERDICT: REFUTED
 DEFECTS:
  - <one concrete defect per line: the symptom and why it matters>
-
+$prior_catches
 === CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
 PROMPT
   printf '%s\n' "$review_body"
@@ -271,6 +312,9 @@ if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" 
   { printf '%s\n' "$read_instr"
     printf '%s\n' "$posture"
     [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
+    # S3: the SAME membrane-memory injection as the cold path — so head-scope reviews
+    # through the warm pawl-service ALSO consume prior catches (computed at $prior_catches).
+    [[ -n "$prior_catches" ]] && printf '%s\n' "$prior_catches"
     printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
     printf '%s\n' "$review_body"
   } > "$route_pkt"

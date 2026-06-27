@@ -30,11 +30,13 @@ import (
 // membrane getting harder to fool.
 
 var (
-	membraneDeriveRun    string
-	membraneDeriveDryRun bool
-	membraneDeriveForce  bool
-	membraneRecallDomain string
-	membraneRecallJSON   bool
+	membraneDeriveRun            string
+	membraneDeriveDryRun         bool
+	membraneDeriveForce          bool
+	membraneRecallDomain         string
+	membraneRecallJSON           bool
+	membraneRecallIncludeCatches bool
+	membraneRecallPaths          []string
 
 	membraneCatchBead     string
 	membraneCatchDomain   string
@@ -107,6 +109,8 @@ func init() {
 
 	membraneRecallCmd.Flags().StringVar(&membraneRecallDomain, "domain", "", "Bounded-context / work-class tag to recall escapes for (required)")
 	membraneRecallCmd.Flags().BoolVar(&membraneRecallJSON, "json", false, "Emit the recalled escapes as JSON")
+	membraneRecallCmd.Flags().BoolVar(&membraneRecallIncludeCatches, "include-catches", false, "Also surface CATCH classes in the domain (the abundant memory; escapes are rare)")
+	membraneRecallCmd.Flags().StringSliceVar(&membraneRecallPaths, "paths", nil, "With --include-catches, narrow to catches whose affected_paths overlap these files")
 
 	membraneCatchCmd.Flags().StringVar(&membraneCatchBead, "bead", "", "Bead id the catch was found on (required)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchDomain, "domain", "", "Bounded-context / work-class tag (required)")
@@ -130,6 +134,46 @@ func recallByDomain(root, domain string) ([]yieldledger.Escape, error) {
 		return nil, err
 	}
 	return yieldledger.EscapesByDomain(ledger, domain), nil
+}
+
+// recallCatchesByDomain is the testable core of CATCH-keyed recall (epic age-zpj5,
+// S3): load the ledger, DetectCatches, and return the catch classes in `domain` —
+// optionally narrowed to catches whose affected_paths OVERLAP `paths` (set
+// intersection). This is the abundant consumption side of membrane memory (escapes
+// are structurally rare; catches are not): before reviewing a change in a bounded
+// context and touching some files, recall the catches already made HERE so the
+// reviewer does not re-derive them. ADVISORY only — never a gate input.
+func recallCatchesByDomain(root, domain string, paths []string) ([]yieldledger.Catch, error) {
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	want := map[string]bool{}
+	for _, p := range paths {
+		if p = strings.TrimSpace(p); p != "" {
+			want[p] = true
+		}
+	}
+	var out []yieldledger.Catch
+	for _, c := range yieldledger.DetectCatches(ledger) {
+		if c.Domain != domain {
+			continue
+		}
+		if len(want) > 0 {
+			overlap := false
+			for _, p := range c.AffectedPaths {
+				if want[p] {
+					overlap = true
+					break
+				}
+			}
+			if !overlap {
+				continue
+			}
+		}
+		out = append(out, c)
+	}
+	return out, nil
 }
 
 // buildCatchInput assembles the GateVerdictInput for a structured catch: a REFUTED
@@ -221,6 +265,12 @@ func runMembraneRecall(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	var catches []yieldledger.Catch
+	if membraneRecallIncludeCatches {
+		if catches, err = recallCatchesByDomain(root, domain, membraneRecallPaths); err != nil {
+			return err
+		}
+	}
 	out := cmd.OutOrStdout()
 	if membraneRecallJSON {
 		if escapes == nil {
@@ -228,20 +278,39 @@ func runMembraneRecall(cmd *cobra.Command, args []string) error {
 		}
 		enc := json.NewEncoder(out)
 		enc.SetIndent("", "  ")
+		if membraneRecallIncludeCatches {
+			if catches == nil {
+				catches = []yieldledger.Catch{}
+			}
+			return enc.Encode(map[string]any{"escapes": escapes, "catches": catches})
+		}
 		return enc.Encode(escapes)
 	}
+	// Escapes (the existing surface — unchanged when --include-catches is off).
 	if len(escapes) == 0 {
 		fmt.Fprintf(out, "No past escapes recorded in domain %q — clean here (or no data yet).\n", domain)
-		return nil
-	}
-	fmt.Fprintf(out, "Membrane recall — %d past escape(s) in domain %q (look out for these here):\n\n", len(escapes), domain)
-	for _, e := range escapes {
-		missed := e.Missed
-		if missed == "" {
-			missed = "(no recorded reason)"
+	} else {
+		fmt.Fprintf(out, "Membrane recall — %d past escape(s) in domain %q (look out for these here):\n\n", len(escapes), domain)
+		for _, e := range escapes {
+			missed := e.Missed
+			if missed == "" {
+				missed = "(no recorded reason)"
+			}
+			fmt.Fprintf(out, "- %s (run %s, refuted by %s): %s\n",
+				e.BeadID, e.RunID, strings.Join(e.RefuterFamilies, ","), missed)
 		}
-		fmt.Fprintf(out, "- %s (run %s, refuted by %s): %s\n",
-			e.BeadID, e.RunID, strings.Join(e.RefuterFamilies, ","), missed)
+	}
+	// Catches (the abundant memory) — additive, only with --include-catches.
+	if membraneRecallIncludeCatches {
+		if len(catches) == 0 {
+			fmt.Fprintf(out, "\nNo past catches recorded in domain %q.\n", domain)
+		} else {
+			fmt.Fprintf(out, "\nMembrane recall — %d past catch class(es) in domain %q (verify these do not recur):\n\n", len(catches), domain)
+			for _, c := range catches {
+				fmt.Fprintf(out, "- [%s] ×%d (%s) paths=%s: %s\n",
+					c.ClassKey, c.HitCount, strings.Join(c.Beads, ","), strings.Join(c.AffectedPaths, ","), c.Reason)
+			}
+		}
 	}
 	return nil
 }

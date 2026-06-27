@@ -3621,9 +3621,11 @@ ao membrane recall --domain <domain> [flags]
 **Flags:**
 
 ```
-      --domain string   Bounded-context / work-class tag to recall escapes for (required)
-  -h, --help            help for recall
-      --json            Emit the recalled escapes as JSON
+      --domain string     Bounded-context / work-class tag to recall escapes for (required)
+  -h, --help              help for recall
+      --include-catches   Also surface CATCH classes in the domain (the abundant memory; escapes are rare)
+      --json              Emit the recalled escapes as JSON
+      --paths strings     With --include-catches, narrow to catches whose affected_paths overlap these files
 ```
 
 ---
