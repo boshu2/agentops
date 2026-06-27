@@ -27,13 +27,22 @@ func writePawlTestRepo(t *testing.T, exitCode int) {
 	must(os.MkdirAll(filepath.Join(repo, "scripts"), 0o755))
 	stub := "#!/usr/bin/env bash\nexit " + strconv.Itoa(exitCode) + "\n"
 	must(os.WriteFile(filepath.Join(repo, "scripts", "pawl-review.sh"), []byte(stub), 0o755))
+	// Simulate the GENUINE-checkout dogfood: the live-script path is taken only when the
+	// running ao binary physically lives inside the resolved checkout (forge-proof trust),
+	// so place a dummy binary inside repo/cli/bin and point pawlSelfBinary at it.
+	must(os.MkdirAll(filepath.Join(repo, "cli", "bin"), 0o755))
+	selfAo := filepath.Join(repo, "cli", "bin", "ao")
+	must(os.WriteFile(selfAo, []byte("dummy"), 0o755))
 
 	prevDir := testProjectDir
 	testProjectDir = repo
+	prevSelf := pawlSelfBinary
+	pawlSelfBinary = func() (string, error) { return selfAo, nil }
 	// runPawlReview mutates these shared cobra-command flags on error — restore them.
 	prevSU, prevSE := pawlReviewCmd.SilenceUsage, pawlReviewCmd.SilenceErrors
 	t.Cleanup(func() {
 		testProjectDir = prevDir
+		pawlSelfBinary = prevSelf
 		pawlReviewCmd.SilenceUsage = prevSU
 		pawlReviewCmd.SilenceErrors = prevSE
 	})

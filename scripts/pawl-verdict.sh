@@ -86,6 +86,20 @@ die() { echo "pawl-verdict: ERROR: $*" >&2; exit 2; }
 
 command -v jq >/dev/null 2>&1 || die "jq not on PATH"
 
+# _ao_bin: print the TRUSTED ao binary for the best-effort provenance/yield/membrane
+# emits below. SECURITY (age-a9iv.4): on the stranger/embedded path these emits run with
+# cwd = the UNTRUSTED repo under review (some explicitly `cd` into it to root the ledger),
+# so a bare `ao` resolved via PATH would execute a planted `./ao` if PATH contains `.`/a
+# relative entry — reintroducing the RCE this change closes. So when PAWL_UNTRUSTED_REPO=1
+# use ONLY the absolute, pinned $AO_BIN (the invoking binary) and NEVER fall back to PATH;
+# print nothing + return 1 when none (callers treat that as skip — emits are non-blocking).
+# In-checkout (flag unset) keeps the original PATH resolution.
+_ao_bin() {
+  if [[ -n "${AO_BIN:-}" && -x "${AO_BIN:-}" ]]; then printf '%s\n' "$AO_BIN"; return 0; fi
+  [[ "${PAWL_UNTRUSTED_REPO:-0}" == "1" ]] && return 1
+  command -v ao 2>/dev/null
+}
+
 cmd="${1:-}"; shift || true
 
 # --- shared arg parse helpers ------------------------------------------------
@@ -436,8 +450,9 @@ do_write() {
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
 
   # Emit verdict→commit provenance edge (non-blocking, ag-cm8nd sensor).
-  if command -v ao >/dev/null 2>&1; then
-    ao provenance emit-verdict --file "$out" 2>/dev/null || true
+  local _ao; _ao="$(_ao_bin)" || _ao=""
+  if [[ -n "$_ao" ]]; then
+    "$_ao" provenance emit-verdict --file "$out" 2>/dev/null || true
   fi
 
   # Emit a yield-ledger gate-verdict (age-uxva): the membrane event log of every
@@ -463,7 +478,8 @@ emit_yield_gate_verdict() {
   local bead="$1" disposition="$2" head="$3" attempt="$4" mode="$5" \
     author_ctx="$6" vfile="$7" run_id="$8" difficulty="$9" author_family="${10}" \
     domain="${11}" reason="${12}"
-  command -v ao >/dev/null 2>&1 || return 0
+  local _ao; _ao="$(_ao_bin)" || return 0
+  [[ -n "$_ao" ]] || return 0
   command -v jq >/dev/null 2>&1 || return 0
   # head_sha is required (>=7) by the schema; without it, skip (fail-open).
   [[ -n "$head" && ${#head} -ge 7 ]] || return 0
@@ -522,9 +538,11 @@ emit_yield_gate_verdict() {
     + (if $dom != "" then {domain: $dom} else {} end)
     + (if $rsn != "" then {reason: $rsn} else {} end)' "$vfile" 2>/dev/null)" || return 0
   [[ -n "$body" ]] || return 0
-  # Run with cwd=REPO_ROOT so ao resolves the ledger at the same root the dedup
+  # Run with cwd=YIELD_ROOT so ao resolves the ledger at the same root the dedup
   # scan reads (and where the verdict file lives), independent of the caller cwd.
-  ( cd "$YIELD_ROOT" && ao yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
+  # $_ao is resolved ABOVE (before this cd) to an absolute trusted binary, so cd-ing
+  # into a possibly-untrusted YIELD_ROOT can never make a bare `ao` hit a planted ./ao.
+  ( cd "$YIELD_ROOT" && "$_ao" yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
 
 # rebind <bead> <pr> --head NEWSHA [--dir D]
@@ -554,7 +572,8 @@ do_rebind() {
      '.head_sha=$h | .generated_at=$ts' "$out" > "$tmp" || { rm -f "$tmp"; die "rebind: failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: rebound $out -> head ${newhead:0:12}" >&2
-  if command -v ao >/dev/null 2>&1; then ao provenance emit-verdict --file "$out" >/dev/null 2>&1 || true; fi
+  local _ao; _ao="$(_ao_bin)" || _ao=""
+  [[ -n "$_ao" ]] && { "$_ao" provenance emit-verdict --file "$out" >/dev/null 2>&1 || true; }
 }
 
 case "$cmd" in

@@ -29,6 +29,14 @@ done
 # Check skills/compile runtime script
 check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
 
+# Check the pawl bundle: scripts + verdict schema embedded so `ao pawl review` runs
+# zero-config on a stranger's repo (no AgentOps checkout). The scripts/ + schemas/
+# sibling layout must be preserved (pawl-verdict.sh reads its schema script-relative).
+for s in pawl-review.sh pawl-verdict.sh pawl.sh; do
+    check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
+done
+check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     echo "ERROR: $ERRORS embedded file(s) are out of sync."
