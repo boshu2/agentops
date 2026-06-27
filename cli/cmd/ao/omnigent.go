@@ -304,8 +304,13 @@ func parseOmnigentVerdict(stdout string) omnigentReceiptVerdict {
 		JudgeModelFamily: "codex/openai",
 		Summary:          omnigentVerdictSummary(stdout),
 	}
+	// The verdict is the LAST VERDICT: sentinel line: the spec puts it on the final
+	// line of the final message. An EARLIER stray sentinel — the agent quoting its
+	// own instructions, or an embedded sub-agent report — must NOT win, or a real
+	// trailing UNWORTHY would be masked by an early WORTHY (a fail-OPEN hole).
 	re := regexp.MustCompile(`(?mi)^\s*VERDICT\s*[:=]\s*(WORTHY|UNWORTHY|BLOCKED)\b(.*)$`)
-	if match := re.FindStringSubmatch(stdout); len(match) == 3 {
+	if all := re.FindAllStringSubmatch(stdout, -1); len(all) > 0 {
+		match := all[len(all)-1]
 		verdict.Status = strings.ToUpper(match[1])
 		rest := strings.TrimSpace(match[2])
 		verdict.Branch = regexpFirstSubmatch(rest, `\bbranch=(\S+)`)
