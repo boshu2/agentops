@@ -62,7 +62,7 @@ Installs hookless. The only hard requirement is an agent runtime and `git`; ever
 [codex/judge-1]  REFUTE  token-bucket refill lacks jitter under burst
 [claude/judge-2] PASS    redis integration follows the repo pattern
 Verdict: HOLD — not done. Fix /login limit + refill jitter, then re-verify.
-Recorded → .agents/council/<run-id>/verdict.md
+Recorded as a proof artifact — no verdict, not done.
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
