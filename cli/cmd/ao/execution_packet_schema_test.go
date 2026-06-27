@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
 
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
@@ -18,20 +20,25 @@ func TestExecutionPacketSchemaValidatesTypedWorkPacketFields(t *testing.T) {
 	}
 }
 
-func TestExecutionPacketSchemaDefaultsDefaultVerdictToFail(t *testing.T) {
+func TestExecutionPacketDefaultVerdictResolvesFailClosed(t *testing.T) {
 	schema := compileExecutionPacketSchemaForTest(t)
-	defaultVerdictSchema := schema.Properties["default_verdict"]
-	if defaultVerdictSchema == nil || defaultVerdictSchema.Default == nil {
-		t.Fatalf("default_verdict schema is missing a default annotation")
-	}
-	if got := (*defaultVerdictSchema.Default).(string); got != "FAIL" {
-		t.Fatalf("default_verdict default = %q, want FAIL", got)
-	}
 
 	packet := validExecutionPacketFixture()
 	delete(packet, "default_verdict")
 	if err := validateExecutionPacketFixture(schema, packet); err != nil {
 		t.Fatalf("execution packet without default_verdict should remain valid: %v", err)
+	}
+	if got := unmarshalExecutionPacketForTest(t, packet).EffectiveVerdict(); got != cliRPI.ExecutionPacketVerdictFail {
+		t.Fatalf("missing default_verdict resolved to %q, want %q", got, cliRPI.ExecutionPacketVerdictFail)
+	}
+
+	explicitPacket := validExecutionPacketFixture()
+	explicitPacket["default_verdict"] = "PASS"
+	if err := validateExecutionPacketFixture(schema, explicitPacket); err != nil {
+		t.Fatalf("execution packet with explicit PASS default_verdict should validate: %v", err)
+	}
+	if got := unmarshalExecutionPacketForTest(t, explicitPacket).EffectiveVerdict(); got != cliRPI.ExecutionPacketVerdictPass {
+		t.Fatalf("explicit default_verdict resolved to %q, want %q", got, cliRPI.ExecutionPacketVerdictPass)
 	}
 
 	legacyPacket := validExecutionPacketFixture()
@@ -81,6 +88,19 @@ func compileExecutionPacketSchemaForTest(t *testing.T) *jsonschema.Schema {
 
 func validateExecutionPacketFixture(schema *jsonschema.Schema, packet map[string]any) error {
 	return schema.Validate(packet)
+}
+
+func unmarshalExecutionPacketForTest(t *testing.T, packet map[string]any) cliRPI.ExecutionPacket {
+	t.Helper()
+	data, err := json.Marshal(packet)
+	if err != nil {
+		t.Fatalf("marshal execution packet fixture: %v", err)
+	}
+	var loaded cliRPI.ExecutionPacket
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatalf("unmarshal execution packet fixture: %v", err)
+	}
+	return loaded
 }
 
 func validExecutionPacketFixture() map[string]any {
