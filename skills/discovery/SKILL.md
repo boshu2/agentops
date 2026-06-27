@@ -211,7 +211,7 @@ and the acceptance-criteria YAML contract.
 **Format:** compact markdown phase summary to stdout plus JSON execution packet
 on disk.
 
-**Files written:**
+**Files written** (the shaping; the LOAD-BEARING output is the persisted tracker beads — see Completion Markers):
 
 - `.agents/research/<topic-slug>.md` - research artifact path only
 - `.agents/plans/YYYY-MM-DD-<goal-slug>.md` - plan document path only
@@ -225,7 +225,7 @@ on disk.
 ## Completion Markers
 
 ```
-<promise>DONE</promise>      # Discovery complete, epic-id + execution-packet ready
+<promise>DONE</promise>      # Discovery complete AND the plan PERSISTED in the active tracker (br/bd, else tasklist): `br show <epic_id>` (the packet's epic_id is a STRING — it must resolve) lists the epic + Gherkin-bearing slice children. A plan packet + passing pre-mortem with NO persisted beads is NOT DONE — operationalize (dag STEP 4 / /plan), verify, then signal.
 <promise>BLOCKED</promise>   # Pre-mortem failed 3x, manual intervention needed
 ```
 
