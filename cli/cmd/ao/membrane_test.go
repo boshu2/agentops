@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -643,5 +644,76 @@ func TestMembraneCatch_DetectorMakesCompileCandidate(t *testing.T) {
 	cc := yieldledger.CompileCandidates(yieldledger.DetectCatches(l))
 	if len(cc) != 1 || cc[0].DetectorPattern != "assign-cmdsub-no-guard" {
 		t.Fatalf("detector-bearing catch must be a compile candidate; got %+v", cc)
+	}
+}
+
+// Catch-keyed recall filters by domain and (when paths given) affected_paths overlap. (S3)
+func TestRecallCatchesByDomain(t *testing.T) {
+	root := t.TempDir()
+	w := yieldledger.Writer{}
+	mk := func(bead, domain, reason string, paths []string) {
+		t.Helper()
+		if _, err := w.AppendGateVerdict(root, buildCatchInput(bead, domain, reason, paths, "", "", "", "", "abcdef0", "",
+			time.Date(2026, 6, 27, 12, 0, 0, 0, time.UTC))); err != nil {
+			t.Fatalf("emit: %v", err)
+		}
+	}
+	mk("age-a", "pawl", "key-injection fail-open", []string{"scripts/pawl.sh"})
+	mk("age-b", "shell", "unguarded cmdsub", []string{"scripts/x.sh"})
+
+	pawl, err := recallCatchesByDomain(root, "pawl", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pawl) != 1 || pawl[0].Domain != "pawl" {
+		t.Fatalf("domain filter: want 1 pawl catch, got %+v", pawl)
+	}
+	if hit, _ := recallCatchesByDomain(root, "pawl", []string{"scripts/pawl.sh", "other.go"}); len(hit) != 1 {
+		t.Fatalf("overlapping path should match, got %d", len(hit))
+	}
+	if miss, _ := recallCatchesByDomain(root, "pawl", []string{"unrelated.go"}); len(miss) != 0 {
+		t.Fatalf("non-overlapping paths should NOT match, got %d", len(miss))
+	}
+}
+
+// The S3 invariant (advisory negative test): the recall functions must NEVER be
+// called from any gate / pass / verdict-deciding path — recall is advisory MEMORY,
+// not a gate input. Statically scan the package source: the only legitimate caller
+// is runMembraneRecall (the advisory command). (epic age-zpj5, S3)
+func TestRecall_IsAdvisoryNeverAGate(t *testing.T) {
+	files, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	callRe := regexp.MustCompile(`\brecall(ByDomain|CatchesByDomain)\(`)
+	defRe := regexp.MustCompile(`^func\s+recall(ByDomain|CatchesByDomain)\b`)
+	fnRe := regexp.MustCompile(`^func\s+(\w+)`)
+	callSites := 0
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		src, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cur := ""
+		for _, line := range strings.Split(string(src), "\n") {
+			if m := fnRe.FindStringSubmatch(line); m != nil {
+				cur = m[1]
+			}
+			if defRe.MatchString(line) {
+				continue // the definition line, not a call
+			}
+			if callRe.MatchString(line) {
+				callSites++
+				if cur != "runMembraneRecall" {
+					t.Errorf("%s: recall is called from %q — recall is ADVISORY memory and must NEVER be a gate/verdict/pass caller (S3 invariant)", f, cur)
+				}
+			}
+		}
+	}
+	if callSites == 0 {
+		t.Fatal("found 0 recall call sites — the scan isn't matching, so this invariant would pass vacuously")
 	}
 }
