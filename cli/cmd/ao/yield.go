@@ -401,6 +401,12 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 			// (caught by the installed-binary e2e, which the struct-level unit test
 			// missed — the producer's CLI seam, not the writer, was the gap).
 			DetectorPattern: b.DetectorPattern, ConstraintPathGlobs: b.ConstraintPathGlobs, DetectorKind: b.DetectorKind,
+			// Same CLI-seam lesson for the catch fields (epic age-zpj5 S1): thread
+			// affected_paths from the JSON body, else `ao yield emit gate-verdict --json
+			// '{...affected_paths...}'` (the path pawl-verdict.sh / emit-deterministic-catch.sh
+			// take) drops them and DetectCatches can't path-recall the catch. class_key is
+			// NOT threaded — it is computed at emit (classKeyIfCatch), not a caller input.
+			AffectedPaths: b.AffectedPaths,
 		}
 		// EM.2.1: the writer stamps the escape sentinels (UNCLASSIFIED domain /
 		// unspecified reason) when this is an overturning-REFUTED missing either —
