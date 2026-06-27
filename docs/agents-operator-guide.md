@@ -61,7 +61,7 @@ ao agents doctor
 
 ### 4. Update consumer docs and skills
 
-If the new surface is part of a user-visible workflow, mention `ao agents inspect | lint | doctor` from the relevant skill or doc. The shared catalog lives in `skills/using-agentops/SKILL.md` (Claude side) and `skills-codex/using-agentops/SKILL.md` (Codex side); after editing the Codex copy, run `scripts/regen-codex-hashes.sh` and verify with `scripts/check-codex-parity-drift.sh`.
+If the new surface is part of a user-visible workflow, mention `ao agents inspect | lint | doctor` from the relevant skill or doc (the `ao agents` surface is documented in `skills/agent-native/SKILL.md`). After editing any Codex skill twin under `skills-codex/`, run `scripts/regen-codex-hashes.sh` and verify with `scripts/check-codex-parity-drift.sh`.
 
 Pure read-side mirrors usually do not need a new contract. Prefer an end-to-end smoke test that locks the read invariant, as described in the hygiene pattern.
 
@@ -90,7 +90,7 @@ If `security-toolchain-gate` or the `.agents/` write-surfaces lint flags a PR yo
 | `undocumented .agents/ write surface "<X>"` | Production code references `.agents/<X>` and `<X>` is neither in the allowlist nor an active skill | Add `<X>` between the BEGIN/END markers; or rename to use a skill-owned path |
 | Doctor reports an orphan skill | A skill exists but never wrote anywhere under `.agents/<skill>/` | Either remove the skill if unused, or document the exemption (e.g. in the skill's SKILL.md) |
 | Doctor reports a stray dir | `.agents/<X>/` exists on disk but neither catalogued nor a skill name | Remove the dir, rename it to a skill name, or add it to the allowlist if production code legitimately writes there |
-| Codex parity audit fails after editing `skills/using-agentops/SKILL.md` | The Codex side at `skills-codex/using-agentops/SKILL.md` drifted | Mirror the change on the Codex side, then run `scripts/regen-codex-hashes.sh` |
+| Codex parity audit fails after editing `skills/inject/SKILL.md` | The Codex side at `skills-codex/inject/SKILL.md` drifted | Mirror the change on the Codex side, then run `scripts/regen-codex-hashes.sh` |
 
 Do not bypass the contract by moving writes to a less precise path. The purpose of the gate is to make ownership and cleanup rules visible to the next operator.
 
