@@ -40,6 +40,40 @@ PAWL_SH="${PAWL_SERVICE_SCRIPT:-$SCRIPT_DIR/pawl.sh}"
 REPO_ROOT="${AGENTOPS_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 VERDICT_DIR="${AGENTOPS_PAWL_VERDICT_DIR:-$REPO_ROOT/.agents/pawl-verdicts}"
 EVIDENCE_DIR="$REPO_ROOT/.agents/pawl-evidence"
+
+# emit_pawl_catch <mode>: record this REFUTE as a structured membrane catch (epic
+# age-zpj5, S2) so DetectCatches/recall can group recurring classes — domain from
+# the changed-files' top dir, reason from the REFUTED verdict text, paths from the
+# reviewed files. Fail-safe + NON-BLOCKING: a missing `ao` or any error never blocks
+# the REFUTED exit (the catch is observability, not a gate). Reads the globals
+# (bead/head/evidence/review_files) at call time.
+emit_pawl_catch() {
+  local mode="${1:-fresh-context}" ao_bin reason domain paths files
+  local -a catch_args=()
+  ao_bin="$(command -v ao 2>/dev/null)" || return 0
+  [[ -n "${bead:-}" && -n "${head:-}" ]] || return 0
+  reason="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*REFUTED' "${evidence:-/dev/null}" 2>/dev/null | tail -1 \
+            | sed -E 's/^[[:space:]]*VERDICT:[[:space:]]*REFUTED[[:space:]:—-]*//I' | cut -c1-200)"
+  [[ -n "$reason" ]] || reason="pawl-review REFUTED for $bead (see evidence)"
+  # Changed files for affected_paths — computed DIRECTLY from git by scope, NOT from
+  # $review_files (which pawl-review only populates for LARGE diffs > MAX_INLINE_BYTES),
+  # so a NORMAL small-diff catch is still path-recallable.
+  case "${scope:-head}" in
+    staged) files="$(git -C "${REPO_ROOT:-.}" diff --cached --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -C "${REPO_ROOT:-.}" show HEAD --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+  esac
+  domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
+  [[ -n "$domain" ]] || domain="pawl-review"
+  paths="$(printf '%s\n' "$files" | head -20 | tr '\n' ',' | sed 's/,$//')" # portable join (BSD paste -sd is unreliable)
+  [[ -n "$paths" ]] && catch_args=(--paths "$paths")
+  # Run from $REPO_ROOT (the REVIEWED repo): `ao membrane catch` roots its ledger via
+  # repoRootOrCwd() from its cwd, so without this a pawl-review invoked from a different
+  # cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in repoB) would write the catch to
+  # the WRONG .agents/yield and recall in the reviewed repo would never see it. Subshell
+  # cd so the rest of the script's cwd is untouched.
+  ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane catch --bead "$bead" --domain "$domain" \
+      --reason "$reason" --head "$head" --mode "$mode" "${catch_args[@]}" ) >/dev/null 2>&1 || true
+}
 PR="${AGENTOPS_PAWL_PR:-0}"          # 0 = push-to-main landing (matches the pre-push gate)
 TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
 # age-mwhj: above this packet-byte cap, inlining the full diff reliably times the review out
@@ -266,6 +300,7 @@ if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" 
                   "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
   if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
     echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
+    emit_pawl_catch multi-model
     exit 3
   fi
   echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
@@ -317,6 +352,7 @@ fi
 if grep -qiE 'REFUTED' <<<"$final_verdict"; then
   echo "=== PAWL REVIEW: REFUTED — defects below (fix, recommit, re-run; NO verdict written) ===" >&2
   sed -n '/^[[:space:]]*VERDICT:[[:space:]]*REFUTED/,$p' "$evidence" >&2
+  emit_pawl_catch fresh-context
   exit 3
 fi
 if ! grep -qiE 'CONFIRMED' <<<"$final_verdict"; then

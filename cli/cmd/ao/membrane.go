@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -33,6 +35,17 @@ var (
 	membraneDeriveForce  bool
 	membraneRecallDomain string
 	membraneRecallJSON   bool
+
+	membraneCatchBead     string
+	membraneCatchDomain   string
+	membraneCatchReason   string
+	membraneCatchPaths    []string
+	membraneCatchDetector string
+	membraneCatchGlobs    string
+	membraneCatchKind     string
+	membraneCatchMode     string
+	membraneCatchHead     string
+	membraneCatchRun      string
 )
 
 var membraneCmd = &cobra.Command{
@@ -67,11 +80,26 @@ here before so the same class of miss is caught one altitude earlier.`,
 	RunE: runMembraneRecall,
 }
 
+var membraneCatchCmd = &cobra.Command{
+	Use:   "catch --bead <id> --domain <bc> --reason <what> [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
+	Short: "Record a membrane CATCH — a REFUTED defect, as a structured class the membrane remembers",
+	Long: `Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
+context (--domain), what was caught (--reason), and the affected files (--paths),
+plus an optional mechanical detector. Unlike an escape (a confirmed-then-refuted
+PAIR, structurally rare), a catch is the ABUNDANT signal — every real REFUTE is
+one. The catch is keyed by a catch-native class_key (computed at emit from
+domain+reason[+detector]) so DetectCatches/recall can group recurring classes,
+and carries affected_paths so even a judgment-class catch is path-recallable.
+This is the manual twin of the pawl-review REFUTED branch. (epic age-zpj5, S2)`,
+	RunE: runMembraneCatch,
+}
+
 func init() {
 	membraneCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(membraneCmd)
 	membraneCmd.AddCommand(membraneDeriveCmd)
 	membraneCmd.AddCommand(membraneRecallCmd)
+	membraneCmd.AddCommand(membraneCatchCmd)
 
 	membraneDeriveCmd.Flags().StringVar(&membraneDeriveRun, "run", "", "Run id to scan for escapes (required)")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveDryRun, "dry-run", false, "Report what would be derived without writing files")
@@ -79,6 +107,17 @@ func init() {
 
 	membraneRecallCmd.Flags().StringVar(&membraneRecallDomain, "domain", "", "Bounded-context / work-class tag to recall escapes for (required)")
 	membraneRecallCmd.Flags().BoolVar(&membraneRecallJSON, "json", false, "Emit the recalled escapes as JSON")
+
+	membraneCatchCmd.Flags().StringVar(&membraneCatchBead, "bead", "", "Bead id the catch was found on (required)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchDomain, "domain", "", "Bounded-context / work-class tag (required)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchReason, "reason", "", "What was caught — the defect (required; becomes the class reason)")
+	membraneCatchCmd.Flags().StringSliceVar(&membraneCatchPaths, "paths", nil, "Concrete repo-relative file paths the catch touches (comma-separated or repeated)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchDetector, "detector-pattern", "", "Optional regex that mechanically detects this class (makes it a compile candidate)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchGlobs, "globs", "", "Optional path globs scoping the detector pattern")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchKind, "detector-kind", "", "Optional detector kind (e.g. regex)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchMode, "mode", "", "Pawl diversity mode: fresh-context (default) | multi-model | deterministic")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchHead, "head", "", "Commit sha the catch was found at (default: git HEAD)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchRun, "run", "", "Run id (default: membrane-catch)")
 }
 
 // recallByDomain is the testable core of `ao membrane recall`: load the yield
@@ -91,6 +130,79 @@ func recallByDomain(root, domain string) ([]yieldledger.Escape, error) {
 		return nil, err
 	}
 	return yieldledger.EscapesByDomain(ledger, domain), nil
+}
+
+// buildCatchInput assembles the GateVerdictInput for a structured catch: a REFUTED
+// gate-verdict carrying domain+reason+affected_paths (+ optional detector). class_key
+// is computed by the writer at emit; affected_paths/refuter_families are sanitized
+// there. Pure (given head, ts, mode) so it is unit-testable without git/clock. (S2)
+func buildCatchInput(bead, domain, reason string, paths []string, detector, globs, kind, mode, head, run string, ts time.Time) yieldledger.GateVerdictInput {
+	if strings.TrimSpace(mode) == "" {
+		mode = yieldledger.ModeFreshContext
+	}
+	if strings.TrimSpace(run) == "" {
+		run = "membrane-catch"
+	}
+	return yieldledger.GateVerdictInput{
+		BeadID:              bead,
+		RunID:               run,
+		TS:                  ts,
+		Difficulty:          1,
+		PawlVerdictRef:      yieldledger.PawlVerdictRef{BeadID: bead, HeadSHA: head},
+		Disposition:         yieldledger.DispositionRefuted,
+		HeadSHA:             head,
+		Attempt:             1,
+		Mode:                mode,
+		AuthorContextID:     "ao-membrane-catch",
+		AuthorFamily:        "manual",
+		AuthorNeReviewer:    true,
+		EvidencePresent:     true,
+		Domain:              domain,
+		Reason:              reason,
+		DetectorPattern:     detector,
+		ConstraintPathGlobs: globs,
+		DetectorKind:        kind,
+		AffectedPaths:       paths,
+	}
+}
+
+// runMembraneCatch records a catch via the production Writer. (epic age-zpj5, S2)
+func runMembraneCatch(cmd *cobra.Command, _ []string) error {
+	if strings.TrimSpace(membraneCatchBead) == "" || strings.TrimSpace(membraneCatchDomain) == "" || strings.TrimSpace(membraneCatchReason) == "" {
+		return fmt.Errorf("ao membrane catch: --bead, --domain, and --reason are required")
+	}
+	// repoRootOrCwd (NOT resolveProjectDir) so a catch emitted from a repo subdir —
+	// or by pawl-review.sh running from any cwd — lands in the REPO-ROOT yield ledger
+	// where recall reads it, not a fragmented <cwd>/.agents/yield (age-6sg.1 class).
+	root, err := repoRootOrCwd()
+	if err != nil {
+		return err
+	}
+	head := strings.TrimSpace(membraneCatchHead)
+	if head == "" {
+		head = gitHeadSHA(root)
+	}
+	if utf8.RuneCountInString(head) < 7 {
+		return fmt.Errorf("ao membrane catch: need a >=7-char --head (commit sha); none resolved (pass --head or run inside a git repo)")
+	}
+	in := buildCatchInput(membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchPaths,
+		membraneCatchDetector, membraneCatchGlobs, membraneCatchKind, membraneCatchMode, head, membraneCatchRun, time.Now().UTC())
+	w := yieldledger.Writer{}
+	if _, err := w.AppendGateVerdict(root, in); err != nil {
+		return fmt.Errorf("ao membrane catch: emit: %w", err)
+	}
+	ck := yieldledger.ClassKeyFor(membraneCatchDomain, membraneCatchReason, membraneCatchDetector)
+	fmt.Fprintf(cmd.OutOrStdout(), "membrane: recorded catch for %s@%s — class %s (domain=%s)\n", membraneCatchBead, head[:7], ck, membraneCatchDomain)
+	return nil
+}
+
+// gitHeadSHA returns the HEAD commit sha of the repo at root, or "" if unavailable.
+func gitHeadSHA(root string) string {
+	out, err := exec.Command("git", "-C", root, "rev-parse", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func runMembraneRecall(cmd *cobra.Command, args []string) error {
