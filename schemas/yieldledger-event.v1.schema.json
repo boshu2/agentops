@@ -147,8 +147,8 @@
                         },
                         "mode": {
                             "type": "string",
-                            "enum": ["fresh-context", "multi-model"],
-                            "description": "Projected pawl diversity mode (optional; absent => fresh-context)."
+                            "enum": ["fresh-context", "multi-model", "deterministic"],
+                            "description": "Projected pawl diversity mode (optional; absent => fresh-context). `deterministic` marks a verdict from the deterministic gate tier — what emit-deterministic-catch.sh writes for a gate-blocked catch (matches Go validMode/ModeDeterministic)."
                         },
                         "domain": {
                             "type": "string",
@@ -184,6 +184,27 @@
                         "evidence_present": {
                             "type": "boolean",
                             "description": "Derived: the pawl-verdict.sh panel-or-refuter evidence check passed (a review actually ran)."
+                        },
+                        "detector_pattern": {
+                            "type": "string",
+                            "description": "On an overturning-REFUTED, a regex the membrane compiles into a draft constraint so the escape's class is mechanically re-introducible. Absent -> the finding stays advisory. (EM.2.10; schema-added with the catch fields, epic age-zpj5 S1)"
+                        },
+                        "constraint_path_globs": {
+                            "type": "string",
+                            "description": "Path globs scoping detector_pattern when compiled into a constraint. (EM.2.10)"
+                        },
+                        "detector_kind": {
+                            "type": "string",
+                            "description": "The kind of detector_pattern (e.g. regex). (EM.2.10)"
+                        },
+                        "class_key": {
+                            "type": "string",
+                            "description": "Catch-native, versioned class identity for a REFUTED catch: v1:slug(domain)/slug(normalized reason)[/slug(detector)], computed at emit. Lets recall + recurrence group catches without anyone authoring a regex. (epic age-zpj5, membrane PROVE-FIRST S1)"
+                        },
+                        "affected_paths": {
+                            "type": "array",
+                            "description": "Concrete repo-relative FILE paths from the reviewed diff, INDEPENDENT of detector metadata so a judgment-class catch (no detector) is still path-recallable. (epic age-zpj5, S1)",
+                            "items": {"type": "string", "minLength": 1}
                         }
                     }
                 }

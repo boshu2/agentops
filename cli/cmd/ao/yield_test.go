@@ -215,6 +215,36 @@ func TestEmitYieldEvent_GateVerdictCarriesDomainAndReason(t *testing.T) {
 	}
 }
 
+// affected_paths is the SAME body->input CLI-seam drop class (epic age-zpj5 S1):
+// the emit command must thread affected_paths from the JSON body, else the real
+// catch emit path (pawl-verdict.sh / emit-deterministic-catch.sh -> ao yield emit)
+// writes a catch with no paths and DetectCatches can't path-recall it.
+func TestEmitYieldEvent_GateVerdictCarriesAffectedPaths(t *testing.T) {
+	root := t.TempDir()
+	ts := time.Date(2026, 6, 27, 14, 0, 0, 0, time.UTC)
+	body := `{"difficulty":1,"pawl_verdict_ref":{"bead_id":"ag-p","head_sha":"abc1234"},"disposition":"REFUTED","head_sha":"abc1234","attempt":2,"author_context_id":"ctx","refuter_families":["codex"],"author_family":"claude","cross_family":true,"author_ne_reviewer":true,"evidence_present":true,"domain":"pawl","reason":"content-pattern key-injection fail-open","affected_paths":["scripts/pawl.sh","scripts/pawl-review.sh"]}`
+	if err := emitYieldEvent(root, yieldledger.EventGateVerdict, "ag-p", "r1", ts, body); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	gvs := ledger.GateVerdictsFor("ag-p")
+	if len(gvs) != 1 || gvs[0].GateVerdict == nil {
+		t.Fatalf("want 1 gate-verdict, got %d", len(gvs))
+	}
+	gv := gvs[0].GateVerdict
+	if len(gv.AffectedPaths) != 2 || gv.AffectedPaths[0] != "scripts/pawl.sh" || gv.AffectedPaths[1] != "scripts/pawl-review.sh" {
+		t.Fatalf("AffectedPaths = %v, want [scripts/pawl.sh scripts/pawl-review.sh] (emit path dropped them)", gv.AffectedPaths)
+	}
+	// End-to-end: DetectCatches can now path-recall the catch.
+	catches := yieldledger.DetectCatches(ledger)
+	if len(catches) != 1 || len(catches[0].AffectedPaths) != 2 {
+		t.Fatalf("DetectCatches must path-recall the catch; got %+v", catches)
+	}
+}
+
 // TestEmitYieldEvent_AllKinds verifies each event kind decodes its JSON body and
 // appends through the ledger, and that the bead-keyed projections see it.
 func TestEmitYieldEvent_AllKinds(t *testing.T) {

@@ -26,6 +26,7 @@ package yieldledger
 import (
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // SchemaVersion is the discriminator value for the yieldledger-event.v1 artifact.
@@ -131,6 +132,16 @@ type GateVerdictBody struct {
 	DetectorPattern     string `json:"detector_pattern,omitempty"`
 	ConstraintPathGlobs string `json:"constraint_path_globs,omitempty"`
 	DetectorKind        string `json:"detector_kind,omitempty"`
+	// ClassKey is the catch-native, versioned class identity for a REFUTED catch
+	// (see ClassKeyFor): slug(domain)/slug(normalized reason)[/slug(detector)],
+	// computed at emit. Two catches of the same class collide on it, so recall and
+	// recurrence work without anyone authoring a regex. Empty on non-catch verdicts.
+	// (epic age-zpj5, membrane PROVE-FIRST S1)
+	ClassKey string `json:"class_key,omitempty"`
+	// AffectedPaths are concrete repo-relative FILE paths from the reviewed diff,
+	// INDEPENDENT of DetectorPattern/ConstraintPathGlobs — so a judgment-class catch
+	// (no detector) is still path-recallable. (epic age-zpj5, S1)
+	AffectedPaths []string `json:"affected_paths,omitempty"`
 }
 
 // UsageBody is the typed payload of a usage event. Feeds gauges R, L, and A/R.
@@ -197,6 +208,7 @@ type GateVerdictInput struct {
 	DetectorPattern     string
 	ConstraintPathGlobs string
 	DetectorKind        string
+	AffectedPaths       []string
 }
 
 // UsageInput holds the fields needed to append a usage event.
@@ -257,7 +269,9 @@ func validCategoryHint(c string) bool {
 
 // validRef reports whether a PawlVerdictRef is structurally complete.
 func validRef(r PawlVerdictRef) bool {
-	return strings.TrimSpace(r.BeadID) != "" && len(strings.TrimSpace(r.HeadSHA)) >= 7
+	// Count CODE POINTS (not bytes) so the floor matches the schema's minLength:7,
+	// which is code-point-counted — a multi-byte head_sha can't byte-pass but rune-fail.
+	return strings.TrimSpace(r.BeadID) != "" && utf8.RuneCountInString(strings.TrimSpace(r.HeadSHA)) >= 7
 }
 
 // newAcceptEvent builds an accept Event from validated input.
@@ -290,7 +304,7 @@ func newGateVerdictEvent(in GateVerdictInput) Event {
 			Attempt:             in.Attempt,
 			Mode:                in.Mode,
 			AuthorContextID:     in.AuthorContextID,
-			RefuterFamilies:     in.RefuterFamilies,
+			RefuterFamilies:     cleanStrings(in.RefuterFamilies),
 			AuthorFamily:        in.AuthorFamily,
 			CrossFamily:         in.CrossFamily,
 			AuthorNeReviewer:    in.AuthorNeReviewer,
@@ -300,6 +314,8 @@ func newGateVerdictEvent(in GateVerdictInput) Event {
 			DetectorPattern:     in.DetectorPattern,
 			ConstraintPathGlobs: in.ConstraintPathGlobs,
 			DetectorKind:        in.DetectorKind,
+			AffectedPaths:       cleanStrings(in.AffectedPaths),
+			ClassKey:            classKeyIfCatch(in.Disposition, in.Domain, in.Reason, in.DetectorPattern),
 		},
 	}
 }
@@ -389,7 +405,7 @@ func validateGateVerdictEvent(e Event) string {
 	if !validDisposition(b.Disposition) {
 		return "gate-verdict body invalid disposition: " + b.Disposition
 	}
-	if len(strings.TrimSpace(b.HeadSHA)) < 7 {
+	if utf8.RuneCountInString(strings.TrimSpace(b.HeadSHA)) < 7 { // code points, matching schema minLength:7
 		return "gate-verdict body head_sha too short"
 	}
 	if b.Attempt < 1 {
