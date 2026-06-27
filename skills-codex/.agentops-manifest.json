@@ -1223,8 +1223,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "51eb788db1fdd948b79dc055508a4f154a74b69175507ec5774fbcdcb4ec948a",
-      "generated_hash": "2be3b5068114c15be905c74208d6d5abb54a21d3665f78e04694a22543dd9681"
+      "source_hash": "513e8194a1a1afdee8aa4b547d3452d3a5b8432bf9a8ee8d4b972f0d5058a5e7",
+      "generated_hash": "ed0d28cdf1ce3a79bd13870d1f150755eb66c0f8e576d3fdd873ca9084c727f4"
     },
     {
       "name": "curate",
@@ -1307,8 +1307,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "5d25bd5e7b49e7190a4f373297d4c2614c8af73a05c2bd64f33de61f94a16673",
-      "generated_hash": "675acff7b1b2802e109d279e6ecbbf311a90652652cc2d427e9bd6dbb5da8379"
+      "source_hash": "ff8991a737d4699cd6b942b1236edd2d0f4146710f3fefcc86dcdaa27055315e",
+      "generated_hash": "1d47ea1fae1b44db4aff927c3ed2c7330029624f29f3f765a683ef7b0e2bbe2b"
     },
     {
       "name": "flywheel",
@@ -1601,8 +1601,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "29e0011c1fc570cb11b5c417482a907859bdfb3c3017414c31c896097280630c",
-      "generated_hash": "ec67f18bed731eccc452da8773a6b38f8a597688c5946e9989665f6882809e46"
+      "source_hash": "accd6f442e8b30c7b1e86d118a675585fc5865673cc90fe1d37db82169659a43",
+      "generated_hash": "310df16c8dd49d7ae75731f8ff0ddfe021031a2a25e1a01b26b9e4098b33cd9d"
     },
     {
       "name": "sbh",
@@ -1745,14 +1745,14 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "0fc629c669f48a1a690bf8434bf3c6414a97cc9d6a10b3dfb4d20a40fc21287b",
-      "generated_hash": "0ca8cb5258a83ccf52bd156655794d77bc8018cedd253909ad66d4d70f543cde"
+      "source_hash": "e095e65ca96a1872a28e1ace36abc74abf96866f75abacf5645aa50f3ca3c939",
+      "generated_hash": "dd75bc126abd50d30fe1aa9add305b00315bbb5ee0333f187160e8fc866fa44f"
     },
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "0fc629c669f48a1a690bf8434bf3c6414a97cc9d6a10b3dfb4d20a40fc21287b",
-      "generated_hash": "0ca8cb5258a83ccf52bd156655794d77bc8018cedd253909ad66d4d70f543cde"
+      "source_hash": "e095e65ca96a1872a28e1ace36abc74abf96866f75abacf5645aa50f3ca3c939",
+      "generated_hash": "dd75bc126abd50d30fe1aa9add305b00315bbb5ee0333f187160e8fc866fa44f"
     },
     {
       "name": "vibing-with-ntm",

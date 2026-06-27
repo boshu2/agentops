@@ -315,6 +315,12 @@ measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
 - **No new modes** without dropping/merging an existing one (Fix-F mode-budget cap = 8).
 - **Verdict heading is regex-anchored** — do not alter the `## Council Verdict: ...` text format.
 
+## Output Specification
+
+**Format:** a PASS/WARN/FAIL validation verdict plus a markdown council summary to stdout; machine-readable `result.json`.
+**Files:** writes `.agents/council/YYYY-MM-DD-validate-<slug>.md` and `result.json`; appends reusable findings to `.agents/findings/registry.jsonl`; may refresh `.agents/planning-rules/` and `.agents/pre-mortem-checks/`.
+**Exit signal:** FAIL re-cranks on the same objective (up to 3 attempts); DONE on a fully-green acceptance roll-up.
+
 ## See Also
 
 - `skills/rpi/SKILL.md` — orchestrator that fires `$validate --mode=pre-impl` after `$plan`

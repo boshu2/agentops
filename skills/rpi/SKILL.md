@@ -202,17 +202,17 @@ Complexity scales the gate's depth: `low`/`fast` and `medium`/`standard` → 2-j
 
 ## Examples
 
-**User says:** `/rpi "add user authentication"`
-Run discovery, implementation, validation, then report.
+- `/rpi "add user authentication"` — discovery → implementation → validation → report.
+- `/rpi --from=implementation ag-23k` — resolve the bead scope, run implementation + validation.
+- `/rpi --deep "refactor payment module"` — full council gates across the lifecycle.
 
-**User says:** `/rpi --from=implementation ag-23k`
-Resolve the bead scope, run implementation and validation, then report.
+Read [references/examples.md](references/examples.md) for resume, interactive, loop, and artifact-mode examples.
 
-**User says:** `/rpi --deep "refactor payment module"`
-Use full council gates across the lifecycle.
+## Output Specification
 
-Read [references/examples.md](references/examples.md) for resume,
-interactive, loop, and artifact-mode examples.
+**Format:** a markdown report to stdout ([report-template](references/report-template.md)) — phase verdicts, re-plan deltas, and epic status.
+**Files:** reads/updates `.agents/rpi/execution-packet.json` (+ `runs/<id>/`) and `.agents/rpi/next-work.jsonl` (with `--spawn-next`); records `ao ratchet record` per phase.
+**Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
 
 ## Troubleshooting
 

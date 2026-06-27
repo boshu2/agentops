@@ -750,6 +750,12 @@ See `references/examples.md` for detailed walkthroughs.
 
 See `references/cycle-history.md` for advanced troubleshooting.
 
+## Output Specification
+
+**Format:** a per-cycle markdown summary to stdout (goals fixed, fitness delta, result); machine-readable cycle records.
+**Files:** appends `.agents/evolve/cycle-history.jsonl`; writes `.agents/evolve/fitness-latest.json` and `.agents/evolve/session-state.json`; honors control files `.agents/evolve/{STOP,DORMANT,HANDOFF}`.
+**Exit signal:** the cycle result (improved / no-change / blocked); resume a paused cycle via `$evolve --resume`.
+
 ## References
 
 - `references/cycle-history.md` — JSONL format, recovery protocol, kill switch

@@ -532,6 +532,12 @@ fi
 | All workers fail | `<promise>BLOCKED</promise>` with diagnostics |
 | File conflict detected | Split into sub-waves, re-run |
 
+## Output Specification
+
+**Format:** committed code plus a markdown progress/closeout summary to stdout; per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
+**Files:** reads `.agents/rpi/execution-packet.json`; writes wave/slice results under `.agents/swarm/results/`; closes beads via `br close` in the resolved `_beads` ledger.
+**Exit signal:** `<promise>DONE</promise>` (all slices accepted) · `<promise>PARTIAL</promise>` (retry the same objective) · `<promise>BLOCKED</promise>` (manual intervention).
+
 ## Related skills
 
 - $using-atm — out-of-session ATM substrate for long-running $crank waves over a bead queue.

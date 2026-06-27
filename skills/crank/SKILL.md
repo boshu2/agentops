@@ -52,13 +52,13 @@ Autonomous execution: implement all issues until the epic is DONE.
 
 **Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `/rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave is *re-plan input*, not just a retry target: per the [`/rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next one runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
 
-**CLI dependencies:** bd (issue tracking), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If bd is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
+**CLI dependencies:** br (issue tracking, via `BEADS_DIR="$(ao beads dir)" br`), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
 
 For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared source of truth is `skills/shared/references/claude-code-latest-features.md`, mirrored locally at `references/claude-code-latest-features.md`.
 
 ## Architecture: Crank + Swarm
 
-Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `bd ready`, bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
+Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `br ready` (resolve the ledger first: `BEADS_DIR="$(ao beads dir)" br ready`), bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
 
 Read `references/team-coordination.md` for the full per-wave execution model, `references/ralph-loop-contract.md` for the fresh-context worker contract, and `references/worker-specs.md` for per-worker model/tool/prompt specs.
 
@@ -153,7 +153,7 @@ When crank drives PRs to `main` itself (orchestrator-merge model), reconcile eac
 2. **Block only on substantive fails.** A failing `claude-review` on a usage-limit message is non-blocking; only substantive non-`claude-review` failures block the merge.
 3. **Fix-forward stale/transient reds — never revert green work.** `correctness (ubuntu-latest)` tar-cache-restore exit-2 → `gh run rerun` **once**, then believe. `registry.json` / derived-surface or `contracts-sync` drift from another PR → `make regen-all` (scoped via `--skills` when only some skills changed), commit, push.
 4. **Merge only when green AND the pawl gate CONFIRMS.** Green CI is necessary but **NOT sufficient** — merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). A CONFIRMED, **evidence-bound, commit-current** pawl verdict ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md): all refuters CONFIRMED; the pawl's diversity floor met — **fresh-context by default** (≥1 refuter in a context other than the author's; model-agnostic), or **multi-model opt-in** (≥2 distinct canonical model families) where the pawl is opted up; real non-empty reviewer evidence, `head_sha` == the PR's live head) tied to this bead+PR must exist, or the merge is **refused (HOLD)**. **REFUTED → AUTO-REDO**: the loop re-works the findings and re-gates on its own, no human. A human is escalated to **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), at which point the disposition is `ESCALATE`/`HOLD` and the door stays closed (never auto-land on a breaker trip) — see pawls.md "Escalation — the circuit-breaker model". Then `gh pr merge --squash --admin`.
-5. **Close on confirmed-MERGED only.** `bd close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `bd --json` query (those flake to null/0).
+5. **Close on confirmed-MERGED only.** `br close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `br --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child PR is independently confirmed `MERGED`** — re-query `gh pr view --json state` per child first. One non-merged child aborts the close. (Post-mortem governance checkpoint: this is a hard gate, not advisory.)
 
 > Enforce steps 4–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, **verifies a CONFIRMED, evidence-bound, commit-current pawl verdict (fresh-context default; multi-model opt-in) via `scripts/pawl-verdict.sh check <bead> <pr> --head <live-sha>` — exit 5/HOLD with no merge if absent/REFUTED/ESCALATE/diversity-floor-unmet/empty-or-stale-head/no-evidence/schema-invalid; also blocks exit 2 on still-PENDING CI (green is strictly necessary)**, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
@@ -164,7 +164,7 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 ## Key Rules
 
-- Auto-detect tracking (`bd` first, TaskList fallback) and use the provided epic or plan input directly.
+- Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
 - Use `/swarm` for every wave, preserve fresh per-issue context, and refuse to continue past unresolved conflicts or the 50-wave cap.
 - Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): the wave-acceptance check uses the **lightweight inline judges** described in `references/wave-patterns.md` ("Wave Acceptance Check") — no skill invocations, no cross-family panel, no context explosion. Fix CRITICAL findings before advancing and keep looping until every issue/task is done. The **heavy** validation (full council, `/validate --mixed`, `/pre-land-refuters`) is reserved for the **bead-acceptance / merge-to-main pawl** — the Final Batched Validation (Step 7) and downstream `/validate` closeout, NOT per intermediate wave.
 - Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
@@ -191,6 +191,12 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 **User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
 
 ---
+
+## Output Specification
+
+**Format:** committed code plus a markdown progress/closeout summary to stdout; per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
+**Files:** reads `.agents/rpi/execution-packet.json`; writes wave/slice results under `.agents/swarm/results/`; closes beads via `br close` in the resolved `_beads` ledger.
+**Exit signal:** `<promise>DONE</promise>` (all slices accepted) · `<promise>PARTIAL</promise>` (retry the same objective) · `<promise>BLOCKED</promise>` (manual intervention).
 
 ## Troubleshooting
 

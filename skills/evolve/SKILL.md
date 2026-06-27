@@ -467,6 +467,12 @@ The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST conta
 
 See `references/examples.md` for detailed walkthroughs.
 
+## Output Specification
+
+**Format:** a per-cycle markdown summary to stdout (goals fixed, fitness delta, result); machine-readable cycle records.
+**Files:** appends `.agents/evolve/cycle-history.jsonl`; writes `.agents/evolve/fitness-latest.json` and `.agents/evolve/session-state.json`; honors control files `.agents/evolve/{STOP,DORMANT,HANDOFF}`.
+**Exit signal:** the cycle result (improved / no-change / blocked); resume a paused cycle via `/evolve --resume`.
+
 ## Troubleshooting
 
 | Problem | Solution |
