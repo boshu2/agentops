@@ -52,6 +52,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `holdout` | persistent | cli, skills | scenario-store | Holdout scenarios stored outside the codebase view |
 | `INDEX.md` | persistent | operators, scripts | corpus-index | Human-readable index for tracked `.agents/` knowledge surfaces |
 | `knowledge` | persistent | cli | promoted-knowledge | Promoted knowledge artifacts |
+| `land-queue` | rolling | scripts | land-serialization-state | Serialized land-queue state for the single-writer land lane (agentops-2pl.9): the file-queue (`requests.jsonl`), `claims`/`done`/`dead-letter`/`quarantine` side-files, gate/land logs, the `.lane.lock` singleton, and the no-actions `gh` runtime shim — written by `scripts/land-submit.sh` and `scripts/land-lane-run.sh`, read by `scripts/land-queue-next.sh` |
 | `learnings` | persistent | cli, skills | promoted-learning | Promoted learning artifacts |
 | `ledger` | persistent | cli | append-only-ledger | Append-only audit ledger |
 | `LOG.md` | persistent | operators, scripts | corpus-log | Human-readable change log for tracked `.agents/` knowledge surfaces |
@@ -133,6 +134,7 @@ handoffs
 harvest
 holdout
 knowledge
+land-queue
 learnings
 ledger
 memory
