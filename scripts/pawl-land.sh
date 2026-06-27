@@ -47,6 +47,13 @@ case "$HEAD_MSG" in
   *) die "HEAD ($(git -C "$ROOT" rev-parse --short HEAD)) does not cite $BEAD — commit the bead's code as HEAD first" ;;
 esac
 
+git -C "$ROOT" fetch origin main --quiet
+if ! git -C "$ROOT" rebase origin/main; then
+  git -C "$ROOT" rebase --abort >/dev/null 2>&1 || true
+  die "rebase onto origin/main failed; aborted without pushing. Resolve the conflict locally, rerun pawl review if the tree changes, then rerun pawl-land."
+fi
+HEAD_SHA="$(git -C "$ROOT" rev-parse HEAD)"
+
 # Rebind the already-reviewed verdict onto the exact commit being pushed. This is the whole
 # fix: it makes verdict.head_sha == pushed head deterministically, regardless of any drift
 # since the review ran.
