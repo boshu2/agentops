@@ -1,131 +1,105 @@
 package packet
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
-
-	"pgregory.net/rapid"
 )
 
-// validBase returns an ExecutionPacket that passes Validate().
-// Tests mutate one field at a time to exercise a single invariant.
 func validBase() ExecutionPacket {
 	return ExecutionPacket{
-		PlanPath:   ".agents/plans/x.md",
-		Complexity: ComplexityStandard,
-		TestLevels: []TestLevel{L1, L2},
-		Provenance: Provenance{CreatedAt: "2026-05-12T00:00:00Z", Source: "discovery"},
+		SchemaVersion:    2,
+		Objective:        "harden the execution packet workpacket contract",
+		ContractSurfaces: []string{"schemas/execution-packet.schema.json", "cli/internal/domain/packet/invariants.go"},
+		TrackerMode:      "beads",
+		Complexity:       ComplexityStandard,
+		TestLevels: &ExecutionPacketTestLevels{
+			Required:    []TestLevel{L1, L2},
+			Recommended: []TestLevel{L3},
+			Rationale:   "standard autonomous proof floor",
+		},
+		Routing: map[string]ExecutionPacketRouting{
+			"agentops-dhk.2": {
+				Implementer: ExecutionPacketModelCodex,
+				Reviewer:    ExecutionPacketModelGemini,
+				Rationale:   "separate implementation and review families",
+			},
+		},
+		Spec: &ExecutionPacketSpec{
+			TestPath: "cli/internal/domain/packet/aggregate_property_test.go",
+			RedTest:  "TestExecutionPacket_ValidateRejectsRichSchemaViolation",
+		},
 	}
 }
 
-// I1 — plan_path non-empty (negative).
-func TestExecutionPacket_ValidateRejectsEmptyPlanPath(t *testing.T) {
+func TestExecutionPacket_ValidateAcceptsRichSchemaPacket(t *testing.T) {
 	p := validBase()
 	p.PlanPath = ""
-	if err := p.Validate(); err != ErrPlanPathEmpty {
-		t.Fatalf("expected ErrPlanPathEmpty, got %v", err)
+
+	if err := p.Validate(); err != nil {
+		t.Fatalf("Validate() rejected valid rich packet: %v", err)
 	}
 }
 
-// I1 — plan_path non-empty (positive, property).
-func TestExecutionPacket_ValidateAcceptsNonEmptyPlanPath(t *testing.T) {
-	rapid.Check(t, func(t *rapid.T) {
-		path := rapid.StringMatching(`[a-zA-Z0-9_./-]{1,40}`).Draw(t, "plan-path")
-		p := validBase()
-		p.PlanPath = path
-		if err := p.Validate(); err != nil {
-			t.Fatalf("expected nil, got %v (packet=%+v)", err, p)
-		}
-	})
+func TestExecutionPacket_EmbeddedSchemaMatchesRootSchema(t *testing.T) {
+	rootSchemaPath := filepath.Join("..", "..", "..", "..", "schemas", "execution-packet.schema.json")
+	rootSchema, err := os.ReadFile(rootSchemaPath)
+	if err != nil {
+		t.Fatalf("read root execution packet schema: %v", err)
+	}
+	if !bytes.Equal(executionPacketSchemaBytes, rootSchema) {
+		t.Fatalf("embedded execution packet schema differs from %s", rootSchemaPath)
+	}
 }
 
-// I2 — complexity ∈ {fast, standard, full} (negative, property).
-func TestExecutionPacket_ValidateRejectsInvalidComplexity(t *testing.T) {
-	rapid.Check(t, func(t *rapid.T) {
-		bad := rapid.StringMatching(`[a-z]{1,10}`).
-			Filter(func(s string) bool {
-				return s != "fast" && s != "standard" && s != "full"
-			}).Draw(t, "bad-complexity")
-		p := validBase()
-		p.Complexity = Complexity(bad)
-		if err := p.Validate(); err != ErrInvalidComplexity {
-			t.Fatalf("expected ErrInvalidComplexity, got %v", err)
-		}
-	})
-}
-
-// I3 — test_levels every entry ∈ {L0,L1,L2,L3} (negative, property).
-func TestExecutionPacket_ValidateRejectsInvalidTestLevel(t *testing.T) {
-	rapid.Check(t, func(t *rapid.T) {
-		bad := rapid.StringMatching(`L[4-9]|X[0-9]`).Draw(t, "bad-level")
-		p := validBase()
-		p.TestLevels = []TestLevel{TestLevel(bad)}
-		if err := p.Validate(); err != ErrInvalidTestLevel {
-			t.Fatalf("expected ErrInvalidTestLevel, got %v", err)
-		}
-	})
-}
-
-// I3 — test_levels non-empty (negative).
-func TestExecutionPacket_ValidateRejectsEmptyTestLevels(t *testing.T) {
+func TestExecutionPacket_ValidateRejectsRichSchemaViolation(t *testing.T) {
 	p := validBase()
-	p.TestLevels = nil
-	if err := p.Validate(); err != ErrEmptyTestLevels {
-		t.Fatalf("expected ErrEmptyTestLevels, got %v", err)
+	p.Routing["agentops-dhk.2"] = ExecutionPacketRouting{
+		Implementer: ExecutionPacketModelFamily("llama"),
+		Reviewer:    ExecutionPacketModelGemini,
+		Rationale:   "not on the schema roster",
+	}
+
+	err := p.Validate()
+	if !errors.Is(err, ErrSchemaViolation) {
+		t.Fatalf("Validate() error = %v, want errors.Is ErrSchemaViolation", err)
+	}
+	if !strings.Contains(err.Error(), "implementer") && !strings.Contains(err.Error(), "llama") {
+		t.Fatalf("Validate() error = %q, want implementer/llama enum detail", err.Error())
 	}
 }
 
-// I4 — provenance.created_at non-empty (negative).
-func TestExecutionPacket_ValidateRejectsEmptyProvenanceCreatedAt(t *testing.T) {
-	p := validBase()
-	p.Provenance.CreatedAt = ""
-	if err := p.Validate(); err != ErrEmptyProvenance {
-		t.Fatalf("expected ErrEmptyProvenance, got %v", err)
-	}
-}
+func TestExecutionPacket_ValidateJSONRejectsAdditionalProperties(t *testing.T) {
+	data := []byte(`{
+		"schema_version": 2,
+		"objective": "reject unknown rich packet fields",
+		"contract_surfaces": ["schemas/execution-packet.schema.json"],
+		"tracker_mode": "beads",
+		"unexpected": true
+	}`)
 
-// I4 — provenance.source non-empty (negative).
-func TestExecutionPacket_ValidateRejectsEmptyProvenanceSource(t *testing.T) {
-	p := validBase()
-	p.Provenance.Source = ""
-	if err := p.Validate(); err != ErrEmptyProvenance {
-		t.Fatalf("expected ErrEmptyProvenance, got %v", err)
+	err := ValidateJSON(data)
+	if !errors.Is(err, ErrSchemaViolation) {
+		t.Fatalf("ValidateJSON() error = %v, want errors.Is ErrSchemaViolation", err)
 	}
-}
-
-// Composite positive — exercises I2 and I3 positive case across
-// all valid Complexity × TestLevels combinations.
-// Naming carries "Property" so `go test -run Property` selects at least
-// one rapid-based test (acceptance gate #4).
-func TestExecutionPacket_ValidateAcceptsAllValidCombinations_Property(t *testing.T) {
-	rapid.Check(t, func(t *rapid.T) {
-		complexities := []Complexity{ComplexityFast, ComplexityStandard, ComplexityFull}
-		levels := []TestLevel{L0, L1, L2, L3}
-		p := validBase()
-		p.Complexity = complexities[rapid.IntRange(0, 2).Draw(t, "ci")]
-		n := rapid.IntRange(1, 4).Draw(t, "nlevels")
-		p.TestLevels = nil
-		for i := 0; i < n; i++ {
-			p.TestLevels = append(p.TestLevels, levels[rapid.IntRange(0, 3).Draw(t, "li")])
-		}
-		if err := p.Validate(); err != nil {
-			t.Fatalf("expected nil, got %v (packet=%+v)", err, p)
-		}
-	})
 }
 
 func TestExecutionPacket_EffectiveVerdictFailsClosedWhenAbsent(t *testing.T) {
 	p := validBase()
 
-	if got := p.EffectiveVerdict(); got != VerdictFail {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, VerdictFail)
+	if got := p.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictFail)
 	}
 }
 
 func TestExecutionPacket_DefaultVerdictRoundTripsAndResolves(t *testing.T) {
 	original := validBase()
-	original.DefaultVerdict = VerdictPass
+	original.DefaultVerdict = ExecutionPacketVerdictPass
 
 	data, err := json.Marshal(original)
 	if err != nil {
@@ -138,7 +112,7 @@ func TestExecutionPacket_DefaultVerdictRoundTripsAndResolves(t *testing.T) {
 	if !reflect.DeepEqual(decoded, original) {
 		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
 	}
-	if got := decoded.EffectiveVerdict(); got != VerdictPass {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, VerdictPass)
+	if got := decoded.EffectiveVerdict(); got != ExecutionPacketVerdictPass {
+		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictPass)
 	}
 }

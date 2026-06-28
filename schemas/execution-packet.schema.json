@@ -8,9 +8,7 @@
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "objective",
-    "contract_surfaces",
-    "tracker_mode"
+    "objective"
   ],
   "properties": {
     "schema_version": {
@@ -18,13 +16,14 @@
       "minimum": 1
     },
     "objective": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "run_id": {
       "type": "string"
     },
     "epic_id": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "bead_id": {
       "type": "string"
@@ -65,7 +64,7 @@
     "validation_lanes": {
       "type": "array",
       "items": {
-        "type": "object"
+        "$ref": "#/$defs/ValidationLane"
       }
     },
     "tracker_mode": {
@@ -109,7 +108,8 @@
       "$ref": "#/$defs/Spec"
     },
     "complexity": {
-      "type": "string"
+      "type": "string",
+      "enum": ["fast", "standard", "full"]
     },
     "pre_mortem_verdict": {
       "type": "string",
@@ -147,7 +147,7 @@
       "type": "string"
     },
     "autodev_program": {
-      "type": "object"
+      "$ref": "#/$defs/AutodevProgram"
     },
     "mixed_mode_requested": {
       "type": "boolean"
@@ -218,9 +218,71 @@
     "generated_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "issues": {
+      "type": "array",
+      "description": "Slim-packet bead list (id/title/wave/blocked_by) emitted by ao rpi alongside epic_criteria/bead_criteria.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "wave": { "type": "integer" },
+          "blocked_by": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "done_when": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Slim-packet stop-conditions list (the emitted alias of done_criteria)."
+    },
+    "likely_blocker": {
+      "type": "string",
+      "description": "Slim-packet free-text note on the most probable blocker."
+    },
+    "ignore_today": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Slim-packet explicit out-of-scope-for-now list."
     }
   },
   "$defs": {
+    "AutodevProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "mutable_scope": { "type": "array", "items": { "type": "string" } },
+        "immutable_scope": { "type": "array", "items": { "type": "string" } },
+        "experiment_unit": { "type": "string" },
+        "validation_commands": { "type": "array", "items": { "type": "string" } },
+        "decision_policy": { "type": "array", "items": { "type": "string" } },
+        "stop_conditions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ValidationLane": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Structural shape of a validation lane carried through the packet. The repo-execution-profile schema (docs/contracts/repo-execution-profile.schema.json) is the authority for lane POLICY validity (cost_class/auto_select enums, required policy fields) and validates lanes at the profile boundary; this packet schema enforces lane STRUCTURE (closed field set, types, null-able escape hatch). Defense-in-depth replication of the profile policy enums here is tracked as a follow-up.",
+      "properties": {
+        "name": { "type": "string" },
+        "command": { "type": "string" },
+        "purpose": { "type": "string" },
+        "read_only": { "type": "boolean" },
+        "writes_artifacts": { "type": "boolean" },
+        "artifact_paths": { "type": "array", "items": { "type": "string" } },
+        "isolated_agents_home": { "type": "boolean" },
+        "release_only": { "type": "boolean" },
+        "mutation_escape_hatch": { "type": ["string", "null"] },
+        "cost_class": { "type": "string" },
+        "auto_select": { "type": "string" },
+        "timeout_seconds": { "type": "integer" },
+        "expensive_reason": { "type": "string" }
+      }
+    },
     "Density": {
       "type": "object",
       "additionalProperties": false,
@@ -264,8 +326,11 @@
       "additionalProperties": false,
       "required": [
         "bounded_context",
-        "non_goals",
-        "write_scope"
+        "non_goals"
+      ],
+      "anyOf": [
+        { "required": ["write_scope"], "properties": { "write_scope": { "minItems": 1 } } },
+        { "required": ["write_scope_first_slice"], "properties": { "write_scope_first_slice": { "minItems": 1 } } }
       ],
       "properties": {
         "bounded_context": {
@@ -281,7 +346,15 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Generic write-scope list. The current ao rpi emitter writes write_scope_first_slice instead; at least one should be present."
+        },
+        "write_scope_first_slice": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Write scope for the first slice — the field the current ao rpi slim emitter produces."
         }
       }
     },
@@ -299,7 +372,20 @@
           "type": "string"
         },
         "ranked_packet_path": {
-          "type": "string"
+          "type": ["string", "null"]
+        },
+        "perspective_plan_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "synthesis_packet_path": {
+          "type": ["string", "null"]
+        },
+        "fable_approval_path": {
+          "type": ["string", "null"]
+        },
+        "approval_edge_path": {
+          "type": ["string", "null"]
         }
       }
     },

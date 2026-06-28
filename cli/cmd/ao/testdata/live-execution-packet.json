@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-06-26-bash-knowledge-to-go-ao-refactor",
+  "objective": "Extract durable bash/Python validation knowledge into typed Go/ao surfaces without blanket-rewriting shell scripts.",
+  "density": {
+    "intent": "Use the existing ao gate boundary as a strangler seam: port tiny deterministic predicates first, preserve shell wrappers, then extract shared Go primitives before moving registry/SKU generation.",
+    "boundary": {
+      "bounded_context": "BC2 Validation / BC4 Factory / BC5 CLI runtime",
+      "non_goals": [
+        "Do not rewrite all bash.",
+        "Do not start with scripts/pre-push-gate.sh.",
+        "Do not start with scripts/generate-registry.sh or SKU drift.",
+        "Do not remove shell wrappers while CI and local entrypoints call them.",
+        "Do not make GitHub Actions the release authority."
+      ],
+      "write_scope_first_slice": [
+        "cli/internal/gates/checks/seed.go",
+        "cli/internal/gates/checks/quarantine_empty.go or cli/internal/gates/checks/native_inline.go",
+        "cli/internal/gates/checks/*_test.go",
+        "cli/internal/gates/workflow_coverage.go only if native-wrapper metadata is needed",
+        "scripts/check-quarantine-empty.sh",
+        "tests/scripts/check-quarantine-empty.bats if wrapper behavior needs a script-level fixture"
+      ]
+    },
+    "evidence": [
+      "scripts/check-quarantine-empty.sh is a 40-line deterministic policy with ALLOW_QUARANTINE override and shell/bats enumeration.",
+      "cli/internal/gates/checks/seed.go registers always.quarantine-empty as Fast|Full, blocking, shell-backed.",
+      "cli/internal/gates/registry.go requires exactly one of Backing or Run.",
+      "cli/internal/gates/workflow_coverage.go derives workflow script coverage from Backing scripts.",
+      ".github/workflows/validate.yml still directly invokes scripts/check-quarantine-empty.sh and scripts/validate-embedded-sync.sh.",
+      "scripts/generate-registry.sh and SKU generation are broad cross-surface generators and should not be first."
+    ],
+    "decision": "Default next move is native-port always.quarantine-empty with script-wrapper parity. It proves the extraction pattern with the smallest blast radius.",
+    "constraint": [
+      "Keep local cockpit gate / ao gate check as release authority.",
+      "Keep shell wrappers callable until downstream surfaces migrate.",
+      "Preserve gate ID, tiers, blocking status, and always-run routing.",
+      "Run test-first and compare wrapper/native behavior before claiming done."
+    ],
+    "next_action": "$crank age-bash-knowledge-go-quarantine-native --test-first"
+  },
+  "artifacts": {
+    "research_path": ".agents/research/2026-06-26-bash-knowledge-to-go-ao-refactor.md",
+    "plan_path": ".agents/plans/2026-06-26-bash-knowledge-to-go-ao-refactor.md",
+    "pre_mortem_path": ".agents/council/2026-06-26-pre-mortem-bash-knowledge-to-go-ao-refactor.md",
+    "ranked_packet_path": null,
+    "perspective_plan_paths": [],
+    "synthesis_packet_path": null,
+    "fable_approval_path": null,
+    "approval_edge_path": null
+  },
+  "epic_id": null,
+  "issues": [
+    {
+      "id": "age-bash-knowledge-go-quarantine-native",
+      "title": "Native-port quarantine-empty gate with wrapper parity",
+      "wave": 1,
+      "blocked_by": []
+    },
+    {
+      "id": "age-bash-knowledge-go-embedded-sync-native",
+      "title": "Native-port embedded-sync after wrapper parity pattern lands",
+      "wave": 2,
+      "blocked_by": [
+        "age-bash-knowledge-go-quarantine-native"
+      ]
+    },
+    {
+      "id": "age-bash-knowledge-go-shared-primitives",
+      "title": "Extract shared Go primitives for file/git/doc validation",
+      "wave": 3,
+      "blocked_by": [
+        "age-bash-knowledge-go-quarantine-native",
+        "age-bash-knowledge-go-embedded-sync-native"
+      ]
+    },
+    {
+      "id": "age-bash-knowledge-go-registry-sku-engine",
+      "title": "Move registry/SKU generation behind typed Go/ao engine",
+      "wave": 4,
+      "blocked_by": [
+        "age-bash-knowledge-go-shared-primitives"
+      ]
+    }
+  ],
+  "validation_commands": [
+    "cd cli && go test ./internal/gates ./internal/gates/checks -run 'Quarantine|Workflow|Seed|Predicate' -count=1",
+    "bash scripts/check-quarantine-empty.sh",
+    "ALLOW_QUARANTINE=1 bash scripts/check-quarantine-empty.sh",
+    "/Users/bo/go/bin/ao gate check --fast --scope head"
+  ],
+  "done_when": [
+    "Native always.quarantine-empty check has test coverage for pass, fail, ignored files, missing directory, and ALLOW_QUARANTINE override.",
+    "Gate registry preserves ID, tiers, blocking status, and always-run selection.",
+    "Script wrapper remains callable and behavior-compatible.",
+    "Workflow parity handles native check plus legacy wrapper without false drift.",
+    "Local cockpit gate passes."
+  ],
+  "likely_blocker": "The gate model currently allows exactly one of Backing or Run, while workflow coverage discovers scripts through Backing only. The implementation may need explicit legacy-wrapper metadata or a targeted workflow coverage adjustment.",
+  "ignore_today": [
+    "scripts/pre-push-gate.sh",
+    "scripts/generate-registry.sh",
+    "scripts/validate-sku-catalog-drift.sh",
+    "scripts/regen-all.sh",
+    "release/tag/GitHub Actions telemetry unless the local gate contradicts it"
+  ]
+}
