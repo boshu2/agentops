@@ -1223,8 +1223,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "513e8194a1a1afdee8aa4b547d3452d3a5b8432bf9a8ee8d4b972f0d5058a5e7",
-      "generated_hash": "ed0d28cdf1ce3a79bd13870d1f150755eb66c0f8e576d3fdd873ca9084c727f4"
+      "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
+      "generated_hash": "d7e774990add51290d0a6963dae1b8bc0fd212f8882b2e99d0b797140027453d"
     },
     {
       "name": "curate",
@@ -1601,8 +1601,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "accd6f442e8b30c7b1e86d118a675585fc5865673cc90fe1d37db82169659a43",
-      "generated_hash": "310df16c8dd49d7ae75731f8ff0ddfe021031a2a25e1a01b26b9e4098b33cd9d"
+      "source_hash": "05691eddcdf1eb9b0e3c6c39ce0e631b039710ee310041a45ab91ab0d98a6b63",
+      "generated_hash": "e579c4a15db2dab6d88d501d2fe34f87e36b92173d10b4598fbcb0f92469480e"
     },
     {
       "name": "sbh",

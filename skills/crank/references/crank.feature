@@ -25,6 +25,14 @@ Feature: Crank executes an epic through conflict-free waves to completion
     Then /crank executes Find → Ignite → Reap → Vibe → Escalate
     And it loops to the next wave until all issues are closed or a blocker is hit
 
+  Scenario: Orchestrator's own diff-read flags an out-of-boundary slice at acceptance
+    Given a slice whose evidence JSON claims PASS and a green <promise>DONE</promise>
+    But whose wave diff touches files outside the slice's declared write-scope boundary
+    When the orchestrator reads the actual diff at Wave Acceptance (Step 3.5),
+      distinct from the delegated sub-judges
+    Then the slice is flagged and the wave verdict is FAIL, not silently counted
+    And the out-of-scope file list is surfaced to the operator
+
   Scenario: A completion marker is mandatory
     When /crank stops
     Then it emits exactly one of <promise>DONE</promise>, <promise>BLOCKED</promise>,
