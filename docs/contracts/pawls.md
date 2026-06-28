@@ -99,6 +99,47 @@ where it's worth it).
 
 Editing a file · writing a test · running a build · a local experiment · a draft · a throwaway branch · a read-only query · an intermediate RPI slice · a mock→real swap · trying an approach and discarding it. **None of these are irreversible. Do not gate them.** Iterate cheaply; the pawl catches you at the door.
 
+## What "good" means — the bar a change must clear to PASS the gate
+
+The pawl fires at a one-way door (above) and an independent reviewer must CONFIRM. But CONFIRM
+against *what bar*? The wrong answer — a maximal-adversarial *"actively REFUTE anything
+plausible-but-wrong"* reviewer — has a documented **infinite false-alarm tail**: on any non-trivial
+change it always finds *one more* cosmetic / theoretical / pre-existing / hallucinated nit, and since
+the gate is all-must-confirm fail-closed, one nit blocks forever. That is the gate eating its own
+productivity (observed 2026-06: a single landing refuted ~9× with ~2/3 of findings non-blocking).
+**The gate's job is to stop a *bad merge*, not to demand a *perfect* one.**
+
+**"Good" = would a thoughtful senior engineer BLOCK this merge?** — never *"can I find any
+imperfection?"* A finding REFUTEs the change only when it clears **all three** filters:
+
+1. **Introduced** — the defect is created or newly *made-reachable* by THIS diff (against its
+   parent). A problem true of the codebase *before* this commit is a backlog note, not a merge
+   blocker; adjacent hardening the change merely "could have also done" is scope-creep, not a
+   defect in the change.
+2. **Real / verifiable** — concrete, and it survives deterministic ground truth. A finding
+   contradicted by a green check the reviewer can actually run (`go vet`, `go test ./pkg`,
+   `bash -n`, the parity/regen/audit scripts) is *wrong* — drop it. No claims about a file the
+   reviewer did not read. (This is the hallucination kill-switch.)
+3. **Blocking** — it breaks correctness or safety (**fail-open**: writes/certifies what it should
+   not · **data-loss / corruption** · **wrong-object**), makes a **claimed contract** false (a
+   documented behavior, a commit-message promise, a public interface, or a test's stated guarantee
+   — *including a test that would pass even if the code were wrong*), or ships **non-working**
+   (does not build/parse, the relevant test fails, or it provably does not do what the change says).
+
+A finding that fails *any* filter is the **accepted tail** — record it as an audited NOTE, do not
+block: cosmetic/style, a coverage gap on otherwise-correct code, a theoretical edge-case with no
+reachable path in this diff, adjacent/out-of-scope hardening, a pre-existing condition, or a
+design-disagreement with a deliberate documented choice whose worst case stays fail-closed.
+**CONFIRM when the only remaining findings are tail.**
+
+**Fail-closed is never relaxed** (the bar is calibrated, not fail-open): ambiguity holds; a reviewer
+that timed out, crashed, or couldn't read the change is *no verdict*, never a CONFIRM. And there is
+**no author-selectable knob** — the calibrated bar is the mandatory default posture
+([`scripts/pawl-review.sh`](../../scripts/pawl-review.sh)), so an author cannot route around it to
+leniency (the anti-Goodhart property council C built). When even a calibrated reviewer can't
+converge — a *different* non-blocking nit every round — that is the circuit-breaker's
+**no-forward-progress** signal (below): escalate to a human, never loop forever.
+
 ## Escalation — the circuit-breaker model
 
 **The human is NOT needed at a pawl by default.** A pawl fires the pawl gate
