@@ -130,10 +130,16 @@ recall_prior_catches() {
 }
 PR="${AGENTOPS_PAWL_PR:-0}"          # 0 = push-to-main landing (matches the pre-push gate)
 TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
-# age-mwhj: above this packet-byte cap, inlining the full diff reliably times the review out
-# (a 41KB packet timed an opus pane out; a 62KB cold codex was killed) and then fails CLOSED —
-# safe but unusable on exactly the large refactors/generated churn where review matters most.
-MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-24576}"   # ~24KB
+# Inline cap. ABOVE this the packet switches to read-files mode, which orders the reviewer to
+# open the changed files itself + elides the added lines — and that mode is what makes a cold
+# `codex exec` WANDER (grep the filesystem) or ECHO the prompt instead of reviewing (age-a9iv:
+# observed on 60KB+ diffs). Inline mode ("review ONLY the change below, no tools") is self-
+# contained and reliable, so INLINE generously and reserve read-files for only enormous diffs.
+# Safety no longer rides on this number: the verdict-format hardening below makes an echoed or
+# oversized run fail CLOSED (no parseable verdict), never false-pass. (Original age-mwhj note:
+# 41KB timed a warm opus PANE out / 62KB cold codex killed — a timeout-machine artifact; cold
+# codex with no timeout completes.)
+MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-65536}"   # 64KB — inline the common range; read-files only for huge diffs
 
 bead=""; scope="head"; extra=""; author_family="claude"; converge=0
 need_val() { [[ -n "${2:-}" ]] || { echo "pawl-review: $1 needs a value" >&2; exit 2; }; }
@@ -296,12 +302,7 @@ ${extra:+
 EXTRA CONTEXT FROM THE AUTHOR:
 $extra
 }
-Reply with EXACTLY this shape and nothing else:
-VERDICT: CONFIRMED
-   -- or --
-VERDICT: REFUTED
-DEFECTS:
- - <one concrete defect per line: the symptom and why it matters>
+Reply with nothing but your review. The FINAL line is the verdict: the token "VERDICT:" then one space then exactly one uppercase word, either CONFIRMED (no blocking defect found) or REFUTED (a blocking defect found). If you refute, put a "DEFECTS:" header above that final line with one concrete defect per line (the symptom and why it matters). (This instruction deliberately does not print a ready-made verdict line, so that an echo of this prompt cannot be mistaken for your verdict.)
 $prior_catches
 === CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
 PROMPT
