@@ -13,15 +13,22 @@ import (
 
 func validPacket() packet.ExecutionPacket {
 	return packet.ExecutionPacket{
-		PlanPath:   ".agents/plans/x.md",
-		EpicID:     "EPIC-1",
-		Complexity: packet.ComplexityStandard,
-		TestLevels: []packet.TestLevel{packet.L1, packet.L2},
-		Provenance: packet.Provenance{
-			CreatedAt: "2026-05-12T00:00:00Z",
-			Source:    "discovery",
-			RunID:     "run-001",
+		SchemaVersion:    2,
+		Objective:        "persist the canonical execution packet",
+		RunID:            "run-001",
+		EpicID:           "EPIC-1",
+		PlanPath:         ".agents/plans/x.md",
+		ContractSurfaces: []string{"schemas/execution-packet.schema.json"},
+		TrackerMode:      "beads",
+		Complexity:       packet.ComplexityStandard,
+		DefaultVerdict:   packet.ExecutionPacketVerdictFail,
+		TestLevels: &packet.ExecutionPacketTestLevels{
+			Required:    []packet.TestLevel{packet.L1, packet.L2},
+			Recommended: []packet.TestLevel{packet.L3},
+			Rationale:   "standard autonomous proof floor",
 		},
+		Source:      "discovery",
+		GeneratedAt: "2026-05-12T00:00:00Z",
 	}
 }
 
@@ -59,11 +66,13 @@ func TestRepo_SaveRejectsInvalidPacket(t *testing.T) {
 	ctx := context.Background()
 
 	bad := validPacket()
-	bad.PlanPath = "" // violates I1
+	// contract_surfaces is optional by design now (age-55qz.2 reconciled the schema
+	// to the live emitter), so use a field that is still genuinely schema-invalid:
+	bad.SchemaVersion = 0 // violates schema_version minimum:1
 
 	err := r.Save(ctx, "run-bad", bad)
-	if !errors.Is(err, packet.ErrPlanPathEmpty) {
-		t.Fatalf("Save: got %v, want errors.Is(err, ErrPlanPathEmpty) == true", err)
+	if !errors.Is(err, packet.ErrSchemaViolation) {
+		t.Fatalf("Save: got %v, want errors.Is(err, ErrSchemaViolation) == true", err)
 	}
 
 	// Verify no files were written.
@@ -75,6 +84,106 @@ func TestRepo_SaveRejectsInvalidPacket(t *testing.T) {
 	archivePath := filepath.Join(tmp, ".agents/rpi/runs/run-bad/execution-packet.json")
 	if _, statErr := os.Stat(archivePath); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("expected archive file to not exist, stat err = %v", statErr)
+	}
+}
+
+func TestRepo_LoadRejectsRichSchemaViolation(t *testing.T) {
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+	runID := "run-invalid-rich"
+	dir := filepath.Join(tmp, ".agents/rpi/runs", runID)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	path := filepath.Join(dir, "execution-packet.json")
+	data := []byte(`{
+		"schema_version": 2,
+		"objective": "reject invalid persisted packet",
+		"contract_surfaces": ["schemas/execution-packet.schema.json"],
+		"tracker_mode": "beads",
+		"default_verdict": "MAYBE"
+	}`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write packet: %v", err)
+	}
+
+	_, err := r.Load(ctx, runID)
+	if !errors.Is(err, packet.ErrSchemaViolation) {
+		t.Fatalf("Load: got %v, want errors.Is(err, ErrSchemaViolation)", err)
+	}
+}
+
+func TestRepo_LoadResolvesMissingDefaultVerdictFailClosed(t *testing.T) {
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+	runID := "run-fail-closed"
+	dir := filepath.Join(tmp, ".agents/rpi/runs", runID)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	path := filepath.Join(dir, "execution-packet.json")
+	data := []byte(`{
+		"schema_version": 2,
+		"objective": "load path resolves absent default verdict",
+		"contract_surfaces": ["schemas/execution-packet.schema.json"],
+		"tracker_mode": "beads"
+	}`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write packet: %v", err)
+	}
+
+	loaded, err := r.Load(ctx, runID)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got := loaded.DefaultVerdict; got != packet.ExecutionPacketVerdictFail {
+		t.Fatalf("loaded DefaultVerdict = %q, want fail-closed %q", got, packet.ExecutionPacketVerdictFail)
+	}
+}
+
+func TestRepo_LoadMigratesLegacySlimPacket(t *testing.T) {
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+	runID := "run-legacy"
+	dir := filepath.Join(tmp, ".agents/rpi/runs", runID)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	path := filepath.Join(dir, "execution-packet.json")
+	data := []byte(`{
+		"plan_path": ".agents/plans/legacy.md",
+		"epic_id": "EPIC-LEGACY",
+		"complexity": "standard",
+		"test_levels": ["L1", "L2"],
+		"ranked_packet_path": ".agents/rpi/ranked-packet.json",
+		"provenance": {
+			"created_at": "2026-05-12T00:00:00Z",
+			"source": "discovery",
+			"run_id": "run-legacy"
+		}
+	}`)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write packet: %v", err)
+	}
+
+	loaded, err := r.Load(ctx, runID)
+	if err != nil {
+		t.Fatalf("Load legacy slim packet: %v", err)
+	}
+	if loaded.SchemaVersion != 1 {
+		t.Fatalf("SchemaVersion = %d, want migrated legacy schema_version 1", loaded.SchemaVersion)
+	}
+	if loaded.PlanPath != ".agents/plans/legacy.md" {
+		t.Fatalf("PlanPath = %q, want legacy plan path", loaded.PlanPath)
+	}
+	if loaded.TestLevels == nil || !reflect.DeepEqual(loaded.TestLevels.Required, []packet.TestLevel{packet.L1, packet.L2}) {
+		t.Fatalf("TestLevels = %#v, want migrated required legacy levels", loaded.TestLevels)
+	}
+	if loaded.DefaultVerdict != packet.ExecutionPacketVerdictFail {
+		t.Fatalf("DefaultVerdict = %q, want fail-closed FAIL", loaded.DefaultVerdict)
 	}
 }
 

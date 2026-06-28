@@ -60,6 +60,7 @@ func (r *Repo) Save(_ context.Context, runID string, p packet.ExecutionPacket) e
 	if err := validateRunID(runID); err != nil {
 		return err
 	}
+	p.DefaultVerdict = p.EffectiveVerdict()
 	if err := p.Validate(); err != nil {
 		return err
 	}
@@ -117,6 +118,5 @@ func readJSON(path string) (packet.ExecutionPacket, error) {
 	if err != nil {
 		return packet.ExecutionPacket{}, err
 	}
-	var p packet.ExecutionPacket
-	return p, json.Unmarshal(b, &p)
+	return packet.DecodeJSON(b)
 }

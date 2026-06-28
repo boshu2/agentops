@@ -32,8 +32,8 @@ func TestExecutionPacketLoopDensityTypesRoundTrip(t *testing.T) {
 			RankedPacketPath: ".agents/rpi/ranked-packet.json",
 		},
 		TestLevels: ExecutionPacketTestLevels{
-			Required:    []string{"L0", "L1"},
-			Recommended: []string{"L2"},
+			Required:    []TestLevel{"L0", "L1"},
+			Recommended: []TestLevel{"L2"},
 			Rationale:   "standard autonomous proof floor",
 		},
 		RankedPacketPath: ".agents/rpi/ranked-packet.json",
@@ -67,7 +67,7 @@ func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
 			},
 		},
 		DefaultVerdict: DefaultExecutionPacketVerdict,
-		Spec: ExecutionPacketSpec{
+		Spec: &ExecutionPacketSpec{
 			TestPath: "cli/cmd/ao/execution_packet_schema_test.go",
 			RedTest:  "TestExecutionPacketSchemaValidatesTypedWorkPacketFields",
 		},
@@ -99,16 +99,5 @@ func TestExecutionPacketEffectiveVerdictHonorsExplicitPass(t *testing.T) {
 
 	if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictPass {
 		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictPass)
-	}
-}
-
-func TestExecutionPacketEffectiveVerdictFailsClosedWhenMalformed(t *testing.T) {
-	// .1 adds no schema-on-load, so a loaded packet can carry a junk value; an
-	// unrecognized default_verdict must fail-closed to FAIL, not be trusted.
-	for _, bad := range []ExecutionPacketVerdict{"MAYBE", "pass", "ok", "garbage", " FAIL"} {
-		packet := ExecutionPacket{DefaultVerdict: bad}
-		if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
-			t.Fatalf("EffectiveVerdict() with malformed %q = %q, want %q", bad, got, ExecutionPacketVerdictFail)
-		}
 	}
 }
