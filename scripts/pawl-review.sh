@@ -282,13 +282,20 @@ prompt_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-prompt.XXXXXX")"
 raw_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-raw.XXXXXX")"
 trap 'rm -f "$prompt_file" "$raw_file"' EXIT
 
-# Posture: ADVERSARIAL (default, max catch) vs the CALIBRATED real-safety bar (--converge,
-# the bounded land-question for converging a heuristic-tail change AFTER its real defects
-# were already found by an adversarial pass — lineage-gated below). (age-cwo.8 / council C)
+# Posture (age-cwo.8/council C; RECALIBRATED 2026-06-28, age-pawl-good-bar): the merge gate binds
+# the CALIBRATED "good" bar by default — a thorough real-defect search with a 3-filter BLOCK
+# threshold (INTRODUCED-by-this-diff × REAL/verifiable × BLOCKING). This REPLACES the old default
+# maximal-adversarial "REFUTE anything plausible-but-wrong" posture, which had a documented infinite
+# false-alarm tail: on a multi-round landing it refuted ~9× and ~2/3 were cosmetic / pre-existing /
+# theoretical / hallucinated nitpicks, so a CONFIRM was never reachable. The anti-Goodhart property
+# council C built is preserved: this calibrated bar is the MANDATORY default — there is no
+# author-selectable knob to route around it. --converge stays the even-narrower real-safety-only
+# convergence-tail bar. "Good" = "would a thoughtful senior engineer BLOCK this merge?", never "can
+# I find any imperfection?". (full definition: docs/contracts/pawls.md "What good means")
 if [[ "$converge" -eq 1 ]]; then
   posture="This is a CALIBRATED real-safety CONVERGENCE pass: the change ALREADY went through a maximal-adversarial review and its real defects were fixed. Answer ONLY the BOUNDED question: is there any REMAINING REAL SAFETY defect — a concrete path that (a) writes/certifies something it should NOT (a fail-open), (b) loses or corrupts data, or (c) targets the wrong object? Novel theoretical or parse edge-cases, cosmetic wording, and 'a producer could output something weirder' are the ACCEPTED TAIL and are NOT grounds to refute. REFUTE ONLY for a concrete real-safety defect."
 else
-  posture="Your default posture is skepticism: actively try to REFUTE that this change is correct and safe to land on main. Look for real defects — logic bugs, fail-open holes, data loss, races, missing edge cases, broken contracts, tests that would pass even if the code were wrong, over-claims in docs. A plausible-but-wrong change must be REFUTED."
+  posture="You are the merge-to-main gate's reviewer. Your job is NOT to find any imperfection — it is to answer ONE question: would a thoughtful senior engineer BLOCK this merge? Search hard for REAL defects (logic bugs, fail-open holes, data loss/corruption, races, wrong-object/SHA, broken contracts, a test that passes even if the code were wrong, a feature that does not do what the commit claims). But a finding REFUTES the change ONLY if it clears ALL THREE filters: (1) INTRODUCED — created or newly made-reachable BY THIS DIFF, not a pre-existing condition and not adjacent hardening the change merely 'could have also done'; (2) REAL — concrete and survives deterministic ground truth: name the check that would expose it (go vet, go test ./<pkg>, bash -n <file>, a parity/regen/audit script) and its expected result, and if a green check you can actually run contradicts the finding, DROP it — and never assert a defect about a file you did not read; (3) BLOCKING — it breaks correctness or safety (writes/certifies what it should not = fail-open; loses or corrupts data; targets the wrong object), makes a CLAIMED contract false (a documented behavior, a commit-message promise, a public interface, or a test's stated guarantee), or ships NON-WORKING (does not build/parse, the relevant test fails, or it provably does not do what the change says — assert this only from a check you actually ran). A finding that fails ANY of the three filters is the ACCEPTED TAIL — cosmetic/wording/style, a coverage gap on otherwise-correct code, a novel theoretical 'a producer could emit something weirder' edge-case with no reachable path in THIS diff, adjacent/out-of-scope hardening the change never claimed, a pre-existing condition, or a design-disagreement with a deliberate documented choice whose worst case stays fail-closed. Surface tail findings as accepted NOTES; do NOT refute on them. CONFIRM when the only remaining findings are accepted tail. Fail-closed is never relaxed: if you cannot run or read the change, or your review errors out, emit NO verdict — absence of a clean review is never a CONFIRMED."
 fi
 
 # The refuter prompt: posture + diff. Diff is appended from a FILE (never shell-
