@@ -66,7 +66,7 @@ the run.
 
 Always-on autonomous loop over `rpi`. Work selection order:
 1. **Harvested `.agents/rpi/next-work.jsonl` work** (freshest concrete follow-up)
-2. **Open ready beads work** (`bd ready`)
+2. **Open ready beads work** (`br ready`)
 3. **Failing goals and directive gaps** (`ao goals measure`)
 4. **Testing improvements** (missing/thin coverage, missing regression tests)
 5. **Validation tightening and bug-hunt passes** (gates, audits, bug sweeps)
@@ -239,12 +239,12 @@ if [ -x scripts/evolve/halt-check.sh ]; then
 else
   # Fallback for repos without the substrate: minimal inline marker check.
   for m in "$HOME/.config/evolve/KILL" .agents/evolve/STOP; do [ -f "$m" ] && { echo "halt: $m"; exit 0; }; done
-  [ -f .agents/evolve/DORMANT ] && { [ "$(bd ready --json 2>/dev/null | jq -r 'length // 0')" -gt 0 ] && rm -f .agents/evolve/DORMANT || { echo dormant; exit 0; }; }
+  [ -f .agents/evolve/DORMANT ] && { [ "$(BEADS_DIR="$(ao beads dir)" br ready --json 2>/dev/null | jq -r 'length // 0')" -gt 0 ] && rm -f .agents/evolve/DORMANT || { echo dormant; exit 0; }; }
   [ -f .agents/evolve/HANDOFF ] && rm -f .agents/evolve/HANDOFF
 fi
 ```
 
-**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while ready beads exist — `halt-check.sh` auto-clears it when `bd ready`/harvested work exists. KILL/STOP honor `EVOLVE_KILL_TTL_DAYS` (default 7); stale markers are surfaced and bypassed. `goal_regression` (latest cycle report `goals_passing_after < before`) halts the loop for operator attention. Heavy-context sessions write non-sticky HANDOFF; the next fire clears it and resumes. The gate is mechanical: see `scripts/evolve/halt-check.sh`.
+**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while ready beads exist — `halt-check.sh` auto-clears it when `br ready`/harvested work exists. KILL/STOP honor `EVOLVE_KILL_TTL_DAYS` (default 7); stale markers are surfaced and bypassed. `goal_regression` (latest cycle report `goals_passing_after < before`) halts the loop for operator attention. Heavy-context sessions write non-sticky HANDOFF; the next fire clears it and resumes. The gate is mechanical: see `scripts/evolve/halt-check.sh`.
 
 ### Step 1.5: Healing-first classifier
 
@@ -263,14 +263,14 @@ Selection is a ladder, not a one-shot check — after every productive cycle, re
 Ladder order (standard mode):
 - **3.0 Scope filter** (soc-5qit) — split-or-defer oversized candidates via scout-mode; never bail.
 - **3.1 Harvested** — `.agents/rpi/next-work.jsonl`, highest-value unconsumed.
-- **3.2 Open ready beads** — `bd ready`, highest priority.
+- **3.2 Open ready beads** — `br ready`, highest priority.
 - **3.3 Failing goals + directive gaps** — skip if `--beads-only`; skip quarantined oscillators.
 - **3.4–3.6 Generators** — `/test` coverage, `/security`+`/perf`, `/refactor`; findings → beads/queue items.
 - **3.7 Feature suggestions** grounded in repo purpose.
 
 `--quality` inverts the top (findings before goals/directives). The metronome gate blocks a rung that would repeat the trailing run's `mode` (streak ≥3).
 
-**Agile invariant (soc-5qit):** `bd ready ≥ 1` ⇒ the loop NEVER writes DORMANT and NEVER exits. The only path to DORMANT is a fully empty backlog + dry generators (3 passes). Context exhaustion → HANDOFF, not DORMANT. Under loop mode, `write-stop-marker` refuses → log blocked + operator-wait (ADR-0007).
+**Agile invariant (soc-5qit):** `br ready ≥ 1` ⇒ the loop NEVER writes DORMANT and NEVER exits. The only path to DORMANT is a fully empty backlog + dry generators (3 passes). Context exhaustion → HANDOFF, not DORMANT. Under loop mode, `write-stop-marker` refuses → log blocked + operator-wait (ADR-0007).
 
 If `--dry-run`: report what would be worked on and go to Teardown.
 
@@ -348,7 +348,7 @@ Two paths: productive cycles get committed, idle cycles are local-only.
 while true; do
   # Step 1 .. Step 6
   # Stop ONLY if: operator override (KILL/STOP), max-cycles, regression-breaker,
-  # or genuine stagnation (bd ready=0 AND harvested=0 AND failing-goals=0 AND
+  # or genuine stagnation (br ready=0 AND harvested=0 AND failing-goals=0 AND
   # generators dry across 3 passes). Context exhaustion is NOT a stop — it's a
   # session-handoff signal (HANDOFF marker) that the next cron-fire clears.
   CYCLE=$((CYCLE + 1))
@@ -359,7 +359,7 @@ done
 
 1. **KILL/STOP file present** — operator override.
 2. **`--max-cycles=N` cap reached**.
-3. **Genuine stagnation** — `bd ready=0 AND harvested-unconsumed=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK>=2 AND IDLE_STREAK>=2`. Writes DORMANT, which auto-clears in Step 1 the moment `bd create` adds a new ready bead.
+3. **Genuine stagnation** — `br ready=0 AND harvested-unconsumed=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK>=2 AND IDLE_STREAK>=2`. Writes DORMANT, which auto-clears in Step 1 the moment `br create` adds a new ready bead.
 4. **Regression breaker after a revert**.
 
 **Context exhaustion is NOT a stop (soc-5qit).** Heavy-context sessions write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"` to cycle-history, and exit the turn cleanly. The next cron-fire (compacted/fresh context) clears HANDOFF in Step 1 and resumes. The loop is continuous across compactions; never write DORMANT for context size. See `references/context-budget.md`.
@@ -402,9 +402,9 @@ if [ $((PRODUCTIVE_THIS_SESSION % 5)) -eq 0 ] && [ "$PRODUCTIVE_THIS_SESSION" -g
 fi
 ```
 
-**Drive to completion (orchestrator-merge model, soc-2drk).** Where the repo requires PRs, a productive cycle does not stop at "PR opened" — the loop drives each bead to *merged*. Ship the bead from its per-bead worktree as a PR (trailers `Closes-scenario` / `Bounded-context` / `Evidence`), wait for CI, and **squash-merge to main once both gates clear** (`gh pr merge <N> --squash --admin`), then `bd close` the bead and remove the worktree. Merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): clearing it requires **green CI AND the pawl gate** — the pawl review ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md)) must CONFIRM. CI alone never authorizes a merge. **Enforced executably**: `scripts/reconcile-pr.sh` calls `scripts/pawl-verdict.sh check <bead> <pr>` before `gh pr merge` and exits **5 (HOLD)** unless a CONFIRMED pawl verdict tied to this bead+PR exists. On red, fix-and-repush or revert; never merge red; on a **REFUTED pawl the loop AUTO-REDOES** autonomously. A human is escalated **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), governed by the same evolve breakers (`scripts/evolve/halt-check.sh`). The loop may dispatch sub-agents and drives their PRs to merge too. The operator stays *on* the loop (intent + STOP marker), not *in* it. **Supersedes "operator is the merge gate"** for the autonomous loop — see [ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md).
+**Drive to completion (orchestrator-merge model, soc-2drk).** Where the repo requires PRs, a productive cycle does not stop at "PR opened" — the loop drives each bead to *merged*. Ship the bead from its per-bead worktree as a PR (trailers `Closes-scenario` / `Bounded-context` / `Evidence`), wait for CI, and **squash-merge to main once both gates clear** (`gh pr merge <N> --squash --admin`), then `br close` the bead and remove the worktree. Merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): clearing it requires **green CI AND the pawl gate** — the pawl review ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md)) must CONFIRM. CI alone never authorizes a merge. **Enforced executably**: `scripts/reconcile-pr.sh` calls `scripts/pawl-verdict.sh check <bead> <pr>` before `gh pr merge` and exits **5 (HOLD)** unless a CONFIRMED pawl verdict tied to this bead+PR exists. On red, fix-and-repush or revert; never merge red; on a **REFUTED pawl the loop AUTO-REDOES** autonomously. A human is escalated **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), governed by the same evolve breakers (`scripts/evolve/halt-check.sh`). The loop may dispatch sub-agents and drives their PRs to merge too. The operator stays *on* the loop (intent + STOP marker), not *in* it. **Supersedes "operator is the merge gate"** for the autonomous loop — see [ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md).
 
-**Confirmed-MERGED gate before `bd close` (hard, not advisory).** Re-confirm `gh pr view <N> --json state -q .state` returns `MERGED` *before* `bd close` — never close on a `gh pr merge` exit code, a log line, or a batch `bd --json` query (those flake to null/0). **Close a parent epic ONLY after every child PR is independently confirmed `MERGED`**; re-query per child first, and one non-merged child aborts the epic close. (Caught two premature epic-closes in the 2026-05-31 crank session — this gate is the governance checkpoint, applied here too.) Enforce via the committed `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` + `scripts/check-epic-children-closed.sh <epic>` (hermetic-tested in `tests/scripts/`), not by hand.
+**Confirmed-MERGED gate before `br close` (hard, not advisory).** Re-confirm `gh pr view <N> --json state -q .state` returns `MERGED` *before* `br close` — never close on a `gh pr merge` exit code, a log line, or a batch `br --json` query (those flake to null/0). **Close a parent epic ONLY after every child PR is independently confirmed `MERGED`**; re-query per child first, and one non-merged child aborts the epic close. (Caught two premature epic-closes in the 2026-05-31 crank session — this gate is the governance checkpoint, applied here too.) Enforce via the committed `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` + `scripts/check-epic-children-closed.sh <epic>` (hermetic-tested in `tests/scripts/`), not by hand.
 
 ### Teardown
 
@@ -460,7 +460,7 @@ The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST conta
 ## Examples
 
 - `/evolve --max-cycles=5` — re-enters the full selection ladder after every `rpi` cycle and runs producer layers instead of idling on empty queues.
-- `/evolve --beads-only` — skips goals measurement and works through `bd ready` backlog.
+- `/evolve --beads-only` — skips goals measurement and works through `br ready` backlog.
 - `/evolve --dry-run` — shows what would be worked on without executing.
 - `/evolve --compile` — runs `ao mine` + `ao defrag` at session start to surface fresh signal (orphaned research, code hotspots, oscillating goals) before cycle 1.
 - `evolve` — worked overnight flow through beads → harvested → goals → testing → bug hunt → feature suggestion before dormancy.
