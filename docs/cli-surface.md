@@ -167,6 +167,7 @@
 | `ao membrane derive-checks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane recall` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane triage` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao memory ingest-claude` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
 | `ao metrics cite` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
