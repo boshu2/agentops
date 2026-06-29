@@ -1,3 +1,8 @@
+# graphify knowledge-graph output — one-shot audit artifact, not a tracked
+# repo surface (34MB graph.json + chunk JSONs, stale within days on a hot repo).
+# Re-run on demand with the /graphify skill; the standing query surface is `ao inject`.
+graphify-out/
+
 # macOS
 .DS_Store
 .AppleDouble
