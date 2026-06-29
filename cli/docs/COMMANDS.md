@@ -2757,6 +2757,23 @@ ao memory [command]
 
 **Subcommands:**
 
+#### `ao memory ingest-claude`
+
+Pull the curated facts in ~/.claude/projects/*/memory/*.md into ao's
+
+```
+ao memory ingest-claude [flags]
+```
+
+**Flags:**
+
+```
+      --dest string     Destination learnings dir (default: ~/.agents/learnings)
+      --dry-run         Report what would be ingested; write nothing
+  -h, --help            help for ingest-claude
+      --source string   Source dir (default: ~/.claude/projects)
+```
+
 #### `ao memory sync`
 
 Write recent session history to a repo-root MEMORY.md with managed block markers.
