@@ -102,14 +102,6 @@ CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to 
 **Steer:** decrease (functions exceeding CC 20)
 **Scenarios:** s-2026-05-24-005
 
-### 6. Maintain competitive awareness
-
-Competitive analysis docs (`docs/comparisons/vs-*.md` and `docs/comparisons/competitive-radar.md`) must stay fresh. GSD, Compound Engineer, and sdd are actively iterating — stale analysis means blind spots. Refresh comparisons within 45 days of last update. `/evolve` picks this up automatically when other goals pass.
-
-**Directive ID:** d-maintain-competitive-awareness
-**Steer:** decrease (stale comparison doc count)
-**Scenarios:** s-2026-05-24-006
-
 ### 7. Enforce codex parity proactively
 
 CI catches codex drift at push time, but 40% of fix commits in the March 2026 integration were codex parity issues caught too late. The PreToolUse hook warns during editing; the goal gate blocks push if drift exists.
@@ -282,7 +274,6 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | goals-validate | `bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && cd .. && /tmp/ao-goals-val goals validate --json 2>/dev/null \| jq -e ".valid == true"'` | 5 | GOALS.md parses and validates without structural errors |  |
 | compile-freshness | `bash scripts/check-compile-health.sh` | 4 | Compile defrag report is fresh and stale learnings are low | runtime-artifact |
 | compile-no-oscillation | `bash scripts/check-compile-oscillation.sh` | 4 | No evolve goals oscillating across consecutive cycles | runtime-artifact |
-| competitive-freshness | `bash scripts/check-competitive-freshness.sh` | 3 | Competitive analysis docs updated within 45 days |  |
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |
 | quarantine-empty | `bash scripts/check-quarantine-empty.sh` | 4 | tests/_quarantine/ holds zero `.sh`/`.bats` suites (Directive D3). Single-cycle override: set `ALLOW_QUARANTINE=1` when intentionally parking a flaky suite. |  |
 | corpus-freshness | `bash scripts/check-corpus-freshness.sh` | 4 | Newest corpus snapshot under `$AGENTOPS_CORPUS_SNAPSHOT_DIR` (default `~/.agentops/corpus-snapshots/`) is within 7 days. Skips cleanly when no snapshots exist. Override: `AGENTOPS_CORPUS_FRESHNESS_SKIP=1`. Companion: `ao corpus snapshot` / `ao corpus restore` (Directive D11). |  |

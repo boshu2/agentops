@@ -34,7 +34,6 @@ One factory, two AgentOps operator surfaces, four compounding layers: an **in-ha
 The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans choose the posture: stay **in the loop** during discovery and validation, or sit **on the loop** while an external substrate dispatches AgentOps loops.
 
 > Canonical contract: [docs/context-lifecycle.md](docs/context-lifecycle.md)
-> Lineage: AgentOps positions explicitly against EveryInc's [Compound Engineer](https://github.com/EveryInc/compound-engineering-plugin) — see [docs/comparisons/vs-compound-engineer.md](docs/comparisons/vs-compound-engineer.md) for the in-depth contrast (operator-driven trunk vs. autonomy overlays, capture/scoring/injection, council validation).
 > Internal lineage: the systems-theory work that preceded AgentOps lives in the [Lineage](#lineage) section, but users do not need that vocabulary to understand the product.
 
 ## Vision
