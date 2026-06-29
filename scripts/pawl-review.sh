@@ -387,6 +387,17 @@ fi
 # clean review (a partial output containing 'VERDICT: CONFIRMED' from a killed run could
 # otherwise write a passing verdict — fail-open). Retry once on a flat 0-byte stall.
 echo "pawl-review: running cross-family (codex) review of $scope diff for $bead (head ${head:0:12})…" >&2
+# age-wjp0: backgrounding-reap hazard. When this script is launched DETACHED (harness
+# run_in_background / `nohup &`), its process group can be reaped mid-`codex exec` —
+# killing the review before the retry + fail-closed logic below ever runs, leaving ONLY
+# the line above as output. That silent flatline looks like a codex stall but is a reap.
+# External reaping cannot be prevented from inside the script, so make the failure
+# SELF-EXPLAINING: emit the diagnostic BEFORE the vulnerable exec so it survives the kill.
+# Fires only when non-interactive (the exact condition where the hazard exists and the
+# operator has no live feedback). (memory: pawl-run-foreground-not-background)
+if ! { [ -t 1 ] || [ -t 2 ]; }; then
+  echo "pawl-review: ⚠ non-interactive run — codex review takes ~3-5 min. If NO verdict follows this line, the codex subprocess was reaped (common when backgrounded). Re-run FOREGROUND: timeout 450 ao pawl review $bead --scope $scope" >&2
+fi
 codex_rc=0
 run_review || codex_rc=$?
 if [[ ! -s "$raw_file" ]]; then
