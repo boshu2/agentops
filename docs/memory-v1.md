@@ -1,10 +1,31 @@
 # Memory v1 — the contract (what we remember, and how ao serves it)
 
+> **⛔ SUPERSEDED — DO NOT BUILD ON THIS (2026-06-29 re-baseline). Read this first.**
+>
+> A scored head-to-head run after `ao recall` v1 shipped found the core premise FALSE:
+> **`cm` (cass-memory) and `cass` are NOT a subscription to escape — they are MIT-licensed,
+> fully LOCAL, free open-source tools** (`cm` bullets live in `~/.local/share/cass-memory/
+> playbook.yaml`; the jsm *subscription* gates the SKILLS catalog, not these binaries). They
+> already ARE the unified, cross-agent, local memory this contract set out to build — and on
+> a real 6-query scored head-to-head **cm beat `ao recall` 6–0** (cm surfaces the right
+> memory via its local history layer; `ao recall` returned the ingested `MEMORY.md` *index*
+> for ~5/6 queries — a quality regression that `ingest-claude` *introduced*).
+>
+> **Corrected decision: do NOT make `ao` "the one memory that retires cm." Adopt cm + cass
+> directly** (fork them if you want full ownership — they're MIT). `ao recall` /
+> `ao memory ingest-claude` shipped (nyfq.5/.6/.7) but are PARKED as a learning, not a
+> foundation; do not point users at them as-is. Remaining beads (.1/.2/.3/.4/.8) are closed
+> as "reinventing a free open-source tool, worse." The lesson: **re-baseline a build against
+> existing tools BEFORE writing code** — this epic never did that against cm, the tool
+> literally built for it, one `cm context` away.
+>
+> _Original (now-superseded) draft contract retained below for the record._
+
 > Status: DRAFT for Bo's ratification (2026-06-28). Forcing function demanded by the
 > agile-founder council — the decision avoided for 8 months. Retrieval was never the
 > blocker; **deciding what to remember** was. Ratify or edit this, then ship.
 
-## The decision (SOT)
+## The decision (SOT) — ⛔ SUPERSEDED, see banner above
 
 **`ao` is the unified agent memory.** Files under `.agents/` (per-repo) and `~/.agents/`
 (per-machine hub) are the source of truth; `ao` is the access path. Not a DB, not a graph,
