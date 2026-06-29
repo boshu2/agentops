@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-28T12:46:08Z",
+  "generated_at": "2026-06-29T13:19:57Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 91,
+    "cli_commands": 92,
     "workflows": 4,
-    "capabilities": 180
+    "capabilities": 181
   },
   "surfaces": {
     "skills": [
@@ -1282,6 +1282,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao recall",
+        "path": "cli/cmd/ao/",
+        "purpose": "Recall curated memory across project + machine tiers (the unified agent-memory front door)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao reconcile",
         "path": "cli/cmd/ao/",
         "purpose": "Join git, CI, release, beads, and .agents truth into one report",
@@ -1552,9 +1559,9 @@
     ]
   },
   "capability_summary": {
-    "total": 180,
+    "total": 181,
     "skills": 75,
-    "cli_commands": 91,
+    "cli_commands": 92,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1624,6 +1631,7 @@
     "quick-start",
     "ratchet",
     "ready",
+    "recall",
     "reconcile",
     "redact",
     "refinery",
@@ -5393,6 +5401,24 @@
         "--config",
         "--dry-run",
         "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.recall",
+      "name": "ao recall",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Recall curated memory across project + machine tiers (the unified agent-memory front door)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--limit",
         "--output",
         "--verbose"
       ],
