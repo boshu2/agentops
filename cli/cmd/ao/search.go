@@ -493,7 +493,17 @@ func classifyResultType(path string) string {
 // 1. Session context (what was the session about)
 // 2. Maturity level (provisional vs established)
 // 3. Confidence decay (older untested learnings rank lower)
-func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, error) {
+// searchRepoCuratedKnowledge searches ONLY the curated knowledge corpus
+// (learnings, patterns, findings, research, council, plans, wiki, …) and
+// deliberately excludes raw session transcripts. It is the retrieval path behind
+// `ao recall`: the memory-v1 contract (docs/memory-v1.md) is that recall serves
+// durable CURATED facts, while raw transcript/session history belongs to
+// `ao search`. searchRepoLocalKnowledge = this curated set PLUS sessions.
+//
+// Results are RANKED + de-duped + capped via rankUniqueSearchResults before
+// return, so callers (notably ao recall) get globally score-ordered hits, not the
+// per-category append order.
+func searchRepoCuratedKnowledge(query, dir string, limit int) []searchResult {
 	var results []searchResult
 	knowledgeRoot := knowledgeRootFromSessions(dir)
 
@@ -510,8 +520,13 @@ func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, err
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/sources", "wiki-source", "wiki-sources", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/synthesis", "wiki-synthesis", "wiki-synthesis", limit)
 	results = appendKnowledgeMarkdownSearch(results, query, knowledgeRoot, "wiki/concepts", "wiki-concept", "wiki-concepts", limit)
-	results = appendSessionSearchResults(results, query, dir, limit)
 
+	return rankUniqueSearchResults(results, limit)
+}
+
+func searchRepoLocalKnowledge(query, dir string, limit int) ([]searchResult, error) {
+	results := searchRepoCuratedKnowledge(query, dir, limit)
+	results = appendSessionSearchResults(results, query, dir, limit)
 	return rankUniqueSearchResults(results, limit), nil
 }
 

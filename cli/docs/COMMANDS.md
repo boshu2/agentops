@@ -3755,6 +3755,23 @@ ao patterns repair-filenames [flags]
 
 ---
 
+### `ao recall`
+
+Recall durable curated facts across both memory tiers.
+
+```
+ao recall <query> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for recall
+      --limit int   Maximum results to return (default 10)
+```
+
+---
+
 ### `ao retrieval-bench`
 
 Measure Precision@K and MRR against a curated corpus of learning artifacts.
