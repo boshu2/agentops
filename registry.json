@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-30T01:16:06Z",
+  "generated_at": "2026-06-30T12:10:14Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -291,7 +291,7 @@
         "path": "skills/research/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 18
       },
       {
         "name": "reverse-engineer",
@@ -3469,7 +3469,7 @@
         "ao metrics cite"
       ],
       "path": "skills/research/",
-      "references": 17
+      "references": 18
     },
     {
       "sku": "skill:reverse-engineer",
