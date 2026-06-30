@@ -107,9 +107,7 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 	return limitCollectedLearnings(learnings, limit), nil
 }
 
-// canonLearningsDir is the repo-relative path to the team canon tier, derived
-// from the canon.go constants so the two never drift.
-var canonLearningsDir = filepath.Join(canonDir, canonLearnings)
+// canonLearningsDir relocated to learning_surface.go (age-oovc Phase 0).
 
 // canonInjectWeight boosts canon (verification-earned) learnings at ranking
 // time. >1.0 because the team canon is the trusted tier; a local TIL should not
@@ -278,9 +276,7 @@ func limitCollectedLearnings(learnings []learning, limit int) []learning {
 
 // globLearningFiles returns *.md and *.jsonl files under dir, including
 // namespaced subdirectories used by global cross-repo stores.
-func globLearningFiles(dir string) []string {
-	return walkKnowledgeFiles(dir, ".md", ".jsonl")
-}
+// globLearningFiles relocated to learning_surface.go (age-oovc Phase 0).
 
 // findLearningFiles discovers .md and .jsonl files in the learnings directory.
 // Delegates to the shared LearningResolver for consistent file discovery.
@@ -476,9 +472,7 @@ func processLearningFile(file string, queryTokensList []string, now time.Time) (
 func passesQualityGate(l learning) bool { return search.PassesQualityGate(l) }
 
 // applyFreshnessScore delegates to search.ApplyFreshnessToLearning.
-func applyFreshnessScore(l *learning, file string, now time.Time) {
-	search.ApplyFreshnessToLearning(l, file, now)
-}
+// applyFreshnessScore relocated to learning_surface.go (age-oovc Phase 0).
 
 // rankLearnings delegates to search.RankLearnings + sort.
 func rankLearnings(learnings []learning) {
@@ -672,7 +666,8 @@ func isPromoted(fm frontMatter) bool   { return search.IsPromoted(fm) }
 func parseLearningBody(lines []string, start int, l *learning) {
 	search.ParseLearningBody(lines, start, l)
 }
-func parseLearningFile(path string) (learning, error) { return search.ParseLearningFile(path) }
+
+// parseLearningFile relocated to learning_surface.go (age-oovc Phase 0).
 func populateLearningFromJSON(data map[string]any, l *learning) {
 	search.PopulateLearningFromJSON(data, l)
 }

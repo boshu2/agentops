@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // seedConstraintIndex writes a constraint index with the given entries.
@@ -229,6 +230,10 @@ func TestConstraint_Integration_ReviewStale(t *testing.T) {
 	dir := chdirTemp(t)
 	setupAgentsDir(t, dir)
 
+	// "Recent" must be relative to now, not a hardcoded date — a fixed timestamp
+	// time-bombs the test once real time crosses the 90-day staleness threshold.
+	recentCompiledAt := time.Now().UTC().AddDate(0, 0, -5).Format("2006-01-02T15:04:05Z")
+
 	// Seed with an old active constraint (>90 days)
 	seedConstraintIndex(t, dir, []constraintEntry{
 		{
@@ -244,7 +249,7 @@ func TestConstraint_Integration_ReviewStale(t *testing.T) {
 			Title:      "Recent constraint",
 			Source:     "retro-recent",
 			Status:     "active",
-			CompiledAt: "2026-04-01T00:00:00Z",
+			CompiledAt: recentCompiledAt,
 			File:       ".agents/constraints/C002-new.md",
 		},
 	})
