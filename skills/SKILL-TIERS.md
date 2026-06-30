@@ -323,10 +323,10 @@ These are how skills chain in practice:
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
-| **continuity-loop** | execution | >- |
-| **operationalize** | execution | >- |
-| **reality-check** | execution | >- |
-| **toil-mining** | execution | >- |
+| **continuity-loop** | execution | Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step. |
+| **operationalize** | execution | Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads. |
+| **reality-check** | execution | Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent. |
+| **toil-mining** | execution | Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand. |
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
 | **dual-pane-atm** | execution | 'Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".' |
 | **orchestrate** | execution | 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.' |
