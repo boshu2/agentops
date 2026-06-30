@@ -3613,66 +3613,6 @@ ao membrane triage [flags]
 
 ---
 
-### `ao mind`
-
-Scan, normalize, link, and index .agents/ markdown into an Obsidian knowledge graph.
-
-```
-ao mind [command]
-```
-
-**Subcommands:**
-
-#### `ao mind all`
-
-Run full pipeline (normalize → link → index)
-
-```
-ao mind all [flags]
-```
-
-#### `ao mind graph`
-
-Show graph statistics
-
-```
-ao mind graph [flags]
-```
-
-#### `ao mind index`
-
-Rebuild the graph index
-
-```
-ao mind index [flags]
-```
-
-#### `ao mind link`
-
-Insert wikilinks between related artifacts
-
-```
-ao mind link [flags]
-```
-
-#### `ao mind normalize`
-
-Add/fix YAML frontmatter on .agents/ markdown
-
-```
-ao mind normalize [flags]
-```
-
-#### `ao mind scan`
-
-Show what needs normalization
-
-```
-ao mind scan [flags]
-```
-
----
-
 ### `ao mine`
 
 Mine scans all reachable data sources for patterns and insights
@@ -4755,41 +4695,6 @@ Print harness-neutral ready bead state as JSON
 
 ```
 ao ready [flags]
-```
-
----
-
-### `ao refinery`
-
-Watch main, run the full gate on each new commit, and on a
-
-```
-ao refinery [command]
-```
-
-**Subcommands:**
-
-#### `ao refinery once`
-
-Evaluate main HEAD once
-
-```
-ao refinery once [flags]
-```
-
-#### `ao refinery run`
-
-Run the refinery loop until interrupted
-
-```
-ao refinery run [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for run
-      --interval duration   poll interval (default 5m0s)
 ```
 
 ---

@@ -1,3 +1,5 @@
+//go:build flywheel
+
 package main
 
 import "testing"

@@ -16,6 +16,12 @@ import (
 var commandHeadingPattern = regexp.MustCompile("(?m)^#{3,6} `(ao(?: [^`]+)+)`$")
 
 func TestCobraConformance(t *testing.T) {
+	// COMMANDS.md documents the DEFAULT (spine) build. The flywheel/legacy build
+	// restores ADR-0012 archived commands, making the live tree a superset of the
+	// generated docs by design — skip when any archive build tag is active.
+	if len(archiveBuildTags) > 0 {
+		t.Skipf("spine-conformance test: archive build tags active (%v); the restored build is a documented superset", archiveBuildTags)
+	}
 	rootCmd.InitDefaultHelpCmd()
 
 	docsPath := filepath.Join("..", "..", "docs", "COMMANDS.md")

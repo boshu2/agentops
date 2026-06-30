@@ -452,7 +452,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"memory",
 		"metrics",
 		"migrate",
-		"mind",
 		"mine",
 		"next-work",
 		"notebook",
@@ -468,7 +467,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"ready",
 		"reconcile",
 		"redact",
-		"refinery",
 		"registry",
 		"rehydrate",
 		"retrieval-bench",
@@ -538,6 +536,13 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 // TestCobraExpectedCmdsMatchRegistration ensures the hardcoded expectedCmds list
 // stays in sync with actual cobra command registration — catches drift in either direction.
 func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
+	// expectedCmds and the generated command surfaces document the DEFAULT (spine)
+	// build. The flywheel/legacy build is a superset (ADR-0012 archived commands
+	// compiled back in), so registered ⊋ expectedCmds there by design — skip the
+	// strict parity assertion when any archive build tag is active.
+	if len(archiveBuildTags) > 0 {
+		t.Skipf("spine-conformance test: archive build tags active (%v); the restored build is a documented superset", archiveBuildTags)
+	}
 	root := rootCmd
 	registered := make(map[string]bool)
 	for _, cmd := range root.Commands() {
@@ -603,7 +608,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"memory",
 		"metrics",
 		"migrate",
-		"mind",
 		"mine",
 		"next-work",
 		"notebook",
@@ -619,7 +623,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"ready",
 		"reconcile",
 		"redact",
-		"refinery",
 		"registry",
 		"rehydrate",
 		"retrieval-bench",

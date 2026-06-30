@@ -172,12 +172,6 @@
 | `ao metrics cite-report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics health` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao mind all` | `public-tested` | `allowlisted` | Covered by mind subcommand tests. |
-| `ao mind graph` | `public-tested` | `allowlisted` | Covered by mind subcommand tests. |
-| `ao mind index` | `public-tested` | `allowlisted` | Covered by mind subcommand tests. |
-| `ao mind link` | `public-stateful-fixture-needed` | `allowlisted` | Writes wikilinks through the Python mind tool. |
-| `ao mind normalize` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao mind scan` | `public-tested` | `allowlisted` | Covered by mind command argument construction tests. |
 | `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao next-work materialize` | `public-tested` | `allowlisted` | Covered by nextworkmaterialize adapter tests and command registration tests. |
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -233,8 +227,6 @@
 | `ao ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao reconcile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao refinery once` | `unsafe-live` | `allowlisted` | Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests. |
-| `ao refinery run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao registry list` | `public-stateful-fixture-needed` | `allowlisted` | Reads generated registry state and needs a representative registry fixture. |
 | `ao rehydrate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
