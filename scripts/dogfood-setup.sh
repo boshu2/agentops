@@ -29,6 +29,22 @@ if [[ "${1:-}" == "--revert" ]]; then
     latest_backup=$(ls -d "$CLAUDE_DIR"/skills.backup.* 2>/dev/null | tail -1)
 
     if [[ -n "$latest_backup" ]] && [[ -d "$latest_backup" ]]; then
+        # Guard: refuse to restore a backup much smaller than the live dir.
+        # A stale backup (captured when few skills existed) would silently wipe
+        # a healthy skills set — the best-fit cause of the 26-vs-125 drift
+        # incident. Override the guard with: --revert --force-revert
+        force_revert=0
+        [[ "${2:-}" == "--force-revert" ]] && force_revert=1
+        live_count=$(find "$CLAUDE_DIR/skills" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
+        backup_count=$(find "$latest_backup" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
+        # Multiply, don't divide: `backup < live/2` floors odd live counts and
+        # fails open at the boundary (live=125 -> 125/2=62, a 62-entry backup
+        # would pass). `2*backup < live` is the exact <50% test with no floor.
+        if [[ "$force_revert" -eq 0 ]] && [[ "$live_count" -gt 0 ]] && [[ $((2 * backup_count)) -lt "$live_count" ]]; then
+            echo -e "${RED}Refusing to revert:${NC} backup has $backup_count skills but the live dir has $live_count."
+            echo "  Restoring would delete $((live_count - backup_count)) skills. If intentional: $0 --revert --force-revert"
+            exit 1
+        fi
         rm -rf "$CLAUDE_DIR/skills"
         mv "$latest_backup" "$CLAUDE_DIR/skills"
         echo -e "${GREEN}✓${NC} Restored skills from $latest_backup"
