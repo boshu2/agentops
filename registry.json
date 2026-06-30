@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-30T12:10:14Z",
+  "generated_at": "2026-06-30T14:45:12Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -1071,8 +1071,6 @@
         "purpose": "Output relevant knowledge for explicit or JIT injection",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "agent-native",
-          "domain",
           "inject"
         ]
       },
@@ -1098,8 +1096,10 @@
         "purpose": "Retrieve specific knowledge artifacts by ID or query",
         "bounded_context": "BC1",
         "driven_by_skills": [
+          "agent-native",
           "crank",
           "discovery",
+          "domain",
           "evolve",
           "flywheel",
           "implement",
@@ -1765,7 +1765,7 @@
         "ao corpus inject",
         "ao gate check",
         "ao goals",
-        "ao inject",
+        "ao lookup",
         "ao mcp serve",
         "ao session bootstrap",
         "ao validate"
@@ -2513,7 +2513,7 @@
         "ao corpus inject",
         "ao eval run",
         "ao gate check",
-        "ao inject",
+        "ao lookup",
         "ao maturity",
         "ao mcp serve",
         "ao session bootstrap"
@@ -4904,8 +4904,6 @@
       "purpose": "Output relevant knowledge for explicit or JIT injection",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
-        "domain",
         "inject"
       ],
       "flags": [
@@ -4975,8 +4973,10 @@
       "purpose": "Retrieve specific knowledge artifacts by ID or query",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "crank",
         "discovery",
+        "domain",
         "evolve",
         "flywheel",
         "implement",

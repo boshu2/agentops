@@ -12,7 +12,7 @@ Feature: Research produces a cited investigation artifact, prior-art first
 
   Scenario: prior art is searched before fresh exploration
     When /research runs on a topic
-    Then it first searches existing knowledge (ao inject/lookup + the .agents/ knowledge dirs)
+    Then it first searches existing knowledge (ao lookup + the .agents/ knowledge dirs)
     And applicable prior learnings are cited in the output, not just loaded passively
 
   Scenario: an explore agent investigates with iterative retrieval

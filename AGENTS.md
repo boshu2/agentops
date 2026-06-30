@@ -34,11 +34,11 @@ Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-
 
 **Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. `ao rpi` CLI code is load-bearing legacy, not the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
 
-> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject "<topic>"` to pull decay-ranked prior context.
+> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao lookup --query "<topic>"` to pull decay-ranked prior context.
 
 ## Zero-context startup (read first)
 
-Run `ao session bootstrap`, then `ao inject "<topic>"` for decay-ranked context. On your first message in a fresh session, read in this order:
+Run `ao session bootstrap`, then `ao lookup --query "<topic>"` for decay-ranked context. On your first message in a fresh session, read in this order:
 
 1. [`docs/newcomer-guide.md`](docs/newcomer-guide.md) — practical repo orientation and learning path
 2. [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md) — consolidated subsystem map (BCs, ownership, gates, footguns)
@@ -81,7 +81,7 @@ Six bounded contexts: BC1 Corpus → BC6 Orchestration. Routing: [`docs/architec
 In-session product path — run this unless a bead explicitly routes elsewhere:
 
 ```text
-ao session bootstrap → ao inject → operating loop → ao gate check --fast --scope head → push main
+ao session bootstrap → ao lookup → operating loop → ao gate check --fast --scope head → push main
 ```
 
 | Layer | Where |
@@ -136,7 +136,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 ```bash
 # Session + context (hookless — run explicitly)
 ao session bootstrap
-ao inject "<query>"              # or: ao corpus inject --query "<query>"
+ao lookup --query "<query>"      # or: ao corpus inject --query "<query>"
 
 # Issue tracking (resolve first; linked worktrees do not carry _beads)
 BEADS_DIR="$(ao beads dir)" br ready
