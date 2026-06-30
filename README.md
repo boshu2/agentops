@@ -51,6 +51,7 @@ Installs hookless. The only hard requirement is an agent runtime and `git`; ever
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
 - **A validation membrane.** Tests, gates, `/pre-mortem`, `/validate`, and `/council` prove or reject the work before you trust it. No verdict, not done.
+- **A bookkeeper that outlives the session.** Work is tracked as beads, and every verdict is bound into a hash-chained provenance ledger: tamper-evident, grep-able, and portable across sessions and models. The record is the proof a change was actually checked — not a memory of one.
 - **An evidence trail that's yours.** Every run, decision, and verdict lands in `.agents/` in your repo: grep-able, diff-able, portable to whatever model wins next quarter. AgentOps adds no hosted control plane and no telemetry; the corpus lives in your repo, not on our servers. Apache-2.0.
 - **It runs on the agent you already pay for.** Claude Code, Codex, Cursor, OpenCode. Same skills, same corpus.
 
@@ -84,7 +85,7 @@ Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs
 | `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
 | `/council` | you want independent judges (optionally Claude and Codex) to return one verdict |
 | `/validate` | you want a code-quality and risk review before shipping |
-| `/evolve` | a goal-driven improvement loop that compounds knowledge without mutating source |
+| `/evolve` | a goal-driven improvement loop that runs without mutating source |
 
 ## The `ao` CLI
 
