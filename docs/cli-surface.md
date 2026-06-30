@@ -167,7 +167,6 @@
 | `ao membrane derive-checks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane recall` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane triage` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao memory ingest-claude` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
 | `ao metrics cite` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
@@ -233,7 +232,6 @@
 | `ao ratchet trace` | `public-tested` | `allowlisted` | Covered through trace command behavior. |
 | `ao ratchet validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao recall` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao reconcile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao refinery once` | `unsafe-live` | `allowlisted` | Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests. |
