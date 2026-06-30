@@ -15,7 +15,7 @@ hooks:
 
 1. **Skills** — `skills/<name>/SKILL.md` progressive-disclosure contracts.
 2. **The `ao` CLI** — the deterministic tool surface (`ao session bootstrap`,
-   `ao inject`, `ao corpus inject --query`, `ao validate`, `ao goals measure`),
+   `ao lookup`, `ao corpus inject --query`, `ao validate`, `ao goals measure`),
    reachable in two ways: shell (Codex/NTM) or **MCP** (`ao mcp serve`, hosted/SDK).
 3. **Local cockpit gate as routine authority** — the installed `.git/hooks/pre-push`
    path runs `scripts/hooks/pre-push.local`; `.github/workflows/validate.yml` runs

@@ -23,7 +23,7 @@
 
 These map to the four scenarios in [references/research.feature](references/research.feature):
 
-- Prior art is searched before fresh exploration: `ao inject`/`lookup` plus the `.agents/` knowledge dirs run first, and applicable learnings are cited in the output (not just loaded passively).
+- Prior art is searched before fresh exploration: `ao lookup` plus the `.agents/` knowledge dirs run first, and applicable learnings are cited in the output (not just loaded passively).
 - An explore agent is actually dispatched (not merely described) using the detected backend, and it uses iterative retrieval — score results, extract new terms from high-relevance hits, refine over up to 3 cycles.
 - Findings are written to `.agents/research/YYYY-MM-DD-<slug>.md`, and every claim carries a `file:line` citation.
 - Interactive runs request human approval (Gate 1) before reporting completion; `--auto` proceeds without the gate.
