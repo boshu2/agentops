@@ -63,7 +63,6 @@
 | `ao corpus scan` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus snapshot` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao council-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao cron self-adjust` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao curate catalog` | `public-tested` | `allowlisted` | Covered by curate command tests. |
 | `ao curate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao curate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

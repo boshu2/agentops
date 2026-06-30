@@ -1517,38 +1517,6 @@ ao codex stop [flags]
 
 ---
 
-### `ao cron`
-
-Compatibility shims for cron-fire scheduling surfaces that now belong
-
-```
-ao cron [command]
-```
-
-**Subcommands:**
-
-#### `ao cron self-adjust`
-
-Compatibility shim for the retired local cron self-adjust renderer.
-
-```
-ao cron self-adjust [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for self-adjust
-      --next string          Accepted for compatibility; MTO owns next-cycle selection
-      --on string            Accepted for compatibility; MTO owns cron scheduling (default "cycle-close")
-      --shipped string       Accepted for compatibility; MTO owns shipped-cycle context
-      --sub-beads string     Accepted for compatibility; MTO owns sub-bead fan-out context
-      --template string      Accepted for compatibility; MTO owns prompt rendering
-      --tests-delta string   Accepted for compatibility; MTO owns test-delta context
-```
-
----
-
 ### `ao eval`
 
 Run deterministic AgentOps evaluation suites and compare run records.
