@@ -12,20 +12,21 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 
 // Change-class path globs (ported from the bash gate's HAS_<CLASS> regexes).
 var (
-	goPaths          = []string{"cli/**", "go.mod", "go.sum"}
-	skillPaths       = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
-	frontDoorPaths   = []string{"skills/**", ".claude/workflows/**"}
-	contractPaths    = []string{"docs/contracts/**", "schemas/**"}
-	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	evalPaths        = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
-	contextMapPaths  = []string{"skills/**", "docs/contracts/context-map.md"}
-	swarmPaths       = []string{".agents/swarm/**", "schemas/swarm-*"}
-	docsPaths        = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
-	agentsDocPaths   = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
-	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
-	goalsPaths       = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
-	registryPaths    = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
-	docSkillRefPaths = []string{
+	goPaths           = []string{"cli/**", "go.mod", "go.sum"}
+	skillPaths        = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
+	frontDoorPaths    = []string{"skills/**", ".claude/workflows/**"}
+	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
+	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
+	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
+	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
+	docsPaths         = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
+	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
+	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
+	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
+	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	docSkillRefPaths  = []string{
 		"AGENTS.md",
 		"CLAUDE.md",
 		"docs/ARCHITECTURE.md",
@@ -155,6 +156,7 @@ func init() {
 		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
 		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
+		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
 		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
@@ -196,7 +198,7 @@ func init() {
 		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
 			Backing: "check-architecture-doc-drift.sh"},
 		{ID: "docs.control-plane-taxonomy", Tiers: gates.Fast | gates.Full, Match: controlPlaneTaxonomyPaths, Blocking: true,
-			Backing: "check-control-plane-taxonomy.sh",
+			Backing:    "check-control-plane-taxonomy.sh",
 			RepairHint: "keep the etcd-analog bound to br + the proof/verdict ledger (not bd/Dolt); keep the agent two-altitude note in the-agent-factory.md + ports-and-adapters.md; keep the taxonomy cross-links bidirectional; see scripts/check-control-plane-taxonomy.sh"},
 		{ID: "eval.skill-probe-i0", Tiers: gates.Full, Match: skillPaths, Blocking: false,
 			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
