@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: local-ci local-ci-fast ci build test docs-check regen-all regen-check clean help
+.PHONY: local-ci local-ci-fast ci build build-flywheel verify-buildtags test docs-check regen-all regen-check clean help
 
 # Default: run the release-grade local CI gate.
 # Note: scripts/ci-local-release.sh already includes build + test + release-binary validation.
@@ -14,8 +14,14 @@ local-ci-fast: ## Run local CI without e2e install test, using quick security mo
 
 ci: local-ci ## Alias for local-ci
 
-build: ## Build ao CLI binary
+build: ## Build ao CLI binary (default = spine; archived satellites omitted)
 	$(MAKE) -C cli build
+
+build-flywheel: ## Build ao with the ADR-0012 archived satellites restored (flywheel + legacy)
+	$(MAKE) -C cli build-flywheel
+
+verify-buildtags: ## Verify the ADR-0012 build-tag mechanism (default omits; flywheel/legacy restore)
+	$(MAKE) -C cli verify-buildtags
 
 test: ## Run CLI tests
 	$(MAKE) -C cli test
