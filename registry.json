@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-30T23:25:20Z",
+  "generated_at": "2026-06-30T23:29:18Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 90,
+    "cli_commands": 88,
     "workflows": 4,
-    "capabilities": 179
+    "capabilities": 177
   },
   "surfaces": {
     "skills": [
@@ -1159,13 +1159,6 @@
         ]
       },
       {
-        "name": "ao mind",
-        "path": "cli/cmd/ao/",
-        "purpose": "Knowledge graph operations",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao mine",
         "path": "cli/cmd/ao/",
         "purpose": "Extract knowledge signal from git, .agents/, and code",
@@ -1288,13 +1281,6 @@
         "name": "ao redact",
         "path": "cli/cmd/ao/",
         "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao refinery",
-        "path": "cli/cmd/ao/",
-        "purpose": "Continuous main-validation backstop (run on bushido)",
         "bounded_context": "",
         "driven_by_skills": []
       },
@@ -1545,9 +1531,9 @@
     ]
   },
   "capability_summary": {
-    "total": 179,
+    "total": 177,
     "skills": 75,
-    "cli_commands": 90,
+    "cli_commands": 88,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1602,7 +1588,6 @@
     "membrane",
     "memory",
     "metrics",
-    "mind",
     "mine",
     "next-work",
     "notebook",
@@ -1618,7 +1603,6 @@
     "ready",
     "reconcile",
     "redact",
-    "refinery",
     "registry",
     "rehydrate",
     "retrieval-bench",
@@ -5106,24 +5090,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.mind",
-      "name": "ao mind",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Knowledge graph operations",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose",
-        "--write"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.mine",
       "name": "ao mine",
       "type": "cli-command",
@@ -5407,24 +5373,6 @@
       "flags": [
         "--config",
         "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.refinery",
-      "name": "ao refinery",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Continuous main-validation backstop (run on bushido)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--interval",
         "--json",
         "--output",
         "--verbose"

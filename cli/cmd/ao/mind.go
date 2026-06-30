@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [ai-assisted-dev, wiki-knowledge-surface]
 package main
 
