@@ -59,12 +59,9 @@ var (
 	injectProfile           bool
 )
 
-// Type aliases — canonical definitions live in internal/search/types.go.
-type injectedKnowledge = search.InjectedKnowledge
-type learning = search.Learning
-type pattern = search.Pattern
-type knowledgeFinding = search.KnowledgeFinding
-type session = search.Session
+// Learning/knowledge type aliases relocated to learning_surface.go (age-oovc
+// Phase 0) so this command file can be deleted in Phase 1 without breaking the
+// repo-wide alias users.
 
 var injectCmd = &cobra.Command{
 	Use:   "inject [context]",
