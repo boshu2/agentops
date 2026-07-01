@@ -1495,6 +1495,37 @@ ao eval baseline-audit [suite.json ...] [flags]
       --root string           suite root to scan when no suite paths are provided (default "evals/agentops-core")
 ```
 
+#### `ao eval bench`
+
+Measure Precision@K and MRR against a curated corpus of learning artifacts.
+
+```
+ao eval bench [flags]
+```
+
+**Flags:**
+
+```
+      --corpus string                    Path to benchmark corpus directory
+      --global                           Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
+  -h, --help                             help for bench
+      --json                             JSON output
+      --k int                            K for Precision@K (default 3)
+      --live                             Benchmark against real .agents/learnings/ instead of synthetic corpus
+      --search-backend string            Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp) (default "local-lexical")
+      --search-compare-backends string   Comma-separated search backends to compare for --search-eval
+      --search-eval string               Path to an ao-search eval manifest with queries and ground_truth paths
+      --search-root string               Repo root to search for --search-eval (defaults to current directory)
+```
+
+#### `ao eval chaos`
+
+Run a read-only smoke test of the tick membrane
+
+```
+ao eval chaos [flags]
+```
+
 #### `ao eval cleanup`
 
 Per SCHEMA.md §4 cleanup state-transition rule (rc2):
@@ -1606,6 +1637,64 @@ ao eval run <suite.json> [flags]
       --runtime string                  runtime override (static, mock, shell, claude, codex)
 ```
 
+#### `ao eval scenario`
+
+Create, list, and validate holdout scenarios stored in .agents/holdout/.
+
+```
+ao eval scenario [command]
+```
+
+##### `ao eval scenario add`
+
+Author a schema-compliant holdout scenario in .agents/holdout/.
+
+```
+ao eval scenario add <goal> [flags]
+```
+
+**Flags:**
+
+```
+      --expected-outcome string   Expected observable outcome (default: inferred from goal)
+  -h, --help                      help for add
+      --narrative string          Narrative description (default: inferred from goal)
+      --source string             Scenario source (human, agent, prod-telemetry) (default "human")
+      --status string             Scenario status (active, draft, retired) (default "draft")
+      --threshold float           Satisfaction threshold in [0,1] (default 0.8)
+```
+
+##### `ao eval scenario init`
+
+Initialize .agents/holdout/ directory for scenario storage
+
+```
+ao eval scenario init [flags]
+```
+
+##### `ao eval scenario list`
+
+List holdout scenarios
+
+```
+ao eval scenario list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for list
+      --status string   Filter by status (active, draft, retired)
+```
+
+##### `ao eval scenario validate`
+
+Validate holdout scenarios against schema
+
+```
+ao eval scenario validate [flags]
+```
+
 #### `ao eval scenario-ab`
 
 Run one holdout scenario (scenario.v1) twice — a control arm WITHOUT the gold
@@ -1656,6 +1745,22 @@ ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
       --kind string                     scorecard kind (rpi, skill-change) (default "rpi")
       --max-category-regression float   allowed per-category regression before verdict becomes regression
       --out string                      write scorecard JSON to path
+```
+
+#### `ao eval session-outcome`
+
+Parse a Claude Code session transcript and derive a composite reward signal.
+
+```
+ao eval session-outcome [transcript-path] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for session-outcome
+      --output string    Output format: text, json (default "text")
+      --session string   Session ID (extracted from transcript if not provided)
 ```
 
 #### `ao eval suite`
@@ -3574,31 +3679,6 @@ ao patterns repair-filenames [flags]
 
 ---
 
-### `ao retrieval-bench`
-
-Measure Precision@K and MRR against a curated corpus of learning artifacts.
-
-```
-ao retrieval-bench [flags]
-```
-
-**Flags:**
-
-```
-      --corpus string                    Path to benchmark corpus directory
-      --global                           Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)
-  -h, --help                             help for retrieval-bench
-      --json                             JSON output
-      --k int                            K for Precision@K (default 3)
-      --live                             Benchmark against real .agents/learnings/ instead of synthetic corpus
-      --search-backend string            Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp) (default "local-lexical")
-      --search-compare-backends string   Comma-separated search backends to compare for --search-eval
-      --search-eval string               Path to an ao-search eval manifest with queries and ground_truth paths
-      --search-root string               Repo root to search for --search-eval (defaults to current directory)
-```
-
----
-
 ### `ao search`
 
 Search workspace session history and repo-local AgentOps knowledge.
@@ -4126,16 +4206,6 @@ ao agents lint [flags]
 
 ---
 
-### `ao chaos-test`
-
-Run a read-only smoke test of the tick membrane
-
-```
-ao chaos-test [flags]
-```
-
----
-
 ### `ao close`
 
 Close a bead and persist the explicit ledger/evidence paths
@@ -4651,68 +4721,6 @@ ao rehydrate [flags]
   -h, --help   help for rehydrate
       --json   Emit the raw handoff artifact as JSON
       --peek   Read the brief without marking the handoff consumed
-```
-
----
-
-### `ao scenario`
-
-Create, list, and validate holdout scenarios stored in .agents/holdout/.
-
-```
-ao scenario [command]
-```
-
-**Subcommands:**
-
-#### `ao scenario add`
-
-Author a schema-compliant holdout scenario in .agents/holdout/.
-
-```
-ao scenario add <goal> [flags]
-```
-
-**Flags:**
-
-```
-      --expected-outcome string   Expected observable outcome (default: inferred from goal)
-  -h, --help                      help for add
-      --narrative string          Narrative description (default: inferred from goal)
-      --source string             Scenario source (human, agent, prod-telemetry) (default "human")
-      --status string             Scenario status (active, draft, retired) (default "draft")
-      --threshold float           Satisfaction threshold in [0,1] (default 0.8)
-```
-
-#### `ao scenario init`
-
-Initialize .agents/holdout/ directory for scenario storage
-
-```
-ao scenario init [flags]
-```
-
-#### `ao scenario list`
-
-List holdout scenarios
-
-```
-ao scenario list [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for list
-      --status string   Filter by status (active, draft, retired)
-```
-
-#### `ao scenario validate`
-
-Validate holdout scenarios against schema
-
-```
-ao scenario validate [flags]
 ```
 
 ---

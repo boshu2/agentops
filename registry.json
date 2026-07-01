@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T06:27:24Z",
+  "generated_at": "2026-07-01T12:13:20Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 84,
+    "cli_commands": 81,
     "workflows": 4,
-    "capabilities": 168
+    "capabilities": 165
   },
   "surfaces": {
     "skills": [
@@ -755,13 +755,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao chaos-test",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run a read-only smoke test of the tick membrane",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao ci",
         "path": "cli/cmd/ao/",
         "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
@@ -1235,29 +1228,11 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao retrieval-bench",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run retrieval quality benchmarks",
-        "bounded_context": "BC2",
-        "driven_by_skills": [
-          "flywheel"
-        ]
-      },
-      {
         "name": "ao robot-docs",
         "path": "cli/cmd/ao/",
         "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
         "bounded_context": "BC5",
         "driven_by_skills": []
-      },
-      {
-        "name": "ao scenario",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage holdout scenarios for behavioral validation",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "goals"
-        ]
       },
       {
         "name": "ao scope",
@@ -1460,9 +1435,9 @@
     ]
   },
   "capability_summary": {
-    "total": 168,
+    "total": 165,
     "skills": 70,
-    "cli_commands": 84,
+    "cli_commands": 81,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1475,7 +1450,6 @@
     "beads",
     "canon",
     "capabilities",
-    "chaos-test",
     "ci",
     "citation",
     "claim",
@@ -1531,9 +1505,7 @@
     "redact",
     "registry",
     "rehydrate",
-    "retrieval-bench",
     "robot-docs",
-    "scenario",
     "scope",
     "search",
     "seed",
@@ -2388,9 +2360,9 @@
         "skills/council/schemas/verdict.json"
       ],
       "drives_commands": [
-        "ao goals",
-        "ao scenario add",
-        "ao scenario validate"
+        "ao eval scenario add",
+        "ao eval scenario validate",
+        "ao goals"
       ],
       "path": "skills/eval-outcomes/",
       "references": 0
@@ -2481,6 +2453,7 @@
         "ao contradict",
         "ao curate status",
         "ao dedup",
+        "ao eval bench",
         "ao flywheel",
         "ao flywheel status",
         "ao lookup",
@@ -2490,7 +2463,6 @@
         "ao metrics cite-report",
         "ao metrics health",
         "ao ratchet",
-        "ao retrieval-bench",
         "ao status"
       ],
       "path": "skills/flywheel/",
@@ -2552,9 +2524,9 @@
         "result.json"
       ],
       "drives_commands": [
+        "ao eval scenario",
         "ao flywheel status",
-        "ao goals",
-        "ao scenario"
+        "ao goals"
       ],
       "path": "skills/goals/",
       "references": 3
@@ -3952,23 +3924,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.chaos-test",
-      "name": "ao chaos-test",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Run a read-only smoke test of the tick membrane",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.ci",
       "name": "ao ci",
       "type": "cli-command",
@@ -5114,35 +5069,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.retrieval-bench",
-      "name": "ao retrieval-bench",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Run retrieval quality benchmarks",
-      "status": "active",
-      "driven_by_skills": [
-        "flywheel"
-      ],
-      "flags": [
-        "--config",
-        "--corpus",
-        "--dry-run",
-        "--eval-set",
-        "--global",
-        "--json",
-        "--k",
-        "--live",
-        "--output",
-        "--search-backend",
-        "--search-compare-backends",
-        "--search-eval",
-        "--search-root",
-        "--seed",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.robot-docs",
       "name": "ao robot-docs",
       "type": "cli-command",
@@ -5150,25 +5076,6 @@
       "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
       "status": "active",
       "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.scenario",
-      "name": "ao scenario",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Manage holdout scenarios for behavioral validation",
-      "status": "active",
-      "driven_by_skills": [
-        "goals"
-      ],
       "flags": [
         "--config",
         "--dry-run",

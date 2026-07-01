@@ -224,9 +224,10 @@ var guardStatusCmd = &cobra.Command{
 }
 
 var chaosTestCmd = &cobra.Command{
-	Use:   "chaos-test",
-	Short: "Run a read-only smoke test of the tick membrane",
-	Args:  cobra.NoArgs,
+	Use:    "chaos-test",
+	Short:  "Run a read-only smoke test of the tick membrane",
+	Args:   cobra.NoArgs,
+	Hidden: true, // canonical spelling is `ao eval chaos`; kept for back-compat
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return tickSmoke(newTickRuntime(cmd))
 	},

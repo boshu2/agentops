@@ -134,7 +134,7 @@ if command -v ao &>/dev/null; then
 
   # Retrieval quality: use the representative live corpus when it exists
   if [ -d cli/cmd/ao/testdata/retrieval-bench-live ]; then
-    ao retrieval-bench --live --corpus cli/cmd/ao/testdata/retrieval-bench-live --json 2>/dev/null || true
+    ao eval bench --live --corpus cli/cmd/ao/testdata/retrieval-bench-live --json 2>/dev/null || true
   fi
 else
   echo "ao CLI not available — using file-based metrics"

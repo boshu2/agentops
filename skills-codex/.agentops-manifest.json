@@ -1247,14 +1247,14 @@
     {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
-      "source_hash": "59ef2b9ee1bca19c5c46243c15c361671fea4a700086f6e8039ce0ae8c144536",
+      "source_hash": "80aa0ce9cd42ee0b7d6fb880cbf7224b8c34869c973c933a284cfd88c467b411",
       "generated_hash": "2410972535278a4fd9835eb2908398dc92154ee625bc9309dcc963152d463111"
     },
     {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
-      "source_hash": "59ef2b9ee1bca19c5c46243c15c361671fea4a700086f6e8039ce0ae8c144536",
-      "generated_hash": "2410972535278a4fd9835eb2908398dc92154ee625bc9309dcc963152d463111"
+      "source_hash": "80aa0ce9cd42ee0b7d6fb880cbf7224b8c34869c973c933a284cfd88c467b411",
+      "generated_hash": "767b467183040969b58b8ed170dd87b25bb4c5cbc478f12087478e529b4af775"
     },
     {
       "name": "evolve",
@@ -1271,14 +1271,14 @@
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "d8c3c5421217f885f047295f18c88bdd06d8f98bd9db8f8eb54f05a61559f3b5",
+      "source_hash": "65bf3763aaf35d72495238d1ec8a1191951272ec7fcc0f12153af751cc73fb44",
       "generated_hash": "b39903d4af526414f9a2f5703c21e4607bbfda7139cd90905954c3a9be935c56"
     },
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "f2df0dc82cd7934a75382c72adfd1fe758628ad89dbf9e19112d7429b8de325e",
-      "generated_hash": "4a3af50fd9336c0e193a598990e2a07f8d58a703e7497a35abcbc37a1f0373a8"
+      "source_hash": "65bf3763aaf35d72495238d1ec8a1191951272ec7fcc0f12153af751cc73fb44",
+      "generated_hash": "0b9af8c8c6747eedae76bef6efc7352719bc99ff97a5dd6f2e8b91c9c04e839b"
     },
     {
       "name": "handoff",
