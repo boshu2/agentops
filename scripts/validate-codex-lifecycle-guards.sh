@@ -75,50 +75,101 @@ require_not_regex() {
 
 echo "=== Codex lifecycle guard validation ==="
 
-entry_files=(
+# age-focus-membrane-bookkeeper-m1wg.18: the entry/closeout/tracker twins split
+# into SPINE (source carries `spine: true` — codex-sync actively regenerates the
+# parity ones; bespoke ones are hand-tended) and FROZEN AMBIENT (non-spine —
+# their twins are no longer restained from source, and a later twin-deletion bead
+# may remove some). Spine twins keep the HARD lifecycle-marker requirement;
+# frozen twins are validated WHILE PRESENT but EXEMPT from the existence
+# requirement (assert-if-present via resolved_exists), so this gate stays green
+# both now and after ambient twins are frozen/removed.
+#
+# resolved_exists <repo-rel-path> — true iff the path resolves (dispositions
+# ledger) to a file that exists. A cut slug resolves to nothing; a removed frozen
+# twin resolves to a missing file — both skip.
+resolved_exists() {
+  local resolved
+  resolved="$(resolve_skill_path "$1")"
+  [[ -n "$resolved" && -f "$resolved" ]]
+}
+
+# Spine entry/closeout/tracker twins (discovery/implement/status/handoff): HARD
+# requirement — the lifecycle guard must always hold on the actively-maintained
+# spine.
+spine_entry_files=(
   "skills-codex/discovery/SKILL.md"
-  "skills-codex/research/SKILL.md"
   "skills-codex/implement/SKILL.md"
   "skills-codex/status/SKILL.md"
+  "skills-codex/discovery/prompt.md"
+  "skills-codex/implement/prompt.md"
+  "skills-codex/status/prompt.md"
+)
+
+# Frozen ambient entry twins (research/recover/crank/rpi): assert-if-present.
+frozen_entry_files=(
+  "skills-codex/research/SKILL.md"
   "skills-codex/recover/SKILL.md"
   "skills-codex/crank/SKILL.md"
   "skills-codex/rpi/SKILL.md"
-  "skills-codex/discovery/prompt.md"
   "skills-codex/research/prompt.md"
-  "skills-codex/implement/prompt.md"
-  "skills-codex/status/prompt.md"
   "skills-codex/recover/prompt.md"
   "skills-codex/crank/prompt.md"
   "skills-codex/rpi/prompt.md"
 )
 
-closeout_files=(
-  "skills-codex/post-mortem/SKILL.md"
+spine_closeout_files=(
   "skills-codex/handoff/SKILL.md"
-  "skills-codex/post-mortem/prompt.md"
   "skills-codex/handoff/prompt.md"
 )
 
-tracker_guidance_files=(
-  "skills-codex/status/SKILL.md"
-  "skills-codex/recover/SKILL.md"
-  "skills-codex/implement/SKILL.md"
-  "skills-codex/crank/SKILL.md"
+# Frozen ambient closeout twin (post-mortem): assert-if-present.
+frozen_closeout_files=(
   "skills-codex/post-mortem/SKILL.md"
+  "skills-codex/post-mortem/prompt.md"
+)
+
+spine_tracker_guidance_files=(
+  "skills-codex/status/SKILL.md"
+  "skills-codex/implement/SKILL.md"
   "skills-codex/handoff/SKILL.md"
-  "skills-codex/rpi/prompt.md"
   "skills-codex-overrides/catalog.json"
 )
 
-for file in "${entry_files[@]}"; do
+# Frozen ambient tracker-guidance twins: assert-if-present.
+frozen_tracker_guidance_files=(
+  "skills-codex/recover/SKILL.md"
+  "skills-codex/crank/SKILL.md"
+  "skills-codex/post-mortem/SKILL.md"
+  "skills-codex/rpi/prompt.md"
+)
+
+check_entry() {
+  local file="$1"
   require_contains "$file" 'ao codex ensure-start' "entry skill must use ao codex ensure-start"
   require_not_contains "$file" 'ao codex start 2>/dev/null || true' "entry skill must not hand-roll ao codex start guards"
   require_not_contains "$file" '.agents/ao/codex/state.json' "entry skill must not parse Codex lifecycle state directly"
-done
+}
 
-for file in "${closeout_files[@]}"; do
+check_closeout() {
+  local file="$1"
   require_contains "$file" 'ao codex ensure-stop' "closeout skill must use ao codex ensure-stop"
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
+}
+
+for file in "${spine_entry_files[@]}"; do
+  check_entry "$file"
+done
+for file in "${frozen_entry_files[@]}"; do
+  resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
+  check_entry "$file"
+done
+
+for file in "${spine_closeout_files[@]}"; do
+  check_closeout "$file"
+done
+for file in "${frozen_closeout_files[@]}"; do
+  resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
+  check_closeout "$file"
 done
 
 # quickstart folded into status, using-agentops into inject (ag-s43tg, 2026-06-12);
@@ -128,9 +179,18 @@ require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-stop' "status (
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-start' "Codex override catalog should reference ensure-start"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-stop' "Codex override catalog should reference ensure-stop"
 
-for file in "${tracker_guidance_files[@]}"; do
+check_tracker_guidance() {
+  local file="$1"
   require_regex "$file" '\bbr\b' "Codex tracker guidance should point at br/beads_rust"
   require_not_regex "$file" '(^|[^[:alnum:]_-])`?bd([`[:space:]]|$)|BD_' "Codex tracker guidance must not default to legacy bd/Dolt"
+}
+
+for file in "${spine_tracker_guidance_files[@]}"; do
+  check_tracker_guidance "$file"
+done
+for file in "${frozen_tracker_guidance_files[@]}"; do
+  resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
+  check_tracker_guidance "$file"
 done
 
 if [[ $failures -ne 0 ]]; then
