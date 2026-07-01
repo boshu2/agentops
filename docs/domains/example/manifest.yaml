@@ -1,6 +1,6 @@
 # Example domain-slice manifest — illustrates all fields.
 # Validates against schemas/domain-slice-manifest.v1.schema.json.
-# See docs/adr/ADR-0004-domain-slice-manifest-contract.md.
+# See docs/adr/ADR-0013-domain-slice-manifest-contract.md.
 #
 # This example uses the 'goals' domain as a worked illustration.
 # To create a real domain manifest: copy this file to docs/domains/<name>/manifest.yaml
@@ -51,7 +51,7 @@ allowed_read_globs:
   - schemas/scenario.v1.schema.json
   - schemas/domain-slice-manifest.v1.schema.json
   - docs/adr/ADR-0003-*.md
-  - docs/adr/ADR-0004-*.md
+  - docs/adr/ADR-0013-*.md
   - docs/domains/**
   - GOALS.md
 

@@ -1,4 +1,6 @@
-# ADR-0004: Domain-Slice Manifest Contract
+# ADR-0013: Domain-Slice Manifest Contract
+
+> Formerly ADR-0004, renumbered 2026-07-01 to resolve the duplicate ADR number; corpus-moat retains 0004 ([ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md)).
 
 - **Status:** Accepted (2026-05-17)
 - **Author:** AgentOps maintainers

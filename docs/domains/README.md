@@ -49,7 +49,7 @@ The manifest is **not** a replacement for:
   classification. The manifest declares the aggregate scope of a slice that may
   span multiple skills.
 
-See [ADR-0004](../adr/ADR-0004-domain-slice-manifest-contract.md) for the full
+See [ADR-0013](../adr/ADR-0013-domain-slice-manifest-contract.md) for the full
 reconciliation and the rationale for each design decision.
 
 ## Adding a new domain slice

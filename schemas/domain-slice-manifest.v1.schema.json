@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://agentops.dev/schemas/domain-slice-manifest.v1.schema.json",
     "title": "AgentOps Domain-Slice Manifest v1",
-    "description": "Durable, git-tracked manifest declaring a bounded DDD domain slice: owned directives, scenarios, context roots, read-fence globs, validation commands, and owner. Stored at docs/domains/<name>/manifest.yaml. See docs/adr/ADR-0004-domain-slice-manifest-contract.md.",
+    "description": "Durable, git-tracked manifest declaring a bounded DDD domain slice: owned directives, scenarios, context roots, read-fence globs, validation commands, and owner. Stored at docs/domains/<name>/manifest.yaml. See docs/adr/ADR-0013-domain-slice-manifest-contract.md.",
     "practices": ["ddd-bounded-context", "design-by-contract", "pragmatic-programmer"],
     "type": "object",
     "additionalProperties": false,

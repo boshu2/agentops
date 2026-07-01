@@ -154,6 +154,16 @@ var (
 		"tests/scripts/check-new-scripts-use-preamble.bats",
 		"tests/scripts/preamble.bats",
 	}
+	// ADR registry integrity: unique NNNN across files, filename number ==
+	// in-file title number, every ADR carries a Status: line. A duplicate
+	// number (two ADR-0004s — resolved in age-gate-the-ungated-egwt.11) or a
+	// filename/title mismatch must fail the next push, plus self-refs so
+	// editing the gate re-runs it.
+	adrRegistryPaths = []string{
+		"docs/adr/**",
+		"scripts/check-adr-registry.sh",
+		"tests/scripts/check-adr-registry.bats",
+	}
 )
 
 func init() {
@@ -297,6 +307,7 @@ func init() {
 		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
+		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
