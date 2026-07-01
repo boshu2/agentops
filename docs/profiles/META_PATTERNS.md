@@ -73,7 +73,7 @@ Constitution enforced universally
 
 **Example**:
 - ADHD patterns discovered in personal → Inform 40% rule in sre-devops
-- AgentOps Laws proven in research → Apply to web-developer docs
+- AgentOps Laws surfaced in research → Apply to web-developer docs
 
 ---
 
@@ -154,7 +154,7 @@ Cycle repeats...
 5. **researcher**: Analyzes new commit, refines pattern
 6. **Loop**: Pattern improves over time through production usage
 
-**Insight**: Knowledge OS is self-improving through role interaction.
+**Insight**: Knowledge OS is *designed to* improve through role interaction (whether it self-improves in practice is an unproven hypothesis, per ADR-0011).
 
 ---
 
@@ -346,7 +346,7 @@ Total:                                 113k (56.5%) ⚠️ Over 40%
 ```
 sre-devops (work/gitops/) → Build AgentOps framework
     ↓
-Git metrics: 40x speedup, 95% success rate
+Git metrics: an uncited speedup figure (removed — no citation), 95% success rate
     ↓
 researcher (personal/12-factor-agentops/) → Extract patterns
     ↓
@@ -378,7 +378,7 @@ Loop repeats...
 | **sre-devops** | Monitoring, alerts, production health | Prometheus, ArgoCD | Zero downtime, SLO met |
 | **platform-engineer** | Tests, builds, manifests | `make test-app`, yamllint | CI passes, app deploys |
 | **web-developer** | Visual testing, cross-browser | Browser DevTools, Lighthouse | Renders correctly, accessible |
-| **researcher** | Peer review, production usage | Git history analysis | Pattern adopted in production |
+| **researcher** | Colleague review, production usage | Git history analysis | Pattern adopted in production |
 | **personal** | Career outcomes, opportunities | Resume, interviews, offers | Goal achieved, growth measured |
 
 **Insight**: Validation is role-contextual, not universal.

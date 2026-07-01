@@ -62,9 +62,9 @@ The methodology became a product. Knowledge OS became the knowledge flywheel. Th
 
 ## What Five Months of Production Taught Us
 
-### The Five Principles (Validated by Evidence)
+### The Five Principles (Learned in Production)
 
-Every principle was learned through failure, refined through iteration, and validated against five months of production use.
+Every principle was learned through failure and refined through iteration across five months of production use. Read them as hard-won operating heuristics, not as a validated theory of compounding — that larger claim is an [explicitly unproven hypothesis](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md).
 
 **1. Context Timing Beats Context Volume.**
 The instinct is to front-load everything. This fails. Agents drown in irrelevant context and hallucinate connections. What works: deliver the right context at the right time. AgentOps evolved from monolithic prompt files to skill-scoped references and session intelligence packets.
@@ -78,8 +78,8 @@ Agents claim success without running tests. They report "all passing" after part
 **4. Parallel Agents Need Ownership Boundaries.**
 File collisions are the #1 swarm failure mode. Without ownership boundaries: ~40% failure rate. With pre-flight file-overlap checks and wave-based execution: near zero.
 
-**5. The Flywheel Is The Product.**
-The compounding effect is not "the model gets smarter." It's "your environment gets smarter." Early commits are skill scaffolding. Later commits are meta-capabilities: session intelligence, quality signals, closure integrity audits. The system spends more time improving itself and less time on raw features.
+**5. The Environment, Not The Model, Is Where The Work Went.**
+The bet is not "the model gets smarter" — it's "your environment gets smarter." (Whether that environment *compounds* into a durable advantage is the [unproven flywheel hypothesis](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md), not a settled result.) Early commits are skill scaffolding. Later commits are meta-capabilities: session intelligence, quality signals, closure integrity audits. The system spends more time improving itself and less time on raw features.
 
 ### The Numbers
 
@@ -154,25 +154,25 @@ Three independent voices arrived at the same place from different directions:
 
 **AgentOps** (devlog 1, January 2026): "The job isn't to write code anymore. The job is to build and run AI coding foundries."
 
-Same answer from three directions. The bookkeeping is the moat. None of this is novel — bookkeeping has compounded human knowledge since Sumerian clay tablets. What's new: agents make the bookkeeping nearly free, and the race is on.
+Same answer from three directions: the bet is that the bookkeeping is where the durable advantage lives. That the accumulated corpus is a *moat* is the [unproven hypothesis](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), not a demonstrated result — but the conviction is old. Bookkeeping has compounded human knowledge since Sumerian clay tablets. What's new: agents make the bookkeeping nearly free, and the race is on.
 
 ---
 
 ## Where It Goes
 
-The flywheel thesis is validated. The context compiler framing clarifies the architecture. The next phase is structural:
+The verification loop is proven; the flywheel thesis (that the corpus *compounds*) remains an [explicitly unproven hypothesis](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md). The context compiler framing clarifies the architecture. The next phase is structural:
 
 - **CLI decomposition** — Extract business logic from the 179-file monolith into domain packages. Make the compiler's pipeline visible in the code structure: ingest → analyze → compile → enforce → validate.
 - **Compiler maturity** — Expand the finding registry from ~50 entries to hundreds. Every domain the team works in should have compiled enforcement gates.
-- **Cross-runtime parity** — The same knowledge compounds regardless of which AI runtime executes the session.
+- **Cross-runtime parity** — The same corpus is designed to carry across runtimes, whichever AI executes the session (the compounding benefit of that is the hypothesis under test, not a proven claim).
 
-The formula hasn't changed since October 2025: write things down, organize them, feed them back. The tooling got better. The thesis got proven. The bookkeeping stays the same.
+The formula hasn't changed since October 2025: write things down, organize them, feed them back. The tooling got better. The verification loop got proven; the compounding thesis is still under test. The bookkeeping stays the same.
 
 ---
 
 ## See Also
 
-- [Philosophy](philosophy.md) — The five validated principles in detail
+- [Philosophy](philosophy.md) — The five production-learned principles in detail
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern
 - [Knowledge Flywheel](knowledge-flywheel.md) — The extraction and compounding pipeline
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Quick start and product overview

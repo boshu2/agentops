@@ -77,6 +77,16 @@ var (
 		"scripts/check-workflow-no-retired-tracker.sh",
 		"tests/scripts/check-workflow-no-retired-tracker.bats",
 	}
+	// ADR-0004 / ADR-0011 demoted the corpus-moat + escape-corpus-compounding
+	// claims to a named UNPROVEN hypothesis; live narrative docs must not assert
+	// them (or ship an uncited multiplier / peer-review claim) as proven. Runs on
+	// any docs change plus self-reference (script / baseline / bats).
+	demotedClaimsPaths = []string{
+		"docs/**",
+		"scripts/check-docs-demoted-claims.sh",
+		"scripts/.docs-demoted-claims-baseline",
+		"tests/scripts/check-docs-demoted-claims.bats",
+	}
 	archDocDriftPaths = []string{
 		"docs/architecture/ports-and-adapters.md",
 		"docs/contracts/bounded-contexts.yaml",
@@ -240,6 +250,7 @@ func init() {
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
 		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
+		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},

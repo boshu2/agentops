@@ -1,0 +1,25 @@
+# .docs-demoted-claims-baseline — FILENAME-pinned baseline for
+# scripts/check-docs-demoted-claims.sh (age-gate-the-ungated-egwt.6).
+#
+# Each non-comment line is a LIVE docs/** path that currently carries a banned
+# unproven-claim-lexicon phrase (peer-review-uncited / multiplier-uncited /
+# compounding-as-proven). The gate is a SHRINK RATCHET: this list may only get
+# smaller. A baselined file that now has ZERO findings FAILS the gate demanding
+# a prune; a NON-baselined live doc with a banned phrase FAILS as a regression.
+#
+# The six long-tail burn-down pages (philosophy, origin-story, brownian-ratchet,
+# canonical-loop-model, agentops-brief, META_PATTERNS) were hedged/cited to match
+# ADR-0004/ADR-0011 and pruned from this list by .6 itself. What remains:
+#   - docs/comparisons/**  — owned by another lane; never edited here.
+#   - the-science / trust-factory / standards / workflows — out of .6's scope.
+docs/comparisons/competitive-radar.md
+docs/comparisons/vs-claude-flow.md
+docs/comparisons/vs-gsd.md
+docs/comparisons/vs-sdd.md
+docs/comparisons/vs-superpowers.md
+docs/standards/python-style-guide.md
+docs/the-science.md
+docs/trust-factory.md
+docs/workflows/complete-cycle.md
+docs/workflows/meta-observer/example-today.md
+docs/workflows/meta-observer/SHOWCASE.md

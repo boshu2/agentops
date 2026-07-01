@@ -390,9 +390,11 @@ Without the flywheel, the ratchet doesn't accelerate:
 - Flywheel amplifies future cycles
 - System accelerates over time
 
-### The Compounding Effect
+### The Compounding Effect (hypothesis, not a measurement)
 
-| Cycle | Ratchet Output | Flywheel State | Effective Speed |
+The table below is an **illustrative model, not measured data**. The specific multipliers are fabricated for shape; whether the flywheel actually compounds this way is an [explicitly unproven hypothesis facing a structural data-starvation headwind](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md). Do not cite these numbers as evidence.
+
+| Cycle | Ratchet Output | Flywheel State | Illustrative Speed (model, uncited) |
 |-------|----------------|----------------|-----------------|
 | 1 | 10 units | baseline | 1.0x |
 | 2 | 10 units | +patterns | 1.2x |
@@ -400,7 +402,7 @@ Without the flywheel, the ratchet doesn't accelerate:
 | 4 | 10 units | +memories | 1.6x |
 | N | 10 units | compounded | 2.0x+ |
 
-The ratchet produces constant raw output. The flywheel multiplies it.
+The ratchet produces constant raw output. *If* the flywheel hypothesis holds, it multiplies that output — that is the claim under test, not a settled result.
 
 ### Practical Integration
 

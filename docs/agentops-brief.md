@@ -4,7 +4,7 @@ AgentOps is an SDLC control plane for agentic software development. It keeps the
 
 `.agents/` is the substrate: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
 
-*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
+*The bet in this uncertain time is that context is the thing that lasts. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the asset least likely to get eaten by the next vendor release. That it compounds into a durable **moat** is an [explicitly unproven hypothesis](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), not a settled claim; the proven asset is the verification loop. Still — that context is what your company actually is.*
 
 AgentOps is the shovel. Start digging.
 
@@ -120,7 +120,7 @@ three-gap contract remains the internal proof model.
 
 ## What if the labs ship this natively?
 
-They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the value isn't in this tool, it's in the corpus you build with it. AgentOps is bridge infrastructure: your `.agents/` directory is plain markdown in your repo, so if a frontier vendor ships native equivalents in 12 months, your corpus carries forward unchanged.
+They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the durable value is meant to live in the corpus you build, not the tool (whether the corpus *compounds* into that durable value is the [unproven hypothesis](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md), not a guarantee). AgentOps is bridge infrastructure: your `.agents/` directory is plain markdown in your repo, so if a frontier vendor ships native equivalents in 12 months, your corpus carries forward unchanged.
 
 ---
 
