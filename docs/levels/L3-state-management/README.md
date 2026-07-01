@@ -22,7 +22,7 @@ Add issue tracking with beads for structured work.
 | `/plan <goal>` | Decompose goal into beads issues |
 | `/research <topic>` | Same as L2 |
 | `/implement [id]` | Execute specific issue, then close it |
-| `/retro [topic]` | Same as L2 |
+| `/post-mortem [topic]` | Same as L2 |
 
 ## Beads Commands
 

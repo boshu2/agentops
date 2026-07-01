@@ -23,7 +23,7 @@ Execute independent tasks in parallel with wave-based execution using the swarm 
 | `/plan <goal>` | Same as L3 |
 | `/research <topic>` | Same as L2 |
 | `/implement [id]` | Execute single task |
-| `/retro [topic]` | Same as L2 |
+| `/post-mortem [topic]` | Same as L2 |
 
 ## Key Concepts
 
@@ -59,7 +59,7 @@ These are easy to mix up:
 |----------|-----|------|
 | Fresh context per iteration (“Ralph Wiggum Pattern”) | `/swarm` | Mayor owns the loop; each background agent is one atomic unit of work |
 | “Do all issues until the epic is done” | `/crank` | Epic execution loop (usually beads-driven), not the Ralph pattern primitive |
-| RPI checkpoints (Research→Plan→Implement→Validate) | `/ratchet` | Gate/record progress; pair with `/crank` or `/swarm` for execution |
+| RPI checkpoints (Research→Plan→Implement→Validate) | `/flywheel` | Gate/record progress; pair with `/crank` or `/swarm` for execution |
 
 ## Wave Workflow
 

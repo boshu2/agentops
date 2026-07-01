@@ -20,11 +20,11 @@ Full autonomous operation with `/crank`.
 | Command | Purpose |
 |---------|---------|
 | `/crank` | Autonomous epic-to-completion |
-| `/implement-wave` | Same as L4 |
+| `/crank` | Same as L4 |
 | `/plan <goal>` | Same as L3 |
 | `/research <topic>` | Same as L2 |
 | `/implement [id]` | Same as L3 |
-| `/retro [topic]` | Same as L2 |
+| `/post-mortem [topic]` | Same as L2 |
 
 ## Key Concepts
 

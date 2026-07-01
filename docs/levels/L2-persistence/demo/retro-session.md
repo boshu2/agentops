@@ -94,7 +94,7 @@ This session focused on debugging authentication timeouts.
 
 ## What You Learned
 
-1. `/retro` captures session knowledge before it's lost
+1. `/post-mortem` captures session knowledge before it's lost
 2. Learnings are structured for future reference
 3. Problems, patterns, and mistakes are all valuable
-4. Run `/retro` before context limits or session end
+4. Run `/post-mortem` before context limits or session end

@@ -90,5 +90,5 @@ Done. Next wave has 2 issues ready.
 ## Next
 
 - `BEADS_DIR="$(ao beads dir)" br ready` - See next wave
-- `/implement-wave` - Run next wave
-- `/retro` - Extract learnings after completing plan
+- `/crank` - Run next wave
+- `/post-mortem` - Extract learnings after completing plan

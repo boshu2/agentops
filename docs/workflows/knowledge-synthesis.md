@@ -109,4 +109,4 @@ Read CLAUDE.md
 
 ---
 
-**Start knowledge synthesis with:** `Read CLAUDE.md` + `/research-multi`
+**Start knowledge synthesis with:** `Read CLAUDE.md` + `/research`

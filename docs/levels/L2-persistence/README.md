@@ -6,7 +6,7 @@ Add the `.agents/` directory for cross-session memory.
 
 - Creating `.agents/` directory structure
 - Writing research documents that persist
-- Extracting learnings with `/retro`
+- Extracting learnings with `/post-mortem`
 - Pattern documentation
 
 ## Prerequisites
@@ -20,7 +20,7 @@ Add the `.agents/` directory for cross-session memory.
 |---------|---------|
 | `/research <topic>` | Output now saved to `.agents/research/` |
 | `/implement` | Same as L1 |
-| `/retro [topic]` | Extract learnings to `.agents/learnings/` |
+| `/post-mortem [topic]` | Extract learnings to `.agents/learnings/` |
 
 ## Key Concepts
 

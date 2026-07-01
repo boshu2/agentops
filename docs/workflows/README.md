@@ -9,11 +9,11 @@ tree.
 
 | Situation | Start with | Continue with |
 |-----------|------------|---------------|
-| First repo setup | `ao quick-start` | `/quickstart`, then `/rpi "a small goal"` |
-| Small, obvious change | [Quick Fix](quick-fix.md) | `/implement`, then `/vibe --quick recent` |
+| First repo setup | `ao quick-start` | `/bootstrap`, then `/rpi "a small goal"` |
+| Small, obvious change | [Quick Fix](quick-fix.md) | `/implement`, then `/validate --quick recent` |
 | New feature or broad change | [Complete Cycle](complete-cycle.md) | `/rpi "goal"` or `/plan` -> `/crank <epic-id>` |
 | Existing tracked backlog | `ao reconcile --json`, then `BEADS_DIR="$(ao beads dir)" br ready` | `/implement <issue-id>` or `/crank <epic-id>` |
-| Review-only checkpoint | `/council validate this PR` | `/vibe recent` before merge |
+| Review-only checkpoint | `/council validate this PR` | `/validate recent` before merge |
 | Terminal-native operation | `ao session bootstrap` | `ao lookup --query "<topic>"`, then drive the operating loop and `ao gate check --fast --scope head` |
 
 ## Decision Tree

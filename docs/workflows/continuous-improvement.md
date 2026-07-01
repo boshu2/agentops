@@ -130,4 +130,4 @@ Low Impact, High Effort → SKIP
 
 ---
 
-**Start continuous improvement with:** `/retro --retrospective`
+**Start continuous improvement with:** `/post-mortem --retrospective`

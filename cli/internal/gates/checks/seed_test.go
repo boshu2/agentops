@@ -148,13 +148,16 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
 		t.Fatalf("docs.skill-refs tiers = %v, want Fast|Full", check.Tiers)
 	}
-	if len(check.Args) != 1 || check.Args[0] != "--strict" {
-		t.Fatalf("docs.skill-refs args = %v, want [--strict]", check.Args)
+	if len(check.Args) != 2 || check.Args[0] != "--all-docs" || check.Args[1] != "--strict" {
+		t.Fatalf("docs.skill-refs args = %v, want [--all-docs --strict]", check.Args)
 	}
 	if len(check.Match) == 0 {
 		t.Fatal("docs.skill-refs should be routed by live docs + skill paths")
 	}
-	for _, want := range []string{"AGENTS.md", "CLAUDE.md", "docs/ARCHITECTURE.md", "docs/SKILLS.md", "docs/architecture/operating-loop.md", "skills/SKILL-TIERS.md"} {
+	// The gate now runs in --all-docs mode (scans every LIVE docs/** file), so
+	// the Match is widened to docs/** plus the pinned doctrine + the script,
+	// baseline, and lib self-references.
+	for _, want := range []string{"AGENTS.md", "CLAUDE.md", "docs/**", "skills/SKILL-TIERS.md", "scripts/.docs-skill-refs-baseline", "scripts/lib/docs-scope.sh"} {
 		found := false
 		for _, got := range check.Match {
 			if got == want {
