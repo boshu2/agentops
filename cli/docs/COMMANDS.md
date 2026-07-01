@@ -1664,6 +1664,25 @@ ao eval scenario add <goal> [flags]
       --threshold float           Satisfaction threshold in [0,1] (default 0.8)
 ```
 
+##### `ao eval scenario evaluate`
+
+Evaluate the executable-spec scenarios linked to GOALS.md directives and
+
+```
+ao eval scenario evaluate [flags]
+```
+
+**Flags:**
+
+```
+      --all                Evaluate every directive's linked scenarios
+      --directive string   Evaluate only the directive with this stable Directive ID
+  -h, --help               help for evaluate
+      --json               Emit the machine-readable evaluation report
+      --run-id string      run_id recorded in the results artifact (default "ao-scenario-evaluate")
+      --timeout duration   Per-check execution timeout (default 2m0s)
+```
+
 ##### `ao eval scenario init`
 
 Initialize .agents/holdout/ directory for scenario storage
