@@ -81,3 +81,29 @@ c.go" "/r"
   [ "$(pawl_tier_note '')" = "unknown-tier" ]
   [[ "$(pawl_tier_note multi-model)" != *"fresh"* ]]
 }
+
+# --- scale_review_timeout (age-wedge-all-in-dyr0.11): measured size-scaled review budget ---
+
+@test "scale_review_timeout: at/below the cap -> current timeout unchanged" {
+  [ "$(scale_review_timeout 65536 65536 300 "")" = "300" ]
+  [ "$(scale_review_timeout 100 65536 300 "")" = "300" ]
+}
+
+@test "scale_review_timeout: 209KB deletion class -> scaled past the 420s that killed it" {
+  # the exact measured failure: 209241B died at 420s, verdicted at ~540s
+  scaled="$(scale_review_timeout 209241 65536 300 "")"
+  [ "$scaled" -gt 540 ]
+  [ "$scaled" -le 900 ]
+}
+
+@test "scale_review_timeout: ceiling is 900s no matter the size" {
+  [ "$(scale_review_timeout 9999999 65536 300 "")" = "900" ]
+}
+
+@test "scale_review_timeout: an explicit PAWL_REVIEW_TIMEOUT pin always wins" {
+  [ "$(scale_review_timeout 209241 65536 420 "420")" = "420" ]
+}
+
+@test "scale_review_timeout: never scales DOWN a larger current timeout" {
+  [ "$(scale_review_timeout 70000 65536 850 "")" = "850" ]
+}

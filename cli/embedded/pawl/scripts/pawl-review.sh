@@ -128,6 +128,24 @@ recall_prior_catches() {
     printf '\n=== MEMBRANE MEMORY — PRIOR CATCHES IN THIS AREA (domain %s; verify the change does NOT reintroduce these) ===\n%s\n' "$domain" "$recalled"
   fi
 }
+# scale_review_timeout (age-wedge-all-in-dyr0.11, measured 2026-07-01): read-files mode
+# COMPLETES on huge diffs but needs wall-clock proportional to size — 117KB verdicted
+# inside 420s; a 209KB deletion died at 420s and verdicted clean at ~540s. Pure: prints
+# the effective timeout given diff bytes, the inline cap, the current timeout, and
+# whether the operator pinned PAWL_REVIEW_TIMEOUT explicitly (explicit pin always wins).
+# Ceiling 900s: beyond that a review is a smell, not a budget problem.
+scale_review_timeout() {
+  local diff_bytes="$1" cap="$2" current="$3" pinned="$4"
+  if [[ -n "$pinned" || "$diff_bytes" -le "$cap" ]]; then
+    printf '%s\n' "$current"; return 0
+  fi
+  local overage_kb=$(( (diff_bytes - cap) / 1024 ))
+  local scaled=$(( 300 + overage_kb * 2 ))
+  [[ "$scaled" -gt 900 ]] && scaled=900
+  [[ "$scaled" -gt "$current" ]] && current="$scaled"
+  printf '%s\n' "$current"
+}
+
 PR="${AGENTOPS_PAWL_PR:-0}"          # 0 = push-to-main landing (matches the pre-push gate)
 TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
 # Inline cap. ABOVE this the packet switches to read-files mode, which orders the reviewer to
@@ -277,6 +295,11 @@ review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$re
 if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   read_instr="This change is LARGE and is NOT inlined. READ the changed files listed below directly (read-only); they are the change under review. Do not modify anything."
   echo "pawl-review: large diff (${diff_bytes}B > ${MAX_INLINE_BYTES}B cap) — packet uses read-files-not-inline (age-mwhj)" >&2
+  _scaled_timeout="$(scale_review_timeout "$diff_bytes" "$MAX_INLINE_BYTES" "$TIMEOUT" "${PAWL_REVIEW_TIMEOUT:-}")"
+  if [[ "$_scaled_timeout" != "$TIMEOUT" ]]; then
+    TIMEOUT="$_scaled_timeout"
+    echo "pawl-review: review timeout scaled to ${TIMEOUT}s for ${diff_bytes}B read-files packet (set PAWL_REVIEW_TIMEOUT to pin)" >&2
+  fi
 else
   read_instr="Do NOT use tools. Do NOT read files. Review ONLY the change below and reply with a verdict."
 fi
