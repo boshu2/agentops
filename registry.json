@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T21:17:16Z",
+  "generated_at": "2026-07-01T21:56:47Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 77,
+    "cli_commands": 78,
     "workflows": 4,
-    "capabilities": 161
+    "capabilities": 162
   },
   "surfaces": {
     "skills": [
@@ -1297,6 +1297,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao verify",
+        "path": "cli/cmd/ao/",
+        "purpose": "Independent cross-family verdict on your change — no verdict = not done",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao version",
         "path": "cli/cmd/ao/",
         "purpose": "Show version information",
@@ -1404,9 +1411,9 @@
     ]
   },
   "capability_summary": {
-    "total": 161,
+    "total": 162,
     "skills": 70,
-    "cli_commands": 77,
+    "cli_commands": 78,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1483,6 +1490,7 @@
     "trace",
     "validate",
     "verdict-gate",
+    "verify",
     "version",
     "vibe-check",
     "wiki",
@@ -5200,6 +5208,27 @@
         "--dry-run",
         "--json",
         "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.verify",
+      "name": "ao verify",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Independent cross-family verdict on your change — no verdict = not done",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--author-family",
+        "--config",
+        "--context",
+        "--converge",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--scope",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

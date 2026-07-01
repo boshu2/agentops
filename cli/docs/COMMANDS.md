@@ -4991,6 +4991,16 @@ ao verdict-gate <file|-> [flags]
 
 ---
 
+### `ao verify`
+
+Run an independent cross-family review of your change and, on CONFIRMED, write
+
+```
+ao verify <change-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>] [flags]
+```
+
+---
+
 ### `ao yield`
 
 Record durable, append-only, bead-keyed operational events for the
