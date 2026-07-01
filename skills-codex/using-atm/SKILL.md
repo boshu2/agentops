@@ -81,7 +81,7 @@ prefer re-cutting the write-set to a sole-writer surface over a shared lease.)
    agent with the AgentOps skills installed, so `rpi`, `evolve`, `$validate`,
    etc. resolve in-pane.
 3. **The bead queue is the work source.** A lead (operator or a lead pane) runs
-   `bd ready`, picks the next bead, and dispatches it to a free worker pane.
+   `br ready`, picks the next bead, and dispatches it to a free worker pane.
 4. **Green CI is the merge gate.** Each worker drives its bead to a green PR from
    a per-bead worktree (orchestrator-merge model); the operator stays *on* the
    loop (intent + stop), not *in* it (per-PR approval).
@@ -174,7 +174,7 @@ Run one tick at a time; take the first action whose trigger fires:
 - **A pane is context-saturated** (forgetting earlier instructions, repeating
   itself) → have it write a handoff, then relaunch fresh and re-dispatch.
 - **A worker finished its bead** (PR merged, bead closed) → dispatch the next
-  `bd ready` bead to it.
+  `br ready` bead to it.
 - **Many review beads open, few closing** → flip the swarm to review-only and
   drain the backlog before taking new feature work.
 - **Otherwise** → observe; do not nudge a healthy working pane.
@@ -201,7 +201,7 @@ the status signals were misread. Discipline:
    fast triage. (`gast`/`grep`/`atm codex palette-state` ARE the read paths — there is no
    `atm capture`/`atm read`.)
 3. **Confirm a lane by its ARTIFACTS, not the meter:** a real lane claims its bead
-   (`br`/`bd` assignee), creates a worktree/branch, opens a PR, or writes its output
+   (`br` assignee), creates a worktree/branch, opens a PR, or writes its output
    file. Check those (`git ls-remote --heads origin 'task/*'`, `gh pr list`, the
    expected path) as ground truth.
 4. **Diagnose BEFORE you respawn.** `atm respawn` kills + restarts panes — run
@@ -283,8 +283,8 @@ recorded in a durable artifact the peer can inspect (bead note or PR comment).
 
 ATM panes coordinate through the other substrate legs, not bespoke glue:
 
-- **Beads (`bd`)** is the shared work queue and the source of truth for state —
-  `bd ready` to pick, `bd update --claim` to claim, `bd close` when merged.
+- **Beads (`br`)** is the shared work queue and the source of truth for state —
+  `br ready` to pick, `br update --claim` to claim, `br close` when merged.
 - **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI,
   **not** an `ao` subcommand) carries cross-pane **messages** and
   **file reservations** — the swarm's defense against two panes editing the same
@@ -301,9 +301,9 @@ ATM panes coordinate through the other substrate legs, not bespoke glue:
 
 ## Convergence + shutdown
 
-The swarm is done when: `bd ready` is empty, no pane has an in-flight bead, and
+The swarm is done when: `br ready` is empty, no pane has an in-flight bead, and
 the last few CI runs are green. Confirm with `atm activity` (all panes idle) and
-`bd ready` (empty) before tearing down with `atm kill <session>`. Don't shut down
+`br ready` (empty) before tearing down with `atm kill <session>`. Don't shut down
 on a transient quiet patch — a rate-limited pane also looks idle.
 
 ## Single-writer + merged-before-close (cards 17–18, cp-4gj6; POLICY → gate cp-hxp6)
@@ -332,7 +332,7 @@ server; do not declare convergence from a stale checkout.
   managed-agents driver (`ao agent`) or a plain in-session run are equally valid
   legs. Choose via [`$automation-shape-routing`](../automation-shape-routing/SKILL.md).
 - ❌ **Closing a bead before the branch is merged.** Closed-but-unmerged is
-  protection-off. Require merge confirmation before `bd close`.
+  protection-off. Require merge confirmation before `br close`.
 - ❌ **Reading state from a stale shared `main`.** Read canonical from the bead's
   worktree branch or after merge; stale reads are the other half of the split-brain.
 

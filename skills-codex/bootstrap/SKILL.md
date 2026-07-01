@@ -19,7 +19,7 @@ That is it. One command. Every step below is idempotent — existing artifacts a
 ## External Tools
 
 - **ao** (optional) — AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
-- **bd** (optional, recommended) — beads CLI. Bootstrap probes for `bd` in Step 0.5 and, when missing, points the user at `scripts/install-bd.sh` with a copy-paste command. Bootstrap never installs `bd` on the user's behalf.
+- **br** (optional, recommended) — beads_rust CLI (local-first issue tracking). Bootstrap probes for `br` in Step 0.5 and, when missing, recommends installing it. Bootstrap never installs `br` on the user's behalf.
 
 ## Flags
 
@@ -41,7 +41,7 @@ HAS_PROGRAM=$([[ -f PROGRAM.md || -f AUTODEV.md ]] && echo true || echo false)
 HAS_AGENTS=$([[ -d .agents ]] && echo true || echo false)
 HAS_HOOKS=$(grep -q "agentops" .codex/settings.json 2>/dev/null && echo true || echo false)
 HAS_AO=$(command -v ao >/dev/null && echo true || echo false)
-HAS_BD=$(command -v bd >/dev/null && echo true || echo false)
+HAS_BR=$(command -v br >/dev/null && echo true || echo false)
 ```
 
 Classify the repo:
@@ -52,17 +52,15 @@ Classify the repo:
 | **partial** | Some artifacts present, some missing |
 | **complete** | GOALS.md, PRODUCT.md, README.md, PROGRAM.md/AUTODEV.md, and .agents/ present |
 
-If `--dry-run` is set: report the state and what would be created, including whether `bd` would be recommended (when `HAS_BD` is false), then stop. Do not proceed to Steps 1-6.
+If `--dry-run` is set: report the state and what would be created, including whether `br` would be recommended (when `HAS_BR` is false), then stop. Do not proceed to Steps 1-6.
 
 If the repo is **complete** and `--force` is not set: report "Repo is fully bootstrapped. Nothing to do." and stop.
 
-### Step 0.5: Recommend bd
+### Step 0.5: Recommend br
 
-If `HAS_BD` is true: skip. Report "bd: present."
+If `HAS_BR` is true: skip. Report "br: present."
 
-If `HAS_BD` is false: report **"bd: not installed (recommended). Install with: `bash scripts/install-bd.sh`"** and continue. Bootstrap does NOT run the installer — `bd` is optional, the user decides.
-
-If `scripts/install-bd.sh` is absent at the repo root, drop the install hint and just report "bd: not installed (recommended). See https://github.com/steveyegge/beads".
+If `HAS_BR` is false: report **"br: not installed (recommended). Install beads_rust to get local-first issue tracking."** and continue. Bootstrap does NOT run the installer — `br` is optional, the user decides.
 
 ### Step 1: GOALS.md
 
@@ -194,7 +192,7 @@ Bootstrap complete.
 | PROGRAM.md    | created / skipped / failed |
 | .agents/      | created / skipped / failed |
 | Hooks         | optional / activated / skipped / failed |
-| bd            | present / recommended (not installed) |
+| br            | present / recommended (not installed) |
 
 Repo is now AgentOps-ready. Next: $rpi "your first goal"
 ```
@@ -227,7 +225,7 @@ Repo is now AgentOps-ready. Next: $rpi "your first goal"
 | Goals skill fails | No project context | Provide a one-line project description when prompted |
 | Product skill fails | No goals defined | Run `$goals init` manually first, then re-run `$bootstrap` |
 | Hooks not activating | ao CLI not installed | Install: `brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops` |
-| bd not installed | Recommended but optional | Install with `bash scripts/install-bd.sh` if you want issue tracking; otherwise ignore |
+| br not installed | Recommended but optional | Install beads_rust (`br`) if you want issue tracking; otherwise ignore |
 | Want to start over | Existing artifacts blocking | Use `--force` to recreate all artifacts |
 
 ## See Also

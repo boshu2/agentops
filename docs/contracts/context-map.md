@@ -244,7 +244,7 @@ graph LR
 | `push` | produces | git-changes |
 | `reality-check` | consumes | implement |
 | `reality-check` | produces | result.json |
-| `recover` | consumes | bd |
+| `recover` | consumes | br |
 | `recover` | consumes | rpi |
 | `recover` | produces | .agents/rpi/*.md |
 | `red-team` | consumes | repo-context |
@@ -273,7 +273,7 @@ graph LR
 | `skill-auditor` | produces | result.json |
 | `skill-builder` | produces | converted-skill |
 | `standards` | produces | stdout |
-| `status` | consumes | bd |
+| `status` | consumes | br |
 | `status` | produces | stdout |
 | `swarm` | consumes | implement |
 | `swarm` | consumes | validate |

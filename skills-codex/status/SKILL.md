@@ -62,6 +62,7 @@ fi
 
 **Call 2 — Beads / Epic State:**
 ```bash
+BEADS_DIR="$(ao beads dir 2>/dev/null)"; export BEADS_DIR
 if br ready --json >/dev/null 2>&1 && br list --type epic --status open --json >/dev/null 2>&1; then
   echo "=== EPIC ==="
   br list --type epic --status open 2>/dev/null | head -5

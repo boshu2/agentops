@@ -7,7 +7,7 @@ practices:
 - sre
 hexagonal_role: driving-adapter
 consumes:
-- bd
+- br
 produces:
 - stdout
 context_rel: []
@@ -30,7 +30,7 @@ output_contract: 'stdout: dashboard'
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-**CLI dependencies:** bd, ao, gt — all optional. Shows what's available, skips what isn't.
+**CLI dependencies:** br, ao, gt — all optional. Shows what's available, skips what isn't.
 
 ### Folded triggers (ag-s43tg wave 1): `quickstart` routes here
 
@@ -83,17 +83,19 @@ fi
 
 **Call 2 — Beads / Epic State:**
 ```bash
-if command -v bd &>/dev/null; then
+if command -v br &>/dev/null; then
+  BEADS_DIR="$(ao beads dir 2>/dev/null)"
+  export BEADS_DIR
   echo "=== EPIC ==="
-  bd list --type epic --status open 2>/dev/null | head -5
+  br list --type epic --status open 2>/dev/null | head -5
   echo "=== IN_PROGRESS ==="
-  bd list --status in_progress 2>/dev/null | head -5
+  br list --status in_progress 2>/dev/null | head -5
   echo "=== READY ==="
-  bd ready 2>/dev/null | head -5
+  br ready 2>/dev/null | head -5
   echo "=== TOTAL ==="
-  bd list 2>/dev/null | wc -l
+  br list 2>/dev/null | wc -l
 else
-  echo "BD_UNAVAILABLE"
+  echo "BR_UNAVAILABLE"
 fi
 ```
 
@@ -180,7 +182,7 @@ ACTIVE EPIC
   In Progress: <list in-progress issues, max 3>
 
 READY TO WORK
-  <top 3 unblocked issues from bd ready>
+  <top 3 unblocked issues from br ready>
   <or "No ready issues — create work with /plan">
 
 RECENT VALIDATIONS
@@ -341,11 +343,11 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Shows "BD_UNAVAILABLE" or "AO_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools: `brew install bd` or `brew install ao`. Skill gracefully degrades by showing available state only. |
+| Shows "BR_UNAVAILABLE" or "AO_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools: `br` (beads_rust) or `ao`. Skill gracefully degrades by showing available state only. |
 | Ratchet phase shows stale data | Old chain.jsonl not cleaned up | Check timestamp of `.agents/ao/chain.jsonl`. If stale, delete it or run `/validate` to complete cycle and reset state. |
 | Suggested action doesn't match intent | State-aware rules didn't capture edge case | Review priority table in Step 3. May need to refine conditions. Use `--json` to inspect raw state and debug rule matching. |
 | JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure with `jq .` before returning to user. |
 
 ## Reference Documents
 
-- [references/status.feature](references/status.feature) — Executable spec: work dashboard from bd (ready/in-progress/epics) + ratchet/flywheel/git, --json, fail-soft on missing tools (soc-qk4b)
+- [references/status.feature](references/status.feature) — Executable spec: work dashboard from br (ready/in-progress/epics) + ratchet/flywheel/git, --json, fail-soft on missing tools (soc-qk4b)
