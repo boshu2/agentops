@@ -20,6 +20,12 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GAP="all"
 STRICT_COVERAGE=0
 
+# Per-run scratch dir: no fixed world-writable /tmp paths, so concurrent
+# worktrees/runs never clobber each other and there is no predictable-temp
+# hazard. Child-gate build output and captured output all live here.
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/ao-gate.XXXXXX")"
+trap 'rm -rf "$tmpdir"' EXIT
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --gap=*) GAP="${1#--gap=}"; shift;;
@@ -37,12 +43,12 @@ done
 run_gate() {
     local label="$1"
     local cmd="$2"
-    if eval "$cmd" >/tmp/sg-"${label}".out 2>&1; then
+    if eval "$cmd" >"$tmpdir/sg-${label}.out" 2>&1; then
         echo "  PASS  $label"
         return 0
     else
         echo "  FAIL  $label"
-        sed 's/^/      /' /tmp/sg-"${label}".out | head -5
+        sed 's/^/      /' "$tmpdir/sg-${label}.out" | head -5
         return 1
     fi
 }
@@ -156,13 +162,10 @@ gap_durable_learning() {
 gap_loop_closure() {
     echo "Gap 3 — Loop closure:"
     local fails=0
-    # Pre-clean /tmp/ao-sg before `go build` — `go build -o <path>` refuses to
-    # overwrite a non-object file (e.g., a shell script left by the bats-test
-    # shim go in tests/scripts/check-three-gap-supergate.bats). This is a real
-    # production hazard, not just a test concern: any prior process that wrote
-    # a non-binary to /tmp/ao-sg would otherwise wedge the gate.
+    # Build into the per-run $tmpdir (fresh dir, so no stale-binary pre-clean
+    # is needed): `go build -o <path>` gets a path that never pre-exists.
     run_gate "goals-validate" \
-        "bash -c 'cd $REPO_ROOT/cli && rm -f /tmp/ao-sg && go build -o /tmp/ao-sg ./cmd/ao && cd .. && /tmp/ao-sg goals validate --json | jq -e .valid==true'" \
+        "bash -c 'cd $REPO_ROOT/cli && go build -o $tmpdir/ao-sg ./cmd/ao && cd .. && $tmpdir/ao-sg goals validate --json | jq -e .valid==true'" \
         || fails=$((fails+1))
     run_gate "wiring-closure" \
         "timeout 60 bash $REPO_ROOT/scripts/check-wiring-closure.sh" || fails=$((fails+1))
