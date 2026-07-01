@@ -1,5 +1,6 @@
 ---
 name: implement
+spine: true
 description: 'Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".'
 practices:
 - tdd

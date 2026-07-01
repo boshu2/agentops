@@ -179,7 +179,7 @@ validate_structural() {
   fi
 
   # Check for unknown top-level keys (additionalProperties: false)
-  local valid_keys="name description skill_api_version metadata user-invocable context allowed-tools license compatibility model output_contract"
+  local valid_keys="name description spine skill_api_version metadata user-invocable context allowed-tools license compatibility model output_contract"
   local actual_keys
   actual_keys=$(echo "$json_data" | jq -r 'keys[]' 2>/dev/null)
   for key in $actual_keys; do

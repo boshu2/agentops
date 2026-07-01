@@ -12,6 +12,7 @@
     },
     "name": { "type": "string" },
     "description": { "type": "string" },
+    "spine": { "type": "boolean", "description": "True iff this skill is one of the 15 canonical membrane+bookkeeper spine skills. Durability anchor — see scripts/check-spine-integrity.sh (age-focus-membrane-bookkeeper-m1wg.23)." },
     "skill_api_version": { "type": "integer", "const": 1 },
     "metadata": {
       "type": "object",

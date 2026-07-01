@@ -1,5 +1,6 @@
 ---
 name: handoff
+spine: true
 description: 'Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".'
 practices:
 - adr

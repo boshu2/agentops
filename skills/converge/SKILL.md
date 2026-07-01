@@ -1,5 +1,6 @@
 ---
 name: converge
+spine: true
 description: 'Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".'
 practices:
 - design-by-contract

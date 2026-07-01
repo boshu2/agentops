@@ -1,5 +1,6 @@
 ---
 name: beads-br
+spine: true
 user-invocable: false
 skill_api_version: 1
 hexagonal_role: supporting

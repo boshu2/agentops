@@ -1,5 +1,6 @@
 ---
 name: plan
+spine: true
 description: 'Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".'
 practices:
 - adr
