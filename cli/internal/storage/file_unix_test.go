@@ -87,7 +87,7 @@ func TestScanJSONLFile_DeferredCloseError(t *testing.T) {
 	predictedFd := int(probe.Fd())
 	probe.Close()
 
-	err := scanJSONLFile(path, func(_ []byte) {
+	err := ScanJSONLFile(path, func(_ []byte) {
 		syscall.Close(predictedFd)
 	})
 	// The scanner returns EBADF from its next read attempt
@@ -230,7 +230,7 @@ func TestScanJSONLFile_DeferCloseError(t *testing.T) {
 			}
 		}()
 
-		err = scanJSONLFile(emptyFile, func(_ []byte) {})
+		err = ScanJSONLFile(emptyFile, func(_ []byte) {})
 		<-done
 
 		if err != nil {

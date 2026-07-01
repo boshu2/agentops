@@ -15,6 +15,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/domain/packet"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // ErrInvalidRunID is returned when a runID contains path-traversal tokens or
@@ -92,25 +93,18 @@ func (r *Repo) LoadLatest(_ context.Context) (packet.ExecutionPacket, error) {
 	return p, err
 }
 
-// writeJSONAtomic serializes p and replaces the file at path atomically:
-// write to <path>.tmp in the same directory, then os.Rename onto path.
-// os.Rename is atomic on POSIX filesystems for same-directory targets.
-// On failure, the temp file is removed; the destination is left intact.
+// writeJSONAtomic serializes p and replaces the file at path durably and
+// atomically via storage.AtomicWriteFile — the canonical repo writer, which
+// fsyncs the temp file and the parent directory before/after the rename so a
+// crash cannot leave a partial or lost write, and a concurrent reader sees
+// either the old or the complete new content. Replaces the earlier fsync-less
+// temp-file + rename body.
 func writeJSONAtomic(path string, p packet.ExecutionPacket) error {
 	b, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o644); err != nil {
-		return err
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		// Best-effort cleanup; ignore secondary error.
-		_ = os.Remove(tmp)
-		return err
-	}
-	return nil
+	return storage.AtomicWriteFile(path, b, 0o644)
 }
 
 func readJSON(path string) (packet.ExecutionPacket, error) {

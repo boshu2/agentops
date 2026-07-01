@@ -6,13 +6,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
-// writeJSONAtomic marshals value to indented JSON and writes it to path via a
-// temp-file + rename so readers never observe a partial write. Extracted from
+// writeJSONAtomic marshals value to indented JSON and writes it to path durably
+// and atomically via storage.AtomicWriteFile — the canonical repo writer, which
+// fsyncs the temp file and the parent directory so a crash cannot leave a partial
+// or lost write, and a concurrent reader sees either the old or the complete new
+// content. Replaces the earlier fsync-less temp-file + rename body extracted from
 // the retired overnight curator (soc-2rtm0) for the KEEP forge queue path.
 func writeJSONAtomic(path string, value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
@@ -20,15 +24,7 @@ func writeJSONAtomic(path string, value any) error {
 		return err
 	}
 	data = append(data, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
-		return fmt.Errorf("write temp file: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("rename temp file: %w", err)
-	}
-	return nil
+	return storage.AtomicWriteFile(path, data, 0o644)
 }
 
 // curatorJob is a single Dream-curator worker-queue job written by the KEEP

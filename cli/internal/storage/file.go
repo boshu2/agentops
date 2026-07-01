@@ -3,6 +3,7 @@ package storage
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -197,7 +198,7 @@ func (fs *FileStorage) ListSessions() ([]IndexEntry, error) {
 	indexPath := filepath.Join(fs.BaseDir, IndexDir, IndexFile)
 
 	var entries []IndexEntry
-	err := scanJSONLFile(indexPath, func(line []byte) {
+	err := ScanJSONLFile(indexPath, func(line []byte) {
 		var entry IndexEntry
 		if err := json.Unmarshal(line, &entry); err == nil {
 			entries = append(entries, entry)
@@ -211,7 +212,7 @@ func (fs *FileStorage) QueryProvenance(artifactPath string) ([]ProvenanceRecord,
 	provPath := filepath.Join(fs.BaseDir, ProvenanceDir, ProvenanceFile)
 
 	var records []ProvenanceRecord
-	err := scanJSONLFile(provPath, func(line []byte) {
+	err := ScanJSONLFile(provPath, func(line []byte) {
 		var record ProvenanceRecord
 		if err := json.Unmarshal(line, &record); err == nil && record.ArtifactPath == artifactPath {
 			records = append(records, record)
@@ -220,17 +221,60 @@ func (fs *FileStorage) QueryProvenance(artifactPath string) ([]ProvenanceRecord,
 	return records, err
 }
 
-// scanJSONLFile opens a JSONL file and calls fn for each non-empty line.
-// Returns nil (not an error) if the file does not exist.
-func scanJSONL(r io.Reader, fn func(line []byte)) error {
+// JSONL scanning buffer policy. Every JSONL reader in this package caps line
+// length at a single, loud value: a line longer than scanJSONLMaxLine is a hard
+// error (ErrLineTooLong), never a silent truncation.
+//
+// The default bufio.Scanner caps tokens at bufio.MaxScanTokenSize (64KB) and, on
+// overflow, ends iteration with bufio.ErrTooLong — a failure mode that is easy to
+// swallow and, worse, when a caller doesn't inspect scanner.Err(), silently drops
+// the tail of a file. This policy makes the cap explicit and above every
+// legitimate line while still bounding memory.
+//
+// Sizing (audited): the largest legitimate line in the checked-in corpus is the
+// ~67.5KB (69,102-byte) longest line of cli/testdata/transcripts/real-2.4mb.jsonl.
+// scanJSONLInitBuf (64KB) is the initial allocation (bufio grows it up to the
+// max, so a 67.5KB line is read fine); scanJSONLMaxLine (8MB) is the hard cap —
+// ~120x the largest real line, comfortably above any real transcript row while
+// keeping a single oversized line from allocating unbounded memory.
+const (
+	scanJSONLInitBuf = 64 * 1024 // 64KB initial scanner buffer (grows to max)
+	scanJSONLMaxLine = 8 << 20   // 8MB hard cap per line before ErrLineTooLong
+)
+
+// ScanJSONL reads r line by line and calls fn for each line's bytes, applying the
+// package JSONL buffer policy: lines up to scanJSONLMaxLine (8MB) are read; a
+// longer line stops iteration and returns an error wrapping ErrLineTooLong that
+// names the 1-based line number. The line slice passed to fn is only valid for
+// the duration of the call — copy it to retain it. A read error from r is
+// returned as-is. This never silently truncates a line.
+func ScanJSONL(r io.Reader, fn func(line []byte)) error {
 	scanner := bufio.NewScanner(r)
+	// +1: bufio.Scanner must hold the token AND its newline delimiter in the
+	// buffer to emit the token, so a max size of exactly scanJSONLMaxLine would
+	// reject a line of exactly scanJSONLMaxLine bytes — off by one against the
+	// documented inclusive cap. The extra byte makes the cap inclusive.
+	scanner.Buffer(make([]byte, 0, scanJSONLInitBuf), scanJSONLMaxLine+1)
+	lineNo := 0
 	for scanner.Scan() {
+		lineNo++
 		fn(scanner.Bytes())
 	}
-	return scanner.Err()
+	if err := scanner.Err(); err != nil {
+		if errors.Is(err, bufio.ErrTooLong) {
+			return fmt.Errorf("line %d: %w (cap %d bytes)", lineNo+1, ErrLineTooLong, scanJSONLMaxLine)
+		}
+		return err
+	}
+	return nil
 }
 
-func scanJSONLFile(path string, fn func(line []byte)) (err error) {
+// ScanJSONLFile opens the JSONL file at path and calls fn for each line, applying
+// the package JSONL buffer policy (see ScanJSONL). A missing file is not an error
+// (fn is simply never called); any other open error, read error, or an oversized
+// line (ErrLineTooLong, naming the line number) is returned. The file is always
+// closed; a close error is surfaced only if the scan itself succeeded.
+func ScanJSONLFile(path string, fn func(line []byte)) (err error) {
 	f, err := os.Open(path)
 	if os.IsNotExist(err) {
 		return nil
@@ -244,7 +288,7 @@ func scanJSONLFile(path string, fn func(line []byte)) (err error) {
 		}
 	}()
 
-	return scanJSONL(f, fn)
+	return ScanJSONL(f, fn)
 }
 
 // Close releases any resources.
@@ -308,14 +352,31 @@ func (fs *FileStorage) atomicWrite(path string, writeFunc func(io.Writer) error)
 	return nil
 }
 
-// appendJSONL appends a JSON line to a file atomically.
-func (fs *FileStorage) appendJSONL(path string, v any) error {
-	return fs.withLockedFile(path, func(f *os.File) error {
-		return fs.appendJSONLToFile(f, v)
+// AppendJSONL appends v, marshaled to a single JSON line, to the file at path.
+// The write is durable and serialized: the file is created if missing, an
+// advisory lock is taken so concurrent appenders do not interleave, the marshaled
+// line plus a trailing newline is written at end-of-file, and the file is fsynced
+// before returning. The parent directory is created if missing. This is the
+// canonical writer for the package's JSONL logs (session index, provenance graph)
+// and the drop-in for a hand-rolled open+seek-end+write+sync append.
+func AppendJSONL(path string, v any) error {
+	return withLockedFile(path, func(f *os.File) error {
+		return appendJSONLToFile(f, v)
 	})
 }
 
+// appendJSONL appends a JSON line to a file atomically.
+func (fs *FileStorage) appendJSONL(path string, v any) error {
+	return AppendJSONL(path, v)
+}
+
 func (fs *FileStorage) appendJSONLToFile(f *os.File, v any) error {
+	return appendJSONLToFile(f, v)
+}
+
+// appendJSONLToFile marshals v and appends it as one line to the already-open
+// (and, at call sites here, locked) file f, then fsyncs.
+func appendJSONLToFile(f *os.File, v any) error {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Errorf("marshal json: %w", err)
@@ -343,7 +404,7 @@ func (fs *FileStorage) hasIndexEntry(f *os.File, sessionID string) (bool, error)
 	}
 
 	found := false
-	err := scanJSONL(f, func(line []byte) {
+	err := ScanJSONL(f, func(line []byte) {
 		var entry IndexEntry
 		if err := json.Unmarshal(line, &entry); err != nil {
 			return
@@ -359,7 +420,15 @@ func (fs *FileStorage) hasIndexEntry(f *os.File, sessionID string) (bool, error)
 	return found, nil
 }
 
-func (fs *FileStorage) withLockedFile(path string, fn func(f *os.File) error) (err error) {
+func (fs *FileStorage) withLockedFile(path string, fn func(f *os.File) error) error {
+	return withLockedFile(path, fn)
+}
+
+// withLockedFile opens (creating if missing) the file at path with an advisory
+// lock held, calls fn with the open file, then unlocks and closes. The first
+// error from fn, unlock, or close is returned. The parent directory is created
+// if missing.
+func withLockedFile(path string, fn func(f *os.File) error) (err error) {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
