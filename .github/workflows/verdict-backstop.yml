@@ -1,0 +1,64 @@
+name: verdict-backstop
+
+# CI verdict backstop (age-wedge-all-in-dyr0.9). The local pre-push cockpit
+# gate is the release AUTHORITY; this reusable workflow is the remote BACKSTOP:
+# for a pushed range it verifies the provenance ledger hash chain is intact and
+# that every commit carries a bound verdict edge (or the #trivial
+# provenance-only waiver — the SAME shared implementation the pre-push gate
+# runs, scripts/lib/trivial-waiver.sh).
+#
+# REPORT-ONLY by default (warn-then-ratchet): missing verdicts annotate, never
+# fail. Tamper trumps report-only: a broken hash chain fails in both modes.
+# It verifies RECORDS only — no reviewer calls, no secrets, no subscription
+# auth (verdict PRODUCTION stays local; no hosted control plane).
+
+on:
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      enforce:
+        description: 'Fail the job when a commit in the range lacks proof (default: report-only).'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verdict-backstop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history so BASE..TIP ranges (and merge-base fallbacks) resolve;
+          # the script degrades to tip-only when the base is unavailable.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao
+        run: |
+          set -euo pipefail
+          GOBIN="$HOME/.local/bin" go -C cli install ./cmd/ao
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Verify pushed range carries proof (report-only unless enforce)
+        env:
+          # push events: event.before..sha. workflow_call: callers run against
+          # their checked-out tip (before is empty → tip-only fallback).
+          RANGE_BASE: ${{ github.event.before || '' }}
+          RANGE_TIP: ${{ github.sha }}
+          ENFORCE: ${{ inputs.enforce == true && '1' || '' }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/check-tip-verdict-ci.sh
+          args=(--base "$RANGE_BASE" --head "$RANGE_TIP")
+          if [ -n "$ENFORCE" ]; then
+            args+=(--enforce)
+          fi
+          AO_BIN="$(command -v ao)" ./scripts/check-tip-verdict-ci.sh "${args[@]}"
