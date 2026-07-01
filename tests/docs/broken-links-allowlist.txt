@@ -137,3 +137,13 @@ docs/CHANGELOG.md:docs/3.0.md
 docs/CHANGELOG.md:docs/architecture/codebase-overview.md
 docs/CHANGELOG.md:docs/audits/2026-06-16-worktree-disposition-audit.md
 docs/CHANGELOG.md:docs/audits/2026-06-16-skill-disposition-triage.md
+
+# Corpus-flywheel skills demoted to the experimental tier ship NO Codex twin
+# (age-focus-membrane-bookkeeper-m1wg.19): skills-codex/{forge,operationalize,...}
+# were dropped. Kept parity twins that carry a source cross-skill deep-link to one
+# of those dropped twins now dangle in the Codex tree only — the link still resolves
+# in the canonical skills/ tree; the Codex twin tree intentionally omits the target.
+# Known, accepted cross-skill limitation — not a real broken doc (same pattern as the
+# swarm/using-atm bespoke-omission entries above).
+skills-codex/skill-builder/SKILL.md:../forge/SKILL.md
+skills-codex/automation-shape-routing/SKILL.md:../operationalize/SKILL.md

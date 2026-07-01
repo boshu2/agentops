@@ -38,7 +38,7 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
-  tier: knowledge
+  tier: experimental
   stability: experimental
   dependencies:
   - automation-shape-routing

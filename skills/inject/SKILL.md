@@ -19,7 +19,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: background
+  tier: experimental
   dependencies:
   - compile
   - curate

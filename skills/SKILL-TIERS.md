@@ -38,16 +38,16 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 |------|----------|-------------|----------|
 | **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, validate, pre-mortem, post-mortem, red-team |
 | **execution** | Primitives + flows | Research, plan, build, and ship — the work itself | research, plan, implement, crank, swarm, rpi |
-| **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | compile, flywheel, forge, operationalize |
+| **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | domain |
 | **product** | Execution | Define mission, goals, release, docs | product, goals, release, doc |
 | **session** | Execution | Session continuity and status | handoff, recover, status |
 | **utility** | Execution | Standalone tools | converter, scaffold, security, perf |
 | **contribute** | Execution | Upstream PR workflow | pr-prep |
 | **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-atm |
 | **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
-| **background** | Internal | Hook-triggered or automatic skills | inject, forge, flywheel |
+| **background** | Internal | Hook-triggered or automatic skills | (none active) |
 | **meta** | Internal | Skills about skills | heal-skill, skill-auditor, skill-builder |
-| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, no measured uplift) | evolve, autodev, acfs |
+| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, corpus-flywheel skills, no measured uplift) | evolve, autodev, acfs, compile, forge, flywheel, curate, operationalize, inject |
 
 ## The Three Categories
 
@@ -299,9 +299,9 @@ These are how skills chain in practice:
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **compile** | knowledge | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| **compile** | experimental | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **domain** | knowledge | Shared vocabulary for human-AI software building (tracer-bullet shape; loaded JIT when terms like vertical slice, tracer bullet, primitive need a canonical definition) |
-| **curate** | knowledge | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
+| **curate** | experimental | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
 
 **Product & Release:**
 
@@ -363,7 +363,7 @@ These are how skills chain in practice:
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
 | **continuity-loop** | execution | Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step. |
-| **operationalize** | execution | Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads. |
+| **operationalize** | experimental | Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads. |
 | **reality-check** | execution | Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent. |
 | **toil-mining** | execution | Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand. |
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
@@ -380,9 +380,9 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|------|----------|---------|
 | standards | library | Judgment | Coding standards (loaded by /validate, /implement, /doc) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
-| inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
-| forge | background | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |
-| flywheel | background | Knowledge | Knowledge health monitoring |
+| inject | experimental | Knowledge | Load knowledge at session start (hook-triggered) |
+| forge | experimental | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |
+| flywheel | experimental | Knowledge | Knowledge health monitoring |
 
 ---
 

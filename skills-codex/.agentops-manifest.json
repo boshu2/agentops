@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "85cc941f93fd04f1fb3e42022c760facb8d28eacd4e891f52efe9e56551006bc",
+  "codex_override_catalog_hash": "7696647620dbfe1b0b5fd00cfeddce2036f418036478581582e92ef3659fe9bf",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -35,9 +35,9 @@
     "skills": [
       {
         "name": "compile",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "autodev",
@@ -114,15 +114,15 @@
       },
       {
         "name": "flywheel",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "Current flywheel monitoring behavior is file-driven and remains understandable from the generated Codex prompt."
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "forge",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "Transcript mining is largely artifact-oriented and does not yet require Codex-only UX differences."
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "goals",
@@ -188,9 +188,9 @@
       },
       {
         "name": "inject",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "plan",
@@ -475,9 +475,9 @@
       },
       {
         "name": "curate",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "validate",
@@ -985,9 +985,9 @@
       },
       {
         "name": "operationalize",
-        "treatment": "parity_only",
+        "treatment": "excluded",
         "wave": "catalog-parity",
-        "reason": "seams epic ag-xwjlc parity twin"
+        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "reality-check",
@@ -1167,18 +1167,6 @@
       "generated_hash": "e5d85d6338dcbe739120d6dfe782f985a92f5b040634588e75648ffbd98c2e8c"
     },
     {
-      "name": "compile",
-      "source_skill": "skills/compile",
-      "source_hash": "4d15cceebc9fda186ae03cb02122dc5c3d3895fd85daea76d1404edc408587b8",
-      "generated_hash": "ae6915140cdab17a5f49b41f8b18c7506a8abbe29e3c9ac31721bf74337683d3"
-    },
-    {
-      "name": "compile",
-      "source_skill": "skills/compile",
-      "source_hash": "4d15cceebc9fda186ae03cb02122dc5c3d3895fd85daea76d1404edc408587b8",
-      "generated_hash": "ae6915140cdab17a5f49b41f8b18c7506a8abbe29e3c9ac31721bf74337683d3"
-    },
-    {
       "name": "continuity-loop",
       "source_skill": "skills/continuity-loop",
       "source_hash": "ae72b1a9f5a4b7440003cf1d8391d824e75b7093bb82a668b2027d3341880176",
@@ -1225,18 +1213,6 @@
       "source_skill": "skills/crank",
       "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
       "generated_hash": "d7e774990add51290d0a6963dae1b8bc0fd212f8882b2e99d0b797140027453d"
-    },
-    {
-      "name": "curate",
-      "source_skill": "skills/curate",
-      "source_hash": "24caefdda1797cc42413082098446a225c3cc65fb14b2265427c2fb883425b7c",
-      "generated_hash": "18f521f60be1b031e92f005e89207512bcafb41be4a3efa96dfb44e2a917babf"
-    },
-    {
-      "name": "curate",
-      "source_skill": "skills/curate",
-      "source_hash": "24caefdda1797cc42413082098446a225c3cc65fb14b2265427c2fb883425b7c",
-      "generated_hash": "18f521f60be1b031e92f005e89207512bcafb41be4a3efa96dfb44e2a917babf"
     },
     {
       "name": "dcg",
@@ -1311,30 +1287,6 @@
       "generated_hash": "fa5561d8ca0917e56ee50adc655229950751b1d99cf9a7093b2fff41e7adf268"
     },
     {
-      "name": "flywheel",
-      "source_skill": "skills/flywheel",
-      "source_hash": "0dac2c985bd7904576af11b8e739e2af41ec9478ad55a988b9351a2e75ab0446",
-      "generated_hash": "ee85d1136af752fe1ff624e19c80c451d76c7eb5ab5ac39d962ffb06bdec991c"
-    },
-    {
-      "name": "flywheel",
-      "source_skill": "skills/flywheel",
-      "source_hash": "0dac2c985bd7904576af11b8e739e2af41ec9478ad55a988b9351a2e75ab0446",
-      "generated_hash": "ee85d1136af752fe1ff624e19c80c451d76c7eb5ab5ac39d962ffb06bdec991c"
-    },
-    {
-      "name": "forge",
-      "source_skill": "skills/forge",
-      "source_hash": "d3edb7b101334a49067f7f930c7b0ad79dac83476b8482e5a41b76e95d86f26f",
-      "generated_hash": "160eae002d00d99d1ee56b7eddb7bd04c5d14bcb5924cc8fe8ec9aa25a9e4872"
-    },
-    {
-      "name": "forge",
-      "source_skill": "skills/forge",
-      "source_hash": "d3edb7b101334a49067f7f930c7b0ad79dac83476b8482e5a41b76e95d86f26f",
-      "generated_hash": "160eae002d00d99d1ee56b7eddb7bd04c5d14bcb5924cc8fe8ec9aa25a9e4872"
-    },
-    {
       "name": "goals",
       "source_skill": "skills/goals",
       "source_hash": "d8c3c5421217f885f047295f18c88bdd06d8f98bd9db8f8eb54f05a61559f3b5",
@@ -1383,28 +1335,10 @@
       "generated_hash": "7c9e79f0c55eee477ca2e46351dd0047db205acdc2b66d2b26e9822e0c8f272f"
     },
     {
-      "name": "inject",
-      "source_skill": "skills/inject",
-      "source_hash": "ddf3780e9a5d6b99dfef0e40950af07f77d7dd41ea00245d20a05756912fdcc6",
-      "generated_hash": "027b32414340584e0b029c219a70a39e1d36d586c30b31c231d470e32c294fac"
-    },
-    {
-      "name": "inject",
-      "source_skill": "skills/inject",
-      "source_hash": "46005314355494526ff9d48041102e1bdf72b02000414a5e52d05325148b20ac",
-      "generated_hash": "e35fbd1ffe7196ab111598d1cc7ab7aefae3f539422c782ee78a818efcbe7402"
-    },
-    {
       "name": "ntm",
       "source_skill": "skills/ntm",
       "source_hash": "9c661533c990808d7b9948e359f82e26d7f86187617162355909336be6e358e8",
       "generated_hash": "60cfa1693cfe08d1675ae0ab272c10592d08c1df9e60ecdb16b5cfcbd7b66b70"
-    },
-    {
-      "name": "operationalize",
-      "source_skill": "skills/operationalize",
-      "source_hash": "8939384a6b0c89ffc4129de2ca138809e0b9287c10791c0a36a7964b1dbbb0c5",
-      "generated_hash": "46d2434f2313c4b99b41eb0c95feff0576376c6ab3a8ab48c18af0d254ce8e31"
     },
     {
       "name": "orchestrate",

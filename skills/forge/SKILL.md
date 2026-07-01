@@ -22,7 +22,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: background
+  tier: experimental
   dependencies: []
   internal: true
 output_contract: .agents/learnings/*.md, .agents/patterns/*.md

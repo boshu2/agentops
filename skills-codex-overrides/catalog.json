@@ -141,9 +141,9 @@
     },
     {
       "name": "compile",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "continuity-loop",
@@ -177,9 +177,9 @@
     },
     {
       "name": "curate",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "dcg",
@@ -235,15 +235,15 @@
     },
     {
       "name": "flywheel",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Current flywheel monitoring behavior is file-driven and remains understandable from the generated Codex prompt."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "forge",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Transcript mining is largely artifact-oriented and does not yet require Codex-only UX differences."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "goals",
@@ -309,9 +309,9 @@
     },
     {
       "name": "inject",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "ntm",
@@ -321,9 +321,9 @@
     },
     {
       "name": "operationalize",
-      "treatment": "parity_only",
+      "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "orchestrate",
