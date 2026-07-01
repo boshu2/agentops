@@ -17,6 +17,7 @@
 - [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
 - [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
+- [Driving Agents Reliably](driving-agents.md) — Operator's field guide: three laws, a copy-paste prompt pack, and the failure→mechanism table (companion to Behavioral Discipline)
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [Codebase Overview](architecture/codebase-overview.md) — Consolidated map of subsystems, active waist, registries, gates, footguns, and reading order (humans + agents)
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
