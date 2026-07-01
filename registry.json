@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T00:01:38Z",
+  "generated_at": "2026-07-01T00:14:28Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 87,
+    "cli_commands": 84,
     "workflows": 4,
-    "capabilities": 176
+    "capabilities": 173
   },
   "surfaces": {
     "skills": [
@@ -1035,13 +1035,6 @@
         ]
       },
       {
-        "name": "ao harness",
-        "path": "cli/cmd/ao/",
-        "purpose": "BC5 HarnessPort operations (sync state across skill harnesses)",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao init",
         "path": "cli/cmd/ao/",
         "purpose": "Initialize AgentOps in the current repository",
@@ -1171,13 +1164,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Manage the session notebook (MEMORY.md)",
         "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao operator",
-        "path": "cli/cmd/ao/",
-        "purpose": "BC4 OperatorPort operations (record/list operator intents)",
-        "bounded_context": "BC4",
         "driven_by_skills": []
       },
       {
@@ -1391,13 +1377,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao turn",
-        "path": "cli/cmd/ao/",
-        "purpose": "Evidenced-Turn operations (the enforced unit-of-work definition-of-done)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao validate",
         "path": "cli/cmd/ao/",
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
@@ -1521,9 +1500,9 @@
     ]
   },
   "capability_summary": {
-    "total": 176,
+    "total": 173,
     "skills": 75,
-    "cli_commands": 87,
+    "cli_commands": 84,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1565,7 +1544,6 @@
     "governor",
     "guard-status",
     "handoff",
-    "harness",
     "init",
     "inject",
     "install-guards",
@@ -1580,7 +1558,6 @@
     "mine",
     "next-work",
     "notebook",
-    "operator",
     "orchestrate",
     "patterns",
     "pawl",
@@ -1607,7 +1584,6 @@
     "status",
     "tick",
     "trace",
-    "turn",
     "validate",
     "verdict-gate",
     "version",
@@ -3151,8 +3127,7 @@
         "ao metrics cite",
         "ao plan-pawl decide",
         "ao ratchet",
-        "ao search",
-        "ao turn verify"
+        "ao search"
       ],
       "path": "skills/pre-mortem/",
       "references": 14
@@ -3966,8 +3941,7 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao search",
-        "ao turn verify"
+        "ao search"
       ],
       "path": "skills/validate/",
       "references": 23
@@ -4780,23 +4754,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.harness",
-      "name": "ao harness",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "BC5 HarnessPort operations (sync state across skill harnesses)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.init",
       "name": "ao init",
       "type": "cli-command",
@@ -5097,23 +5054,6 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Manage the session notebook (MEMORY.md)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.operator",
-      "name": "ao operator",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "BC4 OperatorPort operations (record/list operator intents)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -5623,23 +5563,6 @@
         "--config",
         "--dry-run",
         "--graph",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.turn",
-      "name": "ao turn",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Evidenced-Turn operations (the enforced unit-of-work definition-of-done)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
         "--json",
         "--output",
         "--verbose"

@@ -738,34 +738,6 @@ ao gate run <name> [flags]
 
 ---
 
-### `ao harness`
-
-Inspect the sync state between the canonical skills/ tree and the skills-codex/ mirror via the typed BC5 HarnessPort. Useful as a typed alternative to scripts/audit-codex-parity.sh for drift detection.
-
-```
-ao harness [command]
-```
-
-**Subcommands:**
-
-#### `ao harness status`
-
-Emit HarnessSkillSync entries via the typed BC5 HarnessPort
-
-```
-ao harness status [--skill <name>] [--out-of-sync-only] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help               help for status
-      --out-of-sync-only   emit only entries with OutOfSync=true
-      --skill string       filter to one skill name (empty = all)
-```
-
----
-
 ### `ao loop`
 
 Operations on the /evolve cycle history and related Loop bounded-context state. The 'history' subcommand reads .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
@@ -1060,43 +1032,6 @@ ao metrics report [flags]
 ```
       --days int   Period in days for metrics calculation (default 7)
   -h, --help       help for report
-```
-
----
-
-### `ao operator`
-
-Read and write operator intents via the typed BC4 OperatorPort. Intents are durable records of operator decisions (halt, rescope, handoff) appended to .agents/operator/intents.jsonl.
-
-```
-ao operator [command]
-```
-
-**Subcommands:**
-
-#### `ao operator list`
-
-Emit recorded OperatorIntents from .agents/operator/intents.jsonl
-
-```
-ao operator list [flags]
-```
-
-#### `ao operator record`
-
-Append an OperatorIntent to .agents/operator/intents.jsonl via the
-
-```
-ao operator record --kind <kind> [--subject S] [--note N] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help             help for record
-      --kind string      intent kind (required: halt|rescope|handoff|other)
-      --note string      free-text note
-      --subject string   intent subject (e.g., bd ID, file path)
 ```
 
 ---
@@ -5012,37 +4947,6 @@ ao skills retire <slug> [flags]
       --into string      Target skill the retiree merges into (historical state merged-into; default: cut)
       --json             Emit a machine-readable JSON report
       --no-regen         Skip the regen scripts after the ledger flip
-```
-
----
-
-### `ao turn`
-
-The 'turn' command group operates on Evidenced Turns — the ag-lmdx
-
-```
-ao turn [command]
-```
-
-**Subcommands:**
-
-#### `ao turn verify`
-
-Evaluate the legible Definition-of-Done predicate for one bead's
-
-```
-ao turn verify <bead> [flags]
-```
-
-**Flags:**
-
-```
-      --allow-self      Waive the no-self-grading invariant (permit judge_id == author_id) for the inline fallback; default OFF
-      --graph string    Path to the provenance trace-graph JSONL (node/edge records) for orphan detection
-  -h, --help            help for verify
-      --input string    Path to the turn-input JSON file (state log + scenario coverage) (required)
-      --json            Emit the full Verdict object as JSON
-      --ledger string   Path to the provenance EDGE ledger JSONL (default: docs/provenance/ledger.jsonl)
 ```
 
 ---

@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [hexagonal-architecture, tdd]
 package main
 

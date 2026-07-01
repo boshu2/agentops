@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [tdd]
 package main
 
