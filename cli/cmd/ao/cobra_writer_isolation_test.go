@@ -115,7 +115,7 @@ func unguardedCmdWriterSets(body *ast.BlockStmt) []string {
 		if throwaway[recv] {
 			return true // local `x := &cobra.Command{}` — no shared state to leak
 		}
-		if !(strings.HasSuffix(recv, "Cmd") || findBound[recv]) {
+		if !strings.HasSuffix(recv, "Cmd") && !findBound[recv] {
 			return true
 		}
 		if resets[recv+"|"+stream] {

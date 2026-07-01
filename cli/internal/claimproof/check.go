@@ -240,7 +240,8 @@ func extractClaimIDs(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	// Read-only handle: a Close error cannot lose data, so it is safe to drop.
+	defer func() { _ = f.Close() }()
 
 	seen := map[string]bool{}
 	var ids []string

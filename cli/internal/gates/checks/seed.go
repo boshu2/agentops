@@ -12,7 +12,16 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 
 // Change-class path globs (ported from the bash gate's HAS_<CLASS> regexes).
 var (
-	goPaths           = []string{"cli/**", "go.mod", "go.sum"}
+	goPaths = []string{"cli/**", "go.mod", "go.sum"}
+	// go.lint runs the repo-pinned golangci-lint over any Go change, plus a
+	// self-reference (the gate script + its bats) so editing the gate re-runs it.
+	goLintPaths = []string{
+		"cli/**",
+		"go.mod",
+		"go.sum",
+		"scripts/check-go-lint.sh",
+		"tests/scripts/check-go-lint.bats",
+	}
 	skillPaths        = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	frontDoorPaths    = []string{"skills/**", ".claude/workflows/**"}
@@ -155,6 +164,13 @@ func init() {
 
 		// routed by change class
 		{ID: "go.command-test-pair", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-command-test-pair.sh"},
+		// go.lint: enforce the documented lint budgets (.claude/rules/go.md —
+		// gocyclo fail at 25, errcheck, staticcheck, copyloopvar) via the
+		// repo-pinned golangci-lint. Full-tier only for now: the full-tree run is
+		// too slow to sit in Fast; promote to Fast once measured <60s on changed
+		// scope (age-gate-the-ungated-egwt.7). Blocking is safe — the tree lands
+		// at 0 findings.
+		{ID: "go.lint", Tiers: gates.Full, Match: goLintPaths, Blocking: true, Backing: "check-go-lint.sh", RepairHint: "cd cli && make lint; fix or split — budgets in .claude/rules/go.md; promote to Fast tier only after measured <60s on changed scope (age-gate-the-ungated-egwt.7)"},
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
 		{ID: "skill.triggers", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-triggers.sh"},
 		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh", RepairHint: "bash scripts/generate-registry.sh"},
