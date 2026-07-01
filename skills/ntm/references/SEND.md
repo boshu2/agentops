@@ -72,7 +72,7 @@ ntm send <session> --pane=3 --file packet-agy.md
 **`--gmi` vs AGY:** `--gmi` selects **Gemini CLI** (`gmi` agent type) panes.
 **AGY / Antigravity** is a separate agent family (`agy`); tri-vendor smoke uses
 `--agy` at spawn and send time. See
-[`/dual-pane-atm`](../../dual-pane-atm/SKILL.md) § Tri-vendor.
+[`/using-atm`](../../using-atm/SKILL.md) § Tri-vendor.
 
 ## Pane selectors
 

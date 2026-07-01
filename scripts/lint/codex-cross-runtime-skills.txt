@@ -16,13 +16,11 @@
 #
 # cass            — mines/parses session logs ACROSS Claude Code / Codex / Gemini
 # rch             — remote-compile-hook; documents its Claude Code PreToolUse integration
-# vibing-with-ntm — NTM swarm tending drives Claude + Codex panes; carries the claude -p LAW-0 ban
 # agent-native    — documents making an agent AgentOps-native on each runtime (incl. the Claude path)
 # cc-hooks        — about the Claude Code hook system itself (a non-Codex runtime's feature)
 # agy-native      — about the AGY / Gemini (Antigravity) harness (a non-Codex runtime)
 cass
 rch
-vibing-with-ntm
 agent-native
 cc-hooks
 agy-native

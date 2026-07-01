@@ -161,7 +161,7 @@ N converged` to the tender.
 ## See Also
 
 - [using-atm](../using-atm/SKILL.md) — the reference tick executor (ATM tending loop)
-- [vibing-with-ntm](../vibing-with-ntm/SKILL.md) — pane-level liveness truth and unsticking
+- [ntm](../ntm/SKILL.md) — pane-level liveness truth and unsticking
 - [agent-mail](../agent-mail/SKILL.md) — the message + reservation leg escalations ride on
 - [evolve](../evolve/SKILL.md), [recover](../recover/SKILL.md) — loop consumers of this contract
 - [handoff](../handoff/SKILL.md) — what a context-saturated lane writes before relaunch

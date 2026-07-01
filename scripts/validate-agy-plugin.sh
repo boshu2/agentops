@@ -10,7 +10,6 @@ core_skills=(
   beads-bv
   beads-workflow
   ntm
-  vibing-with-ntm
   cass
   cass-memory
   dcg

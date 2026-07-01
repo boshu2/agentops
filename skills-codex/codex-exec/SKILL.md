@@ -185,8 +185,8 @@ receipts, image-health). Full packet:
    [`discovery`](../discovery/SKILL.md)).
 6. **Approval evidence needs a durable proof surface.** If Fable/ATM approval
    gates implementation, mirror the council artifact or a compact proof packet
-   to a tracked durable path before the gating bead/epic closes (closeout rule:
-   [`codex-approval`](../codex-approval/SKILL.md)).
+   to a tracked durable path before the gating bead/epic closes (the codex-approval
+   Fable-approval bridge and its closeout rule are folded into this skill).
 
 ## Troubleshooting
 

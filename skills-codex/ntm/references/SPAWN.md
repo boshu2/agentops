@@ -56,7 +56,7 @@ the same type accumulate — `--cc=2:opus --cc=1:sonnet` yields 2 Opus + 1 Sonne
 | (plugin flags) | per-plugin | Dynamically registered, `spawn.go:1287-1294` |
 
 
-**AGY (`--agy`):** spawns an interactive Antigravity TUI pane — never `agy -p` / `--print` (LAW 0). Pane numbering for tri-vendor layouts is easiest to verify from spawn `--json` `panes[]` or tmux; **`atm mapping` depends on Agent Mail** and may be empty when AM is down (healthy panes still exist). Cross-link: [`/dual-pane-atm`](../../dual-pane-atm/SKILL.md) § Tri-vendor.
+**AGY (`--agy`):** spawns an interactive Antigravity TUI pane — never `agy -p` / `--print` (LAW 0). Pane numbering for tri-vendor layouts is easiest to verify from spawn `--json` `panes[]` or tmux; **`atm mapping` depends on Agent Mail** and may be empty when AM is down (healthy panes still exist). Cross-link: [`/using-atm`](../../using-atm/SKILL.md) § Tri-vendor.
 
 Ollama specifics:
 
