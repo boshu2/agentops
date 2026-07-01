@@ -4641,6 +4641,21 @@ ao provenance position [flags]
       --json   Emit machine-readable JSON (stdout-as-data)
 ```
 
+#### `ao provenance show`
+
+Render the human story of one change from the committed provenance
+
+```
+ao provenance show <sha|bead-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for show
+      --json   Emit machine-readable JSON (stdout-as-data)
+```
+
 #### `ao provenance trace`
 
 Audit a provenance trace-graph for orphans: engineered artifact nodes
