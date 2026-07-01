@@ -3,125 +3,47 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-AO_BIN="${AGENTOPS_AO_BIN:-}"
 
-if [[ -z "$AO_BIN" ]]; then
-  TMP_DIR="$(mktemp -d)"
-  trap 'rm -rf "$TMP_DIR"' EXIT
-  AO_BIN="$TMP_DIR/ao"
-  (
-    cd "$REPO_ROOT/cli"
-    # Build with the ADR-0012 archive tags so snippets that document
-    # archived-but-revivable commands (e.g. `ao harvest`, `ao forge`, behind
-    # //go:build flywheel|legacy) still validate against the full command
-    # surface. The default `ao` omits them, but a skill may legitimately
-    # reference any command; validating only the spine would false-fail those.
-    go build -tags "flywheel legacy" -o "$AO_BIN" ./cmd/ao
-  )
+# Shared `ao` snippet resolution machinery (build + resolver core), so this gate
+# and the docs.cli-snippets gate resolve against the SAME cobra tree from one
+# place. Resolve via the pre-cd absolutized $SCRIPT_DIR (a relative
+# ${BASH_SOURCE[0]} would resolve wrongly if a caller cd'd first — the .1 lane's
+# round-1 pawl catch).
+# shellcheck source=scripts/lib/ao-snippet-resolve.sh
+. "$SCRIPT_DIR/lib/ao-snippet-resolve.sh"
+
+# Build (or reuse) the archive-tagged ao binary; sets + exports AO_BIN.
+AO_BIN="$(ao_snippet_resolve_bin "$REPO_ROOT")"
+# Clean up a lib-built temp binary on exit (no-op when AGENTOPS_AO_BIN was set).
+if [[ -n "${AO_SNIPPET_TMP_DIR:-}" ]]; then
+  trap 'rm -rf "$AO_SNIPPET_TMP_DIR"' EXIT
 fi
-
-[[ -x "$AO_BIN" ]] || {
-  echo "Missing or non-executable ao binary: $AO_BIN" >&2
-  exit 1
-}
 
 export AO_BIN
 export REPO_ROOT
+# Byte-identical resolution semantics for the skills gate: `ao help <chain>`,
+# trust returncode==0 (the original validator's predicate).
+export AO_RESOLVE_MODE=help
 
 python3 - <<'PY'
 import os
 import pathlib
 import re
 import shlex
-import subprocess
 import sys
 
+# Import the shared resolution core (extracted to scripts/lib/).
+sys.path.insert(0, os.environ["AO_SNIPPET_LIB_DIR"])
+from ao_snippet_resolve import iter_snippets, make_resolver_from_env
+
 repo_root = pathlib.Path(os.environ["REPO_ROOT"])
-ao_bin = os.environ["AO_BIN"]
 roots = [repo_root / "skills", repo_root / "skills-codex"]
 allowed_suffixes = {".md", ".sh"}
-wordish = re.compile(r"^[a-z][a-z0-9-]*$")
-control_tokens = {"|", "||", "&&", ";", "&"}
 stale_beads_resolver = re.compile(r"BEADS_DIR=\$PWD/_beads|git -C _beads|git add \.beads|git add _beads")
 stale_beads_allowed = re.compile(r"\b(anti-pattern|do not|don't|must not|never|reject|fails?|historical|retired)\b", re.IGNORECASE)
 
+resolver = make_resolver_from_env()
 failures = []
-help_cache = {}
-
-def iter_snippets(path: pathlib.Path):
-    try:
-        text = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        return
-
-    for lineno, line in enumerate(text.splitlines(), start=1):
-        if "ao " not in line:
-            continue
-
-        snippets = []
-        for match in re.finditer(r"`([^`]*\bao\b[^`]*)`", line):
-            snippets.append(match.group(1).strip())
-
-        stripped = line.strip()
-        if stripped.startswith("ao "):
-            snippets.append(stripped)
-
-        for snippet in snippets:
-            yield lineno, snippet
-
-def command_help(command):
-    key = tuple(command)
-    if key not in help_cache:
-        result = subprocess.run(
-            [ao_bin, "help", *command],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-        help_cache[key] = result
-    return help_cache[key]
-
-def global_help():
-    return command_help([])
-
-def trim_shell_tokens(tokens):
-    trimmed = []
-    for token in tokens:
-        if token in control_tokens:
-            break
-        if token.startswith(("|", ">", "<")):
-            break
-        if token.endswith((";", "&&", "||")):
-            trimmed.append(token.rstrip(";"))
-            break
-        trimmed.append(token)
-    return [token for token in trimmed if token]
-
-def resolve_command(tokens):
-    candidates = []
-    for token in tokens[1:]:
-        if token.startswith("-"):
-            break
-        if any(ch in token for ch in "<>[]{}=$("):
-            break
-        if not wordish.match(token):
-            break
-        candidates.append(token)
-
-    for end in range(len(candidates), 0, -1):
-        candidate = candidates[:end]
-        result = command_help(candidate)
-        if result.returncode == 0:
-            return candidate, result.stdout
-    return None, None
-
-def normalize_flag(token):
-    if "=" in token:
-        token = token.split("=", 1)[0]
-    return token
-
-def is_regex_like(tokens):
-    return any(re.search(r"[\[\]\(\)\^\*\+\?]", token) for token in tokens[1:])
 
 def validate_snippet(path: pathlib.Path, lineno: int, snippet: str):
     try:
@@ -129,21 +51,21 @@ def validate_snippet(path: pathlib.Path, lineno: int, snippet: str):
     except ValueError:
         return
 
-    tokens = trim_shell_tokens(tokens)
+    tokens = resolver.trim_shell_tokens(tokens)
     if not tokens or tokens[0] != "ao":
         return
 
-    if is_regex_like(tokens):
+    if resolver.is_regex_like(tokens):
         return
 
-    command, help_text = resolve_command(tokens)
+    command, help_text = resolver.resolve_command(tokens)
     if not command:
         if len(tokens) == 1:
             return
         if all(token.startswith("-") for token in tokens[1:]):
-            help_text = global_help().stdout
+            help_text = resolver.global_help()
             for flag in tokens[1:]:
-                normalized = normalize_flag(flag)
+                normalized = resolver.normalize_flag(flag)
                 if normalized not in help_text:
                     failures.append(
                         f"{path.relative_to(repo_root)}:{lineno}: flag {normalized} not found in help for ao"
@@ -158,7 +80,7 @@ def validate_snippet(path: pathlib.Path, lineno: int, snippet: str):
             continue
         if len(token) > 1 and token[1:].isdigit():
             continue
-        flags.append(normalize_flag(token))
+        flags.append(resolver.normalize_flag(token))
     for flag in flags:
         if flag not in help_text:
             failures.append(
@@ -182,7 +104,7 @@ for root in roots:
                 failures.append(
                     f"{path.relative_to(repo_root)}:{lineno}: stale beads resolver; use BEADS_DIR=\"$(ao beads dir)\" and git -C \"$(ao beads dir)\""
                 )
-        for lineno, snippet in iter_snippets(path):
+        for lineno, snippet in iter_snippets(text):
             validate_snippet(path, lineno, snippet)
 
 if failures:

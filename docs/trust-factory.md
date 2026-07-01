@@ -53,8 +53,8 @@ context is logged so a later reviewer can ask *what did the agent actually
 know when it acted?* without guessing.
 
 **Reproducibility.** The RPI workflow (Research → Plan → Implement → Validate)
-runs each phase against a written contract, and `ao crank` isolates parallel
-work in worktrees so the inputs to a phase can be replayed. The packet captured
+runs each phase against a written contract, and the `/crank` skill isolates
+parallel work in worktrees so the inputs to a phase can be replayed. The packet captured
 at planning time is the same packet a re-run consumes; deviations show up as
 diffs against a known input, not as drift.
 
