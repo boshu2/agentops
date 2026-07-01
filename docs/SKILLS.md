@@ -79,6 +79,7 @@ What are you trying to do?
 └─ "First time here" ────────────► ao session bootstrap → /status
 ```
 
+<!-- BEGIN:spine -->
 ## The Membrane — validation spine (no verdict = not done)
 
 The verification skills, the load-bearing product. Every change reaches *done*
@@ -238,6 +239,7 @@ Execute a single beads issue with full lifecycle.
 ```
 
 **Phases:** Context → Tests → Code → Validation → Commit
+<!-- END:spine -->
 
 ---
 

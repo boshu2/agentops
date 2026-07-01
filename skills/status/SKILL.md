@@ -1,5 +1,6 @@
 ---
 name: status
+spine: true
 description: 'Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".'
 practices:
 - dora-metrics

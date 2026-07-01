@@ -1,5 +1,6 @@
 ---
 name: security
+spine: true
 description: 'Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: "security", "run repository security scans for", "security skill".'
 practices:
 - supply-chain-integrity

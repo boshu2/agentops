@@ -1,5 +1,6 @@
 ---
 name: reality-check
+spine: true
 description: >-
   Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent.
 practices:

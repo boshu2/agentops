@@ -1,5 +1,6 @@
 ---
 name: pre-land-refuters
+spine: true
 description: "Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute."
 practices:
 - llm-eval-harness
