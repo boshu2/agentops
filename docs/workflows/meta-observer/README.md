@@ -130,11 +130,11 @@ Located in `.claude/workflows/meta-observer/`
    - Quick start guides
    - All included artifacts
 
-2. **`pattern-guide.md`**
+2. **`../meta-observer-pattern.md`**
    - Full pattern documentation
    - Architecture, principles, usage
    - Examples, troubleshooting
-   - [View guide →](./pattern-guide.md)
+   - [View guide →](../meta-observer-pattern.md)
 
 3. **`example-today.md`**
    - Today's experiment (2025-11-09)
@@ -394,9 +394,9 @@ This pattern validates and uses:
 │   ├── meta-observer.md            # Observer agent protocol
 │   └── autonomous-worker.md        # Worker template
 └── workflows/
+    ├── meta-observer-pattern.md    # Full pattern documentation
     └── meta-observer/
         ├── README.md               # This file - overview
-        ├── pattern-guide.md        # Full pattern documentation
         ├── example-today.md        # Real experiment example
         └── SHOWCASE.md             # Public demonstration doc
 ```
@@ -464,7 +464,7 @@ This pattern validates and uses:
 ## Support
 
 **Questions?**
-- Read: `pattern-guide.md` (comprehensive)
+- Read: `../meta-observer-pattern.md` (comprehensive)
 - Example: `example-today.md` (real usage)
 - Showcase: `SHOWCASE.md` (for presentations)
 

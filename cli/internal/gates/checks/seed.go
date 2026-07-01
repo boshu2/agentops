@@ -96,6 +96,16 @@ var (
 		"scripts/.docs-demoted-claims-baseline",
 		"tests/scripts/check-docs-demoted-claims.bats",
 	}
+	// docs.duplicates shasums every live doc and fails on a byte-identical pair
+	// over the line threshold — an anti-regrowth guard after a docs-lifecycle
+	// sweep deleted a wholesale byte-dup (age-gate-the-ungated-egwt.12). Runs on
+	// any docs change plus self-reference (script / shared scope lib / bats).
+	docsDuplicatesPaths = []string{
+		"docs/**",
+		"scripts/check-docs-duplicates.sh",
+		"scripts/lib/docs-scope.sh",
+		"tests/scripts/check-docs-duplicates.bats",
+	}
 	archDocDriftPaths = []string{
 		"docs/architecture/ports-and-adapters.md",
 		"docs/contracts/bounded-contexts.yaml",
@@ -308,6 +318,7 @@ func init() {
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
 		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
+		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},

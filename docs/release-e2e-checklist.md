@@ -29,7 +29,6 @@ Expect:
   - `Codex runtime sections`
   - `Codex artifact metadata`
   - `Skill runtime parity`
-  - `Hook install smoke (minimal + full)`
   - `ao init`/bootstrap + `ao rpi` smoke
 
 Reference test: `tests/integration/test-release-e2e-validation.sh`.
