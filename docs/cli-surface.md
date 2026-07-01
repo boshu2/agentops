@@ -88,6 +88,7 @@
 | `ao eval outcomes ingest` | `public-stateful-fixture-needed` | `allowlisted` | Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up). |
 | `ao eval run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval scenario add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao eval scenario evaluate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval scenario init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval scenario list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval scenario validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
