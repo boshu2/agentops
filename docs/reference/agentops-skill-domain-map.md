@@ -61,12 +61,12 @@ Disposition meanings:
 | Skill | Domain | Hex role | First disposition | Rationale |
 |---|---|---|---|---|
 | `account-rotation` | BC5 Runtime | supporting | keep | Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill.. |
-| `acfs` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `acfs` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. Demoted to experimental (heavy rpi chain, no measured uplift); external ~/acfs tool — candidate cut (deferred to operator).. |
 | `agent-mail` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agent-native` | BC5 Runtime | supporting | keep | Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival. |
 | `agy-headless-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
+| `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. Demoted to experimental (heavy rpi chain, no measured uplift).. |
 | `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
 | `beads-br` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `beads-bv` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -90,7 +90,7 @@ Disposition meanings:
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
 | `dual-pane-atm` | BC6 Orchestration | supporting | keep | CEP slice 1: repeatable Opus + Codex dual-pane ATM collaboration; consumes using-atm and agent-mail; produces .agents/dual-pane artifacts.. |
 | `eval-outcomes` | BC2 Validation | supporting | keep | Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar. |
-| `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). |
+| `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift).. |
 | `flywheel` | BC1 Corpus | domain | update | Flywheel health kernel; needs productized self-test. |
 | `forge` | BC1 Corpus | domain | update | Learning extraction; align to capture quality and promotion ratchet. |
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T00:14:28Z",
+  "generated_at": "2026-07-01T04:04:11Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -83,14 +83,6 @@
         "path": "skills/agy-headless-evidence/",
         "has_skill_md": true,
         "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "autodev",
-        "tier": "execution",
-        "path": "skills/autodev/",
-        "has_skill_md": true,
-        "has_references": true,
         "reference_count": 0
       },
       {
@@ -196,14 +188,6 @@
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
-      },
-      {
-        "name": "evolve",
-        "tier": "execution",
-        "path": "skills/evolve/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 27
       },
       {
         "name": "implement",
@@ -364,6 +348,30 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 10
+      },
+      {
+        "name": "acfs",
+        "tier": "experimental",
+        "path": "skills/acfs/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "autodev",
+        "tier": "experimental",
+        "path": "skills/autodev/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
+        "name": "evolve",
+        "tier": "experimental",
+        "path": "skills/evolve/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 27
       },
       {
         "name": "council",
@@ -595,14 +603,6 @@
         "path": "skills/status/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "acfs",
-        "tier": "unknown",
-        "path": "skills/acfs/",
-        "has_skill_md": true,
-        "has_references": false,
         "reference_count": 0
       },
       {
@@ -1626,7 +1626,7 @@
       "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
-      "tier": "unknown",
+      "tier": "experimental",
       "capability_class": "orchestration",
       "purpose": "|-",
       "status": "active",
@@ -1779,7 +1779,7 @@
       "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
-      "tier": "execution",
+      "tier": "experimental",
       "capability_class": "planning",
       "purpose": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: \"manage PROGRAM.md/AUTODEV.md\", \"autodev loop rules\", \"evolve/factory tick boundaries\".",
       "status": "active",
@@ -2538,7 +2538,7 @@
       "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
-      "tier": "execution",
+      "tier": "experimental",
       "capability_class": "orchestration",
       "purpose": "Run autonomous improvement loops.",
       "status": "active",

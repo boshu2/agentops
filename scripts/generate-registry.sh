@@ -36,7 +36,7 @@ build_skills() {
 
     local tier="unknown"
     if [[ -f "$tiers_file" ]]; then
-      local valid_tiers="judgment execution knowledge product session contribute cross-vendor library background meta utility"
+      local valid_tiers="judgment execution knowledge product session contribute cross-vendor library background meta utility experimental"
       local found=""
       # User-facing: | **name** | tier | description |
       while IFS= read -r line; do

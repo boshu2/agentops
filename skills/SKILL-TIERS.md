@@ -47,6 +47,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, forge, flywheel |
 | **meta** | Internal | Skills about skills | heal-skill, skill-auditor, skill-builder |
+| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, no measured uplift) | evolve, autodev, acfs |
 
 ## The Three Categories
 
@@ -284,9 +285,9 @@ These are how skills chain in practice:
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
-| **evolve** | execution | Autonomous fitness-scored improvement loop |
+| **evolve** | experimental | Autonomous fitness-scored improvement loop |
 | **eval-outcomes** | execution | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
-| **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
+| **autodev** | experimental | PROGRAM.md autonomous development contract setup and validation |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |
 | **refactor** | execution | Safe, verified refactoring with regression testing at each step |
@@ -344,7 +345,7 @@ These are how skills chain in practice:
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **acfs** | orchestration | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
+| **acfs** | experimental | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
 | **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
 | **agy-headless-evidence** | execution | Use when running Antigravity (AGY) headlessly and capturing durable, machine-checkable JSONL evidence of each run. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |

@@ -247,7 +247,7 @@ def parse_tiers(tiers_path: pathlib.Path) -> Dict[str, str]:
     """
     valid_tiers = {
         "judgment", "execution", "knowledge", "product", "session", "contribute",
-        "cross-vendor", "library", "background", "meta", "utility",
+        "cross-vendor", "library", "background", "meta", "utility", "experimental",
     }
     out: Dict[str, str] = {}
     try:
