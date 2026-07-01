@@ -169,6 +169,13 @@ main() {
     exit 0
   fi
 
+  # A push is in flight from here on: mark it for every child so no descendant
+  # (pawl-verdict.sh write/rebind via any review routed under this gate) ever
+  # creates a commit mid-push — the auto-bind parks the ledger row instead
+  # (age-wedge-all-in-dyr0.3 re-entrancy; see scripts/pawl-land.sh for why a
+  # commit here desyncs the local_sha git already selected for the push).
+  export PAWL_PREPUSH=1
+
   local had_input=false
   local local_ref local_sha remote_ref remote_sha
   while read -r local_ref local_sha remote_ref remote_sha; do

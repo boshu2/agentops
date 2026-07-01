@@ -100,6 +100,212 @@ _ao_bin() {
   command -v ao 2>/dev/null
 }
 
+# ---------------------------------------------------------------------------
+# Verified verdict-edge emission + ledger auto-bind (age-wedge-all-in-dyr0.3)
+#
+# SENSOR (`ao provenance emit-verdict`): fail-OPEN but LOUD. A broken emit never
+# blocks the verdict that was already written (the review result stands), but it
+# prints a prominent warning naming the exact corrective command plus a nonzero
+# SECONDARY-STATUS line — replacing the old silent `|| true` (a silently dead
+# sensor is worse than none, because it is trusted).
+#
+# AUTO-BIND (the ledger commit — kills the manual `chore(provenance): bind …`
+# step): fail-CLOSED. It can only ever commit the single path
+# docs/provenance/ledger.jsonl (`git add` of that exact path + a pathspec-
+# limited `git commit -- <path>`, which leaves unrelated staged work staged and
+# OUT of the bind commit), fires only when THIS emit actually appended to the
+# ledger, and NEVER creates a commit in pre-push/hook context: git has already
+# selected the local_sha being pushed, so mutating HEAD mid-push desyncs the
+# pushed ref (see scripts/pawl-land.sh). Gated by PAWL_AUTOBIND (default ON;
+# 0/false/no/off opts out). The bind commit's trailing-#trivial subject +
+# provenance-only file set satisfies the check-pawl-pre-push.sh waiver
+# (age-u43w), so the next push's tip is waived and the cycle terminates.
+# ---------------------------------------------------------------------------
+
+# _ledger_root_from_cwd: the directory whose docs/provenance/ledger.jsonl the
+# emit will write. MIRRORS ao's resolveLedgerPath() (cli/cmd/ao/provenance_add.go):
+# walk up from cwd looking for a dir with docs/ AND schemas/, else a .git entry;
+# fall back to cwd. Callers that isolate the ledger do so by cwd (see
+# scripts/epic-d16-donetest.sh) — that contract is preserved, so the snapshot
+# and the auto-bind always target the SAME ledger the emit wrote.
+_ledger_root_from_cwd() {
+  local dir="$PWD" i
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+    : "$i"
+    if [[ -d "$dir/docs" && -d "$dir/schemas" ]]; then printf '%s\n' "$dir"; return 0; fi
+    if [[ -e "$dir/.git" ]]; then printf '%s\n' "$dir"; return 0; fi
+    [[ "$dir" == "/" ]] && break
+    dir="$(dirname "$dir")"
+  done
+  printf '%s\n' "$PWD"
+}
+
+# _in_prepush_context: true when a git push (or any git hook) is in flight, i.e.
+# creating a commit now would desync the ref git already selected for push.
+# PRIMARY: the explicit PAWL_PREPUSH marker exported by the pre-push gate entry
+# (scripts/check-pawl-pre-push.sh). SECONDARY (heuristic): GIT_PREFIX / GIT_DIR
+# SET-ness — git exports these into hook subprocesses (probed: git 2.54 pre-push
+# exports GIT_PREFIX; older gits export GIT_DIR) and nothing sets them in a
+# normal interactive shell. Failure direction is safe by construction: a false
+# positive merely parks the row and prints the bind one-liner.
+_in_prepush_context() {
+  case "$(printf '%s' "${PAWL_PREPUSH:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on) return 0 ;;
+  esac
+  [[ -n "${GIT_PREFIX+set}" || -n "${GIT_DIR+set}" ]]
+}
+
+# _warn_emit_failed <why> <verdict-file-abs> [detail]: the LOUD fail-open sensor
+# warning — names the exact corrective commands and prints a nonzero
+# SECONDARY-STATUS marker WITHOUT changing the caller's exit semantics.
+_warn_emit_failed() {
+  local why="$1" vfile="$2" detail="${3:-}"
+  {
+    echo "pawl-verdict: =================================================================="
+    echo "pawl-verdict: WARNING — provenance verdict-edge emit FAILED: $why"
+    if [[ -n "$detail" ]]; then
+      printf '%s\n' "$detail" | sed 's/^/pawl-verdict:   | /'
+    fi
+    echo "pawl-verdict: The verdict itself is UNAFFECTED (fail-open sensor), but the"
+    echo "pawl-verdict: provenance ledger did NOT gain this verdict edge."
+    echo "pawl-verdict: FIX: rebuild ao (cd <agentops>/cli && make build), then retry:"
+    echo "pawl-verdict:   ao provenance emit-verdict --file $vfile"
+    echo "pawl-verdict: =================================================================="
+    echo "pawl-verdict: SECONDARY-STATUS: provenance-emit=1 (verdict outcome unchanged)"
+  } >&2
+}
+
+# _autobind_ledger_edge <bead> <disposition> <ledger-root>: commit the freshly
+# appended ledger edge as the established #trivial provenance-only shape.
+# Fail-closed on scope (only docs/provenance/ledger.jsonl can enter the commit),
+# fail-open on outcome (any failure warns loudly and returns 0 — the verdict and
+# the emitted row both stand).
+_autobind_ledger_edge() {
+  local bead="$1" disposition="$2" root="$3"
+  local rel="docs/provenance/ledger.jsonl"
+  local msg="chore(provenance): bind pawl $disposition verdict for $bead #trivial"
+  local bind_cmd="git -C $root add -- $rel && git -C $root commit -m \"$msg\" -- $rel"
+
+  case "$(printf '%s' "${PAWL_AUTOBIND:-1}" | tr '[:upper:]' '[:lower:]')" in
+    0|false|no|off)
+      {
+        echo "pawl-verdict: auto-bind OFF (PAWL_AUTOBIND=${PAWL_AUTOBIND:-0}) — ledger edge left uncommitted; bind with:"
+        echo "  $bind_cmd"
+      } >&2
+      return 0 ;;
+  esac
+
+  # Never create commits in a repo we do not own (stranger/embedded review path).
+  if [[ "${PAWL_UNTRUSTED_REPO:-0}" == "1" ]]; then
+    echo "pawl-verdict: auto-bind skipped (PAWL_UNTRUSTED_REPO=1) — not committing in a reviewed stranger repo" >&2
+    return 0
+  fi
+
+  # Bind ONLY when the ledger root is itself the toplevel of a git work tree —
+  # never let a stray PARENT repo swallow a commit aimed at an isolated root.
+  # Compare physical paths (macOS /tmp vs /private/tmp).
+  local top top_phys root_phys
+  top="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" || top=""
+  top_phys=""; root_phys=""
+  [[ -n "$top" ]] && top_phys="$(cd "$top" 2>/dev/null && pwd -P)"
+  root_phys="$(cd "$root" 2>/dev/null && pwd -P)"
+  if [[ -z "$top_phys" || "$top_phys" != "$root_phys" ]]; then
+    echo "pawl-verdict: auto-bind skipped ($root is not a git work-tree toplevel) — ledger edge left uncommitted" >&2
+    return 0
+  fi
+
+  # Anything to commit on the ledger path? (The append-gate in the caller means
+  # we normally get here only after a real append.)
+  [[ -n "$(git -C "$root" status --porcelain -- "$rel" 2>/dev/null)" ]] || return 0
+
+  # RE-ENTRANCY (critical): NEVER mutate HEAD while a push/hook is in flight —
+  # git already selected the local_sha being pushed (scripts/pawl-land.sh).
+  # Park the row and print the exact post-push one-liner instead.
+  if _in_prepush_context; then
+    {
+      echo "pawl-verdict: PRE-PUSH context detected — ledger edge written but NOT committed (a commit here would desync the pushed ref)."
+      echo "pawl-verdict: after the push completes, bind it with:"
+      echo "  $bind_cmd"
+    } >&2
+    return 0
+  fi
+
+  # Path-scoped bind commit: stage ONLY the ledger path (never -A), then a
+  # pathspec-limited commit — unrelated staged work stays staged and excluded.
+  if ! git -C "$root" add -- "$rel" 2>/dev/null; then
+    {
+      echo "pawl-verdict: WARNING — auto-bind could not stage $rel; ledger edge left uncommitted. Bind manually:"
+      echo "  $bind_cmd"
+      echo "pawl-verdict: SECONDARY-STATUS: autobind-commit=1 (verdict outcome unchanged)"
+    } >&2
+    return 0
+  fi
+  local commit_out commit_rc=0
+  commit_out="$(git -C "$root" commit -m "$msg" -- "$rel" 2>&1)" || commit_rc=$?
+  if [[ "$commit_rc" -ne 0 ]]; then
+    {
+      echo "pawl-verdict: WARNING — auto-bind commit FAILED (rc=$commit_rc); ledger edge left uncommitted."
+      printf '%s\n' "$commit_out" | sed 's/^/pawl-verdict:   | /'
+      echo "pawl-verdict: bind manually: $bind_cmd"
+      echo "pawl-verdict: SECONDARY-STATUS: autobind-commit=1 (verdict outcome unchanged)"
+    } >&2
+    return 0
+  fi
+
+  # Fail-closed post-assert: the bind commit must contain the ledger path ONLY.
+  local sha files
+  sha="$(git -C "$root" rev-parse HEAD 2>/dev/null)"
+  files="$(git -C "$root" diff-tree --no-commit-id --name-only -r "$sha" 2>/dev/null)"
+  if [[ "$files" != "$rel" ]]; then
+    {
+      echo "pawl-verdict: WARNING — auto-bind commit ${sha:0:12} contains unexpected paths (wanted ONLY $rel):"
+      printf '%s\n' "$files" | sed 's/^/pawl-verdict:   | /'
+      echo "pawl-verdict: inspect it: git -C $root show --stat ${sha:0:12}"
+      echo "pawl-verdict: SECONDARY-STATUS: autobind-commit=1 (verdict outcome unchanged)"
+    } >&2
+    return 0
+  fi
+  echo "pawl-verdict: auto-bound verdict ledger edge at ${sha:0:12} ($msg)" >&2
+}
+
+# emit_verdict_edge_checked <verdict-file> <bead> <disposition>: the CHECKED
+# replacement for both former best-effort `… || true` emit sites (write +
+# rebind). Always returns 0 — the sensor must never change the caller's primary
+# exit semantics; failures are loud (see _warn_emit_failed), never silent.
+emit_verdict_edge_checked() {
+  local vfile="$1" bead="$2" disposition="$3"
+  local vfile_abs
+  case "$vfile" in /*) vfile_abs="$vfile" ;; *) vfile_abs="$PWD/$vfile" ;; esac
+
+  local _ao
+  _ao="$(_ao_bin)" || _ao=""
+  if [[ -z "$_ao" ]]; then
+    _warn_emit_failed "no trusted ao binary found (PATH / AO_BIN)" "$vfile_abs"
+    return 0
+  fi
+
+  # Snapshot the ledger size so the auto-bind fires ONLY when THIS emit actually
+  # appended: an idempotent no-op re-emit, a failed emit, or a stubbed ao must
+  # never trigger a commit — and pre-existing dirt alone never does either.
+  local ledger_root ledger before="0" after="0"
+  ledger_root="$(_ledger_root_from_cwd)"
+  ledger="$ledger_root/docs/provenance/ledger.jsonl"
+  [[ -f "$ledger" ]] && before="$(wc -c < "$ledger" | tr -d '[:space:]')"
+
+  local emit_out emit_rc=0
+  emit_out="$("$_ao" provenance emit-verdict --file "$vfile_abs" 2>&1)" || emit_rc=$?
+  if [[ "$emit_rc" -ne 0 ]]; then
+    _warn_emit_failed "ao provenance emit-verdict exited $emit_rc" "$vfile_abs" "$emit_out"
+    return 0
+  fi
+  echo "pawl-verdict: provenance verdict edge emitted for $bead ($disposition)" >&2
+
+  [[ -f "$ledger" ]] && after="$(wc -c < "$ledger" | tr -d '[:space:]')"
+  [[ "$after" != "$before" ]] || return 0   # nothing appended -> nothing to bind
+  _autobind_ledger_edge "$bead" "$disposition" "$ledger_root"
+  return 0
+}
+
 cmd="${1:-}"; shift || true
 
 # --- shared arg parse helpers ------------------------------------------------
@@ -449,11 +655,10 @@ do_write() {
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
 
-  # Emit verdict→commit provenance edge (non-blocking, ag-cm8nd sensor).
-  local _ao; _ao="$(_ao_bin)" || _ao=""
-  if [[ -n "$_ao" ]]; then
-    "$_ao" provenance emit-verdict --file "$out" 2>/dev/null || true
-  fi
+  # Emit verdict→commit provenance edge (ag-cm8nd sensor) — CHECKED, and on a
+  # real append auto-bind the ledger edge (age-wedge-all-in-dyr0.3). Fail-open
+  # for the verdict (never blocks), loud on failure, never commits mid-push.
+  emit_verdict_edge_checked "$out" "$bead" "$disposition"
 
   # Emit a yield-ledger gate-verdict (age-uxva): the membrane event log of every
   # PANEL/refuter catch, not just merge-path ones. Best-effort, non-blocking,
@@ -572,8 +777,9 @@ do_rebind() {
      '.head_sha=$h | .generated_at=$ts' "$out" > "$tmp" || { rm -f "$tmp"; die "rebind: failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: rebound $out -> head ${newhead:0:12}" >&2
-  local _ao; _ao="$(_ao_bin)" || _ao=""
-  [[ -n "$_ao" ]] && { "$_ao" provenance emit-verdict --file "$out" >/dev/null 2>&1 || true; }
+  # Re-fire the verdict sensor for the new head — CHECKED + auto-bind, same as
+  # write (rebind only ever restamps a CONFIRMED verdict; refused above else).
+  emit_verdict_edge_checked "$out" "$bead" "CONFIRMED"
 }
 
 case "$cmd" in
