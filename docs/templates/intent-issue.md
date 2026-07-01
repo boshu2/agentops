@@ -15,7 +15,7 @@
 ## Bounded context
 
 > Which bounded context from [`docs/contracts/context-map.md`](../contracts/context-map.md) does this work belong to? If it crosses contexts, this is two issues, not one.
-> The bead must carry exactly one matching label: `bc-corpus`, `bc-validation`, `bc-loop`, `bc-factory`, or `bc-runtime`.
+> The bead must carry exactly one matching label: `bc-corpus`, `bc-validation`, `bc-loop`, `bc-factory`, `bc-runtime`, or `bc-orchestration`.
 
 ## Hexagonal boundary
 

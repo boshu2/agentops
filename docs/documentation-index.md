@@ -117,7 +117,7 @@ Bridge / framing docs:
 ### Meta-Observer
 
 - [Meta-Observer README](workflows/meta-observer/README.md) — Complete workflow package overview
-- [Pattern Guide](workflows/meta-observer/pattern-guide.md) — Autonomous multi-session coordination guide
+- [Pattern Guide](workflows/meta-observer-pattern.md) — Autonomous multi-session coordination guide
 - [Example Session](workflows/meta-observer/example-today.md) — Real example from 2025-11-09
 - [Showcase](workflows/meta-observer/SHOWCASE.md) — Distributed intelligence for multi-session work
 

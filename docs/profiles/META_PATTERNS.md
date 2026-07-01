@@ -337,38 +337,6 @@ Total:                                 113k (56.5%) ⚠️ Over 40%
 
 ---
 
-## Pattern 14: Cross-Flavor Feedback Loops
-
-**Discovery**: Technical work (work/) feeds personal development (personal/).
-
-**Feedback Loop**:
-
-```
-sre-devops (work/gitops/) → Build AgentOps framework
-    ↓
-Git metrics: an uncited speedup figure (removed — no citation), 95% success rate
-    ↓
-researcher (personal/12-factor-agentops/) → Extract patterns
-    ↓
-Document framework, compliance audits
-    ↓
-personal (personal/life/) → Track in MCI, update resume
-    ↓
-Career leverage: NVIDIA application with proof
-    ↓
-Visibility campaign: LinkedIn, YouTube
-    ↓
-Community adoption → New use cases
-    ↓
-researcher → Analyze new use cases → Improve framework
-    ↓
-Loop repeats...
-```
-
-**Insight**: Work and personal are not separate - they're symbiotic feedback loops.
-
----
-
 ## Pattern 15: Role-Specific Validation Strategies
 
 **Discovery**: Each role validates work differently.
