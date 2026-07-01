@@ -1216,17 +1216,21 @@ elif [[ -x "cli/bin/ao" ]] && command -v jq >/dev/null 2>&1; then
 elif [[ ! -d "cli/cmd/ao" ]]; then
     # Bats fake-repo, partial checkout, or any environment where cli/cmd/ao
     # isn't present: skip rather than attempt a no-source build that emits
-    # a misleading "/tmp/ao-goals-val: No such file or directory" error.
+    # a misleading "temp binary: No such file or directory" error.
     skip "goals validate (cli/cmd/ao/ not present in this tree)"
 elif command -v jq >/dev/null 2>&1; then
-    # Full-mode fallback: build into a temp binary the gate row's way.
-    if goals_validate_output="$(bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && /tmp/ao-goals-val goals validate --json' 2>&1)" && \
+    # Full-mode fallback: build into a per-run temp dir the gate row's way.
+    # A per-run mktemp -d (not a fixed /tmp path) keeps concurrent worktrees
+    # from clobbering each other and avoids the predictable-temp hazard.
+    goals_val_dir="$(mktemp -d "${TMPDIR:-/tmp}/ao-goals-val.XXXXXX")"
+    if goals_validate_output="$(bash -c 'cd cli && go build -o "$1/ao" ./cmd/ao && "$1/ao" goals validate --json' _ "$goals_val_dir" 2>&1)" && \
        echo "$goals_validate_output" | jq -e '.valid == true' >/dev/null 2>&1; then
         pass "goals validate"
     else
         fail "goals validate"
         indent_output "$goals_validate_output"
     fi
+    rm -rf "$goals_val_dir"
 else
     skip "goals validate (jq not installed)"
 fi

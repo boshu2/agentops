@@ -272,7 +272,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | manifest-versions-match | `test "$(jq -r '.metadata.version' .claude-plugin/marketplace.json)" = "$(jq -r '.version' .claude-plugin/plugin.json)"` | 5 | Plugin and marketplace versions in sync |  |
 | wiring-closure | `timeout 60 bash scripts/check-wiring-closure.sh` | 7 | All scripts, skills, and hooks referenced by registries exist |  |
 | contract-compatibility | `timeout 60 bash scripts/check-contract-compatibility.sh` | 5 | Contract schemas and references exist on disk |  |
-| goals-validate | `bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && cd .. && /tmp/ao-goals-val goals validate --json 2>/dev/null \| jq -e ".valid == true"'` | 5 | GOALS.md parses and validates without structural errors |  |
+| goals-validate | `bash -c 'd=$(mktemp -d "${TMPDIR:-/tmp}/ao-goals-val.XXXXXX"); cd cli && go build -o "$d/ao" ./cmd/ao && cd .. && "$d/ao" goals validate --json 2>/dev/null \| jq -e ".valid == true"; rc=$?; rm -rf "$d"; exit $rc'` | 5 | GOALS.md parses and validates without structural errors |  |
 | compile-freshness | `bash scripts/check-compile-health.sh` | 4 | Compile defrag report is fresh and stale learnings are low | runtime-artifact |
 | compile-no-oscillation | `bash scripts/check-compile-oscillation.sh` | 4 | No evolve goals oscillating across consecutive cycles | runtime-artifact |
 | codex-parity-drift | `bash scripts/check-codex-parity-drift.sh` | 5 | No codex parity findings from audit |  |

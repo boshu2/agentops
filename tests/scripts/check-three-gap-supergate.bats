@@ -37,11 +37,8 @@ EOF
 
 teardown() {
     rm -rf "$TMP_HOME"
-    # Gap 3 tests use a shim `go` that writes a fake /tmp/ao-sg shell
-    # script; clean it up so a subsequent real-goals run that does
-    # `go build -o /tmp/ao-sg` does not trip "output already exists
-    # and is not an object file".
-    rm -f /tmp/ao-sg
+    # The gate builds into a per-run `mktemp -d` scratch dir (not a fixed
+    # /tmp path), so there is no shared build artifact to clean up here.
 }
 
 @test "Gap 2 SKIPs compile-health when no defrag artifact is present" {
@@ -300,4 +297,69 @@ EOF
     rm -f "$SHIM_ROOT/scripts/proof-run.sh" "$SHIM_ROOT/cli/bin/ao"
     PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
     [[ "$output" == *"SKIP  flywheel-proof (cli/bin/ao not built)"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# mktemp de-race (age-gate-the-ungated-egwt.3 / recon M-3)
+#
+# The release-authority gate scripts must not use fixed world-writable /tmp
+# paths for build output or captured output: concurrent worktrees would
+# clobber each other, and a predictable temp path is a classic hazard. Both
+# scripts derive a per-run `mktemp -d` scratch dir instead. These tests pin
+# that invariant against the REAL scripts in the tree (not the shim copy).
+# ---------------------------------------------------------------------------
+
+@test "no fixed /tmp build/capture paths remain in the gate scripts" {
+    # The mktemp template `ao-gate.XXXXXX` (and the per-run ao-goals-val.XXXXXX)
+    # are the sanctioned replacements; every fixed literal must be gone.
+    local sg="$REPO_ROOT/scripts/check-three-gap-supergate.sh"
+    local pp="$REPO_ROOT/scripts/pre-push-gate.sh"
+    # No fixed build binary path.
+    run grep -nE '/tmp/ao-sg([^.]|$)' "$sg"
+    [ "$status" -ne 0 ]
+    # No fixed per-label capture path.
+    run grep -nE '/tmp/sg-' "$sg"
+    [ "$status" -ne 0 ]
+    # No fixed goals-validate binary path in the live pre-push gate.
+    run grep -nE '/tmp/ao-goals-val([^.]|$)' "$pp"
+    [ "$status" -ne 0 ]
+    # The mktemp seam is present in both scripts.
+    run grep -qF 'mktemp -d "${TMPDIR:-/tmp}/ao-gate.XXXXXX"' "$sg"
+    [ "$status" -eq 0 ]
+    run grep -qF 'mktemp -d "${TMPDIR:-/tmp}/ao-goals-val.XXXXXX"' "$pp"
+    [ "$status" -eq 0 ]
+}
+
+@test "per-run mktemp -d dirs are distinct across concurrent runs (no clobber)" {
+    # Two independent runs of the tmpdir-derivation logic (same template the
+    # supergate uses) must yield distinct dirs, so concurrent worktrees never
+    # share a build path.
+    local a b
+    a="$(mktemp -d "${TMPDIR:-/tmp}/ao-gate.XXXXXX")"
+    b="$(mktemp -d "${TMPDIR:-/tmp}/ao-gate.XXXXXX")"
+    [ -d "$a" ]
+    [ -d "$b" ]
+    [ "$a" != "$b" ]
+    rmdir "$a" "$b"
+}
+
+@test "Gap 3 writes captures under the per-run tmpdir, never a fixed /tmp/sg- path" {
+    # Force a failing sub-gate so run_gate captures output, then assert the
+    # capture is not left behind at a predictable /tmp/sg-*.out path.
+    shim_go_for_gap3 true
+    cat > "$SHIM_ROOT/scripts/check-wiring-closure.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "forced wiring-closure failure"
+exit 1
+EOF
+    chmod +x "$SHIM_ROOT/scripts/check-wiring-closure.sh"
+    # Clear any stale residue at the OLD fixed capture path first, so the
+    # post-run assertion proves THIS run did not (re-)create it.
+    rm -f /tmp/sg-wiring-closure.out
+    PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"FAIL  wiring-closure"* ]]
+    # The gate captured to (and cleaned up) its own per-run tmpdir on EXIT:
+    # it must not have written the old fixed-path capture at all.
+    [ ! -e /tmp/sg-wiring-closure.out ]
 }
