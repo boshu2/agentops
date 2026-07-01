@@ -199,7 +199,21 @@ done
 # --scope head; and it is lineage-gated below (age-cwo.8 / council C).
 [[ "$converge" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --converge requires --scope head (it certifies a commit)" >&2; exit 2; }
 [[ -x "$PAWL" ]] || { echo "pawl-review: $PAWL not executable" >&2; exit 1; }
-command -v codex >/dev/null 2>&1 || { echo "pawl-review: codex (the cross-family refuter) not on PATH" >&2; exit 1; }
+# age-a9iv.5: hard runtime deps are a PRECONDITION failure (exit 2), NOT a hard error (1) and NOT a
+# review result (3=REFUTED) — a missing dep that exits 1 is easy to misread as a real refutation. Name
+# the dep, say it is installable, and use the distinct precondition code so a caller can tell them apart.
+command -v codex >/dev/null 2>&1 || {
+  echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
+  echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
+  echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
+  exit 2
+}
+command -v jq >/dev/null 2>&1 || {
+  echo "pawl-review: MISSING DEPENDENCY — jq is not on PATH (the pawl parses verdicts with jq)." >&2
+  echo "  This is NOT a review result. Install jq (brew install jq / apt-get install jq) and re-run." >&2
+  echo "  (exit 2 = precondition, not a REFUTE)" >&2
+  exit 2
+}
 
 # The codex refuter is model family 'gpt' (codex|openai|gpt). A same-family AUTHOR
 # would make this a SAME-family review (shared blind spots), not the cross-family
