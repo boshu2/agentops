@@ -717,6 +717,26 @@ pawl_decide() {
 # Back-compat: the original 3-pane all-CONFIRM rule == pawl_decide with min 2.
 pawl_decide_agreement() { pawl_decide 2 "$@"; }
 
+# age-pawl-good-bar #4: PURE — build the REFUTED/HOLD-path refuter list from the panes' ACTUAL
+# emitted verdicts. Echoes one "family:verdict:context:evidence" spec per line for every pane that
+# really voted (CONFIRMED or REFUTED). A timed-out pane (empty verdict) is OMITTED — recording it as
+# REFUTED fabricates a refutation it never made. The verdict schema requires >=1 refuter, so if NO
+# pane voted (all timed out -> REFUTED:insufficient) fall back to the timed-out enabled panes with a
+# *-timeout context, keeping the membrane catch logged AND honest that it was a timeout, not a
+# refute. Args: vc vd va ev_cc ev_cod ev_agy. ("n/a" = a disabled/unavailable pane -> never recorded.)
+_refuted_refuters() {
+  local vc="$1" vd="$2" va="$3" ecc="$4" ecod="$5" eagy="$6" out=""
+  case "$vc" in CONFIRMED|REFUTED) out="${out}claude:${vc}:opus-pawl-pane-fresh:${ecc}"$'\n' ;; esac
+  case "$vd" in CONFIRMED|REFUTED) out="${out}gpt:${vd}:codex-pawl-pane-gpt55:${ecod}"$'\n' ;; esac
+  case "$va" in CONFIRMED|REFUTED) out="${out}gemini:${va}:agy-pawl-pane-flash35:${eagy}"$'\n' ;; esac
+  if [ -z "$out" ]; then
+    [ "$vc" != "n/a" ] && out="${out}claude:REFUTED:opus-pawl-pane-timeout:${ecc}"$'\n'
+    [ "$vd" != "n/a" ] && out="${out}gpt:REFUTED:codex-pawl-pane-timeout:${ecod}"$'\n'
+    [ "$va" != "n/a" ] && out="${out}gemini:REFUTED:agy-pawl-pane-timeout:${eagy}"$'\n'
+  fi
+  printf '%s' "$out"
+}
+
 cmd_route() {
   load_session
   local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
@@ -899,10 +919,13 @@ cmd_route() {
   # Fail-closed REFUTED/HOLD: STILL record the verdict (age-uxva — the membrane catch we MOST
   # want logged; the chokepoint emit lives in pawl-verdict.sh write). Record ONLY the enabled
   # panes' actual results (a timeout maps to the REFUTED token).
-  local -a rf=()
-  [ "$vc" != "n/a" ] && rf+=(--refuter "claude:${vc:-REFUTED}:opus-pawl-pane-fresh:${ev_cc}")
-  [ "$vd" != "n/a" ] && rf+=(--refuter "gpt:${vd:-REFUTED}:codex-pawl-pane-gpt55:${ev_cod}")
-  [ "$va" != "n/a" ] && rf+=(--refuter "gemini:${va:-REFUTED}:agy-pawl-pane-flash35:${ev_agy}")
+  # age-pawl-good-bar #4: record each enabled pane's ACTUAL emitted verdict (via the pure
+  # _refuted_refuters helper). A timed-out pane has NO verdict — the old `${vc:-REFUTED}` FABRICATED
+  # a refutation the pane never made, corrupting the membrane's own evidence (metrics.jsonl already
+  # logs these as "timeout", so the two disagreed). Disposition is unchanged (pawl_decide decided).
+  local -a rf=() _spec
+  while IFS= read -r _spec; do [ -n "$_spec" ] && rf+=(--refuter "$_spec"); done \
+    < <(_refuted_refuters "$vc" "$vd" "$va" "$ev_cc" "$ev_cod" "$ev_agy")
   bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
     --disposition REFUTED --head "$head" \
     --author-context "pawl-route-author-${bead}" --mode "$mode" \
