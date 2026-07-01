@@ -111,6 +111,14 @@ var (
 		"scripts/check-cli-agents-tracker-drift.sh",
 		"tests/scripts/check-cli-agents-tracker-drift.bats",
 	}
+	// provenance.chain: verify the committed ledger's hash chain at the pre-push
+	// authority boundary (age-gate-the-ungated-egwt.9). Runs on any ledger change
+	// plus self-reference (script + bats) so editing the gate re-runs it.
+	provenanceChainPaths = []string{
+		"docs/provenance/**",
+		"scripts/check-provenance-chain.sh",
+		"tests/scripts/check-provenance-chain.bats",
+	}
 	controlPlaneTaxonomyPaths = []string{
 		"docs/architecture/the-agent-factory.md",
 		"docs/architecture/control-loop-model.md",
@@ -251,6 +259,9 @@ func init() {
 			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
 		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
 			Backing: "check-provenance-orphans.sh"},
+		{ID: "provenance.chain", Tiers: gates.Fast | gates.Full, Match: provenanceChainPaths, Blocking: true,
+			Backing:    "check-provenance-chain.sh",
+			RepairHint: "docs/provenance/ledger.jsonl hash chain broken — find the first bad entry with 'ao provenance verify'; repair is a deliberate re-seal, never hand-edit (age-gate-the-ungated-egwt.9)"},
 		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
 		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",
