@@ -97,3 +97,68 @@ EOF
   [[ "$output" == *"target.txt"* ]]
   [[ "$output" != *"BROKEN SHIM"* ]]
 }
+
+@test "preamble: with_tmpdir creates a dir and assigns it to the caller variable" {
+  run bash -c '. "'"$LIB"'"; with_tmpdir work; [ -d "$work" ] && echo "$work"'
+  [ "$status" -eq 0 ]
+  [ -n "$output" ]
+  # dir was created under ${TMPDIR:-/tmp} with the default label
+  [[ "$output" == *"/agentops."* ]]
+}
+
+@test "preamble: with_tmpdir honors a custom label" {
+  run bash -c '. "'"$LIB"'"; with_tmpdir cache mylabel; echo "$cache"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"/mylabel."* ]]
+}
+
+@test "preamble: with_tmpdir dir is removed by the EXIT trap" {
+  # Capture the path the child made, then assert it no longer exists after the
+  # child (and its EXIT trap) has finished — proving auto-cleanup.
+  run bash -c '. "'"$LIB"'"; with_tmpdir work; printf "%s" "$work" > "'"$FIX"'/path"'
+  [ "$status" -eq 0 ]
+  made="$(cat "$FIX/path")"
+  [ -n "$made" ]
+  [ ! -e "$made" ]
+}
+
+@test "preamble: with_tmpdir cleans up multiple dirs on exit" {
+  run bash -c '. "'"$LIB"'"; with_tmpdir a; with_tmpdir b; printf "%s\n%s\n" "$a" "$b" > "'"$FIX"'/paths"'
+  [ "$status" -eq 0 ]
+  a="$(sed -n 1p "$FIX/paths")"
+  b="$(sed -n 2p "$FIX/paths")"
+  [ -n "$a" ] && [ -n "$b" ] && [ "$a" != "$b" ]
+  [ ! -e "$a" ]
+  [ ! -e "$b" ]
+}
+
+@test "preamble: with_tmpdir requires a VARNAME argument" {
+  run bash -c '. "'"$LIB"'"; with_tmpdir'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"VARNAME required"* ]]
+}
+
+@test "preamble: require_cmd succeeds for a command on PATH" {
+  # `sh` is guaranteed present in any POSIX environment running bats.
+  run bash -c '. "'"$LIB"'"; require_cmd sh && echo OK'
+  [ "$status" -eq 0 ]
+  [ "$output" = "OK" ]
+}
+
+@test "preamble: require_cmd exits 127 with an error for a missing command" {
+  run bash -c '. "'"$LIB"'"; require_cmd definitely-not-a-real-command-xyz'
+  [ "$status" -eq 127 ]
+  [[ "$output" == *"required command not found: definitely-not-a-real-command-xyz"* ]]
+}
+
+@test "preamble: require_cmd includes the install hint when given" {
+  run bash -c '. "'"$LIB"'"; require_cmd definitely-not-a-real-command-xyz "brew install xyz"'
+  [ "$status" -eq 127 ]
+  [[ "$output" == *"install with: brew install xyz"* ]]
+}
+
+@test "preamble: require_cmd requires a CMD argument" {
+  run bash -c '. "'"$LIB"'"; require_cmd'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CMD required"* ]]
+}

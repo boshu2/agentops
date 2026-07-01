@@ -144,6 +144,16 @@ var (
 		"evals/agentops-core/cli-command-surface-matrix.json",
 		"evals/agentops-core/fixtures/cli-command-surface-smoke.sh",
 	}
+	// Preamble-adoption ratchet: run whenever any script changes (a new/modified
+	// scripts/*.sh is what the ratchet governs) plus the gate's own self-refs so
+	// editing the check, the grandfather snapshot, or its bats re-runs it. The
+	// matcher has no `**.sh` form, so `scripts/**` (dir-prefix) is the routing
+	// glob; the backing script itself narrows governance to top-level scripts/*.sh.
+	preambleRatchetPaths = []string{
+		"scripts/**",
+		"tests/scripts/check-new-scripts-use-preamble.bats",
+		"tests/scripts/preamble.bats",
+	}
 )
 
 func init() {
@@ -160,6 +170,15 @@ func init() {
 		// ALL tracked first-party shell (incl. extensionless hooks no *.sh Match
 		// glob would catch), and the fast grep makes a path-class trigger needless.
 		{ID: "always.shell-portability", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-shell-portability.sh"},
+		// preamble-adoption ratchet: a new/changed top-level scripts/*.sh must
+		// source scripts/lib/preamble.sh (the hardened strict-mode + REPO_ROOT +
+		// portable helpers) or carry a `# preamble-exempt: <reason>` line. The
+		// preamble had ZERO adopters and all 13 scripts added after the
+		// opportunistic-adoption decision re-hand-rolled it — a doc instruction was
+		// measured-inert, only a gate changes behavior. Grandfathered tree is
+		// exempt and the allowlist only shrinks. Advisory for one clean cycle, then
+		// flips Blocking (age-gate-the-ungated-egwt.10).
+		{ID: "shell.preamble-ratchet", Tiers: gates.Full, Match: preambleRatchetPaths, Blocking: false, Backing: "check-new-scripts-use-preamble.sh", RepairHint: "source scripts/lib/preamble.sh (or add '# preamble-exempt: <reason>'); advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.10)"},
 		// always-run + fail-closed PATH guard: a private artifact (corpus,
 		// tracker, untraceable wiki) must never reach the PUBLIC repo. No Match
 		// glob — a force-added private path might not match any corpus glob, so

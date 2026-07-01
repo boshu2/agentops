@@ -87,3 +87,70 @@ newest_in_dir() {
     fi
   done < <(portable_find "$dir" -type f -name "$glob" 2>/dev/null) | sort -n | tail -n1 | cut -f2-
 }
+
+# _preamble_tmpdirs: accumulator of tmpdirs created by with_tmpdir, cleaned by a
+# single EXIT trap. NOT exported (a subshell must not inherit and re-clean the
+# parent's dirs). Space-separated because paths under ${TMPDIR:-/tmp}/<label>.XXX
+# never contain spaces.
+_preamble_tmpdirs=""
+
+# _preamble_cleanup_tmpdirs: EXIT-trap body — remove every tmpdir with_tmpdir made.
+_preamble_cleanup_tmpdirs() {
+  local d
+  for d in $_preamble_tmpdirs; do
+    [ -n "$d" ] && rm -rf "$d"
+  done
+}
+
+# with_tmpdir VARNAME [LABEL] → create a fresh `mktemp -d` under ${TMPDIR:-/tmp},
+# assign its absolute path to the caller variable named VARNAME, and register a
+# single EXIT trap that removes it (and every other with_tmpdir dir) on exit —
+# the exact `TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT` pattern re-rolled in
+# ~79 scripts, centralized so the cleanup can't be forgotten and multiple
+# tmpdirs all clean up.
+#
+#   with_tmpdir work            # $work → /tmp/agentops.XXXXXX
+#   with_tmpdir cache mycache   # $cache → /tmp/mycache.XXXXXX
+#
+# NOTE: because it installs an EXIT trap, callers must NOT set their own EXIT
+# trap afterward (it would clobber this one). If a caller needs more EXIT work,
+# it should run with_tmpdir first, then add to the trap, or do cleanup itself.
+with_tmpdir() {
+  local __varname="${1:-}" label="${2:-agentops}" dir
+  if [ -z "$__varname" ]; then
+    echo "with_tmpdir: VARNAME required" >&2
+    return 2
+  fi
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/${label}.XXXXXX")"
+  _preamble_tmpdirs="$_preamble_tmpdirs $dir"
+  # Install (or refresh) the single EXIT trap. Idempotent: the trap body always
+  # walks the current accumulator, so re-setting it on each call is harmless.
+  trap _preamble_cleanup_tmpdirs EXIT
+  # Assign to the caller-named variable without eval (printf -v is bash-native).
+  printf -v "$__varname" '%s' "$dir"
+}
+
+# require_cmd CMD [INSTALL_HINT] → succeed if CMD is on PATH, else print a clear
+# error (with the optional install hint) to stderr and exit non-zero — the
+# `command -v X >/dev/null || <error+exit>` pattern re-rolled in ~62 scripts.
+# Exits 127 (the shell's "command not found" convention) so callers get a
+# consistent, greppable failure code.
+#
+#   require_cmd jq
+#   require_cmd gocyclo "go install github.com/fzipp/gocyclo/cmd/gocyclo@latest"
+require_cmd() {
+  local cmd="${1:-}" hint="${2:-}"
+  if [ -z "$cmd" ]; then
+    echo "require_cmd: CMD required" >&2
+    return 2
+  fi
+  if command -v "$cmd" >/dev/null 2>&1; then
+    return 0
+  fi
+  if [ -n "$hint" ]; then
+    echo "required command not found: $cmd — install with: $hint" >&2
+  else
+    echo "required command not found: $cmd" >&2
+  fi
+  exit 127
+}
