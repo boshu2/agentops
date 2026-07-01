@@ -94,5 +94,5 @@ Crank handles failures automatically:
 
 ## Next
 
-- `/vibe` - Runs automatically at end
+- `/validate` - Runs automatically at end
 - `/post-mortem` - Extract learnings after epic completes

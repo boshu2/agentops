@@ -31,11 +31,11 @@ Sessions → Bookkeeping → Learnings → Findings → Planning Rules → Gates
 Each phase is deliberate:
 
 - **Sessions** produce signal: commits, decisions, failures, retros.
-- **Bookkeeping** (`/retro`, `/forge`, `ao harvest`) extracts and scores that signal. Scores on specificity, actionability, novelty, and confidence filter noise.
+- **Bookkeeping** (`/post-mortem`, `/forge`, `ao harvest`) extracts and scores that signal. Scores on specificity, actionability, novelty, and confidence filter noise.
 - **Learnings** are the raw output — scored, attributed, timestamped.
 - **Findings** are promoted learnings: higher confidence, cross-session validation, broader applicability.
 - **Planning rules** are enforcement-level knowledge: if a finding is violated, the pre-mortem blocks the plan.
-- **Gates** are automated checks in `/pre-mortem`, `/vibe`, and `/council` that prevent known failure modes before they ship.
+- **Gates** are automated checks in `/pre-mortem`, `/validate`, and `/council` that prevent known failure modes before they ship.
 
 The loop closes. The system does not just capture knowledge — it enforces it.
 
@@ -64,7 +64,7 @@ Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 | Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
 | Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
 
-`/dream` uses the local tier when one is configured (otherwise your frontier model) for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on an out-of-session substrate (reference: NTM + MCP + managed-agents), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
+The dream loop (retired as a standalone `/dream` command; folded into the out-of-session substrate) uses the local tier when one is configured (otherwise your frontier model) for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on an out-of-session substrate (reference: NTM + MCP + managed-agents), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
 
 The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
 
@@ -72,7 +72,7 @@ The ratio is intentional. Validation and curation cost 3-5x implementation time.
 
 AgentOps adopts the Brownian Ratchet as a first principle: embrace agent variance, filter aggressively, and make progress one-way.
 
-Agents produce noisy output. Some sessions are brilliant; some are catastrophic. The naive response is to constrain the agent. The AgentOps response is to ratchet: let variance happen, filter at gates (`/pre-mortem` blocks bad plans, `/vibe` blocks bad code, `/council` blocks bad decisions), and only let good output advance. The gate is asymmetric — easy to pass in the forward direction, impossible to pass backward.
+Agents produce noisy output. Some sessions are brilliant; some are catastrophic. The naive response is to constrain the agent. The AgentOps response is to ratchet: let variance happen, filter at gates (`/pre-mortem` blocks bad plans, `/validate` blocks bad code, `/council` blocks bad decisions), and only let good output advance. The gate is asymmetric — easy to pass in the forward direction, impossible to pass backward.
 
 This is why validation gates are blocking, not advisory. An advisory gate with no enforcement is not a ratchet. It is a suggestion.
 

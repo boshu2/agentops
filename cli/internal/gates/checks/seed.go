@@ -26,16 +26,24 @@ var (
 	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
 	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
 	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
-	docSkillRefPaths  = []string{
+	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
+	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
+	// files) and ratchets against scripts/.docs-skill-refs-baseline, so any live
+	// doc that acquires a dead `/skill` ref, or any baselined file that no longer
+	// offends, re-runs the gate. skills/** stays a trigger (a rename/retire under
+	// skills/ can turn a live ref dead); the script + baseline + bats self-ref so
+	// editing the gate re-runs it.
+	docSkillRefPaths = []string{
 		"AGENTS.md",
 		"CLAUDE.md",
-		"docs/ARCHITECTURE.md",
-		"docs/SKILLS.md",
-		"docs/architecture/operating-loop.md",
+		"docs/**",
 		"skills/SKILL-TIERS.md",
 		"skills/**",
 		"scripts/check-doc-skill-refs.sh",
+		"scripts/.docs-skill-refs-baseline",
+		"scripts/lib/docs-scope.sh",
 		"tests/scripts/check-doc-skill-refs.bats",
+		"tests/scripts/check-doc-skill-refs-all-docs.bats",
 	}
 	// A folded skill (state: merged-into) is a redirect; its target must stay a
 	// live skill. A rename/prune of a fold target (under skills/) silently
@@ -205,7 +213,7 @@ func init() {
 		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
 		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
 		{ID: "docs.skill-refs", Tiers: gates.Fast | gates.Full, Match: docSkillRefPaths, Blocking: true,
-			Backing: "check-doc-skill-refs.sh", Args: []string{"--strict"}},
+			Backing: "check-doc-skill-refs.sh", Args: []string{"--all-docs", "--strict"}},
 		{ID: "cli.agents-tracker", Tiers: gates.Fast | gates.Full, Match: cliAgentsTrackerPaths, Blocking: true,
 			Backing: "check-cli-agents-tracker-drift.sh"},
 		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,

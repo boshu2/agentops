@@ -51,5 +51,5 @@ Summary:
 
 ## Next
 
-- `/retro` to extract learnings from your session
+- `/post-mortem` to extract learnings from your session
 - Future sessions: load research with "read .agents/research/..."

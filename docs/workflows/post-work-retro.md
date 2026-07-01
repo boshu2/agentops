@@ -2,7 +2,7 @@
 
 **Purpose:** Systematic retrospective after completing significant work
 
-**Composes:** `/retro` -> `/post-mortem` -> improvement creation
+**Composes:** `/post-mortem` -> improvement creation (the retro step folded into `/post-mortem`)
 
 **Failure Patterns Prevented:** Institutional memory loss, repeated mistakes, ecosystem gaps
 
