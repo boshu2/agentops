@@ -18,14 +18,30 @@ Use this when you're not sure which skill to run. For a full flow overview, run
 ```text
 What are you trying to do?
 │
-├─ "Not sure what to do yet"
-│   └─ Generate options first ─────► /discovery --ideate
+├─ "Prove it's done / validate" (the Membrane — no verdict = not done)
+│   ├─ Code ready to ship? ───────► /validate
+│   ├─ Deeper code audit? ────────► /validate --mode=post-impl
+│   ├─ Plan ready to build? ──────► /pre-mortem
+│   ├─ Independent judges ────────► /council validate recent
+│   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
+│   ├─ Landing 100+ files? ───────► /pre-land-refuters
+│   ├─ Drive fixes to agreement ──► /converge
+│   ├─ Mid-epic drift check ──────► /reality-check
+│   ├─ Security + release gate ───► /security
+│   └─ Work ready to close? ──────► /validate, then /post-mortem
 │
-├─ "I have an idea"
-│   └─ Understand code + context ──► /research
+├─ "Track it / bookkeep it" (the Bookkeeper)
+│   ├─ Break it into issues ──────► /plan
+│   ├─ Manage/close issues ───────► /beads-br
+│   ├─ Shape a fuzzy idea ────────► /discovery --ideate
+│   ├─ Build a single issue ──────► /implement
+│   ├─ Where was I? ──────────────► /status
+│   └─ Save for next session ─────► /handoff
 │
-├─ "I know what I want to build"
-│   └─ Break it into issues ───────► /plan
+├─ "Build a feature"
+│   ├─ Small (1-2 files) ─────────► /implement
+│   ├─ Medium (3-6 issues) ───────► /plan → /crank
+│   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
 │
 ├─ "Now build it"
 │   ├─ Small/single issue ─────────► /implement
@@ -35,17 +51,6 @@ What are you trying to do?
 ├─ "Fix a bug"
 │   ├─ Already scoped? ────────────► /implement <issue-id>
 │   └─ Need to investigate? ───────► /review (bug-hunt mode)
-│
-├─ "Build a feature"
-│   ├─ Small (1-2 files) ─────────► /implement
-│   ├─ Medium (3-6 issues) ───────► /plan → /crank
-│   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
-│
-├─ "Validate something"
-│   ├─ Work ready to close? ──────► /validate, then /post-mortem
-│   ├─ Code quality only? ───────► /validate
-│   ├─ Plan ready to build? ──────► /pre-mortem
-│   └─ Quick sanity check? ───────► /council --quick validate
 │
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /research
@@ -71,20 +76,148 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► ao quick-start → /status
+└─ "First time here" ────────────► ao session bootstrap → /status
 ```
 
-## Core Flow Skills
+## The Membrane — validation spine (no verdict = not done)
 
-### /research
+The verification skills, the load-bearing product. Every change reaches *done*
+only with an independent verdict — a fresh-context, cross-family, or
+deterministic check on the completion claim. Reach here first: no verdict, not
+done.
 
-Deep codebase exploration using Explore agents.
+### /validate
+
+Final validation close-out. Use `/post-mortem` after validation when the work
+should feed the knowledge flywheel.
 
 ```bash
-/research authentication flows in services/auth
+/validate
+/validate ag-1234
 ```
 
-**Output:** `.agents/research/<topic>.md`
+**Use when:** The work is ready for final review, closeout, and learning capture.
+
+### /validate --mode=post-impl (absorbs /vibe)
+
+Comprehensive code validation across 8 aspects with finding classification (CRITICAL vs INFORMATIONAL), suppression framework for known false positives, and domain-specific checklists (SQL safety, LLM trust boundary, race conditions) auto-loaded from `/standards`. Correlates findings against pre-mortem predictions.
+
+```bash
+/validate --mode=post-impl services/auth/
+```
+
+**Checks:** Security, Quality, Architecture, Complexity, Testing, Accessibility, Performance, Documentation
+
+### /council
+
+Multi-model validation — the core primitive used by validate, pre-mortem, and post-mortem. Auto-extracts significant findings from WARN/FAIL verdicts into the knowledge flywheel.
+
+```bash
+/council validate recent
+/council --deep recent
+```
+
+### /pre-mortem
+
+Simulate failures before implementing. Includes error/rescue mapping (tabular risk/mitigation), scope mode selection (Expand/Hold/Reduce with auto-detection), temporal interrogation (hour 1/2/4/6+ timeline), and prediction tracking with unique IDs (`pm-YYYYMMDD-NNN`) correlated through validate and post-mortem.
+
+```bash
+/pre-mortem "add caching layer"
+```
+
+**Output:** Failure modes, error/rescue maps, predictions with IDs, mitigation strategies, spec improvements
+
+### /review (absorbs /bug-hunt)
+
+Root cause analysis with git archaeology.
+
+```bash
+/review "login fails after password reset"
+```
+
+### /red-team
+
+Persona-based adversarial validation — probe a doc, skill, plan, or claim from constrained user perspectives for weaknesses, gaps, and unstated assumptions before it ships.
+
+```bash
+/red-team skills/council
+```
+
+### /converge
+
+Drive a fix → re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop and gates live in Go.
+
+```bash
+ao converge --scope head
+```
+
+### /reality-check
+
+Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent.
+
+```bash
+/reality-check
+```
+
+### /security
+
+Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates — plus the composable binary/prompt-surface suite (offline red-team, policy gating).
+
+```bash
+/security audit
+```
+
+### /pre-land-refuters
+
+Before landing a large change, dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack the completion claim at the shared-trunk pawl.
+
+```bash
+/pre-land-refuters
+```
+
+---
+
+## The Bookkeeper — tracking + session spine
+
+Where work lives between your head and *done*: the linked-intent packet, its
+issues and dependency waves, and the session continuity that keeps the next
+turn from starting from scratch.
+
+### /beads-br
+
+Git-native issue tracking operations.
+
+```bash
+BEADS_DIR="$(ao beads dir)" br ready      # Unblocked issues
+BEADS_DIR="$(ao beads dir)" br show <id>  # Issue details
+BEADS_DIR="$(ao beads dir)" br close <id> # Close issue
+```
+
+### /status
+
+Single-screen dashboard of project state.
+
+```bash
+/status
+```
+
+### /handoff
+
+Session handoff — preserve context for continuation.
+
+```bash
+/handoff
+```
+
+### /discovery --ideate
+
+Structured idea exploration. Four phases: assess clarity, understand idea, explore approaches, capture design.
+
+```bash
+/discovery --ideate "add user authentication"
+```
+
+**Output:** `.agents/discovery/YYYY-MM-DD-<slug>.md`
 
 ### /plan
 
@@ -106,15 +239,22 @@ Execute a single beads issue with full lifecycle.
 
 **Phases:** Context → Tests → Code → Validation → Commit
 
-### /discovery --ideate
+---
 
-Structured idea exploration. Four phases: assess clarity, understand idea, explore approaches, capture design.
+## Flow Skills
+
+The research → build → ship path. These move work through the system; the
+Membrane proves each step and the Bookkeeper tracks it.
+
+### /research
+
+Deep codebase exploration using Explore agents.
 
 ```bash
-/discovery --ideate "add user authentication"
+/research authentication flows in services/auth
 ```
 
-**Output:** `.agents/discovery/YYYY-MM-DD-<slug>.md`
+**Output:** `.agents/research/<topic>.md`
 
 ### /rpi
 
@@ -138,27 +278,23 @@ Autonomous multi-issue execution. Runs until epic is CLOSED.
 
 **Execution model:** Wave-based orchestration via `/swarm` with runtime-native workers.
 
-### /validate
+### /swarm
 
-Final validation close-out. Use `/post-mortem` after validation when the work
-should feed the knowledge flywheel.
-
-```bash
-/validate
-/validate ag-1234
-```
-
-**Use when:** The work is ready for final review, closeout, and learning capture.
-
-### /validate --mode=post-impl (absorbs /vibe)
-
-Comprehensive code validation across 8 aspects with finding classification (CRITICAL vs INFORMATIONAL), suppression framework for known false positives, and domain-specific checklists (SQL safety, LLM trust boundary, race conditions) auto-loaded from `/standards`. Correlates findings against pre-mortem predictions.
+Parallel agent spawning for concurrent task execution.
 
 ```bash
-/validate --mode=post-impl services/auth/
+/swarm <epic-id>
 ```
 
-**Checks:** Security, Quality, Architecture, Complexity, Testing, Accessibility, Performance, Documentation
+### Runtime-native multi-agent lanes
+
+Spawn parallel execution agents through the current runtime/substrate. Use
+`/swarm` for the skill-level entry point; use Codex subagents or NTM/ATM when
+the active runtime owns that transport.
+
+```bash
+/swarm <epic-id>
+```
 
 ### /post-mortem --quick
 
@@ -186,24 +322,6 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 ---
 
 ## Utility Skills
-
-### /beads-br
-
-Git-native issue tracking operations.
-
-```bash
-BEADS_DIR="$(ao beads dir)" br ready      # Unblocked issues
-BEADS_DIR="$(ao beads dir)" br show <id>  # Issue details
-BEADS_DIR="$(ao beads dir)" br close <id> # Close issue
-```
-
-### /review (absorbs /bug-hunt)
-
-Root cause analysis with git archaeology.
-
-```bash
-/review "login fails after password reset"
-```
 
 ### Knowledge queries (no slash command)
 
@@ -241,73 +359,12 @@ CONTRIBUTING, CHANGELOG, AGENTS).
 /doc --mode=oss              # scaffold/audit OSS doc pack
 ```
 
-### /pre-mortem
-
-Simulate failures before implementing. Includes error/rescue mapping (tabular risk/mitigation), scope mode selection (Expand/Hold/Reduce with auto-detection), temporal interrogation (hour 1/2/4/6+ timeline), and prediction tracking with unique IDs (`pm-YYYYMMDD-NNN`) correlated through validate and post-mortem.
-
-```bash
-/pre-mortem "add caching layer"
-```
-
-**Output:** Failure modes, error/rescue maps, predictions with IDs, mitigation strategies, spec improvements
-
----
-
-## Orchestration Skills
-
-### /council
-
-Multi-model validation — the core primitive used by validate, pre-mortem, and post-mortem. Auto-extracts significant findings from WARN/FAIL verdicts into the knowledge flywheel.
-
-```bash
-/council validate recent
-/council --deep recent
-```
-
-### /swarm
-
-Parallel agent spawning for concurrent task execution.
-
-```bash
-/swarm <epic-id>
-```
-
-### Runtime-native multi-agent lanes
-
-Spawn parallel execution agents through the current runtime/substrate. Use
-`/swarm` for the skill-level entry point; use Codex subagents or NTM/ATM when
-the active runtime owns that transport.
-
-```bash
-/swarm <epic-id>
-```
-
----
-
-## Additional Utility Skills
-
-### /handoff
-
-Session handoff — preserve context for continuation.
-
-```bash
-/handoff
-```
-
 ### /release
 
 Pre-flight checks, changelog generation, version bumps, and tagging.
 
 ```bash
 /release
-```
-
-### /status
-
-Single-screen dashboard of project state.
-
-```bash
-/status
 ```
 
 ### /status (absorbs /quickstart)

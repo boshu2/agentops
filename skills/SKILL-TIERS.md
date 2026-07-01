@@ -2,6 +2,34 @@
 
 This document defines the internal `tier` field used in skill frontmatter. Publicly, AgentOps talks about bookkeeping, validation, primitives, and flows. The tier names below are the internal execution taxonomy behind that operating model.
 
+## The Spine (Membrane + Bookkeeper)
+
+Two skill sets lead the operating model. The **Membrane** proves each change is
+actually done — no verdict, not done. The **Bookkeeper** tracks the work between
+your head and *done*. Everything else (research, plan, build, ship) runs *through*
+these two, and the router below leads with them.
+
+**The Membrane — validation spine (no verdict = not done):**
+
+- `/validate` — canonical PASS/WARN/FAIL verdict on artifacts, plans, code, PRs, and gates.
+- `/review` — structured review + root-cause bug-hunt over PRs, agent output, and diffs.
+- `/council` — multi-judge consensus; the core primitive under every validation skill.
+- `/pre-mortem` — simulate failures before implementing; predictions tracked into validate.
+- `/red-team` — persona-based adversarial probe of a doc, skill, plan, or claim before it ships.
+- `/converge` — drive a fix → re-run-judge-panel loop to terminal agreement or a hard BLOCK.
+- `/security` — repository security scans (vulns, dependency risk, secrets) plus release gating.
+- `/reality-check` — mid-epic drift audit: code is ground truth, the plan is the measuring stick.
+- `/pre-land-refuters` — fresh-context refuters attack the completion claim at the shared-trunk pawl before landing.
+
+**The Bookkeeper — tracking + session spine:**
+
+- `/beads-br` — local-first, git-native issue tracker (find ready work, update, close).
+- `/status` — single-screen dashboard of project state.
+- `/handoff` — compact session handoff so the next turn continues instead of restarting.
+- `/discovery` — shape intent into a dense execution packet (ideate → search → research → plan → pre-mortem).
+- `/plan` — decompose a goal into an acceptance-gated bead DAG with dependency waves.
+- `/implement` — execute a single bead through its full TDD lifecycle.
+
 ## Tier Values
 
 Skills fall into three functional categories, plus infrastructure tiers for internal and library skills.
@@ -113,20 +141,35 @@ Start here. Match your intent to a skill.
 ```
 What are you trying to do?
 │
-├─ "Fix a bug"
-│   ├─ Know which file? ──────────► /implement <issue-id>
-│   └─ Need to investigate? ──────► /review
+├─ "Prove it's done / validate" (the Membrane — no verdict = not done)
+│   ├─ Code ready to ship? ───────► /validate
+│   ├─ Plan ready to build? ──────► /pre-mortem
+│   ├─ Independent judges ────────► /council --quick validate
+│   ├─ Adversarial probe ─────────► /red-team
+│   ├─ Root-cause a bug ──────────► /review
+│   ├─ Drive fixes to agreement ──► /converge
+│   ├─ Mid-epic drift check ──────► /reality-check
+│   ├─ Security + release gate ───► /security audit
+│   ├─ Landing 100+ files? ───────► /pre-land-refuters
+│   └─ Work ready to close? ──────► /post-mortem
+│
+├─ "Track it / bookkeep it" (the Bookkeeper)
+│   ├─ Break it into issues ──────► /plan
+│   ├─ Manage/close issues ───────► /beads-br
+│   ├─ Shape a fuzzy idea ────────► /discovery
+│   ├─ Build a single issue ──────► /implement
+│   ├─ Where was I? ──────────────► /status
+│   ├─ Save for next session ─────► /handoff
+│   └─ Recover after compaction ──► /recover
 │
 ├─ "Build a feature"
 │   ├─ Small (1-2 files) ─────────► /implement
 │   ├─ Medium (3-6 issues) ───────► /plan → /crank
 │   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
 │
-├─ "Validate something"
-│   ├─ Code ready to ship? ───────► /validate
-│   ├─ Plan ready to build? ──────► /pre-mortem
-│   ├─ Work ready to close? ──────► /post-mortem
-│   └─ Quick sanity check? ───────► /council --quick validate
+├─ "Fix a bug"
+│   ├─ Know which file? ──────────► /implement <issue-id>
+│   └─ Need to investigate? ──────► /review
 │
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /research
@@ -181,11 +224,6 @@ What are you trying to do?
 │   ├─ Multiple independent tasks ► /swarm
 │   ├─ Codex agents specifically ─► /swarm
 │   └─ Full epic with waves ──────► /crank <epic-id>
-│
-├─ "Session management"
-│   ├─ Where was I? ──────────────► /status
-│   ├─ Save for next session ─────► /handoff
-│   └─ Recover after compaction ──► /recover
 │
 └─ "First time here"
     └─ Interactive tour ──────────► /status
