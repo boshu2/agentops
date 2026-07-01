@@ -420,20 +420,30 @@ agy_ready() {
 # gated cc/agy on `atm wait --until=generating`, but that primitive does NOT reliably detect a pane
 # actually generating — verified live 2026-07-01: both the opus pane ("ack") and the agy pane
 # ("pong") responded to a trivial task while `atm wait` TIMED OUT the whole window, and `--type
-# gemini` does not even match the Antigravity pane. A gate on it produces FALSE "not engaged" that
-# respawn-thrashes the pane before it can review (the exact flakiness this fixes). Both CLIs engage
-# reliably on a successful delivery, so we deliver + retry-on-no-delivery only. A genuinely stuck or
-# compacting pane is caught downstream by the route's cksum-stall-detection + the .10 absolute
-# engage-deadline, and the route degrades to the ready subset (age-yvrp) instead of hanging or
-# fabricating a verdict. (A proactive compaction reset for a long-warm opus pane can be layered on
-# later WITHOUT the unreliable atm-wait gate — tracked separately.)
+# gemini` does not even match the Antigravity pane. So we do NOT gate on atm-wait. Instead we verify
+# engagement the RELIABLE, type-agnostic way: after a delivery, the pane must actually START PRODUCING
+# OUTPUT (its recent-scrollback cksum changes) within a short window — a real review shows a spinner /
+# text immediately. This catches the agy failure mode observed live 2026-07-01: `atm send --file`
+# reports `"delivered":1` but the Antigravity TUI intermittently DROPS the input (empty pane, no
+# review) — a re-send re-triggers it. Not-delivered -> respawn + re-send. A genuinely stuck/compacting
+# pane still degrades downstream via the route's stall-detection + the .10 engage-deadline (age-yvrp).
+_pane_activity() { tmux capture-pane -p -t "${SESSION}.$1" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true; }
 _family_send() {   # $1=pane $2=cc|agy (respawn kind) $3=packet-file
-  local pane="$1" kind="$2" rp="$3" try out
+  local pane="$1" kind="$2" rp="$3" try out before _
   for try in 1 2 3; do
+    before="$(_pane_activity "$pane")"
     out="$(atm send "$SESSION" --pane="$pane" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
-    printf '%s' "$out" | grep -q '"delivered":1' && return 0
-    log "$kind send try $try: not delivered — respawn + retry"
-    respawn_pane "$pane" "$kind" || true
+    if printf '%s' "$out" | grep -q '"delivered":1'; then
+      # engaged iff the pane began producing output (started reviewing) within a short window
+      for _ in $(seq 1 "${PAWL_SEND_ENGAGE_POLLS:-6}"); do
+        sleep "${PAWL_SEND_ENGAGE_TICK:-3}"
+        [ "$(_pane_activity "$pane")" != "$before" ] && return 0
+      done
+      log "$kind send try $try: delivered but pane produced no output (input likely dropped) — re-send"
+    else
+      log "$kind send try $try: not delivered — respawn + re-send"
+      respawn_pane "$pane" "$kind" || true
+    fi
   done
   return 1
 }
@@ -833,8 +843,15 @@ cmd_route() {
       log "claude degraded mid-route (dropped to shell) — respawn + reroute"
       respawn_pane "$CC_PANE" cc || true; cc_send "$rp" || true; cc_rr=1
     fi
-    if [ -z "$va" ] && [ "$agy_gu" -eq 0 ] && [ "$agy_rr" -lt 1 ] && agy_dead; then
-      log "agy degraded mid-route (dropped to shell) — respawn + reroute"
+    # age-agy-reliability: recover an agy pane that has produced NO verdict — whether it dropped to a
+    # shell (dead) OR is alive but stalled (Antigravity intermittently drops the input or starts then
+    # stalls mid-review). Respawn to a fresh pane + re-send once (bounded by agy_rr<1, never thrashes).
+    if [ -z "$va" ] && [ "$agy_gu" -eq 0 ] && [ "$agy_rr" -lt 1 ] \
+       && { agy_dead || [ "$agy_st" -ge "${PAWL_AGY_RESEND_STALL:-60}" ]; }; then
+      # Trigger on STALL (agy_st = seconds with no new output), NOT elapsed time: a slow-but-working
+      # agy on a big diff keeps producing output (agy_st stays ~0) and must be left to finish — only a
+      # DROPPED input (empty pane) or a START-THEN-STALL (silent >= threshold) gets respawned + re-sent.
+      log "agy no verdict$(agy_dead && echo ' (dropped to shell)' || echo " — stalled ${agy_st}s (dropped/stuck)") — respawn + re-send"
       respawn_pane "$AGY_PANE" agy || true; agy_send "$rp" || true; agy_rr=1
     fi
     sleep 5; waited=$((waited + 5))
