@@ -69,7 +69,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
             background)
                 limit=300
                 ;;
-            execution)
+            execution|experimental)
                 limit=800
                 ;;
             judgment|product|session|knowledge|contribute|cross-vendor|orchestration)

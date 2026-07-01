@@ -28,7 +28,7 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
-  tier: execution
+  tier: experimental
   dependencies:
   - rpi
   - post-mortem

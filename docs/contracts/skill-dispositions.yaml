@@ -330,7 +330,7 @@ dispositions:
     path:             skills/autodev/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
+    rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor. Demoted to experimental (heavy rpi chain, no measured uplift)."
   - skill:            behavior-first-planning
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -498,7 +498,7 @@ dispositions:
     path:             skills/evolve/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper)"
+    rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift)."
   - skill:            flywheel
     domain:           "BC1 Corpus"
     hexagonal_role:   domain
@@ -966,7 +966,7 @@ dispositions:
     path:             skills/acfs/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. Demoted to experimental (heavy rpi chain, no measured uplift); external ~/acfs tool — candidate cut (deferred to operator)."
   - skill:            agent-mail
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting

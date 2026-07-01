@@ -172,7 +172,7 @@ validate_structural() {
   local tier
   tier=$(echo "$json_data" | jq -r '.metadata.tier // empty' 2>/dev/null)
   if [[ -n "$tier" ]]; then
-    local valid_tiers="judgment execution library session product contribute meta background orchestration cross-vendor knowledge"
+    local valid_tiers="judgment execution library session product contribute meta background orchestration cross-vendor knowledge experimental"
     if ! echo "$valid_tiers" | grep -qw "$tier"; then
       errors="${errors}'metadata.tier' invalid value '$tier'; "
     fi

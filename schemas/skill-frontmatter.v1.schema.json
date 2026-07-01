@@ -16,7 +16,7 @@
     "metadata": {
       "type": "object",
       "properties": {
-        "tier": { "type": "string", "enum": ["judgment", "execution", "library", "session", "product", "contribute", "meta", "background", "orchestration", "cross-vendor", "knowledge"] },
+        "tier": { "type": "string", "enum": ["judgment", "execution", "library", "session", "product", "contribute", "meta", "background", "orchestration", "cross-vendor", "knowledge", "experimental"] },
         "dependencies": { "type": "array" },
         "internal": { "type": "boolean" },
         "version": { "type": "string" },

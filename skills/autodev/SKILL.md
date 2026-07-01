@@ -19,7 +19,7 @@ context:
     mode: task
   intel_scope: topic
 metadata:
-  tier: execution
+  tier: experimental
   dependencies:
   - evolve
   - rpi

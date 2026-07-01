@@ -22,7 +22,7 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 metadata:
-  tier: orchestration
+  tier: experimental
   dependencies: [ntm, account-rotation, dcg]
   external_dependencies: [fleet-ops]
   stability: stable
