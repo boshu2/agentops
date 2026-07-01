@@ -475,7 +475,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"session-outcome",
 		"sessions",
 		"skills",
-		"state",
 		"status",
 		"store",
 		"task-feedback",
@@ -504,8 +503,11 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify parent commands have subcommands
 	parentExpectations := map[string][]string{
-		"autodev":    {"init", "validate", "show"},
-		"beads":      {"verify", "lint", "harvest"},
+		"autodev": {"init", "validate", "show"},
+		"beads":   {"verify", "lint", "harvest"},
+		// session-continuity commands folded under `ao session`
+		// (age-focus-membrane-bookkeeper-m1wg.17).
+		"session":    {"bootstrap", "close", "state", "memory", "rehydrate", "handoff"},
 		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
@@ -626,7 +628,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"session-outcome",
 		"sessions",
 		"skills",
-		"state",
 		"status",
 		"store",
 		"task-feedback",
@@ -663,6 +664,40 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		if !expectedSet[name] {
 			t.Errorf("registered command %q is not in expectedCmds — add it to keep the list in sync", name)
 		}
+	}
+}
+
+// TestSessionFoldedCommandsResolve verifies the session-continuity commands
+// fold correctly under `ao session` (age-focus-membrane-bookkeeper-m1wg.17):
+// the canonical `ao session {state,memory,rehydrate,handoff}` paths resolve, and
+// the hidden back-compat aliases (`ao handoff`, `ao memory sync`) still route to
+// the same handlers so external/bundled callers keep working.
+func TestSessionFoldedCommandsResolve(t *testing.T) {
+	// Canonical folded paths must resolve under `ao session`.
+	for _, path := range [][]string{
+		{"session", "state"},
+		{"session", "memory"},
+		{"session", "memory", "sync"},
+		{"session", "rehydrate"},
+		{"session", "handoff"},
+	} {
+		cmd, _, err := rootCmd.Find(path)
+		if err != nil {
+			t.Fatalf("find %v: %v", path, err)
+		}
+		if cmd == nil || cmd.Name() != path[len(path)-1] {
+			t.Fatalf("command %v did not resolve to leaf %q (got %v)", path, path[len(path)-1], cmd)
+		}
+	}
+
+	// Hidden back-compat aliases must still execute (isolated cwd so
+	// `ao memory sync` never writes into the repo tree).
+	chdirTemp(t)
+	if _, err := executeCommand("handoff", "--dry-run", "x"); err != nil {
+		t.Fatalf("hidden alias `ao handoff --dry-run x` failed to route: %v", err)
+	}
+	if _, err := executeCommand("memory", "sync", "--quiet"); err != nil {
+		t.Fatalf("hidden alias `ao memory sync --quiet` failed to route: %v", err)
 	}
 }
 

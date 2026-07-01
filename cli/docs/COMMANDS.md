@@ -2212,29 +2212,6 @@ ao goals steer remove <number> [flags]
 
 ---
 
-### `ao handoff`
-
-Write a structured JSON handoff artifact that captures session context
-
-```
-ao handoff [summary] [flags]
-```
-
-**Flags:**
-
-```
-      --collect         Auto-collect git/bead state into the artifact
-      --dry-run         Print artifact to stdout without writing file
-      --epic string     Epic ID for RPI context
-      --goal string     What the session was working on
-  -h, --help            help for handoff
-      --no-kill         Write artifact without restarting the session via tmux
-      --rpi-phase int   RPI phase number (populates RPI context, sets type=rpi)
-      --run-id string   Run ID for RPI context
-```
-
----
-
 ### `ao orchestrate`
 
 Instrument lane for out-of-session multi-model orchestration: tools,
@@ -2592,6 +2569,149 @@ ao session close [flags]
       --session string   Session ID to close (default: most recent transcript)
 ```
 
+#### `ao session handoff`
+
+Write a structured JSON handoff artifact that captures session context
+
+```
+ao session handoff [summary] [flags]
+```
+
+**Flags:**
+
+```
+      --collect         Auto-collect git/bead state into the artifact
+      --dry-run         Print artifact to stdout without writing file
+      --epic string     Epic ID for RPI context
+      --goal string     What the session was working on
+  -h, --help            help for handoff
+      --no-kill         Write artifact without restarting the session via tmux
+      --rpi-phase int   RPI phase number (populates RPI context, sets type=rpi)
+      --run-id string   Run ID for RPI context
+```
+
+#### `ao session memory`
+
+Manage repo-root MEMORY.md for cross-runtime access
+
+```
+ao session memory [command]
+```
+
+##### `ao session memory sync`
+
+Write recent session history to a repo-root MEMORY.md with managed block markers.
+
+```
+ao session memory sync [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                 help for sync
+      --max-entries int      Maximum session entries to keep (default 10)
+      --output-file string   Output path (default: MEMORY.md in repo root)
+      --quiet                Suppress output
+```
+
+#### `ao session rehydrate`
+
+Rehydrate emits a lane's re-bootstrap brief from the most recent handoff
+
+```
+ao session rehydrate [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for rehydrate
+      --json   Emit the raw handoff artifact as JSON
+      --peek   Read the brief without marking the handoff consumed
+```
+
+#### `ao session state`
+
+Manage the durable AgentOps state-memory contract.
+
+```
+ao session state [command]
+```
+
+##### `ao session state admit`
+
+Admit one independently reviewed Finding candidate into .ao/accepted
+
+```
+ao session state admit --candidate <path> --verdict <path> [flags]
+```
+
+**Flags:**
+
+```
+      --candidate string     Path to an .ao Finding candidate JSON file (required)
+      --destination string   Destination under .ao/accepted/findings/ (default: finding id)
+  -h, --help                 help for admit
+      --max-age-days int     Maximum age for reviewed findings (default 30)
+      --verdict string       Path to an independent admission verdict JSON file (required)
+```
+
+##### `ao session state candidate`
+
+Inspect inert .ao state candidates
+
+```
+ao session state candidate [command]
+```
+
+###### `ao session state candidate validate`
+
+Validate an inert .ao Finding candidate and print its digest
+
+```
+ao session state candidate validate <path> [flags]
+```
+
+##### `ao session state doctor`
+
+Diagnose state memory health
+
+```
+ao session state doctor [flags]
+```
+
+##### `ao session state review-request`
+
+Emit the digest-bound review request for a Finding candidate
+
+```
+ao session state review-request <candidate> [flags]
+```
+
+##### `ao session state validate`
+
+Validate state memory JSON files against their schemas
+
+```
+ao session state validate <file> [file...] [flags]
+```
+
+##### `ao session state verify`
+
+Verify .ao state schemas, fixtures, accepted findings, and ledger rows
+
+```
+ao session state verify [flags]
+```
+
+**Flags:**
+
+```
+      --all    Verify all .ao state authority surfaces
+  -h, --help   help for verify
+```
+
 ---
 
 ### `ao tick`
@@ -2751,35 +2871,6 @@ ao config models [flags]
   -h, --help               help for models
       --set-skill string   Set a skill-specific tier override (e.g. council=quality)
       --set-tier string    Set the default model cost tier (quality, balanced, budget)
-```
-
----
-
-### `ao memory`
-
-Manage repo-root MEMORY.md for cross-runtime access
-
-```
-ao memory [command]
-```
-
-**Subcommands:**
-
-#### `ao memory sync`
-
-Write recent session history to a repo-root MEMORY.md with managed block markers.
-
-```
-ao memory sync [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for sync
-      --max-entries int      Maximum session entries to keep (default 10)
-      --output-file string   Output path (default: MEMORY.md in repo root)
-      --quiet                Suppress output
 ```
 
 ---
@@ -3747,91 +3838,6 @@ ao sessions spawn <template-path> [flags]
 
 ---
 
-### `ao state`
-
-Manage the durable AgentOps state-memory contract.
-
-```
-ao state [command]
-```
-
-**Subcommands:**
-
-#### `ao state admit`
-
-Admit one independently reviewed Finding candidate into .ao/accepted
-
-```
-ao state admit --candidate <path> --verdict <path> [flags]
-```
-
-**Flags:**
-
-```
-      --candidate string     Path to an .ao Finding candidate JSON file (required)
-      --destination string   Destination under .ao/accepted/findings/ (default: finding id)
-  -h, --help                 help for admit
-      --max-age-days int     Maximum age for reviewed findings (default 30)
-      --verdict string       Path to an independent admission verdict JSON file (required)
-```
-
-#### `ao state candidate`
-
-Inspect inert .ao state candidates
-
-```
-ao state candidate [command]
-```
-
-##### `ao state candidate validate`
-
-Validate an inert .ao Finding candidate and print its digest
-
-```
-ao state candidate validate <path> [flags]
-```
-
-#### `ao state doctor`
-
-Diagnose state memory health
-
-```
-ao state doctor [flags]
-```
-
-#### `ao state review-request`
-
-Emit the digest-bound review request for a Finding candidate
-
-```
-ao state review-request <candidate> [flags]
-```
-
-#### `ao state validate`
-
-Validate state memory JSON files against their schemas
-
-```
-ao state validate <file> [file...] [flags]
-```
-
-#### `ao state verify`
-
-Verify .ao state schemas, fixtures, accepted findings, and ledger rows
-
-```
-ao state verify [flags]
-```
-
-**Flags:**
-
-```
-      --all    Verify all .ao state authority surfaces
-  -h, --help   help for verify
-```
-
----
-
 ### `ao trace`
 
 Trace the provenance of an artifact back to its source transcript.
@@ -4703,24 +4709,6 @@ ao registry list [flags]
 ```
   -h, --help          help for list
       --type string   Filter by surface type (skills, hooks, stores, jobs, evals, cli, cadence)
-```
-
----
-
-### `ao rehydrate`
-
-Rehydrate emits a lane's re-bootstrap brief from the most recent handoff
-
-```
-ao rehydrate [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for rehydrate
-      --json   Emit the raw handoff artifact as JSON
-      --peek   Read the brief without marking the handoff consumed
 ```
 
 ---

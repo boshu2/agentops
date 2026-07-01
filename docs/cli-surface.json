@@ -982,13 +982,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "handoff",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
       "category": "internal-hidden",
       "command": "help",
       "coverage_status": "allowlisted",
@@ -1159,13 +1152,6 @@
     {
       "category": "public-tested",
       "command": "membrane triage",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "memory sync",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1585,13 +1571,6 @@
     },
     {
       "category": "public-tested",
-      "command": "rehydrate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "robot-docs",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1645,6 +1624,69 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Covered by session close tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session handoff",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session memory sync",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session rehydrate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state admit",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state candidate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state doctor",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state review-request",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state validate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "session state verify",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
@@ -1726,48 +1768,6 @@
     {
       "category": "public-tested",
       "command": "skills retire",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state admit",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state candidate validate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state doctor",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state review-request",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state validate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "state verify",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

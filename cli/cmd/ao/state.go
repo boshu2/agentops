@@ -26,9 +26,8 @@ var (
 )
 
 var stateCmd = &cobra.Command{
-	Use:     "state",
-	GroupID: "knowledge",
-	Short:   "Validate, admit, verify, and doctor AgentOps state memory",
+	Use:   "state",
+	Short: "Validate, admit, verify, and doctor AgentOps state memory",
 	Long: `Manage the durable AgentOps state-memory contract.
 
 State findings are schema-validated, fresh, non-self-reviewed artifacts. The
@@ -84,7 +83,11 @@ var stateDoctorCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(stateCmd)
+	// Folded under `ao session` (age-focus-membrane-bookkeeper-m1wg.17). No
+	// back-compat alias — `ao state` had no external callers. The GroupID was
+	// dropped because sessionCmd defines no command groups (cobra panics at
+	// Execute if a child carries a GroupID its parent doesn't define).
+	sessionCmd.AddCommand(stateCmd)
 	stateCmd.AddCommand(stateValidateCmd, stateCandidateCmd, stateReviewRequestCmd, stateAdmitCmd, stateVerifyCmd, stateDoctorCmd)
 	stateCandidateCmd.AddCommand(stateCandidateValidateCmd)
 

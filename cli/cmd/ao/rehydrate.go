@@ -40,10 +40,35 @@ Examples:
 	RunE: runRehydrate,
 }
 
+// rehydrateAliasCmd is a hidden back-compat alias for `ao rehydrate` (the
+// canonical spelling is `ao session rehydrate` since
+// age-focus-membrane-bookkeeper-m1wg.17). Smoke/ratchet scripts and bundled
+// callers still invoke `ao rehydrate`; it shares runRehydrate + the same
+// package-global flag vars, so both spellings behave identically.
+var rehydrateAliasCmd = &cobra.Command{
+	Use:        "rehydrate",
+	Short:      rehydrateCmd.Short,
+	Long:       rehydrateCmd.Long,
+	Args:       cobra.NoArgs,
+	Hidden:     true,
+	Deprecated: "use `ao session rehydrate`",
+	RunE:       runRehydrate,
+}
+
+// registerRehydrateFlags binds the rehydrate flags to a command's FlagSet. Both
+// the canonical `ao session rehydrate` and the hidden `ao rehydrate` alias share
+// the same package-global vars, so registering on each FlagSet is safe.
+func registerRehydrateFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&rehydratePeek, "peek", false, "Read the brief without marking the handoff consumed")
+	cmd.Flags().BoolVar(&rehydrateJSON, "json", false, "Emit the raw handoff artifact as JSON")
+}
+
 func init() {
-	rootCmd.AddCommand(rehydrateCmd)
-	rehydrateCmd.Flags().BoolVar(&rehydratePeek, "peek", false, "Read the brief without marking the handoff consumed")
-	rehydrateCmd.Flags().BoolVar(&rehydrateJSON, "json", false, "Emit the raw handoff artifact as JSON")
+	sessionCmd.AddCommand(rehydrateCmd)
+	registerRehydrateFlags(rehydrateCmd)
+
+	rootCmd.AddCommand(rehydrateAliasCmd)
+	registerRehydrateFlags(rehydrateAliasCmd)
 }
 
 func runRehydrate(cmd *cobra.Command, args []string) error {

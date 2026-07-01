@@ -29,6 +29,14 @@ var DeprecatedCommands = map[string]string{
 	"ao retrieval-bench": "ao eval bench",
 	"ao chaos-test":      "ao eval chaos",
 	"ao session-outcome": "ao eval session-outcome",
+	// Session-continuity commands folded under `ao session`
+	// (age-focus-membrane-bookkeeper-m1wg.17). The old top-level spellings still
+	// resolve (hidden aliases) except `ao state`, which is fully reparented;
+	// canonical is the `ao session …` form.
+	"ao state":     "ao session state",
+	"ao memory":    "ao session memory",
+	"ao rehydrate": "ao session rehydrate",
+	"ao handoff":   "ao session handoff",
 	"ao work rpi":              "ao orchestrate",
 	"ao work ratchet":          "ao ratchet",
 	"ao work goals":            "ao goals",
