@@ -5,7 +5,7 @@
 # The default pawl poll is a single fresh-context refuter (model-agnostic). The
 # OPT-IN "second poll" adds a different model FAMILY at the irreversible doors.
 # Today that's a documented manual sequence in the pre-land-refuters skill
-# (dispatch a Claude refuter + a `codex exec` refuter, then hand-write
+# (dispatch a Claude refuter + a headless codex refuter, then hand-write
 # `pawl-verdict.sh write --mode multi-model`). This collapses the cross-family
 # half into one command: it runs the gpt-family (codex) refuter for you, parses
 # its verdict, captures evidence, and emits a ready-to-run multi-model

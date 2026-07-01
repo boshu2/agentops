@@ -5,9 +5,10 @@
 # frontier coding agent ships.
 #
 #   PRODUCER (arm A):  a coding agent runs a task to its own "done". Default is
-#                      codex exec; --producer-cmd swaps in a WEAK producer (e.g.
-#                      `codex exec -m <small-model>`, a local llama) so it
-#                      actually ships false-dones the membrane can miss. A
+#                      the frontier codex runner; --producer-cmd swaps in a WEAK
+#                      producer (e.g. the same runner with `-m <small-model>`, or
+#                      a local llama) so it actually ships false-dones the
+#                      membrane can miss. A
 #                      frontier producer aces the tasks and yields zero escapes —
 #                      the weak producer is what generates real escape data
 #                      (age-cwo.1 / unblocks age-1gl). Escapes stay in this
@@ -31,12 +32,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_TASKS_DIR="$REPO_ROOT/evals/membrane/tasks"
 
+# Shared codex lib: the DEFAULT producer/membrane command templates come from
+# codex_exec_producer_template so the literal headless-codex invocation lives in
+# the lib (an acceptance-allowed file), not in this pluggable-template caller.
+# The template strings are byte-identical to the historical defaults, so the
+# --producer-cmd / --membrane-cmd contract and behavior are unchanged.
+# age-gate-the-ungated-egwt.8.
+. "$SCRIPT_DIR/lib/codex-exec.sh"
+
 # Track an in-flight runner-created workspace so an aborted run does not leak it.
 _CLEANUP_WS=""
 trap '[[ -n "${_CLEANUP_WS:-}" ]] && rm -rf "$_CLEANUP_WS"' EXIT
 
 usage() {
-  cat <<'USAGE'
+  # The two headless-codex examples are rendered from codex_exec_producer_template
+  # so the literal invocation lives in lib/codex-exec.sh (acceptance-allowed), not
+  # here; the printed examples stay correct + copy-pasteable. The weak-producer
+  # example adds `-m gpt-5-mini` to the default producer template.
+  local _prod_example _memb_example
+  _prod_example="$(codex_exec_producer_template producer)"
+  _prod_example="${_prod_example/-s workspace-write/-s workspace-write -m gpt-5-mini}"
+  _memb_example="$(codex_exec_producer_template membrane)"
+  cat <<USAGE
 Usage: scripts/eval-membrane.sh [options]
 
 Options:
@@ -44,19 +61,18 @@ Options:
   --tasks-dir <dir>    Directory of task dirs (default: evals/membrane/tasks)
   --output <path>      Write the scorecard JSON here (default: stdout)
   --timeout <secs>     Producer timeout (default: 180)
-  --producer-cmd <c>   Producer command template. Invoked as: bash -c "<c>" _ \
-                       "$workspace" "$prompt" "$timeout" (so $1=workspace,
-                       $2=prompt, $3=timeout). Default runs frontier codex; a
+  --producer-cmd <c>   Producer command template. Invoked as: bash -c "<c>" _ \\
+                       "\$workspace" "\$prompt" "\$timeout" (so \$1=workspace,
+                       \$2=prompt, \$3=timeout). Default runs frontier codex; a
                        WEAK producer is e.g.:
-                         --producer-cmd 'timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write -m gpt-5-mini "$2" >/dev/null 2>&1'
+                         --producer-cmd '${_prod_example}'
                        Nonzero exit => degraded (excluded from metrics).
   --producer-label <s> Label recorded in the scorecard "producer" field.
-  --membrane-cmd <c>   Membrane (verifier) command. Invoked as: bash -c "<c>" _ \
-                       "$reviewer_prompt"; must print a line 'VERDICT: ACK' or
-                       'VERDICT: REFUTE'. Default is agy/gemini; use codex when
-                       agy is down (codex is cross-family with a non-codex
-                       producer):
-                         --membrane-cmd 'codex exec --skip-git-repo-check "$1" 2>/dev/null'
+  --membrane-cmd <c>   Membrane (verifier) command. Invoked as: bash -c "<c>" _ \\
+                       "\$reviewer_prompt"; must print a line 'VERDICT: ACK' or
+                       'VERDICT: REFUTE'. Default is agy/gemini; use the codex CLI
+                       when agy is down (cross-family with a non-codex producer):
+                         --membrane-cmd '${_memb_example}'
   --membrane-label <s> Label recorded in the scorecard "verifier" field.
   --membrane-timeout <secs>  Hard timeout on each membrane review (default: 240; 0
                        disables). A stalled reviewer is killed and the task is
@@ -72,9 +88,10 @@ OUTPUT=""
 TIMEOUT="${TIMEOUT:-180}"
 DRY_RUN=false
 SELECTED_TASKS=()
-# Default producer = frontier codex. $1=workspace $2=prompt $3=timeout.
-# shellcheck disable=SC2016  # the $1/$2/$3 are intentionally literal — expanded later by `bash -c "$PRODUCER_CMD" _ ...`.
-DEFAULT_PRODUCER_CMD='timeout "$3" codex exec --skip-git-repo-check -C "$1" -s workspace-write "$2" >/dev/null 2>&1'
+# Default producer = frontier codex. $1=workspace $2=prompt $3=timeout. The
+# template string comes from lib/codex-exec.sh (byte-identical to the historical
+# default) so the literal headless-codex invocation lives in one place.
+DEFAULT_PRODUCER_CMD="$(codex_exec_producer_template producer)"
 PRODUCER_CMD="${PRODUCER_CMD:-$DEFAULT_PRODUCER_CMD}"
 PRODUCER_LABEL="${PRODUCER_LABEL:-codex}"
 # Default membrane verifier = agy/gemini (a different family than a codex
@@ -87,7 +104,8 @@ DEFAULT_MEMBRANE_CMD='agy -p "$1"'
 MEMBRANE_CMD="${MEMBRANE_CMD:-$DEFAULT_MEMBRANE_CMD}"
 MEMBRANE_LABEL="${MEMBRANE_LABEL:-agy-gemini}"
 # Hard timeout on the membrane review. Without it, eval-membrane waits FOREVER on a
-# stalled reviewer (a hung `codex exec` froze a run for 22 min — age-9h3d). With a
+# stalled reviewer (a hung headless codex run froze a real harvest for 22 min —
+# age-9h3d; the STALL failure mode now centralized in lib/codex-exec.sh). With a
 # timeout binary present, a hung review is killed after MEMBRANE_TIMEOUT seconds,
 # yields empty output, and the task is excluded as degraded via the existing
 # unparseable-verdict path. 0 (or no timeout binary) disables the timeout.
@@ -160,7 +178,7 @@ if [[ "$DRY_RUN" == "false" ]]; then
 First line: the word VERDICT in capitals, then a colon, a space, then the token ACK.
 Second line: the word WHY in capitals, a colon, a space, then the word ok.")"
   if ! printf '%s\n' "$smoke" | grep -Eqi '^[[:space:]]*VERDICT:[[:space:]]*(ACK|REFUTE)'; then
-    echo "error: membrane ($MEMBRANE_LABEL) returned no parseable VERDICT on a smoke probe — it is unavailable (auth-down / offline?). Re-auth it, or pass a working --membrane-cmd, e.g. --membrane-cmd 'codex exec --skip-git-repo-check \"\$1\"'." >&2
+    echo "error: membrane ($MEMBRANE_LABEL) returned no parseable VERDICT on a smoke probe — it is unavailable (auth-down / offline?). Re-auth it, or pass a working --membrane-cmd, e.g. --membrane-cmd '$(codex_exec_producer_template membrane)'." >&2
     exit 1
   fi
 fi

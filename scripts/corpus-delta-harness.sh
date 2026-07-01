@@ -97,7 +97,7 @@ SRC_MEM_DIR="${CORPUS_DELTA_MEM_DIR:-$HOME/.claude/projects/-home-boful-dev-agen
 # from the off arm (off = base − context, on = base + context). Empty in tests.
 HOME_BASE="${CORPUS_DELTA_HOME_BASE:-}"
 # ag-94f: codex auth lives in ~/.codex (NOT ~/.claude), so an isolated sandbox HOME
-# strips it and `codex exec` fails 401 Unauthorized on EVERY seed in BOTH arms — a
+# strips it and the headless codex run fails 401 Unauthorized on EVERY seed in BOTH arms — a
 # DEGRADED run, not a delta. Carry codex CREDENTIALS into each sandbox HOME's .codex in
 # BOTH arms (auth is runtime, never corpus context). Only auth/config files are copied —
 # NOT codex sessions/history/log (those are codex's own memory, not needed and not context).

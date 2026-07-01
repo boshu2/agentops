@@ -48,7 +48,7 @@ done
 if [[ -n "$hits" ]]; then
   echo "check-door9-no-claude-p: FAIL — phased RPI production code can route to Claude print mode" >&2
   printf '%s\n' "$hits" >&2
-  echo "Use codex exec or another non-Claude headless worker for RPI defaults; Claude print mode is forbidden." >&2
+  echo "Use a headless codex runner or another non-Claude headless worker for RPI defaults; Claude print mode is forbidden." >&2
   exit 1
 fi
 
