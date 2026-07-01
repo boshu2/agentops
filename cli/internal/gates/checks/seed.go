@@ -174,6 +174,19 @@ var (
 		"scripts/check-adr-registry.sh",
 		"tests/scripts/check-adr-registry.bats",
 	}
+	// go.jsonl-scanner-ratchet: ADVISORY heuristic — flags a NEW raw
+	// bufio.NewScanner over JSONL outside cli/internal/storage. A raw scanner
+	// silently truncates at its 64KB default buffer; the blessed replacement is
+	// storage.ScanJSONL / storage.ScanJSONLFile (loud ErrLineTooLong policy).
+	// Match = cli/** plus self-refs (script, grandfather list, bats) so editing
+	// the gate re-runs it. Advisory PERMANENTLY by design (grep heuristic —
+	// file-level, no AST; false pos/neg possible), see age-storage-hardening-roxg.3.
+	jsonlScannerRatchetPaths = []string{
+		"cli/**",
+		"scripts/check-jsonl-scanner-ratchet.sh",
+		"scripts/.jsonl-scanner-grandfather",
+		"tests/scripts/check-jsonl-scanner-ratchet.bats",
+	}
 )
 
 func init() {
@@ -319,6 +332,12 @@ func init() {
 		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
 		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
 		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
+		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
+		// bufio.NewScanner over JSONL outside cli/internal/storage silently
+		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless
+		// drift recurs) — it is a file-level grep heuristic (no AST; false pos/neg
+		// possible), so a false positive must never block a push. age-storage-hardening-roxg.3.
+		{ID: "go.jsonl-scanner-ratchet", Tiers: gates.Full, Match: jsonlScannerRatchetPaths, Blocking: false, Backing: "check-jsonl-scanner-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.ScanJSONL/ScanJSONLFile (loud ErrLineTooLong policy) instead of a raw bufio.NewScanner over JSONL; advisory — see age-storage-hardening-roxg.3"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},

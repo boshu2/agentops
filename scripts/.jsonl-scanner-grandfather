@@ -1,0 +1,57 @@
+# scripts/.jsonl-scanner-grandfather — FILENAME-pinned grandfather list.
+#
+# Every cli/**/*.go file (outside cli/internal/storage/) that currently has
+# BOTH a bufio.NewScanner( invocation AND a .jsonl mention. These predate the ratchet
+# (age-storage-hardening-roxg.3) and are exempt. The list only SHRINKS: a
+# grandfathered file that no longer trips the heuristic must be pruned.
+#
+# Blessed replacement for a raw scanner over JSONL: storage.ScanJSONL /
+# storage.ScanJSONLFile (loud storage.ErrLineTooLong policy).
+#
+# Regenerate with:  bash scripts/check-jsonl-scanner-ratchet.sh --regenerate
+# (regenerate at LAND time, after the final rebase — sibling adoptions may
+#  have cleaned sites.)
+cli/cmd/ao/batch_forge.go
+cli/cmd/ao/c2_event_reader.go
+cli/cmd/ao/claim_evidence_binder_adapter.go
+cli/cmd/ao/codex.go
+cli/cmd/ao/context_assemble.go
+cli/cmd/ao/dedup.go
+cli/cmd/ao/extract.go
+cli/cmd/ao/flywheel_citation_feedback.go
+cli/cmd/ao/hypothesis_ledger_adapter.go
+cli/cmd/ao/init.go
+cli/cmd/ao/loop_blocked.go
+cli/cmd/ao/loop_reader_adapter.go
+cli/cmd/ao/loop_writer_adapter.go
+cli/cmd/ao/operator_adapter.go
+cli/cmd/ao/pool_reindex.go
+cli/cmd/ao/pool_reindex_test.go
+cli/cmd/ao/session_outcome.go
+cli/cmd/ao/task_sync.go
+cli/cmd/ao/temper.go
+cli/cmd/ao/tick.go
+cli/internal/adapters/vendorimage/codexruntime/runtime.go
+cli/internal/canon/ledger.go
+cli/internal/doctor/engine.go
+cli/internal/drrebuild/drrebuild.go
+cli/internal/forge/runmine.go
+cli/internal/goals/commands.go
+cli/internal/lifecycle/feedback.go
+cli/internal/lifecycle/maturity.go
+cli/internal/mine/mine.go
+cli/internal/notebook/notebook.go
+cli/internal/pool/pool.go
+cli/internal/quality/doctor.go
+cli/internal/quality/metrics_golden.go
+cli/internal/quality/metrics_run.go
+cli/internal/ratchet/chain.go
+cli/internal/ratchet/validate.go
+cli/internal/resolver/resolver.go
+cli/internal/rpi/queue_file.go
+cli/internal/rpi/queue_read.go
+cli/internal/search/index.go
+cli/internal/search/learnings.go
+cli/internal/search/search_cass.go
+cli/internal/search/sessions.go
+cli/internal/wiki/index.go
