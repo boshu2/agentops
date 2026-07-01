@@ -81,7 +81,7 @@ Parse the user's input:
 | `/goals render`, "export gherkin", "feature file" | **render** | `ao goals render` |
 
 `ao goals scenarios` links each directive to behavioral scenarios (the
-`ao scenario` family) so GOALS.md is an executable BDD spec: bare lists every
+`ao eval scenario` family) so GOALS.md is an executable BDD spec: bare lists every
 directive's linked scenarios with link health; `--create "<goal>" --directive N`
 scaffolds and bidirectionally links a scenario; `--lint` checks the link graph.
 See `docs/adr/ADR-0003`.
@@ -139,7 +139,7 @@ ao goals measure --scenarios-only -o json
 ```
 
 Scenario results are read from the scenario result artifacts (see
-`ao scenario` family); the exact aggregation path and exit-code semantics are
+`ao eval scenario` family); the exact aggregation path and exit-code semantics are
 in `references/executable-spec-chain.md`.
 
 ### Step 3: Report

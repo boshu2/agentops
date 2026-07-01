@@ -227,12 +227,19 @@ var (
 	sessionOutcomeOutput    string
 )
 
+// bindSessionOutcomeFlags registers the session-outcome flag set onto cmd. Both
+// the hidden `ao session-outcome` and the canonical `ao eval session-outcome`
+// bind the same package-global vars (safe: one command runs per process).
+func bindSessionOutcomeFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&sessionOutcomeSessionID, "session", "", "Session ID (extracted from transcript if not provided)")
+	cmd.Flags().StringVar(&sessionOutcomeOutput, "output", "text", "Output format: text, json")
+}
+
 func init() {
 	sessionOutcomeCmd.Hidden = true
 	sessionOutcomeCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(sessionOutcomeCmd)
-	sessionOutcomeCmd.Flags().StringVar(&sessionOutcomeSessionID, "session", "", "Session ID (extracted from transcript if not provided)")
-	sessionOutcomeCmd.Flags().StringVar(&sessionOutcomeOutput, "output", "text", "Output format: text, json")
+	bindSessionOutcomeFlags(sessionOutcomeCmd)
 }
 
 func runSessionOutcome(cmd *cobra.Command, args []string) error {

@@ -14,7 +14,7 @@ func TestScenarioInit_CreatesDirectory(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	out, err := executeCommand("scenario", "init")
+	out, err := executeCommand("eval", "scenario", "init")
 	if err != nil {
 		t.Fatalf("scenario init failed: %v", err)
 	}
@@ -36,8 +36,8 @@ func TestScenarioInit_Idempotent(t *testing.T) {
 	t.Chdir(dir)
 
 	// Run twice
-	executeCommand("scenario", "init")
-	_, err := executeCommand("scenario", "init")
+	executeCommand("eval", "scenario", "init")
+	_, err := executeCommand("eval", "scenario", "init")
 	if err != nil {
 		t.Fatalf("second init should not error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestScenarioList_EmptyDir(t *testing.T) {
 
 	os.MkdirAll(filepath.Join(".agents", "holdout"), 0755)
 
-	out, err := executeCommand("scenario", "list")
+	out, err := executeCommand("eval", "scenario", "list")
 	if err != nil {
 		t.Fatalf("list should not error on empty dir: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestScenarioList_NoDirectory(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	out, err := executeCommand("scenario", "list")
+	out, err := executeCommand("eval", "scenario", "list")
 	if err != nil {
 		t.Fatalf("list should not error when dir missing: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestScenarioList_WithScenarios(t *testing.T) {
 	data, _ := json.Marshal(scenario)
 	os.WriteFile(filepath.Join(holdoutDir, "s-2026-04-05-001.json"), data, 0644)
 
-	out, err := executeCommand("scenario", "list")
+	out, err := executeCommand("eval", "scenario", "list")
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestScenarioList_FilterByStatus(t *testing.T) {
 	os.WriteFile(filepath.Join(holdoutDir, "s1.json"), d1, 0644)
 	os.WriteFile(filepath.Join(holdoutDir, "s2.json"), d2, 0644)
 
-	out, err := executeCommand("scenario", "list", "--status", "draft")
+	out, err := executeCommand("eval", "scenario", "list", "--status", "draft")
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestScenarioAdd_CreatesSchemaCompliantScenario(t *testing.T) {
 	withScenarioClock(t, time.Date(2026, 4, 24, 10, 30, 0, 0, time.UTC))
 
 	out, err := executeCommand(
-		"scenario", "add", "CLI can author holdout scenarios",
+		"eval", "scenario", "add", "CLI can author holdout scenarios",
 		"--narrative", "Evaluator authors a scenario through the CLI.",
 		"--expected-outcome", "A schema-compliant scenario file is written.",
 		"--status", "active",
@@ -166,7 +166,7 @@ func TestScenarioAdd_CreatesSchemaCompliantScenario(t *testing.T) {
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("scenario file not written: %v", err)
 	}
-	validateOut, err := executeCommand("scenario", "validate")
+	validateOut, err := executeCommand("eval", "scenario", "validate")
 	if err != nil {
 		t.Fatalf("written scenario should validate: %v\noutput: %s", err, validateOut)
 	}
@@ -191,7 +191,7 @@ func TestScenarioAdd_IncrementsSameDayID(t *testing.T) {
 		t.Fatalf("write existing scenario: %v", err)
 	}
 
-	out, err := executeCommand("scenario", "add", "next same-day scenario", "--json")
+	out, err := executeCommand("eval", "scenario", "add", "next same-day scenario", "--json")
 	if err != nil {
 		t.Fatalf("scenario add failed: %v\noutput: %s", err, out)
 	}
@@ -208,10 +208,10 @@ func TestScenarioAdd_RejectsInvalidFlags(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	if out, err := executeCommand("scenario", "add", "bad threshold", "--threshold", "1.2"); err == nil {
+	if out, err := executeCommand("eval", "scenario", "add", "bad threshold", "--threshold", "1.2"); err == nil {
 		t.Fatalf("scenario add should reject invalid threshold; output: %s", out)
 	}
-	if out, err := executeCommand("scenario", "add", "bad status", "--status", "blocked"); err == nil {
+	if out, err := executeCommand("eval", "scenario", "add", "bad status", "--status", "blocked"); err == nil {
 		t.Fatalf("scenario add should reject invalid status; output: %s", out)
 	}
 }
@@ -231,7 +231,7 @@ func TestScenarioValidate_ValidSchema(t *testing.T) {
 	data, _ := json.Marshal(scenario)
 	os.WriteFile(filepath.Join(holdoutDir, "test.json"), data, 0644)
 
-	out, err := executeCommand("scenario", "validate")
+	out, err := executeCommand("eval", "scenario", "validate")
 	if err != nil {
 		t.Fatalf("validate should pass: %v", err)
 	}
@@ -255,7 +255,7 @@ func TestScenarioValidate_AcceptsAutoID(t *testing.T) {
 	data, _ := json.Marshal(scenario)
 	os.WriteFile(filepath.Join(holdoutDir, "auto.json"), data, 0644)
 
-	out, err := executeCommand("scenario", "validate")
+	out, err := executeCommand("eval", "scenario", "validate")
 	if err != nil {
 		t.Fatalf("validate should accept auto-* IDs: %v\noutput: %s", err, out)
 	}
@@ -276,7 +276,7 @@ func TestScenarioValidate_InvalidSchema(t *testing.T) {
 	data, _ := json.Marshal(scenario)
 	os.WriteFile(filepath.Join(holdoutDir, "bad.json"), data, 0644)
 
-	_, err := executeCommand("scenario", "validate")
+	_, err := executeCommand("eval", "scenario", "validate")
 	if err == nil {
 		t.Fatal("validate should fail for invalid schema")
 	}
@@ -291,7 +291,7 @@ func TestScenarioValidate_MalformedJSON(t *testing.T) {
 
 	os.WriteFile(filepath.Join(holdoutDir, "bad.json"), []byte("{invalid"), 0644)
 
-	_, err := executeCommand("scenario", "validate")
+	_, err := executeCommand("eval", "scenario", "validate")
 	if err == nil {
 		t.Fatal("validate should fail for malformed JSON")
 	}
@@ -301,7 +301,7 @@ func TestScenarioValidate_NoDirectory(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	out, err := executeCommand("scenario", "validate")
+	out, err := executeCommand("eval", "scenario", "validate")
 	if err != nil {
 		t.Fatalf("validate should not error when dir missing: %v", err)
 	}
@@ -316,7 +316,7 @@ func TestScenarioValidate_EmptyDir(t *testing.T) {
 
 	os.MkdirAll(filepath.Join(".agents", "holdout"), 0755)
 
-	out, err := executeCommand("scenario", "validate")
+	out, err := executeCommand("eval", "scenario", "validate")
 	if err != nil {
 		t.Fatalf("validate should not error on empty dir: %v", err)
 	}

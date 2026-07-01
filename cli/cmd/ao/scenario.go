@@ -14,5 +14,9 @@ whether the implementation satisfies user intent.`,
 }
 
 func init() {
-	rootCmd.AddCommand(scenarioCmd)
+	// Folded under `ao eval` (age-focus-membrane-bookkeeper-m1wg.16). The
+	// add/init/list/validate children are attached to scenarioCmd elsewhere and
+	// auto-follow this reparent. `ao eval scenario-ab` (ADR-0004 revival path) is
+	// a distinct sibling and is unaffected.
+	evalCmd.AddCommand(scenarioCmd)
 }

@@ -16,6 +16,7 @@ $goals init               # Bootstrap GOALS.md interactively
 $goals steer              # Manage directives
 $goals add                # Add a new goal
 $goals drift              # Compare snapshots for regressions
+$goals scenarios          # Link directives to behavioral scenarios (the `ao eval scenario` family)
 $goals history            # Show measurement history
 $goals export             # Export snapshot as JSON for CI
 $goals meta               # Run meta-goals only

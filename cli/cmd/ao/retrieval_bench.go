@@ -619,88 +619,114 @@ the retrieval engine called by collectLearnings), it is a contract
 violation and must be reverted or reseeded to preserve plateau
 detection.`,
 	GroupID: "knowledge",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if strings.TrimSpace(benchSearchEval) != "" {
-			k := benchK
-			if !cmd.Flags().Changed("k") {
-				k = defaultSearchEvalK
-			}
-			return runSearchEval(k, benchJSON, benchSearchRoot, benchSearchEval, benchSearchBackend, benchSearchCompareBackends)
-		}
+	Hidden:  true, // canonical spelling is `ao eval bench`; kept for back-compat
+	RunE:    runRetrievalBench,
+}
 
-		if benchLive {
-			return runLiveBench(benchK, benchJSON, benchGlobal, benchCorpus)
+// runRetrievalBench executes the retrieval-quality benchmark. It is shared by
+// the hidden back-compat top-level `ao retrieval-bench` and the canonical
+// `ao eval bench` alias (both bind the same package-global flag vars; only one
+// runs per process).
+func runRetrievalBench(cmd *cobra.Command, args []string) error {
+	if strings.TrimSpace(benchSearchEval) != "" {
+		k := benchK
+		if !cmd.Flags().Changed("k") {
+			k = defaultSearchEvalK
 		}
+		return runSearchEval(k, benchJSON, benchSearchRoot, benchSearchEval, benchSearchBackend, benchSearchCompareBackends)
+	}
 
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("get working directory: %w", err)
-		}
-		corpusDir, err := resolveRetrievalBenchCorpus(cwd, benchCorpus)
-		if err != nil {
-			return err
-		}
-		report, err := buildBenchReport(corpusDir, corpusDir, benchK)
-		if err != nil {
-			return err
-		}
+	if benchLive {
+		return runLiveBench(benchK, benchJSON, benchGlobal, benchCorpus)
+	}
 
-		if benchJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(report)
-		}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("get working directory: %w", err)
+	}
+	corpusDir, err := resolveRetrievalBenchCorpus(cwd, benchCorpus)
+	if err != nil {
+		return err
+	}
+	report, err := buildBenchReport(corpusDir, corpusDir, benchK)
+	if err != nil {
+		return err
+	}
 
-		// Human-readable output
-		fmt.Println("Retrieval Quality Report")
-		fmt.Println("========================")
-		fmt.Printf("Queries:     %d\n", report.Queries)
-		fmt.Printf("Precision@%d: %.2f (target: %.2f)\n", benchK, report.AvgPAtK, report.TargetPAtK)
-		fmt.Printf("MRR:         %.2f (target: %.2f)\n", report.AvgMRR, report.TargetMRR)
-		if len(report.Splits) > 0 {
-			fmt.Println("Splits:")
-			splitNames := make([]string, 0, len(report.Splits))
-			for split := range report.Splits {
-				splitNames = append(splitNames, split)
-			}
-			sort.Strings(splitNames)
-			for _, split := range splitNames {
-				summary := report.Splits[split]
-				line := fmt.Sprintf("  %-10s cases=%d  P@%d=%.2f  MRR=%.2f", split, summary.Cases, benchK, summary.AvgPAtK, summary.AvgMRR)
-				if summary.SectionCases > 0 {
-					line += fmt.Sprintf("  section-MRR=%.2f", summary.AvgSectionMRR)
-				}
-				fmt.Println(line)
-			}
+	if benchJSON {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(report)
+	}
+
+	// Human-readable output
+	fmt.Println("Retrieval Quality Report")
+	fmt.Println("========================")
+	fmt.Printf("Queries:     %d\n", report.Queries)
+	fmt.Printf("Precision@%d: %.2f (target: %.2f)\n", benchK, report.AvgPAtK, report.TargetPAtK)
+	fmt.Printf("MRR:         %.2f (target: %.2f)\n", report.AvgMRR, report.TargetMRR)
+	if len(report.Splits) > 0 {
+		fmt.Println("Splits:")
+		splitNames := make([]string, 0, len(report.Splits))
+		for split := range report.Splits {
+			splitNames = append(splitNames, split)
 		}
-		fmt.Println()
-		fmt.Println("Per-query breakdown:")
-		for _, r := range report.Results {
-			status := "PASS"
-			if !r.Pass {
-				status = "WARN (below target)"
+		sort.Strings(splitNames)
+		for _, split := range splitNames {
+			summary := report.Splits[split]
+			line := fmt.Sprintf("  %-10s cases=%d  P@%d=%.2f  MRR=%.2f", split, summary.Cases, benchK, summary.AvgPAtK, summary.AvgMRR)
+			if summary.SectionCases > 0 {
+				line += fmt.Sprintf("  section-MRR=%.2f", summary.AvgSectionMRR)
 			}
-			line := fmt.Sprintf("  %-30s P@%d=%.2f  MRR=%.2f", fmt.Sprintf("%q", r.Query), benchK, r.PAtK, r.MRR)
-			if r.ExpectedSection != "" {
-				line += fmt.Sprintf("  section-MRR=%.2f", r.SectionMRR)
-			}
-			line += fmt.Sprintf("  %s", status)
 			fmt.Println(line)
 		}
-		return nil
-	},
+	}
+	fmt.Println()
+	fmt.Println("Per-query breakdown:")
+	for _, r := range report.Results {
+		status := "PASS"
+		if !r.Pass {
+			status = "WARN (below target)"
+		}
+		line := fmt.Sprintf("  %-30s P@%d=%.2f  MRR=%.2f", fmt.Sprintf("%q", r.Query), benchK, r.PAtK, r.MRR)
+		if r.ExpectedSection != "" {
+			line += fmt.Sprintf("  section-MRR=%.2f", r.SectionMRR)
+		}
+		line += fmt.Sprintf("  %s", status)
+		fmt.Println(line)
+	}
+	return nil
+}
+
+// bindRetrievalBenchFlags registers the retrieval-bench flag set onto cmd. Both
+// the hidden `ao retrieval-bench` and the canonical `ao eval bench` bind the
+// same package-global vars (safe: one command runs per process).
+func bindRetrievalBenchFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&benchCorpus, "corpus", "", "Path to benchmark corpus directory")
+	cmd.Flags().BoolVar(&benchJSON, "json", false, "JSON output")
+	cmd.Flags().IntVar(&benchK, "k", 3, "K for Precision@K")
+	cmd.Flags().BoolVar(&benchLive, "live", false, "Benchmark against real .agents/learnings/ instead of synthetic corpus")
+	cmd.Flags().BoolVar(&benchGlobal, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
+	cmd.Flags().StringVar(&benchSearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
+	cmd.Flags().StringVar(&benchSearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
+	cmd.Flags().StringVar(&benchSearchBackend, "search-backend", defaultSearchEvalBackend, "Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp)")
+	cmd.Flags().StringVar(&benchSearchCompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
+}
+
+// evalBenchCmd is the canonical `ao eval bench` alias for the retrieval-quality
+// benchmark, folded under `ao eval` (age-focus-membrane-bookkeeper-m1wg.16).
+var evalBenchCmd = &cobra.Command{
+	Use:   "bench",
+	Short: "Run retrieval quality benchmarks",
+	Long:  retrievalBenchCmd.Long,
+	RunE:  runRetrievalBench,
 }
 
 func init() {
 	retrievalBenchCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(retrievalBenchCmd)
-	retrievalBenchCmd.Flags().StringVar(&benchCorpus, "corpus", "", "Path to benchmark corpus directory")
-	retrievalBenchCmd.Flags().BoolVar(&benchJSON, "json", false, "JSON output")
-	retrievalBenchCmd.Flags().IntVar(&benchK, "k", 3, "K for Precision@K")
-	retrievalBenchCmd.Flags().BoolVar(&benchLive, "live", false, "Benchmark against real .agents/learnings/ instead of synthetic corpus")
-	retrievalBenchCmd.Flags().BoolVar(&benchGlobal, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
-	retrievalBenchCmd.Flags().StringVar(&benchSearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
-	retrievalBenchCmd.Flags().StringVar(&benchSearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
-	retrievalBenchCmd.Flags().StringVar(&benchSearchBackend, "search-backend", defaultSearchEvalBackend, "Search backend for --search-eval (local-lexical, ao-auto, agentic-rg, wiki-link-expand, rerank-llamacpp)")
-	retrievalBenchCmd.Flags().StringVar(&benchSearchCompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
+	bindRetrievalBenchFlags(retrievalBenchCmd)
+
+	bindRetrievalBenchFlags(evalBenchCmd)
+	evalCmd.AddCommand(evalBenchCmd)
 }

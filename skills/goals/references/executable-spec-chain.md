@@ -8,7 +8,7 @@ SKILL.md links here; this file holds the precise schemas and exit-code rules.
 
 `ao goals measure` aggregates the latest result of every behavioral scenario
 linked to a directive and computes a satisfaction ratio. The producer reads
-scenario result artifacts written by the `ao scenario` family.
+scenario result artifacts written by the `ao eval scenario` family.
 
 ### `scenario_satisfaction` JSON shape
 
