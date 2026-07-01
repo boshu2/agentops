@@ -1252,10 +1252,10 @@ func TestScanJSONLFile_MissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "missing.jsonl")
 	called := false
 
-	if err := scanJSONLFile(path, func(line []byte) {
+	if err := ScanJSONLFile(path, func(line []byte) {
 		called = true
 	}); err != nil {
-		t.Fatalf("scanJSONLFile() error = %v, want nil", err)
+		t.Fatalf("ScanJSONLFile() error = %v, want nil", err)
 	}
 	if called {
 		t.Fatal("expected callback to not be invoked for missing file")
@@ -1269,7 +1269,7 @@ func TestScanJSONLFile_OpenError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := scanJSONLFile(filepath.Join(parentFile, "child.jsonl"), func(line []byte) {})
+	err := ScanJSONLFile(filepath.Join(parentFile, "child.jsonl"), func(line []byte) {})
 	if err == nil {
 		t.Fatal("expected open error for non-directory parent")
 	}
@@ -1416,7 +1416,9 @@ func TestFileStorage_HasIndexEntry_ScanError(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	longLine := strings.Repeat("x", 70*1024) + "\n"
+	// A line above the ScanJSONL cap (scanJSONLMaxLine, 8MB) must surface a hard
+	// ErrLineTooLong rather than silently truncating the index scan.
+	longLine := strings.Repeat("x", scanJSONLMaxLine+1) + "\n"
 	if _, err := f.WriteString(longLine); err != nil {
 		t.Fatal(err)
 	}
@@ -1425,6 +1427,9 @@ func TestFileStorage_HasIndexEntry_ScanError(t *testing.T) {
 	_, err = fs.hasIndexEntry(f, "session-id")
 	if err == nil {
 		t.Fatal("expected scan error for oversized line")
+	}
+	if !errors.Is(err, ErrLineTooLong) {
+		t.Fatalf("expected ErrLineTooLong, got %v", err)
 	}
 }
 
@@ -1438,7 +1443,10 @@ func TestFileStorage_WriteIndex_HasIndexEntryError(t *testing.T) {
 	}
 
 	indexPath := fs.GetIndexPath()
-	longLine := strings.Repeat("x", 70*1024) + "\n"
+	// A line above the ScanJSONL cap (scanJSONLMaxLine, 8MB) must surface a hard
+	// ErrLineTooLong through WriteIndex's hasIndexEntry scan rather than a silent
+	// truncation that would let a duplicate append slip through.
+	longLine := strings.Repeat("x", scanJSONLMaxLine+1) + "\n"
 	if err := os.WriteFile(indexPath, []byte(longLine), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -1450,6 +1458,9 @@ func TestFileStorage_WriteIndex_HasIndexEntryError(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected WriteIndex to surface hasIndexEntry error")
+	}
+	if !errors.Is(err, ErrLineTooLong) {
+		t.Fatalf("expected ErrLineTooLong, got %v", err)
 	}
 }
 
@@ -1827,7 +1838,7 @@ func TestScanJSONLFile_PermissionDenied(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(filePath, 0o600) })
 
 	called := false
-	err := scanJSONLFile(filePath, func(_ []byte) { called = true })
+	err := ScanJSONLFile(filePath, func(_ []byte) { called = true })
 	if err == nil {
 		t.Fatal("expected permission denied error from scanJSONLFile")
 	}
@@ -1932,7 +1943,7 @@ func TestExtra_scanJSONLFile_OpenError(t *testing.T) {
 	if err := os.MkdirAll(dirPath, 0700); err != nil {
 		t.Fatal(err)
 	}
-	err := scanJSONLFile(dirPath, func(line []byte) {})
+	err := ScanJSONLFile(dirPath, func(line []byte) {})
 	if err == nil {
 		t.Fatal("expected error opening a directory as file, got nil")
 	}
@@ -1940,7 +1951,7 @@ func TestExtra_scanJSONLFile_OpenError(t *testing.T) {
 
 // TestExtra_scanJSONLFile_NotExist covers the IsNotExist early return.
 func TestExtra_scanJSONLFile_NotExist(t *testing.T) {
-	err := scanJSONLFile("/nonexistent/file.jsonl", func(line []byte) {})
+	err := ScanJSONLFile("/nonexistent/file.jsonl", func(line []byte) {})
 	if err != nil {
 		t.Fatalf("expected nil for non-existent file, got: %v", err)
 	}
@@ -2018,5 +2029,143 @@ func TestExtra_withLockedFile_OpenFileError(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected OpenFile error on directory, got nil")
+	}
+}
+
+// --- Exported JSONL helper policy (age-storage-hardening-roxg.1) ---
+
+// TestScanJSONL_OversizedLineIsLoud proves the buffer policy: a line above the
+// cap is a hard ErrLineTooLong that names the offending line number — never a
+// silently truncated iteration. Fixture-fidelity: the oversized line is produced
+// by the production writer (AppendJSONL) and read back with the production reader
+// (ScanJSONLFile), so the on-disk shape is exactly what the code emits.
+func TestScanJSONL_OversizedLineIsLoud(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "index.jsonl")
+
+	// One small legitimate line, then one line whose marshaled JSON exceeds the
+	// 8MB cap. Both go through the production AppendJSONL writer.
+	if err := AppendJSONL(path, map[string]string{"id": "ok"}); err != nil {
+		t.Fatalf("AppendJSONL(small): %v", err)
+	}
+	huge := map[string]string{"blob": strings.Repeat("x", scanJSONLMaxLine+1)}
+	if err := AppendJSONL(path, huge); err != nil {
+		t.Fatalf("AppendJSONL(huge): %v", err)
+	}
+
+	// Confirm the writer really emitted an oversized line (round-trip fidelity).
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if lines := strings.Count(string(raw), "\n"); lines != 2 {
+		t.Fatalf("expected exactly 2 JSONL lines on disk, got %d", lines)
+	}
+
+	// Reading back must stop with a loud, line-numbered ErrLineTooLong — the
+	// oversized line must NOT be delivered truncated.
+	var got [][]byte
+	err = ScanJSONLFile(path, func(line []byte) {
+		cp := make([]byte, len(line))
+		copy(cp, line)
+		got = append(got, cp)
+	})
+	if err == nil {
+		t.Fatal("expected ErrLineTooLong for an oversized line, got nil (silent truncation)")
+	}
+	if !errors.Is(err, ErrLineTooLong) {
+		t.Fatalf("expected ErrLineTooLong, got %v", err)
+	}
+	// The error must name the offending line (line 2 here).
+	if !strings.Contains(err.Error(), "line 2") {
+		t.Fatalf("expected error to name the offending line 2, got: %v", err)
+	}
+	// The first (small) line was delivered whole; the oversized line was NOT
+	// delivered at all — never a truncated slice.
+	if len(got) != 1 {
+		t.Fatalf("expected exactly 1 delivered line (the small one) before the loud error, got %d", len(got))
+	}
+	if !strings.Contains(string(got[0]), `"id":"ok"`) {
+		t.Fatalf("first delivered line = %q, want the small {\"id\":\"ok\"} record", got[0])
+	}
+}
+
+// TestScanJSONL_ExactCapLineScans pins the boundary of the buffer policy: the
+// cap is INCLUSIVE — a line of exactly scanJSONLMaxLine bytes scans successfully
+// and is delivered whole (bufio needs delimiter headroom, so a naive
+// Buffer(..., cap) would reject it; the +1 in ScanJSONL prevents that).
+// Fixture-fidelity: the line is produced by the production writer (AppendJSONL)
+// and its on-disk length is asserted to be exactly the cap.
+func TestScanJSONL_ExactCapLineScans(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "boundary.jsonl")
+
+	// {"blob":"<N x's>"} marshals to a line of N+11 bytes; pick N so the line is
+	// exactly scanJSONLMaxLine bytes.
+	const overhead = len(`{"blob":"`) + len(`"}`)
+	record := map[string]string{"blob": strings.Repeat("x", scanJSONLMaxLine-overhead)}
+	if err := AppendJSONL(path, record); err != nil {
+		t.Fatalf("AppendJSONL(exact-cap): %v", err)
+	}
+
+	// Self-check the fixture: the on-disk line (sans trailing newline) must be
+	// exactly the cap, or this test is not exercising the boundary.
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	lineLen := len(raw) - 1 // trailing '\n' is the delimiter, not part of the line
+	if lineLen != scanJSONLMaxLine {
+		t.Fatalf("fixture line length = %d, want exactly scanJSONLMaxLine (%d)", lineLen, scanJSONLMaxLine)
+	}
+
+	var gotLens []int
+	if err := ScanJSONL(strings.NewReader(string(raw)), func(line []byte) {
+		gotLens = append(gotLens, len(line))
+	}); err != nil {
+		t.Fatalf("ScanJSONL(exact-cap line): unexpected error %v (cap must be inclusive)", err)
+	}
+	if len(gotLens) != 1 || gotLens[0] != scanJSONLMaxLine {
+		t.Fatalf("delivered lines = %v, want exactly one line of %d bytes", gotLens, scanJSONLMaxLine)
+	}
+}
+
+// TestScanJSONL_RealFatFixtureScans proves the cap is above every legitimate
+// line: the checked-in 2.4MB real transcript (longest line ~67.5KB) scans to
+// completion without ErrLineTooLong and yields every line.
+func TestScanJSONL_RealFatFixtureScans(t *testing.T) {
+	const fixture = "../../testdata/transcripts/real-2.4mb.jsonl"
+	info, err := os.Stat(fixture)
+	if err != nil {
+		t.Skipf("real fat-line fixture not present: %v", err)
+	}
+	if info.Size() < 2*1024*1024 {
+		t.Fatalf("fixture unexpectedly small (%d bytes); expected the ~2.4MB transcript", info.Size())
+	}
+
+	lineCount := 0
+	maxLen := 0
+	err = ScanJSONLFile(fixture, func(line []byte) {
+		lineCount++
+		if len(line) > maxLen {
+			maxLen = len(line)
+		}
+	})
+	if err != nil {
+		t.Fatalf("ScanJSONLFile(real fixture): unexpected error %v", err)
+	}
+	if errors.Is(err, ErrLineTooLong) {
+		t.Fatal("real fixture triggered ErrLineTooLong: cap is below a legitimate line")
+	}
+	if lineCount == 0 {
+		t.Fatal("scanned 0 lines from a 2.4MB fixture (silent truncation or empty read)")
+	}
+	// Sanity: the fixture's longest line is ~67.5KB (69,102 bytes), well under the
+	// 8MB cap and well over bufio's default 64KB — the exact case the cap fixes.
+	if maxLen <= 64*1024 {
+		t.Fatalf("expected the fixture to contain a >64KB line (it exercises the cap); longest was %d bytes", maxLen)
+	}
+	if maxLen >= scanJSONLMaxLine {
+		t.Fatalf("fixture longest line %d unexpectedly at/above the cap %d", maxLen, scanJSONLMaxLine)
 	}
 }
