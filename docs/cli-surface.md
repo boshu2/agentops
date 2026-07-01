@@ -77,6 +77,7 @@
 | `ao doctor ls` | `public-stateful-fixture-needed` | `allowlisted` | Lists local doctor-managed artifacts and needs a controlled home/repo fixture. |
 | `ao doctor robot-docs` | `public-stateful-fixture-needed` | `allowlisted` | Generates robot docs from local state and needs a controlled output fixture. |
 | `ao doctor undo` | `public-stateful-fixture-needed` | `allowlisted` | Reverts doctor fixes and needs an isolated undo fixture. |
+| `ao done` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval baseline` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval baseline-audit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
