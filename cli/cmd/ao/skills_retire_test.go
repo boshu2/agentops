@@ -81,6 +81,10 @@ func retireHistoricalEntry(slug, state, target, date, rationale string) string {
 
 func setupSkillsRetireRepo(t *testing.T) string {
 	t.Helper()
+	// The retire command trust-gates repo-script exec (aoBinaryInside): the test
+	// binary lives outside this temp fixture repo, so opt in via the documented
+	// escape hatch — the harness legitimately owns the fixture it just wrote.
+	t.Setenv(trustRepoEnvVar, "1")
 	repo := t.TempDir()
 	writeSkillEditFile(t, repo, "skills/alpha/SKILL.md", "---\nname: alpha\ndescription: alpha skill\nconsumes: []\ncontext_rel: []\n---\nalpha body\n")
 	writeSkillEditFile(t, repo, "skills/alpha/references/extra.md", "alpha extra\n")

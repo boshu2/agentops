@@ -4,8 +4,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 )
 
 type aoMaintenanceGlobals struct {
@@ -89,19 +87,17 @@ func withSuppressedOutput(fn func() error) error {
 	return fn()
 }
 
+// bestEffortPruneAgents opportunistically runs the repo's prune-agents script.
+// It routes through the trusted-script chokepoint (runBestEffortRepoScript):
+// the script only runs when the checkout passes the aoBinaryInside trust
+// boundary (or AGENTOPS_TRUST_REPO=1), so an installed ao pointed at a foreign
+// repo never executes that repo's planted scripts/prune-agents.sh — an untrusted
+// repo is skipped with an observable stderr note rather than silently executed.
 func bestEffortPruneAgents(cwd string) {
 	if os.Getenv("AGENTOPS_AUTO_PRUNE") == "0" {
 		return
 	}
-	script := filepath.Join(cwd, "scripts", "prune-agents.sh")
-	if _, err := os.Stat(script); err != nil {
-		return
-	}
-	cmd := exec.Command("bash", script, "--execute", "--quiet")
-	cmd.Dir = cwd
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	_ = cmd.Run()
+	runBestEffortRepoScript(cwd, "scripts/prune-agents.sh", "--execute", "--quiet")
 }
 
 func performHooklessSessionEndMaintenance(cwd string) error {

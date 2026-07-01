@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -377,14 +376,13 @@ func writeFindingFileAtomic(path string, data []byte, mode os.FileMode) error {
 	return search.WriteFindingFileAtomic(path, data, mode)
 }
 
+// bestEffortRefreshFindingCompiler opportunistically re-runs the repo's
+// finding-compiler hook. It routes through the trusted-script chokepoint
+// (runBestEffortRepoScript): the hook only runs when the checkout passes the
+// aoBinaryInside trust boundary (or AGENTOPS_TRUST_REPO=1), so an installed ao
+// pointed at a foreign repo never executes that repo's planted
+// hooks/finding-compiler.sh — an untrusted repo is skipped with an observable
+// stderr note instead of silently executed. Failures stay swallowed (best-effort).
 func bestEffortRefreshFindingCompiler(cwd string) {
-	script := filepath.Join(cwd, "hooks", "finding-compiler.sh")
-	if _, err := os.Stat(script); err != nil {
-		return
-	}
-	cmd := exec.Command("bash", script, "--quiet")
-	cmd.Dir = cwd
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	_ = cmd.Run()
+	runBestEffortRepoScript(cwd, "hooks/finding-compiler.sh", "--quiet")
 }
