@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,13 +34,19 @@ var skillsRetireRegenScripts = []string{
 }
 
 // skillsRetireRunScript is an injectable seam so tests can assert the regen
-// invocation list without shelling out.
+// invocation list without shelling out. The production body routes through the
+// trusted-script chokepoint (runTrustedRepoScript) so the aoBinaryInside RCE
+// boundary is enforced at a single site — runSkillsRetire hard-errors on an
+// untrusted checkout before any mutation, so by the time this runs the repo is
+// already trusted; the chokepoint is defense in depth (and satisfies the
+// per-site AST trust guard).
 var skillsRetireRunScript = func(repoRoot, script string) error {
-	cmd := exec.Command("bash", filepath.Join(repoRoot, "scripts", script))
-	cmd.Dir = repoRoot
-	out, err := cmd.CombinedOutput()
+	executed, err := runTrustedRepoScript(repoRoot, "scripts/"+script)
 	if err != nil {
-		return fmt.Errorf("regen %s: %w\n%s", script, err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("regen %s: %w", script, err)
+	}
+	if !executed {
+		return fmt.Errorf("regen %s: script not found under scripts/", script)
 	}
 	return nil
 }
@@ -114,6 +119,18 @@ func runSkillsRetire(cmd *cobra.Command, args []string) error {
 	repoRoot, err := resolveRepoRootForSkills()
 	if err != nil {
 		return err
+	}
+	// Trust gate BEFORE any mutation: the regen phase executes repo-relative
+	// scripts (scripts/*.sh) via skillsRetireRunScript, so the checkout must pass
+	// the aoBinaryInside boundary (or AGENTOPS_TRUST_REPO=1). An installed ao
+	// pointed at a foreign/forged repo must not run that repo's planted scripts —
+	// hard-error here (before removing trees / flipping ledgers) so nothing is
+	// mutated. --no-regen still requires trust: the command's contract is a full
+	// deterministic retire, and a partial retire on an untrusted repo is exactly
+	// the state we refuse. The RunE seam (skillsRetireRunScript) is preserved for
+	// tests, which set AGENTOPS_TRUST_REPO=1 or run inside the real checkout.
+	if !repoScriptTrusted(repoRoot) {
+		return untrustedRepoScriptError(repoRoot, "scripts/"+skillsRetireRegenScripts[0])
 	}
 	opts := skillsRetireOptions{
 		RepoRoot:      repoRoot,

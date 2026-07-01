@@ -19,6 +19,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -42,12 +43,20 @@ var (
 // checkPawlVerdict reports whether a CONFIRMED, commit-current pawl verdict
 // exists for (bead, HEAD). It reuses the canonical gate scripts/pawl-verdict.sh
 // (the same fail-closed verdict->commit authority that gates push-to-main), so
-// publish trust == the pawl trust. Injectable for tests.
+// publish trust == the pawl trust. The exec routes through the trusted-script
+// chokepoint (runTrustedRepoScript) so the aoBinaryInside RCE boundary is
+// enforced at a single site (satisfying the per-site AST trust guard);
+// runWikiPublish hard-errors on an untrusted checkout before this runs.
+// Injectable for tests.
 var checkPawlVerdict = func(repoRoot, bead, head string) error {
-	script := filepath.Join(repoRoot, "scripts", "pawl-verdict.sh")
-	c := exec.Command("bash", script, "check", bead, "0", "--head", head) // #nosec G204 -- repo-owned script, fixed args
-	c.Dir = repoRoot
-	return c.Run()
+	executed, err := runTrustedRepoScript(repoRoot, "scripts/pawl-verdict.sh", "check", bead, "0", "--head", head)
+	if err != nil {
+		return err
+	}
+	if !executed {
+		return fmt.Errorf("scripts/pawl-verdict.sh not found under the checkout")
+	}
+	return nil
 }
 
 // resolveHeadSHA returns the current HEAD commit. Injectable for tests.
@@ -176,8 +185,15 @@ func runWikiPublish(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	// The membrane gate: a CONFIRMED, commit-current pawl verdict for (bead, HEAD).
+	// The membrane gate: a CONFIRMED, commit-current pawl verdict for (bead,
+	// HEAD). checkPawlVerdict executes the repo-relative scripts/pawl-verdict.sh
+	// through the trusted-script chokepoint, so an untrusted checkout returns
+	// errUntrustedRepoScript — surface THAT as its own hard error (naming the
+	// escape hatch) rather than mislabeling it "no CONFIRMED verdict".
 	if err := checkPawlVerdict(base, wikiPublishBead, head); err != nil {
+		if errors.Is(err, errUntrustedRepoScript) {
+			return untrustedRepoScriptError(base, "scripts/pawl-verdict.sh")
+		}
 		return fmt.Errorf("publish refused: no CONFIRMED pawl verdict for bead=%s at HEAD=%s (pawl-verdict.sh check failed) — fail-closed (age-xf9r)", wikiPublishBead, head[:min(7, len(head))])
 	}
 
