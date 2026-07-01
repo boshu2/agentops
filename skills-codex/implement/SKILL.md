@@ -66,7 +66,7 @@ Skip silently if ao is unavailable or returns no results.
 
 **If beads issue ID provided** (e.g., `gt-123`):
 ```bash
-br show <issue-id> 2>/dev/null
+BEADS_DIR="$(ao beads dir)" br show <issue-id> 2>/dev/null
 ```
 
 **If plain description provided:** Use that as the task description.
@@ -79,7 +79,7 @@ br ready 2>/dev/null | head -3
 ### Step 2: Claim the Issue
 
 ```bash
-br update <issue-id> --claim 2>/dev/null
+BEADS_DIR="$(ao beads dir)" br update <issue-id> --claim 2>/dev/null
 ```
 
 ### Step 2a: Build Context Briefing

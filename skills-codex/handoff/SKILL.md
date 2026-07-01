@@ -49,7 +49,7 @@ mkdir -p .agents/handoff
 git log --oneline -5 --format="%s" | head -1
 
 # Check current issue
-br list --status in_progress 2>/dev/null | head -1
+BEADS_DIR="$(ao beads dir)" br list --status in_progress 2>/dev/null | head -1
 
 # Check ratchet state
 ao ratchet status 2>/dev/null | head -3

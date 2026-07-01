@@ -63,11 +63,12 @@ git branch --show-current
 
 **Call 4 — Work Queue State:**
 ```bash
-if br ready --json >/dev/null 2>&1 && br list --type epic --status open --json >/dev/null 2>&1; then
+BEADS_DIR="$(ao beads dir 2>/dev/null)"; export BEADS_DIR
+if BEADS_DIR="$BEADS_DIR" br ready --json >/dev/null 2>&1 && BEADS_DIR="$BEADS_DIR" br list --type epic --status open --json >/dev/null 2>&1; then
   echo "=== IN_PROGRESS ==="
-  br list --status in_progress 2>/dev/null | head -3
+  BEADS_DIR="$BEADS_DIR" br list --status in_progress 2>/dev/null | head -3
   echo "=== READY ==="
-  br ready 2>/dev/null | head -3
+  BEADS_DIR="$BEADS_DIR" br ready 2>/dev/null | head -3
 else
   echo "BR_DEGRADED_OR_UNAVAILABLE"
 fi
