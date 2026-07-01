@@ -87,17 +87,43 @@ Examples:
 	RunE: runHandoff,
 }
 
-func init() {
-	handoffCmd.GroupID = "workflow"
-	rootCmd.AddCommand(handoffCmd)
+// handoffAliasCmd is a hidden back-compat alias for `ao handoff` (the canonical
+// spelling is `ao session handoff` since age-focus-membrane-bookkeeper-m1wg.17).
+// Smoke/ratchet scripts and bundled callers still invoke `ao handoff`; it shares
+// runHandoff + the same package-global flag vars, so both spellings behave
+// identically.
+var handoffAliasCmd = &cobra.Command{
+	Use:        "handoff [summary]",
+	Short:      handoffCmd.Short,
+	Long:       handoffCmd.Long,
+	Args:       cobra.MaximumNArgs(1),
+	Hidden:     true,
+	Deprecated: "use `ao session handoff`",
+	RunE:       runHandoff,
+}
 
-	handoffCmd.Flags().StringVar(&handoffGoal, "goal", "", "What the session was working on")
-	handoffCmd.Flags().BoolVar(&handoffCollect, "collect", false, "Auto-collect git/bead state into the artifact")
-	handoffCmd.Flags().IntVar(&handoffRPIPhase, "rpi-phase", 0, "RPI phase number (populates RPI context, sets type=rpi)")
-	handoffCmd.Flags().StringVar(&handoffEpicID, "epic", "", "Epic ID for RPI context")
-	handoffCmd.Flags().StringVar(&handoffRunID, "run-id", "", "Run ID for RPI context")
-	handoffCmd.Flags().BoolVar(&handoffDryRun, "dry-run", false, "Print artifact to stdout without writing file")
-	handoffCmd.Flags().BoolVar(&handoffNoKill, "no-kill", false, "Write artifact without restarting the session via tmux")
+// registerHandoffFlags binds the handoff flags to a command's FlagSet. Both the
+// canonical `ao session handoff` and the hidden `ao handoff` alias share the same
+// package-global vars, so registering on each FlagSet is safe.
+func registerHandoffFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&handoffGoal, "goal", "", "What the session was working on")
+	cmd.Flags().BoolVar(&handoffCollect, "collect", false, "Auto-collect git/bead state into the artifact")
+	cmd.Flags().IntVar(&handoffRPIPhase, "rpi-phase", 0, "RPI phase number (populates RPI context, sets type=rpi)")
+	cmd.Flags().StringVar(&handoffEpicID, "epic", "", "Epic ID for RPI context")
+	cmd.Flags().StringVar(&handoffRunID, "run-id", "", "Run ID for RPI context")
+	cmd.Flags().BoolVar(&handoffDryRun, "dry-run", false, "Print artifact to stdout without writing file")
+	cmd.Flags().BoolVar(&handoffNoKill, "no-kill", false, "Write artifact without restarting the session via tmux")
+}
+
+func init() {
+	// Folded under `ao session` (age-focus-membrane-bookkeeper-m1wg.17). The
+	// GroupID was dropped because sessionCmd defines no command groups (cobra
+	// panics at Execute if a child carries a GroupID its parent doesn't define).
+	sessionCmd.AddCommand(handoffCmd)
+	registerHandoffFlags(handoffCmd)
+
+	rootCmd.AddCommand(handoffAliasCmd)
+	registerHandoffFlags(handoffAliasCmd)
 }
 
 func runHandoff(cmd *cobra.Command, args []string) error {

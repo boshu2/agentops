@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T12:13:20Z",
+  "generated_at": "2026-07-01T12:28:41Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 81,
+    "cli_commands": 77,
     "workflows": 4,
-    "capabilities": 165
+    "capabilities": 161
   },
   "surfaces": {
     "skills": [
@@ -978,16 +978,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao handoff",
-        "path": "cli/cmd/ao/",
-        "purpose": "Write a structured handoff artifact for session boundary isolation",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "crank",
-          "handoff"
-        ]
-      },
-      {
         "name": "ao init",
         "path": "cli/cmd/ao/",
         "purpose": "Initialize AgentOps in the current repository",
@@ -1073,13 +1063,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Self-improving membrane: turn escapes into membrane checks",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao memory",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
-        "bounded_context": "BC1",
         "driven_by_skills": []
       },
       {
@@ -1221,13 +1204,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao rehydrate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Restore a lane from its latest handoff (the read-side of handoff→clear→rehydrate)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao robot-docs",
         "path": "cli/cmd/ao/",
         "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
@@ -1279,13 +1255,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Inspect and validate the skills/ tree",
         "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao state",
-        "path": "cli/cmd/ao/",
-        "purpose": "Validate, admit, verify, and doctor AgentOps state memory",
-        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1435,9 +1404,9 @@
     ]
   },
   "capability_summary": {
-    "total": 165,
+    "total": 161,
     "skills": 70,
-    "cli_commands": 81,
+    "cli_commands": 77,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1477,7 +1446,6 @@
     "goals",
     "governor",
     "guard-status",
-    "handoff",
     "init",
     "inject",
     "install-guards",
@@ -1487,7 +1455,6 @@
     "maturity",
     "mcp",
     "membrane",
-    "memory",
     "metrics",
     "mine",
     "next-work",
@@ -1504,7 +1471,6 @@
     "reconcile",
     "redact",
     "registry",
-    "rehydrate",
     "robot-docs",
     "scope",
     "search",
@@ -1512,7 +1478,6 @@
     "session",
     "sessions",
     "skills",
-    "state",
     "status",
     "tick",
     "trace",
@@ -2153,7 +2118,6 @@
         "ao defrag",
         "ao flywheel close-loop",
         "ao forge transcript",
-        "ao handoff",
         "ao lookup",
         "ao metrics",
         "ao metrics cite",
@@ -2556,7 +2520,6 @@
         ".agents/research/*.md"
       ],
       "drives_commands": [
-        "ao handoff",
         "ao ratchet"
       ],
       "path": "skills/handoff/",
@@ -4483,32 +4446,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.handoff",
-      "name": "ao handoff",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Write a structured handoff artifact for session boundary isolation",
-      "status": "active",
-      "driven_by_skills": [
-        "crank",
-        "handoff"
-      ],
-      "flags": [
-        "--collect",
-        "--config",
-        "--dry-run",
-        "--epic",
-        "--goal",
-        "--json",
-        "--no-kill",
-        "--output",
-        "--rpi-phase",
-        "--run-id",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.init",
       "name": "ao init",
       "type": "cli-command",
@@ -4710,23 +4647,6 @@
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Self-improving membrane: turn escapes into membrane checks",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.memory",
-      "name": "ao memory",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -5051,24 +4971,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.rehydrate",
-      "name": "ao rehydrate",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Restore a lane from its latest handoff (the read-side of handoff→clear→rehydrate)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--peek",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.robot-docs",
       "name": "ao robot-docs",
       "type": "cli-command",
@@ -5194,23 +5096,6 @@
       "type": "cli-command",
       "bounded_context": "BC4",
       "purpose": "Inspect and validate the skills/ tree",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.state",
-      "name": "ao state",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Validate, admit, verify, and doctor AgentOps state memory",
       "status": "active",
       "driven_by_skills": [],
       "flags": [

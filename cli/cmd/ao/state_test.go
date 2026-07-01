@@ -14,15 +14,17 @@ import (
 )
 
 func TestStateCommandsRegistered(t *testing.T) {
+	// State folded under `ao session` (age-focus-membrane-bookkeeper-m1wg.17):
+	// the canonical spelling is now `ao session state …`.
 	for _, path := range [][]string{
-		{"state"},
-		{"state", "validate"},
-		{"state", "candidate"},
-		{"state", "candidate", "validate"},
-		{"state", "review-request"},
-		{"state", "admit"},
-		{"state", "verify"},
-		{"state", "doctor"},
+		{"session", "state"},
+		{"session", "state", "validate"},
+		{"session", "state", "candidate"},
+		{"session", "state", "candidate", "validate"},
+		{"session", "state", "review-request"},
+		{"session", "state", "admit"},
+		{"session", "state", "verify"},
+		{"session", "state", "doctor"},
 	} {
 		cmd, _, err := rootCmd.Find(path)
 		if err != nil {

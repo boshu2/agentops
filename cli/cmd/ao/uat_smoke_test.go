@@ -72,9 +72,13 @@ func TestUATSmoke_HandoffDryRun(t *testing.T) {
 	tmp := chdirTemp(t)
 	setupAgentsDir(t, tmp)
 
-	out, err := executeCommand("handoff", "--dry-run", "test-handoff")
+	// Canonical spelling is `ao session handoff` (folded under `ao session`,
+	// age-focus-membrane-bookkeeper-m1wg.17). The hidden `ao handoff` alias still
+	// routes (covered by TestSessionFoldedCommandsResolve) but emits a deprecation
+	// notice, so the JSON-output smoke targets the canonical path.
+	out, err := executeCommand("session", "handoff", "--dry-run", "test-handoff")
 	if err != nil {
-		t.Fatalf("handoff --dry-run failed: %v\noutput: %s", err, out)
+		t.Fatalf("session handoff --dry-run failed: %v\noutput: %s", err, out)
 	}
 	// Dry-run should produce valid JSON on stdout.
 	var handoffResult map[string]any

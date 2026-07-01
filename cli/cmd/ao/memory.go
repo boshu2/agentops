@@ -41,14 +41,48 @@ the markers is replaced on each sync.`,
 	RunE: runMemorySync,
 }
 
-func init() {
-	memoryCmd.GroupID = "config"
-	rootCmd.AddCommand(memoryCmd)
-	memorySyncCmd.Flags().BoolVar(&memorySyncQuiet, "quiet", false, "Suppress output")
-	memorySyncCmd.Flags().IntVar(&memorySyncMaxEntries, "max-entries", 10, "Maximum session entries to keep")
-	memorySyncCmd.Flags().StringVar(&memorySyncOutput, "output-file", "", "Output path (default: MEMORY.md in repo root)")
+// memoryAliasCmd is a hidden back-compat alias for `ao memory` (the canonical
+// spelling is `ao session memory` since age-focus-membrane-bookkeeper-m1wg.17).
+// Smoke/ratchet scripts and bundled callers still invoke `ao memory sync
+// --quiet`; the alias mirrors a hidden `sync` child that shares runMemorySync +
+// the same package-global flag vars, so both spellings behave identically.
+var memoryAliasCmd = &cobra.Command{
+	Use:        "memory",
+	Short:      memoryCmd.Short,
+	Hidden:     true,
+	Deprecated: "use `ao session memory`",
+}
 
+var memorySyncAliasCmd = &cobra.Command{
+	Use:        "sync",
+	Short:      memorySyncCmd.Short,
+	Long:       memorySyncCmd.Long,
+	Hidden:     true,
+	Deprecated: "use `ao session memory sync`",
+	RunE:       runMemorySync,
+}
+
+// registerMemorySyncFlags binds the memory-sync flags to a command's FlagSet.
+// Both the canonical `ao session memory sync` and the hidden `ao memory sync`
+// alias share the same package-global vars, so registering on each FlagSet is
+// safe. --quiet is load-bearing: release-smoke calls `ao memory sync --quiet`.
+func registerMemorySyncFlags(cmd *cobra.Command) {
+	cmd.Flags().BoolVar(&memorySyncQuiet, "quiet", false, "Suppress output")
+	cmd.Flags().IntVar(&memorySyncMaxEntries, "max-entries", 10, "Maximum session entries to keep")
+	cmd.Flags().StringVar(&memorySyncOutput, "output-file", "", "Output path (default: MEMORY.md in repo root)")
+}
+
+func init() {
+	// Folded under `ao session` (age-focus-membrane-bookkeeper-m1wg.17). The
+	// GroupID was dropped because sessionCmd defines no command groups (cobra
+	// panics at Execute if a child carries a GroupID its parent doesn't define).
+	sessionCmd.AddCommand(memoryCmd)
+	registerMemorySyncFlags(memorySyncCmd)
 	memoryCmd.AddCommand(memorySyncCmd)
+
+	rootCmd.AddCommand(memoryAliasCmd)
+	registerMemorySyncFlags(memorySyncAliasCmd)
+	memoryAliasCmd.AddCommand(memorySyncAliasCmd)
 }
 
 func runMemorySync(cmd *cobra.Command, args []string) error {
