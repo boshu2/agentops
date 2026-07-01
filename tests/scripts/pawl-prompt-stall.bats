@@ -2,7 +2,9 @@
 # age-djfo: a warm pane can be ALIVE yet stuck on a CLI interruption prompt (codex update dialog,
 # agy feedback survey) or an unknown hang — leaving health falsely green and burning the full
 # ROUTE_TIMEOUT. detect_blocking_prompt classifies the known blockers, prompt_dismiss_key gives
-# the dismiss key, and _stall_over_budget decides the early-give-up. All pure — locked here.
+# the dismiss key, and _stall_over_budget decides the early-give-up. _engage_over_deadline
+# (age-55qz.10) adds the wall-clock give-up that catches a compacting pane the stall misses.
+# All pure — locked here.
 
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -95,6 +97,33 @@ teardown() { export PATH="$ORIG_PATH"; rm -rf "$TMP"; }
 
 @test "_stall_over_budget: budget 0 disables give-up (never fires, even at huge stall)" {
   run _stall_over_budget 99999 0
+  [ "$status" -ne 0 ]
+}
+
+# --- _engage_over_deadline (age-55qz.10 absolute per-pane engagement deadline) ---
+# Unlike _stall_over_budget, this fires on wall-clock waited-seconds ALONE — no "output went quiet"
+# precondition — so it catches a compacting opus pane that re-renders every tick (never stalls) yet
+# never emits a verdict. Reads PAWL_ENGAGE_DEADLINE from the environment.
+
+@test "_engage_over_deadline: waited >= deadline -> give up (0), on wall-clock alone" {
+  PAWL_ENGAGE_DEADLINE=240
+  run _engage_over_deadline 240
+  [ "$status" -eq 0 ]
+  run _engage_over_deadline 300
+  [ "$status" -eq 0 ]
+}
+
+@test "_engage_over_deadline: waited < deadline -> keep waiting (non-zero)" {
+  PAWL_ENGAGE_DEADLINE=240
+  run _engage_over_deadline 239
+  [ "$status" -ne 0 ]
+  run _engage_over_deadline 0
+  [ "$status" -ne 0 ]
+}
+
+@test "_engage_over_deadline: deadline 0 disables (never fires, even past any wait)" {
+  PAWL_ENGAGE_DEADLINE=0
+  run _engage_over_deadline 99999
   [ "$status" -ne 0 ]
 }
 
