@@ -51,6 +51,13 @@ PAWL_IDLE_TTL="${PAWL_IDLE_TTL:-1800}"       # idle seconds before `reap` tears 
 PAWL_STALL_GIVEUP="${PAWL_STALL_GIVEUP:-150}"  # age-djfo: a pane showing NO new output for this
                                                # long is given up (alive-but-stuck) -> degrade fast
                                                # instead of burning the full ROUTE_TIMEOUT. 0 disables.
+PAWL_ENGAGE_DEADLINE="${PAWL_ENGAGE_DEADLINE:-240}"  # age-55qz.10: ABSOLUTE per-pane deadline — a pane
+                                               # with NO verdict by this many seconds is given up
+                                               # (degrade), even while it KEEPS changing output. The
+                                               # cksum-stall heuristic above misses a compacting opus
+                                               # pane (it re-renders every tick, so it never "stalls")
+                                               # which would otherwise burn the full ROUTE_TIMEOUT. Set
+                                               # < ROUTE_TIMEOUT to bound wasted wait; 0 disables.
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ENABLED="${ENABLED:-}"           # resolved family list (space-sep, canonical order); set by up/load_session
 TIER="${TIER:-}"                 # multi (>=2 families) | fresh (1) | "" (none)
@@ -375,6 +382,12 @@ agy_clear_trust_gate() { clear_known_prompts "$AGY_PANE"; }
 # CHANGES its output) resets its stall counter and is never given up.
 _stall_over_budget() { [ "${2:-0}" -gt 0 ] && [ "${1:-0}" -ge "${2}" ]; }
 
+# age-55qz.10: PURE — a pane has blown its ABSOLUTE engagement deadline once the route has waited
+# PAWL_ENGAGE_DEADLINE seconds and it still has no verdict. Unlike _stall_over_budget (which needs
+# OUTPUT to go quiet), this fires on wall-clock alone, so it catches a pane that keeps re-rendering
+# (compacting opus) yet never produces a verdict. Arg1=seconds waited. 0 (default) disables.
+_engage_over_deadline() { [ "${PAWL_ENGAGE_DEADLINE:-0}" -gt 0 ] && [ "${1:-0}" -ge "${PAWL_ENGAGE_DEADLINE}" ]; }
+
 # agy pane is READY when the agy binary is POSITIVELY the foreground process AND it is not
 # sitting on the trust gate. Fail-CLOSED on every uncertainty so a missing/unreadable pane, a
 # shell, or any other program is NEVER reported ready — otherwise health/up would green-light a
@@ -684,6 +697,7 @@ cmd_route() {
         cc_st=$((cc_st + 5))
         if _stall_over_budget "$cc_st" "$PAWL_STALL_GIVEUP"; then log "claude pane stalled ${cc_st}s (no new output) — giving up (degrade)"; cc_gu=1; fi
       else cc_h="$_h"; cc_st=0; fi
+      if [ "$cc_gu" -eq 0 ] && _engage_over_deadline "$waited"; then log "claude pane no verdict by ${PAWL_ENGAGE_DEADLINE}s engage-deadline — giving up (degrade)"; cc_gu=1; fi
     fi
     if [ -z "$vd" ] && [ "$cod_gu" -eq 0 ]; then
       _h="$(tmux capture-pane -p -t "${SESSION}.${COD_PANE}" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true)"
@@ -691,6 +705,7 @@ cmd_route() {
         cod_st=$((cod_st + 5))
         if _stall_over_budget "$cod_st" "$PAWL_STALL_GIVEUP"; then log "codex pane stalled ${cod_st}s (no new output) — giving up (degrade)"; cod_gu=1; fi
       else cod_h="$_h"; cod_st=0; fi
+      if [ "$cod_gu" -eq 0 ] && _engage_over_deadline "$waited"; then log "codex pane no verdict by ${PAWL_ENGAGE_DEADLINE}s engage-deadline — giving up (degrade)"; cod_gu=1; fi
     fi
     if [ -z "$va" ] && [ "$agy_gu" -eq 0 ]; then
       _h="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true)"
@@ -698,11 +713,18 @@ cmd_route() {
         agy_st=$((agy_st + 5))
         if _stall_over_budget "$agy_st" "$PAWL_STALL_GIVEUP"; then log "agy pane stalled ${agy_st}s (no new output) — giving up (degrade)"; agy_gu=1; fi
       else agy_h="$_h"; agy_st=0; fi
+      if [ "$agy_gu" -eq 0 ] && _engage_over_deadline "$waited"; then log "agy pane no verdict by ${PAWL_ENGAGE_DEADLINE}s engage-deadline — giving up (degrade)"; agy_gu=1; fi
     fi
-    # Done when every enabled pane is RESOLVED — a verdict (n/a sentinel counts) OR given-up; OR
-    # short-circuit the moment ANY pane REFUTES (a single refute decides the all-CONFIRM verdict).
+    # Done when every enabled pane is RESOLVED — a verdict (n/a sentinel counts) OR given-up.
     if { [ -n "$vc" ] || [ "$cc_gu" -eq 1 ]; } && { [ -n "$vd" ] || [ "$cod_gu" -eq 1 ]; } && { [ -n "$va" ] || [ "$agy_gu" -eq 1 ]; }; then break; fi
-    { [ "$vc" = "REFUTED" ] || [ "$vd" = "REFUTED" ] || [ "$va" = "REFUTED" ]; } && break
+    # age-55qz.10: do NOT short-circuit the loop the instant ANY pane REFUTES. codex is the only
+    # engagement-verified + fast family (~43s), so a break-on-any-REFUTED let its verdict GUILLOTINE
+    # the still-pending opus/agy panes — they mapped to <timeout> and the route fail-closed REFUTED
+    # even when opus was out-voting a codex false-positive (confirmed by live probe). The single-
+    # refute-blocks rule is UNCHANGED — it lives in pawl_decide (refuted>=1 -> REFUTED) and runs AFTER
+    # the loop, so the disposition is identical; only WHEN we stop waiting changes, and there is no
+    # path to a false-CONFIRM (fail-safe). The all-resolved exit above + the per-pane engage-deadline
+    # give-up bound how long a slow/compacting pane can hold the route.
     # Per-family mid-route recovery — ONLY for enabled, still-awaiting, NOT-given-up panes.
     if [ -z "$vd" ] && [ "$cod_gu" -eq 0 ] && [ "$cod_rr" -lt 1 ]; then
       cs="$(codex_state || echo unknown)"
