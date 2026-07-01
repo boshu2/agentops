@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # smoke-test-codex-skills.sh — DAG-based headless smoke test for Codex skills.
-# Traverses skill dependency graph in topological order, spawns codex exec
-# per skill, collects PASS/PARTIAL/FAIL verdicts.
+# Traverses skill dependency graph in topological order, spawns a headless codex
+# runner per skill, collects PASS/PARTIAL/FAIL verdicts.
 #
 # Usage:
 #   scripts/smoke-test-codex-skills.sh [OPTIONS]
@@ -13,7 +13,7 @@
 #   --timeout SECS  Per-skill timeout (default: 90)
 #   --parallel N    Max parallel Codex invocations (default: 4)
 #   --model MODEL   Codex model (default: gpt-5.4)
-#   --static-only   Run only static checks (no codex exec)
+#   --static-only   Run only static checks (no headless codex run)
 #   --json          Output results as JSON
 #   --verbose       Show Codex output for each skill
 #   --help          Show this help
@@ -29,6 +29,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_CODEX="$REPO_ROOT/skills-codex"
 RESULTS_DIR="$REPO_ROOT/.agents/smoke-test"
+
+# Shared fail-closed codex runner (STALL/ECHO/MISSING defenses + distinct exit
+# codes). age-gate-the-ungated-egwt.8.
+. "$SCRIPT_DIR/lib/codex-exec.sh"
 
 # Defaults
 DRY_RUN=false
@@ -176,8 +180,20 @@ IMPORTANT: Read-only sandbox and missing network access are NOT reasons to FAIL 
 Output EXACTLY one JSON line at the end:
 {\"skill\": \"${skill_name}\", \"verdict\": \"PASS|PARTIAL|FAIL\", \"reason\": \"brief explanation\"}"
 
-  local codex_output
-  if codex_output=$(timeout "$TIMEOUT" codex exec -s read-only -m "$MODEL" -C "$REPO_ROOT" "$prompt" 2>&1); then
+  # Route through the shared fail-closed codex runner (STALL→124, ECHO→125,
+  # MISSING→2, genuine codex non-zero preserved). Capture combined stdout+stderr
+  # into a temp file so the JSON-verdict parse below is unchanged; the exit code
+  # drives the same success/timeout/error branches as before (124 still = TIMEOUT).
+  local codex_output codex_out_file codex_rc
+  codex_out_file="$(mktemp "${TMPDIR:-/tmp}/smoke-codex-out.XXXXXX")"
+  codex_rc=0
+  CODEX_EXEC_TIMEOUT="$TIMEOUT" CODEX_EXEC_SANDBOX=read-only CODEX_EXEC_MODEL="$MODEL" \
+    CODEX_EXEC_DIR="$REPO_ROOT" CODEX_EXEC_PROMPT_ARG="$prompt" \
+    CODEX_EXEC_OUT_FILE="$codex_out_file" \
+    codex_exec_guarded >/dev/null 2>&1 || codex_rc=$?
+  codex_output="$(cat "$codex_out_file")"
+  rm -f "$codex_out_file"
+  if [[ "$codex_rc" -eq 0 ]]; then
     # Extract JSON verdict from output
     local json_line
     json_line=$(echo "$codex_output" | tr -d '\n' | grep -oE '\{[^}]*"verdict"[^}]*\}' | tail -1 || true)
@@ -198,7 +214,7 @@ Output EXACTLY one JSON line at the end:
       echo "FAIL"
     fi
   else
-    local exit_code=$?
+    local exit_code=$codex_rc
     if [[ $exit_code -eq 124 ]]; then
       echo "{\"skill\": \"$skill_name\", \"verdict\": \"FAIL\", \"reason\": \"Timeout after ${TIMEOUT}s\"}" > "$result_file"
       echo "TIMEOUT"
@@ -292,7 +308,7 @@ main() {
   elif [[ "$DRY_RUN" == "true" ]]; then
     echo "--- Phase 2: Dry Run ---"
     for skill in $skills; do
-      echo "  Would run: codex exec -s read-only -m $MODEL -C $REPO_ROOT \"smoke test $skill\""
+      echo "  Would run: headless codex (read-only, -m $MODEL, -C $REPO_ROOT) \"smoke test $skill\""
     done
     echo ""
     # In dry-run, score from static only

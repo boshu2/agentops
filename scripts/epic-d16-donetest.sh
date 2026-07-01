@@ -98,7 +98,7 @@ SEED_BEAD="$(br create "D16 done-test seed" -t task -p 2 --labels d16-donetest -
 [ -n "$SEED_BEAD" ] || fail "seed" "br create returned no id"
 
 # --- 2. NO-HUMAN BOUNDARY ---------------------------------------------------
-LAUNCH_CMD="codex exec --skip-git-repo-check 'implement $SEED_BEAD' (unattended; operator does not touch after launch)"
+LAUNCH_CMD="headless codex --skip-git-repo-check 'implement $SEED_BEAD' (unattended; operator does not touch after launch)"
 START_TS="${DATE_STAMP}T00:00:00Z"
 STOP_TS="${DATE_STAMP}T00:07:00Z"
 

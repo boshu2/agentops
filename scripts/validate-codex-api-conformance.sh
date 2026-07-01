@@ -50,7 +50,7 @@ done < <(find "$SKILLS_ROOT" -mindepth 2 -maxdepth 2 -name 'SKILL.md' -type f | 
 # --- Check 2: No Claude-only primitive names ---
 echo "=== Check 2: Claude primitive references ==="
 # All Claude-only primitives — none have working Codex equivalents
-# (todo_write/update_plan empirically verified as unavailable via codex exec)
+# (todo_write/update_plan empirically verified as unavailable via a headless codex run)
 CLAUDE_PRIMITIVES='TaskCreate|TaskList|TaskUpdate|TaskGet|TaskStop|TeamCreate|TeamDelete|SendMessage|EnterPlanMode|ExitPlanMode|EnterWorktree|task-create|task-list|task-update|task-get|task-stop|team-create|team-delete|send-message|enter-plan-mode|exit-plan-mode|enter-worktree|todo_write|update_plan'
 
 while IFS= read -r skill_md; do

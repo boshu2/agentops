@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Shared fail-closed codex runner (STALL/ECHO/MISSING defenses + distinct exit
+# codes). age-gate-the-ungated-egwt.8. `CDPATH=` is an intentional env-prefix
+# (clears CDPATH for that one cd), not a botched assignment.
+# shellcheck disable=SC1007
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/codex-exec.sh"
+
 EXPECTED_CSV="using-agentops,swarm,research"
 WORKDIR="/tmp"
 PROFILE="${CODEX_VALIDATE_PROFILE:-safe}"
@@ -59,13 +65,15 @@ cleanup() {
 trap cleanup EXIT
 
 PROMPT="List the available skill names you can see in this session. Return only a comma-separated list."
-if ! codex exec \
-  --skip-git-repo-check \
-  --sandbox read-only \
-  --profile "$PROFILE" \
-  --json \
-  "$PROMPT" >"$OUTPUT_FILE"; then
-  echo "codex exec failed while checking skill discovery" >&2
+# The runner reads CODEX_EXEC_EXTRA_ARGS as an ARRAY from the current shell scope
+# (it runs as a sourced function, not a subprocess) — a bash array cannot be set
+# via a `VAR=... cmd` command-prefix, so assign it here before the call.
+# shellcheck disable=SC2034  # consumed by codex_exec_guarded in lib/codex-exec.sh (sourced).
+CODEX_EXEC_EXTRA_ARGS=(--profile "$PROFILE" --json)
+if ! CODEX_EXEC_SANDBOX=read-only CODEX_EXEC_SKIP_GIT_CHECK=1 \
+  CODEX_EXEC_PROMPT_ARG="$PROMPT" CODEX_EXEC_OUT_FILE="$OUTPUT_FILE" \
+  codex_exec_guarded; then
+  echo "headless codex run failed while checking skill discovery" >&2
   exit 1
 fi
 
@@ -92,7 +100,7 @@ for line in path.read_text().splitlines():
             messages.append(text)
 
 if not messages:
-    print("No agent message found in codex exec output", file=sys.stderr)
+    print("No agent message found in headless codex output", file=sys.stderr)
     sys.exit(1)
 
 visible = {part.strip() for part in messages[-1].split(",") if part.strip()}

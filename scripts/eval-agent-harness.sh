@@ -13,6 +13,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKBENCH="${EVAL_WORKBENCH:-$REPO_ROOT/evals/workbench}"
 
+# Shared fail-closed codex runner (STALL/ECHO/MISSING defenses + distinct exit
+# codes). age-gate-the-ungated-egwt.8.
+. "$SCRIPT_DIR/lib/codex-exec.sh"
+
 usage() {
   cat <<'USAGE'
 Usage: scripts/eval-agent-harness.sh --task <task-id> --agent <codex> [options]
@@ -110,19 +114,27 @@ run_agent() {
   fi
 
   # --skip-git-repo-check (ag-o9x): each task workspace is a fresh NON-git dir;
-  # modern `codex exec` REFUSES to launch there ("Not inside a trusted directory
-  # and --skip-git-repo-check was not specified", exit 1) without this flag — so the
+  # the codex runner REFUSES to launch there ("Not inside a trusted directory and
+  # --skip-git-repo-check was not specified", exit 1) without this flag — so the
   # agent never ran and every task scored 0 in both arms. Capture the agent exit
   # status (do NOT swallow with `|| true`) and return it, so run_single can mark a
-  # launch/timeout failure as `degraded` instead of an invisible score-0.
+  # launch/timeout failure as `degraded` instead of an invisible score-0. The
+  # shared codex runner (lib/codex-exec.sh) applies the STALL/ECHO/MISSING defenses
+  # and returns distinct exit codes; any non-zero here still surfaces as degraded.
   local rc=0
   case "$AGENT" in
     codex)
-      if [[ ${#agent_env[@]} -gt 0 ]]; then
-        env "${agent_env[@]}" timeout "$TIMEOUT" codex exec --skip-git-repo-check -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || rc=$?
-      else
-        timeout "$TIMEOUT" codex exec --skip-git-repo-check -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || rc=$?
-      fi
+      # Preserve the previous env behavior: AGENTOPS_HOOKS_DISABLED (when the
+      # skill-off leg is selected) is exported into the codex child. Output was
+      # discarded before (>/dev/null 2>&1); the runner captures to a throwaway
+      # temp file when no CODEX_EXEC_OUT_FILE is set, and we discard its stdout.
+      (
+        if [[ ${#agent_env[@]} -gt 0 ]]; then export "${agent_env[@]}"; fi
+        CODEX_EXEC_TIMEOUT="$TIMEOUT" CODEX_EXEC_DIR="$workspace" \
+          CODEX_EXEC_SANDBOX=workspace-write CODEX_EXEC_SKIP_GIT_CHECK=1 \
+          CODEX_EXEC_EXPECT_OUTPUT=0 CODEX_EXEC_PROMPT_ARG="$prompt" \
+          codex_exec_guarded >/dev/null 2>&1
+      ) || rc=$?
       ;;
     *)
       echo "error: unsupported agent: $AGENT (use codex)" >&2
