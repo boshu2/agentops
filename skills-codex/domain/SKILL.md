@@ -93,7 +93,7 @@ Use `$scaffold domain <name>` to write the manifest template, then fill in the
 boundary before running the operating loop with that manifest as explicit scope.
 For out-of-session execution, dispatch the scoped loop through NTM plus Agent
 Mail reservations so write ownership and the slice boundary are visible. The
-manifest schema and resolution rules are in `docs/adr/ADR-0004`; the `$scaffold`
+manifest schema and resolution rules are in `docs/adr/ADR-0013`; the `$scaffold`
 skill documents the bootstrap step.
 
 ## What's NOT here

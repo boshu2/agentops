@@ -11,7 +11,7 @@
 // domain-scope declaration. The two compose during scoped operating-loop runs:
 // phaseManifest controls context depth; domainSliceManifest controls context breadth.
 //
-// See docs/adr/ADR-0004-domain-slice-manifest-contract.md for design decisions.
+// See docs/adr/ADR-0013-domain-slice-manifest-contract.md for design decisions.
 package domainslice
 
 import (
