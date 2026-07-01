@@ -30,14 +30,12 @@ skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
 skills/domain/references/domain.feature
-skills/dual-pane-atm/references/dual-pane-atm.feature
 skills/evolve/references/evolve.feature
 skills/forge/references/forge.feature
 skills/handoff/references/handoff.feature
 skills/heal-skill/references/heal-skill.feature
 skills/implement/references/implement.feature
 skills/inject/references/knowledge-activation.feature
-skills/orchestrate/references/orchestrate.feature
 skills/perf/references/perf.feature
 skills/plan/references/plan.feature
 skills/post-mortem/references/post-mortem.feature

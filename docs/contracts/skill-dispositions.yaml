@@ -272,6 +272,31 @@ historical:
 #   parity_policy   exempt — workflows are not subject to the cross-runtime skill parity gate
 #   aliases         prior/alternate names that must keep resolving (additive-rename safety)
 #   path            the canonical .js path
+  dual-pane-atm:
+    state:        merged-into
+    merged-into:  using-atm
+    date:         2026-07-01
+    rationale:    "Retired via ao skills retire: merged into using-atm."
+  orchestrate:
+    state:        merged-into
+    merged-into:  using-atm
+    date:         2026-07-01
+    rationale:    "Retired via ao skills retire: merged into using-atm."
+  codex-approval:
+    state:        merged-into
+    merged-into:  codex-exec
+    date:         2026-07-01
+    rationale:    "Retired via ao skills retire: merged into codex-exec."
+  agy-headless-evidence:
+    state:        merged-into
+    merged-into:  agy-native
+    date:         2026-07-01
+    rationale:    "Retired via ao skills retire: merged into agy-native."
+  vibing-with-ntm:
+    state:        merged-into
+    merged-into:  ntm
+    date:         2026-07-01
+    rationale:    "Retired via ao skills retire: merged into ntm."
 workflows:
   ship-beads:
     kind:            workflow
@@ -451,30 +476,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Documentation factory adapter; keep tied to doc-release gates"
-  - skill:            dual-pane-atm
-    domain:           "BC6 Orchestration"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: orchestration
-    path:             skills/dual-pane-atm/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "CEP slice 1: repeatable Opus + Codex dual-pane ATM collaboration; consumes using-atm and agent-mail; produces .agents/dual-pane artifacts."
-  - skill:            orchestrate
-    domain:           "BC6 Orchestration"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: orchestration
-    path:             skills/orchestrate/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Out-of-session instrument lane: ao orchestrate route/preflight/verify before human atm procedure; profiles yaml is SOT."
   - skill:            domain
     domain:           "BC4 Factory"
     hexagonal_role:   domain
@@ -1087,18 +1088,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:            agy-headless-evidence
-    domain:           "BC5 Runtime"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/agy-headless-evidence/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
   - skill:            ntm
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1135,30 +1124,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:            vibing-with-ntm
-    domain:           "BC6 Orchestration"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: orchestration
-    path:             skills/vibing-with-ntm/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:            codex-approval
-    domain:           "BC5 Runtime"
-    hexagonal_role:   driving-adapter
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/codex-approval/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence."
   - skill:            pre-land-refuters
     domain:           "BC2 Validation"
     hexagonal_role:   driving-adapter

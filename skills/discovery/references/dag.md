@@ -165,7 +165,7 @@ Generate, then duel:
    records rejected alternatives, and carries open questions.
 2. Run the cross-family DUEL over the `SynthesisPacket`: two judge panes from
    DISTINCT model families (e.g. Claude + Codex via
-   [`dual-pane-atm`](../../dual-pane-atm/SKILL.md), `--no-user`, fresh-context by
+   [`using-atm`](../../using-atm/SKILL.md), `--no-user`, fresh-context by
    construction). Each pane writes one judge verdict
    (`{family,disposition,warn_class,judgment_flag}`) to `.agents/duel/<run-id>/`.
 3. Decide deterministically — never by reading the panes yourself:

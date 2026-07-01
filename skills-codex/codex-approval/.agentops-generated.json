@@ -1,7 +1,0 @@
-{
-  "generator": "codex-sync",
-  "source_skill": "skills/codex-approval",
-  "layout": "modular",
-  "source_hash": "a81ae19f76d5b0399e733e8e145290fce37f2bef63b4734f347aa73e83da3e29",
-  "generated_hash": "993d0725d0c25dbefbf3a7cc68727c33bbe89ed37ff483448cc7a9f76907022b"
-}

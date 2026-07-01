@@ -65,8 +65,8 @@ This skill does **not** re-document the full `atm` command surface — run
 dispatch and tend AgentOps loops on an ATM swarm.
 
 **Instrument lane (before spawn):** run `ao orchestrate preflight --profile <name> --json`
-and `ao orchestrate verify` after spawn. See [`/orchestrate`](../orchestrate/SKILL.md)
-and `docs/contracts/orchestration-profiles.yaml`.
+and `ao orchestrate verify` after spawn (the orchestrate route/preflight/verify lane is
+folded into this skill; profiles: `docs/contracts/orchestration-profiles.yaml`).
 
 ## When to use ATM vs AM (the 4-case matrix)
 
@@ -278,7 +278,7 @@ the status signals were misread. Discipline:
    break ties before respawning — prefer the `atm codex` classifier first, CPU% as the
    cheap tie-breaker.
 
-7. **AGY lanes + Agent Mail observability gaps (tri-vendor).** `atm activity` may list only Claude + Codex and **omit AGY**; `atm mapping --session=…` may be **empty when Agent Mail is down** even when panes are healthy. Do not treat either signal as spawn failure or wedged AGY. Prefer spawn `--json` `panes[]` or `tmux list-panes` for pane numbers; use tmux capture on the AGY pane for liveness. Full tri-vendor dispatch + verify: [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) (§ Tri-vendor).
+7. **AGY lanes + Agent Mail observability gaps (tri-vendor).** `atm activity` may list only Claude + Codex and **omit AGY**; `atm mapping --session=…` may be **empty when Agent Mail is down** even when panes are healthy. Do not treat either signal as spawn failure or wedged AGY. Prefer spawn `--json` `panes[]` or `tmux list-panes` for pane numbers; use tmux capture on the AGY pane for liveness. Full tri-vendor dispatch + verify is folded into this skill (the former dual-pane-atm duel).
 
 ## Raw tmux Key Injection (Last Resort)
 
@@ -365,10 +365,9 @@ server; do not declare convergence from a stale checkout.
 
 ## Related skills
 
-- [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) — Opus + Codex + optional **AGY** worker-only tri-vendor (`--no-user`, `--agy=1`); pane-3 AGY is interactive TUI dispatch (`atm send --pane=3 --file`), not headless `agy -p`. Observability gaps (`atm activity` / `atm mapping`) documented there.
 - [`/automation-shape-routing`](../automation-shape-routing/SKILL.md) — decide Workflow vs ATM swarm vs plain skill *before* standing up a swarm.
 - [`/swarm`](../swarm/SKILL.md) — in-session parallel fan-out across worktrees (the in-session sibling of this out-of-session substrate).
-- [`vibing-with-ntm`](../vibing-with-ntm/SKILL.md) — the in-session **tending decision layer** (when to nudge / restart / converge, the OC/AP cards, the liveness truth stack). This skill is the **substrate runner** (spawn, dispatch loops, born-into-coordination); reach for `vibing-with-ntm` once panes are live and you're deciding what to do tick-by-tick.
+- [`ntm`](../ntm/SKILL.md) — the in-session **tending decision layer** (when to nudge / restart / converge, the OC/AP cards, the liveness truth stack; the former vibing-with-ntm tending doctrine is folded into `ntm`). This skill is the **substrate runner** (spawn, dispatch loops, born-into-coordination); reach for `ntm` once panes are live and you're deciding what to do tick-by-tick.
 - [`/agent-native`](../agent-native/SKILL.md) — `ao agent bundle` produces the loop definition a managed-agents substrate runs (the managed-agents leg).
 - [`codex-exec`](../codex-exec/SKILL.md) — the **headless** codex lane (`codex exec`, stdin/positional) vs an ATM codex **TUI pane** here (keystroke / `--codex-goal` flow, `atm codex` readiness gates). Different dispatch mechanics, same auth/sub rules.
 - [`rpi`](../rpi/SKILL.md) · [`evolve`](../evolve/SKILL.md) — the loops the substrate dispatches.

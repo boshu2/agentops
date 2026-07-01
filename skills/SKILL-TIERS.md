@@ -259,7 +259,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (70)
+### User-Facing Skills (65)
 
 **Judgment:**
 
@@ -347,28 +347,23 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **acfs** | experimental | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
 | **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
-| **agy-headless-evidence** | execution | Use when running Antigravity (AGY) headlessly and capturing durable, machine-checkable JSONL evidence of each run. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
 | **beads-br** | execution | Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. |
 | **beads-bv** | execution | Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. |
 | **beads-workflow** | execution | Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. |
 | **cass** | execution | Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. |
 | **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
-| **codex-approval** | execution | Use when Codex needs independent Claude/Fable approval for a plan, design, or high-risk change through an ATM/NTM interactive validator pane. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
-| **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
 | **continuity-loop** | execution | Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step. |
 | **operationalize** | experimental | Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads. |
 | **reality-check** | execution | Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent. |
 | **toil-mining** | execution | Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand. |
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
-| **dual-pane-atm** | execution | 'Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".' |
-| **orchestrate** | execution | 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.' |
 | **behavior-first-planning** | execution | 'Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".' |
 | **reverse-engineer** | execution | 'Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".' |
 

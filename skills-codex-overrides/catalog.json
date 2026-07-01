@@ -53,12 +53,6 @@
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
     },
     {
-      "name": "agy-headless-evidence",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for AGY image operator skill."
-    },
-    {
       "name": "agy-native",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -128,12 +122,6 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "codex-approval",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
-    },
-    {
       "name": "codex-exec",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -143,7 +131,7 @@
       "name": "compile",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "continuity-loop",
@@ -155,7 +143,7 @@
       "name": "converge",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
+      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified — parity twin suffices."
     },
     {
       "name": "converter",
@@ -179,7 +167,7 @@
       "name": "curate",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "dcg",
@@ -216,12 +204,6 @@
       "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
     },
     {
-      "name": "dual-pane-atm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Dual-pane ATM orchestration is documentation-led and portable across runtimes; Codex parity is sufficient until durable Codex-only divergence is proven."
-    },
-    {
       "name": "eval-outcomes",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -237,13 +219,13 @@
       "name": "flywheel",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "forge",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "goals",
@@ -311,7 +293,7 @@
       "name": "inject",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "ntm",
@@ -323,13 +305,7 @@
       "name": "operationalize",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-    },
-    {
-      "name": "orchestrate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "BC6 out-of-session instrument lane; Codex parity twin for route/preflight/verify procedure"
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
     },
     {
       "name": "perf",
@@ -641,12 +617,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
-    },
-    {
-      "name": "vibing-with-ntm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
       "name": "workflow-builder",

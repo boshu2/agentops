@@ -34,7 +34,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `acfs` — Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. Triggers:
 - `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees. Triggers: agy, antigravity, agy plugin, AGY evidence.
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
-- `codex-approval` — Use when Codex needs Fable approval through an ATM/NTM validator pane. Triggers: - codex approval - ask fable - fable plan review
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `converge` — Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
@@ -59,7 +58,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `account-rotation` — Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".
 - `agent-native` — Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: "agent-native", "agent native", "make an out-of-session agent agentops-native".
-- `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capture agentapi JSONL evidence, and validate automated AGY loops or event streams.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: "manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick boundaries".
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `beads-br` — Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. Triggers: "beads-br", "beads br", "local-first issue tracker beads rust".
@@ -72,12 +70,10 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
-- `dual-pane-atm` — Repeatable mixed-model ATM duel — Opus (Claude) + Codex (+AGY) panes, or an in-session variant for a one-shot one-way-door decision. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM", "mixed-model duel", "fan out competing theses / duel it out".
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
 - `heal-skill` — Repair skill hygiene. Triggers: "heal-skill", "heal skill", "repair skill hygiene.".
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
-- `orchestrate` — Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure. Triggers: "orchestrate out-of-session", "route + preflight + verify a run", "orchestration preflight".
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors. Triggers: "refactor", "execute safe refactors.", "refactor skill".
@@ -91,7 +87,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `test` — Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".
 - `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
 - `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm".
-- `vibing-with-ntm` — Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
@@ -106,14 +101,10 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ```mermaid
 graph LR
-  agy-headless-evidence -- "customer-of" --> agy-native
-  agy-headless-evidence -- "supplier-to" --> validate
   automation-shape-routing -- "supplier-to" --> operationalize
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
   behavior-first-planning -- "shared-kernel" --> standards
-  codex-approval -- "customer-of" --> agent-mail
-  codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
   continuity-loop -- "customer-of" --> agent-mail
   continuity-loop -- "supplier-to" --> evolve
@@ -123,9 +114,6 @@ graph LR
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
-  dual-pane-atm -- "customer-of" --> automation-shape-routing
-  dual-pane-atm -- "customer-of" --> using-atm
-  dual-pane-atm -- "partnership" --> vibing-with-ntm
   evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
@@ -139,7 +127,6 @@ graph LR
   operationalize -- "supplier-to" --> skill-builder
   operationalize -- "customer-of" --> validate
   operationalize -- "supplier-to" --> workflow-builder
-  orchestrate -- "customer-of" --> using-atm
   perf -- "shared-kernel" --> standards
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
@@ -177,8 +164,6 @@ graph LR
 | `agent-native` | consumes | standards |
 | `agent-native` | consumes | validate |
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
-| `agy-headless-evidence` | consumes | agy-native |
-| `agy-headless-evidence` | produces | agy-evidence-dir |
 | `agy-native` | produces | agy-run-evidence |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
@@ -189,9 +174,6 @@ graph LR
 | `bootstrap` | consumes | goals |
 | `bootstrap` | consumes | product |
 | `bootstrap` | consumes | shared |
-| `codex-approval` | consumes | agent-mail |
-| `codex-approval` | consumes | using-atm |
-| `codex-approval` | produces | council-verdict |
 | `codex-exec` | produces | codex-run-output |
 | `compile` | produces | .agents/compiled/lint-report.md |
 | `continuity-loop` | consumes | agent-mail |
@@ -222,9 +204,6 @@ graph LR
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
-| `dual-pane-atm` | consumes | agent-mail |
-| `dual-pane-atm` | consumes | using-atm |
-| `dual-pane-atm` | produces | .agents/dual-pane/*.md |
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
@@ -243,8 +222,6 @@ graph LR
 | `operationalize` | consumes | .agents/research/*.md |
 | `operationalize` | produces | .agents/operationalize/*.md |
 | `operationalize` | produces | routed-handoffs |
-| `orchestrate` | consumes | automation-shape-routing |
-| `orchestrate` | produces | result.json |
 | `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |
