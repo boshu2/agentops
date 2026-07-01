@@ -50,7 +50,7 @@ type doctorOutput = quality.DoctorOutput
 
 // gatherDoctorChecks runs all doctor checks and returns the results.
 func gatherDoctorChecks() []doctorCheck {
-	return []doctorCheck{
+	checks := []doctorCheck{
 		{Name: "ao CLI", Status: "pass", Detail: formatVersion(version), Required: true},
 		checkCLIDependencies(),
 		checkKnowledgeBase(),
@@ -63,6 +63,9 @@ func gatherDoctorChecks() []doctorCheck {
 		checkStaleReferences(),
 		checkOptionalCLI("codex", "needed for --mixed council"),
 	}
+	// Wedge/verification preflight (reviewer reachability, cross-family
+	// capability, binary freshness, ledger health, LAW-0 guard) — additive.
+	return append(checks, wedgeDoctorChecks()...)
 }
 
 // Thin wrappers — delegate to quality package, kept for test compatibility.
