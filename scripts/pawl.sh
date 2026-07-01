@@ -62,6 +62,11 @@ PAWL_ENGAGE_WAIT="${PAWL_ENGAGE_WAIT:-45s}"    # age-55qz.11: per-send window to
                                                # pane to reach the `generating` state (turn started)
                                                # before respawning to a fresh context + retrying.
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+ROUTE_LOCK="${PAWL_ROUTE_LOCK:-$ROOT/$STATE_DIR/route.lock}"  # age-yvrp: a route in progress writes
+                                               # its start epoch here; down/reap refuse to kill a
+                                               # session while this lock is FRESH (a concurrent lane
+                                               # must not tear down a mid-route pawl). A stale lock
+                                               # (older than a route could run) is ignored + cleaned.
 ENABLED="${ENABLED:-}"           # resolved family list (space-sep, canonical order); set by up/load_session
 TIER="${TIER:-}"                 # multi (>=2 families) | fresh (1) | "" (none)
 
@@ -478,6 +483,37 @@ _ready_debug() {
   printf '%s' "${out# }"
 }
 
+# age-yvrp: echo the subset of ENABLED families whose pane is INDIVIDUALLY route-ready. cmd_up uses
+# this to DEGRADE a boot where not every enabled family came up (e.g. AGY down in a tri-spawn) to the
+# ready subset — reusing the tier door (tier_of, via _set_panes_from_enabled) for sufficiency —
+# instead of dying. Never fabricates readiness (each family runs its real fail-closed ready check).
+_ready_subset() {
+  local out="" f cs
+  for f in $ENABLED; do
+    case "$f" in
+      cc)  clear_known_prompts "$CC_PANE" >/dev/null 2>&1 || true; cc_ready && out="$out cc" ;;
+      cod) clear_known_prompts "$COD_PANE" >/dev/null 2>&1 || true; cs="$(codex_state || true)"; { [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; } && out="$out cod" ;;
+      agy) clear_known_prompts "$AGY_PANE" >/dev/null 2>&1 || true; agy_ready && out="$out agy" ;;
+    esac
+  done
+  printf '%s' "${out# }"
+}
+
+# age-yvrp: true iff a route is IN PROGRESS — the route.lock exists and is FRESH (started within a
+# window a real route could still be running, ROUTE_TIMEOUT + slack). A STALE lock (a crashed route)
+# is cleaned + treated as not-in-progress so it can never wedge teardown forever. PURE-ish: only
+# reads/removes the lockfile.
+_route_in_progress() {
+  [ -f "$ROUTE_LOCK" ] || return 1
+  local started now age
+  started="$(cat "$ROUTE_LOCK" 2>/dev/null || echo 0)"
+  case "$started" in ''|*[!0-9]*) started=0 ;; esac
+  now="$(date +%s)"; age=$(( now - started ))
+  if [ "$age" -ge 0 ] && [ "$age" -lt "$(( ROUTE_TIMEOUT + 60 ))" ]; then return 0; fi
+  rm -f "$ROUTE_LOCK" 2>/dev/null || true
+  return 1
+}
+
 # Human phrase for the tier achieved (printed on `up`).
 _tier_phrase() {
   case "$TIER" in
@@ -542,10 +578,32 @@ cmd_up() {
     fi
     sleep 4
   done
-  die "readiness gate timed out (families=$ENABLED; $(_ready_debug))"
+  # age-yvrp: the full enabled set never all came ready — DEGRADE to the subset that IS ready
+  # (reuse the tier door) rather than dying, so e.g. a tri-spawn with AGY down still serves the
+  # cross-family gate on cc+cod. Fail-safe: _ready_subset runs each family's real fail-closed check
+  # (no fabricated readiness), and a degrade to a single family honestly records TIER=fresh (weaker;
+  # a high-irreversibility door decides sufficiency). Only a fully-empty ready subset is fatal.
+  local ready_subset; ready_subset="$(_ready_subset)"
+  if [ -n "$ready_subset" ]; then
+    log "readiness gate: not all of [$ENABLED] came ready ($(_ready_debug)) — degrading to ready subset [$ready_subset]"
+    # shellcheck disable=SC2086
+    _set_panes_from_enabled $ready_subset
+    _write_session_json
+    log "UP: ready (degraded) — families: $ENABLED, tier=$TIER ($(_tier_phrase))"
+    return 0
+  fi
+  die "readiness gate timed out — NO enabled family became ready (families=$ENABLED; $(_ready_debug))"
 }
 
 cmd_down() {
+  # age-yvrp: refuse to tear down while a route is IN PROGRESS — a concurrent lane (or the idle
+  # reaper) must not kill a mid-route pawl and lose its verdict. --force overrides; a STALE lock
+  # (crashed route) never blocks (see _route_in_progress, which cleans it).
+  local force=0; [ "${1:-}" = "--force" ] && force=1
+  if [ "$force" -eq 0 ] && _route_in_progress; then
+    log "DOWN: refused — a route is in progress (route.lock fresh). Use 'down --force' to override."
+    return 3
+  fi
   if session_exists; then
     atm kill "$SESSION" --json >/dev/null 2>&1 || tmux kill-session -t "$SESSION" 2>/dev/null || true
     rm -f "$ROOT/$STATE_DIR/session.json" 2>/dev/null || true
@@ -665,6 +723,12 @@ cmd_route() {
   [ -f "$packet" ] || die "packet file not found: $packet"
   session_exists || die "no standing session — run 'pawl up' first"
   [ -n "$ENABLED" ] || die "session has no enabled families — re-run 'pawl up'"
+  # age-yvrp: mark this route IN PROGRESS so down/reap won't tear the session out from under it.
+  # The RETURN trap clears it on the normal CONFIRMED/REFUTED exits; a die/crash leaves a lock that
+  # _route_in_progress auto-cleans once it goes stale (> ROUTE_TIMEOUT+slack) — never a permanent wedge.
+  mkdir -p "$(dirname "$ROUTE_LOCK")" 2>/dev/null || true
+  date +%s > "$ROUTE_LOCK" 2>/dev/null || true
+  trap 'rm -f "$ROUTE_LOCK" 2>/dev/null || true' RETURN
   mkdir -p "$EVID_DIR"
   local ev_cc="$EVID_DIR/${bead}-opus.txt" ev_cod="$EVID_DIR/${bead}-codex.txt" ev_agy="$EVID_DIR/${bead}-agy.txt"
   # Per-route nonce scopes verdict parsing to THIS route (kills stale-scrollback +
