@@ -514,6 +514,13 @@
     },
     {
       "category": "public-tested",
+      "command": "done",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "eval baseline",
       "coverage_status": "covered",
       "kind": "leaf",

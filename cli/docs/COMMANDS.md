@@ -4271,6 +4271,26 @@ ao council-gate <verdict1> <verdict2> [...] [flags]
 
 ---
 
+### `ao done`
+
+Close a bead through the membrane's bookkeeping half: the close reason is
+
+```
+ao done <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+      --force-no-verdict   Close without a verdict, stamping an explicit UNVERIFIED marker
+  -h, --help               help for done
+      --json               Emit machine-readable JSON (stdout-as-data)
+  -r, --reason string      Close reason prose (the verdict stamp is appended) (default "Done")
+      --sha string         Commit sha (or >=7-char prefix) the bead landed as (default: HEAD at cwd)
+```
+
+---
+
 ### `ao extract`
 
 Check for pending session extractions and output a prompt for Claude to process.

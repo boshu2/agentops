@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T21:56:47Z",
+  "generated_at": "2026-07-01T22:42:18Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 78,
+    "cli_commands": 79,
     "workflows": 4,
-    "capabilities": 162
+    "capabilities": 163
   },
   "surfaces": {
     "skills": [
@@ -895,6 +895,13 @@
         ]
       },
       {
+        "name": "ao done",
+        "path": "cli/cmd/ao/",
+        "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao eval",
         "path": "cli/cmd/ao/",
         "purpose": "Run deterministic local evaluation suites",
@@ -1411,9 +1418,9 @@
     ]
   },
   "capability_summary": {
-    "total": 162,
+    "total": 163,
     "skills": 70,
-    "cli_commands": 78,
+    "cli_commands": 79,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1443,6 +1450,7 @@
     "defrag",
     "demo",
     "doctor",
+    "done",
     "eval",
     "extract",
     "feedback-loop",
@@ -4250,6 +4258,26 @@
         "--skip",
         "--verbose",
         "--yes"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.done",
+      "name": "ao done",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--force-no-verdict",
+        "--json",
+        "--output",
+        "--reason",
+        "--sha",
+        "--verbose"
       ],
       "path": "cli/cmd/ao/"
     },
