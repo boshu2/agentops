@@ -367,6 +367,11 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 		parentDir = "."
 	}
 
+	// Canonical containment root: the realpath'd directory every extracted entry
+	// MUST stay at or below. Computed once so per-entry containment is asserted
+	// against symlink-resolved ground truth, not string prefixes.
+	rootReal := realpathOrSelf(parentDir)
+
 	var count int
 	var total int64
 	for {
@@ -377,12 +382,25 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 		if herr != nil {
 			return 0, 0, herr
 		}
-		// Defend against path traversal
 		clean := filepath.Clean(hdr.Name)
+		// (a) Reject absolute-path entries LOUDLY. filepath.Join(parentDir, "/etc/x")
+		// contains such an entry only by accident (Join treats an absolute second arg
+		// as relative); make that explicit so a future refactor of Join can't silently
+		// reintroduce an absolute-write escape.
+		if filepath.IsAbs(clean) {
+			return 0, 0, fmt.Errorf("refusing absolute-path entry: %q", hdr.Name)
+		}
+		// Defend against path traversal (string-level first cut).
 		if strings.HasPrefix(clean, "..") || strings.Contains(clean, string(os.PathSeparator)+"..") {
 			return 0, 0, fmt.Errorf("refusing path traversal entry: %q", hdr.Name)
 		}
 		target := filepath.Join(parentDir, clean)
+		// (b) Canonical containment assert: the same pathInside check the pawl uses.
+		// This is the windshield — it catches an escape that survived the string cut
+		// (e.g. a symlinked parentDir, or a clean name that still resolves outside).
+		if !pathInside(realpathOrSelf(target), rootReal) {
+			return 0, 0, fmt.Errorf("refusing entry escaping extraction root: %q", hdr.Name)
+		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, os.FileMode(hdr.Mode)&0o777); err != nil {
@@ -409,6 +427,18 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 			}
 			count++
 			total += n
+		default:
+			// (c) Fail closed on any other typeflag (symlink, hardlink, char/block
+			// device, fifo, etc.) instead of silently skipping it. The production
+			// snapshot writer (writeSnapshot above) emits only TypeDir and TypeReg for
+			// corpus content: filepath.Walk visits the .agents/ tree without following
+			// symlinks and tar.FileInfoHeader classifies each entry, and .agents/ is a
+			// knowledge corpus of plain files+dirs (verified: 0 symlinks). A symlink in
+			// the source WOULD serialize as a broken TypeSymlink (empty Linkname) — not
+			// benign content to restore — so refusing it here rejects both the
+			// smuggled-symlink attack and a malformed archive, rather than dropping it
+			// invisibly.
+			return 0, 0, fmt.Errorf("refusing unsupported tar entry %q with typeflag %q(%d)", hdr.Name, string(hdr.Typeflag), hdr.Typeflag)
 		}
 	}
 	return count, total, nil
