@@ -109,6 +109,8 @@ The whole loop runs in a plain session. No daemon, no scheduler, no cloud. For a
 
 **Proven:** independent verification that records a verdict, and a durable, tamper-evident record of it. A change isn't done until something that didn't write it checks it, and that verdict is bound into the provenance ledger. No verdict, not done.
 
+The receipts are public: [membrane receipts](docs/evidence/membrane-receipts.md) — every number derived straight from the verdict ledger, none hand-written.
+
 **Still measuring:** whether the accumulated corpus makes the next session measurably better. We won't claim it until the numbers say so ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)).
 
 AgentOps proves the work. It doesn't write the code; your agent still does that, and the cross-checks cost tokens. The `.agents/` folder is plain markdown your agents keep up as they go.
