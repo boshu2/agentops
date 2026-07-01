@@ -64,7 +64,7 @@ A loop tick takes context in and emits context out. The exhaust of one tick is t
 - **Out:** evidence, decisions, citations, and verdicts land in `.agents/` and on the bead, under the promotion ratchet.
 - **`ao compile`** rebuilds the corpus periodically so the next inject is fresh.
 
-Context never flows through loop plumbing return values; it flows through the corpus and the bead. That is why the corpus is the moat: it is the compounding artifact, not a byproduct.
+Context never flows through loop plumbing return values; it flows through the corpus and the bead. That is why the corpus is treated as the central artifact rather than a byproduct. Whether it compounds into a *moat* is an [explicitly unproven hypothesis](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md) — the architecture bets on it, but the proven asset is the verification loop, not the moat.
 
 ## The DDD seam: what owns the loop versus what orchestrates it
 

@@ -66,7 +66,7 @@ Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 
 The dream loop (retired as a standalone `/dream` command; folded into the out-of-session substrate) uses the local tier when one is configured (otherwise your frontier model) for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on an out-of-session substrate (reference: NTM + MCP + managed-agents), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
 
-The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
+The ratio is intentional. On this repo, validation and curation have run several times the implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
 
 ## The Ratchet
 
@@ -84,15 +84,17 @@ It is not trying to replace thinking. The model thinks. AgentOps manages what th
 
 It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the local pre-push gate. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and the local pre-push Go gate (`ao gate check`) is the release authority (CI is a backstop). Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
 
-## The Validated Thesis
+## The Thesis, and What Is Actually Proven
 
-As of April 2026, the flywheel thesis is empirically confirmed on a single production repo (this one):
+The proven part is the verification: every change reaches *done* only with an independent proof artifact. Whether the knowledge corpus *compounds* over time is a separate, **explicitly-named unproven hypothesis** — demoted to that status in [ADR-0004](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md) and [ADR-0011](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md), which found the compounding claim faces a structural data-starvation headwind. Do not read the numbers below as a validated flywheel.
+
+What this repo has accumulated (descriptive, not a compounding proof):
 
 - 163 learnings extracted, scored, and curated
 - 13 planning rules enforced at pre-mortem gates
 - 12 patterns promoted from repeated findings
 - 10/12 `ao doctor` checks passing, with the full CI gate suite green
 
-The compound growth is measurable. Session 1 started cold. Session 100+ starts with a knowledge corpus that catches known failure modes before implementation begins.
+Session 1 started cold. Session 100+ starts with a knowledge corpus that *can* catch known failure modes before implementation begins — that the corpus keeps paying off as it grows is the hypothesis, not a settled result.
 
-That is the point. Not a bigger prompt. A repo that remembers.
+That is the aim. Not a bigger prompt. A repo that remembers.
