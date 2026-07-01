@@ -22,6 +22,10 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 		{"pawl/scripts/pawl-review.sh", []string{"scripts", "pawl-review.sh"}},
 		{"pawl/scripts/pawl-verdict.sh", []string{"scripts", "pawl-verdict.sh"}},
 		{"pawl/scripts/pawl.sh", []string{"scripts", "pawl.sh"}},
+		// pawl-review.sh sources this shared codex runner script-relative
+		// ($SCRIPT_DIR/lib/codex-exec.sh), so the stranger/embedded bundle MUST carry it or
+		// the cold review cannot start (age-gate-the-ungated-egwt.13).
+		{"pawl/scripts/lib/codex-exec.sh", []string{"scripts", "lib", "codex-exec.sh"}},
 		{"pawl/schemas/pawl-verdict.v1.schema.json", []string{"schemas", "pawl-verdict.v1.schema.json"}},
 	}
 	for _, tc := range cases {
@@ -56,6 +60,10 @@ func TestExtractPawlBundle(t *testing.T) {
 		filepath.Join("scripts", "pawl-review.sh"),
 		filepath.Join("scripts", "pawl-verdict.sh"),
 		filepath.Join("scripts", "pawl.sh"),
+		// The shared codex runner must extract into the sibling scripts/lib/ that
+		// pawl-review.sh sources; the nested-dir walk + exec-normalize must handle it
+		// (age-gate-the-ungated-egwt.13).
+		filepath.Join("scripts", "lib", "codex-exec.sh"),
 	}
 	for _, rel := range wantExec {
 		info, statErr := os.Stat(filepath.Join(dir, rel))

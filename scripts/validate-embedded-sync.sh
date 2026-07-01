@@ -35,6 +35,11 @@ check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/comp
 for s in pawl-review.sh pawl-verdict.sh pawl.sh; do
     check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
 done
+# The shared fail-closed codex runner (lib/codex-exec.sh) MUST ride along in the pawl
+# bundle: pawl-review.sh sources it script-relative ($SCRIPT_DIR/lib/codex-exec.sh), so on
+# the stranger/embedded path the extracted bundle needs scripts/lib/codex-exec.sh present
+# or the review cannot even start. (age-gate-the-ungated-egwt.13)
+check_file "$REPO_ROOT/scripts/lib/codex-exec.sh" "$EMBEDDED/pawl/scripts/lib/codex-exec.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then
