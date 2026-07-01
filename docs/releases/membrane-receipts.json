@@ -1,0 +1,144 @@
+{
+  "schema": "agentops-membrane-receipts.v1",
+  "generated_at": "2026-07-01T20:53:18Z",
+  "source": {
+    "ledger": "docs/provenance/ledger.jsonl",
+    "records": 213,
+    "tip_hash": "1994cc2712127361648fb29a7c3c0b8abd5df9dece1ff882c8becfaef0d390ae",
+    "chain_verified": true,
+    "verifier": "ao provenance verify"
+  },
+  "totals": {
+    "ledger_records": 213,
+    "verdict_events": 190,
+    "bead_commit_edges": 23,
+    "distinct_beads_reviewed": 169,
+    "distinct_commits_reviewed": 172
+  },
+  "dispositions": {
+    "CONFIRMED": 185,
+    "REFUTED": 4,
+    "other": {
+      "ESCALATE": 1
+    }
+  },
+  "caught_defects": {
+    "refuted_then_fixed": 3,
+    "refuted_without_recorded_fix": 1,
+    "arcs": [
+      {
+        "bead": "ag-721",
+        "refuted_commit": "cafef00dbabe1234",
+        "refuted_commit_short": "cafef00",
+        "refuted_ts": "2026-06-18T01:38:29Z",
+        "evidence": "pawl-verdict ag-721 disposition=REFUTED",
+        "fixed_by": null
+      },
+      {
+        "bead": "age-standing-pawl-service-ml8.7",
+        "refuted_commit": "7c3ff9a933ed1e8176e15ddb86db7e497380f853",
+        "refuted_commit_short": "7c3ff9a",
+        "refuted_ts": "2026-06-23T20:59:51Z",
+        "evidence": "pawl-verdict age-standing-pawl-service-ml8.7 disposition=REFUTED",
+        "fixed_by": {
+          "commit": "0bb3dc3662dc943997053ee3feed52300620efb3",
+          "commit_short": "0bb3dc3",
+          "ts": "2026-06-23T21:19:35Z"
+        }
+      },
+      {
+        "bead": "age-standing-pawl-service-ml8.7",
+        "refuted_commit": "114b35c6d80a3b5c3ff3d1082d2f4a7293539cc3",
+        "refuted_commit_short": "114b35c",
+        "refuted_ts": "2026-06-23T21:09:28Z",
+        "evidence": "pawl-verdict age-standing-pawl-service-ml8.7 disposition=REFUTED",
+        "fixed_by": {
+          "commit": "0bb3dc3662dc943997053ee3feed52300620efb3",
+          "commit_short": "0bb3dc3",
+          "ts": "2026-06-23T21:19:35Z"
+        }
+      },
+      {
+        "bead": "age-rhlx",
+        "refuted_commit": "02230bb3b59041ece7857423bd54adeaa2cd150c",
+        "refuted_commit_short": "02230bb",
+        "refuted_ts": "2026-06-27T01:08:25Z",
+        "evidence": "pawl-verdict age-rhlx disposition=REFUTED",
+        "fixed_by": {
+          "commit": "950a925cfef5a18bf2f9b8b7e0674617a08e4c53",
+          "commit_short": "950a925",
+          "ts": "2026-06-27T01:14:33Z"
+        }
+      }
+    ]
+  },
+  "escapes": {
+    "ledger_escape_records": 0,
+    "entries": [],
+    "note": "count of escape-tagged records in this ledger; absence of records is evidence, not proof, of absence"
+  },
+  "reviewer_families": {
+    "recorded_in_ledger": false,
+    "mix": {}
+  },
+  "time_range": {
+    "first": "2026-06-13T23:55:06Z",
+    "last": "2026-07-01T20:40:41Z"
+  },
+  "exemplar_catches": [
+    {
+      "bead": "ag-721",
+      "refuted_commit": "cafef00dbabe1234",
+      "refuted_commit_short": "cafef00",
+      "refuted_ts": "2026-06-18T01:38:29Z",
+      "evidence": "pawl-verdict ag-721 disposition=REFUTED",
+      "fixed_by": null,
+      "refuted_commit_in_history": false
+    },
+    {
+      "bead": "age-standing-pawl-service-ml8.7",
+      "refuted_commit": "7c3ff9a933ed1e8176e15ddb86db7e497380f853",
+      "refuted_commit_short": "7c3ff9a",
+      "refuted_ts": "2026-06-23T20:59:51Z",
+      "evidence": "pawl-verdict age-standing-pawl-service-ml8.7 disposition=REFUTED",
+      "fixed_by": {
+        "commit": "0bb3dc3662dc943997053ee3feed52300620efb3",
+        "commit_short": "0bb3dc3",
+        "ts": "2026-06-23T21:19:35Z",
+        "commit_in_history": true
+      },
+      "refuted_commit_in_history": true
+    },
+    {
+      "bead": "age-standing-pawl-service-ml8.7",
+      "refuted_commit": "114b35c6d80a3b5c3ff3d1082d2f4a7293539cc3",
+      "refuted_commit_short": "114b35c",
+      "refuted_ts": "2026-06-23T21:09:28Z",
+      "evidence": "pawl-verdict age-standing-pawl-service-ml8.7 disposition=REFUTED",
+      "fixed_by": {
+        "commit": "0bb3dc3662dc943997053ee3feed52300620efb3",
+        "commit_short": "0bb3dc3",
+        "ts": "2026-06-23T21:19:35Z",
+        "commit_in_history": true
+      },
+      "refuted_commit_in_history": true
+    },
+    {
+      "bead": "age-rhlx",
+      "refuted_commit": "02230bb3b59041ece7857423bd54adeaa2cd150c",
+      "refuted_commit_short": "02230bb",
+      "refuted_ts": "2026-06-27T01:08:25Z",
+      "evidence": "pawl-verdict age-rhlx disposition=REFUTED",
+      "fixed_by": {
+        "commit": "950a925cfef5a18bf2f9b8b7e0674617a08e4c53",
+        "commit_short": "950a925",
+        "ts": "2026-06-27T01:14:33Z",
+        "commit_in_history": true
+      },
+      "refuted_commit_in_history": true
+    }
+  ],
+  "unresolvable_shas": [
+    "cafef00"
+  ]
+}
