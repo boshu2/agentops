@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-30T23:29:18Z",
+  "generated_at": "2026-07-01T00:01:38Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 88,
+    "cli_commands": 87,
     "workflows": 4,
-    "capabilities": 177
+    "capabilities": 176
   },
   "surfaces": {
     "skills": [
@@ -1042,16 +1042,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao harvest",
-        "path": "cli/cmd/ao/",
-        "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "curate",
-          "flywheel"
-        ]
-      },
-      {
         "name": "ao init",
         "path": "cli/cmd/ao/",
         "purpose": "Initialize AgentOps in the current repository",
@@ -1531,9 +1521,9 @@
     ]
   },
   "capability_summary": {
-    "total": 177,
+    "total": 176,
     "skills": 75,
-    "cli_commands": 88,
+    "cli_commands": 87,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1576,7 +1566,6 @@
     "guard-status",
     "handoff",
     "harness",
-    "harvest",
     "init",
     "inject",
     "install-guards",
@@ -2356,7 +2345,6 @@
       "drives_commands": [
         "ao dedup",
         "ao defrag",
-        "ao harvest",
         "ao metrics"
       ],
       "path": "skills/curate/",
@@ -2655,7 +2643,6 @@
         "ao dedup",
         "ao flywheel",
         "ao flywheel status",
-        "ao harvest",
         "ao lookup",
         "ao maturity",
         "ao metrics",
@@ -4805,34 +4792,6 @@
         "--dry-run",
         "--json",
         "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.harvest",
-      "name": "ao harvest",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
-      "status": "active",
-      "driven_by_skills": [
-        "curate",
-        "flywheel"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--include",
-        "--json",
-        "--max-file-size",
-        "--max-promotions",
-        "--min-confidence",
-        "--output",
-        "--output-dir",
-        "--promote-to",
-        "--quiet",
-        "--roots",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

@@ -954,13 +954,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "harvest",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
       "category": "internal-hidden",
       "command": "help",
       "coverage_status": "allowlisted",

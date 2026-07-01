@@ -140,7 +140,6 @@
 | `ao guard-status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao handoff` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao harness status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao harvest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
