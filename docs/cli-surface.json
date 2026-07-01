@@ -947,13 +947,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "harness status",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
       "category": "internal-hidden",
       "command": "help",
       "coverage_status": "allowlisted",
@@ -1187,20 +1180,6 @@
     {
       "category": "public-tested",
       "command": "notebook update",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "operator list",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "operator record",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1869,13 +1848,6 @@
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "turn verify",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by turnverify adapter tests and command registration tests."
     },
     {
       "category": "public-tested",

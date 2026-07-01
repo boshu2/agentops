@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [design-by-contract, in-toto-provenance]
 package main
 
