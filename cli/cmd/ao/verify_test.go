@@ -1,0 +1,159 @@
+// practices: [design-by-contract, code-complete]
+package main
+
+import (
+	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+)
+
+// writeVerifyTestRepo builds on writePawlTestRepo (the shared pawl fixture) and swaps
+// the stub scripts/pawl-review.sh for one that RECORDS its argv to a marker file before
+// exiting — proof of which script `ao verify` actually invoked and with what args.
+// Restores verifyCmd's shared cobra state via t.Cleanup (runVerify passes verifyCmd
+// into runPawlReview, which mutates SilenceUsage/SilenceErrors on error).
+func writeVerifyTestRepo(t *testing.T, exitCode int) (markerPath string) {
+	t.Helper()
+	writePawlTestRepo(t, exitCode)
+	repo := testProjectDir
+	markerPath = filepath.Join(repo, "pawl-review-invoked-args")
+	stub := "#!/usr/bin/env bash\nprintf '%s' \"$*\" > \"" + markerPath + "\"\nexit " + strconv.Itoa(exitCode) + "\n"
+	if err := os.WriteFile(filepath.Join(repo, "scripts", "pawl-review.sh"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	prevSU, prevSE := verifyCmd.SilenceUsage, verifyCmd.SilenceErrors
+	t.Cleanup(func() {
+		verifyCmd.SilenceUsage = prevSU
+		verifyCmd.SilenceErrors = prevSE
+	})
+	return markerPath
+}
+
+// verdictShape normalizes an error from the review path into (exitCode, isVerdict):
+// nil == CONFIRMED (0, true); *pawlReviewExitError == a verdict code; anything else
+// is a non-verdict hard error (false).
+func verdictShape(err error) (int, bool) {
+	if err == nil {
+		return 0, true
+	}
+	var exitErr *pawlReviewExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode(), true
+	}
+	return -1, false
+}
+
+// `ao verify` must exist at the ROOT of the ao surface (the front-door verb),
+// carrying the wedge headline as its one-line pitch.
+func TestVerifyCmd_RegisteredAtRoot(t *testing.T) {
+	found := false
+	for _, c := range rootCmd.Commands() {
+		if c.Name() == "verify" {
+			if c != verifyCmd {
+				t.Fatalf("root command %q is not verifyCmd (a second verify surface exists)", c.Name())
+			}
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("`ao verify` is not registered on rootCmd")
+	}
+	wantShort := "Independent cross-family verdict on your change — no verdict = not done"
+	if verifyCmd.Short != wantShort {
+		t.Fatalf("verifyCmd.Short = %q, want %q", verifyCmd.Short, wantShort)
+	}
+}
+
+// The help text is product copy: the wedge headline, the visible advanced path
+// (`ao pawl review` = same engine), the threat-model boundary, and the `ao doctor`
+// pointer for failure paths must all be present.
+func TestVerifyCmd_HelpCarriesWedgeCopy(t *testing.T) {
+	for _, want := range []string{
+		"no verdict = not done",
+		"ao pawl review",
+		"same engine",
+		"single-operator",
+		"ao doctor",
+		"never a silent pass",
+	} {
+		if !strings.Contains(strings.ToLower(verifyCmd.Long), want) {
+			t.Errorf("verifyCmd.Long is missing the wedge copy %q", want)
+		}
+	}
+}
+
+// DELEGATION PROOF: `ao verify` must execute the SAME scripts/pawl-review.sh the
+// `ao pawl review` path resolves, forward argv verbatim, and produce a verdict
+// shape IDENTICAL to runPawlReview for every verdict exit code
+// (0 CONFIRMED · 3 REFUTED · 4 advisory · 2 usage · 1 hard error).
+func TestRunVerify_DelegatesToPawlReviewEngine(t *testing.T) {
+	args := []string{"age-test", "--scope", "head"}
+	for _, code := range []int{0, 3, 4, 2, 1} {
+		t.Run("exit-"+strconv.Itoa(code), func(t *testing.T) {
+			marker := writeVerifyTestRepo(t, code)
+			vCode, vIsVerdict := verdictShape(runVerify(verifyCmd, args))
+			got, readErr := os.ReadFile(marker)
+			if readErr != nil {
+				t.Fatalf("ao verify did not invoke the pawl-review script: %v", readErr)
+			}
+			if string(got) != "age-test --scope head" {
+				t.Fatalf("forwarded argv = %q, want %q (must forward verbatim)", got, "age-test --scope head")
+			}
+			// Same fixture through the advanced surface must yield the identical shape.
+			writeVerifyTestRepo(t, code)
+			pCode, pIsVerdict := verdictShape(runPawlReview(pawlReviewCmd, args))
+			if vIsVerdict != pIsVerdict || vCode != pCode {
+				t.Fatalf("ao verify (%d, verdict=%v) diverges from ao pawl review (%d, verdict=%v)",
+					vCode, vIsVerdict, pCode, pIsVerdict)
+			}
+			if !vIsVerdict || vCode != code {
+				t.Fatalf("verdict exit code = %d (verdict=%v), want %d propagated verbatim", vCode, vIsVerdict, code)
+			}
+		})
+	}
+}
+
+// --help is for ao's command, not the wrapped script: it must print verify's OWN
+// help (the wedge copy) and never forward to the script (the exit-3 stub would fail).
+func TestRunVerify_HelpDoesNotForwardToScript(t *testing.T) {
+	marker := writeVerifyTestRepo(t, 3)
+	var out bytes.Buffer
+	verifyCmd.SetOut(&out)
+	verifyCmd.SetErr(&out)
+	t.Cleanup(func() {
+		verifyCmd.SetOut(nil)
+		verifyCmd.SetErr(nil)
+	})
+	if err := runVerify(verifyCmd, []string{"--help"}); err != nil {
+		t.Fatalf("--help should print help and return nil, got %v", err)
+	}
+	if _, statErr := os.Stat(marker); statErr == nil {
+		t.Fatal("--help forwarded to the pawl-review script (marker written); it must not")
+	}
+	if !strings.Contains(strings.ToLower(out.String()), "no verdict = not done") {
+		t.Fatalf("--help output is missing the wedge headline; got: %s", out.String())
+	}
+}
+
+// A pre-verdict environment failure (missing script) must stay a plain error —
+// never a fabricated verdict code — and point the user at `ao doctor`.
+func TestRunVerify_EnvironmentFailurePointsAtDoctor(t *testing.T) {
+	writeVerifyTestRepo(t, 0)
+	if err := os.Remove(filepath.Join(testProjectDir, "scripts", "pawl-review.sh")); err != nil {
+		t.Fatal(err)
+	}
+	err := runVerify(verifyCmd, []string{"age-test"})
+	if err == nil {
+		t.Fatal("missing pawl-review script should error (fail-closed), got nil")
+	}
+	if _, isVerdict := verdictShape(err); isVerdict {
+		t.Fatalf("environment failure must not masquerade as a verdict exit code: %v", err)
+	}
+	if !strings.Contains(err.Error(), "ao doctor") {
+		t.Fatalf("environment failure must point at `ao doctor`, got: %v", err)
+	}
+}
