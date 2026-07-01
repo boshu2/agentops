@@ -78,3 +78,81 @@ real_edge() {
     [[ "$output" == *"PASS"* ]]
     [[ "$output" == *"4 edges"* ]]
 }
+
+# --- verdict-event recency (age-wedge-all-in-dyr0.3) -------------------------
+# Real-shape verdict edge row (same field set/order as `ao provenance
+# emit-verdict` writes); ts parameterized.
+verdict_edge() {
+    printf '{"schema_version":"agentops-sdlc-provenance.v1","from_id":"age-vr-test@1234567","from_type":"verdict","to_id":"1234567890abcdef1234567890abcdef12345678","to_type":"commit","relation":"wasDerivedFrom","evidence_ref":"pawl-verdict age-vr-test disposition=CONFIRMED","trust_tier":"inferred","ts":"%s","prev_hash":"ae78526f","payload_hash":"7883ec9b","hash":"171e1efb"}\n' "$1"
+}
+
+@test "verdict recency: warn-only (default) fires on a stale verdict edge" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+    verdict_edge "2020-01-01T00:00:00Z" >> "$LEDGER"
+
+    run env PROVENANCE_LEDGER="$LEDGER" bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"* ]]
+    [[ "$output" == *"newest verdict edge is"* ]]
+    [[ "$output" == *"verdict auto-binder may be dead"* ]]
+}
+
+@test "verdict recency: strict fails on a stale verdict edge" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+    verdict_edge "2020-01-01T00:00:00Z" >> "$LEDGER"
+
+    run env PROVENANCE_LEDGER="$LEDGER" bash "$SCRIPT" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"* ]]
+    [[ "$output" == *"newest verdict edge is"* ]]
+}
+
+@test "verdict recency: fresh verdict edge passes (newest wins over an older one)" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+    verdict_edge "2020-01-01T00:00:00Z" >> "$LEDGER"
+    verdict_edge "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LEDGER"
+
+    run env PROVENANCE_LEDGER="$LEDGER" bash "$SCRIPT" --strict
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS (newest verdict edge 0d old"* ]]
+}
+
+@test "verdict recency: warn-only (default) when no verdict edges exist" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+
+    run env PROVENANCE_LEDGER="$LEDGER" bash "$SCRIPT"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"* ]]
+    [[ "$output" == *"no verdict edges in ledger"* ]]
+}
+
+@test "verdict recency: strict fails when no verdict edges exist" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+
+    run env PROVENANCE_LEDGER="$LEDGER" bash "$SCRIPT" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"FAIL"* ]]
+    [[ "$output" == *"no verdict edges in ledger"* ]]
+}
+
+@test "verdict recency: threshold override via PROVENANCE_VERDICT_MAX_AGE_DAYS" {
+    genesis_row > "$LEDGER"
+    real_edge >> "$LEDGER"
+    verdict_edge "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$LEDGER"
+
+    # A 0-day-old edge fails a -1-day threshold -> proves the knob is live.
+    run env PROVENANCE_LEDGER="$LEDGER" PROVENANCE_VERDICT_MAX_AGE_DAYS=-1 bash "$SCRIPT" --strict
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"verdict auto-binder may be dead"* ]]
+}
