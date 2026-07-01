@@ -113,6 +113,20 @@ bespoke = {
     if e.get("treatment") == "bespoke"
 }
 
+# excluded = the drop-the-twin set (age-focus-membrane-bookkeeper-m1wg.19). A
+# spine-excluded source skill (e.g. a corpus-flywheel skill demoted to the
+# experimental tier) ships NO Codex twin: the skills-codex/<name>/ dir is deleted
+# and MUST NOT be regenerated. Like bespoke it is skipped entirely — never
+# generated, never checked, never restained — but unlike bespoke there is no twin
+# on disk at all. The catalog keeps the entry (treatment: excluded) so
+# validate-codex-override-coverage.sh treats the source skill as covered-by-
+# exclusion rather than "missing from Codex catalog". Read from both catalogs.
+excluded = {
+    e.get("name")
+    for e in (manifest_catalog_skills + overrides_skills)
+    if e.get("treatment") == "excluded"
+}
+
 # Cross-runtime skills: exempt from the Claude->Codex / ~/.claude->~/.codex body
 # rewrites (they legitimately document non-Codex runtimes). Single source of truth
 # shared with the gates: scripts/lint/codex-cross-runtime-skills.txt.
@@ -426,6 +440,9 @@ generated = []
 
 for name in source_skills:
     if name in bespoke:
+        continue
+    if name in excluded:
+        # Spine-excluded: the twin was intentionally dropped; never regenerate it.
         continue
     if scope and name not in scope:
         continue

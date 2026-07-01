@@ -20,7 +20,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: knowledge
+  tier: experimental
   dependencies: []
 output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare);
   never code mutations

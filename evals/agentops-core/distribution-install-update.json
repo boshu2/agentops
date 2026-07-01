@@ -131,7 +131,6 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
         {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "There is no update skill"},
-        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
         {"type": "artifact_contains", "target": "../../scripts/install.sh", "value": "install-codex.sh"},
         {"type": "artifact_contains", "target": "../../scripts/install-opencode.sh", "value": "get_latest_tag"}
       ],

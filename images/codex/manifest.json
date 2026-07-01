@@ -36,12 +36,12 @@
     "core_wave_distribution": {
       "backbone": 10,
       "core-execution": 7,
-      "catalog-parity": 23,
+      "catalog-parity": 19,
       "analysis-authoring": 0
     }
   },
-  "core_count": 39,
-  "method_core_count": 28,
+  "core_count": 35,
+  "method_core_count": 24,
   "tool_op_core_count": 11,
   "core_skills": [
     {
@@ -201,45 +201,6 @@
       "codex_treatment": "bespoke"
     },
     {
-      "slug": "forge",
-      "kind": "method",
-      "twin_path": "skills-codex/forge/",
-      "source_path": "skills/forge/",
-      "twin_files": {
-        "skill": "skills-codex/forge/SKILL.md",
-        "prompt": "skills-codex/forge/prompt.md",
-        "drift_marker": "skills-codex/forge/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "compile",
-      "kind": "method",
-      "twin_path": "skills-codex/compile/",
-      "source_path": "skills/compile/",
-      "twin_files": {
-        "skill": "skills-codex/compile/SKILL.md",
-        "prompt": "skills-codex/compile/prompt.md",
-        "drift_marker": "skills-codex/compile/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "flywheel",
-      "kind": "method",
-      "twin_path": "skills-codex/flywheel/",
-      "source_path": "skills/flywheel/",
-      "twin_files": {
-        "skill": "skills-codex/flywheel/SKILL.md",
-        "prompt": "skills-codex/flywheel/prompt.md",
-        "drift_marker": "skills-codex/flywheel/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "goals",
       "kind": "method",
       "twin_path": "skills-codex/goals/",
@@ -316,19 +277,6 @@
       },
       "codex_wave": "core-execution",
       "codex_treatment": "bespoke"
-    },
-    {
-      "slug": "inject",
-      "kind": "method",
-      "twin_path": "skills-codex/inject/",
-      "source_path": "skills/inject/",
-      "twin_files": {
-        "skill": "skills-codex/inject/SKILL.md",
-        "prompt": "skills-codex/inject/prompt.md",
-        "drift_marker": "skills-codex/inject/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
     },
     {
       "slug": "push",

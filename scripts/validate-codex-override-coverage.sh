@@ -218,7 +218,7 @@ if ! jq -e '
   all(.waves[]; (.id | type) == "string" and (.id | length) > 0 and (.description | type) == "string") and
   all(.skills[];
     (.name | type) == "string" and (.name | length) > 0 and
-    (.treatment == "bespoke" or .treatment == "parity_only") and
+    (.treatment == "bespoke" or .treatment == "parity_only" or .treatment == "excluded") and
     (.wave | type) == "string" and (.wave | length) > 0 and
     (.reason | type) == "string" and (.reason | length) > 0 and
     (
@@ -340,7 +340,12 @@ while IFS= read -r entry; do
   override_dir="$OVERRIDES_DIR/$skill"
   override_prompt="$override_dir/prompt.md"
 
-  [[ -f "$generated_prompt" ]] || fail "missing generated Codex prompt for $skill"
+  # An excluded skill ships NO Codex twin (age-focus-membrane-bookkeeper-m1wg.19),
+  # so it has no generated prompt to require — the presence check below applies
+  # only to skills that DO ship a twin (bespoke + parity_only).
+  if [[ "$treatment" != "excluded" ]]; then
+    [[ -f "$generated_prompt" ]] || fail "missing generated Codex prompt for $skill"
+  fi
 
   case "$treatment" in
     bespoke)
@@ -372,6 +377,17 @@ while IFS= read -r entry; do
       fi
       if [[ -d "$override_dir" ]]; then
         fail "parity-only skill has unexpected Codex override directory: $skill"
+      fi
+      ;;
+    excluded)
+      # Spine-excluded: no Codex twin ships (age-focus-membrane-bookkeeper-m1wg.19).
+      # Assert BOTH the generated twin and any override dir are truly absent so an
+      # excluded record can never mask a stale/orphan twin left on disk.
+      if [[ -d "$GENERATED_DIR/$skill" ]]; then
+        fail "excluded skill still has a generated Codex twin dir (git rm -r skills-codex/$skill): $skill"
+      fi
+      if [[ -d "$override_dir" ]]; then
+        fail "excluded skill has unexpected Codex override directory: $skill"
       fi
       ;;
     *)

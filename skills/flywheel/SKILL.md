@@ -24,7 +24,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: background
+  tier: experimental
   dependencies: []
   internal: true
 output_contract: 'stdout: flywheel health report (JSON when --json)'

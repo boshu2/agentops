@@ -91,10 +91,11 @@ require_contains "skills-codex/autodev/SKILL.md" 'In Codex, `$autodev` hands wor
   'autodev must hand off to Codex skills by default'
 require_contains "skills-codex/autodev/prompt.md" 'Do not shell out to a retired CLI wrapper as the Codex' \
   'autodev prompt must reject retired-CLI wrapper handoff (ag-llni: ao evolve deleted)'
-# using-agentops folded into inject (ag-s43tg, 2026-06-12); the $skill-chaining
-# doctrine sentence now lives in the inject twin.
-require_contains "skills-codex/inject/SKILL.md" 'Codex skill orchestration default is `$skill` chaining.' \
-  'inject (absorbs using-agentops) must document $skill chaining as the Codex default'
+# using-agentops folded into inject (ag-s43tg, 2026-06-12). The inject Codex twin
+# was dropped when inject was demoted to the experimental tier
+# (age-focus-membrane-bookkeeper-m1wg.19): the corpus-flywheel skills ship no
+# Codex twin, so there is no skills-codex/inject/SKILL.md to assert the
+# $skill-chaining default against. The doctrine lives in the source skill only.
 
 require_not_contains "skills-codex/evolve/SKILL.md" 'through $rpi and ao evolve' \
   'evolve must not describe ao evolve as a peer default to $rpi'

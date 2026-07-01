@@ -34,7 +34,8 @@ FILES=(
   "skills/status/SKILL.md"
   "skills-codex/status/SKILL.md"
   "skills/inject/SKILL.md"
-  "skills-codex/inject/SKILL.md"
+  # skills-codex/inject/SKILL.md dropped: the inject Codex twin was removed when
+  # inject was demoted to the experimental tier (age-focus-membrane-bookkeeper-m1wg.19).
   "skills/recover/SKILL.md"
   "skills-codex/recover/SKILL.md"
   "skills/review/SKILL.md"

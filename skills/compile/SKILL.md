@@ -20,7 +20,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: knowledge
+  tier: experimental
   stability: stable
   dependencies: []
 output_contract: .agents/compiled/*.md, .agents/compiled/index.md, .agents/compiled/log.md,
