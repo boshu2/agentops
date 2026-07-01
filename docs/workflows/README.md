@@ -14,7 +14,7 @@ tree.
 | New feature or broad change | [Complete Cycle](complete-cycle.md) | `/rpi "goal"` or `/plan` -> `/crank <epic-id>` |
 | Existing tracked backlog | `ao reconcile --json`, then `BEADS_DIR="$(ao beads dir)" br ready` | `/implement <issue-id>` or `/crank <epic-id>` |
 | Review-only checkpoint | `/council validate this PR` | `/vibe recent` before merge |
-| Terminal-native operation | `ao factory start --goal "goal"` | `ao rpi phased "goal"` and `ao rpi status` |
+| Terminal-native operation | `ao session bootstrap` | `ao lookup --query "<topic>"`, then drive the operating loop and `ao gate check --fast --scope head` |
 
 ## Decision Tree
 

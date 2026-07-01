@@ -91,7 +91,7 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 - **Phase boundaries (R to P to I to V)** — The RPI lifecycle enforces sequential phases: Research, Plan, Implement, Validate. Each phase must complete before the next begins. This is a deliberate delay that prevents premature implementation. The cost of finding a bug increases 10x at each stage it survives.
 - **Circuit breaker (60 min)** — `/evolve` stops if no productive cycle occurred in the last 60 minutes. This prevents the system from oscillating between idle cycles indefinitely. Implemented as a timestamp check against `cycle-history.jsonl`.
 - **Confidence decay (10%/week)** — Learning freshness scores decay over time, creating a delay between when knowledge was created and when it becomes effectively invisible to retrieval. This matches Ebbinghaus's forgetting curve.
-- **Stale run TTL** — RPI runs that do not close cleanly have their state cleaned up by `ao rpi cleanup` (and the `--auto-clean-stale-after` pre-run sweep) once older than the TTL. Prevents stale state from contaminating future sessions.
+- **Stale run TTL** — RPI runs that do not close cleanly have their state cleaned up by the worktree-maintenance sweep (`ao worktree`) once older than the TTL. Prevents stale state from contaminating future sessions.
 - **Maturity lifecycle** — `ao maturity --expire` implements time-delayed eviction. Knowledge that is not retrieved within its TTL decays out of the active set.
 
 **dK/dt mapping:** Controls the lag between `I(t)` and usable `K`. Phase boundaries create healthy delays (validation before deployment). Confidence decay and maturity lifecycle create the `delta * K` drain term.

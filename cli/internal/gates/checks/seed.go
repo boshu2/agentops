@@ -48,6 +48,19 @@ var (
 		"scripts/check-skill-redirects.sh",
 		"tests/scripts/check-skill-redirects.bats",
 	}
+	// docs.cli-snippets resolves every `ao …` command cited in a live doc against
+	// the cobra tree; a rename/removal of a command silently strands a golden-path
+	// snippet. Runs on any docs change plus self-reference (the script, its baseline
+	// allowlist, the bats twin, and the shared resolution lib) so editing the gate
+	// re-runs it. (age-gate-the-ungated-egwt.4)
+	docsCliSnippetsPaths = []string{
+		"docs/**",
+		"scripts/check-docs-cli-snippets.sh",
+		"scripts/.docs-cli-snippets-baseline",
+		"scripts/lib/ao-snippet-resolve.sh",
+		"scripts/lib/ao_snippet_resolve.py",
+		"tests/scripts/check-docs-cli-snippets.bats",
+	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
 	// telling agents to run `bd ready` with no gate to catch it.
@@ -218,6 +231,7 @@ func init() {
 		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
 		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
+		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
