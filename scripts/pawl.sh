@@ -58,6 +58,9 @@ PAWL_ENGAGE_DEADLINE="${PAWL_ENGAGE_DEADLINE:-240}"  # age-55qz.10: ABSOLUTE per
                                                # pane (it re-renders every tick, so it never "stalls")
                                                # which would otherwise burn the full ROUTE_TIMEOUT. Set
                                                # < ROUTE_TIMEOUT to bound wasted wait; 0 disables.
+PAWL_ENGAGE_WAIT="${PAWL_ENGAGE_WAIT:-45s}"    # age-55qz.11: per-send window to wait for a cc/agy
+                                               # pane to reach the `generating` state (turn started)
+                                               # before respawning to a fresh context + retrying.
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ENABLED="${ENABLED:-}"           # resolved family list (space-sep, canonical order); set by up/load_session
 TIER="${TIER:-}"                 # multi (>=2 families) | fresh (1) | "" (none)
@@ -411,27 +414,49 @@ agy_ready() {
   [ -z "$(detect_blocking_prompt "$pane_txt")" ]
 }
 
-# Robust agy send: deliver the packet file; if not delivered or the pane is dead,
-# respawn + retry (mirrors cc_send). agy reads the file and emits the verdict line.
-agy_send() {
-  local rp="$1" out
-  out="$(atm send "$SESSION" --pane="$AGY_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
-  printf '%s' "$out" | grep -q '"delivered":1' && return 0
-  log "agy send not delivered — respawning + retry"
-  respawn_pane "$AGY_PANE" agy || true
-  out="$(atm send "$SESSION" --pane="$AGY_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
-  printf '%s' "$out" | grep -q '"delivered":1'
+# age-55qz.11: verify a claude/gemini pane actually ENGAGED (started a turn — reached the
+# `generating` state) after a send, using the existing `atm wait --until=generating` primitive.
+# Parity with cod_send's `atm codex wait-goal-engaged` gate: a `"delivered":1` only proves the
+# keystrokes were TYPED into the input box, NOT that the model started generating — a compacting or
+# never-engaging pane counts as delivered yet emits no verdict in the route window (it then mapped to
+# <timeout> and fail-closed the route). Returns 0 once generating, non-zero on timeout. PURE-ish:
+# reads only session/pane state via atm; no side effects.
+_wait_engaged() {
+  atm wait "$SESSION" --until=generating --pane="$1" --type="$2" --timeout="${PAWL_ENGAGE_WAIT:-45s}" >/dev/null 2>&1
 }
 
-# Robust claude send: deliver the file; if not delivered or the pane is dead, respawn + retry.
+# Robust agy send: deliver the packet file AND verify the pane engaged; on no-delivery or no-
+# engagement, respawn to a fresh context + retry (up to 3x, mirroring cod_send). agy reads the file
+# and emits the verdict line. Returns 0 once delivered + engaged, non-zero after 3 failed tries.
+agy_send() {
+  local rp="$1" try out
+  for try in 1 2 3; do
+    out="$(atm send "$SESSION" --pane="$AGY_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+    if printf '%s' "$out" | grep -q '"delivered":1' && _wait_engaged "$AGY_PANE" gemini; then
+      return 0
+    fi
+    log "agy send try $try: $(printf '%s' "$out" | grep -q '"delivered":1' && echo 'delivered but not engaged' || echo 'not delivered') — respawn (fresh context) + retry"
+    respawn_pane "$AGY_PANE" agy || true
+  done
+  return 1
+}
+
+# Robust claude send: deliver the file AND verify the opus pane engaged (started a turn), respawning
+# to a FRESH context + retrying on no-engagement. The respawn is also the compaction-tax fix: a
+# standing opus pane that auto-compacts (~114k tok) on a send does not reach `generating` inside the
+# window, so it is respawned to a fresh small context that engages promptly — instead of silently
+# burning the route window on a "delivered" pane that never started reviewing.
 cc_send() {
-  local rp="$1" out
-  out="$(atm send "$SESSION" --pane="$CC_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
-  printf '%s' "$out" | grep -q '"delivered":1' && return 0
-  log "claude send not delivered — respawning + retry"
-  respawn_pane "$CC_PANE" cc || true
-  out="$(atm send "$SESSION" --pane="$CC_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
-  printf '%s' "$out" | grep -q '"delivered":1'
+  local rp="$1" try out
+  for try in 1 2 3; do
+    out="$(atm send "$SESSION" --pane="$CC_PANE" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+    if printf '%s' "$out" | grep -q '"delivered":1' && _wait_engaged "$CC_PANE" claude; then
+      return 0
+    fi
+    log "claude send try $try: $(printf '%s' "$out" | grep -q '"delivered":1' && echo 'delivered but not engaged' || echo 'not delivered') — respawn (fresh context) + retry"
+    respawn_pane "$CC_PANE" cc || true
+  done
+  return 1
 }
 
 # True iff every ENABLED family's pane is route-ready.
