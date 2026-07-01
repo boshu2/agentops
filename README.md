@@ -14,7 +14,7 @@ Coding agents declare "done" on code that is still wrong. AgentOps catches that.
 
 ## Install
 
-Pick your runtime, then type `/quickstart` in the agent.
+Pick your runtime and install:
 
 ```bash
 # Claude Code
@@ -67,7 +67,7 @@ Recorded as a proof artifact — no verdict, not done.
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
-Already installed? Ask your agent `/quickstart`, or run `/rpi "a small goal"` to take one change through discovery, build, and validation end to end. The evidence lands in `.agents/`.
+Already installed? Ask your agent to run `/rpi "a small goal"` — it takes one change through discovery, build, and independent validation end to end. The evidence lands in `.agents/`.
 
 ---
 
@@ -79,7 +79,6 @@ Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs
 
 | Skill | Use it when |
 |---|---|
-| `/quickstart` | you want the fastest setup check and next action |
 | `/research` | you need codebase context and prior learnings before changing code |
 | `/pre-mortem` | you want to pressure-test a plan before building |
 | `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
