@@ -437,37 +437,47 @@ func AdmitFinding(ctx context.Context, candidateBytes, verdictBytes []byte, req 
 	if !opts.Write {
 		return report, nil
 	}
+	if err := writeAdmissionArtifacts(root, destAbs, destRel, acceptedBytes, rowBytes, candidate.ID, candidateDigest); err != nil {
+		return AdmissionReport{}, err
+	}
+	report.Wrote = true
+	return report, nil
+}
+
+// writeAdmissionArtifacts durably lands the accepted finding at destAbs and
+// appends its ledger row, atomically and duplicate-guarded. It is the write
+// phase extracted verbatim from AdmitFinding (behavior-identical): the caller
+// invokes it only when opts.Write is set, and marks report.Wrote on success.
+func writeAdmissionArtifacts(root, destAbs, destRel string, acceptedBytes, rowBytes []byte, findingID, candidateDigest string) error {
 	if _, err := os.Stat(destAbs); err == nil {
-		return AdmissionReport{}, fmt.Errorf("duplicate admit rejected: %s already exists", destRel)
+		return fmt.Errorf("duplicate admit rejected: %s already exists", destRel)
 	} else if !os.IsNotExist(err) {
 		// In this branch err is necessarily non-nil (the `err == nil` case is
-		// handled above), so a bare `!os.IsNotExist` is the real stat-error test;
-		// the prior `err != nil &&` was tautological.
-		return AdmissionReport{}, fmt.Errorf("stat accepted destination: %w", err)
+		// handled above), so a bare `!os.IsNotExist` is the real stat-error test.
+		return fmt.Errorf("stat accepted destination: %w", err)
 	}
 	ledgerAbs := filepath.Join(root, filepath.FromSlash(ledgerRel))
-	if err := ensureNoLedgerDuplicate(root, ledgerAbs, candidate.ID, candidateDigest); err != nil {
-		return AdmissionReport{}, fmt.Errorf("prepare admission ledger: %w", err)
+	if err := ensureNoLedgerDuplicate(root, ledgerAbs, findingID, candidateDigest); err != nil {
+		return fmt.Errorf("prepare admission ledger: %w", err)
 	}
 	acceptedTmp, cleanupAccepted, err := prepareAtomicFile(destAbs, acceptedBytes, 0o644)
 	if err != nil {
-		return AdmissionReport{}, fmt.Errorf("prepare accepted finding: %w", err)
+		return fmt.Errorf("prepare accepted finding: %w", err)
 	}
 	defer cleanupAccepted()
 	ledgerTmp, cleanupLedger, err := prepareLedgerAppend(ledgerAbs, rowBytes)
 	if err != nil {
-		return AdmissionReport{}, fmt.Errorf("prepare admission ledger: %w", err)
+		return fmt.Errorf("prepare admission ledger: %w", err)
 	}
 	defer cleanupLedger()
 	if err := os.Rename(acceptedTmp, destAbs); err != nil {
-		return AdmissionReport{}, fmt.Errorf("write accepted finding: %w", err)
+		return fmt.Errorf("write accepted finding: %w", err)
 	}
 	if err := os.Rename(ledgerTmp, ledgerAbs); err != nil {
 		_ = os.Remove(destAbs)
-		return AdmissionReport{}, fmt.Errorf("write admission ledger: %w", err)
+		return fmt.Errorf("write admission ledger: %w", err)
 	}
-	report.Wrote = true
-	return report, nil
+	return nil
 }
 
 func normalizeAdmissionRequest(req AdmissionRequest) AdmissionRequest {

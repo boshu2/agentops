@@ -13,14 +13,24 @@ import (
 // point at the canonical internal/search types (the Phase-0 decouple must not
 // change identity — survivors depend on these by name).
 func TestLearningSurface_AliasesResolve(t *testing.T) {
+	// Compile-time identity check that each local alias still points at the
+	// canonical internal/search type: pass an alias-typed zero value into a
+	// function whose parameter is the canonical type. This compiles iff the
+	// alias resolves, and — unlike a `var _ search.Learning = l` annotation — it
+	// is not a redundant-type var declaration, so staticcheck QF1011 (which fires
+	// on identical alias types) does not apply.
+	wantLearning := func(search.Learning) {}
+	wantPattern := func(search.Pattern) {}
+	wantKnowledgeFinding := func(search.KnowledgeFinding) {}
+	wantSession := func(search.Session) {}
 	var l learning
-	var _ search.Learning = l // compile-time: learning IS search.Learning
 	var p pattern
-	var _ search.Pattern = p
 	var f knowledgeFinding
-	var _ search.KnowledgeFinding = f
 	var s session
-	var _ search.Session = s
+	wantLearning(l)
+	wantPattern(p)
+	wantKnowledgeFinding(f)
+	wantSession(s)
 }
 
 // TestLearningSurface_HelpersWrapSearch confirms the relocated helpers behave as

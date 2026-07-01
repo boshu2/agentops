@@ -50,9 +50,9 @@ func runSourceCmd(t *testing.T, cmd *cobra.Command, args []string, flags map[str
 		if err := cmd.Flags().Set(k, v); err != nil {
 			t.Fatalf("set --%s: %v", k, err)
 		}
-		k := k
-		orig2 := orig
-		t.Cleanup(func() { _ = cmd.Flags().Set(k, orig2) })
+		// Go 1.22+: k is per-iteration and orig is loop-body-scoped, so both are
+		// safe to capture directly — no shadow copies needed.
+		t.Cleanup(func() { _ = cmd.Flags().Set(k, orig) })
 	}
 	err := cmd.RunE(cmd, args)
 	return buf.String(), err

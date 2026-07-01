@@ -272,7 +272,8 @@ func readRegularFileCapped(path string, maxBytes int64) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
-	defer f.Close()
+	// Read-only handle: a Close error cannot lose data, so it is safe to drop.
+	defer func() { _ = f.Close() }()
 	data, err := io.ReadAll(io.LimitReader(f, maxBytes))
 	if err != nil {
 		return nil, false

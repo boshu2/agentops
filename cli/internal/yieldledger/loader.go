@@ -29,7 +29,8 @@ func LoadPath(path string) (*Ledger, error) {
 		}
 		return nil, fmt.Errorf("read yield ledger %s: %w", path, err)
 	}
-	defer f.Close()
+	// Read-only handle: a Close error cannot lose data, so it is safe to drop.
+	defer func() { _ = f.Close() }()
 
 	ledger := &Ledger{SchemaVersion: SchemaVersion}
 	sc := bufio.NewScanner(f)

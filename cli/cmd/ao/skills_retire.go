@@ -146,8 +146,11 @@ func runSkillsRetire(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		// A non-nil report means mutations already landed (e.g. regen failed
 		// after trees+ledger): emit it so the operator sees the partial state.
+		// Best-effort surfacing on an already-failing path — the original err is
+		// authoritative and returned regardless, so an emit error here is
+		// deliberately dropped rather than masking it.
 		if report != nil {
-			emitSkillsRetireReport(out, report)
+			_ = emitSkillsRetireReport(out, report)
 		}
 		return err
 	}
@@ -394,19 +397,12 @@ func historicalInsertAt(lines []string, historicalIdx, workflowsIdx, disposition
 	return insertAt
 }
 
-// flipDispositionsLedger removes the slug's active dispositions row and
-// appends a historical terminal-state row, as a text-targeted edit that
-// preserves every other byte (the file's comments are load-bearing — never a
-// YAML round-trip).
-func flipDispositionsLedger(path, slug, into, state, date string) (string, bool, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", false, fmt.Errorf("read skill dispositions ledger: %w", err)
-	}
-	lines := strings.Split(string(data), "\n")
-
-	// Remove the active dispositions row block: from its `- skill:` line up
-	// to (exclusive) the next row or the next top-level key.
+// stripDispositionRow removes the slug's active dispositions row block from
+// lines: from its `- skill:` line up to (exclusive) the next row, the next
+// top-level key, or a comment line (comments are load-bearing and never belong
+// to the removed row). It returns the surviving lines and whether a row was
+// removed. Behavior-identical to the inline loop it was extracted from.
+func stripDispositionRow(lines []string, slug string) ([]string, bool) {
 	rowRemoved := false
 	var kept []string
 	for i := 0; i < len(lines); i++ {
@@ -428,7 +424,21 @@ func flipDispositionsLedger(path, slug, into, state, date string) (string, bool,
 			}
 		}
 	}
-	lines = kept
+	return kept, rowRemoved
+}
+
+// flipDispositionsLedger removes the slug's active dispositions row and
+// appends a historical terminal-state row, as a text-targeted edit that
+// preserves every other byte (the file's comments are load-bearing — never a
+// YAML round-trip).
+func flipDispositionsLedger(path, slug, into, state, date string) (string, bool, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", false, fmt.Errorf("read skill dispositions ledger: %w", err)
+	}
+	lines := strings.Split(string(data), "\n")
+
+	lines, rowRemoved := stripDispositionRow(lines, slug)
 
 	// Append the historical row at the end of the `historical:` mapping,
 	// immediately before the next top-level section (`workflows:` or

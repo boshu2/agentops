@@ -381,18 +381,13 @@ func classifyUsage(ev Event, eventIndex int, sets runSets) LossBreakdown {
 	return LossBreakdown{Productive: spend}
 }
 
-// ComputeGauges derives the yield vector for runID from the ledger. C is
-// consumed via cIn: pass a published corpus delta (cDelta, cKnown=true) or leave
-// it unknown to get the pending sentinel. Nothing here recomputes C.
-func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges {
-	g := Gauges{RunID: runID, SpendMeasure: SpendMeasure}
-
-	sets := computeRunSets(l, runID)
-
-	// Cross-family-restricted catch-rate accumulators (counted in the A/R loop).
-	var refutedXF, confirmedXF int
-
-	// A and R.
+// accumulateAREvents walks runID's events once, accumulating A (gate-admitted
+// accepts), Unadmitted, R (usage spend), EscalateHolds, and the terminal
+// REFUTED/CONFIRMED adjudication counts into g. It returns the cross-family
+// REFUTED and CONFIRMED counts (kept out of Gauges because they are only used to
+// derive the cross-family catch rate). Behavior-identical to the inline A/R loop
+// it was extracted from.
+func accumulateAREvents(l *Ledger, runID string, g *Gauges) (refutedXF, confirmedXF int) {
 	for _, ev := range l.Events {
 		if ev.RunID != runID {
 			continue
@@ -435,6 +430,20 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 			}
 		}
 	}
+	return refutedXF, confirmedXF
+}
+
+// ComputeGauges derives the yield vector for runID from the ledger. C is
+// consumed via cIn: pass a published corpus delta (cDelta, cKnown=true) or leave
+// it unknown to get the pending sentinel. Nothing here recomputes C.
+func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges {
+	g := Gauges{RunID: runID, SpendMeasure: SpendMeasure}
+
+	sets := computeRunSets(l, runID)
+
+	// A, R, escalation/holds, and terminal-adjudication counts, plus the
+	// cross-family-restricted catch-rate accumulators.
+	refutedXF, confirmedXF := accumulateAREvents(l, runID, &g)
 
 	// CatchRate = REFUTED / (REFUTED + CONFIRMED) — nil when no adjudicated
 	// gate-verdicts (0/0 reads as no signal, never a divide).
