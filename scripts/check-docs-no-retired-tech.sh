@@ -27,33 +27,23 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Shared LIVE-doc scope + historical-exemption resolution (age-gate-the-ungated-egwt.1).
+# Resolve via $ROOT (absolutized BEFORE the cd above) — a relative
+# ${BASH_SOURCE[0]} (e.g. `cd scripts && ./check-...`) would resolve wrongly
+# after the cd (pawl catch on the first land attempt).
+. "$ROOT/scripts/lib/docs-scope.sh"
+# Pin the scope root: this gate always scans ITS repo's docs/, never a tree an
+# inherited DOCS_ROOT env var points at (the injection seam is for the lib's tests).
+DOCS_ROOT="$ROOT"
+
 # Live-doc scope: exclude dated/historical archives (same set as the sweep).
-mapfile -t DOCS < <(find docs -name '*.md' \
-  -not -path 'docs/adr/*' \
-  -not -path 'docs/audits/*' -not -path 'docs/plans/*' -not -path 'docs/brainstorms/*' \
-  -not -path 'docs/council*/*' -not -path 'docs/handoffs/*' -not -path 'docs/learnings/*' \
-  -not -path 'docs/evidence/*' -not -path 'docs/releases/*' -not -path 'docs/convergence/*' \
-  -not -path 'docs/rescope/*' -not -path 'docs/reduction/*' -not -path 'docs/migration-trackers/*' \
-  -not -path 'docs/sovereignty-proof/*' -not -path 'docs/rfcs/*' -not -path 'docs/code-map/*' \
-  | sort)
+mapfile -t DOCS < <(docs_scope_live_files)
 
 # Command/phrase-precise live-staleness patterns.
 PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b|BEADS_DIR=\$PWD/_beads|git -C _beads|pip install beads|brew upgrade beads|\bgt sling\b|gas[ -]?city|gastown|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
 
-# Doc-type exemptions: migration / upgrade / retirement records and the catalog
-# index legitimately name retired subsystems while describing the move off them.
-is_exempt() {
-  local f="$1"
-  case "$f" in
-    *-migration*|*-retirement*|*-sunset*|*-closeout*|*CHANGELOG*) return 0 ;;
-    *MIGRATION*|*UPGRADING*|*documentation-index*) return 0 ;;
-  esac
-  # self-declared historical banner in the first 15 lines
-  if head -n 15 "$f" | grep -qiE 'RETIRED|HISTORICAL|SUPERSEDED'; then
-    return 0
-  fi
-  return 1
-}
+# Doc-type exemptions (filename globs + first-15-lines historical banner + adr/)
+# are resolved by the shared lib's docs_scope_is_exempt; see scripts/lib/docs-scope.sh.
 
 # A matched line that ALSO carries removal/past-tense language is DESCRIBING the
 # retirement, not prescribing the retired tool — not an offender.
@@ -63,7 +53,7 @@ declare -i scanned=0 exempt=0
 offenders=()
 for f in "${DOCS[@]}"; do
   scanned=$((scanned + 1))
-  if is_exempt "$f"; then exempt=$((exempt + 1)); continue; fi
+  if docs_scope_is_exempt "$f"; then exempt=$((exempt + 1)); continue; fi
   if hits=$(grep -nEi "$PATTERN" "$f" 2>/dev/null); then
     while IFS= read -r line; do
       # skip lines that describe the removal rather than prescribe the tool
