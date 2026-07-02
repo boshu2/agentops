@@ -7,6 +7,9 @@
   "narrative": "A user or evaluator exercises the system behavior for this goal: Given a change that introduces codex parity drift, when the codex-parity CI gate (scripts/audit-codex-parity.sh) runs at push time, then it reports zero parity findings and blocks the push if any drift exists..",
   "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a change that introduces codex parity drift, when the codex-parity CI gate (scripts/audit-codex-parity.sh) runs at push time, then it reports zero parity findings and blocks the push if any drift exists..",
   "satisfaction_threshold": 1,
+  "acceptance_vectors": [
+    { "dimension": "consistency", "threshold": 1.0, "check": "gate:codex-parity-drift" }
+  ],
   "source": "human",
   "status": "active"
 }

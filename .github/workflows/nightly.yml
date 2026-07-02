@@ -251,6 +251,35 @@ jobs:
           fi
           scripts/nightly-knowledge-cycle.sh record-stage dream-cycle ok "summary at dream-cycle/summary.md"
 
+      - name: Dream cycle — scenario satisfaction (report-only)
+        if: steps.precondition.outputs.decision == 'RUN'
+        env:
+          NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
+        run: |
+          # Producer side of the satisfaction panel (ag-26y1): evaluate every
+          # directive-linked scenario against its acceptance vectors and append
+          # the verdicts to .agents/rpi/scenario-results.json so satisfaction is
+          # measured nightly alongside the dream cycle. Runs at the repo root —
+          # it needs GOALS.md, spec/scenarios/, and the real gate scripts — NOT
+          # inside nightly-dream-cycle.sh, which snapshots .agents/ into an
+          # ephemeral, GOALS-less workspace and is deliberately non-mutating.
+          # REPORT-ONLY: a gate-shaped scenario that fails its own threshold must
+          # not fail the cycle — mirror the compile-mine warn-on-nonzero guard.
+          SCEN_DIR="${RUNNER_TEMP}/knowledge-cycle/scenario-satisfaction"
+          mkdir -p "$SCEN_DIR"
+          set +e
+          ./cli/bin/ao eval scenario evaluate --all --json > "$SCEN_DIR/report.json"
+          rc=$?
+          if [[ $rc -ne 0 ]]; then
+            scripts/nightly-knowledge-cycle.sh record-stage scenario-satisfaction warn "ao eval scenario evaluate exited $rc (report-only; does not block the cycle)"
+          else
+            written=$(jq -r '.written // 0' "$SCEN_DIR/report.json" 2>/dev/null || echo 0)
+            gate_pass=$(jq -r '[.evaluations[] | select(.shape == "gate" and .verdict == "pass")] | length' "$SCEN_DIR/report.json" 2>/dev/null || echo 0)
+            gate_total=$(jq -r '[.evaluations[] | select(.shape == "gate")] | length' "$SCEN_DIR/report.json" 2>/dev/null || echo 0)
+            scripts/nightly-knowledge-cycle.sh record-stage scenario-satisfaction ok "wrote ${written} result(s); ${gate_pass}/${gate_total} gate-shaped scenarios satisfied"
+          fi
+          exit 0
+
       - name: Athena follow-up (placeholder — shares compile substrate)
         if: steps.precondition.outputs.decision == 'RUN'
         env:
@@ -269,6 +298,7 @@ jobs:
         run: |
           scripts/nightly-knowledge-cycle.sh record-stage compile skip "${{ steps.precondition.outputs.reason }}"
           scripts/nightly-knowledge-cycle.sh record-stage dream-cycle skip "${{ steps.precondition.outputs.reason }}"
+          scripts/nightly-knowledge-cycle.sh record-stage scenario-satisfaction skip "${{ steps.precondition.outputs.reason }}"
           scripts/nightly-knowledge-cycle.sh record-stage athena skip "${{ steps.precondition.outputs.reason }}"
 
       - name: Append knowledge-cycle summary to step summary

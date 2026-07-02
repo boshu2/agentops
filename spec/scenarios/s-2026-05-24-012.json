@@ -7,6 +7,9 @@
   "narrative": "A user or evaluator exercises the system behavior for this goal: Given a fresh checkout after a runtime-state wipe, when the .agents/ snapshot/restore mechanism (soc-rv5p) rehydrates from durable storage, then scripts/corpus-stats.sh reports non-degraded learning/pattern/decision counts and the corpus-freshness gate confirms coverage..",
   "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a fresh checkout after a runtime-state wipe, when the .agents/ snapshot/restore mechanism (soc-rv5p) rehydrates from durable storage, then scripts/corpus-stats.sh reports non-degraded learning/pattern/decision counts and the corpus-freshness gate confirms coverage..",
   "satisfaction_threshold": 0.85,
+  "acceptance_vectors": [
+    { "dimension": "durability", "threshold": 1.0, "check": "gate:corpus-freshness" }
+  ],
   "source": "human",
   "status": "active"
 }
