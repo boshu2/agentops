@@ -93,13 +93,17 @@ Repo-native control plane behind the skills. Full reference: [CLI commands](cli/
 <!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
 
 ```bash
+ao verify                 # independent verdict on your latest change
+ao gate check --fast      # the release gate before you push
+ao provenance show <sha>  # the recorded verdict trail for any commit
+ao done <bead-id>         # close tracked work with its verdict attached
 ao quick-start            # set up AgentOps in a repo
+ao doctor                 # check reviewers, binary, and ledger health
+
+# Experimental (still measuring whether these pay off; see the honest version below):
 ao search "query"         # search history and local knowledge
 ao lookup --query "topic" # retrieve curated learnings
-ao context assemble       # build a task briefing
-ao gate check --fast      # the release gate — verify before you push
 ao compile                # rebuild the corpus
-ao metrics health         # flywheel health
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
