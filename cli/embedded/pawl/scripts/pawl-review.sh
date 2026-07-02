@@ -515,6 +515,89 @@ repro_argv_allowed() {
   return 0
 }
 
+# build_tag_sibling_context <diff> <root> <budget> (age-kg5l): when the diff touches any
+# build-tagged (//go:build) .go file, emit a clearly-delimited CONTEXT-NOT-DIFF section of the
+# tag-SIBLING files a cross-family refuter reviewing ONLY the diff cannot see — the cause of the
+# 2026-07-02 false-REFUTED class (the tag-guarded expectations live in sibling files). Siblings
+# = same-directory basename-stem siblings (foo.go -> dir/foo_*.go) + the legacy/flywheel base
+# variants (strip a trailing _legacy*/_flywheel* to a base stem, then dir/base.go + dir/base_*.go),
+# EXCLUDING the touched files themselves. Pure (reads files under <root>, no git) so bats can
+# exercise it. Emits NOTHING when no touched file is build-tagged => the caller's packet stays
+# byte-identical to today. The rendered section is truncated to <budget> BYTES (siblings only —
+# never the diff), so appending it keeps the total packet under the inline ceiling.
+build_tag_sibling_context() {
+  local diff="$1" root="$2" budget="$3"
+  [[ "${budget:-0}" -gt 0 ]] || return 0
+  # touched files (b/ side of the +++ headers; drop /dev/null deletions)
+  local touched
+  touched="$(printf '%s\n' "$diff" | sed -n 's|^+++ b/||p' | sed '/^\/dev\/null$/d' | sort -u)"
+  [[ -n "$touched" ]] || return 0
+  # A //go:build line ANYWHERE in the diff makes the touched .go files tag-relevant even before
+  # the file exists on disk (a file being newly tagged); the per-file head check catches the rest.
+  local diff_has_tag=0
+  printf '%s' "$diff" | grep -q '//go:build' && diff_has_tag=1
+  local f tagfiles=""
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    case "$f" in *.go) ;; *) continue ;; esac
+    if [[ "$diff_has_tag" -eq 1 ]] || { [[ -f "$root/$f" ]] && head -n 20 "$root/$f" 2>/dev/null | grep -q '^//go:build'; }; then
+      tagfiles+="$f"$'\n'
+    fi
+  done <<< "$touched"
+  [[ -n "$tagfiles" ]] || return 0
+  # UNIQUE sibling rel-paths for each tag file, excluding the touched files (already in the diff).
+  local sibs="" dir stem base g rel
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    dir="$(dirname "$f")"; stem="$(basename "$f" .go)"
+    base="$stem"
+    case "$base" in
+      *_legacy*)   base="${base%%_legacy*}" ;;
+      *_flywheel*) base="${base%%_flywheel*}" ;;
+    esac
+    for g in "$root/$dir/${stem}_"*.go "$root/$dir/${base}_"*.go "$root/$dir/${base}.go"; do
+      [[ -f "$g" ]] || continue                       # a non-matching glob stays literal => skipped
+      rel="${g#"$root"/}"
+      printf '%s\n' "$touched" | grep -qxF "$rel" && continue
+      sibs+="$rel"$'\n'
+    done
+  done <<< "$tagfiles"
+  sibs="$(printf '%s' "$sibs" | sed '/^$/d' | sort -u)"
+  [[ -n "$sibs" ]] || return 0
+  # Render the section, then hard-cap it at <budget> bytes (reserving room for the truncation note).
+  local out
+  out="$(
+    printf '\n=== CONTEXT (NOT PART OF THE DIFF) — tag-SIBLING files (age-kg5l) ===\n'
+    printf 'The change above touches build-tagged (//go:build) file(s). A refuter reviewing ONLY\n'
+    printf 'the DIFF cannot see the tag-guarded expectations in these same-directory siblings (the\n'
+    printf '2026-07-02 false-REFUTED class). They are READ-ONLY CONTEXT — do NOT review them; they\n'
+    printf 'are UNCHANGED by this diff. Truncated to fit the packet if large.\n'
+    while IFS= read -r rel; do
+      [[ -n "$rel" ]] || continue
+      printf -- '--- sibling (context, unchanged): %s ---\n' "$rel"
+      cat "$root/$rel" 2>/dev/null
+      printf '\n'
+    done <<< "$sibs"
+  )"
+  local outlen note notelen keep
+  outlen="$(printf '%s' "$out" | wc -c | tr -d ' ')"
+  if [[ "$outlen" -le "$budget" ]]; then
+    printf '%s' "$out"
+    return 0
+  fi
+  note=$'\n… [tag-sibling context truncated to fit the packet size ceiling — read the files directly] …\n'
+  notelen="$(printf '%s' "$note" | wc -c | tr -d ' ')"
+  if [[ "$notelen" -gt "$budget" ]]; then
+    # The budget cannot fit even the truncation note — emit NOTHING rather than
+    # overflow the caller's absolute packet ceiling (cross-family refute on
+    # age-kg5l: budget=1 emitted ~99 note bytes).
+    return 0
+  fi
+  keep=$(( budget - notelen ))
+  printf '%s' "$out" | head -c "$keep"
+  printf '%s' "$note"
+}
+
 # Source-guard: tests source this file to exercise build_review_body / pawl_tier_note; the
 # codex-running flow below only executes when the script is run directly.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
@@ -726,6 +809,17 @@ if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   esac
 fi
 review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$review_files" "$REPO_ROOT")"
+# age-kg5l: if the diff touches build-tagged (//go:build) files, append a CONTEXT-NOT-DIFF
+# section of the tag-SIBLING files AFTER the diff, truncated to keep the total packet under the
+# inline ceiling (siblings truncated, never the diff). A refuter reviewing only the diff cannot
+# see the tag-guarded sibling expectations — the 2026-07-02 false-REFUTED class. Non-tag diffs
+# produce an empty section => the packet stays byte-identical to today.
+_sib_body_bytes="$(printf '%s' "$review_body" | wc -c | tr -d ' ')"
+_sib_budget=$(( MAX_INLINE_BYTES - _sib_body_bytes ))
+if [[ "$_sib_budget" -gt 0 ]]; then
+  _sibling_ctx="$(build_tag_sibling_context "$diff" "$REPO_ROOT" "$_sib_budget")"
+  [[ -n "$_sibling_ctx" ]] && review_body="${review_body}${_sibling_ctx}"
+fi
 if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   read_instr="This change is LARGE and is NOT inlined. READ the changed files listed below directly (read-only); they are the change under review. Do not modify anything."
   echo "pawl-review: large diff (${diff_bytes}B > ${MAX_INLINE_BYTES}B cap) — packet uses read-files-not-inline (age-mwhj)" >&2
