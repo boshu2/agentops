@@ -186,7 +186,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 **Night: knowledge compounding.** An adopted substrate can run bookkeeping-only compounding over `.agents/`: consolidate learnings, dedupe patterns, defragment the corpus, and report health. Source code stays untouched unless the operator dispatches a foreground `/rpi` loop.
 
 ```text
-> /forge
+> /curate --mode=forge
 > /compile
 
 [compile] INGEST  harvest new artifacts

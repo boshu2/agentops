@@ -87,10 +87,12 @@ require_contains "skills-codex/evolve/prompt.md" 'Drive the lead cycle in-sessio
 require_contains "skills-codex-overrides/evolve/prompt.md" 'Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.' \
   'evolve override prompt must preserve wrapper-command prohibition'
 
-require_contains "skills-codex/autodev/SKILL.md" 'In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.' \
-  'autodev must hand off to Codex skills by default'
-require_contains "skills-codex/autodev/prompt.md" 'Do not shell out to a retired CLI wrapper as the Codex' \
-  'autodev prompt must reject retired-CLI wrapper handoff (ag-llni: ao evolve deleted)'
+# autodev retired --into evolve (2026-07-02): the contract-management surface
+# and its skill-invocation handoff doctrine live in evolve's fold section now.
+require_contains "skills-codex/evolve/SKILL.md" 'absorbed from $autodev' \
+  'evolve twin must carry the absorbed autodev contract-management section'
+require_contains "skills-codex/evolve/SKILL.md" 'In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.' \
+  'absorbed autodev section must hand off to Codex skills by default'
 # using-agentops folded into inject (ag-s43tg, 2026-06-12). The inject Codex twin
 # was dropped when inject was demoted to the experimental tier
 # (age-focus-membrane-bookkeeper-m1wg.19): the corpus-flywheel skills ship no
@@ -103,12 +105,12 @@ require_not_contains "skills-codex/evolve/prompt.md" 'for `ao evolve`:' \
   'evolve prompt must not frame $evolve as only a frontend for ao evolve'
 require_not_contains "skills-codex-overrides/evolve/prompt.md" 'for `ao evolve`:' \
   'evolve override prompt must not frame $evolve as only a frontend for ao evolve'
-require_not_contains "skills-codex/autodev/SKILL.md" 'use `$evolve` or `ao evolve`' \
-  'autodev routing must not offer ao evolve as the Codex default'
-require_not_contains "skills-codex/autodev/SKILL.md" 'use `$rpi` or `ao rpi`' \
-  'autodev routing must not offer ao rpi as the Codex default'
-require_not_contains "skills-codex/autodev/prompt.md" 'to `$evolve`, `ao evolve`, `$rpi`, or `ao rpi`' \
-  'autodev prompt must not offer wrapper commands as peer handoffs'
+require_not_contains "skills-codex/evolve/SKILL.md" 'use `$evolve` or `ao evolve`' \
+  'absorbed autodev routing must not offer ao evolve as the Codex default'
+require_not_contains "skills-codex/evolve/SKILL.md" 'use `$rpi` or `ao rpi`' \
+  'absorbed autodev routing must not offer ao rpi as the Codex default'
+require_not_contains "skills-codex/evolve/prompt.md" 'to `$evolve`, `ao evolve`, `$rpi`, or `ao rpi`' \
+  'evolve prompt must not offer wrapper commands as peer handoffs'
 
 if [[ $failures -ne 0 ]]; then
   echo "Codex RPI contract validation failed with $failures issue(s)." >&2

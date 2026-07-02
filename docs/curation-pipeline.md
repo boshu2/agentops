@@ -45,7 +45,7 @@ v1 (ship first)           v2 (after v1 proves out)      v3 (after v2 proves out)
                                                          └──────────┘
 ```
 
-**v1 closes the biggest gap.** Today, `/forge` and `/retro` produce unstructured markdown files that go directly into `.agents/learnings/` with no verification. v1 adds structure (typed artifacts) and mechanical truth checks (did the tests pass?). This alone prevents the most damaging failure mode: confidently wrong learnings entering the knowledge base.
+**v1 closes the biggest gap.** Today, `/curate --mode=forge` and `/retro` produce unstructured markdown files that go directly into `.agents/learnings/` with no verification. v1 adds structure (typed artifacts) and mechanical truth checks (did the tests pass?). This alone prevents the most damaging failure mode: confidently wrong learnings entering the knowledge base.
 
 **v2 adds discoverability and quality measurement.** Once artifacts are structured and verified, they can be tagged for retrieval and scored for quality. This makes `ao search` and `ao lookup` return better results and enables the pool tiering system (gold/silver/bronze) to operate on verified data.
 
@@ -57,7 +57,7 @@ v1 (ship first)           v2 (after v1 proves out)      v3 (after v2 proves out)
 
 ## Stage 1: CATALOG
 
-**What it does:** Structures raw agent experience into typed artifacts with consistent metadata. Transforms free-form output from `/forge` and `/retro` into machine-parseable records.
+**What it does:** Structures raw agent experience into typed artifacts with consistent metadata. Transforms free-form output from `/curate --mode=forge` and `/retro` into machine-parseable records.
 
 ### Input
 
@@ -65,7 +65,7 @@ Raw output from existing skills:
 
 | Source Skill | Output Location | Content |
 |-------------|-----------------|---------|
-| `/forge` | `.agents/forge/YYYY-MM-DD-forge.md` | Decisions, learnings, failures, patterns extracted from transcripts |
+| `/curate --mode=forge` | `.agents/forge/YYYY-MM-DD-forge.md` | Decisions, learnings, failures, patterns extracted from transcripts |
 | `/retro` | `.agents/learnings/YYYY-MM-DD-<topic>.md` | Lessons learned from completed work |
 | `/retro` | `.agents/learnings/YYYY-MM-DD-<topic>.md` | Retrospective summaries with improvement agendas |
 | `/post-mortem` | `.agents/learnings/`, `.agents/findings/registry.jsonl` | Council-validated learnings plus reusable structured findings |
@@ -104,7 +104,7 @@ All curation artifacts carry `schema_version: 1` in their metadata.
 
 ### Connection to Existing Infrastructure
 
-- **Input:** Reuses existing `/forge` output format (Decision, Learning, Failure, Pattern types with confidence scores). Reuses `/retro` output format (ID, Category, Confidence).
+- **Input:** Reuses existing `/curate --mode=forge` output format (Decision, Learning, Failure, Pattern types with confidence scores). Reuses `/retro` output format (ID, Category, Confidence).
 - **Output:** Writes to `.agents/pool/pending/` using the existing `pool.Add()` Go API (`cli/internal/pool/pool.go`).
 - **CLI:** `ao curate catalog` -- reads forge/retro output, produces typed pool entries.
 - **Types:** Uses existing `types.KnowledgeType` (decision, solution, learning, failure, reference) and `types.Candidate` struct from `cli/internal/types/types.go`.
@@ -113,7 +113,7 @@ All curation artifacts carry `schema_version: 1` in their metadata.
 
 | Failure | Impact | Mitigation |
 |---------|--------|------------|
-| CATALOG missing | Raw markdown goes directly to `.agents/learnings/` -- no structure, no type, no provenance tracking. Search returns untyped results. This is today's status quo. | Graceful: system still works, just without structure. `/forge` and `/retro` continue writing to their existing locations. |
+| CATALOG missing | Raw markdown goes directly to `.agents/learnings/` -- no structure, no type, no provenance tracking. Search returns untyped results. This is today's status quo. | Graceful: system still works, just without structure. `/curate --mode=forge` and `/retro` continue writing to their existing locations. |
 | Wrong type assigned | Learning classified as pattern or vice versa. Affects retrieval relevance but not correctness. | Low impact: type is a hint for retrieval, not a gate. Existing `types.KnowledgeType` has only 5 values. |
 | Duplicate cataloging | Same learning cataloged twice from different sources (forge + retro). | Content hashing on `candidate.Content` prevents duplicates in pool. Existing `resolveArtifactPath()` handles filename collisions. |
 
@@ -487,7 +487,7 @@ The pipeline degrades gracefully. Each version is strictly better than the previ
        │
        ▼
   ┌──────────┐     ┌─────────┐
-  │ /forge   │     │ /retro  │    (existing skills, unchanged)
+  │ /curate  │     │ /retro  │    (existing skills; forge mode)
   └────┬─────┘     └────┬────┘
        │                │
        ▼                ▼
@@ -571,7 +571,7 @@ When the schema evolves, the version increments. Readers check the version and a
 - [Knowledge Flywheel](knowledge-flywheel.md) -- The compounding loop that curation improves
 - [The Science](the-science.md) -- Decay rates, escape velocity, formal model
 - [Architecture](ARCHITECTURE.md) -- System design (Pillar 4: Knowledge Flywheel)
-- `/forge` skill -- Transcript mining (CATALOG input)
+- `/curate --mode=forge` -- Transcript mining (CATALOG input)
 - `/retro` skill -- Retrospective extraction (CATALOG input)
 - `/post-mortem` skill -- Council-validated findings + finding-registry emission
 - `ao pool list` -- View pool entries by tier and status

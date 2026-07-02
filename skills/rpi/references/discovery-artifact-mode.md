@@ -48,7 +48,7 @@ Step by step:
 3. **Write execution packet.** Produce `.agents/rpi/execution-packet.json` with the extracted fields, the artifact path under `discovery_artifacts`, and `phase: "implementation"`. This is the same shape a normal `/discovery` run produces.
 4. **Log Phase 1 completion.** `PHASE 1 COMPLETE ✓ (discovery) — artifact: <path>`
 5. **Proceed to Phase 2 (crank).** Pass the execution packet to `/crank` exactly as if Phase 1 had run normally.
-6. **Phase 3 (validation) is unchanged** — it still runs vibe + post-mortem + retro + forge.
+6. **Phase 3 (validation) is unchanged** — it still runs vibe + post-mortem + retro + curate --mode=forge.
 
 ## Gate behavior
 

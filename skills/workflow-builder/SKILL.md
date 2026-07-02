@@ -42,7 +42,7 @@ output_contract: 'a runnable .claude/workflows/<name>.js with a meta block and a
 ## Confirm the shape first
 
 Do NOT scaffold a workflow for: an attach-and-steer run (→ NTM: `ntm` /
-`vibing-with-ntm`), or a hard-sequential edit-loop with no parallelism (→ plain
+`using-atm`), or a hard-sequential edit-loop with no parallelism (→ plain
 skill: `skill-builder`). If unconfirmed, run `automation-shape-routing`.
 
 ## The template
@@ -107,7 +107,7 @@ this skill scaffolds the script that satisfies it.
    row and run `scripts/check-workflow-governance.sh`.
 7. **Dry-run to validate** — invoke the workflow on a tiny input; confirm the
    `meta` block parses and each phase returns its schema. This is the workflow
-   analog of `skill-auditor`.
+   analog of the heal-skill deep audit (`audit.sh`).
 
 ## Relationship to the SDK
 

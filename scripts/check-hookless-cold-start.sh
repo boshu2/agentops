@@ -33,9 +33,13 @@ FILES=(
   "docs/architecture/primitive-chains.md"
   "skills/status/SKILL.md"
   "skills-codex/status/SKILL.md"
-  "skills/inject/SKILL.md"
-  # skills-codex/inject/SKILL.md dropped: the inject Codex twin was removed when
-  # inject was demoted to the experimental tier (age-focus-membrane-bookkeeper-m1wg.19).
+  # skills/inject/SKILL.md retired (knowledge activation folded into
+  # operationalize). Its cold-start slot passes to skills/bootstrap/SKILL.md,
+  # which now carries the session-start routing (ao session bootstrap +
+  # ao lookup) that made inject a cold-start surface in the first place.
+  # (The inject Codex twin was already dropped when inject was demoted to the
+  # experimental tier, age-focus-membrane-bookkeeper-m1wg.19.)
+  "skills/bootstrap/SKILL.md"
   "skills/recover/SKILL.md"
   "skills-codex/recover/SKILL.md"
   "skills/review/SKILL.md"

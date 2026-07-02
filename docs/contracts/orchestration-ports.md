@@ -8,8 +8,8 @@
 This contract documents the **`OrchestrationPort`** — the typed seam that routes
 a unit of work onto an execution engine and records *why*. It is the foundation
 that gates Bo's application epics (the dual-runtime *AgentOps × Claude Managed
-Agents* integration): every fan-out skill, crank wave, and autodev loop depends
-on this selection layer.
+Agents* integration): every fan-out skill, crank wave, and contract-bounded
+`/evolve` loop depends on this selection layer.
 
 It follows the project-wide [Ports and Adapters](../architecture/ports-and-adapters.md)
 model and the established `cli/internal/ports/` triplet pattern (interface +

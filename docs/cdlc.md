@@ -243,7 +243,7 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 | Release | Distribute | How do others get this context? | Skills registry, `/converter`, `install.sh` |
 | Deploy | Deliver | Did the right context reach the agent? | Explicit phase packets, optional `SessionStart` hooks, SkillLoadEvent |
 | Operate | Observe | Is the context working in practice? | `quality-signals.sh`, citation tracking, session-outcome |
-| Monitor → Plan | Adapt | What should change for next time? | MemRL feedback, `/forge`, `/evolve`, `/dream` |
+| Monitor → Plan | Adapt | What should change for next time? | MemRL feedback, `/curate --mode=forge`, `/evolve`, `/dream` |
 
 ---
 
@@ -262,7 +262,7 @@ BDD-shaped intent issue            ← Generate (the intent is the spec; phase 1
   → evidence + learning capture    ← Adapt (ratcheted promotion into the next loop turn; phase 7)
 ```
 
-The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
+The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/curate --mode=forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
 
 Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](https://github.com/boshu2/agentops/blob/main/GOALS.md).
 

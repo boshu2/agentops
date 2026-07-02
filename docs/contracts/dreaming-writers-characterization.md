@@ -27,7 +27,7 @@ The persisted artifact is a `.agents/learnings/<YYYY-MM-DD>-<id>.md` file matchi
 [Lesson Format](lesson-format.md): YAML front-matter (`id`, `date`, `severity`, `trigger`,
 `verifiable`, `rule`, `falsified_by`, `practice`, `related`) + `## Context` / `## Why this matters`
 / `## How to apply` body. This is the same shape `forge`/`harvest` already emit, so `/compile`
-(Mine → Grow → Defrag → Lint) and `/inject` decay-ranking treat imported notes identically to
+(Mine → Grow → Defrag → Lint) and `ao lookup` decay-ranking treat imported notes identically to
 forged ones.
 
 ### The write port (current state + required delta)

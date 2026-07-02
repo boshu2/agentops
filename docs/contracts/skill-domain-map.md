@@ -104,7 +104,7 @@ candidate.
 autodev program.
 
 **Primary artifacts:** `.agents/plans/*.md`, bd issues, `GOALS.md`, scenario
-files, `PROGRAM.md`/autodev state.
+files, `PROGRAM.md` autodev contract state.
 
 **Adapters:** bd/br/bv, GOALS parser, scenario files, task-list fallback.
 

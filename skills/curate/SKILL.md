@@ -1,6 +1,6 @@
 ---
 name: curate
-description: 'Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".'
+description: 'Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".'
 practices:
 - wiki-knowledge-surface
 - lean-startup
@@ -22,13 +22,13 @@ context:
 metadata:
   tier: experimental
   dependencies: []
-output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare);
+output_contract: .agents/research/*.md (synthesis), br notes, skill diffs (rare);
   never code mutations
 ---
 
 # /curate — Canonical Miner Skill
 
-> **Role:** miner. Input = trinity slice (transcripts, `.agents/`, `bd`, `git`). Output = skill diffs (proposed), bd updates, rare wiki entries. **Never mutates code.**
+> **Role:** miner. Input = trinity slice (transcripts, `.agents/`, `br`, `git`). Output = skill diffs (proposed), br updates, rare wiki entries. **Never mutates code.**
 
 > **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing miners (dream, harvest, forge, compile, retro, post-mortem-mining, flywheel, trace, provenance, defrag) stay until Phase 3 shim conversion (m6v5.D.3). Fix-C smoke (`soc-wb2aa`) gates Phase 3.
 
@@ -38,7 +38,7 @@ output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare)
 |---|---|---|
 | `--mode=dream` | Overnight bounded INGEST→REDUCE→MEASURE on `.agents/` | retired dream lane |
 | `--mode=harvest` | Cross-rig promotion + post-mortem mining + flywheel rollup | retired harvest lane, `/post-mortem` mining half, `/flywheel` |
-| `--mode=forge` | Per-session transcript mining (SessionEnd cadence) | `/forge` |
+| `--mode=forge` | Per-session transcript mining (session-close cadence, run explicitly) | `/forge` |
 | `--mode=compile` | Mine→Grow→Defrag→Lint corpus pipeline | `/compile` |
 | `--mode=retro` | Single-session learning capture | retired retro lane |
 | `--mode=defrag` | Knowledge defragmentation (overnight) | `compile-session-defrag.sh` hook |
@@ -77,12 +77,12 @@ Parse `--mode`. Each mode has its own scope semantics:
 |---|---|---|---|
 | dream | `.agents/` corpus | `.agents/overnight/<run-id>/` summary + per-iteration JSON | overnight (1×/24h) |
 | harvest | `.agents/` across rigs (`~/.agents/learnings/`) | `~/.agents/learnings/` (promotion), `.agents/harvest/latest.json` | daily (1×/24h) |
-| forge | session transcripts (`~/.claude/projects/<session>/*.jsonl`) | `.agents/learnings/`, `.agents/patterns/` | per-session (SessionEnd) or 30m loop |
+| forge | session transcripts (`~/.claude/projects/<session>/*.jsonl`) | `.agents/learnings/`, `.agents/patterns/` | per-session (run at session close) or 30m loop |
 | compile | `.agents/` corpus | `wiki/INDEX.generated.md`, `.agents/compile/<date>.md` | weekly |
 | retro | this session's transcript + recent diffs | `.agents/retro/index.jsonl` (append) | per-session (manual) |
 | defrag | `.agents/` corpus | `.agents/defrag/<date>.md` (cleanup report) | overnight (1×/24h) |
 | watch | last 100 lines of current session transcript | `.agents/watch/<date>.md` (advisory) | in-session 15m loop |
-| provenance | `bd` graph + `git log` + `.agents/` for given anchor | `.agents/provenance/<anchor>.md` | on-demand |
+| provenance | `br` graph + `git log` + `.agents/` for given anchor | `.agents/provenance/<anchor>.md` | on-demand |
 
 ### Step 2: Acquire lock (when applicable)
 
@@ -103,7 +103,7 @@ Each mode delegates to a body section in this skill (see § per-mode bodies belo
 Output is one of (priority order, per architecture knowledge-flywheel rule):
 
 1. **Skill diffs** — proposed changes to existing skill bodies, written to `.agents/skill-diffs/<date>-<skill>.diff`. Operator approves before applying. NEVER writes to `skills/` directly.
-2. **bd updates** — `bd note` or new `bd create` for surfaced issues. Direct, no approval queue.
+2. **br updates** — `BEADS_DIR="$(ao beads dir)" br update <id> --notes` or new `br create` for surfaced issues. Direct, no approval queue.
 3. **Knowledge entries** — `.agents/research/`, `.agents/learnings/`, `~/.agents/learnings/` (rare; only when knowledge is generally reusable).
 
 ### Step 5: Append to LOG.md
@@ -118,7 +118,7 @@ Every mode appends one line to `.agents/LOG.md`:
 
 1. Mode + scope
 2. Output path(s)
-3. Surfaced bd issues (if any)
+3. Surfaced br issues (if any)
 4. Loop continuation hint (next-fire cadence per architecture catalog)
 
 ## Per-mode bodies (outline)
@@ -165,12 +165,36 @@ Detailed body remains inline until Phase 2 extraction.
 
 ### --mode=forge
 
+> **Absorbs `/forge`** (retired): `/forge` and `/forge --promote` route here. The
+> `ao forge` CLI (`ao forge transcript`, `ao forge markdown`) is unchanged and
+> remains the mechanical capture path.
+
 Per-session transcript mining:
 - Locate latest transcript (`~/.claude/projects/<project>/<session>/*.jsonl`)
-- Extract knowledge candidates (decisions, patterns, anti-patterns, bug fixes)
+- Extract knowledge candidates (decisions, patterns, anti-patterns, bug fixes) —
+  match against the signal patterns and 26 known uncaptured lesson categories in
+  [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md)
 - Validate candidates against finding-registry contract
 - Queue to `.agents/knowledge/pending/` for curator review
-- Output: pending markdown files; bd notes for high-confidence findings
+- Output: pending markdown files; br notes for high-confidence findings
+
+Candidates enter at Tier 0 (`.agents/forge/` — the artifact directory keeps the
+`forge` name), then promote to Tier 1 (`.agents/learnings/`) via curator review
+or ≥2 citations.
+
+**Promote — drain the pending queue** (`--promote`, absorbed from `/forge --promote`):
+
+1. **Find pending files:** `ls -lt .agents/knowledge/pending/*.md` and
+   `.agents/ao/pending.jsonl`. If neither exists, report "No pending
+   extractions" and exit.
+2. **Process each pending file** in `.agents/knowledge/pending/`: read it,
+   validate the required fields (`# Learning:`, `**Category**:`,
+   `**Confidence**:`), copy it to `.agents/learnings/` (preserving the
+   filename), then remove the source file from `.agents/knowledge/pending/`.
+3. **Process the pending queue:** if `.agents/ao/pending.jsonl` is non-empty,
+   process each queued session, then truncate the queue.
+4. **Report:** "Promoted N learnings from pending → .agents/learnings/. Queue
+   cleared." Return immediately after reporting.
 
 Detailed body remains inline until Phase 2 extraction.
 
@@ -191,7 +215,7 @@ Single-session learning capture:
 - Read last N turns + diff summary
 - Identify one durable insight (or none — exit clean)
 - Append to `.agents/retro/index.jsonl`
-- Optional: surface to bd as note
+- Optional: surface to br as note
 
 Detailed body remains inline until Phase 2 extraction.
 
@@ -210,7 +234,7 @@ Detailed body remains inline until Phase 2 extraction.
 In-session drift detection:
 - Read last 100 transcript turns
 - Detect: research loops without code change, repeated grep-without-read, oscillating decisions
-- Write advisory to `.agents/watch/<date>.md`; surface high-severity to bd note
+- Write advisory to `.agents/watch/<date>.md`; surface high-severity to br note
 - Cheap; designed for 15-min cadence
 
 Detailed body remains inline until Phase 2 extraction.
@@ -219,14 +243,14 @@ Detailed body remains inline until Phase 2 extraction.
 
 Decision-trace walk:
 - Given anchor (bead ID, file path, or decision marker)
-- Walk: bd graph (parents, blockers, refs) + git log (commits touching anchor) + `.agents/` mentions
+- Walk: br graph (parents, blockers, refs) + git log (commits touching anchor) + `.agents/` mentions
 - Output: `.agents/provenance/<anchor>.md` with chronological trace
 
 Detailed body remains inline until Phase 2 extraction.
 
 ## Constraints (one-role-per-skill)
 
-- **One role: miner.** Output never mutates code; always lands as proposed diffs, bd updates, or wiki entries.
+- **One role: miner.** Output never mutates code; always lands as proposed diffs, br updates, or wiki entries.
 - **No new modes** without dropping/merging an existing one (Fix-F mode-budget cap = 8).
 - **Lock contract** — dream mode is exclusive; harvest defers when dream is
   running; other modes are safe-concurrent.
@@ -239,5 +263,7 @@ Detailed body remains inline until Phase 2 extraction.
 
 ## Reference Documents
 
-- [references/curate.feature](references/curate.feature) — Executable spec: resolve mode + scope, acquire lock when writing shared state, mine into synthesis + bd notes (soc-qk4b)
+- [references/curate.feature](references/curate.feature) — Executable spec: resolve mode + scope, acquire lock when writing shared state, mine into synthesis + br notes (soc-qk4b)
 - [references/harvest-governance.md](references/harvest-governance.md) — Governance model for `--mode=harvest`: sweep frequency, size budgets, staleness thresholds, cross-rig synthesis triggers, dedup policy (folded from retired harvest, cp-dxa)
+- [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for `--mode=forge` transcript mining (folded from retired forge)
+- [references/feedback-compiler-drafts.md](references/feedback-compiler-drafts.md) — draft-vs-provisional promotion rule for `cli/internal/feedbackcompiler` output in `docs/learnings/` (never auto-promote; folded from retired forge)

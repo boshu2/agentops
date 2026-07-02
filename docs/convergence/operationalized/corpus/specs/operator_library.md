@@ -79,7 +79,7 @@
 **Definition**: Autonomy is earned incrementally against verified success; loops carry explicit stop policies.
 **When-to-Use Triggers**:
 - Granting an agent a new unsupervised capability.
-- Any unbounded loop (crank/evolve/autodev).
+- Any unbounded loop (crank/evolve, including a PROGRAM.md/AUTODEV.md-contract-bounded evolve run).
 **Failure Modes**:
 - Full autonomy on day one.
 - Loops with no cycle/wave cap.

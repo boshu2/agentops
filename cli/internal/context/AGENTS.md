@@ -43,6 +43,6 @@ Context packet assembly: turns `.agents/` artifacts plus session signals into a 
 ## Cross-references
 
 - Parent epic: `agentops-tqc` (Olympus → agentopsd extraction).
-- Skill: `skills/inject/SKILL.md` (the primary consumer surface), `skills/recover/SKILL.md`.
+- Skill: `skills/operationalize/SKILL.md` (absorbed the retired inject skill's activation surface), `skills/recover/SKILL.md`.
 - Pattern source: olympus per-folder `AGENTS.md` ownership convention.
 - Sibling packages: `cli/internal/search` (provides ranked intel), `cli/internal/daemon` (serves packets via daemon job results), `cli/internal/overnight` (dream consumes packets at iteration boundaries).

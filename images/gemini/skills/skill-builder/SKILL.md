@@ -101,7 +101,7 @@ For AgentOps skill upgrades, use the productization score as a patch selector,
 not as a replacement for `skill-auditor`:
 
 ```bash
-python3 skills/skill-auditor/scripts/score_agentops_skill.py skills/<name> --markdown
+python3 skills/heal-skill/scripts/score_agentops_skill.py skills/<name> --markdown
 ```
 
 Choose the smallest patch that improves the score while preserving the

@@ -16,7 +16,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
 - `evolve` — Run autonomous improvement loops.
 - `flywheel` — Check knowledge flywheel health. Triggers: "flywheel", "check knowledge flywheel health.", "flywheel skill".
-- `forge` — Mine transcripts into learnings. Triggers: "forge", "mine transcripts into learnings.", "forge skill".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `operationalize` — Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
 - `perf` — Profile and optimize hotspots. Triggers: "perf", "profile and optimize hotspots.", "perf skill".
@@ -31,13 +30,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driving-adapter
 
-- `acfs` — Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. Triggers:
 - `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees. Triggers: agy, antigravity, agy plugin, AGY evidence.
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `converge` — Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
-- `inject` — Load relevant .agents context. Triggers: "inject context", "load .agents context", "pull decay-ranked prior knowledge".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
 - `pre-land-refuters` — Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.
 - `push` — Validate, commit, and push.
@@ -58,21 +55,18 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `account-rotation` — Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".
 - `agent-native` — Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: "agent-native", "agent native", "make an out-of-session agent agentops-native".
-- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: "manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick boundaries".
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `beads-br` — Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. Triggers: "beads-br", "beads br", "local-first issue tracker beads rust".
 - `beads-bv` — Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".
-- `beads-workflow` — Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. Triggers: "beads-workflow", "beads workflow", "use when converting markdown plans".
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".
 - `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".
 - `compile` — Compile .agents knowledge wiki. Triggers: "compile the knowledge wiki", "build the LLM wiki", "compile .agents into the wiki".
-- `continuity-loop` — Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step.
-- `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".
+- `curate` — Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
-- `heal-skill` — Repair skill hygiene. Triggers: "heal-skill", "heal skill", "repair skill hygiene.".
+- `heal-skill` — Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
@@ -81,12 +75,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `reverse-engineer` — Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
 - `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: "scaffold", "create project component or boilerplate".
-- `skill-auditor` — Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `swarm` — Dispatch parallel agents. Triggers: "swarm", "dispatch parallel agents.", "swarm skill".
 - `test` — Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".
 - `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
-- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm".
+- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
@@ -106,22 +99,16 @@ graph LR
   automation-shape-routing -- "supplier-to" --> workflow-builder
   behavior-first-planning -- "shared-kernel" --> standards
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
-  continuity-loop -- "customer-of" --> agent-mail
-  continuity-loop -- "supplier-to" --> evolve
-  continuity-loop -- "customer-of" --> ntm
-  continuity-loop -- "supplier-to" --> recover
-  continuity-loop -- "supplier-to" --> using-atm
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
   evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
-  forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
-  heal-skill -- "customer-of" --> skill-auditor
+  heal-skill -- "customer-of" --> skill-builder
   implement -- "customer-of" --> domain
   operationalize -- "customer-of" --> automation-shape-routing
-  operationalize -- "supplier-to" --> beads-workflow
+  operationalize -- "supplier-to" --> beads-br
   operationalize -- "supplier-to" --> cc-hooks
   operationalize -- "customer-of" --> research
   operationalize -- "supplier-to" --> skill-builder
@@ -144,10 +131,8 @@ graph LR
   rpi -- "customer-of" --> validate
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> validate
-  skill-auditor -- "supplier-to" --> heal-skill
-  skill-auditor -- "customer-of" --> skill-builder
   skill-builder -- "customer-of" --> automation-shape-routing
-  skill-builder -- "supplier-to" --> skill-auditor
+  skill-builder -- "supplier-to" --> heal-skill
   swarm -- "customer-of" --> crank
   toil-mining -- "supplier-to" --> automation-shape-routing
   using-atm -- "customer-of" --> swarm
@@ -159,14 +144,11 @@ graph LR
 
 | Skill | Direction | Artifact |
 |-------|-----------|----------|
-| `acfs` | produces | substrate-health-report |
 | `agent-native` | consumes | converter |
 | `agent-native` | consumes | standards |
 | `agent-native` | consumes | validate |
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `agy-native` | produces | agy-run-evidence |
-| `autodev` | consumes | evolve |
-| `autodev` | consumes | rpi |
 | `behavior-first-planning` | consumes | standards |
 | `behavior-first-planning` | produces | .agents/plans/*.md |
 | `behavior-first-planning` | produces | br-issue |
@@ -176,10 +158,6 @@ graph LR
 | `bootstrap` | consumes | shared |
 | `codex-exec` | produces | codex-run-output |
 | `compile` | produces | .agents/compiled/lint-report.md |
-| `continuity-loop` | consumes | agent-mail |
-| `continuity-loop` | consumes | ntm |
-| `continuity-loop` | produces | .agents/continuity/state.json |
-| `continuity-loop` | produces | escalation-message |
 | `converge` | consumes | command-help |
 | `converge` | produces | stdout |
 | `converter` | produces | converted-skill |
@@ -214,9 +192,9 @@ graph LR
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
 | `flywheel` | produces | .agents/learnings/*.md |
-| `forge` | produces | .agents/research/*.md |
 | `goals` | produces | result.json |
 | `handoff` | produces | .agents/research/*.md |
+| `heal-skill` | produces | audit-report.json |
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
 | `operationalize` | consumes | .agents/research/*.md |
@@ -252,7 +230,6 @@ graph LR
 | `refactor` | consumes | repo-context |
 | `refactor` | produces | git-changes |
 | `release` | produces | result.json |
-| `research` | consumes | inject |
 | `research` | consumes | repo-context |
 | `research` | produces | .agents/research/*.md |
 | `research` | produces | result.json |
@@ -270,7 +247,6 @@ graph LR
 | `security` | consumes | repo-context |
 | `security` | produces | security-report.json |
 | `shared` | produces | stdout |
-| `skill-auditor` | produces | result.json |
 | `skill-builder` | produces | converted-skill |
 | `standards` | produces | stdout |
 | `status` | consumes | br |

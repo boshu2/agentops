@@ -4,7 +4,7 @@ Defines the maturity pipeline for knowledge artifacts.
 
 ## Tier 0: Forge Candidates (`.agents/forge/`)
 
-- **Source:** `/forge` (transcript mining), SessionEnd hook
+- **Source:** `/curate --mode=forge` (transcript mining, run at session close)
 - **Confidence:** 0.0-0.6
 - **Citations:** 0
 - **Promotion criteria:** Auto-promote to Tier 1 when confidence >= 0.7 OR cited >= 2 times (ao-free fallback promotes automatically)
@@ -31,7 +31,7 @@ Defines the maturity pipeline for knowledge artifacts.
 - Any tier can be promoted to `~/.claude/patterns/` via `/post-mortem --global`
 - Global patterns are user-level, shared across all repositories
 - Promotion is a manual decision (human judgment on cross-repo applicability)
-- Global patterns are found by `/research`, `/knowledge`, and `/inject` via grep
+- Global patterns are found by `/research`, `/knowledge`, and `ao lookup` via grep
 
 ## Confidence Normalization
 
@@ -46,6 +46,6 @@ Citations are recorded in `.agents/ao/citations.jsonl`:
 {"artifact_path": ".agents/learnings/example.md", "cited_at": "2026-02-19T12:00:00Z", "session_id": "session-id", "workspace_path": "/abs/workspace"}
 ```
 
-The `/inject` skill records citations when knowledge is loaded into a session.
+Citations are recorded when knowledge is loaded into a session (`ao metrics cite`).
 The `/post-mortem` skill processes citations to update confidence scores.
 The `/flywheel` skill reports citation metrics in health checks.

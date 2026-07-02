@@ -53,7 +53,7 @@ product.
 | **L0** | In-session floor | In the loop, every move | No — agent proposes, human actuates | No | the [operating loop](operating-loop.md) run interactively |
 | **L1** | Supervised dispatch | On the loop, per mutating step | Reads/edits yes; each commit/PR surfaces for ACK | No | `/rpi`, `/implement` under a watching operator |
 | **L2** | Bounded autonomous tick | On the loop, per PR | One bounded unit, then stop | No — opens a PR, human reviews | mayor-driven dispatch (gc / NTM); the autonomous factory tick |
-| **L3** | Bounded autodev loop | On the loop, per batch | Multiple ticks under a contract | Green PRs only, under coherent-arc; auto-downgrades to L2 on risk | `/evolve` + Factory reading [`AUTODEV.md`](https://github.com/boshu2/agentops/blob/main/skills/autodev/SKILL.md) |
+| **L3** | Bounded autodev loop | On the loop, per batch | Multiple ticks under a contract | Green PRs only, under coherent-arc; auto-downgrades to L2 on risk | `/evolve` + Factory reading [`AUTODEV.md`](https://github.com/boshu2/agentops/blob/main/skills/evolve/SKILL.md) |
 | **L4** | Continuous autonomous operation | Off the loop, audits after | Sustained, cross-session | Yes, within the contract's immutable scope | a substrate running L3 lanes unattended — **gated, not yet reached** |
 
 Each rung is a superset of the leash below it, bounded by two hard rules that
@@ -120,6 +120,6 @@ HOLD outrank any drive directive. See [`pawls.md` § Directive precedence](../co
 - [Operating Loop](operating-loop.md) — the seven moves of one tick
 - [Canonical Loop Model](canonical-loop-model.md) — where dispatch sits in the waist
 - [Fungibility Charter](fungibility-charter.md) — fungible by default, specialized on opt-in
-- [`/autodev`](https://github.com/boshu2/agentops/blob/main/skills/autodev/SKILL.md) — the L3 contract layer
+- [`/evolve`](https://github.com/boshu2/agentops/blob/main/skills/evolve/SKILL.md) — the L3 loop and its PROGRAM.md/AUTODEV.md contract layer (contract management absorbed from the retired `/autodev` skill; the CLI surface stays `ao autodev`)
 - [Google SRE convergence](../convergence/google-sre.md) — the L0–L4 source (point #8) and the Bronze/Silver/Gold eval tiers
 - [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md) — why L4 is delegated to a substrate, not shipped

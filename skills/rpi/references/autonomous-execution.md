@@ -20,7 +20,7 @@ The human's only touchpoint is AFTER Phase 3 completes. If something is genuinel
 | Anti-Pattern | Why It's Wrong | Correct Behavior |
 |--------------|----------------|------------------|
 | Stop after Phase 2 and ask to commit | Skips validation — no quality check, no learnings, flywheel doesn't turn | Proceed directly to Phase 3 |
-| Call `/validate` directly instead of `/validate` | `/validate` is one sub-step; `/validate` wraps vibe + post-mortem + forge | Always call `/validate` from `/rpi` |
+| Call `/validate` directly instead of `/validate` | `/validate` is one sub-step; `/validate` wraps vibe + post-mortem + curate --mode=forge | Always call `/validate` from `/rpi` |
 | Ask "want me to commit?" between phases | Interrupts autonomous flow — user invoked `/rpi` for hands-free execution | Commit only after ALL phases complete |
 | Ask the user ANY question during execution | RPI is autonomous unless `--interactive` — questions break the flow | Make best judgment and proceed; report at end |
 | Run Phase 1 inline instead of delegating to `/discovery` | Loses brainstorm → search → research → plan → pre-mortem sequencing | Delegate via `Skill(skill="discovery")` |

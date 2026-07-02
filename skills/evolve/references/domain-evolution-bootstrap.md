@@ -34,8 +34,8 @@ compounding context.
    - `docs/reference/agentops-skill-domain-map.md`
    - `docs/reference/agentops-hexagonal-architecture-map.md`
    - `docs/reference/agentops-domain-evolution-plan.md`
-4. Use `skill-builder` and `skill-auditor` for skill changes. Use
-   `skills/skill-auditor/scripts/score_agentops_skill.py` to choose the
+4. Use `skill-builder` and the heal-skill deep audit for skill changes. Use
+   `skills/heal-skill/scripts/score_agentops_skill.py` to choose the
    smallest score-improving patch.
 5. Keep CLI and hook changes behind typed ports or existing validation scripts.
 6. Run focused validation before selecting the next slice.

@@ -42,7 +42,7 @@ Four product layers (public framing):
 | **Bookkeeping** | work vanishes between sessions | `.agents/`, RPI packets, council verdicts |
 | **Context compiler** | agents start cold | `ao inject`, skills, execution packets |
 | **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/pre-mortem`, `ao gate` |
-| **Knowledge flywheel** | lessons don't compound | `/forge`, promotion ratchet, `ao lookup` |
+| **Knowledge flywheel** | lessons don't compound | `/curate --mode=forge`, promotion ratchet, `ao lookup` |
 
 **Honest fitness posture:** the apparatus to measure corpus delta exists; live-agent uplift is **not yet proven**. See [AgentOps effectiveness evidence](../evals/agentops-effectiveness-evidence.md).
 
@@ -69,7 +69,7 @@ Product and code route through six DDD bounded contexts. Full routing: [Componen
 
 | BC | Name | Center of gravity |
 |----|------|-------------------|
-| **BC1** | Corpus | `.agents/`, `ao inject`, `/forge`, `/compile`, `/harvest` |
+| **BC1** | Corpus | `.agents/`, `ao inject`, `/curate --mode=forge`, `/compile`, `/harvest` |
 | **BC2** | Validation | `ao gate check`, `/validate`, `/council`, `/vibe` |
 | **BC3** | Loop | operating loop, `/evolve`, `br`, goals, autodev |
 | **BC4** | Factory | skill-builder, registries, standards, dispositions |
@@ -249,9 +249,9 @@ cd cli && go test ./internal/gates/checks -count=1   # registry parity tests
 ## Knowledge flywheel
 
 ```text
-Work → /forge → .agents/learnings/pending/
+Work → /curate --mode=forge → .agents/learnings/pending/
      → pool score → promote (gold/silver/bronze)
-     → inject (decay-ranked, cited) → next session
+     → ao lookup (decay-ranked, cited) → next session
      → gates enforce promotion ratchet
 ```
 

@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T04:39:58Z",
+  "generated_at": "2026-07-02T13:09:42Z",
   "summary": {
-    "skills": 70,
+    "skills": 63,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 155
+    "capabilities": 148
   },
   "surfaces": {
     "skills": [
@@ -59,20 +59,12 @@
         "path": "skills/beads-br/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 4
+        "reference_count": 6
       },
       {
         "name": "beads-bv",
         "tier": "execution",
         "path": "skills/beads-bv/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "beads-workflow",
-        "tier": "execution",
-        "path": "skills/beads-workflow/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
@@ -100,14 +92,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 7
-      },
-      {
-        "name": "continuity-loop",
-        "tier": "execution",
-        "path": "skills/continuity-loop/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
       },
       {
         "name": "converge",
@@ -278,22 +262,6 @@
         "reference_count": 0
       },
       {
-        "name": "acfs",
-        "tier": "experimental",
-        "path": "skills/acfs/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "autodev",
-        "tier": "experimental",
-        "path": "skills/autodev/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "compile",
         "tier": "experimental",
         "path": "skills/compile/",
@@ -307,7 +275,7 @@
         "path": "skills/curate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "evolve",
@@ -326,28 +294,12 @@
         "reference_count": 4
       },
       {
-        "name": "forge",
-        "tier": "experimental",
-        "path": "skills/forge/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "inject",
-        "tier": "experimental",
-        "path": "skills/inject/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "operationalize",
         "tier": "experimental",
         "path": "skills/operationalize/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 3
       },
       {
         "name": "council",
@@ -459,7 +411,7 @@
         "path": "skills/heal-skill/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 4
       },
       {
         "name": "rpi",
@@ -468,14 +420,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 18
-      },
-      {
-        "name": "skill-auditor",
-        "tier": "meta",
-        "path": "skills/skill-auditor/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "skill-builder",
@@ -691,7 +635,6 @@
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
         "driven_by_skills": [
-          "autodev",
           "domain",
           "evolve",
           "shared",
@@ -902,8 +845,9 @@
         "name": "ao forge",
         "path": "cli/cmd/ao/",
         "purpose": "Extract knowledge from sources",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": [
+          "curate",
           "post-mortem"
         ]
       },
@@ -955,10 +899,8 @@
         "name": "ao inject",
         "path": "cli/cmd/ao/",
         "purpose": "Output relevant knowledge for explicit or JIT injection",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "inject"
-        ]
+        "bounded_context": "",
+        "driven_by_skills": []
       },
       {
         "name": "ao install-guards",
@@ -973,7 +915,7 @@
         "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "inject"
+          "operationalize"
         ]
       },
       {
@@ -983,13 +925,14 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "agent-native",
+          "bootstrap",
           "crank",
           "discovery",
           "domain",
           "evolve",
           "flywheel",
           "implement",
-          "inject",
+          "operationalize",
           "plan",
           "pre-mortem",
           "recover",
@@ -1354,8 +1297,8 @@
     ]
   },
   "capability_summary": {
-    "total": 155,
-    "skills": 70,
+    "total": 148,
+    "skills": 63,
     "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
@@ -1461,34 +1404,6 @@
       "references": 0
     },
     {
-      "sku": "skill:acfs",
-      "name": "acfs",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "experimental",
-      "capability_class": "orchestration",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "substrate-health-report"
-      ],
-      "drives_commands": [],
-      "path": "skills/acfs/",
-      "references": 0
-    },
-    {
       "sku": "skill:agent-mail",
       "name": "agent-mail",
       "type": "skill",
@@ -1583,37 +1498,6 @@
       "references": 1
     },
     {
-      "sku": "skill:autodev",
-      "name": "autodev",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "experimental",
-      "capability_class": "planning",
-      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: \"manage PROGRAM.md/AUTODEV.md\", \"autodev loop rules\", \"evolve/factory tick boundaries\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "evolve",
-        "rpi"
-      ],
-      "produces": [],
-      "drives_commands": [
-        "ao agent"
-      ],
-      "path": "skills/autodev/",
-      "references": 0
-    },
-    {
       "sku": "skill:automation-shape-routing",
       "name": "automation-shape-routing",
       "type": "skill",
@@ -1665,7 +1549,7 @@
         "ao beads dir"
       ],
       "path": "skills/beads-br/",
-      "references": 4
+      "references": 6
     },
     {
       "sku": "skill:beads-bv",
@@ -1691,32 +1575,6 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/beads-bv/",
-      "references": 3
-    },
-    {
-      "sku": "skill:beads-workflow",
-      "name": "beads-workflow",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "tracking",
-      "purpose": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. Triggers: \"beads-workflow\", \"beads workflow\", \"use when converting markdown plans\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/beads-workflow/",
       "references": 3
     },
     {
@@ -1779,7 +1637,9 @@
       "produces": [],
       "drives_commands": [
         "ao gate check",
-        "ao quick-start"
+        "ao lookup",
+        "ao quick-start",
+        "ao session bootstrap"
       ],
       "path": "skills/bootstrap/",
       "references": 1
@@ -1896,38 +1756,6 @@
       ],
       "path": "skills/compile/",
       "references": 4
-    },
-    {
-      "sku": "skill:continuity-loop",
-      "name": "continuity-loop",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "ntm",
-        "agent-mail"
-      ],
-      "produces": [
-        ".agents/continuity/state.json",
-        "escalation-message"
-      ],
-      "drives_commands": [],
-      "path": "skills/continuity-loop/",
-      "references": 0
     },
     {
       "sku": "skill:converge",
@@ -2075,7 +1903,7 @@
       "hex_role": "supporting",
       "tier": "experimental",
       "capability_class": "corpus",
-      "purpose": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
+      "purpose": "Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2092,10 +1920,13 @@
       ],
       "drives_commands": [
         "ao dedup",
+        "ao forge",
+        "ao forge markdown",
+        "ao forge transcript",
         "ao metrics"
       ],
       "path": "skills/curate/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:dcg",
@@ -2346,6 +2177,7 @@
         "ao maturity",
         "ao metrics",
         "ao metrics baseline",
+        "ao metrics cite",
         "ao metrics cite-report",
         "ao metrics health",
         "ao ratchet",
@@ -2353,37 +2185,6 @@
       ],
       "path": "skills/flywheel/",
       "references": 4
-    },
-    {
-      "sku": "skill:forge",
-      "name": "forge",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "domain",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": "Mine transcripts into learnings. Triggers: \"forge\", \"mine transcripts into learnings.\", \"forge skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [
-        "ao forge markdown",
-        "ao forge transcript"
-      ],
-      "path": "skills/forge/",
-      "references": 3
     },
     {
       "sku": "skill:goals",
@@ -2457,7 +2258,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "authoring",
-      "purpose": "Repair skill hygiene. Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene.\".",
+      "purpose": "Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2469,10 +2270,12 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [],
-      "produces": [],
+      "produces": [
+        "audit-report.json"
+      ],
       "drives_commands": [],
       "path": "skills/heal-skill/",
-      "references": 2
+      "references": 4
     },
     {
       "sku": "skill:implement",
@@ -2507,43 +2310,6 @@
       ],
       "path": "skills/implement/",
       "references": 7
-    },
-    {
-      "sku": "skill:inject",
-      "name": "inject",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "driving-adapter",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": "Load relevant .agents context. Triggers: \"inject context\", \"load .agents context\", \"pull decay-ranked prior knowledge\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [
-        "ao inject",
-        "ao knowledge",
-        "ao knowledge activate",
-        "ao knowledge beliefs",
-        "ao knowledge brief",
-        "ao knowledge gaps",
-        "ao knowledge playbooks",
-        "ao lookup",
-        "ao metrics cite",
-        "ao session bootstrap"
-      ],
-      "path": "skills/inject/",
-      "references": 3
     },
     {
       "sku": "skill:ntm",
@@ -2598,9 +2364,18 @@
         ".agents/operationalize/*.md",
         "routed-handoffs"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao knowledge",
+        "ao knowledge activate",
+        "ao knowledge beliefs",
+        "ao knowledge brief",
+        "ao knowledge gaps",
+        "ao knowledge playbooks",
+        "ao lookup",
+        "ao metrics cite"
+      ],
       "path": "skills/operationalize/",
-      "references": 0
+      "references": 3
     },
     {
       "sku": "skill:perf",
@@ -3074,7 +2849,6 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "inject",
         "repo-context"
       ],
       "produces": [
@@ -3336,34 +3110,6 @@
       "references": 16
     },
     {
-      "sku": "skill:skill-auditor",
-      "name": "skill-auditor",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "capability_class": "validation",
-      "purpose": "Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/skill-auditor/",
-      "references": 3
-    },
-    {
       "sku": "skill:skill-builder",
       "name": "skill-builder",
       "type": "skill",
@@ -3562,7 +3308,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\".",
+      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3655,7 +3401,6 @@
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
       "driven_by_skills": [
-        "autodev",
         "domain",
         "evolve",
         "shared",
@@ -4185,10 +3930,11 @@
       "sku": "cmd:ao.forge",
       "name": "ao forge",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Extract knowledge from sources",
       "status": "active",
       "driven_by_skills": [
+        "curate",
         "post-mortem"
       ],
       "flags": [
@@ -4302,12 +4048,10 @@
       "sku": "cmd:ao.inject",
       "name": "ao inject",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Output relevant knowledge for explicit or JIT injection",
       "status": "active",
-      "driven_by_skills": [
-        "inject"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--apply-decay",
         "--bead",
@@ -4356,7 +4100,7 @@
       "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
       "status": "active",
       "driven_by_skills": [
-        "inject"
+        "operationalize"
       ],
       "flags": [
         "--config",
@@ -4376,13 +4120,14 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
+        "bootstrap",
         "crank",
         "discovery",
         "domain",
         "evolve",
         "flywheel",
         "implement",
-        "inject",
+        "operationalize",
         "plan",
         "pre-mortem",
         "recover",
