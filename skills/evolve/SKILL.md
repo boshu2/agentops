@@ -10,7 +10,7 @@ consumes:
 - rpi
 - goals
 - post-mortem
-- compile
+- curate
 produces:
 - git-changes
 - goals-fitness-delta
@@ -32,7 +32,7 @@ metadata:
   dependencies:
   - rpi
   - post-mortem
-  - compile
+  - curate
   triggers:
   - evolve
   - improve everything

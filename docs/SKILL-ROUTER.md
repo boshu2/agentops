@@ -61,7 +61,7 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Compile knowledge ─────────► /curate --mode=forge or /compile (experimental tier)
+│   ├─ Compile knowledge ─────────► /curate --mode=forge or --mode=compile (experimental tier)
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover

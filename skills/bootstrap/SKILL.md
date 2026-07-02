@@ -175,7 +175,7 @@ This directory contains accumulated knowledge from agent sessions.
 Knowledge is automatically managed by the AgentOps flywheel:
 - `ao lookup` surfaces relevant prior knowledge on demand
 - `/post-mortem` extracts and processes new learnings
-- `/compile` runs maintenance (mine, grow, defrag)
+- `/curate --mode=compile` runs maintenance (mine, grow, defrag)
 ```
 
 If `HAS_AGENTS` is true and `--force` is not set: skip. Report ".agents/ exists -- skipped."

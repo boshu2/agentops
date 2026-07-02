@@ -24,10 +24,10 @@ all: build
 
 # Sync lib helpers and skills into cli/embedded/ for Go embed
 sync-hooks:
-	@mkdir -p embedded/lib embedded/skills/standards/references embedded/skills/compile/scripts
+	@mkdir -p embedded/lib embedded/skills/standards/references embedded/skills/curate/scripts
 	@cp ../lib/chain-parser.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
-	@cp ../skills/compile/scripts/compile.sh embedded/skills/compile/scripts/compile.sh
+	@cp ../skills/curate/scripts/compile.sh embedded/skills/curate/scripts/compile.sh
 	@mkdir -p embedded/pawl/scripts embedded/pawl/scripts/lib embedded/pawl/schemas
 	@cp ../scripts/pawl-review.sh ../scripts/pawl-verdict.sh ../scripts/pawl.sh embedded/pawl/scripts/
 	@cp ../scripts/gen-membrane-receipts.sh ../scripts/check-membrane-receipts-freshness.sh embedded/pawl/scripts/

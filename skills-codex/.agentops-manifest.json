@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "7696647620dbfe1b0b5fd00cfeddce2036f418036478581582e92ef3659fe9bf",
+  "codex_override_catalog_hash": "01ac0cdb6d2623643c1f083943f8fb57ed490204cba6f141505925a4d480229d",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -33,12 +33,6 @@
       }
     ],
     "skills": [
-      {
-        "name": "compile",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-      },
       {
         "name": "autodev",
         "treatment": "parity_only",
@@ -1171,6 +1165,7 @@
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
       "generated_hash": "ffd94cc76118cdd3cc5d3685559834dd845bb69995af1b8ef10c5c34b4607d5f"
+      "generated_hash": "f87b59479970475d94476ab0ec895d30f4427631417c7f41b622f4388b1b9d38"
     },
     {
       "name": "goals",
@@ -1343,8 +1338,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "60988dae2cd2ecc67d8b8951b5fbffd4b7291f1fbea6dae10c839b6d316481ab",
-      "generated_hash": "8d4695b78ce5cabffb2c7cb3fb5311973d0f4047106f71032a2819787466babd"
+      "source_hash": "280aee74e6dbdc966950a2c2ce6e4b870a2c64d8256d8107f53ad94cdb0c8c00",
+      "generated_hash": "05d1e764b9b8a59bfcbe1e4970c13a33d14e7c931e6565b13bad3078829fe112"
     },
     {
       "name": "standards",
