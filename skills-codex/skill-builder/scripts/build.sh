@@ -11,7 +11,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# SKILL_BUILDER_REPO_ROOT overrides root discovery for fixture-driven tests
+# (see init.sh — same contract, mirrors HEAL_REPO_ROOT in heal.sh).
+REPO_ROOT="${SKILL_BUILDER_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 INIT_SH="$SCRIPT_DIR/init.sh"
 AUDITOR_SH="$REPO_ROOT/skills/heal-skill/scripts/audit.sh"
 

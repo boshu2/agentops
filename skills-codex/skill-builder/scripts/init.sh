@@ -10,7 +10,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# SKILL_BUILDER_REPO_ROOT overrides root discovery for fixture-driven tests
+# (tests/integration/test_skill_builder.bats scaffolds into a scratch repo copy
+# so no in-repo surface — skills/, the dispositions ledger, the codex catalog —
+# is ever mutated by a test run). Mirrors HEAL_REPO_ROOT in heal.sh. Production
+# derives the root from the script location.
+REPO_ROOT="${SKILL_BUILDER_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 TEMPLATE_REF="$REPO_ROOT/skills/skill-builder/references/skill-template.md"
 
 [[ -f "$TEMPLATE_REF" ]] || { echo "init.sh: missing $TEMPLATE_REF" >&2; exit 1; }
