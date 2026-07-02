@@ -14,6 +14,8 @@ into repeatable flows.
 
 Use this when you're not sure which skill to run. For a full flow overview, run
 `ao session bootstrap`, then `ao lookup --query "<topic>"` when you need on-demand context loading.
+To search skills by intent instead of reading this tree, use `ms search "<task>"`
+(or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
 
 ```text
 What are you trying to do?
@@ -337,6 +339,17 @@ ao search --all "patterns for rate limiting"
 ```
 
 **Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`, `.agents/compiled/`
+
+### Skill search (ms — no slash command)
+
+Find a skill by intent across both corpora before hand-grepping the catalog.
+Consume via MCP (`mcp__ms__search` / `mcp__ms__load full:true`); writes and admin
+go through the `ms` CLI. See [`skills/ms/SKILL.md`](../skills/ms/SKILL.md).
+
+```bash
+ms search "switch accounts on a rate limit" -O json
+ms load account-rotation --full -O json | jq -r '.data.content'
+```
 
 ### /refactor (absorbs /complexity)
 
