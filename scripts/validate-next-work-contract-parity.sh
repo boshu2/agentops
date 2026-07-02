@@ -164,11 +164,11 @@ require_contains "$SCHEMA" "Legacy Compatibility" \
 
 entry_fields=(
   source_epic timestamp items consumed claim_status claimed_by claimed_at
-  consumed_by consumed_at failed_at
+  consumed_by consumed_at consumed_note consumed_ref failed_at
 )
 item_fields=(
   title type severity source description evidence target_repo proof_ref consumed
-  claim_status claimed_by claimed_at consumed_by consumed_at failed_at
+  consumed_note consumed_ref claim_status claimed_by claimed_at consumed_by consumed_at failed_at
 )
 proof_ref_fields=(
   kind target_id run_id path
@@ -431,6 +431,31 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
   )"
   if [[ -n "$lifecycle_drift" ]]; then
     fail "next-work.jsonl has aggregate/item lifecycle drift: $(printf '%s\n' "$lifecycle_drift" | head -1)"
+  fi
+
+  # Consumed-marker type drift (age-tkxq): the first-class per-item and
+  # batch-level markers must be well-typed even when hand-edited — consumed is a
+  # boolean, consumed_note / consumed_ref are strings. A wrong-typed marker on the
+  # shared-mutable queue fails here (mirrors scripts/validate-next-work.sh).
+  marker_type_drift="$(
+    jq -s -r '
+      def bad_bool($o; $k): ($o | has($k)) and (($o[$k] | type) != "boolean");
+      def bad_str($o; $k):  ($o | has($k)) and (($o[$k] | type) != "string");
+      to_entries[] as $line |
+      select(($line.value.items? | type) == "array") |
+      (
+        (if bad_bool($line.value; "consumed") then "line \($line.key + 1) batch consumed must be boolean" else empty end),
+        (if bad_str($line.value; "consumed_note") then "line \($line.key + 1) batch consumed_note must be string" else empty end),
+        (if bad_str($line.value; "consumed_ref") then "line \($line.key + 1) batch consumed_ref must be string" else empty end),
+        ($line.value.items | to_entries[] as $item |
+          (if bad_bool($item.value; "consumed") then "line \($line.key + 1) item \($item.key + 1) consumed must be boolean" else empty end),
+          (if bad_str($item.value; "consumed_note") then "line \($line.key + 1) item \($item.key + 1) consumed_note must be string" else empty end),
+          (if bad_str($item.value; "consumed_ref") then "line \($line.key + 1) item \($item.key + 1) consumed_ref must be string" else empty end))
+      )
+    ' "$LIVE_QUEUE" 2>/dev/null || true
+  )"
+  if [[ -n "$marker_type_drift" ]]; then
+    fail "next-work.jsonl has consumed-marker type drift: $(printf '%s\n' "$marker_type_drift" | head -1)"
   fi
 fi
 

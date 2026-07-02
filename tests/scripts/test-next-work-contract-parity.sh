@@ -276,6 +276,37 @@ EOF
     "next-work.jsonl has active item enum drift"
 }
 
+test_consumed_marker_type_drift_fails() {
+  # age-tkxq: a hand-edited row with a wrong-typed first-class consumed marker
+  # (numeric consumed_note) must fail the parity gate's live-queue drift pass.
+  local fixture
+  fixture="$(create_fixture "marker-type-drift")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-marker-type","timestamp":"2026-07-02T00:00:00Z","items":[{"title":"bad marker","type":"task","severity":"medium","source":"retro-learning","description":"d","consumed_note":42}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}
+EOF
+
+  assert_gate_fails_with \
+    "consumed-marker type drift fails parity gate" \
+    "$fixture" \
+    "next-work.jsonl has consumed-marker type drift"
+}
+
+test_consumed_marker_valid_shape_passes() {
+  # age-tkxq: a well-typed mixed batch (item 0 consumed with consumed_note +
+  # consumed_ref, item 1 available) plus a batch-level consumed_note must pass.
+  local fixture
+  fixture="$(create_fixture "marker-valid")"
+  mkdir -p "$fixture/.agents/rpi"
+  cat > "$fixture/.agents/rpi/next-work.jsonl" <<'EOF'
+{"source_epic":"ag-marker-ok","timestamp":"2026-07-02T00:00:00Z","items":[{"title":"done item","type":"task","severity":"medium","source":"retro-learning","description":"d","consumed":true,"claim_status":"consumed","consumed_by":"commit:abc1234","consumed_at":"2026-07-02T01:00:00Z","consumed_note":"landed","consumed_ref":"abc1234"},{"title":"open item","type":"task","severity":"low","source":"retro-learning","description":"d","claim_status":"available"}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null,"consumed_note":"[0] landed abc1234"}
+EOF
+
+  assert_gate_passes \
+    "well-typed first-class consumed markers pass parity gate" \
+    "$fixture"
+}
+
 test_consumed_legacy_enum_drift_passes() {
   local fixture
   fixture="$(create_fixture "consumed-legacy-enum-drift")"
@@ -334,6 +365,8 @@ test_codex_skill_legacy_example_fails
 test_explicit_item_lifecycle_drift_fails
 test_aggregate_self_drift_fails
 test_active_item_enum_drift_fails
+test_consumed_marker_type_drift_fails
+test_consumed_marker_valid_shape_passes
 test_consumed_legacy_enum_drift_passes
 test_legacy_aggregate_only_consumed_queue_passes
 test_dream_degraded_active_source_passes

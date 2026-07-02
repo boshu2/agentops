@@ -42,6 +42,14 @@
     "claimed_at": { "type": ["string", "null"] },
     "consumed_by": { "type": ["string", "null"] },
     "consumed_at": { "type": ["string", "null"] },
+    "consumed_note": {
+      "type": "string",
+      "description": "Optional batch-level free-text summary of the consumption outcome across items (e.g. an operator's '[0] landed X; [2] deferred Y'). Per-item consumed_note in items[] is the first-class per-item form; this aggregate stays honored for back-compat reads."
+    },
+    "consumed_ref": {
+      "type": "string",
+      "description": "Optional batch-level machine anchor (bead ID or commit SHA) for the aggregate consumption outcome."
+    },
     "failed_at": { "type": ["string", "null"] }
   },
   "additionalProperties": true

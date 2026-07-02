@@ -16,6 +16,7 @@ The queue is **append-on-write, rewrite-on-lifecycle**:
 - producers append new entries
 - consumers may rewrite existing lines to claim, release, fail, or consume individual items
 - readers MUST tolerate unknown fields for forward compatibility
+- **rewriters MUST preserve fields they did not set.** The file is shared-mutable — concurrent lanes and operator/external-tool hand-edits touch it — so a struct→JSON rewrite that dropped unknown keys (or unrelated lifecycle fields) would silently revert another writer's work (the reverted-flag / dropped-note hazard). The Go runtime honors this by round-tripping every unmodeled object key at both the batch and item level (`cli/internal/rpi/next_work_json.go`); ad-hoc tools that rewrite the file must do the same.
 
 ---
 
@@ -34,6 +35,8 @@ One entry per producer event, usually one `/post-mortem` run.
 | `claimed_at` | string (ISO-8601) or null | yes | Aggregate claim timestamp |
 | `consumed_by` | string or null | yes | Consumer that finalized the batch aggregate |
 | `consumed_at` | string (ISO-8601) or null | yes | When the batch aggregate became fully consumed |
+| `consumed_note` | string | no | Optional batch-level free-text summary of the consumption outcome (e.g. an operator's `[0] landed X; [2] deferred Y`). Per-item `consumed_note` in `items[]` is the first-class per-item form; this aggregate stays honored for back-compat reads |
+| `consumed_ref` | string | no | Optional batch-level machine anchor (bead ID or commit SHA) for the aggregate consumption outcome |
 | `failed_at` | string (ISO-8601) or null | no | Latest failure timestamp across child items; retry metadata only, not completion proof |
 
 Entry lifecycle fields are aggregates for dashboards and legacy readers. Item lifecycle inside `items[]` is authoritative.
@@ -55,6 +58,8 @@ One actionable follow-up item.
 | `target_repo` | string | no | Repo slug this applies to, or `*` for cross-repo/process work |
 | `proof_ref` | Proof Reference | no | Explicit completion-proof anchor for later consumers; prefer this over burying target IDs or artifact paths in free text |
 | `consumed` | boolean | no | Item lifecycle flag; omitted or `false` means not yet consumed |
+| `consumed_note` | string | no | Free-text human annotation on this item's consumption outcome (e.g. `landed as ag-x` or `deferred: superseded by Y`). Distinct from `consumed`, which stays the authoritative lifecycle flag |
+| `consumed_ref` | string | no | Machine anchor for the consumption outcome — a bead ID or commit SHA that proves or points at this item's disposition |
 | `claim_status` | enum | no | Item lifecycle state; omitted means `available` |
 | `claimed_by` | string or null | no | Item claimant identifier |
 | `claimed_at` | string (ISO-8601) or null | no | Item claim timestamp |
@@ -69,8 +74,9 @@ One actionable follow-up item.
 
 Compatibility notes:
 - omitted item `claim_status` means `available`
+- `consumed_note` / `consumed_ref` are optional per-item annotations; `consumed` (boolean) stays the authoritative lifecycle flag — a note without `consumed=true` does NOT mark the item done. An entry's aggregate `consumed=true` is derived truth (every child item consumed) but the entry field stays honored for back-compat reads
 - new producers should prefer `proof_ref` when they already know the authoritative completion-proof surface for a harvested item
-- producers may attach extra metadata fields (for example `id`, `file`, or `func`); readers MUST ignore unknown fields
+- producers may attach extra metadata fields (for example `id`, `file`, or `func`); readers MUST ignore unknown fields and rewriters MUST preserve them (see the rewrite-preservation rule above)
 - when `dedup_key` is set, downstream producers SHOULD treat any new item with the same key as already covered and skip emission; consumers MAY use it for cross-run idempotency checks
 - `status` and `requires` are advisory release fields — they do not replace `claim_status`. An item is selectable only when `claim_status` is `available` AND `status` is `ready` (or absent) AND `requires` is empty (or absent)
 

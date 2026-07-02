@@ -59,6 +59,18 @@ setup() {
     [[ "$output" == *"malformed JSON"* ]]
 }
 
+@test "strict mode accepts first-class per-item and batch consumed markers" {
+    run bash "$SCRIPT" --strict "$FIX/consumed-markers.jsonl"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS"* ]]
+}
+
+@test "strict mode rejects a non-string consumed_note and names the field" {
+    run bash "$SCRIPT" --strict "$FIX/bad-consumed-note-type.jsonl"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"consumed_note must be a string"* ]]
+}
+
 @test "advisory mode (default) reports violations but exits zero" {
     run bash "$SCRIPT" "$FIX/bad-type.jsonl"
     [ "$status" -eq 0 ]
