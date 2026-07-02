@@ -174,10 +174,13 @@ A loop should branch on the process exit code, not on scraped text.
 - **Network-touching validators need `-s danger-full-access`.** A codex VALIDATOR that must read a Dolt-mode bd ledger, run `git fetch`, or reach any network MUST be dispatched with `-s danger-full-access`. `-s workspace-write` blocks network (`connect: operation not permitted`) and blocks FETCH_HEAD writes. A fail-closed FAIL caused purely by sandbox denial is an **infrastructure artifact, not a verdict**: fix the dispatch and re-run the judge. NEVER hand-verify the missing item yourself and upgrade the verdict — that breaks judge independence (author ≠ judge).
 - **Set TMPDIR inside the workspace for any run that commits.** The sandbox blocks git temp-object writes to `/var/folders`; export `TMPDIR` to a path inside the workspace (e.g. `TMPDIR="$REPO/.tmp"`) before any codex run that needs `git commit` to succeed.
 - **Verdict file contract.** Bare `VERDICT: PASS|FAIL` as the first line, then a blank line, then a bare `COMMANDS RUN:` line, then the commands + output verbatim. No `##` headings or parentheticals on those lines — the gate parses them anchored. Fail closed on anything unverifiable.
+- **Write-scope clamp — mandatory in every judge brief (2026-07-02, showcase kernel R2).** State it verbatim: "READ-ONLY except writing your single verdict file at `<path>`. Do NOT commit, push, or run tracker/infra ops (git push, br/bd, dolt)." Role-scoped, not model-scoped — workers hold write scopes, judges never do. An unclamped codex judge has pushed a feature branch and attempted `bd dolt push` twice mid-judgment; a judge that mutates while judging can corrupt the artifact under judgment or preempt the pawl. Note the clamp is prompt-level discipline layered ON TOP of the sandbox: a network-touching judge dispatched with `-s danger-full-access` has nothing mechanical stopping a push.
 - **Judge prompt pattern — publish the output contract from the prompt (card 10, cp-b2by).** A stated verdict spec drifts; the output shape must be derived from the prompt the judge reads. Minimal judge prompt:
 
   ```
   You are an INDEPENDENT VALIDATOR. Author != judge.
+  READ-ONLY except writing your single verdict file at <path>.
+  Do NOT commit, push, or run tracker/infra ops (git push, br/bd, dolt).
   BEAD: <id> — <title>
   ACCEPTANCE: <verbatim acceptance text>
   Re-run the cited commands on the actual artifacts. Do not read the evidence and agree.

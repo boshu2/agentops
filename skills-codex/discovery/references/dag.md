@@ -156,11 +156,19 @@ is already satisfied.
 
 Generate, then duel:
 
-1. Write at least three independent `PerspectivePlan` artifacts under
+1. Write independent `PerspectivePlan` artifacts under
    `.agents/discovery/<run-id>/`, normally using these lenses:
    - product/user value
    - architecture and gate integrity
    - operations, migration, and failure recovery
+   **Lens count scales with risk class (2026-07-02, showcase kernel R3):** reserve
+   the full three-lens fan-out for genuine architecture forks and one-way doors.
+   For content/marketing-class epics, run operations (always load-bearing — file
+   ownership, waves, cut order) plus at most one domain lens, folding the rest
+   into the synthesis directly (measured: product + gate-integrity lenses
+   overlapped the research synthesis ~40% on a content epic, ~343k tokens for the
+   trio). The DUEL below never scales down — two distinct families at the pawl is
+   the floor regardless of lens count.
    Then write one `SynthesisPacket` that selects or merges the winning plan,
    records rejected alternatives, and carries open questions.
 2. Run the cross-family DUEL over the `SynthesisPacket`: two judge panes from

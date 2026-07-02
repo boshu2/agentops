@@ -178,6 +178,14 @@ Read [references/implementation-detail.md](references/implementation-detail.md) 
 
 See the **Symbol Verification** section in [references/implementation-detail.md](references/implementation-detail.md). For each symbol cited in the plan, grep the codebase to verify it exists. If >20% of cited symbols are stale, WARN (do not block) and log them under `## Stale Symbol Warnings`. Opt-out: `--skip-symbol-check`.
 
+**Inventory facts are symbols too (2026-07-02, showcase kernel R10).** Any count,
+file list, or "X is empty/absent" claim the plan cites gets the same verification —
+and, because derived state moves faster than plans, consumers **re-verify at the
+moment of use**, not only at plan time (`ls`/`jq`/`grep` cost seconds). Measured:
+three of a duel's nine round-1 findings were plan facts gone stale within the hour
+they were written (wrong paths, a "dir is empty" claim on a non-empty dir, an
+undercounted locus list).
+
 ### Step 4: Decompose into Issues
 
 Analyze the goal and break it into discrete, implementable issues. For each issue define:
