@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -90,6 +91,30 @@ func TestVerifyCmd_HelpCarriesWedgeCopy(t *testing.T) {
 // `ao pawl review` path resolves, forward argv verbatim, and produce a verdict
 // shape IDENTICAL to runPawlReview for every verdict exit code
 // (0 CONFIRMED · 3 REFUTED · 4 advisory · 2 usage · 1 hard error).
+// TestRunVerify_BareInvocationDefaultsLabel pins the zero-arg front door: bare
+// `ao verify` in a git repo must default the change label to change-<sha12>
+// and reach the engine, never exit 2 on missing positional (the README CLI
+// block documents the bare form).
+func TestRunVerify_BareInvocationDefaultsLabel(t *testing.T) {
+	marker := writeVerifyTestRepo(t, 0)
+	out, err := exec.Command("git", "rev-parse", "--short=12", "HEAD").Output()
+	if err != nil {
+		t.Fatalf("rev-parse: %v", err)
+	}
+	sha := strings.TrimSpace(string(out))
+	if err := runVerify(verifyCmd, nil); err != nil {
+		t.Fatalf("bare runVerify: %v", err)
+	}
+	argv, readErr := os.ReadFile(marker)
+	if readErr != nil {
+		t.Fatalf("stub never invoked: %v", readErr)
+	}
+	want := "change-" + sha
+	if !strings.Contains(string(argv), want) {
+		t.Fatalf("bare invocation argv = %q, want default label %q", string(argv), want)
+	}
+}
+
 func TestRunVerify_DelegatesToPawlReviewEngine(t *testing.T) {
 	args := []string{"age-test", "--scope", "head"}
 	for _, code := range []int{0, 3, 4, 2, 1} {

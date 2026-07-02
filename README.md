@@ -67,7 +67,7 @@ Recorded as a proof artifact — no verdict, not done.
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
-Already installed? Ask your agent to run `/rpi "a small goal"` — it takes one change through discovery, build, and independent validation end to end. The evidence lands in `.agents/`.
+Already installed? Try it in three steps: make a small change and commit it, run `ao verify my-first-change`, then read the verdict. A model that had no part in writing the change reviews your commit, prints CONFIRMED or REFUTED, and records the result as a line in `docs/provenance/ledger.jsonl` inside your repo.
 
 ---
 

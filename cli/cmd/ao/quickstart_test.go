@@ -184,6 +184,7 @@ func TestQuickstart_CreateStarterPack_PatternContent(t *testing.T) {
 func TestQuickstart_runQuickstart_minimal(t *testing.T) {
 	tmp := t.TempDir()
 	chdirTo(t, tmp)
+	stubReviewerPATH(t, "codex") // the first-verdict step probes reviewers; never invoke real CLIs
 
 	oldMinimal := minimal
 	minimal = true
@@ -226,6 +227,7 @@ func TestQuickstart_runQuickstart_minimal(t *testing.T) {
 func TestQuickstart_runQuickstart_fullNoBeads(t *testing.T) {
 	tmp := t.TempDir()
 	chdirTo(t, tmp)
+	stubReviewerPATH(t, "codex") // the first-verdict step probes reviewers; never invoke real CLIs
 
 	oldMinimal := minimal
 	minimal = false
@@ -262,6 +264,7 @@ func TestQuickstart_runQuickstart_fullNoBeads(t *testing.T) {
 func TestQuickstart_runQuickstart_createsClaudeMd(t *testing.T) {
 	tmp := t.TempDir()
 	chdirTo(t, tmp)
+	stubReviewerPATH(t, "codex") // the first-verdict step probes reviewers; never invoke real CLIs
 
 	oldMinimal := minimal
 	minimal = false
@@ -302,6 +305,7 @@ func TestQuickstart_runQuickstart_createsClaudeMd(t *testing.T) {
 func TestQuickstart_runQuickstart_existingClaudeMd(t *testing.T) {
 	tmp := t.TempDir()
 	chdirTo(t, tmp)
+	stubReviewerPATH(t, "codex") // the first-verdict step probes reviewers; never invoke real CLIs
 
 	// Pre-create CLAUDE.md
 	claudeMdPath := filepath.Join(tmp, "CLAUDE.md")
