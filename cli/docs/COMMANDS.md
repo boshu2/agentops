@@ -4436,6 +4436,14 @@ ao verify [command]
 
 **Subcommands:**
 
+#### `ao verify receipts`
+
+Render the membrane-receipts proof page for THIS git repository from its
+
+```
+ao verify receipts [flags]
+```
+
 #### `ao verify stats`
 
 Report the COST of verified-done from the committed provenance ledger

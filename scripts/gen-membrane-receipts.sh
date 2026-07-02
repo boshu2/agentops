@@ -19,7 +19,12 @@
 #   PROVENANCE_LEDGER  ledger path (must be <root>/docs/provenance/ledger.jsonl)
 #   RECEIPTS_MD        output markdown path
 #   RECEIPTS_JSON      output json path
-#   AO_BIN             ao binary to use (else PATH, else build from cli/)
+#   AO_BIN             ao binary to use (else PATH, else build from cli/). REQUIRED
+#                      on the embedded/stranger path (PAWL_UNTRUSTED_REPO=1): the
+#                      running `ao verify receipts` pins itself here, so we never
+#                      resolve or BUILD ao from an untrusted repo's cli/ (that would
+#                      compile+run its ./cmd/ao — RCE). The build-from-cli/ fallback
+#                      is for THIS repo's own in-checkout workflow only.
 #
 # Exit codes:
 #   0 = receipts rendered
@@ -51,8 +56,15 @@ case "$LEDGER" in
 esac
 
 # Resolve the ao binary: explicit override, then PATH, then build from cli/.
+# On the embedded/stranger path (PAWL_UNTRUSTED_REPO=1) the caller MUST pin AO_BIN
+# to the trusted running binary — we refuse to PATH-resolve or, worse, build ao from
+# the UNTRUSTED repo's cli/ (compiling+running its ./cmd/ao would be arbitrary code
+# execution from the repo under review). The PATH → build-from-cli/ fallback below is
+# reachable only on THIS repo's own in-checkout workflow.
 if [ -z "$AO_BIN" ]; then
-  if command -v ao >/dev/null 2>&1; then
+  if [ "${PAWL_UNTRUSTED_REPO:-}" = "1" ]; then
+    die "AO_BIN must be set on the embedded/stranger path (PAWL_UNTRUSTED_REPO=1); refusing to resolve or build ao from an untrusted repo"
+  elif command -v ao >/dev/null 2>&1; then
     AO_BIN="$(command -v ao)"
   else
     AO_BIN="$(mktemp -d)/ao-receipts"
