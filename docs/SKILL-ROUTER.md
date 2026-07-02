@@ -5,6 +5,9 @@ Use this when you're not sure which skill to run. For the full flow overview run
 embedded in [`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep
 the two in sync when skills are folded or renamed.
 
+To search skills by intent instead of reading this tree, use `ms search "<task>"`
+(or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
+
 ```text
 What are you trying to do?
 │

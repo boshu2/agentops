@@ -199,6 +199,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 		"onboard=skipped",
 		"beads=",
 		"tracker: BEADS_DIR=",
+		`skills: ms search "<task>"`,
 		"bootstrap memory: 1 item(s)",
 		"Canon Human",
 		"human bootstrap canon memory should be visible",

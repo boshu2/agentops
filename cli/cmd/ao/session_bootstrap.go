@@ -528,6 +528,10 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 			return err
 		}
 	}
+	if _, err := fmt.Fprintln(cmd.OutOrStdout(),
+		`skills: ms search "<task>" (or mcp__ms__search) to find a skill before hand-grepping the catalog`); err != nil {
+		return err
+	}
 	if len(s.BootstrapMemory) > 0 {
 		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "bootstrap memory: %d item(s), %d/%d tokens\n",
 			len(s.BootstrapMemory), s.BootstrapMemoryUsedTokens, s.BootstrapMemoryBudgetTokens); err != nil {
