@@ -43,7 +43,7 @@ Anything else is a typo or an undeclared dependency and fails the gate.
 |-------|-----------|
 | `Cargo.lock` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `Cargo.toml` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
-| `bd` | the beads issue store |
+| `br` | the beads_rust issue store |
 | `build-config` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `cargo-metadata` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `cli-source` | declared external input supplied by the user, repository, runtime, or upstream toolchain |

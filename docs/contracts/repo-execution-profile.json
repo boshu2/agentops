@@ -121,12 +121,12 @@
     }
   ],
   "tracker_commands": {
-    "shell_prefix": "",
-    "ready": "bd ready --json",
-    "show": "bd show <id> --json",
-    "update": "bd update <id> --status in_progress --json",
-    "close": "bd close <id> --reason \"Completed\" --json",
-    "doctor": "bd doctor",
+    "shell_prefix": "BEADS_DIR=\"$(ao beads dir)\" ",
+    "ready": "br ready --json",
+    "show": "br show <id> --json",
+    "update": "br update <id> --status in_progress --json",
+    "close": "br close <id> --reason \"Completed\" --json",
+    "doctor": "br doctor",
     "vc_status": "git status --short"
   },
   "work_selection_order": [
@@ -147,7 +147,7 @@
       "scripts/pre-push-gate.sh --fast is green",
       "ao autodev validate reports valid: true for PROGRAM.md",
       "git status is clean for the slice (operator-noted pre-existing dirty files excluded)",
-      "new follow-up work discovered during the cycle is tracked in bd"
+      "new follow-up work discovered during the cycle is tracked in br"
     ],
     "required_validations": [
       "scripts/pre-push-gate.sh --fast"
