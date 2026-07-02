@@ -92,6 +92,14 @@
       "type": "boolean",
       "description": "Item lifecycle flag; omitted or false means not yet consumed."
     },
+    "consumed_note": {
+      "type": "string",
+      "description": "Free-text human annotation on this item's consumption outcome (e.g. 'landed as ag-x' or 'deferred: superseded by Y'). Distinct from the consumed boolean, which remains the authoritative lifecycle flag."
+    },
+    "consumed_ref": {
+      "type": "string",
+      "description": "Machine anchor for the consumption outcome — a bead ID or commit SHA that proves or points at this item's disposition."
+    },
     "claim_status": {
       "type": "string",
       "enum": ["available", "in_progress", "consumed"],

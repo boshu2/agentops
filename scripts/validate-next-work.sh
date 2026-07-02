@@ -156,6 +156,22 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             "$FILE:$line_no: batch claim_status=$bcs not in {$(set_str "${VALID_CLAIM[@]}")}"
     fi
 
+    # Batch-level consumed-marker field types (age-tkxq). consumed is a boolean;
+    # consumed_note / consumed_ref are optional string annotations. Both the
+    # legacy batch-only shape and the new per-item shape must pass these.
+    if printf '%s' "$line" | jq -e 'has("consumed") and (.consumed | type != "boolean")' >/dev/null 2>&1; then
+        add_violation "$line_no" "null" "consumed" \
+            "$FILE:$line_no: batch consumed must be a boolean"
+    fi
+    if printf '%s' "$line" | jq -e 'has("consumed_note") and (.consumed_note | type != "string")' >/dev/null 2>&1; then
+        add_violation "$line_no" "null" "consumed_note" \
+            "$FILE:$line_no: batch consumed_note must be a string"
+    fi
+    if printf '%s' "$line" | jq -e 'has("consumed_ref") and (.consumed_ref | type != "string")' >/dev/null 2>&1; then
+        add_violation "$line_no" "null" "consumed_ref" \
+            "$FILE:$line_no: batch consumed_ref must be a string"
+    fi
+
     # items must be an array.
     if ! printf '%s' "$line" | jq -e '.items | type == "array"' >/dev/null 2>&1; then
         # Missing items already reported as a required-field violation above;
@@ -204,6 +220,22 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         if [[ -n "$ist" ]] && ! in_set "$ist" "${VALID_STATUS[@]}"; then
             add_violation "$line_no" "$j" "status" \
                 "$FILE:$line_no item $j ($title): status=$ist not in {$(set_str "${VALID_STATUS[@]}")}"
+        fi
+
+        # First-class per-item consumed markers (age-tkxq): consumed is a boolean;
+        # consumed_note / consumed_ref are optional string annotations. Malformed
+        # types fail here so a hand-edited row cannot smuggle a wrong-typed marker.
+        if printf '%s' "$item" | jq -e 'has("consumed") and (.consumed | type != "boolean")' >/dev/null 2>&1; then
+            add_violation "$line_no" "$j" "consumed" \
+                "$FILE:$line_no item $j ($title): consumed must be a boolean"
+        fi
+        if printf '%s' "$item" | jq -e 'has("consumed_note") and (.consumed_note | type != "string")' >/dev/null 2>&1; then
+            add_violation "$line_no" "$j" "consumed_note" \
+                "$FILE:$line_no item $j ($title): consumed_note must be a string"
+        fi
+        if printf '%s' "$item" | jq -e 'has("consumed_ref") and (.consumed_ref | type != "string")' >/dev/null 2>&1; then
+            add_violation "$line_no" "$j" "consumed_ref" \
+                "$FILE:$line_no item $j ($title): consumed_ref must be a string"
         fi
 
         # proof_ref conditional requirements (mirrors item schema proof_ref.allOf).

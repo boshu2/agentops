@@ -1,6 +1,7 @@
 package rpi
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"time"
@@ -56,6 +57,8 @@ type NextWorkEntry struct {
 	ClaimedAt            *string        `json:"claimed_at,omitempty"`
 	ConsumedBy           *string        `json:"consumed_by"`
 	ConsumedAt           *string        `json:"consumed_at"`
+	ConsumedNote         string         `json:"consumed_note,omitempty"`
+	ConsumedRef          string         `json:"consumed_ref,omitempty"`
 	FailedAt             *string        `json:"failed_at,omitempty"`
 	CompletionEvidence   string         `json:"completion_evidence,omitempty"`
 	CompletionEvidenceAt *string        `json:"completion_evidence_at,omitempty"`
@@ -69,6 +72,14 @@ type NextWorkEntry struct {
 	Evidence             string         `json:"evidence,omitempty"`
 	TargetRepo           string         `json:"target_repo,omitempty"`
 	QueueIndex           int            `json:"-"`
+
+	// Extra preserves any batch-level JSON object keys not represented by a
+	// typed field above so a struct->JSON rewrite (RewriteNextWorkFile) round
+	// trips forward-compat / ad-hoc fields it did not itself set. The next-work
+	// queue is a shared-mutable file edited by concurrent lanes and external
+	// tools; dropping their fields on rewrite is the reverted-flag hazard. See
+	// MarshalJSON/UnmarshalJSON in next_work_json.go. Do not set directly.
+	Extra map[string]json.RawMessage `json:"-"`
 }
 
 // NextWorkProofRef holds a typed reference to completion proof.
@@ -101,12 +112,19 @@ type NextWorkItem struct {
 	PacketPath  string            `json:"packet_path,omitempty"`
 	BeadID      string            `json:"bead_id,omitempty"`
 	Consumed    bool              `json:"consumed,omitempty"`
-	ClaimStatus string            `json:"claim_status,omitempty"`
-	ClaimedBy   *string           `json:"claimed_by,omitempty"`
-	ClaimedAt   *string           `json:"claimed_at,omitempty"`
-	ConsumedBy  *string           `json:"consumed_by,omitempty"`
-	ConsumedAt  *string           `json:"consumed_at,omitempty"`
-	FailedAt    *string           `json:"failed_at,omitempty"`
+	// ConsumedNote is a free-text human annotation on this item's consumption
+	// outcome (e.g. "landed as ag-x" or "deferred: superseded by Y"). It is
+	// distinct from Consumed, which stays the authoritative lifecycle boolean.
+	ConsumedNote string `json:"consumed_note,omitempty"`
+	// ConsumedRef is a machine anchor for the consumption outcome — a bead ID
+	// or commit SHA that proves/points at this item's disposition.
+	ConsumedRef string  `json:"consumed_ref,omitempty"`
+	ClaimStatus string  `json:"claim_status,omitempty"`
+	ClaimedBy   *string `json:"claimed_by,omitempty"`
+	ClaimedAt   *string `json:"claimed_at,omitempty"`
+	ConsumedBy  *string `json:"consumed_by,omitempty"`
+	ConsumedAt  *string `json:"consumed_at,omitempty"`
+	FailedAt    *string `json:"failed_at,omitempty"`
 	// ProbedStaleAt records when a tractability probe found this item
 	// already satisfied (file/symbol/script grep matched) but the item
 	// has not yet been marked consumed. Pairs with ProbedBy so future
@@ -132,6 +150,11 @@ type NextWorkItem struct {
 	// aggregator output (RFC 0001 Proposal 1) and external watchlist
 	// candidates (Proposal 2).
 	DedupKey string `json:"dedup_key,omitempty"`
+
+	// Extra preserves any item-level JSON object keys not represented by a typed
+	// field above so a struct->JSON rewrite round-trips forward-compat fields it
+	// did not set (see the NextWorkEntry.Extra doc). Do not set directly.
+	Extra map[string]json.RawMessage `json:"-"`
 }
 
 // QueueSelection holds the selected item together with its source entry index
