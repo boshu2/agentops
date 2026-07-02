@@ -1,0 +1,12 @@
+{
+  "window": {
+    "since": "2026-06-18T00:00:00+00:00",
+    "until": "2026-07-02T20:20:16.737639+00:00"
+  },
+  "ms_calls": 9,
+  "grep_calls": 519,
+  "ratio": 0.017,
+  "sessions_scanned": 507,
+  "generated_at": "2026-07-02T20:20:16.737639+00:00",
+  "projects_dir": "/Users/bo/.claude/projects"
+}

@@ -1265,8 +1265,8 @@
     {
       "name": "handoff",
       "source_skill": "skills/handoff",
-      "source_hash": "ec2845a819f4fb3ef2c03a857b1df76e3ef229e2002780904772be1cc1350bc2",
-      "generated_hash": "74d706362411f8dae1f5927169b787b04dfd8df06ef9c0ee2b04e7a844464cbd"
+      "source_hash": "43e2509488c8c142e4c59c1f8b577b0436439cf182e1fa00bcbf879e760f69d0",
+      "generated_hash": "4a21b7be588c3f3e2156e91b15ca261daaf102731e2f4068eab9a67d64d7c2ba"
     },
     {
       "name": "heal-skill",
@@ -1332,7 +1332,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "c2183ff53b7de5a800af0febf3fb343320de42f69ce4f068ae1829568ed2b047",
-      "generated_hash": "baaa600613760dd69036509ed03550cda5174f13a527ee92a2597b0e36fc9845"
+      "generated_hash": "43c9b40fc2377de2fbee1a57f753645322672e1fcf75aa97037ea7c533f5fcca"
     },
     {
       "name": "pr-prep",
