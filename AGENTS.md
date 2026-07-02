@@ -32,7 +32,7 @@ Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-
 
 **Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Resolve the live private ledger with `ao beads dir` before every direct `br` read/write, especially in linked worktrees where `$PWD/_beads` is usually absent. Invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C "$(ao beads dir)" push`, **never** `git add _beads`. **`bd`/Dolt is RETIRED LEGACY** (single-host SPOF with no offline lane) — do not run `bd`.
 
-**Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. `ao rpi` CLI code is load-bearing legacy, not the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
+**Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. The `ao rpi` command surface was removed (f61c5f0e7); the operating loop is the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
 
 > **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao lookup --query "<topic>"` to pull decay-ranked prior context.
 
@@ -164,7 +164,7 @@ Run the local cockpit gate before pushing, then push the coherent bead arc direc
 | Edit the shared canonical checkout under swarm load | **Git worktree** per bead |
 | `git add _beads` | Never — sync with `git -C "$(ao beads dir)" push` |
 | Hand-edit `registry.json` / generated maps | `make regen-all` from sources |
-| Route new work through the `ao rpi` loop | Operating loop + NTM/Agent Mail substrate |
+| Route new work through the (removed) `ao rpi` loop | Operating loop + NTM/Agent Mail substrate |
 | Trust stale narrative over executable behavior | Check `cli/`, generated docs, gates first |
 | Run `claude -p` / `claude --print` | **Forbidden** — LAW 0 above |
 

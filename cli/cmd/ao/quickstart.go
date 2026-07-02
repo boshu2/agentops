@@ -67,7 +67,7 @@ func quickstartBeadsStep(cwd string) {
 		fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
 		if err := initBeads(cwd); err != nil {
 			fmt.Printf("  ⚠ Beads init skipped: %v\n", err)
-			fmt.Println("  → You can run 'bd init' later to enable git-native issues")
+			fmt.Println("  → You can run 'br init' later to enable git-native issues")
 		}
 	} else {
 		fmt.Println("\n━━━ STEP 3: Skipping beads (--no-beads) ━━━")
@@ -421,8 +421,8 @@ Pre-mortem caught 6 critical issues before implementation:
    - Don't reinvent what exists
 
 4. **Use beads for state**
-   - ` + "`bd ready`" + ` shows unblocked work
-   - beads auto-sync issue writes; use ` + "`bd export -o backup.jsonl`" + ` for a manual snapshot
+   - ` + "`br ready`" + ` shows unblocked work
+   - br is git-JSONL-backed (` + "`_beads/issues.jsonl`" + `); run ` + "`br sync --flush-only`" + ` to flush a snapshot
 `,
 	}
 
@@ -451,8 +451,8 @@ Pre-mortem caught 6 critical issues before implementation:
 
 func initBeads(cwd string) error {
 	// Check if beads is available
-	if _, err := exec.LookPath("bd"); err != nil {
-		return fmt.Errorf("bd command not found (install: brew install beads)")
+	if _, err := exec.LookPath("br"); err != nil {
+		return fmt.Errorf("br command not found (install beads_rust; see AGENTS.md for tracker setup)")
 	}
 
 	// Check if already initialized
@@ -483,12 +483,12 @@ func initBeads(cwd string) error {
 		prefix = strings.TrimSpace(prefix)
 	}
 
-	// Run bd init
-	cmd := exec.Command("bd", "init", "--prefix", prefix)
+	// Run br init
+	cmd := exec.Command("br", "init", "--prefix", prefix)
 	cmd.Dir = cwd
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("bd init failed: %s", string(output))
+		return fmt.Errorf("br init failed: %s", string(output))
 	}
 
 	fmt.Printf("  ✓ Beads initialized with prefix '%s'\n", prefix)
@@ -503,7 +503,7 @@ func createTasksFile(cwd string) {
 	}
 	content := `{
   "tasks": [],
-  "note": "Beads-optional mode. Use 'bd init' to enable full git-native issues."
+  "note": "Beads-optional mode. Use 'br init' to enable full git-native issues."
 }
 `
 	// ag-chvc: surface write failures instead of silently dropping them; only claim
@@ -523,7 +523,7 @@ func createProjectClaudeMd(cwd string) error {
 
 `+"```bash"+`
 ao quick-start        # Repair or inspect the repo seed
-bd ready              # See unblocked issues when beads is enabled
+br ready              # See unblocked issues when beads is enabled
 /rpi "objective"      # Run discovery, implementation, validation
 `+"```"+`
 
@@ -532,7 +532,7 @@ bd ready              # See unblocked issues when beads is enabled
 `+"```bash"+`
 # Start
 ao status             # Check AgentOps state
-bd ready              # Find available work
+br ready              # Find available work
 
 # End
 git add .
@@ -566,8 +566,8 @@ func showNextSteps(hasBeads bool) {
      > /rpi "your first objective"
 
   2. Tracked work:
-     $ bd ready
-     $ bd create "My first task"
+     $ br ready
+     $ br create "My first task"
 
   3. Orchestration instruments:
      $ ao orchestrate status
@@ -590,8 +590,8 @@ func showNextSteps(hasBeads bool) {
      $ ao orchestrate shape --help
 
   4. Add tracked execution when ready:
-     $ bd init
-     $ bd create "My first task"`)
+     $ br init
+     $ br create "My first task"`)
 	}
 
 	fmt.Print(`
