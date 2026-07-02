@@ -20,14 +20,16 @@ metadata:
 
 ## Quick Start
 
+Find a skill (MCP-primary — BM25, currently strictly better than CLI search), then load the FULL runnable SKILL.md in one call (always `full: true` when you mean to use it):
+
 ```bash
-# Find a skill (MCP-primary — BM25, currently strictly better than CLI search)
 mcp__ms__search {query: "handle a rate limit switching accounts"}
-
-# Load the FULL runnable SKILL.md in one call (always full:true when you mean to use it)
 mcp__ms__load {skill: "account-rotation", full: true}
+```
 
-# CLI fallback when no MCP server is attached
+CLI fallback when no MCP server is attached:
+
+```bash
 ms search "switch accounts on rate limit" -O json
 ms load account-rotation --full -O json | jq -r '.data.content'
 ```
@@ -61,16 +63,13 @@ ms load <id> --full -O json | jq -r '.data.content'   # content lives in .data.c
 The MCP feedback tool exists, but **only the CLI write path is verified to land** — trust the CLI for writes.
 
 ```bash
-# Feedback on a skill
-ms feedback add <skill> --positive --comment "..."
+ms feedback add <skill> --positive --comment "..."   # feedback on a skill
 ms feedback add <skill> --negative --comment "..."
 
-# Dogfood loop: record AFTER actually using a skill's guidance
-ms outcome <skill> --success
+ms outcome <skill> --success   # dogfood loop: record AFTER actually using a skill's guidance
 ms outcome <skill> --failure
 
-# Admin
-ms doctor                      # health
+ms doctor                      # admin: health
 ms index                       # (re)index — then KILL every ms mcp serve (see Footguns)
 ms list -O jsonl --limit 1000  # counting / enumeration
 ms config                      # resolved config + skill_paths
