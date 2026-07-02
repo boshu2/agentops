@@ -37,7 +37,9 @@ var DeprecatedCommands = map[string]string{
 	"ao memory":    "ao session memory",
 	"ao rehydrate": "ao session rehydrate",
 	"ao handoff":   "ao session handoff",
-	"ao work rpi":              "ao orchestrate",
+	// `ao orchestrate` was archived behind //go:build legacy (age-h4y3); point the
+	// stale `ao work rpi` ref at the surviving spine loop driver `ao converge`.
+	"ao work rpi":              "ao converge",
 	"ao work ratchet":          "ao ratchet",
 	"ao work goals":            "ao goals",
 	"ao work session":          "ao session",

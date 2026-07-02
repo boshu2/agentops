@@ -997,69 +997,6 @@
     },
     {
       "category": "public-tested",
-      "command": "loop append",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop blocked",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop converged",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop history",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "loop hypothesis append",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Appends loop hypotheses and needs an isolated loop ledger fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "loop hypothesis list",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Reads loop hypotheses and needs a representative loop ledger fixture."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop next-work",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop verify",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "loop write-stop-marker",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "maturity",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1152,55 +1089,6 @@
     {
       "category": "public-tested",
       "command": "notebook update",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate preflight",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate route",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "orchestrate select",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Selects work from repo-local orchestration state and needs a controlled queue fixture."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate shape",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate status",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate tools",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "orchestrate verify",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
