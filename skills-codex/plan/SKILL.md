@@ -79,7 +79,11 @@ Feature: Plan converts dense intent into executable slices
    count, file list, or "X is empty/absent" claim gets the same verification,
    and consumers re-verify at the moment of use (`ls`/`jq`/`grep` cost
    seconds) — three of nine duel round-1 findings were plan facts stale
-   within the hour they were written.
+   within the hour they were written. Search the skill/CLI corpus for each
+   major capability before scoping it as new: `ms search "<capability>"` (fast
+   path when available — `command -v ms`, or the `mcp__ms__search` tool is
+   attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`); existing-skill
+   or `ao` command hits become **reuse** notes, not new beads.
 7. **Choose detail level.** Minimal for 1-2 simple issues, Standard for 3-6
    issues, Deep for 7+ issues, broad refactors, or `--deep`.
 8. **Decompose into issues.** Each issue needs title, file ownership,

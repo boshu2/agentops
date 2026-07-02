@@ -38,6 +38,8 @@ Materializes a new skill against the unified template at `references/skill-templ
 
 > **If unsure whether the work should be a skill, a Workflow, or an NTM swarm, run `/automation-shape-routing` first** — it is the front door that decides the shape and hands off to the right builder.
 
+> **Before creating, search for an existing owner.** `ms search` the proposed skill's trigger phrases (fast path when available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`). A strong hit means **extend that skill, don't create a new one** — this is one item of the fuller skill-admission checklist (bead age-7d3r).
+
 ## ⚠️ Critical Constraints
 
 - **Template is canonical.** All four modes produce SKILL.md files conforming to `references/skill-template.md`. Do not invent ad-hoc structures. **Why:** the heal-skill deep audit validates against this template; drift creates audit false-fails.

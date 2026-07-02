@@ -150,7 +150,7 @@ Dispatch an Explore sub-agent (Task tool) with a prompt that demands symbol-leve
 
 #### Pre-Planning Baseline Audit (Mandatory)
 
-Before decomposing, run grep/wc/ls commands to quantify files to change, sections to add/remove, LOC to modify, coverage gaps. Record commands alongside results. File size limits (800-line SKILL.md lint limit) and test fixture counts are mandatory checks. Ground truth with numbers prevents scope creep.
+Before decomposing, run grep/wc/ls commands to quantify files to change, sections to add/remove, LOC to modify, coverage gaps. Record commands alongside results. File size limits (800-line SKILL.md lint limit) and test fixture counts are mandatory checks. Ground truth with numbers prevents scope creep. Search the skill/CLI corpus for each major capability before scoping it as new: `ms search "<capability>"` (fast path when available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`). Existing-skill or `ao` command hits become **reuse** notes in the plan, not new beads.
 
 Read [references/pre-decomposition.md](references/pre-decomposition.md) for the bad/good examples table and the full audit recipe.
 

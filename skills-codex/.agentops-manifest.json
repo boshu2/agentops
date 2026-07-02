@@ -1187,14 +1187,14 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "859c36859eb4f571fee8430bd4e214d436f1e9b92843d3d00e1fa4e8ced96ce2",
-      "generated_hash": "7f034cf135b98b35eef1f820205f9b84bc4566081b80680a5e7da0605188902f"
+      "source_hash": "4d33ffa61ce0cdfda881a024b99c68355b4ca1e205768cf6b67716baecae7890",
+      "generated_hash": "6de42be4c4a1ce7ff196721030a71f8f1e055fb97cbf2053b37a768bd8733152"
     },
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "859c36859eb4f571fee8430bd4e214d436f1e9b92843d3d00e1fa4e8ced96ce2",
-      "generated_hash": "7f034cf135b98b35eef1f820205f9b84bc4566081b80680a5e7da0605188902f"
+      "source_hash": "4d33ffa61ce0cdfda881a024b99c68355b4ca1e205768cf6b67716baecae7890",
+      "generated_hash": "6de42be4c4a1ce7ff196721030a71f8f1e055fb97cbf2053b37a768bd8733152"
     },
     {
       "name": "doc",
@@ -1319,8 +1319,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "6c7b4c5a201cf6ac9bf31363c5643bf3bf0f1325c72e2e7eb95a0a2c4020df20",
-      "generated_hash": "3fd69263687ec35102f5a9da2386c256cff38f3716e3d9b66a1ebd59826fce62"
+      "source_hash": "233f59f2ab14f00efe09ca7efa2f6d41621eb110541e76e6311281d00c90a592",
+      "generated_hash": "bfc0c15245cdffa03c496b4ac5963e9da06e4572777fe581e6cc34071e6ec440"
     },
     {
       "name": "post-mortem",
