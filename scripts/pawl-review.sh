@@ -426,9 +426,101 @@ triage_block() {
   } >&2
 }
 
+# age-6idm: AUTO-RUN-THE-REPRO helpers. A REVIEWER REFUTED that NAMES an executable repro is
+# a candidate FALSE refute — the 2026-07-02 build-tag class had 3/3 REFUTEDs each naming a
+# repro that actually PASSED (hallucinated on cobra legacy-tag expectations + an install.sh
+# --tier claim). These extract the named repro + gate it at the ARGV level so it can be run
+# ONCE to check the refute. Split out as pure functions so the bats suite can source + exercise
+# them, mirroring build_review_body / pawl_tier_note above.
+
+# _repro_trim <s>: strip leading + trailing whitespace (no echo of a newline).
+_repro_trim() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"   # ltrim
+  s="${s%"${s##*[![:space:]]}"}"   # rtrim
+  printf '%s' "$s"
+}
+
+# _repro_looks_like_cmd <s>: 0 when the trimmed string's FIRST whitespace token is a repro
+# tool we will consider (`go`, `bats`, or `*/bats`). This is only a candidate FILTER; the
+# full security allowlist is repro_argv_allowed.
+_repro_looks_like_cmd() {
+  local c first
+  c="$(_repro_trim "$1")"
+  first="${c%%[[:space:]]*}"
+  case "$first" in
+    go|bats|*/bats) return 0 ;;
+    *)              return 1 ;;
+  esac
+}
+
+# extract_repro_command: read reviewer/evidence text on STDIN and print the FIRST plausible
+# repro COMMAND STRING it names — a line inside a ``` fenced block, or a `backtick-quoted`
+# span — whose first token is go/bats. Parses CONSERVATIVELY: an unquoted inline command is
+# NOT parsed, and no candidate found prints NOTHING (=> no execution). Finding a candidate is
+# separate from allowing it: repro_argv_allowed gates the tokenized argv before anything runs.
+extract_repro_command() {
+  local line in_fence=0 span
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    case "$line" in
+      '```'*) in_fence=$(( in_fence ^ 1 )); continue ;;   # fence open/close toggle
+    esac
+    if [[ "$in_fence" -eq 1 ]]; then
+      if _repro_looks_like_cmd "$line"; then printf '%s\n' "$(_repro_trim "$line")"; return 0; fi
+    else
+      # inline `backtick` spans on this line, in order
+      while IFS= read -r span; do
+        [[ -n "$span" ]] || continue
+        if _repro_looks_like_cmd "$span"; then printf '%s\n' "$(_repro_trim "$span")"; return 0; fi
+      done < <(printf '%s\n' "$line" | grep -oE '`[^`]+`' | sed 's/^`//; s/`$//')
+    fi
+  done
+  return 0
+}
+
+# repro_argv_allowed <argv...>: SECURITY GATE (age-6idm; the plan-duel judge's non-negotiable
+# contract). Enforced at the ARGV level — the caller tokenizes the reviewer text itself with
+# `read -r -a` and NOTHING is ever handed to `sh -c`/eval. Returns 0 ONLY when argv[0] is
+# exactly `go` with argv[1] in {test,build,vet}, OR argv[0] is `bats` / ends in `/bats`; AND
+# no argument is a shell metacharacter, a dangerous go flag (-exec*/-toolexec*/-ldflags*/
+# -gcflags*/-o), an absolute path, or a `..` traversal component (Go's `./...` wildcard, whose
+# component is three dots, is allowed). Any violation => nonzero (the caller does NOT execute).
+repro_argv_allowed() {
+  [[ $# -ge 1 ]] || return 1
+  local a0="$1" a1="${2:-}" arg
+  case "$a0" in
+    go) case "$a1" in test|build|vet) ;; *) return 1 ;; esac ;;
+    bats|*/bats) ;;
+    *) return 1 ;;
+  esac
+  for arg in "$@"; do
+    # shell metacharacters (rejected even though no shell is ever invoked — defense in depth)
+    case "$arg" in
+      *';'*|*'|'*|*'&'*|*'$'*|*'`'*|*'<'*|*'>'*|*'('*|*')'*|*'{'*|*'}'*|*'*'*|*'?'*|*'['*|*']'*|*'!'*|*'~'*|*'\'*|*"'"*|*'"'*) return 1 ;;
+    esac
+    # embedded newline / carriage-return / tab (line-smuggling)
+    case "$arg" in
+      *$'\n'*|*$'\r'*|*$'\t'*) return 1 ;;
+    esac
+    # dangerous go build/test flags that can execute or write outside the test
+    case "$arg" in
+      -exec*|-toolexec*|-ldflags*|-gcflags*|-o) return 1 ;;
+    esac
+    # absolute paths (we run ONLY from the repo root) + `..` traversal components. The four
+    # patterns reject `..`, `../x`, `x/..`, `x/../y` WITHOUT matching Go's three-dot `./...`.
+    case "$arg" in
+      /*|..|../*|*/..|*/../*) return 1 ;;
+    esac
+  done
+  return 0
+}
+
 # Source-guard: tests source this file to exercise build_review_body / pawl_tier_note; the
 # codex-running flow below only executes when the script is run directly.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
+# age-6idm: preserve the ORIGINAL argv so the auto-repro path can re-exec the review ONCE
+# (bounded by PAWL_REROLLED_AFTER_FALSE_REPRO) when a REFUTED names a repro that passes.
+PAWL_ORIG_ARGS=("$@")
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope)         need_val "$1" "${2:-}"; scope="$2"; shift 2 ;;
@@ -905,6 +997,54 @@ if [[ "$converge" -eq 0 && "$codex_rc" -eq 0 && -n "$final_verdict" ]]; then
 fi
 
 if grep -qiE 'REFUTED' <<<"$final_verdict"; then
+  # age-6idm: AUTO-RUN-THE-REPRO. A REVIEWER REFUTED that NAMES an executable repro is a
+  # candidate FALSE refute (the 2026-07-02 build-tag class: 3/3 REFUTEDs each named a repro
+  # that actually PASSED). Extract the repro from the DEFECTS text, gate it at the ARGV level
+  # (repro_argv_allowed — never sh -c/eval), and run it ONCE, timeboxed:
+  #   - repro PASSES (exit 0) -> the refute is SUSPECT; re-roll the review ONCE. Bounded by
+  #     PAWL_REROLLED_AFTER_FALSE_REPRO (the marker that survives the re-exec) so a second
+  #     false-repro can NOT loop — on an already-rerolled run this branch is skipped and the
+  #     REFUTED STANDS (surfaced with the run) even if its repro passes.
+  #   - repro FAILS -> the REFUTED STANDS; attach the run's exit code + output tail as evidence.
+  #   - no candidate / disallowed argv -> no execution; the REFUTED stands exactly as today.
+  repro_cmd="$(extract_repro_command < "$evidence")"
+  if [[ -n "$repro_cmd" ]]; then
+    read -r -a repro_argv <<<"$repro_cmd"   # ARGV-level tokenize; NOTHING goes to a shell
+    if [[ "${#repro_argv[@]}" -ge 1 ]] && repro_argv_allowed "${repro_argv[@]}"; then
+      echo "pawl-review: REFUTED names a repro — running it ONCE (timeboxed, argv-allowlisted) to check the refute: ${repro_argv[*]}" >&2
+      repro_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-repro.XXXXXX")"
+      _rt=(); read -r -a _rt <<<"$(codex_exec_timeout_cmd 300)" || true   # same timeout wrapper as the reviewer
+      repro_rc=0
+      if [[ "${#_rt[@]}" -gt 0 ]]; then
+        ( cd "$REPO_ROOT" && "${_rt[@]}" "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+      else
+        ( cd "$REPO_ROOT" && "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+      fi
+      if [[ "$repro_rc" -eq 0 && -z "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
+        echo "pawl-review: the named repro PASSED (exit 0) — the REFUTED is SUSPECT (false repro). Re-rolling the review ONCE (bounded)…" >&2
+        # exec skips the EXIT trap, so clean the temp files this run owns before replacing.
+        rm -f "$repro_out" "$prompt_file" "$raw_file"
+        [[ -n "${smoke_out:-}" ]] && rm -f "$smoke_out"
+        PAWL_REROLLED_AFTER_FALSE_REPRO=1 exec bash "$0" "${PAWL_ORIG_ARGS[@]}"
+      fi
+      # repro FAILED, or we already re-rolled once (bounded) — the REFUTED STANDS. Attach evidence.
+      {
+        printf '\n=== AUTO-REPRO (age-6idm) — the REFUTED named a repro; it was run ONCE, timeboxed ===\n'
+        printf 'repro command: %s\n' "${repro_argv[*]}"
+        printf 'exit code: %s\n' "$repro_rc"
+        if [[ -n "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
+          printf 'NOTE: this review was already RE-ROLLED once after a false repro (rerolled_after_false_repro);\n'
+          printf 'a second REFUTED STANDS even if its repro passes — surfaced here with the run.\n'
+        fi
+        printf -- '--- repro output tail (each line "    | "-prefixed — run output, neutralized) ---\n'
+        tail -n 30 "$repro_out" 2>/dev/null | sed 's/^/    | /'
+        printf -- '--- end AUTO-REPRO ---\n'
+      } >> "$evidence"
+      rm -f "$repro_out"
+    else
+      echo "pawl-review: REFUTED named a repro '$repro_cmd' NOT in the allowed argv set (go test|build|vet or bats, no dangerous args/paths) — NOT executing; the REFUTED stands." >&2
+    fi
+  fi
   echo "=== PAWL REVIEW: REFUTED — defects below (fix, recommit, re-run; NO verdict written) ===" >&2
   sed -n '/^[[:space:]]*VERDICT:[[:space:]]*REFUTED/,$p' "$evidence" >&2
   emit_pawl_catch fresh-context
