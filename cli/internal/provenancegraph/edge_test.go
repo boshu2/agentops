@@ -228,4 +228,128 @@ func TestEdge_JSONFieldNamesMatchSchema(t *testing.T) {
 	if _, ok := m["evidence_ref"]; ok {
 		t.Error("evidence_ref should be omitted when empty")
 	}
+	// v1.1 enrichment fields are omitempty: all absent on a bare edge.
+	for _, key := range []string{"reviewer_family", "degraded", "rounds", "duration_s", "evidence_path"} {
+		if _, ok := m[key]; ok {
+			t.Errorf("v1.1 field %q should be omitted when empty (additivity)", key)
+		}
+	}
+}
+
+// legacyEdgePayload mirrors the PRE-v1.1 edgePayload shape (before age-rk3r.3):
+// the exact 9 payload fields an ao binary predating the enrichment marshals. It
+// is the fixture for the documented compatibility boundary — a reader with this
+// struct DROPS the v1.1 fields and therefore recomputes a different payload_hash
+// on any record that sets them.
+type legacyEdgePayload struct {
+	SchemaVersion string `json:"schema_version"`
+	FromID        string `json:"from_id"`
+	FromType      string `json:"from_type"`
+	ToID          string `json:"to_id"`
+	ToType        string `json:"to_type"`
+	Relation      string `json:"relation"`
+	EvidenceRef   string `json:"evidence_ref,omitempty"`
+	TrustTier     string `json:"trust_tier"`
+	TS            string `json:"ts"`
+}
+
+// legacyPayloadHash recomputes payload_hash the way a pre-v1.1 ao binary would:
+// marshal ONLY the legacy 9 fields (dropping any v1.1 enrichment), then sha256.
+func legacyPayloadHash(e Edge) string {
+	b, _ := json.Marshal(legacyEdgePayload{
+		SchemaVersion: e.SchemaVersion,
+		FromID:        e.FromID,
+		FromType:      e.FromType,
+		ToID:          e.ToID,
+		ToType:        e.ToType,
+		Relation:      e.Relation,
+		EvidenceRef:   e.EvidenceRef,
+		TrustTier:     e.TrustTier,
+		TS:            e.TS,
+	})
+	return hashHex(b)
+}
+
+// TestEnrichmentFields_AdditiveHashProtection is the core OPTION-C invariant
+// (age-rk3r.3): the v1.1 enrichment fields are both (a) ADDITIVE — an edge that
+// leaves them empty seals to the identical payload_hash a pre-v1.1 binary would
+// compute, so every pre-existing committed edge keeps its hash and VerifyChain
+// stays intact — and (b) HASH-PROTECTED — an edge that sets any field changes the
+// payload_hash (unlike the bead_id/merge_sha join keys, which do not).
+func TestEnrichmentFields_AdditiveHashProtection(t *testing.T) {
+	bare := validEdge()
+	sealedBare, err := Seal(bare, "")
+	if err != nil {
+		t.Fatalf("seal bare: %v", err)
+	}
+	// (a) ADDITIVE: an empty-enrichment edge hashes identically to the legacy
+	// 9-field payload — proof that omitempty keeps pre-v1.1 records unchanged.
+	if got := legacyPayloadHash(sealedBare); got != sealedBare.PayloadHash {
+		t.Fatalf("empty-enrichment payload_hash %s != legacy recompute %s — the fields are NOT additive; every pre-v1.1 committed edge would break",
+			sealedBare.PayloadHash, got)
+	}
+
+	// (b) HASH-PROTECTED: setting the enrichment fields changes payload_hash.
+	enriched := validEdge()
+	enriched.ReviewerFamily = "claude+gpt"
+	enriched.Rounds = 3
+	enriched.DurationS = 12.5
+	enriched.Degraded = true
+	enriched.EvidencePath = ".agents/pawl-verdicts/ag-x.transcript"
+	sealedEnriched, err := Seal(enriched, "")
+	if err != nil {
+		t.Fatalf("seal enriched: %v", err)
+	}
+	if sealedEnriched.PayloadHash == sealedBare.PayloadHash {
+		t.Fatal("enrichment fields did not change payload_hash — they are not hash-protected")
+	}
+	// The legacy reader's recompute of the enriched edge DIFFERS from the stored
+	// hash (it dropped the fields): the documented old-reader mismatch.
+	if legacyPayloadHash(sealedEnriched) == sealedEnriched.PayloadHash {
+		t.Fatal("legacy recompute matched the enriched payload_hash — expected the boundary mismatch")
+	}
+	// Fields round-trip on the record.
+	if sealedEnriched.ReviewerFamily != "claude+gpt" || sealedEnriched.Rounds != 3 ||
+		sealedEnriched.DurationS != 12.5 || !sealedEnriched.Degraded ||
+		sealedEnriched.EvidencePath != ".agents/pawl-verdicts/ag-x.transcript" {
+		t.Fatalf("enrichment fields lost after seal: %+v", sealedEnriched)
+	}
+}
+
+// TestEnrichment_MixedChain_NewReaderPassesOldReaderFalseBreaks is the versioned
+// hash-reader boundary test (age-rk3r.3 acceptance i): a chain mixing a v1-shaped
+// edge and a v1.1-shaped edge verifies clean under the CURRENT reader
+// (VerifyChain), and reproduces the OLD-reader false-break — a reader predating
+// the fields recomputes a different payload_hash on the v1.1 record (a false
+// "broken chain") while still matching every v1 record.
+func TestEnrichment_MixedChain_NewReaderPassesOldReaderFalseBreaks(t *testing.T) {
+	v1, err := Seal(validEdge(), "")
+	if err != nil {
+		t.Fatalf("seal v1: %v", err)
+	}
+	v11edge := validEdge()
+	v11edge.FromType = "verdict"
+	v11edge.ToType = "commit"
+	v11edge.Relation = "wasDerivedFrom"
+	v11edge.TrustTier = "inferred"
+	v11edge.ReviewerFamily = "claude"
+	v11, err := Seal(v11edge, v1.Hash)
+	if err != nil {
+		t.Fatalf("seal v11: %v", err)
+	}
+	chain := []Edge{v1, v11}
+
+	// CURRENT reader: the mixed chain is intact.
+	if idx, err := VerifyChain(chain); err != nil || idx != 0 {
+		t.Fatalf("current reader on mixed chain: idx=%d err=%v, want 0/nil", idx, err)
+	}
+
+	// OLD reader simulation: recompute each record's payload_hash with the legacy
+	// 9-field payload. The v1 record still matches; the v1.1 record does NOT.
+	if legacyPayloadHash(v1) != v1.PayloadHash {
+		t.Fatal("old reader should still verify the pre-v1.1 record, but its payload_hash recompute differs")
+	}
+	if legacyPayloadHash(v11) == v11.PayloadHash {
+		t.Fatal("old reader should FALSE-BREAK on the v1.1 record (dropped fields), but its recompute matched")
+	}
 }

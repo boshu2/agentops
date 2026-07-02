@@ -327,3 +327,64 @@ func TestParseDisposition(t *testing.T) {
 		}
 	}
 }
+
+// TestProvenanceShow_RendersV11Enrichment proves the reader is additive
+// (age-rk3r.3): a verdict edge carrying the v1.1 fields renders one line per
+// present field, while a v1-shaped verdict edge (no fields) renders none of them
+// — consumers branch on field PRESENCE, never a version string.
+func TestProvenanceShow_RendersV11Enrichment(t *testing.T) {
+	chdirRepoFixture(t)
+	setProvShowJSON(t, false)
+	store := provenancegraph.NewStore(resolveLedgerPath())
+
+	const shaEnriched = "dddddddddddddddddddddddddddddddddddddddd"
+	const shaPlain = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+	edges := []provenancegraph.Edge{
+		buildBeadCommitEdge("ag-enrich", shaEnriched),
+		{
+			FromID: "ag-enrich@" + shaEnriched[:7], FromType: "verdict", ToID: shaEnriched,
+			ToType: "commit", Relation: "wasDerivedFrom", TrustTier: "inferred",
+			EvidenceRef:    "pawl-verdict ag-enrich disposition=CONFIRMED",
+			ReviewerFamily: "claude+gpt", Degraded: true, Rounds: 4, DurationS: 18.5,
+			EvidencePath: ".agents/pawl-verdicts/ag-enrich.transcript",
+		},
+		buildBeadCommitEdge("ag-plain", shaPlain),
+		buildVerdictCommitEdge(pawlVerdict{BeadID: "ag-plain", HeadSHA: shaPlain, Disposition: "CONFIRMED"}),
+	}
+	for i, e := range edges {
+		e.TS = "2026-07-01T00:00:0" + string(rune('0'+i)) + "Z"
+		if _, err := store.Append(e); err != nil {
+			t.Fatalf("append %d: %v", i, err)
+		}
+	}
+
+	// Enriched commit renders one line per present v1.1 field.
+	cE, outE := provTestCmd()
+	if err := runProvenanceShow(cE, []string{shaEnriched}); err != nil {
+		t.Fatalf("show enriched: %v", err)
+	}
+	gotE := outE.String()
+	for _, want := range []string{
+		"reviewer_family: claude+gpt",
+		"degraded: true",
+		"rounds: 4",
+		"duration_s: 18.5",
+		"evidence_path: .agents/pawl-verdicts/ag-enrich.transcript",
+	} {
+		if !strings.Contains(gotE, want) {
+			t.Errorf("enriched show missing %q:\n%s", want, gotE)
+		}
+	}
+
+	// Plain (v1-shaped) verdict renders NONE of the enrichment lines.
+	cP, outP := provTestCmd()
+	if err := runProvenanceShow(cP, []string{shaPlain}); err != nil {
+		t.Fatalf("show plain: %v", err)
+	}
+	gotP := outP.String()
+	for _, notWant := range []string{"reviewer_family:", "degraded:", "rounds:", "duration_s:", "evidence_path:"} {
+		if strings.Contains(gotP, notWant) {
+			t.Errorf("plain show must not contain %q:\n%s", notWant, gotP)
+		}
+	}
+}

@@ -85,6 +85,14 @@ type showVerdictEntry struct {
 	Timestamp   string `json:"ts"`
 	// Record is the 1-based chain position of this edge in the ledger.
 	Record int `json:"record"`
+	// v1.1 additive enrichment (age-rk3r.3): displayed only when the edge carries
+	// them (consumers branch on PRESENCE, never a version string). A v1-shaped
+	// verdict edge leaves them empty and they are omitted from the JSON.
+	ReviewerFamily string  `json:"reviewer_family,omitempty"`
+	Degraded       bool    `json:"degraded,omitempty"`
+	Rounds         int     `json:"rounds,omitempty"`
+	DurationS      float64 `json:"duration_s,omitempty"`
+	EvidencePath   string  `json:"evidence_path,omitempty"`
 }
 
 // isHexToken reports whether s is non-empty lowercase/uppercase hex.
@@ -194,12 +202,17 @@ func buildShowReport(edges []provenancegraph.Edge, query string) (showReport, er
 				})
 			case e.Relation == "wasDerivedFrom" && e.FromType == "verdict" && e.ToType == "commit":
 				lin.Verdicts = append(lin.Verdicts, showVerdictEntry{
-					VerdictID:   e.FromID,
-					Disposition: parseDisposition(e.EvidenceRef),
-					EvidenceRef: e.EvidenceRef,
-					TrustTier:   e.TrustTier,
-					Timestamp:   e.TS,
-					Record:      record,
+					VerdictID:      e.FromID,
+					Disposition:    parseDisposition(e.EvidenceRef),
+					EvidenceRef:    e.EvidenceRef,
+					TrustTier:      e.TrustTier,
+					Timestamp:      e.TS,
+					Record:         record,
+					ReviewerFamily: e.ReviewerFamily,
+					Degraded:       e.Degraded,
+					Rounds:         e.Rounds,
+					DurationS:      e.DurationS,
+					EvidencePath:   e.EvidencePath,
 				})
 			}
 		}
@@ -231,6 +244,23 @@ func renderShowReport(out io.Writer, r showReport) {
 				v.VerdictID, disp, v.TrustTier, v.Timestamp, v.Record, r.TotalRecords)
 			if v.EvidenceRef != "" {
 				fmt.Fprintf(out, "          evidence: %s\n", v.EvidenceRef)
+			}
+			// v1.1 enrichment lines — rendered only when the edge carries them
+			// (a v1-shaped edge omits every one, so the output is unchanged).
+			if v.ReviewerFamily != "" {
+				fmt.Fprintf(out, "          reviewer_family: %s\n", v.ReviewerFamily)
+			}
+			if v.Degraded {
+				fmt.Fprintf(out, "          degraded: true\n")
+			}
+			if v.Rounds != 0 {
+				fmt.Fprintf(out, "          rounds: %d\n", v.Rounds)
+			}
+			if v.DurationS != 0 {
+				fmt.Fprintf(out, "          duration_s: %g\n", v.DurationS)
+			}
+			if v.EvidencePath != "" {
+				fmt.Fprintf(out, "          evidence_path: %s\n", v.EvidencePath)
 			}
 		}
 	}

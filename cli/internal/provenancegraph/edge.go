@@ -87,29 +87,62 @@ type Edge struct {
 	// authoritative values are from_id/to_id, which the payload already covers,
 	// so these projections need no independent hash protection — and excluding
 	// them keeps every existing committed edge's payload_hash/VerifyChain intact.
-	BeadID      string `json:"bead_id,omitempty"`
-	MergeSHA    string `json:"merge_sha,omitempty"`
-	TrustTier   string `json:"trust_tier"`
-	TS          string `json:"ts"`
-	PrevHash    string `json:"prev_hash"`
-	PayloadHash string `json:"payload_hash"`
-	Hash        string `json:"hash"`
+	BeadID    string `json:"bead_id,omitempty"`
+	MergeSHA  string `json:"merge_sha,omitempty"`
+	TrustTier string `json:"trust_tier"`
+	TS        string `json:"ts"`
+	// v1.1 verdict-record enrichment (age-rk3r.3) — five OPTIONAL, additive
+	// fields carrying reviewer metadata for verdict edges (the cost-of-verified-
+	// done substrate; failover label; the receipts' structured evidence source).
+	// UNLIKE the bead_id/merge_sha join keys above, these ARE part of edgePayload
+	// and therefore hash-PROTECTED: a record that sets any of them has it covered
+	// by payload_hash, so it is tamper-evident. Backward compatibility rests on
+	// omitempty — a record predating these fields (or leaving them at their zero
+	// value) omits them from the payload JSON entirely, so its payload_hash is
+	// byte-identical to the pre-v1.1 layout and VerifyChain stays intact across the
+	// whole committed history. "v1.1" is a DOCUMENTATION label only: SchemaVersion
+	// is UNCHANGED, and consumers branch on field PRESENCE, never a version string.
+	//
+	// COMPATIBILITY BOUNDARY (documented, load-bearing): because the fields are IN
+	// the payload, an OLDER ao binary that predates them unmarshals a v1.1 record
+	// into a struct that DROPS them, recomputes the payload WITHOUT them, and so
+	// reports a spurious payload_hash mismatch (a false "broken chain") on v1.1
+	// records — while still verifying every pre-v1.1 record. A reader must be at or
+	// above the version that knows these fields to verify v1.1 records; the
+	// installed-hook ao-version floor is a separate bead (.6).
+	ReviewerFamily string  `json:"reviewer_family,omitempty"`
+	Degraded       bool    `json:"degraded,omitempty"`
+	Rounds         int     `json:"rounds,omitempty"`
+	DurationS      float64 `json:"duration_s,omitempty"`
+	EvidencePath   string  `json:"evidence_path,omitempty"`
+	PrevHash       string  `json:"prev_hash"`
+	PayloadHash    string  `json:"payload_hash"`
+	Hash           string  `json:"hash"`
 }
 
 // edgePayload is the hash-input subset of an Edge: every field EXCEPT
 // prev_hash/payload_hash/hash AND the additive non-payload join keys
 // (bead_id, merge_sha — denormalized projections of from_id/to_id, see Edge).
-// Field order is fixed so the canonical JSON is deterministic.
+// The v1.1 enrichment fields (reviewer_family, degraded, rounds, duration_s,
+// evidence_path) ARE included here — they are hash-protected, and their
+// omitempty tags keep pre-v1.1 records byte-identical (all zero => omitted from
+// the canonical JSON, so payload_hash is unchanged over history). Field order is
+// fixed so the canonical JSON is deterministic.
 type edgePayload struct {
-	SchemaVersion string `json:"schema_version"`
-	FromID        string `json:"from_id"`
-	FromType      string `json:"from_type"`
-	ToID          string `json:"to_id"`
-	ToType        string `json:"to_type"`
-	Relation      string `json:"relation"`
-	EvidenceRef   string `json:"evidence_ref,omitempty"`
-	TrustTier     string `json:"trust_tier"`
-	TS            string `json:"ts"`
+	SchemaVersion  string  `json:"schema_version"`
+	FromID         string  `json:"from_id"`
+	FromType       string  `json:"from_type"`
+	ToID           string  `json:"to_id"`
+	ToType         string  `json:"to_type"`
+	Relation       string  `json:"relation"`
+	EvidenceRef    string  `json:"evidence_ref,omitempty"`
+	TrustTier      string  `json:"trust_tier"`
+	TS             string  `json:"ts"`
+	ReviewerFamily string  `json:"reviewer_family,omitempty"`
+	Degraded       bool    `json:"degraded,omitempty"`
+	Rounds         int     `json:"rounds,omitempty"`
+	DurationS      float64 `json:"duration_s,omitempty"`
+	EvidencePath   string  `json:"evidence_path,omitempty"`
 }
 
 // inSet reports whether v is a member of allowed.
@@ -184,15 +217,20 @@ func hashHex(data []byte) string {
 // reusing the cli/internal/rpi/ledger.go chaining semantics.
 func ComputeHashes(e Edge) (payloadHash, hash string, err error) {
 	payload := edgePayload{
-		SchemaVersion: e.SchemaVersion,
-		FromID:        e.FromID,
-		FromType:      e.FromType,
-		ToID:          e.ToID,
-		ToType:        e.ToType,
-		Relation:      e.Relation,
-		EvidenceRef:   e.EvidenceRef,
-		TrustTier:     e.TrustTier,
-		TS:            e.TS,
+		SchemaVersion:  e.SchemaVersion,
+		FromID:         e.FromID,
+		FromType:       e.FromType,
+		ToID:           e.ToID,
+		ToType:         e.ToType,
+		Relation:       e.Relation,
+		EvidenceRef:    e.EvidenceRef,
+		TrustTier:      e.TrustTier,
+		TS:             e.TS,
+		ReviewerFamily: e.ReviewerFamily,
+		Degraded:       e.Degraded,
+		Rounds:         e.Rounds,
+		DurationS:      e.DurationS,
+		EvidencePath:   e.EvidencePath,
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {

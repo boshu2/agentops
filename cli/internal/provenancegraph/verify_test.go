@@ -65,6 +65,60 @@ func TestVerifyFile_IntactChainPasses(t *testing.T) {
 	}
 }
 
+// TestVerifyFile_MixedV1V11_ThroughProductionWriter is the L2 fixture-fidelity
+// proof (age-rk3r.3): a ledger built by appending BOTH a v1-shaped edge and a
+// v1.1-shaped (enrichment-carrying) edge THROUGH the production Store.Append
+// verifies clean in place, and the enrichment survives the write→read round-trip
+// while the v1 edge is unaffected. The v1.1 fields are hash-protected yet
+// additive, so the boundary between the two shapes does not break the chain.
+func TestVerifyFile_MixedV1V11_ThroughProductionWriter(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ledger.jsonl")
+	store := NewStore(path)
+
+	// v1-shaped bead→commit edge (no enrichment fields).
+	if _, err := store.Append(Edge{
+		FromID: "ag-old", FromType: "bead", ToID: "0123456abc", ToType: "commit",
+		Relation: "wasGeneratedBy", TrustTier: "authored", TS: "2026-07-01T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("append v1 edge: %v", err)
+	}
+	// v1.1-shaped verdict→commit edge carrying every enrichment field.
+	if _, err := store.Append(Edge{
+		FromID: "ag-new@0123456", FromType: "verdict", ToID: "0123456abc", ToType: "commit",
+		Relation: "wasDerivedFrom", TrustTier: "inferred", TS: "2026-07-01T01:00:00Z",
+		ReviewerFamily: "claude+gpt", Degraded: true, Rounds: 2, DurationS: 9.5,
+		EvidencePath: ".agents/x.md",
+	}); err != nil {
+		t.Fatalf("append v1.1 edge: %v", err)
+	}
+
+	res, err := store.VerifyFile()
+	if err != nil {
+		t.Fatalf("VerifyFile: %v", err)
+	}
+	if !res.Pass {
+		t.Fatalf("mixed v1/v1.1 chain not intact: line %d: %s", res.FirstBrokenLine, res.Message)
+	}
+	if res.RecordCount != 2 {
+		t.Errorf("RecordCount = %d, want 2", res.RecordCount)
+	}
+
+	// The enrichment survives the write→read round-trip through the ledger file;
+	// the v1 edge stays field-empty.
+	edges, err := store.Read()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if edges[1].ReviewerFamily != "claude+gpt" || !edges[1].Degraded || edges[1].Rounds != 2 ||
+		edges[1].DurationS != 9.5 || edges[1].EvidencePath != ".agents/x.md" {
+		t.Fatalf("enrichment lost through the ledger round-trip: %+v", edges[1])
+	}
+	if edges[0].ReviewerFamily != "" || edges[0].Degraded || edges[0].Rounds != 0 ||
+		edges[0].DurationS != 0 || edges[0].EvidencePath != "" {
+		t.Errorf("v1 edge unexpectedly gained enrichment fields: %+v", edges[0])
+	}
+}
+
 // TestVerifyFile_GenesisLinks confirms row 1 prev_hash is the empty genesis and
 // row 2 prev_hash links to row 1 hash.
 func TestVerifyFile_GenesisLinks(t *testing.T) {
