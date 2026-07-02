@@ -39,8 +39,8 @@
         },
         "disposition": {
             "type": "string",
-            "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD"],
-            "description": "Panel-level disposition. CONFIRMED = ALL refuters confirmed, the per-mode diversity floor is met, and the panel authorizes the door. REFUTED = at least one refuter refuted; the gate REJECTED. The default REFUTED path is AUTO-REJECT -> AUTO-REDO: the loop sends the work back to be re-done with the findings and re-gates, with no human — continuous self-correction. ESCALATE / HOLD = a tunable CIRCUIT BREAKER tripped (max-attempts, time budget, cost/quota budget, or oscillation/no-forward-progress); the loop stops auto-redoing and HOLDs for a human. The disposition is ESCALATE/HOLD ONLY on a breaker trip, NOT on plain REFUTED. Only CONFIRMED authorizes the merge; everything else fail-closed HOLDs at the merge path."
+            "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD", "REBOUND"],
+            "description": "Panel-level disposition. CONFIRMED = ALL refuters confirmed, the per-mode diversity floor is met, and the panel authorizes the door. REFUTED = at least one refuter refuted; the gate REJECTED. The default REFUTED path is AUTO-REJECT -> AUTO-REDO: the loop sends the work back to be re-done with the findings and re-gates, with no human — continuous self-correction. ESCALATE / HOLD = a tunable CIRCUIT BREAKER tripped (max-attempts, time budget, cost/quota budget, or oscillation/no-forward-progress); the loop stops auto-redoing and HOLDs for a human. The disposition is ESCALATE/HOLD ONLY on a breaker trip, NOT on plain REFUTED. REBOUND = this verdict was re-bound from a prior CONFIRMED verdict, re-stamped onto a NEW commit proven byte-identical to the reviewed one (see rebound_from_verdict / rebound_from_sha / patch_id_proof) — the deterministic clean-land step that REUSES a real review across a no-op rebase rather than re-running it. Only CONFIRMED authorizes the merge; everything else (including REBOUND) fail-closed HOLDs at the merge path. NOTE: this enum ADMITS the REBOUND value to the contract; the merge-authorization semantics for a REBOUND verdict are enforced separately in pawl-verdict.sh `check` (which today authorizes only CONFIRMED)."
         },
         "generated_at": {
             "type": "string",
@@ -102,6 +102,22 @@
         "council_artifact": {
             "type": "string",
             "description": "Optional path to the free-form council narrative (.agents/council/YYYY-MM-DD-pre-land-<slug>.md) this summary was distilled from."
+        },
+        "degraded": {
+            "type": "boolean",
+            "description": "Optional. TRUE when this verdict was produced under a DEGRADED review posture: the panel could not run at its configured strength (e.g. a reviewer family was unavailable and it fell back to a reduced-diversity or cold-fallback path) but a real review still ran. Lets downstream consumers (metrics, audits) distinguish a nominal verdict from one produced under a weaker-than-nominal configuration. Absent => nominal (not degraded)."
+        },
+        "rebound_from_verdict": {
+            "type": "string",
+            "description": "Optional; part of the REBOUND lineage. Path to (or id of) the prior verdict artifact this one was re-bound FROM — the previously-recorded verdict whose real review this REBOUND descends from. Makes the re-bind auditable: the original review that actually ran is locatable from here."
+        },
+        "rebound_from_sha": {
+            "type": "string",
+            "description": "Optional; part of the REBOUND lineage. The commit sha the prior verdict (rebound_from_verdict) actually reviewed. With patch_id_proof it establishes that the commit this verdict is now stamped onto is byte-identical to the originally-reviewed one (only sha/date changed, e.g. after a rebase)."
+        },
+        "patch_id_proof": {
+            "type": "string",
+            "description": "Optional; part of the REBOUND lineage. The git patch-id proving byte-identity between the originally-reviewed commit (rebound_from_sha) and the new commit this REBOUND verdict points at. A matching patch-id is deterministic evidence the diff is unchanged across the re-bind — what licenses reusing the prior review instead of running a fresh one."
         }
     }
 }
