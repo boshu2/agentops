@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -12,12 +14,74 @@ import (
 )
 
 // pawlVerdict is the subset of fields we parse from a pawl-verdict JSON file.
-// We read only the fields needed to construct provenance edges: bead_id,
-// head_sha, and disposition. Everything else is the verdict schema's concern.
+// We read the fields needed to construct provenance edges: bead_id, head_sha,
+// and disposition, plus the refuter panel and council_artifact that back the
+// v1.1 additive enrichment (reviewer_family, evidence_path). Everything else is
+// the verdict schema's concern.
 type pawlVerdict struct {
-	BeadID      string `json:"bead_id"`
-	HeadSHA     string `json:"head_sha"`
-	Disposition string `json:"disposition"`
+	BeadID          string        `json:"bead_id"`
+	HeadSHA         string        `json:"head_sha"`
+	Disposition     string        `json:"disposition"`
+	Refuters        []pawlRefuter `json:"refuters"`
+	CouncilArtifact string        `json:"council_artifact"`
+}
+
+// pawlRefuter is the subset of a pawl-verdict refuter entry the sensor reads:
+// the model family (for reviewer_family) and the evidence path (for
+// evidence_path). Matches the refuter shape in schemas/pawl-verdict.v1.schema.json.
+type pawlRefuter struct {
+	Family   string `json:"family"`
+	Evidence string `json:"evidence"`
+}
+
+// normalizeFamily collapses a raw pawl-verdict family label to its canonical
+// model family, mirroring normalize_family() in scripts/pawl-verdict.sh so the
+// ledger's reviewer_family agrees with the gate's roster: fable/anthropic ->
+// claude, codex/openai -> gpt, agy/google -> gemini. An unknown/off-roster label
+// returns "" (dropped) rather than polluting the mix with junk.
+func normalizeFamily(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "claude", "fable", "anthropic":
+		return "claude"
+	case "gpt", "codex", "openai":
+		return "gpt"
+	case "gemini", "agy", "google":
+		return "gemini"
+	default:
+		return ""
+	}
+}
+
+// deriveReviewerFamily maps the refuter panel to the edge's reviewer_family: the
+// sorted, de-duplicated set of canonical families joined with "+" (e.g. "claude"
+// or "claude+gpt"). Returns "" when no refuter carries a roster-valid family, so
+// the omitempty field stays absent (a pre-v1.1-shaped edge) rather than empty.
+func deriveReviewerFamily(refuters []pawlRefuter) string {
+	seen := map[string]bool{}
+	var fams []string
+	for _, r := range refuters {
+		nf := normalizeFamily(r.Family)
+		if nf == "" || seen[nf] {
+			continue
+		}
+		seen[nf] = true
+		fams = append(fams, nf)
+	}
+	sort.Strings(fams)
+	return strings.Join(fams, "+")
+}
+
+// deriveEvidencePath maps the verdict artifact to the edge's evidence_path: the
+// first refuter with a non-empty evidence path (the reviewer's real run output),
+// falling back to the top-level council_artifact. Returns "" when the verdict
+// carries no evidence path, so the omitempty field stays absent.
+func deriveEvidencePath(v pawlVerdict) string {
+	for _, r := range v.Refuters {
+		if p := strings.TrimSpace(r.Evidence); p != "" {
+			return p
+		}
+	}
+	return strings.TrimSpace(v.CouncilArtifact)
 }
 
 // extractVerdict reads a pawl-verdict JSON file and returns the provenance-
@@ -58,6 +122,17 @@ func buildVerdictCommitEdge(v pawlVerdict) provenancegraph.Edge {
 		Relation:    "wasDerivedFrom",
 		TrustTier:   "inferred",
 		EvidenceRef: "pawl-verdict " + v.BeadID + " disposition=" + v.Disposition,
+		// v1.1 additive enrichment (age-rk3r.3). bead_id is the structured join
+		// key (a non-payload projection of from_id) that lets receipts/mesh stop
+		// regex-parsing the free-text evidence_ref for the bead. reviewer_family
+		// and evidence_path are hash-protected fields derived from the verdict's
+		// refuter panel WHEN PRESENT. degraded/rounds/duration_s have no source in
+		// the v1 pawl-verdict file yet, so they stay empty (absent) until the
+		// sibling beads populate them (.2 failover label, .16 cost substrate) —
+		// additive by construction, no version bump.
+		BeadID:         v.BeadID,
+		ReviewerFamily: deriveReviewerFamily(v.Refuters),
+		EvidencePath:   deriveEvidencePath(v),
 	}
 }
 

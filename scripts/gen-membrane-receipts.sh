@@ -87,8 +87,16 @@ TIP_HASH="$(jq -rs 'last | .hash' "$LEDGER")"
 STATS_JSON="$(jq -s \
   --arg generated_at "$GENERATED_AT" \
   --arg tip_hash "$TIP_HASH" '
+  # v1.1 (age-rk3r.3): prefer the STRUCTURED bead_id when present, regex-parse
+  # the free-text evidence_ref only as the v1 fallback. bead_id is null on v1
+  # verdict edges, so a pure-v1 ledger yields byte-identical output; a v1.1 edge
+  # carries bead_id == the same bead the regex would have extracted. reviewer
+  # family is already read structurally below via .reviewer_family; disposition
+  # has no dedicated v1.1 field, so it stays evidence_ref-derived (present on
+  # both v1 and v1.1 edges).
   def bead_of:
-    ((.evidence_ref // "" | capture("^pawl-verdict (?<b>.+) disposition=[A-Za-z]+$")? | .b)
+    (.bead_id
+     // (.evidence_ref // "" | capture("^pawl-verdict (?<b>.+) disposition=[A-Za-z]+$")? | .b)
      // (.from_id | tostring | split("@")[0]));
   def disp_of:
     ((.evidence_ref // "" | capture("disposition=(?<d>[A-Za-z]+)")? | .d) // "UNRECORDED");

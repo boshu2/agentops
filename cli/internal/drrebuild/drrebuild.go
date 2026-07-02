@@ -62,25 +62,46 @@ type LedgerEvent struct {
 	EvidenceRef   string `json:"evidence_ref,omitempty"`
 	TrustTier     string `json:"trust_tier"`
 	TS            string `json:"ts"`
-	PrevHash      string `json:"prev_hash"`
-	PayloadHash   string `json:"payload_hash"`
-	Hash          string `json:"hash"`
+	// v1.1 verdict-record enrichment (age-rk3r.3). These MUST stay in sync with
+	// provenancegraph.Edge — drrebuild is a parallel, independent implementation
+	// of the SAME ledger hashing discipline, and because these fields ARE part of
+	// payload_hash (unlike the bead_id/merge_sha join keys, which drrebuild does
+	// not even parse), the rebuild must marshal them into the payload or it would
+	// falsely report v1.1 records as tampered. omitempty keeps pre-v1.1 records
+	// byte-identical (all zero => omitted), preserving faithful rebuild over the
+	// whole mixed history.
+	ReviewerFamily string  `json:"reviewer_family,omitempty"`
+	Degraded       bool    `json:"degraded,omitempty"`
+	Rounds         int     `json:"rounds,omitempty"`
+	DurationS      float64 `json:"duration_s,omitempty"`
+	EvidencePath   string  `json:"evidence_path,omitempty"`
+	PrevHash       string  `json:"prev_hash"`
+	PayloadHash    string  `json:"payload_hash"`
+	Hash           string  `json:"hash"`
 }
 
 // ledgerPayload is the hash-covered subset of a LedgerEvent: every field
-// EXCEPT prev_hash, payload_hash, and hash. Marshaled in the schema's field
-// order (struct field order is stable in encoding/json) to reproduce
-// payload_hash deterministically.
+// EXCEPT prev_hash, payload_hash, and hash (and the additive non-payload join
+// keys bead_id/merge_sha, which this proof does not parse — they are excluded
+// from payload_hash by design). Marshaled in the schema's field order (struct
+// field order is stable in encoding/json) to reproduce payload_hash
+// deterministically. The v1.1 enrichment fields ARE included (hash-protected),
+// with omitempty keeping pre-v1.1 records byte-identical.
 type ledgerPayload struct {
-	SchemaVersion string `json:"schema_version"`
-	FromID        string `json:"from_id"`
-	FromType      string `json:"from_type"`
-	ToID          string `json:"to_id"`
-	ToType        string `json:"to_type"`
-	Relation      string `json:"relation"`
-	EvidenceRef   string `json:"evidence_ref,omitempty"`
-	TrustTier     string `json:"trust_tier"`
-	TS            string `json:"ts"`
+	SchemaVersion  string  `json:"schema_version"`
+	FromID         string  `json:"from_id"`
+	FromType       string  `json:"from_type"`
+	ToID           string  `json:"to_id"`
+	ToType         string  `json:"to_type"`
+	Relation       string  `json:"relation"`
+	EvidenceRef    string  `json:"evidence_ref,omitempty"`
+	TrustTier      string  `json:"trust_tier"`
+	TS             string  `json:"ts"`
+	ReviewerFamily string  `json:"reviewer_family,omitempty"`
+	Degraded       bool    `json:"degraded,omitempty"`
+	Rounds         int     `json:"rounds,omitempty"`
+	DurationS      float64 `json:"duration_s,omitempty"`
+	EvidencePath   string  `json:"evidence_path,omitempty"`
 }
 
 // Node is a rebuilt context-graph node. The node set is itself a projection:
@@ -225,15 +246,20 @@ func ParseLedger(r io.Reader) ([]LedgerEvent, error) {
 // sha256(payload_hash + "\n" + prev_hash).
 func computeHashes(ev LedgerEvent) (payloadHash, hash string, err error) {
 	payload := ledgerPayload{
-		SchemaVersion: ev.SchemaVersion,
-		FromID:        ev.FromID,
-		FromType:      ev.FromType,
-		ToID:          ev.ToID,
-		ToType:        ev.ToType,
-		Relation:      ev.Relation,
-		EvidenceRef:   ev.EvidenceRef,
-		TrustTier:     ev.TrustTier,
-		TS:            ev.TS,
+		SchemaVersion:  ev.SchemaVersion,
+		FromID:         ev.FromID,
+		FromType:       ev.FromType,
+		ToID:           ev.ToID,
+		ToType:         ev.ToType,
+		Relation:       ev.Relation,
+		EvidenceRef:    ev.EvidenceRef,
+		TrustTier:      ev.TrustTier,
+		TS:             ev.TS,
+		ReviewerFamily: ev.ReviewerFamily,
+		Degraded:       ev.Degraded,
+		Rounds:         ev.Rounds,
+		DurationS:      ev.DurationS,
+		EvidencePath:   ev.EvidencePath,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

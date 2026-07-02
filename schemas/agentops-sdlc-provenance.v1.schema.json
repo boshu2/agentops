@@ -62,6 +62,30 @@
       "minLength": 1,
       "description": "Optional, additive mesh join key (ag-5qltf): the full/canonical trunk commit OID (push-to-main: the landed commit) anchoring the bead→commit hop. Denormalizes to_id on a bead→commit edge. Pairs with bead_id as (bead_id, merge_sha). NON-payload (see bead_id)."
     },
+    "reviewer_family": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): the canonical reviewer model family/families that produced this verdict edge — e.g. 'claude' or 'claude+gpt' (aliases collapse: fable/anthropic->claude, codex/openai->gpt, agy/google->gemini; multiple distinct families are sorted and joined with '+'). Derived from the pawl-verdict refuter panel. UNLIKE the bead_id/merge_sha join keys, this field IS part of payload_hash (hash-protected / tamper-evident). ADDITIVITY: records predating v1.1 simply omit it, so their payload marshals byte-identically and payload_hash/VerifyChain are unchanged over history; a v1.1 record that sets it has it covered by payload_hash. COMPATIBILITY BOUNDARY: because it is in the payload, an ao binary predating these fields drops them on read and will report a spurious payload_hash mismatch on v1.1 records (while still verifying pre-v1.1 records) — verify v1.1 records with an ao at or above the version that knows these fields. 'v1.1' is a documentation label only; schema_version is unchanged and consumers branch on field PRESENCE, never a version string."
+    },
+    "degraded": {
+      "type": "boolean",
+      "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): true when the verdict was produced under a degraded/failover reviewer configuration (the failover label; sibling bead .2). Payload-included (hash-protected, same additivity + compatibility boundary as reviewer_family); omitted when false/absent. The v1 pawl-verdict file carries no source for this yet, so it stays absent until the failover bead populates it."
+    },
+    "rounds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): the number of adversarial refute→fix rounds this verdict took — a cost-of-verified-done substrate. Payload-included (hash-protected, same additivity + compatibility boundary as reviewer_family); omitted when absent/zero. The v1 pawl-verdict file carries no source for this yet, so it stays absent until the cost bead (.16) populates it."
+    },
+    "duration_s": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): wall-clock seconds the verified-done review took — a cost-of-verified-done substrate. Payload-included (hash-protected, same additivity + compatibility boundary as reviewer_family); omitted when absent/zero. The v1 pawl-verdict file carries no source for this yet, so it stays absent until the cost bead (.16) populates it."
+    },
+    "evidence_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): a repo-relative path to the concrete reviewer evidence artifact (the refuter transcript or council narrative) backing this verdict — distinct from evidence_ref, which is a free-text pointer. Derived from the pawl-verdict refuters' evidence path, or the council_artifact, when present. Payload-included (hash-protected, same additivity + compatibility boundary as reviewer_family); omitted when absent."
+    },
     "trust_tier": {
       "type": "string",
       "enum": ["authored", "inferred", "mined"],
@@ -78,7 +102,7 @@
     },
     "payload_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "sha256 (lowercase hex) over the canonical JSON of the edge payload — every field of this record EXCEPT prev_hash, payload_hash, hash, and the additive non-payload join keys (bead_id, merge_sha). The join keys are excluded because they denormalize the already-hashed from_id/to_id; excluding them keeps payload_hash stable for edges that predate the join-key fields (ag-5qltf)."
+      "description": "sha256 (lowercase hex) over the canonical JSON of the edge payload — every field of this record EXCEPT prev_hash, payload_hash, hash, and the additive non-payload join keys (bead_id, merge_sha). The join keys are excluded because they denormalize the already-hashed from_id/to_id; excluding them keeps payload_hash stable for edges that predate the join-key fields (ag-5qltf). The v1.1 verdict-enrichment fields (reviewer_family, degraded, rounds, duration_s, evidence_path) ARE included in the payload (hash-protected). They are additive via omitempty: a record predating them omits them, so its payload marshals byte-identically and its payload_hash is unchanged — so an intact chain over mixed v1/v1.1 records stays intact for a reader that knows the fields (age-rk3r.3; see the per-field compatibility-boundary note)."
     },
     "hash": {
       "$ref": "#/$defs/sha256_hex",

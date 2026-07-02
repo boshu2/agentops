@@ -145,6 +145,96 @@ func TestBuildVerdictCommitEdge(t *testing.T) {
 	}
 }
 
+// TestBuildVerdictCommitEdge_V11Enrichment covers the additive v1.1 derivation
+// (age-rk3r.3): reviewer_family is the sorted, de-duplicated, alias-collapsed
+// canonical family set; evidence_path is the first refuter evidence (else the
+// council_artifact); bead_id is set as the structured join key; and the fields
+// with no source in a v1 verdict file (degraded/rounds/duration_s) stay empty
+// until the sibling beads populate them.
+func TestBuildVerdictCommitEdge_V11Enrichment(t *testing.T) {
+	cases := []struct {
+		name         string
+		v            pawlVerdict
+		wantFamily   string
+		wantEvidence string
+	}{
+		{
+			name: "multi-family collapses aliases, sorts, dedups; first refuter evidence wins",
+			v: pawlVerdict{
+				BeadID: "ag-a", HeadSHA: "0123456789ab", Disposition: "CONFIRMED",
+				Refuters: []pawlRefuter{
+					{Family: "codex", Evidence: ".agents/r1.md"},
+					{Family: "fable"},
+					{Family: "claude"},
+				},
+			},
+			wantFamily:   "claude+gpt", // fable->claude (dedup w/ claude), codex->gpt; sorted
+			wantEvidence: ".agents/r1.md",
+		},
+		{
+			name: "single family; evidence falls back to council_artifact",
+			v: pawlVerdict{
+				BeadID: "ag-b", HeadSHA: "abcdef012345", Disposition: "CONFIRMED",
+				Refuters:        []pawlRefuter{{Family: "claude"}},
+				CouncilArtifact: ".agents/council/x.md",
+			},
+			wantFamily:   "claude",
+			wantEvidence: ".agents/council/x.md",
+		},
+		{
+			name: "off-roster family and no evidence => empty enrichment (not junk)",
+			v: pawlVerdict{
+				BeadID: "ag-c", HeadSHA: "aaaaaaabbbbb", Disposition: "REFUTED",
+				Refuters: []pawlRefuter{{Family: "totally-fake"}},
+			},
+			wantFamily:   "",
+			wantEvidence: "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := buildVerdictCommitEdge(tc.v)
+			if e.ReviewerFamily != tc.wantFamily {
+				t.Errorf("ReviewerFamily = %q, want %q", e.ReviewerFamily, tc.wantFamily)
+			}
+			if e.EvidencePath != tc.wantEvidence {
+				t.Errorf("EvidencePath = %q, want %q", e.EvidencePath, tc.wantEvidence)
+			}
+			if e.BeadID != tc.v.BeadID {
+				t.Errorf("BeadID = %q, want %q (structured join key)", e.BeadID, tc.v.BeadID)
+			}
+			// No source in a v1 verdict file — must stay empty (additive).
+			if e.Degraded || e.Rounds != 0 || e.DurationS != 0 {
+				t.Errorf("degraded/rounds/duration_s should be empty, got %v/%d/%g",
+					e.Degraded, e.Rounds, e.DurationS)
+			}
+		})
+	}
+}
+
+// TestEmitVerdict_RealArtifact_DerivesReviewerFamily proves the sensor derives
+// the v1.1 reviewer_family from the REAL producer artifact (fixture-fidelity):
+// the tracked sample carries one refuter (family claude) and no evidence path,
+// so the edge gains reviewer_family=claude + a structured bead_id while
+// evidence_path/degraded/rounds/duration_s stay empty.
+func TestEmitVerdict_RealArtifact_DerivesReviewerFamily(t *testing.T) {
+	fixture := filepath.Join("..", "..", "..", "tests", "fixtures", "provenance", "pawl-verdict-real-sample.json")
+	v, err := extractVerdict(fixture)
+	if err != nil {
+		t.Fatalf("extractVerdict: %v", err)
+	}
+	e := buildVerdictCommitEdge(v)
+	if e.ReviewerFamily != "claude" {
+		t.Errorf("ReviewerFamily = %q, want claude", e.ReviewerFamily)
+	}
+	if e.EvidencePath != "" {
+		t.Errorf("EvidencePath = %q, want empty (fixture carries no evidence path)", e.EvidencePath)
+	}
+	if e.BeadID != v.BeadID {
+		t.Errorf("BeadID = %q, want %q", e.BeadID, v.BeadID)
+	}
+}
+
 // TestEmitVerdict_ConsumesRealProducerArtifact is the producer→sensor seam
 // guard (age-d16-self-hosting-route-nkr.1 / M1). The fixture is the REAL on-disk
 // artifact emitted by `scripts/pawl-verdict.sh write` (not a hand-built struct),

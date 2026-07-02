@@ -310,3 +310,47 @@ func TestIsContentRef(t *testing.T) {
 		}
 	}
 }
+
+// TestVerifyChain_V11EnrichmentAdditive is the drrebuild half of the age-rk3r.3
+// additivity guarantee: this parallel implementation of the ledger hashing must
+// stay faithful when a record carries the v1.1 enrichment fields (reviewer_family,
+// degraded, rounds, duration_s, evidence_path), which ARE part of payload_hash.
+// A chain mixing a v1-shaped event and a v1.1-shaped event verifies clean, and
+// the fields survive the JSONL round-trip — proving the DR rebuild neither
+// falsely reports v1.1 records as tampered nor silently drops the enrichment.
+func TestVerifyChain_V11EnrichmentAdditive(t *testing.T) {
+	chained, jsonl := buildChainedLedger(t, []LedgerEvent{
+		{SchemaVersion: "agentops-sdlc-provenance.v1", FromID: "ag-old", FromType: "bead",
+			ToID: "abc123", ToType: "commit", Relation: "wasGeneratedBy",
+			TrustTier: "authored", TS: "2026-07-01T00:00:00Z"},
+		{SchemaVersion: "agentops-sdlc-provenance.v1", FromID: "ag-new@abc1234", FromType: "verdict",
+			ToID: "abc1234def", ToType: "commit", Relation: "wasDerivedFrom",
+			TrustTier: "inferred", TS: "2026-07-01T01:00:00Z",
+			ReviewerFamily: "claude+gpt", Degraded: true, Rounds: 2, DurationS: 7.5,
+			EvidencePath: ".agents/x.md"},
+	})
+
+	// The mixed chain verifies through the (now v1.1-aware) parallel implementation.
+	if err := VerifyChain(chained); err != nil {
+		t.Fatalf("mixed v1/v1.1 chain should verify, got: %v", err)
+	}
+
+	// The enrichment survives the JSONL round-trip (parse then re-verify).
+	parsed, err := ParseLedger(bytes.NewReader(jsonl))
+	if err != nil {
+		t.Fatalf("ParseLedger: %v", err)
+	}
+	if err := VerifyChain(parsed); err != nil {
+		t.Fatalf("parsed mixed chain should verify, got: %v", err)
+	}
+	v11 := parsed[1]
+	if v11.ReviewerFamily != "claude+gpt" || !v11.Degraded || v11.Rounds != 2 ||
+		v11.DurationS != 7.5 || v11.EvidencePath != ".agents/x.md" {
+		t.Fatalf("v1.1 enrichment lost through the ledger round-trip: %+v", v11)
+	}
+	// The v1 event stays field-empty (additive; no data invented).
+	if parsed[0].ReviewerFamily != "" || parsed[0].Degraded || parsed[0].Rounds != 0 ||
+		parsed[0].DurationS != 0 || parsed[0].EvidencePath != "" {
+		t.Errorf("v1 event unexpectedly gained enrichment fields: %+v", parsed[0])
+	}
+}
