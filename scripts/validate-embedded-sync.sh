@@ -35,6 +35,12 @@ check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/comp
 for s in pawl-review.sh pawl-verdict.sh pawl.sh; do
     check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
 done
+# The membrane-receipts generator + its freshness check ride along in the bundle so
+# `ao verify receipts` renders a repo's own proof page zero-config on the stranger
+# path (no AgentOps checkout to resolve them from). (age-rk3r.12)
+for s in gen-membrane-receipts.sh check-membrane-receipts-freshness.sh; do
+    check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
+done
 # The shared fail-closed codex runner (lib/codex-exec.sh) MUST ride along in the pawl
 # bundle: pawl-review.sh sources it script-relative ($SCRIPT_DIR/lib/codex-exec.sh), so on
 # the stranger/embedded path the extracted bundle needs scripts/lib/codex-exec.sh present

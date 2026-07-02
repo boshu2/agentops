@@ -26,6 +26,11 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 		// ($SCRIPT_DIR/lib/codex-exec.sh), so the stranger/embedded bundle MUST carry it or
 		// the cold review cannot start (age-gate-the-ungated-egwt.13).
 		{"pawl/scripts/lib/codex-exec.sh", []string{"scripts", "lib", "codex-exec.sh"}},
+		// The membrane-receipts generator + freshness check ride along so `ao verify
+		// receipts` renders a repo's proof page from the embedded bundle on the stranger
+		// path (age-rk3r.12); they must stay byte-identical to the repo scripts.
+		{"pawl/scripts/gen-membrane-receipts.sh", []string{"scripts", "gen-membrane-receipts.sh"}},
+		{"pawl/scripts/check-membrane-receipts-freshness.sh", []string{"scripts", "check-membrane-receipts-freshness.sh"}},
 		{"pawl/schemas/pawl-verdict.v1.schema.json", []string{"schemas", "pawl-verdict.v1.schema.json"}},
 	}
 	for _, tc := range cases {
@@ -64,6 +69,11 @@ func TestExtractPawlBundle(t *testing.T) {
 		// pawl-review.sh sources; the nested-dir walk + exec-normalize must handle it
 		// (age-gate-the-ungated-egwt.13).
 		filepath.Join("scripts", "lib", "codex-exec.sh"),
+		// The membrane-receipts generator + freshness check must extract executable so
+		// `ao verify receipts` renders a repo's proof page from the bundle on the
+		// stranger path (age-rk3r.12).
+		filepath.Join("scripts", "gen-membrane-receipts.sh"),
+		filepath.Join("scripts", "check-membrane-receipts-freshness.sh"),
 	}
 	for _, rel := range wantExec {
 		info, statErr := os.Stat(filepath.Join(dir, rel))
@@ -92,8 +102,8 @@ func TestPawlReviewColdEnv(t *testing.T) {
 	// repo under review UNTRUSTED so the script never executes $REPO_ROOT/cli/* (RCE guard).
 	want := map[string]bool{
 		"AGENTOPS_REPO_ROOT=/home/stranger/their-repo": false,
-		"PAWL_NO_SERVICE=1":   false,
-		"PAWL_UNTRUSTED_REPO=1": false,
+		"PAWL_NO_SERVICE=1":                            false,
+		"PAWL_UNTRUSTED_REPO=1":                        false,
 	}
 	var sawAOBin bool
 	for _, e := range env {
