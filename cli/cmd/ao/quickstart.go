@@ -25,6 +25,9 @@ This command:
   2. Optionally initializes beads (git-native issues)
   3. Creates starter knowledge pack
   4. Shows the software-factory operator lane
+  5. Ends one command away from a first verdict: it readies the provenance
+     ledger path, checks a reviewer CLI is reachable (the same check as
+     'ao doctor'), and prints the exact 'ao verify' command to run next
 
 Examples:
   ao quick-start              # Full setup with beads
@@ -45,6 +48,10 @@ type quickstartResult struct {
 	NoBeads   bool                       `json:"no_beads"`
 	Beads     string                     `json:"beads"`
 	Readiness *lifecycle.ReadinessReport `json:"readiness"`
+	// FirstVerdict is the final quick-start step: ledger readiness + reviewer
+	// reachability + the exact next command. Nil on --dry-run (no writes, no
+	// probes).
+	FirstVerdict *firstVerdictInfo `json:"first_verdict,omitempty"`
 }
 
 func init() {
@@ -143,18 +150,21 @@ func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode 
 	if err != nil {
 		return err
 	}
+	firstVerdict := prepareFirstVerdict()
 	if jsonMode {
 		return outputQuickstartResult(quickstartResult{
-			Path:      cwd,
-			Minimal:   true,
-			NoBeads:   noBeads,
-			Beads:     "skipped-minimal",
-			Readiness: report,
+			Path:         cwd,
+			Minimal:      true,
+			NoBeads:      noBeads,
+			Beads:        "skipped-minimal",
+			Readiness:    report,
+			FirstVerdict: firstVerdict,
 		})
 	}
 	fmt.Println("\n✓ Minimal setup complete!")
 	printReadinessSummary(report)
 	showNextSteps(false)
+	printFirstVerdictStep(firstVerdict)
 	return nil
 }
 
@@ -185,16 +195,18 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 	}
 
 	beadsStatus := beadsReadinessStatus(cwd, noBeads)
+	firstVerdict := prepareFirstVerdict()
 	if jsonMode {
 		return outputQuickstartResult(quickstartResult{
-			Path:      cwd,
-			Minimal:   false,
-			NoBeads:   noBeads,
-			Beads:     beadsStatus,
-			Readiness: report,
+			Path:         cwd,
+			Minimal:      false,
+			NoBeads:      noBeads,
+			Beads:        beadsStatus,
+			Readiness:    report,
+			FirstVerdict: firstVerdict,
 		})
 	}
-	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report)
+	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict)
 	return nil
 }
 
@@ -208,7 +220,7 @@ func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
 	return true, nil
 }
 
-func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport) {
+func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo) {
 	quickstartBeadsStep(cwd)
 	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
 	if claudeAlreadyExisted {
@@ -223,6 +235,7 @@ func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, r
 	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
 	printReadinessSummary(report)
 	showNextSteps(!noBeads)
+	printFirstVerdictStep(firstVerdict)
 }
 
 func outputQuickstartResult(result quickstartResult) error {

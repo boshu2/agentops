@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"os/exec"
+	"strings"
 )
 
 // verifyCmd is the canonical front-door verb onto the pawl review engine
@@ -58,11 +60,29 @@ func init() {
 	rootCmd.AddCommand(verifyCmd)
 }
 
+// headShortSHA returns the 12-char HEAD sha of the repo at cwd, or "" when
+// not in a git repo (the engine then reports its own usage error).
+func headShortSHA() string {
+	out, err := exec.Command("git", "rev-parse", "--short=12", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
 // runVerify delegates to runPawlReview — the SAME code path `ao pawl review`
 // executes — and only decorates non-verdict failures with the `ao doctor`
 // pointer. Verdict exit codes (*pawlReviewExitError) propagate verbatim:
 // the exit code IS the verdict.
 func runVerify(cmd *cobra.Command, args []string) error {
+	// Bare `ao verify` (the README headline form) defaults the change label to
+	// the short HEAD sha instead of erroring: the engine requires a positional
+	// label, but the front door should not fail on its documented zero-arg use.
+	if len(args) == 0 {
+		if sha := headShortSHA(); sha != "" {
+			args = []string{"change-" + sha}
+		}
+	}
 	err := runPawlReview(cmd, args)
 	var exitErr *pawlReviewExitError
 	if err == nil || errors.As(err, &exitErr) {
