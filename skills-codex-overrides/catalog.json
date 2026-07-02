@@ -104,7 +104,7 @@
       "name": "converge",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified — parity twin suffices."
+      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
     },
     {
       "name": "converter",
@@ -128,7 +128,7 @@
       "name": "curate",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "dcg",
@@ -180,7 +180,7 @@
       "name": "flywheel",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "goals",
@@ -254,7 +254,7 @@
       "name": "operationalize",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "perf",
