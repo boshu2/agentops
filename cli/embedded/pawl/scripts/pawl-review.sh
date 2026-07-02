@@ -34,6 +34,12 @@
 # timed-out smoke REFUTES fail-first (exit 3) WITHOUT spending a reviewer round; a green smoke
 # attaches a LIVE RUNTIME EVIDENCE section to the reviewer packet + the bound verdict evidence.
 #
+# LAND DISCIPLINE — HIJACK GUARD (age-sylz): this review runs for minutes; NEVER share a
+# landing worktree between lanes, or a concurrent `git reset` can move HEAD mid-review and
+# bind the verdict onto the wrong commit. pawl-review snapshots HEAD at review start and
+# exports it as PAWL_REVIEW_START_HEAD; pawl-verdict.sh refuses to emit/bind the edge if the
+# live worktree HEAD no longer matches. Land each bead from its OWN isolated worktree.
+#
 # Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
 # Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 2 usage/precondition · 1 hard error.
 set -uo pipefail
@@ -430,7 +436,7 @@ while [[ $# -gt 0 ]]; do
     --context)       need_val "$1" "${2:-}"; extra="$2"; shift 2 ;;
     --smoke)         need_val "$1" "${2:-}"; smoke_cmd="$2"; shift 2 ;;
     --converge)      converge=1; shift ;;
-    -h|--help)       sed -n '2,37p' "$0"; exit 0 ;;
+    -h|--help)       sed -n '2,44p' "$0"; exit 0 ;;
     -*)              echo "pawl-review: unknown flag $1" >&2; exit 2 ;;
     *)               bead="$1"; shift ;;
   esac
@@ -609,6 +615,13 @@ esac
 head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
 [[ -n "$head" && "${#head}" -ge 7 ]] || { echo "pawl-review: cannot resolve HEAD sha" >&2; exit 1; }
+# age-sylz HIJACK GUARD: snapshot the HEAD this review is ABOUT and export it, so the
+# verdict step (pawl-verdict.sh write, cold path here; and the routed pawl.sh path, which
+# inherits the env) can refuse to bind if a concurrent lane resets a SHARED landing
+# worktree mid-review — a review runs for minutes, and binding onto a hijacked HEAD would
+# certify the WRONG commit (real incident 2026-07-02). The `check` stale-guard misses this
+# (it passes when verdict.head_sha and --head moved together).
+export PAWL_REVIEW_START_HEAD="$head"
 
 # age-mwhj: choose inline vs read-files-not-inline by packet size. Above the cap, the reviewer
 # (cold codex --sandbox read-only OR the warm panes) reads the changed files directly.
