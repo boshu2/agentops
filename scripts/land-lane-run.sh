@@ -51,7 +51,8 @@
 #                               guard script that blocks GitHub Actions/PR/merge
 #                               paths from the land lane (default bundled guard)
 #   LAND_LANE_AUTHOR_FAMILY     author family for the gate (default operator)
-#   BR_BIN / bd                 issue tracker close on a green land (best-effort)
+#   BR_BIN                      issue tracker (br) close on a green land (best-effort)
+#   AO_BIN                      ao binary, used to resolve `ao beads dir` for the close
 #
 # Exit codes: 0 clean (queue drained / one landed / watch interrupted);
 #             1 could not acquire the singleton lane lock (another lane runs);
@@ -86,7 +87,10 @@ GATE_CMD="${LAND_LANE_GATE_CMD:-}"
 GATE_ONLY_CMD="${LAND_LANE_GATE_ONLY_CMD:-}"
 LAND_CMD="${LAND_LANE_LAND_CMD:-}"
 AUTHOR_FAMILY="${LAND_LANE_AUTHOR_FAMILY:-operator}"
-BR_BIN="${BR_BIN:-$(command -v br 2>/dev/null || command -v bd 2>/dev/null || true)}"
+# bd/Dolt is RETIRED legacy (single-host SPOF, no offline lane) — never fall back to
+# it. The lane closes via br only; AO_BIN resolves the live private ledger for the close.
+BR_BIN="${BR_BIN:-$(command -v br 2>/dev/null || true)}"
+AO_BIN="${AO_BIN:-$(command -v ao 2>/dev/null || true)}"
 FLAKY_RETRY_SCRIPT="${LAND_LANE_FLAKY_RETRY_SCRIPT:-$SCRIPT_DIR/land-lane-flaky-retry.sh}"
 ASSERT_NO_ACTIONS_SCRIPT="${LAND_LANE_ASSERT_NO_ACTIONS_SCRIPT:-$SCRIPT_DIR/assert-no-actions.sh}"
 
@@ -547,6 +551,15 @@ process_one() {
 close_bead() {
   local bead="$1"
   [[ -n "$BR_BIN" ]] || return 0
+  # Resolve the live private ledger before calling br. In the canonical checkout
+  # and in linked worktrees $PWD/_beads is usually absent, so a bare `br close`
+  # fails ("Is a directory") and the || true swallows it — the bead silently never
+  # closes. Set BEADS_DIR via `ao beads dir` exactly like scripts/land.sh does.
+  # Best-effort throughout: a close failure must never fail an already-green land.
+  if [[ -z "${BEADS_DIR:-}" && -n "$AO_BIN" ]]; then
+    local _beads_dir; _beads_dir="$("$AO_BIN" beads dir 2>/dev/null || true)"
+    [[ -n "$_beads_dir" ]] && export BEADS_DIR="$_beads_dir"
+  fi
   "$BR_BIN" close "$bead" --reason "Landed via land-lane (agentops-2pl.9)" >/dev/null 2>&1 \
     || "$BR_BIN" close "$bead" >/dev/null 2>&1 || true
 }
