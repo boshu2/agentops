@@ -38,6 +38,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # (embedded) path resolves it script-relative from the extracted bundle's scripts/lib/.
 # shellcheck source=scripts/lib/codex-exec.sh
 . "$SCRIPT_DIR/lib/codex-exec.sh"
+# age-rk3r.17: source the per-repo verify config ONCE — resolves the checked-in
+# .aoverify.yaml (at the REVIEWED repo's root, via cwd) into exported PAWL_* using the
+# .5 Go bridge `ao verify --export-env`, so a committed, reviewable policy is honored
+# without hand-exporting env. Zero config emits nothing => byte-identical. Fail-safe:
+# guarded + a silent no-op when no ao is available, so it can never break a review.
+# Sourced script-relative so the embedded stranger bundle resolves its sibling copy.
+# shellcheck source=scripts/lib/verify-config.sh
+[ -f "$SCRIPT_DIR/lib/verify-config.sh" ] && . "$SCRIPT_DIR/lib/verify-config.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
