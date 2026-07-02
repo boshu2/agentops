@@ -227,19 +227,6 @@
       "codex_treatment": "bespoke"
     },
     {
-      "slug": "autodev",
-      "kind": "method",
-      "twin_path": "skills-codex/autodev/",
-      "source_path": "skills/autodev/",
-      "twin_files": {
-        "skill": "skills-codex/autodev/SKILL.md",
-        "prompt": "skills-codex/autodev/prompt.md",
-        "drift_marker": "skills-codex/autodev/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "bootstrap",
       "kind": "method",
       "twin_path": "skills-codex/bootstrap/",
@@ -339,19 +326,6 @@
         "skill": "skills-codex/skill-builder/SKILL.md",
         "prompt": "skills-codex/skill-builder/prompt.md",
         "drift_marker": "skills-codex/skill-builder/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "skill-auditor",
-      "kind": "method",
-      "twin_path": "skills-codex/skill-auditor/",
-      "source_path": "skills/skill-auditor/",
-      "twin_files": {
-        "skill": "skills-codex/skill-auditor/SKILL.md",
-        "prompt": "skills-codex/skill-auditor/prompt.md",
-        "drift_marker": "skills-codex/skill-auditor/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"

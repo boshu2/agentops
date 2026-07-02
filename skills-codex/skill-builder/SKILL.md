@@ -11,7 +11,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 ## ⚠️ Critical Constraints
 
 - **Template is canonical.** All four modes produce SKILL.md files conforming to `references/skill-template.md`. Do not invent ad-hoc structures. **Why:** the heal-skill deep audit validates against this template; drift creates auditor false-fails.
-- **Self-audit is mandatory.** After every successful build, the build script invokes the heal-skill audit (`heal-skill/scripts/audit.sh`) against the new skill directory. A FAIL verdict aborts the build. **Why:** PR-002 (external validation gate) — the builder must not declare its own work complete.
+- **Self-audit is mandatory.** After every successful build, the build script invokes the heal-skill deep audit (`audit.sh` in `skills/heal-skill/`) against the new skill directory. A FAIL verdict aborts the build. **Why:** PR-002 (external validation gate) — the builder must not declare its own work complete.
 - **Codex parity is day-1, not later.** `from-scratch`, `from-template`, and `absorb-external` modes must produce both `skills/<name>/SKILL.md` AND `skills-codex/<name>/SKILL.md` + `skills-codex/<name>/prompt.md`. **Why:** finding `2026-05-03-codex-skill-shape-is-dual-file` — codex SKILL.md uses slim frontmatter (no `skill_api_version`); prompt.md is mandatory; `audit-codex-parity.sh` is a content scanner that won't catch frontmatter drift.
 - **Editing an EXISTING skill also needs a manual twin mirror.** When you change `skills/<name>/references/*.md` or `SKILL.md`, manually mirror the content into `skills-codex/<name>/` (runtime-native), THEN run `scripts/regen-codex-hashes.sh --only <name>`. `make regen-all` only refreshes the twin's *hash record*, not its prose — a green `✓ codex hashes` over a stale twin looks handled but isn't. Verify with a content diff (`grep -c <new-token>` on both copies), not the hash exit code. **Why:** finding `2026-06-16-codex-twin-content-not-auto-mirrored` (age-aqu/age-yxl) — regen made the marker self-consistent with a stale twin (0-vs-2 token divergence) and nothing complained. The parity gate now blocks an un-mirrored `references/**` edit, but the mirror is still a manual step.
 - **250-line ceiling on new SKILL.md.** Use `references/` for overflow. **Why:** finding `f-2026-05-01-025` — every Skill() invocation reloads 5-15KB; multi-lifecycle sessions compound to 150-200KB+ pure scaffolding.
@@ -62,7 +62,7 @@ For `absorb-external`, the external SKILL.md's content (Constraints / Workflow /
 
 ### Phase 4: Self-audit
 
-The build script tail invokes the heal-skill deep audit (`skills/heal-skill/scripts/audit.sh`) on `skills/<new-name>`. WARN is acceptable for v1 skills (e.g., `experimental` stability). FAIL aborts.
+The build script tail invokes the heal-skill deep audit (`audit.sh` in `skills/heal-skill/`) on `skills/<new-name>`. WARN is acceptable for v1 skills (e.g., `experimental` stability). FAIL aborts.
 
 **Checkpoint:** `audit_pass=true` in build report.
 

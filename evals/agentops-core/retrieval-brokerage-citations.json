@@ -135,9 +135,10 @@
         {"type": "artifact_contains", "target": "../../docs/architecture/primitive-chains.md", "value": "`lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together"},
         {"type": "artifact_contains", "target": "../../docs/contracts/session-intelligence-trust-model.md", "value": "Any runtime surface that injects context must be able to explain:"},
         {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao lookup --query \"<topic>\""},
+        {"type": "artifact_contains", "target": "../../skills/operationalize/SKILL.md", "value": "Knowledge activation via ao knowledge (absorbed from /inject)"},
         {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "After applying, record each citation:"},
-        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao metrics cite"},
-        {"type": "artifact_contains", "target": "../../skills/bootstrap/SKILL.md", "value": "for decay-ranked"}
+        {"type": "artifact_contains", "target": "../../skills/operationalize/SKILL.md", "value": "record it with `ao metrics cite"},
+        {"type": "artifact_contains", "target": "../../skills/bootstrap/SKILL.md", "value": "then `ao lookup --query \"<topic>\"` for decay-ranked"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
     }

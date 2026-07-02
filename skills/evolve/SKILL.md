@@ -132,7 +132,8 @@ Evolve also fires for the folded-in use-cases of the retired `/autodev` skill:
 "manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick
 boundaries", PROGRAM.md repair. The contract is the config/intent layer the
 loop reads each cycle — NOT a loop itself
-([vocabulary](../domain/references/autodev.md)). The **`ao autodev` CLI
+([vocabulary](../domain/references/autodev.md)). The **ao autodev CLI
+(legacy-tagged `ao` builds: `go build -tags legacy`)
 outlives the retired skill** and remains the contract surface; the contract
 spec is [docs/contracts/autodev-program.md](../../docs/contracts/autodev-program.md).
 Step 0 below *consumes* a valid contract each run; this section is the
@@ -153,8 +154,8 @@ Infer the `init` objective from the user request or repo context; ask only when
 inventing it would make the contract misleading.
 
 **Repair validation failures.** When the user asked to create or fix the
-contract, patch the missing required sections and rerun
-`ao autodev validate --json`:
+contract, patch the missing required sections and rerun the validate command
+from the detection block above:
 
 | Required section | Repair guidance |
 |---|---|
@@ -170,14 +171,14 @@ contract, patch the missing required sections and rerun
 
 | Intent | Action |
 |--------|--------|
-| define or repair the repo-local autonomous policy | this section + `ao autodev` |
+| define or repair the repo-local autonomous policy | this section + ao autodev (legacy-tagged builds) |
 | run the repeated autonomous improvement loop | `/evolve` (the rest of this skill) |
 | run one bounded lifecycle | a single `/rpi` turn |
 
 Executable specs: [references/autodev.feature](references/autodev.feature)
 (contract-bounded loop, contract management ≠ the loop, loop discipline under
 autonomy) and [references/autodev-cli.feature](references/autodev-cli.feature)
-(`ao autodev {init,validate,show}` behavior, linked to `cli/cmd/ao` tests).
+(ao autodev {init,validate,show} behavior, linked to `cli/cmd/ao` tests).
 
 ## Execution Steps
 
@@ -541,7 +542,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 - [references/evolve.feature](references/evolve.feature) — Executable spec: gated cycles, ladder, bounded slice, never-self-halt
 - [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, contract management ≠ the loop, loop-discipline-under-autonomy (soc-qk4b; absorbed from /autodev)
-- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: `ao autodev` CLI command behavior, linked to cmd tests (soc-jnfgi; absorbed from /autodev)
+- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: ao autodev CLI command behavior, linked to cmd tests (soc-jnfgi; absorbed from /autodev)
 - [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules + operator-shape carve-out

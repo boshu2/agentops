@@ -87,12 +87,6 @@
       "ship": "direct"
     },
     {
-      "slug": "forge",
-      "path": "skills/forge/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
       "slug": "compile",
       "path": "skills/compile/",
       "category": "method-core",
@@ -117,12 +111,6 @@
       "ship": "direct"
     },
     {
-      "slug": "autodev",
-      "path": "skills/autodev/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
       "slug": "bootstrap",
       "path": "skills/bootstrap/",
       "category": "method-core",
@@ -137,12 +125,6 @@
     {
       "slug": "recover",
       "path": "skills/recover/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "inject",
-      "path": "skills/inject/",
       "category": "method-core",
       "ship": "direct"
     },
@@ -173,12 +155,6 @@
     {
       "slug": "skill-builder",
       "path": "skills/skill-builder/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "skill-auditor",
-      "path": "skills/skill-auditor/",
       "category": "method-core",
       "ship": "direct"
     },

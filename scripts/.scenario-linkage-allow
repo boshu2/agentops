@@ -31,11 +31,10 @@ skills/doc/references/readme.feature
 skills/domain/references/domain.feature
 skills/evolve/references/autodev.feature
 skills/evolve/references/evolve.feature
-skills/forge/references/forge.feature
 skills/handoff/references/handoff.feature
 skills/heal-skill/references/heal-skill.feature
 skills/implement/references/implement.feature
-skills/inject/references/knowledge-activation.feature
+skills/operationalize/references/knowledge-activation.feature
 skills/perf/references/perf.feature
 skills/plan/references/plan.feature
 skills/post-mortem/references/post-mortem.feature

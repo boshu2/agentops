@@ -36,7 +36,6 @@ bd-first-memory-migration
 
 # --- standalone operator/library/analyzer skills introduced by the expanded corpus ---
 automation-loop-hardening        # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-beads-workflow                   # retired — merged into beads-br (ag-ez7y6); entry kept only until the retire command removes the tree
 casr                             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 cass                             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 changelog-quality-pass           # standalone external-boundary or library/analyzer skill; no peer skill edge by design

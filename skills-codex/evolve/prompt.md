@@ -1,6 +1,6 @@
 # evolve
 
-Run `$evolve` as the Codex-facing operator loop: post-mortem finished work, analyze repo state, select or create the next highest-value item, let `$rpi` plan/pre-mortem/implement/validate it, harvest follow-ups, and repeat until a real stop condition fires. Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper. Do not shell out to a retired CLI wrapper as the Codex handoff for contract-managed (`$autodev`) work either — route it to `$evolve` or `$rpi`.
+Run `$evolve` as the Codex-facing operator loop: post-mortem finished work, analyze repo state, select or create the next highest-value item, let `$rpi` plan/pre-mortem/implement/validate it, harvest follow-ups, and repeat until a real stop condition fires. Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.
 
 ## Codex Execution Profile
 

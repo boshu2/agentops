@@ -97,7 +97,7 @@ PY
 
 # --- Pass 2: 8 NEW checks ------------------------------------------------
 
-# Check 1: description-has-triggers (FAIL on miss)
+# Check 1: description-has-triggers (WARN on miss; run_check registers severity)
 check_description_has_triggers() {
   local skill_md="$1"
   # Form (a): YAML | block scalar in description
@@ -208,7 +208,7 @@ check_references_modularization() {
   (( count > 0 ))
 }
 
-# Check 8: trigger-clarity (FAIL on miss)
+# Check 8: trigger-clarity (WARN on miss; run_check registers severity)
 check_trigger_clarity() {
   local skill_md="$1"
   awk '

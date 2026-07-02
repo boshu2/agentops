@@ -51,9 +51,11 @@ func findBeadsRepoRoot(t *testing.T) string {
 // capability lives only in a removed dir.
 func TestBeadsConsolidation_RetiredUmbrellaGone(t *testing.T) {
 	root := findBeadsRepoRoot(t)
-	beadsDir := filepath.Join(root, "skills", "beads")
-	if _, err := os.Stat(beadsDir); err == nil {
-		t.Fatalf("legacy umbrella skills/beads still exists; expected it retired --into beads-br")
+	for _, retired := range []string{"beads", "beads-workflow"} {
+		dir := filepath.Join(root, "skills", retired)
+		if _, err := os.Stat(dir); err == nil {
+			t.Fatalf("retired skills/%s still exists; expected it retired --into beads-br", retired)
+		}
 	}
 	for _, slug := range beadsConsolidationSurvivors {
 		dir := filepath.Join(root, "skills", slug)
@@ -117,7 +119,7 @@ func TestBeadsConsolidation_WorkflowFoldedIntoBR(t *testing.T) {
 		"polishing protocol":                           "polishing protocol",
 		"quality checklist":                            "self-contained",
 		"when beads are ready":                         "steady-state",
-		"bd→br doc migration":                          "br sync --flush-only",
+		"bd→br doc migration":                          "bd → br migration (docs)",
 		"lifecycle: claim-verify before dispatch":      "claim-verify",
 		"lifecycle: merged-before-close":               "merged to trunk",
 		"lifecycle: residual routed to successor":      "residual",
@@ -161,12 +163,19 @@ func TestBeadsConsolidation_LedgerCleanMergedInto(t *testing.T) {
 		strings.Contains(dispositionsSection, "- skill: beads\n") {
 		t.Errorf("active dispositions row for retired skill `beads` still present")
 	}
-	// Historical row present, merged-into beads-br.
-	if !strings.Contains(historicalSection, "\n  beads:\n") {
-		t.Errorf("historical: section missing a `beads:` terminal-state row")
+	// No active dispositions row for the folded conversion skill either.
+	if strings.Contains(dispositionsSection, "- skill:            beads-workflow\n") ||
+		strings.Contains(dispositionsSection, "- skill: beads-workflow\n") {
+		t.Errorf("active dispositions row for retired skill `beads-workflow` still present")
+	}
+	// Historical rows present, merged-into beads-br.
+	for _, retired := range []string{"beads", "beads-workflow"} {
+		if !strings.Contains(historicalSection, "\n  "+retired+":\n") {
+			t.Errorf("historical: section missing a `%s:` terminal-state row", retired)
+		}
 	}
 	if !strings.Contains(historicalSection, "merged-into: beads-br") &&
 		!strings.Contains(historicalSection, "merged-into:  beads-br") {
-		t.Errorf("historical `beads` row not recorded as merged-into beads-br")
+		t.Errorf("historical beads rows not recorded as merged-into beads-br")
 	}
 }

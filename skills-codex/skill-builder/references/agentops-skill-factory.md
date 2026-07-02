@@ -25,7 +25,7 @@ only.
 2. Score the target skill:
 
    ```bash
-   python3 skills/skill-auditor/scripts/score_agentops_skill.py skills/<name> --markdown
+   python3 skills/heal-skill/scripts/score_agentops_skill.py skills/<name> --markdown
    ```
 
 3. Pick the smallest score-improving patch, usually one of:
@@ -61,7 +61,7 @@ AgentOps artifacts:
 
 - source skill changes under `skills/`;
 - Codex runtime changes under `skills-codex/` or `skills-codex-overrides/`;
-- reusable scoring/audit scripts under `skills/skill-auditor/scripts/`;
+- reusable scoring/audit scripts under `skills/heal-skill/scripts/`;
 - clean-room standards under `docs/reference/` and `skills/standards/`.
 
 Avoid adding a duplicate top-level skill when an existing AgentOps skill already

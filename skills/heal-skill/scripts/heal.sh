@@ -27,6 +27,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${HEAL_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 SKILLS_ROOT="$REPO_ROOT/skills"
 
+# Retired-skill slugs from the dispositions ledger's historical: section.
+# A slug with a terminal (merged-into/cut) row is a DOCUMENTED retirement, and
+# "absorbed from /<slug>" trigger notes in the merge target are the repo's own
+# fold convention — Check 9 (DEAD_XREF) must not flag them. Parsed once; the
+# historical: mapping ends at the next top-level key (workflows:/dispositions:).
+RETIRED_SLUGS=""
+DISPOSITIONS_YAML="$REPO_ROOT/docs/contracts/skill-dispositions.yaml"
+if [[ -f "$DISPOSITIONS_YAML" ]]; then
+  RETIRED_SLUGS="$(awk '
+    /^historical:/ { in_hist=1; next }
+    in_hist && /^[a-z]/ { in_hist=0 }
+    in_hist && /^  [a-z][a-z0-9-]*:[[:space:]]*$/ {
+      slug=$1; sub(/:$/, "", slug); print slug
+    }
+  ' "$DISPOSITIONS_YAML" | sort -u)"
+fi
+
 # If no targets, scan all skill dirs (skills/ and skills-codex/)
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
   for d in "$REPO_ROOT"/skills/*/; do
@@ -418,6 +435,11 @@ for skill_dir in "${TARGETS[@]}"; do
       # (the generic Skill tool). Referencing them is correct, not a dead xref.
       clear|goal|skill|help|compact) continue ;;
     esac
+    # Retired slugs with a historical ledger row are documented folds
+    # ("absorbed from /<slug>" notes), not dead references.
+    if [[ -n "$RETIRED_SLUGS" ]] && grep -qx "$ref" <<<"$RETIRED_SLUGS"; then
+      continue
+    fi
     if [[ ! -d "$SKILLS_ROOT/$ref" ]]; then
       report "DEAD_XREF" "$skill_dir" "references /$ref but skill directory not found"
     fi

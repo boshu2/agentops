@@ -1062,7 +1062,7 @@
       "name": "agent-native",
       "source_skill": "skills/agent-native",
       "source_hash": "5e60d4ffe006099bbe8da5cbf567346cf414ddb3d92c19c7bcb5c53799111e66",
-      "generated_hash": "3cf83329793b6a9c72bd7488aa00cefe6e32c9589a4b4e68dcc341a9ec95df27"
+      "generated_hash": "87f84315cf4d69ed77a5abdc64c884feef940631c52a1843316b7c87668e179f"
     },
     {
       "name": "agy-native",
@@ -1236,7 +1236,7 @@
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "a6dd2bc01749bc4de340d95ea52f3dbea7d9050b54cdebdc552f37039d0d661f"
+      "generated_hash": "9c7e43e0786a194cca922fe0ff78890fa0ffac913d55aa9f9fb09f3594be3c63"
     },
     {
       "name": "goals",
@@ -1272,7 +1272,7 @@
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
       "source_hash": "608c1b2524020793eab05138dd606a5facca8a736493305b71036202f5063efe",
-      "generated_hash": "429a7069bb30eaf04616f34e82cfbb533bd8da064d854d04ed9ff46a07cc5be1"
+      "generated_hash": "5e049b9a0afc78d5d33ac0d9bc067d5d7ba36844d2f8aa79c6ab3129365504a9"
     },
     {
       "name": "implement",
@@ -1548,7 +1548,7 @@
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
       "source_hash": "5abb568b6916fb85dbdf23f1e4bb911bb9e78e92ef884b7e50adcb31990aec9b",
-      "generated_hash": "71e2d0baa9457da73c59d3fad970e11e889f5b23194aae5e3a6175d476549602"
+      "generated_hash": "5faff3bdd16e6aaa718ea34964ccea1a010535352eb68a046609fc854f774ee4"
     },
     {
       "name": "standards",

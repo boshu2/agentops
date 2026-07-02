@@ -266,3 +266,4 @@ Detailed body remains inline until Phase 2 extraction.
 - [references/curate.feature](references/curate.feature) — Executable spec: resolve mode + scope, acquire lock when writing shared state, mine into synthesis + br notes (soc-qk4b)
 - [references/harvest-governance.md](references/harvest-governance.md) — Governance model for `--mode=harvest`: sweep frequency, size budgets, staleness thresholds, cross-rig synthesis triggers, dedup policy (folded from retired harvest, cp-dxa)
 - [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for `--mode=forge` transcript mining (folded from retired forge)
+- [references/feedback-compiler-drafts.md](references/feedback-compiler-drafts.md) — draft-vs-provisional promotion rule for `cli/internal/feedbackcompiler` output in `docs/learnings/` (never auto-promote; folded from retired forge)

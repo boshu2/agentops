@@ -1,7 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T04:39:58Z",
-  "generated_at": "2026-07-02T04:50:18Z",
+  "generated_at": "2026-07-02T13:09:42Z",
   "summary": {
     "skills": 63,
     "hooks": 0,
@@ -10,8 +9,7 @@
     "eval_files": 56,
     "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 155
-    "capabilities": 151
+    "capabilities": 148
   },
   "surfaces": {
     "skills": [
@@ -277,7 +275,7 @@
         "path": "skills/curate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "evolve",
@@ -1299,12 +1297,9 @@
     ]
   },
   "capability_summary": {
-    "total": 155,
-    "skills": 70,
-    "cli_commands": 71,
-    "total": 151,
+    "total": 148,
     "skills": 63,
-    "cli_commands": 74,
+    "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1925,14 +1920,13 @@
       ],
       "drives_commands": [
         "ao dedup",
-        "ao defrag",
         "ao forge",
         "ao forge markdown",
         "ao forge transcript",
         "ao metrics"
       ],
       "path": "skills/curate/",
-      "references": 2
+      "references": 3
     },
     {
       "sku": "skill:dcg",
