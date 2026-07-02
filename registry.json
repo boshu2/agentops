@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-01T22:42:18Z",
+  "generated_at": "2026-07-02T02:00:49Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
@@ -2536,7 +2536,8 @@
         ".agents/research/*.md"
       ],
       "drives_commands": [
-        "ao ratchet"
+        "ao ratchet",
+        "ao session handoff"
       ],
       "path": "skills/handoff/",
       "references": 0

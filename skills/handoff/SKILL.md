@@ -44,7 +44,7 @@ to exactly where it was**: the active goal, the claimed bead(s), held file
 reservations, the peer/comms topology, and a pointer to the working thread. A
 thin handoff makes `clear` destructive; a complete one makes the agent
 disposable-yet-continuous (the system-not-DAG property at the orchestrator
-level). The structured artifact is `ao handoff` → `.agents/handoff/` (JSON;
+level). The structured artifact is `ao session handoff` → `.agents/handoff/` (JSON;
 `--no-kill` writes without the tmux restart).
 
 ## Every handoff is a compounding artifact
