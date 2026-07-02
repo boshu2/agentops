@@ -578,6 +578,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for reverse-engineer"
+    },
+    {
+      "name": "ms",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Auto-generated parity twin (codex-sync): skills/ms is the source of truth; no durable Codex-specific divergence yet."
     }
   ]
 }

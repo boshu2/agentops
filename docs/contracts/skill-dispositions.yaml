@@ -1014,6 +1014,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already)."
+  - skill:            ms
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/ms/SKILL.md
+    aliases:          [meta_skill]
+    supersedes:       null
+    rationale:        "Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass."
   - skill:            cc-hooks
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting

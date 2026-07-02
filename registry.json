@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 63,
+    "skills": 64,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 148
+    "capabilities": 149
   },
   "surfaces": {
     "skills": [
@@ -131,6 +131,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 7
+      },
+      {
+        "name": "ms",
+        "tier": "execution",
+        "path": "skills/ms/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "ntm",
@@ -1296,8 +1304,8 @@
     ]
   },
   "capability_summary": {
-    "total": 148,
-    "skills": 63,
+    "total": 149,
+    "skills": 64,
     "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
@@ -2309,6 +2317,34 @@
       ],
       "path": "skills/implement/",
       "references": 7
+    },
+    {
+      "sku": "skill:ms",
+      "name": "ms",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "capability_class": "corpus",
+      "purpose": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [
+        "meta_skill"
+      ],
+      "supersedes": null,
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/ms/",
+      "references": 0
     },
     {
       "sku": "skill:ntm",

@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-02T14:41:59Z",
-  "skill_count": 63,
+  "generated_at": "2026-07-02T15:18:40Z",
+  "skill_count": 64,
   "skills": [
     {
       "name": "account-rotation",
@@ -589,6 +589,20 @@
         }
       ],
       "references_count": 7,
+      "codex_override_present": true
+    },
+    {
+      "name": "ms",
+      "description": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
