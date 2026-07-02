@@ -332,6 +332,39 @@ _autobind_ledger_edge() {
   echo "pawl-verdict: auto-bound verdict ledger edge at ${sha:0:12} ($msg)" >&2
 }
 
+# _assert_review_head_unmoved: HIJACK GUARD (age-sylz). pawl-review.sh exports
+# PAWL_REVIEW_START_HEAD = the HEAD sha it snapshotted when it resolved the diff for
+# review. A cross-family review runs for MINUTES, and a concurrent lane can `git reset`
+# a SHARED landing worktree mid-review — which would bind THIS verdict's edge onto the
+# OTHER lane's commit (a real incident 2026-07-02). The `check` stale-guard
+# (verdict.head_sha vs --head) CANNOT catch it: it passes when both moved together. This
+# guard compares the LIVE worktree HEAD against the review-start snapshot and refuses the
+# emit/bind on any difference, naming BOTH shas + the failure mode. The compared repo is
+# the ledger root the emit/auto-bind would target (_ledger_root_from_cwd), so it protects
+# the exact tree the edge would be committed into. Returns 0 = snapshot absent (older
+# caller — prior behavior) OR live HEAD equals the snapshot (proceed); nonzero = the
+# worktree HEAD moved (refuse).
+_assert_review_head_unmoved() {
+  local snap="${PAWL_REVIEW_START_HEAD:-}"
+  [[ -n "$snap" ]] || return 0          # older caller: no snapshot => prior behavior (bind)
+  local root now
+  root="$(_ledger_root_from_cwd)"
+  now="$(git -C "$root" rev-parse HEAD 2>/dev/null || true)"
+  [[ -n "$now" ]] || return 0           # no resolvable live HEAD => cannot prove a move; do not block
+  [[ "$now" == "$snap" ]] && return 0   # unmoved => bind
+  {
+    echo "pawl-verdict: =================================================================="
+    echo "pawl-verdict: REFUSING to emit/bind the verdict edge — worktree HEAD moved during"
+    echo "pawl-verdict: review — possible concurrent-lane hijack; re-run the review."
+    echo "pawl-verdict:   review-start HEAD (snapshot) : $snap"
+    echo "pawl-verdict:   worktree HEAD now (bind-time): $now"
+    echo "pawl-verdict: A shared landing worktree was reset/advanced by another lane while the"
+    echo "pawl-verdict: cross-family review ran, so this verdict would bind onto the WRONG commit."
+    echo "pawl-verdict: =================================================================="
+  } >&2
+  return 1
+}
+
 # emit_verdict_edge_checked <verdict-file> <bead> <disposition>: the CHECKED
 # replacement for both former best-effort `… || true` emit sites (write +
 # rebind). Always returns 0 — the sensor must never change the caller's primary
@@ -892,6 +925,15 @@ do_write() {
     > "$tmp" || { rm -f "$tmp"; die "failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
+
+  # HIJACK GUARD (age-sylz): before emitting/binding the verdict edge, confirm the
+  # worktree HEAD still equals the sha pawl-review.sh snapshotted at review start
+  # (PAWL_REVIEW_START_HEAD). If a concurrent lane reset a SHARED landing worktree
+  # mid-review, binding here would attach this verdict onto the OTHER lane's commit
+  # — refuse fail-closed (exit nonzero, no edge). Absent snapshot => prior behavior.
+  if ! _assert_review_head_unmoved; then
+    return 1
+  fi
 
   # Emit verdict→commit provenance edge (ag-cm8nd sensor) — CHECKED, and on a
   # real append auto-bind the ledger edge (age-wedge-all-in-dyr0.3). Fail-open
