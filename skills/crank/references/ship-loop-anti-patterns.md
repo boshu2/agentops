@@ -1,6 +1,6 @@
 # /ship-loop anti-patterns
 
-Eight observed patterns to avoid when shipping in the bot-paired fast lane.
+Nine observed patterns to avoid when shipping in the bot-paired fast lane.
 
 ## 1. Shipping an inventory-touching PR without the regen sweep
 
@@ -101,6 +101,19 @@ bats tests/scripts/<name>.bats
 Run BEFORE `git commit`. Fix any failures in the same commit. Treat the bats suite as the regression-guard contract for the script's documented semantics.
 
 **Evidence (historical):** PR #352 (`soc-98o8`) first push removed an explicit fast-mode skip branch in the (now-retired) `scripts/pre-push-gate.sh` eval-canary trigger logic. A bats test in `tests/scripts/pre-push-gate.bats` ("skips eval canaries by default for eval changes in local fast mode") FAILed on CI. Local bats run would have caught it pre-push. Re-pushed with semantics preserved; all 55 tests then green. The lesson generalizes beyond pre-push-gate.sh: any gate/validator script with a sibling bats file gets the same treatment.
+
+## 9. Closing a bead on push output alone under direct-push-to-main
+
+**Pattern:** Under direct-push-to-main with concurrent lanes running, the operator runs `git push`, sees a success line, and closes the bead on that output alone.
+
+**Why it costs:** `git push` success output lies about what actually landed. Another lane can win the race to the tip, so a bead closed on push output alone can be closed against a commit that never became reachable from `origin/main` — the tracker reads "done" while the work is not on main.
+
+**Rule:** After push, prove the landing before closing the bead:
+1. `git fetch origin`
+2. `git merge-base --is-ancestor <landed-sha> origin/main` MUST pass (exit 0) — the deterministic proof the commit is reachable from the canonical tip.
+3. Only then close via `ao done <bead-id> --sha <landed-sha>`, so the close carries the commit-bound verdict stamp.
+
+**Evidence:** Seen live 2026-07-01 under parallel-lane churn on this repo's hot main — a `git push` reported success but the pushed tip lost the race and never became an ancestor of `origin/main`.
 
 ## When you've violated one of these
 
