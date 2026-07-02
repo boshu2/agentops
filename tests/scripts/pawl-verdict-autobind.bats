@@ -247,3 +247,110 @@ run_write() {
   [[ "$output" == *"SECONDARY-STATUS: provenance-emit=1"* ]]
   [ "$(git -C "$REPO" rev-parse HEAD)" = "$HEAD0" ]
 }
+
+# ---------------------------------------------------------------------------
+# (age-7krl) foreign same-file ledger rows swept into the bind commit
+#
+# The path-scoped bind commit captures the whole working-tree-vs-HEAD delta of
+# docs/provenance/ledger.jsonl — so any rows already sitting UNCOMMITTED before
+# this run's emit (another lane's leftovers or an aborted run) ride into the bind
+# commit even though this run never emitted them. The auto-bind must WARN loudly
+# (count + NAME the foreign rows) but NOT block, NOT change what is committed, and
+# NOT reorder rows (hash-chained ledger rows must not be rewritten).
+# ---------------------------------------------------------------------------
+
+# (a) one pre-existing foreign row -> warned + still committed
+@test "foreign uncommitted row: warned (counted + named) and still swept into the bind commit" {
+  local frow='{"schema_version":"agentops-sdlc-provenance.v1","from_id":"age-FOREIGN@9999999","from_type":"verdict","to_id":"9999999888888877777776666666555555544444","to_type":"commit","relation":"wasDerivedFrom","evidence_ref":"foreign leftover row","trust_tier":"inferred","ts":"2026-06-30T00:00:00Z","prev_hash":"ae78526f","payload_hash":"cafef00d","hash":"f00dcafe"}'
+  printf '%s\n' "$frow" >> "$LEDGER"
+  # sanity: the leftover is uncommitted before the run
+  [ -n "$(git -C "$REPO" status --porcelain -- docs/provenance/ledger.jsonl)" ]
+
+  run run_write AO_STUB_APPEND=1
+  echo "# status=$status" >&3
+  echo "# output=$output" >&3
+  [ "$status" -eq 0 ]
+
+  # LOUD warning: counts 1 foreign row and NAMES it (from_id -> to_id)
+  [[ "$output" == *"WARNING — the auto-bind commit will SWEEP IN 1 pre-existing ledger"* ]]
+  [[ "$output" == *"age-FOREIGN@9999999 -> 9999999888888877777776666666555555544444"* ]]
+  [[ "$output" == *"SECONDARY-STATUS: autobind-foreign-rows=1"* ]]
+
+  # NOT blocked: the bind commit still lands, exact #trivial subject, ledger-only
+  tip="$(git -C "$REPO" rev-parse HEAD)"
+  [ "$tip" != "$HEAD0" ]
+  [ "$(git -C "$REPO" log -1 --format=%s "$tip")" = "$BIND_MSG" ]
+  [ "$(git -C "$REPO" diff-tree --no-commit-id --name-only -r "$tip")" = "docs/provenance/ledger.jsonl" ]
+
+  # BOTH rows are in the committed ledger — nothing dropped (warn-only)
+  run git -C "$REPO" show "$tip:docs/provenance/ledger.jsonl"
+  [[ "$output" == *'"from_id":"age-FOREIGN@9999999"'* ]]
+  [[ "$output" == *'"from_id":"age-autobind-test@1111111"'* ]]
+
+  # worktree left clean for the ledger path
+  [ -z "$(git -C "$REPO" status --porcelain -- docs/provenance/ledger.jsonl)" ]
+}
+
+# (b) clean ledger -> auto-bind fires but NO foreign-row warning
+@test "clean ledger: successful emit auto-binds with NO foreign-row warning" {
+  run run_write AO_STUB_APPEND=1
+  echo "# status=$status output=$output" >&3
+  [ "$status" -eq 0 ]
+  # sanity: the clean path still auto-binds
+  [ "$(git -C "$REPO" rev-parse HEAD)" != "$HEAD0" ]
+  # NO foreign-row warning of any kind on a clean ledger
+  [[ "$output" != *"SWEEP IN"* ]]
+  [[ "$output" != *"autobind-foreign-rows"* ]]
+}
+
+# (a') multiple pre-existing foreign rows -> all counted and named
+@test "multiple foreign rows: all counted and named in the warning" {
+  local f1 f2
+  f1='{"schema_version":"agentops-sdlc-provenance.v1","from_id":"age-FOR1@9999999","from_type":"verdict","to_id":"aaaa111122223333444455556666777788889999","to_type":"commit","relation":"wasDerivedFrom","evidence_ref":"leftover 1","trust_tier":"inferred","ts":"2026-06-30T00:00:00Z","prev_hash":"ae78526f","payload_hash":"cafef00d","hash":"f00dcafe"}'
+  f2='{"schema_version":"agentops-sdlc-provenance.v1","from_id":"age-FOR2@8888888","from_type":"verdict","to_id":"bbbb111122223333444455556666777788889999","to_type":"commit","relation":"wasDerivedFrom","evidence_ref":"leftover 2","trust_tier":"inferred","ts":"2026-06-30T01:00:00Z","prev_hash":"f00dcafe","payload_hash":"beadfeed","hash":"feedbead"}'
+  printf '%s\n%s\n' "$f1" "$f2" >> "$LEDGER"
+
+  run run_write AO_STUB_APPEND=1
+  echo "# status=$status output=$output" >&3
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SWEEP IN 2 pre-existing ledger"* ]]
+  [[ "$output" == *"age-FOR1@9999999 -> aaaa111122223333444455556666777788889999"* ]]
+  [[ "$output" == *"age-FOR2@8888888 -> bbbb111122223333444455556666777788889999"* ]]
+  [[ "$output" == *"autobind-foreign-rows=2"* ]]
+  # still lands, ledger-only
+  tip="$(git -C "$REPO" rev-parse HEAD)"
+  [ "$tip" != "$HEAD0" ]
+  [ "$(git -C "$REPO" diff-tree --no-commit-id --name-only -r "$tip")" = "docs/provenance/ledger.jsonl" ]
+}
+
+# (c) untracked-ledger edge: git cannot diff it, so the whole file is foreign
+@test "untracked ledger: pre-existing rows are treated as foreign and warned" {
+  # Model a truly UNTRACKED ledger: drop it from history, then recreate it in the
+  # working tree with a leftover row (absent from HEAD and the index, so git diff
+  # cannot see it and the pre-existing content is entirely foreign).
+  git -C "$REPO" rm -q -- docs/provenance/ledger.jsonl
+  git -C "$REPO" commit -qm "drop ledger from history"
+  local base; base="$(git -C "$REPO" rev-parse HEAD)"
+  mkdir -p "$REPO/docs/provenance"
+  local frow='{"schema_version":"agentops-sdlc-provenance.v1","from_id":"age-UNTRACKED@7777777","from_type":"verdict","to_id":"7777777666666655555554444444333333322222","to_type":"commit","relation":"wasDerivedFrom","evidence_ref":"untracked leftover","trust_tier":"inferred","ts":"2026-06-30T00:00:00Z","prev_hash":"","payload_hash":"cafef00d","hash":"f00dcafe"}'
+  printf '%s\n' "$frow" > "$LEDGER"
+  # sanity: genuinely untracked (ls-files errors on an untracked path)
+  if git -C "$REPO" ls-files --error-unmatch -- docs/provenance/ledger.jsonl >/dev/null 2>&1; then
+    echo "expected ledger to be untracked" >&2; return 1
+  fi
+
+  run run_write AO_STUB_APPEND=1
+  echo "# status=$status output=$output" >&3
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SWEEP IN 1 pre-existing ledger"* ]]
+  [[ "$output" == *"age-UNTRACKED@7777777 -> 7777777666666655555554444444333333322222"* ]]
+  [[ "$output" == *"autobind-foreign-rows=1"* ]]
+
+  # bind commit lands on the new base, ledger-only, holds both rows
+  tip="$(git -C "$REPO" rev-parse HEAD)"
+  [ "$tip" != "$base" ]
+  [ "$(git -C "$REPO" diff-tree --no-commit-id --name-only -r "$tip")" = "docs/provenance/ledger.jsonl" ]
+  run git -C "$REPO" show "$tip:docs/provenance/ledger.jsonl"
+  [[ "$output" == *"age-UNTRACKED@7777777"* ]]
+  [[ "$output" == *"age-autobind-test@1111111"* ]]
+}

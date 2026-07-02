@@ -140,6 +140,28 @@ _ledger_root_from_cwd() {
   printf '%s\n' "$PWD"
 }
 
+# _ledger_foreign_added_lines <root> <rel>: print the ledger's PRE-existing
+# uncommitted ADDED lines — content the pending path-scoped bind commit would
+# sweep in (the commit captures the whole working-tree-vs-HEAD delta of the path,
+# NOT just this run's appended edge), but which THIS run did not emit. Mirrors
+# that delta via `git diff HEAD` (captures both staged and unstaged mods, exactly
+# what `git add <rel> && git commit -- <rel>` will include). Handles the
+# untracked-ledger edge — where git cannot diff the file at all — by treating the
+# whole working-tree file as foreign. (age-7krl)
+_ledger_foreign_added_lines() {
+  local root="$1" rel="$2" diff
+  diff="$(git -C "$root" diff HEAD --no-color -- "$rel" 2>/dev/null)"
+  if [[ -n "$diff" ]]; then
+    printf '%s\n' "$diff" | awk '/^\+/ && !/^\+\+\+/ { print substr($0, 2) }'
+    return 0
+  fi
+  # No diff vs HEAD => either clean-tracked (nothing foreign) or fully untracked
+  # (git cannot diff it). Distinguish: an untracked path is absent from the index.
+  if [[ -f "$root/$rel" ]] && ! git -C "$root" ls-files --error-unmatch -- "$rel" >/dev/null 2>&1; then
+    cat -- "$root/$rel"
+  fi
+}
+
 # _in_prepush_context: true when a git push (or any git hook) is in flight, i.e.
 # creating a commit now would desync the ref git already selected for push.
 # PRIMARY: the explicit PAWL_PREPUSH marker exported by the pre-push gate entry
@@ -175,13 +197,46 @@ _warn_emit_failed() {
   } >&2
 }
 
+# _warn_foreign_ledger_rows <root> <rel> <foreign-lines>: the LOUD warn-only
+# sensor for the foreign-row sweep — counts and NAMES the pre-existing ledger
+# rows the pending bind commit will include but this run did NOT emit (renders
+# from_id -> to_id [relation] when the row parses as JSON, else the raw line).
+# WARN ONLY: it never blocks, never changes what is committed, and never reorders
+# rows — hash-chained ledger rows must not be rewritten. (age-7krl)
+_warn_foreign_ledger_rows() {
+  local root="$1" rel="$2" foreign="$3"
+  local n; n="$(printf '%s\n' "$foreign" | grep -c .)"
+  [[ "${n:-0}" -ge 1 ]] || return 0
+  {
+    echo "pawl-verdict: =================================================================="
+    echo "pawl-verdict: WARNING — the auto-bind commit will SWEEP IN $n pre-existing ledger"
+    echo "pawl-verdict: row(s) this pawl run did NOT emit — found uncommitted in $rel"
+    echo "pawl-verdict: BEFORE this run's verdict edge (another lane's leftovers or an"
+    echo "pawl-verdict: aborted run):"
+    local line desc
+    while IFS= read -r line; do
+      [[ -n "$line" ]] || continue
+      if desc="$(printf '%s' "$line" | jq -er 'select(.from_id or .to_id) | "\(.from_id // "?") -> \(.to_id // "?")  [\(.relation // "?")]"' 2>/dev/null)" && [[ -n "$desc" ]]; then
+        echo "pawl-verdict:   | $desc"
+      else
+        echo "pawl-verdict:   | ${line:0:200}"
+      fi
+    done < <(printf '%s\n' "$foreign")
+    echo "pawl-verdict: These foreign rows are committed AS-IS — hash-chained ledger rows"
+    echo "pawl-verdict: are never reordered or rewritten (warn-first). If they are not yours,"
+    echo "pawl-verdict: review the bind commit after it lands: git -C $root show HEAD"
+    echo "pawl-verdict: SECONDARY-STATUS: autobind-foreign-rows=$n (verdict outcome unchanged)"
+    echo "pawl-verdict: =================================================================="
+  } >&2
+}
+
 # _autobind_ledger_edge <bead> <disposition> <ledger-root>: commit the freshly
 # appended ledger edge as the established #trivial provenance-only shape.
 # Fail-closed on scope (only docs/provenance/ledger.jsonl can enter the commit),
 # fail-open on outcome (any failure warns loudly and returns 0 — the verdict and
 # the emitted row both stand).
 _autobind_ledger_edge() {
-  local bead="$1" disposition="$2" root="$3"
+  local bead="$1" disposition="$2" root="$3" foreign="${4:-}"
   local rel="docs/provenance/ledger.jsonl"
   local msg="chore(provenance): bind pawl $disposition verdict for $bead #trivial"
   local bind_cmd="git -C $root add -- $rel && git -C $root commit -m \"$msg\" -- $rel"
@@ -228,6 +283,15 @@ _autobind_ledger_edge() {
       echo "  $bind_cmd"
     } >&2
     return 0
+  fi
+
+  # WARN (warn-only — never blocks, never alters what is committed): if the
+  # ledger already carried uncommitted rows BEFORE this run's emit, the path-
+  # scoped bind commit will sweep those foreign rows in too. Name them loudly so
+  # no foreign row can ride in silently; they are still committed as-is (hash-
+  # chained rows must not be reordered/rewritten). (age-7krl)
+  if [[ -n "$foreign" ]]; then
+    _warn_foreign_ledger_rows "$root" "$rel" "$foreign"
   fi
 
   # Path-scoped bind commit: stage ONLY the ledger path (never -A), then a
@@ -292,6 +356,14 @@ emit_verdict_edge_checked() {
   ledger="$ledger_root/docs/provenance/ledger.jsonl"
   [[ -f "$ledger" ]] && before="$(wc -c < "$ledger" | tr -d '[:space:]')"
 
+  # Snapshot any PRE-emit uncommitted ledger rows (another lane's leftovers or an
+  # aborted run). The path-scoped bind commit sweeps the whole working-tree-vs-
+  # HEAD delta of the ledger path, so these foreign rows would ride into the bind
+  # commit even though this run never emitted them — capture them NOW so the
+  # auto-bind can WARN (warn-only; the rows are still committed as-is). (age-7krl)
+  local foreign_rows
+  foreign_rows="$(_ledger_foreign_added_lines "$ledger_root" "docs/provenance/ledger.jsonl")"
+
   local emit_out emit_rc=0
   emit_out="$("$_ao" provenance emit-verdict --file "$vfile_abs" 2>&1)" || emit_rc=$?
   if [[ "$emit_rc" -ne 0 ]]; then
@@ -302,7 +374,7 @@ emit_verdict_edge_checked() {
 
   [[ -f "$ledger" ]] && after="$(wc -c < "$ledger" | tr -d '[:space:]')"
   [[ "$after" != "$before" ]] || return 0   # nothing appended -> nothing to bind
-  _autobind_ledger_edge "$bead" "$disposition" "$ledger_root"
+  _autobind_ledger_edge "$bead" "$disposition" "$ledger_root" "$foreign_rows"
   return 0
 }
 
