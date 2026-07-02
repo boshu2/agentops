@@ -19,7 +19,40 @@ const (
 	ScopeWorktree Scope = "worktree"
 	// ScopeUpstream is the diff vs the upstream merge base (CI default).
 	ScopeUpstream Scope = "upstream"
+
+	// ScopeRangePrefix marks an explicit revision-range scope written
+	// "range:<base>..<head>". It routes on `git diff --name-only <base>..<head>`.
+	// Landing loops need it because a detached landing worktree has no upstream:
+	// the upstream/head fallbacks then see only the tip commit, so a c1+c2 train
+	// whose tests land in c2 falsely fails a co-change gate at c1. An explicit
+	// range spans the whole train.
+	ScopeRangePrefix = "range:"
 )
+
+// ScopeRange reports whether scope is a range scope ("range:<base>..<head>")
+// and returns the "<base>..<head>" revision spec verbatim. Callers validate the
+// spec with ValidateRangeSpec before use.
+func ScopeRange(scope Scope) (spec string, ok bool) {
+	s := string(scope)
+	if !strings.HasPrefix(s, ScopeRangePrefix) {
+		return "", false
+	}
+	return strings.TrimPrefix(s, ScopeRangePrefix), true
+}
+
+// ValidateRangeSpec checks a range scope's "<base>..<head>" spec is well-formed
+// enough to hand to `git diff`: non-empty and containing the ".." range
+// operator. It rejects a bare rev (e.g. "range:HEAD"), which git would
+// otherwise interpret as a diff against the working tree — a silent footgun.
+func ValidateRangeSpec(spec string) error {
+	if strings.TrimSpace(spec) == "" {
+		return fmt.Errorf("gates: range scope requires <base>..<head>, got empty range")
+	}
+	if !strings.Contains(spec, "..") {
+		return fmt.Errorf("gates: range scope %q must be a <base>..<head> revision range", spec)
+	}
+	return nil
+}
 
 // ChangedFilesPort reports the set of changed files (repo-relative, deduped)
 // for a scope.
@@ -80,6 +113,12 @@ func scopeArgs(scope Scope) ([]string, error) {
 	case ScopeUpstream:
 		return []string{"diff", "--name-only", "@{upstream}...HEAD"}, nil
 	default:
+		if spec, ok := ScopeRange(scope); ok {
+			if err := ValidateRangeSpec(spec); err != nil {
+				return nil, err
+			}
+			return []string{"diff", "--name-only", spec}, nil
+		}
 		return nil, fmt.Errorf("gates: unknown scope %q", scope)
 	}
 }

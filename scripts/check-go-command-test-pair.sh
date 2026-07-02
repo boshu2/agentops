@@ -19,6 +19,16 @@ fi
 
 collect_changed_files() {
     if git rev-parse --git-dir >/dev/null 2>&1; then
+        # Prefer an explicit push range when the gate exports one
+        # (ao gate check --scope range:<base>..<head>). A detached landing
+        # worktree has no @{upstream}, so the fallbacks below see only the tip
+        # commit and a c1+c2 train whose tests land in c2 falsely fails at c1.
+        # The explicit range spans the whole train. It is authoritative: an
+        # empty range diff means "nothing in range" (SKIP), not "fall through".
+        if [[ -n "${AGENTOPS_GATE_RANGE:-}" ]]; then
+            git diff --name-only "$AGENTOPS_GATE_RANGE" 2>/dev/null || true
+            return 0
+        fi
         if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
             ahead_files="$(git diff --name-only '@{upstream}...HEAD' 2>/dev/null || true)"
             if [[ -n "$ahead_files" ]]; then

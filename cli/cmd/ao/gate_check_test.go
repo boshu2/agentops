@@ -15,6 +15,86 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
+// nativeCheckReason builds a native FAIL/PASS check that carries a reason but no
+// LogTail — the shape (changelog.sync, learning.coherence, silent backing
+// scripts) that emitted an empty --json log_tail before age-wy2t.
+func nativeCheckReason(id string, status ports.GateStatus, reason string) gates.Check {
+	return gates.Check{
+		ID: id, Tiers: gates.Full, Blocking: true,
+		Run: func(context.Context, gates.RunContext) (ports.GateVerdict, error) {
+			return ports.GateVerdict{Status: status, Reason: reason}, nil
+		},
+	}
+}
+
+// TestGateCheck_FailJSONHasNonEmptyLogTail is the SLICE 2 acceptance end-to-end:
+// `ao gate check --full --json` on a FAILing native check emits a non-empty
+// log_tail carrying the reason, so a landing loop never has to re-run + tee-log
+// to learn which gate failed and why.
+func TestGateCheck_FailJSONHasNonEmptyLogTail(t *testing.T) {
+	reg := gates.NewRegistry()
+	if err := reg.Add(nativeCheckReason("n.fail", ports.GateStatusFail, "CHANGELOG.md != docs/CHANGELOG.md")); err != nil {
+		t.Fatal(err)
+	}
+	// A blocking FAIL returns a gateExitError; the JSON is still written first.
+	out, err := runGateCheckWith(t, reg, true, true)
+	if err == nil {
+		t.Fatal("blocking FAIL should return a gateExitError")
+	}
+	var parsed struct {
+		Gates []struct {
+			Name    string `json:"name"`
+			Status  string `json:"status"`
+			LogTail string `json:"log_tail"`
+		} `json:"gates"`
+	}
+	if uerr := json.Unmarshal([]byte(out), &parsed); uerr != nil {
+		t.Fatalf("unmarshal %q: %v", out, uerr)
+	}
+	if len(parsed.Gates) != 1 {
+		t.Fatalf("gates = %+v, want one", parsed.Gates)
+	}
+	g := parsed.Gates[0]
+	if g.Status != "FAIL" {
+		t.Fatalf("status = %q, want FAIL", g.Status)
+	}
+	if g.LogTail != "CHANGELOG.md != docs/CHANGELOG.md" {
+		t.Fatalf("log_tail = %q, want the reason (non-empty detail)", g.LogTail)
+	}
+}
+
+func TestApplyRangeScope_ExportsEnv(t *testing.T) {
+	t.Setenv("AGENTOPS_GATE_RANGE", "") // baseline + auto-restore
+	if err := applyRangeScope("range:origin/main..HEAD"); err != nil {
+		t.Fatalf("applyRangeScope: %v", err)
+	}
+	if got := os.Getenv("AGENTOPS_GATE_RANGE"); got != "origin/main..HEAD" {
+		t.Fatalf("AGENTOPS_GATE_RANGE = %q, want origin/main..HEAD", got)
+	}
+}
+
+func TestApplyRangeScope_NonRangeLeavesEnv(t *testing.T) {
+	t.Setenv("AGENTOPS_GATE_RANGE", "sentinel")
+	for _, scope := range []gates.Scope{gates.ScopeHead, gates.ScopeStaged, gates.ScopeUpstream} {
+		if err := applyRangeScope(scope); err != nil {
+			t.Fatalf("applyRangeScope(%q): %v", scope, err)
+		}
+	}
+	if got := os.Getenv("AGENTOPS_GATE_RANGE"); got != "sentinel" {
+		t.Fatalf("AGENTOPS_GATE_RANGE = %q, want unchanged sentinel", got)
+	}
+}
+
+func TestApplyRangeScope_InvalidRangeErrors(t *testing.T) {
+	t.Setenv("AGENTOPS_GATE_RANGE", "")
+	if err := applyRangeScope("range:HEAD"); err == nil {
+		t.Fatal("range without .. should error")
+	}
+	if err := applyRangeScope("range:"); err == nil {
+		t.Fatal("empty range should error")
+	}
+}
+
 func TestGateRepoRoot_ResolvesToScriptsParent(t *testing.T) {
 	root, err := gateRepoRoot()
 	if err != nil {
