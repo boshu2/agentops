@@ -75,6 +75,11 @@ Feature: Plan converts dense intent into executable slices
 6. **Baseline audit.** Mechanically count the current state before making
    quantitative claims: files, sections, LOC, tests, fixtures, schemas, and
    any SKILL.md files near size limits. Record commands and results.
+   Inventory facts are symbols too (2026-07-02, showcase kernel R10): any
+   count, file list, or "X is empty/absent" claim gets the same verification,
+   and consumers re-verify at the moment of use (`ls`/`jq`/`grep` cost
+   seconds) — three of nine duel round-1 findings were plan facts stale
+   within the hour they were written.
 7. **Choose detail level.** Minimal for 1-2 simple issues, Standard for 3-6
    issues, Deep for 7+ issues, broad refactors, or `--deep`.
 8. **Decompose into issues.** Each issue needs title, file ownership,

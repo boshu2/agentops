@@ -289,6 +289,16 @@ Before dispatching a validator, register intent on the bead graph (update status
 assign actor). **Two parallel validators on the same bead produce a dedup incident,
 not a cross-family quorum.** Check for an existing actor before spawning.
 
+### Judge lanes carry an explicit write-scope clamp (2026-07-02, showcase kernel R2)
+
+Every judge brief states, verbatim: **"READ-ONLY except writing your single verdict
+file at `<path>`. Do NOT commit, push, or run tracker/infra ops (git push, br/bd,
+dolt)."** The clamp is role-scoped, not model-scoped — crank workers legitimately
+hold broad write scopes; judges re-measure, they never mutate. Proven live: an
+unclamped codex acceptance judge pushed the feature branch unprompted and attempted
+`bd dolt push` twice mid-judgment. A judge that mutates while judging can corrupt
+the artifact under judgment or preempt the pawl.
+
 ### Judges re-measure; they do not read (card 8)
 
 A judge re-runs the cited commands on the actual artifacts. It does not read the
