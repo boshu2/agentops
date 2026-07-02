@@ -195,7 +195,8 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"compile",
 		"constraint",
 		"contradict",
-		"curate",
+		// "curate" archived behind the flywheel build tag (age-nzwo); absent
+		// from the default binary this test builds.
 		"dedup",
 		"lookup",
 		"knowledge",

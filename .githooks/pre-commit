@@ -8,7 +8,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# $0-relative resolution breaks when this hook is installed into .git/hooks
+# (dirname/$0/.. = .git). Ask git for the real root instead.
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # --- Go build/vet gate (only when cli/ files are staged) ---
 if command -v go >/dev/null 2>&1; then
