@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [dora-metrics, lean-startup]
 package main
 

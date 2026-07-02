@@ -146,15 +146,6 @@
 | `ao knowledge gaps` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao knowledge playbooks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao lookup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop append` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop blocked` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop converged` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop history` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop hypothesis append` | `public-stateful-fixture-needed` | `allowlisted` | Appends loop hypotheses and needs an isolated loop ledger fixture. |
-| `ao loop hypothesis list` | `public-stateful-fixture-needed` | `allowlisted` | Reads loop hypotheses and needs a representative loop ledger fixture. |
-| `ao loop next-work` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop write-stop-marker` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao mcp serve` | `public-tested` | `allowlisted` | Covered by mcpsurface and mcptransport adapter tests and command registration tests. |
 | `ao membrane catch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -169,13 +160,6 @@
 | `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao next-work materialize` | `public-tested` | `allowlisted` | Covered by nextworkmaterialize adapter tests and command registration tests. |
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate preflight` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate route` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate select` | `public-stateful-fixture-needed` | `allowlisted` | Selects work from repo-local orchestration state and needs a controlled queue fixture. |
-| `ao orchestrate shape` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate tools` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao orchestrate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pawl down` | `unsafe-live` | `allowlisted` | Kills the live standing opus+codex ATM pawl-service; ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh down live-proven (ml8.1). |
 | `ao pawl health` | `unsafe-live` | `allowlisted` | Probes a live standing ATM pawl-service; ao wrapper exit-code-tested; pawl.sh health live-proven. |

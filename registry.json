@@ -2,15 +2,16 @@
   "schema_version": 2,
   "generated_at": "2026-07-02T02:19:56Z",
   "generated_at": "2026-07-02T02:32:19Z",
+  "generated_at": "2026-07-02T02:37:53Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 76,
+    "cli_commands": 74,
     "workflows": 4,
-    "capabilities": 160
+    "capabilities": 158
   },
   "surfaces": {
     "skills": [
@@ -1026,16 +1027,6 @@
         ]
       },
       {
-        "name": "ao loop",
-        "path": "cli/cmd/ao/",
-        "purpose": "BC3 Loop operations (cycle history, etc.)",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "evolve",
-          "standards"
-        ]
-      },
-      {
         "name": "ao maturity",
         "path": "cli/cmd/ao/",
         "purpose": "Check and manage learning maturity levels",
@@ -1094,13 +1085,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Manage the session notebook (MEMORY.md)",
         "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao orchestrate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Out-of-session orchestration instruments (windshield)",
-        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1398,9 +1382,9 @@
     ]
   },
   "capability_summary": {
-    "total": 160,
+    "total": 158,
     "skills": 70,
-    "cli_commands": 76,
+    "cli_commands": 74,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1444,7 +1428,6 @@
     "install-guards",
     "knowledge",
     "lookup",
-    "loop",
     "maturity",
     "mcp",
     "membrane",
@@ -1452,7 +1435,6 @@
     "mine",
     "next-work",
     "notebook",
-    "orchestrate",
     "patterns",
     "pawl",
     "plan-pawl",
@@ -2209,7 +2191,6 @@
       ],
       "drives_commands": [
         "ao lookup",
-        "ao orchestrate shape",
         "ao plan-pawl decide",
         "ao ratchet",
         "ao search"
@@ -2357,15 +2338,6 @@
         "ao defrag",
         "ao goals",
         "ao lookup",
-        "ao loop",
-        "ao loop append",
-        "ao loop blocked",
-        "ao loop converged",
-        "ao loop history",
-        "ao loop hypothesis list",
-        "ao loop next-work",
-        "ao loop verify",
-        "ao loop write-stop-marker",
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
@@ -3486,9 +3458,7 @@
       ],
       "drives_commands": [
         "ao ci",
-        "ao corpus inject",
-        "ao loop",
-        "ao loop history"
+        "ao corpus inject"
       ],
       "path": "skills/standards/",
       "references": 23
@@ -3649,9 +3619,7 @@
       ],
       "drives_commands": [
         "ao agent",
-        "ao agent bundle",
-        "ao orchestrate preflight",
-        "ao orchestrate verify"
+        "ao agent bundle"
       ],
       "path": "skills/using-atm/",
       "references": 0
@@ -4542,27 +4510,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.loop",
-      "name": "ao loop",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "BC3 Loop operations (cycle history, etc.)",
-      "status": "active",
-      "driven_by_skills": [
-        "evolve",
-        "standards"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--mode",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.maturity",
       "name": "ao maturity",
       "type": "cli-command",
@@ -4698,23 +4645,6 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Manage the session notebook (MEMORY.md)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.orchestrate",
-      "name": "ao orchestrate",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Out-of-session orchestration instruments (windshield)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [

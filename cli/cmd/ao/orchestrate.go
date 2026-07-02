@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [hexagonal-architecture, safe-degradation]
 package main
 
