@@ -224,15 +224,63 @@ done
 # --scope head; and it is lineage-gated below (age-cwo.8 / council C).
 [[ "$converge" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --converge requires --scope head (it certifies a commit)" >&2; exit 2; }
 [[ -x "$PAWL" ]] || { echo "pawl-review: $PAWL not executable" >&2; exit 1; }
+# age-rk3r.1: resolve the cold REVIEWER adapter (default codex). The lib
+# (lib/codex-exec.sh) owns the per-adapter argv/marker/echo/sandbox contract and the run
+# classification; this script is a THIN switch — it honors REVIEWER for the precondition +
+# same-family guard, routes a non-codex reviewer to the COLD adapter (the warm tmux service
+# stays on its codex-family route), and passes REVIEWER through the environment to the lib.
+# local-mlx is EVAL-ONLY and is hard-refused IN-LIB in a prod context without
+# PAWL_EVAL_ADAPTERS_OK=1 (2026-06-23 ruling).
+# reviewer_family is the label written into the binding verdict's refuter entry (age-rk3r.1
+# refutation DEFECT 2: it was a hardcoded "codex", so REVIEWER=agy certified family=codex —
+# the wrong family in the proof artifact). Labels are values pawl-verdict.sh's
+# normalize_family roster accepts: codex keeps "codex" (byte-compat; canonicalizes to gpt),
+# agy writes the CANONICAL "gemini" (gemini|agy|google all collapse to gemini). local-mlx
+# gets a deliberately OFF-roster label: even an opted-in eval run's verdict must NEVER pass
+# the prod roster check (2026-06-23 ruling) — the checker rejects unknown families fail-closed.
+reviewer="$(printf '%s' "${REVIEWER:-codex}" | tr '[:upper:]' '[:lower:]')"
+case "$reviewer" in
+  ""|codex|codex-exec|gpt|openai)   reviewer="codex";     reviewer_bin="${CODEX_EXEC_BIN:-codex}"; reviewer_family="codex";     reviewer_family_re='gpt|codex|openai' ;;   # codex bin override is CODEX_EXEC_BIN (lib contract); REVIEWER_BIN is for non-codex adapters
+  agy|gemini|antigravity|google)    reviewer="agy";       reviewer_bin="${REVIEWER_BIN:-agy}";   reviewer_family="gemini";    reviewer_family_re='gemini|google|agy|antigravity' ;;
+  claude|anthropic|fable|opus|sonnet|haiku)
+    # No sanctioned COLD claude adapter exists (LAW 0: never `claude -p`); this arm exists so
+    # claude-roster names resolve to their real family instead of falling through with an empty
+    # family regex (round-5 pawl catch: an alias with an empty re SKIPPED the same-family guard —
+    # a self-approval bypass). A custom bridge may be supplied via REVIEWER_BIN; the default
+    # placeholder fails the bin precondition (exit 2) rather than running anything.
+    reviewer="$reviewer"; reviewer_bin="${REVIEWER_BIN:-claude-cold-adapter-unavailable}"; reviewer_family="claude"; reviewer_family_re='claude|anthropic|fable|opus|sonnet|haiku' ;;
+  local-mlx|localmlx|local_mlx|mlx) reviewer="local-mlx"; reviewer_bin="";      reviewer_family="local-mlx"; reviewer_family_re='' ;;   # eval-only; lib refuses in prod; off-roster on purpose
+  *)
+    # FAIL-CLOSED (round-5 pawl catch): an unknown reviewer name has no establishable model
+    # family, so the cross-family guarantee this command exists to provide cannot be checked —
+    # refuse rather than run with the same-family guard silently disabled.
+    echo "pawl-review: unknown reviewer '$reviewer' — no roster family, so the cross-family guard cannot run." >&2
+    echo "  Add the adapter to the reviewer roster (scripts/pawl-review.sh + lib/codex-exec.sh) with an" >&2
+    echo "  explicit family; refusing fail-closed. (exit 2 = precondition, not a REFUTE)" >&2
+    exit 2 ;;
+esac
+
 # age-a9iv.5: hard runtime deps are a PRECONDITION failure (exit 2), NOT a hard error (1) and NOT a
 # review result (3=REFUTED) — a missing dep that exits 1 is easy to misread as a real refutation. Name
 # the dep, say it is installable, and use the distinct precondition code so a caller can tell them apart.
-command -v codex >/dev/null 2>&1 || {
-  echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
-  echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
-  echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
-  exit 2
-}
+# age-rk3r.1: the precondition checks the RESOLVED reviewer's binary. codex keeps its exact message
+# (byte-compat); a non-codex adapter checks its own bin; local-mlx has no bin precondition here (the lib
+# hard-refuses it in a prod context without PAWL_EVAL_ADAPTERS_OK=1).
+if [[ "$reviewer" == "codex" ]]; then
+  command -v "$reviewer_bin" >/dev/null 2>&1 || {
+    echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
+    echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
+    echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
+    exit 2
+  }
+elif [[ -n "$reviewer_bin" ]]; then
+  command -v "$reviewer_bin" >/dev/null 2>&1 || {
+    echo "pawl-review: MISSING DEPENDENCY — '$reviewer_bin' (the '$reviewer' cross-family reviewer) is not on PATH." >&2
+    echo "  This is NOT a review result. Install the '$reviewer' reviewer CLI, put it on PATH, and re-run." >&2
+    echo "  (exit 2 = precondition, not a REFUTE)" >&2
+    exit 2
+  }
+fi
 command -v jq >/dev/null 2>&1 || {
   echo "pawl-review: MISSING DEPENDENCY — jq is not on PATH (the pawl parses verdicts with jq)." >&2
   echo "  This is NOT a review result. Install jq (brew install jq / apt-get install jq) and re-run." >&2
@@ -240,22 +288,26 @@ command -v jq >/dev/null 2>&1 || {
   exit 2
 }
 
-# The codex refuter is model family 'gpt' (codex|openai|gpt). A same-family AUTHOR
-# would make this a SAME-family review (shared blind spots), not the cross-family
-# check this command exists to provide — refuse it (use a different-family author, or
-# a different reviewer for codex-authored work). Defends a same-family false-CONFIRMED.
-# Case-INSENSITIVE + substring so Codex / GPT / openai-gpt cannot bypass the guard.
+# The refuter must be a DIFFERENT model family than the AUTHOR, or this is a SAME-family
+# review (shared blind spots), not the cross-family check this command exists to provide —
+# refuse it (use a different-family author, or a different reviewer). Defends a same-family
+# false-CONFIRMED. age-rk3r.1: the guard now keys on the RESOLVED reviewer's family
+# (codex=gpt/codex/openai, agy=gemini/google/…) so the SECOND reviewer is protected the same
+# way. Case-INSENSITIVE substring so family variants cannot bypass. (local-mlx is eval-only +
+# refused in prod, so it carries no family guard here.)
 af_lc="$(printf '%s' "$author_family" | tr '[:upper:]' '[:lower:]')"
-case "$af_lc" in
-  *gpt*|*codex*|*openai*)
-    echo "pawl-review: --author-family '$author_family' is the SAME model family (gpt/codex/openai) as the codex refuter — that is a same-family review, not the cross-family pawl this command provides. Review codex-authored work with a different-family reviewer." >&2
-    exit 2 ;;
-esac
+if [[ -n "$reviewer_family_re" && "$af_lc" =~ ($reviewer_family_re) ]]; then
+  echo "pawl-review: --author-family '$author_family' is the SAME model family as the '$reviewer' refuter — that is a same-family review, not the cross-family pawl this command provides. Review this work with a different-family reviewer." >&2
+  exit 2
+fi
 
-# The kill-budget snapshot. Historically this was captured into a `TIMEOUT_CMD` array HERE
-# (before the large-diff scaling below reassigns $TIMEOUT), so the cold run was killed at the
-# UNSCALED budget. Snapshot it at the SAME point to keep that timing byte-identical — the
-# lib's codex_exec_guarded owns the actual timeout/gtimeout wrapper + degrade-to-no-timeout
+# The kill-budget snapshot. INITIAL value here; FINALIZED after the large-diff scaling
+# below (see the age-iian re-snapshot). age-iian (FOLDED into age-rk3r.1): historically this
+# was the ONLY snapshot and it was captured BEFORE scale_review_timeout reassigns $TIMEOUT,
+# so a large read-files diff that scaled its budget up (e.g. 300s -> 540s) STILL got killed at
+# the UNSCALED 300s — the auto-scaled budget never reached the cold kill. run_review reads
+# REVIEW_TIMEOUT at CALL time (far below), so the fix is to RE-SNAPSHOT after scaling runs.
+# The lib's codex_exec_guarded owns the actual timeout/gtimeout wrapper + degrade-to-no-timeout
 # (codex_exec_timeout_cmd), so nothing is duplicated here. (age-gate-the-ungated-egwt.13)
 REVIEW_TIMEOUT="$TIMEOUT"
 # SECURITY (age-a9iv.4): the refuter runs with cwd = the repo under review so it can READ
@@ -281,6 +333,10 @@ run_review() {
   # statement (not an inline env prefix), so set it, then call.
   # shellcheck disable=SC2034  # consumed by codex_exec_guarded (sourced lib), not locally.
   local -a CODEX_EXEC_EXTRA_ARGS=(-c project_doc_max_bytes=0)
+  # REVIEWER is passed EXPLICITLY as the resolved/normalized adapter name, so the lib
+  # dispatches exactly what this script validated (precondition + same-family guard);
+  # the codex-specific vars (SANDBOX/EXTRA_ARGS) are ignored by non-codex adapters.
+  REVIEWER="$reviewer" \
   CODEX_EXEC_PROMPT_FILE="$prompt_file" \
   CODEX_EXEC_OUT_FILE="$raw_file" \
   CODEX_EXEC_TIMEOUT="$REVIEW_TIMEOUT" \
@@ -326,6 +382,14 @@ else
   read_instr="Do NOT use tools. Do NOT read files. Review ONLY the change below and reply with a verdict."
 fi
 
+# age-iian (FOLDED into age-rk3r.1): RE-SNAPSHOT the kill budget AFTER scale_review_timeout has
+# (possibly) raised $TIMEOUT for a large read-files packet. The earlier REVIEW_TIMEOUT snapshot
+# was taken BEFORE this scaling, so without this line the auto-scaled budget never reached the
+# cold reviewer kill (a large diff needing 540s was still killed at the unscaled 300s).
+# run_review consumes REVIEW_TIMEOUT (CODEX_EXEC_TIMEOUT) when it is CALLED below, so finalizing
+# the snapshot here lets the scaled budget through to the exec wrapper.
+REVIEW_TIMEOUT="$TIMEOUT"
+
 # Lineage key: the content hash of the reviewed diff. The adversarial run records it;
 # --converge requires a prior adversarial run on the IDENTICAL diff (no fuzzy "material
 # change" — an exact-hash match, which is unambiguous and safe). (age-cwo.8)
@@ -335,7 +399,9 @@ if command -v shasum >/dev/null 2>&1; then diff_hash="$(printf '%s' "$diff" | sh
 else diff_hash="$(printf '%s' "$diff" | sha256sum | cut -d' ' -f1)"; fi
 
 mkdir -p "$EVIDENCE_DIR"
-ctx="codex-fresh-${bead}-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null)"
+# The refuter context id names the RESOLVED reviewer (codex stays "codex-fresh-…",
+# byte-compat; agy runs are honestly "agy-fresh-…"). (age-rk3r.1 DEFECT 2)
+ctx="${reviewer}-fresh-${bead}-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null)"
 evidence="$EVIDENCE_DIR/${bead}-pawl-review.txt"
 prompt_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-prompt.XXXXXX")"
 raw_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-raw.XXXXXX")"
@@ -382,7 +448,9 @@ PROMPT
 # cold in a single session). One-time ~couple-min warmup; fail-safe — if `up` fails the
 # health check below stays false and we fall through to the cold path. Opt out:
 # PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
-if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
+# age-rk3r.1: only for the codex-family route. An explicit non-codex REVIEWER (e.g. agy) wants
+# the COLD portable adapter below — the warm tmux service stays on its own codex-family route.
+if [[ "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
    && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
   echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
   bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
@@ -395,8 +463,9 @@ fi
 # routing error falls through to the codex-exec path below (never fail-open). --converge
 # (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
 # routing would wrongly write a HEAD-bound verdict for an uncommitted diff) stay on the cold
-# path. Opt out: PAWL_NO_SERVICE=1.
-if [[ "$converge" -eq 0 && "$scope" == "head" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
+# path. Opt out: PAWL_NO_SERVICE=1. age-rk3r.1: an explicit non-codex REVIEWER also stays on the
+# cold adapter below (the warm service route is codex-family); "$reviewer" == "codex" gates this.
+if [[ "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
    && bash "$PAWL_SH" health >/dev/null 2>&1; then
   route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
   # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
@@ -445,7 +514,7 @@ fi
 # Run the refuter, CAPTURING the exit status: a timeout/crash must NOT be trusted as a
 # clean review (a partial output containing 'VERDICT: CONFIRMED' from a killed run could
 # otherwise write a passing verdict — fail-open). Retry once on a flat 0-byte stall.
-echo "pawl-review: running cross-family (codex) review of $scope diff for $bead (head ${head:0:12})…" >&2
+echo "pawl-review: running cross-family ($reviewer) review of $scope diff for $bead (head ${head:0:12})…" >&2
 # age-wjp0: backgrounding-reap hazard. When this script is launched DETACHED (harness
 # run_in_background / `nohup &`), its process group can be reaped mid-`codex exec` —
 # killing the review before the retry + fail-closed logic below ever runs, leaving ONLY
@@ -556,10 +625,12 @@ fi
 # the same check the pre-push gate runs. context_id differs from --author-context
 # (fresh-context floor). Absolute evidence path so check resolves it regardless of which
 # repo root the checker uses.
+# The refuter entry certifies the RESOLVED reviewer's family (age-rk3r.1 DEFECT 2 fix —
+# a hardcoded "codex" here made REVIEWER=agy certify family=codex in the binding verdict).
 "$PAWL" write "$bead" "$PR" \
   --disposition CONFIRMED --head "$head" \
   --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
-  --refuter "codex:CONFIRMED:${ctx}:${evidence}" \
+  --refuter "${reviewer_family}:CONFIRMED:${ctx}:${evidence}" \
   --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: verdict write failed" >&2; exit 1; }
 
 if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
