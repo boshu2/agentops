@@ -125,7 +125,7 @@ example to the test, gate, or eval that proved it.
 
 ### 7. Capture evidence and learning, then ratchet
 
-Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary). The corpus-flywheel skills `/curate --mode=forge`, `/flywheel`, and `/compile` are demoted to the experimental tier — kept and still invokable, but no longer part of the primary ratchet.
+Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary). The corpus-flywheel skills `/curate` (`--mode=forge`, `--mode=compile` — the latter absorbed the retired `/compile`) and `/flywheel` are demoted to the experimental tier — kept and still invokable, but no longer part of the primary ratchet.
 
 ### The loop closes here: re-plan on evidence, not just on failure
 
