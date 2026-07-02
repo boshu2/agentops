@@ -226,6 +226,10 @@ git log --oneline --since="2 hours ago" 2>/dev/null | wc -l
 **If ≥3 commits:** Suggest running `$post-mortem --quick` to extract learnings.
 **If <3 commits:** Handoff alone is sufficient; learnings are likely minimal.
 
+### Step 8.5: Grade Skills Used (ms outcome, optional)
+
+If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` or `ms outcome <skill> --failure`, so ranking is fed by real usage. Honest only — the skills you truly leaned on, not every match. Skip if `ms` is not present.
+
 ### Step 9: Report to User
 
 Tell the user:

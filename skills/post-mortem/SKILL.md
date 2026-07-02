@@ -224,6 +224,10 @@ This must be the LAST action in Phase 4.
 
 **Phases 3-6 (Maintenance):** Read [references/maintenance-phases.md](references/maintenance-phases.md) for backlog processing, activation, retirement, and harvesting phases. Load when `--process-only` flag is set or when running full post-mortem.
 
+## Close the ms outcome loop (optional)
+
+If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` (helped) or `ms outcome <skill> --failure` (misled/didn't apply) — only real consultations, an honest empty set beats a padded one. Skip silently if `ms` is not present.
+
 ## Reporting and Workflow
 
 Read [references/user-reporting.md](references/user-reporting.md) when you need the Step 7 report template, mandatory next-`/rpi` suggestion format, workflow integration diagram, and example invocations.
