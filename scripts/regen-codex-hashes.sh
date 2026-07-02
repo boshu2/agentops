@@ -68,7 +68,35 @@ if not manifest_path.exists():
 
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 entries = manifest.get("skills", [])
-entry_by_name = {entry.get("name"): entry for entry in entries if entry.get("name")}
+
+# Key the manifest skills[] by name — exactly one row per name. Historical
+# syncs appended duplicate rows and then updated only one of a pair in place,
+# so drift was masked or misreported depending on which row a reader's
+# name-keyed dict happened to keep. Later rows win (last-write-wins, matching
+# the dict-comprehension behavior every reader already had); the deduped list
+# replaces skills[] preserving first-seen order.
+entry_by_name = {}
+deduped_entries = []
+for entry in entries:
+    name = entry.get("name")
+    if not name:
+        deduped_entries.append(entry)
+        continue
+    if name in entry_by_name:
+        # Later row wins: overwrite the kept row's content in place.
+        entry_by_name[name].clear()
+        entry_by_name[name].update(entry)
+        continue
+    entry_by_name[name] = entry
+    deduped_entries.append(entry)
+duplicate_rows_removed = len(entries) - len(deduped_entries)
+if duplicate_rows_removed:
+    manifest["skills"] = deduped_entries
+    print(
+        f"Manifest skills[] carried {duplicate_rows_removed} duplicate row(s); "
+        + ("would dedupe" if check_only else "deduped")
+        + " to one row per skill name."
+    )
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -183,6 +211,10 @@ if not check_only:
 if updated:
     verb = "Drifted" if check_only else "Updated"
     print(f"{verb} hashes for {len(updated)} skill(s): {', '.join(updated)}")
+    if check_only:
+        sys.exit(1)
+elif duplicate_rows_removed:
+    # Duplicate rows are manifest drift even when no hash changed.
     if check_only:
         sys.exit(1)
 else:

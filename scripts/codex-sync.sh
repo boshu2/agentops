@@ -361,17 +361,32 @@ def twin_prompt_md(
 
 
 def upsert(entries: list, name: str, entry: dict) -> bool:
-    """Insert or replace by name. Returns True if the list changed. Appends in
-    place (no global re-sort) to keep the diff minimal — matches the append-only
-    behavior of register-new-codex-skill.sh and avoids reordering the existing
-    catalog on every new skill."""
-    for i, e in enumerate(entries):
-        if e.get("name") == name:
-            if e == entry:
-                return False
-            entries[i] = entry
-            return True
-    entries.append(entry)
+    """Insert or replace by name, keeping EXACTLY ONE row per name. Returns True
+    if the list changed. Replaces in place (no global re-sort) to keep the diff
+    minimal — matches the append-only behavior of register-new-codex-skill.sh
+    and avoids reordering the existing catalog on every new skill. Any later
+    duplicate rows for the same name are dropped: historical syncs updated one
+    row of a duplicated pair in place, so drift was masked or misreported
+    depending on which row a reader's name-keyed dict happened to keep."""
+    replaced_at = None
+    removed = False
+    for i in range(len(entries) - 1, -1, -1):
+        if entries[i].get("name") != name:
+            continue
+        if replaced_at is None:
+            replaced_at = i
+        else:
+            # entries[i] is an EARLIER duplicate (we scan backwards): keep the
+            # first position for the row, drop the later one.
+            entries[replaced_at : replaced_at + 1] = []
+            replaced_at = i
+            removed = True
+    if replaced_at is None:
+        entries.append(entry)
+        return True
+    if not removed and entries[replaced_at] == entry:
+        return False
+    entries[replaced_at] = entry
     return True
 
 
