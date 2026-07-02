@@ -7,6 +7,9 @@
   "narrative": "A user or evaluator exercises the system behavior for this goal: Given the cli/ and cli/internal/ Go packages, when the go-complexity CI gate runs golangci-lint, then zero functions exceed cyclomatic complexity 20 (cli/) and 18 (cli/internal/)..",
   "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the cli/ and cli/internal/ Go packages, when the go-complexity CI gate runs golangci-lint, then zero functions exceed cyclomatic complexity 20 (cli/) and 18 (cli/internal/)..",
   "satisfaction_threshold": 1,
+  "acceptance_vectors": [
+    { "dimension": "maintainability", "threshold": 1.0, "check": "gate:go-complexity-ceiling" }
+  ],
   "source": "human",
   "status": "active"
 }

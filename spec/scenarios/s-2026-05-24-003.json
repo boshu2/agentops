@@ -7,6 +7,9 @@
   "narrative": "A user or evaluator exercises the system behavior for this goal: Given the tests/_quarantine/ directory, when the validate-quarantine-empty CI gate runs, then it finds zero active quarantined test suites (the directory stays empty or every entry is promoted, deleted, or tracked as explicit follow-up)..",
   "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the tests/_quarantine/ directory, when the validate-quarantine-empty CI gate runs, then it finds zero active quarantined test suites (the directory stays empty or every entry is promoted, deleted, or tracked as explicit follow-up)..",
   "satisfaction_threshold": 1,
+  "acceptance_vectors": [
+    { "dimension": "correctness", "threshold": 1.0, "check": "gate:quarantine-empty" }
+  ],
   "source": "human",
   "status": "active"
 }
