@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-22T18:42:37Z",
-  "skill_count": 75,
+  "generated_at": "2026-07-02T14:41:59Z",
+  "skill_count": 63,
   "skills": [
     {
       "name": "account-rotation",
@@ -12,23 +12,6 @@
       "produces": [],
       "practices": [
         "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "acfs",
-      "description": "|-",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "substrate-health-report"
-      ],
-      "practices": [
-        "pragmatic-programmer",
-        "continuous-delivery"
       ],
       "context_rel": [],
       "references_count": 0,
@@ -70,34 +53,6 @@
       "codex_override_present": true
     },
     {
-      "name": "agy-headless-evidence",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "agy-native"
-      ],
-      "produces": [
-        "agy-evidence-dir"
-      ],
-      "practices": [
-        "design-by-contract",
-        "evidence-over-assertion"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "agy-native"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "validate"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "agy-native",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
@@ -112,25 +67,6 @@
       ],
       "context_rel": [],
       "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "autodev",
-      "description": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair. Triggers: \"manage PROGRAM.md/AUTODEV.md\", \"autodev loop rules\", \"evolve/factory tick boundaries\".",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [
-        "evolve",
-        "rpi"
-      ],
-      "produces": [],
-      "practices": [
-        "cmm-process-maturity",
-        "ai-assisted-dev",
-        "dora-metrics"
-      ],
-      "context_rel": [],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -173,26 +109,12 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 4,
+      "references_count": 6,
       "codex_override_present": true
     },
     {
       "name": "beads-bv",
       "description": "Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "beads-workflow",
-      "description": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. Triggers: \"beads-workflow\", \"beads workflow\", \"use when converting markdown plans\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -280,35 +202,6 @@
       "codex_override_present": true
     },
     {
-      "name": "codex-approval",
-      "description": "|-",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "using-atm",
-        "agent-mail"
-      ],
-      "produces": [
-        "council-verdict"
-      ],
-      "practices": [
-        "continuous-delivery",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "using-atm"
-        },
-        {
-          "kind": "customer-of",
-          "with": "agent-mail"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "codex-exec",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
@@ -345,50 +238,7 @@
       ],
       "context_rel": [],
       "references_count": 4,
-      "codex_override_present": true
-    },
-    {
-      "name": "continuity-loop",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "ntm",
-        "agent-mail"
-      ],
-      "produces": [
-        ".agents/continuity/state.json",
-        "escalation-message"
-      ],
-      "practices": [
-        "sre",
-        "team-topologies",
-        "design-by-contract"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "evolve"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "using-atm"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "recover"
-        },
-        {
-          "kind": "customer-of",
-          "with": "agent-mail"
-        },
-        {
-          "kind": "customer-of",
-          "with": "ntm"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
+      "codex_override_present": false
     },
     {
       "name": "converge",
@@ -484,7 +334,7 @@
     },
     {
       "name": "curate",
-      "description": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
+      "description": "Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -496,8 +346,8 @@
         "lean-startup"
       ],
       "context_rel": [],
-      "references_count": 1,
-      "codex_override_present": true
+      "references_count": 3,
+      "codex_override_present": false
     },
     {
       "name": "dcg",
@@ -582,40 +432,6 @@
       "codex_override_present": true
     },
     {
-      "name": "dual-pane-atm",
-      "description": "Repeatable mixed-model ATM duel — Opus (Claude) + Codex (+AGY) panes, or an in-session variant for a one-shot one-way-door decision. Triggers: \"dual pane\", \"Opus and Codex together\", \"CEP duel/build\", \"two-pane ATM\", \"collaborative ATM\", \"mixed-model duel\", \"fan out competing theses / duel it out\".",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [
-        "using-atm",
-        "agent-mail"
-      ],
-      "produces": [
-        ".agents/dual-pane/*.md"
-      ],
-      "practices": [
-        "team-topologies",
-        "mythical-man-month",
-        "llm-eval-harness"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "using-atm"
-        },
-        {
-          "kind": "customer-of",
-          "with": "automation-shape-routing"
-        },
-        {
-          "kind": "partnership",
-          "with": "vibing-with-ntm"
-        }
-      ],
-      "references_count": 2,
-      "codex_override_present": true
-    },
-    {
       "name": "eval-outcomes",
       "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: \"eval-outcomes\", \"eval outcomes\", \"grade agent or model output\".",
       "hexagonal_role": "supporting",
@@ -685,29 +501,7 @@
         }
       ],
       "references_count": 4,
-      "codex_override_present": true
-    },
-    {
-      "name": "forge",
-      "description": "Mine transcripts into learnings. Triggers: \"forge\", \"mine transcripts into learnings.\", \"forge skill\".",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "practices": [
-        "wiki-knowledge-surface",
-        "lean-startup"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
+      "codex_override_present": false
     },
     {
       "name": "goals",
@@ -752,11 +546,13 @@
     },
     {
       "name": "heal-skill",
-      "description": "Repair skill hygiene. Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene.\".",
+      "description": "Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
-      "produces": [],
+      "produces": [
+        "audit-report.json"
+      ],
       "practices": [
         "refactoring",
         "code-complete"
@@ -764,10 +560,10 @@
       "context_rel": [
         {
           "kind": "customer-of",
-          "with": "skill-auditor"
+          "with": "skill-builder"
         }
       ],
-      "references_count": 2,
+      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -793,21 +589,6 @@
         }
       ],
       "references_count": 7,
-      "codex_override_present": true
-    },
-    {
-      "name": "inject",
-      "description": "Load relevant .agents context. Triggers: \"inject context\", \"load .agents context\", \"pull decay-ranked prior knowledge\".",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "wiki-knowledge-surface",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
       "codex_override_present": true
     },
     {
@@ -868,35 +649,11 @@
         },
         {
           "kind": "supplier-to",
-          "with": "beads-workflow"
+          "with": "beads-br"
         }
       ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "orchestrate",
-      "description": "Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure. Triggers: \"orchestrate out-of-session\", \"route + preflight + verify a run\", \"orchestration preflight\".",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [
-        "automation-shape-routing"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "team-topologies",
-        "hexagonal-architecture"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "using-atm"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
+      "references_count": 3,
+      "codex_override_present": false
     },
     {
       "name": "perf",
@@ -1143,7 +900,7 @@
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
-        "bd",
+        "br",
         "rpi"
       ],
       "produces": [
@@ -1232,7 +989,6 @@
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
-        "inject",
         "repo-context"
       ],
       "produces": [
@@ -1245,12 +1001,12 @@
         "ddd-bounded-context"
       ],
       "context_rel": [],
-      "references_count": 17,
+      "references_count": 18,
       "codex_override_present": true
     },
     {
       "name": "reverse-engineer",
-      "description": "Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
+      "description": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1349,7 +1105,7 @@
     },
     {
       "name": "scaffold",
-      "description": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\", \"scaffold skill\".",
+      "description": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1432,33 +1188,6 @@
       "codex_override_present": true
     },
     {
-      "name": "skill-auditor",
-      "description": "Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "code-complete",
-        "cmm-process-maturity",
-        "design-by-contract"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "skill-builder"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "heal-skill"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
       "name": "skill-builder",
       "description": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "hexagonal_role": "supporting",
@@ -1479,7 +1208,7 @@
         },
         {
           "kind": "supplier-to",
-          "with": "skill-auditor"
+          "with": "heal-skill"
         }
       ],
       "references_count": 4,
@@ -1509,7 +1238,7 @@
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
-        "bd"
+        "br"
       ],
       "produces": [
         "stdout"
@@ -1593,7 +1322,7 @@
     },
     {
       "name": "using-atm",
-      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\".",
+      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -1629,20 +1358,6 @@
       ],
       "context_rel": [],
       "references_count": 23,
-      "codex_override_present": true
-    },
-    {
-      "name": "vibing-with-ntm",
-      "description": "Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 10,
       "codex_override_present": true
     },
     {
