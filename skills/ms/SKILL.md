@@ -70,7 +70,7 @@ ms outcome <skill> --success   # dogfood loop: record AFTER actually using a ski
 ms outcome <skill> --failure
 
 ms doctor                      # admin: health
-ms index                       # (re)index — then KILL every ms mcp serve (see Footguns)
+scripts/ms-reindex.sh          # (re)index THE way: rebuild + sweep every ms mcp serve + probe (see Footguns)
 ms list -O jsonl --limit 1000  # counting / enumeration
 ms config                      # resolved config + skill_paths
 ```
@@ -81,7 +81,7 @@ ms config                      # resolved config + skill_paths
 
 | Footgun | Truth |
 |---|---|
-| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Kill ALL `ms mcp serve` after any rebuild** — sessions respawn fresh. This is the one law. |
+| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Reindex via `scripts/ms-reindex.sh` — THE way to reindex** (rebuilds, then TERMs every `ms mcp serve`, then probes a fresh server for orphan ids); never run bare `ms index` and leave servers up. Sessions respawn fresh. This is the one law, now mechanized (age-22g0). |
 | **`ms load --pack N`** | Trap: caps at the gutted `overview` tier for ANY N (`800` == `20000`) — drops the executable steps and returns LESS than the no-flag default. Use `--full` (CLI) or `full: true` (MCP). |
 | **`-O plain`** | Prints name-only on `load`; truncates list output (`[N more lines]`). The content lives in `-O json` → `.data.content`. |
 | **CLI `ms search` "hybrid"** | Runs `embedding_backend = "hash"` (no real embeddings): empty results on paraphrases, a collision-attractor skill, and loses to MCP BM25 even on exact keywords. Don't prefer it for quality until a real embedding backend is configured + reindexed. |
