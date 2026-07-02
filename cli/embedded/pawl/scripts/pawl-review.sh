@@ -26,8 +26,16 @@
 # verdict ONLY if a prior ADVERSARIAL run covered the IDENTICAL diff; no/changed lineage ->
 # ADVISORY-ONLY (exit 4), so the adversarial pass can never be skipped (no gate-weakening).
 #
-# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context "<extra>"]
-# Exit:  0 CONFIRMED(+written for head) · 3 REFUTED · 4 --converge advisory-only (no lineage) · 2 usage/precondition · 1 hard error.
+# LIVE SMOKE (age-rk3r.7): --smoke "<cmd>" (or the reviewed repo's .aoverify.yaml `smoke`
+# key, exported by verify-config.sh as PAWL_SMOKE_CMD) runs a REAL runtime check in the
+# reviewed repo BEFORE the reviewer, bounded by the review timeout. The membrane reviews the
+# DIFF; the smoke reviews the RUNNING code — closing the diff-only blind spot the age-55qz.11
+# escape rode (passing-but-mocked tests + a cold-pawl CONFIRMED on the diff). A red or
+# timed-out smoke REFUTES fail-first (exit 3) WITHOUT spending a reviewer round; a green smoke
+# attaches a LIVE RUNTIME EVIDENCE section to the reviewer packet + the bound verdict evidence.
+#
+# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
+# Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 2 usage/precondition · 1 hard error.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -173,8 +181,15 @@ TIMEOUT="${PAWL_REVIEW_TIMEOUT:-300}"
 # 41KB timed a warm opus PANE out / 62KB cold codex killed — a timeout-machine artifact; cold
 # codex with no timeout completes.)
 MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-65536}"   # 64KB — inline the common range; read-files only for huge diffs
+# age-rk3r.7 (round 3): per-SIDE byte cap for the live-smoke evidence head/tail. No existing
+# per-section byte constant to reuse — MAX_INLINE_BYTES (64KB) is the WHOLE-packet cap, far too
+# large for a single evidence section — so this introduces one deliberately UNDER it: 8KB head
+# + 8KB tail = 16KB max, a quarter of the packet cap, so the smoke section can never dominate
+# the packet even when a smoke emits one enormous no-newline blob (a minified bundle / giant
+# JSON is line-cheap but byte-huge, so the line cap alone would copy it wholesale). Overridable.
+SMOKE_EVIDENCE_MAX_BYTES="${PAWL_SMOKE_EVIDENCE_MAX_BYTES:-8192}"   # 8KB/side (head+tail = 16KB), < MAX_INLINE_BYTES
 
-bead=""; scope="head"; extra=""; author_family="claude"; converge=0
+bead=""; scope="head"; extra=""; author_family="claude"; converge=0; smoke_cmd=""
 need_val() { [[ -n "${2:-}" ]] || { echo "pawl-review: $1 needs a value" >&2; exit 2; }; }
 
 # age-mwhj: assemble the review body. At/below the byte cap, the full inline diff (unchanged).
@@ -213,6 +228,92 @@ pawl_tier_note() {
   esac
 }
 
+# age-rk3r.7: LIVE-SMOKE helpers. The membrane reviews the DIFF; a live smoke reviews the
+# RUNNING code — the diff-only blind spot the age-55qz.11 escape rode (mocked-but-passing
+# tests + a CONFIRMED on the diff). Split out as pure formatters + a thin runner so the bats
+# suite can source and exercise them, mirroring build_review_body / pawl_tier_note above.
+
+# smoke_output_headtail <file> [head_n] [tail_n] [head_bytes] [tail_bytes]: bounded head/tail
+# of a smoke's captured output, so a chatty OR single-giant-line runtime cannot bloat the
+# packet / verdict evidence. Bounded by BOTH lines (readability) AND bytes (refuter catch,
+# age-rk3r.7 round 3): a multi-MB no-newline blob — a minified bundle, a giant JSON dump — is
+# line-cheap but byte-huge, so a line-only cap copied it wholesale into the packet + evidence.
+# Pure. Emits the whole file verbatim ONLY when it is within BOTH caps; otherwise the
+# byte-capped first head_n lines, one explicit elision marker, then the byte-capped last
+# tail_n lines. The marker is inert downstream: build_smoke_evidence renders every line of
+# this output through the '    | ' neutralization prefix, so it cannot smuggle a verdict token.
+smoke_output_headtail() {
+  local f="$1" head_n="${2:-30}" tail_n="${3:-30}"
+  local head_bytes="${4:-${SMOKE_EVIDENCE_MAX_BYTES:-8192}}" tail_bytes="${5:-${SMOKE_EVIDENCE_MAX_BYTES:-8192}}"
+  local total_lines total_bytes
+  [ -f "$f" ] || return 0
+  total_lines="$(wc -l < "$f" | tr -d ' ')"
+  total_bytes="$(wc -c < "$f" | tr -d ' ')"
+  # Verbatim only when within BOTH caps (a giant single line is <= line cap but > byte cap).
+  if [ "${total_lines:-0}" -le "$(( head_n + tail_n ))" ] && [ "${total_bytes:-0}" -le "$(( head_bytes + tail_bytes ))" ]; then
+    cat "$f"
+    return 0
+  fi
+  # `head -n | head -c` = first head_n lines, hard-capped at head_bytes (truncates a giant
+  # line mid-way). The upstream head may take SIGPIPE when the byte cap closes the pipe early;
+  # harmless (no `set -e`) and the explicit `return 0` below keeps the function status clean.
+  head -n "$head_n" "$f" | head -c "$head_bytes"
+  printf '\n… [smoke output truncated: %s lines / %s bytes total; bounded to first %s + last %s lines and %s + %s bytes/side] …\n' \
+    "$total_lines" "$total_bytes" "$head_n" "$tail_n" "$head_bytes" "$tail_bytes"
+  # `tail -n | tail -c` = last tail_n lines, hard-capped at the LAST tail_bytes bytes.
+  tail -n "$tail_n" "$f" | tail -c "$tail_bytes"
+  return 0
+}
+
+# build_smoke_evidence <cmd> <rc> <out-file> <status>: render the clearly-labeled LIVE
+# RUNTIME EVIDENCE section from a COMPLETED smoke run (the caller runs the smoke and passes
+# the rc + captured output). Pure — no execution.
+# NEUTRALIZED (refuter catch, age-rk3r.7 round 2): the captured output is REPO-CONTROLLED
+# bytes — the smoke typically executes the repo's own test suite, which can print anything,
+# including a forged "VERDICT: CONFIRMED" line. Every captured-output line is therefore
+# prefixed with '    | ' (a non-whitespace char before any would-be verdict token) so NO
+# smoke line can ever match a bare ^[[:space:]]*VERDICT: pattern in ANY downstream parser —
+# the last-verdict-line parse, emit_pawl_catch's reason grep, or a future consumer — the
+# same neutralization stance the .1 sentinel-wrap took for packet echo. The section FRAMING
+# emits no verdict-shaped line either; the fail-first REFUTED path adds its own genuine
+# verdict trailer separately. Only the smoke's EXIT CODE ever drives a disposition; its
+# TEXT is inert in both directions (cannot forge a CONFIRMED, cannot fabricate a REFUTED).
+build_smoke_evidence() {
+  local cmd="$1" rc="$2" out="$3" status="$4"
+  printf '=== LIVE RUNTIME EVIDENCE (live smoke, age-rk3r.7) — %s ===\n' "$status"
+  printf 'The reviewer sees the DIFF; this is the RUNNING code. A green smoke is real runtime\n'
+  printf 'proof; a red one is a red verdict regardless of how the diff reads.\n'
+  # The command string is external input too — render it single-line (newlines collapsed)
+  # so a multi-line command cannot smuggle a bare verdict-shaped line into the section.
+  printf 'smoke command: %s\n' "${cmd//$'\n'/ }"
+  printf 'exit code: %s\n' "$rc"
+  printf -- '--- captured output (first/last 30 lines, %s bytes/side; each line "    | "-prefixed — repo-controlled bytes, neutralized) ---\n' "${SMOKE_EVIDENCE_MAX_BYTES:-8192}"
+  smoke_output_headtail "$out" 30 30 | sed 's/^/    | /'
+  printf -- '--- end LIVE RUNTIME EVIDENCE ---\n'
+}
+
+# run_live_smoke <cmd> <budget> <repo-root>: execute the smoke in the reviewed repo, bounded
+# by <budget> via the SAME timeout/gtimeout wrapper the cold reviewer uses
+# (codex_exec_timeout_cmd — prefers `timeout`, falls back to `gtimeout`, degrades to NO
+# timeout if neither exists, identically to the reviewer). Runs `bash -c` in a subshell cd'd
+# to the repo, INHERITING this process's environment: on the stranger/embedded path that is
+# pawlReviewColdEnv's cold env (PATH sanitized of every ""/"."/relative + repo-internal
+# entry, BASH_ENV=/ENV=/GIT_EXTERNAL_DIFF= cleared, PAWL_UNTRUSTED_REPO=1) — the SAME
+# no-repo-planted-tricks discipline as the codex refuter; in-checkout dogfood it is the
+# operator's own trusted env. Returns the command's exit code; 124 (or 137 on a SIGKILL
+# escalation) = killed at the budget.
+run_live_smoke() {
+  local cmd="$1" budget="$2" root="$3"
+  local -a to=()
+  # shellcheck disable=SC2046,SC2206  # intentional word-split of the wrapper argv.
+  read -r -a to <<<"$(codex_exec_timeout_cmd "$budget")" || true
+  if [ "${#to[@]}" -gt 0 ]; then
+    ( cd "$root" && "${to[@]}" bash -c "$cmd" )
+  else
+    ( cd "$root" && bash -c "$cmd" )
+  fi
+}
+
 # Source-guard: tests source this file to exercise build_review_body / pawl_tier_note; the
 # codex-running flow below only executes when the script is run directly.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
@@ -221,13 +322,26 @@ while [[ $# -gt 0 ]]; do
     --scope)         need_val "$1" "${2:-}"; scope="$2"; shift 2 ;;
     --author-family) need_val "$1" "${2:-}"; author_family="$2"; shift 2 ;;
     --context)       need_val "$1" "${2:-}"; extra="$2"; shift 2 ;;
+    --smoke)         need_val "$1" "${2:-}"; smoke_cmd="$2"; shift 2 ;;
     --converge)      converge=1; shift ;;
-    -h|--help)       sed -n '2,30p' "$0"; exit 0 ;;
+    -h|--help)       sed -n '2,37p' "$0"; exit 0 ;;
     -*)              echo "pawl-review: unknown flag $1" >&2; exit 2 ;;
     *)               bead="$1"; shift ;;
   esac
 done
 [[ -n "$bead" ]] || { echo "pawl-review: need <bead-id>" >&2; exit 2; }
+# age-rk3r.7: resolve the live-smoke command. Precedence: explicit --smoke flag >
+# PAWL_SMOKE_CMD (from the operator's env, or the reviewed repo's .aoverify.yaml `smoke`
+# key exported by verify-config.sh at entry) > none.
+# SECURITY: a CONFIG-sourced smoke is a REPO-PLANTED command, so on the UNTRUSTED
+# stranger/embedded path (PAWL_UNTRUSTED_REPO=1) ONLY the operator's explicit --smoke flag
+# is honored — the reviewed repo's own `smoke:` config is IGNORED (never auto-run a stranger
+# repo's arbitrary command as a side effect of reviewing it). In-checkout dogfood (trusted)
+# honors both. This mirrors resolve_ao's untrusted-repo stance for the command SOURCE, on
+# top of the cold env the smoke already inherits (see run_live_smoke).
+if [[ -z "$smoke_cmd" && "${PAWL_UNTRUSTED_REPO:-0}" != "1" ]]; then
+  smoke_cmd="${PAWL_SMOKE_CMD:-}"
+fi
 # --converge (the calibrated real-safety bar) certifies a COMMIT, so it requires
 # --scope head; and it is lineage-gated below (age-cwo.8 / council C).
 [[ "$converge" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --converge requires --scope head (it certifies a commit)" >&2; exit 2; }
@@ -415,6 +529,58 @@ prompt_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-prompt.XXXXXX")"
 raw_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-raw.XXXXXX")"
 trap 'rm -f "$prompt_file" "$raw_file"' EXIT
 
+# age-rk3r.7: LIVE SMOKE — run the configured runtime check BEFORE any reviewer round, so a
+# red runtime fails FIRST (cheap; no reviewer spent) and a green runtime attaches real
+# evidence. Bounded by the (already diff-size-scaled) $REVIEW_TIMEOUT via the reviewer's own
+# timeout wrapper; a hanging smoke is killed and fails closed (STALL). The smoke inherits the
+# cold env on the stranger path (see run_live_smoke) and runs with cwd=$REPO_ROOT.
+smoke_evidence=""
+if [[ -n "$smoke_cmd" ]]; then
+  smoke_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-smoke.XXXXXX")"
+  trap 'rm -f "$prompt_file" "$raw_file" "$smoke_out"' EXIT
+  echo "pawl-review: LIVE SMOKE — running the configured runtime check in $REPO_ROOT (bounded by ${REVIEW_TIMEOUT}s) BEFORE the reviewer…" >&2
+  smoke_rc=0
+  run_live_smoke "$smoke_cmd" "$REVIEW_TIMEOUT" "$REPO_ROOT" >"$smoke_out" 2>&1 || smoke_rc=$?
+
+  # A killed run (the timeout wrapper returns 124, or 137 on a SIGKILL escalation) is a
+  # STALL: no green runtime in budget — fail-closed, no CONFIRMED possible. Guarded on a
+  # timeout wrapper ACTUALLY being applied (codex_exec_timeout_cmd non-empty), so on a host
+  # with neither timeout nor gtimeout a genuine smoke exit of 124/137 still reads as a normal
+  # non-zero REFUTE below rather than being mislabeled a stall.
+  if { [ "$smoke_rc" -eq 124 ] || [ "$smoke_rc" -eq 137 ]; } && [ -n "$(codex_exec_timeout_cmd "$REVIEW_TIMEOUT")" ]; then
+    {
+      build_smoke_evidence "$smoke_cmd" "$smoke_rc" "$smoke_out" "TIMED-OUT (killed at ${REVIEW_TIMEOUT}s budget)"
+      echo "DEFECTS:"
+      echo "- live smoke TIMED OUT after ${REVIEW_TIMEOUT}s and was KILLED (rc=$smoke_rc): the runtime did not come up green in budget — fail-closed (STALL)."
+      echo "VERDICT: REFUTED"
+    } > "$evidence"
+    echo "=== PAWL REVIEW: REFUTED — live smoke STALLED (killed at ${REVIEW_TIMEOUT}s budget); NO reviewer round spent, NO verdict written ===" >&2
+    sed -n '/^=== LIVE RUNTIME EVIDENCE/,$p' "$evidence" >&2
+    emit_pawl_catch live-smoke
+    exit 3
+  fi
+
+  # A non-zero smoke is a RED RUNTIME — REFUTE FIRST, without spending a reviewer round. A
+  # red runtime is a red verdict regardless of how the diff reads (the age-55qz.11 blind spot).
+  if [[ "$smoke_rc" -ne 0 ]]; then
+    {
+      build_smoke_evidence "$smoke_cmd" "$smoke_rc" "$smoke_out" "FAILED (exit $smoke_rc)"
+      echo "DEFECTS:"
+      echo "- live smoke exited NON-ZERO (exit $smoke_rc): the runtime is RED at head ${head:0:12} regardless of how the diff reads. Fix the runtime, recommit, re-run."
+      echo "VERDICT: REFUTED"
+    } > "$evidence"
+    echo "=== PAWL REVIEW: REFUTED — live smoke FAILED (exit $smoke_rc); NO reviewer round spent, NO verdict written ===" >&2
+    sed -n '/^=== LIVE RUNTIME EVIDENCE/,$p' "$evidence" >&2
+    emit_pawl_catch live-smoke
+    exit 3
+  fi
+
+  # PASS: build the LIVE RUNTIME EVIDENCE section attached to the reviewer packet below +
+  # persisted into the bound verdict evidence file after the reviewer runs.
+  smoke_evidence="$(build_smoke_evidence "$smoke_cmd" "$smoke_rc" "$smoke_out" "PASSED (exit 0)")"
+  echo "pawl-review: LIVE SMOKE passed (exit 0) — attaching runtime evidence to the reviewer packet + verdict evidence." >&2
+fi
+
 # Posture (age-cwo.8/council C; RECALIBRATED 2026-06-28, age-pawl-good-bar): the merge gate binds
 # the CALIBRATED "good" bar by default — a thorough real-defect search with a 3-filter BLOCK
 # threshold (INTRODUCED-by-this-diff × REAL/verifiable × BLOCKING). This REPLACES the old default
@@ -444,6 +610,7 @@ $extra
 }
 Reply with nothing but your review. The FINAL line is the verdict: the token "VERDICT:" then one space then exactly one uppercase word, either CONFIRMED (no blocking defect found) or REFUTED (a blocking defect found). If you refute, put a "DEFECTS:" header above that final line with one concrete defect per line (the symptom and why it matters). (This instruction deliberately does not print a ready-made verdict line, so that an echo of this prompt cannot be mistaken for your verdict.)
 $prior_catches
+$smoke_evidence
 === CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
 PROMPT
   printf '%s\n' "$review_body"
@@ -484,6 +651,9 @@ if [[ "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PA
     # S3: the SAME membrane-memory injection as the cold path — so head-scope reviews
     # through the warm pawl-service ALSO consume prior catches (computed at $prior_catches).
     [[ -n "$prior_catches" ]] && printf '%s\n' "$prior_catches"
+    # age-rk3r.7: the SAME live-smoke runtime evidence goes into the routed packet too, so a
+    # head-scope review through the warm pawl-service also sees the running-code proof.
+    [[ -n "$smoke_evidence" ]] && printf '%s\n' "$smoke_evidence"
     printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
     printf '%s\n' "$review_body"
   } > "$route_pkt"
@@ -550,11 +720,24 @@ verdict_block="$(awk '/^codex$/{c=1; next} c' "$raw_file" 2>/dev/null)"
 printf '%s\n' "$verdict_block" > "$evidence"
 [[ -s "$evidence" ]] || { echo "pawl-review: no reviewer output captured — fail-closed" >&2; exit 1; }
 
-# Decide on the FINAL verdict-shaped line only: the reviewer's real answer comes LAST,
-# after any preamble or echoed prompt template — an echoed "VERDICT: CONFIRMED" from the
-# instructions must not be mistaken for the verdict. (defends a quoted/multi-verdict
-# false-CONFIRMED)
-final_verdict="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*(CONFIRMED|REFUTED)' "$evidence" | tail -1)"
+# Decide on the FINAL verdict-shaped line only — parsed from the REVIEWER's OWN bytes
+# ($verdict_block, which only ever holds the reviewer subprocess's output), NEVER from the
+# evidence file (refuter catch, age-rk3r.7 round 2): the live-smoke section appended below
+# embeds REPO-CONTROLLED output (the smoke typically runs the repo's own test suite, which
+# can print anything — including a forged "VERDICT: CONFIRMED" placed AFTER a real REFUTED),
+# so smoke bytes must be STRUCTURALLY incapable of reaching this parse. The reviewer's real
+# answer comes LAST, after any preamble or echoed prompt template — an echoed
+# "VERDICT: CONFIRMED" from the instructions must not be mistaken for the verdict. (defends
+# a quoted/multi-verdict false-CONFIRMED)
+final_verdict="$(printf '%s\n' "$verdict_block" | grep -iE '^[[:space:]]*VERDICT:[[:space:]]*(CONFIRMED|REFUTED)' | tail -1)"
+
+# age-rk3r.7: persist the live-smoke runtime evidence into the SAME verdict evidence file the
+# CONFIRMED verdict binds — so the proof artifact carries the RUNTIME proof, not just the diff
+# review. Appended AFTER (and independent of) the verdict parse above; defense-in-depth,
+# every captured smoke-output line is "    | "-neutralized by build_smoke_evidence, so no
+# smoke line can match a bare ^VERDICT: pattern in ANY downstream consumer of this file
+# (emit_pawl_catch's reason grep included). Empty when no smoke ran => byte-identical.
+[[ -n "$smoke_evidence" ]] && printf '\n%s\n' "$smoke_evidence" >> "$evidence"
 
 # Record ADVERSARIAL lineage: a clean adversarial run (any verdict) on THIS exact diff.
 # --converge later requires this for the identical diff-hash. Written here — before the
