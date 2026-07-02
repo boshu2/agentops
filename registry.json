@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T02:00:49Z",
+  "generated_at": "2026-07-02T02:19:56Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
@@ -899,7 +899,9 @@
         "path": "cli/cmd/ao/",
         "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "crank"
+        ]
       },
       {
         "name": "ao eval",
@@ -2132,6 +2134,7 @@
       ],
       "drives_commands": [
         "ao defrag",
+        "ao done",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao lookup",
@@ -4269,7 +4272,9 @@
       "bounded_context": "",
       "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "crank"
+      ],
       "flags": [
         "--config",
         "--dry-run",
