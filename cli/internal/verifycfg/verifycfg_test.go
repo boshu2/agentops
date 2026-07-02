@@ -20,11 +20,7 @@ var allEnvVars = []string{
 func isolate(t *testing.T) {
 	t.Helper()
 	for _, name := range allEnvVars {
-		if old, ok := os.LookupEnv(name); ok {
-			t.Cleanup(func() { _ = os.Setenv(name, old) })
-		} else {
-			t.Cleanup(func() { _ = os.Unsetenv(name) })
-		}
+		t.Setenv(name, "") // snapshots + auto-restores the prior set/unset state
 		if err := os.Unsetenv(name); err != nil {
 			t.Fatalf("unset %s: %v", name, err)
 		}
