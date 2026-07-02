@@ -26,6 +26,10 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 		// ($SCRIPT_DIR/lib/codex-exec.sh), so the stranger/embedded bundle MUST carry it or
 		// the cold review cannot start (age-gate-the-ungated-egwt.13).
 		{"pawl/scripts/lib/codex-exec.sh", []string{"scripts", "lib", "codex-exec.sh"}},
+		// pawl-review.sh also sources the per-repo verify-config hook script-relative
+		// ($SCRIPT_DIR/lib/verify-config.sh), so the stranger/embedded bundle must carry it
+		// or a stranger repo's checked-in .aoverify.yaml is silently ignored (age-rk3r.17).
+		{"pawl/scripts/lib/verify-config.sh", []string{"scripts", "lib", "verify-config.sh"}},
 		// The membrane-receipts generator + freshness check ride along so `ao verify
 		// receipts` renders a repo's proof page from the embedded bundle on the stranger
 		// path (age-rk3r.12); they must stay byte-identical to the repo scripts.
@@ -69,6 +73,9 @@ func TestExtractPawlBundle(t *testing.T) {
 		// pawl-review.sh sources; the nested-dir walk + exec-normalize must handle it
 		// (age-gate-the-ungated-egwt.13).
 		filepath.Join("scripts", "lib", "codex-exec.sh"),
+		// The per-repo verify-config hook extracts into the same sibling scripts/lib/ so the
+		// embedded pawl-review sources it and honors a stranger repo's .aoverify.yaml (age-rk3r.17).
+		filepath.Join("scripts", "lib", "verify-config.sh"),
 		// The membrane-receipts generator + freshness check must extract executable so
 		// `ao verify receipts` renders a repo's proof page from the bundle on the
 		// stranger path (age-rk3r.12).

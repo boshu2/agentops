@@ -46,6 +46,11 @@ done
 # the stranger/embedded path the extracted bundle needs scripts/lib/codex-exec.sh present
 # or the review cannot even start. (age-gate-the-ungated-egwt.13)
 check_file "$REPO_ROOT/scripts/lib/codex-exec.sh" "$EMBEDDED/pawl/scripts/lib/codex-exec.sh"
+# The per-repo verify-config hook (lib/verify-config.sh) also rides along: pawl-review.sh
+# sources it script-relative to honor a stranger repo's checked-in .aoverify.yaml on the
+# embedded path (via `ao verify --export-env`). Absent from the bundle => stranger-repo
+# config is silently ignored, so keep it byte-identical. (age-rk3r.17)
+check_file "$REPO_ROOT/scripts/lib/verify-config.sh" "$EMBEDDED/pawl/scripts/lib/verify-config.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then
