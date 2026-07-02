@@ -151,7 +151,11 @@ echo "ship: branch=$branch  gate=$gate_mode  ($reason)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     regen_msg="$([[ "$gate_mode" == "full" ]] && echo "yes" || echo "no")"
-    gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "pre-push-gate.sh --fast" || echo "pre-push-gate.sh (full)")"
+    if [[ "${AGENTOPS_GATE_BASH:-0}" == "1" ]]; then
+        gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "pre-push-gate.sh --fast (AGENTOPS_GATE_BASH=1)" || echo "pre-push-gate.sh (full; AGENTOPS_GATE_BASH=1)")"
+    else
+        gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "ao gate check --fast --scope head" || echo "ao gate check --full")"
+    fi
     echo "ship: --dry-run — would run regen sweep: $regen_msg; then $gate_msg"
     exit 0
 fi
@@ -185,17 +189,48 @@ if [[ "$gate_mode" == "full" && "$SKIP_REGEN" != "true" ]]; then
     fi
 fi
 
-# --- Pre-push gate ---------------------------------------------------------
+# --- Gate ------------------------------------------------------------------
+# Release authority is the Go gate (`ao gate check`). The legacy bash gate
+# (scripts/pre-push-gate.sh) stays reachable via AGENTOPS_GATE_BASH=1, mirroring
+# scripts/hooks/pre-push.local's documented escape hatch. Inventory-touching diffs
+# run the FULL gate (routing ignored); routine diffs run the fast changed-file
+# cockpit subset scoped to HEAD.
 
-gate_args=()
-if [[ "$gate_mode" == "fast" ]]; then
-    gate_args=(--fast)
-fi
+run_gate() {
+    local bash_args=()
+    [[ "$gate_mode" == "fast" ]] && bash_args=(--fast)
 
-echo "ship: running pre-push-gate.sh ${gate_args[*]:-(full)}"
-if bash scripts/pre-push-gate.sh "${gate_args[@]}"; then
+    if [[ "${AGENTOPS_GATE_BASH:-0}" == "1" ]]; then
+        echo "ship: running legacy bash gate (AGENTOPS_GATE_BASH=1): pre-push-gate.sh ${bash_args[*]:-(full)}"
+        bash scripts/pre-push-gate.sh "${bash_args[@]}"
+        return $?
+    fi
+
+    # Resolution order: AO_BIN, then the REPO's own build, then PATH — the repo
+    # binary is the freshly-built one (pre-push.local builds it); a stale PATH ao
+    # shadowing it is the landed!=installed trap (cross-family refute, age-fkps).
+    local ao_bin
+    ao_bin="${AO_BIN:-}"
+    [[ -z "$ao_bin" && -x "$REPO_ROOT/cli/bin/ao" ]] && ao_bin="$REPO_ROOT/cli/bin/ao"
+    [[ -z "$ao_bin" ]] && ao_bin="$(command -v ao 2>/dev/null || true)"
+    if [[ -z "$ao_bin" ]]; then
+        echo "ship: WARN — ao not resolvable; falling back to the legacy bash gate (install ao, or set AGENTOPS_GATE_BASH=1 to silence)." >&2
+        bash scripts/pre-push-gate.sh "${bash_args[@]}"
+        return $?
+    fi
+
+    if [[ "$gate_mode" == "full" ]]; then
+        echo "ship: running Go gate: ao gate check --full"
+        "$ao_bin" gate check --full
+    else
+        echo "ship: running Go gate: ao gate check --fast --scope head"
+        "$ao_bin" gate check --fast --scope head
+    fi
+}
+
+if run_gate; then
     echo ""
-    echo "ship: pre-push gate PASSED."
+    echo "ship: gate PASSED."
     echo ""
     echo "Next steps (operator):"
     echo "  1. Review changes:           git status && git diff"
@@ -205,7 +240,7 @@ if bash scripts/pre-push-gate.sh "${gate_args[@]}"; then
 else
     rc=$?
     echo "" >&2
-    echo "ship: pre-push gate BLOCKED. Address the failing check(s) above and re-run." >&2
-    echo "ship: in inventory mode, --fast skips ~15 validators — DO NOT use --force-fast to bypass." >&2
+    echo "ship: gate BLOCKED. Address the failing check(s) above and re-run." >&2
+    echo "ship: in inventory mode, --fast skips validators — DO NOT use --force-fast to bypass." >&2
     exit "$rc"
 fi
