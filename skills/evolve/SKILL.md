@@ -136,8 +136,8 @@ loop reads each cycle — NOT a loop itself
 (legacy-tagged `ao` builds: `go build -tags legacy`)
 outlives the retired skill** and remains the contract surface; the contract
 spec is [docs/contracts/autodev-program.md](../../docs/contracts/autodev-program.md).
-Step 0 below *consumes* a valid contract each run; this section is the
-create/validate/repair surface for it — nothing here runs the loop.
+Step 0 below *consumes* a valid contract each run; this section only
+creates/validates/repairs it.
 
 **Detect and validate the contract** (`PROGRAM.md` takes precedence; treat
 `AUTODEV.md` as the compatibility alias):
@@ -153,13 +153,12 @@ ao autodev init "<objective>"   # only when no contract exists and setup was req
 Infer the `init` objective from the user request or repo context; ask only when
 inventing it would make the contract misleading.
 
-**Repair validation failures.** When the user asked to create or fix the
-contract, patch the missing required sections and rerun the validate command
-from the detection block above:
+**Repair validation failures.** Patch the missing required sections and rerun
+the validate command above:
 
 | Required section | Repair guidance |
 |---|---|
-| `Objective` | One sentence, inferred from request/repo purpose — never invent a misleading one |
+| `Objective` | One sentence, inferred from request/repo purpose |
 | `Mutable Scope` / `Immutable Scope` | Prefer narrow mutable scope; work crossing immutable scope ⇒ create/update a bead, never silently widen the contract |
 | `Experiment Unit` | The bounded unit one cycle may attempt |
 | `Validation Commands` | Concrete runnable commands — Step 5 runs them de-duplicated after the repo bundle |
@@ -167,7 +166,7 @@ from the detection block above:
 | `Escalation Rules` | When to stop and hand a decision to the operator |
 | `Stop Conditions` | Per-cycle done criteria — main tests green alone never marks a cycle successful |
 
-**Routing** — when asked whether contract work "is evolve":
+**Routing**:
 
 | Intent | Action |
 |--------|--------|
@@ -175,10 +174,9 @@ from the detection block above:
 | run the repeated autonomous improvement loop | `/evolve` (the rest of this skill) |
 | run one bounded lifecycle | a single `/rpi` turn |
 
-Executable specs: [references/autodev.feature](references/autodev.feature)
-(contract-bounded loop, contract management ≠ the loop, loop discipline under
-autonomy) and [references/autodev-cli.feature](references/autodev-cli.feature)
-(ao autodev {init,validate,show} behavior, linked to `cli/cmd/ao` tests).
+Executable specs: [references/autodev.feature](references/autodev.feature) and
+[references/autodev-cli.feature](references/autodev-cli.feature)
+(`ao autodev {init,validate,show}`, linked to `cli/cmd/ao` tests).
 
 ## Execution Steps
 

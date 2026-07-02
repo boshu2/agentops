@@ -99,12 +99,11 @@ ao autodev validate --json ${PROGRAM_PATH:+--file "$PROGRAM_PATH"}
 ao autodev init "<objective>"   # no contract + setup requested; infer objective from repo context
 ```
 
-On validation failure (when asked to create or fix the contract), patch the
-missing required sections — `Objective`, `Mutable Scope`, `Immutable Scope`,
-`Experiment Unit`, `Validation Commands`, `Decision Policy`, `Escalation Rules`,
-`Stop Conditions` — then rerun the validate command from the detection block above. Prefer narrow
-mutable scope and concrete validation commands; work crossing immutable scope
-becomes a bead, never a silently widened contract.
+On validation failure, patch the missing required sections — `Objective`,
+`Mutable Scope`, `Immutable Scope`, `Experiment Unit`, `Validation Commands`,
+`Decision Policy`, `Escalation Rules`, `Stop Conditions` — then rerun the
+validate command. Prefer narrow mutable scope and concrete validation commands;
+work crossing immutable scope becomes a bead, never a silently widened contract.
 
 Routing: define/repair the repo-local autonomous policy → this section +
 ao autodev; run the repeated improvement loop → `$evolve`; run one bounded
