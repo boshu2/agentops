@@ -428,13 +428,13 @@ PY
     and (.pr? | type == "number")          # MUST be a JSON number, not a string
     and (.head_sha? | is_str) and ((.head_sha|length) >= 7)
     and (.disposition? | is_str)
-    and (.disposition as $d | (["CONFIRMED","REFUTED","ESCALATE","HOLD"] | index($d)) != null)
+    and (.disposition as $d | (["CONFIRMED","REFUTED","ESCALATE","HOLD","REBOUND"] | index($d)) != null)
     and (.generated_at? | is_str) and ((.generated_at|length) > 0)
     and (.author_context_id? | is_str) and ((.author_context_id|length) > 0)
     and ((.mode? // null) | (. == null) or (. as $m | (["fresh-context","multi-model"] | index($m)) != null))
     and (.refuters? | type == "array") and ((.refuters|length) >= 1)
     # no unknown top-level keys
-    and ((keys - ["schema_version","bead_id","pr","head_sha","disposition","generated_at","mode","author_context_id","attempt","refuters","council_artifact"]) | length == 0)
+    and ((keys - ["schema_version","bead_id","pr","head_sha","disposition","generated_at","mode","author_context_id","attempt","refuters","council_artifact","degraded","rebound_from_verdict","rebound_from_sha","patch_id_proof"]) | length == 0)
     # each refuter: required family+verdict+context_id, correct types/enums, no
     # extras, family within the known alias set (canonical-roster check is separate)
     and (all(.refuters[];
