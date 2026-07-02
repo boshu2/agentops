@@ -54,7 +54,7 @@ Examples:
 }
 
 func init() {
-	defragCmd.GroupID = "knowledge"
+	defragCmd.GroupID = "experimental"
 	rootCmd.AddCommand(defragCmd)
 	defragCmd.Flags().BoolVar(&defragPrune, "prune", false,
 		"Find orphaned learnings not referenced in patterns or research")

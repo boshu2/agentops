@@ -40,7 +40,7 @@ Examples:
 }
 
 func init() {
-	flywheelCmd.GroupID = "core"
+	flywheelCmd.GroupID = "experimental"
 	rootCmd.AddCommand(flywheelCmd)
 
 	// flywheel status subcommand

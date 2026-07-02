@@ -93,7 +93,7 @@ var curateStatusCmd = &cobra.Command{
 }
 
 func init() {
-	curateCmd.GroupID = "core"
+	curateCmd.GroupID = "experimental"
 	rootCmd.AddCommand(curateCmd)
 
 	curateCmd.AddCommand(curateCatalogCmd)

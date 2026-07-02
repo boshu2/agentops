@@ -177,6 +177,10 @@ func init() {
 		&cobra.Group{ID: "config", Title: "Configuration:"},
 		&cobra.Group{ID: "comms", Title: "Communication:"},
 		&cobra.Group{ID: "knowledge", Title: "Knowledge:"},
+		// The corpus/flywheel surface is experimental-tier (unproven — ADR-0004,
+		// ADR-0011): kept and buildable, but demoted under its own header so the
+		// spine (proven) commands lead the `ao --help` surface (age-h4y3).
+		&cobra.Group{ID: "experimental", Title: "Experimental (corpus/flywheel):"},
 	)
 
 	// Global flags available to all commands
