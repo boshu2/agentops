@@ -62,8 +62,8 @@
 
 ## 5. NUDGE / TIME loops (keep loops turning)
 - **What:** the time/event drivers that fire the other loops.
-- **Surfaces:** `/loop` (in-session, fixed-interval or self-paced); **ScheduleWakeup** (in-session perpetuation, cache-aware delays); **CronCreate / shell cron** (off-session, survives session death); **NTM/ATM tending** (8-step tick: baseline→attend→classify→score→act→verify→stop→log; the Liveness Truth Stack); **continuity-loop** (renewal ticks, 2-tick stall rule, `.agents/continuity/state.json`).
-- **State:** working (continuity-loop experimental). Temporal tiers: scheduling (hours/days) → autonomous (5–30 min, evolve) → operational (15–30 min, NTM tending) → workflow (3–5 min/phase, RPI).
+- **Surfaces:** `/loop` (in-session, fixed-interval or self-paced); **ScheduleWakeup** (in-session perpetuation, cache-aware delays); **CronCreate / shell cron** (off-session, survives session death); **NTM/ATM tending** (8-step tick: baseline→attend→classify→score→act→verify→stop→log; the Liveness Truth Stack); **`/using-atm` continuity contract** (renewal ticks, 2-tick stall rule, `.agents/continuity/state.json`; absorbed from the retired continuity-loop skill).
+- **State:** working (continuity contract experimental). Temporal tiers: scheduling (hours/days) → autonomous (5–30 min, evolve) → operational (15–30 min, NTM tending) → workflow (3–5 min/phase, RPI).
 - **Lesson:** one continuous machine with multiple control surfaces, not a cascade of systems. All honor the same kill markers.
 
 ## L. PROMOTION ladder (routes a lesson to its surface)

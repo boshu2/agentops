@@ -297,6 +297,40 @@ historical:
     merged-into:  ntm
     date:         2026-07-01
     rationale:    "Retired via ao skills retire: merged into ntm."
+  acfs:
+    state:        cut
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: cut."
+  autodev:
+    state:        merged-into
+    merged-into:  evolve
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into evolve."
+  skill-auditor:
+    state:        merged-into
+    merged-into:  heal-skill
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into heal-skill."
+  beads-workflow:
+    state:        merged-into
+    merged-into:  beads-br
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into beads-br."
+  continuity-loop:
+    state:        merged-into
+    merged-into:  using-atm
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into using-atm."
+  inject:
+    state:        merged-into
+    merged-into:  operationalize
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into operationalize."
+  forge:
+    state:        merged-into
+    merged-into:  curate
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into curate."
 workflows:
   ship-beads:
     kind:            workflow
@@ -344,18 +378,6 @@ workflows:
     rationale:       "Runs one capability through the AgentOps seven-move operating loop end-to-end."
 
 dispositions:
-  - skill:            autodev
-    domain:           "BC3 Loop"
-    hexagonal_role:   supporting
-    disposition:      refactor
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: planning
-    path:             skills/autodev/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor. Demoted to experimental (heavy rpi chain, no measured uplift)."
   - skill:            behavior-first-planning
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -512,18 +534,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Flywheel health kernel; needs productized self-test"
-  - skill:            forge
-    domain:           "BC1 Corpus"
-    hexagonal_role:   domain
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/forge/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Learning extraction; align to capture quality and promotion ratchet"
   - skill:            goals
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -572,18 +582,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Slice executor; enforce first-failing-test language"
-  - skill:            inject
-    domain:           "BC1 Corpus"
-    hexagonal_role:   driving-adapter
-    disposition:      refactor
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/inject/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Context injection should be explicit CorpusReader adapter use"
   - skill:            perf
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -812,18 +810,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Shared contracts; avoid broad edits"
-  - skill:            skill-auditor
-    domain:           "BC4 Factory"
-    hexagonal_role:   supporting
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/skill-auditor/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Audit role should consume new quality/domain rubrics"
   - skill:            skill-builder
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
@@ -956,18 +942,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
-  - skill:            acfs
-    domain:           "BC5 Runtime"
-    hexagonal_role:   driving-adapter
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: orchestration
-    path:             skills/acfs/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. Demoted to experimental (heavy rpi chain, no measured uplift); external ~/acfs tool — candidate cut (deferred to operator)."
   - skill:            agent-mail
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1013,18 +987,6 @@ dispositions:
     parity_policy:    required
     capability_class: tracking
     path:             skills/beads-bv/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:            beads-workflow
-    domain:           "BC3 Loop"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: tracking
-    path:             skills/beads-workflow/SKILL.md
     aliases:          []
     supersedes:       null
     rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
@@ -1136,18 +1098,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
-  - skill:            continuity-loop
-    domain:           "BC6 Orchestration"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: orchestration
-    path:             skills/continuity-loop/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here."
   - skill:            operationalize
     domain:           "BC1 Corpus"
     hexagonal_role:   domain

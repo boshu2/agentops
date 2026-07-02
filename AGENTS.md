@@ -26,7 +26,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 4. **TDD per slice** — first the failing test (the slice's contract), then implementation. Code without a failing test has no acceptance surface. → `/implement`
 5. **Group into a wave only when write scopes do not collide** — parallelism is explicit ownership; default to sequential. ≥2 writers on a shared path ⇒ Agent Mail reserve first. → `/swarm`, `/crank`
 6. **Close the bead by proving its acceptance** — the gate here is the *windshield*: deterministic ground-truth that catches a confident hallucination re-planning alone can't. → `ao gate check --fast --scope head`, `/validate`
-7. **Capture evidence + learning, then ratchet** — promote what changes future behavior; kill artifacts that don't. → `/post-mortem` (`/forge` and the corpus-flywheel skills are experimental-tier — kept, not primary)
+7. **Capture evidence + learning, then ratchet** — promote what changes future behavior; kill artifacts that don't. → `/post-mortem` (`/curate` and the corpus-flywheel skills are experimental-tier — kept, not primary)
 
 Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). Which skill runs which move → [`docs/SKILL-ROUTER.md`](docs/SKILL-ROUTER.md). `/rpi` is one turn's executor over this loop, **not** the primary navigation. The rest of this file is the mechanics each move uses; full workflow phases (claim → scope → ship → land), branch shape, and provenance live in [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md).
 

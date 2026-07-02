@@ -1,7 +1,7 @@
 # Skill Router
 
 Use this when you're not sure which skill to run. For the full flow overview run
-`ao session bootstrap`, then `/inject` for on-demand context. The same tree is
+`ao session bootstrap`, then `ao lookup` for on-demand context. The same tree is
 embedded in [`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep
 the two in sync when skills are folded or renamed.
 
@@ -61,7 +61,7 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Compile knowledge ─────────► /forge or /compile (experimental tier)
+│   ├─ Compile knowledge ─────────► /curate --mode=forge or /compile (experimental tier)
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover

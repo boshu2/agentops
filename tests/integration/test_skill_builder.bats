@@ -13,7 +13,7 @@
 setup() {
     REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
     BUILD_SH="$REPO_ROOT/skills/skill-builder/scripts/build.sh"
-    AUDIT_SH="$REPO_ROOT/skills/skill-auditor/scripts/audit.sh"
+    AUDIT_SH="$REPO_ROOT/skills/heal-skill/scripts/audit.sh"
 
     # Tests build into the real REPO_ROOT/skills tree (init.sh hardcodes REPO_ROOT
     # discovery via SCRIPT_DIR). We track every created skill name so teardown

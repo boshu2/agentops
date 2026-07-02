@@ -97,4 +97,4 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
 - [eval-outcomes](../eval-outcomes/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
 - [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `$rpi` skill loops (`ao agent bundle` produces the definition a managed-agents substrate runs)
-- [skill-auditor](../skill-auditor/SKILL.md) — audit this skill before declaring stable
+- [heal-skill](../heal-skill/SKILL.md) — deep audit mode (absorbed from skill-auditor): audit this skill before declaring stable

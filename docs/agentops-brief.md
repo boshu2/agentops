@@ -143,7 +143,7 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 70 shared skills  │   `ao` Control Plane │ local pre-push gate  │
+│ 63 shared skills  │   `ao` Control Plane │ local pre-push gate  │
 │ plus runtime      │ repo-native retrieval│    + CI backstop     │
 │    artifacts      │ goals, and automation│ routine release path │
 └───────────────────┴──────────────────────┴───────────────────────┘
@@ -159,7 +159,7 @@ GOALS.md
       -> /rpi
           -> Discovery: /brainstorm -> /research -> /plan -> /pre-mortem
           -> Implementation: /crank -> /swarm -> /implement
-          -> Validation: /validation -> /vibe -> /post-mortem -> /retro -> /forge
+          -> Validation: /validation -> /vibe -> /post-mortem -> /retro -> /curate --mode=forge
 ```
 
 ### Validation Layer — Everything Flows Through Council

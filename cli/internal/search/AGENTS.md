@@ -13,7 +13,7 @@ In-memory inverted index over `.md` and `.jsonl` files in `.agents/`, plus the i
 
 - **Owner:** agentopsd extraction track (epic `agentops-tqc`).
 - **Index format:** JSONL on disk — one term per line as `IndexEntry{Term, Paths}`. Loaded into a `map[string]map[string]bool` in memory.
-- **Skill surface:** drives `skills/inject/SKILL.md` (decay-ranked, token-budgeted context injection) and `skills/research/SKILL.md`.
+- **Skill surface:** drives `skills/research/SKILL.md` (retrieval via `ao lookup`/`ao search`; the retired inject skill's activation half lives in `skills/operationalize/SKILL.md`).
 
 ## Interfaces
 
@@ -45,6 +45,6 @@ In-memory inverted index over `.md` and `.jsonl` files in `.agents/`, plus the i
 ## Cross-references
 
 - Parent epic: `agentops-tqc` (Olympus → agentopsd extraction).
-- Skills: `skills/inject/SKILL.md`, `skills/research/SKILL.md`.
+- Skills: `skills/research/SKILL.md`, `skills/operationalize/SKILL.md` (absorbed inject activation surface).
 - Pattern source: olympus per-folder `AGENTS.md` ownership convention.
 - Sibling packages: `cli/internal/context` (assembles full context packets using search results), `cli/internal/overnight` (writes findings consumed by `findings.go`).

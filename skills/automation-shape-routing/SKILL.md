@@ -166,7 +166,7 @@ decided, hand off:
 | Verdict | Next | What it does |
 |---|---|---|
 | **shape 0 (one-shot)** | *(no builder — stop routing)* | Do the task inline, or fan out 2–3 in-session Agent subagents for independent drafts. Author nothing. |
-| **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
+| **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `heal-skill` (deep audit + hygiene). |
 | **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
 | **ATM swarm** | `atm` + [`/using-atm`](../using-atm/SKILL.md) | Stand up + tend an ATM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
 | **gate** | [`operationalize`](../operationalize/SKILL.md) (`gate` route) | Emit a warn-only check script + bats case + CI wiring; flip to blocking after soak. For promoted must-never-regress learnings. |

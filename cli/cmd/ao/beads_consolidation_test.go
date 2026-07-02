@@ -1,10 +1,10 @@
 // Tests for the beads-* skill-cluster consolidation (ag-ez7y6): the four
 // beads skills (beads, beads-br, beads-bv, beads-workflow) collapse to the
-// surviving set {beads-br, beads-bv, beads-workflow} with the legacy `beads`
-// umbrella retired --into beads-br. These are L2 structural-invariant tests:
-// they read the real repo files (skills tree + disposition ledger) so a
-// regression that re-adds the retired skill, drops the folded doctrine, or
-// leaves the ledger dirty fails the build.
+// surviving set {beads-br, beads-bv}, with the legacy `beads` umbrella and
+// the `beads-workflow` conversion doctrine both merged into beads-br. These
+// are L2 structural-invariant tests: they read the real repo files (skills
+// tree + disposition ledger) so a regression that re-adds a retired skill,
+// drops the folded doctrine, or leaves the ledger dirty fails the build.
 
 // practices: [pragmatic-programmer]
 package main
@@ -18,7 +18,7 @@ import (
 )
 
 // beadsConsolidationSurvivors is the post-consolidation surviving set.
-var beadsConsolidationSurvivors = []string{"beads-br", "beads-bv", "beads-workflow"}
+var beadsConsolidationSurvivors = []string{"beads-br", "beads-bv"}
 
 // findBeadsRepoRoot resolves the repo root by a stable structural marker that
 // only co-exists at the root: skills/ AND docs/contracts/. The shared
@@ -51,9 +51,11 @@ func findBeadsRepoRoot(t *testing.T) string {
 // capability lives only in a removed dir.
 func TestBeadsConsolidation_RetiredUmbrellaGone(t *testing.T) {
 	root := findBeadsRepoRoot(t)
-	beadsDir := filepath.Join(root, "skills", "beads")
-	if _, err := os.Stat(beadsDir); err == nil {
-		t.Fatalf("legacy umbrella skills/beads still exists; expected it retired --into beads-br")
+	for _, retired := range []string{"beads", "beads-workflow"} {
+		dir := filepath.Join(root, "skills", retired)
+		if _, err := os.Stat(dir); err == nil {
+			t.Fatalf("retired skills/%s still exists; expected it retired --into beads-br", retired)
+		}
 	}
 	for _, slug := range beadsConsolidationSurvivors {
 		dir := filepath.Join(root, "skills", slug)
@@ -92,6 +94,51 @@ func TestBeadsConsolidation_DoctrineFoldedIntoBR(t *testing.T) {
 	}
 }
 
+// TestBeadsConsolidation_WorkflowFoldedIntoBR asserts the plan→beads
+// conversion doctrine that lived ONLY in `beads-workflow` survives in
+// beads-br — the second half of the 4→2 consolidation (ag-ez7y6). The
+// workflow skill's distinct value was the conversion/shaping doctrine (THE
+// EXACT PROMPT, polishing protocol, quality checklist, readiness criteria,
+// bd→br doc-migration notes, lifecycle cards) plus its reference files
+// (PROMPTS.md, BEAD-ANATOMY.md) — not the br command surface beads-br
+// already had. Also asserts the absorbed-trigger note so `/beads-workflow`
+// requests route to beads-br.
+func TestBeadsConsolidation_WorkflowFoldedIntoBR(t *testing.T) {
+	root := findBeadsRepoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "skills", "beads-br", "SKILL.md"))
+	if err != nil {
+		t.Fatalf("read beads-br SKILL.md: %v", err)
+	}
+	body := strings.ToLower(string(data))
+	// Each token marks a folded conversion-doctrine capability. Tokens are
+	// lower-cased and chosen to be robust to phrasing.
+	required := map[string]string{
+		"absorbed trigger routes /beads-workflow here": "absorbed from /beads-workflow",
+		"the exact conversion prompt":                  "the exact prompt",
+		"exact prompt verbatim body":                   "comprehensive and granular set of beads",
+		"polishing protocol":                           "polishing protocol",
+		"quality checklist":                            "self-contained",
+		"when beads are ready":                         "steady-state",
+		"bd→br doc migration":                          "bd → br migration (docs)",
+		"lifecycle: claim-verify before dispatch":      "claim-verify",
+		"lifecycle: merged-before-close":               "merged to trunk",
+		"lifecycle: residual routed to successor":      "residual",
+		"lifecycle: append notes never replace":        "append",
+		"lifecycle: fuzzy intent same-turn bead":       "same turn",
+	}
+	for capability, token := range required {
+		if !strings.Contains(body, token) {
+			t.Errorf("beads-br SKILL.md lost folded capability %q (token %q not found)", capability, token)
+		}
+	}
+	// The moved reference files must live under beads-br now.
+	for _, ref := range []string{"PROMPTS.md", "BEAD-ANATOMY.md"} {
+		if _, err := os.Stat(filepath.Join(root, "skills", "beads-br", "references", ref)); err != nil {
+			t.Errorf("beads-br/references/%s missing after beads-workflow fold: %v", ref, err)
+		}
+	}
+}
+
 // TestBeadsConsolidation_LedgerCleanMergedInto asserts the disposition ledger
 // records `beads` in the historical: section as merged-into beads-br, and that
 // no active dispositions row for `beads` remains — the "ledger + ripple clean"
@@ -116,12 +163,19 @@ func TestBeadsConsolidation_LedgerCleanMergedInto(t *testing.T) {
 		strings.Contains(dispositionsSection, "- skill: beads\n") {
 		t.Errorf("active dispositions row for retired skill `beads` still present")
 	}
-	// Historical row present, merged-into beads-br.
-	if !strings.Contains(historicalSection, "\n  beads:\n") {
-		t.Errorf("historical: section missing a `beads:` terminal-state row")
+	// No active dispositions row for the folded conversion skill either.
+	if strings.Contains(dispositionsSection, "- skill:            beads-workflow\n") ||
+		strings.Contains(dispositionsSection, "- skill: beads-workflow\n") {
+		t.Errorf("active dispositions row for retired skill `beads-workflow` still present")
+	}
+	// Historical rows present, merged-into beads-br.
+	for _, retired := range []string{"beads", "beads-workflow"} {
+		if !strings.Contains(historicalSection, "\n  "+retired+":\n") {
+			t.Errorf("historical: section missing a `%s:` terminal-state row", retired)
+		}
 	}
 	if !strings.Contains(historicalSection, "merged-into: beads-br") &&
 		!strings.Contains(historicalSection, "merged-into:  beads-br") {
-		t.Errorf("historical `beads` row not recorded as merged-into beads-br")
+		t.Errorf("historical beads rows not recorded as merged-into beads-br")
 	}
 }

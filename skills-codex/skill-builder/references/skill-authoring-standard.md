@@ -65,7 +65,7 @@ python3 skills/skill-builder/scripts/scan_descriptions.py skills --strict   # ex
 python3 skills/skill-builder/scripts/scan_descriptions.py skills --json     # robot mode
 ```
 
-The scanner applies the exact detection logic of `skill-auditor/scripts/audit.sh`,
+The scanner applies the exact detection logic of `heal-skill/scripts/audit.sh`,
 so its verdict never contradicts the per-skill auditor; it adds the prioritized
 remediation list and a suggested `Triggers:` stub the auditor does not provide.
 

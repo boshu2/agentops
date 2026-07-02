@@ -303,7 +303,7 @@ ao pool list              # Show knowledge by quality tier
 | Skill | Purpose |
 |-------|---------|
 | `/retro` | Quick retrospective |
-| `/inject` | Manually load prior knowledge |
+| `ao lookup` | Manually load prior knowledge |
 | `/knowledge` | Query knowledge base |
 | `/bug-hunt` | Root cause analysis |
 | `/complexity` | Code complexity metrics |

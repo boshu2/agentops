@@ -92,7 +92,7 @@ During Defrag, merge learnings with overlapping content:
 
 ## Integration with Forge
 
-When `/forge` extracts learnings from transcripts:
+When `/curate --mode=forge` extracts learnings from transcripts:
 1. Check if similar learning already exists (semantic match)
 2. If yes: update confidence (+0.1) and add observation
 3. If no: create new learning at 0.3 confidence

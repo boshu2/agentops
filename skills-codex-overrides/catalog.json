@@ -35,12 +35,6 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "acfs",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
       "name": "agent-mail",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -59,21 +53,6 @@
       "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
     },
     {
-      "name": "autodev",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands.",
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Do not shell out to a retired CLI wrapper as the Codex default; invoke `$evolve` or `$rpi` for skill handoff."
-        ]
-      }
-    },
-    {
       "name": "automation-shape-routing",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -87,12 +66,6 @@
     },
     {
       "name": "beads-bv",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "beads-workflow",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
@@ -131,19 +104,13 @@
       "name": "compile",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
-    },
-    {
-      "name": "continuity-loop",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "converge",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified — parity twin suffices."
+      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
     },
     {
       "name": "converter",
@@ -167,7 +134,7 @@
       "name": "curate",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "dcg",
@@ -219,13 +186,7 @@
       "name": "flywheel",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
-    },
-    {
-      "name": "forge",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "goals",
@@ -290,12 +251,6 @@
       }
     },
     {
-      "name": "inject",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
-    },
-    {
       "name": "ntm",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -305,7 +260,7 @@
       "name": "operationalize",
       "treatment": "excluded",
       "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped — no runtime twin ships."
+      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "perf",
@@ -538,12 +493,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
-    },
-    {
-      "name": "skill-auditor",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
     },
     {
       "name": "skill-builder",

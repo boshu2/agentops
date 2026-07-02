@@ -43,9 +43,9 @@ Adapters may change; the domain contract does not.
 | 2. Track as bead | `persist_intent` | Bead body carrying the Gherkin or linking to the intent issue | `/beads`, `br create`, tracker facade | br, `IssueTrackerPort`, `bv --robot-*`, dependency graph checks | Bead is self-contained, dependency-linked, and has validation commands |
 | 3. Slice vertically | `plan_slices` | Slice validation plan, one row per scenario or behavior | `/plan` | symbol verification, file matrix, planning rules | Every slice has a first failing proof, write scope, owner, and bounded context |
 | 4. Execute slice | `execute_slice` | Worker brief with slice, proof, scope, and rollback path | `/implement`, `/crank`, `/swarm` | git, test runners, scope guard, runtime agents | Failing proof failed for the right reason, then passes after the smallest implementation |
-| 5. Execute wave | `execute_wave` | Wave packet with independent slice ownership | `/crank`, `/swarm`, `/autodev` | file-conflict matrix, worktrees, agent messaging | Same-wave writes do not collide, integration order is declared |
+| 5. Execute wave | `execute_wave` | Wave packet with independent slice ownership | `/crank`, `/swarm`, `/evolve` | file-conflict matrix, worktrees, agent messaging | Same-wave writes do not collide, integration order is declared |
 | 6. Validate acceptance | `validate_acceptance` | Criterion verdicts and roll-up validation report | `/validation`, `/validate`, `/vibe`, `/council`, `/scenario` | tests, evals, GOALS measure, completion-claim kernel | Every Given/When/Then maps to fresh passing evidence; no test theater |
-| 7. Record evidence | `record_evidence` | Ratchet entry, evidence index, residual-gap disposition | `/ratchet`, `/post-mortem`, `/retro`, `/forge` | `.agents/ratchet/`, learning promotion gates, findings registry | Evidence is cited, residual gaps have next-step beads or accepted disposition |
+| 7. Record evidence | `record_evidence` | Ratchet entry, evidence index, residual-gap disposition | `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | `.agents/ratchet/`, learning promotion gates, findings registry | Evidence is cited, residual gaps have next-step beads or accepted disposition |
 | 8. Steer loop | `steer_goal` | Goal trace, learning, or next-work packet | `/goals`, `/flywheel`, `/harvest`, `/dream` | GOALS.md, scenarios, knowledge compile, scheduler | Durable behavior changed, or the observation dies at handoff |
 
 ## BDD and Done-State Rules
@@ -107,7 +107,7 @@ agents are expected to consume.
 | `/implement` | Owns `execute_slice`, runs first failing proof then smallest green implementation |
 | `/crank` and `/swarm` | Own `execute_wave`, coordinate workers without collapsing ownership boundaries |
 | `/validation`, `/validate`, `/vibe`, `/scenario`, `/goals` | Own `validate_acceptance`, prove claims with fresh evidence |
-| `/ratchet`, `/post-mortem`, `/retro`, `/forge` | Own `record_evidence`, promote only reusable learnings |
+| `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | Own `record_evidence`, promote only reusable learnings |
 | `/rpi` | Orchestrates the port chain without replacing the phase skills that own each port |
 
 ## Failure Modes

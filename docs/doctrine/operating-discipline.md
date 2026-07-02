@@ -154,7 +154,7 @@ is advisory doctrine for swarm runs.
 ### D12 — Inference mines and codifies; deterministic code reconciles forever
 The steady-state control loop is deterministic and cheap; inference lives in the learning loop
 (mine → codify into controllers), never inside the control loop it is meant to make reliable.
-**Doctrine** — and the core AgentOps shape: the knowledge flywheel (`/forge`, `/curate`, `ao
+**Doctrine** — and the core AgentOps shape: the knowledge flywheel (`/curate`, `ao
 lookup`) is the learning loop; the deterministic gates/scripts are the control loop. Keep models
 out of the reconcile path; let them propose new deterministic checks, not run inside the gate.
 

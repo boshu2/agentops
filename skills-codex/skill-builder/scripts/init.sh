@@ -154,7 +154,7 @@ output_contract: "TODO: path to schema or output description"
 
 ## See Also
 
-- [skill-auditor](../skill-auditor/SKILL.md) — audit this skill before declaring stable
+- [heal-skill](../heal-skill/SKILL.md) — deep audit (audit.sh) this skill before declaring stable
 EOF
 
 # --- Mode-specific content injection -------------------------------------
@@ -176,7 +176,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
-exec bash "$REPO_ROOT/skills/skill-auditor/scripts/audit.sh" "$SKILL_DIR"
+exec bash "$REPO_ROOT/skills/heal-skill/scripts/audit.sh" "$SKILL_DIR"
 EOF
 chmod +x "$NEW_DIR/scripts/validate.sh"
 chmod +x "$NEW_DIR" 2>/dev/null || true

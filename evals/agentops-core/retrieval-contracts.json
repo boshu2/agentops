@@ -47,8 +47,8 @@
       "kind": "artifact_check",
       "objective": "Ensure retrieval-oriented skills still document the current on-demand knowledge loading flow.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Use `ao lookup --query \"topic\"`"},
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "ao search"},
+        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao lookup --query \"<topic>\""},
+        {"type": "artifact_contains", "target": "../../skills/operationalize/SKILL.md", "value": "ao knowledge activate"},
         {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao lookup --query \"<topic>\""},
         {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao search \"<topic>\""},
         {"type": "artifact_contains", "target": "../../skills/recover/SKILL.md", "value": "ao lookup --query \"evolve cycle recovery\""}

@@ -112,7 +112,7 @@ AgentOps is valuable in rigorous environments because it changes agent work from
 | Council verdicts | `/council`, `/pre-mortem`, `/vibe` | Record independent PASS/WARN/FAIL judgment and rationale |
 | Citations | `ao metrics cite`, lookup/search/inject flows | Show which knowledge influenced a run |
 | Handoffs | `/handoff`, `/recover`, session closeout | Preserve continuity across agents and sessions |
-| Retros and post-mortems | `/retro`, `/post-mortem`, `/forge` | Turn completed work into reusable lessons |
+| Retros and post-mortems | `/retro`, `/post-mortem`, `/curate --mode=forge` | Turn completed work into reusable lessons |
 | Ratchet records | `/ratchet`, validation gates | Capture forward-progress checks and failure prevention |
 | Goal measurements | `GOALS.md`, `ao goals measure`, `/evolve` | Tie autonomous work to measurable fitness criteria |
 | Local gates | pre-push, tests, security scans, docs gates | Make promotion conditional on executable checks |

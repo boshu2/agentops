@@ -48,8 +48,8 @@ The pattern: chaos + filter + ratchet = directional progress from undirected ene
 ### 4. Knowledge Flywheel
 
 Escape velocity condition: `signal_rate x retrieval_rate > decay_rate` (informally: you learn faster than you forget). Goals should verify:
-- Signal generation (extract, forge, retro produce learnings)
-- Retrieval (inject loads learnings into sessions)
+- Signal generation (extract, curate --mode=forge, retro produce learnings)
+- Retrieval (ao lookup loads learnings into sessions)
 - Decay resistance (learnings are persisted, not just in-memory)
 
 ## Weight Guidelines

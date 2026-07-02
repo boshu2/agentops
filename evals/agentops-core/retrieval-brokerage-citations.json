@@ -134,10 +134,11 @@
         {"type": "artifact_contains", "target": "../../docs/architecture/primitive-chains.md", "value": "`ao search` and `ao lookup` pull prior repo knowledge and nearby precedents."},
         {"type": "artifact_contains", "target": "../../docs/architecture/primitive-chains.md", "value": "`lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together"},
         {"type": "artifact_contains", "target": "../../docs/contracts/session-intelligence-trust-model.md", "value": "Any runtime surface that injects context must be able to explain:"},
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Use `ao lookup --query \"topic\"` for on-demand learnings retrieval"},
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "After presenting injected knowledge, record which files were injected for the feedback loop:"},
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Citation tracking enables the feedback loop"},
-        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "this hook emits only a pointer to on-demand retrieval commands (`ao search`, `ao lookup`)."}
+        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "ao lookup --query \"<topic>\""},
+        {"type": "artifact_contains", "target": "../../skills/operationalize/SKILL.md", "value": "Knowledge activation via ao knowledge (absorbed from /inject)"},
+        {"type": "artifact_contains", "target": "../../skills/research/SKILL.md", "value": "After applying, record each citation:"},
+        {"type": "artifact_contains", "target": "../../skills/operationalize/SKILL.md", "value": "record it with `ao metrics cite"},
+        {"type": "artifact_contains", "target": "../../skills/bootstrap/SKILL.md", "value": "then `ao lookup --query \"<topic>\"` for decay-ranked"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
     }

@@ -71,7 +71,7 @@ the change itself, not in a SaaS tool that the next vendor can take away.
 
 **Recovery.** When a change turns out to have been wrong, the ratchet record
 is the rollback unit, and the failure is converted by `/post-mortem` and
-`/forge` into a learning, then into a planning rule that prevents the same
+`/curate --mode=forge` into a learning, then into a planning rule that prevents the same
 class of mistake from being injected again. The loop is closed inside the
 corpus, not inside a chat transcript.
 

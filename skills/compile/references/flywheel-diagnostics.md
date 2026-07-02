@@ -86,7 +86,7 @@ During Compile's Grow phase, compute and report:
 - Remove hallucinated learnings (coherence check)
 
 ### For Low ρ (citation rate)
-- Enable automatic extraction from sessions (forge hook)
+- Extract from sessions at close (`/curate --mode=forge`; hookless — run explicitly)
 - Lower confidence threshold for initial capture (0.5 instead of 0.7)
 - Add extraction prompts to session wrap-up
 
@@ -105,7 +105,7 @@ During Compile's Grow phase, compute and report:
 
 The flywheel requires all four loops to be closed:
 
-1. **Capture:** Automatic extraction from sessions (forge, retro, post-mortem)
+1. **Capture:** Extraction from sessions (curate --mode=forge, retro, post-mortem)
 2. **Promotion:** Citation-driven — used knowledge gets promoted (higher confidence)
 3. **Decay:** Built-in — unused knowledge loses confidence over time
 4. **Reinforcement:** Promoted knowledge surfaces more often in future sessions
@@ -127,7 +127,7 @@ During flywheel diagnostics, Compile should check for these common normalization
 ### Remediation
 
 - **Placeholder files:** Delete or populate with extracted content.
-- **Stacked frontmatter:** Split into valid single-frontmatter files; re-run forge on source transcript.
+- **Stacked frontmatter:** Split into valid single-frontmatter files; re-run `/curate --mode=forge` on source transcript.
 - **Bundled learnings:** Split into one learning per file, preserving original timestamps.
 - **Duplicated headings:** Deduplicate manually or via `ao dedup`.
 - **Stale contradictions:** Re-run contradiction detection (`ao contradict`) after latest extraction pass; discard stale findings.

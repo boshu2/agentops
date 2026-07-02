@@ -262,7 +262,7 @@ ao flywheel status --json       # machine-readable
 | Verdict | Action |
 |---------|--------|
 | **decaying** | Run `/compile` cycle, archive stale artifacts, increase citation via `ao lookup` |
-| **accumulating** | Review orphaned research (`/research`→`/post-mortem --quick` pipeline), improve forge quality |
+| **accumulating** | Review orphaned research (`/research`→`/post-mortem --quick` pipeline), improve `/curate --mode=forge` capture quality |
 | **compounding** | Maintain cadence. Consider capturing baselines (`ao metrics baseline`) for trend tracking |
 
 ## Cache Eviction

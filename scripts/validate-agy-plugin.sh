@@ -8,7 +8,6 @@ core_skills=(
   agent-mail
   beads-br
   beads-bv
-  beads-workflow
   ntm
   cass
   cass-memory

@@ -72,8 +72,8 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/goals/SKILL.md", "value": "ao goals measure --json"},
         {"type": "artifact_contains", "target": "../../skills/goals/SKILL.md", "value": "When both files exist, GOALS.md takes precedence."},
-        {"type": "artifact_contains", "target": "../../skills/autodev/SKILL.md", "value": "`PROGRAM.md` takes precedence over `AUTODEV.md`."},
-        {"type": "artifact_contains", "target": "../../skills/autodev/SKILL.md", "value": "Do not mark an autonomous cycle successful only because the main tests pass."},
+        {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "`PROGRAM.md` takes precedence"},
+        {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "main tests green alone never marks a cycle successful"},
         {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "Failing goals and directive gaps"},
         {"type": "artifact_contains", "target": "../../skills/evolve/SKILL.md", "value": "Testing improvements"}
       ],

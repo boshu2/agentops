@@ -59,9 +59,10 @@ echo ""
 # Verify git is available
 check "git binary exists" "which git" "git"
 
-# Verify current tracker skill surfaces exist (`beads` was retired).
+# Verify current tracker skill surfaces exist (`beads` and `beads-workflow`
+# were merged into beads-br, ag-ez7y6).
 check_exists "beads-br skill exists" "$SKILL_DIR/../beads-br/SKILL.md"
-check_exists "beads-workflow skill exists" "$SKILL_DIR/../beads-workflow/SKILL.md"
+check_exists "beads-br conversion prompts exist" "$SKILL_DIR/../beads-br/references/PROMPTS.md"
 
 # Verify pr-prep workflow patterns in SKILL.md
 check_pattern "SKILL.md has git archaeology" "$SKILL_DIR/SKILL.md" "git|[Aa]rchaeology"

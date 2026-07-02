@@ -2,7 +2,7 @@
 # /research investigates a topic prior-art-first, dispatches an explore agent that uses
 # iterative retrieval, and writes a cited artifact to .agents/research/ — every claim
 # carries a file:line reference. Interactive runs gate on human approval; --auto skips it.
-# Hexagon: driving-adapter; consumes inject + repo-context; produces .agents/research/*.md
+# Hexagon: driving-adapter; consumes ao-lookup context + repo-context; produces .agents/research/*.md
 # + result.json. (soc-qk4b)
 
 Feature: Research produces a cited investigation artifact, prior-art first

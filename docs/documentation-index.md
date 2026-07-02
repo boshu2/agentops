@@ -37,7 +37,7 @@
 | **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, post-mortems |
 | **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
 | **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
-| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/post-mortem --quick`, `/forge`, `ao lookup`, `.agents/` |
+| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/post-mortem --quick`, `/curate --mode=forge`, `ao lookup`, `.agents/` |
 
 Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
@@ -89,12 +89,12 @@ Bridge / framing docs:
 - [Critical Skills Policy](contracts/critical-skills.txt) — Human-supervised skill-edit denylist consumed by `ao skills edit seal`
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 70 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 63 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) — Scaffold or absorb new SKILL.md files against the unified template
-- [skill-auditor](https://github.com/boshu2/agentops/blob/main/skills/skill-auditor/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (15 checks)
+- [heal-skill (deep audit mode)](https://github.com/boshu2/agentops/blob/main/skills/heal-skill/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (absorbed from the retired skill-auditor)
 - [Tier-S Audit Pilot 2026-05-06](https://github.com/boshu2/agentops/blob/main/.agents/audits/2026-05-06-tier-s-pilot.md) — Empirical baseline of 5 Tier-S skills against the auditor
 - [Claude Code Skills Docs](https://code.claude.com/docs/en/skills) — Official Claude Code skills documentation (upstream)
 

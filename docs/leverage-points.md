@@ -263,7 +263,7 @@ The same shape at every scale (function, issue, epic, repository) means rules at
 |-----------|--------------------|----|
 | `/evolve` fitness loop | Goal pursuit strategy | Measures all goals, selects worst by severity weight, fixes it, validates no regression, learns. Next cycle's choice depends on this cycle's result. |
 | Finding registry ratchet | Planning, review, and validation context | Structured findings enter through `.agents/findings/registry.jsonl`, compile into promoted artifacts plus planning/pre-mortem outputs, and feed `.agents/constraints/index.json`; the registry contract is CI-enforced (`scripts/check-finding-registry.sh`). |
-| `/forge` pattern extraction | Knowledge taxonomy | Extracts reusable patterns from sessions. The pattern library grows and changes shape based on what the system encounters. |
+| `/curate --mode=forge` pattern extraction | Knowledge taxonomy | Extracts reusable patterns from sessions. The pattern library grows and changes shape based on what the system encounters. |
 | Skill composition | Capability surface | Skills chain: `/research` -> `/plan` -> `/pre-mortem` -> `/crank` -> `/vibe` -> `/post-mortem`. The chain is fixed but each skill adapts its behavior to its inputs. |
 | Progressive skill revelation | User-visible surface | New users see 8 starter skills. The remaining skills reveal as the user grows. The system's visible complexity adapts to the user's readiness. |
 | Severity-weighted goal selection | Priority ordering | `ao goals measure` scores all goals by weight. `/evolve` works the highest-weight failure first. The priority order changes every cycle based on measurement. |
