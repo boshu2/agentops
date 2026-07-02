@@ -163,10 +163,20 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   [[ "$output" == *"needs a value"* ]]
 }
 
-@test "pawl-review: missing bead id is a usage error (exit 2)" {
-  run env PATH="$BIN:$PATH" bash "$SCRIPT" --scope head
-  [ "$status" -eq 2 ]
-  [[ "$output" == *"need <bead-id>"* ]]
+# age-rk3r.10: the change-id is now OPTIONAL — when omitted it is DERIVED from the branch
+# (sanitized), else the short-sha, and the run proceeds (the change-id is a LABEL only, never
+# tracker-validated). This supersedes the old "need <bead-id>" usage error (exit 2).
+@test "pawl-review: NO change-id on a branch -> derives a sanitized label, says so, runs (age-rk3r.10)" {
+  git checkout -q -b feat/derive-me
+  CODEX_STUB="VERDICT: CONFIRMED" run env PATH="$BIN:$PATH" bash "$SCRIPT" --scope head
+  [ "$status" -eq 0 ]
+  # It announced the derived label AND that a change-id is a label only (not a bare error).
+  [[ "$output" == *"no change-id given"* ]]
+  [[ "$output" == *"using the derived label"* ]]
+  [[ "$output" != *"need <bead-id>"* ]]
+  # 'feat/derive-me' -> filename-safe 'feat-derive-me'; the verdict is keyed on the derived label.
+  [[ "$output" == *"feat-derive-me"* ]]
+  [ -f "$AGENTOPS_PAWL_VERDICT_DIR/feat-derive-me.json" ]
 }
 
 # --- convergence protocol (age-cwo.8 / council C) ---

@@ -314,6 +314,112 @@ run_live_smoke() {
   fi
 }
 
+# age-rk3r.10: VERIFY-ERGONOMICS helpers (heartbeat + NO-VERDICT triage). Pure/idempotent
+# and defined ABOVE the source-guard so the bats suite can source + exercise them directly,
+# mirroring build_review_body / pawl_tier_note / the smoke helpers. They emit ONLY to stderr
+# and change NO verdict semantics or exit codes — a healthy long run and a stall become legible
+# without touching what the parse trusts.
+
+# _HB_PID — the running heartbeat subshell's PID ("" = none). Declared here so the EXIT trap
+# (set far below, before _HB_PID would otherwise exist under `set -u`) can always reference it.
+_HB_PID=""
+
+# start_heartbeat <budget-seconds> <reviewer-family> — spawn a background heartbeat that prints
+# ONE plain stderr line every PAWL_HEARTBEAT_INTERVAL seconds (default 30; <=0 disables it) so an
+# operator can tell a HEALTHY long reviewer run from a stall (a flat-0-bytes mid-run is NORMAL for
+# a cold reviewer — this makes "alive" legible instead of tribal). Sets the global _HB_PID.
+#
+# LOAD-BEARING ISOLATION (given .7 hardened the verdict-parse isolation): the heartbeat writes
+# ONLY to fd 2 (stderr). The reviewer's output is captured to a FILE (CODEX_EXEC_OUT_FILE=$raw_file)
+# that the verdict parser reads — so a heartbeat line can NEVER interleave into the bytes the parse
+# consumes; the two sinks are separate by construction. The subshell's fd 1 is sent to /dev/null so
+# it never holds a caller's stdout/command-substitution pipe open. It also CLEARS inherited traps
+# first, so being killed can never run the parent's EXIT cleanup (which rm's $raw_file/$prompt_file)
+# — a delete-the-evidence-mid-review hazard this must not introduce. NO TTY/cursor codes: every line
+# is a plain newline-terminated printf, clean in a non-tty pipe.
+start_heartbeat() {
+  local budget="${1:-0}" family="${2:-reviewer}" interval="${PAWL_HEARTBEAT_INTERVAL:-30}"
+  _HB_PID=""
+  [[ "$interval" =~ ^[0-9]+$ ]] || interval=30
+  [ "$interval" -gt 0 ] || return 0
+  (
+    # (1) DROP the inherited EXIT cleanup: being killed must NEVER run the parent's rm of
+    #     $raw_file/$prompt_file (a delete-the-evidence-mid-review hazard).
+    # (2) On SIGTERM/SIGINT, tear down THIS process AND its current `sleep` child, then exit —
+    #     so stop_heartbeat's kill leaves NO orphaned `sleep` still holding an inherited
+    #     captured-output pipe (that orphan is what hung `run`-captured callers, since a caller
+    #     waits for pipe EOF and the stray sleep held fd 2 open for the whole interval).
+    trap - EXIT
+    trap 'kill "${_hb_sleep:-}" 2>/dev/null; exit 0' TERM INT
+    local hb_start hb_now hb_elapsed hb_remaining _hb_sleep
+    hb_start="$(date +%s)"
+    while :; do
+      # Backgrounded so the TERM trap can kill it on demand; its stdio -> /dev/null so even a
+      # stray one can never hold the caller's captured-output pipe (belt over the trap).
+      sleep "$interval" >/dev/null 2>&1 &
+      _hb_sleep=$!
+      wait "$_hb_sleep" 2>/dev/null || true
+      hb_now="$(date +%s)"; hb_elapsed=$(( hb_now - hb_start ))
+      hb_remaining=$(( budget - hb_elapsed )); [ "$hb_remaining" -lt 0 ] && hb_remaining=0
+      printf 'pawl-review: … reviewer (%s) still working — %ss elapsed, ~%ss of the %ss budget remaining (no output yet is NORMAL for a cold review; this heartbeat = alive, not stalled)\n' \
+        "$family" "$hb_elapsed" "$hb_remaining" "$budget" >&2
+    done
+  ) >/dev/null &   # fd1 -> /dev/null so it never holds a caller's stdout/pipe open; fd2 (the heartbeat sink) stays the script's stderr
+  _HB_PID="$!"
+}
+
+# stop_heartbeat [pid] — kill + reap the heartbeat subshell (default: $_HB_PID) so it can NEVER
+# leak past the reviewer call. Safe on an empty or already-dead pid; clears _HB_PID.
+stop_heartbeat() {
+  local pid="${1:-${_HB_PID:-}}"
+  [ -n "$pid" ] || return 0
+  kill "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+  _HB_PID=""
+}
+
+# codex_rc_class <rc> — map a codex_exec_guarded exit code (lib/codex-exec.sh contract, .1) to a
+# NO-VERDICT triage class label. Consumes the taxonomy; does NOT redefine it.
+codex_rc_class() {
+  case "${1:-}" in
+    124) printf 'STALL' ;;      # CODEX_EXEC_STALL_TIMEOUT — killed at budget / empty after retry
+    125) printf 'ECHO' ;;       # CODEX_EXEC_ECHO — prompt/packet reflected, no real review
+    2)   printf 'MISSING' ;;    # CODEX_EXEC_MISSING — reviewer bin not on PATH
+    *)   printf 'NO-VERDICT' ;; # ran but no parseable verdict / other
+  esac
+}
+
+# triage_block <class> [evidence-path] — print a one-paragraph triage block to stderr for a
+# NO-VERDICT outcome (STALL / ECHO / NO-VERDICT / MISSING). A NO-VERDICT is NOT a REFUTED: no
+# trustworthy review was produced, so name (1) what the exit code means, (2) the ONE next command,
+# and (3) where the raw evidence is — so an operator (or a stranger with no second model) never
+# bounces on a bare error. Pure formatter (no exec); reads $bead/$scope at call time. Writes only
+# to stderr; exit codes + verdict semantics are unchanged (this is purely informational).
+triage_block() {
+  local class="${1:-NO-VERDICT}" ev="${2:-}"
+  [ -n "$ev" ] || ev="n/a (no reviewer output captured)"
+  local self="ao pawl review ${bead:-<change-id>} --scope ${scope:-head}"
+  {
+    printf '\n=== PAWL REVIEW: NO VERDICT (%s) — triage (this is NOT a REFUTED; no trustworthy review was produced) ===\n' "$class"
+    case "$class" in
+      STALL)
+        printf 'What it means: the reviewer was killed at the timeout budget or produced no output after a retry (a stall), so exit is 1 (no-verdict, fail-closed) — NOT exit 3 (REFUTED).\n'
+        printf 'Next: re-run ONCE, foreground: timeout 450 %s\n' "$self"
+        printf 'If it stalls again: run `ao doctor` (checks the reviewer CLI is reachable), or switch reviewer family for this run: REVIEWER=agy %s (automatic failover lands in a later slice).\n' "$self" ;;
+      ECHO|NO-VERDICT)
+        printf 'What it means: the reviewer returned but its FINAL line was not a clear "VERDICT: CONFIRMED|REFUTED" (an echoed prompt / garbled run), so exit is 1 (no-verdict, fail-closed) — NOT exit 3 (REFUTED).\n'
+        printf 'Next: re-run ONCE: %s\n' "$self"
+        printf 'If it recurs: run `ao doctor` (reviewer reachability), or switch reviewer family: REVIEWER=agy %s.\n' "$self" ;;
+      MISSING)
+        printf 'What it means: no reviewer CLI is on PATH — the cross-family pawl needs a SECOND model family, so exit is 2 (precondition, fail-closed) — NOT exit 3 (REFUTED).\n'
+        printf 'Next: run `ao doctor` (checks reviewer reachability + install hints), then install a reviewer CLI (codex, or agy) and put it on PATH.\n'
+        printf 'No second model? Run the reviewer-OPTIONAL lane: %s --smoke "<your build/test cmd>" — a live runtime check needs no reviewer, and a red runtime still REFUTES fail-first.\n' "$self" ;;
+    esac
+    printf 'Raw evidence: %s\n' "$ev"
+    printf '=== end triage ===\n'
+  } >&2
+}
+
 # Source-guard: tests source this file to exercise build_review_body / pawl_tier_note; the
 # codex-running flow below only executes when the script is run directly.
 [ "${BASH_SOURCE[0]:-$0}" = "${0}" ] || return 0
@@ -329,7 +435,28 @@ while [[ $# -gt 0 ]]; do
     *)               bead="$1"; shift ;;
   esac
 done
-[[ -n "$bead" ]] || { echo "pawl-review: need <bead-id>" >&2; exit 2; }
+# age-rk3r.10: the change-id (bead) is a LABEL ONLY — it keys the verdict/evidence file names and
+# is echoed into the reviewer packet; it is NEVER validated against a tracker (recon-confirmed). So
+# when it is OMITTED, DERIVE a label rather than bouncing the caller a round trip (a coordinator hit
+# "need <bead-id>" and lost a round): the current git branch (sanitized to a filename-safe token),
+# else the short HEAD sha, else a timestamp. PRINT a note naming the derived label so the operator
+# knows what the verdict/evidence files are keyed on. Passing a change-id works EXACTLY as before.
+if [[ -z "$bead" ]]; then
+  _derived_src=""
+  _derived_branch="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  if [[ -n "$_derived_branch" && "$_derived_branch" != "HEAD" ]]; then
+    # Sanitize: the label becomes a filename under the evidence/review/verdicts dirs, so collapse
+    # anything outside [A-Za-z0-9._-] (e.g. a `feat/foo` branch's slash) to '-' and trim leading/trailing '-'.
+    bead="$(printf '%s' "$_derived_branch" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')"
+    [[ -n "$bead" ]] && _derived_src="branch '$_derived_branch'"
+  fi
+  if [[ -z "$bead" ]]; then
+    bead="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null)"
+    [[ -n "$bead" ]] && _derived_src="short HEAD sha"
+  fi
+  [[ -n "$bead" ]] || { bead="pawl-$(date -u +%Y%m%dT%H%M%SZ)"; _derived_src="timestamp (no branch or HEAD)"; }
+  echo "pawl-review: no change-id given — using the derived label '$bead' (from $_derived_src). The change-id is a LABEL only (names the verdict/evidence files), never tracker-validated; pass one explicitly to override." >&2
+fi
 # age-rk3r.7: resolve the live-smoke command. Precedence: explicit --smoke flag >
 # PAWL_SMOKE_CMD (from the operator's env, or the reviewed repo's .aoverify.yaml `smoke`
 # key exported by verify-config.sh at entry) > none.
@@ -393,6 +520,7 @@ if [[ "$reviewer" == "codex" ]]; then
     echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
     echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
     echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
+    triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
     exit 2
   }
 elif [[ -n "$reviewer_bin" ]]; then
@@ -400,6 +528,7 @@ elif [[ -n "$reviewer_bin" ]]; then
     echo "pawl-review: MISSING DEPENDENCY — '$reviewer_bin' (the '$reviewer' cross-family reviewer) is not on PATH." >&2
     echo "  This is NOT a review result. Install the '$reviewer' reviewer CLI, put it on PATH, and re-run." >&2
     echo "  (exit 2 = precondition, not a REFUTE)" >&2
+    triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
     exit 2
   }
 fi
@@ -527,7 +656,7 @@ ctx="${reviewer}-fresh-${bead}-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/d
 evidence="$EVIDENCE_DIR/${bead}-pawl-review.txt"
 prompt_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-prompt.XXXXXX")"
 raw_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-raw.XXXXXX")"
-trap 'rm -f "$prompt_file" "$raw_file"' EXIT
+trap 'rm -f "$prompt_file" "$raw_file"; [ -n "${_HB_PID:-}" ] && kill "${_HB_PID}" 2>/dev/null; true' EXIT
 
 # age-rk3r.7: LIVE SMOKE — run the configured runtime check BEFORE any reviewer round, so a
 # red runtime fails FIRST (cheap; no reviewer spent) and a green runtime attaches real
@@ -537,7 +666,7 @@ trap 'rm -f "$prompt_file" "$raw_file"' EXIT
 smoke_evidence=""
 if [[ -n "$smoke_cmd" ]]; then
   smoke_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-smoke.XXXXXX")"
-  trap 'rm -f "$prompt_file" "$raw_file" "$smoke_out"' EXIT
+  trap 'rm -f "$prompt_file" "$raw_file" "$smoke_out"; [ -n "${_HB_PID:-}" ] && kill "${_HB_PID}" 2>/dev/null; true' EXIT
   echo "pawl-review: LIVE SMOKE — running the configured runtime check in $REPO_ROOT (bounded by ${REVIEW_TIMEOUT}s) BEFORE the reviewer…" >&2
   smoke_rc=0
   run_live_smoke "$smoke_cmd" "$REVIEW_TIMEOUT" "$REPO_ROOT" >"$smoke_out" 2>&1 || smoke_rc=$?
@@ -710,7 +839,13 @@ codex_rc=0
 # a STALL, so it is no longer re-implemented here (single source of truth, age-gate-the-
 # ungated-egwt.13). codex_rc carries the lib's outcome code; a STALL/ECHO/timeout returns
 # non-zero and the fail-closed logic below (empty-output guard + "codex_rc != 0") holds.
+# age-rk3r.10: a heartbeat around the reviewer call makes a healthy long run legible vs a stall.
+# It writes ONLY to stderr; run_review captures the reviewer to $raw_file, so the heartbeat can
+# never interleave into the bytes the verdict parse reads. Stopped unconditionally after the call
+# (below), and the EXIT trap kills any orphan if the script dies mid-review.
+start_heartbeat "$REVIEW_TIMEOUT" "$reviewer"
 run_review || codex_rc=$?
+stop_heartbeat
 
 # Codex prints a 'codex' marker line before its answer; drop the marker itself and keep
 # what follows (evidence starts at the reviewer's content, not the marker). Fall back to
@@ -718,7 +853,7 @@ run_review || codex_rc=$?
 verdict_block="$(awk '/^codex$/{c=1; next} c' "$raw_file" 2>/dev/null)"
 [[ -n "$verdict_block" ]] || verdict_block="$(cat "$raw_file")"
 printf '%s\n' "$verdict_block" > "$evidence"
-[[ -s "$evidence" ]] || { echo "pawl-review: no reviewer output captured — fail-closed" >&2; exit 1; }
+[[ -s "$evidence" ]] || { echo "pawl-review: no reviewer output captured — fail-closed" >&2; triage_block STALL "$evidence"; exit 1; }
 
 # Decide on the FINAL verdict-shaped line only — parsed from the REVIEWER's OWN bytes
 # ($verdict_block, which only ever holds the reviewer subprocess's output), NEVER from the
@@ -764,11 +899,13 @@ if grep -qiE 'REFUTED' <<<"$final_verdict"; then
 fi
 if ! grep -qiE 'CONFIRMED' <<<"$final_verdict"; then
   echo "pawl-review: reviewer's FINAL line is not a clear VERDICT: CONFIRMED|REFUTED — fail-closed. Raw output in $evidence" >&2
+  triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
   exit 1
 fi
 # A CONFIRMED is only trustworthy from a CLEANLY-EXITED reviewer run (defends defect #3).
 if [[ "$codex_rc" -ne 0 ]]; then
   echo "pawl-review: reviewer exited non-zero ($codex_rc, e.g. timeout 124) — refusing to trust a CONFIRMED from an incomplete run — fail-closed" >&2
+  triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
   exit 1
 fi
 
