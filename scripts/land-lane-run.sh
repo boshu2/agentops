@@ -29,9 +29,14 @@
 #   scripts/land-lane-run.sh --watch [--poll N]
 #                                            # run forever; poll every N seconds
 #                                            # (default 10) when the queue empties
+#   scripts/land-lane-run.sh --prune-source  # after each green land, prune the
+#                                            # request's CLEAN, fully-landed source
+#                                            # worktree + branch (opt-in; OFF by
+#                                            # default; AGENTOPS_LAND_PRUNE_SOURCE=1)
 #
 # Knobs (env):
 #   AGENTOPS_LAND_QUEUE_DIR     queue dir          (default <repo>/.agents/land-queue)
+#   AGENTOPS_LAND_PRUNE_SOURCE  1 => --prune-source (default 0/off)
 #   AGENTOPS_PUSH_LOCK_TIMEOUT  lane-lock wait (s) (default 300; PUSH_LOCK_TIMEOUT also honored)
 #   AGENTOPS_LAND_LANE_LOCK     lane lock dir      (default <queue>/.lane.lock)
 #   LAND_LANE_GATE_CMD          gate+land command  (default the bundled gate that
@@ -99,6 +104,15 @@ MODE="drain"   # drain | once | watch
 PROCESS_FAILURE_REASON=""
 NO_ACTIONS_GH_SHIM_DIR=""
 
+# POST-LAND SOURCE PRUNE (opt-in; age-fkps +f / age-ym4b slice b). OFF by default:
+# after a green land, remove the SOURCE worktree + branch a request came from, but
+# ONLY when it is CLEAN and every commit unique to it is now an ancestor of the
+# freshly-updated origin/main. --prune-source or AGENTOPS_LAND_PRUNE_SOURCE=1.
+PRUNE_SOURCE=0
+case "$(printf '%s' "${AGENTOPS_LAND_PRUNE_SOURCE:-0}" | tr '[:upper:]' '[:lower:]')" in
+  1|true|yes|on) PRUNE_SOURCE=1 ;;
+esac
+
 die() { echo "land-lane: ERROR: $*" >&2; exit 2; }
 log() { echo "land-lane: $*" >&2; }
 
@@ -113,6 +127,7 @@ while [[ $# -gt 0 ]]; do
     --poll)
       [[ -n "${2:-}" ]] || die "--poll requires a value"
       POLL_SECONDS="$2"; shift 2 ;;
+    --prune-source) PRUNE_SOURCE=1; shift ;;
     -h|--help) sed -n '2,55p' "$0"; exit 0 ;;
     -*) die "unknown flag: $1" ;;
     *)  die "unexpected argument: $1" ;;
@@ -333,8 +348,18 @@ default_gate() {
 
 default_land() {
   local bead="$1"
-  # Land: the .7-patched pawl-land.sh re-fetches origin/main, rebases, rebinds
-  #    the verdict to the post-rebase head, and pushes HEAD:main in one shot.
+  # Land: pawl-land.sh re-fetches origin/main, rebases, restamps the verdict onto
+  #    the post-rebase FEAT commit (under PAWL_AUTOBIND=0, no 2nd #trivial), and
+  #    pushes HEAD:main in one shot (age-fkps).
+  #
+  # PROVENANCE (age-fkps (e)): the lane does NOT run post-land-provenance-emit.sh
+  # here. The pawl review's `pawl-verdict write` already auto-bound the verdict edge
+  # as the single #trivial provenance commit that IS the pushed tip, so the ledger
+  # edge lands with the change — provenance is covered incidentally by that
+  # auto-bind, not by a separate post-land emit. (scripts/land.sh, the standalone
+  # direct-main path, additionally runs post-land-provenance-emit.sh to reconcile
+  # the full landed RANGE against origin/main; the lane's single-writer loop does
+  # not need that reconciliation pass.)
   "$PAWL_LAND_SCRIPT" "$bead"
 }
 
@@ -546,22 +571,120 @@ process_one() {
 }
 
 # --------------------------------------------------------------------------- #
-# close_bead: best-effort issue-tracker close on a green land (never fatal).
+# close_bead: best-effort verdict-stamped close on a green land (never fatal).
+#
+# Prefers `ao done <bead> --sha <landed-sha>` — the current close primitive, which
+# stamps the close reason with the ledger proof that the landed commit was reviewed
+# ("no verdict = not done"). Falls back to a raw `br close` only when ao is absent
+# or ao done cannot close (e.g. the verdict edge is not yet committed). The pushed
+# tip is normally the #trivial provenance auto-bind; the VERDICT binds its parent
+# (the reviewed feat, age-fkps), so the close targets that feat for the strong
+# [verdict:<sha7>:CONFIRMED] stamp rather than the weaker waived-trivial class.
 # --------------------------------------------------------------------------- #
 close_bead() {
   local bead="$1"
-  [[ -n "$BR_BIN" ]] || return 0
-  # Resolve the live private ledger before calling br. In the canonical checkout
-  # and in linked worktrees $PWD/_beads is usually absent, so a bare `br close`
-  # fails ("Is a directory") and the || true swallows it — the bead silently never
+  # Resolve the live private ledger before the close. In the canonical checkout
+  # and in linked worktrees $PWD/_beads is usually absent, so a bare close fails
+  # ("Is a directory") and the || true swallows it — the bead silently never
   # closes. Set BEADS_DIR via `ao beads dir` exactly like scripts/land.sh does.
   # Best-effort throughout: a close failure must never fail an already-green land.
   if [[ -z "${BEADS_DIR:-}" && -n "$AO_BIN" ]]; then
     local _beads_dir; _beads_dir="$("$AO_BIN" beads dir 2>/dev/null || true)"
     [[ -n "$_beads_dir" ]] && export BEADS_DIR="$_beads_dir"
   fi
-  "$BR_BIN" close "$bead" --reason "Landed via land-lane (agentops-2pl.9)" >/dev/null 2>&1 \
+  local landed_sha
+  landed_sha="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+  # When HEAD is the #trivial provenance tip, the verdict-bound feat is its parent.
+  if [[ -n "$landed_sha" ]]; then
+    local _tip_files _parent
+    _tip_files="$(git -C "$REPO_ROOT" diff-tree --no-commit-id --no-renames --name-only -r "$landed_sha" 2>/dev/null || true)"
+    if [[ -n "$_tip_files" ]] && ! grep -qvE '^docs/provenance/' <<<"$_tip_files"; then
+      _parent="$(git -C "$REPO_ROOT" rev-parse --verify --quiet "${landed_sha}^" 2>/dev/null || true)"
+      [[ -n "$_parent" ]] && landed_sha="$_parent"
+    fi
+  fi
+  local reason="Landed via land-lane (agentops-2pl.9)"
+  if [[ -n "$AO_BIN" ]]; then
+    # 'done' quoted so shellcheck does not read it as the loop keyword (SC1010).
+    if [[ -n "$landed_sha" ]]; then
+      "$AO_BIN" 'done' "$bead" --sha "$landed_sha" --reason "$reason" >/dev/null 2>&1 && return 0
+    else
+      "$AO_BIN" 'done' "$bead" --reason "$reason" >/dev/null 2>&1 && return 0
+    fi
+  fi
+  [[ -n "$BR_BIN" ]] || return 0
+  "$BR_BIN" close "$bead" --reason "$reason" >/dev/null 2>&1 \
     || "$BR_BIN" close "$bead" >/dev/null 2>&1 || true
+}
+
+# request_source_ref <bead>: the source_ref the request was submitted with (the
+# author's local ref, e.g. a worktree branch). Read from the queue file; empty when
+# absent / no jq. Last matching record wins.
+request_source_ref() {
+  local bead="$1"
+  [[ -f "$QUEUE_FILE" ]] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  jq -r --arg b "$bead" 'select(.bead == $b) | .source_ref // empty' "$QUEUE_FILE" 2>/dev/null | tail -1
+}
+
+# --------------------------------------------------------------------------- #
+# prune_source_worktree <bead> <source_ref>: OPT-IN cleanup after a green land
+# (age-fkps +f). When the source ref is a local branch checked out in a LINKED git
+# worktree (never the main checkout), the worktree is CLEAN, and every commit unique
+# to that branch vs the freshly-updated origin/main is now an ANCESTOR of origin/main
+# (i.e. it actually landed — the merge-base --is-ancestor check), remove the worktree
+# and delete the branch. Conservative + best-effort: a dirty worktree, an un-landed
+# commit (e.g. the branch was rebased so its exact shas are not on main), or any
+# failure leaves everything in place. Never fatal to an already-green land.
+#
+# NOTE: prune keys on the request's source_ref, so it only fires for requests
+# submitted with an explicit branch (`land-submit.sh <bead> <branch>`). The default
+# source_ref=HEAD is anonymous — no branch to map to a worktree — and is skipped.
+# --------------------------------------------------------------------------- #
+prune_source_worktree() {
+  [[ "$PRUNE_SOURCE" -eq 1 ]] || return 0
+  local bead="$1" source_ref="${2:-}"
+  [[ -n "$source_ref" && "$source_ref" != "HEAD" ]] || return 0
+  local branch="${source_ref#refs/heads/}"
+  git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$branch" 2>/dev/null || return 0
+
+  # Locate the LINKED worktree checked out on that branch (skip the main checkout).
+  local wt="" line cur_path=""
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) cur_path="${line#worktree }" ;;
+      "branch refs/heads/$branch")
+        [[ "$cur_path" != "$REPO_ROOT" ]] && wt="$cur_path" ;;
+    esac
+  done < <(git -C "$REPO_ROOT" worktree list --porcelain 2>/dev/null)
+  [[ -n "$wt" && -d "$wt" ]] || return 0
+
+  # Never discard uncommitted / untracked work.
+  if [[ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]]; then
+    log "prune-source: $wt ($branch) is dirty — NOT removing"
+    return 0
+  fi
+
+  # Every commit unique to the branch must already be on origin/main (landed).
+  git -C "$REPO_ROOT" fetch origin main --quiet 2>/dev/null || true
+  local unique sha landed=1
+  unique="$(git -C "$REPO_ROOT" rev-list "origin/main..refs/heads/$branch" 2>/dev/null || true)"
+  while IFS= read -r sha; do
+    [[ -n "$sha" ]] || continue
+    git -C "$REPO_ROOT" merge-base --is-ancestor "$sha" origin/main 2>/dev/null || { landed=0; break; }
+  done <<<"$unique"
+  if [[ "$landed" -ne 1 ]]; then
+    log "prune-source: $branch has commit(s) not on origin/main (rebased or unlanded) — NOT removing"
+    return 0
+  fi
+
+  if git -C "$REPO_ROOT" worktree remove "$wt" 2>/dev/null; then
+    git -C "$REPO_ROOT" branch -D "$branch" >/dev/null 2>&1 || true
+    git -C "$REPO_ROOT" worktree prune >/dev/null 2>&1 || true
+    log "prune-source: removed landed source worktree $wt + branch $branch"
+  else
+    log "prune-source: could not remove worktree $wt — leaving in place"
+  fi
 }
 
 # --------------------------------------------------------------------------- #
@@ -578,6 +701,7 @@ process_tick() {
   if process_one "$bead" "$branch"; then
     append_record "$DONE_FILE" "done" "$bead" "$branch" "landed"
     close_bead "$bead"
+    prune_source_worktree "$bead" "$(request_source_ref "$bead")"
     log "LANDED $bead"
   else
     append_record "$DEADLETTER_FILE" "dead-letter" "$bead" "$branch" "${PROCESS_FAILURE_REASON:-land failed; see lane log}"
