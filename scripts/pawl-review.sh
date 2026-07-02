@@ -19,12 +19,15 @@
 #                act on), write NO VERDICT, exit 3 (author must fix + re-run).
 #
 # A maximal-adversarial refuter over LLM prose has an infinite false-alarm tail. So a
-# clean adversarial run RECORDS LINEAGE (.agents/pawl-review/<bead>.adversarial.json: the
-# reviewed diff-hash), and --converge switches to the CALIBRATED real-safety bar ("any
-# REMAINING real fail-open/data-loss/wrong-object defect? parse-tail accepted") to converge
-# a heuristic-tail change. --converge is LINEAGE-GATED (council C, age-cwo.8): it writes a
-# verdict ONLY if a prior ADVERSARIAL run covered the IDENTICAL diff; no/changed lineage ->
-# ADVISORY-ONLY (exit 4), so the adversarial pass can never be skipped (no gate-weakening).
+# clean adversarial run RECORDS LINEAGE (.agents/pawl-review/<bead>.adversarial.json: a DUAL
+# KEY — the reviewed commit's rebase-stable patch-id AND a whitespace-significant content
+# signature), and --converge switches to the CALIBRATED real-safety bar ("any REMAINING real
+# fail-open/data-loss/wrong-object defect? parse-tail accepted") to converge a heuristic-tail
+# change. --converge is LINEAGE-GATED (council C, age-cwo.8): it writes a verdict ONLY if a
+# prior ADVERSARIAL run covered the SAME change (BOTH lineage keys match — patch-id survives a
+# legitimate rebase, the content signature catches a whitespace-only change patch-id misses,
+# age-rk3r.9); no/changed lineage -> ADVISORY-ONLY (exit 4), so the adversarial pass can never
+# be skipped (no gate-weakening).
 #
 # LIVE SMOKE (age-rk3r.7): --smoke "<cmd>" (or the reviewed repo's .aoverify.yaml `smoke`
 # key, exported by verify-config.sh as PAWL_SMOKE_CMD) runs a REAL runtime check in the
@@ -60,6 +63,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Sourced script-relative so the embedded stranger bundle resolves its sibling copy.
 # shellcheck source=scripts/lib/verify-config.sh
 [ -f "$SCRIPT_DIR/lib/verify-config.sh" ] && . "$SCRIPT_DIR/lib/verify-config.sh"
+# age-rk3r.9: the diff-identity signature (commit_patch_id / commit_content_lines /
+# commit_content_sig) is the SINGLE source of truth shared with pawl-verdict.sh, so the
+# --converge lineage below and REBOUND rebind/check use ONE byte-exact denylist signature and
+# cannot drift. Sourced script-relative (same pattern as codex-exec.sh) so the embedded bundle
+# resolves its sibling copy.
+# shellcheck source=scripts/lib/diff-identity.sh
+. "$SCRIPT_DIR/lib/diff-identity.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
@@ -915,13 +925,54 @@ fi
 # the snapshot here lets the scaled budget through to the exec wrapper.
 REVIEW_TIMEOUT="$TIMEOUT"
 
-# Lineage key: the content hash of the reviewed diff. The adversarial run records it;
-# --converge requires a prior adversarial run on the IDENTICAL diff (no fuzzy "material
-# change" — an exact-hash match, which is unambiguous and safe). (age-cwo.8)
+# Lineage DUAL KEY: the content-identity of the reviewed diff. The adversarial run records
+# it; --converge requires a prior adversarial run on the SAME change (an exact match of BOTH
+# keys — no fuzzy "material change"; unambiguous and safe). (age-cwo.8)
+#
+# age-rk3r.9: the lineage is a DUAL KEY — (1) `git patch-id --stable` of the reviewed COMMIT
+# (rebase-STABLE) + (2) a sha256 CONTENT-LINE SIGNATURE (whitespace-SIGNIFICANT). Rationale:
+#   (1) patch-id, not sha256 of `git show HEAD`: `git show HEAD` embeds the commit HEADER
+#       (sha, author, date, message), so a sha256 of it CHANGED on every rebase even when the
+#       diff was unchanged — a --converge after a no-op rebase then failed the lineage match
+#       and paid a fresh adversarial re-review for nothing (the waste this epic removes).
+#       patch-id is header-blind + hunk-position-stable, so it survives a rebase.
+#   (2) BUT patch-id is WHITESPACE-INSENSITIVE, so a whitespace/indentation-only change (e.g.
+#       Python indentation — semantically load-bearing) has the SAME patch-id. patch-id alone
+#       would let such a change REUSE a stale adversarial lineage and certify a CONFIRMED after
+#       only the calibrated converge pass — NOT a full review. So the lineage ALSO stores a
+#       content-line signature (commit_content_sig: sha256 of the +/- content lines,
+#       whitespace-significant, with only the volatile headers `index`/`@@` stripped so a
+#       legitimate rebase's shifted hunk positions still match). The MATCH requires BOTH keys
+#       to equal the current tip's: a true byte-identical rebase matches both (lineage reused,
+#       as intended); a whitespace-only change matches patch-id but NOT the content signature,
+#       so it FAILS the lineage check and falls through to a full adversarial review.
+# Both keys fall back to the diff-TEXT content hash when patch-id is unavailable — scope=staged
+# (no commit) or an empty/failed patch-id — preserving the prior behavior there.
 PAWL_REVIEW_DIR="$REPO_ROOT/.agents/pawl-review"
 lineage_file="$PAWL_REVIEW_DIR/${bead}.adversarial.json"
-if command -v shasum >/dev/null 2>&1; then diff_hash="$(printf '%s' "$diff" | shasum -a 256 | cut -d' ' -f1)"
-else diff_hash="$(printf '%s' "$diff" | sha256sum | cut -d' ' -f1)"; fi
+
+# diff_hash (rebase-stable patch-id) + content_sig (byte-exact content signature) both come
+# from the SHARED scripts/lib/diff-identity.sh (commit_patch_id / commit_content_sig), the
+# SAME denylist signature REBOUND rebind/check use — so converge lineage cannot drift from it
+# (age-rk3r.9; the local allowlist content_sig was dropped, closing the `\ No newline` and
+# mode/binary escapes that the allowlist leaked). REPO_ROOT is the reviewed repo here.
+diff_hash=""
+content_sig=""
+if [[ "$scope" == "head" && -n "$head" ]]; then
+  diff_hash="$(commit_patch_id "$head" "$REPO_ROOT")"
+  content_sig="$(commit_content_sig "$head" "$REPO_ROOT")"
+fi
+if [[ -z "$diff_hash" ]]; then
+  if command -v shasum >/dev/null 2>&1; then diff_hash="$(printf '%s' "$diff" | shasum -a 256 | cut -d' ' -f1)"
+  else diff_hash="$(printf '%s' "$diff" | sha256sum | cut -d' ' -f1)"; fi
+fi
+# content_sig fallback (scope=staged / no patch-id): the diff TEXT is already whitespace-
+# significant, so a sha256 of the whole diff text is a sound content signature there — it
+# changes on any byte change (including whitespace), matching the head-path guarantee.
+if [[ -z "$content_sig" ]]; then
+  if command -v shasum >/dev/null 2>&1; then content_sig="$(printf '%s' "$diff" | shasum -a 256 | cut -d' ' -f1)"
+  else content_sig="$(printf '%s' "$diff" | sha256sum | cut -d' ' -f1)"; fi
+fi
 
 mkdir -p "$EVIDENCE_DIR"
 # The refuter context id (ctx) names the RESOLVED reviewer and so is computed PER ATTEMPT inside
@@ -1215,16 +1266,18 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
   # (emit_pawl_catch's reason grep included). Empty when no smoke ran => byte-identical.
   [[ -n "$smoke_evidence" ]] && printf '\n%s\n' "$smoke_evidence" >> "$evidence"
 
-  # Record ADVERSARIAL lineage: a clean adversarial run (any verdict) on THIS exact diff.
-  # --converge later requires this for the identical diff-hash. Written here — before the
-  # REFUTED exit — so a REFUTED-on-cosmetic-tail run (the convergence trigger) still records
-  # that this diff faced maximal refutation. NOT written by --converge itself (it must not
-  # self-certify lineage) nor by a crashed run. (age-cwo.8 / council C)
+  # Record ADVERSARIAL lineage: a clean adversarial run (any verdict) on THIS exact change.
+  # --converge later requires this for the identical DUAL KEY (patch-id + content signature).
+  # Written here — before the REFUTED exit — so a REFUTED-on-cosmetic-tail run (the convergence
+  # trigger) still records that this diff faced maximal refutation. NOT written by --converge
+  # itself (it must not self-certify lineage) nor by a crashed run. (age-cwo.8 / council C)
   if [[ "$converge" -eq 0 && "$codex_rc" -eq 0 && -n "$final_verdict" ]]; then
     mkdir -p "$PAWL_REVIEW_DIR"
     _outcome="$(grep -qi REFUTED <<<"$final_verdict" && echo REFUTED || echo CONFIRMED)"
-    printf '{"bead":"%s","diff_hash":"%s","head_sha":"%s","outcome":"%s","ts":"%s"}\n' \
-      "$bead" "$diff_hash" "$head" "$_outcome" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$lineage_file"
+    # Store BOTH lineage keys: diff_hash (rebase-stable patch-id) AND content_sig (whitespace-
+    # significant content-line signature). --converge requires BOTH to match (age-rk3r.9).
+    printf '{"bead":"%s","diff_hash":"%s","content_sig":"%s","head_sha":"%s","outcome":"%s","ts":"%s"}\n' \
+      "$bead" "$diff_hash" "$content_sig" "$head" "$_outcome" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$lineage_file"
     # Preserve the adversarial review's FULL output (its defects). --converge folds it into
     # the verdict so the adversarial findings being ACCEPTED-AS-TAIL are recorded, never
     # silently bypassed — even a REFUTED adversarial run's defects are auditable in the
@@ -1328,18 +1381,39 @@ if [[ "$scope" == "staged" ]]; then
 fi
 
 # --converge LINEAGE GATE (council C): the calibrated real-safety CONFIRMED may write a
-# verdict ONLY if a prior ADVERSARIAL review covered THIS exact diff (identical hash). No
-# lineage / a changed diff => ADVISORY ONLY (the calibrated review printed above), NO
-# verdict (exit 4) — this prevents skipping the adversarial pass (a Goodhart gate-weaken).
+# verdict ONLY if a prior ADVERSARIAL review covered THIS exact change (identical DUAL KEY:
+# rebase-stable patch-id AND whitespace-significant content signature). No lineage / a changed
+# diff => ADVISORY ONLY (the calibrated review printed above), NO verdict (exit 4) — this
+# prevents skipping the adversarial pass (a Goodhart gate-weaken).
+#
+# DUAL KEY (age-rk3r.9): BOTH keys must match. patch-id is rebase-STABLE (a legitimate rebase
+# with identical content still matches, so the lineage is correctly reused), but patch-id is
+# whitespace-INSENSITIVE — so a whitespace/indentation-only change (e.g. Python indentation)
+# would match patch-id and wrongly reuse a stale lineage to certify a CONFIRMED after only the
+# calibrated pass. The content signature (whitespace-significant) DIFFERS on such a change, so
+# requiring BOTH forces a full adversarial review for any real byte change while still reusing
+# the lineage across a true byte-identical rebase.
 if [[ "$converge" -eq 1 ]]; then
-  lineage_hash=""
-  [[ -f "$lineage_file" ]] && lineage_hash="$(sed -n 's/.*"diff_hash":"\([a-f0-9]*\)".*/\1/p' "$lineage_file" | head -1)"
+  lineage_hash=""; lineage_sig=""
+  if [[ -f "$lineage_file" ]]; then
+    lineage_hash="$(sed -n 's/.*"diff_hash":"\([a-f0-9]*\)".*/\1/p' "$lineage_file" | head -1)"
+    lineage_sig="$(sed -n 's/.*"content_sig":"\([a-f0-9]*\)".*/\1/p' "$lineage_file" | head -1)"
+  fi
   if [[ -z "$lineage_hash" ]]; then
     echo "pawl-review: --converge but NO adversarial lineage for $bead — the calibrated real-safety bar requires a prior adversarial review of this diff. Run 'pawl-review.sh $bead' (adversarial) first. ADVISORY-ONLY: no verdict written." >&2
     exit 4
   fi
   if [[ "$lineage_hash" != "$diff_hash" ]]; then
-    echo "pawl-review: --converge but the diff CHANGED since the adversarial review (lineage hash ${lineage_hash:0:12} != current ${diff_hash:0:12}) — re-run the adversarial review on this diff first. ADVISORY-ONLY: no verdict written." >&2
+    echo "pawl-review: --converge but the diff CHANGED since the adversarial review (lineage patch-id ${lineage_hash:0:12} != current ${diff_hash:0:12}) — re-run the adversarial review on this diff first. ADVISORY-ONLY: no verdict written." >&2
+    exit 4
+  fi
+  # Content-signature half of the dual key (age-rk3r.9): a patch-id match is necessary but not
+  # sufficient (patch-id is whitespace-insensitive). A MISSING lineage content_sig is treated
+  # as a mismatch (fail-closed) so a pre-age-rk3r.9 lineage file (patch-id only) cannot certify
+  # a whitespace-changed tip — re-run the adversarial review to record the dual key.
+  if [[ -z "$lineage_sig" || "$lineage_sig" != "$content_sig" ]]; then
+    _ls_disp="${lineage_sig:0:12}"; [[ -z "$_ls_disp" ]] && _ls_disp="<none>"
+    echo "pawl-review: --converge but the diff CONTENT BYTES changed since the adversarial review (lineage content-sig ${_ls_disp} != current ${content_sig:0:12}) — patch-id is whitespace-insensitive, so a whitespace/indentation-only change reuses the same patch-id but is a real change; re-run the adversarial review on this diff first. ADVISORY-ONLY: no verdict written." >&2
     exit 4
   fi
   # Record BOTH bars in the evidence (council C): this CONFIRMED is the calibrated real-

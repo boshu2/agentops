@@ -107,13 +107,20 @@ EOF
 }
 
 @test "REBOUND: passes the jq fallback (schema-VALID exit 1, not fail-closed exit 2) when validators are absent" {
+  # This fixture omits rebound_from_verdict, so post-age-rk3r.9 it is ADMITTED by schema
+  # (exit 1, not fail-closed exit 2) but then REFUSED at the REBOUND lineage gate for the
+  # missing lineage. The contract point this test pins is unchanged: a REBOUND is schema-
+  # VALID (exit 1), NOT schema-INVALID (exit 2). (The pre-.9 generic "disposition=REBOUND"
+  # reject message was replaced by the lineage-gate refusal when .9 made REBOUND an
+  # authorizing-with-proof disposition rather than an always-rejected one.)
   emit_verdict reb-jq REBOUND ',"rebound_from_sha":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef","patch_id_proof":"patch-abc123"'
   mask_jsonschema
   run bash "$SCRIPT" check reb-jq 0 --dir "$TMP/verdicts" --head "$SHA"
-  # exit 1 = schema-VALID but disposition != CONFIRMED (admitted, non-authorizing).
-  # exit 2 would mean schema-INVALID (fail-closed) — the pre-widen rejection.
+  # exit 1 = schema-VALID but non-authorizing (missing lineage). exit 2 would mean
+  # schema-INVALID (fail-closed) — the pre-widen rejection this test guards against.
   [ "$status" -eq 1 ]
-  [[ "$output" == *"disposition=REBOUND"* ]]
+  [[ "$output" == *"REBOUND"* ]]
+  [[ "$output" != *"merge authorized"* ]]
 }
 
 @test "REBOUND is ADMITTED to the contract but does NOT authorize a merge (only CONFIRMED does)" {

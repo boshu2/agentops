@@ -1,6 +1,6 @@
 {
-  "recorded_at": "2026-07-02T21:24:44Z",
-  "git_sha": "bb047dbd6a94993f9fd5e293c6dba58798e8cf4f",
+  "recorded_at": "2026-07-02T22:23:08Z",
+  "git_sha": "a75a3be108655918c0796b04443bf84ad4420816",
   "git_branch": "HEAD",
   "evidence": {
     "compounding": false,
@@ -27,9 +27,9 @@
     },
     "metric_namespace": "primary",
     "metrics": {
-      "timestamp": "2026-07-02T17:24:42.643395-04:00",
-      "period_start": "2026-06-25T17:24:42.643395-04:00",
-      "period_end": "2026-07-02T17:24:42.643395-04:00",
+      "timestamp": "2026-07-02T18:23:06.937704-04:00",
+      "period_start": "2026-06-25T18:23:06.937704-04:00",
+      "period_end": "2026-07-02T18:23:06.937704-04:00",
       "delta": 0,
       "sigma": 0,
       "rho": 0,

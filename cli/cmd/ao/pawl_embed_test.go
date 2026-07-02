@@ -30,6 +30,11 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 		// ($SCRIPT_DIR/lib/verify-config.sh), so the stranger/embedded bundle must carry it
 		// or a stranger repo's checked-in .aoverify.yaml is silently ignored (age-rk3r.17).
 		{"pawl/scripts/lib/verify-config.sh", []string{"scripts", "lib", "verify-config.sh"}},
+		// BOTH pawl-verdict.sh and pawl-review.sh source the shared diff-identity signature
+		// script-relative ($SCRIPT_DIR/lib/diff-identity.sh) — the SINGLE byte-exact denylist for
+		// REBOUND rebind/check AND --converge lineage — so the stranger/embedded bundle MUST carry
+		// it or the embedded rebind/check/converge cannot resolve the signature (age-rk3r.9).
+		{"pawl/scripts/lib/diff-identity.sh", []string{"scripts", "lib", "diff-identity.sh"}},
 		// The membrane-receipts generator + freshness check ride along so `ao verify
 		// receipts` renders a repo's proof page from the embedded bundle on the stranger
 		// path (age-rk3r.12); they must stay byte-identical to the repo scripts.
@@ -76,6 +81,9 @@ func TestExtractPawlBundle(t *testing.T) {
 		// The per-repo verify-config hook extracts into the same sibling scripts/lib/ so the
 		// embedded pawl-review sources it and honors a stranger repo's .aoverify.yaml (age-rk3r.17).
 		filepath.Join("scripts", "lib", "verify-config.sh"),
+		// The shared diff-identity signature extracts into the same sibling scripts/lib/ so both
+		// embedded pawl-verdict + pawl-review resolve the ONE byte-exact denylist (age-rk3r.9).
+		filepath.Join("scripts", "lib", "diff-identity.sh"),
 		// The membrane-receipts generator + freshness check must extract executable so
 		// `ao verify receipts` renders a repo's proof page from the bundle on the
 		// stranger path (age-rk3r.12).

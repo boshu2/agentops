@@ -51,6 +51,12 @@ check_file "$REPO_ROOT/scripts/lib/codex-exec.sh" "$EMBEDDED/pawl/scripts/lib/co
 # embedded path (via `ao verify --export-env`). Absent from the bundle => stranger-repo
 # config is silently ignored, so keep it byte-identical. (age-rk3r.17)
 check_file "$REPO_ROOT/scripts/lib/verify-config.sh" "$EMBEDDED/pawl/scripts/lib/verify-config.sh"
+# The shared diff-identity signature (lib/diff-identity.sh) rides along too: BOTH pawl-verdict.sh
+# and pawl-review.sh source it script-relative ($SCRIPT_DIR/lib/diff-identity.sh) for the SINGLE
+# byte-exact denylist used by REBOUND rebind/check AND --converge lineage. Absent from the bundle
+# => the embedded rebind/check/converge cannot resolve the signature (fail-closed at the source),
+# so keep it byte-identical. (age-rk3r.9)
+check_file "$REPO_ROOT/scripts/lib/diff-identity.sh" "$EMBEDDED/pawl/scripts/lib/diff-identity.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then
