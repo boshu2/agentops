@@ -110,6 +110,13 @@ CI catches codex drift at push time, but 40% of fix commits in the March 2026 in
 **Steer:** decrease (codex parity findings count)
 **Scenarios:** s-2026-05-24-007
 
+> **Experimental tier: Directives 8 and 9.** Both build on the corpus-compounding
+> hypothesis, which is named unproven ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md),
+> [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)).
+> They stay maintained but do NOT count toward route priority under Directive 16's
+> prioritization rule until the compounding evidence lands. Work here is DEFER-class
+> unless it also advances a route milestone.
+
 ### 8. Automate the dream cycle (nightly flywheel consolidation)
 
 Today harvest/forge/inject are on-demand — an operator runs them when they remember to. Anthropic's "dream cycle" concept validates what we've known: consolidation should happen automatically between sessions. Ship a GitHub Action (or scheduled Claude task) that runs nightly: harvest new learnings from recent sessions, forge patterns from accumulated learnings, defrag stale knowledge, and report flywheel health. The dream cycle is what turns the flywheel from "useful when invoked" to "always compounding."

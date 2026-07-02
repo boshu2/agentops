@@ -214,10 +214,11 @@ BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
 BEADS_DIR="$(ao beads dir)" br update <id> --priority 1 --json
 ```
 
-**Complete work:**
+**Complete work** (preferred: `ao done` stamps the close with the commit-bound verdict, refusing when none exists — "no verdict = not done" made mechanical):
 
 ```bash
-BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json
+ao done <id> -r "Completed"                    # verifies a bound verdict for HEAD (or --sha), then closes
+BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json   # raw close (no verdict check)
 ```
 
 ### Issue Types
@@ -243,7 +244,7 @@ BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json
 3. **Work on it**: Implement, test, document
 4. **Discover new work?** Create linked issue:
    - `BEADS_DIR="$(ao beads dir)" br create "Found bug" --body "Details about what was found" -p 1 --deps discovered-from:<parent-id> --json`
-5. **Complete**: `BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"`
+5. **Complete**: `ao done <id> -r "Done"` (verdict-stamped close; falls back to `BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"` when no verdict applies)
 
 ### Quality
 - Use `br update <id> --acceptance-criteria "..."` and `--design "..."` to fill structured fields

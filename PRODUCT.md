@@ -137,7 +137,7 @@ For the 3.0 target audience, a 10-star experience is not "configure every automa
 
 AgentOps is autonomous code validation backed by a wiki for your agents. `.agents/` is markdown in your repo, version-controlled with your code, that agents read, traverse, and contribute to — the kind of wiki your team should already have, except agents do the maintenance. AgentOps automates the discipline of proving work and preserving the proof: capture, retrieval, validation, and compounding all happen mechanically so the wiki stays current instead of bitrotting.
 
-That wiki is the substrate underneath a software factory with three surfaces and four user-facing layers: Validation Membrane, Evidence Trail, Context Compiler, and Knowledge Ratchet. Dream is a bounded compounding skill, not a separate peer product or AgentOps-owned scheduler. The SDLC control plane executes the CDLC — the [Context Development Life Cycle](docs/cdlc.md) — so agent work can move through small, bounded, evidence-bearing vertical slices. The deeper proof-contract framing — identity, reproducibility, evaluation, evidence, recovery — lives in [docs/trust-factory.md](docs/trust-factory.md).
+That wiki is the substrate underneath a software factory with three surfaces and four user-facing layers: Validation Membrane and Evidence Trail (proven), plus Context Compiler and Knowledge Ratchet (experimental, gated on ADR-0004/0011). Dream is a bounded compounding skill, not a separate peer product or AgentOps-owned scheduler. The SDLC control plane executes the CDLC — the [Context Development Life Cycle](docs/cdlc.md) — so agent work can move through small, bounded, evidence-bearing vertical slices. The deeper proof-contract framing — identity, reproducibility, evaluation, evidence, recovery — lives in [docs/trust-factory.md](docs/trust-factory.md).
 
 ### Three surfaces
 
@@ -164,11 +164,11 @@ The narrow waist is BDD/Gherkin + DDD + Hexagonal + TDD:
 
 All other practices attach there: CI/CD reruns the proof, SRE/DORA measures fitness, ADRs and provenance preserve decision memory, wikis and ratchets preserve learning, and Agile/XP keeps work atomic instead of waterfall-shaped.
 
-### Four layers
+### Four layers: two proven, two experimental
 
-The same model used in the README: bookkeeping records the work, the context compiler feeds the next run, validation gates enforce judgment, and the flywheel compounds the corpus.
+Two layers are proven and carry the product: validation gates enforce judgment, and bookkeeping records the work with its proof. The other two, the context compiler and the knowledge flywheel, are experimental: they run, but whether they make the next session measurably better is still being measured ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)). They are labeled below so no reader mistakes the hypothesis for the product.
 
-#### Layer 1: Agent Bookkeeping
+#### Layer 1: Agent Bookkeeping (proven)
 
 **Problem:** Agents do not keep their own operational memory. They forget what they tried, why they changed course, which warnings mattered, what passed validation, and what should be reused next time.
 
@@ -180,7 +180,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao metrics cite` and citation logs — record what knowledge was used
 - RPI packets and council verdicts — preserve plan/build/validation evidence
 
-#### Layer 2: Context Compiler
+#### Layer 2: Context Compiler (experimental, gated on ADR-0004)
 
 **Problem:** Every session starts from zero. Agents need the right slice of prior work, policy, constraints, and decisions before they can act well.
 
@@ -193,7 +193,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - Reusable skills — generated from `skills/**/SKILL.md` and packaged across Claude Code, Codex, Gemini/Antigravity, and OpenCode
 - Runtime install one-liners plus Day-2 operations — install, update, backup, permission repair, recovery, and escalation are product surfaces, not afterthoughts
 
-#### Layer 3: Validation Gates
+#### Layer 3: Validation Gates (proven)
 
 **Problem:** Agents ship confident garbage. No review, no second opinion, no gate between "agent thinks this is good" and "this goes into production."
 
@@ -205,7 +205,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - 63 eval suites + 12-task workbench — deterministic context quality testing
 - Baseline A/B — skill-on vs skill-off delta measurement
 
-#### Layer 4: Knowledge Flywheel
+#### Layer 4: Knowledge Flywheel (experimental, gated on ADR-0004/0011)
 
 **Problem:** Each session ends and the lessons disappear. Same mistakes get made. Same solutions get rediscovered. Nothing compounds.
 
