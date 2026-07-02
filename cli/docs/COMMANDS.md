@@ -3851,6 +3851,14 @@ ao provenance export [flags]
       --verify   Verify the re-chained export and print only a one-line summary
 ```
 
+#### `ao provenance ledger-reader-version`
+
+Print, as a single bare integer, the ledger-reader capability level this ao
+
+```
+ao provenance ledger-reader-version [flags]
+```
+
 #### `ao provenance list`
 
 Read the provenance edges recorded in docs/provenance/ledger.jsonl, in
@@ -4240,6 +4248,21 @@ ao verify [command]
 ```
 
 **Subcommands:**
+
+#### `ao verify init`
+
+Install a pre-push hook into THIS git repository that refuses any push to
+
+```
+ao verify init [--remove] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for init
+      --remove   Uninstall the ratchet, restoring any pre-existing pre-push hook byte-identically
+```
 
 #### `ao verify receipts`
 

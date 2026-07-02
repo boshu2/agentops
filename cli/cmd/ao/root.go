@@ -125,6 +125,13 @@ func Execute() {
 			// verdict + defects; propagate the code with no extra cobra noise.
 			os.Exit(pawlReviewErr.ExitCode())
 		}
+		var verifyPrePushErr *verifyPrePushExitError
+		if errors.As(err, &verifyPrePushErr) {
+			// The exit code IS the decision in `ao verify pre-push` (0 allow · 1
+			// refuse). The gate already printed the human refusal to stderr and
+			// silences cobra's error print; just map to the process exit code.
+			os.Exit(verifyPrePushErr.ExitCode())
+		}
 		var beadsErr *beadsExitError
 		if errors.As(err, &beadsErr) {
 			// The exit code IS the verdict in `ao beads verify|lint|audit`:
