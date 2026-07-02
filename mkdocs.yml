@@ -242,6 +242,7 @@ nav:
       - vs Superpowers: comparisons/vs-superpowers.md
       - vs Claude-Flow: comparisons/vs-claude-flow.md
       - vs Compound Engineer: comparisons/vs-compound-engineer.md
+      - vs hosted AI code review: comparisons/vs-hosted-code-review.md
   - Convergence:
       - convergence/index.md
       - The Reading: convergence/the-reading.md

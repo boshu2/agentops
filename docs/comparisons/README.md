@@ -148,6 +148,7 @@ By session 100:
 - [vs. SDD Tools](vs-sdd.md) — The spec-driven approach
 - [vs. GSD](vs-gsd.md) — The fresh-context execution framework
 - [vs. Compound Engineer](vs-compound-engineer.md) — The closest philosophical neighbor
+- [vs. hosted AI code review](vs-hosted-code-review.md) — CodeRabbit, Qodo, Copilot: same review play, different ownership story
 - [Competitive Radar](competitive-radar.md) — The current market read and next-move pressure
 
 ---
