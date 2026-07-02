@@ -68,6 +68,10 @@ if [[ "$MODE" == "regen" ]]; then
   step "cli-surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
   step "codex twins (parity)"  bash scripts/codex-sync.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "codex hashes"          bash scripts/regen-codex-hashes.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
+  # Catalog LAST: it projects skill frontmatter + references + codex-twin PRESENCE,
+  # so it must run after codex-sync.sh (which may create/remove skills-codex/<name>/
+  # twins) for the codex_override_present flag to be correct.
+  step "skill catalog (catalog.json)" bash scripts/generate-skill-catalog.sh
   echo
   echo "Regenerated. Review 'git status', then run: scripts/regen-all.sh --check"
   echo "Note: parity_only skills-codex/<name>/ twins are AUTO-generated/refreshed"
@@ -89,6 +93,7 @@ else
   step "codex twins (no drift)" bash scripts/codex-sync.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "codex hashes (no drift)" bash scripts/regen-codex-hashes.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "SKU catalog drift"     bash scripts/validate-sku-catalog-drift.sh
+  step "skill catalog drift"   bash scripts/check-skill-catalog-drift.sh
   step "artifact-classification schema" bash scripts/validate-skill-disposition-schema.sh
   step "context-map drift"     bash scripts/validate-context-map-drift.sh
   step "command surfaces drift" bash scripts/regen-command-surfaces.sh --check
