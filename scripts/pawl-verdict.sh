@@ -450,6 +450,162 @@ PY
 }
 
 # ---------------------------------------------------------------------------
+# EVIDENCE-QUALITY FLOOR (age-rk3r.11) — ADVISORY-FIRST.
+#
+# The evidence-binding gate in `check` proves a review FILE exists + is non-empty.
+# It does NOT prove the review carried SUBSTANCE: a 155-byte "no blocking defects"
+# stub passed `check` on 2026-07-01. This floor raises the bar — a CONFIRMED must
+# carry EITHER (a) at least one file:line-shaped finding/observation, OR (b) an
+# explicit reviewed-scope attestation (a files-reviewed count) — PLUS, for every
+# refuter attributable to a cold reviewer adapter, that adapter's genuine-run marker
+# in its OWN evidence (codex="tokens used", agy="VERDICT:", MIRRORING the .1 adapter
+# contract in scripts/lib/codex-exec.sh reviewer_adapter_marker).
+#
+# HONESTY (load-bearing): this floor measures review SUBSTANCE — that a real, specific
+# review actually ran over named code — NOT correctness. A substantive review can
+# still be WRONG; the floor cannot and does not certify the verdict is right.
+#
+# ROLLOUT: ADVISORY-FIRST, like the repo's other advisory gates. Until FLOOR_ENFORCE_AFTER
+# the floor only MEASURES + WARNS — it NEVER changes the authorize/refuse decision — so the
+# false-positive rate on REAL reviews can be observed for one cycle before it fail-closes.
+# On/after the flip date a floor violation HOLDs (fail-closed).
+#   FLIP MECHANISM (both overridable so the flip is a one-line change, not a code edit):
+#     - FLOOR_ENFORCE_AFTER (const; env override PAWL_FLOOR_ENFORCE_AFTER) — the UTC date
+#       (YYYY-MM-DD) the floor starts BLOCKING. ISO-8601 dates are zero-padded, so the
+#       lexical `[[ < ]]` compare below is a correct chronological order.
+#     - PAWL_FLOOR_ENFORCE=1|0 — force enforce|advisory regardless of the date (operator
+#       kill-switch + how tests pin behavior clock-independently).
+#   AT FLIP TIME: bump/remove FLOOR_ENFORCE_AFTER AND update any stub-evidence behavior-lock
+#   suites (their thin fixtures deliberately carry no substance and will begin to HOLD).
+# ---------------------------------------------------------------------------
+FLOOR_ENFORCE_AFTER="${PAWL_FLOOR_ENFORCE_AFTER:-2026-07-16}"
+
+# _floor_enforcing — 0 (true) when the floor should BLOCK on a violation; 1 (false) when
+# it is still advisory (measure + warn only). PAWL_FLOOR_ENFORCE overrides the date both
+# ways; otherwise enforcing once today (UTC) >= FLOOR_ENFORCE_AFTER.
+_floor_enforcing() {
+  case "$(printf '%s' "${PAWL_FLOOR_ENFORCE:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on)  return 0 ;;
+    0|false|no|off) return 1 ;;
+  esac
+  local today; today="$(date -u +%Y-%m-%d)"
+  [[ "$today" < "$FLOOR_ENFORCE_AFTER" ]] && return 1
+  return 0
+}
+
+# _evidence_has_substance <file> — 0 (true) when the evidence carries review SUBSTANCE:
+# a file:line-shaped finding/observation (or a bare "line N" code reference), OR an
+# explicit reviewed-scope attestation (a files-reviewed count). Deliberately GENEROUS:
+# a false "has substance" merely authorizes as `check` does today, whereas the HARMFUL
+# direction is a false HOLD on a genuine review — so any recognizable substance shape
+# suffices and thin "no blocking defects" stubs (no location, no count) are what fail.
+_evidence_has_substance() {
+  local f="$1"
+  [[ -s "$f" ]] || return 1
+  # (a) file:line — path.ext:NNN (a finding/observation that cites concrete code) OR a
+  #     bare "line N" / "lines N-M" reference (reviewers cite locations both ways).
+  grep -qE '[[:alnum:]_./-]+\.[[:alnum:]]+:[0-9]+' "$f" 2>/dev/null && return 0
+  grep -qiE '\blines?[[:space:]]+[0-9]+' "$f" 2>/dev/null && return 0
+  # (b) reviewed-scope attestation — a files-reviewed count (the clean-review escape for
+  #     a review that legitimately found nothing concrete to cite).
+  grep -qiE '(files[[:space:]_-]*reviewed|reviewed[[:space:]_-]*(files|scope))[^0-9]{0,40}[0-9]+' "$f" 2>/dev/null && return 0
+  return 1
+}
+
+# _family_genuine_marker <canonical-family> — the adapter genuine-run marker EXPECTED in a
+# refuter's evidence for that family, MIRRORING the .1 reviewer-adapter contract
+# (scripts/lib/codex-exec.sh reviewer_adapter_marker): gpt→codex adapter ("tokens used"),
+# gemini→agy adapter ("VERDICT:"). Empty for a family with no cold-adapter marker defined
+# yet (claude = the warm reviewer) → advisory skip, never a hard fail (duel amendment 1).
+# Drift-locked against codex-exec.sh by tests/scripts/pawl-verdict-evidence-floor.bats.
+_family_genuine_marker() {
+  case "$1" in
+    gpt)    printf 'tokens used' ;;   # codex adapter
+    gemini) printf 'VERDICT:' ;;      # agy (cold) adapter
+    *)      printf '' ;;              # claude / unknown: no cold-adapter marker (advisory)
+  esac
+}
+
+# _resolve_ev_path <path> — resolve an evidence path against REPO_ROOT (absolute stays).
+_resolve_ev_path() {
+  local p="$1"
+  [[ -z "$p" ]] && { printf ''; return; }
+  case "$p" in /*) printf '%s' "$p" ;; *) printf '%s/%s' "$REPO_ROOT" "$p" ;; esac
+}
+
+# pawl_evidence_floor <verdict-file> — evaluate the evidence-quality floor for a CONFIRMED
+# (or, per duel amendment 2, a degraded-fallback) verdict. Prints the honesty caveat + any
+# WARN/HOLD findings to stderr. RETURNS 0 when the caller may AUTHORIZE (floor satisfied, or
+# still in the advisory window), 1 ONLY when enforcing AND the floor is violated (caller must
+# HOLD). Reusable by the degraded-fallback path (.2): a degraded verdict must meet this floor
+# before a failover can be trusted. Assumes the caller already ran the evidence-binding gate
+# (the referenced evidence files exist + are non-empty).
+pawl_evidence_floor() {
+  local f="$1"
+  local enforcing=0; _floor_enforcing || enforcing=1   # 0 = enforce, 1 = advisory
+  local mode_label; [[ "$enforcing" -eq 0 ]] && mode_label="ENFORCING" || mode_label="ADVISORY"
+
+  # Honesty caveat — ALWAYS printed when the floor runs.
+  echo "PAWL-FLOOR ($mode_label): measures review SUBSTANCE (that a real, specific review ran over named code), NOT correctness — a substantive review can still be wrong." >&2
+
+  local held=0
+
+  # (1) SUBSTANCE — at least ONE evidence surface (a per-refuter evidence file, or the
+  #     top-level council_artifact) must carry a file:line finding OR a reviewed-scope
+  #     attestation.
+  local any_substance=0 ev epath council cpath
+  council="$(jq -r '.council_artifact // ""' "$f" 2>/dev/null)"
+  if [[ -n "$council" ]]; then
+    cpath="$(_resolve_ev_path "$council")"
+    [[ -s "$cpath" ]] && _evidence_has_substance "$cpath" && any_substance=1
+  fi
+  if [[ "$any_substance" -ne 1 ]]; then
+    while IFS= read -r ev; do
+      [[ -z "$ev" ]] && continue
+      epath="$(_resolve_ev_path "$ev")"
+      if [[ -s "$epath" ]] && _evidence_has_substance "$epath"; then any_substance=1; break; fi
+    done < <(jq -r '.refuters[].evidence // empty' "$f" 2>/dev/null)
+  fi
+  if [[ "$any_substance" -ne 1 ]]; then
+    if [[ "$enforcing" -eq 0 ]]; then
+      echo "PAWL-FLOOR: HOLD (evidence-quality floor) — CONFIRMED verdict carries NO review substance: no file:line finding and no reviewed-scope attestation (a files-reviewed count) in any evidence surface. A thin 'no blocking defects' stub is not a review." >&2
+      held=1
+    else
+      echo "PAWL-FLOOR: WARN (advisory; evidence-quality floor) — CONFIRMED verdict carries no file:line finding and no reviewed-scope attestation; a thin stub would HOLD once the floor enforces (on/after $FLOOR_ENFORCE_AFTER). Still authorizing (advisory window)." >&2
+    fi
+  fi
+
+  # (2) PER-ADAPTER GENUINE-RUN MARKER — each refuter attributable to a cold adapter
+  #     (gpt=codex / gemini=agy) must carry that adapter's genuine-run marker in its OWN
+  #     evidence, so a real cross-family review can be told apart from a lazy stub/echo. A
+  #     family with no cold-adapter marker yet (claude) is advisory-skipped (amendment 1);
+  #     a refuter with no evidence path is skipped (the substance gate already requires a
+  #     real evidence surface to exist somewhere).
+  local rfam rnorm rev repath marker
+  while IFS=$'\t' read -r rfam rev; do
+    [[ -z "$rfam" ]] && continue
+    rnorm="$(normalize_family "$rfam")"
+    [[ -z "$rnorm" ]] && continue
+    marker="$(_family_genuine_marker "$rnorm")"
+    [[ -z "$marker" ]] && continue          # no cold-adapter marker for this family — advisory skip
+    [[ -z "$rev" ]] && continue             # no evidence path recorded — skip (substance gate covers presence)
+    repath="$(_resolve_ev_path "$rev")"
+    [[ -s "$repath" ]] || continue
+    if ! grep -qiF -- "$marker" "$repath" 2>/dev/null; then
+      if [[ "$enforcing" -eq 0 ]]; then
+        echo "PAWL-FLOOR: HOLD (adapter genuine-run floor) — refuter family '$rnorm' (adapter marker '$marker') is MISSING its genuine-run marker in evidence '$rev' — cannot prove a real '$rnorm' review ran rather than an echo/stub." >&2
+        held=1
+      else
+        echo "PAWL-FLOOR: WARN (advisory; adapter genuine-run floor) — refuter family '$rnorm' evidence '$rev' lacks the adapter genuine-run marker '$marker'; would HOLD once the floor enforces (on/after $FLOOR_ENFORCE_AFTER). Still authorizing (advisory window)." >&2
+      fi
+    fi
+  done < <(jq -r '.refuters[] | [(.family // ""), (.evidence // "")] | @tsv' "$f" 2>/dev/null)
+
+  [[ "$enforcing" -eq 0 && "$held" -eq 1 ]] && return 1
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # check <bead> <pr> [--dir D] [--head CURRENT_SHA]
 # ---------------------------------------------------------------------------
 do_check() {
@@ -621,6 +777,16 @@ do_check() {
   done < <(jq -r '.refuters[].evidence // empty' "$f" 2>/dev/null)
   if [[ "$have_evidence" -ne 1 ]]; then
     echo "PAWL-GATE: no reviewer evidence (no refuter evidence paths and no council_artifact) — a self-asserted stamp is not a review — fail-closed" >&2
+    return 1
+  fi
+
+  # --- evidence-QUALITY floor (age-rk3r.11): ADVISORY-FIRST. Evidence-binding above
+  #     proves the review files EXIST + are non-empty; this floor proves they carry
+  #     SUBSTANCE (a file:line finding or a reviewed-scope attestation) + each cold-adapter
+  #     refuter carries its genuine-run marker. Warn-only until FLOOR_ENFORCE_AFTER; a
+  #     violation then HOLDs. It measures review substance, NOT correctness (caveat printed).
+  if ! pawl_evidence_floor "$f"; then
+    echo "PAWL-GATE: evidence-quality floor HOLD (see PAWL-FLOOR above) — fail-closed, merge refused" >&2
     return 1
   fi
 
