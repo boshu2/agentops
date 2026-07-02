@@ -4,7 +4,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 
+	"github.com/boshu2/agentops/cli/internal/verifycfg"
 	"github.com/spf13/cobra"
 	"os/exec"
 	"strings"
@@ -48,9 +50,18 @@ If the run fails before a verdict (no codex/agy reviewer installed, not a git
 repository, bash missing), that is an environment problem, not a verdict —
 run 'ao doctor' to diagnose.
 
+Per-repo policy (age-rk3r.5): an optional committed .aoverify.yaml at the repo
+root sets a durable, reviewable verify policy without exporting PAWL_* by hand.
+Precedence is env > file > default; zero config is byte-identical to today.
+
+  --show-config   print the EFFECTIVE config and where each value came from
+  --export-env    emit "export PAWL_*=..." lines for the shell to eval (the
+                  bridge the pawl shell sources; only non-default values emitted)
+
 Examples:
   ao verify my-change-123                # review + certify HEAD
-  ao verify my-change --scope staged     # review staged work (advisory — no commit to bind)`,
+  ao verify my-change --scope staged     # review staged work (advisory — no commit to bind)
+  ao verify --show-config                # inspect effective verify policy for this repo`,
 	// The pawl review surface owns the flag contract; forward everything verbatim.
 	DisableFlagParsing: true,
 	RunE:               runVerify,
@@ -75,6 +86,18 @@ func headShortSHA() string {
 // pointer. Verdict exit codes (*pawlReviewExitError) propagate verbatim:
 // the exit code IS the verdict.
 func runVerify(cmd *cobra.Command, args []string) error {
+	// Config-inspection flags short-circuit BEFORE the review engine: they read
+	// the per-repo policy and print, never forwarding to runPawlReview. Flag
+	// parsing is disabled on this command, so scan the raw args.
+	for _, a := range args {
+		switch a {
+		case "--show-config":
+			return runVerifyShowConfig(cmd)
+		case "--export-env":
+			return runVerifyExportEnv(cmd)
+		}
+	}
+
 	// Bare `ao verify` (the README headline form) defaults the change label to
 	// the short HEAD sha instead of erroring: the engine requires a positional
 	// label, but the front door should not fail on its documented zero-arg use.
@@ -89,4 +112,44 @@ func runVerify(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return fmt.Errorf("ao verify: %w\nthis is an environment failure, not a verdict (fail-closed — never a silent pass); run 'ao doctor' to diagnose reviewer/tooling setup", err)
+}
+
+// runVerifyShowConfig prints the effective per-repo verify config plus the
+// provenance (env/file/default) of every value, for debugging a stranger repo.
+func runVerifyShowConfig(cmd *cobra.Command) error {
+	cfg := verifycfg.Load()
+	out := cmd.OutOrStdout()
+
+	fmt.Fprintln(out, "ao verify — effective config (precedence: env > file > default)")
+	if cfg.FileFound {
+		fmt.Fprintf(out, "config file: %s\n", cfg.ConfigPath)
+	} else {
+		fmt.Fprintf(out, "config file: none (no %s at repo root; using env + defaults)\n", verifycfg.ConfigFileName)
+	}
+	fmt.Fprintln(out)
+	fmt.Fprintf(out, "  %-15s %-14s %-8s %s\n", "KEY", "VALUE", "SOURCE", "ENV OVERRIDE")
+	for _, e := range cfg.Entries() {
+		val := e.Value
+		if val == "" {
+			val = "(unset)"
+		}
+		fmt.Fprintf(out, "  %-15s %-14s %-8s %s\n", e.Key, val, e.Source, e.EnvVar)
+	}
+	printVerifyCfgWarnings(cmd.ErrOrStderr(), cfg.Warnings)
+	return nil
+}
+
+// runVerifyExportEnv emits the shell bridge (age-rk3r.17) for `eval "$(...)"`.
+func runVerifyExportEnv(cmd *cobra.Command) error {
+	cfg := verifycfg.Load()
+	fmt.Fprint(cmd.OutOrStdout(), cfg.ExportEnv())
+	printVerifyCfgWarnings(cmd.ErrOrStderr(), cfg.Warnings)
+	return nil
+}
+
+// printVerifyCfgWarnings writes each non-fatal config warning once to stderr.
+func printVerifyCfgWarnings(w io.Writer, warnings []string) {
+	for _, warning := range warnings {
+		fmt.Fprintf(w, "ao verify: %s\n", warning)
+	}
 }

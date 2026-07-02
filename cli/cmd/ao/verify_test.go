@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 // writeVerifyTestRepo builds on writePawlTestRepo (the shared pawl fixture) and swaps
@@ -181,4 +183,134 @@ func TestRunVerify_EnvironmentFailurePointsAtDoctor(t *testing.T) {
 	if !strings.Contains(err.Error(), "ao doctor") {
 		t.Fatalf("environment failure must point at `ao doctor`, got: %v", err)
 	}
+}
+
+// verifyCfgEnvVars mirrors the canonical env surface the config reader honors;
+// tests clear them so a runner exporting a PAWL_* var cannot poison provenance.
+var verifyCfgEnvVars = []string{
+	"PAWL_REVIEWER_CHAIN", "PAWL_REVIEW_TIMEOUT", "PAWL_STRICT",
+	"PAWL_SMOKE_CMD", "PAWL_AUTOBIND", "PAWL_AUTHOR_FAMILY",
+}
+
+func clearVerifyCfgEnv(t *testing.T) {
+	t.Helper()
+	for _, name := range verifyCfgEnvVars {
+		if old, ok := os.LookupEnv(name); ok {
+			t.Cleanup(func() { _ = os.Setenv(name, old) })
+		} else {
+			t.Cleanup(func() { _ = os.Unsetenv(name) })
+		}
+		if err := os.Unsetenv(name); err != nil {
+			t.Fatalf("unset %s: %v", name, err)
+		}
+	}
+}
+
+// mkVerifyCfgRepo creates a temp git-marked repo (with an optional .aoverify.yaml)
+// and chdirs into it so verifycfg.Load() resolves it. cwd auto-restores.
+func mkVerifyCfgRepo(t *testing.T, yaml string) {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if yaml != "" {
+		if err := os.WriteFile(filepath.Join(root, ".aoverify.yaml"), []byte(yaml), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(root)
+}
+
+// `--show-config` must short-circuit BEFORE the review engine (return nil without
+// forwarding — a missing pawl script would otherwise error), read the repo's own
+// .aoverify.yaml, print effective values with provenance, and route unknown-key
+// warnings to stderr.
+func TestRunVerify_ShowConfigReadsRepoPolicy(t *testing.T) {
+	clearVerifyCfgEnv(t)
+	mkVerifyCfgRepo(t, "review_timeout: 600\nauthor_family: gpt5\nbogus_key: 1\n")
+
+	cmd := &cobra.Command{}
+	var out, errb bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&errb)
+
+	if err := runVerify(cmd, []string{"--show-config"}); err != nil {
+		t.Fatalf("--show-config returned error (must not forward to engine): %v", err)
+	}
+	for _, want := range []string{"config file:", ".aoverify.yaml", "review_timeout", "600", "file", "author_family", "gpt5"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("--show-config output missing %q; got:\n%s", want, out.String())
+		}
+	}
+	if !strings.Contains(errb.String(), "unknown key(s) ignored: bogus_key") {
+		t.Errorf("unknown-key warning not on stderr; got: %s", errb.String())
+	}
+}
+
+// Env override wins and --show-config must show the env provenance.
+func TestRunVerify_ShowConfigEnvOverride(t *testing.T) {
+	clearVerifyCfgEnv(t)
+	mkVerifyCfgRepo(t, "review_timeout: 600\n")
+	t.Setenv("PAWL_REVIEW_TIMEOUT", "999")
+
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runVerify(cmd, []string{"--show-config"}); err != nil {
+		t.Fatalf("--show-config: %v", err)
+	}
+	line := findLine(out.String(), "review_timeout")
+	if !strings.Contains(line, "999") || !strings.Contains(line, "env") {
+		t.Errorf("review_timeout line = %q, want value 999 with source env", line)
+	}
+}
+
+// Zero-config: --show-config prints all defaults and returns cleanly.
+func TestRunVerify_ShowConfigZeroConfig(t *testing.T) {
+	clearVerifyCfgEnv(t)
+	mkVerifyCfgRepo(t, "") // no .aoverify.yaml
+
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runVerify(cmd, []string{"--show-config"}); err != nil {
+		t.Fatalf("--show-config: %v", err)
+	}
+	for _, want := range []string{"config file: none", "review_timeout", "300", "default", "autobind", "true"} {
+		if !strings.Contains(out.String(), want) {
+			t.Errorf("zero-config --show-config missing %q; got:\n%s", want, out.String())
+		}
+	}
+}
+
+// `--export-env` emits shell-eval lines for non-default keys only (the bridge
+// bead age-rk3r.17 sources); bools render as 0/1.
+func TestRunVerify_ExportEnvEmitsShellLines(t *testing.T) {
+	clearVerifyCfgEnv(t)
+	mkVerifyCfgRepo(t, "review_timeout: 600\nautobind: false\n")
+
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	if err := runVerify(cmd, []string{"--export-env"}); err != nil {
+		t.Fatalf("--export-env: %v", err)
+	}
+	want := "export PAWL_REVIEW_TIMEOUT='600'\nexport PAWL_AUTOBIND='0'\n"
+	if out.String() != want {
+		t.Errorf("--export-env = %q, want %q", out.String(), want)
+	}
+}
+
+// findLine returns the first line containing sub, or "".
+func findLine(s, sub string) string {
+	for _, ln := range strings.Split(s, "\n") {
+		if strings.Contains(ln, sub) {
+			return ln
+		}
+	}
+	return ""
 }
