@@ -70,12 +70,6 @@ const (
 
 type lifecycleRuntimeProfile = codexruntime.LifecycleRuntimeProfile
 
-type codexArtifactRef struct {
-	Title      string `json:"title"`
-	Path       string `json:"path"`
-	ModifiedAt string `json:"modified_at"`
-}
-
 type codexLifecycleEvent struct {
 	SessionID           string `json:"session_id,omitempty"`
 	ThreadName          string `json:"thread_name,omitempty"`
@@ -239,147 +233,6 @@ type codexImageHealthCheckResult struct {
 	Optional    bool     `json:"optional,omitempty"`
 }
 
-type codexTaskPacket struct {
-	SchemaVersion    int                       `json:"schema_version"`
-	PacketID         string                    `json:"packet_id"`
-	CreatedAt        string                    `json:"created_at"`
-	Objective        string                    `json:"objective"`
-	Role             string                    `json:"role"`
-	CWD              string                    `json:"cwd"`
-	AllowedPaths     []string                  `json:"allowed_paths,omitempty"`
-	ForbiddenActions []string                  `json:"forbidden_actions,omitempty"`
-	Sandbox          string                    `json:"sandbox"`
-	Auth             codexTaskAuthGuard        `json:"auth"`
-	Dispatch         codexTaskDispatchPolicy   `json:"dispatch"`
-	Execution        codexTaskExecution        `json:"execution"`
-	Output           codexTaskOutputContract   `json:"output"`
-	Evidence         codexTaskEvidenceContract `json:"evidence"`
-	Resume           *codexTaskResume          `json:"resume,omitempty"`
-	StopCondition    string                    `json:"stop_condition"`
-	Notes            []string                  `json:"notes,omitempty"`
-	// AuthorIdentity carries the identity of the agent that AUTHORED the work
-	// being judged, so the author_neq_validator asymmetry can be enforced on the
-	// dispatched judge (the judge must be a different identity than the author).
-	AuthorIdentity string `json:"author_identity,omitempty"`
-}
-
-// AuthorID returns the identity of the work author carried by the packet (used by
-// the converge author_neq_validator guard).
-func (p codexTaskPacket) AuthorID() string {
-	return p.AuthorIdentity
-}
-
-type codexTaskAuthGuard struct {
-	RequiredMode           string   `json:"required_mode"`
-	RejectEnv              []string `json:"reject_env"`
-	LoginStatusMustContain string   `json:"login_status_must_contain"`
-	ForbidAPIKey           bool     `json:"forbid_api_key"`
-}
-
-type codexTaskDispatchPolicy struct {
-	Mode        string   `json:"mode"`
-	MutatesRepo bool     `json:"mutates_repo"`
-	Command     []string `json:"command"`
-	Notes       string   `json:"notes,omitempty"`
-}
-
-type codexTaskExecution struct {
-	Argv             []string          `json:"argv"`
-	Stdin            codexTaskStdin    `json:"stdin"`
-	TimeoutSeconds   int               `json:"timeout_seconds"`
-	PromptPath       string            `json:"prompt_path,omitempty"`
-	OutputSchemaPath string            `json:"output_schema_path,omitempty"`
-	Environment      map[string]string `json:"environment,omitempty"`
-}
-
-type codexTaskStdin struct {
-	Mode             string `json:"mode"`
-	CloseAfterPrompt bool   `json:"close_after_prompt"`
-}
-
-type codexTaskOutputContract struct {
-	CaptureMode      string `json:"capture_mode"`
-	FinalMessagePath string `json:"final_message_path"`
-	JSONLPath        string `json:"jsonl_path,omitempty"`
-	SchemaPath       string `json:"schema_path,omitempty"`
-	ReceiptPath      string `json:"receipt_path"`
-}
-
-type codexTaskEvidenceContract struct {
-	ReceiptPath      string   `json:"receipt_path"`
-	RequiredCommands []string `json:"required_commands"`
-	Artifacts        []string `json:"artifacts,omitempty"`
-}
-
-type codexTaskResume struct {
-	Policy      string `json:"policy"`
-	SessionID   string `json:"session_id,omitempty"`
-	AllowResume bool   `json:"allow_resume"`
-}
-
-type codexRunReceipt struct {
-	SchemaVersion     int                  `json:"schema_version"`
-	ReceiptID         string               `json:"receipt_id"`
-	PacketID          string               `json:"packet_id"`
-	CodexSessionID    string               `json:"codex_session_id,omitempty"`
-	StartedAt         string               `json:"started_at"`
-	EndedAt           string               `json:"ended_at"`
-	CWD               string               `json:"cwd"`
-	Sandbox           string               `json:"sandbox"`
-	AuthMode          string               `json:"auth_mode"`
-	AuthStatus        string               `json:"auth_status"`
-	Command           codexReceiptCommand  `json:"command"`
-	Stdin             codexReceiptStdin    `json:"stdin"`
-	TimeoutSeconds    int                  `json:"timeout_seconds"`
-	TimedOut          bool                 `json:"timed_out"`
-	ExitCode          int                  `json:"exit_code"`
-	Outputs           codexReceiptOutputs  `json:"outputs"`
-	ChangedFiles      []string             `json:"changed_files"`
-	CommandsRun       []codexCommandResult `json:"commands_run"`
-	Verdict           codexReceiptVerdict  `json:"verdict"`
-	ResumeFromSession string               `json:"resume_from_session,omitempty"`
-	Evidence          []codexEvidenceRef   `json:"evidence,omitempty"`
-	FailureReason     string               `json:"failure_reason,omitempty"`
-}
-
-type codexReceiptCommand struct {
-	Argv []string `json:"argv"`
-}
-
-type codexReceiptStdin struct {
-	Mode         string `json:"mode"`
-	ClosedAt     string `json:"closed_at"`
-	BytesWritten int    `json:"bytes_written"`
-}
-
-type codexReceiptOutputs struct {
-	FinalMessagePath string `json:"final_message_path"`
-	JSONLPath        string `json:"jsonl_path,omitempty"`
-	SchemaPath       string `json:"schema_path,omitempty"`
-	ReceiptPath      string `json:"receipt_path"`
-}
-
-type codexCommandResult struct {
-	Command       string `json:"command"`
-	ExitCode      int    `json:"exit_code"`
-	OutputExcerpt string `json:"output_excerpt,omitempty"`
-}
-
-type codexReceiptVerdict struct {
-	Status           string `json:"status"`
-	JudgeSource      string `json:"judge_source"`
-	Summary          string `json:"summary"`
-	AuthorID         string `json:"author_id,omitempty"`
-	JudgeName        string `json:"judge_name,omitempty"`
-	JudgeProgram     string `json:"judge_program,omitempty"`
-	JudgeModelFamily string `json:"judge_model_family,omitempty"`
-}
-
-type codexEvidenceRef struct {
-	Path string `json:"path"`
-	Kind string `json:"kind"`
-}
-
 var codexCmd = &cobra.Command{
 	Use:   "codex",
 	Short: "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
@@ -483,10 +336,6 @@ func detectLifecycleRuntimeProfile() lifecycleRuntimeProfile {
 
 func detectCodexLifecycleProfile() lifecycleRuntimeProfile {
 	return codexruntime.DetectCodexLifecycleProfile()
-}
-
-func findTranscriptBySessionID(sessionID string) (string, error) {
-	return codexruntime.FindTranscriptBySessionID(sessionID)
 }
 
 func synthesizeCodexHistoryTranscript(cwd, sessionID string) (string, error) {
@@ -1887,62 +1736,6 @@ func collectCodexStartupArtifacts(cwd, query string, limit int) ([]codexArtifact
 
 	research := collectRecentResearchArtifacts(cwd, query, limit)
 	return briefings, learnings, patterns, findings, recentSessions, nextWork, research
-}
-
-func collectRecentResearchArtifacts(cwd, query string, limit int) []codexArtifactRef {
-	return collectRecentCodexArtifacts(filepath.Join(cwd, ".agents", SectionResearch), query, limit)
-}
-
-func collectRecentCodexArtifacts(dir, query string, limit int) []codexArtifactRef {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-
-	type researchFile struct {
-		path    string
-		modTime time.Time
-	}
-	var files []researchFile
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
-			continue
-		}
-		info, err := entry.Info()
-		if err != nil {
-			continue
-		}
-		files = append(files, researchFile{
-			path:    filepath.Join(dir, entry.Name()),
-			modTime: info.ModTime(),
-		})
-	}
-	slices.SortFunc(files, func(a, b researchFile) int {
-		return b.modTime.Compare(a.modTime)
-	})
-
-	queryLower := strings.ToLower(strings.TrimSpace(query))
-	var artifacts []codexArtifactRef
-	for _, file := range files {
-		if queryLower != "" {
-			baseLower := strings.ToLower(filepath.Base(file.path))
-			if !strings.Contains(baseLower, queryLower) {
-				data, err := os.ReadFile(file.path)
-				if err != nil || !strings.Contains(strings.ToLower(string(data)), queryLower) {
-					continue
-				}
-			}
-		}
-		artifacts = append(artifacts, codexArtifactRef{
-			Title:      strings.TrimSuffix(filepath.Base(file.path), filepath.Ext(file.path)),
-			Path:       file.path,
-			ModifiedAt: file.modTime.UTC().Format(time.RFC3339),
-		})
-		if len(artifacts) >= limit {
-			break
-		}
-	}
-	return artifacts
 }
 
 func resolveCodexStopTranscript(cwd, sessionID string, noHistoryFallback bool) (string, string, bool, string, error) {
