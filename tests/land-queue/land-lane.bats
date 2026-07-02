@@ -344,6 +344,83 @@ gate_runs() {
   [ ! -d "$LANE_LOCK_DIR" ]
 }
 
+# ---------------------------------------------------------------------------
+# POST-LAND SOURCE PRUNE (age-fkps +f / age-ym4b slice b) — opt-in, OFF by
+# default. Prune fires only for requests submitted with an EXPLICIT source
+# branch (land-submit.sh <bead> <branch>), only for a CLEAN linked worktree,
+# and only when every commit unique to the branch is an ancestor of the new
+# origin/main (the merge-base --is-ancestor landed-proof).
+# ---------------------------------------------------------------------------
+
+# queue_worktree_bead <bead> <branch> <wt-path> <file>: create a LINKED worktree
+# on <branch>, commit <file> there, submit with the EXPLICIT source branch (the
+# shape prune keys on), writing into the shared fixture queue.
+queue_worktree_bead() {
+  local bead="$1" branch="$2" wt="$3" file="$4"
+  git -C "$REPO" worktree add --quiet -b "$branch" "$wt" main
+  printf '%s\n' "$bead" >"$wt/$file"
+  git -C "$wt" add "$file"
+  git -C "$wt" commit --quiet -m "feat(land-queue): land $bead ($bead)"
+  ( cd "$wt" && AGENTOPS_LAND_QUEUE_BACKEND=file LAND_AUTHOR_FAMILY=operator \
+      AGENTOPS_LAND_QUEUE_DIR="$QUEUE_DIR" bash "$SUBMIT" "$bead" "$branch" >/dev/null )
+}
+
+@test "prune-source ON removes a clean fully-landed source worktree; a dirty one is never removed" {
+  queue_worktree_bead age-pra src-a "$TMP/wt-a" alpha.txt
+  queue_worktree_bead age-prc src-c "$TMP/wt-c" charlie.txt
+  # Dirty wt-c AFTER submitting (land-submit refuses a dirty tree).
+  printf 'uncommitted work\n' >"$TMP/wt-c/dirty.txt"
+
+  run run_lane bash "$LANE" --drain --prune-source
+  echo "$output"
+  [ "$status" -eq 0 ]
+  lane_out="$output"   # later `run`s clobber $output — keep the lane transcript
+
+  # Both beads landed.
+  git -C "$ORIGIN" cat-file -e refs/heads/main:alpha.txt
+  git -C "$ORIGIN" cat-file -e refs/heads/main:charlie.txt
+
+  # Clean + fully-landed source worktree removed, branch deleted.
+  [ ! -d "$TMP/wt-a" ]
+  run git -C "$REPO" show-ref --verify --quiet refs/heads/src-a
+  [ "$status" -ne 0 ]
+  [[ "$lane_out" == *"prune-source: removed landed source worktree"* ]]
+
+  # Dirty worktree NEVER removed: worktree, branch, and the dirt all intact,
+  # and the lane says why.
+  [ -d "$TMP/wt-c" ]
+  [ -f "$TMP/wt-c/dirty.txt" ]
+  git -C "$REPO" show-ref --verify --quiet refs/heads/src-c
+  [[ "$lane_out" == *"is dirty — NOT removing"* ]]
+}
+
+@test "prune-source OFF (default) leaves the landed source worktree and branch in place" {
+  queue_worktree_bead age-prb src-b "$TMP/wt-b" bravo.txt
+
+  run run_lane bash "$LANE" --drain
+  echo "$output"
+  [ "$status" -eq 0 ]
+
+  git -C "$ORIGIN" cat-file -e refs/heads/main:bravo.txt
+  # Nothing pruned by default.
+  [ -d "$TMP/wt-b" ]
+  git -C "$REPO" show-ref --verify --quiet refs/heads/src-b
+  [[ "$output" != *"prune-source: removed"* ]]
+}
+
+@test "prune-source via AGENTOPS_LAND_PRUNE_SOURCE=1 env prunes a clean landed worktree" {
+  queue_worktree_bead age-pre src-e "$TMP/wt-e" echo.txt
+
+  run run_lane env AGENTOPS_LAND_PRUNE_SOURCE=1 bash "$LANE" --drain
+  echo "$output"
+  [ "$status" -eq 0 ]
+
+  git -C "$ORIGIN" cat-file -e refs/heads/main:echo.txt
+  [ ! -d "$TMP/wt-e" ]
+  run git -C "$REPO" show-ref --verify --quiet refs/heads/src-e
+  [ "$status" -ne 0 ]
+}
+
 @test "drain is crash-safe: a re-run does not re-land already-done beads" {
   queue_bead age-2pl9a alpha.txt alpha
   queue_bead age-2pl9b bravo.txt bravo

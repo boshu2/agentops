@@ -31,6 +31,7 @@ suites=(
   tests/land-queue/postrebase-pawl-stamp.bats
   tests/land-queue/branch-submit.bats
   tests/land-queue/land-lane.bats
+  tests/land-queue/land-lane-close.bats
   tests/land-queue/flaky-retry.bats
   tests/land-queue/assert-no-actions.bats
   tests/land-queue/e2e-acceptance.bats

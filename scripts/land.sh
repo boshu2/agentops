@@ -160,20 +160,41 @@ fi
 "$PAWL_REVIEW_SCRIPT" "$BEAD" --scope head --author-family "$AUTHOR_FAMILY"
 "$PAWL_LAND_SCRIPT" "$BEAD"
 
+# Resolve the landed commits AFTER pawl-land (it rebased + pushed, so HEAD moved).
+# HEAD is the pushed tip; when it is the #trivial provenance auto-bind commit, the
+# reviewed FEAT — the commit the verdict binds (age-fkps [feat, #trivial-bind]
+# shape) — is its parent. The strict provenance check and the close both key on
+# that verdict-bound feat, not the stale pre-ship head and not the #trivial tip.
+landed_tip="$(git rev-parse HEAD 2>/dev/null || echo "$head_sha")"
+landed_feat="$landed_tip"
+tip_files="$(git diff-tree --no-commit-id --no-renames --name-only -r "$landed_tip" 2>/dev/null || true)"
+if [[ -n "$tip_files" ]] && ! grep -qvE '^docs/provenance/' <<<"$tip_files"; then
+  parent_sha="$(git rev-parse --verify --quiet "${landed_tip}^" 2>/dev/null || true)"
+  [[ -n "$parent_sha" ]] && landed_feat="$parent_sha"
+fi
+
 if [[ -n "$AO_BIN" ]]; then
-  AGENTOPS_PROVENANCE_EMIT_STRICT=1 AGENTOPS_PROVENANCE_REQUIRED_VERDICT_BEAD="$BEAD" AGENTOPS_PROVENANCE_REQUIRED_VERDICT_HEAD="$head_sha" AO_BIN="$AO_BIN" "$POST_LAND_SCRIPT"
+  AGENTOPS_PROVENANCE_EMIT_STRICT=1 AGENTOPS_PROVENANCE_REQUIRED_VERDICT_BEAD="$BEAD" AGENTOPS_PROVENANCE_REQUIRED_VERDICT_HEAD="$landed_feat" AO_BIN="$AO_BIN" "$POST_LAND_SCRIPT"
 else
-  AGENTOPS_PROVENANCE_EMIT_STRICT=1 AGENTOPS_PROVENANCE_REQUIRED_VERDICT_BEAD="$BEAD" AGENTOPS_PROVENANCE_REQUIRED_VERDICT_HEAD="$head_sha" "$POST_LAND_SCRIPT"
+  AGENTOPS_PROVENANCE_EMIT_STRICT=1 AGENTOPS_PROVENANCE_REQUIRED_VERDICT_BEAD="$BEAD" AGENTOPS_PROVENANCE_REQUIRED_VERDICT_HEAD="$landed_feat" "$POST_LAND_SCRIPT"
 fi
 
 if [[ "$NO_CLOSE" -eq 0 ]]; then
-  [[ -n "$BR_BIN" ]] || die "br not on PATH; close $BEAD manually with br close"
   if [[ -z "${BEADS_DIR:-}" ]]; then
     [[ -n "$AO_BIN" ]] || die "ao not on PATH; set BEADS_DIR or AO_BIN before closing $BEAD"
     BEADS_DIR="$("$AO_BIN" beads dir)"
     export BEADS_DIR
   fi
-  "$BR_BIN" close "$BEAD" --reason "Landed $head_short via scripts/land.sh; ship gate, pawl review, pawl-land, and strict post-land provenance completed." --json
+  close_reason="Landed $landed_feat via scripts/land.sh; ship gate, pawl review, pawl-land, and strict post-land provenance completed."
+  # Prefer the verdict-stamped close (ao done <bead> --sha <verdict-bound-feat>): it
+  # stamps the ledger proof that the landed commit was reviewed ("no verdict = not
+  # done"). Fall back to a raw br close only when ao is absent or ao done cannot close.
+  if [[ -n "$AO_BIN" ]] && "$AO_BIN" 'done' "$BEAD" --sha "$landed_feat" --reason "$close_reason" --json; then
+    :
+  else
+    [[ -n "$BR_BIN" ]] || die "br not on PATH; close $BEAD manually with br close"
+    "$BR_BIN" close "$BEAD" --reason "$close_reason" --json
+  fi
 fi
 
 echo "land: DONE $BEAD at $head_short"

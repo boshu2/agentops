@@ -1,14 +1,16 @@
 #!/usr/bin/env bats
-# age-t5p6: the land lane's close step must resolve the live private ledger
-# (BEADS_DIR via `ao beads dir`) BEFORE calling br, exactly like scripts/land.sh.
+# age-t5p6 (+ age-fkps (c)): the land lane's close step must resolve the live
+# private ledger (BEADS_DIR via `ao beads dir`) BEFORE the close, exactly like
+# scripts/land.sh. The close now PREFERS `ao done <bead> --sha <sha>` (verdict-
+# stamped), which itself shells out to br; the fallback is a raw `br close`.
 #
-# Without it, a bare `br close` in the canonical checkout / a linked worktree —
-# where $PWD/_beads is usually absent — fails ("Is a directory"), and the
-# best-effort `|| true` silently swallows the failure, so the landed bead never
-# closes. This suite drives the REAL land-lane-run.sh --once against a bare-origin
-# fixture with br + ao STUBBED (br records the BEADS_DIR it saw; ao serves a dir)
-# and asserts the resolved dir reaches br. It also guards that the retired `bd`
-# fallback stays removed.
+# Without the BEADS_DIR resolution, a bare close in the canonical checkout / a
+# linked worktree — where $PWD/_beads is usually absent — fails ("Is a directory"),
+# and the best-effort `|| true` silently swallows the failure, so the landed bead
+# never closes. This suite drives the REAL land-lane-run.sh --once against a
+# bare-origin fixture with br + ao STUBBED (ao done shells to br, which records the
+# BEADS_DIR it saw; ao serves a dir) and asserts the resolved dir reaches br. It
+# also guards that the retired `bd` fallback stays removed.
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -54,7 +56,10 @@ exit 0
 EOS
   cat >"$BIN/ao" <<EOS
 #!/usr/bin/env bash
-if [[ "\$1" == "beads" && "\$2" == "dir" ]]; then echo "$BEADS_DIR_STUB"; fi
+if [[ "\$1" == "beads" && "\$2" == "dir" ]]; then echo "$BEADS_DIR_STUB"; exit 0; fi
+# The lane's close prefers 'ao done <bead> --sha <sha>'; real ao done shells out to
+# br for the actual close, so mirror that here (br records the BEADS_DIR it saw).
+if [[ "\$1" == "done" ]]; then exec "$BIN/br" close "\$2"; fi
 exit 0
 EOS
   GATE="$TMP/gate.sh"
