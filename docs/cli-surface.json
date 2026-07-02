@@ -1641,7 +1641,7 @@
     },
     {
       "category": "public-tested",
-      "command": "verify",
+      "command": "verify stats",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

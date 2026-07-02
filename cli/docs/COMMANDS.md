@@ -4431,7 +4431,26 @@ ao verdict-gate <file|-> [flags]
 Run an independent cross-family review of your change and, on CONFIRMED, write
 
 ```
-ao verify <change-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>] [flags]
+ao verify [command]
+```
+
+**Subcommands:**
+
+#### `ao verify stats`
+
+Report the COST of verified-done from the committed provenance ledger
+
+```
+ao verify stats [flags]
+```
+
+**Flags:**
+
+```
+      --days int        Trailing window in days for the trend section (<=0 = all time) (default 30)
+  -h, --help            help for stats
+      --json            Emit machine-readable JSON (stdout-as-data)
+      --ledger string   Ledger path override (default: repo docs/provenance/ledger.jsonl)
 ```
 
 ---
