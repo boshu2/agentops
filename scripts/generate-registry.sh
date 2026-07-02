@@ -536,9 +536,12 @@ build_cadence_recommendations() {
 # ─── Assemble ────────────────────────────────────────────────────────────────
 
 main() {
-  local generated_at
-  generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
+  # No wall-clock stamp in the committed artifact: a `generated_at` timestamp
+  # made back-to-back regens non-byte-identical (rewrote every `make regen-all`),
+  # which collided/re-noised at nearly every serial landing. registry.json is now
+  # a pure content-derived projection of its sources — matching the other
+  # generators (generate-context-map.sh / generate-skill-domain-map.sh, which
+  # also carry no timestamp). "When was this generated" = git log on the file.
   local skills hooks knowledge_stores job_types schedules evals cli_commands cadence
   local ao_bin sku_block
 
@@ -579,7 +582,6 @@ main() {
   # capabilities/capability_summary).
   local registry
   registry=$(jq -n \
-    --arg generated_at "$generated_at" \
     --argjson skill_count "$skill_count" \
     --argjson hook_count "$hook_count" \
     --argjson store_count "$store_count" \
@@ -602,7 +604,6 @@ main() {
     --argjson workflow_count "$workflow_count" \
     '{
       schema_version: 2,
-      generated_at: $generated_at,
       summary: {
         skills: $skill_count,
         hooks: $hook_count,
@@ -639,7 +640,10 @@ main() {
         echo "FAIL: registry.json does not exist. Run: bash scripts/generate-registry.sh" >&2
         exit 1
       fi
-      # Compare ignoring generated_at timestamp
+      # generated_at was removed from the body (was wall-clock, caused churn);
+      # del(.generated_at) stays as a defensive no-op so an older committed
+      # registry.json that still carries the field still compares clean during
+      # rollout (and tolerates the field being reintroduced elsewhere).
       local current_no_ts new_no_ts
       current_no_ts=$(jq 'del(.generated_at)' "$OUTPUT")
       new_no_ts=$(echo "$registry" | jq 'del(.generated_at)')
