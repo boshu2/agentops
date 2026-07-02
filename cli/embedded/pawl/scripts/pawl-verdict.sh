@@ -86,6 +86,13 @@ die() { echo "pawl-verdict: ERROR: $*" >&2; exit 2; }
 
 command -v jq >/dev/null 2>&1 || die "jq not on PATH"
 
+# The diff-identity signature (commit_patch_id / commit_content_lines / commit_content_sig) is
+# the SINGLE source of truth shared with pawl-review.sh (age-rk3r.9). Sourced script-relative
+# from lib/ so the in-checkout run uses scripts/lib/ and the embedded (stranger) path uses the
+# extracted bundle's scripts/lib/ — the SAME pattern pawl-review.sh uses for codex-exec.sh.
+# shellcheck source=scripts/lib/diff-identity.sh
+. "$SCRIPT_DIR/lib/diff-identity.sh"
+
 # _ao_bin: print the TRUSTED ao binary for the best-effort provenance/yield/membrane
 # emits below. SECURITY (age-a9iv.4): on the stranger/embedded path these emits run with
 # cwd = the UNTRUSTED repo under review (some explicitly `cd` into it to root the ledger),
@@ -431,6 +438,10 @@ normalize_family() {
   esac
 }
 
+# commit_patch_id / commit_content_lines / commit_content_sig now live in the SHARED
+# scripts/lib/diff-identity.sh (sourced above) — the SINGLE diff-identity signature shared
+# with pawl-review.sh's --converge lineage, so the two can never drift (age-rk3r.9).
+
 # Validate a verdict file against the v1 schema. Prefer a real JSON Schema
 # validator (python jsonschema / check-jsonschema); fall back to strict jq
 # type/enum/required-field checks. Returns 0 = valid, non-zero = invalid (msg on
@@ -559,11 +570,15 @@ _family_genuine_marker() {
   esac
 }
 
-# _resolve_ev_path <path> — resolve an evidence path against REPO_ROOT (absolute stays).
+# _resolve_ev_path <path> — resolve a RELATIVE evidence path against YIELD_ROOT (the repo
+# being gated: AGENTOPS_REPO_ROOT on the embedded/stranger path = the USER's repo; ==
+# REPO_ROOT in-checkout). Absolute paths stay. Using YIELD_ROOT (not the script-relative
+# REPO_ROOT) is what makes evidence written repo-relative resolvable on the embedded path —
+# where REPO_ROOT is the extracted-bundle temp dir, not the user's repo. (age-rk3r.9)
 _resolve_ev_path() {
   local p="$1"
   [[ -z "$p" ]] && { printf ''; return; }
-  case "$p" in /*) printf '%s' "$p" ;; *) printf '%s/%s' "$REPO_ROOT" "$p" ;; esac
+  case "$p" in /*) printf '%s' "$p" ;; *) printf '%s/%s' "$YIELD_ROOT" "$p" ;; esac
 }
 
 # pawl_evidence_floor <verdict-file> — evaluate the evidence-quality floor for a CONFIRMED
@@ -643,17 +658,22 @@ pawl_evidence_floor() {
 # ---------------------------------------------------------------------------
 do_check() {
   local bead="${1:-}" pr="${2:-}"; shift 2 || true
-  local cur_head=""
+  local cur_head="" verdict_file=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --dir)  VDIR="${2:-}"; shift 2 ;;
-      --head) cur_head="${2:-}"; shift 2 ;;
+      --dir)          VDIR="${2:-}"; shift 2 ;;
+      --head)         cur_head="${2:-}"; shift 2 ;;
+      # --verdict-file overrides the default <dir>/<bead>.json resolution so the caller can
+      # point check at a verdict file whose NAME is not <bead>.json (the REBOUND lineage
+      # recursion targets an archived '<bead>.confirmed-<sha>.json'). The file's own bead_id
+      # still must equal <bead> (the structural gate enforces it).
+      --verdict-file) verdict_file="${2:-}"; shift 2 ;;
       *) shift ;;
     esac
   done
   [[ -n "$bead" && -n "$pr" ]] || { echo "pawl-verdict check: need <bead> <pr>" >&2; return 2; }
 
-  local f="$VDIR/$bead.json"
+  local f="${verdict_file:-$VDIR/$bead.json}"
   if [[ ! -f "$f" ]]; then
     echo "PAWL-GATE: no pawl verdict at $f — fail-closed, merge refused" >&2
     return 2
@@ -671,12 +691,20 @@ do_check() {
 
   # Structural + content gates (post-schema). family roster is checked in shell
   # (normalize each, reject empties, count distinct canonical labels).
+  #
+  # AUTHORIZING dispositions: CONFIRMED (a real review of THIS commit) OR REBOUND (a
+  # prior CONFIRMED review re-bound onto a byte-identical commit — see the REBOUND
+  # lineage gate below, which is what actually earns a REBOUND its authorization).
+  # A REBOUND that fails its lineage gate is refused there; REFUTED/ESCALATE/HOLD
+  # refuse here. The refuter-CONFIRMED + author_context_id checks apply to both:
+  # a REBOUND carries the ORIGINAL review's refuter panel (rebind-verified copies it
+  # verbatim), so it must still be all-CONFIRMED with an author context.
   local result
   result="$(jq -r --arg bead "$bead" --arg pr "$pr" '
     if (.schema_version != "pawl-verdict.v1") then "BAD: schema_version != pawl-verdict.v1"
     elif (.bead_id != $bead) then "BAD: bead mismatch (verdict.bead_id=\(.bead_id) wanted \($bead))"
     elif ((.pr|tostring) != $pr) then "BAD: pr mismatch (verdict.pr=\(.pr) wanted \($pr))"
-    elif (.disposition != "CONFIRMED") then "BAD: disposition=\(.disposition) (only CONFIRMED authorizes; REFUTED/ESCALATE/HOLD refuse)"
+    elif ((.disposition != "CONFIRMED") and (.disposition != "REBOUND")) then "BAD: disposition=\(.disposition) (only CONFIRMED or REBOUND authorize; REFUTED/ESCALATE/HOLD refuse)"
     elif ((.refuters | length) < 1) then "BAD: <1 refuter"
     elif (any(.refuters[]; .verdict != "CONFIRMED")) then "BAD: a refuter is not CONFIRMED"
     elif ((.author_context_id // "") == "") then "BAD: missing author_context_id"
@@ -687,6 +715,9 @@ do_check() {
     echo "PAWL-GATE: ${result:-BAD: unreadable verdict} — fail-closed, merge refused" >&2
     return 1
   fi
+
+  local disposition
+  disposition="$(jq -r '.disposition // ""' "$f" 2>/dev/null)"
 
   # --- commit-binding: head_sha required + (when given) equals current head ---
   local verdict_head
@@ -707,6 +738,149 @@ do_check() {
   if [[ "$verdict_head" != "$cur_head" ]]; then
     echo "PAWL-GATE: STALE verdict — head_sha=$verdict_head != current PR head=$cur_head; a new commit was pushed after review — fail-closed, merge refused" >&2
     return 1
+  fi
+
+  # --- REBOUND lineage gate (age-rk3r.9): a REBOUND verdict authorizes the merge ONLY
+  # when it descends from a FULLY-VALID authorizing CONFIRMED and the diff is proven
+  # unchanged (patch-id + whitespace-significant content). It is NEVER forgeable as a fresh
+  # CONFIRMED and is NO EASIER to authorize than the CONFIRMED it inherits (DEFECT 2 fix).
+  # This block enforces the REBOUND-SPECIFIC requirements and then FALLS THROUGH to the
+  # SHARED gate battery below (roster, fresh-context/diversity floor, evidence-binding, the
+  # .11 evidence-quality floor) — the REBOUND carries the original panel verbatim, so it
+  # must PASS those exact gates too; it does NOT short-circuit before them. Fail-closed
+  # unless ALL hold:
+  #   (1) rebound_from_verdict is present, resolvable, and is itself a FULLY-VALID
+  #       authorizing CONFIRMED — validated by running the SAME check battery against it
+  #       (recursive `check` at its own reviewed sha), not merely `.disposition=="CONFIRMED"`;
+  #   (2) patch_id_proof is present AND matches the patch-id RE-DERIVED from THIS tip
+  #       (recomputed from git — a stale/forged string cannot slip through); AND
+  #   (3) the whitespace-significant +/- CONTENT LINES of the current tip EQUAL those of the
+  #       reviewed commit (rebound_from_sha) — closing the patch-id whitespace hole (DEFECT 1),
+  #       so a whitespace-only change (e.g. Python indentation) is REFUSED even though its
+  #       patch-id matches.
+  # CAVEAT (verbatim, load-bearing): a matching patch-id proves the change is rebase-stable
+  # but is WHITESPACE-INSENSITIVE, so it does NOT prove the diff BYTES are unchanged, and even
+  # byte-identical content on a new base can still break (semantic conflict). REBOUND therefore
+  # requires (a) the same rebase-stable patch-id AND (b) byte-identical +/- content lines
+  # (whitespace-significant) AND (c) a green full gate on the new tip. (c) is enforced at
+  # WRITE time (rebind-verified refuses on a red gate); this `check` enforces (a), (b), and
+  # the full lineage validity.
+  if [[ "$disposition" == "REBOUND" ]]; then
+    local reb_from reb_proof reb_from_sha
+    reb_from="$(jq -r '.rebound_from_verdict // ""' "$f" 2>/dev/null)"
+    reb_proof="$(jq -r '.patch_id_proof // ""' "$f" 2>/dev/null)"
+    reb_from_sha="$(jq -r '.rebound_from_sha // ""' "$f" 2>/dev/null)"
+    if [[ -z "$reb_from" ]]; then
+      echo "PAWL-GATE: REBOUND verdict missing rebound_from_verdict lineage — fail-closed, merge refused (a REBOUND must name the CONFIRMED review it descends from)" >&2
+      return 1
+    fi
+    if [[ -z "$reb_proof" ]]; then
+      echo "PAWL-GATE: REBOUND verdict missing patch_id_proof — fail-closed, merge refused (no proof the diff is byte-identical to the reviewed one)" >&2
+      return 1
+    fi
+    if [[ -z "$reb_from_sha" || ${#reb_from_sha} -lt 7 ]]; then
+      echo "PAWL-GATE: REBOUND verdict missing/short rebound_from_sha — fail-closed, merge refused (cannot identify the reviewed commit to prove content identity)" >&2
+      return 1
+    fi
+    # Resolve the lineage verdict path: absolute stays; a bare basename or relative path
+    # resolves against the SAME verdicts dir this check is reading, then the repo root — so
+    # lineage bound in-tree ('.agents/pawl-verdicts/<bead>.json') or by dir is found.
+    local reb_path=""
+    case "$reb_from" in
+      /*) reb_path="$reb_from" ;;
+      *)
+        if [[ -f "$VDIR/$reb_from" ]]; then reb_path="$VDIR/$reb_from"
+        elif [[ -f "$REPO_ROOT/$reb_from" ]]; then reb_path="$REPO_ROOT/$reb_from"
+        else reb_path="$reb_from"; fi
+        ;;
+    esac
+    if [[ ! -f "$reb_path" ]]; then
+      echo "PAWL-GATE: REBOUND lineage verdict '$reb_from' not found (looked at $reb_path) — fail-closed, merge refused" >&2
+      return 1
+    fi
+    # (1) LINEAGE MUST BE A FULLY-VALID AUTHORIZING CONFIRMED (DEFECT 2 fix). Not just
+    # `.disposition=="CONFIRMED"` — run the ENTIRE check battery against the lineage verdict
+    # at ITS OWN reviewed sha, so a thin/self-stamped/evidence-less "CONFIRMED" that would
+    # NOT itself authorize a merge cannot be laundered into an authorizing REBOUND. The
+    # recursive check re-validates schema + roster + fresh-context/diversity floor +
+    # evidence-binding + the .11 evidence-quality floor on the lineage. It must be a plain
+    # CONFIRMED (guarded below) so it takes the CONFIRMED path (no REBOUND recursion).
+    local reb_disp reb_bead reb_pr
+    reb_disp="$(jq -r '.disposition // ""' "$reb_path" 2>/dev/null)"
+    if [[ "$reb_disp" != "CONFIRMED" ]]; then
+      echo "PAWL-GATE: REBOUND lineage verdict '$reb_from' is disposition=$reb_disp, not CONFIRMED — a REBOUND may only descend from a genuine CONFIRMED review — fail-closed, merge refused" >&2
+      return 1
+    fi
+    reb_bead="$(jq -r '.bead_id // ""' "$reb_path" 2>/dev/null)"
+    reb_pr="$(jq -r '.pr // 0' "$reb_path" 2>/dev/null)"
+    # Recurse: validate the lineage as a full authorizing CONFIRMED at its reviewed sha.
+    # Point check at the lineage file DIRECTLY (--verdict-file) since its name is not
+    # <bead>.json (the archived '<bead>.confirmed-<sha>.json'). PAWL_REBIND_LINEAGE_CHECK
+    # guards against any accidental infinite recursion (the lineage is a plain CONFIRMED so
+    # it won't re-enter this REBOUND block, but the guard is belt-and-suspenders). Evidence
+    # paths in the lineage resolve against REPO_ROOT as usual.
+    if [[ -z "${PAWL_REBIND_LINEAGE_CHECK:-}" ]]; then
+      local lineage_out lineage_rc=0
+      lineage_out="$(PAWL_REBIND_LINEAGE_CHECK=1 AGENTOPS_REPO_ROOT="$YIELD_ROOT" \
+        bash "$0" check "$reb_bead" "$reb_pr" --verdict-file "$reb_path" --head "$reb_from_sha" 2>&1)" || lineage_rc=$?
+      if [[ "$lineage_rc" -ne 0 ]]; then
+        {
+          echo "PAWL-GATE: REBOUND lineage verdict '$reb_from' is NOT a fully-valid authorizing CONFIRMED (it fails the same check battery a merge-authorizing CONFIRMED must pass — roster / fresh-context / evidence-binding / evidence-quality floor). A REBOUND may not launder a thin or invalid verdict into an authorizing one — fail-closed, merge refused."
+          printf '%s\n' "$lineage_out" | sed 's/^/  lineage| /'
+        } >&2
+        return 1
+      fi
+    fi
+    # (2)+(3) EQUIVALENCE PROVEN BETWEEN rebound_from_sha AND THE TIP (age-rk3r.9) — the
+    # reviewed CONFIRMED applies to the tip ONLY if the tip's diff is TRULY EQUIVALENT to the
+    # reviewed commit's. RE-DERIVE from git, for BOTH commits, BOTH keys:
+    #   patch-id (rebase-stable) AND the BYTE-EXACT content signature (commit_content_lines:
+    #   every diff byte significant EXCEPT text-hunk blob ids + @@ positions — so whitespace,
+    #   file mode, binary content, and trailing-newline are all significant), and require the
+    #   reviewed values to EQUAL the tip values. Comparing reviewed-vs-tip (not just
+    # stored-proof-vs-tip) is what closes the forged-proof hole: a patch_id_proof set to the
+    # tip's own patch-id can no longer bypass, because the authoritative comparison recomputes
+    # the REVIEWED commit's keys and requires the match. The stored patch_id_proof is ALSO
+    # required to equal the re-derived tip patch-id as a defense-in-depth consistency check (a
+    # lineage whose recorded proof disagrees with git is tampered/stale). Compute against
+    # YIELD_ROOT (the repo being gated).
+    local tip_pid reviewed_pid tip_content reviewed_content
+    tip_pid="$(commit_patch_id "$cur_head" "$YIELD_ROOT")"
+    reviewed_pid="$(commit_patch_id "$reb_from_sha" "$YIELD_ROOT")"
+    tip_content="$(commit_content_lines "$cur_head" "$YIELD_ROOT")"
+    reviewed_content="$(commit_content_lines "$reb_from_sha" "$YIELD_ROOT")"
+    if [[ -z "$tip_pid" || -z "$reviewed_pid" ]]; then
+      echo "PAWL-GATE: REBOUND — could not compute git patch-id for the current head ($cur_head) or the reviewed commit ($reb_from_sha) (unknown sha / empty diff / git error) — fail-closed, merge refused" >&2
+      return 1
+    fi
+    if [[ -z "$tip_content" || -z "$reviewed_content" ]]; then
+      echo "PAWL-GATE: REBOUND — could not extract the byte-exact content signature for the current tip ($cur_head) or the reviewed commit ($reb_from_sha) — cannot prove the change is identical — fail-closed, merge refused" >&2
+      return 1
+    fi
+    # AUTHORITATIVE: the reviewed commit's patch-id must equal the tip's.
+    if [[ "$reviewed_pid" != "$tip_pid" ]]; then
+      echo "PAWL-GATE: REBOUND — the reviewed commit ($reb_from_sha) patch-id=$reviewed_pid != the current tip ($cur_head) patch-id=$tip_pid; the tip is NOT the same change as the reviewed one — fail-closed, merge refused" >&2
+      return 1
+    fi
+    # AUTHORITATIVE: the reviewed commit's BYTE-EXACT content signature must equal the tip's —
+    # catches EVERY diff-byte difference patch-id misses: a whitespace-only change (Python
+    # indentation), a FILE-MODE change (e.g. a data file made EXECUTABLE), a BINARY content
+    # change, or a trailing-newline flip. The signature is byte-exact except text-hunk blob ids
+    # + @@ positions, so it is complete by construction (denylist, not a leaky allowlist).
+    if [[ "$reviewed_content" != "$tip_content" ]]; then
+      echo "PAWL-GATE: REBOUND — the tip's byte-exact content signature differs from the reviewed commit's (patch-id matched but the change is NOT identical — a whitespace edit, a file-mode flip like a data file made executable, a binary-content change, or a trailing-newline flip is semantically load-bearing) — fail-closed, merge refused" >&2
+      return 1
+    fi
+    # DEFENSE-IN-DEPTH: the recorded patch_id_proof must agree with git (a stale/forged proof
+    # that disagrees with the re-derived tip patch-id is rejected).
+    if [[ "$reb_proof" != "$tip_pid" ]]; then
+      echo "PAWL-GATE: REBOUND patch_id_proof=$reb_proof disagrees with the re-derived current tip patch-id=$tip_pid — the recorded proof is stale or forged — fail-closed, merge refused" >&2
+      return 1
+    fi
+    echo "PAWL-GATE: REBOUND lineage OK — descends from a fully-valid CONFIRMED '$reb_from'; the reviewed commit ($reb_from_sha) and the tip ($cur_head) are equivalent (patch-id $tip_pid + byte-exact content signature match); now validating the REBOUND's own panel through the shared gate battery…" >&2
+    # FALL THROUGH — the REBOUND's own panel must pass the SAME roster/diversity/evidence/
+    # floor gates below (DEFECT 2: no short-circuit). It authorizes only if BOTH the lineage
+    # proof above AND the shared battery below pass.
   fi
 
   # --- roster validation (MODE-INDEPENDENT): every family label must be a
@@ -788,10 +962,14 @@ do_check() {
   # Paths resolve against the repo root (or absolute). Fail-closed if none exist.
   local council ev have_evidence=0
   council="$(jq -r '.council_artifact // ""' "$f" 2>/dev/null)"
+  # Resolve RELATIVE evidence/council paths against YIELD_ROOT (the repo being gated =
+  # AGENTOPS_REPO_ROOT on the embedded path = the user's repo; == REPO_ROOT in-checkout).
+  # Script-relative REPO_ROOT would be the extracted-bundle temp dir on the embedded path,
+  # so evidence written repo-relative would falsely read as missing there. (age-rk3r.9)
   resolve_path() {
     local p="$1"
     [[ -z "$p" ]] && { echo ""; return; }
-    case "$p" in /*) echo "$p" ;; *) echo "$REPO_ROOT/$p" ;; esac
+    case "$p" in /*) echo "$p" ;; *) echo "$YIELD_ROOT/$p" ;; esac
   }
   if [[ -n "$council" ]]; then
     local cpath; cpath="$(resolve_path "$council")"
@@ -823,7 +1001,7 @@ do_check() {
     return 1
   fi
 
-  echo "PAWL-GATE: CONFIRMED, evidence-bound, commit-current pawl verdict (mode=$mode) for $bead (PR $pr, head ${verdict_head:0:12}) — merge authorized" >&2
+  echo "PAWL-GATE: $disposition, evidence-bound, commit-current pawl verdict (mode=$mode) for $bead (PR $pr, head ${verdict_head:0:12}) — merge authorized" >&2
   return 0
 }
 
@@ -1077,10 +1255,278 @@ do_rebind() {
   emit_verdict_edge_checked "$out" "$bead" "CONFIRMED"
 }
 
+# ---------------------------------------------------------------------------
+# rebind-verified <bead> <pr> --from-verdict <path> --head NEWSHA [--dir D] [--repo-root R]
+#
+# The SAFE, patch-id-gated re-bind (age-rk3r.9): stop paying a full re-review for a
+# byte-identical rebase. Given a PRIOR CONFIRMED verdict and a NEW tip proven to be the
+# SAME change as the reviewed one, AND with the full local gate GREEN on the new tip,
+# WRITE a DISTINCT REBOUND verdict binding the new tip and carrying lineage
+# (rebound_from_verdict / rebound_from_sha / patch_id_proof). This REUSES a real review
+# across a no-op rebase instead of re-running it — the reviewer would read the same diff
+# bytes, so a second full review is pure cost with zero added assurance. A REBOUND is
+# NEVER forgeable as a fresh CONFIRMED and is NO EASIER to authorize than the CONFIRMED it
+# inherits: `check` authorizes it only when its lineage is a FULLY-VALID CONFIRMED, its
+# patch_id_proof matches the new tip, and the tip's whitespace-significant content matches.
+#
+# This is a DISTINCT verb from `rebind` (do_rebind): `rebind` is pawl-land.sh's
+# deterministic clean-land restamp (keeps CONFIRMED, no patch-id or gate check) and its
+# behavior is locked; `rebind-verified` is the patch-id+content+gate-gated REBOUND writer.
+#
+# Permitted ONLY when ALL THREE hold:
+#   (a) git patch-id --stable of the reviewed diff EQUALS the new tip's — the REBASE-STABLE
+#       key (it normalizes @@ hunk positions that legitimately shift across a rebase), AND
+#   (b) the +/- CONTENT LINES are byte-identical (WHITESPACE-SIGNIFICANT) between the
+#       reviewed diff and the new-tip diff — because git patch-id is whitespace-INSENSITIVE,
+#       so (a) alone would authorize a whitespace-only change (e.g. Python indentation,
+#       semantically load-bearing); (b) closes that hole, AND
+#   (c) the FULL local gate is green on the new tip (ao gate check --scope head — the gate
+#       re-runs the tests against the new base, which catches a semantic conflict that even
+#       a byte-identical diff on a new base can cause).
+# CAVEAT (verbatim, load-bearing): a matching patch-id proves the change is rebase-stable
+# but is WHITESPACE-INSENSITIVE, so it does NOT prove the diff bytes are unchanged, and even
+# byte-identical content on a new base can still break (semantic conflict). REBOUND requires
+# (a) the same rebase-stable patch-id AND (b) byte-identical +/- content lines (whitespace-
+# significant) AND (c) a green full gate on the new tip.
+#
+# Gate command is overridable via PAWL_REBIND_GATE_CMD (for tests / a documented
+# alternate gate); default "ao gate check --scope head" run with cwd = the repo root.
+# Set PAWL_REBIND_SKIP_GATE=1 ONLY in a test that pins the patch-id/content/lineage logic in
+# isolation (it prints a loud warning; never use it in production — it removes the
+# behavior half of the safety argument).
+do_rebind_verified() {
+  local bead="${1:-}" pr="${2:-}"; shift 2 2>/dev/null || true
+  local newhead="" from_verdict="" repo_root="$REPO_ROOT"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --head)          newhead="${2:-}"; shift 2 ;;
+      --from-verdict)  from_verdict="${2:-}"; shift 2 ;;
+      --dir)           VDIR="${2:-}"; shift 2 ;;
+      --repo-root)     repo_root="${2:-}"; shift 2 ;;
+      *) echo "pawl-verdict rebind-verified: unknown flag $1" >&2; return 2 ;;
+    esac
+  done
+  [[ -n "$bead" && -n "$pr" ]] || { echo "pawl-verdict rebind-verified: need <bead> <pr> --head NEWSHA [--from-verdict PATH]" >&2; return 2; }
+  [[ -n "$newhead" && ${#newhead} -ge 7 ]] || { echo "pawl-verdict rebind-verified: need --head NEWSHA (>=7 chars)" >&2; return 2; }
+
+  # The prior verdict defaults to this bead's own verdict file (the common case: the
+  # verdict that reviewed the pre-rebase commit is <dir>/<bead>.json). --from-verdict
+  # overrides for cross-bead lineage. It MUST exist and be CONFIRMED (never a REBOUND
+  # or a REFUTED — a REBOUND may only descend from a genuine authorizing review).
+  local prior="${from_verdict:-$VDIR/$bead.json}"
+  [[ -f "$prior" ]] || { echo "pawl-verdict rebind-verified: prior verdict '$prior' not found — nothing to re-bind" >&2; return 2; }
+  local prior_disp prior_sha
+  prior_disp="$(jq -r '.disposition // ""' "$prior" 2>/dev/null)"
+  prior_sha="$(jq -r '.head_sha // ""' "$prior" 2>/dev/null)"
+  if [[ "$prior_disp" != "CONFIRMED" ]]; then
+    echo "pawl-verdict rebind-verified: prior verdict '$prior' is disposition=$prior_disp, not CONFIRMED — a REBOUND may only descend from a CONFIRMED review — refusing" >&2
+    return 2
+  fi
+  if [[ -z "$prior_sha" || ${#prior_sha} -lt 7 ]]; then
+    echo "pawl-verdict rebind-verified: prior verdict '$prior' has no/short head_sha — cannot identify the reviewed commit — refusing" >&2
+    return 2
+  fi
+
+  # LINEAGE VALIDITY (DEFECT 2 fix, WRITE-TIME half) — the prior CONFIRMED must be a
+  # FULLY-VALID authorizing CONFIRMED, not just disposition=="CONFIRMED". Run the SAME check
+  # battery against it at ITS reviewed sha (roster / fresh-context / evidence-binding / the
+  # .11 evidence-quality floor) so rebind-verified REFUSES to build a REBOUND from a thin,
+  # self-stamped, or evidence-less CONFIRMED — the laundering path. (Defense-in-depth: `check`
+  # re-validates the lineage again at merge time; catching it here gives a clear write-time
+  # error.) Guarded by PAWL_REBIND_LINEAGE_CHECK against any accidental recursion.
+  if [[ -z "${PAWL_REBIND_LINEAGE_CHECK:-}" ]]; then
+    local prior_bead prior_pr lin_out lin_rc=0
+    prior_bead="$(jq -r '.bead_id // ""' "$prior" 2>/dev/null)"
+    prior_pr="$(jq -r '.pr // 0' "$prior" 2>/dev/null)"
+    lin_out="$(PAWL_REBIND_LINEAGE_CHECK=1 AGENTOPS_REPO_ROOT="$repo_root" \
+      bash "$0" check "$prior_bead" "$prior_pr" --verdict-file "$prior" --head "$prior_sha" 2>&1)" || lin_rc=$?
+    if [[ "$lin_rc" -ne 0 ]]; then
+      {
+        echo "pawl-verdict rebind-verified: prior verdict '$prior' is NOT a fully-valid authorizing CONFIRMED — it fails the same check battery a merge-authorizing CONFIRMED must pass (roster / fresh-context / evidence-binding / evidence-quality floor). A REBOUND may not launder a thin/invalid verdict into an authorizing one — refusing."
+        printf '%s\n' "$lin_out" | sed 's/^/  lineage| /'
+      } >&2
+      return 2
+    fi
+  fi
+
+  # (a) PATCH-ID MATCH — the rebase-stable key. Compute both stable patch-ids from git;
+  # refuse (fail-closed) on any difference, naming the FIRST differing file so the operator
+  # sees WHY it is not a no-op rebase. An empty patch-id (unknown sha / empty diff / git
+  # error) is treated as "cannot prove identity" and refuses. NOTE (DEFECT 1): patch-id is
+  # WHITESPACE-INSENSITIVE, so this match alone does NOT prove the diff bytes are unchanged
+  # — the (b) content-line check below is what closes that hole.
+  local prior_pid new_pid
+  prior_pid="$(commit_patch_id "$prior_sha" "$repo_root")"
+  new_pid="$(commit_patch_id "$newhead" "$repo_root")"
+  if [[ -z "$prior_pid" ]]; then
+    echo "pawl-verdict rebind-verified: could not compute patch-id for the reviewed commit $prior_sha (unknown sha / empty diff / git error) — refusing" >&2
+    return 2
+  fi
+  if [[ -z "$new_pid" ]]; then
+    echo "pawl-verdict rebind-verified: could not compute patch-id for the new tip $newhead (unknown sha / empty diff / git error) — refusing" >&2
+    return 2
+  fi
+  if [[ "$prior_pid" != "$new_pid" ]]; then
+    # Name the first differing file — the diff CHANGED, so this is NOT a no-op rebase
+    # and a REBOUND is not permitted; the change needs a real re-review.
+    local first_diff
+    first_diff="$(git -c core.fsmonitor= -C "$repo_root" diff --no-ext-diff --no-textconv --name-only "$prior_sha" "$newhead" 2>/dev/null | head -1)"
+    {
+      echo "pawl-verdict rebind-verified: patch-id MISMATCH — the diff CHANGED since the review, so this is NOT a no-op rebase — refusing (a REBOUND is not permitted; re-run the full review)."
+      echo "  reviewed commit ${prior_sha:0:12} patch-id: $prior_pid"
+      echo "  new tip         ${newhead:0:12} patch-id: $new_pid"
+      if [[ -n "$first_diff" ]]; then
+        echo "  first differing file (reviewed..new): $first_diff"
+      else
+        echo "  (the patch-ids differ; the two commits' diffs are not byte-identical)"
+      fi
+    } >&2
+    return 2
+  fi
+
+  # (b) CONTENT-LINE MATCH (DEFECT 1 fix) — patch-id is whitespace-insensitive, so require
+  # the +/- change content to be IDENTICAL BYTE-FOR-BYTE (leading whitespace included),
+  # comparing ONLY the stable structural headers + content lines (index/@@ dropped, since
+  # they legitimately shift across a rebase). This is what makes the "byte-identical diff"
+  # safety claim TRUE: a whitespace-only change (e.g. Python indentation) has the same
+  # patch-id but a DIFFERENT content-line set and is REFUSED here. Refuse fail-closed on any
+  # difference (or an empty set = cannot prove content identity), naming the difference.
+  local prior_content new_content
+  prior_content="$(commit_content_lines "$prior_sha" "$repo_root")"
+  new_content="$(commit_content_lines "$newhead" "$repo_root")"
+  if [[ -z "$prior_content" || -z "$new_content" ]]; then
+    echo "pawl-verdict rebind-verified: could not extract whitespace-significant content lines for the reviewed commit or the new tip — cannot prove the diff bytes are identical — refusing" >&2
+    return 2
+  fi
+  if [[ "$prior_content" != "$new_content" ]]; then
+    {
+      echo "pawl-verdict rebind-verified: CONTENT-LINE MISMATCH — the patch-ids match but the +/- content BYTES differ (patch-id is whitespace-INSENSITIVE; a whitespace-only change is semantically load-bearing, e.g. Python indentation) — refusing (a REBOUND is not permitted; re-run the full review)."
+      echo "  reviewed commit ${prior_sha:0:12} vs new tip ${newhead:0:12} — first differing content line:"
+      # Show the first line where the whitespace-significant content sets diverge.
+      diff <(printf '%s\n' "$prior_content") <(printf '%s\n' "$new_content") 2>/dev/null | grep -E '^[<>]' | head -4 | sed 's/^/    /'
+    } >&2
+    return 2
+  fi
+
+  # (c) FULL GATE GREEN ON THE NEW TIP — the behavior check. A byte-identical diff on a
+  # new base can still break (semantic conflict); the gate re-runs the tests against the
+  # new base. Run with cwd = repo root so the gate resolves the checkout it is gating.
+  #
+  # HEAD==newhead GUARD (required for the gate contract to hold): the gate runs against the
+  # worktree's CURRENT HEAD (`cd "$repo_root" && <gate>`), NOT against $newhead directly. If
+  # the worktree is checked out at some OTHER commit while --head names $newhead, the gate
+  # would validate the WRONG tree yet we would stamp a REBOUND for $newhead — the "gate is
+  # green on the NEW TIP" claim would be false. So REQUIRE the worktree HEAD to resolve to
+  # $newhead before the gate runs; if not, REFUSE fail-closed and instruct (never auto-check
+  # out — that mutates the user's worktree). This guarantees the behavior check ran against
+  # the very commit being rebound. Bypassed only when the gate itself is skipped (test-only).
+  case "$(printf '%s' "${PAWL_REBIND_SKIP_GATE:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on) : ;;   # gate skipped (test-only) — the HEAD guard is moot without a gate run
+    *)
+      local worktree_head
+      worktree_head="$(git -c core.fsmonitor= -C "$repo_root" rev-parse HEAD 2>/dev/null)"
+      # Resolve $newhead to a full sha in this repo so a short/ref --head compares correctly.
+      local newhead_full
+      newhead_full="$(git -c core.fsmonitor= -C "$repo_root" rev-parse --verify "${newhead}^{commit}" 2>/dev/null)"
+      if [[ -z "$worktree_head" || -z "$newhead_full" || "$worktree_head" != "$newhead_full" ]]; then
+        local wt_disp="${worktree_head:0:12}"; [[ -z "$wt_disp" ]] && wt_disp="<none>"
+        {
+          echo "pawl-verdict rebind-verified: the gate must run against the rebound tip, but the worktree HEAD ($wt_disp) is not the rebound tip ${newhead:0:12} — refusing (the gate would validate the wrong commit while stamping a REBOUND for $newhead)."
+          echo "  check out $newhead first (git -C $repo_root checkout $newhead), or omit --head to rebind onto the current HEAD."
+        } >&2
+        return 2
+      fi
+      ;;
+  esac
+
+  local gate_cmd="${PAWL_REBIND_GATE_CMD:-ao gate check --scope head}"
+  case "$(printf '%s' "${PAWL_REBIND_SKIP_GATE:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|on)
+      echo "pawl-verdict rebind-verified: WARNING — PAWL_REBIND_SKIP_GATE set; SKIPPING the green-gate behavior check (TEST-ONLY; the patch-id match alone does NOT prove behavior is unchanged)" >&2
+      ;;
+    *)
+      echo "pawl-verdict rebind-verified: running the full gate on the new tip ($gate_cmd) — the behavior check a byte-identical diff cannot give…" >&2
+      local gate_out gate_rc=0
+      # gate_cmd is an operator/default command LINE (e.g. "ao gate check --scope head"),
+      # so it is intentionally run through the shell via eval to honor its own word-split
+      # + flags. It is NOT untrusted repo input: production default is a fixed literal, and
+      # the only override is PAWL_REBIND_GATE_CMD, an operator/env-set value.
+      gate_out="$( cd "$repo_root" && eval "$gate_cmd" 2>&1 )" || gate_rc=$?
+      if [[ "$gate_rc" -ne 0 ]]; then
+        {
+          echo "pawl-verdict rebind-verified: the FULL gate is RED on the new tip $newhead (rc=$gate_rc) — refusing to write a REBOUND. A byte-identical diff on a new base can still break (semantic conflict); the red gate is that check firing."
+          printf '%s\n' "$gate_out" | tail -n 20 | sed 's/^/  | /'
+        } >&2
+        return 2
+      fi
+      echo "pawl-verdict rebind-verified: gate GREEN on the new tip." >&2
+      ;;
+  esac
+
+  # BOTH conditions hold — write the DISTINCT REBOUND verdict binding the new tip.
+  # Preserve the prior review's refuters/mode/author_context/attempt VERBATIM (the
+  # review did not re-run), flip disposition to REBOUND, set the new head + timestamp,
+  # and record the three lineage fields. rebound_from_verdict points at the prior
+  # verdict PATH so `check` can re-verify the lineage root was CONFIRMED.
+  mkdir -p "$VDIR"
+  local out="$VDIR/$bead.json" tmp
+  tmp="$(mktemp "$VDIR/.$bead.XXXXXX")"
+
+  # LINEAGE PRESERVATION (critical): the common case defaults the prior verdict to this
+  # bead's OWN file ($VDIR/$bead.json), which is ALSO $out — overwriting it with the
+  # REBOUND would make rebound_from_verdict point at a file that is now REBOUND, not
+  # CONFIRMED, and `check`'s lineage gate (which re-reads it and requires CONFIRMED)
+  # would refuse. So when prior IS out, ARCHIVE the original CONFIRMED verdict to a
+  # distinct, auditable path FIRST and point the lineage there. Compare physical paths
+  # (macOS /tmp vs /private/tmp). An explicit --from-verdict at a distinct path is used
+  # as-is (no archive needed — it survives).
+  local lineage_ref="$prior"
+  local prior_phys out_phys
+  prior_phys="$(cd "$(dirname "$prior")" 2>/dev/null && printf '%s/%s' "$(pwd -P)" "$(basename "$prior")")"
+  out_phys="$(cd "$(dirname "$out")" 2>/dev/null && printf '%s/%s' "$(pwd -P)" "$(basename "$out")")"
+  if [[ -n "$prior_phys" && "$prior_phys" == "$out_phys" ]]; then
+    local archive="$VDIR/$bead.confirmed-${prior_sha:0:12}.json"
+    if ! cp "$prior" "$archive" 2>/dev/null; then
+      rm -f "$tmp"; die "rebind-verified: could not archive the prior CONFIRMED verdict to $archive — refusing (lineage would be lost)"
+    fi
+    lineage_ref="$archive"
+    echo "pawl-verdict rebind-verified: archived the prior CONFIRMED verdict to $archive (lineage root preserved for check)" >&2
+  fi
+
+  jq --arg h "$newhead" \
+     --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     --arg from "$lineage_ref" \
+     --arg fromsha "$prior_sha" \
+     --arg proof "$new_pid" \
+     '.disposition = "REBOUND"
+      | .head_sha = $h
+      | .generated_at = $ts
+      | .rebound_from_verdict = $from
+      | .rebound_from_sha = $fromsha
+      | .patch_id_proof = $proof' \
+     "$prior" > "$tmp" || { rm -f "$tmp"; die "rebind-verified: failed to render REBOUND verdict json"; }
+  mv "$tmp" "$out"
+  echo "pawl-verdict: wrote REBOUND $out -> head ${newhead:0:12} (lineage: ${lineage_ref} @ ${prior_sha:0:12}, patch-id $new_pid)" >&2
+
+  # HIJACK GUARD (age-sylz): as with write, refuse to emit/bind the edge if a
+  # concurrent lane moved a shared worktree HEAD out from under this run.
+  if ! _assert_review_head_unmoved; then
+    return 1
+  fi
+  # LIMITATION (age-rk3r.18): REBOUND is honored by pawl-verdict check (the reconcile/merge
+  # path — .9's stated acceptance); the portable `ao verify init` pre-push gate + CI
+  # (cli/cmd/ao/verify_prepush.go, scripts/check-tip-verdict-ci.sh) honor only CONFIRMED
+  # today, so this committed REBOUND edge is safely REFUSED there (fail-closed) until
+  # age-rk3r.18 wires Go-side REBOUND lineage+proof re-validation.
+  # Re-fire the verdict sensor for the REBOUND edge (CHECKED + auto-bind, same as write).
+  emit_verdict_edge_checked "$out" "$bead" "REBOUND"
+}
+
 case "$cmd" in
   check) do_check "$@" ;;
   write) do_write "$@" ;;
   rebind) do_rebind "$@" ;;
+  rebind-verified) do_rebind_verified "$@" ;;
   -h|--help|"") cat >&2 <<'H'
 Usage:
   pawl-verdict.sh check <bead-id> <pr> [--dir D] [--head CURRENT_SHA]
@@ -1093,6 +1539,24 @@ Usage:
   pawl-verdict.sh rebind <bead-id> <pr> --head NEWSHA [--dir D]
       Re-stamp an existing CONFIRMED verdict onto a new head (refuters preserved) — the
       deterministic clean-land step after the verdict's ledger edge is committed.
+  pawl-verdict.sh rebind-verified <bead-id> <pr> --head NEWSHA [--from-verdict PATH] [--dir D] [--repo-root R]
+      The SAFE, patch-id-gated re-bind: authorize a rebase that is the SAME change WITHOUT a
+      full re-review by writing a DISTINCT REBOUND verdict (lineage: rebound_from_verdict /
+      rebound_from_sha / patch_id_proof). Permitted ONLY when ALL THREE hold: (a) git patch-id
+      --stable of the reviewed diff EQUALS the new tip's (the rebase-stable key), AND (b) the
+      +/- content lines are byte-identical WHITESPACE-SIGNIFICANT (patch-id is whitespace-
+      INSENSITIVE, so (a) alone would pass a whitespace-only change like Python indentation),
+      AND (c) the full local gate is GREEN on the new tip (ao gate check --scope head; override
+      via PAWL_REBIND_GATE_CMD).
+      CAVEAT: a matching patch-id proves the change is rebase-stable but is WHITESPACE-
+      INSENSITIVE, so it does NOT prove the diff bytes are unchanged, and even byte-identical
+      content on a new base can still break (semantic conflict). REBOUND requires (a) the same
+      rebase-stable patch-id AND (b) byte-identical +/- content lines (whitespace-significant)
+      AND (c) a green full gate on the new tip. `check` authorizes a REBOUND only when its
+      lineage is a FULLY-VALID CONFIRMED (it re-runs the same roster/fresh-context/evidence/
+      floor gates against the lineage), its patch_id_proof matches the tip, and the tip's
+      content bytes match — never forgeable, and no easier to authorize than the CONFIRMED it
+      inherits.
 
 Families normalize to the roster: claude(fable/anthropic) | gpt(codex/openai) | gemini(agy/google).
 DIVERSITY IS MODE-BASED:

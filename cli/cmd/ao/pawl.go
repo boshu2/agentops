@@ -353,3 +353,40 @@ func extractPawlBundle() (string, func(), error) {
 	}
 	return dir, cleanup, nil
 }
+
+// defaultPawlVerdictScript is the verdict writer/checker (sibling of pawl-review.sh),
+// the script that owns the `rebind-verified` verb `ao verify --rebind` forwards to.
+const defaultPawlVerdictScript = "scripts/pawl-verdict.sh"
+
+// resolvePawlVerdictScript resolves scripts/pawl-verdict.sh under the SAME trust split
+// runPawlReview uses: the LIVE repo script when the running ao binary physically lives
+// inside a genuine AgentOps checkout (dogfood — a script edit is exercised immediately),
+// else the EMBEDDED bundle extracted to a temp dir against the user's own repo (zero
+// config, never executing a script from the untrusted repo under review). Returns the
+// script path, the working dir (the repo being operated on), the extra env overlay
+// (nil in-checkout; the sanitized cold seams on the stranger path), and a cleanup func.
+func resolvePawlVerdictScript() (script, dir string, extraEnv []string, cleanup func(), err error) {
+	cleanup = func() {}
+	if repoRoot, rerr := resolveAgentsRepoRoot(); rerr == nil && aoBinaryInside(repoRoot) {
+		script = filepath.Join(repoRoot, defaultPawlVerdictScript)
+		if _, statErr := os.Stat(script); statErr != nil {
+			return "", "", nil, cleanup, fmt.Errorf("pawl-verdict script not found at %s: %w", script, statErr)
+		}
+		return script, repoRoot, nil, cleanup, nil
+	}
+	// Stranger path: extract the embedded bundle and run against the user's own repo.
+	startDir, derr := resolveProjectDir()
+	if derr != nil {
+		return "", "", nil, cleanup, derr
+	}
+	userRoot, terr := gitToplevel(startDir)
+	if terr != nil {
+		return "", "", nil, cleanup, fmt.Errorf("ao verify --rebind must run inside a git repository: %w", terr)
+	}
+	cacheDir, bcleanup, xerr := extractPawlBundle()
+	if xerr != nil {
+		return "", "", nil, cleanup, fmt.Errorf("preparing embedded pawl scripts: %w", xerr)
+	}
+	script = filepath.Join(cacheDir, "scripts", filepath.Base(defaultPawlVerdictScript))
+	return script, userRoot, pawlReviewColdEnv(userRoot), bcleanup, nil
+}

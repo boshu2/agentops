@@ -291,6 +291,63 @@ func TestEmitVerdict_ConsumesRealProducerArtifact(t *testing.T) {
 	}
 }
 
+// TestEmitVerdict_ReboundArtifact_RoundTripsChain is the age-rk3r.9 acceptance
+// proof: a REBOUND verdict edge round-trips `ao provenance verify` clean (the
+// chain stays intact). The fixture is the REAL on-disk shape the shell writer
+// `scripts/pawl-verdict.sh rebind-verified` emits (disposition REBOUND + the
+// three lineage fields rebound_from_verdict/rebound_from_sha/patch_id_proof),
+// per the fixture-fidelity rule — not a hand-built struct. The sensor must emit a
+// schema-valid, hash-chained edge for a REBOUND exactly as it does for a
+// CONFIRMED (the disposition is carried in evidence_ref), so the provenance chain
+// never breaks when a byte-identical rebase is re-bound instead of re-reviewed.
+func TestEmitVerdict_ReboundArtifact_RoundTripsChain(t *testing.T) {
+	fixture := filepath.Join("..", "..", "..", "tests", "fixtures", "provenance", "pawl-verdict-rebound-sample.json")
+
+	v, err := extractVerdict(fixture)
+	if err != nil {
+		t.Fatalf("extractVerdict on real REBOUND artifact: %v", err)
+	}
+	if v.Disposition != "REBOUND" {
+		t.Errorf("Disposition = %q, want REBOUND", v.Disposition)
+	}
+	if v.HeadSHA != "3fb96d7908a9cf81cd51acb9a2b1c1991f8a7449" {
+		t.Errorf("HeadSHA = %q, want the fixture's head_sha", v.HeadSHA)
+	}
+
+	ledger := filepath.Join(t.TempDir(), "ledger.jsonl")
+	store := provenancegraph.NewStore(ledger)
+	edge := buildVerdictCommitEdge(v)
+	edge.TS = "2026-07-02T00:00:00Z"
+
+	res, err := store.Append(edge)
+	if err != nil {
+		t.Fatalf("append REBOUND edge: %v", err)
+	}
+	if res.Skipped {
+		t.Error("first emit of the REBOUND artifact should not be skipped")
+	}
+	// The disposition rides in evidence_ref so downstream consumers can see the edge
+	// is a REBOUND, not a fresh CONFIRMED.
+	if !strings.Contains(res.Edge.EvidenceRef, "disposition=REBOUND") {
+		t.Errorf("edge evidence_ref = %q, want it to carry disposition=REBOUND", res.Edge.EvidenceRef)
+	}
+	if res.Edge.ToID != v.HeadSHA {
+		t.Errorf("edge to_id = %q, want full head_sha %q", res.Edge.ToID, v.HeadSHA)
+	}
+
+	// The chain verifies clean — the REBOUND edge round-trips provenance verify.
+	vr, err := store.VerifyFile()
+	if err != nil {
+		t.Fatalf("verify after appending REBOUND edge: %v", err)
+	}
+	if !vr.Pass {
+		t.Fatalf("chain not intact after REBOUND append: %s (line %d)", vr.Message, vr.FirstBrokenLine)
+	}
+	if vr.RecordCount != 1 {
+		t.Errorf("RecordCount = %d, want 1", vr.RecordCount)
+	}
+}
+
 // TestEmitVerdict_LedgerGrowsAndStaysIntact is the L2 scenario proof for
 // ag-cm8nd: emitting verdict→commit edges appends schema-valid, hash-chained
 // rows to the ledger, the chain verifies, and re-emitting is idempotent.

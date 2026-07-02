@@ -228,6 +228,97 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   grep -q 'cosmetic tail nit' "$REPO/.agents/pawl-evidence/age-rev-test-pawl-review.txt"
 }
 
+# --- age-rk3r.9: converge lineage DUAL KEY (patch-id + whitespace-significant content sig) ---
+
+# py_setup: replace the default README change with an UNINDENTED Python statement change on a
+# fresh commit, so a later reindent produces the SAME patch-id (patch-id is whitespace-
+# insensitive) but DIFFERENT content bytes. Prints nothing; resets HEAD_SHA/VFILE targets.
+py_setup() {
+  git -C "$REPO" reset --quiet --hard HEAD~1                       # drop the default README change
+  printf 'def g():\n    return 1\n' > "$REPO/a.py"; git -C "$REPO" add a.py
+  git -C "$REPO" commit --quiet -m "base py (age-rev-test)"
+  printf 'def g():\n    return 1\nx = 2\n' > "$REPO/a.py"; git -C "$REPO" add a.py   # UNINDENTED
+  git -C "$REPO" commit --quiet -m "feat(x): add x unindented (age-rev-test)" --date="2020-01-01T00:00:00"
+}
+
+@test "pawl-review: --converge REFUSES a whitespace-only change (same patch-id, different content) — no stale-lineage certify (age-rk3r.9)" {
+  py_setup
+  # Record adversarial lineage on the UNINDENTED change (full flow: adversarial REFUTES tail
+  # but records lineage, then it exists for the converge attempt).
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 3 ]
+  [ -f "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" ]
+  # the lineage stores BOTH keys.
+  grep -q '"diff_hash"' "$REPO/.agents/pawl-review/age-rev-test.adversarial.json"
+  grep -q '"content_sig"' "$REPO/.agents/pawl-review/age-rev-test.adversarial.json"
+
+  # REBASE to an INDENTED same-patch-id change (semantically load-bearing whitespace).
+  printf 'def g():\n    return 1\n    x = 2\n' > "$REPO/a.py"; git -C "$REPO" add a.py
+  git -C "$REPO" commit --quiet --amend -m "feat(x): add x INDENTED (age-rev-test)" --date="2021-06-06T12:00:00"
+  # sanity: the patch-id is UNCHANGED (this is the trap the dual key must catch).
+  local pid_old pid_new
+  pid_old="$(sed -n 's/.*"diff_hash":"\([a-f0-9]*\)".*/\1/p' "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" | head -1)"
+  pid_new="$(git -C "$REPO" show HEAD --no-color --no-ext-diff | git patch-id --stable | awk 'NR==1{print $1}')"
+  [ "$pid_old" = "$pid_new" ]
+
+  rm -f "$VFILE"
+  # --converge must REFUSE (content bytes changed) — NOT certify on the stale lineage.
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"CONTENT BYTES changed"* ]]
+  [ ! -f "$VFILE" ]                                   # no stale-lineage CONFIRMED written
+}
+
+@test "pawl-review: --converge REUSES lineage on a TRUE byte-identical rebase (same patch-id AND content) — the positive control (age-rk3r.9)" {
+  py_setup
+  # Record adversarial lineage on the unindented change.
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 3 ]
+  [ -f "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" ]
+
+  # A TRUE byte-identical rebase: re-commit the SAME content with a new date/message only.
+  printf 'def g():\n    return 1\nx = 2\n' > "$REPO/a.py"; git -C "$REPO" add a.py
+  git -C "$REPO" commit --quiet --amend -m "feat(x): add x unindented REWORDED (age-rev-test)" --date="2021-06-06T12:00:00"
+  rm -f "$VFILE"
+  # --converge REUSES the lineage (both keys match) and CONFIRMS.
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 0 ]
+  [ -f "$VFILE" ]
+  grep -q '"disposition": "CONFIRMED"' "$VFILE"
+}
+
+@test "pawl-review: --converge REFUSES a no-final-newline change (same patch-id, different bytes) — the shared-lib denylist closes the allowlist gap (age-rk3r.9)" {
+  # The 4th byte-category the OLD allowlist content_sig leaked (after whitespace/mode/binary):
+  # git's `\ No newline at end of file` marker. Now that pawl-review's --converge content_sig
+  # comes from the SHARED scripts/lib/diff-identity.sh (the byte-exact denylist), a tip that
+  # drops the final newline (same patch-id, same +/- text) must FAIL the lineage → full review.
+  git -C "$REPO" reset --quiet --hard HEAD~1                       # drop the default README change
+  printf 'data\n' > "$REPO/a.txt"; git -C "$REPO" add a.txt
+  git -C "$REPO" commit --quiet -m "base txt (age-rev-test)"
+  printf 'data\nX\n' > "$REPO/a.txt"; git -C "$REPO" add a.txt     # newline-TERMINATED
+  git -C "$REPO" commit --quiet -m "feat(x): add X (newline-terminated)" --date="2020-01-01T00:00:00"
+
+  # Record adversarial lineage on the newline-terminated change.
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head
+  [ "$status" -eq 3 ]
+  [ -f "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" ]
+
+  # Amend to DROP the final newline — same +/- text, SAME patch-id, different diff bytes.
+  printf 'data\nX' > "$REPO/a.txt"; git -C "$REPO" add a.txt
+  git -C "$REPO" commit --quiet --amend -m "feat(x): add X (no final newline)" --date="2021-06-06T12:00:00"
+  # sanity: the patch-id is UNCHANGED (the trap the byte-exact content_sig must catch).
+  local pid_old pid_new
+  pid_old="$(sed -n 's/.*"diff_hash":"\([a-f0-9]*\)".*/\1/p' "$REPO/.agents/pawl-review/age-rev-test.adversarial.json" | head -1)"
+  pid_new="$(git -C "$REPO" show HEAD --no-color --no-ext-diff | git patch-id --stable | awk 'NR==1{print $1}')"
+  [ "$pid_old" = "$pid_new" ]
+
+  rm -f "$VFILE"
+  CODEX_CONVERGE_AWARE=1 run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope head --converge
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"CONTENT BYTES changed"* ]]
+  [ ! -f "$VFILE" ]                                   # no stale-lineage CONFIRMED written
+}
+
 # --- ml8.7: route the default pawl through the standing service (opus+codex duel) ---
 
 @test "pawl-review: routes; a CONFIRMED route whose verdict PASSES pawl-verdict.sh check exits 0 (ml8.7)" {

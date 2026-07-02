@@ -4777,12 +4777,17 @@
         "--config",
         "--context",
         "--converge",
+        "--dir",
         "--dry-run",
         "--export-env",
+        "--from-verdict",
+        "--head",
         "--json",
         "--output",
+        "--rebind",
         "--scope",
         "--show-config",
+        "--stable",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
