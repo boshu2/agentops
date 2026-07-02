@@ -224,6 +224,7 @@ Bridge / framing docs:
 - [vs Superpowers](comparisons/vs-superpowers.md) — AgentOps vs Superpowers plugin
 - [vs Claude-Flow](comparisons/vs-claude-flow.md) — AgentOps vs Claude-Flow orchestration
 - [vs Compound Engineer](comparisons/vs-compound-engineer.md) — AgentOps vs Compound Engineering plugin
+- [vs hosted AI code review](comparisons/vs-hosted-code-review.md) — AgentOps vs CodeRabbit, Qodo, and Copilot code review
 - [vs Tons-of-Skills](comparisons/vs-tons-of-skills.md) — AgentOps vs `jeremylongshore/claude-code-plugins-plus-skills` (volume marketplace lane)
 - [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
