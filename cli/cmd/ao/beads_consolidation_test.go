@@ -1,10 +1,10 @@
 // Tests for the beads-* skill-cluster consolidation (ag-ez7y6): the four
 // beads skills (beads, beads-br, beads-bv, beads-workflow) collapse to the
-// surviving set {beads-br, beads-bv, beads-workflow} with the legacy `beads`
-// umbrella retired --into beads-br. These are L2 structural-invariant tests:
-// they read the real repo files (skills tree + disposition ledger) so a
-// regression that re-adds the retired skill, drops the folded doctrine, or
-// leaves the ledger dirty fails the build.
+// surviving set {beads-br, beads-bv}, with the legacy `beads` umbrella and
+// the `beads-workflow` conversion doctrine both merged into beads-br. These
+// are L2 structural-invariant tests: they read the real repo files (skills
+// tree + disposition ledger) so a regression that re-adds a retired skill,
+// drops the folded doctrine, or leaves the ledger dirty fails the build.
 
 // practices: [pragmatic-programmer]
 package main
@@ -18,7 +18,7 @@ import (
 )
 
 // beadsConsolidationSurvivors is the post-consolidation surviving set.
-var beadsConsolidationSurvivors = []string{"beads-br", "beads-bv", "beads-workflow"}
+var beadsConsolidationSurvivors = []string{"beads-br", "beads-bv"}
 
 // findBeadsRepoRoot resolves the repo root by a stable structural marker that
 // only co-exists at the root: skills/ AND docs/contracts/. The shared
@@ -88,6 +88,51 @@ func TestBeadsConsolidation_DoctrineFoldedIntoBR(t *testing.T) {
 	for capability, token := range required {
 		if !strings.Contains(body, token) {
 			t.Errorf("beads-br SKILL.md lost folded capability %q (token %q not found)", capability, token)
+		}
+	}
+}
+
+// TestBeadsConsolidation_WorkflowFoldedIntoBR asserts the plan→beads
+// conversion doctrine that lived ONLY in `beads-workflow` survives in
+// beads-br — the second half of the 4→2 consolidation (ag-ez7y6). The
+// workflow skill's distinct value was the conversion/shaping doctrine (THE
+// EXACT PROMPT, polishing protocol, quality checklist, readiness criteria,
+// bd→br doc-migration notes, lifecycle cards) plus its reference files
+// (PROMPTS.md, BEAD-ANATOMY.md) — not the br command surface beads-br
+// already had. Also asserts the absorbed-trigger note so `/beads-workflow`
+// requests route to beads-br.
+func TestBeadsConsolidation_WorkflowFoldedIntoBR(t *testing.T) {
+	root := findBeadsRepoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "skills", "beads-br", "SKILL.md"))
+	if err != nil {
+		t.Fatalf("read beads-br SKILL.md: %v", err)
+	}
+	body := strings.ToLower(string(data))
+	// Each token marks a folded conversion-doctrine capability. Tokens are
+	// lower-cased and chosen to be robust to phrasing.
+	required := map[string]string{
+		"absorbed trigger routes /beads-workflow here": "absorbed from /beads-workflow",
+		"the exact conversion prompt":                  "the exact prompt",
+		"exact prompt verbatim body":                   "comprehensive and granular set of beads",
+		"polishing protocol":                           "polishing protocol",
+		"quality checklist":                            "self-contained",
+		"when beads are ready":                         "steady-state",
+		"bd→br doc migration":                          "br sync --flush-only",
+		"lifecycle: claim-verify before dispatch":      "claim-verify",
+		"lifecycle: merged-before-close":               "merged to trunk",
+		"lifecycle: residual routed to successor":      "residual",
+		"lifecycle: append notes never replace":        "append",
+		"lifecycle: fuzzy intent same-turn bead":       "same turn",
+	}
+	for capability, token := range required {
+		if !strings.Contains(body, token) {
+			t.Errorf("beads-br SKILL.md lost folded capability %q (token %q not found)", capability, token)
+		}
+	}
+	// The moved reference files must live under beads-br now.
+	for _, ref := range []string{"PROMPTS.md", "BEAD-ANATOMY.md"} {
+		if _, err := os.Stat(filepath.Join(root, "skills", "beads-br", "references", ref)); err != nil {
+			t.Errorf("beads-br/references/%s missing after beads-workflow fold: %v", ref, err)
 		}
 	}
 }

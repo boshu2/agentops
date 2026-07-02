@@ -292,7 +292,7 @@ If you see an error for a command that is documented as planned, it does not exi
 | **CLI Dependencies** | `br` is on your PATH (the beads_rust issue tracker, invoked `BEADS_DIR="$(ao beads dir)" br`). | Install `br` (beads_rust); see AGENTS.md for the tracker setup. |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
-| **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |
+| **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/curate --mode=forge` to extract learnings; empty is normal early on. |
 | **Codex CLI** | The `codex` binary is on your PATH (optional, used for `--mixed` validation modes). | Install Codex CLI and ensure it is on PATH. |
 
 ### Reading the output

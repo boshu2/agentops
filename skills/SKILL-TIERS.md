@@ -46,8 +46,8 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-atm |
 | **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | (none active) |
-| **meta** | Internal | Skills about skills | heal-skill, skill-auditor, skill-builder |
-| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, corpus-flywheel skills, no measured uplift) | evolve, autodev, acfs, compile, forge, flywheel, curate, operationalize, inject |
+| **meta** | Internal | Skills about skills | heal-skill, skill-builder |
+| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, corpus-flywheel skills, no measured uplift) | evolve, compile, flywheel, curate, operationalize |
 
 ## The Three Categories
 
@@ -122,16 +122,16 @@ POST-SHIP                             ONBOARDING / STATUS
 Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. Next session injects the best. This is the bookkeeping layer that makes sessions compound instead of starting from scratch.
 
 ```
-┌─────────┐     ┌─────────┐     ┌──────────┐     ┌──────────┐
-│post-mortem│──►│  forge  │────►│ compile  │────►│  inject  │
-└─────────┘     └─────────┘     └──────────┘     └──────────┘
+┌─────────┐     ┌─────────┐     ┌──────────┐     ┌───────────┐
+│post-mortem│──►│ curate  │────►│ compile  │────►│ ao lookup │
+└─────────┘     └─────────┘     └──────────┘     └───────────┘
      ▲                                                 │
      │              ┌──────────┐                       │
      └──────────────│ flywheel │◄──────────────────────┘
                     └──────────┘
 
-User-facing: /compile (query + grow), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
-Background:  inject, forge, flywheel
+User-facing: /curate (miner), /compile (query + grow), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
+Background:  flywheel (health monitor)
 CLI:         ao lookup, ao extract, ao forge, ao maturity
 ```
 
@@ -259,7 +259,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (65)
+### User-Facing Skills (60)
 
 **Judgment:**
 
@@ -287,7 +287,6 @@ These are how skills chain in practice:
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
 | **evolve** | experimental | Autonomous fitness-scored improvement loop |
 | **eval-outcomes** | execution | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
-| **autodev** | experimental | PROGRAM.md autonomous development contract setup and validation |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |
 | **refactor** | execution | Safe, verified refactoring with regression testing at each step |
@@ -334,7 +333,6 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **converter** | cross-vendor | Cross-platform skill converter (Codex, Cursor) |
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
-| **skill-auditor** | meta | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
 | **automation-shape-routing** | meta | Front door for building automation: route to Workflow vs NTM swarm vs plain skill, then hand off |
 | **workflow-builder** | meta | Scaffold a new Claude Workflow script (.claude/workflows/*.js) from the operating-loop.js template |
@@ -345,12 +343,10 @@ These are how skills chain in practice:
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **acfs** | experimental | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
 | **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
 | **beads-br** | execution | Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. |
 | **beads-bv** | execution | Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. |
-| **beads-workflow** | execution | Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. |
 | **cass** | execution | Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. |
 | **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
@@ -359,7 +355,6 @@ These are how skills chain in practice:
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
-| **continuity-loop** | execution | Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step. |
 | **operationalize** | experimental | Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads. |
 | **reality-check** | execution | Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent. |
 | **toil-mining** | execution | Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand. |
@@ -367,7 +362,7 @@ These are how skills chain in practice:
 | **behavior-first-planning** | execution | 'Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".' |
 | **reverse-engineer** | execution | 'Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".' |
 
-### Internal Skills (5) — `metadata.internal: true`
+### Internal Skills (3) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -375,8 +370,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|------|----------|---------|
 | standards | library | Judgment | Coding standards (loaded by /validate, /implement, /doc) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
-| inject | experimental | Knowledge | Load knowledge at session start (hook-triggered) |
-| forge | experimental | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |
 | flywheel | experimental | Knowledge | Knowledge health monitoring |
 
 ---
@@ -399,10 +392,8 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **crank** | swarm, validate, implement, beads-br, post-mortem | required, required, required, optional, optional |
 | doc | standards | required |
 | flywheel | - | - |
-| forge | - | - |
 | handoff | - | - |
 | **implement** | beads-br, standards | optional, required |
-| inject | - | - |
 | **plan** | research, beads-br, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
@@ -411,11 +402,10 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **discovery** | research, plan, pre-mortem, shared | research+plan+pre-mortem required, shared optional |
 | **rpi** | discovery, crank, validate | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
-| **autodev** | evolve, rpi | required |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
 | **recover** | - | - (standalone) |
-| research | inject | optional |
+| research | - | - |
 | standards | - | - |
 | **goals** | - | - (reads GOALS.yaml directly) |
 | **status** | - | - (all CLIs optional) |

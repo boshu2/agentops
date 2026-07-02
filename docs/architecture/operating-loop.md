@@ -112,7 +112,7 @@ Wave validity is a hard gate, applied row by row:
 | Owner per slice | One agent or one human per slice — no joint ownership |
 | Discard path per slice | Every slice has a rollback or drop-and-re-plan exit |
 
-Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; `/crank`, `/swarm`, `/autodev` execute it.
+Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; `/crank`, `/swarm`, `/evolve` execute it.
 
 ### 6. Close the bead by proving its acceptance
 
@@ -125,7 +125,7 @@ example to the test, gate, or eval that proved it.
 
 ### 7. Capture evidence and learning, then ratchet
 
-Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary). The corpus-flywheel skills `/forge`, `/flywheel`, and `/compile` are demoted to the experimental tier — kept and still invokable, but no longer part of the primary ratchet.
+Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary). The corpus-flywheel skills `/curate --mode=forge`, `/flywheel`, and `/compile` are demoted to the experimental tier — kept and still invokable, but no longer part of the primary ratchet.
 
 ### The loop closes here: re-plan on evidence, not just on failure
 
@@ -156,7 +156,7 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 | Slice + wave plan | `plan` | Slice list + wave grouping + ownership map |
 | Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
-| Wave execution | `crank`, `swarm`, `autodev` | Parallel slices with explicit ownership |
+| Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
 | Slice validation | `validate`, `council`, `pre-land-refuters` | Per-slice acceptance proof |
 | Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
 | Capture | `post-mortem`, `forge` | Evidence + promoted learnings |

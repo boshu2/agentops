@@ -50,7 +50,7 @@ What used to be hook responsibilities are now explicit, pulled surfaces:
 | Startup context | `ao knowledge brief` / `ao context assemble` (pulled, not injected on every event) |
 | Validation gates | CI (`.github/workflows/validate.yml`) + skill-level checks run in-band |
 | Code quality | `cd cli && make test`, `go vet`, complexity budget — enforced by CI |
-| Flywheel closure | `ao flywheel close-loop` / `/retro` / `/forge` at session close |
+| Flywheel closure | `ao flywheel close-loop` / `/retro` / `/curate --mode=forge` at session close |
 | Execution discipline | Execution-packet `next_action` + skill instructions |
 
 Both lanes run **in session** because people use Codex or they use Claude
@@ -68,7 +68,7 @@ deleted (see [AgentOps 3.0 north star](3.0.md)).
 | Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
 | Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents) — not an AgentOps surface |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
-| Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
+| Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/curate --mode=forge` |
 | Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |
 | Substrate | Retrieval, provenance, packetization, and promotion machinery | `.agents/packets/`, `.agents/topics/`, `.agents/briefings/`, `.agents/findings/`, builder logic |
 
@@ -80,7 +80,7 @@ explicit, pulled surfaces rather than automatic lifecycle scripts:
 - **Validation gates** — CI (`.github/workflows/validate.yml`) is the
   authoritative gate; skills run their own checks in-band before claiming work
   complete.
-- **Ratchet checkpoints** — `ao flywheel close-loop` / `/retro` / `/forge`
+- **Ratchet checkpoints** — `ao flywheel close-loop` / `/retro` / `/curate --mode=forge`
   persist learnings at session close.
 - **Execution discipline** — execution-packet `next_action` and skill
   instructions keep the agent producing artifacts instead of stalling.

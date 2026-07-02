@@ -73,7 +73,7 @@ pass() {
 }
 
 # Known skill names for slash-command detection (pipe-separated)
-SKILL_NAMES="research|plan|pre-mortem|implement|crank|swarm|council|vibe|post-mortem|retro|evolve|release|status|goals|ratchet|rpi|brainstorm|bug-hunt|doc|forge|inject|knowledge|learn|extract|flywheel|handoff|recover|trace|provenance|beads|quickstart|readme|security|complexity|codex-team|pr-research|pr-plan|pr-implement|pr-validate|pr-prep|pr-retro|oss-docs|openai-docs|heal-skill|converter|update|product|reverse-engineer-rpi|standards|shared|using-agentops"
+SKILL_NAMES="research|plan|pre-mortem|implement|crank|swarm|council|vibe|post-mortem|retro|evolve|release|status|goals|ratchet|rpi|brainstorm|bug-hunt|doc|knowledge|learn|extract|flywheel|handoff|recover|trace|provenance|beads|quickstart|readme|security|complexity|codex-team|pr-research|pr-plan|pr-implement|pr-validate|pr-prep|pr-retro|oss-docs|openai-docs|heal-skill|converter|update|product|reverse-engineer-rpi|standards|shared|using-agentops"
 
 # Claude-only primitives (should not appear in main execution flow)
 CLAUDE_PRIMITIVES="TeamCreate|SendMessage|EnterPlanMode|ExitPlanMode|EnterWorktree"

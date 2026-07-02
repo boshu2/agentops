@@ -126,6 +126,59 @@ cycle hands off. The seal creates the rollback commit and records the
 | `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /security, /perf, /refactor). Falls back to manual scanning. |
 | `--mode=burst\|loop` | burst | Operator-loop; STOP refused. [loop-mode.md](references/loop-mode.md). |
 
+## Managing the PROGRAM.md / AUTODEV.md contract (absorbed from /autodev)
+
+Evolve also fires for the folded-in use-cases of the retired `/autodev` skill:
+"manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick
+boundaries", PROGRAM.md repair. The contract is the config/intent layer the
+loop reads each cycle — NOT a loop itself
+([vocabulary](../domain/references/autodev.md)). The **`ao autodev` CLI
+outlives the retired skill** and remains the contract surface; the contract
+spec is [docs/contracts/autodev-program.md](../../docs/contracts/autodev-program.md).
+Step 0 below *consumes* a valid contract each run; this section is the
+create/validate/repair surface for it — nothing here runs the loop.
+
+**Detect and validate the contract** (`PROGRAM.md` takes precedence; treat
+`AUTODEV.md` as the compatibility alias):
+
+```bash
+if [ -f PROGRAM.md ]; then PROGRAM_PATH=PROGRAM.md
+elif [ -f AUTODEV.md ]; then PROGRAM_PATH=AUTODEV.md
+else PROGRAM_PATH=; fi
+ao autodev validate --json ${PROGRAM_PATH:+--file "$PROGRAM_PATH"}  # validate before use
+ao autodev init "<objective>"   # only when no contract exists and setup was requested
+```
+
+Infer the `init` objective from the user request or repo context; ask only when
+inventing it would make the contract misleading.
+
+**Repair validation failures.** When the user asked to create or fix the
+contract, patch the missing required sections and rerun
+`ao autodev validate --json`:
+
+| Required section | Repair guidance |
+|---|---|
+| `Objective` | One sentence, inferred from request/repo purpose — never invent a misleading one |
+| `Mutable Scope` / `Immutable Scope` | Prefer narrow mutable scope; work crossing immutable scope ⇒ create/update a bead, never silently widen the contract |
+| `Experiment Unit` | The bounded unit one cycle may attempt |
+| `Validation Commands` | Concrete runnable commands — Step 5 runs them de-duplicated after the repo bundle |
+| `Decision Policy` | Ordered keep/revert rules — Step 5's first keep/revert rule set |
+| `Escalation Rules` | When to stop and hand a decision to the operator |
+| `Stop Conditions` | Per-cycle done criteria — main tests green alone never marks a cycle successful |
+
+**Routing** — when asked whether contract work "is evolve":
+
+| Intent | Action |
+|--------|--------|
+| define or repair the repo-local autonomous policy | this section + `ao autodev` |
+| run the repeated autonomous improvement loop | `/evolve` (the rest of this skill) |
+| run one bounded lifecycle | a single `/rpi` turn |
+
+Executable specs: [references/autodev.feature](references/autodev.feature)
+(contract-bounded loop, contract management ≠ the loop, loop discipline under
+autonomy) and [references/autodev-cli.feature](references/autodev-cli.feature)
+(`ao autodev {init,validate,show}` behavior, linked to `cli/cmd/ao` tests).
+
 ## Execution Steps
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
@@ -170,7 +223,7 @@ Then load the repo-local autodev program contract when it exists — `PROGRAM.md
 
 - Locate `PROGRAM.md` and `AUTODEV.md`. `PROGRAM.md` takes precedence.
 - Read the resolved program before cycle recovery and cache `program_path`, `mutable_scope`, `immutable_scope`, `validation_commands`, `decision_policy`, and `stop_conditions` into session state.
-- If structurally invalid, stop or downgrade with an explicit warning before cycle 1.
+- If structurally invalid, stop or downgrade with an explicit warning before cycle 1 — and when the operator asked for contract setup or repair, fix it first via [Managing the PROGRAM.md / AUTODEV.md contract](#managing-the-programmd--autodevmd-contract-absorbed-from-autodev) above.
 - When a program contract exists, prefer work that lands wholly inside mutable scope. Do not silently widen scope around immutable files.
 
 Recover cycle number, generator streaks, and the last claimed work item from disk (survives context compaction). Initialize `CYCLE` from `cycle-history.jsonl`, recover `IDLE_STREAK`, `GENERATOR_EMPTY_STREAK`, `LAST_SELECTED_SOURCE`, and `CLAIMED_WORK_REF` from `session-state.json`.
@@ -487,6 +540,8 @@ See `references/cycle-history.md` for advanced troubleshooting.
 ## References
 
 - [references/evolve.feature](references/evolve.feature) — Executable spec: gated cycles, ladder, bounded slice, never-self-halt
+- [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, contract management ≠ the loop, loop-discipline-under-autonomy (soc-qk4b; absorbed from /autodev)
+- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: `ao autodev` CLI command behavior, linked to cmd tests (soc-jnfgi; absorbed from /autodev)
 - [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules + operator-shape carve-out

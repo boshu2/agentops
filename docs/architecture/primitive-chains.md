@@ -22,7 +22,7 @@ This document maps the live primitives to the chains they form.
 | Risk / prevention | confront what can fail | `/plan`, `/pre-mortem`, findings registry, planning rules, pre-mortem checks | Risk-first scoping and reusable failure prevention |
 | Execution | fresh-context implementation | `/crank`, `/swarm`, `/implement`, worktrees, beads waves | Parallel OODA loops with bounded scope and retries |
 | Validation | judgment before closure | `/vibe`, `/validation`, `/council`, task-validation gate | Detect defects and regressions before accepting completion |
-| Learning | extract and reinforce | `/post-mortem`, `/retro`, `/forge`, `ao flywheel`, `ao maturity` | Convert completed work into reusable knowledge |
+| Learning | extract and reinforce | `/post-mortem`, `/retro`, `/curate --mode=forge`, `ao flywheel`, `ao maturity` | Convert completed work into reusable knowledge |
 | Ratchet / provenance | lock progress | `ao ratchet`, commits, `.agents/ao/chain.jsonl` | Ensure accepted work becomes the new baseline |
 | Continuity | survive context loss | `/handoff`, `/recover`, phased manifests, session hooks, `.agents/rpi/` | Disk-backed continuity when sessions compact or die |
 
@@ -41,7 +41,7 @@ scope/risk    validated build   learn + next work
 |------|----------------|-----------------|
 | Discovery | `/brainstorm` -> `/research` -> `/plan` -> `/pre-mortem` | research artifacts, beads graph, execution packet, known risks |
 | Implementation | `/crank` -> `/swarm` -> `/implement` | closed issues, code, tests, ratchet checkpoints |
-| Validation | `/validation` -> `/vibe` -> `/post-mortem` -> `/retro` -> `/forge` | findings, learnings, promoted constraints, next-work queue |
+| Validation | `/validation` -> `/vibe` -> `/post-mortem` -> `/retro` -> `/curate --mode=forge` | findings, learnings, promoted constraints, next-work queue |
 
 `/rpi` is the orchestrator that routes across those phases. The historical acronym remains, but the current runtime shape is phased.
 
@@ -90,7 +90,7 @@ What happens:
 1. `/vibe` validates the produced system against code quality, architecture, security, and intent.
 2. `/post-mortem` captures what changed, what failed, and what should become reusable.
 3. `/retro` provides quick-capture learning when full wrap-up is unnecessary.
-4. `/forge` turns transcripts or markdown artifacts into structured knowledge.
+4. `/curate --mode=forge` turns transcripts or markdown artifacts into structured knowledge.
 5. `ao flywheel close-loop` records session closure so the next run starts with better retrieval.
 
 This is where the repo becomes more capable than it was before the session started.
@@ -142,7 +142,7 @@ AgentOps 3.0 ships no hooks. Every behavior a lifecycle hook used to fire automa
 | Term | Historical Meaning | Current Executable Meaning |
 |------|--------------------|----------------------------|
 | `RPI` | Research -> Plan -> Implement | Historical product name for the full lifecycle; the runtime now executes `Discovery -> Implementation -> Validation` |
-| `five commands` | `/research`, `/plan`, `/pre-mortem`, `/crank`, `/post-mortem` | Useful legacy teaching aid, but incomplete because it omits `/brainstorm`, `/validation`, `/vibe`, `/retro`, `/forge`, and continuity surfaces |
+| `five commands` | `/research`, `/plan`, `/pre-mortem`, `/crank`, `/post-mortem` | Useful legacy teaching aid, but incomplete because it omits `/brainstorm`, `/validation`, `/vibe`, `/retro`, `/curate --mode=forge`, and continuity surfaces |
 | `knowledge injection` | startup context loading | Now broader: `lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together |
 | `three hooks` | session start/end/stop | The runtime currently declares 7 hook event sections, with three lifecycle anchors plus prompt/tool/task guardrails |
 | `Research-Plan-Implement` | product slogan | Still appears in names and legacy docs, but phased execution and validation are first-class now |

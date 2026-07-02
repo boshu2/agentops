@@ -2,7 +2,7 @@
 
 > Single source of truth for "which skill do I need next?"
 > Linked from `skills/curate/SKILL.md`, `skills/compile/SKILL.md`,
-> `skills/inject/SKILL.md`, and their `skills-codex/` mirrors.
+> `skills/operationalize/SKILL.md`, and their `skills-codex/` mirrors.
 
 ## Decision-Tree Naming Convention
 
@@ -70,6 +70,6 @@ terminal, use compile. If you're going to bed, use dream.
 
 - `skills/curate/SKILL.md` — full harvest invocation (`--mode=harvest`)
 - `skills/compile/SKILL.md` — compile flags and runtimes
-- `skills/inject/SKILL.md` — activation surfaces (folded knowledge-activation)
+- `skills/operationalize/SKILL.md` — activation surfaces (absorbed from the retired inject / knowledge-activation)
 - `skills/dream/SKILL.md` — overnight compounding
 - `skills/status/SKILL.md` — first-time setup (folded `quickstart`)

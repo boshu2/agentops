@@ -71,9 +71,9 @@ table as the short contract when editing skills:
 | `persist_intent` | `/beads` | Self-contained br-backed bead with scenario or linked intent issue | `plan_slices` |
 | `plan_slices` | `/plan` | Slice validation plan with first failing proofs | `execute_slice` / `execute_wave` |
 | `execute_slice` | `/implement` | Commit-ready slice result and proof output | `validate_acceptance` |
-| `execute_wave` | `/crank`, `/swarm`, `/autodev` | Wave result, worker evidence, phase handoff | `validate_acceptance` |
+| `execute_wave` | `/crank`, `/swarm`, `/evolve` | Wave result, worker evidence, phase handoff | `validate_acceptance` |
 | `validate_acceptance` | `/validation`, `/validate`, `/vibe`, `/scenario`, `/goals` | Criterion verdicts and acceptance roll-up | `record_evidence` |
-| `record_evidence` | `/ratchet`, `/post-mortem`, `/retro`, `/forge` | Ratchet entry, learning disposition, residual gaps | `steer_goal` |
+| `record_evidence` | `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | Ratchet entry, learning disposition, residual gaps | `steer_goal` |
 | `steer_goal` | `/goals`, `/flywheel`, `/harvest`, `/dream` | Updated directive, learning, or next-work packet | `shape_intent` |
 
 Every non-trivial boundary artifact should name its inbound port, bounded

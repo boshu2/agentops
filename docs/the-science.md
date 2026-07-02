@@ -662,8 +662,8 @@ Every feature, every skill, every CLI command serves this inequality:
 
 | Feature | How It Helps |
 |---------|-------------|
-| `/forge` | Increases `I(t)` — more knowledge in |
-| `/inject` | Increases `σ` — better retrieval |
+| `/curate --mode=forge` | Increases `I(t)` — more knowledge in |
+| `ao lookup` | Increases `σ` — better retrieval |
 | `/vibe`, `/pre-mortem` | Filter bad work before it wastes cycles |
 | `ao feedback` | Improves `σ` via utility learning |
 | Tiering/pruning/re-indexing | Prevents limits-to-growth collapse in `σ` and `φ` |

@@ -436,7 +436,7 @@ if command -v ao &>/dev/null; then
   echo "Session closed, flywheel loop triggered"
 else
   # Learnings are already in .agents/learnings/ from Phase 2.
-  # Without ao CLI, grep-based search in /research and /inject
+  # Without ao CLI, grep-based search in /research
   # will find them directly — no copy to pending needed.
 
   # Feedback-loop fallback: update confidence for cited learnings

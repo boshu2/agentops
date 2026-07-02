@@ -78,6 +78,40 @@ Dream owns the knowledge compounding layer; `$evolve` owns the code compounding 
 | `--test-first` | on | Pass strict-quality defaults through to `$rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `$rpi` |
 
+## Managing the PROGRAM.md / AUTODEV.md contract (absorbed from $autodev)
+
+$evolve also fires for the folded-in use-cases of the retired `$autodev` skill:
+"manage PROGRAM.md/AUTODEV.md", "autodev loop rules", "evolve/factory tick
+boundaries", PROGRAM.md repair. The contract is the config/intent layer the
+loop reads each cycle — NOT a loop itself. The **`ao autodev` CLI outlives the
+retired skill** (contract spec: `docs/contracts/autodev-program.md`). Step 0
+consumes a valid contract; this section is the create/validate/repair surface.
+In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.
+
+Detect (`PROGRAM.md` takes precedence; `AUTODEV.md` is the compatibility alias),
+validate before use, init only when setup was requested:
+
+```bash
+if [ -f PROGRAM.md ]; then PROGRAM_PATH=PROGRAM.md
+elif [ -f AUTODEV.md ]; then PROGRAM_PATH=AUTODEV.md
+else PROGRAM_PATH=; fi
+ao autodev validate --json ${PROGRAM_PATH:+--file "$PROGRAM_PATH"}
+ao autodev init "<objective>"   # no contract + setup requested; infer objective from repo context
+```
+
+On validation failure (when asked to create or fix the contract), patch the
+missing required sections — `Objective`, `Mutable Scope`, `Immutable Scope`,
+`Experiment Unit`, `Validation Commands`, `Decision Policy`, `Escalation Rules`,
+`Stop Conditions` — then rerun `ao autodev validate --json`. Prefer narrow
+mutable scope and concrete validation commands; work crossing immutable scope
+becomes a bead, never a silently widened contract.
+
+Routing: define/repair the repo-local autonomous policy → this section +
+`ao autodev`; run the repeated improvement loop → `$evolve`; run one bounded
+lifecycle → a single `$rpi` turn. Executable specs (canonical):
+`skills/evolve/references/autodev.feature`,
+`skills/evolve/references/autodev-cli.feature`.
+
 ## Execution Steps
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**

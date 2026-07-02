@@ -24,7 +24,7 @@ A unit of work with no shared mutable state with concurrent workers. Pure functi
 Git-native issue tracking system accessed via the `br` CLI (beads_rust). Issues live in `_beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](../skills/beads-br/SKILL.md)
 
 ### Bookkeeping
-AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
+AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/curate --mode=forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
 
 ### Brownian Ratchet
 The core execution model: spawn parallel agents (chaos), validate their output with a multi-model council (filter), and merge passing results to main (ratchet). Progress locks forward — failed agents are discarded cheaply because fresh context means no contamination. [Full documentation](how-it-works.md#the-brownian-ratchet)
@@ -66,7 +66,7 @@ A long-haul autonomous run that executes while you are away, emitting morning wo
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
 
 ### Extract
-An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/forge --promote`. [Full documentation](../skills/forge/SKILL.md)
+An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/curate/SKILL.md)
 
 ## F
 
@@ -80,7 +80,7 @@ The automated loop that extracts learnings from completed work, scores them for 
 A composite measure of whether the knowledge flywheel is actually compounding: retrieval rate, promotion rate, decay rate, and injection hit rate. Surfaced by `ao flywheel` commands and used by `/evolve` to steer improvements.
 
 ### Forge
-An internal skill that mines session transcripts for knowledge artifacts — decisions, patterns, failures, and fixes — and stores them in `.agents/`. [Full documentation](../skills/forge/SKILL.md)
+Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/curate/SKILL.md)
 
 ## G
 
@@ -90,7 +90,7 @@ A checkpoint that blocks progress until a condition is met. AgentOps 3.0 is hook
 ## H
 
 ### Harvest
-A curation step that pulls learning candidates from recent sessions, scores them, and filters low-confidence output before they enter the flywheel. Invoked via `ao harvest` or inside `/forge --promote`.
+A curation step that pulls learning candidates from recent sessions, scores them, and filters low-confidence output before they enter the flywheel. Invoked via `ao harvest` or inside `/curate --mode=forge` (promote step).
 
 ### Handoff
 A skill (`/handoff`) that creates structured session handoff documents so another agent or future session can continue work with full context. [Full documentation](../skills/handoff/SKILL.md)
@@ -104,7 +104,7 @@ A shell script that fires automatically on agent lifecycle events. **AgentOps 3.
 ## I
 
 ### Inject
-An internal skill triggered at session start that loads relevant prior knowledge from `.agents/` into the current session context. [Full documentation](../skills/inject/SKILL.md)
+Historical name for session-start knowledge loading. Retired as a skill: on-demand retrieval is `ao lookup --query "<topic>"`, and knowledge activation (beliefs/playbooks/briefings/gaps) lives in the operationalize skill. [Full documentation](../skills/operationalize/SKILL.md)
 
 ### Issue
 A discrete unit of trackable work, stored as a bead. Created by `/plan`, executed by `/implement` or `/crank`. Has status, dependencies, and parent/child relationships. [Full documentation](SKILLS.md#beads)
@@ -164,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
-A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 70 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
+A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 63 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
 A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](../skills/swarm/SKILL.md)

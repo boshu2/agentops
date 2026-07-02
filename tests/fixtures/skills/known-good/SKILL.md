@@ -6,7 +6,7 @@ description: |
   **Use when:**
   - The auditor integration tests assert PASS verdict on a canonical input
 
-  **Triggers:** "known-good fixture", "auditor PASS smoke", "skill-auditor regression"
+  **Triggers:** "known-good fixture", "auditor PASS smoke", "skill audit regression"
 
   **Not ideal for:**
   - Real-world use (this is a test fixture)
@@ -76,7 +76,7 @@ Aggregate via max-severity rule.
 
 ```bash
 # Run auditor against this fixture; expect exit 0 and verdict PASS or WARN
-bash skills/skill-auditor/scripts/audit.sh tests/fixtures/skills/known-good
+bash skills/heal-skill/scripts/audit.sh tests/fixtures/skills/known-good
 ```
 
 ## Troubleshooting

@@ -36,7 +36,7 @@ bd-first-memory-migration
 
 # --- standalone operator/library/analyzer skills introduced by the expanded corpus ---
 automation-loop-hardening        # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-beads-workflow                   # standalone external-boundary or library/analyzer skill; no peer skill edge by design
+beads-workflow                   # retired — merged into beads-br (ag-ez7y6); entry kept only until the retire command removes the tree
 casr                             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 cass                             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 changelog-quality-pass           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
@@ -75,5 +75,5 @@ stash-hygiene-sweep              # standalone external-boundary or library/analy
 ubs                              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 vibing-with-ntm                  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 worktree-branch-rationalization  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-beads-bv                         # tracker-triage primitive; lost its only incoming edge when operating-loop-skill was pruned (ag-if7p) — leaf by design, like status/beads-workflow
+beads-bv                         # tracker-triage primitive; lost its only incoming edge when operating-loop-skill was pruned (ag-if7p) — leaf by design, like status
 converge                         # thin memo over the `ao converge` command (driving-adapter); no peer skill edge by design, like status
