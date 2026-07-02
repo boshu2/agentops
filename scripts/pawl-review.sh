@@ -395,6 +395,93 @@ codex_rc_class() {
   esac
 }
 
+# ---------------------------------------------------------------------------
+# REVIEWER FAILOVER CHAIN (age-rk3r.2)
+# ---------------------------------------------------------------------------
+# With the .1 adapters the cold-review SPOF became a ROUTING problem: when codex is down /
+# overloaded / same-family-rejected, the cold path should try the NEXT configured family rather
+# than stalling the whole factory — but a fallback-family verdict must SAY so (honest
+# degradation). These helpers + the chain loop (far below) implement that. LOAD-BEARING:
+#   1. The DEFAULT chain is codex-ONLY. A fallback family joins ONLY by EXPLICIT operator opt-in
+#      (PAWL_REVIEWER_CHAIN, or a config key that exports it) — NEVER by default. With no chain
+#      set, behavior is byte-identical to the single-codex path (no failover logic is reachable).
+#   2. Failover triggers ONLY on OUTAGE-class exits (MISSING / STALL / ECHO / 529-class) — NEVER
+#      on REFUTED. A refutation is a RESULT, not an outage: a REFUTED from reviewer 1 is FINAL;
+#      reviewer 2 is never asked to overturn it into a CONFIRMED.
+#   3. reviewer_family is READ from the resolved refuter (refuters[].family); the
+#      honest-degradation flag lands via the .16 `degraded` field on the verdict JSON.
+#   4. STRICT tier (a later slice, age-rk3r.13) will REFUSE to degrade. The seam is clean: every
+#      failover decision routes through `_has_next` in the loop, which a strict mode can force
+#      off. Not implemented here.
+
+# _reviewer_spec <name> — resolve a reviewer NAME to its adapter spec, echoed as TAB-separated
+#   reviewer<TAB>bin<TAB>family<TAB>family_re
+# The SINGLE source of the reviewer->family/bin mapping (resolve_reviewer parses it into globals;
+# the chain pre-pass reads the family_re field for same-family filtering). Byte-compatible with
+# the historical inline case arm: codex bin = CODEX_EXEC_BIN (its lib override, NOT REVIEWER_BIN);
+# the non-codex adapters share REVIEWER_BIN; local-mlx is eval-only (empty bin, off-roster family,
+# empty re). Returns 2 (echoes nothing) for an UNKNOWN name — fail-closed: no roster family means
+# the cross-family guarantee cannot be checked.
+_reviewer_spec() {
+  local r; r="$(printf '%s' "${1:-codex}" | tr '[:upper:]' '[:lower:]')"
+  case "$r" in
+    ""|codex|codex-exec|gpt|openai)
+      printf 'codex\t%s\tcodex\tgpt|codex|openai\n' "${CODEX_EXEC_BIN:-codex}" ;;
+    agy|gemini|antigravity|google)
+      printf 'agy\t%s\tgemini\tgemini|google|agy|antigravity\n' "${REVIEWER_BIN:-agy}" ;;
+    claude|anthropic|fable|opus|sonnet|haiku)
+      printf '%s\t%s\tclaude\tclaude|anthropic|fable|opus|sonnet|haiku\n' "$r" "${REVIEWER_BIN:-claude-cold-adapter-unavailable}" ;;
+    local-mlx|localmlx|local_mlx|mlx)
+      printf 'local-mlx\t\tlocal-mlx\t\n' ;;
+    *) return 2 ;;
+  esac
+}
+
+# resolve_reviewer <name> — set the reviewer globals (reviewer / reviewer_bin / reviewer_family /
+# reviewer_family_re) from _reviewer_spec. Returns 2 (globals untouched) on an unknown name.
+resolve_reviewer() {
+  local _spec; _spec="$(_reviewer_spec "$1")" || return 2
+  IFS=$'\t' read -r reviewer reviewer_bin reviewer_family reviewer_family_re <<<"$_spec"
+  return 0
+}
+
+# _is_outage_class <reviewer_rc> <evidence_file> — 0 (true) when a FAILED reviewer attempt is
+# OUTAGE-class (the reviewer could not produce a trustworthy verdict because it was unavailable
+# or overloaded) so the chain should FAIL OVER; 1 (false) for a NON-outage failure (a genuine
+# auth error, a garbled clean-exit no-verdict) which must NOT fail over (invariant 2 lists exactly
+# MISSING/STALL/529-class). At this LAUNCHED-exit classifier the outage set is STALL(124) PLUS a
+# 529-class content probe ONLY — rc=2 (a launched reviewer's own auth/config failure; a truly-
+# absent binary is the pre-launch precondition's job) and rc=125 (ECHO, a fail-closed malfunction)
+# are NOT outages here (age-rk3r.2 cross-family refuter). The 529-class content probe (an API
+# overload / rate-limit surfaced by the reviewer —
+# codex's 529 window), trusted ONLY on an actually-failed run (rc != 0) so a clean no-verdict whose
+# text merely mentions "rate limit" is never mistaken for an outage. NEVER called on a REFUTED (the
+# REFUTED branch exits first), so a refutation that discusses 529s can never trigger a failover.
+# Sets _OUTAGE_LABEL to the SPECIFIC reason (STALL / ECHO / MISSING / 529-class) for the failover
+# trail — the ONE place the 529-class signature lives, so the label and the decision never drift.
+_OUTAGE_LABEL=""
+_is_outage_class() {
+  local rc="${1:-}" ev="${2:-}"
+  _OUTAGE_LABEL=""
+  case "$rc" in
+    124) _OUTAGE_LABEL="STALL";   return 0 ;;   # CODEX_EXEC_STALL_TIMEOUT — killed at budget / API slow
+    # rc=2 and rc=125 are DELIBERATELY NOT outages at this LAUNCHED-exit classifier:
+    #   - rc=2 (CODEX_EXEC_MISSING) as a truly-absent binary is caught by the pre-launch
+    #     bin precondition (command -v), which advances the chain BEFORE any review runs.
+    #     Once a reviewer has LAUNCHED, exit 2 is its OWN genuine failure (auth/config) —
+    #     NOT an outage, so it must fail CLOSED, never fail over to a second family.
+    #   - rc=125 (CODEX_EXEC_ECHO) is a reviewer MALFUNCTION (it echoed the packet instead
+    #     of reviewing) — the anti-fabrication defense treats it fail-closed, not an outage.
+    # Invariant 2 lists the outage set as STALL/MISSING/529-class; MISSING is the precondition's
+    # job, so the only LAUNCHED-exit outages here are STALL(124) + the 529-class probe below.
+  esac
+  if [[ "$rc" -ne 0 && -n "$ev" && -f "$ev" ]] \
+     && grep -qiE '(^|[^0-9])(429|529)([^0-9]|$)|overloaded|rate[ _-]?limit|too many requests|service unavailable|temporarily unavailable' "$ev" 2>/dev/null; then
+    _OUTAGE_LABEL="529-class"; return 0
+  fi
+  return 1
+}
+
 # triage_block <class> [evidence-path] — print a one-paragraph triage block to stderr for a
 # NO-VERDICT outcome (STALL / ECHO / NO-VERDICT / MISSING). A NO-VERDICT is NOT a REFUTED: no
 # trustworthy review was produced, so name (1) what the exit code means, (2) the ONE next command,
@@ -654,84 +741,72 @@ fi
 # --scope head; and it is lineage-gated below (age-cwo.8 / council C).
 [[ "$converge" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --converge requires --scope head (it certifies a commit)" >&2; exit 2; }
 [[ -x "$PAWL" ]] || { echo "pawl-review: $PAWL not executable" >&2; exit 1; }
-# age-rk3r.1: resolve the cold REVIEWER adapter (default codex). The lib
-# (lib/codex-exec.sh) owns the per-adapter argv/marker/echo/sandbox contract and the run
-# classification; this script is a THIN switch — it honors REVIEWER for the precondition +
-# same-family guard, routes a non-codex reviewer to the COLD adapter (the warm tmux service
-# stays on its codex-family route), and passes REVIEWER through the environment to the lib.
-# local-mlx is EVAL-ONLY and is hard-refused IN-LIB in a prod context without
-# PAWL_EVAL_ADAPTERS_OK=1 (2026-06-23 ruling).
-# reviewer_family is the label written into the binding verdict's refuter entry (age-rk3r.1
-# refutation DEFECT 2: it was a hardcoded "codex", so REVIEWER=agy certified family=codex —
-# the wrong family in the proof artifact). Labels are values pawl-verdict.sh's
-# normalize_family roster accepts: codex keeps "codex" (byte-compat; canonicalizes to gpt),
-# agy writes the CANONICAL "gemini" (gemini|agy|google all collapse to gemini). local-mlx
-# gets a deliberately OFF-roster label: even an opted-in eval run's verdict must NEVER pass
-# the prod roster check (2026-06-23 ruling) — the checker rejects unknown families fail-closed.
-reviewer="$(printf '%s' "${REVIEWER:-codex}" | tr '[:upper:]' '[:lower:]')"
-case "$reviewer" in
-  ""|codex|codex-exec|gpt|openai)   reviewer="codex";     reviewer_bin="${CODEX_EXEC_BIN:-codex}"; reviewer_family="codex";     reviewer_family_re='gpt|codex|openai' ;;   # codex bin override is CODEX_EXEC_BIN (lib contract); REVIEWER_BIN is for non-codex adapters
-  agy|gemini|antigravity|google)    reviewer="agy";       reviewer_bin="${REVIEWER_BIN:-agy}";   reviewer_family="gemini";    reviewer_family_re='gemini|google|agy|antigravity' ;;
-  claude|anthropic|fable|opus|sonnet|haiku)
-    # No sanctioned COLD claude adapter exists (LAW 0: never `claude -p`); this arm exists so
-    # claude-roster names resolve to their real family instead of falling through with an empty
-    # family regex (round-5 pawl catch: an alias with an empty re SKIPPED the same-family guard —
-    # a self-approval bypass). A custom bridge may be supplied via REVIEWER_BIN; the default
-    # placeholder fails the bin precondition (exit 2) rather than running anything.
-    reviewer="$reviewer"; reviewer_bin="${REVIEWER_BIN:-claude-cold-adapter-unavailable}"; reviewer_family="claude"; reviewer_family_re='claude|anthropic|fable|opus|sonnet|haiku' ;;
-  local-mlx|localmlx|local_mlx|mlx) reviewer="local-mlx"; reviewer_bin="";      reviewer_family="local-mlx"; reviewer_family_re='' ;;   # eval-only; lib refuses in prod; off-roster on purpose
-  *)
-    # FAIL-CLOSED (round-5 pawl catch): an unknown reviewer name has no establishable model
-    # family, so the cross-family guarantee this command exists to provide cannot be checked —
-    # refuse rather than run with the same-family guard silently disabled.
-    echo "pawl-review: unknown reviewer '$reviewer' — no roster family, so the cross-family guard cannot run." >&2
+# age-rk3r.2: resolve the cold REVIEWER CHAIN (default codex-only). The lib (lib/codex-exec.sh)
+# owns the per-adapter argv/marker/echo/sandbox contract + run classification; this script is a
+# THIN switch that resolves each family (via _reviewer_spec, the SINGLE mapping source), honors it
+# for the precondition + same-family guard, routes a non-codex reviewer to the COLD adapter (the
+# warm tmux service stays on its codex-family route), and passes REVIEWER to the lib per attempt.
+# reviewer_family is the label written into the binding verdict's refuter entry (age-rk3r.1 DEFECT 2:
+# a hardcoded "codex" made REVIEWER=agy certify family=codex). Labels are values pawl-verdict.sh's
+# normalize_family accepts: codex->"codex" (byte-compat; canonicalizes to gpt), agy->CANONICAL
+# "gemini"; local-mlx gets a deliberately OFF-roster label (an opted-in eval run must never pass the
+# prod roster check — 2026-06-23 ruling).
+#
+# THE CHAIN: DEFAULT = codex-only (or a single explicit REVIEWER), preserving today's behavior
+# byte-for-byte (invariant 1). PAWL_REVIEWER_CHAIN is the EXPLICIT operator opt-in — a comma list
+# tried in order on OUTAGE, e.g. "codex,agy". The .5/.17 config layer may export it from a repo's
+# .aoverify.yaml; env is the primary surface. Every member is roster-validated below (unknown =>
+# fail-closed) and local-mlx stays prod-refused IN-LIB, so even a config-fed chain can only select a
+# real cross-family reviewer, never inject an arbitrary or weak-eval one.
+reviewer_chain=()
+if [[ -n "${PAWL_REVIEWER_CHAIN:-}" ]]; then
+  IFS=',' read -r -a _rc_raw <<<"$PAWL_REVIEWER_CHAIN"
+  for _rc in "${_rc_raw[@]}"; do
+    _rc="$(printf '%s' "$_rc" | tr -d '[:space:]')"   # tolerate "codex, agy"
+    [[ -n "$_rc" ]] && reviewer_chain+=("$_rc")
+  done
+fi
+# No chain configured => the single-reviewer default (REVIEWER if set, else codex). This is the
+# invariant-1 lock: with nothing set the chain is exactly [codex] and no failover is observable.
+[[ ${#reviewer_chain[@]} -gt 0 ]] || reviewer_chain=("${REVIEWER:-codex}")
+
+# Validate every chain member up front (a typo'd reviewer is a config error, caught before any
+# review runs) and compute the USABLE list = the members that are CROSS-family to the author, in
+# order. A member that is the SAME family as --author-family is SKIPPED — that is CORRECT ROUTING
+# (pick the first cross-family reviewer), NOT degradation: the first USABLE reviewer is the "first
+# choice", and a verdict from it is degraded=false. Same case-insensitive family-regex test the
+# historical single-reviewer same-family guard used (round-5 pawl catch: an empty re skips the guard).
+af_lc="$(printf '%s' "$author_family" | tr '[:upper:]' '[:lower:]')"
+usable_reviewers=()
+for _rc in "${reviewer_chain[@]}"; do
+  _spec="$(_reviewer_spec "$_rc")" || {
+    # FAIL-CLOSED (round-5 pawl catch, preserved): an unknown reviewer name has no roster family,
+    # so the cross-family guarantee this command exists to provide cannot be checked.
+    echo "pawl-review: unknown reviewer '$_rc' — no roster family, so the cross-family guard cannot run." >&2
     echo "  Add the adapter to the reviewer roster (scripts/pawl-review.sh + lib/codex-exec.sh) with an" >&2
     echo "  explicit family; refusing fail-closed. (exit 2 = precondition, not a REFUTE)" >&2
-    exit 2 ;;
-esac
-
-# age-a9iv.5: hard runtime deps are a PRECONDITION failure (exit 2), NOT a hard error (1) and NOT a
-# review result (3=REFUTED) — a missing dep that exits 1 is easy to misread as a real refutation. Name
-# the dep, say it is installable, and use the distinct precondition code so a caller can tell them apart.
-# age-rk3r.1: the precondition checks the RESOLVED reviewer's binary. codex keeps its exact message
-# (byte-compat); a non-codex adapter checks its own bin; local-mlx has no bin precondition here (the lib
-# hard-refuses it in a prod context without PAWL_EVAL_ADAPTERS_OK=1).
-if [[ "$reviewer" == "codex" ]]; then
-  command -v "$reviewer_bin" >/dev/null 2>&1 || {
-    echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
-    echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
-    echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
-    triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
     exit 2
   }
-elif [[ -n "$reviewer_bin" ]]; then
-  command -v "$reviewer_bin" >/dev/null 2>&1 || {
-    echo "pawl-review: MISSING DEPENDENCY — '$reviewer_bin' (the '$reviewer' cross-family reviewer) is not on PATH." >&2
-    echo "  This is NOT a review result. Install the '$reviewer' reviewer CLI, put it on PATH, and re-run." >&2
-    echo "  (exit 2 = precondition, not a REFUTE)" >&2
-    triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
-    exit 2
-  }
+  _fam_re="$(printf '%s' "$_spec" | cut -f4)"
+  if [[ -n "$_fam_re" && "$af_lc" =~ ($_fam_re) ]]; then
+    continue   # same family as the author — skip (routing); keep looking for a cross-family member
+  fi
+  usable_reviewers+=("$_rc")
+done
+# No cross-family member anywhere in the chain => a same-family review is all that is possible,
+# which is not the cross-family pawl this command provides. Refuse (byte-compatible with the
+# historical single-reviewer same-family guard: exit 2, message contains "SAME model family").
+if [[ ${#usable_reviewers[@]} -eq 0 ]]; then
+  echo "pawl-review: no cross-family reviewer available — every reviewer in the chain (${reviewer_chain[*]}) is the SAME model family as --author-family '$author_family'. That is a same-family review, not the cross-family pawl this command provides. Configure a different-family reviewer (or author with a different family)." >&2
+  exit 2
 fi
+
 command -v jq >/dev/null 2>&1 || {
   echo "pawl-review: MISSING DEPENDENCY — jq is not on PATH (the pawl parses verdicts with jq)." >&2
   echo "  This is NOT a review result. Install jq (brew install jq / apt-get install jq) and re-run." >&2
   echo "  (exit 2 = precondition, not a REFUTE)" >&2
   exit 2
 }
-
-# The refuter must be a DIFFERENT model family than the AUTHOR, or this is a SAME-family
-# review (shared blind spots), not the cross-family check this command exists to provide —
-# refuse it (use a different-family author, or a different reviewer). Defends a same-family
-# false-CONFIRMED. age-rk3r.1: the guard now keys on the RESOLVED reviewer's family
-# (codex=gpt/codex/openai, agy=gemini/google/…) so the SECOND reviewer is protected the same
-# way. Case-INSENSITIVE substring so family variants cannot bypass. (local-mlx is eval-only +
-# refused in prod, so it carries no family guard here.)
-af_lc="$(printf '%s' "$author_family" | tr '[:upper:]' '[:lower:]')"
-if [[ -n "$reviewer_family_re" && "$af_lc" =~ ($reviewer_family_re) ]]; then
-  echo "pawl-review: --author-family '$author_family' is the SAME model family as the '$reviewer' refuter — that is a same-family review, not the cross-family pawl this command provides. Review this work with a different-family reviewer." >&2
-  exit 2
-fi
 
 # The kill-budget snapshot. INITIAL value here; FINALIZED after the large-diff scaling
 # below (see the age-iian re-snapshot). age-iian (FOLDED into age-rk3r.1): historically this
@@ -849,9 +924,11 @@ if command -v shasum >/dev/null 2>&1; then diff_hash="$(printf '%s' "$diff" | sh
 else diff_hash="$(printf '%s' "$diff" | sha256sum | cut -d' ' -f1)"; fi
 
 mkdir -p "$EVIDENCE_DIR"
-# The refuter context id names the RESOLVED reviewer (codex stays "codex-fresh-…",
-# byte-compat; agy runs are honestly "agy-fresh-…"). (age-rk3r.1 DEFECT 2)
-ctx="${reviewer}-fresh-${bead}-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null)"
+# The refuter context id (ctx) names the RESOLVED reviewer and so is computed PER ATTEMPT inside
+# the failover loop below (age-rk3r.2) — on a fail-over it must name the WINNING reviewer, not the
+# first-choice one. (age-rk3r.1 DEFECT 2: codex stays "codex-fresh-…" byte-compat; agy is honestly
+# "agy-fresh-…".)
+ctx=""
 evidence="$EVIDENCE_DIR/${bead}-pawl-review.txt"
 prompt_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-prompt.XXXXXX")"
 raw_file="$(mktemp "${TMPDIR:-/tmp}/pawl-review-raw.XXXXXX")"
@@ -944,217 +1021,304 @@ PROMPT
   printf '%s\n' "$review_body"
 } > "$prompt_file"
 
-# Lazy auto-start (the "membrane is never silently cold again" fix): when routing is
-# eligible (head scope, not --converge, not opted out) but the standing service is DOWN,
-# stand it up ONCE here so this and every later review in the session run WARM through the
-# tri-model duel instead of paying a cold codex-exec each time (the gap that left ~13 reviews
-# cold in a single session). One-time ~couple-min warmup; fail-safe — if `up` fails the
-# health check below stays false and we fall through to the cold path. Opt out:
-# PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
-# age-rk3r.1: only for the codex-family route. An explicit non-codex REVIEWER (e.g. agy) wants
-# the COLD portable adapter below — the warm tmux service stays on its own codex-family route.
-if [[ "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
-   && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
-  echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
-  bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
-fi
-
-# ml8.7 + tri-model: route the DEFAULT adversarial pawl through the standing pawl-service (the
-# warm opus+codex+agy DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is
-# up. The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
-# warm (no per-bead subprocess spin-up — the anti-pattern this deprecates). Fail SAFE: any
-# routing error falls through to the codex-exec path below (never fail-open). --converge
-# (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
-# routing would wrongly write a HEAD-bound verdict for an uncommitted diff) stay on the cold
-# path. Opt out: PAWL_NO_SERVICE=1. age-rk3r.1: an explicit non-codex REVIEWER also stays on the
-# cold adapter below (the warm service route is codex-family); "$reviewer" == "codex" gates this.
-if [[ "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
-   && bash "$PAWL_SH" health >/dev/null 2>&1; then
-  route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
-  # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
-  # pawl.sh route appends its own nonce-tagged verdict format ("PAWL <nonce> CONFIRMED|REFUTED").
-  { printf '%s\n' "$read_instr"
-    printf '%s\n' "$posture"
-    [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
-    # S3: the SAME membrane-memory injection as the cold path — so head-scope reviews
-    # through the warm pawl-service ALSO consume prior catches (computed at $prior_catches).
-    [[ -n "$prior_catches" ]] && printf '%s\n' "$prior_catches"
-    # age-rk3r.7: the SAME live-smoke runtime evidence goes into the routed packet too, so a
-    # head-scope review through the warm pawl-service also sees the running-code proof.
-    [[ -n "$smoke_evidence" ]] && printf '%s\n' "$smoke_evidence"
-    printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
-    printf '%s\n' "$review_body"
-  } > "$route_pkt"
-  echo "pawl-review: routing through the standing pawl-service (warm cross-family panel, ml8.7)…" >&2
-  route_rc=0
-  # Pass the REAL PR ($PR, from AGENTOPS_PAWL_PR) — NOT a hardcoded 0 — so the routed
-  # verdict binds to the right PR (push-to-main is PR 0; a PR review is its number).
-  bash "$PAWL_SH" route "$bead" "$route_pkt" "$PR" >&2 || route_rc=$?
-  rm -f "$route_pkt"
-  # Trust the route ONLY if it actually wrote a verdict bound to THIS head (fail-safe: a
-  # routing error must not be read as a clean pass, and an absent/stale verdict falls back).
-  # The routed path deliberately does NOT write --converge lineage: --converge is a cold,
-  # codex-only bounded re-review that folds in the COLD adversarial run's preserved defects;
-  # a routed duel is a different mode, so leaving no lineage makes --converge correctly
-  # require a genuine cold adversarial run first (closes the auditability gap codex flagged).
-  # Trust the route's CONFIRMED ONLY if the written verdict PASSES the REAL gate — the same
-  # `pawl-verdict.sh check` the push gate runs (schema + PR + head-binding + cross-family
-  # evidence/diversity). A shallow head+disposition jq is NOT enough: a malformed verdict
-  # could slip through (codex caught exactly this). A REFUTED route is a real HOLD; anything
-  # else (no gate-valid verdict) falls back to the cold codex-exec — never fail-open.
-  if [[ "$route_rc" -eq 0 ]] && "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
-    routed_mode="$(jq -r '.mode // "multi-model"' "$VERDICT_DIR/${bead}.json" 2>/dev/null)"
-    echo "pawl-review: CONFIRMED (routed: $(pawl_tier_note "$routed_mode")) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
-    exit 0
+# ---- age-rk3r.2: FAILOVER LOOP over the usable (cross-family) reviewers ----
+# The first USABLE reviewer is the FIRST CHOICE (a verdict from it is degraded=false). On an
+# OUTAGE (MISSING / STALL / ECHO / 529-class) with a fallback remaining, fail over to the next
+# family and mark degraded=true (a non-first-choice family produced the verdict). A REFUTED is a
+# RESULT — final, NO failover (a REFUTED from reviewer 1 is never re-asked of reviewer 2). A
+# non-outage failure (auth error / garbled clean no-verdict) also does NOT fail over. With a
+# SINGLE usable reviewer (the default) `_has_next` is always 0, so every branch takes exactly the
+# historical single-reviewer exit — byte-identical (invariant 1). The prompt/smoke above are
+# reviewer-agnostic and built ONCE; only the reviewer resolution + run + classification loop.
+degraded=false
+reviewer_attempts=0
+failover_trail=""
+_n_usable=${#usable_reviewers[@]}
+for (( _ui=0; _ui<_n_usable; _ui++ )); do
+  resolve_reviewer "${usable_reviewers[_ui]}"   # sets reviewer/reviewer_bin/reviewer_family/reviewer_family_re (roster-validated above)
+  reviewer_attempts=$(( reviewer_attempts + 1 ))
+  _has_next=0; [[ $(( _ui + 1 )) -lt "$_n_usable" ]] && _has_next=1
+  # Defense-in-depth (round-5 pawl catch: an empty family regex once SKIPPED the same-family guard,
+  # a self-approval bypass). The usable list already excluded same-family members, but re-assert on
+  # the RESOLVED reviewer: a reviewer that is somehow the SAME family as the author is a same-family
+  # review — refuse fail-closed rather than self-approve (never reachable in normal routing).
+  if [[ -n "$reviewer_family_re" && "$af_lc" =~ ($reviewer_family_re) ]]; then
+    echo "pawl-review: internal guard — resolved reviewer '$reviewer' is the SAME model family as --author-family '$author_family' despite cross-family routing; refusing fail-closed. (exit 2)" >&2
+    exit 2
   fi
-  routed_disp="$(jq -r 'select(.head_sha=="'"$head"'") | .disposition // empty' \
-                  "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
-  if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
-    echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
-    emit_pawl_catch multi-model
+  # The refuter context id names the RESOLVED reviewer (codex stays "codex-fresh-…" byte-compat;
+  # agy is honestly "agy-fresh-…") — recomputed per attempt so a fail-over names the WINNER.
+  ctx="${reviewer}-fresh-${bead}-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null)"
+
+  # PRECONDITION (age-a9iv.5 / age-rk3r.1): the resolved reviewer's binary must be on PATH — a
+  # PRECONDITION failure (exit 2), NOT a REFUTE. age-rk3r.2: a MISSING bin is an OUTAGE — with a
+  # fallback remaining, fail over (degraded); with none, the byte-identical MISSING exit. codex
+  # keeps its exact message; a non-codex adapter checks its own bin; local-mlx has no bin precond
+  # here (the lib hard-refuses it in prod without PAWL_EVAL_ADAPTERS_OK=1).
+  if { [[ "$reviewer" == "codex" ]] || [[ -n "$reviewer_bin" ]]; } && ! command -v "$reviewer_bin" >/dev/null 2>&1; then
+    if [[ "$_has_next" -eq 1 ]]; then
+      degraded=true; failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(MISSING)"
+      echo "pawl-review: reviewer '$reviewer' MISSING (bin '$reviewer_bin' not on PATH) — OUTAGE; failing over to the next configured reviewer…" >&2
+      continue
+    fi
+    if [[ "$reviewer" == "codex" ]]; then
+      echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
+      echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
+      echo "  check; install the codex CLI, put it on PATH, and re-run. (exit 2 = precondition, not a REFUTE)" >&2
+    else
+      echo "pawl-review: MISSING DEPENDENCY — '$reviewer_bin' (the '$reviewer' cross-family reviewer) is not on PATH." >&2
+      echo "  This is NOT a review result. Install the '$reviewer' reviewer CLI, put it on PATH, and re-run." >&2
+      echo "  (exit 2 = precondition, not a REFUTE)" >&2
+    fi
+    triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
+    exit 2
+  fi
+
+  # Lazy auto-start (the "membrane is never silently cold again" fix): when routing is
+  # eligible (head scope, not --converge, not opted out) but the standing service is DOWN,
+  # stand it up ONCE here so this and every later review in the session run WARM through the
+  # tri-model duel instead of paying a cold codex-exec each time (the gap that left ~13 reviews
+  # cold in a single session). One-time ~couple-min warmup; fail-safe — if `up` fails the
+  # health check below stays false and we fall through to the cold path. Opt out:
+  # PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
+  # age-rk3r.1: only for the codex-family route. An explicit non-codex REVIEWER (e.g. agy) wants
+  # the COLD portable adapter below — the warm tmux service stays on its own codex-family route.
+  # age-rk3r.2: also gated on the NON-DEGRADED first codex attempt — a warm route writes its OWN
+  # verdict with no degraded flag, so it must never run for a fall-over-to-codex (rare) attempt.
+  if [[ "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
+     && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
+    echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
+    bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
+  fi
+
+  # ml8.7 + tri-model: route the DEFAULT adversarial pawl through the standing pawl-service (the
+  # warm opus+codex+agy DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is
+  # up. The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
+  # warm (no per-bead subprocess spin-up — the anti-pattern this deprecates). Fail SAFE: any
+  # routing error falls through to the codex-exec path below (never fail-open). --converge
+  # (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
+  # routing would wrongly write a HEAD-bound verdict for an uncommitted diff) stay on the cold
+  # path. Opt out: PAWL_NO_SERVICE=1. age-rk3r.1: an explicit non-codex REVIEWER also stays on the
+  # cold adapter below (the warm service route is codex-family); "$reviewer" == "codex" gates this.
+  # age-rk3r.2: also gated on the non-degraded first attempt (see auto-up above).
+  if [[ "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
+     && bash "$PAWL_SH" health >/dev/null 2>&1; then
+    route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
+    # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
+    # pawl.sh route appends its own nonce-tagged verdict format ("PAWL <nonce> CONFIRMED|REFUTED").
+    { printf '%s\n' "$read_instr"
+      printf '%s\n' "$posture"
+      [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
+      # S3: the SAME membrane-memory injection as the cold path — so head-scope reviews
+      # through the warm pawl-service ALSO consume prior catches (computed at $prior_catches).
+      [[ -n "$prior_catches" ]] && printf '%s\n' "$prior_catches"
+      # age-rk3r.7: the SAME live-smoke runtime evidence goes into the routed packet too, so a
+      # head-scope review through the warm pawl-service also sees the running-code proof.
+      [[ -n "$smoke_evidence" ]] && printf '%s\n' "$smoke_evidence"
+      printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
+      printf '%s\n' "$review_body"
+    } > "$route_pkt"
+    echo "pawl-review: routing through the standing pawl-service (warm cross-family panel, ml8.7)…" >&2
+    route_rc=0
+    # Pass the REAL PR ($PR, from AGENTOPS_PAWL_PR) — NOT a hardcoded 0 — so the routed
+    # verdict binds to the right PR (push-to-main is PR 0; a PR review is its number).
+    bash "$PAWL_SH" route "$bead" "$route_pkt" "$PR" >&2 || route_rc=$?
+    rm -f "$route_pkt"
+    # Trust the route ONLY if it actually wrote a verdict bound to THIS head (fail-safe: a
+    # routing error must not be read as a clean pass, and an absent/stale verdict falls back).
+    # The routed path deliberately does NOT write --converge lineage: --converge is a cold,
+    # codex-only bounded re-review that folds in the COLD adversarial run's preserved defects;
+    # a routed duel is a different mode, so leaving no lineage makes --converge correctly
+    # require a genuine cold adversarial run first (closes the auditability gap codex flagged).
+    # Trust the route's CONFIRMED ONLY if the written verdict PASSES the REAL gate — the same
+    # `pawl-verdict.sh check` the push gate runs (schema + PR + head-binding + cross-family
+    # evidence/diversity). A shallow head+disposition jq is NOT enough: a malformed verdict
+    # could slip through (codex caught exactly this). A REFUTED route is a real HOLD; anything
+    # else (no gate-valid verdict) falls back to the cold codex-exec — never fail-open.
+    if [[ "$route_rc" -eq 0 ]] && "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
+      routed_mode="$(jq -r '.mode // "multi-model"' "$VERDICT_DIR/${bead}.json" 2>/dev/null)"
+      echo "pawl-review: CONFIRMED (routed: $(pawl_tier_note "$routed_mode")) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
+      exit 0
+    fi
+    routed_disp="$(jq -r 'select(.head_sha=="'"$head"'") | .disposition // empty' \
+                    "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
+    if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
+      echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
+      emit_pawl_catch multi-model
+      exit 3
+    fi
+    echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
+  fi
+
+  # Run the refuter, CAPTURING the exit status: a timeout/crash must NOT be trusted as a
+  # clean review (a partial output containing 'VERDICT: CONFIRMED' from a killed run could
+  # otherwise write a passing verdict — fail-open). Retry once on a flat 0-byte stall.
+  echo "pawl-review: running cross-family ($reviewer) review of $scope diff for $bead (head ${head:0:12})…" >&2
+  # age-wjp0: backgrounding-reap hazard. When this script is launched DETACHED (harness
+  # run_in_background / `nohup &`), its process group can be reaped mid-`codex exec` —
+  # killing the review before the retry + fail-closed logic below ever runs, leaving ONLY
+  # the line above as output. That silent flatline looks like a codex stall but is a reap.
+  # External reaping cannot be prevented from inside the script, so make the failure
+  # SELF-EXPLAINING: emit the diagnostic BEFORE the vulnerable exec so it survives the kill.
+  # Fires only when non-interactive (the exact condition where the hazard exists and the
+  # operator has no live feedback). (memory: pawl-run-foreground-not-background)
+  if ! { [ -t 1 ] || [ -t 2 ]; }; then
+    echo "pawl-review: ⚠ non-interactive run — codex review takes ~3-5 min. If NO verdict follows this line, the codex subprocess was reaped (common when backgrounded). Re-run FOREGROUND: timeout 450 ao pawl review $bead --scope $scope" >&2
+  fi
+  codex_rc=0
+  # The flat-0-byte stall-retry lives in codex_exec_guarded now (CODEX_EXEC_RETRY_ON_EMPTY=1,
+  # its default): a first run that produces NOTHING is retried once before it is classified as
+  # a STALL, so it is no longer re-implemented here (single source of truth, age-gate-the-
+  # ungated-egwt.13). codex_rc carries the lib's outcome code; a STALL/ECHO/timeout returns
+  # non-zero and the fail-closed logic below (empty-output guard + "codex_rc != 0") holds.
+  # age-rk3r.10: a heartbeat around the reviewer call makes a healthy long run legible vs a stall.
+  # It writes ONLY to stderr; run_review captures the reviewer to $raw_file, so the heartbeat can
+  # never interleave into the bytes the verdict parse reads. Stopped unconditionally after the call
+  # (below), and the EXIT trap kills any orphan if the script dies mid-review.
+  start_heartbeat "$REVIEW_TIMEOUT" "$reviewer"
+  run_review || codex_rc=$?
+  stop_heartbeat
+
+  # Codex prints a 'codex' marker line before its answer; drop the marker itself and keep
+  # what follows (evidence starts at the reviewer's content, not the marker). Fall back to
+  # the full output if there is no marker.
+  verdict_block="$(awk '/^codex$/{c=1; next} c' "$raw_file" 2>/dev/null)"
+  [[ -n "$verdict_block" ]] || verdict_block="$(cat "$raw_file")"
+  printf '%s\n' "$verdict_block" > "$evidence"
+  # age-rk3r.2: EMPTY output = a STALL. With a fallback remaining, fail over (degraded); with
+  # none, the byte-identical fail-closed STALL exit.
+  if [[ ! -s "$evidence" ]]; then
+    if [[ "$_has_next" -eq 1 ]]; then
+      degraded=true; failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(STALL)"
+      echo "pawl-review: reviewer '$reviewer' produced NO output (STALL) — OUTAGE; failing over to the next configured reviewer…" >&2
+      continue
+    fi
+    echo "pawl-review: no reviewer output captured — fail-closed" >&2; triage_block STALL "$evidence"; exit 1
+  fi
+
+  # Decide on the FINAL verdict-shaped line only — parsed from the REVIEWER's OWN bytes
+  # ($verdict_block, which only ever holds the reviewer subprocess's output), NEVER from the
+  # evidence file (refuter catch, age-rk3r.7 round 2): the live-smoke section appended below
+  # embeds REPO-CONTROLLED output (the smoke typically runs the repo's own test suite, which
+  # can print anything — including a forged "VERDICT: CONFIRMED" placed AFTER a real REFUTED),
+  # so smoke bytes must be STRUCTURALLY incapable of reaching this parse. The reviewer's real
+  # answer comes LAST, after any preamble or echoed prompt template — an echoed
+  # "VERDICT: CONFIRMED" from the instructions must not be mistaken for the verdict. (defends
+  # a quoted/multi-verdict false-CONFIRMED)
+  final_verdict="$(printf '%s\n' "$verdict_block" | grep -iE '^[[:space:]]*VERDICT:[[:space:]]*(CONFIRMED|REFUTED)' | tail -1)"
+
+  # age-rk3r.7: persist the live-smoke runtime evidence into the SAME verdict evidence file the
+  # CONFIRMED verdict binds — so the proof artifact carries the RUNTIME proof, not just the diff
+  # review. Appended AFTER (and independent of) the verdict parse above; defense-in-depth,
+  # every captured smoke-output line is "    | "-neutralized by build_smoke_evidence, so no
+  # smoke line can match a bare ^VERDICT: pattern in ANY downstream consumer of this file
+  # (emit_pawl_catch's reason grep included). Empty when no smoke ran => byte-identical.
+  [[ -n "$smoke_evidence" ]] && printf '\n%s\n' "$smoke_evidence" >> "$evidence"
+
+  # Record ADVERSARIAL lineage: a clean adversarial run (any verdict) on THIS exact diff.
+  # --converge later requires this for the identical diff-hash. Written here — before the
+  # REFUTED exit — so a REFUTED-on-cosmetic-tail run (the convergence trigger) still records
+  # that this diff faced maximal refutation. NOT written by --converge itself (it must not
+  # self-certify lineage) nor by a crashed run. (age-cwo.8 / council C)
+  if [[ "$converge" -eq 0 && "$codex_rc" -eq 0 && -n "$final_verdict" ]]; then
+    mkdir -p "$PAWL_REVIEW_DIR"
+    _outcome="$(grep -qi REFUTED <<<"$final_verdict" && echo REFUTED || echo CONFIRMED)"
+    printf '{"bead":"%s","diff_hash":"%s","head_sha":"%s","outcome":"%s","ts":"%s"}\n' \
+      "$bead" "$diff_hash" "$head" "$_outcome" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$lineage_file"
+    # Preserve the adversarial review's FULL output (its defects). --converge folds it into
+    # the verdict so the adversarial findings being ACCEPTED-AS-TAIL are recorded, never
+    # silently bypassed — even a REFUTED adversarial run's defects are auditable in the
+    # converge verdict (the "both bars" the council required).
+    cp "$evidence" "$PAWL_REVIEW_DIR/${bead}.adversarial.evidence.txt" 2>/dev/null || true
+  fi
+
+  # REFUTED is a RESULT, not an outage: FINAL, NEVER a failover (invariant 2). Even with a
+  # fallback configured, a REFUTED from this reviewer stands — reviewer 2 is not asked to
+  # overturn it into a CONFIRMED.
+  if grep -qiE 'REFUTED' <<<"$final_verdict"; then
+    # age-6idm: AUTO-RUN-THE-REPRO. A REVIEWER REFUTED that NAMES an executable repro is a
+    # candidate FALSE refute (the 2026-07-02 build-tag class: 3/3 REFUTEDs each named a repro
+    # that actually PASSED). Extract the repro from the DEFECTS text, gate it at the ARGV level
+    # (repro_argv_allowed — never sh -c/eval), and run it ONCE, timeboxed:
+    #   - repro PASSES (exit 0) -> the refute is SUSPECT; re-roll the review ONCE. Bounded by
+    #     PAWL_REROLLED_AFTER_FALSE_REPRO (the marker that survives the re-exec) so a second
+    #     false-repro can NOT loop — on an already-rerolled run this branch is skipped and the
+    #     REFUTED STANDS (surfaced with the run) even if its repro passes.
+    #   - repro FAILS -> the REFUTED STANDS; attach the run's exit code + output tail as evidence.
+    #   - no candidate / disallowed argv -> no execution; the REFUTED stands exactly as today.
+    repro_cmd="$(extract_repro_command < "$evidence")"
+    if [[ -n "$repro_cmd" ]]; then
+      read -r -a repro_argv <<<"$repro_cmd"   # ARGV-level tokenize; NOTHING goes to a shell
+      if [[ "${#repro_argv[@]}" -ge 1 ]] && repro_argv_allowed "${repro_argv[@]}"; then
+        echo "pawl-review: REFUTED names a repro — running it ONCE (timeboxed, argv-allowlisted) to check the refute: ${repro_argv[*]}" >&2
+        repro_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-repro.XXXXXX")"
+        _rt=(); read -r -a _rt <<<"$(codex_exec_timeout_cmd 300)" || true   # same timeout wrapper as the reviewer
+        repro_rc=0
+        if [[ "${#_rt[@]}" -gt 0 ]]; then
+          ( cd "$REPO_ROOT" && "${_rt[@]}" "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+        else
+          ( cd "$REPO_ROOT" && "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+        fi
+        if [[ "$repro_rc" -eq 0 && -z "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
+          echo "pawl-review: the named repro PASSED (exit 0) — the REFUTED is SUSPECT (false repro). Re-rolling the review ONCE (bounded)…" >&2
+          # exec skips the EXIT trap, so clean the temp files this run owns before replacing.
+          rm -f "$repro_out" "$prompt_file" "$raw_file"
+          [[ -n "${smoke_out:-}" ]] && rm -f "$smoke_out"
+          PAWL_REROLLED_AFTER_FALSE_REPRO=1 exec bash "$0" "${PAWL_ORIG_ARGS[@]}"
+        fi
+        # repro FAILED, or we already re-rolled once (bounded) — the REFUTED STANDS. Attach evidence.
+        {
+          printf '\n=== AUTO-REPRO (age-6idm) — the REFUTED named a repro; it was run ONCE, timeboxed ===\n'
+          printf 'repro command: %s\n' "${repro_argv[*]}"
+          printf 'exit code: %s\n' "$repro_rc"
+          if [[ -n "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
+            printf 'NOTE: this review was already RE-ROLLED once after a false repro (rerolled_after_false_repro);\n'
+            printf 'a second REFUTED STANDS even if its repro passes — surfaced here with the run.\n'
+          fi
+          printf -- '--- repro output tail (each line "    | "-prefixed — run output, neutralized) ---\n'
+          tail -n 30 "$repro_out" 2>/dev/null | sed 's/^/    | /'
+          printf -- '--- end AUTO-REPRO ---\n'
+        } >> "$evidence"
+        rm -f "$repro_out"
+      else
+        echo "pawl-review: REFUTED named a repro '$repro_cmd' NOT in the allowed argv set (go test|build|vet or bats, no dangerous args/paths) — NOT executing; the REFUTED stands." >&2
+      fi
+    fi
+    echo "=== PAWL REVIEW: REFUTED — defects below (fix, recommit, re-run; NO verdict written) ===" >&2
+    sed -n '/^[[:space:]]*VERDICT:[[:space:]]*REFUTED/,$p' "$evidence" >&2
+    emit_pawl_catch fresh-context
     exit 3
   fi
-  echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
-fi
-
-# Run the refuter, CAPTURING the exit status: a timeout/crash must NOT be trusted as a
-# clean review (a partial output containing 'VERDICT: CONFIRMED' from a killed run could
-# otherwise write a passing verdict — fail-open). Retry once on a flat 0-byte stall.
-echo "pawl-review: running cross-family ($reviewer) review of $scope diff for $bead (head ${head:0:12})…" >&2
-# age-wjp0: backgrounding-reap hazard. When this script is launched DETACHED (harness
-# run_in_background / `nohup &`), its process group can be reaped mid-`codex exec` —
-# killing the review before the retry + fail-closed logic below ever runs, leaving ONLY
-# the line above as output. That silent flatline looks like a codex stall but is a reap.
-# External reaping cannot be prevented from inside the script, so make the failure
-# SELF-EXPLAINING: emit the diagnostic BEFORE the vulnerable exec so it survives the kill.
-# Fires only when non-interactive (the exact condition where the hazard exists and the
-# operator has no live feedback). (memory: pawl-run-foreground-not-background)
-if ! { [ -t 1 ] || [ -t 2 ]; }; then
-  echo "pawl-review: ⚠ non-interactive run — codex review takes ~3-5 min. If NO verdict follows this line, the codex subprocess was reaped (common when backgrounded). Re-run FOREGROUND: timeout 450 ao pawl review $bead --scope $scope" >&2
-fi
-codex_rc=0
-# The flat-0-byte stall-retry lives in codex_exec_guarded now (CODEX_EXEC_RETRY_ON_EMPTY=1,
-# its default): a first run that produces NOTHING is retried once before it is classified as
-# a STALL, so it is no longer re-implemented here (single source of truth, age-gate-the-
-# ungated-egwt.13). codex_rc carries the lib's outcome code; a STALL/ECHO/timeout returns
-# non-zero and the fail-closed logic below (empty-output guard + "codex_rc != 0") holds.
-# age-rk3r.10: a heartbeat around the reviewer call makes a healthy long run legible vs a stall.
-# It writes ONLY to stderr; run_review captures the reviewer to $raw_file, so the heartbeat can
-# never interleave into the bytes the verdict parse reads. Stopped unconditionally after the call
-# (below), and the EXIT trap kills any orphan if the script dies mid-review.
-start_heartbeat "$REVIEW_TIMEOUT" "$reviewer"
-run_review || codex_rc=$?
-stop_heartbeat
-
-# Codex prints a 'codex' marker line before its answer; drop the marker itself and keep
-# what follows (evidence starts at the reviewer's content, not the marker). Fall back to
-# the full output if there is no marker.
-verdict_block="$(awk '/^codex$/{c=1; next} c' "$raw_file" 2>/dev/null)"
-[[ -n "$verdict_block" ]] || verdict_block="$(cat "$raw_file")"
-printf '%s\n' "$verdict_block" > "$evidence"
-[[ -s "$evidence" ]] || { echo "pawl-review: no reviewer output captured — fail-closed" >&2; triage_block STALL "$evidence"; exit 1; }
-
-# Decide on the FINAL verdict-shaped line only — parsed from the REVIEWER's OWN bytes
-# ($verdict_block, which only ever holds the reviewer subprocess's output), NEVER from the
-# evidence file (refuter catch, age-rk3r.7 round 2): the live-smoke section appended below
-# embeds REPO-CONTROLLED output (the smoke typically runs the repo's own test suite, which
-# can print anything — including a forged "VERDICT: CONFIRMED" placed AFTER a real REFUTED),
-# so smoke bytes must be STRUCTURALLY incapable of reaching this parse. The reviewer's real
-# answer comes LAST, after any preamble or echoed prompt template — an echoed
-# "VERDICT: CONFIRMED" from the instructions must not be mistaken for the verdict. (defends
-# a quoted/multi-verdict false-CONFIRMED)
-final_verdict="$(printf '%s\n' "$verdict_block" | grep -iE '^[[:space:]]*VERDICT:[[:space:]]*(CONFIRMED|REFUTED)' | tail -1)"
-
-# age-rk3r.7: persist the live-smoke runtime evidence into the SAME verdict evidence file the
-# CONFIRMED verdict binds — so the proof artifact carries the RUNTIME proof, not just the diff
-# review. Appended AFTER (and independent of) the verdict parse above; defense-in-depth,
-# every captured smoke-output line is "    | "-neutralized by build_smoke_evidence, so no
-# smoke line can match a bare ^VERDICT: pattern in ANY downstream consumer of this file
-# (emit_pawl_catch's reason grep included). Empty when no smoke ran => byte-identical.
-[[ -n "$smoke_evidence" ]] && printf '\n%s\n' "$smoke_evidence" >> "$evidence"
-
-# Record ADVERSARIAL lineage: a clean adversarial run (any verdict) on THIS exact diff.
-# --converge later requires this for the identical diff-hash. Written here — before the
-# REFUTED exit — so a REFUTED-on-cosmetic-tail run (the convergence trigger) still records
-# that this diff faced maximal refutation. NOT written by --converge itself (it must not
-# self-certify lineage) nor by a crashed run. (age-cwo.8 / council C)
-if [[ "$converge" -eq 0 && "$codex_rc" -eq 0 && -n "$final_verdict" ]]; then
-  mkdir -p "$PAWL_REVIEW_DIR"
-  _outcome="$(grep -qi REFUTED <<<"$final_verdict" && echo REFUTED || echo CONFIRMED)"
-  printf '{"bead":"%s","diff_hash":"%s","head_sha":"%s","outcome":"%s","ts":"%s"}\n' \
-    "$bead" "$diff_hash" "$head" "$_outcome" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$lineage_file"
-  # Preserve the adversarial review's FULL output (its defects). --converge folds it into
-  # the verdict so the adversarial findings being ACCEPTED-AS-TAIL are recorded, never
-  # silently bypassed — even a REFUTED adversarial run's defects are auditable in the
-  # converge verdict (the "both bars" the council required).
-  cp "$evidence" "$PAWL_REVIEW_DIR/${bead}.adversarial.evidence.txt" 2>/dev/null || true
-fi
-
-if grep -qiE 'REFUTED' <<<"$final_verdict"; then
-  # age-6idm: AUTO-RUN-THE-REPRO. A REVIEWER REFUTED that NAMES an executable repro is a
-  # candidate FALSE refute (the 2026-07-02 build-tag class: 3/3 REFUTEDs each named a repro
-  # that actually PASSED). Extract the repro from the DEFECTS text, gate it at the ARGV level
-  # (repro_argv_allowed — never sh -c/eval), and run it ONCE, timeboxed:
-  #   - repro PASSES (exit 0) -> the refute is SUSPECT; re-roll the review ONCE. Bounded by
-  #     PAWL_REROLLED_AFTER_FALSE_REPRO (the marker that survives the re-exec) so a second
-  #     false-repro can NOT loop — on an already-rerolled run this branch is skipped and the
-  #     REFUTED STANDS (surfaced with the run) even if its repro passes.
-  #   - repro FAILS -> the REFUTED STANDS; attach the run's exit code + output tail as evidence.
-  #   - no candidate / disallowed argv -> no execution; the REFUTED stands exactly as today.
-  repro_cmd="$(extract_repro_command < "$evidence")"
-  if [[ -n "$repro_cmd" ]]; then
-    read -r -a repro_argv <<<"$repro_cmd"   # ARGV-level tokenize; NOTHING goes to a shell
-    if [[ "${#repro_argv[@]}" -ge 1 ]] && repro_argv_allowed "${repro_argv[@]}"; then
-      echo "pawl-review: REFUTED names a repro — running it ONCE (timeboxed, argv-allowlisted) to check the refute: ${repro_argv[*]}" >&2
-      repro_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-repro.XXXXXX")"
-      _rt=(); read -r -a _rt <<<"$(codex_exec_timeout_cmd 300)" || true   # same timeout wrapper as the reviewer
-      repro_rc=0
-      if [[ "${#_rt[@]}" -gt 0 ]]; then
-        ( cd "$REPO_ROOT" && "${_rt[@]}" "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
-      else
-        ( cd "$REPO_ROOT" && "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
-      fi
-      if [[ "$repro_rc" -eq 0 && -z "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
-        echo "pawl-review: the named repro PASSED (exit 0) — the REFUTED is SUSPECT (false repro). Re-rolling the review ONCE (bounded)…" >&2
-        # exec skips the EXIT trap, so clean the temp files this run owns before replacing.
-        rm -f "$repro_out" "$prompt_file" "$raw_file"
-        [[ -n "${smoke_out:-}" ]] && rm -f "$smoke_out"
-        PAWL_REROLLED_AFTER_FALSE_REPRO=1 exec bash "$0" "${PAWL_ORIG_ARGS[@]}"
-      fi
-      # repro FAILED, or we already re-rolled once (bounded) — the REFUTED STANDS. Attach evidence.
-      {
-        printf '\n=== AUTO-REPRO (age-6idm) — the REFUTED named a repro; it was run ONCE, timeboxed ===\n'
-        printf 'repro command: %s\n' "${repro_argv[*]}"
-        printf 'exit code: %s\n' "$repro_rc"
-        if [[ -n "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
-          printf 'NOTE: this review was already RE-ROLLED once after a false repro (rerolled_after_false_repro);\n'
-          printf 'a second REFUTED STANDS even if its repro passes — surfaced here with the run.\n'
-        fi
-        printf -- '--- repro output tail (each line "    | "-prefixed — run output, neutralized) ---\n'
-        tail -n 30 "$repro_out" 2>/dev/null | sed 's/^/    | /'
-        printf -- '--- end AUTO-REPRO ---\n'
-      } >> "$evidence"
-      rm -f "$repro_out"
-    else
-      echo "pawl-review: REFUTED named a repro '$repro_cmd' NOT in the allowed argv set (go test|build|vet or bats, no dangerous args/paths) — NOT executing; the REFUTED stands." >&2
+  # No clear CONFIRMED. age-rk3r.2: an OUTAGE (STALL/ECHO/529-class) with a fallback remaining
+  # fails over (degraded); a NON-outage no-verdict (a genuine garbled run) does NOT — it takes
+  # the byte-identical fail-closed exit.
+  if ! grep -qiE 'CONFIRMED' <<<"$final_verdict"; then
+    if [[ "$_has_next" -eq 1 ]] && _is_outage_class "$codex_rc" "$evidence"; then
+      degraded=true; failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(${_OUTAGE_LABEL})"
+      echo "pawl-review: reviewer '$reviewer' produced NO clear verdict + OUTAGE (${_OUTAGE_LABEL}) — failing over to the next configured reviewer…" >&2
+      continue
     fi
+    echo "pawl-review: reviewer's FINAL line is not a clear VERDICT: CONFIRMED|REFUTED — fail-closed. Raw output in $evidence" >&2
+    triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
+    exit 1
   fi
-  echo "=== PAWL REVIEW: REFUTED — defects below (fix, recommit, re-run; NO verdict written) ===" >&2
-  sed -n '/^[[:space:]]*VERDICT:[[:space:]]*REFUTED/,$p' "$evidence" >&2
-  emit_pawl_catch fresh-context
-  exit 3
-fi
-if ! grep -qiE 'CONFIRMED' <<<"$final_verdict"; then
-  echo "pawl-review: reviewer's FINAL line is not a clear VERDICT: CONFIRMED|REFUTED — fail-closed. Raw output in $evidence" >&2
-  triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
-  exit 1
-fi
-# A CONFIRMED is only trustworthy from a CLEANLY-EXITED reviewer run (defends defect #3).
-if [[ "$codex_rc" -ne 0 ]]; then
-  echo "pawl-review: reviewer exited non-zero ($codex_rc, e.g. timeout 124) — refusing to trust a CONFIRMED from an incomplete run — fail-closed" >&2
-  triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
-  exit 1
-fi
+  # A CONFIRMED is only trustworthy from a CLEANLY-EXITED reviewer run (defends defect #3).
+  # age-rk3r.2: an incomplete-run CONFIRMED is an OUTAGE — fail over if a fallback remains.
+  if [[ "$codex_rc" -ne 0 ]]; then
+    if [[ "$_has_next" -eq 1 ]] && _is_outage_class "$codex_rc" "$evidence"; then
+      degraded=true; failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(${_OUTAGE_LABEL})"
+      echo "pawl-review: reviewer '$reviewer' CONFIRMED from an INCOMPLETE run ($codex_rc, ${_OUTAGE_LABEL}) — OUTAGE; failing over to the next configured reviewer…" >&2
+      continue
+    fi
+    echo "pawl-review: reviewer exited non-zero ($codex_rc, e.g. timeout 124) — refusing to trust a CONFIRMED from an incomplete run — fail-closed" >&2
+    triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
+    exit 1
+  fi
+
+  # CONFIRMED + clean run — this reviewer WON. Leave the loop and write the verdict below.
+  failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(CONFIRMED)"
+  break
+done
 
 # scope=staged is REVIEW-ONLY: the reviewed change is not committed, so there is no
 # object to commit-bind a verdict to. Print the result; do NOT write (defends defect #1).
@@ -1202,14 +1366,42 @@ fi
 # repo root the checker uses.
 # The refuter entry certifies the RESOLVED reviewer's family (age-rk3r.1 DEFECT 2 fix —
 # a hardcoded "codex" here made REVIEWER=agy certify family=codex in the binding verdict).
+#
+# age-rk3r.2: when this verdict came from a FALL-OVER (a non-first-choice family, after an
+# OUTAGE on an earlier one), stamp the .16 `degraded` flag so downstream (metrics/audits) can
+# tell a nominal verdict from a weaker-than-nominal one. reviewer_family is READ from the
+# resolved refuter (NOT re-added top-level — invariant 3). The attempt COUNT + family trail are
+# recorded in the BOUND evidence (not a new schema field), so the winning reviewer's evidence
+# self-documents the fall-over. With no chain / no fall-over, degraded stays false and NO flag /
+# note is emitted — byte-identical (invariant 1).
+_degraded_args=()
+if [[ "$degraded" == true ]]; then
+  _degraded_args=(--degraded true)
+  {
+    echo ""
+    echo "=== DEGRADED FALLBACK (age-rk3r.2) ==="
+    echo "This verdict was produced by a FALL-OVER reviewer after an OUTAGE on an earlier configured"
+    echo "family — a DEGRADED (weaker-than-nominal) review posture, honestly labeled degraded=true."
+    echo "Reviewer chain: ${reviewer_chain[*]}"
+    echo "Usable (cross-family) chain: ${usable_reviewers[*]}"
+    echo "Attempts: ${reviewer_attempts}   Trail: ${failover_trail}   Winning family: ${reviewer_family}"
+    echo "=== end DEGRADED FALLBACK ==="
+  } >> "$evidence"
+  # A degraded fallback that produced THIN evidence is not trustworthy: the .11 evidence-quality
+  # floor still applies. `$PAWL check` below runs pawl_evidence_floor on this verdict (advisory
+  # now, HOLD once it enforces on/after its flip date) — a degraded verdict is NEVER exempted.
+  echo "pawl-review: DEGRADED verdict — fell over to '${reviewer_family}' after ${reviewer_attempts} attempt(s) [${failover_trail}]; stamping degraded=true. The .11 evidence-quality floor still applies below (a thin-evidence degraded fallback is not trustworthy)." >&2
+fi
 "$PAWL" write "$bead" "$PR" \
   --disposition CONFIRMED --head "$head" \
   --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
   --refuter "${reviewer_family}:CONFIRMED:${ctx}:${evidence}" \
+  ${_degraded_args[@]+"${_degraded_args[@]}"} \
   --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: verdict write failed" >&2; exit 1; }
 
+_deg_suffix=""; [[ "$degraded" == true ]] && _deg_suffix=" (DEGRADED fallback — see PAWL-FLOOR above)"
 if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
-  echo "pawl-review: CONFIRMED + verdict written + verified for $bead @ ${head:0:12} — ready to push." >&2
+  echo "pawl-review: CONFIRMED + verdict written + verified for $bead @ ${head:0:12}${_deg_suffix} — ready to push." >&2
   exit 0
 fi
 echo "pawl-review: verdict written but the check did not pass (see above) — fail-closed" >&2

@@ -833,7 +833,7 @@ do_check() {
 do_write() {
   local bead="${1:-}" pr="${2:-}"; shift 2 || true
   local disposition="" head="" council="" attempt="1" mode="" author_ctx=""
-  local difficulty="1" author_family="unknown" domain="" reason=""
+  local difficulty="1" author_family="unknown" domain="" reason="" degraded=""
   local refuters=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -845,6 +845,11 @@ do_write() {
       --attempt)        attempt="${2:-}"; shift 2 ;;
       --mode)           mode="${2:-}"; shift 2 ;;
       --author-context) author_ctx="${2:-}"; shift 2 ;;
+      # age-rk3r.2: honest-degradation flag (the .16-accepted `degraded` field). TRUE when the
+      # panel could not run at its configured strength (a reviewer family was unavailable and a
+      # fall-over/reduced-diversity path produced the verdict) but a real review still ran. Only
+      # true|false accepted; absent => the field is OMITTED (nominal, byte-identical default).
+      --degraded)       degraded="${2:-}"; shift 2 ;;
       # yield-ledger enrichment (age-uxva) — all optional; the emit is best-effort.
       # NOTE: deliberately NO --run flag. The run_id MUST resolve identically to
       # reconcile-pr.sh's accept emit (which has no --run either), or gauge A
@@ -868,6 +873,14 @@ do_write() {
   # and an exit here would silently DROP the very catch we most want logged.
   if [[ "$disposition" == "REFUTED" ]]; then
     [[ -n "$reason" ]] || { echo "pawl-verdict write: a REFUTED verdict is a candidate escape — --reason is REQUIRED (what was missed). Classify it." >&2; return 2; }
+  fi
+  # age-rk3r.2: validate --degraded (the .16 boolean field). Only true|false; anything else is a
+  # caller bug — fail-closed rather than write a non-boolean the schema would then reject at check.
+  if [[ -n "$degraded" ]]; then
+    case "$degraded" in
+      true|false) ;;
+      *) echo "pawl-verdict write: --degraded must be 'true' or 'false' (got '$degraded')" >&2; return 2 ;;
+    esac
   fi
 
   # Build the refuters JSON array from `fam:verdict:context_id[:evidence-path]`
@@ -909,6 +922,7 @@ do_write() {
     --arg council "$council" \
     --arg mode "$mode" \
     --arg author_ctx "$author_ctx" \
+    --arg degraded "$degraded" \
     '{
        schema_version: "pawl-verdict.v1",
        bead_id: $bead,
@@ -921,7 +935,8 @@ do_write() {
      }
      + (if $mode    != "" then {mode: $mode} else {} end)
      + (if $head    != "" then {head_sha: $head} else {} end)
-     + (if $council != "" then {council_artifact: $council} else {} end)' \
+     + (if $council != "" then {council_artifact: $council} else {} end)
+     + (if $degraded != "" then {degraded: ($degraded == "true")} else {} end)' \
     > "$tmp" || { rm -f "$tmp"; die "failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
@@ -1072,7 +1087,9 @@ Usage:
   pawl-verdict.sh write <bead-id> <pr> --disposition <CONFIRMED|REFUTED|ESCALATE|HOLD> --head SHA \
       --author-context <id> [--mode <fresh-context|multi-model>] \
       --refuter <family>:<CONFIRMED|REFUTED>:<context_id>[:<evidence-path>] [--refuter ...] \
-      [--dir D] [--council PATH] [--attempt N]
+      [--dir D] [--council PATH] [--attempt N] [--degraded true|false]
+      --degraded true marks an honestly-DEGRADED review posture (a fall-over reviewer produced
+        this verdict after an outage on the configured family). Absent => nominal (field omitted).
   pawl-verdict.sh rebind <bead-id> <pr> --head NEWSHA [--dir D]
       Re-stamp an existing CONFIRMED verdict onto a new head (refuters preserved) — the
       deterministic clean-land step after the verdict's ledger edge is committed.
