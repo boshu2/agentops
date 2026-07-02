@@ -19,7 +19,7 @@ state *first*, then clear, then rehydrate from the artifact. **Handoff before
 clear, always** — clearing without a current handoff loses the thread. The handoff
 must be complete enough to rehydrate the lane to exactly where it was (goal,
 claimed bead(s), held reservations, peer/comms topology, working-thread pointer).
-The structured artifact is `ao handoff` → `.agents/handoff/` (`--no-kill` writes
+The structured artifact is `ao session handoff` → `.agents/handoff/` (`--no-kill` writes
 without the tmux restart).
 
 ## Every handoff is a compounding artifact
