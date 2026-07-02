@@ -1172,6 +1172,13 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance ledger-reader-version",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance list",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1558,6 +1565,13 @@
     {
       "category": "public-tested",
       "command": "verdict-gate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "verify init",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

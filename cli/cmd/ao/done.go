@@ -191,24 +191,26 @@ func doneResolveHead(cwd string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// doneCommitProvenanceOnly reports whether every changed file of the commit is
-// under docs/provenance/ — the sole waiver class, mirroring the #trivial
-// semantics of scripts/check-pawl-pre-push.sh. Fail-closed: a failed diff-tree
-// or an empty changed-file list cannot prove triviality, so it does NOT waive.
-// --no-renames forces a rename INTO docs/provenance/ to expose its
-// non-allowlisted source path.
-func doneCommitProvenanceOnly(cwd, sha string) bool {
-	out, err := exec.Command("git", "-C", cwd,
-		"diff-tree", "--no-commit-id", "--no-renames", "--name-only", "-r", sha).Output()
-	if err != nil {
-		return false
-	}
+// provenanceOnlyChangedFiles is the SINGLE allowlist-discipline both the `ao
+// done` waiver (doneCommitProvenanceOnly) and the pre-push #trivial waiver
+// (trivialWaiver) route through, so the two can never disagree about what is
+// waivable. `out` is the NUL-separated changed-file list from `git diff-tree
+// --no-commit-id --no-renames --name-only -z -r <sha>`. It reports whether that
+// list is non-empty AND every path is under docs/provenance/.
+//
+// -z is load-bearing (parsing sweep): NUL-separated output emits each path's RAW
+// bytes with NO C-quoting, so the comparison is against the exact path — a path
+// literally named " docs/provenance/x" (LEADING SPACE) or one with any other
+// surprising byte is matched exactly, never trimmed or dequoted into the
+// allowlist (the newline+CR-strip form depended on git's quoting to fail-close;
+// -z removes that dependency and the ambiguity of splitting on a byte a path
+// could contain). The docs/provenance/ prefix keeps its TRAILING SLASH so it is
+// an exact directory boundary — "docs/provenance-evil/x" is NOT under it.
+// Fail-closed on an empty list: it cannot prove triviality.
+func provenanceOnlyChangedFiles(out string) bool {
 	var files []string
-	// Strip only the line terminator, never spaces: a path literally named
-	// " docs/provenance/x" (leading space) must NOT trim into the allowlist
-	// (pawl catch: fail-open waiver via TrimSpace).
-	for _, line := range strings.Split(string(out), "\n") {
-		if f := strings.TrimRight(line, "\r"); f != "" {
+	for _, f := range strings.Split(out, "\x00") {
+		if f != "" {
 			files = append(files, f)
 		}
 	}
@@ -221,6 +223,23 @@ func doneCommitProvenanceOnly(cwd, sha string) bool {
 		}
 	}
 	return true
+}
+
+// doneCommitProvenanceOnly reports whether every changed file of the commit is
+// under docs/provenance/ — the sole waiver class, mirroring the #trivial
+// semantics of scripts/check-pawl-pre-push.sh. Fail-closed: a failed diff-tree
+// or an empty changed-file list cannot prove triviality, so it does NOT waive.
+// --no-renames forces a rename INTO docs/provenance/ to expose its
+// non-allowlisted source path; -z emits raw (unquoted) NUL-separated paths for
+// exact comparison. Path discipline is the shared provenanceOnlyChangedFiles
+// (parity with the pre-push waiver).
+func doneCommitProvenanceOnly(cwd, sha string) bool {
+	out, err := exec.Command("git", "-C", cwd,
+		"diff-tree", "--no-commit-id", "--no-renames", "--name-only", "-z", "-r", sha).Output() // #nosec G204 -- cwd is the repo; sha is a resolved commit id.
+	if err != nil {
+		return false
+	}
+	return provenanceOnlyChangedFiles(string(out))
 }
 
 // doneRefusalError builds the corrective refusal: no proof, no close.

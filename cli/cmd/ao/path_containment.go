@@ -41,3 +41,13 @@ func pathInside(child, root string) bool {
 	}
 	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && !filepath.IsAbs(rel))
 }
+
+// pathInsideRepo reports whether path is at or below repo, resolving symlinks on
+// both sides so a symlinked binary or checkout compares correctly. It is the ONE
+// containment predicate the "no repo-internal-absolute binary is ever trusted"
+// invariant rests on: trustedLookPath applies it to exclude a repo-planted git
+// from PATH resolution (runtime), and `ao verify init` applies it to refuse
+// baking a repo-internal ao path into the installed hook (install time).
+func pathInsideRepo(path, repo string) bool {
+	return pathInside(realpathOrSelf(path), realpathOrSelf(repo))
+}
