@@ -189,7 +189,7 @@ CANNED
 	}
 
 	// Stderr must not carry the old regression signature.
-	if strings.Contains(stderr.String(), "skills/compile/scripts/compile.sh: file does not exist") {
+	if strings.Contains(stderr.String(), "skills/curate/scripts/compile.sh: file does not exist") {
 		t.Errorf("compile script resolution regressed; stderr: %s", stderr.String())
 	}
 }

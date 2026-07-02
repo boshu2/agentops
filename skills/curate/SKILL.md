@@ -1,6 +1,6 @@
 ---
 name: curate
-description: 'Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".'
+description: 'Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Fold target for compile (knowledge-wiki compilation via --mode=compile). Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill", "compile the knowledge wiki".'
 practices:
 - wiki-knowledge-surface
 - lean-startup
@@ -8,6 +8,7 @@ hexagonal_role: supporting
 consumes: []
 produces:
 - .agents/research/*.md
+- .agents/compiled/lint-report.md
 context_rel: []
 skill_api_version: 1
 user-invocable: true
@@ -22,8 +23,8 @@ context:
 metadata:
   tier: experimental
   dependencies: []
-output_contract: .agents/research/*.md (synthesis), br notes, skill diffs (rare);
-  never code mutations
+output_contract: .agents/research/*.md (synthesis), br notes, skill diffs (rare),
+  .agents/compiled/*.md wiki (--mode=compile); never code mutations
 ---
 
 # /curate — Canonical Miner Skill
@@ -39,7 +40,7 @@ output_contract: .agents/research/*.md (synthesis), br notes, skill diffs (rare)
 | `--mode=dream` | Overnight bounded INGEST→REDUCE→MEASURE on `.agents/` | retired dream lane |
 | `--mode=harvest` | Cross-rig promotion + post-mortem mining + flywheel rollup | retired harvest lane, `/post-mortem` mining half, `/flywheel` |
 | `--mode=forge` | Per-session transcript mining (session-close cadence, run explicitly) | `/forge` |
-| `--mode=compile` | Mine→Grow→Defrag→Lint corpus pipeline | `/compile` |
+| `--mode=compile` | Mine→Grow→Compile→Lint→Defrag corpus pipeline | `/compile` (retired 2026-07-02, absorbed here) |
 | `--mode=retro` | Single-session learning capture | retired retro lane |
 | `--mode=defrag` | Knowledge defragmentation (overnight) | `compile-session-defrag.sh` hook |
 | `--mode=watch` | In-session drift / loop detection (15-min cadence) | `research-loop-detector.sh` hook |
@@ -78,7 +79,7 @@ Parse `--mode`. Each mode has its own scope semantics:
 | dream | `.agents/` corpus | `.agents/overnight/<run-id>/` summary + per-iteration JSON | overnight (1×/24h) |
 | harvest | `.agents/` across rigs (`~/.agents/learnings/`) | `~/.agents/learnings/` (promotion), `.agents/harvest/latest.json` | daily (1×/24h) |
 | forge | session transcripts (`~/.claude/projects/<session>/*.jsonl`) | `.agents/learnings/`, `.agents/patterns/` | per-session (run at session close) or 30m loop |
-| compile | `.agents/` corpus | `wiki/INDEX.generated.md`, `.agents/compile/<date>.md` | weekly |
+| compile | `.agents/` corpus | `.agents/compiled/` wiki (articles + `index.md` + `log.md` + `lint-report.md`), `.agents/compile/<date>-report.md` | weekly |
 | retro | this session's transcript + recent diffs | `.agents/retro/index.jsonl` (append) | per-session (manual) |
 | defrag | `.agents/` corpus | `.agents/defrag/<date>.md` (cleanup report) | overnight (1×/24h) |
 | watch | last 100 lines of current session transcript | `.agents/watch/<date>.md` (advisory) | in-session 15m loop |
@@ -198,16 +199,48 @@ or ≥2 citations.
 
 Detailed body remains inline until Phase 2 extraction.
 
-### --mode=compile
+### --mode=compile (absorbed from /compile)
 
-Corpus pipeline:
-- Mine: extract candidate knowledge from `.agents/`
-- Grow: merge into existing taxonomy
-- Defrag: collapse redundant entries
-- Lint: check for orphans, contradictions, staleness
-- Output: `wiki/INDEX.generated.md` (rebuilt), `.agents/compile/<date>.md` (lint report)
+> **Absorbs `/compile`** (retired): `/compile` routes here. The `ao compile` CLI
+> is unchanged and remains the mechanical path; its headless compiler script now
+> lives at [scripts/compile.sh](scripts/compile.sh) (moved from the retired
+> skill — `ao compile` reads that path with an embedded fallback, so it still
+> runs zero-config outside a source checkout).
 
-Detailed body remains inline until Phase 2 extraction.
+Corpus pipeline — reads raw `.agents/` artifacts and compiles them into a
+structured, interlinked markdown wiki. **No vector DB:** at personal scale
+(~100-400 articles) the compiled wiki fits in context windows; the wiki IS the
+retrieval layer.
+
+1. **Mine** — extract signal from git + `.agents/research/` + complexity hotspots
+2. **Grow** — LLM-driven validation, synthesis, gap detection; adjust learning confidence
+3. **Compile** — inventory → topic extraction → wiki articles with `[[backlinks]]`
+4. **Lint** — contradictions, orphans, missing cross-refs, stale claims
+5. **Defrag** — prune stale, dedup near-duplicates, sweep oscillating goals
+6. **Report** — write `.agents/compile/YYYY-MM-DD-report.md`
+
+Output: `.agents/compiled/` — encyclopedia-style markdown with `[[backlinks]]`,
+an `index.md` catalog, a `log.md` chronological record, and `lint-report.md`.
+
+Sub-flags (absorbed from /compile): `--compile-only`, `--lint-only`,
+`--defrag-only`, `--mine-only`, `--full`, `--since <window>`, `--incremental`,
+`--force`. Full per-phase procedure, confidence scoring, auto-promotion rules,
+and article/index/log/lint-report template shapes:
+[references/phases.md](references/phases.md).
+
+**Headless / scheduled runs** go through `ao compile` (or
+`bash skills/curate/scripts/compile.sh` directly). Choose the LLM backend with
+`AGENTOPS_COMPILE_RUNTIME` — `codex-cli` (zero-config, inherits Codex CLI
+auth), `ollama` (set `OLLAMA_HOST` for remote), `claude` (`ANTHROPIC_API_KEY`),
+or `openai` (`OPENAI_API_KEY` + `OPENAI_BASE_URL`); unset = compile inline in
+the current session (the agent reading this skill IS the compiler), with
+`codex`-binary auto-detect for headless runs. Precedence (high → low):
+`--runtime` flag, env, `compile.preferred_runtime` in `~/.agentops/config.yaml`,
+codex auto-detect, empty (fail fast with an explicit error). Large corpora
+batch automatically: `--batch-size N` (default 25 files per LLM prompt) and
+`--max-batches N` (0 = unlimited). Unattended cadence belongs to the host
+scheduler (cron/launchd/CI) invoking `ao compile --force --runtime ollama` —
+not a parallel wrapper inside this skill.
 
 ### --mode=retro
 
@@ -267,3 +300,8 @@ Detailed body remains inline until Phase 2 extraction.
 - [references/harvest-governance.md](references/harvest-governance.md) — Governance model for `--mode=harvest`: sweep frequency, size budgets, staleness thresholds, cross-rig synthesis triggers, dedup policy (folded from retired harvest, cp-dxa)
 - [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for `--mode=forge` transcript mining (folded from retired forge)
 - [references/feedback-compiler-drafts.md](references/feedback-compiler-drafts.md) — draft-vs-provisional promotion rule for `cli/internal/feedbackcompiler` output in `docs/learnings/` (never auto-promote; folded from retired forge)
+- [references/compile.feature](references/compile.feature) — Executable spec: Mine→Grow→Lint→Defrag rebuild, lint-not-autofix, incremental batching, evolve warmup (soc-qk4b; absorbed from /compile)
+- [references/phases.md](references/phases.md) — full per-phase compile procedure (mine → grow → compile → lint → defrag → report) for `--mode=compile` (absorbed from /compile)
+- [references/confidence-scoring.md](references/confidence-scoring.md) — confidence-scoring table + auto-promotion rules for the grow phase (absorbed from /compile)
+- [references/knowledge-synthesis-patterns.md](references/knowledge-synthesis-patterns.md) — synthesis patterns for the grow phase (absorbed from /compile)
+- [references/flywheel-diagnostics.md](references/flywheel-diagnostics.md) — corpus-health diagnostics (absorbed from /compile)

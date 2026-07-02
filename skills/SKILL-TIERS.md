@@ -47,7 +47,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | (none active) |
 | **meta** | Internal | Skills about skills | heal-skill, skill-builder |
-| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, corpus-flywheel skills, no measured uplift) | evolve, compile, flywheel, curate, operationalize |
+| **experimental** | Internal | Heavy legacy loops kept but demoted (heavy rpi chains, corpus-flywheel skills, no measured uplift) | evolve, flywheel, curate, operationalize |
 
 ## The Three Categories
 
@@ -122,15 +122,15 @@ POST-SHIP                             ONBOARDING / STATUS
 Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. Next session injects the best. This is the bookkeeping layer that makes sessions compound instead of starting from scratch.
 
 ```
-┌─────────┐     ┌─────────┐     ┌──────────┐     ┌───────────┐
-│post-mortem│──►│ curate  │────►│ compile  │────►│ ao lookup │
-└─────────┘     └─────────┘     └──────────┘     └───────────┘
-     ▲                                                 │
-     │              ┌──────────┐                       │
-     └──────────────│ flywheel │◄──────────────────────┘
-                    └──────────┘
+┌───────────┐    ┌────────┐    ┌────────────────┐    ┌───────────┐
+│post-mortem│───►│ curate │───►│ --mode=compile │───►│ ao lookup │
+└───────────┘    └────────┘    └────────────────┘    └───────────┘
+     ▲                                                     │
+     │                  ┌──────────┐                       │
+     └──────────────────│ flywheel │◄──────────────────────┘
+                        └──────────┘
 
-User-facing: /curate (miner), /compile (query + grow), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
+User-facing: /curate (miner; --mode=compile = query + grow, absorbed from /compile), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
 Background:  flywheel (health monitor)
 CLI:         ao lookup, ao extract, ao forge, ao maturity
 ```
@@ -178,7 +178,7 @@ What are you trying to do?
 │   └─ Generate ideas ────────────► /discovery
 │
 ├─ "Learn from past work"
-│   ├─ What do we know about X? ──► /compile <query>
+│   ├─ What do we know about X? ──► /curate --mode=compile <query>
 │   ├─ Save this insight ─────────► /post-mortem --quick "insight"
 │   ├─ Full retrospective ────────► /post-mortem
 │   └─ Trace a decision ─────────► /recover <concept>
@@ -243,7 +243,7 @@ These are how skills chain in practice:
 | **Full pipeline** | `/rpi` (chains all above) | End-to-end, autonomous |
 | **Evolve loop** | `/evolve` (chains `/rpi` repeatedly) | Fitness-scored improvement |
 | **PR contribution** | `/pr-prep` → `/plan` → `/implement` → `/validate --mode=pr` → `/pr-prep` | External repo |
-| **Knowledge query** | `/compile` → `/research` (if gaps) | Understanding before building |
+| **Knowledge query** | `/curate --mode=compile` → `/research` (if gaps) | Understanding before building |
 | **Standalone review** | `/council validate <target>` | Ad-hoc multi-judge review |
 | **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |
 | **TDD feature** | `/implement <issue>` | TDD-first by default (skip with `--no-tdd`) |
@@ -259,7 +259,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (60)
+### User-Facing Skills (59)
 
 **Judgment:**
 
@@ -298,9 +298,8 @@ These are how skills chain in practice:
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **compile** | experimental | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **domain** | knowledge | Shared vocabulary for human-AI software building (tracer-bullet shape; loaded JIT when terms like vertical slice, tracer bullet, primitive need a canonical definition) |
-| **curate** | experimental | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
+| **curate** | experimental | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries; `--mode=compile` runs the Mine → Grow → Compile → Lint → Defrag wiki cycle (absorbed from /compile) |
 
 **Product & Release:**
 
@@ -380,9 +379,8 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 
 | Skill | Dependencies | Type |
 |-------|--------------|------|
-| **compile** | - | - (standalone, ao CLI optional) |
 | **curate** | - | - (standalone knowledge miner) |
-| **operationalize** | compile, flywheel | optional, optional |
+| **operationalize** | curate, flywheel | optional, optional |
 | **council** | - | - (core primitive) |
 | **validate** | - | - (standalone validator role) |
 | **pre-mortem** | council | required |

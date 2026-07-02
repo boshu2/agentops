@@ -152,7 +152,7 @@ func TestRunCompileLintOnlySkipsMineAndDefrag(t *testing.T) {
 func TestMaterializeCompileScriptNormalizesCRLF(t *testing.T) {
 	resetCommandState(t)
 	tmp := t.TempDir()
-	script := filepath.Join(tmp, "skills", "compile", "scripts", "compile.sh")
+	script := filepath.Join(tmp, "skills", "curate", "scripts", "compile.sh")
 	if err := os.MkdirAll(filepath.Dir(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -177,12 +177,12 @@ func TestMaterializeCompileScriptNormalizesCRLF(t *testing.T) {
 
 // TestMaterializeCompileScriptFallsBackToEmbedded verifies the regression
 // reported on 2026-04-15: when `ao compile --full` runs outside a source
-// checkout (no local skills/compile/scripts/compile.sh), the embedded copy
+// checkout (no local skills/curate/scripts/compile.sh), the embedded copy
 // must resolve instead of returning "file does not exist".
 func TestMaterializeCompileScriptFallsBackToEmbedded(t *testing.T) {
 	resetCommandState(t)
 	tmp := t.TempDir()
-	// Intentionally do NOT create skills/compile/scripts/compile.sh in tmp.
+	// Intentionally do NOT create skills/curate/scripts/compile.sh in tmp.
 	path, cleanup, err := materializeCompileScript(tmp)
 	if err != nil {
 		t.Fatalf("materializeCompileScript outside repo: %v", err)
@@ -362,7 +362,7 @@ func TestCompileScriptOptionsPassesBatchFlags(t *testing.T) {
 	t.Cleanup(func() { testProjectDir = "" })
 
 	// Seed a no-op compile script locally so materialize succeeds.
-	script := filepath.Join(tmp, "skills", "compile", "scripts", "compile.sh")
+	script := filepath.Join(tmp, "skills", "curate", "scripts", "compile.sh")
 	if err := os.MkdirAll(filepath.Dir(script), 0o755); err != nil {
 		t.Fatal(err)
 	}

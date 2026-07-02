@@ -60,8 +60,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `beads-bv` — Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".
 - `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".
-- `compile` — Compile .agents knowledge wiki. Triggers: "compile the knowledge wiki", "build the LLM wiki", "compile .agents into the wiki".
-- `curate` — Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".
+- `curate` — Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Fold target for compile (knowledge-wiki compilation via --mode=compile). Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill", "compile the knowledge wiki".
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
@@ -157,7 +156,6 @@ graph LR
 | `bootstrap` | consumes | product |
 | `bootstrap` | consumes | shared |
 | `codex-exec` | produces | codex-run-output |
-| `compile` | produces | .agents/compiled/lint-report.md |
 | `converge` | consumes | command-help |
 | `converge` | produces | stdout |
 | `converter` | produces | converted-skill |
@@ -171,6 +169,7 @@ graph LR
 | `crank` | consumes | validate |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
+| `curate` | produces | .agents/compiled/lint-report.md |
 | `curate` | produces | .agents/research/*.md |
 | `discovery` | consumes | plan |
 | `discovery` | consumes | pre-mortem |
@@ -185,7 +184,7 @@ graph LR
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
-| `evolve` | consumes | compile |
+| `evolve` | consumes | curate |
 | `evolve` | consumes | goals |
 | `evolve` | consumes | post-mortem |
 | `evolve` | consumes | rpi |

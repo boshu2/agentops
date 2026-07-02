@@ -331,6 +331,11 @@ historical:
     merged-into:  curate
     date:         2026-07-02
     rationale:    "Retired via ao skills retire: merged into curate."
+  compile:
+    state:        merged-into
+    merged-into:  curate
+    date:         2026-07-02
+    rationale:    "Retired via ao skills retire: merged into curate."
 workflows:
   ship-beads:
     kind:            workflow
@@ -402,18 +407,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "First-run factory entrypoint; needs current 3.0/domain packet shape"
-  - skill:            compile
-    domain:           "BC1 Corpus"
-    hexagonal_role:   supporting
-    disposition:      refactor
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/compile/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Corpus compiler is core; align read/write flows to Corpus ports"
   - skill:            converge
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter

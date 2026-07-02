@@ -196,11 +196,11 @@ promotes; the two are the read and write-to-surface halves of the same flywheel.
 Activation is the **fourth step** of the global-corpus workflow:
 
 1. `/curate --mode=harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
-2. `/compile` — synthesize raw artifacts into `.agents/compiled/`
+2. `/curate --mode=compile` — synthesize raw artifacts into `.agents/compiled/`
 3. *(optional)* `/curate --mode=dream` overnight — bounded compounding loop
 4. **knowledge activation** — lift compiled knowledge into playbooks, beliefs, and runtime briefings
 
-`/compile` remains the hygiene loop; activation owns corpus operationalization. Use it when the problem is no longer "capture more knowledge" but: promote the strongest recurring claims into a belief system, turn healthy topics into reusable playbooks, compile a small goal-time briefing, and surface thin topics and promotion gaps before they calcify.
+`/curate --mode=compile` remains the hygiene loop; activation owns corpus operationalization. Use it when the problem is no longer "capture more knowledge" but: promote the strongest recurring claims into a belief system, turn healthy topics into reusable playbooks, compile a small goal-time briefing, and surface thin topics and promotion gaps before they calcify.
 
 ### Command contract
 

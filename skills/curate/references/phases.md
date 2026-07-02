@@ -12,11 +12,11 @@ mkdir -p .agents/compiled
 ```
 
 Determine mode from arguments:
-- `/compile` — Full cycle: Mine → Grow → Compile → Lint → Defrag
-- `/compile --compile-only` — Skip mine/grow, just compile + lint
-- `/compile --lint-only` — Only lint the existing compiled wiki
-- `/compile --defrag-only` — Only run defrag/cleanup
-- `/compile --mine-only` — Only run mine + grow (legacy behavior)
+- `/curate --mode=compile` — Full cycle: Mine → Grow → Compile → Lint → Defrag
+- `/curate --mode=compile --compile-only` — Skip mine/grow, just compile + lint
+- `/curate --mode=compile --lint-only` — Only lint the existing compiled wiki
+- `/curate --mode=compile --defrag-only` — Only run defrag/cleanup
+- `/curate --mode=compile --mine-only` — Only run mine + grow (legacy behavior)
 
 ## Step 1 — Mine: Extract Signal
 

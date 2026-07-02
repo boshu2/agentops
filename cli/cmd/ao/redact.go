@@ -10,7 +10,7 @@ import (
 )
 
 // redactCmd is the shell-callable git-safety chokepoint (ag-sz3h). Shell
-// callers (notably the compile render-write in skills/compile/scripts/compile.sh)
+// callers (notably the compile render-write in skills/curate/scripts/compile.sh)
 // cannot invoke llm.Redact directly, so they pipe content through `ao redact`:
 // it reads stdin, applies the canonical secret redactor, and writes the
 // scrubbed bytes to stdout. Single source of truth for credential patterns.

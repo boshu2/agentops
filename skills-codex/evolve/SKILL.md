@@ -56,14 +56,14 @@ $evolve --test-first         # Default strict-quality $rpi execution path
 $evolve --no-test-first      # Explicit opt-out from test-first mode
 ```
 
-## Delineation vs $dream
+## Delineation vs Nightly Knowledge Compounding
 
 | Lane | Runs | Mutates code? | Mutates corpus? | Outer loop? | Budget |
 |------|------|---------------|-----------------|-------------|--------|
-| `$dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
+| `$curate --mode=dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
 | `$evolve` | daytime, operator-driven | Yes (via `$rpi`) | Yes (light) | Yes | cycle cap |
 
-Dream owns the knowledge compounding layer; `$evolve` owns the code compounding layer. Both share fitness-measurement substrate via `corpus.Compute` / `ao goals measure`. Run Dream overnight, then start each day with `$evolve` against the freshly-compounded corpus with a clean fitness baseline.
+**The old dream skill is retired**; the current nightly compounding surface is `$curate --mode=dream`. `$evolve` owns the live daytime code-compounding lane. Both share fitness-measurement substrate via `corpus.Compute` / `ao goals measure`. Run the nightly lane overnight, then start each day with `$evolve` against the freshly-compounded corpus with a clean fitness baseline.
 
 ## Flags
 

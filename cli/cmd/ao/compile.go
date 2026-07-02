@@ -90,7 +90,7 @@ By default it runs the repo-local compiled knowledge cycle:
   lint the compiled wiki
   defrag stale or duplicate learnings
 
-Headless compilation uses skills/compile/scripts/compile.sh. Set
+Headless compilation uses skills/curate/scripts/compile.sh. Set
 AGENTOPS_COMPILE_RUNTIME or pass --runtime to choose an LLM backend
 (codex-cli, ollama, claude, or openai).`,
 	Args: cobra.NoArgs,
@@ -467,14 +467,14 @@ func materializeCompileScript(cwd string) (string, func(), error) {
 }
 
 func loadCompileScript(cwd string) ([]byte, error) {
-	local := filepath.Join(cwd, "skills", "compile", "scripts", "compile.sh")
+	local := filepath.Join(cwd, "skills", "curate", "scripts", "compile.sh")
 	if data, err := os.ReadFile(local); err == nil {
 		return data, nil
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("read local compile script: %w", err)
 	}
 
-	data, err := fs.ReadFile(embedded.HooksFS, "skills/compile/scripts/compile.sh")
+	data, err := fs.ReadFile(embedded.HooksFS, "skills/curate/scripts/compile.sh")
 	if err != nil {
 		return nil, fmt.Errorf("read embedded compile script: %w", err)
 	}

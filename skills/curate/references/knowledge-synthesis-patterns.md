@@ -122,5 +122,5 @@ Oscillating goals (3+ transitions) indicate the fix approach is wrong, not just 
 
 **Interpretation:**
 - All healthy: flywheel is compounding effectively
-- 1-2 degraded: run `/compile` to address specific areas
+- 1-2 degraded: run `/curate --mode=compile` to address specific areas
 - Any critical: prioritize flywheel maintenance before feature work

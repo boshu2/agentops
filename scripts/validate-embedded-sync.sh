@@ -26,8 +26,8 @@ for f in "$REPO_ROOT"/skills/standards/references/*; do
     check_file "$f" "$EMBEDDED/skills/standards/references/$basename"
 done
 
-# Check skills/compile runtime script
-check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
+# Check the curate compile-mode runtime script (moved from skills/compile at the compile->curate fold)
+check_file "$REPO_ROOT/skills/curate/scripts/compile.sh" "$EMBEDDED/skills/curate/scripts/compile.sh"
 
 # Check the pawl bundle: scripts + verdict schema embedded so `ao pawl review` runs
 # zero-config on a stranger's repo (no AgentOps checkout). The scripts/ + schemas/
