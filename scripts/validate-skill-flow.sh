@@ -112,13 +112,13 @@ JSON = os.environ.get("JSON") == "1"
 
 # Closed vocabulary for non-skill `consumes` tokens. These are the *external
 # inputs* a skill may read that are not themselves produced by a peer skill
-# (VCS state, the bd issue store, an upstream API, the repo working tree, the
+# (VCS state, the br issue store, an upstream API, the repo working tree, the
 # onboarding handshake). Adding a new external input is a deliberate act: extend
 # this list AND document it in docs/contracts/skill-flow.md.
 EXTERNAL_INPUTS = {
     "Cargo.lock",
     "Cargo.toml",
-    "bd",
+    "br",
     "build-config",
     "cargo-metadata",
     "cli-source",
