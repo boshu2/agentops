@@ -30,6 +30,19 @@ setup() {
 
   TMP="$(mktemp -d)"
   ORIG_DIR="$PWD"
+  ORIG_PATH="$PATH"
+
+  # Contain the lane's close step (ao done -> br / br close): these throwaway bead
+  # ids must never reach the real tracker. The stub records invocations for the
+  # close-shape assertion; real ao stays on PATH (its auto-bind is load-bearing here).
+  mkdir -p "$TMP/bin"
+  cat >"$TMP/bin/br" <<EOS
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >>"$TMP/br.log"
+exit 0
+EOS
+  chmod +x "$TMP/bin/br"
+  export PATH="$TMP/bin:$PATH"
 
   ORIGIN="$TMP/origin.git"
   REPO="$TMP/repo"
@@ -53,10 +66,12 @@ setup() {
   # injected gate run against in-tree scripts (matches postrebase-pawl-stamp.bats).
   # Commit them in the INITIAL commit so the working tree is clean when
   # land-submit.sh (which refuses on any untracked file) runs.
-  mkdir -p "$REPO/scripts" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
+  mkdir -p "$REPO/scripts" "$REPO/scripts/lib" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
   cp "$REPO_ROOT/scripts/pawl-land.sh"            "$REPO/scripts/pawl-land.sh"
   cp "$REPO_ROOT/scripts/pawl-verdict.sh"         "$REPO/scripts/pawl-verdict.sh"
   cp "$REPO_ROOT/scripts/check-pawl-pre-push.sh"  "$REPO/scripts/check-pawl-pre-push.sh"
+  # check-pawl-pre-push.sh sources scripts/lib/trivial-waiver.sh and dies if absent.
+  cp "$REPO_ROOT/scripts/lib/trivial-waiver.sh"   "$REPO/scripts/lib/trivial-waiver.sh"
   cp "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$REPO/schemas/pawl-verdict.v1.schema.json"
   chmod +x "$REPO/scripts/"*.sh
 
@@ -73,6 +88,10 @@ setup() {
 set -euo pipefail
 repo="$(git rev-parse --show-toplevel)"
 echo pre-push >>"$repo/.git/pre-push-count"
+# A land is [feat, #trivial-bind]: the #trivial tip is waived, and the feat behind it is
+# re-gated by the mixed-range cockpit gate (age-8ais). Stub that cockpit gate to pass here —
+# the real `ao gate check` needs the full repo; this suite proves the LANE, not that gate.
+export AGENTOPS_PREPUSH_GATE_CMD=true
 exec "$repo/scripts/check-pawl-pre-push.sh"
 EOS
   chmod +x "$REPO/.git/hooks/pre-push"
@@ -105,7 +124,14 @@ EOS
 }
 
 teardown() {
+  # Reap a --watch lane if a test aborted before its own TERM (else the orphaned
+  # background loop keeps polling and bats hangs waiting on it).
+  if [[ -n "${WATCH_PID:-}" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then
+    kill -TERM "$WATCH_PID" 2>/dev/null || true
+    wait "$WATCH_PID" 2>/dev/null || true
+  fi
   cd "$ORIG_DIR" 2>/dev/null || true
+  export PATH="$ORIG_PATH"
   rm -rf "$TMP"
 }
 
@@ -149,14 +175,19 @@ gate_runs() {
   echo "$output"
   [ "$status" -eq 0 ]
 
-  # (a) main contains all 3 commits, in queue order, each rebased onto the prior.
+  # (a) main contains all 3 feat commits in queue order, each land as [feat, #trivial-bind]:
+  # the pawl review's SINGLE auto-bind provenance commit is the pushed tip, the feat is its
+  # parent, and the verdict binds the feat (age-fkps single-trivial-per-land shape).
   git -C "$REPO" fetch origin main --quiet
   log="$(git -C "$ORIGIN" log --format='%s' refs/heads/main)"
   echo "ORIGIN LOG:"; echo "$log"
-  # newest first: charlie, bravo, alpha, then init
-  [ "$(printf '%s\n' "$log" | sed -n '1p')" = "feat(land-queue): land age-2pl9c (age-2pl9c)" ]
-  [ "$(printf '%s\n' "$log" | sed -n '2p')" = "feat(land-queue): land age-2pl9b (age-2pl9b)" ]
-  [ "$(printf '%s\n' "$log" | sed -n '3p')" = "feat(land-queue): land age-2pl9a (age-2pl9a)" ]
+  feats="$(printf '%s\n' "$log" | grep '^feat(land-queue): land ')"
+  # feat commits newest first: charlie, bravo, alpha
+  [ "$(printf '%s\n' "$feats" | sed -n '1p')" = "feat(land-queue): land age-2pl9c (age-2pl9c)" ]
+  [ "$(printf '%s\n' "$feats" | sed -n '2p')" = "feat(land-queue): land age-2pl9b (age-2pl9b)" ]
+  [ "$(printf '%s\n' "$feats" | sed -n '3p')" = "feat(land-queue): land age-2pl9a (age-2pl9a)" ]
+  # exactly one #trivial provenance bind per land (no DOUBLE-#trivial — age-fkps)
+  [ "$(printf '%s\n' "$log" | grep -c '#trivial')" = "3" ]
 
   # all three files landed
   git -C "$ORIGIN" cat-file -e refs/heads/main:alpha.txt
@@ -259,9 +290,12 @@ gate_runs() {
     exec bash "$LANE" --watch --poll 1 ) &
   WATCH_PID=$!
 
-  # Wait (bounded) for the watch lane to acquire the singleton lock.
+  # Wait (bounded) for the watch lane to acquire the singleton lock. The lane is an
+  # async `exec bash … --watch` whose startup (source + git discovery + no-actions
+  # guard) can take a few seconds under machine load, so allow a generous window —
+  # the lane's OWN "acquired singleton lane lock" log confirms it does acquire.
   acquired=0
-  for _ in $(seq 1 50); do
+  for _ in $(seq 1 200); do
     if [ -d "$LANE_LOCK_DIR" ]; then acquired=1; break; fi
     sleep 0.1
   done

@@ -47,10 +47,12 @@ EOS
   printf 'base\n' >"$REPO/README.md"
   printf '.agents/\n' >"$REPO/.gitignore"
 
-  mkdir -p "$REPO/scripts" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
+  mkdir -p "$REPO/scripts" "$REPO/scripts/lib" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
   cp "$REPO_ROOT/scripts/pawl-land.sh" "$REPO/scripts/pawl-land.sh"
   cp "$REPO_ROOT/scripts/pawl-verdict.sh" "$REPO/scripts/pawl-verdict.sh"
   cp "$REPO_ROOT/scripts/check-pawl-pre-push.sh" "$REPO/scripts/check-pawl-pre-push.sh"
+  # check-pawl-pre-push.sh sources scripts/lib/trivial-waiver.sh and dies if absent.
+  cp "$REPO_ROOT/scripts/lib/trivial-waiver.sh" "$REPO/scripts/lib/trivial-waiver.sh"
   cp "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$REPO/schemas/pawl-verdict.v1.schema.json"
   chmod +x "$REPO/scripts/"*.sh
 
@@ -62,6 +64,10 @@ EOS
   cat >"$REPO/.git/hooks/pre-push" <<'EOS'
 #!/usr/bin/env bash
 set -euo pipefail
+# A land is [feat, #trivial-bind]: the #trivial tip is waived and the feat behind it
+# is re-gated by the mixed-range cockpit gate (age-8ais). Stub that cockpit gate — the
+# real `ao gate check` needs the full repo; this suite proves flaky-retry, not the gate.
+export AGENTOPS_PREPUSH_GATE_CMD=true
 exec "$(git rev-parse --show-toplevel)/scripts/check-pawl-pre-push.sh"
 EOS
   chmod +x "$REPO/.git/hooks/pre-push"

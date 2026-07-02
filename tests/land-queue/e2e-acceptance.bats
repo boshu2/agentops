@@ -67,10 +67,12 @@ EOS
   printf 'base\n' >"$REPO/README.md"
   printf '.agents/\n' >"$REPO/.gitignore"
 
-  mkdir -p "$REPO/scripts" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
+  mkdir -p "$REPO/scripts" "$REPO/scripts/lib" "$REPO/schemas" "$REPO/.agents/pawl-verdicts" "$REPO/.git/hooks"
   cp "$REPO_ROOT/scripts/pawl-land.sh" "$REPO/scripts/pawl-land.sh"
   cp "$REPO_ROOT/scripts/pawl-verdict.sh" "$REPO/scripts/pawl-verdict.sh"
   cp "$REPO_ROOT/scripts/check-pawl-pre-push.sh" "$REPO/scripts/check-pawl-pre-push.sh"
+  # check-pawl-pre-push.sh sources scripts/lib/trivial-waiver.sh and dies if absent.
+  cp "$REPO_ROOT/scripts/lib/trivial-waiver.sh" "$REPO/scripts/lib/trivial-waiver.sh"
   cp "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$REPO/schemas/pawl-verdict.v1.schema.json"
   chmod +x "$REPO/scripts/"*.sh
 
@@ -104,6 +106,10 @@ EOS
 set -euo pipefail
 repo="$(git rev-parse --show-toplevel)"
 echo pre-push >>"$repo/.git/pre-push-count"
+# A land is [feat, #trivial-bind]: the #trivial tip is waived and the feat behind it
+# is re-gated by the mixed-range cockpit gate (age-8ais). Stub that cockpit gate — the
+# real `ao gate check` needs the full repo; this suite proves the integrated lane.
+export AGENTOPS_PREPUSH_GATE_CMD=true
 exec "$repo/scripts/check-pawl-pre-push.sh"
 EOS
   chmod +x "$REPO/.git/hooks/pre-push"
@@ -332,10 +338,21 @@ parent_of() {
   [ -n "$upstream_sha" ]
   [ -n "$flake_sha" ]
   [ -n "$charlie_sha" ]
-  [ "$(parent_of "$alpha_sha")" = "$INITIAL_MAIN" ]
-  [ "$(parent_of "$upstream_sha")" = "$alpha_sha" ]
-  [ "$(parent_of "$flake_sha")" = "$upstream_sha" ]
-  [ "$(parent_of "$charlie_sha")" = "$flake_sha" ]
+  # Each land appends [feat, #trivial-bind] (age-fkps single-trivial-per-land): the
+  # pawl review's SINGLE auto-bind provenance commit sits directly on the feat and is
+  # the pushed tip, so the NEXT thing (an upstream advance, or the next rebased feat)
+  # parents onto that #trivial tip — not the bare feat. Verify the interleave + the
+  # fast-forward lineage.
+  trivial_alpha="$(commit_by_subject "chore(provenance): bind pawl CONFIRMED verdict for age-2pl12a #trivial")"
+  trivial_flake="$(commit_by_subject "chore(provenance): bind pawl CONFIRMED verdict for age-2pl12b #trivial")"
+  [ -n "$trivial_alpha" ]
+  [ -n "$trivial_flake" ]
+  [ "$(parent_of "$alpha_sha")" = "$INITIAL_MAIN" ]      # feat alpha on initial main
+  [ "$(parent_of "$trivial_alpha")" = "$alpha_sha" ]     # alpha's #trivial bind on its feat
+  [ "$(parent_of "$upstream_sha")" = "$trivial_alpha" ]  # upstream advanced on alpha's #trivial tip
+  [ "$(parent_of "$flake_sha")" = "$upstream_sha" ]      # feat flake rebased onto upstream
+  [ "$(parent_of "$trivial_flake")" = "$flake_sha" ]     # flake's #trivial bind on its feat
+  [ "$(parent_of "$charlie_sha")" = "$trivial_flake" ]   # feat charlie rebased onto flake's #trivial tip
 
   # No force-push: every main update observed by the bare origin was a fast-forward,
   # and the initial main remains in final history.

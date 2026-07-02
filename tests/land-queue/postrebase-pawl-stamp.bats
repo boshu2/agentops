@@ -38,10 +38,12 @@ init_main_repo() {
 
 copy_pawl_scripts() {
   local repo="$1"
-  mkdir -p "$repo/scripts" "$repo/schemas" "$repo/.agents/pawl-verdicts" "$repo/.git/hooks"
+  mkdir -p "$repo/scripts" "$repo/scripts/lib" "$repo/schemas" "$repo/.agents/pawl-verdicts" "$repo/.git/hooks"
   cp "$REPO_ROOT/scripts/pawl-land.sh" "$repo/scripts/pawl-land.sh"
   cp "$REPO_ROOT/scripts/pawl-verdict.sh" "$repo/scripts/pawl-verdict.sh"
   cp "$REPO_ROOT/scripts/check-pawl-pre-push.sh" "$repo/scripts/check-pawl-pre-push.sh"
+  # check-pawl-pre-push.sh sources scripts/lib/trivial-waiver.sh and dies if absent.
+  cp "$REPO_ROOT/scripts/lib/trivial-waiver.sh" "$repo/scripts/lib/trivial-waiver.sh"
   cp "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$repo/schemas/pawl-verdict.v1.schema.json"
   chmod +x "$repo/scripts/"*.sh
   cat >"$repo/.git/hooks/pre-push" <<'EOS'
@@ -155,4 +157,50 @@ make_local_bead_commit() {
   [ "$(jq -r '.head_sha' "$REPO/.agents/pawl-verdicts/$BEAD.json")" = "$A_SHA" ]
   [ "$(git -C "$ORIGIN" rev-parse refs/heads/main)" = "$UPSTREAM_SHA" ]
   [ ! -f "$REPO/.git/pre-push-count" ]
+}
+
+@test "pawl-land: a provenance-only FEAT (no #trivial marker) stays the verdict target — never rebound to its parent" {
+  # Cross-family refute (age-fkps landing): classifying the tip by FILES alone would
+  # misread a legitimate provenance-only feat (a deliberate ledger re-seal) as the
+  # auto-bind and rebind the verdict to HEAD^. The auto-bind signature is files AND
+  # the #trivial subject marker.
+  make_base_fixture "base"
+  git -C "$REPO" checkout --quiet -b feat/land-queue
+  mkdir -p "$REPO/docs/provenance"
+  printf '{"reseal":true}\n' > "$REPO/docs/provenance/ledger.jsonl"
+  git -C "$REPO" add docs/provenance/ledger.jsonl
+  git -C "$REPO" commit --quiet -m "fix(provenance): deliberate ledger re-seal ($BEAD)"
+  A_SHA="$(git -C "$REPO" rev-parse HEAD)"
+  write_confirmed_verdict "$BEAD" "$A_SHA"
+  advance_origin_unrelated
+
+  cd "$REPO"
+  run bash "$REPO/scripts/pawl-land.sh" "$BEAD"
+
+  [ "$status" -eq 0 ]
+  POST_SHA="$(git -C "$REPO" rev-parse HEAD)"
+  # The verdict must follow the FEAT itself across the rebase — HEAD, not HEAD^.
+  [ "$(jq -r '.head_sha' "$REPO/.agents/pawl-verdicts/$BEAD.json")" = "$POST_SHA" ]
+  [ "$(git -C "$ORIGIN" rev-parse refs/heads/main)" = "$POST_SHA" ]
+}
+
+@test "pawl-land: a REAL auto-bind tip (#trivial marker + provenance-only) rebinds the verdict to the FEAT parent" {
+  make_base_fixture "base"
+  make_local_bead_commit local.txt local
+  mkdir -p "$REPO/docs/provenance"
+  printf '{"edge":"bind"}\n' > "$REPO/docs/provenance/ledger.jsonl"
+  git -C "$REPO" add docs/provenance/ledger.jsonl
+  git -C "$REPO" commit --quiet -m "chore(provenance): bind pawl CONFIRMED verdict for $BEAD #trivial"
+  write_confirmed_verdict "$BEAD" "$A_SHA"
+  advance_origin_unrelated
+
+  cd "$REPO"
+  run bash "$REPO/scripts/pawl-land.sh" "$BEAD"
+
+  [ "$status" -eq 0 ]
+  POST_TIP="$(git -C "$REPO" rev-parse HEAD)"
+  POST_FEAT="$(git -C "$REPO" rev-parse HEAD^)"
+  # Tip is the #trivial bind; the verdict binds the FEAT beneath it.
+  [ "$(jq -r '.head_sha' "$REPO/.agents/pawl-verdicts/$BEAD.json")" = "$POST_FEAT" ]
+  [ "$(git -C "$ORIGIN" rev-parse refs/heads/main)" = "$POST_TIP" ]
 }
