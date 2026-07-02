@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [microservices, design-by-contract]
 package main
 

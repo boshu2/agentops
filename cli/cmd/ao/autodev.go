@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [ai-assisted-dev, agile-manifesto]
 package main
 

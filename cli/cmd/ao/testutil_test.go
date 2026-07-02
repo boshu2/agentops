@@ -278,18 +278,10 @@ func resetCommandState(t *testing.T) {
 	origSearchUseSC := searchUseSC
 	origSearchUseCASS := searchUseCASS
 	origSearchUseLocal := searchUseLocal
-	origCodexStartLimit := codexStartLimit
-	origCodexStartQuery := codexStartQuery
-	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origCodexStopSessionID := codexStopSessionID
-	origCodexStopTranscriptPath := codexStopTranscriptPath
-	origCodexStopAutoExtract := codexStopAutoExtract
-	origCodexStopNoHistoryFallback := codexStopNoHistoryFallback
-	origCodexStopNoCloseLoop := codexStopNoCloseLoop
-	origCodexStatusDays := codexStatusDays
-	origCodexDispatchPacketPath := codexDispatchPacketPath
-	origAutodevFile := autodevFile
-	origAutodevForce := autodevForce
+	// codex + autodev cobra-flag globals live in the //go:build legacy archive
+	// (age-h4y3). Their save/restore/reset is delegated to a tagged helper so the
+	// untagged (spine) test build never references archived symbols.
+	resetArchivedCommandGlobals(t)
 	origFindingsListLimit := findingsListLimit
 	origFindingsListAll := findingsListAll
 	origFindingsExportTo := findingsExportTo
@@ -361,18 +353,6 @@ func resetCommandState(t *testing.T) {
 		searchUseSC = origSearchUseSC
 		searchUseCASS = origSearchUseCASS
 		searchUseLocal = origSearchUseLocal
-		codexStartLimit = origCodexStartLimit
-		codexStartQuery = origCodexStartQuery
-		codexStartNoMaintenance = origCodexStartNoMaintenance
-		codexStopSessionID = origCodexStopSessionID
-		codexStopTranscriptPath = origCodexStopTranscriptPath
-		codexStopAutoExtract = origCodexStopAutoExtract
-		codexStopNoHistoryFallback = origCodexStopNoHistoryFallback
-		codexStopNoCloseLoop = origCodexStopNoCloseLoop
-		codexStatusDays = origCodexStatusDays
-		codexDispatchPacketPath = origCodexDispatchPacketPath
-		autodevFile = origAutodevFile
-		autodevForce = origAutodevForce
 		findingsListLimit = origFindingsListLimit
 		findingsListAll = origFindingsListAll
 		findingsExportTo = origFindingsExportTo
@@ -448,18 +428,6 @@ func resetCommandState(t *testing.T) {
 	searchUseSC = false
 	searchUseCASS = false
 	searchUseLocal = false
-	codexStartLimit = 3
-	codexStartQuery = ""
-	codexStartNoMaintenance = false
-	codexStopSessionID = ""
-	codexStopTranscriptPath = ""
-	codexStopAutoExtract = true
-	codexStopNoHistoryFallback = false
-	codexStopNoCloseLoop = false
-	codexStatusDays = 7
-	codexDispatchPacketPath = ""
-	autodevFile = ""
-	autodevForce = false
 	findingsListLimit = 20
 	findingsListAll = false
 	findingsExportTo = ""

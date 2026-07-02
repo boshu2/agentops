@@ -1,3 +1,5 @@
+//go:build legacy
+
 // practices: [microservices, design-by-contract]
 package main
 
@@ -340,10 +342,6 @@ func detectCodexLifecycleProfile() lifecycleRuntimeProfile {
 
 func synthesizeCodexHistoryTranscript(cwd, sessionID string) (string, error) {
 	return codexruntime.SynthesizeCodexHistoryTranscript(cwd, sessionID)
-}
-
-func findLastSession() (string, error) {
-	return codexruntime.FindLastSession()
 }
 
 func extractSessionIDFromCodexArchivedPath(path string) string {
@@ -1799,10 +1797,6 @@ func codexLifecycleStatePath(cwd string) string {
 
 func normalizeCodexLifecyclePath(path string) string {
 	return bridge.NormalizeCodexLifecyclePath(path)
-}
-
-func firstNonEmptyTrimmed(values ...string) string {
-	return bridge.FirstNonEmptyTrimmed(values...)
 }
 
 func firstNonEmptyLifecycleField(state *codexLifecycleState, getter func(*codexLifecycleEvent) string) string {
