@@ -43,8 +43,23 @@
 # exports it as PAWL_REVIEW_START_HEAD; pawl-verdict.sh refuses to emit/bind the edge if the
 # live worktree HEAD no longer matches. Land each bead from its OWN isolated worktree.
 #
-# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
-# Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 2 usage/precondition · 1 hard error.
+# STRICT TWO-FAMILY COLD QUORUM (age-rk3r.13): --strict (or PAWL_STRICT=1, from the .5/.17
+# .aoverify.yaml `strict: true` config bridge) is the OPT-IN highest-irreversibility-door posture.
+# It runs TWO DISTINCT strict-eligible cold families and REFUSES to degrade to one:
+#   - BOTH CONFIRMED    -> exit 0 (a multi-model verdict records BOTH families + BOTH evidence paths).
+#   - ANY REFUTED       -> exit 3 (REFUTED; both families' results shown; a REFUTED is FINAL).
+#   - ANY family OUTAGE -> exit 5 (HOLD; NEVER degrades to single-family — the whole point). Prints
+#                          the failover-vs-strict distinction: failover degrades to keep going;
+#                          strict refuses to degrade.
+# ELIGIBILITY SEAM: STRICT_ELIGIBLE_FAMILIES (override PAWL_STRICT_ELIGIBLE_FAMILIES) is the ONE list
+# of currently strict-eligible cold reviewer families. TODAY it is codex-ONLY (agy is A7-benched —
+# ROUTINE + degraded-fallback only until Bo graduates it; there is NO cold claude adapter, LAW 0).
+# So with no second strict-eligible cold family, --strict prints an HONEST UNAVAILABLE (naming WHY +
+# the non-strict alternative) and exits 5 — it NEVER fakes a strict pass and NEVER degrades to one
+# family. Flipping ONE list (add a graduated family to STRICT_ELIGIBLE_FAMILIES) enables real strict.
+#
+# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
+# Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 5 STRICT HOLD/UNAVAILABLE (no second strict-eligible cold family, or a family outage — never degrades) · 2 usage/precondition · 1 hard error.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -206,6 +221,11 @@ MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-65536}"   # 64KB — inline the commo
 SMOKE_EVIDENCE_MAX_BYTES="${PAWL_SMOKE_EVIDENCE_MAX_BYTES:-8192}"   # 8KB/side (head+tail = 16KB), < MAX_INLINE_BYTES
 
 bead=""; scope="head"; extra=""; author_family="claude"; converge=0; smoke_cmd=""
+# age-rk3r.13: STRICT two-family cold quorum — opt-in. Default OFF (PAWL_STRICT from the .5/.17
+# config bridge, or the --strict flag). When ON, the review requires TWO DISTINCT strict-eligible
+# cold families to BOTH CONFIRMED and REFUSES to degrade to a single family on an outage (HOLD).
+strict=0
+[[ "${PAWL_STRICT:-0}" == "1" || "${PAWL_STRICT:-}" == "true" ]] && strict=1
 need_val() { [[ -n "${2:-}" ]] || { echo "pawl-review: $1 needs a value" >&2; exit 2; }; }
 
 # age-mwhj: assemble the review body. At/below the byte cap, the full inline diff (unchanged).
@@ -523,6 +543,35 @@ triage_block() {
   } >&2
 }
 
+# _strict_hold <family> <class> [evidence-path] — the STRICT no-degrade terminal (age-rk3r.13). A
+# strict door requires TWO families to BOTH CONFIRMED; when a family goes OUTAGE (MISSING / STALL /
+# no-verdict / incomplete run), strict REFUSES to degrade to the single family that did answer — that
+# refusal IS the point of strict — so it HOLDs (exit 5, non-authorizing, NO verdict) rather than
+# writing a single-family verdict. Prints the failover-vs-strict distinction so the operator sees WHY
+# this differs from the ordinary chain, plus the non-strict alternative. Pure formatter + exit; reads
+# $bead/$scope at call time; writes only to stderr. Never returns (exits 5).
+_strict_hold() {
+  local fam="${1:-a reviewer}" class="${2:-OUTAGE}" ev="${3:-}"
+  local self="ao verify ${bead:-<change-id>} --scope ${scope:-head}"
+  [ -n "$ev" ] || ev="n/a (no reviewer output captured)"
+  {
+    printf '\n=== STRICT HOLD (age-rk3r.13) — a required family (%s) went OUTAGE (%s); strict REFUSES to degrade (this is NOT a REFUTED; NO verdict written) ===\n' "$fam" "$class"
+    printf 'STRICT requires TWO DISTINCT strict-eligible cold families to BOTH CONFIRMED. One of them could\n'
+    printf 'not produce a trustworthy verdict, so the two-family quorum cannot be met.\n\n'
+    printf 'FAILOVER vs STRICT — the load-bearing distinction:\n'
+    printf '  - the ordinary reviewer chain DEGRADES on an outage: it falls over to the next family and\n'
+    printf '    labels the verdict degraded=true, to KEEP GOING.\n'
+    printf '  - STRICT REFUSES to degrade: a single-family answer on a strict door is exactly what strict\n'
+    printf '    exists to forbid, so it HOLDs (exit 5) instead of falling back to one family.\n\n'
+    printf 'Next: re-run strict once the family is reachable (foreground): timeout 450 %s --strict\n' "$self"
+    printf 'If it stays down and you accept a WEAKER (single cross-family) gate for this change, drop --strict:\n'
+    printf '  %s            # fresh-context default — a real gate, but NOT the two-family strict door\n' "$self"
+    printf 'Raw evidence: %s\n' "$ev"
+    printf '=== end STRICT HOLD ===\n'
+  } >&2
+  exit 5
+}
+
 # age-6idm: AUTO-RUN-THE-REPRO helpers. A REVIEWER REFUTED that NAMES an executable repro is
 # a candidate FALSE refute — the 2026-07-02 build-tag class had 3/3 REFUTEDs each naming a
 # repro that actually PASSED (hallucinated on cobra legacy-tag expectations + an install.sh
@@ -708,6 +757,7 @@ while [[ $# -gt 0 ]]; do
     --context)       need_val "$1" "${2:-}"; extra="$2"; shift 2 ;;
     --smoke)         need_val "$1" "${2:-}"; smoke_cmd="$2"; shift 2 ;;
     --converge)      converge=1; shift ;;
+    --strict)        strict=1; shift ;;   # age-rk3r.13: opt-in two-family cold quorum (never degrades)
     -h|--help)       sed -n '2,44p' "$0"; exit 0 ;;
     -*)              echo "pawl-review: unknown flag $1" >&2; exit 2 ;;
     *)               bead="$1"; shift ;;
@@ -750,6 +800,14 @@ fi
 # --converge (the calibrated real-safety bar) certifies a COMMIT, so it requires
 # --scope head; and it is lineage-gated below (age-cwo.8 / council C).
 [[ "$converge" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --converge requires --scope head (it certifies a commit)" >&2; exit 2; }
+# age-rk3r.13: --strict is a TWO-family multi-model posture; --converge is the codex-only,
+# single-family, lineage-gated convergence-tail bar. They are mutually exclusive by construction
+# (converge deliberately stays on the cold single-codex path — see the routing gates below), so
+# refuse the combination fail-closed rather than silently ignore one.
+[[ "$strict" -eq 1 && "$converge" -eq 1 ]] && { echo "pawl-review: --strict and --converge are mutually exclusive — strict is a two-family quorum; --converge is the codex-only single-family convergence bar. Pick one." >&2; exit 2; }
+# STRICT certifies a COMMIT with a two-family verdict, so it requires --scope head (staged has no
+# commit to bind — the same constraint --converge carries).
+[[ "$strict" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --strict requires --scope head (a two-family quorum certifies a commit; staged has nothing to bind)" >&2; exit 2; }
 [[ -x "$PAWL" ]] || { echo "pawl-review: $PAWL not executable" >&2; exit 1; }
 # age-rk3r.2: resolve the cold REVIEWER CHAIN (default codex-only). The lib (lib/codex-exec.sh)
 # owns the per-adapter argv/marker/echo/sandbox contract + run classification; this script is a
@@ -806,9 +864,120 @@ done
 # No cross-family member anywhere in the chain => a same-family review is all that is possible,
 # which is not the cross-family pawl this command provides. Refuse (byte-compatible with the
 # historical single-reviewer same-family guard: exit 2, message contains "SAME model family").
-if [[ ${#usable_reviewers[@]} -eq 0 ]]; then
+# age-rk3r.13: STRICT does NOT use the chain to pick voters — it derives them from the eligibility
+# seam below (STRICT_ELIGIBLE_FAMILIES). So an empty CHAIN-usable list must NOT exit here in strict
+# mode (it would block the strict path before its own eligibility/exclusion + HOLD logic runs); the
+# strict block handles author-family exclusion + the "<2 reachable eligible" HOLD itself.
+if [[ "$strict" -eq 0 && ${#usable_reviewers[@]} -eq 0 ]]; then
   echo "pawl-review: no cross-family reviewer available — every reviewer in the chain (${reviewer_chain[*]}) is the SAME model family as --author-family '$author_family'. That is a same-family review, not the cross-family pawl this command provides. Configure a different-family reviewer (or author with a different family)." >&2
   exit 2
+fi
+
+# ---------------------------------------------------------------------------
+# STRICT ELIGIBILITY (age-rk3r.13) — the two-family cold quorum's gate
+# ---------------------------------------------------------------------------
+# STRICT is the OPT-IN highest-irreversibility posture: TWO DISTINCT strict-eligible cold families
+# must BOTH CONFIRMED, and it REFUSES to degrade to a single family (an outage HOLDs — exit 5).
+#
+# THE ELIGIBILITY SEAM — ONE list to flip, and it DRIVES the strict voter set. STRICT_ELIGIBLE_FAMILIES
+# is the set of reviewer families measured trustworthy enough to serve a STRICT door. In strict mode the
+# voters are DERIVED FROM THIS LIST (each entry → its adapter via _reviewer_spec), NOT filtered from
+# PAWL_REVIEWER_CHAIN — the chain is the FAILOVER-mode ordering, a DIFFERENT selection; strict is driven
+# by eligibility. This is the whole point: flipping ONLY STRICT_ELIGIBLE_FAMILIES genuinely activates the
+# quorum with no other change (age-rk3r.13 seam-contract fix — the earlier version wrongly gated the
+# voter set on the chain, so flipping the list alone yielded 1 voter and a false UNAVAILABLE). The set is
+# deliberately NARROWER than the failover chain (which admits agy as a degraded fallback): a family fine
+# as a fallback is NOT automatically fit to be one of TWO independent quorum voters on a one-way door.
+# TODAY the set is codex-ONLY — the honest current reality (A7 bench ruling):
+#   - agy (gemini) is ROUTINE + degraded-fallback only until Bo graduates it — NOT strict-eligible yet.
+#   - there is NO cold claude-family adapter (LAW 0: never `claude -p`; Fable/opus are warm-only).
+# So RIGHT NOW there is no SECOND strict-eligible cold family, and --strict must SAY the posture is
+# unavailable rather than fake it. When Bo graduates a second family (a measured strict certification),
+# flip THIS ONE LIST (add its family) and real two-family strict turns on with NO other change. Override
+# for tests/operators: PAWL_STRICT_ELIGIBLE_FAMILIES (comma list of reviewer NAMES, resolved through
+# _reviewer_spec so only roster families count) — the test seam that simulates a second eligible family
+# WITHOUT also having to set PAWL_REVIEWER_CHAIN (which would mask the real activation path).
+#
+# What gates on that graduation is ONLY *active* strict certification (a real two-family default + any
+# doc/marketing claim of active strict cross-family protection). The honest-UNAVAILABLE self-report
+# below is the landable behavior and claims NOTHING about active protection.
+STRICT_ELIGIBLE_FAMILIES="${PAWL_STRICT_ELIGIBLE_FAMILIES:-codex}"
+strict_reviewers=()
+if [[ "$strict" -eq 1 ]]; then
+  # DERIVE the strict voter set FROM the eligibility seam. For each eligible entry: resolve its adapter
+  # (reviewer name + bin + family via _reviewer_spec, the SAME .1/.2 mapping), then keep it as a voter
+  # iff it is (a) a roster reviewer, (b) NOT the author's family (author-family exclusion — a same-family
+  # review is not cross-family diversity), (c) REACHABLE (its bin is on PATH — an eligible family whose
+  # CLI is not installed does not count toward the quorum, so the count reflects REACHABLE voters), and
+  # (d) a NEW distinct family (one voter per family; two voters must be two DIFFERENT families). An
+  # unknown eligible name is a config error, fail-closed. The result `strict_reviewers` is the concrete
+  # voter list the shared loop below iterates — chosen entirely by eligibility, never by the chain.
+  strict_fams_used=()
+  IFS=',' read -r -a _se_raw <<<"$STRICT_ELIGIBLE_FAMILIES"
+  for _se in "${_se_raw[@]}"; do
+    _se="$(printf '%s' "$_se" | tr -d '[:space:]')"; [[ -n "$_se" ]] || continue
+    _se_spec="$(_reviewer_spec "$_se")" || {
+      echo "pawl-review: STRICT_ELIGIBLE_FAMILIES lists unknown reviewer '$_se' — no roster family, so strict eligibility cannot be checked. Fix PAWL_STRICT_ELIGIBLE_FAMILIES (or the default). (exit 2 = precondition)" >&2
+      exit 2
+    }
+    _se_name="$(printf '%s' "$_se_spec" | cut -f1)"   # canonical adapter NAME (codex/agy/opus/…)
+    _se_bin="$(printf '%s' "$_se_spec" | cut -f2)"    # adapter bin (may be empty for local-mlx)
+    _se_fam="$(printf '%s' "$_se_spec" | cut -f3)"    # canonical FAMILY label (codex/gemini/claude/…)
+    # (b) author-family exclusion — a voter must be CROSS-family to the author. Use the adapter's
+    # family REGEX (the same case-insensitive test the failover same-family guard uses) so an author
+    # named by any alias of the family (gpt/openai/codex) is caught, not just the canonical label.
+    _se_fam_re="$(printf '%s' "$_se_spec" | cut -f4)"
+    if [[ -n "$_se_fam_re" && "$af_lc" =~ ($_se_fam_re) ]]; then
+      echo "pawl-review: STRICT — eligible family '$_se_fam' is the SAME family as --author-family '$author_family'; excluded (a same-family review is not the cross-family quorum). Needs another distinct eligible family." >&2
+      continue
+    fi
+    # (d) distinct families only — skip a family already chosen.
+    _dup=0; for _uf in ${strict_fams_used[@]+"${strict_fams_used[@]}"}; do [[ "$_uf" == "$_se_fam" ]] && _dup=1; done
+    [[ "$_dup" -eq 1 ]] && continue
+    # (c) REACHABILITY — the adapter's bin must be on PATH (codex counts iff its bin resolves; a bin-less
+    # adapter like local-mlx never counts as a reachable strict voter). An unreachable eligible family is
+    # NOT a config error (the CLI may simply be uninstalled) — it just does not count toward the quorum,
+    # so a later "<2 reachable" HOLDs honestly.
+    if [[ -z "$_se_bin" ]] || ! command -v "$_se_bin" >/dev/null 2>&1; then
+      echo "pawl-review: STRICT — eligible family '$_se_fam' (adapter '$_se_name', bin '${_se_bin:-<none>}') is NOT reachable on PATH; it does not count toward the quorum." >&2
+      continue
+    fi
+    strict_reviewers+=("$_se_name"); strict_fams_used+=("$_se_fam")
+  done
+  # HONEST-UNAVAILABLE (the load-bearing acceptance): fewer than TWO distinct strict-eligible
+  # cross-family voters => strict CANNOT run at its defining strength. STRICT NEVER degrades to a
+  # single family (that is the whole point), so this is NOT a silent fall-through to the single-family
+  # path — it is an explicit non-authorizing HOLD (exit 5) that names WHY and points at the non-strict
+  # alternative. NO faked pass, NO verdict written.
+  if [[ ${#strict_reviewers[@]} -lt 2 ]]; then
+    _self="ao verify ${bead} --scope head"
+    {
+      echo ""
+      echo "=== STRICT UNAVAILABLE (age-rk3r.13) — no second strict-eligible cold family (this is NOT a REFUTED; NO verdict written) ==="
+      echo "--strict requires TWO DISTINCT strict-eligible cold families to BOTH CONFIRMED, and it REFUSES"
+      echo "to degrade to a single family (that refusal is the whole point of strict). Available strict-eligible"
+      echo "cross-family voters: ${#strict_reviewers[@]} (${strict_reviewers[*]:-none}); required: 2."
+      echo ""
+      echo "WHY only one strict-eligible cold family exists right now (the honest current posture):"
+      echo "  - agy (gemini) is A7-benched — ROUTINE + degraded-fallback only until it is graduated; NOT a strict voter yet."
+      echo "  - there is NO cold claude-family adapter (LAW 0: never 'claude -p'; Fable/opus are warm-only today)."
+      echo "So codex is the ONLY strict-eligible cold family, and a two-family quorum is not yet possible."
+      echo ""
+      echo "This command does NOT fake a strict pass and does NOT degrade to single-family. Use the non-strict"
+      echo "alternative instead — a fresh-context cross-family review is still a real gate:"
+      echo "  ${_self}                 # fresh-context default (single cross-family reviewer)"
+      echo "  ${_self} --converge      # the calibrated real-safety convergence bar (after an adversarial pass)"
+      echo ""
+      echo "When a second cold family is graduated to strict, add its canonical family to STRICT_ELIGIBLE_FAMILIES"
+      echo "(scripts/pawl-review.sh) — flipping that ONE list turns real two-family strict on with no other change."
+      echo "=== end STRICT UNAVAILABLE ==="
+    } >&2
+    exit 5
+  fi
+  # Two+ eligible voters: STRICT runs over exactly the distinct-eligible-family set. Replace the
+  # failover chain's usable list with the strict voter list so the shared loop below iterates THEM.
+  usable_reviewers=("${strict_reviewers[@]}")
+  echo "pawl-review: STRICT two-family cold quorum — requiring ALL of {${strict_reviewers[*]}} to CONFIRMED; strict REFUSES to degrade (an outage HOLDs, never falls back to one family)." >&2
 fi
 
 command -v jq >/dev/null 2>&1 || {
@@ -1084,11 +1253,27 @@ PROMPT
 degraded=false
 reviewer_attempts=0
 failover_trail=""
+# age-rk3r.13: STRICT accumulates ONE refuter token PER eligible family (all must CONFIRMED). In
+# strict mode the loop iterates EVERY voter (never breaks on the first CONFIRMED — it records the
+# refuter and continues to the next family), and its distinct evidence files are collected so the
+# multi-model verdict below binds BOTH families' evidence. Empty in the non-strict path (untouched).
+strict_refuters=()
+strict_trail=""
 _n_usable=${#usable_reviewers[@]}
 for (( _ui=0; _ui<_n_usable; _ui++ )); do
   resolve_reviewer "${usable_reviewers[_ui]}"   # sets reviewer/reviewer_bin/reviewer_family/reviewer_family_re (roster-validated above)
   reviewer_attempts=$(( reviewer_attempts + 1 ))
   _has_next=0; [[ $(( _ui + 1 )) -lt "$_n_usable" ]] && _has_next=1
+  # age-rk3r.13: in STRICT there is no failover — an outage HOLDs, never degrades. Force `_has_next`
+  # OFF so every OUTAGE branch below takes its terminal (no-failover) path instead of falling over to
+  # the next family; strict's own terminal handling (HOLD exit 5) replaces the single-family
+  # fail-closed exit where it differs. This IS the ".2 seam" (STRICT can force `_has_next` off).
+  [[ "$strict" -eq 1 ]] && _has_next=0
+  # STRICT uses a DISTINCT evidence file per family so the two-family verdict can bind BOTH (the
+  # non-strict path keeps the single shared $evidence, byte-identical). Recomputed per iteration.
+  if [[ "$strict" -eq 1 ]]; then
+    evidence="$EVIDENCE_DIR/${bead}-pawl-review-strict-${reviewer_family}.txt"
+  fi
   # Defense-in-depth (round-5 pawl catch: an empty family regex once SKIPPED the same-family guard,
   # a self-approval bypass). The usable list already excluded same-family members, but re-assert on
   # the RESOLVED reviewer: a reviewer that is somehow the SAME family as the author is a same-family
@@ -1112,6 +1297,9 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
       echo "pawl-review: reviewer '$reviewer' MISSING (bin '$reviewer_bin' not on PATH) — OUTAGE; failing over to the next configured reviewer…" >&2
       continue
     fi
+    # age-rk3r.13: STRICT never degrades — a required family MISSING is a HOLD (exit 5), not a
+    # single-family fall-through. (_has_next is forced 0 in strict, so this reached the terminal.)
+    [[ "$strict" -eq 1 ]] && _strict_hold "$reviewer_family" MISSING ""
     if [[ "$reviewer" == "codex" ]]; then
       echo "pawl-review: MISSING DEPENDENCY — codex (the cross-family refuter) is not on PATH." >&2
       echo "  This is NOT a review result. The pawl needs a SECOND model family to run the cross-family" >&2
@@ -1136,7 +1324,10 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
   # the COLD portable adapter below — the warm tmux service stays on its own codex-family route.
   # age-rk3r.2: also gated on the NON-DEGRADED first codex attempt — a warm route writes its OWN
   # verdict with no degraded flag, so it must never run for a fall-over-to-codex (rare) attempt.
-  if [[ "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
+  # age-rk3r.13: STRICT runs COLD, one review PER family, to collect two DISTINCT evidence files —
+  # it must NOT route to the warm single-verdict pawl-service (which writes ONE codex-family verdict).
+  # `"$strict" -eq 0` gates both the auto-up and the route below onto the non-strict path only.
+  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
      && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
     echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
     bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
@@ -1152,7 +1343,10 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
   # path. Opt out: PAWL_NO_SERVICE=1. age-rk3r.1: an explicit non-codex REVIEWER also stays on the
   # cold adapter below (the warm service route is codex-family); "$reviewer" == "codex" gates this.
   # age-rk3r.2: also gated on the non-degraded first attempt (see auto-up above).
-  if [[ "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
+  # age-rk3r.13: `"$strict" -eq 0` — STRICT stays on the cold per-family path (it collects two
+  # distinct cold evidences and writes ONE multi-model verdict itself; the warm route would write a
+  # single codex-family verdict, defeating the quorum).
+  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
      && bash "$PAWL_SH" health >/dev/null 2>&1; then
     route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
     # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
@@ -1244,6 +1438,8 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
       echo "pawl-review: reviewer '$reviewer' produced NO output (STALL) — OUTAGE; failing over to the next configured reviewer…" >&2
       continue
     fi
+    # age-rk3r.13: STRICT — a required family stalling is a HOLD, not a single-family pass.
+    [[ "$strict" -eq 1 ]] && _strict_hold "$reviewer_family" STALL "$evidence"
     echo "pawl-review: no reviewer output captured — fail-closed" >&2; triage_block STALL "$evidence"; exit 1
   fi
 
@@ -1339,6 +1535,20 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
     fi
     echo "=== PAWL REVIEW: REFUTED — defects below (fix, recommit, re-run; NO verdict written) ===" >&2
     sed -n '/^[[:space:]]*VERDICT:[[:space:]]*REFUTED/,$p' "$evidence" >&2
+    # age-rk3r.13: in STRICT, a REFUTED from ANY family is FINAL (strict is all-must-CONFIRMED, so one
+    # REFUTED sinks the quorum — a REFUTED is a RESULT, never overturned by asking another family).
+    # Surface BOTH families' results: the families that already CONFIRMED this run are recorded in
+    # $strict_refuters (family:CONFIRMED:ctx:evidence), plus THIS family's REFUTED above.
+    if [[ "$strict" -eq 1 ]]; then
+      echo "=== STRICT two-family quorum: REFUTED by '${reviewer_family}' — the quorum FAILS (all families must CONFIRMED). Both families' results: ===" >&2
+      for _sr in ${strict_refuters[@]+"${strict_refuters[@]}"}; do
+        _sr_fam="${_sr%%:*}"; _sr_rest="${_sr#*:}"; _sr_vd="${_sr_rest%%:*}"
+        echo "  - ${_sr_fam}: ${_sr_vd} (recorded this run)" >&2
+      done
+      echo "  - ${reviewer_family}: REFUTED (defects above)" >&2
+      emit_pawl_catch multi-model
+      exit 3
+    fi
     emit_pawl_catch fresh-context
     exit 3
   fi
@@ -1351,6 +1561,9 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
       echo "pawl-review: reviewer '$reviewer' produced NO clear verdict + OUTAGE (${_OUTAGE_LABEL}) — failing over to the next configured reviewer…" >&2
       continue
     fi
+    # age-rk3r.13: STRICT requires an affirmative CONFIRMED from EACH family; a required family that
+    # produced no clear verdict means the quorum cannot be met — HOLD, never a single-family pass.
+    [[ "$strict" -eq 1 ]] && _strict_hold "$reviewer_family" "$(codex_rc_class "$codex_rc")" "$evidence"
     echo "pawl-review: reviewer's FINAL line is not a clear VERDICT: CONFIRMED|REFUTED — fail-closed. Raw output in $evidence" >&2
     triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
     exit 1
@@ -1363,15 +1576,65 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
       echo "pawl-review: reviewer '$reviewer' CONFIRMED from an INCOMPLETE run ($codex_rc, ${_OUTAGE_LABEL}) — OUTAGE; failing over to the next configured reviewer…" >&2
       continue
     fi
+    # age-rk3r.13: STRICT — a CONFIRMED from an incomplete (non-clean) run is untrustworthy, and
+    # strict never degrades to the one family that did answer cleanly — HOLD.
+    [[ "$strict" -eq 1 ]] && _strict_hold "$reviewer_family" "$(codex_rc_class "$codex_rc")" "$evidence"
     echo "pawl-review: reviewer exited non-zero ($codex_rc, e.g. timeout 124) — refusing to trust a CONFIRMED from an incomplete run — fail-closed" >&2
     triage_block "$(codex_rc_class "$codex_rc")" "$evidence"
     exit 1
   fi
 
-  # CONFIRMED + clean run — this reviewer WON. Leave the loop and write the verdict below.
+  # CONFIRMED + clean run.
+  # age-rk3r.13: STRICT — this family CONFIRMED, but strict needs ALL families. RECORD this family's
+  # refuter token (family:CONFIRMED:ctx:evidence, the SAME shape pawl-verdict.sh write consumes) and
+  # CONTINUE to the next voter instead of breaking. The distinct per-family $evidence path (set at the
+  # loop top) is preserved so the multi-model verdict below binds BOTH families' evidence. After the
+  # loop, all-CONFIRMED writes ONE multi-model verdict.
+  if [[ "$strict" -eq 1 ]]; then
+    strict_refuters+=("${reviewer_family}:CONFIRMED:${ctx}:${evidence}")
+    strict_trail="${strict_trail}${strict_trail:+ + }${reviewer_family}(CONFIRMED)"
+    echo "pawl-review: STRICT — ${reviewer_family} CONFIRMED (voter $(( _ui + 1 ))/${_n_usable}); continuing to the next required family…" >&2
+    continue
+  fi
+  # Non-strict: CONFIRMED + clean run — this reviewer WON. Leave the loop and write the verdict below.
   failover_trail="${failover_trail}${failover_trail:+ -> }${reviewer_family}(CONFIRMED)"
   break
 done
+
+# ---------------------------------------------------------------------------
+# STRICT TWO-FAMILY VERDICT (age-rk3r.13) — write ONE multi-model verdict
+# ---------------------------------------------------------------------------
+# Reaching here in strict means EVERY voter CONFIRMED (a REFUTED exited 3 above; an OUTAGE HELD via
+# _strict_hold; both never reach here). Write ONE verdict at mode=multi-model carrying a --refuter
+# entry PER family (the joined reviewer_family label — e.g. "gpt+gemini" — is DERIVED by
+# pawl-verdict.sh from the refuters[] array) plus BOTH evidence paths, then verify it passes the SAME
+# `$PAWL check` the push gate runs (which enforces the multi-model floor: >=2 distinct roster
+# families + the fresh-context floor). Strict is scope=head only (guarded at entry), so there is
+# always a commit to bind. degraded is NEVER set on a strict pass (a strict pass ran at FULL
+# strength by definition — no fall-over occurred).
+if [[ "$strict" -eq 1 ]]; then
+  # Defense-in-depth: the loop's all-CONFIRMED path must have collected >=2 distinct families. If it
+  # somehow did not (a voter neither CONFIRMED, REFUTED, nor HELD — unreachable), refuse fail-closed
+  # rather than write a sub-quorum verdict.
+  if [[ ${#strict_refuters[@]} -lt 2 ]]; then
+    echo "pawl-review: STRICT internal error — fewer than 2 families CONFIRMED reached the write (${#strict_refuters[@]}); refusing fail-closed (exit 5, no verdict)." >&2
+    exit 5
+  fi
+  _strict_refuter_args=()
+  for _sr in "${strict_refuters[@]}"; do _strict_refuter_args+=(--refuter "$_sr"); done
+  echo "pawl-review: STRICT two-family cold quorum — ALL required families CONFIRMED [${strict_trail}]; writing ONE multi-model verdict binding both families + both evidence paths." >&2
+  "$PAWL" write "$bead" "$PR" \
+    --disposition CONFIRMED --head "$head" --mode multi-model \
+    --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
+    "${_strict_refuter_args[@]}" \
+    --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: STRICT verdict write failed" >&2; exit 1; }
+  if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
+    echo "pawl-review: STRICT CONFIRMED — two-family multi-model verdict written + verified for $bead @ ${head:0:12} (families: ${strict_trail}) — ready to push." >&2
+    exit 0
+  fi
+  echo "pawl-review: STRICT verdict written but the check did not pass (see above) — fail-closed (exit 5, no authorization)." >&2
+  exit 5
+fi
 
 # scope=staged is REVIEW-ONLY: the reviewed change is not committed, so there is no
 # object to commit-bind a verdict to. Print the result; do NOT write (defends defect #1).

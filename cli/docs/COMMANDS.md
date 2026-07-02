@@ -3714,7 +3714,7 @@ ao pawl reap [flags]
 Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 
 ```
-ao pawl review <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>] [flags]
+ao pawl review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>] [flags]
 ```
 
 #### `ao pawl route`

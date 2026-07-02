@@ -38,14 +38,23 @@ const defaultPawlReviewScript = "scripts/pawl-review.sh"
 const defaultPawlServiceScript = "scripts/pawl.sh"
 
 var pawlReviewCmd = &cobra.Command{
-	Use:   "review <bead-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>]",
+	Use:   "review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>]",
 	Short: "Run the cross-family (codex) membrane review; on CONFIRMED write the commit-bound verdict",
 	Long: `Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 refuter against the commit and, on CONFIRMED, writes + verifies the commit-bound pawl
 verdict the pre-push gate requires (REFUTED prints the defects + exits 3; --converge is
 advisory-only without adversarial lineage and exits 4). LAW 0: the refuter is codex (a
 cross-family reviewer), never a same-model self-review. All arguments after 'review' are
-forwarded verbatim to the script.`,
+forwarded verbatim to the script.
+
+--strict (age-rk3r.13): the OPT-IN two-family cold quorum for the highest-irreversibility
+doors — TWO DISTINCT strict-eligible cold families must BOTH CONFIRMED, and strict REFUSES
+to degrade to one (an outage HOLDs, exit 5, never a single-family pass). It DOUBLES review
+cost (opt-in only) and is the portable cold analogue of the warm tri-family duel. Today no
+second strict-eligible cold family exists yet (agy A7-benched; no cold claude adapter — LAW
+0 forbids the Claude headless print path), so --strict prints an honest UNAVAILABLE and
+exits 5 rather than faking a pass; the machinery is built and flipping one eligibility list
+turns real strict on. See 'ao verify --help' for the full posture.`,
 	// Forward all flags verbatim to the script (it owns the flag contract).
 	DisableFlagParsing: true,
 	RunE:               runPawlReview,

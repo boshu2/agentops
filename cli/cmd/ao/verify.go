@@ -20,7 +20,7 @@ import (
 // trust split, and the sanitized cold env are REUSED, never re-derived
 // (a parallel implementation is a reject condition on this surface).
 var verifyCmd = &cobra.Command{
-	Use:   "verify <change-id> [--scope head|staged] [--converge] [--author-family <fam>] [--context <s>]",
+	Use:   "verify <change-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>]",
 	Short: "Independent cross-family verdict on your change — no verdict = not done",
 	Long: `Run an independent cross-family review of your change and, on CONFIRMED, write
 the commit-bound verdict to the provenance ledger. No verdict = not done: the
@@ -35,8 +35,33 @@ argument is forwarded verbatim, and the exit code IS the verdict:
   0  CONFIRMED — verdict written and bound to the commit
   3  REFUTED — defects printed; fix and re-run
   4  advisory-only (--converge without adversarial lineage)
+  5  STRICT HOLD / UNAVAILABLE — --strict could not run at its two-family
+     strength (a required family went outage, or no second strict-eligible
+     cold family exists yet). NON-authorizing: strict NEVER degrades to a
+     single family, and NEVER fakes a pass. See --strict below.
   2  usage error
   1  hard error — always fail-closed, never a silent pass
+
+--strict (age-rk3r.13): the OPT-IN, highest-irreversibility-door posture — a TWO-family
+cold quorum. It runs TWO DISTINCT strict-eligible cold reviewer families and REFUSES to
+degrade to one: BOTH must CONFIRMED (exit 0, a multi-model verdict recording BOTH families
++ BOTH evidence paths); ANY REFUTED is REFUTED (exit 3, both shown); ANY family OUTAGE is a
+HOLD (exit 5) — strict never falls back to the single family that answered (that refusal is
+the whole point). The strict VOTERS are DERIVED FROM the eligibility list (STRICT_ELIGIBLE_FAMILIES),
+NOT from PAWL_REVIEWER_CHAIN (the chain is the failover-mode ordering), so flipping ONLY that list
+activates the quorum. It is the portable cold analogue of the warm tri-family duel, and it
+DOUBLES review cost, so it is opt-in only — never the default. Enable via --strict or the
+'strict: true' key in .aoverify.yaml (PAWL_STRICT).
+
+HONEST-UNAVAILABLE (the current posture): strict requires a SECOND strict-eligible cold
+family besides codex, and there is none TODAY — agy is A7-benched (routine + degraded-
+fallback only until it is graduated) and there is NO cold claude-family adapter (LAW 0
+forbids the Claude headless print path; Fable/opus are warm-only). So --strict currently
+DETECTS this and prints an honest UNAVAILABLE (naming WHY + the non-strict alternative) and
+exits 5 — it never fakes a strict pass and never degrades. The two-family machinery is fully
+built; flipping ONE list (STRICT_ELIGIBLE_FAMILIES in scripts/pawl-review.sh) turns real
+strict on the moment a second cold family is graduated. This command claims NO active strict
+cross-family protection — only the honest self-report until that graduation.
 
 Inside the AgentOps checkout it runs the live repo scripts (dogfood); anywhere
 else it runs the embedded review bundle against YOUR git repository with a
@@ -86,6 +111,7 @@ installed pre-push ratchet will still ask for a CONFIRMED until then.
 Examples:
   ao verify my-change-123                # review + certify HEAD
   ao verify my-change --scope staged     # review staged work (advisory — no commit to bind)
+  ao verify my-change-123 --strict       # TWO-family cold quorum (highest-irreversibility door; refuses to degrade)
   ao verify --show-config                # inspect effective verify policy for this repo
   ao verify my-change-123 --rebind       # re-bind the CONFIRMED verdict onto HEAD after a no-op rebase`,
 	// The pawl review surface owns the flag contract; forward everything verbatim.

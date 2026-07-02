@@ -144,6 +144,63 @@ func TestRunVerify_DelegatesToPawlReviewEngine(t *testing.T) {
 	}
 }
 
+// STRICT (age-rk3r.13): the two-family cold quorum posture must be documented on BOTH
+// surfaces' help — the opt-in nature, the refuses-to-degrade invariant, the exit-5 HOLD,
+// and the honest-UNAVAILABLE current posture (no active-protection claim). This is the
+// documentary half; the behavioral forwarding is proven in TestRunVerify_StrictForwarded.
+func TestVerifyCmd_HelpDocumentsStrict(t *testing.T) {
+	for _, want := range []string{
+		"--strict",
+		"two-family",
+		"refuses to degrade",
+		"strict hold",   // the exit-5 HOLD is named
+		"unavailable",   // the honest current posture
+		"opt-in",
+	} {
+		if !strings.Contains(strings.ToLower(verifyCmd.Long), want) {
+			t.Errorf("verifyCmd.Long is missing the strict copy %q", want)
+		}
+	}
+	// The advanced surface (`ao pawl review`) documents strict too — same engine, same flag.
+	for _, want := range []string{"--strict", "two-family", "refuses"} {
+		if !strings.Contains(strings.ToLower(pawlReviewCmd.Long), want) {
+			t.Errorf("pawlReviewCmd.Long is missing the strict copy %q", want)
+		}
+	}
+	// Do NOT claim ACTIVE strict cross-family protection (the honesty boundary): the help must
+	// state the machinery is built + unavailable, never that strict protection is live today.
+	if !strings.Contains(verifyCmd.Long, "claims NO active strict") {
+		t.Error("verifyCmd.Long must state it claims NO active strict protection (the honesty boundary)")
+	}
+}
+
+// STRICT forwarding: `--strict` is a flag the SCRIPT owns (DisableFlagParsing), so `ao verify`
+// must forward it verbatim, and the strict HOLD/UNAVAILABLE exit code (5) must propagate as a
+// verdict shape — never be swallowed into a hard error. Mirrors TestRunVerify_DelegatesToPawlReviewEngine
+// but pins the strict flag + the new non-authorizing exit 5.
+func TestRunVerify_StrictForwarded(t *testing.T) {
+	args := []string{"age-strict", "--scope", "head", "--strict"}
+	marker := writeVerifyTestRepo(t, 5) // stub exits 5 (STRICT HOLD/UNAVAILABLE)
+	vCode, vIsVerdict := verdictShape(runVerify(verifyCmd, args))
+	got, readErr := os.ReadFile(marker)
+	if readErr != nil {
+		t.Fatalf("ao verify did not invoke the pawl-review script: %v", readErr)
+	}
+	if string(got) != "age-strict --scope head --strict" {
+		t.Fatalf("forwarded argv = %q, want %q (--strict must forward verbatim)", got, "age-strict --scope head --strict")
+	}
+	if !vIsVerdict || vCode != 5 {
+		t.Fatalf("strict exit code = %d (verdict=%v), want 5 propagated verbatim as a verdict shape", vCode, vIsVerdict)
+	}
+	// Same fixture through the advanced surface must yield the identical shape.
+	writeVerifyTestRepo(t, 5)
+	pCode, pIsVerdict := verdictShape(runPawlReview(pawlReviewCmd, args))
+	if vIsVerdict != pIsVerdict || vCode != pCode {
+		t.Fatalf("ao verify strict (%d, verdict=%v) diverges from ao pawl review (%d, verdict=%v)",
+			vCode, vIsVerdict, pCode, pIsVerdict)
+	}
+}
+
 // --help is for ao's command, not the wrapped script: it must print verify's OWN
 // help (the wedge copy) and never forward to the script (the exit-3 stub would fail).
 func TestRunVerify_HelpDoesNotForwardToScript(t *testing.T) {
