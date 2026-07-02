@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [tdd]
 package main
 

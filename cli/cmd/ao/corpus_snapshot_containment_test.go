@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [wiki-knowledge-surface, resilience-patterns, ai-assisted-dev]
 package main
 

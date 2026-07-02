@@ -543,16 +543,21 @@ func TestDoctorStaleReplacementsExist(t *testing.T) {
 			t.Errorf("deprecatedCommands[%q] = %q — too few parts", old, newCmd)
 			continue
 		}
-		// Walk rootCmd to find the command (skip "ao" prefix)
+		// Walk rootCmd to find the command (skip "ao" prefix). rootCmd.Find
+		// returns rootCmd itself when nothing matches — a dead replacement.
 		cmd, _, err := rootCmd.Find(parts[1:])
-		if err != nil {
-			t.Errorf("deprecatedCommands[%q] = %q — command not found: %v", old, newCmd, err)
-			continue
-		}
-		// rootCmd.Find returns rootCmd itself when the command doesn't
-		// match any subcommand. That means the replacement is dead.
-		if cmd == rootCmd {
-			t.Errorf("deprecatedCommands[%q] = %q — resolved to root (command does not exist)", old, newCmd)
+		if err != nil || cmd == rootCmd {
+			// The replacement is not registered in this build. In the spine
+			// (default) build some replacements point to commands archived
+			// behind a build tag (e.g. "ao curate" → //go:build flywheel,
+			// age-nzwo). Tolerate those here; the flywheel/legacy run of this
+			// test — where every archived command is compiled back in — is the
+			// strict check that still catches a genuinely dead replacement.
+			if len(archiveBuildTags) == 0 {
+				t.Logf("deprecatedCommands[%q] = %q — replacement absent from spine build (archived behind a build tag); checked by the archive-tag run", old, newCmd)
+				continue
+			}
+			t.Errorf("deprecatedCommands[%q] = %q — command not found (err=%v)", old, newCmd, err)
 		}
 	}
 }

@@ -44,19 +44,8 @@
 | `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao contradict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao converge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus capture` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus classify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus fitness` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus restore` | `public-stateful-fixture-needed` | `allowlisted` | Restores corpus snapshots and needs a disposable corpus fixture. |
-| `ao corpus scan` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao corpus snapshot` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao council-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao curate catalog` | `public-tested` | `allowlisted` | Covered by curate command tests. |
-| `ao curate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao curate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao dedup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao defrag` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation capabilities and needs a controlled home/repo fixture. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state and needs a controlled home/repo fixture. |

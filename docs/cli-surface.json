@@ -283,55 +283,6 @@
     },
     {
       "category": "public-tested",
-      "command": "corpus capture",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "corpus classify",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "corpus fitness",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "corpus inject",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "corpus restore",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Restores corpus snapshots and needs a disposable corpus fixture."
-    },
-    {
-      "category": "public-tested",
-      "command": "corpus scan",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "corpus snapshot",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "council-gate",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -339,35 +290,7 @@
     },
     {
       "category": "public-tested",
-      "command": "curate catalog",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by curate command tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "curate status",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "curate verify",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "dedup",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "defrag",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

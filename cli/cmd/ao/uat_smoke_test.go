@@ -107,6 +107,13 @@ func TestUATSmoke_MineGitSource(t *testing.T) {
 }
 
 func TestUATSmoke_DefragDedup(t *testing.T) {
+	// `ao defrag` is archived behind //go:build flywheel (age-nzwo); it is not in
+	// the spine binary. This UAT exercises the command end-to-end, so it only runs
+	// when the flywheel tag compiles defrag back in. The DefragReport type it
+	// unmarshals stays spine-resident (defrag_types.go), so this file still builds.
+	if len(archiveBuildTags) == 0 {
+		t.Skip("ao defrag archived behind the flywheel build tag (age-nzwo)")
+	}
 	tmp := chdirTemp(t)
 	setupAgentsDir(t, tmp)
 

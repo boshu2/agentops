@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T03:43:29Z",
+  "generated_at": "2026-07-02T04:39:58Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 74,
+    "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 158
+    "capabilities": 155
   },
   "surfaces": {
     "skills": [
@@ -819,24 +819,10 @@
         ]
       },
       {
-        "name": "ao corpus",
-        "path": "cli/cmd/ao/",
-        "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao council-gate",
         "path": "cli/cmd/ao/",
         "purpose": "Fail-closed two-plus judge verdict aggregation",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao curate",
-        "path": "cli/cmd/ao/",
-        "purpose": "Curation pipeline operations",
-        "bounded_context": "BC1",
         "driven_by_skills": []
       },
       {
@@ -848,18 +834,6 @@
           "compile",
           "curate",
           "flywheel"
-        ]
-      },
-      {
-        "name": "ao defrag",
-        "path": "cli/cmd/ao/",
-        "purpose": "Prune and deduplicate .agents/ learning artifacts",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "compile",
-          "crank",
-          "curate",
-          "evolve"
         ]
       },
       {
@@ -1380,9 +1354,9 @@
     ]
   },
   "capability_summary": {
-    "total": 158,
+    "total": 155,
     "skills": 70,
-    "cli_commands": 74,
+    "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1403,11 +1377,8 @@
     "constraint",
     "contradict",
     "converge",
-    "corpus",
     "council-gate",
-    "curate",
     "dedup",
-    "defrag",
     "demo",
     "doctor",
     "done",
@@ -1573,7 +1544,6 @@
       ],
       "drives_commands": [
         "ao agent bundle",
-        "ao corpus inject",
         "ao gate check",
         "ao goals",
         "ao lookup",
@@ -1922,7 +1892,6 @@
         "ao compile",
         "ao contradict",
         "ao dedup",
-        "ao defrag",
         "ao mine"
       ],
       "path": "skills/compile/",
@@ -2083,7 +2052,6 @@
         "git-changes"
       ],
       "drives_commands": [
-        "ao defrag",
         "ao done",
         "ao flywheel close-loop",
         "ao forge transcript",
@@ -2124,7 +2092,6 @@
       ],
       "drives_commands": [
         "ao dedup",
-        "ao defrag",
         "ao metrics"
       ],
       "path": "skills/curate/",
@@ -2253,7 +2220,6 @@
       "drives_commands": [
         "ao agent",
         "ao compile",
-        "ao corpus inject",
         "ao eval run",
         "ao gate check",
         "ao lookup",
@@ -2332,8 +2298,6 @@
       "drives_commands": [
         "ao agent",
         "ao ci recent",
-        "ao corpus inject",
-        "ao defrag",
         "ao goals",
         "ao lookup",
         "ao metrics cite",
@@ -2374,7 +2338,6 @@
         "ao badge",
         "ao constraint review",
         "ao contradict",
-        "ao curate status",
         "ao dedup",
         "ao eval bench",
         "ao flywheel",
@@ -3455,8 +3418,7 @@
         "stdout"
       ],
       "drives_commands": [
-        "ao ci",
-        "ao corpus inject"
+        "ao ci"
       ],
       "path": "skills/standards/",
       "references": 23
@@ -4007,45 +3969,11 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.corpus",
-      "name": "ao corpus",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.council-gate",
       "name": "ao council-gate",
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Fail-closed two-plus judge verdict aggregation",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.curate",
-      "name": "ao curate",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Curation pipeline operations",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -4077,34 +4005,6 @@
         "--output",
         "--verbose",
         "--yes"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.defrag",
-      "name": "ao defrag",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Prune and deduplicate .agents/ learning artifacts",
-      "status": "active",
-      "driven_by_skills": [
-        "compile",
-        "crank",
-        "curate",
-        "evolve"
-      ],
-      "flags": [
-        "--config",
-        "--dedup",
-        "--dry-run",
-        "--json",
-        "--no-snapshot",
-        "--output",
-        "--output-dir",
-        "--prune",
-        "--quiet",
-        "--stale-days",
-        "--verbose"
       ],
       "path": "cli/cmd/ao/"
     },
