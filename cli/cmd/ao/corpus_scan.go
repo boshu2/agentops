@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [fail-closed-safety, wiki-knowledge-surface]
 package main
 
@@ -13,20 +15,9 @@ import (
 
 var corpusScanJSON bool
 
-// corpusScanExitError carries the fail-closed exit code out of RunE so that a
-// detected leak (or read failure) maps to a nonzero process exit without cobra
-// printing its own error noise. Exit semantics:
-//
-//	0  clean — no markers, no read errors (publishable)
-//	1  leak detected OR a file could not be read (FAIL CLOSED)
-//	2  internal error invoking the scan
-type corpusScanExitError struct {
-	code int
-	msg  string
-}
-
-func (e *corpusScanExitError) Error() string { return e.msg }
-func (e *corpusScanExitError) ExitCode() int { return e.code }
+// corpusScanExitError (the typed exit-code error) lives in the untagged
+// corpus_scan_error.go so root.go's spine Execute() switch can type-assert it
+// after this command archives behind //go:build flywheel (age-nzwo).
 
 const (
 	corpusScanClean    = 0

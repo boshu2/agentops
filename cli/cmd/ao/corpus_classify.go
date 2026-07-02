@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [fail-closed-safety, wiki-knowledge-surface]
 package main
 

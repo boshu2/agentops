@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [wiki-knowledge-surface, refactoring]
 package main
 

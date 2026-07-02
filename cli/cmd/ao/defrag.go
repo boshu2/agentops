@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [wiki-knowledge-surface, refactoring]
 package main
 
@@ -23,10 +25,10 @@ var (
 	defragNoSnapshot bool
 )
 
-// Type aliases for cmd/ao test compatibility.
-type DefragReport = lifecycle.DefragReport
-type PruneResult = lifecycle.PruneResult
-type DefragDedupResult = lifecycle.DefragDedupResult
+// DefragReport / PruneResult / DefragDedupResult type aliases live in the
+// untagged defrag_types.go (age-nzwo) so spine consumers (goals_prune.go,
+// uat_smoke_test.go) keep compiling after this command archives behind the
+// flywheel tag.
 
 var defragCmd = &cobra.Command{
 	Use:   "defrag",

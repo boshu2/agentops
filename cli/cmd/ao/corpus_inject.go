@@ -1,3 +1,5 @@
+//go:build flywheel
+
 // practices: [hexagonal-architecture, ddd-bounded-context]
 package main
 
