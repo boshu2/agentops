@@ -556,7 +556,7 @@ ao gate check [flags]
   -h, --help                      help for check
       --json                      emit the machine-readable JSON report
       --require-workflow-parity   fail if validate.yml references scripts missing from the Go gate registry
-      --scope string              fast-mode changed-file scope: head|staged|worktree|upstream (default "head")
+      --scope string              fast-mode changed-file scope: head|staged|worktree|upstream|range:<base>..<head> (default "head")
       --workflow-coverage         include validate.yml-vs-registry script coverage in the report
       --workflow-path string      workflow path used by --workflow-coverage and --require-workflow-parity (default ".github/workflows/validate.yml")
 ```

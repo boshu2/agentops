@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -60,11 +61,32 @@ func init() {
 	f.BoolVar(&gateCheckJSON, "json", false, "emit the machine-readable JSON report")
 	f.BoolVar(&gateCheckGitHub, "github-annotations", false, "emit GitHub Actions annotations for WARN/FAIL checks")
 	f.BoolVar(&gateCheckFailFast, "fail-fast", false, "stop after the first blocking failure")
-	f.StringVar(&gateCheckScope, "scope", "head", "fast-mode changed-file scope: head|staged|worktree|upstream")
+	f.StringVar(&gateCheckScope, "scope", "head", "fast-mode changed-file scope: head|staged|worktree|upstream|range:<base>..<head>")
 	f.BoolVar(&gateCheckWorkflowCoverage, "workflow-coverage", false, "include validate.yml-vs-registry script coverage in the report")
 	f.BoolVar(&gateCheckRequireWorkflowParity, "require-workflow-parity", false, "fail if validate.yml references scripts missing from the Go gate registry")
 	f.StringVar(&gateCheckWorkflowPath, "workflow-path", ".github/workflows/validate.yml", "workflow path used by --workflow-coverage and --require-workflow-parity")
 	gateCmd.AddCommand(gateCheckCmd)
+}
+
+// applyRangeScope validates a range scope ("range:<base>..<head>") and exports
+// AGENTOPS_GATE_RANGE so backing collectors (e.g.
+// scripts/check-go-command-test-pair.sh) prefer the explicit range over their
+// @{upstream}/git-show-HEAD fallback, which is absent or tip-only in a detached
+// landing worktree (age-wy2t). It sets the var on the process so every backing
+// subprocess inherits it via the ScriptRunner's cmd.Environ(). Non-range scopes
+// are a no-op (the env is left untouched).
+func applyRangeScope(scope gates.Scope) error {
+	spec, ok := gates.ScopeRange(scope)
+	if !ok {
+		return nil
+	}
+	if err := gates.ValidateRangeSpec(spec); err != nil {
+		return err
+	}
+	if err := os.Setenv("AGENTOPS_GATE_RANGE", spec); err != nil {
+		return fmt.Errorf("set AGENTOPS_GATE_RANGE: %w", err)
+	}
+	return nil
 }
 
 // gateCheckMode maps the --full flag to a run tier.
@@ -95,6 +117,11 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 		return &gateExitError{code: gateExitInternal, msg: fmt.Sprintf("resolve repo root: %v", err)}
 	}
 
+	scope := gates.Scope(gateCheckScope)
+	if rerr := applyRangeScope(scope); rerr != nil {
+		return &gateExitError{code: gateExitInternal, msg: rerr.Error()}
+	}
+
 	orch := gates.NewOrchestrator(
 		gateCheckRegistry,
 		gates.NewScriptRunner(root),
@@ -103,7 +130,7 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 	)
 	report, err := orch.Run(cmd.Context(), gates.RunOptions{
 		Mode:     gateCheckMode(gateCheckFull),
-		Scope:    gates.Scope(gateCheckScope),
+		Scope:    scope,
 		FailFast: gateCheckFailFast,
 	})
 	if err != nil {

@@ -138,7 +138,7 @@ func (r *Report) JSON() ([]byte, error) {
 			WorkflowBacking: res.Check.WorkflowBacking(),
 			ArtifactPath:    res.Check.ArtifactPath(),
 			RepairHint:      res.Check.EffectiveRepairHint(),
-			LogTail:         res.Verdict.LogTail,
+			LogTail:         jsonLogTail(res, reason),
 			DurationMs:      res.Duration.Milliseconds(),
 		})
 	}
@@ -161,6 +161,40 @@ func (r *Report) JSON() ([]byte, error) {
 		return nil, fmt.Errorf("gates: marshal report: %w", err)
 	}
 	return out, nil
+}
+
+// maxLogTailLines bounds the JSON log_tail to a readable window — the last few
+// lines of a failing gate's output, where the actionable summary lives.
+const maxLogTailLines = 15
+
+// jsonLogTail computes the log_tail emitted for a gate. It returns the last
+// maxLogTailLines lines of the captured output, and — the load-bearing part —
+// falls back to the reason when a FAILing (or eval-errored) gate captured no
+// output at all. Native-Go checks and silently-failing backing scripts
+// otherwise emit an empty log_tail, so a --json FAIL entry carried no detail and
+// diagnosing which gates failed meant re-running with tee-log archaeology
+// (age-wy2t). A failing gate now always carries actionable detail.
+func jsonLogTail(res CheckResult, reason string) string {
+	tail := res.Verdict.LogTail
+	failing := res.Verdict.Status == ports.GateStatusFail || res.Err != nil
+	if strings.TrimSpace(tail) == "" && failing {
+		tail = reason
+	}
+	return lastLines(tail, maxLogTailLines)
+}
+
+// lastLines returns at most the final n lines of s (trailing blank lines
+// trimmed first), preserving order. Empty in, empty out.
+func lastLines(s string, n int) string {
+	s = strings.TrimRight(s, "\n")
+	if s == "" {
+		return ""
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= n {
+		return s
+	}
+	return strings.Join(lines[len(lines)-n:], "\n")
 }
 
 // Human writes a concise human-readable report to w.
