@@ -2522,8 +2522,8 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		if !strings.Contains(buf.String(), "bd create") {
-			t.Error("expected 'bd create' in next steps with beads")
+		if !strings.Contains(buf.String(), "br create") {
+			t.Error("expected 'br create' in next steps with beads")
 		}
 	})
 
@@ -2537,8 +2537,8 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		if !strings.Contains(buf.String(), "bd init") {
-			t.Error("expected 'bd init' in next steps without beads")
+		if !strings.Contains(buf.String(), "br init") {
+			t.Error("expected 'br init' in next steps without beads")
 		}
 	})
 }

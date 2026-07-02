@@ -103,8 +103,8 @@ func TestQuickstart_CreateTasksFile_ValidJSON(t *testing.T) {
 
 func TestQuickstart_ShowNextSteps_WithBeads(t *testing.T) {
 	out, _ := captureStdout(t, func() error { showNextSteps(true); return nil })
-	if !strings.Contains(out, "bd") {
-		t.Errorf("with beads=true, expected bd reference in output:\n%s", out)
+	if !strings.Contains(out, "br ready") {
+		t.Errorf("with beads=true, expected 'br ready' tracker reference in output:\n%s", out)
 	}
 	if !strings.Contains(out, "ao factory start") {
 		t.Errorf("with beads=true, expected factory lane in output:\n%s", out)
