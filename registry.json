@@ -1,15 +1,16 @@
 {
   "schema_version": 2,
   "generated_at": "2026-07-02T02:19:56Z",
+  "generated_at": "2026-07-02T02:32:19Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 79,
+    "cli_commands": 76,
     "workflows": 4,
-    "capabilities": 163
+    "capabilities": 160
   },
   "surfaces": {
     "skills": [
@@ -715,15 +716,6 @@
         ]
       },
       {
-        "name": "ao autodev",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage the PROGRAM.md operational contract for autonomous development",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev"
-        ]
-      },
-      {
         "name": "ao badge",
         "path": "cli/cmd/ao/",
         "purpose": "Display knowledge flywheel health badge",
@@ -782,13 +774,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Close a bead and persist the explicit ledger/evidence paths",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao codex",
-        "path": "cli/cmd/ao/",
-        "purpose": "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
-        "bounded_context": "BC5",
         "driven_by_skills": []
       },
       {
@@ -1276,13 +1261,6 @@
         ]
       },
       {
-        "name": "ao tick",
-        "path": "cli/cmd/ao/",
-        "purpose": "Typed port of the assured loop tick oracle",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao trace",
         "path": "cli/cmd/ao/",
         "purpose": "Track artifact provenance",
@@ -1420,9 +1398,9 @@
     ]
   },
   "capability_summary": {
-    "total": 163,
+    "total": 160,
     "skills": 70,
-    "cli_commands": 79,
+    "cli_commands": 76,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1430,7 +1408,6 @@
     "agent",
     "agents",
     "anti-patterns",
-    "autodev",
     "badge",
     "beads",
     "canon",
@@ -1439,7 +1416,6 @@
     "citation",
     "claim",
     "close",
-    "codex",
     "compile",
     "config",
     "constraint",
@@ -1496,7 +1472,6 @@
     "sessions",
     "skills",
     "status",
-    "tick",
     "trace",
     "validate",
     "verdict-gate",
@@ -1683,10 +1658,7 @@
       ],
       "produces": [],
       "drives_commands": [
-        "ao agent",
-        "ao autodev",
-        "ao autodev init",
-        "ao autodev validate"
+        "ao agent"
       ],
       "path": "skills/autodev/",
       "references": 0
@@ -1856,7 +1828,6 @@
       ],
       "produces": [],
       "drives_commands": [
-        "ao autodev init",
         "ao gate check",
         "ao quick-start"
       ],
@@ -2036,7 +2007,6 @@
         "stdout"
       ],
       "drives_commands": [
-        "ao codex dispatch",
         "ao converge"
       ],
       "path": "skills/converge/",
@@ -2628,7 +2598,6 @@
       "consumes": [],
       "produces": [],
       "drives_commands": [
-        "ao codex start",
         "ao inject",
         "ao knowledge",
         "ao knowledge activate",
@@ -2797,8 +2766,6 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao codex status",
-        "ao codex stop",
         "ao flywheel close-loop",
         "ao forge",
         "ao forge markdown",
@@ -3055,9 +3022,6 @@
         ".agents/rpi/*.md"
       ],
       "drives_commands": [
-        "ao codex start",
-        "ao codex status",
-        "ao codex stop",
         "ao lookup",
         "ao metrics cite",
         "ao session bootstrap"
@@ -3816,26 +3780,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.autodev",
-      "name": "ao autodev",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Manage the PROGRAM.md operational contract for autonomous development",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--file",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.badge",
       "name": "ao badge",
       "type": "cli-command",
@@ -3969,23 +3913,6 @@
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Close a bead and persist the explicit ledger/evidence paths",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.codex",
-      "name": "ao codex",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -5159,23 +5086,6 @@
       "driven_by_skills": [
         "flywheel"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.tick",
-      "name": "ao tick",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Typed port of the assured loop tick oracle",
-      "status": "active",
-      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",

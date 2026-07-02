@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/adapters/vendorimage/codexruntime"
+	"github.com/boshu2/agentops/cli/internal/bridge"
 )
 
 // Codex artifact/transcript helpers that the SPINE consumes. Extracted from
@@ -86,4 +87,15 @@ func collectRecentCodexArtifacts(dir, query string, limit int) []codexArtifactRe
 
 func findTranscriptBySessionID(sessionID string) (string, error) {
 	return codexruntime.FindTranscriptBySessionID(sessionID)
+}
+
+func findLastSession() (string, error) {
+	return codexruntime.FindLastSession()
+}
+
+// firstNonEmptyTrimmed returns the first value that is non-empty after trimming.
+// Used across the spine (knowledge surface, session close); kept untagged so it
+// survives the codex command archive (age-h4y3).
+func firstNonEmptyTrimmed(values ...string) string {
+	return bridge.FirstNonEmptyTrimmed(values...)
 }

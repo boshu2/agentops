@@ -12,7 +12,9 @@ import (
 
 func TestTickCommandSurfaceCovered(t *testing.T) {
 	// These literals are intentionally full leaf-command names: the command
-	// surface parity gate scans *_test.go for this coverage.
+	// surface parity gate scans *_test.go for this coverage. The `tick`
+	// subcommands are archived behind //go:build legacy — their coverage lives
+	// in tick_cmd_legacy_test.go (age-h4y3).
 	_ = []string{
 		"ao chaos-test",
 		"ao close",
@@ -29,24 +31,11 @@ func TestTickCommandSurfaceCovered(t *testing.T) {
 		"guard-status",
 		"install-guards",
 		"ready",
-		"tick claim",
-		"tick close",
-		"tick council-gate",
-		"tick guard-status",
-		"tick install-guards",
-		"tick next",
-		"tick reopen",
-		"tick smoke",
-		"tick status",
-		"tick verdict-gate",
 		"verdict-gate",
 	}
 	registered := map[string]bool{}
 	for _, cmd := range rootCmd.Commands() {
 		registered[cmd.Name()] = true
-	}
-	for _, cmd := range tickCmd.Commands() {
-		registered["tick "+cmd.Name()] = true
 	}
 	for _, name := range covered {
 		if !registered[name] {

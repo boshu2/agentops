@@ -57,19 +57,11 @@ func executeCommand(args ...string) (string, error) {
 	origSearchUseSC := searchUseSC
 	origSearchUseCASS := searchUseCASS
 	origSearchUseLocal := searchUseLocal
-	origCodexStartLimit := codexStartLimit
-	origCodexStartQuery := codexStartQuery
-	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origCodexStopSessionID := codexStopSessionID
-	origCodexStopTranscriptPath := codexStopTranscriptPath
-	origCodexStopAutoExtract := codexStopAutoExtract
-	origCodexStopNoHistoryFallback := codexStopNoHistoryFallback
-	origCodexStopCloseLoop := codexStopCloseLoop
-	origCodexStopNoCloseLoop := codexStopNoCloseLoop
-	origCodexStatusDays := codexStatusDays
-	origCodexDispatchPacketPath := codexDispatchPacketPath
-	origAutodevFile := autodevFile
-	origAutodevForce := autodevForce
+	// codex + autodev cobra-flag globals live in the //go:build legacy archive
+	// (age-h4y3); snapshot+reset them via the tagged delegate so this untagged
+	// (spine) helper never references archived symbols. restoreArchived is invoked
+	// in the deferred restore below.
+	restoreArchived := snapshotArchivedCommandGlobals()
 	origFindingsListLimit := findingsListLimit
 	origFindingsListAll := findingsListAll
 	origFindingsExportTo := findingsExportTo
@@ -140,19 +132,7 @@ func executeCommand(args ...string) (string, error) {
 		searchUseSC = origSearchUseSC
 		searchUseCASS = origSearchUseCASS
 		searchUseLocal = origSearchUseLocal
-		codexStartLimit = origCodexStartLimit
-		codexStartQuery = origCodexStartQuery
-		codexStartNoMaintenance = origCodexStartNoMaintenance
-		codexStopSessionID = origCodexStopSessionID
-		codexStopTranscriptPath = origCodexStopTranscriptPath
-		codexStopAutoExtract = origCodexStopAutoExtract
-		codexStopNoHistoryFallback = origCodexStopNoHistoryFallback
-		codexStopCloseLoop = origCodexStopCloseLoop
-		codexStopNoCloseLoop = origCodexStopNoCloseLoop
-		codexStatusDays = origCodexStatusDays
-		codexDispatchPacketPath = origCodexDispatchPacketPath
-		autodevFile = origAutodevFile
-		autodevForce = origAutodevForce
+		restoreArchived()
 		findingsListLimit = origFindingsListLimit
 		findingsListAll = origFindingsListAll
 		findingsExportTo = origFindingsExportTo
@@ -221,19 +201,6 @@ func executeCommand(args ...string) (string, error) {
 	searchUseSC = false
 	searchUseCASS = false
 	searchUseLocal = false
-	codexStartLimit = 3
-	codexStartQuery = ""
-	codexStartNoMaintenance = false
-	codexStopSessionID = ""
-	codexStopTranscriptPath = ""
-	codexStopAutoExtract = true
-	codexStopNoHistoryFallback = false
-	codexStopCloseLoop = false
-	codexStopNoCloseLoop = false
-	codexStatusDays = 7
-	codexDispatchPacketPath = ""
-	autodevFile = ""
-	autodevForce = false
 	findingsListLimit = 20
 	findingsListAll = false
 	findingsExportTo = ""
@@ -398,7 +365,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"agent",
 		"agents",
 		"anti-patterns",
-		"autodev",
 		"badge",
 		"batch-feedback",
 		"beads",
@@ -410,7 +376,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"citation",
 		"claim",
 		"close",
-		"codex",
 		"compile",
 		"completion",
 		"config",
@@ -482,7 +447,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"task-status",
 		"task-sync",
 		"temper",
-		"tick",
 		"trace",
 		"validate",
 		"verdict-gate",
@@ -505,8 +469,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify parent commands have subcommands
 	parentExpectations := map[string][]string{
-		"autodev": {"init", "validate", "show"},
-		"beads":   {"verify", "lint", "harvest"},
+		"beads": {"verify", "lint", "harvest"},
 		// session-continuity commands folded under `ao session`
 		// (age-focus-membrane-bookkeeper-m1wg.17).
 		"session":    {"bootstrap", "close", "state", "memory", "rehydrate", "handoff"},
@@ -553,7 +516,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"agent",
 		"agents",
 		"anti-patterns",
-		"autodev",
 		"badge",
 		"batch-feedback",
 		"beads",
@@ -565,7 +527,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"citation",
 		"claim",
 		"close",
-		"codex",
 		"compile",
 		"completion",
 		"config",
@@ -637,7 +598,6 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"task-status",
 		"task-sync",
 		"temper",
-		"tick",
 		"trace",
 		"validate",
 		"verdict-gate",
