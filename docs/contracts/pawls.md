@@ -227,3 +227,44 @@ The cross-family pawl can run as a **standing warm service** (`ao pawl up` — c
 - Without a schedule, the panes stay warm until an explicit `ao pawl down`. That is safe — the membrane gates on the recorded verdict, never on a live pane — it just holds account slots.
 
 **Tier transparency.** A routed verdict is stamped `multi-model` (≥2 families — the real cross-family gate) or `fresh-context` (1 family — a single fresh-context refuter, weaker). A high-irreversibility door (push-to-main) demands `multi-model` and refuses a `fresh-context` verdict; `ao pawl review` and the pre-push gate surface the achieved tier so a single-family land is a conscious choice, not silent.
+
+## Strict two-family cold quorum — the portable `multi-model` door (age-rk3r.13)
+
+The [`multi-model`](#diversity-mode--per-pawl-fresh-context-by-default) mode above is the strongest
+diversity requirement, and until now the only place it ran *portably* was the warm tri-family duel
+(operator machinery). **`ao verify --strict`** (or the `strict: true` key in `.aoverify.yaml` →
+`PAWL_STRICT`) is the **cold, portable** `multi-model` door: it runs **two DISTINCT strict-eligible
+cold reviewer families**, requires **both** CONFIRMED, and writes ONE `multi-model` verdict recording
+**both** families + **both** evidence paths (the ledger edge's `reviewer_family` is the joined label,
+e.g. `gpt+gemini`). It **DOUBLES review cost**, so it is **opt-in only, never the default** — reserve
+it for the highest-irreversibility doors (a shared-ref rewrite, a schema/contract change).
+
+**Strict REFUSES to degrade — that refusal is the whole point.** This is the load-bearing contrast
+with the failover chain ([`scripts/pawl-review.sh`](../../scripts/pawl-review.sh) — the ordinary
+cold path degrades on an outage: it falls over to the next family and labels the verdict
+`degraded=true`, to *keep going*). **Strict does the opposite:** a single-family answer on a strict
+door is exactly what strict exists to forbid, so any family OUTAGE **HOLDs** (exit 5, non-authorizing,
+no verdict) rather than falling back to one family. A REFUTED from either family is FINAL (a REFUTED is
+a result, never overturned by asking the other family — the same invariant the whole gate holds).
+
+**Eligibility is a ONE-list seam that DRIVES the voter set — and today it is honestly `codex`-only.**
+`STRICT_ELIGIBLE_FAMILIES` (override `PAWL_STRICT_ELIGIBLE_FAMILIES`) is the single list of families
+measured trustworthy enough to serve a strict door. In strict mode the **voters are derived from this
+list** (each entry → its adapter, excluding the author family, keeping only *reachable* distinct
+families) — **not** from `PAWL_REVIEWER_CHAIN`, which is the *failover*-mode ordering, a different
+selection. That is what makes the seam real: **flipping ONLY `STRICT_ELIGIBLE_FAMILIES` activates the
+quorum with no other change.** The set is deliberately *narrower* than the failover chain (a family
+fine as a fallback is not automatically fit to be one of two independent quorum voters on a one-way
+door). Right now that set is **codex only**: per the A7 bench ruling **agy is not yet strict-eligible**
+(routine + degraded-fallback only until it is graduated), and there is **no cold claude-family adapter**
+(LAW 0: never `claude -p`; Fable/opus are warm-only). So there is **no second strict-eligible cold
+family today**, and `--strict` **DETECTS this and prints an honest UNAVAILABLE** (naming *why* + the
+non-strict alternative — `ao verify` fresh-context, or `--converge`) and exits 5. It **never fakes a
+strict pass and never degrades to one family**. The full two-family machinery is built and locked; the
+moment a second cold family is graduated (a real measured strict certification), **flipping that one
+list** turns real strict on with no other change.
+
+**Honesty boundary (do not overstate).** What is shipped and claimable is the **mechanism + the honest
+self-report**. **Active** strict cross-family protection — a real two-family default, or *any* claim of
+active strict protection in docs/marketing — gates on a second measured strict-eligible family
+graduating; **do not claim active strict protection anywhere** until then.

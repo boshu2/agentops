@@ -4788,6 +4788,7 @@
         "--scope",
         "--show-config",
         "--stable",
+        "--strict",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
