@@ -1,8 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T02:19:56Z",
-  "generated_at": "2026-07-02T02:32:19Z",
-  "generated_at": "2026-07-02T02:37:53Z",
+  "generated_at": "2026-07-02T03:43:29Z",
   "summary": {
     "skills": 70,
     "hooks": 0,
@@ -5100,9 +5098,11 @@
         "--context",
         "--converge",
         "--dry-run",
+        "--export-env",
         "--json",
         "--output",
         "--scope",
+        "--show-config",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
