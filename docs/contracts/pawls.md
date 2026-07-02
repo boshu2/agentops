@@ -95,6 +95,41 @@ This keeps the ratchet cheap by default while letting the operator pay for the s
 exactly where irreversibility earns it — the same economy as the pawl list itself (gate only
 where it's worth it).
 
+## Evidence-quality floor — a CONFIRMED must carry substance (age-rk3r.11)
+
+Evidence-binding proves a review file *exists and is non-empty*. It does **not** prove the
+review carried **substance**: a 155-byte "no blocking defects" stub once passed `check`. The
+**evidence-quality floor** (`scripts/pawl-verdict.sh check`) raises the bar — a CONFIRMED's
+evidence must carry **one of**:
+
+- **a file:line-shaped finding/observation** — the review cites concrete code (`path.ext:NNN`,
+  or a `line N` reference). A genuine review of a diff does this naturally; **real reviews pass
+  untouched**. This is the primary signal.
+- **an explicit reviewed-scope attestation** — a *files-reviewed count* plus the file names
+  (e.g. `Files reviewed: 2 (scripts/pawl-verdict.sh, schemas/pawl-verdict.v1.schema.json)`).
+  This is the **escape for a legitimately clean review** that found nothing concrete to cite:
+  a review that blocks nothing must still *attest what it looked at*.
+
+**Plus a per-adapter genuine-run marker.** Each refuter attributable to a cold reviewer adapter
+must carry that adapter's genuine-run marker in its **own** evidence — `codex` = `tokens used`,
+`agy` = `VERDICT:` (mirroring the reviewer-adapter contract in `scripts/lib/codex-exec.sh`
+`reviewer_adapter_marker`). A family with no cold-adapter marker defined yet (`claude`, the warm
+reviewer) is skipped — advisory, never a hard fail. This distinguishes a real cross-family review
+from a lazy stub or an echo.
+
+**It measures SUBSTANCE, not correctness.** The floor proves a real, specific review *ran over
+named code* — it does **not** and **cannot** certify the verdict is *right*; a substantive review
+can still be wrong. `check` prints that caveat whenever the floor runs.
+
+**Rollout is ADVISORY-FIRST.** Until `FLOOR_ENFORCE_AFTER` (`scripts/pawl-verdict.sh`; env override
+`PAWL_FLOOR_ENFORCE_AFTER`) the floor only **measures + warns** — it never changes the
+authorize/refuse decision — so the false-positive rate on real reviews is observed for one cycle
+before it fail-closes. On/after the flip date a violation **HOLDs** (a CONFIRMED without substance
+names the floor; a refuter without its marker names the adapter). `PAWL_FLOOR_ENFORCE=1|0` forces
+enforce|advisory regardless of the date (operator kill-switch). *At flip time*, bump/remove the
+date **and** update any stub-evidence behavior-lock suites (their thin fixtures deliberately carry
+no substance and begin to HOLD).
+
 ## What is NOT a pawl (chaos — run free, ungated)
 
 Editing a file · writing a test · running a build · a local experiment · a draft · a throwaway branch · a read-only query · an intermediate RPI slice · a mock→real swap · trying an approach and discarding it. **None of these are irreversible. Do not gate them.** Iterate cheaply; the pawl catches you at the door.

@@ -1,0 +1,16 @@
+I reviewed the diff for this change as the merge-to-main gate reviewer.
+
+Read scripts/pawl-verdict.sh:455 — the do_check evidence-binding gate fails closed
+when no reviewer evidence surface exists, and the new floor call at
+scripts/pawl-verdict.sh:626 runs AFTER it, so it only inspects evidence files the
+prior gate already proved present and non-empty.
+
+Checked cli/cmd/ao/provenance_emit_verdict.go:41 — the verdict-edge emit path is
+unchanged by this diff; no new field is written, so the .16 allowlist is not widened.
+
+NOTES (accepted tail, non-blocking): the WARN copy is verbose, but that is intentional
+during the advisory measurement window.
+
+No introduced, real, blocking defect found.
+VERDICT: CONFIRMED
+[2026-07-02T12:04:11] tokens used: 5183
