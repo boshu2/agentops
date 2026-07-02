@@ -35,7 +35,7 @@ var corpusFitnessCmd = &cobra.Command{
 }
 
 func init() {
-	corpusCmd.GroupID = "knowledge"
+	corpusCmd.GroupID = "experimental"
 	rootCmd.AddCommand(corpusCmd)
 	corpusCmd.AddCommand(corpusFitnessCmd)
 	corpusFitnessCmd.Flags().BoolVar(&corpusFitnessJSON, "json", false, "Emit the fitness vector as JSON")

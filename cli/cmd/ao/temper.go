@@ -72,7 +72,7 @@ type TemperStatus struct {
 
 func init() {
 	temperCmd.Hidden = true
-	temperCmd.GroupID = "knowledge"
+	temperCmd.GroupID = "experimental"
 	rootCmd.AddCommand(temperCmd)
 
 	// validate subcommand

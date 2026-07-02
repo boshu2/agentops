@@ -50,7 +50,7 @@ Commands:
 
 func init() {
 	storeCmd.Hidden = true
-	storeCmd.GroupID = "knowledge"
+	storeCmd.GroupID = "experimental"
 	rootCmd.AddCommand(storeCmd)
 
 	// index subcommand

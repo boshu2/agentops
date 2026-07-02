@@ -148,7 +148,7 @@ and how many documents are currently indexed.`,
 }
 
 func init() {
-	wikiCmd.GroupID = "knowledge"
+	wikiCmd.GroupID = "experimental"
 	rootCmd.AddCommand(wikiCmd)
 
 	wikiCmd.AddCommand(wikiIndexCmd)

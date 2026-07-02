@@ -70,7 +70,7 @@ Examples:
 func init() {
 	dedupCmd.Flags().BoolVar(&dedupMerge, "merge", false, "Auto-resolve duplicates: keep highest utility, archive the rest")
 	dedupCmd.Flags().BoolVar(&dedupYes, "yes", false, "Skip the interactive confirmation prompt for large merges (for hooks/CI)")
-	dedupCmd.GroupID = "core"
+	dedupCmd.GroupID = "experimental"
 	rootCmd.AddCommand(dedupCmd)
 }
 

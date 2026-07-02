@@ -80,7 +80,7 @@ Examples:
 }
 
 func init() {
-	maturityCmd.GroupID = "core"
+	maturityCmd.GroupID = "experimental"
 	rootCmd.AddCommand(maturityCmd)
 	maturityCmd.Flags().BoolVar(&maturityApply, "apply", false, "Apply maturity transitions")
 	maturityCmd.Flags().BoolVar(&maturityScan, "scan", false, "Scan all learnings for pending transitions")

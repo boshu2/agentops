@@ -11,18 +11,57 @@ Usage:
   bash scripts/install.sh
   bash scripts/install.sh --dev
   bash scripts/install.sh --with-hooks
+  bash scripts/install.sh --tier spine
 
 Options:
   --dev       Configure this checkout for AgentOps development: install repo
               hooks, build cli/bin/ao, and smoke-test pre-push wiring.
   --with-hooks
               Also install runtime hooks. Default install is hookless.
+  --tier <spine|all>
+              Which skill tier to install. "spine" installs only the proven
+              spine skills (spine: true frontmatter — see skills/SKILL-TIERS.md),
+              skipping the experimental corpus/flywheel tier; "all" (default)
+              installs the whole bundle. Filters the Codex/AGY bundle installs;
+              the Claude plugin path is whole-bundle (manifest split is future work).
   -h, --help  Show this help.
 EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WITH_HOOKS="${AGENTOPS_INSTALL_HOOKS:-0}"
+TIER="${AGENTOPS_INSTALL_TIER:-all}"
+
+# prune_bundle_to_spine removes every non-spine skill dir from an extracted
+# AgentOps bundle so a --tier spine install ships only the proven spine skills
+# (age-h4y3). It edits the bundle in place before the per-runtime installers copy
+# from it; the selection lever is scripts/select-spine-skills.sh.
+prune_bundle_to_spine() {
+    local bundle="$1"
+    local selector="$bundle/scripts/select-spine-skills.sh"
+    if [[ ! -f "$selector" ]]; then
+        echo "Warning: spine selector missing ($selector); installing all skills." >&2
+        return 0
+    fi
+    local keep
+    keep="$(bash "$selector" "$bundle/skills" 2>/dev/null || true)"
+    if [[ -z "$keep" ]]; then
+        echo "Warning: no spine skills resolved; installing all skills." >&2
+        return 0
+    fi
+    local skills_root dir name
+    for skills_root in "$bundle/skills" "$bundle/skills-codex"; do
+        [[ -d "$skills_root" ]] || continue
+        for dir in "$skills_root"/*/; do
+            [[ -d "$dir" ]] || continue
+            name="$(basename "$dir")"
+            if ! grep -qxF "$name" <<<"$keep"; then
+                rm -rf "$dir"
+            fi
+        done
+    done
+    echo "Tier spine: kept $(printf '%s\n' "$keep" | grep -c .) spine skills; skipped the experimental corpus/flywheel tier."
+}
 
 install_dev() {
     local repo_root
@@ -68,6 +107,11 @@ while [[ $# -gt 0 ]]; do
             WITH_HOOKS=0
             shift
             ;;
+        --tier)
+            shift
+            TIER="${1:-}"
+            shift || true
+            ;;
         -h|--help)
             usage
             exit 0
@@ -90,6 +134,14 @@ case "$WITH_HOOKS_NORMALIZED" in
         ;;
     *)
         echo "Invalid AGENTOPS_INSTALL_HOOKS/--with-hooks value: $WITH_HOOKS" >&2
+        exit 2
+        ;;
+esac
+
+case "$TIER" in
+    spine|all) ;;
+    *)
+        echo "Invalid --tier/AGENTOPS_INSTALL_TIER value: $TIER (want: spine|all)" >&2
         exit 2
         ;;
 esac
@@ -148,6 +200,11 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 curl -fsSL https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main \
     | tar xz -C "$TMP" --strip-components=1
+
+if [[ "$TIER" == "spine" ]]; then
+    echo "Tier: spine — pruning bundle to spine skills before install..."
+    prune_bundle_to_spine "$TMP"
+fi
 
 if command -v codex >/dev/null 2>&1; then
     codex_args=()

@@ -98,7 +98,7 @@ AGENTOPS_COMPILE_RUNTIME or pass --runtime to choose an LLM backend
 }
 
 func init() {
-	compileCmd.GroupID = "knowledge"
+	compileCmd.GroupID = "experimental"
 	rootCmd.AddCommand(compileCmd)
 
 	compileCmd.Flags().StringVar(&compileSourcesDir, "sources", ".agents", "Source .agents root to compile")
