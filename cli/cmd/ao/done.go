@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -146,6 +147,36 @@ func lookupDoneVerdicts(edges []provenancegraph.Edge, beadID, sha string) doneVe
 	return l
 }
 
+// doneOriginRef is the remote-tracking ref the origin-ledger fallback consults.
+// The repo lands directly on main, so origin/main is the shared audit line.
+const doneOriginRef = "origin/main"
+
+// lookupDoneVerdictsFromOrigin consults the already-fetched origin/main ledger
+// blob for a verdict binding the commit — the stale-checkout fallback. `ao done`
+// runs wherever the operator happens to be, and a verdict pushed elsewhere lands
+// on origin/main before the local working tree catches up, so a local checkout
+// that lags origin would otherwise refuse a genuinely-verified close.
+//
+// It reads `git show origin/main:docs/provenance/ledger.jsonl` — a blob read
+// with NO working-tree change and NO `git fetch` (a stale origin ref simply
+// misses, and the caller refuses as before, advising a fetch). Any failure (no
+// origin/main ref, absent blob, unreadable/corrupt ledger) fails SOFT to
+// (zero, false): the fallback can only ever HELP find a verdict, never block a
+// close the local ledger would otherwise satisfy. The bool reports whether the
+// origin ledger was read and decoded at all.
+func lookupDoneVerdictsFromOrigin(cwd, beadID, sha string) (doneVerdictLookup, bool) {
+	out, err := exec.Command("git", "-C", cwd, "show",
+		doneOriginRef+":"+provenancegraph.LedgerRelativePath).Output()
+	if err != nil {
+		return doneVerdictLookup{}, false
+	}
+	edges, err := provenancegraph.DecodeEdges(bytes.NewReader(out))
+	if err != nil {
+		return doneVerdictLookup{}, false
+	}
+	return lookupDoneVerdicts(edges, beadID, sha), true
+}
+
 // doneStamp formats the close-reason stamp: "[verdict:<sha7>:<disposition>]".
 func doneStamp(sha, disposition string) string {
 	return "[verdict:" + shortHash7(sha) + ":" + disposition + "]"
@@ -208,6 +239,7 @@ func doneRefusalError(beadID, sha string, l doneVerdictLookup) error {
   produce one:  ao verify %s            (front door — writes the commit-bound verdict on CONFIRMED)
   advanced:     ao pawl review %s --scope head
   waiver:       only a commit whose changed files are all under docs/provenance/ closes as waived-trivial
+  stale local?  git fetch origin && git merge --ff-only origin/main   (a verdict pushed elsewhere lands on origin/main first; ao done checks it, but your local ledger may still lag it)
   escape hatch: ao done %s --force-no-verdict   (closes with an explicit UNVERIFIED stamp)`,
 		found, beadID, beadID, beadID, beadID)
 }
@@ -246,10 +278,34 @@ func runDone(cmd *cobra.Command, args []string) error {
 		disposition = doneStampConfirmed
 	case len(lookup.Dispositions) == 0 && doneCommitProvenanceOnly(cwd, sha):
 		disposition = doneStampWaived
-	case doneForceNoVerdct:
-		disposition = doneStampUnverified
 	default:
-		return doneRefusalError(beadID, sha, lookup)
+		// The local ledger neither certifies this commit nor makes it
+		// waiver-eligible. Before refusing, consult the already-fetched
+		// origin/main ledger: a stale local checkout may simply lag a verdict
+		// pushed elsewhere. Adopt a CONFIRMED verdict found there and close
+		// exactly as if it were local; otherwise surface origin's findings in
+		// the refusal. Fail-closed posture unchanged — nothing here can turn a
+		// would-refuse into anything weaker than the local ledger allows.
+		if originLookup, ok := lookupDoneVerdictsFromOrigin(cwd, beadID, sha); ok {
+			if originLookup.Confirmed {
+				lookup.Confirmed = true
+				lookup.VerdictID = originLookup.VerdictID
+			} else if len(lookup.Dispositions) == 0 && len(lookup.ForeignBeads) == 0 {
+				// Local ledger is silent on this commit; carry origin/main's
+				// findings into the refusal so the message is accurate.
+				lookup.Dispositions = originLookup.Dispositions
+				lookup.ForeignBeads = originLookup.ForeignBeads
+				lookup.VerdictID = originLookup.VerdictID
+			}
+		}
+		switch {
+		case lookup.Confirmed:
+			disposition = doneStampConfirmed
+		case doneForceNoVerdct:
+			disposition = doneStampUnverified
+		default:
+			return doneRefusalError(beadID, sha, lookup)
+		}
 	}
 
 	stamp := doneStamp(sha, disposition)

@@ -477,3 +477,175 @@ func TestShaBindsCommit(t *testing.T) {
 		}
 	}
 }
+
+// makeDoneOriginRepo builds a bare "origin" whose main branch carries a
+// docs/provenance/ledger.jsonl seeded with originEdges, plus a local checkout
+// whose WORKING-TREE ledger carries localEdges — a stale checkout that lags
+// origin: its ledger is written but never committed, and it only *fetches*
+// origin so origin/main is a resolvable ref without fast-forwarding the working
+// tree. Edges are written THROUGH the production writer (Store.Append) for
+// fixture fidelity — the same on-disk hash-chained shape `git show` returns.
+// chdirs into the local checkout and returns nothing (the caller drives ao done
+// from cwd).
+func makeDoneOriginRepo(t *testing.T, localEdges, originEdges []provenancegraph.Edge) {
+	t.Helper()
+	root := t.TempDir()
+	bare := filepath.Join(root, "origin.git")
+	builder := filepath.Join(root, "builder")
+	local := filepath.Join(root, "local")
+
+	gitEnv := append(os.Environ(),
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
+	git := func(dir string, args ...string) {
+		t.Helper()
+		c := exec.Command("git", args...)
+		c.Dir = dir
+		c.Env = gitEnv
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("git -C %s %v: %v\n%s", dir, args, err, out)
+		}
+	}
+	writeLedger := func(dir string, edges []provenancegraph.Edge) {
+		t.Helper()
+		if len(edges) == 0 {
+			return
+		}
+		store := provenancegraph.NewStore(filepath.Join(dir, provenancegraph.LedgerRelativePath))
+		for i, e := range edges {
+			e.TS = "2026-07-02T00:00:0" + string(rune('0'+i)) + "Z"
+			if _, err := store.Append(e); err != nil {
+				t.Fatalf("append fixture edge %d in %s: %v", i, dir, err)
+			}
+		}
+	}
+
+	for _, d := range []string{bare, builder, local} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", d, err)
+		}
+	}
+	git(bare, "init", "-q", "--bare")
+
+	// Builder seeds origin/main with the origin ledger and pushes it.
+	git(builder, "init", "-q")
+	writeLedger(builder, originEdges)
+	git(builder, "add", "--", provenancegraph.LedgerRelativePath)
+	git(builder, "commit", "-q", "-m", "origin ledger")
+	git(builder, "remote", "add", "origin", bare)
+	git(builder, "push", "-q", "origin", "HEAD:main")
+
+	// Local is the operator's stale checkout: its working-tree ledger lags
+	// origin (localEdges), and it only fetches origin so origin/main resolves —
+	// mirroring the incident where the local ledger predated a pushed verdict.
+	git(local, "init", "-q")
+	writeLedger(local, localEdges)
+	git(local, "remote", "add", "origin", bare)
+	git(local, "fetch", "-q", "origin")
+	t.Chdir(local)
+}
+
+// TestDone_OriginLedgerFallbackConfirms: the incident — a CONFIRMED verdict is
+// already on origin/main but the local working-tree ledger predates it. ao done
+// must consult origin/main and close exactly as if the verdict were local (same
+// stamp), with NO manual `git merge --ff-only`.
+func TestDone_OriginLedgerFallbackConfirms(t *testing.T) {
+	makeDoneOriginRepo(t,
+		nil, // stale local: no verdict for the commit
+		[]provenancegraph.Edge{
+			buildBeadCommitEdge("ag-orig.1", doneSHAConfirmed),
+			buildVerdictCommitEdge(pawlVerdict{
+				BeadID: "ag-orig.1", HeadSHA: doneSHAConfirmed, Disposition: "CONFIRMED"}),
+		})
+	resetDoneFlags(t)
+	argvFile := stubBr(t)
+	doneSHA = doneSHAConfirmed
+
+	c, out := provTestCmd()
+	if err := runDone(c, []string{"ag-orig.1"}); err != nil {
+		t.Fatalf("ao done with CONFIRMED verdict only on origin/main: %v", err)
+	}
+
+	wantArgv := []string{"close", "ag-orig.1", "-r", "Done [verdict:1a1a1a1:CONFIRMED]"}
+	got := readStubArgv(t, argvFile)
+	if len(got) != len(wantArgv) {
+		t.Fatalf("br argv = %q, want %q", got, wantArgv)
+	}
+	for i := range wantArgv {
+		if got[i] != wantArgv[i] {
+			t.Fatalf("br argv[%d] = %q, want %q", i, got[i], wantArgv[i])
+		}
+	}
+	if !strings.Contains(out.String(), "closed ag-orig.1 at 1a1a1a1 [verdict:1a1a1a1:CONFIRMED]") {
+		t.Errorf("human output missing close line:\n%s", out.String())
+	}
+}
+
+// TestDone_OriginLedgerFallbackMissRefusesWithFetchHint: the verdict is in
+// NEITHER the local ledger nor origin/main (origin holds only an unrelated
+// verdict). ao done must still refuse — fail-closed — and the refusal must
+// extend with the git-fetch hint so the operator knows a just-pushed verdict
+// may not have reached this checkout's origin ref yet.
+func TestDone_OriginLedgerFallbackMissRefusesWithFetchHint(t *testing.T) {
+	makeDoneOriginRepo(t,
+		nil, // local: nothing
+		[]provenancegraph.Edge{
+			// origin has a verdict, but for a DIFFERENT commit than we query.
+			buildBeadCommitEdge("ag-orig.2", doneSHARefuted),
+			buildVerdictCommitEdge(pawlVerdict{
+				BeadID: "ag-orig.2", HeadSHA: doneSHARefuted, Disposition: "REFUTED"}),
+		})
+	resetDoneFlags(t)
+	argvFile := stubBr(t)
+	doneSHA = doneSHANoVerdict // certified by neither local nor origin
+
+	c, _ := provTestCmd()
+	err := runDone(c, []string{"ag-orig.2"})
+	if err == nil {
+		t.Fatal("want refusal when the verdict is in neither ledger, got nil")
+	}
+	for _, want := range []string{
+		"no verdict recorded for commit 3c3c3c3",
+		"no verdict = not done",
+		"git fetch origin && git merge --ff-only origin/main",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal error missing %q:\n%s", want, err.Error())
+		}
+	}
+	if _, statErr := os.Stat(argvFile); statErr == nil {
+		t.Error("br was invoked on a refused close — refusal must not close")
+	}
+}
+
+// TestDone_LocalVerdictClosesUnchangedWithOrigin: existing behavior is
+// untouched — when the LOCAL ledger already certifies the commit, ao done
+// closes from it and never depends on origin/main (here origin carries no
+// certifying verdict at all).
+func TestDone_LocalVerdictClosesUnchangedWithOrigin(t *testing.T) {
+	makeDoneOriginRepo(t,
+		[]provenancegraph.Edge{ // local already certifies
+			buildBeadCommitEdge("ag-loc.3", doneSHAConfirmed),
+			buildVerdictCommitEdge(pawlVerdict{
+				BeadID: "ag-loc.3", HeadSHA: doneSHAConfirmed, Disposition: "CONFIRMED"}),
+		},
+		[]provenancegraph.Edge{ // origin: only a bead edge, no verdict
+			buildBeadCommitEdge("ag-loc.3", doneSHAConfirmed),
+		})
+	resetDoneFlags(t)
+	argvFile := stubBr(t)
+	doneSHA = doneSHAConfirmed
+
+	c, out := provTestCmd()
+	if err := runDone(c, []string{"ag-loc.3"}); err != nil {
+		t.Fatalf("ao done with a local CONFIRMED verdict: %v", err)
+	}
+	argv := readStubArgv(t, argvFile)
+	if argv[3] != "Done [verdict:1a1a1a1:CONFIRMED]" {
+		t.Fatalf("close reason = %q, want the local CONFIRMED stamp", argv[3])
+	}
+	if !strings.Contains(out.String(), "closed ag-loc.3 at 1a1a1a1 [verdict:1a1a1a1:CONFIRMED]") {
+		t.Errorf("human output missing close line:\n%s", out.String())
+	}
+}

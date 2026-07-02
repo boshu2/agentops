@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -35,9 +36,18 @@ func (s *Store) Read() ([]Edge, error) {
 		return nil, fmt.Errorf("open ledger: %w", err)
 	}
 	defer func() { _ = f.Close() }()
+	return DecodeEdges(f)
+}
 
+// DecodeEdges parses every non-blank line of r as an Edge, in reader order,
+// with the same discipline as Read: blank lines are skipped and a malformed
+// line is a hard error so a corrupt record is never silently dropped. It is the
+// shared decoder behind Read and any in-memory ledger snapshot — e.g. a git
+// blob read via `git show <ref>:docs/provenance/ledger.jsonl` for the
+// origin-ledger fallback. Pure with respect to the filesystem.
+func DecodeEdges(r io.Reader) ([]Edge, error) {
 	var edges []Edge
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	line := 0
 	for scanner.Scan() {
