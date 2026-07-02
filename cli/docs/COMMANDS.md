@@ -379,67 +379,6 @@ ao contradict [flags]
 
 ---
 
-### `ao curate`
-
-Curate manages the knowledge curation pipeline: catalog artifacts,
-
-```
-ao curate [command]
-```
-
-**Subcommands:**
-
-#### `ao curate catalog`
-
-Catalog a knowledge artifact
-
-```
-ao curate catalog <path> [flags]
-```
-
-#### `ao curate status`
-
-Show curation pipeline status
-
-```
-ao curate status [flags]
-```
-
-#### `ao curate verify`
-
-Verify gate health against baselines
-
-```
-ao curate verify [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help           help for verify
-      --since string   Filter to changes within duration (e.g. 24h, 7d)
-```
-
----
-
-### `ao dedup`
-
-Scan learnings and patterns for near-duplicates using normalized content hashing.
-
-```
-ao dedup [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help    help for dedup
-      --merge   Auto-resolve duplicates: keep highest utility, archive the rest
-      --yes     Skip the interactive confirmation prompt for large merges (for hooks/CI)
-```
-
----
-
 ### `ao doctor`
 
 Run health checks on your AgentOps installation.
@@ -558,89 +497,6 @@ ao doctor undo <run-id> [flags]
 
 ---
 
-### `ao flywheel`
-
-Knowledge flywheel operations and status.
-
-```
-ao flywheel [command]
-```
-
-**Subcommands:**
-
-#### `ao flywheel close-loop`
-
-Close the knowledge flywheel loop by chaining:
-
-```
-ao flywheel close-loop [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for close-loop
-      --pending-dir string   Pending directory to ingest from (default ".agents/knowledge/pending")
-      --quiet                Suppress non-essential output (hook-friendly)
-      --threshold string     Minimum age for auto-promotion (default: 24h) (default "24h")
-```
-
-#### `ao flywheel compare`
-
-Compare retrieval quality between primary and shadow namespaces.
-
-```
-ao flywheel compare [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for compare
-      --shadow string   Shadow namespace to compare against primary (default "shadow")
-```
-
-#### `ao flywheel gate`
-
-Check the post-structural readiness gate before retrieval-expansion work.
-
-```
-ao flywheel gate [flags]
-```
-
-**Flags:**
-
-```
-      --corpus string   Benchmark corpus directory (defaults to repo testdata)
-  -h, --help            help for gate
-```
-
-#### `ao flywheel nudge`
-
-Returns structured JSON combining:
-
-```
-ao flywheel nudge [flags]
-```
-
-#### `ao flywheel status`
-
-Display comprehensive flywheel health status.
-
-```
-ao flywheel status [flags]
-```
-
-**Flags:**
-
-```
-      --days int           Period in days for metrics calculation (default 7)
-  -h, --help               help for status
-      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
-```
-
----
-
 ### `ao gate`
 
 Manage human review gates for bronze-tier candidates.
@@ -738,33 +594,6 @@ ao gate run <name> [flags]
 
 ---
 
-### `ao maturity`
-
-Check and manage CASS (Contextual Agent Session Search) maturity levels.
-
-```
-ao maturity [learning-id] [flags]
-```
-
-**Flags:**
-
-```
-      --apply                Apply maturity transitions
-      --archive              Move expired/evicted/curated files to archive (requires --expire, --evict, or --curate)
-      --curate               Normalize metadata and identify low-signal or uncited stale learnings
-      --evict                Identify eviction candidates (composite criteria)
-      --expire               Scan for expired learnings
-      --global               Operate on ~/.agents/learnings instead of the local workspace learnings
-  -h, --help                 help for maturity
-      --migrate-md           Add default frontmatter to .md learnings missing utility field
-      --recalibrate          Reset utility to 0.5 for all learnings
-      --scan                 Scan all learnings for pending transitions
-      --target-size string   Size-budget eviction: when set with --evict, archive lowest-utility eligible files until the learnings hub falls below the target (e.g. 250M, 1G, 1024K)
-      --uncited-days int     Archive provisional/candidate learnings with zero citations older than this many days when used with --curate (default 60)
-```
-
----
-
 ### `ao metrics`
 
 Track and report on knowledge flywheel metrics.
@@ -855,150 +684,6 @@ ao metrics report [flags]
 ```
       --days int   Period in days for metrics calculation (default 7)
   -h, --help       help for report
-```
-
----
-
-### `ao pool`
-
-Manage knowledge candidates in quality pools.
-
-```
-ao pool [command]
-```
-
-**Subcommands:**
-
-#### `ao pool auto-promote`
-
-Automatically approve (and optionally promote) high-quality candidates
-
-```
-ao pool auto-promote [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help               help for auto-promote
-      --include-gold       Include gold-tier candidates when using --promote (default true)
-      --promote            Also stage+promote eligible candidates into .agents/ (not just approval)
-      --threshold string   Minimum age for auto-promotion (default: 24h) (default "24h")
-```
-
-#### `ao pool batch-promote`
-
-Promote pending pool candidates that meet promotion criteria.
-
-```
-ao pool batch-promote [flags]
-```
-
-**Flags:**
-
-```
-  --dry-run   Show what would be promoted without executing
-  --force     Promote all pending candidates regardless of criteria
-  --min-age   Minimum age threshold (default: 24h)
-      --force            Promote all pending regardless of criteria
-  -h, --help             help for batch-promote
-      --min-age string   Minimum age for promotion eligibility (default "24h")
-```
-
-#### `ao pool ingest`
-
-Ingest pending learnings into the quality pool.
-
-```
-ao pool ingest [<files-or-globs...>] [flags]
-```
-
-**Flags:**
-
-```
-      --dir string   Directory to ingest from when no args are provided (default ".agents/knowledge/pending")
-  -h, --help         help for ingest
-```
-
-#### `ao pool list`
-
-List knowledge candidates filtered by tier and/or status.
-
-```
-ao pool list [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for list
-      --limit int       Maximum results to return (default 50, 0 for unlimited) (default 50)
-      --offset int      Skip first N results (for pagination)
-      --status string   Filter by status (pending, staged, promoted, rejected)
-      --tier string     Filter by tier (gold, silver, bronze)
-  -w, --wide            Show full IDs without truncation
-```
-
-#### `ao pool promote`
-
-Move a staged candidate to the knowledge base (.agents/learnings/ or .agents/patterns/).
-
-```
-ao pool promote <candidate-id> [flags]
-```
-
-#### `ao pool reindex`
-
-Walk .agents/learnings/*.md and .agents/patterns/*.md, compute the
-
-```
-ao pool reindex [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run   Print counts only; do not write to the index
-  -h, --help      help for reindex
-      --json      Emit structured JSON output
-```
-
-#### `ao pool reject`
-
-Mark a candidate as rejected and move to rejected directory.
-
-```
-ao pool reject <candidate-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for reject
-      --reason string   Reason for rejection (required)
-```
-
-#### `ao pool show`
-
-Show detailed information about a pool candidate.
-
-```
-ao pool show <candidate-id> [flags]
-```
-
-#### `ao pool stage`
-
-Move a candidate from pending to staged status.
-
-```
-ao pool stage <candidate-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help              help for stage
-      --min-tier string   Minimum tier threshold (default: bronze)
 ```
 
 ---
@@ -1867,188 +1552,6 @@ ao goals steer remove <number> [flags]
 
 ---
 
-### `ao ratchet`
-
-Track progress through the phased RPI workflow.
-
-```
-ao ratchet [command]
-```
-
-**Subcommands:**
-
-#### `ao ratchet check`
-
-Check if prerequisites are satisfied for a workflow step.
-
-```
-ao ratchet check <step> [flags]
-```
-
-**Aliases:**
-
-```
-  check, c
-```
-
-#### `ao ratchet next`
-
-Show the next pending step in the RPI workflow.
-
-```
-ao ratchet next [flags]
-```
-
-**Aliases:**
-
-```
-  next, n
-```
-
-**Flags:**
-
-```
-      --epic string   Filter by epic ID
-  -h, --help          help for next
-```
-
-#### `ao ratchet spec`
-
-Find and output the current spec artifact path.
-
-```
-ao ratchet spec [flags]
-```
-
-#### `ao ratchet status`
-
-Display the current state of the ratchet chain.
-
-```
-ao ratchet status [flags]
-```
-
-**Aliases:**
-
-```
-  status, s
-```
-
-**Flags:**
-
-```
-      --chain string   Filter by chain ID
-      --epic string    Filter by epic ID
-  -h, --help           help for status
-```
-
-#### `ao ratchet validate`
-
-Validate that an artifact meets quality requirements.
-
-```
-ao ratchet validate <step> [flags]
-```
-
-**Flags:**
-
-```
-      --changes strings      Files to validate
-  -h, --help                 help for validate
-      --lenient              Allow legacy artifacts without schema_version (expires in 90 days)
-      --lenient-expiry int   Days until lenient bypass expires (default 90)
-```
-
-#### `ao ratchet promote`
-
-Record promotion of an artifact to a higher tier.
-
-```
-ao ratchet promote <artifact> [flags]
-```
-
-**Aliases:**
-
-```
-  promote, p
-```
-
-**Flags:**
-
-```
-  -h, --help     help for promote
-      --to int   Target tier (0-4, required) (default -1)
-```
-
-#### `ao ratchet record`
-
-Record that a workflow step has been completed.
-
-```
-ao ratchet record <step> [flags]
-```
-
-**Flags:**
-
-```
-      --cycle int            RPI cycle number (1 for first, 2+ for iterations)
-  -h, --help                 help for record
-      --input string         Input artifact path
-      --lock                 Lock the step (engage ratchet) (default true)
-      --output string        Output artifact path (required)
-      --parent-epic string   Parent epic ID from prior RPI cycle
-      --tier int             Quality tier (0-4) (default -1)
-```
-
-#### `ao ratchet skip`
-
-Record that a step was intentionally skipped.
-
-```
-ao ratchet skip <step> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for skip
-      --reason string   Reason for skipping (required)
-```
-
-#### `ao ratchet find`
-
-Search for artifacts across all locations.
-
-```
-ao ratchet find <pattern> [flags]
-```
-
-#### `ao ratchet trace`
-
-Trace an artifact back through the ratchet chain.
-
-```
-ao ratchet trace <artifact> [flags]
-```
-
-#### `ao ratchet migrate`
-
-Migrate chain from legacy YAML format to JSONL.
-
-```
-ao ratchet migrate [flags]
-```
-
-#### `ao ratchet migrate-artifacts`
-
-Add schema_version: 1 to existing .agents/ artifacts.
-
-```
-ao ratchet migrate-artifacts [path] [flags]
-```
-
----
-
 ### `ao session`
 
 Session lifecycle operations.
@@ -2582,192 +2085,6 @@ ao beads verify-acceptance <bead-id>... [flags]
 
 ---
 
-### `ao compile`
-
-Compile makes the existing AgentOps knowledge compiler available through the ao CLI.
-
-```
-ao compile [flags]
-```
-
-**Flags:**
-
-```
-      --batch-size int      Max changed files per LLM prompt (prevents single-giant-prompt on large corpora) (default 25)
-      --compile-only        Skip mine and defrag; run compile plus lint
-      --defrag-only         Only run mechanical defrag cleanup
-      --force               Recompile all source artifacts regardless of hashes
-      --force-repair        Actually delete orphans during --repair. Without --force-repair, --repair runs dry.
-      --full                Run the full mine, compile, lint, and defrag cycle
-      --gold                Publish the sanitized OKF gold wiki to .ao/wiki after the compile cycle (default true)
-  -h, --help                help for compile
-      --incremental         Compile only changed source artifacts (default true)
-      --lint-only           Only lint the existing compiled wiki
-      --max-batches int     Cap number of compile batches per invocation (0 = unlimited)
-      --mine-only           Only mine new knowledge signal
-      --output-dir string   Compiled wiki output directory (default ".agents/compiled")
-      --quiet               Suppress human progress output
-      --repair              Remove orphaned fallback stubs from .agents/compiled/ (files with no inbound wikilink traffic)
-      --reset               Delete .agents/compiled/ and .hashes.json before compiling (force full rebuild)
-      --runtime string      LLM runtime override for headless compilation (codex-cli, ollama, claude, openai)
-      --since string        Mine lookback window for full and mine-only modes (default "26h")
-      --sources string      Source .agents root to compile (default ".agents")
-```
-
----
-
-### `ao corpus`
-
-Commands that inspect the local .agents/ corpus quality.
-
-```
-ao corpus [command]
-```
-
-**Subcommands:**
-
-#### `ao corpus capture`
-
-Write an artifact to a corpus root via the typed BC1
-
-```
-ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...] [flags]
-```
-
-**Flags:**
-
-```
-      --body string        body text (mutually exclusive with --body-file and --body-stdin)
-      --body-file string   read body from file
-      --body-stdin         read body from stdin
-  -h, --help               help for capture
-      --meta stringArray   metadata key=value (repeatable)
-      --path string        relative path within root (required)
-      --root string        corpus root (default: .agents/learnings/)
-```
-
-#### `ao corpus classify`
-
-Ensure every learning record under <dir> carries the two promote-gate
-
-```
-ao corpus classify <dir> [flags]
-```
-
-**Flags:**
-
-```
-      --apply   Write the changes (default: dry run, report only)
-  -h, --help    help for classify
-      --json    Emit the report as JSON
-```
-
-#### `ao corpus fitness`
-
-Compute the corpus-quality fitness vector for the current .agents/
-
-```
-ao corpus fitness [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for fitness
-      --json   Emit the fitness vector as JSON
-```
-
-#### `ao corpus inject`
-
-Read knowledge from a corpus root via the typed BC1
-
-```
-ao corpus inject [--query <text>] [--root <path>] [--limit N] [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help           help for inject
-      --limit int      max items to emit (0 = all) (default 10)
-      --query string   ranking query (empty = all items, score 0)
-      --root string    corpus root (default: .agents/learnings/)
-```
-
-#### `ao corpus restore`
-
-Untars a snapshot produced by ao corpus snapshot. By default refuses to overwrite an
-
-```
-ao corpus restore [flags]
-```
-
-**Flags:**
-
-```
-      --from string   Explicit snapshot tarball path
-  -h, --help          help for restore
-      --into string   Destination directory (default: .agents) (default ".agents")
-      --json          Emit the result as JSON to stdout
-      --latest        Pick the newest tarball in the snapshot dir
-      --overwrite     Replace an existing destination directory (with .bak rescue)
-```
-
-#### `ao corpus scan`
-
-Scan a file or directory of RENDERED public text (markdown/json/txt/html)
-
-```
-ao corpus scan <path> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for scan
-      --json   Emit the scan report as JSON (per-file hits)
-```
-
-#### `ao corpus snapshot`
-
-Writes the entire .agents/ tree as a tar.gz to a durable directory outside the repo,
-
-```
-ao corpus snapshot [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for snapshot
-      --json                Emit the manifest as JSON to stdout
-      --output-dir string   Override snapshot dir (default: $AGENTOPS_CORPUS_SNAPSHOT_DIR or ~/.agentops/corpus-snapshots)
-```
-
----
-
-### `ao defrag`
-
-Defrag performs mechanical cleanup of the knowledge base:
-
-```
-ao defrag [flags]
-```
-
-**Flags:**
-
-```
-      --dedup               Flag learnings with >80% content similarity
-  -h, --help                help for defrag
-      --no-snapshot         Skip the automatic corpus snapshot taken before a destructive prune
-      --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
-      --prune               Find orphaned learnings not referenced in patterns or research
-      --quiet               Suppress progress output
-      --stale-days int      Days after which an unreferenced learning is considered stale (default 30)
-```
-
----
-
 ### `ao findings`
 
 Manage promoted finding artifacts under .agents/findings/.
@@ -3285,6 +2602,689 @@ ao trace <artifact-path> [flags]
 ```
       --graph   Show ASCII provenance graph
   -h, --help    help for trace
+```
+
+---
+
+### `ao compile`
+
+Compile makes the existing AgentOps knowledge compiler available through the ao CLI.
+
+```
+ao compile [flags]
+```
+
+**Flags:**
+
+```
+      --batch-size int      Max changed files per LLM prompt (prevents single-giant-prompt on large corpora) (default 25)
+      --compile-only        Skip mine and defrag; run compile plus lint
+      --defrag-only         Only run mechanical defrag cleanup
+      --force               Recompile all source artifacts regardless of hashes
+      --force-repair        Actually delete orphans during --repair. Without --force-repair, --repair runs dry.
+      --full                Run the full mine, compile, lint, and defrag cycle
+      --gold                Publish the sanitized OKF gold wiki to .ao/wiki after the compile cycle (default true)
+  -h, --help                help for compile
+      --incremental         Compile only changed source artifacts (default true)
+      --lint-only           Only lint the existing compiled wiki
+      --max-batches int     Cap number of compile batches per invocation (0 = unlimited)
+      --mine-only           Only mine new knowledge signal
+      --output-dir string   Compiled wiki output directory (default ".agents/compiled")
+      --quiet               Suppress human progress output
+      --repair              Remove orphaned fallback stubs from .agents/compiled/ (files with no inbound wikilink traffic)
+      --reset               Delete .agents/compiled/ and .hashes.json before compiling (force full rebuild)
+      --runtime string      LLM runtime override for headless compilation (codex-cli, ollama, claude, openai)
+      --since string        Mine lookback window for full and mine-only modes (default "26h")
+      --sources string      Source .agents root to compile (default ".agents")
+```
+
+---
+
+### `ao corpus`
+
+Commands that inspect the local .agents/ corpus quality.
+
+```
+ao corpus [command]
+```
+
+**Subcommands:**
+
+#### `ao corpus capture`
+
+Write an artifact to a corpus root via the typed BC1
+
+```
+ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...] [flags]
+```
+
+**Flags:**
+
+```
+      --body string        body text (mutually exclusive with --body-file and --body-stdin)
+      --body-file string   read body from file
+      --body-stdin         read body from stdin
+  -h, --help               help for capture
+      --meta stringArray   metadata key=value (repeatable)
+      --path string        relative path within root (required)
+      --root string        corpus root (default: .agents/learnings/)
+```
+
+#### `ao corpus classify`
+
+Ensure every learning record under <dir> carries the two promote-gate
+
+```
+ao corpus classify <dir> [flags]
+```
+
+**Flags:**
+
+```
+      --apply   Write the changes (default: dry run, report only)
+  -h, --help    help for classify
+      --json    Emit the report as JSON
+```
+
+#### `ao corpus fitness`
+
+Compute the corpus-quality fitness vector for the current .agents/
+
+```
+ao corpus fitness [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for fitness
+      --json   Emit the fitness vector as JSON
+```
+
+#### `ao corpus inject`
+
+Read knowledge from a corpus root via the typed BC1
+
+```
+ao corpus inject [--query <text>] [--root <path>] [--limit N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for inject
+      --limit int      max items to emit (0 = all) (default 10)
+      --query string   ranking query (empty = all items, score 0)
+      --root string    corpus root (default: .agents/learnings/)
+```
+
+#### `ao corpus restore`
+
+Untars a snapshot produced by ao corpus snapshot. By default refuses to overwrite an
+
+```
+ao corpus restore [flags]
+```
+
+**Flags:**
+
+```
+      --from string   Explicit snapshot tarball path
+  -h, --help          help for restore
+      --into string   Destination directory (default: .agents) (default ".agents")
+      --json          Emit the result as JSON to stdout
+      --latest        Pick the newest tarball in the snapshot dir
+      --overwrite     Replace an existing destination directory (with .bak rescue)
+```
+
+#### `ao corpus scan`
+
+Scan a file or directory of RENDERED public text (markdown/json/txt/html)
+
+```
+ao corpus scan <path> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for scan
+      --json   Emit the scan report as JSON (per-file hits)
+```
+
+#### `ao corpus snapshot`
+
+Writes the entire .agents/ tree as a tar.gz to a durable directory outside the repo,
+
+```
+ao corpus snapshot [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for snapshot
+      --json                Emit the manifest as JSON to stdout
+      --output-dir string   Override snapshot dir (default: $AGENTOPS_CORPUS_SNAPSHOT_DIR or ~/.agentops/corpus-snapshots)
+```
+
+---
+
+### `ao curate`
+
+Curate manages the knowledge curation pipeline: catalog artifacts,
+
+```
+ao curate [command]
+```
+
+**Subcommands:**
+
+#### `ao curate catalog`
+
+Catalog a knowledge artifact
+
+```
+ao curate catalog <path> [flags]
+```
+
+#### `ao curate status`
+
+Show curation pipeline status
+
+```
+ao curate status [flags]
+```
+
+#### `ao curate verify`
+
+Verify gate health against baselines
+
+```
+ao curate verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for verify
+      --since string   Filter to changes within duration (e.g. 24h, 7d)
+```
+
+---
+
+### `ao dedup`
+
+Scan learnings and patterns for near-duplicates using normalized content hashing.
+
+```
+ao dedup [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help    help for dedup
+      --merge   Auto-resolve duplicates: keep highest utility, archive the rest
+      --yes     Skip the interactive confirmation prompt for large merges (for hooks/CI)
+```
+
+---
+
+### `ao defrag`
+
+Defrag performs mechanical cleanup of the knowledge base:
+
+```
+ao defrag [flags]
+```
+
+**Flags:**
+
+```
+      --dedup               Flag learnings with >80% content similarity
+  -h, --help                help for defrag
+      --no-snapshot         Skip the automatic corpus snapshot taken before a destructive prune
+      --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
+      --prune               Find orphaned learnings not referenced in patterns or research
+      --quiet               Suppress progress output
+      --stale-days int      Days after which an unreferenced learning is considered stale (default 30)
+```
+
+---
+
+### `ao flywheel`
+
+Knowledge flywheel operations and status.
+
+```
+ao flywheel [command]
+```
+
+**Subcommands:**
+
+#### `ao flywheel close-loop`
+
+Close the knowledge flywheel loop by chaining:
+
+```
+ao flywheel close-loop [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                 help for close-loop
+      --pending-dir string   Pending directory to ingest from (default ".agents/knowledge/pending")
+      --quiet                Suppress non-essential output (hook-friendly)
+      --threshold string     Minimum age for auto-promotion (default: 24h) (default "24h")
+```
+
+#### `ao flywheel compare`
+
+Compare retrieval quality between primary and shadow namespaces.
+
+```
+ao flywheel compare [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for compare
+      --shadow string   Shadow namespace to compare against primary (default "shadow")
+```
+
+#### `ao flywheel gate`
+
+Check the post-structural readiness gate before retrieval-expansion work.
+
+```
+ao flywheel gate [flags]
+```
+
+**Flags:**
+
+```
+      --corpus string   Benchmark corpus directory (defaults to repo testdata)
+  -h, --help            help for gate
+```
+
+#### `ao flywheel nudge`
+
+Returns structured JSON combining:
+
+```
+ao flywheel nudge [flags]
+```
+
+#### `ao flywheel status`
+
+Display comprehensive flywheel health status.
+
+```
+ao flywheel status [flags]
+```
+
+**Flags:**
+
+```
+      --days int           Period in days for metrics calculation (default 7)
+  -h, --help               help for status
+      --namespace string   Citation namespace to evaluate (primary by default) (default "primary")
+```
+
+---
+
+### `ao maturity`
+
+Check and manage CASS (Contextual Agent Session Search) maturity levels.
+
+```
+ao maturity [learning-id] [flags]
+```
+
+**Flags:**
+
+```
+      --apply                Apply maturity transitions
+      --archive              Move expired/evicted/curated files to archive (requires --expire, --evict, or --curate)
+      --curate               Normalize metadata and identify low-signal or uncited stale learnings
+      --evict                Identify eviction candidates (composite criteria)
+      --expire               Scan for expired learnings
+      --global               Operate on ~/.agents/learnings instead of the local workspace learnings
+  -h, --help                 help for maturity
+      --migrate-md           Add default frontmatter to .md learnings missing utility field
+      --recalibrate          Reset utility to 0.5 for all learnings
+      --scan                 Scan all learnings for pending transitions
+      --target-size string   Size-budget eviction: when set with --evict, archive lowest-utility eligible files until the learnings hub falls below the target (e.g. 250M, 1G, 1024K)
+      --uncited-days int     Archive provisional/candidate learnings with zero citations older than this many days when used with --curate (default 60)
+```
+
+---
+
+### `ao pool`
+
+Manage knowledge candidates in quality pools.
+
+```
+ao pool [command]
+```
+
+**Subcommands:**
+
+#### `ao pool auto-promote`
+
+Automatically approve (and optionally promote) high-quality candidates
+
+```
+ao pool auto-promote [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for auto-promote
+      --include-gold       Include gold-tier candidates when using --promote (default true)
+      --promote            Also stage+promote eligible candidates into .agents/ (not just approval)
+      --threshold string   Minimum age for auto-promotion (default: 24h) (default "24h")
+```
+
+#### `ao pool batch-promote`
+
+Promote pending pool candidates that meet promotion criteria.
+
+```
+ao pool batch-promote [flags]
+```
+
+**Flags:**
+
+```
+  --dry-run   Show what would be promoted without executing
+  --force     Promote all pending candidates regardless of criteria
+  --min-age   Minimum age threshold (default: 24h)
+      --force            Promote all pending regardless of criteria
+  -h, --help             help for batch-promote
+      --min-age string   Minimum age for promotion eligibility (default "24h")
+```
+
+#### `ao pool ingest`
+
+Ingest pending learnings into the quality pool.
+
+```
+ao pool ingest [<files-or-globs...>] [flags]
+```
+
+**Flags:**
+
+```
+      --dir string   Directory to ingest from when no args are provided (default ".agents/knowledge/pending")
+  -h, --help         help for ingest
+```
+
+#### `ao pool list`
+
+List knowledge candidates filtered by tier and/or status.
+
+```
+ao pool list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for list
+      --limit int       Maximum results to return (default 50, 0 for unlimited) (default 50)
+      --offset int      Skip first N results (for pagination)
+      --status string   Filter by status (pending, staged, promoted, rejected)
+      --tier string     Filter by tier (gold, silver, bronze)
+  -w, --wide            Show full IDs without truncation
+```
+
+#### `ao pool promote`
+
+Move a staged candidate to the knowledge base (.agents/learnings/ or .agents/patterns/).
+
+```
+ao pool promote <candidate-id> [flags]
+```
+
+#### `ao pool reindex`
+
+Walk .agents/learnings/*.md and .agents/patterns/*.md, compute the
+
+```
+ao pool reindex [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Print counts only; do not write to the index
+  -h, --help      help for reindex
+      --json      Emit structured JSON output
+```
+
+#### `ao pool reject`
+
+Mark a candidate as rejected and move to rejected directory.
+
+```
+ao pool reject <candidate-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for reject
+      --reason string   Reason for rejection (required)
+```
+
+#### `ao pool show`
+
+Show detailed information about a pool candidate.
+
+```
+ao pool show <candidate-id> [flags]
+```
+
+#### `ao pool stage`
+
+Move a candidate from pending to staged status.
+
+```
+ao pool stage <candidate-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for stage
+      --min-tier string   Minimum tier threshold (default: bronze)
+```
+
+---
+
+### `ao ratchet`
+
+Track progress through the phased RPI workflow.
+
+```
+ao ratchet [command]
+```
+
+**Subcommands:**
+
+#### `ao ratchet check`
+
+Check if prerequisites are satisfied for a workflow step.
+
+```
+ao ratchet check <step> [flags]
+```
+
+**Aliases:**
+
+```
+  check, c
+```
+
+#### `ao ratchet next`
+
+Show the next pending step in the RPI workflow.
+
+```
+ao ratchet next [flags]
+```
+
+**Aliases:**
+
+```
+  next, n
+```
+
+**Flags:**
+
+```
+      --epic string   Filter by epic ID
+  -h, --help          help for next
+```
+
+#### `ao ratchet spec`
+
+Find and output the current spec artifact path.
+
+```
+ao ratchet spec [flags]
+```
+
+#### `ao ratchet status`
+
+Display the current state of the ratchet chain.
+
+```
+ao ratchet status [flags]
+```
+
+**Aliases:**
+
+```
+  status, s
+```
+
+**Flags:**
+
+```
+      --chain string   Filter by chain ID
+      --epic string    Filter by epic ID
+  -h, --help           help for status
+```
+
+#### `ao ratchet validate`
+
+Validate that an artifact meets quality requirements.
+
+```
+ao ratchet validate <step> [flags]
+```
+
+**Flags:**
+
+```
+      --changes strings      Files to validate
+  -h, --help                 help for validate
+      --lenient              Allow legacy artifacts without schema_version (expires in 90 days)
+      --lenient-expiry int   Days until lenient bypass expires (default 90)
+```
+
+#### `ao ratchet promote`
+
+Record promotion of an artifact to a higher tier.
+
+```
+ao ratchet promote <artifact> [flags]
+```
+
+**Aliases:**
+
+```
+  promote, p
+```
+
+**Flags:**
+
+```
+  -h, --help     help for promote
+      --to int   Target tier (0-4, required) (default -1)
+```
+
+#### `ao ratchet record`
+
+Record that a workflow step has been completed.
+
+```
+ao ratchet record <step> [flags]
+```
+
+**Flags:**
+
+```
+      --cycle int            RPI cycle number (1 for first, 2+ for iterations)
+  -h, --help                 help for record
+      --input string         Input artifact path
+      --lock                 Lock the step (engage ratchet) (default true)
+      --output string        Output artifact path (required)
+      --parent-epic string   Parent epic ID from prior RPI cycle
+      --tier int             Quality tier (0-4) (default -1)
+```
+
+#### `ao ratchet skip`
+
+Record that a step was intentionally skipped.
+
+```
+ao ratchet skip <step> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for skip
+      --reason string   Reason for skipping (required)
+```
+
+#### `ao ratchet find`
+
+Search for artifacts across all locations.
+
+```
+ao ratchet find <pattern> [flags]
+```
+
+#### `ao ratchet trace`
+
+Trace an artifact back through the ratchet chain.
+
+```
+ao ratchet trace <artifact> [flags]
+```
+
+#### `ao ratchet migrate`
+
+Migrate chain from legacy YAML format to JSONL.
+
+```
+ao ratchet migrate [flags]
+```
+
+#### `ao ratchet migrate-artifacts`
+
+Add schema_version: 1 to existing .agents/ artifacts.
+
+```
+ao ratchet migrate-artifacts [path] [flags]
 ```
 
 ---
