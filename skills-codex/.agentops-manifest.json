@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "7696647620dbfe1b0b5fd00cfeddce2036f418036478581582e92ef3659fe9bf",
+  "codex_override_catalog_hash": "3e8703d7a3b1cbe8f3c070568ee27d1dd27e89047d20713f0575c40bf44d9bc9",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1036,6 +1036,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "ATM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
+      },
+      {
+        "name": "ms",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/ms is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -1633,6 +1639,12 @@
       "source_skill": "skills/workflow-builder",
       "source_hash": "ef7383f849e896cba600c169954ef96e9b70fbafc8ac0871fdedc341c783ca92",
       "generated_hash": "ef907b207cf43eef197bc2ec63e4ee5f2428099f6d2c928a09ecdf68b75226e7"
+    },
+    {
+      "name": "ms",
+      "source_skill": "skills/ms",
+      "source_hash": "c68e1e7e4831b4b99a0cafecc751e8cb5eead206da3bbb1aaf4ae1aafb5e9449",
+      "generated_hash": "093ea59f76a43a7962cca60548b5a287fe3006465cab2be00e9ad737c24523bc"
     }
   ]
 }

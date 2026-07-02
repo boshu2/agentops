@@ -259,7 +259,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (60)
+### User-Facing Skills (61)
 
 **Judgment:**
 
@@ -351,6 +351,7 @@ These are how skills chain in practice:
 | **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
+| **ms** | execution | meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |

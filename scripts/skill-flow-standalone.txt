@@ -52,6 +52,7 @@ golden-artifact-testing          # standalone external-boundary or library/analy
 installer-quality-audit          # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 layered-defect-hunt              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 metamorphic-test-design          # standalone external-boundary or library/analyzer skill; no peer skill edge by design
+ms                               # wraps the external meta_skill (ms) binary/MCP server; external-boundary tool, no peer skill edge by design
 multi-model-triangulation        # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 native-debugger-triage           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 planning-workflow                # standalone external-boundary or library/analyzer skill; no peer skill edge by design

@@ -4,7 +4,7 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│   63 Skills       │   76 CLI Commands    │   Hookless (CI-gated) │
+│   64 Skills       │   76 CLI Commands    │   Hookless (CI-gated) │
 │  (workflows)      │  (ao binary)         │  (validate.yml)       │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
@@ -189,4 +189,4 @@ post-mortem          crank                  goals               standards
 
 ---
 
-*63 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*
+*64 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*
