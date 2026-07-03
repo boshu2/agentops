@@ -236,3 +236,38 @@ func TestArchitectureDriftGateIsBlocking(t *testing.T) {
 		t.Fatal("docs.architecture-drift must be blocking")
 	}
 }
+
+func TestNextWorkContractGateRoutesOnItsSubjectFile(t *testing.T) {
+	check, ok := gates.Default.Get("skill.next-work-contract")
+	if !ok {
+		t.Fatal("skill.next-work-contract gate is not registered")
+	}
+	if check.Backing != "validate-next-work-contract-parity.sh" {
+		t.Fatalf("skill.next-work-contract backing = %q, want validate-next-work-contract-parity.sh", check.Backing)
+	}
+	if !check.Blocking {
+		t.Fatal("skill.next-work-contract must be blocking")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("skill.next-work-contract tiers = %v, want Fast|Full", check.Tiers)
+	}
+	// The validator asserts the live queue's aggregate lifecycle plus parity
+	// across the schema doc, the rpi runtime, and the validator scripts. A
+	// change to any of those surfaces must route the gate — most critically
+	// the subject file itself: a next-work.jsonl-only commit previously
+	// SKIPped its own contract gate and had to be caught by a pawl round
+	// (age-77g6).
+	for _, path := range []string{
+		".agents/rpi/next-work.jsonl",
+		"docs/contracts/next-work.schema.md",
+		"cli/internal/rpi/types.go",
+		"cli/cmd/ao/rpi_loop.go",
+		"scripts/validate-next-work-contract-parity.sh",
+		"scripts/validate-next-work.sh",
+		"skills/post-mortem/SKILL.md",
+	} {
+		if !gates.PathMatchesAny(check.Match, path) {
+			t.Fatalf("skill.next-work-contract must route on %q; match globs = %v", path, check.Match)
+		}
+	}
+}

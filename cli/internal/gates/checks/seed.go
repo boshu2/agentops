@@ -22,7 +22,21 @@ var (
 		"scripts/check-go-lint.sh",
 		"tests/scripts/check-go-lint.bats",
 	}
-	skillPaths        = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	// nextWorkContractPaths routes skill.next-work-contract on every surface its
+	// validator actually reads — most critically the subject file itself
+	// (.agents/rpi/next-work.jsonl): a next-work-only commit previously SKIPped
+	// its own contract gate and the defect had to be caught by a pawl round
+	// (age-77g6, age-e70a).
+	nextWorkContractPaths = []string{
+		"skills/**", "skills-codex/**", "tests/skills/**",
+		".agents/rpi/next-work.jsonl",
+		"docs/contracts/next-work.schema.md",
+		"cli/internal/rpi/**",
+		"cli/cmd/ao/rpi_loop.go",
+		"scripts/validate-next-work-contract-parity.sh",
+		"scripts/validate-next-work.sh",
+	}
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	frontDoorPaths    = []string{"skills/**", ".claude/workflows/**"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
@@ -248,7 +262,7 @@ func init() {
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
 		{ID: "skill.manifests", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-manifests.sh", Args: []string{"--repo-root", "."}},
-		{ID: "skill.next-work-contract", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-next-work-contract-parity.sh"},
+		{ID: "skill.next-work-contract", Tiers: gates.Fast | gates.Full, Match: nextWorkContractPaths, Blocking: true, Backing: "validate-next-work-contract-parity.sh"},
 		{ID: "skill.codex-parity-drift", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-codex-parity-drift.sh"},
 		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
 		{ID: "skill.codex-override-coverage", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-override-coverage.sh"},
