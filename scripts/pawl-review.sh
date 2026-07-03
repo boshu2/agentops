@@ -85,6 +85,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # resolves its sibling copy.
 # shellcheck source=scripts/lib/diff-identity.sh
 . "$SCRIPT_DIR/lib/diff-identity.sh"
+# age-33nx: the SINGLE #trivial provenance-only waiver implementation (shared with the
+# pre-push gate and the CI verdict backstop) — used below to walk the review target back
+# over auto-bound verdict-edge commits so a re-run after a REFUTED round reviews the
+# change, not the bind commit.
+# shellcheck source=scripts/lib/trivial-waiver.sh
+. "$SCRIPT_DIR/lib/trivial-waiver.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
@@ -142,7 +148,7 @@ emit_pawl_catch() {
   # so a NORMAL small-diff catch is still path-recallable.
   case "${scope:-head}" in
     staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
-    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show "${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
   [[ -n "$domain" ]] || domain="pawl-review"
@@ -167,7 +173,7 @@ recall_prior_catches() {
   ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   case "${scope:-head}" in
     staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
-    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show "${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
   [[ -n "$domain" ]] || return 0
@@ -1036,21 +1042,56 @@ run_review() {
 # GIT_EXTERNAL_DIFF / core.fsmonitor — which is code execution before the read-only review.
 # --no-ext-diff + --no-textconv + -c core.fsmonitor= disable them (GIT_EXTERNAL_DIFF also
 # cleared in the cold env). --stat/--name-only below render no content, so they are safe.
+# age-33nx BIND-RECURSION GUARD: pawl-verdict auto-binds a `#trivial` provenance
+# commit onto HEAD even for a REFUTED round, so a re-run after a refute would review
+# the BIND commit instead of the change under review — the reviewer then (correctly)
+# refutes the incoherent ledger row and the loop can never converge (age-77g6
+# rounds 2-3, 2026-07-03). For head scope, walk the review target back over
+# GENUINE #trivial provenance-only commits — the SAME shared-lib waiver decision
+# (rc=0 only) the pre-push gate uses, so a #trivial-tagged commit touching
+# non-provenance paths (waiver refused/unprovable) is NEVER skipped. Bounded depth;
+# any waiver outcome other than "provably trivial" stops the walk fail-safe at the
+# current commit. The verdict then binds to the reviewed change commit — exactly the
+# state a first-round review produces before its own bind commit lands on top.
+review_target="HEAD"
+if [[ "$scope" == "head" ]]; then
+  _live_head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
+  if [[ -n "$_live_head" ]]; then
+    _walk="$_live_head"; _walked=0
+    while [[ "$_walked" -lt 10 ]] \
+      && pawl_trivial_waiver "$REPO_ROOT" "$_walk" pawl-review >/dev/null 2>&1; do
+      _parent="$(git -C "$REPO_ROOT" rev-parse --verify --quiet "${_walk}^" 2>/dev/null)" || _parent=""
+      [[ -n "$_parent" ]] || break
+      _walk="$_parent"; _walked=$((_walked + 1))
+    done
+    if [[ "$_walked" -gt 0 && "$_walk" != "$_live_head" ]]; then
+      review_target="$_walk"
+      echo "pawl-review: HEAD is a #trivial provenance-bind commit — walked back $_walked commit(s) to review ${_walk:0:12} (age-33nx bind-recursion guard)" >&2
+    fi
+  fi
+fi
 case "$scope" in
-  head)   diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" show HEAD --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
+  head)   diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
   staged) diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
   *) echo "pawl-review: --scope must be head|staged" >&2; exit 2 ;;
 esac
-head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
+head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
 [[ -n "$head" && "${#head}" -ge 7 ]] || { echo "pawl-review: cannot resolve HEAD sha" >&2; exit 1; }
-# age-sylz HIJACK GUARD: snapshot the HEAD this review is ABOUT and export it, so the
-# verdict step (pawl-verdict.sh write, cold path here; and the routed pawl.sh path, which
-# inherits the env) can refuse to bind if a concurrent lane resets a SHARED landing
-# worktree mid-review — a review runs for minutes, and binding onto a hijacked HEAD would
-# certify the WRONG commit (real incident 2026-07-02). The `check` stale-guard misses this
-# (it passes when verdict.head_sha and --head moved together).
-export PAWL_REVIEW_START_HEAD="$head"
+# age-sylz HIJACK GUARD: snapshot the LIVE worktree HEAD at review start and export it,
+# so the verdict step (pawl-verdict.sh write, cold path here; and the routed pawl.sh
+# path, which inherits the env) can refuse to bind if a concurrent lane resets a SHARED
+# landing worktree mid-review — a review runs for minutes, and binding onto a hijacked
+# HEAD would certify the WRONG commit (real incident 2026-07-02). The `check`
+# stale-guard misses this (it passes when verdict.head_sha and --head moved together).
+# NOTE (age-33nx): the snapshot is the LIVE head, not the (possibly walked-back)
+# review target — the guard's job is detecting worktree movement DURING the review;
+# the verdict's commit binding is carried separately in $head.
+export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
+# age-33nx: the routed warm path (pawl.sh route) binds its own resolved head; export
+# the review target so a walked-back review binds the routed verdict to the SAME
+# change commit the packet was built from.
+export PAWL_ROUTE_HEAD="$head"
 
 # age-mwhj: choose inline vs read-files-not-inline by packet size. Above the cap, the reviewer
 # (cold codex --sandbox read-only OR the warm panes) reads the changed files directly.
@@ -1058,7 +1099,7 @@ diff_bytes="$(printf '%s' "$diff" | wc -c | tr -d ' ')"
 review_stat=""; review_files=""
 if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   case "$scope" in
-    head)   review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" show HEAD --no-ext-diff --no-textconv --stat --format= --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" show HEAD --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
+    head)   review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --stat --format= --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
     staged) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
 fi
