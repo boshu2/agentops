@@ -1,0 +1,70 @@
+# Codebase Recon Synthesis — agentops (2026-07-01)
+
+> Executive summary over the four recon reports in this directory. Read this first; each section links its sources.
+> HEAD at scan time: `e4ec22c46`. All four workers verified `go build ./...` green.
+
+## Verdict
+
+AgentOps is a mature, unusually self-aware codebase in strong health: ~156K LOC of Go source carried by ~226K LOC of tests (1.45× — the product takes its own medicine), zero secrets (gitleaks over 930 MB), zero known-vuln deps (govulncheck), 0 shellcheck errors across 326 scripts, all 12 regen drift gates green, and a security posture where the high-value attack surfaces are *already defended deliberately, with tests and inline rationale* ([codebase-audit.md](codebase-audit.md)). The architecture matches its own docs on every figure checked ([codebase-archaeology.md](codebase-archaeology.md)). Zero critical or high findings across all four lenses. The real weaknesses are second-order and consistent across reports: **policies and extractions that exist but are not mechanically enforced drift** — an RCE guard applied to one code path but not its siblings (audit M-1), a lint budget documented but red (audit M-2), and three good library extractions sitting at 0% adoption ([codebase-pattern-extraction.md](codebase-pattern-extraction.md)). In this repo the only lever that demonstrably changes behavior is a gate; everything ungated decays.
+
+## Converging findings (flagged independently by ≥2 reports — this is the signal)
+
+1. **Ungated policy drifts; gates are the only working lever.** The pattern report's meta-finding (extractions packaged but 0/317 adopted; the repo's own A/B measured doc-instructions as behaviorally inert) and the audit's M-2 (documented gocyclo-25/errcheck budget, yet `make lint` is red with 13 issues because lint isn't wired into the gate) are the same defect class from two lenses. — [codebase-pattern-extraction.md](codebase-pattern-extraction.md) §2/meta, [codebase-audit.md](codebase-audit.md) M-2.
+2. **The repo knows its threat model but applies it asymmetrically.** The pawl path enforces the "repo-planted script" RCE guard (`aoBinaryInside`, `PAWL_UNTRUSTED_REPO`), yet `bestEffortRefreshFindingCompiler`/`bestEffortPruneAgents` execute cwd-relative scripts silently without it. Archaeology independently catalogs the pawl guard as a closed RCE class (age-a9iv); the audit found its unguarded siblings. — [codebase-audit.md](codebase-audit.md) M-1, [codebase-archaeology.md](codebase-archaeology.md) §Configuration.
+3. **Generated↔source drift is the dominant structural risk shape.** Archaeology names it outright (registry.json, COMMANDS.md, skills-codex twins — "~77 gate checks exist mostly to police exactly that"); the report's Gotchas 4 (generated vs curated, manual skills-codex mirror) and the pattern report's P6 (gate-triple protocol only ~25% consistent) corroborate. Minor live instance: archaeology counts ~88 documented commands vs 79 generated, and ~77 vs ~91 seeded gate checks between reports — worth one regen/count reconciliation. — [codebase-archaeology.md](codebase-archaeology.md) note 5, [codebase-report.md](codebase-report.md) Gotcha 4, [codebase-pattern-extraction.md](codebase-pattern-extraction.md) P6.
+4. **Two generations coexist by design — always ask "spine or satellite?"** Build tags (`flywheel`/`legacy`) archive command sets out of the default binary and have broken spine-only validators **twice** (age-sydq, age-zei7); `.githooks/` is a historical shim (its pre-commit mis-derives `REPO_ROOT` as `.git`); `bd`/Dolt config is preserved-but-dead. — [codebase-archaeology.md](codebase-archaeology.md) note 4 + §Configuration, [codebase-report.md](codebase-report.md) Gotchas 2–3.
+5. **The membrane's core mechanics are the same in every telling** — exit-code-IS-the-verdict typed-error protocol, hash-chained provenance ledger (213 entries), fail-closed doctrine (`#trivial` waiver checks the diff, not the message), and honesty-as-structure (ADR-0004/0011 demote the product's own hypotheses to unproven). Both architecture reports traced these to identical file:line ground truth. — [codebase-archaeology.md](codebase-archaeology.md), [codebase-report.md](codebase-report.md).
+6. **Atomic-write consolidation held, with one fresh escape** — the prior recon's headline is verified ~closed; `forge_curator_id.go` `writeJSONAtomic` re-rolled the pattern fsync-less, proving that a consolidation without a guard accretes new copies (feeds finding 1). — [codebase-pattern-extraction.md](codebase-pattern-extraction.md) §1, corroborated by [codebase-audit.md](codebase-audit.md)'s clean path-traversal/atomicity sweep.
+
+## Top risks (deduplicated, severity-ranked)
+
+| # | Sev | Risk | Source |
+|---|-----|------|--------|
+| 1 | **Medium (security)** | Cwd-relative hook/maintenance scripts (`hooks/finding-compiler.sh`, `scripts/prune-agents.sh`) execute via `ao findings pull`/session-end maintenance without the pawl trust guard, stderr discarded — contextual RCE inconsistent with the repo's own documented threat model. | [codebase-audit.md](codebase-audit.md) M-1 |
+| 2 | **Medium (quality/process)** | `make lint` red vs the repo's own hard limits (3 funcs over gocyclo-25, 4 dropped errors) because lint isn't a blocking gate — the enforcement gap that generalizes to risk #4. | [codebase-audit.md](codebase-audit.md) M-2 |
+| 3 | **Medium (reliability)** | JSONL scanner sprawl: 64 hand-rolled readers, 45 buffer bumps in 10+ variants; any un-bumped scanner silently truncates lines >64KB — a live class given a checked-in 2.4MB-line fixture. Canonical helpers exist in `internal/storage` but are unexported (0 external adopters). | [codebase-pattern-extraction.md](codebase-pattern-extraction.md) P3 |
+| 4 | **Medium (reliability)** | Preamble non-adoption: 0/317 scripts source `scripts/lib/preamble.sh`; all 13 scripts added *after* the opportunistic-adoption decision re-hand-rolled it, re-exposing paid-for bug classes (CWD-hijackable `REPO_ROOT` variants ×13, bare `$(pwd)` ×5, macOS stat/find portability). | [codebase-pattern-extraction.md](codebase-pattern-extraction.md) P2 |
+| 5 | **Medium (reliability)** | `codex exec` stall/echo/wander defenses live only in `pawl-review.sh`; ≥8 other scripts re-solve subsets — each new harness re-learns the 22-min-hang / echo-as-verdict failure modes. | [codebase-pattern-extraction.md](codebase-pattern-extraction.md) P5 |
+| 6 | **Medium-Low (security)** | Predictable non-unique `/tmp` paths in shared gate/service scripts (`check-three-gap-supergate.sh`, `pawl.sh` cron log) — classic symlink/clobber pattern on multi-user hosts. | [codebase-audit.md](codebase-audit.md) M-3 |
+| 7 | **Low (operational, recurring)** | Build-tag spine/satellite footgun (validators must build `-tags "flywheel legacy"`; already bit twice) and the tracked `.githooks` pre-commit falsely blocking `cli/*.go` commits. | [codebase-report.md](codebase-report.md) Gotchas 2–3, [codebase-archaeology.md](codebase-archaeology.md) |
+| 8 | **Low (hardening)** | Tar extraction's absolute-path containment is implicit in `filepath.Join` semantics (correct today, silently breakable by refactor); `writeJSONAtomic` escape lacks fsync; gate validates the worktree not the commit (partial `git add` can land broken). | [codebase-audit.md](codebase-audit.md) L-3, [codebase-pattern-extraction.md](codebase-pattern-extraction.md) §1, [codebase-report.md](codebase-report.md) Gotcha 1 |
+
+## Strongest reusable patterns & architecture facts worth remembering
+
+**Patterns worth stealing (all verified against source):**
+- **Declarative init()-registered gate registry** — ~91 seeded checks, each a struct with tier bitmask, path-glob change routing, self-reference glob, exactly-one-of script-backing or native Go; adding a check touches no central orchestrator. The repo's most successful extraction. ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) P6, [codebase-archaeology.md](codebase-archaeology.md))
+- **Exit-code-IS-the-verdict**: nine typed exit errors unwrapped in `Execute()` make the CLI machine-consumable at the process boundary (pawl: 0 CONFIRMED / 3 REFUTED / 4 advisory). ([codebase-report.md](codebase-report.md), [codebase-archaeology.md](codebase-archaeology.md))
+- **Hexagonal ports with in-memory fakes** — ~25 port interfaces each paired with an `inmemory_*.go` fake; why 226K LOC of tests run without external CLIs. ([codebase-archaeology.md](codebase-archaeology.md))
+- **`App` DI container** replacing globals (Terraform-Meta/kubectl-Options hybrid) injected via `cmd.Context()`. ([codebase-archaeology.md](codebase-archaeology.md))
+- **Contract-governed side effects**: every production write surface under `.agents/` is catalogued in a contract doc and linted; shell workers run under `SanitizedBashCommand` (`--noprofile --norc`, stripped `BASH_ENV`). ([codebase-archaeology.md](codebase-archaeology.md), [codebase-audit.md](codebase-audit.md))
+- **Hash-chained provenance ledger** (prev_hash → payload_hash → hash) binding verdicts to commit SHAs — "no verdict = not done" made tamper-evident. ([codebase-report.md](codebase-report.md))
+
+**Architecture facts (orientation for the next agent):**
+- Three layers on one repo: 73 skills (SSOT `skills/`, never `~/.claude/skills/`) · the `ao` Go CLI (79 commands, ~80 internal packages, go 1.26, deliberately no DB/no network SDK — all state is repo-local files) · ~317 shell scripts. Six bounded contexts, BC1 Corpus → BC6 Orchestration. ([codebase-archaeology.md](codebase-archaeology.md), [codebase-report.md](codebase-report.md))
+- Release authority is the **local** pre-push cockpit gate (`scripts/hooks/pre-push.local`, installed — NOT the tracked `.githooks/`); CI is a tag/PR/manual backstop only; pushes go direct to main. ([codebase-report.md](codebase-report.md))
+- Tracker is `br` over `_beads/` (private nested repo; resolve with `BEADS_DIR="$(ao beads dir)"`; SQLite cache can lie under concurrent writes — JSONL is truth). `bd`/Dolt retired. ([codebase-report.md](codebase-report.md) Gotcha 5)
+- Source-of-truth precedence is stated in AGENTS.md itself: executable/generated > declared contracts > narrative docs. Local clone is **shallow** (grafted 2026-06-30, 50 commits) — deep blame archaeology isn't possible from this checkout; use the ADRs/CHANGELOG/ledger paper trail. ([codebase-archaeology.md](codebase-archaeology.md))
+- Biggest gravity wells for a deep-dive: `cli/cmd/ao/codex.go` (94.5K, largest file) and the `beads*.go` cluster (~150K). ([codebase-archaeology.md](codebase-archaeology.md) note 6)
+
+## Prioritized actions
+
+1. **Apply the pawl trust guard (`aoBinaryInside`) to `bestEffortRefreshFindingCompiler` + `bestEffortPruneAgents` and stop discarding their stderr** — small change, closes a self-identified threat-model gap. ([codebase-audit.md](codebase-audit.md) M-1)
+2. **Ship the new-file-scoped preamble drift gate** (`check-new-scripts-use-preamble.sh` + bats twin + seed.go registration; fail only for scripts added after a pinned cutoff) and fold `with_tmpdir`/`require_cmd` into `preamble.sh`. Zero churn of the 284 existing scripts; stops the measured bleed. ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) P2/P8)
+3. **Decide the lint policy**: wire `make lint` into the gate (making gocyclo-25/errcheck real) or split the 3 over-budget functions and check the 4 dropped errors. ([codebase-audit.md](codebase-audit.md) M-2)
+4. **Export `storage.ScanJSONL`/`AppendJSONL` with the buffer policy decided once inside the helper**; adopt at touch-time; optional grep-gate for new `bufio.NewScanner` over `.jsonl` outside `storage`. Kills the silent-64KB-truncation class. ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) P3)
+5. **Extract `scripts/lib/codex-exec.sh`** (`codex_exec_guarded`: timeout + stall-kill + echo/wander detection + NO-VERDICT≠REFUTED exit contract); `pawl-review.sh` delegates first, eval harnesses at touch-time. ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) P5)
+6. **`mktemp` the supergate temp file** (one line, matches sibling scripts' `$$` convention). ([codebase-audit.md](codebase-audit.md) M-3)
+7. **Build the `new-gate` scaffolder** emitting the check/bats/seed triple with the canonical output protocol — also the delivery vehicle for action 2. ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) P6)
+8. **Fix `writeJSONAtomic` → `storage.AtomicWriteFile`** and declare `emitJSON`/`outputJSON` canonical for the 52-file hand-rolled `--json` emit population (touch-time adoption, no sweep). ([codebase-pattern-extraction.md](codebase-pattern-extraction.md) §1/P4)
+9. **Harden the tar extractor with an explicit `filepath.IsAbs` reject + post-Join containment assertion**, and lead `ao --help` with the README's plain value line instead of operator jargon. ([codebase-audit.md](codebase-audit.md) L-3/L-1)
+10. **Reconcile the count drifts**: documented ~88 vs generated 79 commands, and ~77 vs ~91 gate-check figures between reports — one `make regen-all`/doc pass. ([codebase-archaeology.md](codebase-archaeology.md) note 1, [codebase-report.md](codebase-report.md))
+
+## Missing reports
+
+All four reports expected for this run are present and substantive (none stub-thin):
+[codebase-archaeology.md](codebase-archaeology.md) (14.9K) · [codebase-audit.md](codebase-audit.md) (13.1K) · [codebase-pattern-extraction.md](codebase-pattern-extraction.md) (22.1K) · [codebase-report.md](codebase-report.md) (15.8K).
+
+Note: the full codebase-recon sweep can also produce `codebase-risk-audit.md` and `codebase-briefing-report.md`; neither was in this run's expected set. Risk coverage is partially folded into the audit report's security/reliability lenses, so treat the audit's severity table (plus this synthesis's risk section) as the risk register for this run.
+
+---
+*Synthesized 2026-07-01 from the four worker reports above; every claim traces to a linked source report, which in turn cites file:line ground truth at `e4ec22c46`.*
