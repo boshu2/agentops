@@ -108,11 +108,13 @@ REBOUND authorization (age-rk3r.18), scoped honestly by reachability of the REVI
     a sanitized-PATH git (it runs NO repo-tree script, so it is safe in a hostile stranger repo):
     a committed CONFIRMED-reviewed commit byte-equivalent to the tip (same git patch-id --stable
     AND byte-exact content signature) must exist, or the REBOUND is refused.
-  - the CI backstop (scripts/check-tip-verdict-ci.sh) honors REBOUND ONLY WHEN the reviewed
-    commit is reachable in the CI checkout. A clean CI clone after a rebase that orphaned the
-    reviewed commit cannot re-derive the equivalence, so CI REFUSES fail-closed with a distinct
-    "reviewed commit not reachable" message (never a false authorization). age-rk3r.19 tracks a
-    keep-ref design that makes CI-REBOUND work with an orphaned reviewed commit.
+  - the CI backstop (scripts/check-tip-verdict-ci.sh) honors REBOUND when the reviewed commit is
+    reachable in the CI checkout OR when a keep-ref (refs/agentops/rebound/<C>, written+pushed by
+    --rebind, age-rk3r.19) makes it fetchable in a clean clone that orphaned it; it REFUSES
+    fail-closed with a distinct "reviewed commit not reachable" message only when NEITHER holds
+    (never a false authorization). The keep-ref is a reachability aid: CI re-derives the
+    byte-equivalence against the LEDGER-named reviewed commit, so a forged keep-ref cannot launder
+    an authorization.
 Every path RE-VALIDATES before honoring — a bare disposition=REBOUND never authorizes anywhere,
 and the edge's stored patch_id_proof is never trusted. So --rebind's convenience applies on the
 installed local ratchet; CI is a backstop that honors it when it can independently prove it.

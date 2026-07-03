@@ -89,6 +89,30 @@ func TestVerifyCmd_HelpCarriesWedgeCopy(t *testing.T) {
 	}
 }
 
+// KEEP-REF (age-rk3r.19): the REBOUND CI-scoping copy must now describe the SHIPPED
+// keep-ref behavior — CI honors a REBOUND when the reviewed commit is reachable OR a
+// keep-ref (refs/agentops/rebound/<C>) makes it fetchable, and the keep-ref is only a
+// reachability aid re-checked against the ledger's R (a forged keep-ref cannot launder
+// authorization). This locks the doc reconciliation so a future edit cannot silently
+// revert it to the old "age-rk3r.19 tracks a keep-ref fix" forward-looking wording.
+func TestVerifyCmd_HelpDocumentsReboundKeepRef(t *testing.T) {
+	long := strings.ToLower(verifyCmd.Long)
+	for _, want := range []string{
+		"refs/agentops/rebound",   // the keep-ref namespace
+		"keep-ref",                // named as the mechanism
+		"fetchable",               // CI honors when reachable OR keep-ref makes it fetchable
+		"forged keep-ref cannot launder", // the security invariant
+	} {
+		if !strings.Contains(long, strings.ToLower(want)) {
+			t.Errorf("verifyCmd.Long is missing the REBOUND keep-ref copy %q", want)
+		}
+	}
+	// And the OLD forward-looking wording must be gone (reconciled to shipped).
+	if strings.Contains(long, "tracks a keep-ref") {
+		t.Errorf("verifyCmd.Long still carries the stale 'tracks a keep-ref fix' forward-looking wording; reconcile it to the shipped behavior")
+	}
+}
+
 // DELEGATION PROOF: `ao verify` must execute the SAME scripts/pawl-review.sh the
 // `ao pawl review` path resolves, forward argv verbatim, and produce a verdict
 // shape IDENTICAL to runPawlReview for every verdict exit code

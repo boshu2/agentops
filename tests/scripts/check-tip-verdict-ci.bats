@@ -337,6 +337,155 @@ func F() {}
   [[ "$output" != *"lacks a bound verdict"* ]]
 }
 
+# ============================================================================
+# KEEP-REF (age-rk3r.19) — CI re-verifies an ORPHANED reviewed commit by fetching
+# refs/agentops/rebound/<C> from origin, then re-deriving byte-equivalence against
+# the LEDGER-named R. The write side (pawl-verdict.sh do_rebind_verified) pushes
+# this ref; here we simulate it landing on the remote by writing it into the bare
+# mirror the CI clone fetches from.
+# ============================================================================
+
+# setup_orphaned_rebound_clone <keepref-mode> — build the full REBOUND repo (R on
+# main, C on 'rebound', ledger committed), a bare mirror, and a single-branch CI clone
+# that ORPHANS R. <keepref-mode> selects what keep-ref refs/agentops/rebound/<C> is
+# planted INTO the bare mirror (what do_rebind_verified's push would put on the remote):
+#   real  — pin the ACTUAL reviewed R (the honest write-side behavior).
+#   none  — plant nothing (the age-rk3r.18 baseline: fall back to fail-closed).
+# The keep-ref is planted AFTER make_rebound_repo sets REVIEWED_R/TIP_C (they are only
+# known then). Sets CLONE, CLONE_TIP, TIP_C, REVIEWED_R, REBOUND_BASE, BOUND, BARE.
+setup_orphaned_rebound_clone() {
+  local mode="${1:?keepref-mode required (real|none)}"
+  make_rebound_repo 'package main
+
+func F() {}
+'
+  git -C "$REPO" add docs/provenance/ledger.jsonl
+  git -C "$REPO" commit --quiet -m "chore(provenance): bind REBOUND + lineage #trivial"
+  BOUND="$(git -C "$REPO" rev-parse HEAD)"
+  BARE="$TMP/bare.git"
+  git clone --quiet --bare "$REPO" "$BARE"
+  # Plant the keep-ref on the remote (what do_rebind_verified's push would do).
+  case "$mode" in
+    real) git -C "$BARE" update-ref "refs/agentops/rebound/${TIP_C}" "$REVIEWED_R" ;;
+    none) : ;;
+    *) echo "bad keepref-mode: $mode" >&2; return 1 ;;
+  esac
+  CLONE="$TMP/ci-clone"
+  git clone --quiet --no-local --single-branch --branch rebound "$BARE" "$CLONE"
+  CLONE_TIP="$(git -C "$CLONE" rev-parse HEAD)"
+  # Preconditions shared by every keep-ref test: C present, R orphaned, both edges committed.
+  git -C "$CLONE" cat-file -e "${TIP_C}^{commit}"
+  run git -C "$CLONE" cat-file -e "${REVIEWED_R}^{commit}"
+  [ "$status" -ne 0 ]
+  [ "$CLONE_TIP" = "$BOUND" ]
+}
+
+# RED->GREEN (age-rk3r.19): the SAME orphaned-R clean-clone case that age-rk3r.18
+# REFUSED (exit 2) now AUTHORIZES when the keep-ref pins the ledger-named R on the
+# remote — CI fetches it, confirms the fetched object is the ledger's R, re-derives
+# byte-equivalence, and authorizes.
+@test "KEEP-REF: orphaned reviewed commit + a keep-ref pinning the LEDGER R -> CI fetches, re-verifies, AUTHORIZES" {
+  require_ao
+  setup_orphaned_rebound_clone real            # keep-ref -> the real reviewed R
+  run_backstop --repo "$CLONE" --base "$REBOUND_BASE" --head "$CLONE_TIP" --enforce
+  [ "$status" -eq 0 ]                                        # AUTHORIZED (was exit-2 refuse pre-fix)
+  [[ "$output" == *"fetched keep-ref refs/agentops/rebound/${TIP_C:0:12}"* ]]
+  [[ "$output" == *"REBOUND authorized"* ]]
+  [[ "$output" != *"NOT reachable in this checkout"* ]]
+  # And R is now genuinely present in the clone (fetched via the keep-ref).
+  git -C "$CLONE" cat-file -e "${REVIEWED_R}^{commit}"
+}
+
+# UNCHANGED (age-rk3r.18 baseline preserved): orphaned R with NO keep-ref on the
+# remote still refuses fail-closed with the distinct message.
+@test "KEEP-REF: orphaned reviewed commit + NO keep-ref -> still fail-closed exit-2 (unchanged)" {
+  require_ao
+  setup_orphaned_rebound_clone none            # no keep-ref planted
+  run_backstop --repo "$CLONE" --base "$REBOUND_BASE" --head "$CLONE_TIP" --enforce
+  [ "$status" -ne 0 ]                                        # fail-closed
+  [[ "$output" == *"REBOUND: the reviewed commit it descends from is NOT reachable in this checkout"* ]]
+  [[ "$output" == *"NOT authorized (fail-closed)"* ]]
+  [[ "$output" != *"REBOUND authorized"* ]]
+}
+
+# FORGE (age-rk3r.19): a keep-ref exists but points at a WRONG commit R' (not the
+# ledger's R) — EVEN one whose diff is byte-equivalent to C. It must be REFUSED: CI
+# re-derives against the LEDGER-named R, which is STILL unreachable (the keep-ref made
+# R' present, not R), so the scan stays exit-2 fail-closed. A forged keep-ref launders
+# nothing.
+@test "FORGE KEEP-REF: keep-ref points at a WRONG (byte-equivalent) R' not the ledger R -> REFUSED" {
+  require_ao
+  # Build the standard orphaned-R scenario but ALSO create a decoy R' whose diff equals C.
+  make_rebound_repo 'package main
+
+func F() {}
+'
+  # R' = a SECOND commit off the shared base applying the identical change (byte-equivalent
+  # to C, distinct sha, and NOT the ledger's CONFIRMED to_id). Park it on its own branch so
+  # it is a real, fetchable object but not on 'rebound'.
+  git -C "$REPO" checkout -q -f -b decoy "$REBOUND_BASE"
+  printf 'package main\n\nfunc F() {}\n' > "$REPO/app.go"
+  git -C "$REPO" add app.go
+  git -C "$REPO" commit --quiet -m "feat: byte-equivalent decoy R-prime"
+  local RPRIME; RPRIME="$(git -C "$REPO" rev-parse HEAD)"
+  [ "$RPRIME" != "$REVIEWED_R" ]
+  git -C "$REPO" checkout -q -f rebound
+  git -C "$REPO" add docs/provenance/ledger.jsonl
+  git -C "$REPO" commit --quiet -m "chore(provenance): bind REBOUND + lineage #trivial"
+  BOUND="$(git -C "$REPO" rev-parse HEAD)"
+  BARE="$TMP/bare.git"
+  git clone --quiet --bare "$REPO" "$BARE"
+  # The FORGED keep-ref points at R' (the decoy), NOT the ledger's R.
+  git -C "$BARE" update-ref "refs/agentops/rebound/${TIP_C}" "$RPRIME"
+  CLONE="$TMP/ci-clone"
+  git clone --quiet --no-local --single-branch --branch rebound "$BARE" "$CLONE"
+  CLONE_TIP="$(git -C "$CLONE" rev-parse HEAD)"
+  # R (the ledger's CONFIRMED to_id) is orphaned; R' is what the forged keep-ref pins.
+  run git -C "$CLONE" cat-file -e "${REVIEWED_R}^{commit}"; [ "$status" -ne 0 ]
+  run_backstop --repo "$CLONE" --base "$REBOUND_BASE" --head "$CLONE_TIP" --enforce
+  [ "$status" -ne 0 ]                                        # REFUSED
+  [[ "$output" != *"REBOUND authorized"* ]]
+  # The ledger-named R is STILL unreachable after fetching R', so the distinct exit-2 fires.
+  [[ "$output" == *"NOT reachable in this checkout"* ]]
+}
+
+# FORGE (age-rk3r.19): the keep-ref DOES pin the ledger's real R, but R's diff is NOT
+# byte-equivalent to C (a genuine non-equivalent lineage). After fetching R, CI re-derives
+# and finds no equivalence -> REFUSED as a plain no-proof ("lacks a bound verdict").
+@test "FORGE KEEP-REF: keep-ref pins the real R but R is NOT byte-equivalent to C -> REFUSED" {
+  require_ao
+  make_repo
+  printf 'package main\n' > "$REPO/app.go"; git -C "$REPO" add app.go
+  git -C "$REPO" commit --quiet -m "chore: base app.go"
+  REBOUND_BASE="$(git -C "$REPO" rev-parse HEAD)"
+  # Reviewed R on main applies func F.
+  printf 'package main\n\nfunc F() {}\n' > "$REPO/app.go"; git -C "$REPO" add app.go
+  git -C "$REPO" commit --quiet -m "feat: change F (reviewed)"
+  REVIEWED_R="$(git -C "$REPO" rev-parse HEAD)"; bind_verdict age-rev "$REVIEWED_R"
+  # Tip C on 'rebound' applies a DIFFERENT change (func G) — NOT equivalent to R.
+  git -C "$REPO" checkout -q -f -b rebound "$REBOUND_BASE"
+  printf 'package main\n\nfunc G() {}\n' > "$REPO/app.go"; git -C "$REPO" add app.go
+  git -C "$REPO" commit --quiet -m "feat: change G (non-equivalent tip)"
+  TIP_C="$(git -C "$REPO" rev-parse HEAD)"; bind_rebound age-reb "$TIP_C"
+  git -C "$REPO" add docs/provenance/ledger.jsonl
+  git -C "$REPO" commit --quiet -m "chore(provenance): bind REBOUND + lineage #trivial"
+  BOUND="$(git -C "$REPO" rev-parse HEAD)"
+  BARE="$TMP/bare.git"
+  git clone --quiet --bare "$REPO" "$BARE"
+  # Keep-ref pins the REAL ledger R (honest pin) — but R is not equivalent to C.
+  git -C "$BARE" update-ref "refs/agentops/rebound/${TIP_C}" "$REVIEWED_R"
+  CLONE="$TMP/ci-clone"
+  git clone --quiet --no-local --single-branch --branch rebound "$BARE" "$CLONE"
+  CLONE_TIP="$(git -C "$CLONE" rev-parse HEAD)"
+  run git -C "$CLONE" cat-file -e "${REVIEWED_R}^{commit}"; [ "$status" -ne 0 ]  # R orphaned pre-fetch
+  run_backstop --repo "$CLONE" --base "$REBOUND_BASE" --head "$CLONE_TIP" --enforce
+  [ "$status" -ne 0 ]                                        # REFUSED
+  [[ "$output" != *"REBOUND authorized"* ]]
+  # R fetched + reachable, but non-equivalent -> genuine no-proof, not the unreachable message.
+  [[ "$output" == *"lacks a bound verdict"* ]]
+  git -C "$CLONE" cat-file -e "${REVIEWED_R}^{commit}"       # R IS now present (keep-ref fetched)
+}
+
 @test "FORGE: a REBOUND whose tip is NOT byte-equivalent to any CONFIRMED is REFUSED (enforce)" {
   require_ao
   make_repo

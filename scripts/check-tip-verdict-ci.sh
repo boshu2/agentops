@@ -297,14 +297,20 @@ hex_commit_object_id() {
 # closing the ref-alias fail-open. The edge's stored patch_id_proof is NEVER
 # consulted; the authoritative comparison recomputes R's keys from git. Fail-closed
 # on every path that is not exit 0.
-rebound_authorizes() {
-  local sha="$1"
-  rebound_edge_bound_to "$sha" || return 1   # no well-formed REBOUND edge → plain no-proof
-  local tip_pid tip_sig
-  tip_pid="$(commit_patch_id "$sha" "$REPO")"
-  tip_sig="$(commit_content_sig "$sha" "$REPO")"
-  # Empty key = cannot prove even the TIP's identity → plain no-proof (exit 1).
-  [[ -n "$tip_pid" && -n "$tip_sig" ]] || return 1
+# scan_lineage_for_equivalence <sha> <tip_pid> <tip_sig> — iterate the ledger's
+# CONFIRMED lineage roots and test each for byte-equivalence to the tip. This is the
+# AUTHORITATIVE, SECURITY-LOAD-BEARING scan (extracted so rebound_authorizes can run it
+# BEFORE and AFTER a keep-ref fetch, age-rk3r.19, with identical semantics each time):
+#   exit 0 — a reachable, re-derivable CONFIRMED lineage R (R != sha) is byte-equivalent.
+#   exit 2 — no match AND >=1 well-formed hex lineage to_id could NOT be resolved/re-derived
+#            here (the orphaned-reviewed-commit case).
+#   exit 1 — no match and EVERY candidate was reachable (genuine no-proof / reachable forge).
+# The candidates come ONLY from the ledger's hex-validated to_ids (confirmed_lineage_shas +
+# hex_commit_object_id) — never from "whatever a ref points at". So a fetched keep-ref only
+# makes the LEDGER-NAMED R's object present; it can never inject a DIFFERENT commit R' into
+# this scan. That is the invariant that keeps a forged keep-ref harmless.
+scan_lineage_for_equivalence() {
+  local sha="$1" tip_pid="$2" tip_sig="$3"
   local r r_oid r_pid r_sig
   local saw_unreachable_lineage=0   # a hex, well-formed lineage to_id we could NOT resolve/re-derive here
   while IFS= read -r r; do
@@ -334,14 +340,80 @@ rebound_authorizes() {
       return 0
     fi
   done < <(confirmed_lineage_shas)
-  # No byte-equivalence match. If the ONLY reason we could not match is that a
-  # well-formed lineage candidate's reviewed commit is unreachable in this
-  # checkout, report exit 2 (distinct message, still fail-closed). Otherwise every
-  # candidate was reachable and non-matching → exit 1 (genuine no-proof).
-  if [[ "$saw_unreachable_lineage" -eq 1 ]]; then
-    return 2
-  fi
+  [[ "$saw_unreachable_lineage" -eq 1 ]] && return 2
   return 1
+}
+
+# ci_origin_remote — the remote a CI clone fetches from. Prefer an explicit override
+# (AGENTOPS_KEEPREF_REMOTE, for tests / non-default CI), then a configured `origin`,
+# then the FIRST configured remote. Empty if none (a keep-ref fetch is then impossible
+# → fall through to fail-closed). git is invoked hardened as everywhere here. (age-rk3r.19)
+ci_origin_remote() {
+  if [[ -n "${AGENTOPS_KEEPREF_REMOTE:-}" ]]; then printf '%s' "$AGENTOPS_KEEPREF_REMOTE"; return 0; fi
+  if git -c core.fsmonitor= -C "$REPO" remote get-url origin >/dev/null 2>&1; then printf 'origin'; return 0; fi
+  local first
+  first="$(git -c core.fsmonitor= -C "$REPO" remote 2>/dev/null | head -1)"
+  [[ -n "$first" ]] && printf '%s' "$first"
+  return 0
+}
+
+# fetch_rebound_keep_ref <tip-C-sha> — try to fetch refs/agentops/rebound/<C> from the CI
+# origin so the reviewed commit R (which the write side pinned there, age-rk3r.19) becomes
+# reachable in this clone. Exit 0 iff the fetch SUCCEEDED and the keep-ref now resolves to a
+# commit object locally; exit 1 otherwise (no remote, ref absent, offline, denied).
+#
+# SECURITY: this is a REACHABILITY AID ONLY. It does NOT decide authorization — it merely
+# makes an object available. The authoritative scan (scan_lineage_for_equivalence) then
+# resolves R STRICTLY from the ledger's hex to_id and re-derives byte-equivalence, so a
+# keep-ref pointing at a WRONG or non-equivalent commit CANNOT launder anything: it either
+# fails to make the ledger-named R present (wrong R → scan still sees R unreachable → exit 2)
+# or R is present but non-equivalent (→ exit 1). A forged keep-ref is inert here.
+fetch_rebound_keep_ref() {
+  local tip_c="$1"
+  local remote; remote="$(ci_origin_remote)"
+  [[ -n "$remote" ]] || return 1
+  local ref="refs/agentops/rebound/${tip_c}"
+  # Fetch the keep-ref into the SAME name locally (FETCH_HEAD also gets it). Hardened git;
+  # a ref/object transfer (no diff drivers). Quiet + non-fatal.
+  git -c core.fsmonitor= -C "$REPO" fetch --quiet "$remote" "${ref}:${ref}" >/dev/null 2>&1 || return 1
+  # Confirm the fetched ref resolves to a commit object here (defensive; a server could
+  # in principle answer without delivering — but git fetch of a missing ref errors, caught
+  # above). The scan re-verifies sha==ledger-R independently regardless.
+  git -c core.fsmonitor= -C "$REPO" rev-parse --verify --quiet "${ref}^{commit}" >/dev/null 2>&1 || return 1
+  return 0
+}
+
+rebound_authorizes() {
+  local sha="$1"
+  rebound_edge_bound_to "$sha" || return 1   # no well-formed REBOUND edge → plain no-proof
+  local tip_pid tip_sig
+  tip_pid="$(commit_patch_id "$sha" "$REPO")"
+  tip_sig="$(commit_content_sig "$sha" "$REPO")"
+  # Empty key = cannot prove even the TIP's identity → plain no-proof (exit 1).
+  [[ -n "$tip_pid" && -n "$tip_sig" ]] || return 1
+
+  # FIRST scan against what is already reachable in this checkout.
+  local rc=0
+  scan_lineage_for_equivalence "$sha" "$tip_pid" "$tip_sig" || rc=$?
+  if [[ "$rc" -ne 2 ]]; then
+    return "$rc"   # 0 = authorized; 1 = reachable-but-no-match (genuine no-proof)
+  fi
+
+  # rc == 2: a well-formed CONFIRMED lineage exists but its reviewed commit R is NOT
+  # reachable here (orphaned by a rebase — the clean-CI-clone case). Before giving up
+  # (age-rk3r.18 exit-2), try to fetch the keep-ref the write side pushed to pin R
+  # (refs/agentops/rebound/<C>). If it makes R reachable, RE-SCAN — the re-scan resolves
+  # R strictly from the ledger's hex to_id and re-derives byte-equivalence, so this can only
+  # AUTHORIZE a genuinely-equivalent, ledger-named, now-fetchable R (a forged/wrong/non-
+  # equivalent keep-ref stays refused). (age-rk3r.19)
+  if fetch_rebound_keep_ref "$sha"; then
+    echo "tip-verdict-ci: fetched keep-ref refs/agentops/rebound/${sha:0:12} — re-verifying the reviewed commit's byte-equivalence" >&2
+    local rc2=0
+    scan_lineage_for_equivalence "$sha" "$tip_pid" "$tip_sig" || rc2=$?
+    return "$rc2"   # 0 authorize; 2 still-unreachable (wrong-R keep-ref); 1 fetched-but-non-equivalent
+  fi
+  # No keep-ref (absent / no remote / offline) → unchanged age-rk3r.18 fail-closed exit-2.
+  return 2
 }
 
 # ── (b) per-commit verdict-or-waiver check ──────────────────────────────────
@@ -358,8 +430,12 @@ for sha in "${COMMITS[@]}"; do
   # byte-equivalent to this tip must exist. A bare disposition=REBOUND is NOT
   # accepted; the stored patch_id_proof is never trusted. rebound_authorizes
   # distinguishes AUTHORIZED (0) from UNVERIFIABLE-HERE (2: a well-formed REBOUND
-  # whose reviewed commit is unreachable in this checkout — orphaned by a rebase)
-  # from plain NO-PROOF (1).
+  # whose reviewed commit is unreachable here AND no keep-ref made it fetchable)
+  # from plain NO-PROOF (1). When R is orphaned, rebound_authorizes first tries to
+  # fetch the keep-ref refs/agentops/rebound/<C> (age-rk3r.19) and RE-VERIFIES the
+  # ledger-named R's byte-equivalence — so an orphaned-but-keep-ref'd legitimate
+  # REBOUND now AUTHORIZES; only when NEITHER R is reachable NOR a valid keep-ref
+  # exists does it stay exit 2.
   rebound_rc=0
   rebound_authorizes "$sha" || rebound_rc=$?
   if [[ "$rebound_rc" -eq 0 ]]; then
@@ -367,15 +443,16 @@ for sha in "${COMMITS[@]}"; do
     continue
   fi
   if [[ "$rebound_rc" -eq 2 ]]; then
-    # HONEST SCOPING (age-rk3r.18): the REBOUND edge is well-formed but the reviewed
-    # commit it descends from is NOT reachable in this checkout, so CI cannot
-    # INDEPENDENTLY re-verify the byte-equivalence. Fail-closed (do NOT authorize),
-    # with a DISTINCT, accurate message — never the misleading "lacks a bound
-    # verdict". The LOCAL pre-push gate is authoritative for REBOUND (the reviewed
-    # commit is reachable at push time); CI can only honor it when the reviewed
-    # commit is reachable in the CI checkout. age-rk3r.19 tracks making CI-REBOUND
-    # work with an orphaned reviewed commit (a keep-ref design).
-    echo "::warning::commit ${sha:0:12} REBOUND: the reviewed commit it descends from is NOT reachable in this checkout (likely orphaned by a rebase), so the byte-equivalence cannot be independently re-verified — NOT authorized (fail-closed). The local pre-push gate is authoritative for REBOUND; for CI to honor it, fetch the reviewed commit or the commit needs a fresh verdict (${subject})"
+    # HONEST SCOPING (age-rk3r.18/.19): the REBOUND edge is well-formed but the reviewed
+    # commit it descends from is NOT reachable here AND no keep-ref made it fetchable
+    # (refs/agentops/rebound/<C> absent, or the remote/network could not deliver it, or a
+    # keep-ref resolved to the WRONG commit so the LEDGER-named R is still absent), so CI
+    # cannot INDEPENDENTLY re-verify the byte-equivalence. Fail-closed (do NOT authorize),
+    # with a DISTINCT, accurate message — never the misleading "lacks a bound verdict".
+    # The LOCAL pre-push gate is authoritative for REBOUND (the reviewed commit is
+    # reachable at push time); CI honors it when R is reachable OR a keep-ref makes it
+    # fetchable. age-rk3r.19 shipped the keep-ref; reaching here means neither held.
+    echo "::warning::commit ${sha:0:12} REBOUND: the reviewed commit it descends from is NOT reachable in this checkout and no keep-ref (refs/agentops/rebound/${sha:0:12}) made it fetchable (likely orphaned by a rebase, keep-ref unpushed/pruned, or offline), so the byte-equivalence cannot be independently re-verified — NOT authorized (fail-closed). The local pre-push gate is authoritative for REBOUND; for CI to honor it, ensure the keep-ref reached the remote or the commit needs a fresh verdict (${subject})"
     violations=$((violations + 1))
     continue
   fi
