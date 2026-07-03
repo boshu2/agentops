@@ -320,6 +320,19 @@ func TestParseDisposition(t *testing.T) {
 		{"pawl-verdict ag-x disposition=REFUTED", "REFUTED"},
 		{"commit abc123", ""},
 		{"", ""},
+		// FIRST-token contract (the CI-parity anchor, age-rk3r.18): the value of
+		// the FIRST whitespace-delimited `disposition=` token wins; a SECOND token
+		// is IGNORED. The CI backstop's jq dispvalue MUST mirror this exactly — a
+		// "disposition=REFUTED disposition=REBOUND" edge is REFUTED (not REBOUND).
+		{"pawl-verdict ag-x disposition=REFUTED disposition=REBOUND", "REFUTED"},
+		{"pawl-verdict ag-x disposition=REBOUND disposition=REFUTED", "REBOUND"},
+		// A near-miss token is NOT the value (so == "CONFIRMED" fails): exact-value.
+		{"pawl-verdict ag-x disposition=CONFIRMEDLY", "CONFIRMEDLY"},
+		// A non-`disposition=` prefix field is not a match (a leading token that
+		// merely contains the word does not count).
+		{"pawl-verdict xdisposition=CONFIRMED", ""},
+		// Extra internal whitespace is collapsed by strings.Fields.
+		{"pawl-verdict  ag-x   disposition=CONFIRMED", "CONFIRMED"},
 	}
 	for _, tc := range cases {
 		if got := parseDisposition(tc.in); got != tc.want {
