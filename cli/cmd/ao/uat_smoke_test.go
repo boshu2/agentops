@@ -201,8 +201,8 @@ func TestUATSmoke_VersionNotEmpty(t *testing.T) {
 	}
 	// Version must be non-empty. Valid forms:
 	//   "dev"         — old untagged default (no longer the source default)
-	//   "3.1.0-rc"    — source fallback on the 3.1 branch before tag-cut
-	//   "v3.1.0" / "3.1.0" — goreleaser-injected release version
+	//   "X.Y.Z-rc"    — source fallback on the current release line before tag-cut
+	//   "vX.Y.Z" / "X.Y.Z" — goreleaser-injected release version
 	// Any non-empty string satisfies the intent; the empty check above covers the gate.
 	_ = ver // already checked for empty above
 }
