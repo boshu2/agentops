@@ -109,6 +109,9 @@ e2e_log_phase setup
 
 # Build (or reuse) the ao binary inside the sandbox. Honors PROOF_AO_BIN and
 # PROOF_FORCE_BUILD — see tests/lib/e2e-factory.sh for the resolution rules.
+# The flywheel proof exercises ADR-0012 archived surfaces (harvest / dream
+# cycle), which the default spine build omits — request the archive tags.
+export PROOF_BUILD_TAGS="${PROOF_BUILD_TAGS:-flywheel legacy}"
 AO_BIN="$(e2e_factory_ao_bin "$BUILD_DIR" "$REPO_ROOT")"
 export PATH="$BUILD_DIR:$PATH"
 pass "ao binary resolved at $AO_BIN"
