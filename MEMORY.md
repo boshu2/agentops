@@ -1,7 +1,5 @@
 # Project Memory
 
-## Last Session
-
 ## Architecture
 
 - **Harness Reuse**: Long-running RPI improvements should extend existing phase/result/handoff artifacts instead of creating a second run ledger (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
@@ -15,11 +13,11 @@
 
 ## Debugging
 
-- **Tracker Skew First**: When `bd` probes fail with schema errors, check `bd` version and migrations before blaming repo code (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
+- **Tracker Skew First**: When tracker probes fail with schema errors, check the tracker binary version and cache state before blaming repo code — for `br`, the SQLite cache can go stale under concurrent ledger writes; the JSONL is the source of truth (originally learned on the retired `bd`; source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
 
 ## Patterns
 
-- **CLI-Owned Lifecycle**: Codex skills should call `ao codex ensure-start` / `ensure-stop` instead of parsing state files themselves (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
+- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves — but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see AGENTS-RUNTIME.md (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
 
 ## Key Lessons
 

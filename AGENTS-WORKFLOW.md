@@ -274,33 +274,10 @@ br syncs through git, not a server:
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT run `bd` — retired legacy (2026-06-11); its Dolt server was a single-host SPOF (see the tracker note atop this file)
 
-For more details, see README.md and docs/QUICKSTART.md.
+For more details, see README.md and [docs/newcomer-guide.md](docs/newcomer-guide.md).
 
 ## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds. For **user-facing CLI changes**, also run the installed-binary smoke (`cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh`) so the closeout proves the installed `ao` matches the build — not the stale product path — before declaring it usable.
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   BEADS_DIR="$(ao beads dir)" br sync --flush-only
-   git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: <summary>" && git -C "$(ao beads dir)" push  # if tracker changed
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+Covered in full by [Landing the Plane (Session Completion)](#landing-the-plane-session-completion) above — one canonical checklist; this section exists only so older links to it still resolve.
 
 <!-- END BEADS INTEGRATION -->
