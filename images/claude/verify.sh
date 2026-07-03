@@ -60,7 +60,7 @@ fi
 # Version guard: the Claude marketplace plugin manifest is the install entrypoint
 # for this image. Assert .claude-plugin/plugin.json declares the expected version
 # so a stale-version drift (plugin.json behind the release) fails the gate.
-EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-3.1.0}"
+EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-3.2.0}"
 plugin_manifest="$repo_root/.claude-plugin/plugin.json"
 if [ ! -f "$plugin_manifest" ]; then
   echo "FAIL: Claude plugin manifest not found: $plugin_manifest" >&2
