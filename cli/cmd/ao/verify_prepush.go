@@ -766,14 +766,17 @@ func confirmedVerdictCommitSHAs(edges []provenancegraph.Edge) []string {
 // trusted git, empty/error signature) returns false → the caller falls through to
 // the normal "no CONFIRMED = refuse" path (fail-closed).
 //
-// REACHABILITY (honest scoping, age-rk3r.18): this re-derivation requires the
+// REACHABILITY (honest scoping, age-rk3r.18/.19): this re-derivation requires the
 // REVIEWED commit R to be resolvable in the local object store. At LOCAL PUSH time
 // that holds — a just-rebased R is still reachable via the reflog / as a dangling
-// object (pre-gc) — so the local pre-push gate honors REBOUND. The CI backstop
-// (scripts/check-tip-verdict-ci.sh) runs in a CLEAN clone where a rebase-orphaned R
-// is absent; it therefore cannot re-derive the equivalence and REFUSES fail-closed
-// with a distinct message (never a false authorization). age-rk3r.19 tracks a
-// keep-ref design that makes CI-REBOUND work with an orphaned reviewed commit.
+// object (pre-gc) — so the local pre-push gate honors REBOUND WITHOUT needing a
+// keep-ref (the shallow-clone edge is not this path's concern; the CI backstop is).
+// The CI backstop (scripts/check-tip-verdict-ci.sh) runs in a CLEAN clone where a
+// rebase-orphaned R is absent; it fetches the keep-ref refs/agentops/rebound/<C>
+// (written+pushed by rebind-verified, age-rk3r.19) to make R reachable, then
+// re-derives the equivalence against the LEDGER-named R (a forged keep-ref cannot
+// launder it) and authorizes; it REFUSES fail-closed with a distinct message only
+// when R is neither reachable nor keep-ref-fetchable (never a false authorization).
 //
 // R != sha is required: a REBOUND descends from a DISTINCT prior reviewed commit
 // (the whole point is re-binding across a rebase to a new sha). A CONFIRMED edge

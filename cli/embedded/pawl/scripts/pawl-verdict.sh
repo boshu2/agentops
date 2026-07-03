@@ -1256,6 +1256,83 @@ do_rebind() {
 }
 
 # ---------------------------------------------------------------------------
+# rebound_keep_ref_name <tip-C-sha> — the canonical keep-ref path for a REBOUND
+# whose new tip is C: refs/agentops/rebound/<full-C-sha>. Keyed by the REBOUND TIP
+# (not the reviewed R) so it is unambiguous per rebound — one C authorizes exactly
+# one keep-ref, and a fresh rebound of the same lineage onto a different tip gets a
+# distinct ref. (age-rk3r.19)
+rebound_keep_ref_name() {
+  printf 'refs/agentops/rebound/%s' "$1"
+}
+
+# write_rebound_keep_ref <tip-C-sha> <reviewed-R-sha> <repo-root> — PIN the reviewed
+# commit R so it survives the rebase that orphaned it and can be fetched by any CI
+# clone (age-rk3r.19). Two moves, both best-effort (a keep-ref is a CI REACHABILITY
+# AID ONLY — the local gate never needs it, R is reachable via reflog/dangling at push
+# time — so a failure to write/push it must WARN, never fail the rebind):
+#   (1) LOCAL: git update-ref refs/agentops/rebound/<C> <R>  — pins R in this repo's
+#       ref namespace so a local `git gc` will not prune it while the rebound is live.
+#   (2) REMOTE: git push <push-remote> <R>:refs/agentops/rebound/<C>  — the operator
+#       pushes C to the remote; the keep-ref must reach the SAME remote so the CI clone
+#       (which clones from it) can fetch R. rebind-verified pushes the keep-ref ITSELF
+#       (rather than leaning on the land/push flow to also push refs/agentops/rebound/*)
+#       so the safety aid is self-contained in the operation that creates it — robust
+#       and least-surprising: no separate step can forget it, and it works from any
+#       land path (direct push, worktree, restamp).
+# The remote is the branch's configured push remote (@{push}'s remote), falling back to
+# `origin`; if neither resolves (no remote / offline), WARN and skip the push — the
+# LOCAL gate still authorizes (R reachable), and CI degrades to age-rk3r.18's fail-closed
+# exit-2 (never fail-OPEN). git is invoked hardened (-c core.fsmonitor=) as everywhere in
+# this script; these are ref/push plumbing calls (no diff drivers), so the trusted-git
+# discipline reduces to the standard hardened form.
+# RETENTION: keep-refs accumulate under refs/agentops/rebound/*; a future GC/retention
+# policy MAY prune old ones. Pruning a keep-ref only downgrades CI to the fail-closed
+# exit-2 for that rebound (it can no longer fetch R) — it is NEVER a fail-open, so GC is
+# safe to add later without weakening any authorization. (Not implemented in this bead.)
+write_rebound_keep_ref() {
+  local tip_c="$1" reviewed_r="$2" root="$3"
+  local ref; ref="$(rebound_keep_ref_name "$tip_c")"
+
+  # (1) LOCAL pin — resolve R to a full oid first (defensive; R is already validated as
+  # the prior verdict's head_sha >=7 hex). A failure here is non-fatal (WARN).
+  local r_oid
+  r_oid="$(git -c core.fsmonitor= -C "$root" rev-parse --verify --quiet "${reviewed_r}^{commit}" 2>/dev/null)" || r_oid=""
+  if [[ -z "$r_oid" ]]; then
+    echo "pawl-verdict rebind-verified: WARNING — could not resolve reviewed commit ${reviewed_r:0:12} to pin a keep-ref (local); CI will fall back to fail-closed if R is later orphaned" >&2
+    return 0
+  fi
+  if git -c core.fsmonitor= -C "$root" update-ref "$ref" "$r_oid" 2>/dev/null; then
+    echo "pawl-verdict rebind-verified: pinned reviewed commit ${r_oid:0:12} at $ref (local keep-ref)" >&2
+  else
+    echo "pawl-verdict rebind-verified: WARNING — could not create local keep-ref $ref for ${r_oid:0:12}" >&2
+  fi
+
+  # (2) REMOTE push so the CI clone can fetch R. Resolve the branch's configured push
+  # remote; fall back to origin. Skip (WARN, non-fatal) when no remote is configured.
+  local push_remote=""
+  push_remote="$(git -c core.fsmonitor= -C "$root" rev-parse --abbrev-ref --symbolic-full-name '@{push}' 2>/dev/null | cut -d/ -f1)" || push_remote=""
+  if [[ -z "$push_remote" ]]; then
+    if git -c core.fsmonitor= -C "$root" remote get-url origin >/dev/null 2>&1; then
+      push_remote="origin"
+    fi
+  fi
+  if [[ -z "$push_remote" ]]; then
+    echo "pawl-verdict rebind-verified: WARNING — no push remote / no 'origin' configured; NOT pushing keep-ref $ref. The local gate still authorizes; CI will fall back to fail-closed if R is orphaned in a clean clone (age-rk3r.18 exit-2 — never fail-open)." >&2
+    return 0
+  fi
+  # Push R (the object) to the keep-ref name on the remote. --no-verify: this is a
+  # ref-plumbing push of an ALREADY-COMMITTED, already-reviewed object under an internal
+  # namespace, NOT a branch push carrying new work — the pre-push verdict gate does not
+  # apply to it. Best-effort: an offline/denied push WARNs, never fails the rebind.
+  if git -c core.fsmonitor= -C "$root" push --no-verify "$push_remote" "${r_oid}:${ref}" >/dev/null 2>&1; then
+    echo "pawl-verdict rebind-verified: pushed keep-ref $ref -> ${r_oid:0:12} to '$push_remote' (CI can now fetch the reviewed commit even after a rebase orphans it)" >&2
+  else
+    echo "pawl-verdict rebind-verified: WARNING — could not push keep-ref $ref to '$push_remote' (offline/denied?). The local gate still authorizes; CI falls back to fail-closed if R is orphaned (age-rk3r.18 exit-2 — never fail-open)." >&2
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # rebind-verified <bead> <pr> --from-verdict <path> --head NEWSHA [--dir D] [--repo-root R]
 #
 # The SAFE, patch-id-gated re-bind (age-rk3r.9): stop paying a full re-review for a
@@ -1508,22 +1585,35 @@ do_rebind_verified() {
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote REBOUND $out -> head ${newhead:0:12} (lineage: ${lineage_ref} @ ${prior_sha:0:12}, patch-id $new_pid)" >&2
 
+  # KEEP-REF (age-rk3r.19): pin the reviewed commit R (prior_sha) at
+  # refs/agentops/rebound/<new-tip-C> and push it to the remote, so the CI backstop can
+  # fetch R and re-verify byte-equivalence even after a rebase orphans R in a clean clone.
+  # Best-effort — a failure WARNs but does NOT fail the rebind (the local gate never needs
+  # the keep-ref; it is a CI aid, and its absence only makes CI fall back to fail-closed).
+  # Resolve $newhead to its full oid so the ref name is keyed by the canonical tip sha.
+  local newhead_oid
+  newhead_oid="$(git -c core.fsmonitor= -C "$repo_root" rev-parse --verify --quiet "${newhead}^{commit}" 2>/dev/null)" || newhead_oid="$newhead"
+  write_rebound_keep_ref "$newhead_oid" "$prior_sha" "$repo_root"
+
   # HIJACK GUARD (age-sylz): as with write, refuse to emit/bind the edge if a
   # concurrent lane moved a shared worktree HEAD out from under this run.
   if ! _assert_review_head_unmoved; then
     return 1
   fi
-  # REBOUND authorization (age-rk3r.18), scoped honestly by REVIEWED-commit reachability:
+  # REBOUND authorization (age-rk3r.18/.19), scoped honestly by REVIEWED-commit reachability:
   # pawl-verdict check (this reconcile/merge path) and the LOCAL `ao verify init` pre-push
   # gate (cli/cmd/ao/verify_prepush.go: reboundVerdictAuthorizes) HONOR this edge — at
   # push/merge time the reviewed commit is normally still reachable (reflog / dangling
   # pre-gc), so the byte-equivalence can be independently re-derived. The CI backstop
-  # (scripts/check-tip-verdict-ci.sh: rebound_authorizes) honors it ONLY WHEN the reviewed
-  # commit is reachable in the CI checkout; a clean clone that orphaned it (post-rebase)
-  # REFUSES fail-closed with a distinct "reviewed commit not reachable" message (age-rk3r.19
-  # tracks a keep-ref fix). Every path RE-VALIDATES first — a committed CONFIRMED-reviewed
-  # commit byte-equivalent to the tip must exist (same patch-id + byte-exact content
-  # signature); a bare disposition=REBOUND never authorizes anywhere.
+  # (scripts/check-tip-verdict-ci.sh: rebound_authorizes) honors it when the reviewed commit
+  # is reachable in the CI checkout OR when the keep-ref written+pushed just above
+  # (refs/agentops/rebound/<C>, age-rk3r.19) makes it fetchable in a clean clone that
+  # orphaned it; it REFUSES fail-closed with a distinct "reviewed commit not reachable"
+  # message ONLY when NEITHER holds. Every path RE-VALIDATES first — a committed
+  # CONFIRMED-reviewed commit byte-equivalent to the tip must exist (same patch-id +
+  # byte-exact content signature); a bare disposition=REBOUND never authorizes anywhere,
+  # and the keep-ref is a reachability aid whose target is re-checked against the ledger's
+  # R (a forged keep-ref cannot launder authorization).
   # Re-fire the verdict sensor for the REBOUND edge (CHECKED + auto-bind, same as write).
   emit_verdict_edge_checked "$out" "$bead" "REBOUND"
 }

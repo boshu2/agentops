@@ -519,3 +519,58 @@ EOF
   [[ "$output" == *"CONTENT-LINE MISMATCH"* ]]
   [ "$(jq -r .disposition "$TMP/verdicts/nlbead2.json")" = "CONFIRMED" ]   # no REBOUND written
 }
+
+# ---------------------------------------------------------------------------
+# KEEP-REF (age-rk3r.19) — on a SUCCESSFUL REBOUND, rebind-verified pins the reviewed
+# commit R at refs/agentops/rebound/<new-tip-C> (LOCAL) and pushes it to the remote so
+# a clean CI clone can fetch R even after a rebase orphans it. Best-effort: no remote /
+# a push failure WARNs but does NOT fail the rebind (the local gate never needs it).
+# ---------------------------------------------------------------------------
+
+@test "KEEP-REF: a successful rebind-verified creates the LOCAL keep-ref refs/agentops/rebound/<C> -> R" {
+  local SHA_B; SHA_B="$(rebase_identical)"
+  [ "$SHA_B" != "$SHA_A" ]
+  run env AGENTOPS_REPO_ROOT="$R" PAWL_AUTOBIND=0 PAWL_REBIND_GATE_CMD="true" \
+    bash "$SCRIPT" rebind-verified mybead 0 --head "$SHA_B" --dir "$TMP/verdicts" --repo-root "$R"
+  [ "$status" -eq 0 ]
+  # The REBOUND was written AND the local keep-ref pins the REVIEWED commit R (=SHA_A),
+  # keyed by the new tip C (=SHA_B).
+  [ "$(jq -r .disposition "$TMP/verdicts/mybead.json")" = "REBOUND" ]
+  local kept; kept="$("$GIT" -C "$R" rev-parse --verify --quiet "refs/agentops/rebound/${SHA_B}" 2>/dev/null || true)"
+  [ "$kept" = "$SHA_A" ]
+  [[ "$output" == *"pinned reviewed commit ${SHA_A:0:12} at refs/agentops/rebound/${SHA_B} (local keep-ref)"* ]]
+  # No remote is configured on $R, so the push half WARNs but does NOT fail.
+  [[ "$output" == *"no push remote / no 'origin' configured"* ]]
+}
+
+@test "KEEP-REF: with an 'origin' remote, rebind-verified PUSHES the keep-ref so the remote carries R" {
+  # A bare remote the keep-ref must reach.
+  local BARE="$TMP/bare.git"
+  "$GIT" init -q --bare "$BARE"
+  "$GIT" -C "$R" remote add origin "$BARE"
+  local SHA_B; SHA_B="$(rebase_identical)"
+  [ "$SHA_B" != "$SHA_A" ]
+  run env AGENTOPS_REPO_ROOT="$R" PAWL_AUTOBIND=0 PAWL_REBIND_GATE_CMD="true" \
+    bash "$SCRIPT" rebind-verified mybead 0 --head "$SHA_B" --dir "$TMP/verdicts" --repo-root "$R"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"pushed keep-ref refs/agentops/rebound/${SHA_B} -> ${SHA_A:0:12} to 'origin'"* ]]
+  # The REMOTE now carries the keep-ref pointing at the reviewed commit R — exactly what a
+  # clean CI clone fetches to re-verify equivalence.
+  local remote_kept; remote_kept="$("$GIT" -C "$BARE" rev-parse --verify --quiet "refs/agentops/rebound/${SHA_B}" 2>/dev/null || true)"
+  [ "$remote_kept" = "$SHA_A" ]
+  # And the local ref exists too.
+  [ "$("$GIT" -C "$R" rev-parse --verify --quiet "refs/agentops/rebound/${SHA_B}" 2>/dev/null || true)" = "$SHA_A" ]
+}
+
+@test "KEEP-REF: a push failure (unreachable remote) WARNs but does NOT fail the rebind" {
+  # An 'origin' that cannot be pushed to (a non-existent path). The local ref is still
+  # created; the push WARNs; the rebind SUCCEEDS (the keep-ref is a CI aid, not a gate).
+  "$GIT" -C "$R" remote add origin "$TMP/does-not-exist.git"
+  local SHA_B; SHA_B="$(rebase_identical)"
+  run env AGENTOPS_REPO_ROOT="$R" PAWL_AUTOBIND=0 PAWL_REBIND_GATE_CMD="true" \
+    bash "$SCRIPT" rebind-verified mybead 0 --head "$SHA_B" --dir "$TMP/verdicts" --repo-root "$R"
+  [ "$status" -eq 0 ]                                        # rebind still succeeds
+  [ "$(jq -r .disposition "$TMP/verdicts/mybead.json")" = "REBOUND" ]
+  [[ "$output" == *"could not push keep-ref"* ]]
+  [ "$("$GIT" -C "$R" rev-parse --verify --quiet "refs/agentops/rebound/${SHA_B}" 2>/dev/null || true)" = "$SHA_A" ]
+}
