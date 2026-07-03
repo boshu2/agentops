@@ -1,6 +1,6 @@
 {
-  "recorded_at": "2026-07-02T23:36:02Z",
-  "git_sha": "7a4e8d2d756bb871cc5e3bce5edc82fb6fa9ed70",
+  "recorded_at": "2026-07-03T01:52:12Z",
+  "git_sha": "91cbb5676591f7ccebf8be21e699e0405dfbeeeb",
   "git_branch": "HEAD",
   "evidence": {
     "compounding": false,
@@ -27,9 +27,9 @@
     },
     "metric_namespace": "primary",
     "metrics": {
-      "timestamp": "2026-07-02T19:36:00.970616-04:00",
-      "period_start": "2026-06-25T19:36:00.970616-04:00",
-      "period_end": "2026-07-02T19:36:00.970616-04:00",
+      "timestamp": "2026-07-02T21:52:12.368188-04:00",
+      "period_start": "2026-06-25T21:52:12.368188-04:00",
+      "period_end": "2026-07-02T21:52:12.368188-04:00",
       "delta": 0,
       "sigma": 0,
       "rho": 0,
@@ -53,10 +53,10 @@
         "promoted_findings": 0,
         "planning_rules": 0,
         "pre_mortem_checks": 0,
-        "queue_entries": 13,
-        "unconsumed_batches": 13,
-        "unconsumed_items": 44,
-        "high_severity_unconsumed": 6
+        "queue_entries": 0,
+        "unconsumed_batches": 0,
+        "unconsumed_items": 0,
+        "high_severity_unconsumed": 0
       },
       "golden_signals": {
         "velocity_trend_7d": 0,
@@ -82,10 +82,10 @@
       "promoted_findings": 0,
       "planning_rules": 0,
       "pre_mortem_checks": 0,
-      "queue_entries": 13,
-      "unconsumed_batches": 13,
-      "unconsumed_items": 44,
-      "high_severity_unconsumed": 6
+      "queue_entries": 0,
+      "unconsumed_batches": 0,
+      "unconsumed_items": 0,
+      "high_severity_unconsumed": 0
     },
     "sigma": 0,
     "sigma_rho": 0,

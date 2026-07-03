@@ -100,11 +100,22 @@ requires (a) the same rebase-stable patch-id AND (b) byte-identical +/- content 
 is a fully-valid CONFIRMED, its patch-id matches, and its content bytes match — never
 forgeable, and no easier to authorize than the CONFIRMED it inherits.
 
-LIMITATION (age-rk3r.18): REBOUND is honored by pawl-verdict check (the reconcile/merge
-path); the portable 'ao verify init' pre-push gate + CI honor only CONFIRMED today — a
-REBOUND edge is safely refused there (fail-closed) until age-rk3r.18 wires Go-side REBOUND
-validation. So --rebind's convenience applies on the operator/reconcile merge path; the
-installed pre-push ratchet will still ask for a CONFIRMED until then.
+REBOUND authorization (age-rk3r.18), scoped honestly by reachability of the REVIEWED commit:
+  - reconcile/merge path (pawl-verdict check) and the LOCAL 'ao verify init' pre-push gate
+    (cli/cmd/ao/verify_prepush.go) HONOR REBOUND: at push/merge time the reviewed commit is
+    normally still reachable (it lives in the reflog / as a dangling object pre-gc), so the gate
+    can independently re-derive the byte-equivalence. The pre-push gate re-derives it in Go from
+    a sanitized-PATH git (it runs NO repo-tree script, so it is safe in a hostile stranger repo):
+    a committed CONFIRMED-reviewed commit byte-equivalent to the tip (same git patch-id --stable
+    AND byte-exact content signature) must exist, or the REBOUND is refused.
+  - the CI backstop (scripts/check-tip-verdict-ci.sh) honors REBOUND ONLY WHEN the reviewed
+    commit is reachable in the CI checkout. A clean CI clone after a rebase that orphaned the
+    reviewed commit cannot re-derive the equivalence, so CI REFUSES fail-closed with a distinct
+    "reviewed commit not reachable" message (never a false authorization). age-rk3r.19 tracks a
+    keep-ref design that makes CI-REBOUND work with an orphaned reviewed commit.
+Every path RE-VALIDATES before honoring — a bare disposition=REBOUND never authorizes anywhere,
+and the edge's stored patch_id_proof is never trusted. So --rebind's convenience applies on the
+installed local ratchet; CI is a backstop that honors it when it can independently prove it.
 
   ao verify <id> --rebind [--head SHA] [--from-verdict PATH] [--dir DIR]
 

@@ -58,8 +58,13 @@ line per pushed ref) and gate the push:
   (b) every commit pushed to main/master must carry proof — EITHER a CONFIRMED
       cross-family verdict edge bound to it in that committed ledger
       (from_type=verdict, to_type=commit, disposition=CONFIRMED, the shape
-      'ao verify' binds) OR the provenance-only #trivial waiver (every changed
-      file under docs/provenance/).
+      'ao verify' binds) OR a REBOUND verdict edge whose lineage + byte-
+      equivalence RE-VALIDATE (a committed CONFIRMED-reviewed commit exists that
+      is byte-equivalent to this tip — same git patch-id --stable AND byte-exact
+      content signature, re-derived here via trusted git; a bare disposition=
+      REBOUND is NOT accepted, and the edge's stored patch_id_proof is never
+      trusted) OR the provenance-only #trivial waiver (every changed file under
+      docs/provenance/).
 
 Both checks read the ledger blob from the PUSHED TIP'S TREE, never the working
 tree: the remote only receives committed history, so an appended-but-uncommitted
@@ -271,6 +276,15 @@ func checkMainPush(out io.Writer, repo, targetRemote string, ln prePushLine) err
 	var violations []string
 	for _, sha := range commits {
 		if confirmedVerdictEdgeIn(edges, sha) {
+			continue
+		}
+		// A committed REBOUND edge authorizes ONLY after Go-side lineage + proof
+		// RE-VALIDATION (age-rk3r.18): a bare disposition==REBOUND accept would be a
+		// forge-a-rebound fail-open. reboundVerdictAuthorizes proves — from the
+		// committed ledger + trusted git alone — that a CONFIRMED-reviewed commit
+		// byte-equivalent to sha exists (patch-id + content-signature). It never
+		// trusts the (uncommitted) verdict file's self-declared patch_id_proof.
+		if reboundVerdictAuthorizes(repo, edges, sha) {
 			continue
 		}
 		waived, werr := trivialWaiver(repo, sha)
@@ -653,8 +667,11 @@ func hasConfirmedVerdictEdge(ledgerPath, sha string) bool {
 // (The bead-scoping in lookupDoneVerdicts is a close-THIS-bead concern.) An
 // empty/nil edge set (no committed ledger at the tip) confirms nothing.
 //
-// Only CONFIRMED authorizes: no REBOUND/other disposition is a wired
-// authorization path for this gate.
+// CONFIRMED authorizes directly; a REBOUND authorizes only through
+// reboundVerdictAuthorizes (Go-side lineage + proof re-validation, age-rk3r.18) —
+// this function is the CONFIRMED half and is deliberately exact about the
+// disposition token so a REBOUND edge is NOT accepted here (it must earn its
+// authorization by proving byte-equivalence to a reviewed commit).
 func confirmedVerdictEdgeIn(edges []provenancegraph.Edge, sha string) bool {
 	for _, e := range edges {
 		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
@@ -664,6 +681,147 @@ func confirmedVerdictEdgeIn(edges []provenancegraph.Edge, sha string) bool {
 			continue
 		}
 		if parseDisposition(e.EvidenceRef) == doneStampConfirmed {
+			return true
+		}
+	}
+	return false
+}
+
+// doneStampRebound is the exact disposition token a REBOUND verdict edge carries
+// in its evidence_ref ("pawl-verdict <bead> disposition=REBOUND", the shape
+// emit-verdict writes for a rebind). Matched EXACTLY, never as a substring.
+const doneStampRebound = "REBOUND"
+
+// reboundEdgeBoundTo reports whether edges carries a REBOUND verdict edge bound
+// to commit sha — the shape `ao provenance emit-verdict` writes for a rebind
+// (relation=wasDerivedFrom, from_type=verdict, to_type=commit, an EXACT-TOKEN
+// disposition==REBOUND, to_id binding sha). Exact + fail-closed, the same
+// discipline as confirmedVerdictEdgeIn.
+func reboundEdgeBoundTo(edges []provenancegraph.Edge, sha string) bool {
+	for _, e := range edges {
+		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
+			continue
+		}
+		if !shaBindsCommit(sha, e.ToID) {
+			continue
+		}
+		if parseDisposition(e.EvidenceRef) == doneStampRebound {
+			return true
+		}
+	}
+	return false
+}
+
+// confirmedVerdictCommitSHAs returns the DISTINCT to_id commit shas of every
+// CONFIRMED verdict edge in edges — the candidate REBOUND lineage roots. Each is
+// a commit an independent cross-family review CONFIRMED, as committed in the
+// pushed ledger. Order is first-seen (deterministic); duplicates collapse.
+func confirmedVerdictCommitSHAs(edges []provenancegraph.Edge) []string {
+	seen := map[string]bool{}
+	var shas []string
+	for _, e := range edges {
+		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
+			continue
+		}
+		if parseDisposition(e.EvidenceRef) != doneStampConfirmed {
+			continue
+		}
+		if e.ToID == "" || seen[e.ToID] {
+			continue
+		}
+		seen[e.ToID] = true
+		shas = append(shas, e.ToID)
+	}
+	return shas
+}
+
+// reboundVerdictAuthorizes reports whether a committed REBOUND verdict edge bound
+// to commit sha authorizes the push — the Go twin of scripts/pawl-verdict.sh's
+// REBOUND lineage gate (do_check REBOUND branch), for the hostile-repo-safe
+// portable pre-push path (age-rk3r.18).
+//
+// WHY THE SHAPE DIFFERS FROM THE SHELL (load-bearing): the shell `check` reads a
+// verdict JSON FILE that carries rebound_from_verdict / rebound_from_sha /
+// patch_id_proof. Those fields live ONLY in that .agents/-gitignored file — they
+// are NEVER projected into the COMMITTED ledger edge (emit-verdict writes only
+// evidence_ref "pawl-verdict <bead> disposition=REBOUND" + to_id=tip). The gate's
+// age-rk3r.6 trust boundary forbids reading the repo tree's .agents/ (or running
+// any repo script), so the self-declared rebound_from_sha/proof are UNAVAILABLE
+// and UNTRUSTED here. Instead the gate proves the SAME safety property straight
+// from the committed ledger + trusted git:
+//
+//	A commit sha carrying a committed REBOUND edge is authorized IFF there exists
+//	SOME committed CONFIRMED verdict edge bound to a DISTINCT commit R whose diff
+//	is BYTE-EQUIVALENT to sha's — proven by RE-DERIVING, via trusted git, BOTH
+//	git patch-id --stable AND the byte-exact content signature (the Go port,
+//	commitPatchIDGit + commitContentSigGit) for BOTH commits and requiring an
+//	EXACT match on BOTH keys.
+//
+// This is at least as strict as the shell path and closes the forge-a-rebound
+// hole by construction: authorization requires a REAL, committed, CONFIRMED-
+// reviewed commit that is byte-equivalent to the tip. It never reads or trusts
+// the edge's (absent) patch_id_proof; a forged proof cannot help because nothing
+// here consults it — the equivalence recomputes the reviewed commit's keys from
+// git. Any failure (no REBOUND edge, no equivalent CONFIRMED lineage, unresolvable
+// trusted git, empty/error signature) returns false → the caller falls through to
+// the normal "no CONFIRMED = refuse" path (fail-closed).
+//
+// REACHABILITY (honest scoping, age-rk3r.18): this re-derivation requires the
+// REVIEWED commit R to be resolvable in the local object store. At LOCAL PUSH time
+// that holds — a just-rebased R is still reachable via the reflog / as a dangling
+// object (pre-gc) — so the local pre-push gate honors REBOUND. The CI backstop
+// (scripts/check-tip-verdict-ci.sh) runs in a CLEAN clone where a rebase-orphaned R
+// is absent; it therefore cannot re-derive the equivalence and REFUSES fail-closed
+// with a distinct message (never a false authorization). age-rk3r.19 tracks a
+// keep-ref design that makes CI-REBOUND work with an orphaned reviewed commit.
+//
+// R != sha is required: a REBOUND descends from a DISTINCT prior reviewed commit
+// (the whole point is re-binding across a rebase to a new sha). A CONFIRMED edge
+// bound to sha itself is already handled by confirmedVerdictEdgeIn upstream, so
+// skipping the self-sha here changes nothing and keeps the lineage semantics
+// honest (a REBOUND that names its own commit as its lineage proves nothing).
+func reboundVerdictAuthorizes(repo string, edges []provenancegraph.Edge, sha string) bool {
+	if !reboundEdgeBoundTo(edges, sha) {
+		return false
+	}
+	gitBin, err := trustedGit(repo)
+	if err != nil {
+		return false // cannot trust any git → cannot re-derive → fail-closed
+	}
+	// Re-derive the tip's keys ONCE.
+	tipPID := commitPatchIDGit(gitBin, repo, sha)
+	tipSig := commitContentSigGit(gitBin, repo, sha)
+	if tipPID == "" || tipSig == "" {
+		return false // cannot prove the tip's identity → fail-closed
+	}
+	for _, r := range confirmedVerdictCommitSHAs(edges) {
+		// SECURITY (age-rk3r.18 refuter fix): the lineage to_id is fed to git as a
+		// commit for the diff re-derivation, so it MUST be a HEX commit id resolved
+		// as an OBJECT — never a revision expression. The direct-CONFIRMED path
+		// (confirmedVerdictEdgeIn → shaBindsCommit) already requires this; the
+		// REBOUND lineage MUST apply the identical discipline, or a crafted ledger
+		// with a fake CONFIRMED edge to_id="HEAD~1" (a ref alias, not a hex id)
+		// would let `git show HEAD~1` supply a matching diff and certify an
+		// unreviewed tip (fail-open). hexCommitObjectID rejects any non-hex /
+		// non-committish / ref-alias to_id, returning the resolved full oid ("" =
+		// reject → skip this candidate).
+		rOID := hexCommitObjectID(gitBin, repo, r)
+		if rOID == "" {
+			continue // non-hex / ref-alias / non-committish lineage to_id → not a valid lineage
+		}
+		if shaBindsCommit(sha, rOID) {
+			continue // a CONFIRMED on the tip itself is the confirmedVerdictEdgeIn path, not lineage
+		}
+		rPID := commitPatchIDGit(gitBin, repo, rOID)
+		rSig := commitContentSigGit(gitBin, repo, rOID)
+		if rPID == "" || rSig == "" {
+			continue // cannot prove this candidate's identity → not a valid lineage
+		}
+		// AUTHORITATIVE: the reviewed commit's patch-id AND byte-exact content
+		// signature must BOTH equal the tip's — the same two-key equivalence the
+		// shell requires (patch-id is whitespace/mode/newline-insensitive; the
+		// content signature catches every diff-byte difference it misses).
+		if rPID == tipPID && rSig == tipSig {
 			return true
 		}
 	}
@@ -759,6 +917,45 @@ func gitCommitExists(repo, ref string) bool {
 		return false
 	}
 	return exec.Command(gitBin, "-C", repo, "rev-parse", "--verify", "--quiet", ref+"^{commit}").Run() == nil // #nosec G204 -- gitBin is trusted-PATH-resolved; repo is the resolved git toplevel; ref is a push-supplied object id.
+}
+
+// hexCommitObjectID validates that candidate is a HEX commit id (the exact
+// discipline confirmedVerdictEdgeIn/shaBindsCommit applies to a bound to_id) and
+// resolves it to its FULL commit object id — returning "" (reject) for anything
+// that is not a hex, committish OBJECT. It is the fix for the age-rk3r.18 refuter
+// fail-open: the REBOUND lineage to_id is fed to `git show` for the diff re-
+// derivation, so a ledger-supplied REVISION EXPRESSION (e.g. "HEAD~1", a branch
+// name, a tag, ":/msg") must never be treated as the reviewed commit — that would
+// let a crafted CONFIRMED edge point its lineage at an arbitrary revision whose
+// diff matches the tip and certify an unreviewed commit.
+//
+// Discipline, fail-closed at every step:
+//   - candidate must be a HEX token of >= minShaPrefixLen chars (isHexToken +
+//     length — the SAME predicate shaBindsCommit uses). This alone rejects every
+//     revision expression, since "~", "^", ":", "/", "HEAD", branch/tag names all
+//     carry non-hex bytes.
+//   - it is resolved with `git rev-parse --verify --quiet <hex>^{commit}` via the
+//     trusted git, so a non-existent or non-committish object rejects.
+//   - DEFENSE-IN-DEPTH against a ref NAMED like a hex prefix: the resolved full
+//     oid must BIND the input hex (shaBindsCommit — one a prefix of the other). A
+//     branch "deadbeef" whose tip oid does not start with "deadbeef" is thereby
+//     rejected even if git resolved the name; only a genuine object-id resolution
+//     (oid has the hex as a prefix, or vice-versa) passes.
+//
+// Returns the resolved full oid on success, "" on any rejection.
+func hexCommitObjectID(gitBin, repo, candidate string) string {
+	if len(candidate) < minShaPrefixLen || !isHexToken(candidate) {
+		return "" // not a hex commit id → reject (never treat as a revision)
+	}
+	out, err := exec.Command(gitBin, "-C", repo, "rev-parse", "--verify", "--quiet", candidate+"^{commit}").Output() // #nosec G204 -- gitBin is trusted-PATH-resolved; repo is the resolved git toplevel; candidate is hex-validated above (no revision metacharacters).
+	if err != nil {
+		return "" // non-existent / non-committish object → reject
+	}
+	oid := strings.TrimSpace(string(out))
+	if oid == "" || !shaBindsCommit(oid, candidate) {
+		return "" // resolved something that does not bind the hex (a ref alias) → reject
+	}
+	return oid
 }
 
 // gitStdout runs `git -C repo args...` and returns STDOUT only (with trailing

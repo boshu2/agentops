@@ -1513,11 +1513,17 @@ do_rebind_verified() {
   if ! _assert_review_head_unmoved; then
     return 1
   fi
-  # LIMITATION (age-rk3r.18): REBOUND is honored by pawl-verdict check (the reconcile/merge
-  # path — .9's stated acceptance); the portable `ao verify init` pre-push gate + CI
-  # (cli/cmd/ao/verify_prepush.go, scripts/check-tip-verdict-ci.sh) honor only CONFIRMED
-  # today, so this committed REBOUND edge is safely REFUSED there (fail-closed) until
-  # age-rk3r.18 wires Go-side REBOUND lineage+proof re-validation.
+  # REBOUND authorization (age-rk3r.18), scoped honestly by REVIEWED-commit reachability:
+  # pawl-verdict check (this reconcile/merge path) and the LOCAL `ao verify init` pre-push
+  # gate (cli/cmd/ao/verify_prepush.go: reboundVerdictAuthorizes) HONOR this edge — at
+  # push/merge time the reviewed commit is normally still reachable (reflog / dangling
+  # pre-gc), so the byte-equivalence can be independently re-derived. The CI backstop
+  # (scripts/check-tip-verdict-ci.sh: rebound_authorizes) honors it ONLY WHEN the reviewed
+  # commit is reachable in the CI checkout; a clean clone that orphaned it (post-rebase)
+  # REFUSES fail-closed with a distinct "reviewed commit not reachable" message (age-rk3r.19
+  # tracks a keep-ref fix). Every path RE-VALIDATES first — a committed CONFIRMED-reviewed
+  # commit byte-equivalent to the tip must exist (same patch-id + byte-exact content
+  # signature); a bare disposition=REBOUND never authorizes anywhere.
   # Re-fire the verdict sensor for the REBOUND edge (CHECKED + auto-bind, same as write).
   emit_verdict_edge_checked "$out" "$bead" "REBOUND"
 }

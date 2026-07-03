@@ -927,3 +927,462 @@ func TestPrePush_ConfirmedVerdictEdgeIn_ExactMatchOnly(t *testing.T) {
 		})
 	}
 }
+
+// ============================================================================
+// REBOUND authorization (age-rk3r.18) — the portable pre-push gate honors a
+// committed REBOUND verdict edge ONLY after Go-side lineage + proof re-
+// validation: a committed CONFIRMED-reviewed commit that is BYTE-EQUIVALENT to
+// the tip must exist (same git patch-id --stable AND byte-exact content
+// signature, re-derived via trusted git). A bare disposition=REBOUND is NEVER
+// accepted; the edge's stored patch_id_proof is never consulted. These tests
+// mirror age-rk3r.9's escape corpus (whitespace / mode / binary / no-newline) at
+// the Go gate, RED-first where behavior changed.
+// ============================================================================
+
+// appendReboundEdgeT appends a REBOUND verdict edge bound to toSHA via the
+// PRODUCTION writer (fixture fidelity), WITHOUT committing. This is the exact
+// committed shape `ao provenance emit-verdict` writes for a rebind: only
+// disposition=REBOUND + to_id ride the ledger edge — the lineage fields live in
+// the (uncommitted) verdict file, which the gate deliberately cannot read.
+func appendReboundEdgeT(t *testing.T, repo, bead, toSHA string) {
+	t.Helper()
+	ledger := filepath.Join(repo, provenancegraph.LedgerRelativePath)
+	if _, err := provenancegraph.NewStore(ledger).Append(provenancegraph.Edge{
+		FromID: bead + "@" + toSHA[:7], FromType: "verdict",
+		ToID: toSHA, ToType: "commit", Relation: "wasDerivedFrom",
+		EvidenceRef: "pawl-verdict " + bead + " disposition=REBOUND", TrustTier: "inferred",
+		TS: "2026-07-02T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("append REBOUND edge: %v", err)
+	}
+}
+
+// reboundFixture builds the canonical REBOUND scenario in a fresh repo and
+// returns the pieces the tests assert over. The SHARED base-of-`file` commit
+// lives BEFORE the branch point so BOTH R and C build on the identical tree —
+// the only new code commit on the rebound line is tip C itself (the commit under
+// test). It creates:
+//   - README -> shared base-of-`file` -> reviewed R (applies `change`) on main,
+//     with a CONFIRMED verdict edge bound to R;
+//   - a divergent branch `rebound` off the shared base-of-`file` that applies the
+//     SAME `change` (byte-identical diff) as tip C — a distinct sha with an
+//     identical patch-id + content signature (a true no-op rebase);
+//   - a REBOUND verdict edge bound to C, appended after the CONFIRMED edge;
+//   - the ledger committed as a #trivial bind on the `rebound` branch, so C's
+//     pushed tip tree carries BOTH edges.
+//
+// Returns (repo, branchBase, reviewedR, tipC, boundLedgerCommit). The push under
+// test is branchBase..boundLedgerCommit, so the pushed range is exactly [C, bind]
+// — both proof-bearing (C via REBOUND, bind via #trivial). file/change let a test
+// vary the diff category.
+func reboundFixture(t *testing.T, file, baseContent, changeContent string) (repo, branchBase, reviewedR, tipC, bound string) {
+	t.Helper()
+	repo = gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	// The SHARED base-of-file commit — the branch point for both R and C.
+	branchBase = commitFileT(t, repo, file, baseContent, "chore: base "+file)
+	// The reviewed commit R on main.
+	reviewedR = commitFileT(t, repo, file, changeContent, "feat: the change (reviewed)")
+
+	// Bind a CONFIRMED verdict to R (in the working-tree ledger, not yet committed).
+	appendLedgerEdgeT(t, repo, "age-rev", reviewedR)
+
+	// Diverge from the SHARED base and apply the IDENTICAL change -> tip C with the
+	// same patch-id + content signature but a distinct sha (a no-op rebase).
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC = commitFileT(t, repo, file, changeContent, "feat: the change (rebound)")
+
+	// Append the REBOUND edge for C AFTER the CONFIRMED edge, then commit the whole
+	// ledger as the #trivial bind so C's tip tree carries both edges.
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind REBOUND + lineage #trivial")
+	bound = runGitT(t, repo, "rev-parse", "HEAD")
+	return repo, branchBase, reviewedR, tipC, bound
+}
+
+// A VALID REBOUND (lineage CONFIRMED at a byte-equivalent reviewed commit, tip
+// byte-equivalent) authorizes the push. RED-first: BEFORE age-rk3r.18 the gate
+// authorized ONLY CONFIRMED, so a REBOUND tip was REFUSED — this proves the
+// wiring changed behavior.
+func TestPrePush_REBOUND_ValidLineageAuthorizes(t *testing.T) {
+	repo, base, reviewedR, tipC, bound := reboundFixture(t, "app.go", "package main\n", "package main\n\nfunc F() {}\n")
+	if tipC == reviewedR {
+		t.Fatal("rebound tip must be a distinct sha from the reviewed commit")
+	}
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, base))
+	if rc != 0 {
+		t.Fatalf("a VALID REBOUND (byte-equivalent to a CONFIRMED-reviewed commit) must authorize: got %d\n%s", rc, out)
+	}
+}
+
+// FORGE (a): the REBOUND's lineage is NOT a CONFIRMED — the only reviewed commit
+// carries a REFUTED (or absent) verdict. With no CONFIRMED-reviewed commit
+// byte-equivalent to the tip, the REBOUND is REFUSED (fail-closed).
+func TestPrePush_REBOUND_LineageNotConfirmed_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	branchBase := commitFileT(t, repo, "app.go", "package main\n", "chore: base app.go")
+	// Reviewed commit R with a NON-CONFIRMED (REFUTED) verdict edge.
+	reviewedR := commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (reviewed)")
+	ledger := filepath.Join(repo, provenancegraph.LedgerRelativePath)
+	if _, err := provenancegraph.NewStore(ledger).Append(provenancegraph.Edge{
+		FromID: "age-rev@" + reviewedR[:7], FromType: "verdict",
+		ToID: reviewedR, ToType: "commit", Relation: "wasDerivedFrom",
+		EvidenceRef: "pawl-verdict age-rev disposition=REFUTED", TrustTier: "inferred",
+		TS: "2026-07-02T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("append REFUTED edge: %v", err)
+	}
+	// Rebound tip C (byte-equivalent to R) off the SHARED base, with a REBOUND edge.
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (rebound)")
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind REBOUND (thin lineage) #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, branchBase))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose only lineage is REFUTED (not CONFIRMED) must REFUSE: got %d\n%s", rc, out)
+	}
+	// The refusal must name the REBOUND TIP itself (proving the REBOUND logic
+	// rejected it, not a stray unverified sibling commit).
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// FORGE (b): a lied proof — the tip's diff is NOT byte-equivalent to the reviewed
+// commit (a genuinely different change), yet a REBOUND edge is bound to it. Even
+// though a CONFIRMED-reviewed commit exists in the ledger, it is NOT equivalent
+// to the tip, so the REBOUND is REFUSED. (The stored patch_id_proof is never
+// consulted; equivalence is re-derived from git.)
+func TestPrePush_REBOUND_TipNotEquivalent_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	branchBase := commitFileT(t, repo, "app.go", "package main\n", "chore: base app.go")
+	// Reviewed commit R, CONFIRMED (func F).
+	reviewedR := commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: change F (reviewed)")
+	appendLedgerEdgeT(t, repo, "age-rev", reviewedR)
+	// Rebound tip C off the SHARED base applies a DIFFERENT change (func G, not F)
+	// — NOT byte-equivalent to the CONFIRMED commit.
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "app.go", "package main\n\nfunc G() {}\n", "feat: change G (forged rebound)")
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind forged REBOUND #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, branchBase))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose tip is NOT byte-equivalent to any CONFIRMED commit must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// FORGE (c1) WHITESPACE: the tip differs from the reviewed commit ONLY by leading
+// whitespace on a content line (same patch-id, different diff bytes). The byte-
+// exact content signature catches it → REFUSED. (age-rk3r.9 DEFECT 1 at the Go gate.)
+func TestPrePush_REBOUND_WhitespaceOnlyDrift_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	branchBase := commitFileT(t, repo, "a.py", "def g():\n    return 1\n", "chore: base py")
+	// Reviewed: add an UNINDENTED statement.
+	reviewedR := commitFileT(t, repo, "a.py", "def g():\n    return 1\nx = 2\n", "feat: add x (reviewed)")
+	appendLedgerEdgeT(t, repo, "age-rev", reviewedR)
+	// Rebound tip off the SHARED base: add the SAME statement INDENTED — same
+	// patch-id, different bytes.
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "a.py", "def g():\n    return 1\n    x = 2\n", "feat: add x indented (rebound)")
+
+	// Precondition: the two commits DO share a patch-id (the trap the signature must catch).
+	git := trustedGitForTest(t, repo)
+	if commitPatchIDGit(git, repo, reviewedR) != commitPatchIDGit(git, repo, tipC) {
+		t.Skip("environment did not reproduce the shared-patch-id whitespace trap")
+	}
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind whitespace-drift REBOUND #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, branchBase))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose tip differs only by whitespace (same patch-id) must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// FORGE (c2) MODE: the tip drops the reviewed commit's chmod (100755 -> 100644) —
+// same +/- text, different mode. The byte-exact content signature (mode-aware)
+// catches it → REFUSED.
+func TestPrePush_REBOUND_ModeDrift_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	// Shared base: f.dat with `data\n`, mode 100644.
+	branchBase := commitFileT(t, repo, "f.dat", "data\n", "chore: base dat")
+	// Reviewed R off the shared base: add X AND make executable (100644 -> 100755).
+	if err := os.WriteFile(filepath.Join(repo, "f.dat"), []byte("data\nX\n"), 0o644); err != nil {
+		t.Fatalf("write f.dat: %v", err)
+	}
+	runGitT(t, repo, "add", "--chmod=+x", "f.dat")
+	runGitT(t, repo, "commit", "-q", "-m", "feat: add X +chmod (reviewed)")
+	reviewedR := runGitT(t, repo, "rev-parse", "HEAD")
+	appendLedgerEdgeT(t, repo, "age-rev", reviewedR)
+	// Rebound tip off the SHARED base: SAME text, NO chmod (stays 100644) — same
+	// +/- text, different mode. -f discards the reviewed commit's on-disk exec bit
+	// so the checkout to the 100644 base is clean (we deliberately reset to base).
+	runGitT(t, repo, "checkout", "-q", "-f", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "f.dat", "data\nX\n", "feat: add X no-chmod (rebound)")
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind mode-drift REBOUND #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, branchBase))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose tip drops the reviewed chmod must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// FORGE (c3) NO-NEWLINE: the tip drops the final newline (same patch-id, same
+// +/- text, different diff — git's `\ No newline` marker). The denylist content
+// signature keeps that marker byte-exact → REFUSED.
+func TestPrePush_REBOUND_NoNewlineDrift_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	branchBase := commitFileT(t, repo, "f.dat", "data\n", "chore: base dat")
+	// Reviewed R off the shared base: add a NEWLINE-TERMINATED line.
+	reviewedR := commitFileT(t, repo, "f.dat", "data\nX\n", "feat: add X newline (reviewed)")
+	appendLedgerEdgeT(t, repo, "age-rev", reviewedR)
+	// Rebound tip off the SHARED base: add the SAME line WITHOUT a trailing newline.
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	if err := os.WriteFile(filepath.Join(repo, "f.dat"), []byte("data\nX"), 0o644); err != nil {
+		t.Fatalf("write no-newline f.dat: %v", err)
+	}
+	runGitT(t, repo, "add", "f.dat")
+	runGitT(t, repo, "commit", "-q", "-m", "feat: add X no-final-newline (rebound)")
+	tipC := runGitT(t, repo, "rev-parse", "HEAD")
+
+	// Precondition: the patch-ids MATCH (the trap the byte-exact signature must catch).
+	git := trustedGitForTest(t, repo)
+	if commitPatchIDGit(git, repo, reviewedR) != commitPatchIDGit(git, repo, tipC) {
+		t.Skip("environment did not reproduce the shared-patch-id no-newline trap")
+	}
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind no-newline REBOUND #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, branchBase))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose tip drops the final newline (same patch-id) must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// A bare REBOUND edge with NO CONFIRMED lineage anywhere in the ledger (the
+// simplest forge: just write a REBOUND edge on an unreviewed commit) is REFUSED.
+func TestPrePush_REBOUND_NoConfirmedLineageAnywhere_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	base := commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	code := commitFileT(t, repo, "app.go", "package main\n", "feat: unreviewed change")
+	// Only a REBOUND edge — no CONFIRMED edge exists in the ledger at all.
+	appendReboundEdgeT(t, repo, "age-reb", code)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind bare REBOUND #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, base))
+	if rc != 1 {
+		t.Fatalf("a REBOUND with no CONFIRMED lineage anywhere must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, code[:12]) {
+		t.Fatalf("refusal must name the unauthorized commit %s:\n%s", code[:12], out)
+	}
+}
+
+// appendConfirmedEdgeRawToID appends a CONFIRMED verdict edge whose to_id is an
+// ARBITRARY raw string (not necessarily a hex commit id) via the production
+// writer, WITHOUT committing. It exists to build the refuter's exact attack: a
+// crafted CONFIRMED lineage edge whose to_id is a REVISION EXPRESSION ("HEAD~1").
+// The writer (Store.Append / ValidateFields) only requires to_id non-empty, so a
+// non-hex to_id is persistable — which is precisely why the GATE must enforce the
+// hex-commit-id + object-resolution discipline (a permissive writer is not the
+// boundary; the gate is).
+func appendConfirmedEdgeRawToID(t *testing.T, repo, bead, rawToID string) {
+	t.Helper()
+	ledger := filepath.Join(repo, provenancegraph.LedgerRelativePath)
+	if _, err := provenancegraph.NewStore(ledger).Append(provenancegraph.Edge{
+		FromID: bead + "@" + "fakehed", FromType: "verdict",
+		ToID: rawToID, ToType: "commit", Relation: "wasDerivedFrom",
+		EvidenceRef: "pawl-verdict " + bead + " disposition=CONFIRMED", TrustTier: "inferred",
+		TS: "2026-07-02T00:00:00Z",
+	}); err != nil {
+		t.Fatalf("append raw-to_id CONFIRMED edge: %v", err)
+	}
+}
+
+// FORGE (refuter fix, age-rk3r.18): a crafted CONFIRMED lineage edge whose to_id
+// is a REVISION EXPRESSION ("HEAD~1"), NOT a hex commit id, must NOT authorize a
+// REBOUND on an unreviewed commit C. The pre-fix REBOUND path fed the lineage
+// to_id straight to `git show`, which happily resolves "HEAD~1" and — because its
+// diff patch-id/content-sig matches the tip's — certified C fail-open. The direct
+// CONFIRMED path always rejected the non-hex to_id (shaBindsCommit); the REBOUND
+// path must apply the IDENTICAL hex-commit-id + object-resolution discipline.
+// RED-first: proven to authorize (exit 0) against the pre-fix code; REFUSES after.
+func TestPrePush_REBOUND_NonHexLineageRefAlias_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	base := commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	// The genuinely-reviewed prior work R is on the SHARED base so HEAD~1 (from the
+	// pushed tip's history) has the SAME diff as the unreviewed tip C — the attack
+	// only works when some reachable revision is byte-equivalent to C.
+	branchBase := commitFileT(t, repo, "app.go", "package main\n", "chore: base app.go")
+	// R: the change, on main — but DELIBERATELY given NO CONFIRMED verdict (only the
+	// crafted ref-alias edge below points "at" it, via HEAD~1).
+	commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (unreviewed R)")
+	// Unreviewed tip C off the SHARED base applies the IDENTICAL change (byte-
+	// equivalent to R, i.e. to HEAD~1 of C's own history once the bind commit lands).
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (unreviewed C)")
+	// CRAFTED: a "CONFIRMED" edge whose lineage to_id is the REVISION EXPRESSION
+	// "HEAD~1" (which, from the bind commit, resolves to tipC's parent-line — a
+	// byte-equivalent commit) + a REBOUND edge bound to the unreviewed tipC.
+	appendConfirmedEdgeRawToID(t, repo, "age-fake", "HEAD~1")
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind ref-alias forge #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, base))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose CONFIRMED lineage to_id is a REVISION EXPRESSION (HEAD~1), not a hex commit id, must REFUSE (fail-closed): got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// FORGE (refuter fix, age-rk3r.18): a lineage to_id that is a NON-HEX junk string
+// (not a revision, just garbage) must also be rejected — the hex predicate is the
+// first gate. Guards the isHexToken branch of hexCommitObjectID directly.
+func TestPrePush_REBOUND_NonHexJunkLineage_Refused(t *testing.T) {
+	repo := gitInitRepoT(t)
+	base := commitFileT(t, repo, "README.md", "hi\n", "chore: init")
+	branchBase := commitFileT(t, repo, "app.go", "package main\n", "chore: base app.go")
+	commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (unreviewed R)")
+	runGitT(t, repo, "checkout", "-q", "-b", "rebound", branchBase)
+	tipC := commitFileT(t, repo, "app.go", "package main\n\nfunc F() {}\n", "feat: the change (unreviewed C)")
+	// A non-hex junk lineage to_id (":/feat" is a git :/message revision; "zzzz…"
+	// is pure junk) — both must be rejected by the hex predicate.
+	appendConfirmedEdgeRawToID(t, repo, "age-fake", "zzzzzzzzzzzz")
+	appendReboundEdgeT(t, repo, "age-reb", tipC)
+	runGitT(t, repo, "add", provenancegraph.LedgerRelativePath)
+	runGitT(t, repo, "commit", "-q", "-m", "chore(provenance): bind junk-lineage forge #trivial")
+	bound := runGitT(t, repo, "rev-parse", "HEAD")
+
+	rc, out := runGateT(t, repo, pushLine("refs/heads/main", bound, base))
+	if rc != 1 {
+		t.Fatalf("a REBOUND whose CONFIRMED lineage to_id is non-hex junk must REFUSE: got %d\n%s", rc, out)
+	}
+	if !strings.Contains(out, tipC[:12]) {
+		t.Fatalf("refusal must name the unauthorized rebound tip %s:\n%s", tipC[:12], out)
+	}
+}
+
+// hexCommitObjectID unit coverage: a hex commit id resolves to its full oid; a
+// revision expression, a non-committish, and non-hex junk all reject ("").
+func TestHexCommitObjectID(t *testing.T) {
+	repo := gitInitRepoT(t)
+	commitFileT(t, repo, "a.txt", "1\n", "chore: c1")
+	c2 := commitFileT(t, repo, "a.txt", "1\n2\n", "chore: c2")
+	git, err := trustedGit(repo)
+	if err != nil {
+		t.Fatalf("trustedGit: %v", err)
+	}
+	// A full hex commit id resolves to itself.
+	if got := hexCommitObjectID(git, repo, c2); got != c2 {
+		t.Fatalf("full hex id: got %q, want %q", got, c2)
+	}
+	// A >=7-char hex PREFIX resolves to the full oid (binds it).
+	if got := hexCommitObjectID(git, repo, c2[:10]); got != c2 {
+		t.Fatalf("hex prefix: got %q, want %q", got, c2)
+	}
+	// Revision expressions must be REJECTED (never treated as a commit).
+	for _, rev := range []string{"HEAD", "HEAD~1", "HEAD^", "main", ":/chore", "@"} {
+		if got := hexCommitObjectID(git, repo, rev); got != "" {
+			t.Fatalf("revision expression %q must reject, got %q", rev, got)
+		}
+	}
+	// Non-hex junk and too-short hex reject.
+	for _, junk := range []string{"zzzzzzz", "abc", "", "  ", "deadbee-"} {
+		if got := hexCommitObjectID(git, repo, junk); got != "" {
+			t.Fatalf("junk %q must reject, got %q", junk, got)
+		}
+	}
+	// A hex string that does not resolve to any object rejects.
+	if got := hexCommitObjectID(git, repo, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"); got != "" {
+		t.Fatalf("non-existent hex oid must reject, got %q", got)
+	}
+}
+
+// Unit-level coverage of the authorization predicate: it accepts a REBOUND when a
+// byte-equivalent CONFIRMED lineage exists, and rejects when the disposition is
+// bare REBOUND with no equivalent CONFIRMED. Exercises reboundEdgeBoundTo +
+// confirmedVerdictCommitSHAs wiring directly.
+func TestReboundEdgeBoundTo_ExactDispositionToken(t *testing.T) {
+	sha := "abc1234def5678"
+	rebound := provenancegraph.Edge{
+		FromID: "age-r@" + sha[:7], FromType: "verdict", ToID: sha, ToType: "commit",
+		Relation: "wasDerivedFrom", EvidenceRef: "pawl-verdict age-r disposition=REBOUND",
+	}
+	if !reboundEdgeBoundTo([]provenancegraph.Edge{rebound}, sha) {
+		t.Fatal("a REBOUND edge bound to the sha must be recognized")
+	}
+	// A CONFIRMED edge is NOT a REBOUND edge.
+	confirmed := rebound
+	confirmed.EvidenceRef = "pawl-verdict age-r disposition=CONFIRMED"
+	if reboundEdgeBoundTo([]provenancegraph.Edge{confirmed}, sha) {
+		t.Fatal("a CONFIRMED edge must NOT be recognized as a REBOUND edge")
+	}
+	// A substring/near-miss token must NOT match (exact-token discipline).
+	near := rebound
+	near.EvidenceRef = "pawl-verdict age-r disposition=REBOUNDLY"
+	if reboundEdgeBoundTo([]provenancegraph.Edge{near}, sha) {
+		t.Fatal("disposition=REBOUNDLY must NOT match the exact REBOUND token")
+	}
+	// FIRST-token contract (the CI-parity anchor, age-rk3r.18): a double-disposition
+	// edge whose FIRST token is REFUTED is NOT a REBOUND (parseDisposition returns
+	// the first token). The CI backstop's jq dispvalue must mirror this exactly.
+	doubleReb := rebound
+	doubleReb.EvidenceRef = "pawl-verdict age-r disposition=REFUTED disposition=REBOUND"
+	if reboundEdgeBoundTo([]provenancegraph.Edge{doubleReb}, sha) {
+		t.Fatal("disposition=REFUTED disposition=REBOUND must NOT match REBOUND (first token wins)")
+	}
+	if confirmedVerdictEdgeIn([]provenancegraph.Edge{doubleReb}, sha) {
+		t.Fatal("a double-disposition REBOUND edge must NOT be a CONFIRMED either")
+	}
+	// The symmetric CONFIRMED case: first token REFUTED ⇒ not a CONFIRMED.
+	doubleConf := rebound
+	doubleConf.EvidenceRef = "pawl-verdict age-r disposition=REFUTED disposition=CONFIRMED"
+	if confirmedVerdictEdgeIn([]provenancegraph.Edge{doubleConf}, sha) {
+		t.Fatal("disposition=REFUTED disposition=CONFIRMED must NOT match CONFIRMED (first token wins)")
+	}
+	if got := confirmedVerdictCommitSHAs([]provenancegraph.Edge{doubleConf}); len(got) != 0 {
+		t.Fatalf("a double-disposition (first=REFUTED) edge must not be a lineage candidate, got %v", got)
+	}
+	// confirmedVerdictCommitSHAs collects only CONFIRMED to_ids, deduped.
+	shas := confirmedVerdictCommitSHAs([]provenancegraph.Edge{confirmed, confirmed, rebound})
+	if len(shas) != 1 || shas[0] != sha {
+		t.Fatalf("confirmedVerdictCommitSHAs = %v, want [%s]", shas, sha)
+	}
+}
