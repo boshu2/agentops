@@ -19,7 +19,6 @@ primitive — no artifact is produced unless it advances behavior toward accepta
 - cli/**
 - evals/**
 - docs/**
-- hooks/**
 - lib/**
 - scripts/**
 - schemas/**
@@ -68,8 +67,8 @@ first failing test against the port interface, not an adapter internal.
 
 ## Validation Commands
 
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao autodev validate --file ../PROGRAM.md --json`
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./cmd/ao ./internal/autodev`
+- `cd cli && env -u AGENTOPS_RPI_RUNTIME go run -tags legacy ./cmd/ao autodev validate --file ../PROGRAM.md --json` — the `autodev` command surface is archived behind the `legacy` build tag; the shipped spine binary does not carry it
+- `cd cli && env -u AGENTOPS_RPI_RUNTIME go test -tags legacy ./cmd/ao ./internal/autodev`
 - `cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./internal/domain/... ./internal/ports/... ./internal/adapters/...`
 - `env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict`
 - `bash scripts/check-worktree-disposition.sh`
@@ -77,7 +76,7 @@ first failing test against the port interface, not an adapter internal.
 
 ## Decision Policy
 
-- Start from `BEADS_DIR=$PWD/_beads br ready --json` or a user-selected bead; create a discovered bead
+- Start from `BEADS_DIR="$(ao beads dir)" br ready --json` or a user-selected bead; create a discovered bead
   before editing when the work is new. A bead is not ready to work until its
   acceptance examples are testable Given/When/Then rows.
 - For Nightly, evolve, or RPI-auto maintenance work, inspect the last 14 days of
@@ -144,4 +143,4 @@ two or more slices.
 - Every foreign worktree is marked merged, preserved, exported, or deleted.
 - Evidence is recorded in the bead and `.agents/ratchet/`; learnings are promoted
   only if they cleared the promotion ratchet bar.
-- New follow-up work discovered during the cycle is tracked in bd.
+- New follow-up work discovered during the cycle is tracked in br.

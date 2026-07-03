@@ -61,7 +61,7 @@ Always report mismatches; never silently prefer a lower-precedence doc over exec
 
 ```
 skills/           Skill definitions (SSOT — edit here, never ~/.claude/skills/)
-skills-codex/     Checked-in Codex twins; manually mirrored (see AGENTS-CODEX.md)
+skills-codex/     Checked-in Codex twins; parity auto-synced, bespoke hand-kept (see AGENTS-CODEX.md)
 cli/              Go CLI (ao) — cmd/ao, internal/, gates, corpus, RPI legacy lane
 scripts/          Release, validation, regen (~280 shell tools)
 tests/            Bats gate tests, integration, e2e
@@ -101,7 +101,7 @@ When in doubt about HOW the work flows, read [`docs/cdlc.md`](docs/cdlc.md) and 
 
 Three drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI command), across the 6 Bounded Contexts. Edit the sources (`skills/**/SKILL.md`, `.claude/workflows/*.js` + the `workflows:` ledger, `cli/cmd/ao/`), then `make regen-all`; `make regen-check` is the drift gate. Generated projections must not be hand-edited; curated routers may be edited deliberately, with count markers and reference checks left to gates.
 
-- **Skills** — generated: `registry.json` · `docs/reference/agentops-skill-domain-map.md`; curated/gated: `docs/SKILLS.md` (router) · `skills/SKILL-TIERS.md` (tier ledger) · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it). **Codex twins are NOT regenerated** — after editing `skills/<name>/`, manually mirror into `skills-codex/<name>/` then `scripts/regen-codex-hashes.sh --only <name>` (detail: [`AGENTS-CODEX.md`](AGENTS-CODEX.md)).
+- **Skills** — generated: `registry.json` · `docs/reference/agentops-skill-domain-map.md`; curated/gated: `docs/SKILLS.md` (router) · `skills/SKILL-TIERS.md` (tier ledger) · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it). **Codex twins:** parity-only twins are auto-refreshed from `skills/<name>/` by `make regen-all` / `scripts/codex-sync.sh` (hash bookkeeping: `scripts/regen-codex-hashes.sh --only <name>`); bespoke and pointer twins are hand-maintained per `skills-codex-overrides/catalog.json` and never auto-mirrored (detail: [`AGENTS-CODEX.md`](AGENTS-CODEX.md)).
 - **Workflows** — `registry.json` `workflows[]` (Claude-only `.claude/workflows/*.js`); sourced from the `workflows:` section of `docs/contracts/skill-dispositions.yaml`. Drift gate: `scripts/check-workflow-governance.sh`. No Codex twin.
 - **Tools** — `cli/docs/COMMANDS.md` · `docs/cli-surface.{json,md}` (generated from `cli/cmd/ao/`).
 

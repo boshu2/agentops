@@ -33,7 +33,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 ```bash
 scripts/sync-skill-counts.sh
 ```
-This updates counts in SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md.
+This validates `skills/SKILL-TIERS.md` (the SSOT — it must already carry a row per skill directory) and patches the count-bearing surfaces: SKILL-TIERS.md headers, PRODUCT.md, docs/documentation-index.md, docs/GLOSSARY.md, and the ASCII diagrams in docs/agentops-system-map.md / docs/agentops-brief.md (same-digit-width drift auto-patched; width changes need a hand re-pad). README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and docs/index.md intentionally carry no hard-coded counts.
 
 **Every reference file must be linked.** If a file exists in a skill's `references/` directory, the skill's SKILL.md must link to it via markdown link or Read instruction. Run `heal.sh --strict` to check.
 
