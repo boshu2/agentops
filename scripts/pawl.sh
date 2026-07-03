@@ -893,7 +893,11 @@ cmd_route() {
   # A fresh-context verdict is recorded honestly; a high-irreversibility door (pawl-verdict.sh /
   # the push gate) decides whether that tier is sufficient.
   local mode="multi-model"; [ "$TIER" = "fresh" ] && mode="fresh-context"
-  local head; head="$(git rev-parse HEAD)"
+  # age-33nx: pawl-review exports PAWL_ROUTE_HEAD as the commit its packet was
+  # built from (walked back over #trivial provenance-bind commits); bind the routed
+  # verdict to THAT commit so packet and binding can never disagree. Absent env
+  # (direct route callers) keeps the live-HEAD behavior.
+  local head; head="${PAWL_ROUTE_HEAD:-$(git rev-parse HEAD)}"
   if [ "$disposition" = "CONFIRMED" ]; then
     # Record ONLY the CONFIRMED enabled refuters; an unavailable/disabled pane is omitted, never
     # recorded as a false CONFIRM.
