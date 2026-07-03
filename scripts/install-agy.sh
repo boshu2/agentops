@@ -3,7 +3,7 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.1.0
+#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.2.0
 
 set -euo pipefail
 shopt -s lastpipe 2>/dev/null || true
@@ -26,7 +26,7 @@ Install the AgentOps Gemini/Antigravity image bundle.
 
 Usage:
   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.1.0
+  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.2.0
 
 Options:
   --ref <ref>       Git ref to install. Defaults to AGENTOPS_INSTALL_REF or main.
