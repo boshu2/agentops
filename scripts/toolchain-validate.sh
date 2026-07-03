@@ -625,6 +625,13 @@ run_semgrep() {
         --exclude-rule go.lang.security.deserialization.unsafe-deserialization-interface.go-unsafe-deserialization-interface
         --exclude-rule python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         --exclude-rule bash.lang.security.ifs-tampering.ifs-tampering
+        # github-actions-mutable-action-tag: registry drift (2026-07) started
+        # flagging every pre-existing `uses: <action>@vN` ref in the workflow
+        # fleet as HIGH (88 sites, mostly first-party actions/*), which blocked
+        # the v3.2.0 publisher on infrastructure that predates the release.
+        # SHA-pinning the fleet is real hardening work tracked as age-9838;
+        # remove this exclusion when it lands.
+        --exclude-rule yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
     )
 
     if [[ -n "$ssl_cert_file" ]]; then

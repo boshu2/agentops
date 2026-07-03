@@ -149,8 +149,8 @@ age-a9iv), `AGENTOPS_LEGACY=1` (legacy build tag), `AO_BIN` (pin the trusted bin
 
 **Build-tag archive mechanism (ADR-0012)** — a de-facto configuration axis: satellite
 command sets are archived behind `//go:build flywheel` and `//go:build legacy`
-(17 tag-gated files in `cli/cmd/ao/`). The default build is the **spine** (corpus/flywheel
-+ RPI/factory commands omitted); `make build-flywheel` restores them; hidden
+(17 tag-gated files in `cli/cmd/ao/`). The default build is the **spine** (corpus/flywheel +
+RPI/factory commands omitted); `make build-flywheel` restores them; hidden
 `ao buildtags` introspects which build you hold. *Footgun with a track record:* validators
 that build spine-only miss archived-command references (hit twice — age-sydq, age-zei7).
 

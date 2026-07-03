@@ -132,8 +132,12 @@ jobs:
           # golangci-lint
           GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
 
-          # trivy
-          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          # trivy — pinned tag, download-then-execute. Piping a mutable-branch
+          # install script into sh was the semgrep gha-curl-pipe-shell CRITICAL
+          # that blocked the v3.2.0 publisher (supply-chain: a hijacked script
+          # would run unread).
+          curl -sSfL -o /tmp/trivy-install.sh https://raw.githubusercontent.com/aquasecurity/trivy/v0.72.0/contrib/install.sh
+          sh /tmp/trivy-install.sh -b /usr/local/bin v0.72.0
 
           # hadolint
           curl -sSfL -o /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64"

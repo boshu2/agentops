@@ -19,7 +19,7 @@
 > existing tools BEFORE writing code** — this epic never did that against cm, the tool
 > literally built for it, one `cm context` away.
 >
-> _Original (now-superseded) draft contract retained below for the record._
+> *Original (now-superseded) draft contract retained below for the record.*
 
 > Status: DRAFT for Bo's ratification (2026-06-28). Forcing function demanded by the
 > agile-founder council — the decision avoided for 8 months. Retrieval was never the
