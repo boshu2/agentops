@@ -416,3 +416,4 @@ For onboarding-style research ("what does this do?", new repo orientation), foll
 - [../shared/references/ralph-loop-contract.md](../shared/references/ralph-loop-contract.md)
 - [references/codebase-archaeology.md](references/codebase-archaeology.md) — Systematic codebase exploration for onboarding
 - [references/software-research.md](references/software-research.md) — Research tools via source code, GitHub, and web
+- [references/structural-graph-navigation.md](references/structural-graph-navigation.md) — graphify Tier 1b recipe + the REQUIRED vocab-expansion step

@@ -374,78 +374,97 @@ func computeVerifyStats(edges []provenancegraph.Edge, days int, now time.Time) v
 		r.RefuteRate = float64(refuted) / float64(r.VerdictEvents)
 	}
 
-	// Rounds distribution (v1.1).
-	if roundsN > 0 {
-		r.Rounds.Available = true
-		r.Rounds.RecordsWithRounds = roundsN
-		for k, v := range roundCounts {
-			r.Rounds.Distribution = append(r.Rounds.Distribution, roundBucket{Rounds: k, Count: v})
+	r.Rounds = buildRoundsStats(roundCounts, roundsN)
+	r.Duration = buildDurationStats(durations)
+	r.Degraded = buildDegradedStats(famSeen, famTotals, famDegraded)
+	r.ReReview = buildReReviewStats(beadConfirmed, beadConfirmedCommits)
+	r.Trend = buildTrendStats(days, since, dayBuckets)
+
+	return r
+}
+
+// buildRoundsStats assembles the v1.1 rounds-per-verdict distribution section.
+func buildRoundsStats(roundCounts map[int]int, roundsN int) roundsStats {
+	if roundsN == 0 {
+		return roundsStats{Reason: noV11Reason("rounds")}
+	}
+	s := roundsStats{Available: true, RecordsWithRounds: roundsN}
+	for k, v := range roundCounts {
+		s.Distribution = append(s.Distribution, roundBucket{Rounds: k, Count: v})
+	}
+	sort.Slice(s.Distribution, func(i, j int) bool {
+		return s.Distribution[i].Rounds < s.Distribution[j].Rounds
+	})
+	return s
+}
+
+// buildDurationStats assembles the v1.1 wall-time summary. Sorts its input.
+func buildDurationStats(durations []float64) durationStats {
+	if len(durations) == 0 {
+		return durationStats{Reason: noV11Reason("duration_s")}
+	}
+	sort.Float64s(durations)
+	return durationStats{
+		Available: true,
+		Count:     len(durations),
+		MedianS:   median(durations),
+		P90S:      percentileNearestRank(durations, 0.90),
+	}
+}
+
+// buildDegradedStats assembles the v1.1 degraded-share-by-family section.
+func buildDegradedStats(famSeen bool, famTotals, famDegraded map[string]int) degradedStats {
+	if !famSeen {
+		return degradedStats{Reason: noV11Reason("reviewer_family")}
+	}
+	s := degradedStats{Available: true, ByReviewerFamily: map[string]familyDegraded{}}
+	for fam, total := range famTotals {
+		d := famDegraded[fam]
+		share := 0.0
+		if total > 0 {
+			share = float64(d) / float64(total)
 		}
-		sort.Slice(r.Rounds.Distribution, func(i, j int) bool {
-			return r.Rounds.Distribution[i].Rounds < r.Rounds.Distribution[j].Rounds
-		})
-	} else {
-		r.Rounds.Reason = noV11Reason("rounds")
+		s.ByReviewerFamily[fam] = familyDegraded{Total: total, Degraded: d, Share: share}
 	}
+	return s
+}
 
-	// Duration median/p90 (v1.1).
-	if len(durations) > 0 {
-		sort.Float64s(durations)
-		r.Duration.Available = true
-		r.Duration.Count = len(durations)
-		r.Duration.MedianS = median(durations)
-		r.Duration.P90S = percentileNearestRank(durations, 0.90)
-	} else {
-		r.Duration.Reason = noV11Reason("duration_s")
-	}
-
-	// Degraded share by reviewer_family (v1.1).
-	if famSeen {
-		r.Degraded.Available = true
-		r.Degraded.ByReviewerFamily = map[string]familyDegraded{}
-		for fam, total := range famTotals {
-			d := famDegraded[fam]
-			share := 0.0
-			if total > 0 {
-				share = float64(d) / float64(total)
-			}
-			r.Degraded.ByReviewerFamily[fam] = familyDegraded{Total: total, Degraded: d, Share: share}
-		}
-	} else {
-		r.Degraded.Reason = noV11Reason("reviewer_family")
-	}
-
-	// Re-review (rebase-waste proxy): beads with >1 CONFIRMED verdict.
+// buildReReviewStats assembles the rebase-waste proxy: beads with more than
+// one CONFIRMED verdict, sorted by bead id.
+func buildReReviewStats(beadConfirmed map[string]int, beadConfirmedCommits map[string]map[string]bool) reReviewStats {
+	var s reReviewStats
 	for bead, c := range beadConfirmed {
 		if c >= 2 {
-			r.ReReview.RereviewedBeads++
-			r.ReReview.RedundantConfirmations += c - 1
-			r.ReReview.Beads = append(r.ReReview.Beads, reReviewedBead{
+			s.RereviewedBeads++
+			s.RedundantConfirmations += c - 1
+			s.Beads = append(s.Beads, reReviewedBead{
 				Bead:            bead,
 				Confirmed:       c,
 				DistinctCommits: len(beadConfirmedCommits[bead]),
 			})
 		}
 	}
-	sort.Slice(r.ReReview.Beads, func(i, j int) bool { return r.ReReview.Beads[i].Bead < r.ReReview.Beads[j].Bead })
-	if r.ReReview.Beads == nil {
-		r.ReReview.Beads = []reReviewedBead{}
+	sort.Slice(s.Beads, func(i, j int) bool { return s.Beads[i].Bead < s.Beads[j].Bead })
+	if s.Beads == nil {
+		s.Beads = []reReviewedBead{}
 	}
+	return s
+}
 
-	// Trend.
-	r.Trend.Days = days
+// buildTrendStats assembles the per-day verdict trend over the trailing window.
+func buildTrendStats(days int, since time.Time, dayBuckets map[string]*trendDay) trendStats {
+	s := trendStats{Days: days}
 	if days > 0 {
-		r.Trend.Since = since.UTC().Format(time.RFC3339)
+		s.Since = since.UTC().Format(time.RFC3339)
 	}
 	for _, td := range dayBuckets {
-		r.Trend.ByDay = append(r.Trend.ByDay, *td)
+		s.ByDay = append(s.ByDay, *td)
 	}
-	sort.Slice(r.Trend.ByDay, func(i, j int) bool { return r.Trend.ByDay[i].Date < r.Trend.ByDay[j].Date })
-	if r.Trend.ByDay == nil {
-		r.Trend.ByDay = []trendDay{}
+	sort.Slice(s.ByDay, func(i, j int) bool { return s.ByDay[i].Date < s.ByDay[j].Date })
+	if s.ByDay == nil {
+		s.ByDay = []trendDay{}
 	}
-
-	return r
+	return s
 }
 
 // renderVerifyStatsText writes the human-readable cost-of-verified-done report.

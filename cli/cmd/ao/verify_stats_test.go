@@ -369,3 +369,137 @@ func TestRunVerifyStats_ThroughCommand(t *testing.T) {
 		}
 	}
 }
+
+// --- Builder unit tests (the computeVerifyStats gocyclo split, age-hl9q) ---
+// Each builder owns one report section; these pin the exact section shapes the
+// split must preserve: availability flags, unavailability reasons, sort orders,
+// and the arithmetic (median/p90, degraded share, redundant confirmations).
+
+func TestBuildRoundsStats_SortedDistributionAndEmptyReason(t *testing.T) {
+	s := buildRoundsStats(map[int]int{3: 1, 1: 2}, 3)
+	if !s.Available {
+		t.Fatalf("Available = false, want true")
+	}
+	if s.RecordsWithRounds != 3 {
+		t.Fatalf("RecordsWithRounds = %d, want 3", s.RecordsWithRounds)
+	}
+	want := []roundBucket{{Rounds: 1, Count: 2}, {Rounds: 3, Count: 1}}
+	if len(s.Distribution) != len(want) {
+		t.Fatalf("Distribution len = %d, want %d", len(s.Distribution), len(want))
+	}
+	for i, b := range want {
+		if s.Distribution[i] != b {
+			t.Fatalf("Distribution[%d] = %+v, want %+v", i, s.Distribution[i], b)
+		}
+	}
+
+	empty := buildRoundsStats(map[int]int{}, 0)
+	if empty.Available {
+		t.Fatalf("empty: Available = true, want false")
+	}
+	if !strings.Contains(empty.Reason, "rounds") {
+		t.Fatalf("empty: Reason = %q, want mention of rounds", empty.Reason)
+	}
+}
+
+func TestBuildDurationStats_ExactMedianAndNearestRankP90(t *testing.T) {
+	s := buildDurationStats([]float64{5, 1, 3, 2, 4})
+	if !s.Available || s.Count != 5 {
+		t.Fatalf("Available/Count = %v/%d, want true/5", s.Available, s.Count)
+	}
+	if s.MedianS != 3 {
+		t.Fatalf("MedianS = %v, want 3", s.MedianS)
+	}
+	// nearest-rank p90 over n=5: rank = ceil(0.9*5) = 5 -> sorted[4] = 5.
+	if s.P90S != 5 {
+		t.Fatalf("P90S = %v, want 5", s.P90S)
+	}
+
+	empty := buildDurationStats(nil)
+	if empty.Available {
+		t.Fatalf("empty: Available = true, want false")
+	}
+	if !strings.Contains(empty.Reason, "duration_s") {
+		t.Fatalf("empty: Reason = %q, want mention of duration_s", empty.Reason)
+	}
+}
+
+func TestBuildDegradedStats_ExactShare(t *testing.T) {
+	s := buildDegradedStats(true, map[string]int{"codex": 4}, map[string]int{"codex": 1})
+	if !s.Available {
+		t.Fatalf("Available = false, want true")
+	}
+	got, ok := s.ByReviewerFamily["codex"]
+	if !ok {
+		t.Fatalf("ByReviewerFamily missing codex: %+v", s.ByReviewerFamily)
+	}
+	if got.Total != 4 || got.Degraded != 1 || math.Abs(got.Share-0.25) > 1e-9 {
+		t.Fatalf("codex = %+v, want {Total:4 Degraded:1 Share:0.25}", got)
+	}
+
+	unseen := buildDegradedStats(false, nil, nil)
+	if unseen.Available {
+		t.Fatalf("unseen: Available = true, want false")
+	}
+	if !strings.Contains(unseen.Reason, "reviewer_family") {
+		t.Fatalf("unseen: Reason = %q, want mention of reviewer_family", unseen.Reason)
+	}
+}
+
+func TestBuildReReviewStats_RedundantConfirmationsSorted(t *testing.T) {
+	confirmed := map[string]int{"age-a": 3, "age-b": 1, "age-c": 2}
+	commits := map[string]map[string]bool{
+		"age-a": {fxSHA1: true, fxSHA2: true},
+		"age-c": {fxSHA3: true},
+	}
+	s := buildReReviewStats(confirmed, commits)
+	if s.RereviewedBeads != 2 {
+		t.Fatalf("RereviewedBeads = %d, want 2 (age-b has a single CONFIRMED)", s.RereviewedBeads)
+	}
+	if s.RedundantConfirmations != 3 {
+		t.Fatalf("RedundantConfirmations = %d, want 3 ((3-1)+(2-1))", s.RedundantConfirmations)
+	}
+	want := []reReviewedBead{
+		{Bead: "age-a", Confirmed: 3, DistinctCommits: 2},
+		{Bead: "age-c", Confirmed: 2, DistinctCommits: 1},
+	}
+	if len(s.Beads) != len(want) {
+		t.Fatalf("Beads len = %d, want %d", len(s.Beads), len(want))
+	}
+	for i, b := range want {
+		if s.Beads[i] != b {
+			t.Fatalf("Beads[%d] = %+v, want %+v (sorted by bead id)", i, s.Beads[i], b)
+		}
+	}
+
+	none := buildReReviewStats(map[string]int{"age-x": 1}, nil)
+	if none.Beads == nil || len(none.Beads) != 0 {
+		t.Fatalf("no re-reviews: Beads = %#v, want non-nil empty slice (JSON [])", none.Beads)
+	}
+}
+
+func TestBuildTrendStats_SortedByDateAndWindowStamp(t *testing.T) {
+	since := fixedNow.AddDate(0, 0, -7)
+	buckets := map[string]*trendDay{
+		"2026-07-01": {Date: "2026-07-01", Verdicts: 2, Confirmed: 1, Refuted: 1},
+		"2026-06-29": {Date: "2026-06-29", Verdicts: 1, Confirmed: 1},
+	}
+	s := buildTrendStats(7, since, buckets)
+	if s.Days != 7 {
+		t.Fatalf("Days = %d, want 7", s.Days)
+	}
+	if s.Since != since.UTC().Format(time.RFC3339) {
+		t.Fatalf("Since = %q, want %q", s.Since, since.UTC().Format(time.RFC3339))
+	}
+	if len(s.ByDay) != 2 || s.ByDay[0].Date != "2026-06-29" || s.ByDay[1].Date != "2026-07-01" {
+		t.Fatalf("ByDay = %+v, want ascending dates [2026-06-29 2026-07-01]", s.ByDay)
+	}
+
+	allTime := buildTrendStats(0, time.Time{}, map[string]*trendDay{})
+	if allTime.Since != "" {
+		t.Fatalf("all-time Since = %q, want empty (days<=0 leaves the window unstamped)", allTime.Since)
+	}
+	if allTime.ByDay == nil || len(allTime.ByDay) != 0 {
+		t.Fatalf("all-time ByDay = %#v, want non-nil empty slice (JSON [])", allTime.ByDay)
+	}
+}

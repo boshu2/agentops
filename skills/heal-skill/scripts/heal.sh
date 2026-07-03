@@ -44,6 +44,26 @@ if [[ -f "$DISPOSITIONS_YAML" ]]; then
   ' "$DISPOSITIONS_YAML" | sort -u)"
 fi
 
+# Full `ao` command surface for Check 8 (INVALID_AO_CMD), resolved ONCE at
+# startup — Check 8 runs per skill and must not rebuild per call. COMMANDS.md
+# and the default cli/bin/ao document only the spine build; skills citing
+# archived commands (`ao harvest`, `ao defrag` — //go:build flywheel|legacy,
+# ADR-0012) false-fail against them (the cli-snippets / body-refs escape class,
+# third instance). The shared snippet resolver builds with the archive tags.
+# Empty when the lib or Go toolchain is unavailable (fixture repos, standalone
+# installs); Check 8 then falls back to the legacy COMMANDS.md/binary chain.
+HEAL_FULL_AO_CMDS=""
+if [[ -f "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" ]]; then
+  _heal_full_bin="$(
+    # shellcheck source=/dev/null
+    . "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" 2>/dev/null \
+      && ao_snippet_resolve_bin "$REPO_ROOT" 2>/dev/null
+  )" || _heal_full_bin=""
+  if [[ -n "$_heal_full_bin" && -x "$_heal_full_bin" ]]; then
+    HEAL_FULL_AO_CMDS="$("$_heal_full_bin" help 2>&1 | grep -oE '^[[:space:]]+[a-z][-a-z]*' | tr -d ' ' | sort -u || true)"
+  fi
+fi
+
 # If no targets, scan all skill dirs (skills/ and skills-codex/)
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
   for d in "$REPO_ROOT"/skills/*/; do
@@ -371,11 +391,13 @@ for skill_dir in "${TARGETS[@]}"; do
     fi
   done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | sed -E 's|https?://[^[:space:]`"]*||g' | grep -oE '\bscripts/[a-zA-Z0-9_-]+\.[a-z]+' 2>/dev/null | sort -u || true)
 
-  # Check 8: CLI command validation (prefer repo binary over PATH)
+  # Check 8: CLI command validation. Prefer the full command surface resolved
+  # once at startup (archive tags — see HEAL_FULL_AO_CMDS above); fall back to
+  # the legacy COMMANDS.md / repo-binary / PATH chain when it is unavailable.
   ao_bin=""
-  ao_cmds=""
+  ao_cmds="$HEAL_FULL_AO_CMDS"
   commands_md="$REPO_ROOT/cli/docs/COMMANDS.md"
-  if [[ -f "$commands_md" ]]; then
+  if [[ -z "$ao_cmds" && -f "$commands_md" ]]; then
     ao_cmds="$(
       awk '
         /^### `ao [^`]+`/ {

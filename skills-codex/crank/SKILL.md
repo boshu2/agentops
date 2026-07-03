@@ -566,5 +566,6 @@ fi
 - [references/gc-pool-dispatch.md](references/gc-pool-dispatch.md) - gc pool worker dispatch
 - [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md) - Wave 1 spec consistency checklist
 - [references/worktree-per-worker.md](references/worktree-per-worker.md) - worktree isolation pattern
+- [references/ship-loop-anti-patterns.md](references/ship-loop-anti-patterns.md) - absorbed ship-loop anti-pattern catalog (ag-s43tg)
 
 <!-- Lifecycle integration wired: 2026-03-28. See skills/crank/SKILL.md for canonical -->

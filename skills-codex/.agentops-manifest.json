@@ -1176,7 +1176,7 @@
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
-      "generated_hash": "2e5659fb46b55a2c6c475791fedaecbe1ce49afe36050b7a3dc7c529e7ce5fc3"
+      "generated_hash": "fccc7baa2329ff4b720c53bd25269b79f2bb86d3fdb06fa1b82787495c4a9c49"
     },
     {
       "name": "dcg",
@@ -1458,7 +1458,7 @@
       "name": "research",
       "source_skill": "skills/research",
       "source_hash": "351ef0b9c836a45e9a73700acc17d31f0bac6b00e31799d7738abe93dbfdf482",
-      "generated_hash": "1fc7c05559e57b2aa6c656f70ff9b97a63ae1e6d63dd3cae7ef1f32475370e26"
+      "generated_hash": "9633645a67cbc17ae4ad789e83c7df141689939e3493e7d3d93a665798bc6159"
     },
     {
       "name": "reverse-engineer",
