@@ -92,6 +92,23 @@ var (
 		"scripts/lib/ao_snippet_resolve.py",
 		"tests/scripts/check-docs-cli-snippets.bats",
 	}
+	// scripts.ao-invocations resolves every LITERAL first-token `ao <sub>`
+	// invocation in an executable script/test against the cobra tree; a
+	// command removal silently strands a caller (the stale-retired-surface
+	// class — age-sydq, age-zei7). Sibling of docs.cli-snippets / skill.cli-snippets
+	// but over EXECUTABLE callers. Runs on any scripts/** or tests/** change plus
+	// a cli/cmd/ao/** change (a removal is the trigger), and self-references the
+	// script, its baseline, the bats twin, and the shared resolution lib so
+	// editing the gate re-runs it. (age-owcs)
+	scriptsAoInvocationsPaths = []string{
+		"scripts/**",
+		"tests/**",
+		"cli/cmd/ao/**",
+		"scripts/lib/ao-snippet-resolve.sh",
+		"scripts/lib/ao_snippet_resolve.py",
+		"scripts/.scripts-ao-invocations-baseline",
+		"tests/scripts/check-scripts-ao-invocations.bats",
+	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
 	// telling agents to run `bd ready` with no gate to catch it.
@@ -343,6 +360,7 @@ func init() {
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
 		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
+		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
 		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
 		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
 		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
