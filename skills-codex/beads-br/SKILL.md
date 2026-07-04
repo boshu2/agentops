@@ -31,6 +31,7 @@ skill (without the repo CLAUDE.md) must still honor these invariants:
 | **Never leak** | never stage the private ledger from the host repo — bead bodies carry private context; the host repo is public and gitignores the ledger. |
 | **bd is retired** | because the bd/Dolt remote-server lane was retired (2026-06-11) — do not run `bd` in a br repo; it appears only in explicitly-marked legacy notes. |
 | **Prefix filter** | to prevent cross-project leakage in shared DBs, filter queries by the repo's issue prefix (e.g. `ag-`) before trusting `br ready` output. |
+| **Writes fail closed** | because an empty/wrong `BEADS_DIR` makes br silently write a fallback tracker (age-gstf) — for `create`/`update`/`close`/`dep` use `BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR && br <write-cmd>`; `--require` refuses to print a path unless the directory holds a real ledger. |
 
 This section is the `persist_intent` port contract: the skill that persists
 intent owns the rules that keep that intent private and uncorrupted.
@@ -46,8 +47,8 @@ BEADS_DIR="$(ao beads dir)" br update ag-abc123 --claim --json
 
 # 3. Do work...
 
-# 4. Complete
-BEADS_DIR="$(ao beads dir)" br close ag-abc123 --reason "Implemented X"
+# 4. Complete (write commands: guarded, fail-closed resolution)
+BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR && br close ag-abc123 --reason "Implemented X"
 
 # 5. Sync to git (EXPLICIT!)
 BEADS_DIR="$(ao beads dir)" br sync --flush-only

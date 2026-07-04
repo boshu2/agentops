@@ -87,7 +87,10 @@ session acts on them and harvesting closure reasons into durable learnings.
 None of these commands replace bd itself — they complement it.`,
 }
 
-var beadsDirJSON bool
+var (
+	beadsDirJSON    bool
+	beadsDirRequire bool
+)
 
 var beadsDirCmd = &cobra.Command{
 	Use:   "dir",
@@ -95,7 +98,14 @@ var beadsDirCmd = &cobra.Command{
 	Long: `Print the BEADS_DIR path AgentOps will use for br subprocesses.
 
 In linked git worktrees, this resolves through git's common directory back to
-the canonical private _beads ledger instead of assuming $PWD/_beads exists.`,
+the canonical private _beads ledger instead of assuming $PWD/_beads exists.
+
+With --require, the resolved path must be an existing directory that contains
+a ledger artifact (issues.jsonl or beads.db); otherwise nothing is printed to
+stdout and the command exits non-zero. Use this before br WRITE commands so a
+failed resolution cannot silently fall back to the wrong tracker (age-gstf):
+
+  BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR && br close <id> -r "Done"`,
 	Args: cobra.NoArgs,
 	RunE: runBeadsDir,
 }
@@ -176,6 +186,8 @@ func init() {
 
 	beadsDirCmd.Flags().BoolVar(&beadsDirJSON, "json", false,
 		"Emit {beads_dir, source} as JSON")
+	beadsDirCmd.Flags().BoolVar(&beadsDirRequire, "require", false,
+		"Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger")
 
 	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyJSON, "json", false,
 		"Emit verification report as JSON instead of human-readable text")
@@ -199,6 +211,11 @@ func runBeadsDir(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	resolved := resolveBeadsDir(cwd, os.Environ())
+	if beadsDirRequire {
+		if reason := beadsDirLedgerMissing(resolved.Path); reason != "" {
+			return fmt.Errorf("beads dir --require: %s (resolved %s via %s); refusing to print a path a br write could silently fall back from", reason, resolved.Path, resolved.Source)
+		}
+	}
 	if beadsDirJSON {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{
 			"beads_dir": resolved.Path,
@@ -207,6 +224,25 @@ func runBeadsDir(cmd *cobra.Command, _ []string) error {
 	}
 	fmt.Fprintln(cmd.OutOrStdout(), resolved.Path)
 	return nil
+}
+
+// beadsDirLedgerMissing reports why path does not hold a usable br ledger
+// (empty string = it does). A ledger dir must exist and contain at least one
+// of the artifacts br itself maintains.
+func beadsDirLedgerMissing(path string) string {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "resolved path does not exist"
+	}
+	if !info.IsDir() {
+		return "resolved path is not a directory"
+	}
+	for _, artifact := range []string{"issues.jsonl", "beads.db"} {
+		if _, err := os.Stat(filepath.Join(path, artifact)); err == nil {
+			return ""
+		}
+	}
+	return "no ledger artifact (issues.jsonl or beads.db) in resolved directory"
 }
 
 // ------------------------------------------------------------------------
