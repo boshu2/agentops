@@ -124,6 +124,13 @@ type GateVerdictBody struct {
 	// signal a derived check is built from. (age-membrane-memory-j9c6.1)
 	Domain string `json:"domain,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Class is an OPTIONAL semantic class slug supplied at emit (--class). When
+	// present it — not the free-text reason — is the class-identity component of the
+	// ClassKey, so the same label on DIFFERENT beads collapses to ONE cross-bead
+	// class (a reason-derived key drifts with bead-specific wording and stayed
+	// invisible; age-jjt8). Absent on every historical row → the reason path keys it,
+	// so old rows are unchanged. (age-jjt8)
+	Class string `json:"class,omitempty"`
 	// Detector* fields, when present on an overturning-REFUTED, make the escape
 	// MECHANICALLY re-introducible: deriveFindingFromEscape compiles them into a
 	// draft constraint (regex pattern + path globs) the gate enforces, so the
@@ -205,6 +212,7 @@ type GateVerdictInput struct {
 	EvidencePresent     bool
 	Domain              string
 	Reason              string
+	Class               string
 	DetectorPattern     string
 	ConstraintPathGlobs string
 	DetectorKind        string
@@ -311,11 +319,12 @@ func newGateVerdictEvent(in GateVerdictInput) Event {
 			EvidencePresent:     in.EvidencePresent,
 			Domain:              in.Domain,
 			Reason:              in.Reason,
+			Class:               in.Class,
 			DetectorPattern:     in.DetectorPattern,
 			ConstraintPathGlobs: in.ConstraintPathGlobs,
 			DetectorKind:        in.DetectorKind,
 			AffectedPaths:       cleanStrings(in.AffectedPaths),
-			ClassKey:            classKeyIfCatch(in.Disposition, in.Domain, in.Reason, in.DetectorPattern),
+			ClassKey:            classKeyIfCatch(in.Disposition, in.Domain, in.Reason, in.DetectorPattern, in.Class),
 		},
 	}
 }

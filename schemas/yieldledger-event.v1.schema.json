@@ -158,6 +158,10 @@
                             "type": "string",
                             "description": "Optional verdict rationale; on a REFUTED verdict it is the what-was-missed signal a derived membrane-check is built from. (age-membrane-memory-j9c6.1)"
                         },
+                        "class": {
+                            "type": "string",
+                            "description": "Optional SEMANTIC class slug supplied at emit (--class). When present it — not the free-text reason — is the class-identity component of class_key, so the same label on DIFFERENT beads collapses to ONE cross-bead class (a reason-derived key drifts with bead-specific wording and stayed invisible). Absent on historical rows, which key from reason. Slug shape: lowercase [a-z0-9] words joined by '-'. (age-jjt8)"
+                        },
                         "author_context_id": {
                             "type": "string",
                             "minLength": 1,
