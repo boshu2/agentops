@@ -29,13 +29,29 @@ setup_fixture() {
   cp "$ROOT/scripts/lib/ao-snippet-resolve.sh" "$repo/scripts/lib/ao-snippet-resolve.sh"
   cp "$ROOT/scripts/lib/ao_snippet_resolve.py" "$repo/scripts/lib/ao_snippet_resolve.py"
 
+  # Mode-agnostic fake `ao`: understands BOTH resolution shapes so the fixture
+  # exercises whichever predicate the validator's AO_RESOLVE_MODE selects —
+  #   help  mode: `ao help <chain>`        (trust rc==0)
+  #   strict mode: `ao <chain> --help`     (reject "unknown command" in stdout)
+  # Normalize either invocation to the bare <chain>, then dispatch. An unknown
+  # chain prints cobra's "unknown command" to stdout and exits non-zero, so it
+  # fails BOTH predicates (rc!=0 for help mode; matched regex for strict mode).
   cat > "$repo/fake-ao" <<'EOF'
 #!/usr/bin/env bash
-if [[ "$1" != "help" ]]; then
-  exit 1
+args=("$@")
+# Drop a leading `help` (help-mode) or a trailing `--help`/`-h` (strict-mode),
+# and drop the root-help forms so `ao --help` == `ao help` == global help.
+if [[ "${args[0]:-}" == "help" ]]; then
+  args=("${args[@]:1}")
 fi
-shift
-case "$*" in
+if [[ "${#args[@]}" -gt 0 ]]; then
+  last_idx=$(( ${#args[@]} - 1 ))
+  case "${args[$last_idx]}" in
+    --help|-h) unset 'args[last_idx]'; args=("${args[@]}") ;;
+  esac
+fi
+chain="${args[*]}"
+case "$chain" in
   "")
     cat <<'INNER'
 Usage:
@@ -68,6 +84,8 @@ INNER
     exit 0
     ;;
   *)
+    echo "Error: unknown command \"${args[0]:-}\" for \"ao\"" >&2
+    echo "unknown command"
     exit 1
     ;;
 esac
