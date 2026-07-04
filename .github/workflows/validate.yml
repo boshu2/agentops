@@ -58,7 +58,7 @@ jobs:
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
       corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Detect release tag push or merge-queue (force full run)
         id: release
         shell: bash
@@ -70,7 +70,7 @@ jobs:
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
         if: steps.release.outputs.release != 'true'
         id: filter
         with:
@@ -177,16 +177,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -219,7 +219,7 @@ jobs:
 
       - name: Upload Go gate report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ao-gate-shadow-report
           path: ao-gate-report.json
@@ -241,7 +241,7 @@ jobs:
 
       - name: Upload CI deterministic catch
         if: always() && steps.go_gate.outcome == 'failure'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ci-deterministic-catch
           path: .agents/yield/yield-ledger.jsonl
@@ -267,18 +267,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Go (skill-body-refs + regen-all against live CLI)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.docs == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -364,7 +364,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 2
 
@@ -393,14 +393,14 @@ jobs:
           echo "✅ Bats tests passed"
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python (smoke-test)
         if: runner.os == 'Linux' && (needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -550,7 +550,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v7
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
         with:
           files: ./cli/coverage.out
           flags: cli
@@ -558,7 +558,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: always() && runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: go-coverage
           path: cli/coverage.out
@@ -625,11 +625,11 @@ jobs:
       needs.changes.outputs.markdown == 'true' || needs.changes.outputs.skills == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Run markdownlint
         if: needs.changes.outputs.markdown == 'true' || needs.changes.outputs.ci == 'true'
-        uses: DavidAnson/markdownlint-cli2-action@v23
+        uses: DavidAnson/markdownlint-cli2-action@ded1f9488f68a970bc66ea5619e13e9b52e601cd # v23
         with:
           globs: |
             **/*.md
@@ -674,7 +674,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Scan for secrets
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -763,14 +763,14 @@ jobs:
 
       - name: Set up Go (security toolchain)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python (security toolchain)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -816,7 +816,7 @@ jobs:
 
       - name: Upload security gate artifacts
         if: always() && (needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: security-gate
           path: ${{ runner.temp }}/agentops-security/
@@ -838,18 +838,18 @@ jobs:
       needs.changes.outputs.corpus == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Go (skill-body-refs against live CLI)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -1016,18 +1016,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Go
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -1170,7 +1170,7 @@ jobs:
       # ── agentops-contract-canaries (heavy bespoke setup: bd, gocyclo, bats) ──
       - name: Cache pinned Go tool binaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             ~/go/bin
@@ -1228,10 +1228,10 @@ jobs:
       needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Python (parity-drift)
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -1293,7 +1293,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # fetch-depth: 0 required so the three-gap-supergate Gap 1
           # --strict-coverage advisory step can resolve `main..HEAD`.
@@ -1301,7 +1301,7 @@ jobs:
 
       - name: Set up Go
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
@@ -1523,21 +1523,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # eval-skill-delta diffs HEAD~1 for skills/ changes.
           fetch-depth: 2
 
       - name: Set up Go
         if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python (workbench)
         if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -1556,7 +1556,7 @@ jobs:
 
       - name: Upload applied-OOD headroom scorecards
         if: always() && (needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: applied-ood-headroom-scorecards
           path: .agents/evals/applied-ood-headroom/ci
@@ -1624,7 +1624,7 @@ jobs:
 
       - name: Upload scorecard-latest.json (D10 delta artifact)
         if: always() && (needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: workbench-scorecard
           path: evals/workbench/scorecard-latest.json
@@ -1679,7 +1679,7 @@ jobs:
     # like a flaky red rather than the deterministic hard-fail this gate owns).
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # The changed-skill diff is computed against the PR merge base, so the
           # full history (or at least the base ref) must be present.
@@ -1689,7 +1689,7 @@ jobs:
       # `#![feature(portable_simd)]` — that requires the NIGHTLY channel
       # (stable rejects it with E0554). Pin nightly so the install compiles.
       - name: Set up Rust toolchain (nightly — ms needs portable_simd)
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@efcb852328a9f50117170cc43094fb6f09eaf1ae # nightly
 
       # Cache the compiled `ms` binary keyed on its pinned rev. A cache hit
       # restores ~/.cargo/bin/ms directly, so post-first-run gates skip the
@@ -1697,7 +1697,7 @@ jobs:
       # changes only when MS_REV changes, so the cache is correct-by-pinning.
       - name: Cache pinned ms binary
         id: ms-cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ~/.cargo/bin/ms
           key: ms-bin-b0bb6bd5-nightly-${{ runner.os }}
@@ -1813,7 +1813,7 @@ jobs:
 
       - name: Upload retrieval-probe receipts (I0 artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: skill-retrieval-probe-receipts
           path: .agents/ao/skill-eval/*.json
@@ -1843,7 +1843,7 @@ jobs:
       needs.changes.outputs.shell == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           # validate-test-count-noregress needs the PR base ref for the
           # before/after per-package test-count diff.
@@ -1962,7 +1962,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Check results
         run: |
