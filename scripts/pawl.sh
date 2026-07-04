@@ -423,16 +423,24 @@ agy_ready() {
 # gemini` does not even match the Antigravity pane. So we do NOT gate on atm-wait. Instead we verify
 # engagement the RELIABLE, type-agnostic way: after a delivery, the pane must actually START PRODUCING
 # OUTPUT (its recent-scrollback cksum changes) within a short window — a real review shows a spinner /
-# text immediately. This catches the agy failure mode observed live 2026-07-01: `atm send --file`
-# reports `"delivered":1` but the Antigravity TUI intermittently DROPS the input (empty pane, no
-# review) — a re-send re-triggers it. Not-delivered -> respawn + re-send. A genuinely stuck/compacting
-# pane still degrades downstream via the route's stall-detection + the .10 engage-deadline (age-yvrp).
+# text immediately. Not-delivered -> respawn + re-send. A genuinely stuck/compacting pane still
+# degrades downstream via the route's stall-detection + the .10 engage-deadline (age-yvrp).
+#
+# age-9rmh (2026-07-03): deliver the packet by its file PATH + a "read it now" instruction (mirroring
+# cod_send), NOT by PASTING the content via `atm send --file`. On large diffs (~14KB+) the Antigravity
+# (agy) TUI intermittently DROPS a pasted packet (`"delivered":1` but an empty pane, no review), and a
+# re-send just re-pastes + re-drops. A tiny path-pointer message the pane reads itself is immune to the
+# paste-size limit, so it is safe at EVERY diff size — hence ONE uniform path-based delivery for both cc
+# and agy, no size branch. The packet file ($rp) is the SAME self-contained artifact codex reads.
 _pane_activity() { tmux capture-pane -p -t "${SESSION}.$1" -S -25 2>/dev/null | cksum 2>/dev/null | cut -d' ' -f1 || true; }
 _family_send() {   # $1=pane $2=cc|agy (respawn kind) $3=packet-file
   local pane="$1" kind="$2" rp="$3" try out before _
   for try in 1 2 3; do
     before="$(_pane_activity "$pane")"
-    out="$(atm send "$SESSION" --pane="$pane" --file "$rp" --no-cass-check --force-non-interactive --json 2>/dev/null || true)"
+    # age-9rmh: PATH + read-now instruction (see header) — never a `--file` paste that the agy TUI drops.
+    out="$(atm send "$SESSION" --pane="$pane" --no-cass-check --force-non-interactive --json \
+      "Follow the adversarial review instructions in the file $rp and obey its final VERDICT FORMAT line. Read the file now." \
+      2>/dev/null || true)"
     if printf '%s' "$out" | grep -q '"delivered":1'; then
       # engaged iff the pane began producing output (started reviewing) within a short window
       for _ in $(seq 1 "${PAWL_SEND_ENGAGE_POLLS:-6}"); do
