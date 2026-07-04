@@ -25,6 +25,7 @@
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
 - [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, br/bv, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
+- [Migration Guide](MIGRATION.md) — Living map from every removed/retired surface (bd, hooks, daemon, `ao rpi`, corpus/flywheel, acfs) to what you use instead, plus the recommended open-source stack (br/bv, NTM, cass/cm, ubs, dcg, ACFS)
 - [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + an adopted substrate: NTM / MCP / managed-agents)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
