@@ -87,6 +87,85 @@ func TestRunBeadsDirJSON(t *testing.T) {
 	}
 }
 
+// setBeadsDirRequire flips the --require cobra global for one test and
+// restores it on cleanup (shared rootCmd state; see .claude/rules/go.md).
+func setBeadsDirRequire(t *testing.T, v bool) {
+	t.Helper()
+	orig := beadsDirRequire
+	t.Cleanup(func() { beadsDirRequire = orig })
+	beadsDirRequire = v
+}
+
+func TestRunBeadsDirRequireFailsClosedWhenNoLedger(t *testing.T) {
+	// A resolvable path that exists but holds no ledger artifact must be
+	// refused: printing it would let a br WRITE silently target the wrong
+	// tracker (age-gstf).
+	dir := t.TempDir()
+	ledgerless := filepath.Join(dir, "_beads")
+	if err := os.Mkdir(ledgerless, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BEADS_DIR", ledgerless)
+	setBeadsDirRequire(t, true)
+
+	var out strings.Builder
+	cmd := beadsDirCmd
+	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil) })
+	err := runBeadsDir(cmd, nil)
+	if err == nil {
+		t.Fatalf("runBeadsDir(--require) = nil error for ledgerless dir; want fail-closed error")
+	}
+	if !strings.Contains(err.Error(), "no ledger artifact") {
+		t.Fatalf("error = %q, want the no-ledger-artifact reason", err)
+	}
+	if out.String() != "" {
+		t.Fatalf("stdout = %q, want empty (a printed path defeats the fail-closed contract)", out.String())
+	}
+}
+
+func TestRunBeadsDirRequireFailsClosedWhenPathMissing(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("BEADS_DIR", filepath.Join(dir, "does-not-exist"))
+	setBeadsDirRequire(t, true)
+
+	var out strings.Builder
+	cmd := beadsDirCmd
+	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil) })
+	err := runBeadsDir(cmd, nil)
+	if err == nil || !strings.Contains(err.Error(), "does not exist") {
+		t.Fatalf("runBeadsDir(--require) err = %v, want does-not-exist refusal", err)
+	}
+	if out.String() != "" {
+		t.Fatalf("stdout = %q, want empty on refusal", out.String())
+	}
+}
+
+func TestRunBeadsDirRequirePassesWithLedgerArtifact(t *testing.T) {
+	dir := t.TempDir()
+	ledger := filepath.Join(dir, "_beads")
+	if err := os.Mkdir(ledger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte("{\"id\":\"x-1\",\"status\":\"open\"}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BEADS_DIR", ledger)
+	setBeadsDirRequire(t, true)
+
+	var out strings.Builder
+	cmd := beadsDirCmd
+	cmd.SetOut(&out)
+	t.Cleanup(func() { cmd.SetOut(nil) })
+	if err := runBeadsDir(cmd, nil); err != nil {
+		t.Fatalf("runBeadsDir(--require) = %v for a dir with issues.jsonl; want success", err)
+	}
+	if got := strings.TrimSpace(out.String()); got != ledger {
+		t.Fatalf("stdout = %q, want resolved ledger path %q", got, ledger)
+	}
+}
+
 func makeGitRepoWithLinkedWorktree(t *testing.T) (root, lane string) {
 	t.Helper()
 	if _, err := exec.LookPath("git"); err != nil {

@@ -1942,8 +1942,9 @@ ao beads dir [flags]
 **Flags:**
 
 ```
-  -h, --help   help for dir
-      --json   Emit {beads_dir, source} as JSON
+  -h, --help      help for dir
+      --json      Emit {beads_dir, source} as JSON
+      --require   Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger
 ```
 
 #### `ao beads harvest`
