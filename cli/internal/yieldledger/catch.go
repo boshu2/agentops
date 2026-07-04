@@ -49,14 +49,29 @@ type CatchInstance struct {
 // without silently re-bucketing old rows (a v2 key never collides with a v1 key).
 const classKeyVersion = "v1"
 
-// ClassKeyFor computes the deterministic class key for a catch's (domain, reason,
-// detectorPattern): "v1:" + slug(domain) + "/" + slug(normalize(reason)) and,
-// when a detector is present, + "/" + slug(detectorPattern). Pure and versioned:
-// the same (domain, reason) always yields the same key. Catching trivial
-// rephrasings of the same reason as the SAME key is a NON-goal — the per-class
-// human assessment in S4 is what confirms a class before it counts.
-func ClassKeyFor(domain, reason, detectorPattern string) string {
-	key := classKeyVersion + ":" + slugify(domain) + "/" + slugify(normalizeReason(reason))
+// ClassKeyFor computes the deterministic class key for a catch. The class-identity
+// component is the SEMANTIC class slug when one was supplied (--class), else the
+// normalized reason. Keying on a stable semantic slug is what makes a class
+// CROSS-BEAD: the same --class on two DIFFERENT beads collides on one key, where a
+// reason-derived key drifts with the (often bead-specific) verdict wording — that
+// drift is exactly why cross-bead recurrence was invisible (age-jjt8). Shape:
+// "v1:" + slug(domain) + "/" + slug(semanticClass | normalize(reason)) and, when a
+// detector is present, + "/" + slug(detectorPattern). Pure and versioned: the same
+// inputs always yield the same key.
+//
+// Backward compatibility: an empty semanticClass falls back to the reason path, so
+// historical rows (which carry no class) key EXACTLY as before. A semantic-class
+// slug that happens to equal a reason's normalized slug collides with it — the two
+// ARE then the same class, which is the intended (and benign) semantics. Catching
+// trivial rephrasings of the same FREE-TEXT reason as the same key is a NON-goal —
+// the per-class human assessment in S4 is what confirms a class before it counts;
+// the semantic class is the deliberate way to make a class stable on purpose.
+func ClassKeyFor(domain, reason, detectorPattern, semanticClass string) string {
+	ident := slugify(normalizeReason(reason))
+	if s := slugify(semanticClass); s != "" {
+		ident = s
+	}
+	key := classKeyVersion + ":" + slugify(domain) + "/" + ident
 	if strings.TrimSpace(detectorPattern) != "" {
 		key += "/" + slugify(detectorPattern)
 	}
@@ -70,14 +85,14 @@ func ClassKeyFor(domain, reason, detectorPattern string) string {
 // Uses the SAME isClassifiableCatch predicate as the read side so a sentinel-stamped
 // row (DomainUnclassified / ReasonUnspecified) is NEVER persisted with a fabricated
 // class_key — floor-only at the ledger contract, not just in triage. (epic age-zpj5, S4)
-func classKeyIfCatch(disposition, domain, reason, detectorPattern string) string {
+func classKeyIfCatch(disposition, domain, reason, detectorPattern, semanticClass string) string {
 	if disposition != DispositionRefuted {
 		return ""
 	}
 	if !isClassifiableCatch(domain, reason) {
 		return ""
 	}
-	return ClassKeyFor(domain, reason, detectorPattern)
+	return ClassKeyFor(domain, reason, detectorPattern, semanticClass)
 }
 
 // reasonStopwords are dropped from a reason before keying so incidental glue words
@@ -179,7 +194,12 @@ func DetectCatches(l *Ledger) []Catch {
 		if !isClassifiableCatch(gv.Domain, gv.Reason) {
 			continue
 		}
-		ck := ClassKeyFor(gv.Domain, gv.Reason, gv.DetectorPattern)
+		// Key from the stored semantic Class when present (cross-bead by design), else
+		// the normalized reason. gv.Class is "" on every historical row, so those key
+		// EXACTLY as they did before this field existed — the read path is fully
+		// backward compatible, and a legacy bead-keyed reason stays its own class (never
+		// retroactively merged; the ledger is never rewritten). (age-jjt8)
+		ck := ClassKeyFor(gv.Domain, gv.Reason, gv.DetectorPattern, gv.Class)
 		c, ok := classes[ck]
 		if !ok {
 			c = &Catch{

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -41,6 +42,7 @@ var (
 	membraneCatchBead     string
 	membraneCatchDomain   string
 	membraneCatchReason   string
+	membraneCatchClass    string
 	membraneCatchPaths    []string
 	membraneCatchDetector string
 	membraneCatchGlobs    string
@@ -85,7 +87,7 @@ here before so the same class of miss is caught one altitude earlier.`,
 }
 
 var membraneCatchCmd = &cobra.Command{
-	Use:   "catch --bead <id> --domain <bc> --reason <what> [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
+	Use:   "catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
 	Short: "Record a membrane CATCH — a REFUTED defect, as a structured class the membrane remembers",
 	Long: `Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 context (--domain), what was caught (--reason), and the affected files (--paths),
@@ -133,7 +135,8 @@ func init() {
 
 	membraneCatchCmd.Flags().StringVar(&membraneCatchBead, "bead", "", "Bead id the catch was found on (required)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchDomain, "domain", "", "Bounded-context / work-class tag (required)")
-	membraneCatchCmd.Flags().StringVar(&membraneCatchReason, "reason", "", "What was caught — the defect (required; becomes the class reason)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchReason, "reason", "", "What was caught — the defect (required; the class reason when no --class given)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchClass, "class", "", "Optional SEMANTIC class slug (e.g. stale-retired-surface). When set it keys the class CROSS-BEAD (the same label on different beads is ONE class), instead of the bead-drifting reason. Slug shape: lowercase [a-z0-9] words joined by '-'")
 	membraneCatchCmd.Flags().StringSliceVar(&membraneCatchPaths, "paths", nil, "Concrete repo-relative file paths the catch touches (comma-separated or repeated)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchDetector, "detector-pattern", "", "Optional regex that mechanically detects this class (makes it a compile candidate)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchGlobs, "globs", "", "Optional path globs scoping the detector pattern")
@@ -231,10 +234,21 @@ func buildCatchInput(bead, domain, reason string, paths []string, detector, glob
 	}
 }
 
+// classSlugRe is the accepted shape for a --class semantic slug: one or more
+// lowercase alphanumeric words joined by single '-' (no leading/trailing/double
+// dash, no spaces or uppercase). It matches slugify's output so a validated slug
+// survives ClassKeyFor's slugify unchanged — a class the operator can read back
+// verbatim in triage. (age-jjt8)
+var classSlugRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
 // runMembraneCatch records a catch via the production Writer. (epic age-zpj5, S2)
 func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 	if strings.TrimSpace(membraneCatchBead) == "" || strings.TrimSpace(membraneCatchDomain) == "" || strings.TrimSpace(membraneCatchReason) == "" {
 		return fmt.Errorf("ao membrane catch: --bead, --domain, and --reason are required")
+	}
+	class := strings.TrimSpace(membraneCatchClass)
+	if class != "" && !classSlugRe.MatchString(class) {
+		return fmt.Errorf("ao membrane catch: --class %q is not a valid slug (want lowercase [a-z0-9] words joined by '-', e.g. stale-retired-surface)", class)
 	}
 	// repoRootOrCwd (NOT resolveProjectDir) so a catch emitted from a repo subdir —
 	// or by pawl-review.sh running from any cwd — lands in the REPO-ROOT yield ledger
@@ -252,11 +266,12 @@ func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 	}
 	in := buildCatchInput(membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchPaths,
 		membraneCatchDetector, membraneCatchGlobs, membraneCatchKind, membraneCatchMode, head, membraneCatchRun, time.Now().UTC())
+	in.Class = class
 	w := yieldledger.Writer{}
 	if _, err := w.AppendGateVerdict(root, in); err != nil {
 		return fmt.Errorf("ao membrane catch: emit: %w", err)
 	}
-	ck := yieldledger.ClassKeyFor(membraneCatchDomain, membraneCatchReason, membraneCatchDetector)
+	ck := yieldledger.ClassKeyFor(membraneCatchDomain, membraneCatchReason, membraneCatchDetector, class)
 	fmt.Fprintf(cmd.OutOrStdout(), "membrane: recorded catch for %s@%s — class %s (domain=%s)\n", membraneCatchBead, head[:7], ck, membraneCatchDomain)
 	return nil
 }

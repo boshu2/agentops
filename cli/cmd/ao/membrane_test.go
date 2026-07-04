@@ -647,6 +647,53 @@ func TestMembraneCatch_DetectorMakesCompileCandidate(t *testing.T) {
 	}
 }
 
+// `ao membrane catch --class <slug>` persists the semantic class and keys the catch
+// CROSS-BEAD; an invalid slug is rejected before any write. Cobra globals restored via
+// t.Cleanup (shared rootCmd/package flag vars — .claude/rules/go.md). (age-jjt8)
+func TestMembraneCatch_SemanticClassFlag(t *testing.T) {
+	root := t.TempDir()
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	ob, od, orr, ocl, ohd := membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass, membraneCatchHead
+	t.Cleanup(func() {
+		membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass, membraneCatchHead = ob, od, orr, ocl, ohd
+	})
+	membraneCatchCmd.SetOut(&bytes.Buffer{})
+	t.Cleanup(func() { membraneCatchCmd.SetOut(nil) })
+
+	// Invalid slug -> error BEFORE any write.
+	membraneCatchBead, membraneCatchDomain, membraneCatchReason = "age-x", "scripts", "r"
+	membraneCatchHead = "abcdef0123"
+	membraneCatchClass = "Not A Slug"
+	if err := runMembraneCatch(membraneCatchCmd, nil); err == nil {
+		t.Fatal("invalid --class slug must be rejected")
+	}
+	if l, _ := yieldledger.Load(root); l != nil && len(l.Events) != 0 {
+		t.Fatalf("a rejected --class must NOT write a catch; got %d events", len(l.Events))
+	}
+
+	// Valid slug on two DIFFERENT beads with DIFFERENT reasons -> ONE cross-bead class.
+	membraneCatchClass = "stale-retired-surface"
+	membraneCatchBead, membraneCatchReason = "age-1", "reason wording one"
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("valid catch #1: %v", err)
+	}
+	membraneCatchBead, membraneCatchReason = "age-2", "totally different wording two"
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("valid catch #2: %v", err)
+	}
+	l, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 || catches[0].ClassKey != "v1:scripts/stale-retired-surface" || catches[0].HitCount != 2 {
+		t.Fatalf("two --class catches on different beads must be ONE cross-bead class; got %#v", catches)
+	}
+}
+
 // Catch-keyed recall filters by domain and (when paths given) affected_paths overlap. (S3)
 func TestRecallCatchesByDomain(t *testing.T) {
 	root := t.TempDir()

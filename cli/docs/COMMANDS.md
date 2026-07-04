@@ -2401,13 +2401,14 @@ ao membrane [command]
 Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 
 ```
-ao membrane catch --bead <id> --domain <bc> --reason <what> [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
+ao membrane catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
 ```
 
 **Flags:**
 
 ```
       --bead string               Bead id the catch was found on (required)
+      --class string              Optional SEMANTIC class slug (e.g. stale-retired-surface). When set it keys the class CROSS-BEAD (the same label on different beads is ONE class), instead of the bead-drifting reason. Slug shape: lowercase [a-z0-9] words joined by '-'
       --detector-kind string      Optional detector kind (e.g. regex)
       --detector-pattern string   Optional regex that mechanically detects this class (makes it a compile candidate)
       --domain string             Bounded-context / work-class tag (required)
@@ -2416,7 +2417,7 @@ ao membrane catch --bead <id> --domain <bc> --reason <what> [--paths f1,f2] [--d
   -h, --help                      help for catch
       --mode string               Pawl diversity mode: fresh-context (default) | multi-model | deterministic
       --paths strings             Concrete repo-relative file paths the catch touches (comma-separated or repeated)
-      --reason string             What was caught — the defect (required; becomes the class reason)
+      --reason string             What was caught — the defect (required; the class reason when no --class given)
       --run string                Run id (default: membrane-catch)
 ```
 

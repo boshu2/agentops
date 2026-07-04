@@ -2,6 +2,7 @@ package yieldledger
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -89,8 +90,8 @@ func TestCompileCandidates_DetectorSubsetOnly(t *testing.T) {
 
 func TestClassKeyFor_DeterministicAndVersioned(t *testing.T) {
 	// Case/punctuation/stopword differences normalize to the SAME class.
-	a := ClassKeyFor("Pawl", "A *_ready predicate called tmux send-keys!", "")
-	b := ClassKeyFor("pawl", "ready predicate called tmux send keys", "")
+	a := ClassKeyFor("Pawl", "A *_ready predicate called tmux send-keys!", "", "")
+	b := ClassKeyFor("pawl", "ready predicate called tmux send keys", "", "")
 	if a != b {
 		t.Fatalf("same reason should yield same key:\n a=%q\n b=%q", a, b)
 	}
@@ -98,7 +99,7 @@ func TestClassKeyFor_DeterministicAndVersioned(t *testing.T) {
 		t.Fatalf("class key must carry the version prefix, got %q", a)
 	}
 	// A detector specializes the class (distinct key).
-	if ClassKeyFor("pawl", "x", "rx") == ClassKeyFor("pawl", "x", "") {
+	if ClassKeyFor("pawl", "x", "rx", "") == ClassKeyFor("pawl", "x", "", "") {
 		t.Fatalf("a detector pattern must specialize the class key")
 	}
 	// The stored ClassKey (computed at emit) equals the read-time key.
@@ -107,6 +108,130 @@ func TestClassKeyFor_DeterministicAndVersioned(t *testing.T) {
 	l, _ := Load(root)
 	if got := DetectCatches(l); len(got) != 1 || got[0].ClassKey != b {
 		t.Fatalf("read-time key must match ClassKeyFor; got %#v", got)
+	}
+}
+
+// appendCatchWithClass records a REFUTED catch carrying a SEMANTIC class through the
+// PRODUCTION writer — fixture fidelity: the on-disk shape is whatever AppendGateVerdict
+// emits, never a hand-built body. (age-jjt8)
+func appendCatchWithClass(t *testing.T, root, bead, headSHA, domain, reason, class string, attempt int) {
+	t.Helper()
+	w := Writer{}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID:          bead,
+		RunID:           "run-1",
+		TS:              time.Date(2026, 6, 27, 12, attempt, 0, 0, time.UTC),
+		Difficulty:      1,
+		PawlVerdictRef:  PawlVerdictRef{BeadID: bead, HeadSHA: headSHA},
+		Disposition:     DispositionRefuted,
+		AuthorContextID: "ctx",
+		AuthorFamily:    "claude",
+		RefuterFamilies: []string{"codex"},
+		HeadSHA:         headSHA,
+		Attempt:         attempt,
+		Domain:          domain,
+		Reason:          reason,
+		Class:           class,
+	}); err != nil {
+		t.Fatalf("append catch %s: %v", bead, err)
+	}
+}
+
+// A SEMANTIC class overrides the reason as the class-identity component: the same
+// --class on two DIFFERENT reasons yields the SAME key, and an empty class falls back
+// to the reason (so historical rows key exactly as before). (age-jjt8, defect 1)
+func TestClassKeyFor_SemanticClassOverridesReason(t *testing.T) {
+	// Same class, different reason wording -> SAME key.
+	a := ClassKeyFor("pawl", "some bead-specific verdict text A", "", "stale-retired-surface")
+	b := ClassKeyFor("pawl", "totally different verdict text B", "", "stale-retired-surface")
+	if a != b {
+		t.Fatalf("same --class must yield the same key regardless of reason:\n a=%q\n b=%q", a, b)
+	}
+	if want := "v1:pawl/stale-retired-surface"; a != want {
+		t.Fatalf("class key should be domain/class-slug; got %q want %q", a, want)
+	}
+	// Empty class -> reason path (backward compatible with pre-class rows).
+	noClass := ClassKeyFor("pawl", "ready predicate called tmux send keys", "", "")
+	if strings.Contains(noClass, "stale-retired-surface") {
+		t.Fatalf("empty class must fall back to the reason, got %q", noClass)
+	}
+	// A detector still specializes a class-keyed catch.
+	if ClassKeyFor("pawl", "x", "rx", "cls") == ClassKeyFor("pawl", "x", "", "cls") {
+		t.Fatalf("detector must specialize even a semantic-class key")
+	}
+}
+
+// TWO catches on DIFFERENT beads with DIFFERENT reasons but the SAME --class collapse
+// to ONE cross-bead class (HitCount 2, both beads listed) — the recurrence that a
+// bead-drifting reason-derived key made invisible. Round-tripped through the production
+// writer+reader (fixture fidelity). (age-jjt8, scenario 1)
+func TestDetectCatches_SemanticClassIsCrossBead(t *testing.T) {
+	root := t.TempDir()
+	appendCatchWithClass(t, root, "age-b1", "head0001", "scripts", "REFUTED: X on bead one", "stale-retired-surface", 1)
+	appendCatchWithClass(t, root, "age-b2", "head0002", "scripts", "REFUTED: totally other wording on bead two", "stale-retired-surface", 2)
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	catches := DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("same --class on two beads must be ONE class, got %d: %#v", len(catches), catches)
+	}
+	c := catches[0]
+	if c.ClassKey != "v1:scripts/stale-retired-surface" {
+		t.Fatalf("cross-bead class key wrong: %q", c.ClassKey)
+	}
+	if c.HitCount != 2 {
+		t.Fatalf("two distinct beads must count as 2 hits (recurring), got %d", c.HitCount)
+	}
+	if len(c.Beads) != 2 {
+		t.Fatalf("class must list both beads, got %v", c.Beads)
+	}
+}
+
+// Defect-1 contrast: the OLD bead-embedded reason fallback ("...REFUTED for <bead>...")
+// keys PER-BEAD (the recurrence-blind behavior), while the de-bead-ided fallback
+// ("...REFUTED (see evidence)") collapses to ONE per-domain class across beads. Both are
+// exercised WITHOUT --class, so this pins the pawl-review.sh fallback-wording fix. (age-jjt8)
+func TestClassKeyFor_DeBeadIdedFallbackCollapsesAcrossBeads(t *testing.T) {
+	// OLD (bad) fallback: bead id in the reason -> distinct keys per bead.
+	oldA := ClassKeyFor("scripts", "pawl-review REFUTED for age-aaa (see evidence)", "", "")
+	oldB := ClassKeyFor("scripts", "pawl-review REFUTED for age-bbb (see evidence)", "", "")
+	if oldA == oldB {
+		t.Fatalf("sanity: bead-embedded reasons SHOULD differ per bead (that is the defect)")
+	}
+	// NEW (fixed) fallback: no bead id -> same key across beads.
+	newA := ClassKeyFor("scripts", "pawl-review REFUTED (see evidence)", "", "")
+	newB := ClassKeyFor("scripts", "pawl-review REFUTED (see evidence)", "", "")
+	if newA != newB {
+		t.Fatalf("de-bead-ided fallback must collapse across beads:\n a=%q\n b=%q", newA, newB)
+	}
+}
+
+// A REAL line copied verbatim from the live ledger (a LEGACY bead-keyed catch that
+// predates the class field) must still parse AND classify unchanged — the read path is
+// fully backward compatible; a legacy row keeps its per-bead legacy class, never an
+// error. (age-jjt8, scenario 2 — fixture fidelity against a real on-disk sample)
+func TestDetectCatches_RealLegacyLedgerLine(t *testing.T) {
+	// Verbatim from .agents/yield/yield-ledger.jsonl — the exact defect this bead fixes:
+	// the bead id ("age-landq-self") baked into the stored class_key.
+	const real = `{"event":"gate-verdict","bead_id":"age-landq-self","run_id":"membrane-catch","ts":"2026-06-27T17:20:48Z","body":{"difficulty":1,"pawl_verdict_ref":{"bead_id":"age-landq-self","head_sha":"291b2c0a9ff0de6caa0b8517bb66cf1a83c0cbec"},"disposition":"REFUTED","head_sha":"291b2c0a9ff0de6caa0b8517bb66cf1a83c0cbec","attempt":1,"mode":"fresh-context","author_context_id":"ao-membrane-catch","refuter_families":[],"author_family":"manual","cross_family":false,"author_ne_reviewer":true,"evidence_present":true,"domain":"scripts","reason":"pawl-review REFUTED for age-landq-self (see evidence)","class_key":"v1:scripts/pawl-review-refuted-age-landq-self-see-evidence","affected_paths":["scripts/land-queue-test.sh","tests/land-queue/PAINS.md","tests/land-queue/e2e-acceptance.bats"]}}`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ledger.jsonl")
+	if err := os.WriteFile(path, []byte(real+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	l, err := LoadPath(path)
+	if err != nil {
+		t.Fatalf("real legacy line must still parse: %v", err)
+	}
+	catches := DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("want 1 catch class from the real line, got %d", len(catches))
+	}
+	if got, want := catches[0].ClassKey, "v1:scripts/pawl-review-refuted-age-landq-self-see-evidence"; got != want {
+		t.Fatalf("legacy bead-keyed row must classify UNCHANGED\n got  %q\n want %q", got, want)
 	}
 }
 

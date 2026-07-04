@@ -142,7 +142,17 @@ emit_pawl_catch() {
   [[ -n "${bead:-}" && -n "${head:-}" ]] || return 0
   reason="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*REFUTED' "${evidence:-/dev/null}" 2>/dev/null | tail -1 \
             | sed -E 's/^[[:space:]]*VERDICT:[[:space:]]*REFUTED[[:space:]:—-]*//I' | cut -c1-200)"
-  [[ -n "$reason" ]] || reason="pawl-review REFUTED for $bead (see evidence)"
+  # De-bead-ided fallback (age-jjt8): NO $bead in the reason. class_key = domain + normalize(reason),
+  # so a bead in the fallback minted a per-bead class and made cross-bead recurrence invisible. Without
+  # it, unlabeled catches collapse to ONE per-domain class; the bead id is still on the row's bead field
+  # (no information loss). An explicit --class (below) overrides this reason as the class identity.
+  [[ -n "$reason" ]] || reason="pawl-review REFUTED (see evidence)"
+  # Optional orchestrator-supplied SEMANTIC class + mechanical detector, passed through when set. The
+  # class makes the catch CROSS-BEAD (a stable slug instead of the bead-drifting reason); the detector
+  # populates detector_pattern so the class becomes a compile candidate (was NEVER set -> compilability
+  # 0.00 by construction). Both optional; validated ao-side. (age-jjt8 defects 1+2)
+  [[ -n "${PAWL_CATCH_CLASS:-}" ]]    && catch_args+=(--class "$PAWL_CATCH_CLASS")
+  [[ -n "${PAWL_CATCH_DETECTOR:-}" ]] && catch_args+=(--detector-pattern "$PAWL_CATCH_DETECTOR")
   # Changed files for affected_paths — computed DIRECTLY from git by scope, NOT from
   # $review_files (which pawl-review only populates for LARGE diffs > MAX_INLINE_BYTES),
   # so a NORMAL small-diff catch is still path-recallable.
@@ -153,7 +163,7 @@ emit_pawl_catch() {
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
   [[ -n "$domain" ]] || domain="pawl-review"
   paths="$(printf '%s\n' "$files" | head -20 | tr '\n' ',' | sed 's/,$//')" # portable join (BSD paste -sd is unreliable)
-  [[ -n "$paths" ]] && catch_args=(--paths "$paths")
+  [[ -n "$paths" ]] && catch_args+=(--paths "$paths") # += : never clobber the class/detector args set above
   # Run from $REPO_ROOT (the REVIEWED repo): `ao membrane catch` roots its ledger via
   # repoRootOrCwd() from its cwd, so without this a pawl-review invoked from a different
   # cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in repoB) would write the catch to
