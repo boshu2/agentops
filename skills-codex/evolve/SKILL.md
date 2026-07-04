@@ -55,7 +55,7 @@ $evolve --compile            # Mine → Defrag warmup before first cycle
 | `$dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
 | `$evolve` | daytime, operator-driven | Yes (via `$rpi`) | Yes (light) | Yes | cycle cap |
 
-Dream owns knowledge compounding; `$evolve` owns code compounding. Both share the fitness-measurement substrate (`corpus.Compute` / `ao goals measure`). Run Dream overnight, then start each day with `$evolve` against the freshly-compounded corpus.
+Dream owns knowledge compounding; `$evolve` owns code compounding. Both share fitness substrate (`corpus.Compute` / `ao goals measure`). Dream runs overnight; `$evolve` starts the day on the fresh corpus.
 
 ## Flags
 
@@ -760,7 +760,7 @@ walkthroughs.
 | `ao goals measure` hangs | Use `--timeout 30 --total-timeout 75` or `--beads-only` to skip |
 | Regression gate reverts | Review reverted changes, narrow scope, re-run; claimed work items must be released back to available state |
 
-See `references/cycle-history.md` for advanced troubleshooting.
+See `references/cycle-history.md` for troubleshooting.
 
 ## Output Specification
 
@@ -775,19 +775,20 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [goals-schema](references/goals-schema.md) — GOALS.yaml format and metrics
 - [parallel-execution](references/parallel-execution.md) — Parallel $swarm architecture
 - [teardown](references/teardown.md) — Trajectory + session summary
-- [examples](references/examples.md) — Usage examples
+- [examples](references/examples.md) — Examples
 - [artifacts](references/artifacts.md) — Generated files registry
 - [oscillation](references/oscillation.md) — Detection and quarantine
 - [quality-mode](references/quality-mode.md) — Scoring, cascade, artifacts
 - [convergence-mechanics](references/convergence-mechanics.md) — Convergence semantics
 - [postmortem-checkpoint](references/postmortem-checkpoint.md) — Checkpoint procedure
+- [autonomous-execution](references/autonomous-execution.md) — Loop cadence; handoff re-arms
 
 ## See Also
 
 - `skills/rpi/SKILL.md` — Full lifecycle orchestrator, called per cycle
 - `skills/crank/SKILL.md` — Epic execution for beads epics
 - `docs/contracts/autodev-program.md` — Bounded autonomous development contract
-- `GOALS.yaml` — Fitness goals for this repo
+- `GOALS.yaml` — Fitness goals
 - [test](../test/SKILL.md) — Test generation
 - [refactor](../refactor/SKILL.md) — Safe, verified refactoring
 - [security](../security/SKILL.md) — Dependency audit + vuln scanning (absorbs deps)
