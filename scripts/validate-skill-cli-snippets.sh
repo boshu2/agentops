@@ -21,9 +21,12 @@ fi
 
 export AO_BIN
 export REPO_ROOT
-# Byte-identical resolution semantics for the skills gate: `ao help <chain>`,
-# trust returncode==0 (the original validator's predicate).
-export AO_RESOLVE_MODE=help
+# SOUND resolution semantics for the skills gate: `ao <chain> --help`, reject
+# cobra's "unknown command" / "Unknown help topic" (see ao_snippet_resolve.py).
+# The original `help`-mode predicate (`ao help <chain>` trusting rc==0) was
+# UNSOUND — `ao help <anything>` always exits 0, so the gate could not detect a
+# removed command at all (age-zggp). The env seam stays for tests / A-B.
+export AO_RESOLVE_MODE="${AO_RESOLVE_MODE:-strict}"
 
 python3 - <<'PY'
 import os
