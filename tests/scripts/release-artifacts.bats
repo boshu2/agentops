@@ -92,7 +92,7 @@ EOF
     "vil": {"status": "pass"},
     "release_smoke": {"status": "pass"},
     "hook_install_smoke": {"status": "pass"},
-    "rpi_smoke": {"status": "pass"}
+    "init_smoke": {"status": "pass"}
   }
 }
 EOF

@@ -48,8 +48,7 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
 ## ⚠️ Critical Constraints
 
 - **Never API-bill a worker.** Do NOT set `OPENAI_API_KEY` in a worker's env, and do NOT use `codex login --with-api-key`. **Why:** that flips Codex from flat-rate sub billing to per-token API billing — the Codex twin of the banned `claude -p`. A factory cycle on API keys silently burns real money. (Mirror of the "never `claude -p` for workers" rule.)
-  - WRONG: `OPENAI_API_KEY=sk-... codex exec -C "$REPO" "<task>"`
-  - CORRECT: `codex login status  # Logged in using ChatGPT` then `codex exec -C "$REPO" -s workspace-write "<task>"`
+  - WRONG: `OPENAI_API_KEY=sk-... codex exec -C "$REPO" "<task>"` · CORRECT: `codex login status  # Logged in using ChatGPT` then `codex exec -C "$REPO" -s workspace-write "<task>"`
 - **Confirm the sub before dispatch.** Run `codex login status` and require `Logged in using ChatGPT`. **Why:** a worker that "runs fine" on a leaked API token bills per token; the check is the only thing standing between a green run and a surprise invoice.
 - **Pipe the prompt (or close stdin) in any non-TTY lane — else codex HANGS.** A positional-arg `codex exec "<prompt>"` run with non-TTY stdin (background, `&`, ATM/NTM pane, cron, piped, inherited-pipe) still **reads stdin** — it prints `Reading additional input from stdin...` and blocks **forever** when that stdin never reaches EOF (the classic idle open pipe). **Why:** codex appends piped stdin as a `<stdin>` block even when a positional prompt is present, so an open idle stdin is an unterminated read. For unattended/background/factory lanes the safe DEFAULT is to **pipe the prompt** — `printf '%s' "$P" | codex exec … -` (or `cat prompt.txt | codex exec … -`) — or **close stdin** — `codex exec "<prompt>" </dev/null`. The bare positional form is fine only for an interactive TTY.
 - **Pick the sandbox deliberately.** `-s read-only` for offline validators, `-s workspace-write` for workers that must edit, `-s danger-full-access` only inside an already-sandboxed host. **Why:** `codex exec` runs model-generated shell commands; the sandbox is the blast radius.
@@ -248,5 +247,4 @@ receipts, image-health). Full packet:
 - `ntm` — Claude worker panes (the Claude-side lane; never `claude -p`)
 - `using-atm` — driving codex as an ATM **TUI pane** (keystroke / `--codex-goal` flow, `atm codex` readiness gates) vs this skill's **headless** `codex exec` (stdin/positional). Different dispatch mechanics, same auth/sub rules — conflating them is how "positional arg → background hang" and "send → wedged TUI pane" co-occur.
 - `account-rotation` — host-routed account switching; on Codex/Gemini and Linux/WSL lanes the swap tool is `caam` (isolated multi-account profiles for the 4-lane flywheel: Claude Max ×2 + Codex Pro + Gemini)
-- `dcg` — destructive-command guard that can enforce the never-API-bill rule
-- Memory: "Never claude -p for workers 2026-06-06" — the Claude-side twin of this skill's core rule
+- `dcg` — destructive-command guard that can enforce the never-API-bill rule · Memory "Never claude -p for workers 2026-06-06" — the Claude-side twin of this skill's core rule

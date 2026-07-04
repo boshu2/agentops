@@ -412,7 +412,7 @@ cat > "$INSTALL_META" <<EOF
   "install_mode": "native-plugin",
   "hook_runtime": "$HOOK_RUNTIME",
   "hooks_installed": $HOOKS_INSTALLED,
-  "lifecycle_commands": ["ao rpi phased", "ao codex status"],
+  "lifecycle_commands": ["ao session bootstrap", "ao gate check"],
   "plugin_key": "$PLUGIN_KEY",
   "version": "$VERSION",
   "plugin_root": "$PLUGIN_CACHE_ROOT",

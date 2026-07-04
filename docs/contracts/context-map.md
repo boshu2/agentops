@@ -67,7 +67,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
 - `heal-skill` — Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
-- `ms` — meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
+- `ms` — meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
@@ -80,7 +80,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `swarm` — Dispatch parallel agents. Triggers: "swarm", "dispatch parallel agents.", "swarm skill".
 - `test` — Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".
 - `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
-- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
+- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic

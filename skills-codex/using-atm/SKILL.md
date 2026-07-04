@@ -81,7 +81,7 @@ prefer re-cutting the write-set to a sole-writer surface over a shared lease.)
    agent with the AgentOps skills installed, so `rpi`, `evolve`, `$validate`,
    etc. resolve in-pane.
 3. **The bead queue is the work source.** A lead (operator or a lead pane) runs
-   `br ready`, picks the next bead, and dispatches it to a free worker pane.
+   `BEADS_DIR="$(ao beads dir)" br ready`, picks the next bead, and dispatches it to a free worker pane.
 4. **Green CI is the merge gate.** Each worker drives its bead to a green PR from
    a per-bead worktree (orchestrator-merge model); the operator stays *on* the
    loop (intent + stop), not *in* it (per-PR approval).
@@ -180,6 +180,62 @@ Run one tick at a time; take the first action whose trigger fires:
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
 > **The wedged-vs-working judgment depends entirely on reading the pane CORRECTLY — see below. The `atm` meter lies.**
+
+### Continuity: renewal ticks and the two-tick stall rule (absorbed from /continuity-loop)
+
+> **Folded trigger:** requests to wire or tune a loop's continuity step, issue a
+> stall verdict (suspect / stalled / converged), or set renewal-tick cadence
+> route here — the retired `/continuity-loop` renewal spine lives in this section.
+
+Each tending pass above IS one **renewal tick**: a bounded observation pass over
+the supervised lanes that decides, per lane, whether forward progress happened
+since the last tick and renews that lane's entry in the state surface. A tick
+observes and records; intervention is a separate decision the tick's output
+feeds. This is a **contract, not a scheduler** — tick firing is owned by host
+timing (cron, a systemd user timer, or you tending), never an AgentOps daemon.
+Default cadence: one tick per 10 minutes of unattended operation (tighten for
+short-lived swarms, loosen overnight); the cadence is recorded in the state
+file so consumers can compute staleness.
+
+**Forward-progress evidence (any one suffices):** new pane output delta (ATM
+robot state); new Agent Mail message or reservation activity; the lane
+self-renewed its state entry; a work-product delta (commit, closed bead, new
+artifact).
+
+**State surface:** `.agents/continuity/state.json` — the ONLY continuity state
+surface (two surfaces guarantee a split-brain stall verdict), renewed in place
+per tick (write temp + rename). Shape (`continuity-state.v1`): global
+`tick_seq`, `cadence_minutes`, `last_tick`, and a `lanes[]` array whose entries
+carry `lane`, `agent`, `work_item`, `status` ∈ `active | suspect | stalled |
+converged | escalated`, `tick_seq`, `last_renewal`, and an `evidence` string.
+Every status change cites its evidence — a bare status flip is invalid. A lane
+whose `tick_seq` is one behind the global counter is SUSPECT; two or more
+behind is STALLED. A lane that finishes cleanly is marked `converged` and
+leaves supervision — it is never reported as stalled.
+
+**The two-tick rule — no stall verdict on a single missed tick** (one tick
+cannot distinguish a slow tool call from a wedge; acting on one produces
+nudge-storms that kill healthy lanes):
+
+1. **Tick N:** no forward-progress evidence → mark the lane `suspect`. No action.
+2. **Tick N+1:** still no evidence → mark it `stalled`. Now intervene, in
+   order: one nudge → if the next tick shows no recovery, relaunch the lane
+   (route it through [`$recover`](../recover/SKILL.md)) and re-dispatch → if
+   the relaunched lane stalls again on the same work item, escalate.
+3. Any forward-progress evidence at any point resets the lane to `active`.
+   Healthy lanes are left alone — interruptions reset agent context, so the
+   intervention IS the failure mode when the lane was fine.
+
+**Escalation is an Agent Mail message, never a silent kill** (a killed pane
+with no `am` record is indistinguishable from a crash). Message the
+operator/tender lane and set the lane `escalated` when any of these hold: a
+two-tick stall survived one nudge **and** one relaunch; the same work item
+stalled two different lanes (the work is poisoned, not the lane); an
+auth/rate-limit failure that account rotation did not clear; a
+file-reservation conflict on the lane's write surface (route to
+[`agent-mail`](../agent-mail/SKILL.md) coordination, not a retry); or a lane
+re-doing work its own evidence trail shows complete (context saturation —
+handoff, then relaunch fresh).
 
 ## Observing lanes (the meter LIES)
 
@@ -283,8 +339,10 @@ recorded in a durable artifact the peer can inspect (bead note or PR comment).
 
 ATM panes coordinate through the other substrate legs, not bespoke glue:
 
-- **Beads (`br`)** is the shared work queue and the source of truth for state —
-  `br ready` to pick, `br update --claim` to claim, `br close` when merged.
+- **Beads (`br`, beads_rust)** is the shared work queue and the source of truth for state —
+  `BEADS_DIR="$(ao beads dir)" br ready` to pick, `br update <id> --claim` to claim,
+  `br close <id>` when merged. (`bd`/Dolt is retired; resolve `BEADS_DIR` before every
+  direct `br` read/write — linked worktrees don't carry `_beads`.)
 - **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI,
   **not** an `ao` subcommand) carries cross-pane **messages** and
   **file reservations** — the swarm's defense against two panes editing the same

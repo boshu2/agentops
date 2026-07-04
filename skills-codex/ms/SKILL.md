@@ -1,6 +1,6 @@
 ---
 name: ms
-description: meta_skill (ms) — the skill-search/load
+description: meta_skill (ms) — skill-search/load engine
 ---
 <!-- TOC: Core Insight | Quick Start | Consume (MCP) | Write/Admin (CLI) | Footguns | Concurrency | References -->
 
@@ -10,14 +10,16 @@ description: meta_skill (ms) — the skill-search/load
 
 ## Quick Start
 
+Find a skill (MCP-primary — BM25, currently strictly better than CLI search), then load the FULL runnable SKILL.md in one call (always `full: true` when you mean to use it):
+
 ```bash
-# Find a skill (MCP-primary — BM25, currently strictly better than CLI search)
 mcp__ms__search {query: "handle a rate limit switching accounts"}
-
-# Load the FULL runnable SKILL.md in one call (always full:true when you mean to use it)
 mcp__ms__load {skill: "account-rotation", full: true}
+```
 
-# CLI fallback when no MCP server is attached
+CLI fallback when no MCP server is attached:
+
+```bash
 ms search "switch accounts on rate limit" -O json
 ms load account-rotation --full -O json | jq -r '.data.content'
 ```
@@ -32,7 +34,7 @@ Prefer the MCP tools whenever a `ms mcp serve` is attached — they are the fast
 
 | Tool | Use |
 |------|-----|
-| `mcp__ms__search {query}` | BM25 search. **Currently strictly better than CLI search** (see Footguns — the CLI runs a `hash` embedding backend). |
+| `mcp__ms__search {query}` | BM25 search. **Currently strictly better than CLI search** (see Footguns — CLI hybrid is BM25-only; ms never stores doc embeddings). |
 | `mcp__ms__load {skill, full: true}` | Returns the full runnable SKILL.md in ONE call, zero extraction friction. **`full: false` returns a useless metadata card — always `full: true` when you intend to use the skill.** |
 | `mcp__ms__show {skill}` | Metadata card for a skill. |
 | `mcp__ms__suggest {cwd}` | Suggests skills for a directory. Works — but **ignore its project-language detection** (misdetects Makefile repos as C; cosmetic only). |
@@ -51,17 +53,14 @@ ms load <id> --full -O json | jq -r '.data.content'   # content lives in .data.c
 The MCP feedback tool exists, but **only the CLI write path is verified to land** — trust the CLI for writes.
 
 ```bash
-# Feedback on a skill
-ms feedback add <skill> --positive --comment "..."
+ms feedback add <skill> --positive --comment "..."   # feedback on a skill
 ms feedback add <skill> --negative --comment "..."
 
-# Dogfood loop: record AFTER actually using a skill's guidance
-ms outcome <skill> --success
+ms outcome <skill> --success   # dogfood loop: record AFTER actually using a skill's guidance
 ms outcome <skill> --failure
 
-# Admin
-ms doctor                      # health
-ms index                       # (re)index — then KILL every ms mcp serve (see Footguns)
+ms doctor                      # admin: health
+scripts/ms-reindex.sh          # (re)index THE way: rebuild + sweep every ms mcp serve + probe (see Footguns)
 ms list -O jsonl --limit 1000  # counting / enumeration
 ms config                      # resolved config + skill_paths
 ```
@@ -72,12 +71,12 @@ ms config                      # resolved config + skill_paths
 
 | Footgun | Truth |
 |---|---|
-| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Kill ALL `ms mcp serve` after any rebuild** — sessions respawn fresh. This is the one law. |
+| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Reindex via `scripts/ms-reindex.sh` — THE way to reindex** (rebuilds, then TERMs every `ms mcp serve`, then probes a fresh server for orphan ids); never run bare `ms index` and leave servers up. Sessions respawn fresh. This is the one law, now mechanized (age-22g0). |
 | **`ms load --pack N`** | Trap: caps at the gutted `overview` tier for ANY N (`800` == `20000`) — drops the executable steps and returns LESS than the no-flag default. Use `--full` (CLI) or `full: true` (MCP). |
 | **`-O plain`** | Prints name-only on `load`; truncates list output (`[N more lines]`). The content lives in `-O json` → `.data.content`. |
-| **CLI `ms search` "hybrid"** | Runs `embedding_backend = "hash"` (no real embeddings): empty results on paraphrases, a collision-attractor skill, and loses to MCP BM25 even on exact keywords. Don't prefer it for quality until a real embedding backend is configured + reindexed. |
+| **CLI `ms search` "hybrid"** | Effectively BM25-only — ms never stores doc embeddings (`upsert_embedding` is called only from a unit test), so hybrid ≡ BM25 under ANY backend; no config/backend change fixes it (upstream gap, feature-noted; measured 2026-07-02, age-s3jf). Still loses to MCP BM25 in practice; don't prefer it. |
 | **Stale `ms.lock`** | `ms doctor` prints "Lock held" for a DEAD pid yet still says all-pass. A dead-pid lock is safe to delete. |
-| **Symlinks** | ms does NOT follow directory symlinks — `skill_paths` must list BOTH `~/.codex/skills` AND `~/dev/agentops/skills`. |
+| **Symlinks** | ms does NOT follow directory symlinks — `skill_paths` must list BOTH roots explicitly: the `~/.codex` skills dir AND the `~/dev/agentops/skills` repo dir. |
 | **Binary** | Source build only (`~/dev/meta_skill`, branch `local/frontmatter-id`); the 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills. Update: `git fetch && git rebase origin/main && cargo install --path . --locked`. |
 
 ## Concurrency

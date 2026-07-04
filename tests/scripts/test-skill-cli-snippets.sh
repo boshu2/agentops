@@ -20,9 +20,14 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local repo="$1"
-  mkdir -p "$repo/scripts" "$repo/skills/example" "$repo/skills-codex/example" "$repo/cli"
+  mkdir -p "$repo/scripts/lib" "$repo/skills/example" "$repo/skills-codex/example" "$repo/cli"
   cp "$SCRIPT" "$repo/scripts/validate-skill-cli-snippets.sh"
   chmod +x "$repo/scripts/validate-skill-cli-snippets.sh"
+  # The validator sources scripts/lib/ao-snippet-resolve.sh and its inline
+  # Python imports ao_snippet_resolve from AO_SNIPPET_LIB_DIR (the same lib
+  # dir) — the fixture must carry both alongside the copied validator.
+  cp "$ROOT/scripts/lib/ao-snippet-resolve.sh" "$repo/scripts/lib/ao-snippet-resolve.sh"
+  cp "$ROOT/scripts/lib/ao_snippet_resolve.py" "$repo/scripts/lib/ao_snippet_resolve.py"
 
   cat > "$repo/fake-ao" <<'EOF'
 #!/usr/bin/env bash

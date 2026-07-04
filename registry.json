@@ -2327,7 +2327,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "corpus",
-      "purpose": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
+      "purpose": "meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3343,7 +3343,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
+      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
