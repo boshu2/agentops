@@ -1,17 +1,17 @@
 ---
 name: crank
-description: Execute epics through waves.
+description: 'Execute epics through waves. Triggers: "crank an epic", "execute epics through waves", "drive the bead wave plan".'
 practices:
 - continuous-delivery
 - xp
 - agile-manifesto
 hexagonal_role: domain
 consumes:
-- beads
+- beads-br
 - implement
 - post-mortem
 - swarm
-- vibe
+- validate
 produces:
 - .agents/swarm/results/*.json
 - git-changes
@@ -32,9 +32,9 @@ metadata:
   tier: execution
   dependencies:
   - swarm
-  - vibe
+  - validate
   - implement
-  - beads
+  - beads-br
   - post-mortem
 output_contract: code changes across wave execution, .agents/swarm/results/*.json
 ---
@@ -50,13 +50,15 @@ Move **5 (wave execution)** of the [operating loop](../../docs/architecture/oper
 
 Autonomous execution: implement all issues until the epic is DONE.
 
-**CLI dependencies:** bd (issue tracking), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If bd is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
+**Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `/rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave is *re-plan input*, not just a retry target: per the [`/rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next one runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
+
+**CLI dependencies:** br (issue tracking, via `BEADS_DIR="$(ao beads dir)" br`), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
 
 For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared source of truth is `skills/shared/references/claude-code-latest-features.md`, mirrored locally at `references/claude-code-latest-features.md`.
 
 ## Architecture: Crank + Swarm
 
-Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `bd ready`, bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
+Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `br ready` (resolve the ledger first: `BEADS_DIR="$(ao beads dir)" br ready`), bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
 
 Read `references/team-coordination.md` for the full per-wave execution model, `references/ralph-loop-contract.md` for the fresh-context worker contract, and `references/worker-specs.md` for per-worker model/tool/prompt specs.
 
@@ -67,7 +69,7 @@ Read `references/team-coordination.md` for the full per-wave execution model, `r
 | `--test-first` | off | Enable spec-first TDD: SPEC WAVE generates contracts, TEST WAVE generates failing tests, IMPL WAVES make tests pass |
 | `--per-task-commits` | off | Opt-in per-task commit strategy. Falls back to wave-batch when file boundaries overlap. See `references/commit-strategies.md`. |
 | `--tier=<name>` | (auto) | Force a specific cost tier (quality/balanced/budget) for all council calls. Overrides effort-to-tier auto-mapping. |
-| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-vibe deps/test checks) |
+| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-validation deps/test checks) |
 | `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps vuln), `full` (all) |
 | `--no-scope-check` | off | Skip scope-completion check before DONE marker (Step 8.7) |
 | `--skip-audit` | off | Skip bd-audit pre-flight gate (Step 3a.2) |
@@ -112,7 +114,7 @@ Read [references/wave-dispatch.md](references/wave-dispatch.md) when you need SP
 
 ### Wave completion (Step 5 → Step 8.7)
 
-Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), vibe-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work loop (Step 6), de-sloppify pass (6.5), pre-vibe lifecycle checks (6.9), final batched validation (Step 7), phase-2 summary (Step 8), learnings extraction (8.5), shared-notes archive (8.6), and the scope-completion pre-close gate (8.7).
+Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), validation-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work loop (Step 6), de-sloppify pass (6.5), pre-validation lifecycle checks (6.9), final batched validation (Step 7), phase-2 summary (Step 8), learnings extraction (8.5), shared-notes archive (8.6), and the scope-completion pre-close gate (8.7).
 
 Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github/workflows/*.yml`, run `bash scripts/validate-ci-policy-parity.sh`; any non-zero exit fails wave acceptance and surfaces the generated drift report. See [references/wave-patterns.md](references/wave-patterns.md) "CI-Policy Parity Gate" for the worked example and trigger pattern.
 
@@ -122,7 +124,7 @@ Tell the user:
 1. Epic ID and title
 2. Number of issues completed
 3. Total iterations used (of 50 max)
-4. Final vibe results
+4. Final validation (/validate --mode=post-impl, absorbs vibe) results
 5. Flywheel status (if ao available)
 6. Suggest running `/validate` to complete closeout and promote learnings
 
@@ -150,11 +152,11 @@ When crank drives PRs to `main` itself (orchestrator-merge model), reconcile eac
 1. **Poll** `gh pr checks <pr>` until all checks are terminal.
 2. **Block only on substantive fails.** A failing `claude-review` on a usage-limit message is non-blocking; only substantive non-`claude-review` failures block the merge.
 3. **Fix-forward stale/transient reds — never revert green work.** `correctness (ubuntu-latest)` tar-cache-restore exit-2 → `gh run rerun` **once**, then believe. `registry.json` / derived-surface or `contracts-sync` drift from another PR → `make regen-all` (scoped via `--skills` when only some skills changed), commit, push.
-4. **Merge when green:** `gh pr merge --squash --admin`.
-5. **Close on confirmed-MERGED only.** `bd close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `bd --json` query (those flake to null/0).
+4. **Merge only when green AND the pawl gate CONFIRMS.** Green CI is necessary but **NOT sufficient** — merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). A CONFIRMED, **evidence-bound, commit-current** pawl verdict ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md): all refuters CONFIRMED; the pawl's diversity floor met — **fresh-context by default** (≥1 refuter in a context other than the author's; model-agnostic), or **multi-model opt-in** (≥2 distinct canonical model families) where the pawl is opted up; real non-empty reviewer evidence, `head_sha` == the PR's live head) tied to this bead+PR must exist, or the merge is **refused (HOLD)**. **REFUTED → AUTO-REDO**: the loop re-works the findings and re-gates on its own, no human. A human is escalated to **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), at which point the disposition is `ESCALATE`/`HOLD` and the door stays closed (never auto-land on a breaker trip) — see pawls.md "Escalation — the circuit-breaker model". Then `gh pr merge --squash --admin`.
+5. **Close on confirmed-MERGED only.** `br close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `br --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child PR is independently confirmed `MERGED`** — re-query `gh pr view --json state` per child first. One non-merged child aborts the close. (Post-mortem governance checkpoint: this is a hard gate, not advisory.)
 
-> Enforce steps 5–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
+> Enforce steps 4–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, **verifies a CONFIRMED, evidence-bound, commit-current pawl verdict (fresh-context default; multi-model opt-in) via `scripts/pawl-verdict.sh check <bead> <pr> --head <live-sha>` — exit 5/HOLD with no merge if absent/REFUTED/ESCALATE/diversity-floor-unmet/empty-or-stale-head/no-evidence/schema-invalid; also blocks exit 2 on still-PENDING CI (green is strictly necessary)**, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
 
 ## The FIRE Loop
 
@@ -162,10 +164,21 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 ## Key Rules
 
-- Auto-detect tracking (`bd` first, TaskList fallback) and use the provided epic or plan input directly.
+- Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
 - Use `/swarm` for every wave, preserve fresh per-issue context, and refuse to continue past unresolved conflicts or the 50-wave cap.
-- Validate once per wave, fix CRITICAL findings before completion, and keep looping until every issue/task is done.
+- Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): the wave-acceptance check uses the **lightweight inline judges** described in `references/wave-patterns.md` ("Wave Acceptance Check") — no skill invocations, no cross-family panel, no context explosion. Fix CRITICAL findings before advancing and keep looping until every issue/task is done. The **heavy** validation (full council, `/validate --mixed`, `/pre-land-refuters`) is reserved for the **bead-acceptance / merge-to-main pawl** — the Final Batched Validation (Step 7) and downstream `/validate` closeout, NOT per intermediate wave.
 - Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
+
+### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
+
+- **`burndown` → bounded epic mode.** Use when you need to drive a finite epic set to all-merged,
+  then stop — finishing a specific list of tasks, burning down a backlog epic, or executing a
+  bounded set of beads until done. Crank's per-wave loop with a fixed input set (epic-id or bead
+  list) and the epic-close gate IS the burndown: no new-work discovery, terminate on all-closed.
+- **`ship-loop` → single-bead fast lane.** Use when running the fast-lane internal ship cycle for
+  one closable bead or small slice: claim, test, implement, push, merge, close. That is a one-issue,
+  one-wave crank — the Orchestrator-Merge + Reconcile Loop above (confirmed-MERGED before close)
+  owns the merge/close half.
 
 ### Verb Disambiguation for Worker Prompts
 
@@ -173,11 +186,17 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 
 ## Examples
 
-**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final vibe.
-**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final vibe.
+**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final validation.
+**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final validation.
 **User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
 
 ---
+
+## Output Specification
+
+**Format:** committed code plus a markdown progress/closeout summary to stdout; per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
+**Files:** reads `.agents/rpi/execution-packet.json`; writes wave/slice results under `.agents/swarm/results/`; closes beads via `br close` in the resolved `_beads` ledger.
+**Exit signal:** `<promise>DONE</promise>` (all slices accepted) · `<promise>PARTIAL</promise>` (retry the same objective) · `<promise>BLOCKED</promise>` (manual intervention).
 
 ## Troubleshooting
 
@@ -189,7 +208,7 @@ Common failure modes: no ready issues, repeated wave gate failures, missing file
 
 Most `/crank` steps delegate worker execution via `/swarm` or `Skill()`. A small number of steps are **orchestrator-owned** by design — these are inline gates, scans, and bookkeeping that must stay in the orchestrator's context to make a downstream decision. Orchestrator-owned steps are marked with a `*(orchestrator-owned: …)*` admonition in the body (see STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7).
 
-**Do NOT convert orchestrator-owned steps into `Skill()` or `/swarm` delegations** — they are intentionally inline. Every other step (SPEC wave, TEST wave, IMPL wave, vibe, lifecycle checks) should delegate via the documented `Skill(...)` call or `/swarm` invocation.
+**Do NOT convert orchestrator-owned steps into `Skill()` or `/swarm` delegations** — they are intentionally inline. Every other step (SPEC wave, TEST wave, IMPL wave, validation, lifecycle checks) should delegate via the documented `Skill(...)` call or `/swarm` invocation.
 
 If unsure whether a step is orchestrator-owned or delegatable, the default is **delegate**. Only steps marked with the admonition above are exempt.
 
@@ -228,3 +247,5 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 - [references/wave-patterns.md](references/wave-patterns.md)
 - [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)
 - [references/external-gate-protocol.md](references/external-gate-protocol.md)
+
+- [references/ship-loop-anti-patterns.md](references/ship-loop-anti-patterns.md) — absorbed ship-loop anti-pattern catalog (ag-s43tg)

@@ -5,9 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard,
-  DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
+description: 'Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".'
 practices:
 - pragmatic-programmer
 ---

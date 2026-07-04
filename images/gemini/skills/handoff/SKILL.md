@@ -1,6 +1,7 @@
 ---
 name: handoff
-description: Write compact session handoffs.
+spine: true
+description: 'Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".'
 practices:
 - adr
 - wiki-knowledge-surface
@@ -29,6 +30,32 @@ output_contract: .agents/handoffs/YYYY-MM-DD-*.md
 
 Create a handoff document that enables seamless session continuation.
 
+## Handoff is the write-side of the self-healing context loop
+
+Handoff is not only an end-of-session ritual — it is the **write-side of the
+`handoff → clear → rehydrate` loop** that keeps a long-running agent (or a peer
+orchestrator) healthy against context bloat. The natural pre-`/clear` step is to
+hand off: capture the working state to durable state *first*, then clear, then
+rehydrate from the artifact. **Handoff before clear, always** — clearing without
+a current handoff loses the thread.
+
+For that to be safe, the handoff must be **complete enough to rehydrate the lane
+to exactly where it was**: the active goal, the claimed bead(s), held file
+reservations, the peer/comms topology, and a pointer to the working thread. A
+thin handoff makes `clear` destructive; a complete one makes the agent
+disposable-yet-continuous (the system-not-DAG property at the orchestrator
+level). The structured artifact is `ao session handoff` → `.agents/handoff/` (JSON;
+`--no-kill` writes without the tmux restart).
+
+## Every handoff is a compounding artifact
+
+A handoff is a **first-class node in the compounding artifact graph**, not a
+throwaway note. It feeds the llm-wiki / knowledge corpus, gets **mined and
+measured** (the artifact already carries `consumed` / `consumed_by` hooks), and
+each cycle should make the *next* handoff better. Context, code, and markdown are
+all artifacts to be fed back. Write handoffs dense and honest — they are evidence
+the flywheel compounds on, not paperwork.
+
 ## Execution Steps
 
 Given `/handoff [topic]`:
@@ -49,7 +76,7 @@ mkdir -p .agents/handoff
 git log --oneline -5 --format="%s" | head -1
 
 # Check current issue
-bd current 2>/dev/null | head -1
+BEADS_DIR="$(ao beads dir)" br list 2>/dev/null | head -1
 
 # Check ratchet state
 ao ratchet status 2>/dev/null | head -3
@@ -78,7 +105,7 @@ ls -lt .agents/research/*.md 2>/dev/null | head -3
 ls -lt .agents/plans/*.md 2>/dev/null | head -3
 
 # Issues closed
-bd list --status closed --since "2 hours ago" 2>/dev/null | head -5
+BEADS_DIR="$(ao beads dir)" br list --status closed --since "2 hours ago" 2>/dev/null | head -5
 ```
 
 ### Step 4: Identify Pause Point
@@ -92,7 +119,7 @@ Determine where we stopped:
 
 Check for in-progress work:
 ```bash
-bd list --status in_progress 2>/dev/null | head -5
+BEADS_DIR="$(ao beads dir)" br list --status in_progress 2>/dev/null | head -5
 ```
 
 ### Step 5: Identify Key Files to Read
@@ -226,6 +253,10 @@ git log --oneline --since="2 hours ago" 2>/dev/null | wc -l
 **If ≥3 commits:** Suggest running `/post-mortem --quick` to extract learnings.
 **If <3 commits:** Handoff alone is sufficient; learnings are likely minimal.
 
+### Step 8.5: Grade Skills Used (ms outcome, optional)
+
+If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` or `ms outcome <skill> --failure`, so ranking is fed by real usage. Honest only — the skills you truly leaned on, not every match. Skip if `ms` is not present.
+
 ### Step 9: Report to User
 
 Tell the user:
@@ -302,7 +333,7 @@ If ao CLI not available:
 
 **What happens:**
 1. Agent detects recent commits (5 commits in last 2 hours, auth-related)
-2. Agent checks in-progress work with `bd list` (issue #42 still open)
+2. Agent checks in-progress work with `br list` (issue #42 still open)
 3. Agent identifies pause point: "Completed token generation, about to start refresh logic"
 4. Agent lists key files: auth.go, token.go, research doc, plan doc
 5. Agent writes handoff document with accomplishments and pause state

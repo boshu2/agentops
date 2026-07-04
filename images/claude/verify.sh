@@ -81,5 +81,5 @@ if [ "$plugin_version" != "$EXPECTED_VERSION" ]; then
 fi
 echo "OK: Claude plugin manifest version $plugin_version matches expected $EXPECTED_VERSION"
 
-echo "OK: all $count Claude-image skills present (61 CORE + operator)"
+echo "OK: all $count Claude-image skills present (CORE + operator, per manifest.json)"
 exit 0

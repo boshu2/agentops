@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs."
+description: 'Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".'
 practices:
 - pragmatic-programmer
 ---
@@ -18,6 +18,10 @@ practices:
 > **⚠️ TWO SURFACES — read this first.** Every operation has BOTH an MCP-tool form (`send_message`, `fetch_inbox`, …) AND a CLI form (`am mail send`, `am mail inbox`, …). The MCP tools are only present when the agent-mail MCP server is wired into your session's tool surface — **a plain CLI/shell agent (or a session where the MCP server didn't load) will NOT have them.** In that case use the `am` CLI, which works from any shell. **Discoverability trap (br cp-jgcl):** the send/reply verbs live under the `am mail` group, which `am --help` does NOT list, and the read commands have flat aliases (`am inbox`, `am status`) but **`am send` does not exist** — it is **`am mail send`**. When in doubt: `am mail --help`, `am macros --help`, `am file_reservations --help`.
 
 **Don't re-learn the command surface from this skill.** The MCP server self-describes its tools and resources in your tool list; the CLI self-describes via `am --help` and the group helps above. This skill carries only the operating doctrine: when to use mail, the reservation discipline, and the coordination boundaries. Full tool/parameter catalog: [TOOLS.md](references/TOOLS.md).
+
+> **When this applies (scope guard).** Agent Mail coordination — `start-session`, identity registration, file reservations, cross-lane ACKs — is **required when ≥2 lanes/panes share the repo** (a swarm, or you plus a concurrent peer session). With **only one active writer** (no second lane/pane), do **not** register or reserve against yourself — coordination is an escalation, not a session-start tax. If you are the sole writer, skip to the work. (Doctrine: [operating-loop principle 8](../../docs/architecture/operating-loop.md#governing-principles) — single-agent-first.)
+>
+> **Asymmetry guardrail — the part of the de-mandate that does NOT relax.** AM answers a **contention** axis; ATM answers a separate **durability** axis (they're not a package — full 4-case matrix in [`using-atm`](../using-atm/SKILL.md#when-to-use-atm-vs-am-the-4-case-matrix)). The de-mandate removes the single-writer *session-start tax*, **not** the *collision guard*. The costs are asymmetric: an **unneeded** AM call costs one command; a **missing** one lets two writers silently clobber a shared file and the merge looks like ordinary conflict cleanup while the design forked. So the **`≥2-writers → reserve` reflex stays non-negotiable.** "Trust the models" does not grant two concurrent writers consistency on one path. **Partition before you lock:** if you can cut the write-sets disjoint (sole writer per file), do that instead of reserving — locks are the fallback when partition fails.
 
 ## Coordination Boundary
 
@@ -55,7 +59,7 @@ Before any actor acts on a bead (intake, admit, implement, validate, mutate),
 **update the bead status and set the actor on the graph first**, then check for an
 existing actor. Parallel pipelines are blind to each other at every tier — dedup
 via the ledger, not behavioral coordination. Five exhibits of same-bead parallel
-work hit the fleet in one day (impl/validation/admission/mutation/intake, cp-hhtu).
+work hit the fleet in one day (impl/validate/admission/mutation/intake, cp-hhtu).
 The fix is structural: intent on the graph is the lock.
 
 ### ACK-with-id on routed writes (card 5, cp-fmt8)
@@ -70,6 +74,7 @@ is invisible work. "Are these filed?" must not be a question — the ACK closes 
 | Situation | Action |
 |-----------|--------|
 | Starting any agent session | `macro_start_session` (CLI: `am macros start-session`) |
+| **Confirm a lane actually registered** | `am robot agents --project <abs> --active` — must list your name and each peer lane |
 | About to edit files | reserve paths → edit → release reservations |
 | Need to tell another agent something | `send_message` with `thread_id` (CLI: `am mail send`) |
 | Picking up someone else's work | `macro_prepare_thread` |
@@ -79,7 +84,15 @@ is invisible work. "Are these filed?" must not be a question — the ACK closes 
 
 ## Session Bootstrap
 
-**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every agent session.** One call: ensures project exists → registers your identity → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
+**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every *multi-lane* agent session** (skip it when you are the sole writer — see the scope guard above). One call: ensures project exists → registers your identity → reserves files → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
+
+**Verify the lane registered.** A pane can *look* spawned and still have never registered — its start-session may not have landed. Confirm with:
+
+```bash
+am robot agents --project <abs> --active   # should list YOUR name and each peer lane
+```
+
+If your name (or a peer's) is missing, that lane's start-session did not land — **do not assume the coordination leg is live.** Re-run start-session for the missing lane before relying on mail/reservations between you. Skipping this check is how the coordination leg silently goes unverified.
 
 Identity notes:
 
@@ -117,9 +130,10 @@ Use bead IDs as your threading anchor. BR remains authoritative; mail carries th
 | Error | Fix |
 |-------|-----|
 | "sender_name not registered" | Call `macro_start_session` first |
+| Pane looks spawned but coordination is silent | A pane can look spawned yet never have registered. Run `am robot agents --project <abs> --active` — if the lane is absent, its start-session didn't land; re-run it |
 | "FILE_RESERVATION_CONFLICT" | Wait, coordinate, or use `exclusive=false` |
 | "CONTACT_BLOCKED" | Use `request_contact`, wait for approval |
-| Server unreachable | `health_check()` / `curl http://127.0.0.1:8765/health`; start with `am` |
+| Server unreachable | `am robot health` (works CLI-only, direct SQLite) or `health_check()` (MCP). `curl …:8765/health` only resolves if the HTTP MCP server is running; CLI-only deploys have no `:8765` listener. Start the server with `am` |
 | Guard blocks commit | Set `AGENT_NAME` env var; emergency bypass: `AGENT_MAIL_BYPASS=1 git commit` |
 
 Deeper diagnostics (doctor check/repair), the pre-commit guard (`install_precommit_guard`), the human-overseer web UI, and FTS5 search syntax are all self-described by the server/CLI — see [RECOVERY.md](references/RECOVERY.md) and [ADVANCED.md](references/ADVANCED.md).
@@ -140,6 +154,12 @@ Deeper diagnostics (doctor check/repair), the pre-commit guard (`install_precomm
 ## Validation
 
 ```bash
-curl http://127.0.0.1:8765/health   # → {"status": "healthy"}
+am robot health                     # PRIMARY check — CLI/direct SQLite, works without the HTTP server
+am agent start --json               # cockpit; flags a missing :8765 listener under mcp_endpoint=fail
+curl http://127.0.0.1:8765/health   # ONLY if the HTTP MCP server is up (am serve-http); CLI-only deploys have no :8765 listener
 am                                  # start server if needed
 ```
+
+---
+
+**Fork maintenance.** `am` is Bo's fork (`boshu2/mcp_agent_mail_rust`). To pull upstream fixes, use the fork-sync factory in `~/dev/mcp_agent_mail_rust`: `make fork-status` → `make fork-preview` → `make fork-sync` (its `AGENTS.md` § "Upstream sync"; never rebase main by hand). Divergence facts are owned by **FORKS-MAP F-3**.

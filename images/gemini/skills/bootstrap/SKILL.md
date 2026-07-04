@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Initialize AgentOps project files.
+description: 'Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".'
 practices:
 - containers
 - hermetic-builds
@@ -43,10 +43,20 @@ output_contract: .agents/ directory structure, GOALS.md, PRODUCT.md
 
 That is it. One command. Every step below is idempotent — existing artifacts are never overwritten.
 
+## Absorbed triggers (routed here from retired skills)
+
+- **`session-bootstrap` / session-start context** — run `ao session bootstrap` for the
+  universal orientation report, then `ao lookup --query "<topic>"` for decay-ranked
+  prior context. (Previously routed via the retired `/inject`.)
+- **`using-agentops` / workflow tour** — read
+  [docs/architecture/operating-loop.md](../../docs/architecture/operating-loop.md)
+  (the primary navigation). There is no update skill — to refresh installed skills, re-run the install one-liner:
+  `bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)`.
+
 ## External Tools
 
 - **ao** (optional) — AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
-- **bd** (optional, recommended) — beads CLI. Bootstrap probes for `bd` in Step 0.5 and, when missing, points the user at `scripts/install-bd.sh` with a copy-paste command. Bootstrap never installs `bd` on the user's behalf.
+- **br** (optional, recommended) — beads_rust CLI (local-first issue tracking). Bootstrap probes for `br` in Step 0.5 and, when missing, recommends installing it. Bootstrap never installs `br` on the user's behalf.
 
 ## Flags
 
@@ -68,7 +78,7 @@ HAS_PROGRAM=$([[ -f PROGRAM.md || -f AUTODEV.md ]] && echo true || echo false)
 HAS_AGENTS=$([[ -d .agents ]] && echo true || echo false)
 HAS_HOOKS=$(grep -q "agentops" .claude/settings.json 2>/dev/null && echo true || echo false)
 HAS_AO=$(command -v ao >/dev/null && echo true || echo false)
-HAS_BD=$(command -v bd >/dev/null && echo true || echo false)
+HAS_BR=$(command -v br >/dev/null && echo true || echo false)
 ```
 
 Classify the repo:
@@ -79,17 +89,15 @@ Classify the repo:
 | **partial** | Some artifacts present, some missing |
 | **complete** | GOALS.md, PRODUCT.md, README.md, PROGRAM.md/AUTODEV.md, and .agents/ present |
 
-If `--dry-run` is set: report the state and what would be created, including whether `bd` would be recommended (when `HAS_BD` is false), then stop. Do not proceed to Steps 1-6.
+If `--dry-run` is set: report the state and what would be created, including whether `br` would be recommended (when `HAS_BR` is false), then stop. Do not proceed to Steps 1-6.
 
 If the repo is **complete** and `--force` is not set: report "Repo is fully bootstrapped. Nothing to do." and stop.
 
-### Step 0.5: Recommend bd
+### Step 0.5: Recommend br
 
-If `HAS_BD` is true: skip. Report "bd: present."
+If `HAS_BR` is true: skip. Report "br: present."
 
-If `HAS_BD` is false: report **"bd: not installed (recommended). Install with: `bash scripts/install-bd.sh`"** and continue. Bootstrap does NOT run the installer — `bd` is optional, the user decides.
-
-If `scripts/install-bd.sh` is absent at the repo root, drop the install hint and just report "bd: not installed (recommended). See https://github.com/steveyegge/beads".
+If `HAS_BR` is false: report **"br: not installed (recommended). Install beads_rust to get local-first issue tracking."** and continue. Bootstrap does NOT run the installer — `br` is optional, the user decides.
 
 ### Step 1: GOALS.md
 
@@ -165,7 +173,7 @@ This directory contains accumulated knowledge from agent sessions.
 ## Usage
 
 Knowledge is automatically managed by the AgentOps flywheel:
-- `/inject` surfaces relevant prior knowledge at session start
+- `ao lookup` surfaces relevant prior knowledge on demand
 - `/post-mortem` extracts and processes new learnings
 - `/compile` runs maintenance (mine, grow, defrag)
 ```
@@ -190,16 +198,19 @@ If `HAS_PROGRAM` is true and `--force` is not set: skip. Report "PROGRAM.md/AUTO
 
 ### Step 6: Optional Hook Activation
 
-Do not activate hooks. AgentOps 3.0 is hookless: `ao quick-start`, execution
-packets, explicit validation, and knowledge compounding deliver first value
-with no runtime hooks, and CI is the authoritative gate. There is no `ao`
-command or flag that installs hooks — hooks were removed from the CLI.
+Do not activate runtime agent hooks. AgentOps 3.0 is runtime-hookless:
+`ao quick-start`, execution packets, explicit validation, and knowledge
+compounding deliver first value without Claude/Codex runtime hooks. Routine
+release authority is the local cockpit gate (`ao gate check` plus the installed
+Git pre-push/pawl proof path); GitHub Actions are PR/tag/manual backstop
+telemetry. There is no `ao` command or flag that installs runtime hooks —
+hooks were removed from the CLI.
 
 If the user explicitly requests hooks, they are opt-in and author-it-yourself:
 point them at the `hooks-authoring` skill, which scaffolds project-local hooks
 into `.claude/settings.json`. Bootstrap itself never writes hooks.
 
-If hooks were not explicitly requested: skip. Report "Hooks optional -- skipped. AgentOps 3.0 is hookless; CI is the authoritative gate. To author your own, use the `hooks-authoring` skill."
+If hooks were not explicitly requested: skip. Report "Runtime hooks optional -- skipped. AgentOps 3.0 is runtime-hookless; routine release authority is the local cockpit gate. To author your own, use the `hooks-authoring` skill."
 
 If `HAS_HOOKS` is true: report "Hooks already present in .claude/settings.json -- left untouched."
 
@@ -218,7 +229,7 @@ Bootstrap complete.
 | PROGRAM.md    | created / skipped / failed |
 | .agents/      | created / skipped / failed |
 | Hooks         | optional / activated / skipped / failed |
-| bd            | present / recommended (not installed) |
+| br            | present / recommended (not installed) |
 
 Repo is now AgentOps-ready. Next: /rpi "your first goal"
 ```
@@ -251,7 +262,7 @@ Repo is now AgentOps-ready. Next: /rpi "your first goal"
 | Goals skill fails | No project context | Provide a one-line project description when prompted |
 | Product skill fails | No goals defined | Run `/goals init` manually first, then re-run `/bootstrap` |
 | Hooks not activating | ao CLI not installed | Install: `brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops` |
-| bd not installed | Recommended but optional | Install with `bash scripts/install-bd.sh` if you want issue tracking; otherwise ignore |
+| br not installed | Recommended but optional | Install beads_rust (`br`) if you want issue tracking; otherwise ignore |
 | Want to start over | Existing artifacts blocking | Use `--force` to recreate all artifacts |
 
 ## See Also
@@ -259,7 +270,7 @@ Repo is now AgentOps-ready. Next: /rpi "your first goal"
 - [goals](../goals/SKILL.md) -- Fitness specification and directive management
 - [product](../product/SKILL.md) -- Product definition generation
 - [doc](../doc/SKILL.md) -- README generation (`--mode=readme`) + repo docs
-- [quickstart](../quickstart/SKILL.md) -- New user onboarding (lighter than bootstrap)
+- [status](../status/SKILL.md) -- New user onboarding (lighter than bootstrap)
 - [related operator runbooks](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
 
 ## Reference Documents

@@ -154,6 +154,20 @@ check "install-agy.sh dry-run exits cleanly" \
 
 echo ""
 
+# ── Image bundle verifiers (REAL execution) ──
+# install-agy.sh runs images/gemini/verify.sh as a hard install gate, so a stale
+# image manifest breaks the advertised one-liner outright. The vendor steps are
+# stubbed elsewhere in this suite (fixture-fidelity gap, age-085q): execute the
+# verifiers for real. Both are offline and skip vendor CLIs when absent.
+
+check "images/gemini/verify.sh passes (real execution)" \
+    bash "$REPO_ROOT/images/gemini/verify.sh"
+
+check "images/claude/verify.sh passes (real execution)" \
+    bash "$REPO_ROOT/images/claude/verify.sh"
+
+echo ""
+
 # ── Runtime execution tests ──
 # Verify that a locally-built ao binary is executable and responds to basic commands.
 # These tests require the CLI to be built (cd cli && make build).

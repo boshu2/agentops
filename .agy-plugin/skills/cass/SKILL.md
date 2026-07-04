@@ -1,6 +1,6 @@
 ---
 name: cass
-description: Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
+description: 'Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
@@ -35,6 +35,11 @@ This skill carries only the AgentOps operating doctrine: when to reach for cass,
 - Prior-art check before inventing a new approach, plan, or prompt
 - Scope archaeology: "when did we decide NOT to do X?"
 - Post-context-loss recovery: what was searched for after a crash = what mattered
+
+### Folded triggers (ag-s43tg wave 1): `casr` + `cass-memory` route here
+
+- **`casr` → cross-harness resume.** Cross Agent Session Resumer: convert and resume sessions across Claude Code, Codex, Gemini, and other providers — `cass resume` plus [RESUME.md](references/RESUME.md) own this lane (resolve subagent logs to their parent via `cass context` first; subagent files are not resumable).
+- **`cass-memory` → `cm` procedural memory.** Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory — mine past sessions here first, then promote the durable lessons through `cm` instead of re-deriving them each session.
 
 ## The Goldmine Principle
 

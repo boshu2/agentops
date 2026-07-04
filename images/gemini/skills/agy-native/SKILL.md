@@ -7,13 +7,10 @@ practices:
 - team-topologies
 - continuous-delivery
 hexagonal_role: driving-adapter
-consumes:
-- operating-loop-skill
+consumes: []
 produces:
 - agy-run-evidence
-context_rel:
-- kind: customer-of
-  with: operating-loop-skill
+context_rel: []
 skill_api_version: 1
 user-invocable: false
 context:
@@ -46,6 +43,24 @@ Verified primitives on this host (`agy --help`, `agy plugin help`, `agy models`)
 - **Permissions:** `--dangerously-skip-permissions` auto-approves tool calls (loop/headless lane); `--sandbox` restricts the terminal.
 - **Workspace scope:** `--add-dir <dir>` (repeatable) scopes which repos a run can touch (AGY's write-isolation primitive — it scopes by directory, not by spawning worktrees).
 - **Brain/knowledge:** durable agent memory + user-facing artifacts under `~/.gemini/antigravity-cli/{brain,knowledge}/` (per-conversation dirs; `*.md` + `*.md.metadata.json` with `{summary, updatedAt, userFacing}`).
+
+### Folded triggers (ag-s43tg wave 1): the four AGY sibling lanes route here
+
+- **`agy-mcp-plugins` → the Distribution lane.** Use when wiring MCP servers and AgentOps plugin bundles
+  into the AGY image with least-privilege access, rollback evidence, and validation hooks — the
+  §"Distribution" layer below (plugin trees, `agy plugin link/install`, validate → apply → list →
+  record-rollback) owns that mutation protocol.
+- **`agy-project-worktree-permissions` → the isolation rules.** Use when proving AGY project/worktree
+  isolation with scoped --add-dir permissions, role permission tiers, and `dcg` guardrails — Rules 4–6
+  below (non-overlapping `--add-dir` scopes, permission matched to role, the `dcg` BeforeTool hook)
+  are that contract, with evidence persisted per Rule 3.
+- **`agy-rules-workflows` (triggers: AGY rules, agy-loop, AGY schedule) → Phase 2 law packaging.** Use
+  when installing AGY rules, workflow, goal, and schedule controls for AgentOps loop law — the
+  `agy-control-plane` plugin tree in Phase 2 (`rules/` + `workflows/` + `hooks.json`) is where the
+  agy-loop law lands; schedules drive Phase 5.
+- **`agy-sidecar-scheduled-tick` → the Phase 5 recurring driver.** Use when running a
+  recurring AGY sidecar loop tick with agentapi evidence capture — Phase 5's tick lane (AGY
+  scheduled task, or an external timer / Claude `CronCreate` calling `agy --print`) is that driver.
 
 ## ⚠️ Critical Constraints
 
@@ -139,8 +154,8 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 ## Examples
 
-- **Fallback tick when the Claude image is rate-limited:** import a plugin (`agy plugin import claude`), run Phase 3–4 on Gemini 3.1 Pro, persist, hand the next bead back to the Claude image.
-- **Cross-vendor author!=judge:** author with `agy --print --model "Gemini 3.1 Pro (High)"`, judge with `agy --print --model "Claude Opus 4.6 (Thinking)"` — two vendors, one loop, no shared context.
+- **Fallback tick when the Claude image is rate-limited:** import a plugin (`agy plugin import claude`), run Phase 3–4 on Gemini 3.5 Flash, persist, hand the next bead back to the Claude image.
+- **Cross-vendor author!=judge:** author with `agy --print --model "Gemini 3.5 Flash (High)"`, judge with `agy --print --model "Claude Opus 4.6 (Thinking)"` — two vendors, one loop, no shared context.
 - **Expose a new AgentOps skill to AGY (dev):** `agy plugin link ~/dev/agentops/skills/<name>` (or drop a portable `SKILL.md` in `~/.gemini/skills/<name>/`), then `agy plugin list` to confirm discovery; rollback `agy plugin uninstall <name>`.
 
 ## Troubleshooting
@@ -158,6 +173,7 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 - **[references/distribution-and-run-control.md](references/distribution-and-run-control.md)** — full plugin verb list, install-vs-link discipline, mutation protocol, the permission×output×scope matrix (AGY equivalents for retired gemini flags), and the brain evidence layout.
 - Research input: `~/.agents/research/agy-native-harness-2026-06-06.md` (AGY primitives, official docs index, open questions).
+- [`/using-atm`](../using-atm/SKILL.md) — **in-ATM AGY** (interactive pane-3 TUI via `atm send`; the dual-pane tri-vendor duel is folded in) vs this skill's **headless** `agy --print` / sidecar paths; do not conflate them.
 - Sibling AGY skills: `agy-rules-workflows` (goal/schedule loop law), `agy-mcp-plugins` (MCP servers + plugin packaging), `agy-headless-evidence` (agentapi sidecar + JSONL evidence).
 - Sibling images / loop substrate: `ntm` (tmux swarms), `beads-br` (br tracker), `agent-mail` (coordination), `dcg` (destructive-command guard), `caam` (account lanes).
 - Loop doctrine: control-plane LEARNINGS (author!=judge, evidence-gated close); memory `never claude -p for workers`; ACFS invoke-never-rebuild + fork-and-own doctrine.

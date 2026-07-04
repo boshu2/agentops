@@ -5,7 +5,7 @@
 #   1. plugin.json / mcp_config.json / hooks.json / hooks/hooks.json are valid JSON
 #      and expose the expected manifest shape (modeled on the proven .agy-plugin
 #      package at agentops ed8f573e6).
-#   2. each of the 65 slugs (61 CORE + 4 AGY operator) resolves to
+#   2. each bundled slug (CORE + AGY operator; see arrays below) resolves to
 #      skills/<slug>/SKILL.md inside the bundle AND is byte-identical to the
 #      canonical source skills/<slug>/SKILL.md
 #      (the KEY FINDING: zero content conversion — only the wrapper differs).
@@ -20,26 +20,26 @@ PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # repo root = images/gemini -> images -> <repo root>
 REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
 
-# The 61 CORE slugs (35 method + 26 tool-op) per IMAGE-CORE.md §1.
+# The 38 CORE slugs — the original IMAGE-CORE.md §1 list resolved through the
+# skill-consolidation ledger (docs/contracts/skill-dispositions.yaml historical
+# merged-into chains + caam->account-rotation, refreshed 2026-07-04, age-085q).
+# Retired-with-no-successor slugs (ssh, gcloud, gh-cli, gh-actions, ...) dropped.
 core_skills=(
-  rpi discovery research plan implement crank swarm validate vibe
-  council pre-mortem red-team ratchet post-mortem forge compile flywheel
-  goals evolve autodev beads bootstrap brainstorm design handoff recover
-  inject push scope session-bootstrap status test operating-loop-workflow
-  skill-builder skill-auditor
-  beads-br beads-bv agent-mail ntm cass cass-memory dcg caam casr ubs
-  ru-multi-repo-workflow gh-triage-ru rch sbh process-triage
-  system-performance-remediation ssh gcloud gh-cli gh-actions planning-workflow
-  multi-model-triangulation research-software repeatedly-apply-skill cc-hooks
-  vibing-with-ntm
+  rpi discovery research plan implement crank swarm validate
+  council pre-mortem red-team post-mortem curate compile flywheel
+  goals evolve bootstrap handoff recover
+  operationalize push scope status test
+  skill-builder heal-skill
+  beads-br beads-bv agent-mail ntm cass dcg review
+  rch sbh cc-hooks account-rotation
 )
 
-# The 4 Gemini/AGY operator skills (IMAGE-CORE.md §3c) — drive AGY's first-class
-# control surface. Unit-3 (cp-7uih) bundles these alongside the CORE so Unit-3's
-# "operator skills from §3c" consumer note is satisfied. Same packaging recipe:
-# direct, byte-identical SKILL.md copies, zero conversion.
+# The Gemini/AGY operator surface (was 4 skills; agy-rules-workflows,
+# agy-mcp-plugins, agy-headless-evidence merged into agy-native per the
+# dispositions ledger). Same packaging recipe: direct, byte-identical
+# SKILL.md copies, zero conversion.
 operator_skills=(
-  agy-native agy-rules-workflows agy-mcp-plugins agy-headless-evidence
+  agy-native
 )
 
 # Full bundled set = CORE + AGY operator.
@@ -98,7 +98,7 @@ rule_count="$(find "$PLUGIN_DIR/rules" -maxdepth 1 -type f -name '*.md' | wc -l 
 [[ "$rule_count" -ge 2 ]] || fail "expected >=2 AGY rules, found $rule_count"
 pass "agents ($agent_count) + rules ($rule_count) present"
 
-# --- 3. slug presence + byte-identity to source (61 CORE + 4 AGY operator) ----
+# --- 3. slug presence + byte-identity to source (CORE + AGY operator) ---------
 bundled_count="$(find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')"
 expected_count="${#all_skills[@]}"
 [[ "$bundled_count" == "$expected_count" ]] \

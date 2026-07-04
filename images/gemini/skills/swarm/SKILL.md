@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: Dispatch parallel agents.
+description: 'Dispatch parallel agents. Triggers: "swarm", "dispatch parallel agents.", "swarm skill".'
 practices:
 - microservices
 - team-topologies
@@ -8,7 +8,7 @@ practices:
 hexagonal_role: supporting
 consumes:
 - implement
-- vibe
+- validate
 produces:
 - .agents/swarm/results/*.json
 context_rel:
@@ -27,12 +27,30 @@ metadata:
   tier: orchestration
   dependencies:
   - implement
-  - vibe
+  - validate
 output_contract: .agents/swarm/results/*.json
 ---
 # Swarm Skill
 
 Spawn isolated agents to execute tasks in parallel. Fresh context per agent (Ralph Wiggum pattern).
+
+## Before you swarm — pick the lightest path that fits
+
+> **Confirm a swarm is even warranted.** A swarm pays off only with **≥2
+> genuinely independent units of working-tree work** that benefit from
+> isolation. If it's **one deliverable**, **pure analysis/investigation**, or
+> **no working-tree edits**, do NOT swarm — use the lighter path below. Reaching
+> for the machinery on a small task costs more than the task (real failure
+> 2026-06-15: an ATM-codex swarm pointed at a ~9-idea content task wedged on
+> codex boot; in-session Agent fan-out did it in one pass).
+
+Three paths, lightest first — reach for the lightest that fits:
+
+| Path | What it is | Use when |
+|---|---|---|
+| **In-session Agent/Task fan-out** (lightest) | Spawn 2–3 `Agent` subagents in *this* session. No persistence, no worktrees, no attach, dies with the session. Read-only-friendly. | One-shot parallel work: independent drafts, fan-out analysis, fresh-eyes review. **Default for anything small.** See [`automation-shape-routing`](../automation-shape-routing/SKILL.md) shape 0. |
+| **`/swarm`** (middle) | Wave-gated working-tree execution with disjoint file ownership + conflict checks (this skill). | ≥2 independent units that **edit the working tree** and need isolation + wave-validity gating. |
+| **ATM** ([`/using-atm`](../using-atm/SKILL.md), heaviest) | Persistent tmux panes + human attach/steer + multi-vendor, running whole `/rpi`/`/evolve` loops. | Long-lived epics needing persistence and live steering — **not** one-shot tasks. Boot cost (esp. codex) alone can exceed doing it inline. |
 
 ## Loop position
 
@@ -99,7 +117,7 @@ Mayor: "Let's build a user auth system"
 
 5. Continue until #5 completes
 
-6. /vibe -> Validate everything
+6. /validate -> Validate everything
 ```
 
 ### Scope-Escape Protocol
@@ -127,6 +145,37 @@ The lead reviews scope escapes after each wave and creates follow-up tasks as ne
 - **Atomic execution** - Each worker works until task done
 - **Graceful degradation** - If multi-agent unavailable, work executes sequentially in current session
 
+## Worker report contract + lane authority (cp-hhd7, cards 4 + 16)
+
+### Worker FINAL REPORT — what the orchestrator requires
+
+Workers write raw evidence; the orchestrator does not trust prose summaries.
+Each `.agents/swarm/results/<id>.json` or the worker's final message SHOULD include:
+
+```
+files_changed: [list of exact paths]
+commit_sha: <git rev-parse HEAD>   # or "no commit" + reason
+test_tail: <verbatim last N lines of test output>
+conflicts_surfaced: [list, or "none"]
+```
+
+A result missing `commit_sha` or `test_tail` is treated as **unverified** until the
+orchestrator independently confirms persistence and test passage. The audit cost of
+trusting summaries exceeds the cost of requiring the fields.
+
+### Lane authority (POLICY, card 4 — applies when running a two-lane swarm)
+
+In a multi-lane deployment (this is a **contextual policy**, not a universal swarm
+rule), a decision inside one lane's scope is decided by that lane with the other lane's
+view as input — not a vote, not an escalation. Escalate to the human operator only for:
+- genuine out-of-both-lanes decision forks
+- gate violations
+- a loop that cannot self-heal
+
+Escalating an in-lane sequencing call makes the operator a bottleneck. The lane
+authority rule is enforced by convention in the control-plane context; the mechanism
+(swarm) is general.
+
 ## Workflow Integration
 
 This ties into the full workflow:
@@ -136,7 +185,7 @@ This ties into the full workflow:
 /plan -> Decompose into beads issues
 /crank -> Autonomous epic loop
     +-- /swarm -> Execute each wave in parallel
-/vibe -> Validate results
+/validate -> Validate results
 /post-mortem -> Extract learnings
 ```
 
@@ -173,6 +222,7 @@ TaskUpdate(taskId="2", addBlockedBy=["1"])
 
 | Scenario | Use |
 |----------|-----|
+| **Single one-shot deliverable / no working-tree edits / read-only investigation** | **do NOT swarm** → do it inline, or fan out 2–3 in-session **Agent** subagents (see "Before you swarm" above + [`automation-shape-routing`](../automation-shape-routing/SKILL.md) shape 0) |
 | Multiple independent tasks | `/swarm` (parallel) |
 | Sequential dependencies | `/swarm` with blockedBy |
 | Mix of both | `/swarm` spawns waves, each wave parallel |
@@ -199,7 +249,7 @@ When `/crank` invokes `/swarm`: Crank bridges beads to TaskList, swarm executes 
 | Fresh-context parallel execution | `/swarm` | Each spawned agent is a clean slate |
 | Autonomous epic loop | `/crank` | Loops waves via swarm until epic closes |
 | Just swarm, no beads | `/swarm` directly | TaskList only, skip beads |
-| RPI progress gates | `/ratchet` | Tracks progress; does not execute work |
+| RPI progress gates | `/flywheel` | Tracks progress; does not execute work |
 
 ---
 
@@ -212,6 +262,8 @@ When the selected backend is **Codex** (Codex CLI on PATH or Codex sub-agents), 
 2. Codex CLI available → Codex CLI via Bash (`codex exec ...`)
 3. `skill` tool read-only (OpenCode) → OpenCode subagents (`task(subagent_type="general", ...)`)
 4. None → fall back to the runtime-native swarm backend / sequential
+
+**Decision-time warning (codex boot-wedge).** A Codex-backed swarm adds a **boot-failure surface** — codex can fail to boot at all (the actual 2026-06-15 failure: a codex swarm wedged before doing any work). For a small task the boot cost alone can exceed doing it inline, so first confirm the swarm is warranted (see "Before you swarm" at the top), then run the pre-flight below *before committing* to a Codex swarm.
 
 **Pre-flight (CLI backend only):** verify `which codex`, then test the configured default model with `codex exec --full-auto -C "$(pwd)" "echo ok"`. If either fails, fall back to another backend.
 

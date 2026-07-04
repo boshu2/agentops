@@ -8,7 +8,7 @@ practices:
 hexagonal_role: domain
 consumes:
 - implement
-- vibe
+- validate
 - council
 produces:
 - result.json
@@ -20,7 +20,7 @@ metadata:
   tier: judgment
   dependencies:
   - council
-  - beads
+  - beads-br
 context:
   window: fork
   intent:
@@ -39,7 +39,31 @@ output_contract: skills/council/schemas/verdict.json
 
 ## Loop position
 
-Move **7 (capture evidence + learning, then ratchet)** of the [operating loop](../../docs/architecture/operating-loop.md). Two outputs per loop turn: evidence (test names, snapshot keys, council verdicts, citation events) recorded against the bead and `.agents/ratchet/`; learnings promoted only under the [ratchet rules](../../docs/architecture/operating-loop.md#the-promotion-ratchet) — noticed once stays in the handoff, repeats twice goes to `.agents/learnings/`, changes future behavior updates a SKILL.md or template, must-never-regress becomes a gate, core doctrine promotes into PRODUCT.md/GOALS.md/docs/cdlc.md. Most observations die at handoff. That is correct.
+Move **7 (capture evidence + learning, then ratchet)** of the [operating loop](../../docs/architecture/operating-loop.md). Two outputs per loop turn: evidence (test names, snapshot keys, council verdicts, citation events) recorded against the bead and `.agents/flywheel/`; learnings promoted only under the [ratchet rules](../../docs/architecture/operating-loop.md#the-promotion-ratchet) — noticed once stays in the handoff, repeats twice goes to `.agents/learnings/`, changes future behavior updates a SKILL.md or template, must-never-regress becomes a gate, core doctrine promotes into PRODUCT.md/GOALS.md/docs/cdlc.md. Most observations die at handoff. That is correct.
+
+**Route a promoted learning to the WEAKEST enforcement surface that actually
+changes behavior** — this is the ladder, by strength, not three copies of the
+same note:
+
+| Surface | Strength | Promote here when |
+|---|---|---|
+| `AGENTS.md`/`CLAUDE.md` | always-on context | doctrine relevant to *most* turns in this repo |
+| a **SKILL.md** | JIT, model-invoked | contextual judgment that fires on a trigger |
+| a **gate/hook** | mechanical, un-skippable | must-never-regress; cannot be left to judgment |
+
+Put it as high as needed and no higher: a hook for what an agent must not be
+*able* to skip; a skill for what it should *choose* well; AGENTS.md for what it
+should always *know*. A lesson that only needs to be known doesn't need a hook;
+a lesson that must never regress is wasted as prose. **If the existing
+hook/gate layer already catches the failure** (it fired, just late), the fix is
+usually one rung weaker — teach a skill/AGENTS.md to run that gate *earlier*, not
+add a redundant hook.
+
+**Measure the shipped change on real data, not just unit-green.** A learning or
+feature that is unit-correct but has **zero observable effect on the real
+corpus/workload** is a STOP signal (stop investing in it), not a "do more"
+signal. Cite the real-data measurement (counts before/after on the actual
+corpus), not just "tests pass."
 
 Six phases:
 1. **Council** — Did we implement it correctly?
@@ -200,6 +224,10 @@ This must be the LAST action in Phase 4.
 
 **Phases 3-6 (Maintenance):** Read [references/maintenance-phases.md](references/maintenance-phases.md) for backlog processing, activation, retirement, and harvesting phases. Load when `--process-only` flag is set or when running full post-mortem.
 
+## Close the ms outcome loop (optional)
+
+If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` (helped) or `ms outcome <skill> --failure` (misled/didn't apply) — only real consultations, an honest empty set beats a padded one. Skip silently if `ms` is not present.
+
 ## Reporting and Workflow
 
 Read [references/user-reporting.md](references/user-reporting.md) when you need the Step 7 report template, mandatory next-`/rpi` suggestion format, workflow integration diagram, and example invocations.
@@ -263,8 +291,9 @@ should change. See the `/goals` skill.
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
-- `skills/vibe/SKILL.md` — Council validates code (`/vibe` after coding)
+- `skills/validate/SKILL.md` — Council validates code (`/validate` after coding)
 - `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
+- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — its council artifact (`.agents/council/*-pre-land-*.md`) is landing evidence this post-mortem consumes
 
 
 ## Reference Documents

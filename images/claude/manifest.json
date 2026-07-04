@@ -1,17 +1,17 @@
 {
   "image": "claude",
   "spec": "IMAGE-CORE.md",
-  "spec_section": "\u00a71 (CORE 61) + \u00a72a (Claude recipe) + \u00a72d (contract) + \u00a73a (operator skills)",
-  "source_corpus_commit": "8172d7e7ab6b43a6fb2624c4be8ac3816d6a24d5",
+  "spec_section": "post-consolidation corpus refresh (2026-07-04, age-085q); original spec: IMAGE-CORE.md \u00a71 + \u00a72a + \u00a72d + \u00a73a",
+  "source_corpus_commit": "81303ad9c48373c0f78ec785fb4c05c9422f9399",
   "recipe": "direct",
   "transform": "none",
   "description": "Claude image = the CORE skill set shipped DIRECT. SKILL.md is Claude-native (YAML frontmatter name/description + markdown body); no conversion, no wrapper. Skills are consumed in place from agentops/skills/<slug>/ via the Claude harness skills path / marketplace plugin. First-class Claude primitives (Workflows, Agent subagents, scheduled tasks) wrap USAGE, not the skill files. This bundle is the manifest + README + verify only; it does NOT copy or duplicate the skill files.",
   "counts": {
-    "method_core": 28,
-    "tool_op_core": 22,
-    "core_total": 50,
+    "method_core": 24,
+    "tool_op_core": 11,
+    "core_total": 35,
     "operator": 2,
-    "manifest_total": 52
+    "manifest_total": 37
   },
   "core_skills": [
     {
@@ -195,26 +195,14 @@
       "ship": "direct"
     },
     {
-      "slug": "caam",
-      "path": "skills/caam/",
+      "slug": "account-rotation",
+      "path": "skills/account-rotation/",
       "category": "tool-op-core",
       "ship": "direct"
     },
     {
       "slug": "review",
       "path": "skills/review/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "ru-multi-repo-workflow",
-      "path": "skills/ru-multi-repo-workflow/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "gh-triage-ru",
-      "path": "skills/gh-triage-ru/",
       "category": "tool-op-core",
       "ship": "direct"
     },
@@ -231,62 +219,8 @@
       "ship": "direct"
     },
     {
-      "slug": "process-triage",
-      "path": "skills/process-triage/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "system-performance-remediation",
-      "path": "skills/system-performance-remediation/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "ssh",
-      "path": "skills/ssh/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "gcloud",
-      "path": "skills/gcloud/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "gh-cli",
-      "path": "skills/gh-cli/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "gh-actions",
-      "path": "skills/gh-actions/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "research-software",
-      "path": "skills/research-software/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "repeatedly-apply-skill",
-      "path": "skills/repeatedly-apply-skill/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
       "slug": "cc-hooks",
       "path": "skills/cc-hooks/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "vibing-with-ntm",
-      "path": "skills/vibing-with-ntm/",
       "category": "tool-op-core",
       "ship": "direct"
     }

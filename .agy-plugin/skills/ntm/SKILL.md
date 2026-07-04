@@ -5,16 +5,15 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending
-  panes, reading robot state, triaging work, locks/mail, safety, pipelines,
-  serve, or NTM errors.
+description: 'Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".'
 practices:
 - pragmatic-programmer
 ---
 <!-- TOC: One Rule | Outcome | Cold Start | Mandatory Loop | NTM Action Card | Surface Selection | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Output | Operating Notes | Reference Index | Related Skills -->
 
-> **Scope:** this skill is AgentOps **operating doctrine** for NTM. The binary is self-describing — for command syntax, flags, schemas, and examples use `ntm --robot-docs=quickstart|commands|examples|exit-codes`, `ntm --robot-capabilities`, `ntm --robot-schema=all`, or `ntm --help`. Never trust this file (or any notes) over the live contract. For tending loops, marching orders, unstick ladders, and swarm cadence, use the companion `vibing-with-ntm` skill.
+> **Scope:** this skill is AgentOps **operating doctrine** for NTM. The binary is self-describing — for command syntax, flags, schemas, and examples use `ntm --robot-docs=quickstart|commands|examples|exit-codes`, `ntm --robot-capabilities`, `ntm --robot-schema=all`, or `ntm --help`. Never trust this file (or any notes) over the live contract. For tending loops, marching orders, unstick ladders, and swarm cadence, use the companion `using-atm` skill (the former `vibing-with-ntm` tending doctrine is folded into `/ntm`).
+
+> **`atm` is the same binary.** `atm` (Bo's fork/alias, `~/.local/bin/atm`) is byte-identical to `ntm` — same `--help`, same `--robot-*` surface, same flags, same exit codes. Every `ntm …` form documented here and in the references applies verbatim to `atm …`, and vice-versa. Use them interchangeably; the companion out-of-session substrate skill is literally named `using-atm`. When `--robot-capabilities` matters, query whichever binary you invoked — they resolve to the same contract.
 
 # NTM — Named Tmux Manager
 
@@ -39,11 +38,24 @@ If the snapshot or attention feed disagrees with what the command said happened,
 | Situation | Start here |
 |---|---|
 | You need NTM doctrine, then exact syntax via `--robot-docs` / references | This skill |
-| You are tending an already-running swarm and deciding whether to nudge, restart, stand down, or dispatch marching orders | `/vibing-with-ntm` |
+| You are tending an already-running swarm and deciding whether to nudge, restart, stand down, or dispatch marching orders | `/using-atm` (tending loop) |
 | You are running a Brenner-style hypothesis investigation or incident RCA through NTM panes | `brennerbot-with-ntm` |
 | You only need Beads or BV mechanics | `/beads-br` or `/beads-bv` |
 
 For any state-changing action, verify the live contract with `ntm --robot-capabilities` before executing.
+
+### Folded triggers (ag-s43tg wave 1): `ntm-browser-test-coordination` + `ntm-review-worker-orchestration` route here
+
+- **Browser/UI test coordination.** Use when coordinating browser or UI tests through NTM panes
+  with screenshots and handoffs: dispatch the test run as marching orders to a dedicated pane,
+  reserve the surfaces under test via `agent-mail`, keep screenshot/artifact paths in the pane
+  output, and confirm completion in `--robot-snapshot` + the attention feed before handing off.
+- **Review/analysis workers.** Use when operating an NTM review or
+  analysis worker with bounded inputs and evidence-backed output: scope the worker
+  to an explicit input set (files, diff, bead),
+  require artifact-backed findings (paths + line refs, not impressions), and treat a worker that
+  emits conclusions without evidence as not-done — re-dispatch with the bounded-input contract
+  restated.
 
 ## The Loop (Mandatory)
 
@@ -115,7 +127,8 @@ Escalate only with the action card filled; each tier raises the proof bar:
 | Conflate pipeline status and run | `--robot-pipeline=<id>` is status | `--robot-pipeline-run=<file>` |
 | Retry degraded mail/CASS forever | Burns the session | record degraded source, use fallback, continue |
 | Infer abandoned beads from silence | NTM deliberately does not implement `bead_orphaned` | explicit status/mail/reservation evidence |
-| Trust a fresh `spawn --cod` pane blind | Some builds leave a bare shell; prompts execute as shell text | verify with `--robot-tail`; fall back to `codex exec -C <worktree>` per lane |
+| Trust a fresh `spawn --cod` pane blind (bare shell) | Some builds leave a **bare zsh**; prompts execute as shell text | verify with `--robot-tail`; relaunch the CLI, or fall back to `codex exec -C <worktree>` per lane |
+| Fire a separate `send` right after a bare `spawn` (boot race) | `spawn` returns **before** the agent boots to its input box; the first send is silently dropped → pane is never-engaged (CLI alive, 0.0% CPU) | wait for input-ready first: `--assign` / `--init-prompt` / `--robot-wait=ready`; if already dropped, **re-dispatch, don't restart** (OC-047) |
 
 ## Pre-Flight Checklist
 
@@ -173,13 +186,13 @@ Keep depth out of this file. The binary's own docs (`ntm --robot-docs=...`) are 
 
 Drop-in examples live under `assets/`:
 
-- [`pipeline-example.yaml`](assets/pipeline-example.yaml) — a review pipeline with parallel step + retry
-- [`policy-example.yaml`](assets/policy-example.yaml) — opinionated `~/.ntm/policy.yaml` starter
-- [`envrc.example`](assets/envrc.example) — recommended `direnv`/shell env vars
+- [`pipeline-example.yaml`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/pipeline-example.yaml) — a review pipeline with parallel step + retry
+- [`policy-example.yaml`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/policy-example.yaml) — opinionated `~/.ntm/policy.yaml` starter
+- [`envrc.example`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/envrc.example) — recommended `direnv`/shell env vars
 
 ## Related Skills
 
-- **`vibing-with-ntm`** — the companion **operator / orchestration** skill: tending loops, marching-orders prompts, autonomous unstick recipes, steady-state cadence. Use it whenever the question is "how do I run the swarm well?" rather than "what does NTM do?"
+- **`using-atm`** — the companion **operator / substrate** skill: spawn + dispatch, the swarm tending loop, continuity renewal ticks. Use it whenever the question is "how do I run the swarm well?" rather than "what does NTM do?" (The former `vibing-with-ntm` tending doctrine is folded into `/ntm`.)
 - `agent-mail` for inboxes, contact handshakes, and file reservations
 - `br` for bead state changes and syncing
 - `bv` for graph-aware task prioritization
