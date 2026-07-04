@@ -23,6 +23,86 @@ The "Action required" callout distinguishes hard breakages (must fix before runn
 
 ---
 
+## Upgrading to 3.2.x
+
+3.2 continues the 3.0 narrowing: the last CLI-orchestration verbs are removed, and the corpus/factory satellites move behind build tags so the default surface stays small. The satellites are **archived, not deleted** — each restore command below rebuilds them.
+
+### `ao rpi` / `ao evolve` command surface removed
+
+**Affects:** anyone invoking `ao rpi` or `ao evolve` from scripts, wrappers, or CI.
+
+The command lane was removed at `f61c5f0e7`. The loop itself is now the in-session navigation path, not a CLI verb.
+
+**Action required:** drive the loop in-session via the operating loop + the `/rpi` skill (one turn over the loop). To restore the old command surface: `AGENTOPS_LEGACY=1 make build`.
+
+### `ao recall` / `ao memory ingest-claude` removed
+
+**Affects:** anyone calling `ao recall` or `ao memory ingest-claude`.
+
+Both were removed at `9d5be0b9e`. AgentOps consumes external memory tools instead of shipping its own store.
+
+**Action required:** use `cass` (search your past agent sessions) and `cm` (procedural memory). Session-log → provenance mining stays native.
+
+### Corpus / flywheel commands archived behind the `flywheel` build tag
+
+**Affects:** callers of `ao corpus`, `ao curate`, `ao defrag`, `ao harvest`, `ao mind`, `ao refinery`.
+
+These moved behind `//go:build flywheel`; the default (`spine`) build omits them. The code stays buildable, just off by default.
+
+**Action required:** rebuild them with `make build-flywheel`, or consume knowledge via `cass` + `cm`.
+
+### RPI / factory commands archived behind the `legacy` build tag
+
+**Affects:** callers of `ao autodev`, `ao codex`, `ao loop*`, `ao orchestrate*`, `ao operator*`, `ao tick`, `ao turn_verify`, `ao harness`.
+
+These moved behind `//go:build legacy`.
+
+**Action required:** use the operating loop + an out-of-session substrate; restore the old commands with `AGENTOPS_LEGACY=1 make build`.
+
+### `ao cron` shim deleted
+
+**Affects:** anyone calling the `ao cron` scheduling shim.
+
+Removed at `b242136ac` (ADR-0012).
+
+**Action required:** schedule an external substrate instead — NTM dispatch, `ao mcp serve`, or `ao agent`.
+
+full map: [MIGRATION.md](MIGRATION.md)
+
+---
+
+## Upgrading to 3.0.x
+
+3.0 is a deliberate narrowing: AgentOps becomes **in-session only**. Everything that tried to be an always-on runtime was deleted, and out-of-session orchestration moves to a substrate you choose. Full narrative: [MIGRATION-3.0.md](MIGRATION-3.0.md).
+
+### All runtime hooks deleted (the repo is hookless)
+
+**Affects:** anyone who ran the hook bundle or relied on PreToolUse/PostToolUse side effects.
+
+Every runtime hook was deleted (ADR-0002) after an A/B showed the injected-context delta was zero.
+
+**Action required:** rely on hookless skills + the `ao` CLI, and install the local pre-push gate (`scripts/install-pre-push-gate.sh`) — the gate, not a hook, enforces the bar before a push. `--with-hooks` remains as an opt-in for anyone who still wants them.
+
+### `agentopsd` daemon, `ao schedule`, and `ao overnight` deleted
+
+**Affects:** anyone who ran the always-on daemon, the scheduling lane, or the overnight compounding runner.
+
+AgentOps ships no always-on runtime (ADR-0009 — "delete, not deprecate").
+
+**Action required:** move that lane to an external substrate you choose — **NTM** (a local tmux swarm) + `ao mcp serve` (MCP tool surface) + `ao agent` (managed agents). Out-of-session scheduling belongs to whatever substrate you run.
+
+### bd / Dolt tracker retired
+
+**Affects:** anyone tracking work with the `bd`/Dolt backend.
+
+The old tracker was a single-host server with no offline lane; it is retired.
+
+**Action required:** track with `BEADS_DIR="$(ao beads dir)" br <cmd>` and triage with `bv`. Your old `.beads/` is preserved but non-authoritative.
+
+full map: [MIGRATION.md](MIGRATION.md)
+
+---
+
 ## Upgrading to 2.38.x (Unreleased)
 
 **Status:** in development — see `[Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) for latest.
