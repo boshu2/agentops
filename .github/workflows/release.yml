@@ -29,7 +29,7 @@ jobs:
   doc-release-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Run doc-release stabilization gate
         run: |
@@ -39,16 +39,16 @@ jobs:
   pre-publish-evidence:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
@@ -108,7 +108,7 @@ jobs:
           jq -e '.release_status == "pass"' release-artifacts/release-readiness.json
 
       - name: Upload pre-publish release evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pre-publish-release-evidence
           path: release-artifacts
@@ -119,22 +119,22 @@ jobs:
     if: needs.doc-release-gate.result == 'success' && needs.pre-publish-evidence.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: '1.26.3'
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
 
       - name: Download pre-publish release evidence
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: pre-publish-release-evidence
           path: release-artifacts
@@ -223,7 +223,7 @@ jobs:
           fi
 
       - name: Publish with GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
         with:
           version: '~> v2'
           args: release --clean
@@ -250,7 +250,7 @@ jobs:
           echo "Uploaded SBOM + security report + readiness assets"
 
       - name: Generate SLSA provenance attestation
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
         with:
           subject-path: |
             dist/ao-darwin-amd64.tar.gz
