@@ -375,11 +375,14 @@ for suite in "${SUITES[@]}"; do
                 if [[ "$baseline_gate" == "pre-push" || "$baseline_gate" == "ci" || "$baseline_gate" == "release" || "$baseline_gate" == "model-upgrade" ]]; then
                     record_failure "$suite_id requires a promoted baseline at $baseline_path"
                 else
-                    record_warning "$suite_id has no promoted baseline at $baseline_path"
+                    # Baselines are operator-local (.agents/ is gitignored), so a
+                    # fresh clone legitimately has none — degrade to WARN and say
+                    # how to seed one (age-ll9q).
+                    record_warning "$suite_id has no promoted baseline at $baseline_path (expected on a fresh clone; seed: bash scripts/eval-agentops.sh --suite $suite --promote-baseline --promoted-by \"\$USER\" --rationale 'seed initial baseline')"
                 fi
                 ;;
             promotable)
-                record_warning "$suite_id is promotable but has no promoted baseline at $baseline_path"
+                record_warning "$suite_id is promotable but has no promoted baseline at $baseline_path (seed: bash scripts/eval-agentops.sh --suite $suite --promote-baseline --promoted-by \"\$USER\" --rationale 'seed initial baseline')"
                 ;;
             none|"")
                 ;;
