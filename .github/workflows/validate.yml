@@ -1170,7 +1170,7 @@ jobs:
       # ── agentops-contract-canaries (heavy bespoke setup: bd, gocyclo, bats) ──
       - name: Cache pinned Go tool binaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/go/bin
@@ -1697,7 +1697,7 @@ jobs:
       # changes only when MS_REV changes, so the cache is correct-by-pinning.
       - name: Cache pinned ms binary
         id: ms-cache
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cargo/bin/ms
           key: ms-bin-b0bb6bd5-nightly-${{ runner.os }}
