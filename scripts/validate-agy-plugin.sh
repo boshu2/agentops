@@ -4,21 +4,23 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_DIR="$REPO_ROOT/.agy-plugin"
 
+# Operator-core set, resolved through the skill-consolidation ledger
+# (2026-07-04 refresh, age-085q): cass-memory/casr -> cass, caam ->
+# account-rotation, ubs -> review, planning-workflow -> plan,
+# multi-model-triangulation -> council.
 core_skills=(
   agent-mail
   beads-br
   beads-bv
   ntm
   cass
-  cass-memory
   dcg
-  caam
-  casr
-  ubs
+  account-rotation
+  review
+  plan
+  council
   rch
   sbh
-  planning-workflow
-  multi-model-triangulation
   cc-hooks
 )
 

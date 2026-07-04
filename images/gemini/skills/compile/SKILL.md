@@ -1,6 +1,6 @@
 ---
 name: compile
-description: Compile .agents knowledge wiki.
+description: 'Compile .agents knowledge wiki. Triggers: "compile the knowledge wiki", "build the LLM wiki", "compile .agents into the wiki".'
 practices:
 - wiki-knowledge-surface
 - ddd-bounded-context
@@ -20,7 +20,7 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: knowledge
+  tier: experimental
   stability: stable
   dependencies: []
 output_contract: .agents/compiled/*.md, .agents/compiled/index.md, .agents/compiled/log.md,
@@ -28,13 +28,15 @@ output_contract: .agents/compiled/*.md, .agents/compiled/index.md, .agents/compi
 ---
 # Compile — Knowledge Compiler
 
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — compiles promoted `.agents/` learnings into the interlinked wiki (the compound sub-step).
+
 Reads raw `.agents/` artifacts and compiles them into a structured, interlinked
 markdown wiki. Inspired by [Karpathy's LLM Knowledge Bases](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 ## What This Skill Does
 
 The knowledge flywheel captures signal reactively (via `/post-mortem`,
-`/forge`). `/compile` closes the loop by:
+`/curate --mode=forge`). `/compile` closes the loop by:
 
 1. **Mining** unextracted signal from git and `.agents/` (existing)
 2. **Growing** learnings via validation, synthesis, and gap detection (existing)

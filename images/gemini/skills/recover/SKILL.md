@@ -1,13 +1,13 @@
 ---
 name: recover
-description: Recover session context.
+description: 'Recover session context. Triggers: "recover", "recover session context.", "recover skill".'
 practices:
 - sre
 - legacy-code-seams
 - pragmatic-programmer
 hexagonal_role: driving-adapter
 consumes:
-- bd
+- br
 - rpi
 produces:
 - .agents/rpi/*.md
@@ -29,7 +29,16 @@ output_contract: 'stdout: recovered context summary'
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-**CLI dependencies:** gt, ao, bd — all optional. Shows what's available, skips what isn't.
+**CLI dependencies:** gt, ao, br — all optional. Shows what's available, skips what isn't.
+
+### Folded trigger (ag-s43tg wave 1): `trace` routes here
+
+- **`trace` → the recovery evidence walk.** Use when you need to trace decisions through artifacts —
+  reconstructing why a change happened by walking commits, beads,
+  plans, and `.agents/` evidence backwards from the artifact in question. The Step 1
+  parallel evidence sweep below (git log, work-queue state, knowledge artifacts) is the
+  trace surface; start from the artifact, follow its citations, and summarize the
+  decision chain in the dashboard.
 
 ---
 
@@ -84,13 +93,14 @@ git branch --show-current
 
 **Call 4 — Work Queue State:**
 ```bash
-if command -v bd &>/dev/null; then
+if command -v br &>/dev/null; then
+  BEADS_DIR="$(ao beads dir)"
   echo "=== IN_PROGRESS ==="
-  bd list --status in_progress 2>/dev/null | head -3
+  BEADS_DIR="$BEADS_DIR" br list --status in_progress 2>/dev/null | head -3
   echo "=== READY ==="
-  bd ready 2>/dev/null | head -3
+  BEADS_DIR="$BEADS_DIR" br ready 2>/dev/null | head -3
 else
-  echo "BD_UNAVAILABLE"
+  echo "BR_UNAVAILABLE"
 fi
 ```
 
@@ -356,7 +366,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Shows "BD_UNAVAILABLE" or "GT_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools: `brew install bd` or `brew install gt`. Skill gracefully degrades by showing available state only. |
+| Shows "BR_UNAVAILABLE" or "GT_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools (`br` / `gt`). Skill gracefully degrades by showing available state only. |
 | RPI state shows wrong phase | Stale phased-state.json not updated | Check timestamp of `.agents/rpi/phased-state.json`. If stale, it may be from a previous run. Run `/status` to verify current phase. |
 | Evolve history shows wrong cycle | Old cycle-history.jsonl entries not pruned | Tail -3 shows most recent entries. Check all entries with `tail -20 .agents/evolve/cycle-history.jsonl`. |
 | Knowledge injection fails silently | ao CLI not installed or no knowledge artifacts | Ensure ao installed: `brew install ao`. If no learnings exist, run `/validate` to seed the knowledge base. |
@@ -365,4 +375,4 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 
 ## Reference Documents
 
-- [references/recover.feature](references/recover.feature) — Executable spec: detect rpi phase from phased-state, surface claimed/ready bd work, recent git, --json dashboard (soc-qk4b)
+- [references/recover.feature](references/recover.feature) — Executable spec: detect rpi phase from phased-state, surface claimed/ready br work, recent git, --json dashboard (soc-qk4b)

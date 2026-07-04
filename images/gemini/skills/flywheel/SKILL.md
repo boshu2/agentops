@@ -1,6 +1,6 @@
 ---
 name: flywheel
-description: Check knowledge flywheel health.
+description: 'Check knowledge flywheel health. Triggers: "flywheel", "check knowledge flywheel health.", "flywheel skill".'
 practices:
 - wiki-knowledge-surface
 - lean-startup
@@ -24,12 +24,14 @@ context:
     - TASK
   intel_scope: full
 metadata:
-  tier: background
+  tier: experimental
   dependencies: []
   internal: true
 output_contract: 'stdout: flywheel health report (JSON when --json)'
 ---
 # Flywheel Skill
+
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — monitors the knowledge-pool health that the promotion ratchet feeds.
 Monitor the knowledge flywheel health.
 ## The Flywheel Model
 ```
@@ -40,6 +42,17 @@ Sessions → Transcripts → Forge → Pool → Promote → Knowledge
 ```
 
 **Velocity** = rate of knowledge flowing through. **Friction** = bottlenecks slowing the flywheel.
+
+### Folded triggers (ag-s43tg wave 1): `ratchet` routes here
+
+- **`ratchet` → flywheel gate tracking.** Use when asked to record Brownian Ratchet gates —
+  tracking progress through the RPI workflow with permanent gates
+  (`Progress = Chaos × Filter → Ratchet`; merged/closed/stored progress can't be un-ratcheted).
+- Gate surface: `ao ratchet status` / `ao ratchet check <step>` / `ao ratchet record <step>
+  --output "<artifact-path>"` over the chain at `.agents/ao/chain.jsonl`
+  (steps: `research`, `plan`, `implement`, `vibe`, `post-mortem`).
+- Ratchet tracks and locks progress; it does not run the loop itself — pair with `/crank`
+  (epic loop) or `/swarm` (Ralph loop) to execute work.
 
 ## Execution Steps
 Given `/flywheel`:
@@ -121,7 +134,7 @@ if command -v ao &>/dev/null; then
 
   # Retrieval quality: use the representative live corpus when it exists
   if [ -d cli/cmd/ao/testdata/retrieval-bench-live ]; then
-    ao retrieval-bench --live --corpus cli/cmd/ao/testdata/retrieval-bench-live --json 2>/dev/null || true
+    ao eval bench --live --corpus cli/cmd/ao/testdata/retrieval-bench-live --json 2>/dev/null || true
   fi
 else
   echo "ao CLI not available — using file-based metrics"
@@ -249,7 +262,7 @@ ao flywheel status --json       # machine-readable
 | Verdict | Action |
 |---------|--------|
 | **decaying** | Run `/compile` cycle, archive stale artifacts, increase citation via `ao lookup` |
-| **accumulating** | Review orphaned research (`/research`→`/post-mortem --quick` pipeline), improve forge quality |
+| **accumulating** | Review orphaned research (`/research`→`/post-mortem --quick` pipeline), improve `/curate --mode=forge` capture quality |
 | **compounding** | Maintain cadence. Consider capturing baselines (`ao metrics baseline`) for trend tracking |
 
 ## Cache Eviction

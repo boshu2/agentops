@@ -1,6 +1,6 @@
 ---
 name: goals
-description: Maintain AgentOps goals.
+description: 'Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".'
 practices:
 - dora-metrics
 - lean-startup
@@ -81,7 +81,7 @@ Parse the user's input:
 | `/goals render`, "export gherkin", "feature file" | **render** | `ao goals render` |
 
 `ao goals scenarios` links each directive to behavioral scenarios (the
-`ao scenario` family) so GOALS.md is an executable BDD spec: bare lists every
+`ao eval scenario` family) so GOALS.md is an executable BDD spec: bare lists every
 directive's linked scenarios with link health; `--create "<goal>" --directive N`
 scaffolds and bidirectionally links a scenario; `--lint` checks the link graph.
 See `docs/adr/ADR-0003`.
@@ -139,7 +139,7 @@ ao goals measure --scenarios-only -o json
 ```
 
 Scenario results are read from the scenario result artifacts (see
-`ao scenario` family); the exact aggregation path and exit-code semantics are
+`ao eval scenario` family); the exact aggregation path and exit-code semantics are
 in `references/executable-spec-chain.md`.
 
 ### Step 3: Report
@@ -215,7 +215,7 @@ Check what product infrastructure exists and suggest appropriate gates:
 | Infrastructure | Suggested Gate |
 |---------------|----------------|
 | `.agents/learnings/` exists | `flywheel-compounding` — knowledge above escape velocity |
-| `skills/quickstart/` exists | `quickstart-under-5min` — onboarding time gate |
+| `skills/status/` exists | `quickstart-under-5min` — onboarding time gate |
 | `docs/comparisons/` exists | `competitive-freshness` — comparison docs updated within 45 days |
 | `PRODUCT.md` exists | `product-gaps-tracked` — Known Gaps section has entries |
 | `ao flywheel status` works | `flywheel-promotion-rate` — learnings promoted above threshold |

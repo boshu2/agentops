@@ -1,6 +1,7 @@
 ---
 name: plan
-description: Decompose goals into issue plans.
+spine: true
+description: 'Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".'
 practices:
 - adr
 - agile-manifesto
@@ -19,7 +20,7 @@ metadata:
   tier: execution
   dependencies:
   - research
-  - beads
+  - beads-br
   - pre-mortem
   - crank
   - implement
@@ -28,19 +29,35 @@ context:
   intent:
     mode: task
   intel_scope: topic
-output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via bd create)
+output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via br create)
 ---
 # Plan Skill
 
-> **Quick Ref:** Decompose goal into trackable issues with waves. Output: `.agents/plans/*.md` + bd issues.
+> **Quick Ref:** Decompose goal into trackable issues with waves. Output: `.agents/plans/*.md` + br issues.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
+
+## Absorbed trigger surface — planning-workflow (folded in, skill-prune phase 2)
+
+This skill also covers the retired `planning-workflow` skill: the comprehensive
+markdown planning methodology for software projects. Use `plan` when starting a
+new project, creating implementation plans, or refining architecture before
+coding — planning tokens are far fewer and cheaper than implementation tokens,
+so front-load the thinking. The absorbed methodology's bar for a *delivered*
+plan: self-contained (a fresh agent can implement without asking the human),
+dependency-aware (decomposes cleanly into a beads graph), justified (every
+non-obvious choice has a *why*), reviewed to steady-state by a strong reasoning
+model, and converted to beads with the dependency edges intact. Ground every
+load-bearing architectural claim (library choices, existing-codebase structure,
+performance/cost numbers) in a verifiable source before it survives a review
+round. For small local changes (< ~200 LOC), plan in chat instead — the
+planning overhead would exceed the implementation cost.
 
 ## Loop position
 
 Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [BDD intent issue](../../docs/templates/intent-issue.md); produces a [slice validation plan](../../docs/templates/slice-validation.md) — one slice per Given/When/Then row with a first-failing-test target, write-scope, bounded context, and ownership. Slices group into a wave only when every row of the wave-validity check passes (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Default to sequential when in doubt — parallel waves are an optimization, not a default.
 
-**CLI dependencies:** bd (issue creation). If bd is unavailable, write the plan to `.agents/plans/` as markdown with issue descriptions, and use TaskList for tracking instead. The plan document is always created regardless of bd availability.
+**CLI dependencies:** br (issue creation) and bv (graph triage). If br is unavailable, write the plan to `.agents/plans/` as markdown with issue descriptions, and use TaskList for tracking instead. The plan document is always created regardless of br availability.
 
 ## Discovery Boundary
 
@@ -53,7 +70,7 @@ for the boundary from Discovery into Plan:
 | Inbound port | `plan_slices` from BDD intent, bead, research artifact, or execution packet |
 | Outbound ports | `persist_issue`, `verify_symbols`, `retrieve_context`, `seed_execution_packet` |
 | Driving adapter | `/plan` skill invocation |
-| Driven adapters | bd, `rg`, `.agents/findings`, `.agents/plans`, execution-packet writer |
+| Driven adapters | br, bv, `rg`, `.agents/findings`, `.agents/plans`, execution-packet writer |
 | Context packet | slice plan, file dependency matrix, acceptance criteria, test levels |
 | Guard adapter | stale-scope verification, symbol verification, wave-validity check |
 
@@ -133,7 +150,7 @@ Dispatch an Explore sub-agent (Task tool) with a prompt that demands symbol-leve
 
 #### Pre-Planning Baseline Audit (Mandatory)
 
-Before decomposing, run grep/wc/ls commands to quantify files to change, sections to add/remove, LOC to modify, coverage gaps. Record commands alongside results. File size limits (800-line SKILL.md lint limit) and test fixture counts are mandatory checks. Ground truth with numbers prevents scope creep.
+Before decomposing, run grep/wc/ls commands to quantify files to change, sections to add/remove, LOC to modify, coverage gaps. Record commands alongside results. File size limits (800-line SKILL.md lint limit) and test fixture counts are mandatory checks. Ground truth with numbers prevents scope creep. Search the skill/CLI corpus for each major capability before scoping it as new: `ms search "<capability>"` (fast path when available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`). Existing-skill or `ao` command hits become **reuse** notes in the plan, not new beads.
 
 Read [references/pre-decomposition.md](references/pre-decomposition.md) for the bad/good examples table and the full audit recipe.
 
@@ -160,6 +177,14 @@ Read [references/implementation-detail.md](references/implementation-detail.md) 
 ### Step 3.6: Symbol Verification (Mandatory)
 
 See the **Symbol Verification** section in [references/implementation-detail.md](references/implementation-detail.md). For each symbol cited in the plan, grep the codebase to verify it exists. If >20% of cited symbols are stale, WARN (do not block) and log them under `## Stale Symbol Warnings`. Opt-out: `--skip-symbol-check`.
+
+**Inventory facts are symbols too (2026-07-02, showcase kernel R10).** Any count,
+file list, or "X is empty/absent" claim the plan cites gets the same verification —
+and, because derived state moves faster than plans, consumers **re-verify at the
+moment of use**, not only at plan time (`ls`/`jq`/`grep` cost seconds). Measured:
+three of a duel's nine round-1 findings were plan facts gone stale within the hour
+they were written (wrong paths, a "dir is empty" claim on a non-empty dir, an
+undercounted locus list).
 
 ### Step 4: Decompose into Issues
 
@@ -190,7 +215,7 @@ Rules:
 - One scenario per distinct Given/When/Then behavior; a bead with N behaviors carries N scenarios.
 - Scenarios describe **observable behavior**, not implementation steps.
 - The `## Scenarios` block sits in the bead description ABOVE the `acceptance_criteria` YAML; the YAML is the machine-checkable layer, Gherkin is the behavior layer (they are complementary, not substitutes).
-- A bead emitted without a `## Scenarios` block is a contract violation — promote any free-text acceptance to scenarios before creating the bead.
+- This contract is enforced mechanically by the Step 7b.0 admission gate (`scripts/check-bead-scenario-coverage.sh --admission`, per `references/task-creation.md`): every created bead is piped through the gate post-creation, and a bead that fails admission must be fixed before the plan is reported DONE.
 
 This is the same `## Scenarios` block the bead-embedded acceptance model expects (`scenario-hash-stability` CI gate) and that `/discovery` lifts into the execution packet.
 
@@ -312,7 +337,7 @@ See [references/examples.md](references/examples.md) for full walkthroughs.
 
 | Problem | Solution |
 |---------|----------|
-| bd create fails | Run `bd init --prefix <prefix>` first |
+| br create fails | Run `br init --prefix <prefix>` first |
 | Plan too large (>20 issues) | Narrow goal or split into multiple epics |
 | Wave structure incorrect | Review dependencies: does blocked issue modify blocker's files? |
 | Conformance checks missing | Add `files_exist`, `content_check`, `tests`, or `command` checks |

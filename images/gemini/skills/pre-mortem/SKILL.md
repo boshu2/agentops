@@ -1,5 +1,6 @@
 ---
 name: pre-mortem
+spine: true
 description: 'Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.'
 practices:
 - adr
@@ -97,6 +98,17 @@ In `--quick` mode, skip Steps 1a and 1b as standalone pre-processing phases. If 
 
 To escalate to full multi-judge council, use `--deep` (4 judges) or `--mixed` (cross-vendor).
 
+### Step 1.5.1: Reversibility self-check — size the gate to the stakes (Mandatory)
+
+Before selecting gate depth, **state the plan's blast radius and reversibility in one sentence.** If the plan is
+reversible (content recoverable, deletion non-destructive, no shared schema/CLI/contract/migration surface), **say so and
+default to the lightest gate** — inline `--quick` plus a single blind sub-agent for the no-self-grading floor (Step 2.9).
+Escalate to `--deep` / `--mixed` / full council **only on a named irreversible surface** — a one-way door per the
+[blast-radius rule](../../docs/contracts/pawls.md#the-blast-radius-rule-the-list-is-examples-not-the-boundary)
+(schema migration, public API, architecture fork, security posture, deletion, mutate-shared-trunk). This is the de-escalation
+dual of Step 2.10's escalation rule: 2.10 says *add* rigor for one-way doors; this says *notice and drop* rigor when the op
+is reversible. Running a cross-family duel on a reversible doc/refactor is the waterfall the ratchet exists to avoid.
+
 ### Step 1.6: Scope Mode Selection
 
 Determine review posture — EXPANSION, HOLD SCOPE, or REDUCTION — and commit `scope_mode: <expansion|hold|reduction>` in the council packet. Auto-detection rules and mode-specific judge prompts are in [references/scope-mode.md](references/scope-mode.md).
@@ -157,6 +169,17 @@ Five mandatory checks run during council validation — temporal interrogation, 
 
 When a plan introduces a regex, grep, glob, or similar scope predicate, also apply [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md): require positive and negative examples before approval.
 
+**Re-baseline against what exists (mandatory when the plan proposes NEW
+construction).** A plan that says "build X" / "X is missing" / "the unbuilt
+arm" must prove X does not already exist — `grep`/read the codebase for the
+capability, the command, the function, the table — *before* the effort estimate
+is accepted. The dominant scoping failure is estimating new construction for
+machinery that is already built (and only needs integration), which inflates
+effort 2× and risks a duplicate/competing implementation. Judge prompt: "For
+each 'build/add/missing' claim, was the absence verified by a search, or
+assumed? Name the search." Treat an unverified "it's missing" as a WARN at
+minimum; FAIL if the plan's effort/sequencing depends on it.
+
 ### Step 2.9: No-self-grading invariant (author ≠ validator)
 
 The pre-mortem verdict must NOT be graded by the plan's own author. A verdict produced by the authoring context is autocorrelated — the same assumptions that shaped the plan pass it. This is the no-self-grading invariant (`ag-lmdx.4`): the independent-trust-domain check on the plan-acceptance verdict.
@@ -168,6 +191,36 @@ The pre-mortem verdict must NOT be graded by the plan's own author. A verdict pr
 **Escape:** `--allow-self` (default OFF) waives the invariant for the inline fallback only (e.g. no sub-agent runtime available). Using it stamps the verdict as self-graded; downstream `ao turn verify` reports it as waived, not independently validated.
 
 **Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed.
+
+**Cross-family requirement for one-way-door plans:** when the plan is a strategy, experiment, or one-way-door decision, the judge MUST be from a **different model family** than the author (e.g. author=Claude → judge=Codex, or vice versa). Same-family judges share training-data-correlated blind spots — the dominant failure mode for high-stakes plan review. Use `--mixed` or `codex exec` to satisfy this. Record `judge_family` in the verdict alongside `judge_id`.
+
+### Step 2.10: Pre-Registered Decision Rule (strategy / experiment / one-way-door plans)
+
+When the plan under review is a **strategy**, **experiment-driven** plan, or a **one-way-door** decision (irreversible: schema migration, public API change, architecture fork, security posture change, data deletion), the pre-mortem MUST require and record a **pre-registered decision rule** — defined BEFORE the council judges deliberate.
+
+A pre-registered decision rule answers three questions:
+
+1. **What result changes the decision?** Name the specific finding, metric, or evidence that would cause the plan to be rejected or materially altered. (Not "if judges say FAIL" — that's tautological.)
+2. **What threshold or CI gate kills the claim?** Name a concrete, mechanically verifiable condition: a test that must pass, a metric that must stay within bounds, a property that must hold. If no such gate exists, the plan is unfalsifiable — FAIL.
+3. **What negative result redirects?** Name what happens on a real negative: pivot to alternative X, defer to next cycle, escalate to human. "Try harder" is not a redirect.
+
+Record the decision rule in the council packet frontmatter as `decision_rule:` before judges deliberate. Judges evaluate the plan AGAINST the decision rule — not just "is this plan good" but "does this plan survive its own kill conditions."
+
+**Why:** without a pre-registered decision rule, pre-mortem degenerates into "does this plan seem reasonable" — a question the author already answered yes to. The decision rule makes the pre-mortem falsifiable. Surfaced by a cross-family (Codex) pre-mortem that found real problems an inline review missed because the inline review had no kill conditions to test against.
+
+### Step 2.11: Plan-Pawl Duel Checklist (the cross-family invariant)
+
+Steps 2.9 + 2.10 are **one invariant** — *a plan's acceptance verdict must come from an independent, cross-family adversary, against pre-registered kill conditions.* That invariant has **two delivery forms of the same thing**, not two different gates:
+
+- **`/pre-mortem --mixed`** (this skill) — a cross-vendor council judges the plan artifact.
+- **The discovery plan-pawl duel** ([`discovery`](../discovery/SKILL.md) STEP 3.5 → `ao plan-pawl decide`, the [`plan-pawl` row](../../docs/contracts/pawls.md)) — two distinct-family judge panes duel over the `SynthesisPacket`; that duel verdict **IS** the pre-mortem verdict for fanout-class discovery (do not run a second council).
+
+For fanout class the duel **satisfies no-self-grading by construction**: the two judges are fresh, context-isolated, distinct-family panes, so `author_id ≠ judge_id` and `judge_family ≠ author_family` hold automatically. Before accepting ANY plan acceptance verdict (either form), check:
+
+- [ ] **Independent judge** — `judge_id` ≠ `author_id` (no inline self-review; `--allow-self` waives only for the no-subagent fallback, and stamps the verdict self-graded).
+- [ ] **Cross-family for one-way doors** — strategy / experiment / irreversible plan ⇒ `judge_family` ≠ `author_family` (≥2 distinct roster families; the duel's quorum floor).
+- [ ] **Pre-registered decision rule** — `decision_rule:` recorded BEFORE deliberation; judges evaluate the plan against its own kill conditions.
+- [ ] **Not a behavior substitute** — the plan-pawl gates plan SHAPE; it never replaces the acceptance-test layer (2026-06-12 auth-bypass learning).
 
 ### Step 3: Interpret Council Verdict
 
@@ -183,7 +236,7 @@ Write to `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` using the full templ
 
 When Step 4.5 writes reusable findings, include `dedup_key` and refresh compiled findings with `finding-compiler.sh` when that hook exists.
 
-The generated report must preserve this exact heading because `ao rpi phased` extracts verdicts with a regex anchored to it:
+The generated report must preserve this exact heading because downstream validators and ledger readers extract verdicts with a regex anchored to it:
 
 ## Council Verdict: PASS / WARN / FAIL
 
@@ -231,8 +284,9 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
+- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — same adversarial stance aimed at the finished diff: this skill attacks the plan pre-work; that one attacks the completion claim pre-push
 - `skills/plan/SKILL.md` — Create implementation plans
-- `skills/vibe/SKILL.md` — Validate code after implementation
+- `skills/validate/SKILL.md` — Validate code after implementation
 
 ## Reference Documents
 
