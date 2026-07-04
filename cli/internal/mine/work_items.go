@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // WorkItemEmit is a single work item within a next-work.jsonl entry.
@@ -124,7 +126,11 @@ func LoadExistingMineIDs(path string) (map[string]bool, error) {
 	return ids, nil
 }
 
-// WriteWorkItems appends one JSONL line per work item to the given path.
+// WriteWorkItems appends one JSONL line per work item to the given path. The
+// append runs under the shared next-work sidecar lock
+// (rpi.WithNextWorkFileLock) so a line appended here cannot land inside a
+// concurrent RewriteNextWorkFile read-truncate-write window and be silently
+// destroyed by the rewrite (age-kbw4).
 func WriteWorkItems(path string, items []WorkItemEmit, ts string) error {
 	type emitEntry struct {
 		SourceEpic  string         `json:"source_epic"`
@@ -138,33 +144,35 @@ func WriteWorkItems(path string, items []WorkItemEmit, ts string) error {
 		ConsumedAt  *string        `json:"consumed_at"`
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
-	if err != nil {
-		return fmt.Errorf("open next-work.jsonl: %w", err)
-	}
-
-	for _, item := range items {
-		entry := emitEntry{
-			SourceEpic:  "compile-mine",
-			Timestamp:   ts,
-			Items:       []WorkItemEmit{item},
-			Consumed:    false,
-			ClaimStatus: "available",
-		}
-		data, err := json.Marshal(entry)
+	return rpi.WithNextWorkFileLock(path, func() error {
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o640)
 		if err != nil {
-			return fmt.Errorf("marshal work item entry: %w", err)
+			return fmt.Errorf("open next-work.jsonl: %w", err)
 		}
-		data = append(data, '\n')
-		if _, writeErr := f.Write(data); writeErr != nil {
-			_ = f.Close()
-			return writeErr
+
+		for _, item := range items {
+			entry := emitEntry{
+				SourceEpic:  "compile-mine",
+				Timestamp:   ts,
+				Items:       []WorkItemEmit{item},
+				Consumed:    false,
+				ClaimStatus: "available",
+			}
+			data, err := json.Marshal(entry)
+			if err != nil {
+				return fmt.Errorf("marshal work item entry: %w", err)
+			}
+			data = append(data, '\n')
+			if _, writeErr := f.Write(data); writeErr != nil {
+				_ = f.Close()
+				return writeErr
+			}
 		}
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("close next-work.jsonl: %w", err)
-	}
-	return nil
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("close next-work.jsonl: %w", err)
+		}
+		return nil
+	})
 }
 
 // WriteMineReportJSON writes a JSON report to dated and latest files.
