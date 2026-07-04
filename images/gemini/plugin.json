@@ -1,17 +1,17 @@
 {
-  "name": "agentops-core-gemini",
-  "version": "3.2.0",
-  "description": "AgentOps 65-skill image (61 CORE + 4 AGY operator) packaged for Google Antigravity (AGY) / Gemini. Portable SKILL.md set (identical to the Claude image — zero conversion) wrapped in an Antigravity plugin, with Agent Mail MCP and AgentOps guard/evidence hooks.",
-  "skills": "./skills",
-  "agents": "./agents",
-  "rules": "./rules",
-  "hooks": "./hooks/hooks.json",
-  "mcpServers": {
-    "agent-mail": {
-      "command": "am",
-      "args": [
-        "serve-stdio"
-      ]
-    }
+ "name": "agentops-core-gemini",
+ "version": "3.2.0",
+ "description": "AgentOps 39-skill image (38 CORE + agy-native operator) packaged for Google Antigravity (AGY) / Gemini. Portable SKILL.md set (identical to the Claude image - zero conversion) wrapped in an Antigravity plugin, with Agent Mail MCP and AgentOps guard/evidence hooks.",
+ "skills": "./skills",
+ "agents": "./agents",
+ "rules": "./rules",
+ "hooks": "./hooks/hooks.json",
+ "mcpServers": {
+  "agent-mail": {
+   "command": "am",
+   "args": [
+    "serve-stdio"
+   ]
   }
+ }
 }

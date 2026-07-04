@@ -28,13 +28,15 @@ Claude ships the source tree directly.
 | Gemini/AGY | `skills/<slug>/` | none (direct) | Antigravity plugin wrapper |
 | Codex | `skills/<slug>/` | CONVERSION → `skills-codex/<slug>/` | Codex skills + plugins |
 
-## The skill set — 66 skills
+## The skill set — 36 skills
 
-- **61 CORE** (the "image mind"): **35 method-core** (the operating loop, AgentOps-owned)
-  - **26 tool-op-core** (operating the substrate). Exact slugs in `IMAGE-CORE.md` §1.
-- **5 Claude operator skills** (§3a): thin skills that teach the worker to drive
-  Claude's first-class control surface — `workflow-builder`, `cc-subagents`,
-  `cc-worktree-isolation`, `cc-cron-ticks`, `cc-loop-driver`.
+- **34 CORE** (the "image mind"): **24 method-core** (the operating loop,
+  AgentOps-owned) + **10 tool-op-core** (operating the substrate). The original
+  IMAGE-CORE.md 61-slug list, resolved through the skill-consolidation ledger
+  (2026-07-04 refresh, age-085q) — retired slugs dropped, merged slugs replaced
+  by their successors.
+- **2 Claude operator skills** (§3a): thin skills that teach the worker to drive
+  Claude's first-class control surface — `workflow-builder`, `cc-hooks`.
 
 The authoritative list (slug + path + `ship: direct`) is `manifest.json`.
 
