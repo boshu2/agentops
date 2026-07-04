@@ -31,9 +31,9 @@ The "Action required" callout distinguishes hard breakages (must fix before runn
 
 **Affects:** anyone invoking `ao rpi` or `ao evolve` from scripts, wrappers, or CI.
 
-The command lane was removed at `f61c5f0e7`. The loop itself is now the in-session navigation path, not a CLI verb.
+`ao rpi` was deleted at `f61c5f0e7`; `ao evolve` was removed earlier (#724). The loop itself is now the in-session navigation path, not a CLI verb.
 
-**Action required:** drive the loop in-session via the operating loop + the `/rpi` skill (one turn over the loop). To restore the old command surface: `AGENTOPS_LEGACY=1 make build`.
+**Action required:** drive the loop in-session via the operating loop + the `/rpi` skill (one turn over the loop). The verbs themselves do not come back under any build tag — `AGENTOPS_LEGACY=1 make build` restores the *archived factory machinery* (`ao loop`, `ao orchestrate`, `ao operator`, ...; see the legacy-tag section below), not `ao rpi`.
 
 ### `ao recall` / `ao memory ingest-claude` removed
 
