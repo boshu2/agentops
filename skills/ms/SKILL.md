@@ -1,6 +1,6 @@
 ---
 name: ms
-description: 'meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".'
+description: 'meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
@@ -86,7 +86,7 @@ ms config                      # resolved config + skill_paths
 | **`-O plain`** | Prints name-only on `load`; truncates list output (`[N more lines]`). The content lives in `-O json` → `.data.content`. |
 | **CLI `ms search` "hybrid"** | Effectively BM25-only — ms never stores doc embeddings (`upsert_embedding` is called only from a unit test), so hybrid ≡ BM25 under ANY backend; no config/backend change fixes it (upstream gap, feature-noted; measured 2026-07-02, age-s3jf). Still loses to MCP BM25 in practice; don't prefer it. |
 | **Stale `ms.lock`** | `ms doctor` prints "Lock held" for a DEAD pid yet still says all-pass. A dead-pid lock is safe to delete. |
-| **Symlinks** | ms does NOT follow directory symlinks — `skill_paths` must list BOTH `~/.claude/skills` AND `~/dev/agentops/skills`. |
+| **Symlinks** | ms does NOT follow directory symlinks — `skill_paths` must list BOTH roots explicitly: the `~/.claude` skills dir AND the `~/dev/agentops/skills` repo dir. |
 | **Binary** | Source build only (`~/dev/meta_skill`, branch `local/frontmatter-id`); the 0.1.2 release binary corrupts IDs on Anthropic-frontmatter skills. Update: `git fetch && git rebase origin/main && cargo install --path . --locked`. |
 
 ## Concurrency

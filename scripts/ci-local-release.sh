@@ -10,7 +10,7 @@ set -euo pipefail
 #   ./scripts/ci-local-release.sh --quick      # fast pre-tag sanity (<5min): code-correctness subset, skips release-rehearsal lane
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
-#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao rpi status'
+#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao status'
 #
 # --quick vs --fast vs default:
 #   default  Full release rehearsal (~78min): cross-build + SBOM (cyclonedx/spdx) + vuln scan
@@ -330,14 +330,13 @@ check_required_cmds() {
 }
 
 run_shellcheck() {
+    # Tracked files only (mirrors run_markdownlint): a find over the working
+    # dir sweeps untracked local state (.tmp/, .gc/, scratch clones) and makes
+    # the gate irreproducible across machines (age-z1pv).
     local files=()
-    while IFS= read -r -d '' file; do
+    while IFS= read -r file; do
         files+=("$file")
-    done < <(find . -name "*.sh" -type f \
-        -not -path "./.git/*" \
-        -not -path "./.claude/*" \
-        -not -path "./.agents/*" \
-        -print0 2>/dev/null)
+    done < <(git ls-files '*.sh')
 
     if [[ "${#files[@]}" -eq 0 ]]; then
         echo "No shell files found."
@@ -382,6 +381,7 @@ run_security_scan_patterns() {
             --exclude-dir=.gc \
             --exclude-dir=.claude \
             --exclude-dir=.agents \
+            --exclude-dir=_beads \
             --exclude-dir=.tmp \
             --exclude-dir=.venv \
             --exclude-dir=.venv-docs \
@@ -446,7 +446,7 @@ run_dangerous_pattern_scan() {
 is_allowed_installer_pipe_match() {
     local match="$1"
 
-    [[ "$match" =~ ^\./scripts/install-(agy|claude|codex|codex-native-skills|codex-plugin|opencode)\.sh:[0-9]+: ]] || return 1
+    [[ "$match" =~ ^\./scripts/install(-(agy|claude|codex|codex-native-skills|codex-plugin|opencode))?\.sh:[0-9]+: ]] || return 1
     [[ "$match" =~ https://raw\.githubusercontent\.com/boshu2/agentops/main/scripts/install-(agy|claude|codex|opencode)\.sh ]] || return 1
     [[ "$match" =~ \|[[:space:]]*bash ]] || return 1
     return 0
@@ -675,7 +675,10 @@ run_security_gate() {
     echo "Security artifacts: $security_dir"
 }
 
-run_init_rpi_smoke() {
+run_init_live_waist_smoke() {
+    # Fresh-repo smoke over the LIVE waist: init + status + the gate/verify
+    # surfaces. The old `ao rpi ...` calls drove a surface removed in
+    # f61c5f0e7 (ADR-0009) and kept this step permanently red (age-z1pv).
     local tmp_home
     local tmp_repo
     tmp_home="$(mktemp -d)"
@@ -686,9 +689,10 @@ run_init_rpi_smoke() {
     (
         cd "$tmp_repo"
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" init
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi status
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi --help >/dev/null
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi phased --help >/dev/null
+        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" status >/dev/null
+        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" session bootstrap >/dev/null
+        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" gate check --help >/dev/null
+        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" verify --help >/dev/null
     ) || rc=$?
 
     rm -rf "$tmp_home" "$tmp_repo"
@@ -740,7 +744,7 @@ run_release_hil_evidence() {
 write_release_digital_twin_evidence() {
     local generated_at
     local status="pass"
-    local reason="release smoke, hook install smoke, and ao init/rpi smoke completed before this artifact was written"
+    local reason="release smoke, hook install smoke, and the ao init live-waist smoke completed before this artifact was written"
 
     generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     if [[ "$FAST_MODE" == "true" ]]; then
@@ -768,7 +772,7 @@ write_release_digital_twin_evidence() {
             vil: {status: $status, evidence: "local release digital twin"},
             release_smoke: {status: $status},
             hook_install_smoke: {status: $status},
-            rpi_smoke: {status: $status}
+            init_smoke: {status: $status}
           },
           errors_before_artifact: $errors_before_artifact
         }' > "$ARTIFACT_DIR/digital-twin-evidence.json"
@@ -1091,7 +1095,7 @@ fi
 
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
-run_step_bg "ao init + ao rpi smoke" run_init_rpi_smoke
+run_step_bg "ao init + live-waist smoke" run_init_live_waist_smoke
 run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
 collect_parallel

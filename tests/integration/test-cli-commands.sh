@@ -141,8 +141,8 @@ test_command "$TMPBIN inject" "ao inject"
 # Test 11: ao ratchet (help — subcommands require args)
 test_command "$TMPBIN ratchet --help" "ao ratchet --help" "ratchet|status|record|Usage"
 
-# Test 12: ao rpi status
-test_command "$TMPBIN rpi status" "ao rpi status"
+# Test 12: ao rpi status — REMOVED: the `ao rpi` command surface was removed
+# (f61c5f0e7); the operating loop replaced it as the live navigation path.
 
 # Test 13: ao pool promote (help — requires arg)
 test_command "$TMPBIN pool promote --help" "ao pool promote --help" "promote|usage|Usage"
@@ -150,8 +150,7 @@ test_command "$TMPBIN pool promote --help" "ao pool promote --help" "promote|usa
 # Test 14: ao ratchet record (help — requires step name)
 test_command "$TMPBIN ratchet record --help" "ao ratchet record --help" "record|usage|Usage"
 
-# Test 15: ao rpi (help — shows subcommands)
-test_command "$TMPBIN rpi --help" "ao rpi --help" "rpi|status|phased|Usage"
+# Test 15: ao rpi --help — REMOVED: `ao rpi` command surface removed (f61c5f0e7).
 
 # =============================================================================
 # Summary

@@ -394,7 +394,9 @@ test_exec_tolerant "ao doctor" "$AO" doctor
 
 # Search
 test_exec "ao search 'test'" "$AO" search "test"
-test_exec_exact "ao search --json --local nonexistent => []" "[]" "$AO" search --json --local "nonexistent-xyz-12345"
+# NOTE: the exact-[] no-match assertion lives in the Golden Path Fresh Repo
+# section — search tokenizes query fragments, so NO query is guaranteed empty
+# against a populated operator-local .agents corpus (age-z1pv).
 
 # Knowledge injection
 inject_mutation_args=()
@@ -438,11 +440,11 @@ test_exec_tolerant "ao contradict" "$AO" contradict
 test_exec_output "ao dedup" "Dedup|Scan|Total|Duplicate|No learnings|No learning or pattern files" "$AO" dedup
 
 # Curate
-test_exec_tolerant "ao curate status" "$AO" curate status
+test_exec_tolerant "ao flywheel status" "$AO" flywheel status
 
 # Notebook and memory (quiet mode to avoid state changes)
 test_exec "ao notebook update --quiet" "$AO" notebook update --quiet
-test_exec_tolerant "ao memory sync --quiet" "$AO" memory sync --quiet
+test_exec_tolerant "ao session memory sync --quiet" "$AO" session memory sync --quiet
 
 # Trace (help only — requires artifact path arg)
 test_help "ao trace --help" "$AO" trace --help
@@ -455,8 +457,7 @@ test_exec_output "ao goals measure" "GOAL|RESULT|pass|fail" "$AO" goals measure 
 # Ratchet
 test_exec_output "ao ratchet status" "Ratchet|Chain|Status|STEP" "$AO" ratchet status
 
-# RPI
-test_exec_tolerant "ao rpi status" "$AO" rpi status
+# (ao rpi removed in f61c5f0e7 / ADR-0009 — no live equivalent to smoke)
 
 # Badge
 test_exec_output "ao badge" "AGENTOPS|KNOWLEDGE|Sessions|Learnings|Citations" "$AO" badge
@@ -483,7 +484,7 @@ test_help "ao session --help" "$AO" session --help
 test_help "ao config --help" "$AO" config --help
 test_help "ao completion --help" "$AO" completion --help
 test_help "ao gate --help" "$AO" gate --help
-test_help "ao curate verify --help" "$AO" curate verify --help
+test_help "ao verify --help" "$AO" verify --help
 
 # ═══════════════════════════════════════════════════════
 #  Subcommand Help Coverage (verify subcommands exist)
@@ -496,12 +497,10 @@ test_help "ao ratchet --help" "$AO" ratchet --help
 test_help "ao metrics --help" "$AO" metrics --help
 test_help "ao pool --help" "$AO" pool --help
 test_help "ao constraint --help" "$AO" constraint --help
-test_help "ao curate --help" "$AO" curate --help
 test_help "ao session --help" "$AO" session --help
-test_help "ao rpi --help" "$AO" rpi --help
 test_help "ao flywheel --help" "$AO" flywheel --help
 test_help "ao maturity --help" "$AO" maturity --help
-test_help "ao memory --help" "$AO" memory --help
+test_help "ao session memory --help" "$AO" session memory --help
 test_help "ao notebook --help" "$AO" notebook --help
 test_help "ao trace --help" "$AO" trace --help
 test_help "ao findings --help" "$AO" findings --help
@@ -578,11 +577,11 @@ TOP_HELP=$("$AO" --help 2>&1)
 EXPECTED_COMMANDS=(
     doctor status version completion
     search inject lookup forge trace findings
-    rpi ratchet goals session
+    ratchet goals session verify
     flywheel pool metrics gate maturity
-    config hooks memory notebook
+    config hooks notebook
     demo init seed quick-start
-    badge constraint contradict dedup curate
+    badge constraint contradict dedup
     anti-patterns vibe-check extract validate
 )
 
@@ -620,6 +619,14 @@ if git -C "$QUICKSTART_REPO" init >/dev/null 2>&1; then
         pass "quickstart keeps instruction section idempotent"
     else
         fail "quickstart keeps instruction section idempotent"
+    fi
+
+    QS_SEARCH=$(cd "$QUICKSTART_REPO" && "$AO" search --json --local "nonexistent-xyz-12345" 2>/dev/null)
+    if [[ "$QS_SEARCH" == "[]" ]]; then
+        pass "ao search --json --local no-match => [] (fresh repo, empty corpus)"
+    else
+        fail "ao search --json --local no-match => [] (fresh repo, empty corpus)"
+        print_output_head "$QS_SEARCH" 4
     fi
 
     QS_JSON_RC=0
