@@ -92,13 +92,13 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao constraint activate`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Change constraint status from draft to active"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao curate verify`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Verify gate health against baselines"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao flywheel status`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Display comprehensive flywheel health status."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao pool auto-promote`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Automatically approve (and optionally promote) high-quality candidates"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run goal checks and produce a snapshot"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao memory sync`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao session memory sync`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Write recent session history to a repo-root MEMORY.md with managed block markers."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao beads audit`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Audits open and in-progress beads for backlog hygiene issues."},
@@ -107,7 +107,7 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao knowledge activate`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the full knowledge activation outer loop"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao sessions index`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao scenario validate`"}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "##### `ao eval scenario validate`"}
       ],
       "dimensions": ["artifact_quality", "process_adherence", "runtime_compatibility"],
       "critical": true
