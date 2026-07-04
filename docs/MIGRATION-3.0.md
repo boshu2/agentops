@@ -1,8 +1,8 @@
 # Migrating to AgentOps 3.0
 
-> **3.2 update:** the `ao rpi` / `ao evolve` CLI surface described below was removed in v3.2 and archived behind the `legacy` build tag (`AGENTOPS_LEGACY=1 make build` restores it). The in-session path is the operating loop + skills. Living map: [MIGRATION.md](MIGRATION.md).
+> **3.2 update:** the `ao rpi` / `ao evolve` CLI verbs described below are gone — `ao rpi` deleted at `f61c5f0e7` (3.2), `ao evolve` earlier (#724) — and no build tag restores them. What `AGENTOPS_LEGACY=1 make build` brings back is the archived RPI/factory machinery (`ao loop`, `ao orchestrate`, `ao operator`, …). The in-session path is the operating loop + skills. Living map: [MIGRATION.md](MIGRATION.md).
 
-3.0 is a deliberate narrowing. AgentOps is now the **in-session** agent operating loop and context compiler: skills, the operating loop (formerly the `ao rpi`/`ao evolve` verbs, removed in 3.2), crank/swarm, and the `.agents/` corpus. Everything that tried to be an always-on orchestration runtime has been removed. Out-of-session orchestration is delegated to a substrate you choose. AgentOps adopts a reference trio — **NTM** (a local tmux swarm) + **MCP** (`ao mcp serve`, shipped) + **managed-agents** (`ao agent`) — or you can run **Olympus** (the full-custom take). AgentOps owns none of it.
+3.0 is a deliberate narrowing. AgentOps is now the **in-session** agent operating loop and context compiler: skills, the operating loop (formerly the `ao rpi`/`ao evolve` verbs, since removed), crank/swarm, and the `.agents/` corpus. Everything that tried to be an always-on orchestration runtime has been removed. Out-of-session orchestration is delegated to a substrate you choose. AgentOps adopts a reference trio — **NTM** (a local tmux swarm) + **MCP** (`ao mcp serve`, shipped) + **managed-agents** (`ao agent`) — or you can run **Olympus** (the full-custom take). AgentOps owns none of it.
 
 This guide lists what was removed in 3.0 and what to use instead.
 
@@ -38,11 +38,11 @@ The CLI gc-bridge glue is severed. `ao rpi` (the command, since removed in 3.2) 
 ## New in 3.0
 
 - **`ao validate --gate`** — deterministic exit-code verdict (0 pass/warn, 1 fail, 2 internal error; `--strict` flips WARN→1). The retry hook for a substrate's `check` step and for CI; composes the existing ratchet validator, no network or LLM.
-- **The reference out-of-session substrate** — AgentOps adopts **NTM** + **MCP** (`ao mcp serve`, shipped) + **managed-agents** (`ao agent`) to run the loop out of session. None of it is AgentOps-owned; the substrate dispatches a whole operating-loop run (the `ao rpi`/`ao evolve` verbs since removed in 3.2) as one unit and never drives its insides.
+- **The reference out-of-session substrate** — AgentOps adopts **NTM** + **MCP** (`ao mcp serve`, shipped) + **managed-agents** (`ao agent`) to run the loop out of session. None of it is AgentOps-owned; the substrate dispatches a whole operating-loop run (the `ao rpi`/`ao evolve` verbs have since been removed) as one unit and never drives its insides.
 
 ## What stays (the in-session core)
 
-`crank`, `swarm`, `ao doctor`, `ao goals`, and the `.agents/` corpus remain in the default in-session core. The `ao rpi`/`ao evolve` verbs were removed in 3.2 (restore: `AGENTOPS_LEGACY=1 make build`), and the corpus/flywheel commands (`ao corpus`, `ao harvest`, `ao mind`, …) moved behind the `flywheel` build tag (restore: `make build-flywheel`). The in-session loop is the product, and it is proven end-to-end.
+`crank`, `swarm`, `ao doctor`, `ao goals`, and the `.agents/` corpus remain in the default in-session core. The `ao rpi`/`ao evolve` verbs were removed outright (no build tag restores them); the archived factory machinery (`ao loop`, `ao orchestrate`, …) returns via `AGENTOPS_LEGACY=1 make build`, and the corpus/flywheel commands (`ao corpus`, `ao harvest`, `ao mind`, …) via `make build-flywheel`. The in-session loop is the product, and it is proven end-to-end.
 
 ## One-line summary
 
