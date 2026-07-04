@@ -14,8 +14,17 @@
 # for once the corpus-wide pass rate is stable.
 #
 # Usage:
-#   check-loop-shape.sh                 # inspect live `bd` open + in_progress beads
-#   check-loop-shape.sh --json FILE     # inspect a bd-JSON array from FILE
+#   check-loop-shape.sh                 # inspect live open + in_progress beads.
+#                                       # Resolution order:
+#                                       #   1. br ledger (preferred): $(ao beads dir)/issues.jsonl —
+#                                       #      the source of truth; br's SQLite cache
+#                                       #      can go stale under concurrent writes
+#                                       #   2. bd CLI (fallback, external AgentOps
+#                                       #      users): `bd list --json` behind a
+#                                       #      background+timeout guard
+#                                       #   3. neither resolvable: SKIP (exit 0)
+#   check-loop-shape.sh --json FILE     # inspect a JSON array of issue objects
+#                                       # (br or bd shape) from FILE
 #   check-loop-shape.sh --strict        # exit 1 if any non-trivial bead lacks shape
 #   check-loop-shape.sh --self-test     # run built-in fixtures and assert behavior
 #   check-loop-shape.sh --help
@@ -70,7 +79,10 @@ analyze_beads() {
   local rows
   rows=$(printf '%s' "$json" | jq -r '
     def evidence_text:
-      [(.description // ""), (.acceptance_criteria // ""), (.notes // "")]
+      [(.description // ""),
+       (.acceptance_criteria // ""),
+       (.notes // ""),
+       ((.comments // []) | map(.text // "") | join("\n"))]
       | join("\n");
     def context_labels:
       [(.labels // [])[]
@@ -119,6 +131,26 @@ analyze_beads() {
   echo "OFFENDERS: $offenders"
 }
 
+# Resolve the live br ledger (issues.jsonl) and emit open + in_progress issues
+# as a JSON array. The JSONL is the source of truth (one last-wins line per
+# issue); reading it directly avoids both a br-binary dependency and the
+# stale-SQLite-cache hazard. Prints nothing and returns 1 when the ledger
+# cannot be resolved (caller SKIPs).
+live_bead_json() {
+  command -v ao >/dev/null 2>&1 || return 1
+  local beads_dir
+  beads_dir="$(ao beads dir 2>/dev/null)" || return 1
+  [ -n "$beads_dir" ] || return 1
+  [ -f "$beads_dir/issues.jsonl" ] || return 1
+  jq -s '
+    group_by(.id) | map(last)
+    | map(select(.status == "open" or .status == "in_progress"))
+  ' "$beads_dir/issues.jsonl" 2>/dev/null
+}
+
+# bd fallback (external AgentOps users still track with bd). Runs `bd list`
+# in the background with a timeout guard so a hung bd daemon can never wedge
+# the gate; returns 124 on timeout so the caller can SKIP.
 bd_list_with_timeout() {
   local status="$1"
   local tmp
@@ -158,6 +190,14 @@ self_test() {
   { "id": "fix-good",  "labels": ["non-trivial", "bc-loop", "xp"],
     "description": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c\nSlice candidates: S1 do the thing\nFirst failing proof: go test ./..." },
   { "id": "fix-split-fields", "labels": ["non-trivial", "bc-corpus"],
+    "description": "Problem statement only.",
+    "comments": [
+      { "id": 1, "issue_id": "fix-split-fields", "author": "bo",
+        "text": "Slice candidates: S1 do the thing\nFirst failing proof: go test ./..." },
+      { "id": 2, "issue_id": "fix-split-fields", "author": "bo",
+        "text": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c" }
+    ] },
+  { "id": "fix-split-fields-bd", "labels": ["non-trivial", "bc-corpus"],
     "description": "Problem statement only.",
     "acceptance_criteria": "Slice candidates: S1 do the thing\nFirst failing proof: go test ./...",
     "notes": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c" },
@@ -210,8 +250,12 @@ EOF
     echo "SELF-TEST FAIL: fix-good has full loop shape and must not warn" >&2
     fails=$((fails + 1))
   fi
-  if printf '%s\n' "$out" | grep -q "^WARN: fix-split-fields"; then
-    echo "SELF-TEST FAIL: fix-split-fields has evidence across bd fields and must not warn" >&2
+  if printf '%s\n' "$out" | grep -q "^WARN: fix-split-fields "; then
+    echo "SELF-TEST FAIL: fix-split-fields has evidence across description + comments (br shape) and must not warn" >&2
+    fails=$((fails + 1))
+  fi
+  if printf '%s\n' "$out" | grep -q "^WARN: fix-split-fields-bd"; then
+    echo "SELF-TEST FAIL: fix-split-fields-bd has evidence across description + acceptance_criteria + notes (bd shape) and must not warn" >&2
     fails=$((fails + 1))
   fi
   if printf '%s\n' "$out" | grep -q "^WARN: fix-trivial"; then
@@ -232,18 +276,17 @@ if [ "$SELF_TEST" -eq 1 ]; then
   exit $?
 fi
 
-# Resolve the bead JSON: explicit fixture file, or live bd.
+# Resolve the bead JSON: explicit fixture file, or a live tracker.
+# Live order: br ledger (preferred) → bd CLI (fallback) → SKIP.
 if [ -n "$JSON_FILE" ]; then
   if [ ! -f "$JSON_FILE" ]; then
     echo "check-loop-shape: --json file not found: $JSON_FILE" >&2
     exit 2
   fi
   BEAD_JSON=$(cat "$JSON_FILE")
-else
-  if ! command -v bd >/dev/null 2>&1; then
-    echo "check-loop-shape: SKIP (bd not available; pass --json FILE to inspect a fixture)"
-    exit 0
-  fi
+elif BEAD_JSON=$(live_bead_json) && [ -n "$BEAD_JSON" ]; then
+  : # br ledger resolved
+elif command -v bd >/dev/null 2>&1; then
   OPEN_JSON=$(bd_list_with_timeout open) || BD_TIMED_OUT=1
   PROG_JSON=$(bd_list_with_timeout in_progress) || BD_TIMED_OUT=1
   if [ "$BD_TIMED_OUT" -eq 1 ]; then
@@ -251,6 +294,9 @@ else
     exit 0
   fi
   BEAD_JSON=$(printf '%s\n%s' "$OPEN_JSON" "$PROG_JSON" | jq -s 'add // []' 2>/dev/null || echo '[]')
+else
+  echo "check-loop-shape: SKIP (no tracker resolvable — need a br ledger via 'ao beads dir' or the bd CLI; pass --json FILE to inspect a fixture)"
+  exit 0
 fi
 
 RESULT=$(analyze_beads "$BEAD_JSON")
