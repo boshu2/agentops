@@ -144,3 +144,30 @@ the live planner-shapes-a-real-ask drill is a separate fitness exercise.
    harness flag: `membrane/scaffold-quest.sh` is the planner's sole write path
    and is fail-closed on an existing quest (never edits impl code). The deny-list
    in the planner prompt is the backstop.
+
+<!-- BEGIN section: city self-verification (age-gc-mvp-w2-nuiw.6) -->
+## Self-verification — the membrane applied to itself
+
+Stock gc already ships the housekeeping substrate (20 native orders, `gc doctor`
+with 73 checks, `gc events`, dashboard), so this pack does **not** rebuild
+stall-detection or notification infra. It adds only the membrane-specific
+self-check: *is the fail-closed close door itself installed and sound in the city
+that imports the pack?*
+
+| Piece | What it proves |
+|---|---|
+| `doctor/membrane-health/` | A `gc doctor` check (exit 2 blocking): the close door (`membrane/close-gate.sh`, `finalize.sh`, `finalize.jq`) is present + executable, the `membrane-quest` formula resolves, the trinity agents exist, and **>=2 distinct provider families are configured** — the cross-family precondition the gate requires. A 1-family city can never CONFIRM (`finalize.jq` rejects `fewer_than_two_families`), so it is flagged EARLY here, not on the first close. |
+| `scripts/e2e.sh` | The headless **membrane smoke** an operator/CI runs: asserts the two membrane doctor checks (`law0-print-args` + `membrane-health`) are green and the pack `gc lint`-compiles. Structural + doctor-level only — **not** a live agent drill. Exits non-zero on a broken install. |
+| `orders/membrane-canary.toml` | A native **cooldown order** (not launchd/cron) that runs the smoke on a schedule (default 30m). A broken close door / missing trinity / sub-2-family city makes the next sweep exit non-zero, surfacing through gc's existing `gc events`/dashboard channel. Structural self-check only — a live through-the-loop quest canary is `age-gc-mvp-w2-nuiw.4`. |
+
+```bash
+gc doctor                         # membrane-health + law0-print-args now active
+bash scripts/e2e.sh --city <city> # headless membrane smoke; non-zero = broken
+gc order list                     # membrane-canary scheduled
+```
+
+**Residual zero-nudge gaps** (idle-pane drain → only `gc session submit`
+recovers; codex `~/.codex/hooks.json` trust modal → pre-trust in setup) are
+documented honestly in [`RESIDUAL-GAPS.md`](RESIDUAL-GAPS.md).
+<!-- END section: city self-verification (age-gc-mvp-w2-nuiw.6) -->
+
