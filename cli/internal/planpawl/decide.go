@@ -36,6 +36,23 @@ const (
 	Judgment WarnClass = "judgment"
 )
 
+// FailureClass records an infrastructure (not judgment) failure on a judge lane,
+// distinguishing a retryable outage from a genuine refutation. A judge that
+// provider-timed-out / rate-limited / produced no verdict must NOT be recorded as
+// a REFUTED — that is the age-5olx incident this type fixes.
+type FailureClass string
+
+const (
+	// FailureNone — the lane ran cleanly (no infrastructure failure).
+	FailureNone FailureClass = "none"
+	// FailureTransient — a retryable outage (rate-limit / timeout / no-verdict). NOT
+	// a refutation: excluded from the FAIL tally and from quorum coverage.
+	FailureTransient FailureClass = "transient"
+	// FailureHard — a non-retryable infrastructure failure. Counted fail-closed as a
+	// refutation (unchanged).
+	FailureHard FailureClass = "hard"
+)
+
 // JudgeVerdict is one model-family pane's verdict for the current round.
 type JudgeVerdict struct {
 	Family       string      `json:"family"`
@@ -43,6 +60,11 @@ type JudgeVerdict struct {
 	WarnClass    WarnClass   `json:"warn_class,omitempty"`
 	JudgmentFlag bool        `json:"judgment_flag,omitempty"`
 	Note         string      `json:"note,omitempty"`
+	// FailureClass / FailureReason record an infrastructure failure on this lane
+	// (a provider timeout, rate-limit, or no-verdict). A transient class makes the
+	// lane a retryable outage, not a refutation; see ClassifyFailure.
+	FailureClass  FailureClass `json:"failure_class,omitempty"`
+	FailureReason string       `json:"failure_reason,omitempty"`
 }
 
 // Decision is the deterministic outcome of a duel round.
@@ -55,13 +77,19 @@ const (
 	DecisionRedo Decision = "REDO"
 	// DecisionBlocked — a circuit breaker tripped: HOLD and escalate (andon).
 	DecisionBlocked Decision = "BLOCKED"
+	// DecisionDegraded — no genuine FAIL / mechanical-WARN / breaker fired, but
+	// transient lane loss dropped distinct-family coverage below the quorum floor.
+	// Retryable: re-run the PANEL (the work is fine; the judges timed out), NOT the
+	// work. This is distinct from REDO so a caller never redoes good work over an
+	// infrastructure outage.
+	DecisionDegraded Decision = "DEGRADED"
 )
 
 // Input is the deterministic decider's input for one round.
 type Input struct {
-	Verdicts    []JudgeVerdict
-	Round       int
-	MaxRounds   int
+	Verdicts  []JudgeVerdict
+	Round     int
+	MaxRounds int
 	// Oscillation is set by the caller when the SAME failure has repeated across
 	// rounds (no-forward-progress); a hard breaker.
 	Oscillation bool
@@ -77,11 +105,102 @@ type Outcome struct {
 	AutoApplied    []string `json:"auto_applied,omitempty"`
 	SurfacedWarns  []string `json:"surfaced_warns,omitempty"`
 	BreakerTripped string   `json:"breaker_tripped,omitempty"`
+	// Degraded is set when >= 1 judge lane transiently failed (a retryable outage,
+	// not a refutation). DegradedFamilies names those lanes' families. On a PASS it
+	// means the quorum floor still held on the surviving families; the DEGRADED
+	// decision means transient loss dropped coverage below the floor.
+	Degraded         bool     `json:"degraded,omitempty"`
+	DegradedFamilies []string `json:"degraded_families,omitempty"`
 }
 
 // quorumFloor is the minimum number of distinct, roster-validated model families
 // required for the multi-model plan-pawl (matches scripts/pawl-verdict.sh).
 const quorumFloor = 2
+
+// transientFailureReasons is the reason-token table that classifies an
+// infrastructure failure as retryable when no explicit FailureClass is set. It
+// mirrors the pawl-review.sh 529-class / no-verdict transport taxonomy.
+var transientFailureReasons = map[string]bool{
+	"rate_limited":          true,
+	"provider_rate_limited": true,
+	"provider_unavailable":  true,
+	"provider_timeout":      true,
+	"temporary_unavailable": true,
+	"transport_interrupted": true,
+	"timeout":               true,
+	"no_verdict":            true,
+}
+
+// transientDispositionTokens are the raw disposition sentinels pawl-review.sh
+// writes when a lane produced no trustworthy verdict (a stall / no-verdict). A
+// disposition equal to one of these IS the transient signal — there is no separate
+// FailureClass on the lane.
+var transientDispositionTokens = map[string]bool{
+	"<timeout>":  true,
+	"timeout":    true,
+	"no verdict": true,
+	"no-verdict": true,
+	"no_verdict": true,
+}
+
+// ClassifyFailure normalizes a lane's (class, reason) into the none/transient/hard
+// contract. Rules, fail-safe by design (never a silent pass, never a false refute):
+//   - explicit transient / hard class          -> that class (wins over the reason)
+//   - explicit none, or empty class + empty reason -> none (a clean lane)
+//   - empty class + a reason in the token table -> transient
+//   - empty class + an off-table reason         -> hard (fail-closed)
+//   - an UNRECOGNIZED class token WITH a reason  -> transient (an outage was
+//     reported; degrade rather than falsely refute)
+//   - an UNRECOGNIZED class token with no reason -> hard (no outage evidence)
+func ClassifyFailure(rawClass FailureClass, rawReason string) (FailureClass, string) {
+	class := normalizeToken(string(rawClass))
+	reason := normalizeToken(rawReason)
+	if class == "" && reason == "" {
+		return FailureNone, ""
+	}
+	switch FailureClass(class) {
+	case FailureNone:
+		return FailureNone, reason
+	case FailureTransient:
+		return FailureTransient, reason
+	case FailureHard:
+		return FailureHard, reason
+	case "":
+		if transientFailureReasons[reason] {
+			return FailureTransient, reason
+		}
+		return FailureHard, reason
+	default:
+		if reason != "" {
+			return FailureTransient, reason
+		}
+		return FailureHard, reason
+	}
+}
+
+// laneFailureClass is ClassifyFailure over a whole verdict, folding in the raw
+// disposition transport sentinels: an explicit transient/hard class from the
+// fields wins; otherwise a disposition that is itself a sentinel ("<timeout>", "no
+// verdict", ...) makes the lane transient.
+func laneFailureClass(v JudgeVerdict) FailureClass {
+	class, _ := ClassifyFailure(v.FailureClass, v.FailureReason)
+	if class == FailureTransient || class == FailureHard {
+		return class
+	}
+	if isTransientDisposition(v.Disposition) {
+		return FailureTransient
+	}
+	return FailureNone
+}
+
+// isTransientDisposition reports whether a raw disposition is a pawl-review.sh
+// transport sentinel (case-insensitive).
+func isTransientDisposition(d Disposition) bool {
+	return transientDispositionTokens[normalizeToken(string(d))]
+}
+
+// normalizeToken lowercases and trims a class/reason/disposition token.
+func normalizeToken(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
 
 // normalizeFamily collapses aliases to a canonical roster label, mirroring
 // scripts/pawl-verdict.sh's normalize_family. An off-roster family returns "".
@@ -116,12 +235,24 @@ func distinctFamilies(vs []JudgeVerdict) []string {
 // Decide applies the deterministic quorum/round/breaker rules. Precedence (high
 // to low) — a breaker always wins over the no-FAIL quorum check:
 //
-//  1. judgment-flag or oscillation  -> BLOCKED (hard breakers)
-//  2. round > max-rounds            -> BLOCKED (max-attempts breaker)
-//  3. any FAIL                      -> REDO (auto-redo, no human)
-//  4. any mechanical WARN           -> REDO (auto-apply the fix, then re-judge)
-//  5. fewer than quorumFloor families -> REDO (quorum not met)
-//  6. otherwise                     -> PASS (surfacing any judgment WARNs)
+//  1. judgment-flag or oscillation      -> BLOCKED (hard breakers)
+//  2. round > max-rounds                -> BLOCKED (max-attempts breaker)
+//  3. any FAIL or hard infra failure    -> REDO (auto-redo, no human)
+//  4. any mechanical WARN               -> REDO (auto-apply the fix, then re-judge)
+//  5. surviving distinct families < floor:
+//     - if transient lane loss caused it -> DEGRADED (retryable: re-run the panel)
+//     - otherwise                        -> REDO (quorum genuinely not met)
+//  6. otherwise                         -> PASS (Degraded=true when the floor still
+//     held despite a transient lane loss;
+//     surfacing any judgment WARNs)
+//
+// A lane that transiently failed — a retryable outage (an explicit transient
+// FailureClass, a reason in the transient token table, or a raw disposition that is
+// itself a transport sentinel like "<timeout>" / "no verdict") — is NOT a
+// refutation: it is excluded from the FAIL tally AND from quorum coverage, and
+// recorded in DegradedFamilies. This is the fix for the age-5olx incident, where a
+// warm panel whose codex+agy panes timed out was recorded REFUTED at 1/3 coverage.
+// A hard infra failure, by contrast, stays fail-closed (counted as a refutation).
 func Decide(in Input) Outcome {
 	fams := distinctFamilies(in.Verdicts)
 	out := Outcome{Round: in.Round, MaxRounds: in.MaxRounds, Families: fams}
@@ -163,12 +294,35 @@ func Decide(in Input) Outcome {
 		return out
 	}
 
-	// Tally FAILs and classify WARNs. FAIL-CLOSED: any disposition that is not a
-	// recognized PASS/FAIL/WARN (missing, empty, or garbage — e.g. a malformed
-	// --dir verdict JSON) is counted as a FAIL, never silently treated as clean.
-	// The decider is the windshield: it must not trust its inputs.
+	// Tally FAILs, classify WARNs, and separate transient lane loss from genuine
+	// refutations. FAIL-CLOSED: any disposition that is not a recognized
+	// PASS/FAIL/WARN (missing, empty, or garbage — e.g. a malformed --dir verdict
+	// JSON) is counted as a FAIL, never silently treated as clean. The decider is
+	// the windshield: it must not trust its inputs.
 	var fails int
+	var surviving []string // distinct roster families with a real (non-transient) verdict
+	seenSurviving := map[string]bool{}
+	var degraded []string // families whose lane transiently failed (evidence)
+	seenDegraded := map[string]bool{}
 	for _, v := range in.Verdicts {
+		switch laneFailureClass(v) {
+		case FailureTransient:
+			// A retryable outage — NOT a refutation. Excluded from the FAIL tally AND
+			// from quorum coverage; recorded so the decision is honest about the loss.
+			fam := normalizeOrRaw(v.Family)
+			if !seenDegraded[fam] {
+				seenDegraded[fam] = true
+				degraded = append(degraded, fam)
+			}
+			continue
+		case FailureHard:
+			// A non-retryable infra failure is a refutation (fail-closed, unchanged);
+			// it produced no trustworthy verdict, so it does not count toward coverage.
+			fails++
+			continue
+		}
+		// FailureNone: no infra failure reported — the ordinary quorum path.
+		//
 		// FAIL-CLOSED on the family too: a pane from an unrecognized/off-roster
 		// family is a malformed duel (operator error), not a free pass. It is
 		// counted as a refutation so a junk pane can never pad a quorum — e.g.
@@ -176,6 +330,10 @@ func Decide(in Input) Outcome {
 		if normalizeFamily(v.Family) == "" {
 			fails++
 			continue
+		}
+		if rf := normalizeFamily(v.Family); !seenSurviving[rf] {
+			seenSurviving[rf] = true
+			surviving = append(surviving, rf)
 		}
 		switch normDisposition(v.Disposition) {
 		case PASS:
@@ -201,8 +359,11 @@ func Decide(in Input) Outcome {
 			fails++
 		}
 	}
+	out.DegradedFamilies = degraded
+	out.Degraded = len(degraded) > 0
 
-	// 3. Any FAIL -> auto-redo (the default self-correcting path).
+	// 3. Any FAIL (incl. a hard infra failure) -> auto-redo (the self-correcting
+	// path). A genuine refutation outranks transient degradation.
 	if fails > 0 {
 		out.Decision = DecisionRedo
 		out.Reason = "at least one family refuted the plan — auto-redo with the findings"
@@ -216,18 +377,33 @@ func Decide(in Input) Outcome {
 		return out
 	}
 
-	// 5. Quorum floor: the multi-model plan-pawl needs >= 2 distinct families.
-	if len(fams) < quorumFloor {
+	// 5. Quorum floor over the SURVIVING (non-transient) families. If transient lane
+	// loss dropped coverage below the floor, the decision is DEGRADED — retryable,
+	// re-run the panel (the work is fine) — NEVER a silent PASS and never a false
+	// REDO/REFUTED. Without any transient loss, too few families is the ordinary
+	// quorum-not-met REDO (operator setup error).
+	if len(surviving) < quorumFloor {
+		if out.Degraded {
+			out.Decision = DecisionDegraded
+			out.Reason = "degraded coverage — transient lane loss (" + strings.Join(degraded, ", ") +
+				") dropped distinct-family coverage below quorum; retryable — re-run the panel, not the work"
+			return out
+		}
 		out.Decision = DecisionRedo
 		out.Reason = "quorum not met — the multi-model plan-pawl needs >= 2 distinct roster families to have run"
 		return out
 	}
 
-	// 6. No FAIL, no mechanical WARN, quorum met -> PASS (judgment WARNs surfaced).
+	// 6. No FAIL, no mechanical WARN, quorum met by the surviving families -> PASS.
 	out.Decision = DecisionPass
-	if len(out.SurfacedWarns) > 0 {
+	switch {
+	case out.Degraded && len(out.SurfacedWarns) > 0:
+		out.Reason = "quorum met by surviving families despite transient lane loss — PASS (degraded coverage; judgment WARN(s) surfaced)"
+	case out.Degraded:
+		out.Reason = "quorum met by surviving families despite transient lane loss — PASS with degraded coverage"
+	case len(out.SurfacedWarns) > 0:
 		out.Reason = "quorum met, no FAIL — PASS with accepted-risk judgment WARN(s) surfaced"
-	} else {
+	default:
 		out.Reason = "quorum met, no FAIL, no blocking WARN"
 	}
 	return out

@@ -17,10 +17,11 @@ import (
 // Exit codes for `ao plan-pawl decide` — the exit code IS the decision, so the
 // skill (dual-pane-atm) can branch on it without parsing.
 const (
-	planPawlExitPass    = 0 // PASS — the door opens
-	planPawlExitUsage   = 2 // bad invocation
-	planPawlExitRedo    = 3 // REDO — auto-redo loop (no human)
-	planPawlExitBlocked = 4 // BLOCKED — a circuit breaker tripped (andon)
+	planPawlExitPass     = 0 // PASS — the door opens
+	planPawlExitUsage    = 2 // bad invocation
+	planPawlExitRedo     = 3 // REDO — auto-redo loop (no human)
+	planPawlExitBlocked  = 4 // BLOCKED — a circuit breaker tripped (andon)
+	planPawlExitDegraded = 5 // DEGRADED — transient lane loss below quorum; re-run the PANEL
 )
 
 // planPawlExitError carries a decision exit code up to Execute().
@@ -110,6 +111,9 @@ Examples:
 			if len(out.SurfacedWarns) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "surfaced (judgment): %s\n", strings.Join(out.SurfacedWarns, ", "))
 			}
+			if len(out.DegradedFamilies) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "degraded (transient lane loss): %s\n", strings.Join(out.DegradedFamilies, ", "))
+			}
 		}
 
 		switch out.Decision {
@@ -119,6 +123,10 @@ Examples:
 			return &planPawlExitError{code: planPawlExitRedo, msg: ""}
 		case planpawl.DecisionBlocked:
 			return &planPawlExitError{code: planPawlExitBlocked, msg: ""}
+		case planpawl.DecisionDegraded:
+			// Retryable: re-run the panel, not the work. Its own exit code so the
+			// caller never conflates an infra outage with a genuine REDO.
+			return &planPawlExitError{code: planPawlExitDegraded, msg: ""}
 		default:
 			return &planPawlExitError{code: planPawlExitUsage, msg: "unknown decision " + string(out.Decision)}
 		}
