@@ -1,0 +1,9 @@
+# agy-verifier — verdict-only reviewer on a THIRD family (AGY / Gemini). Same
+# RBAC + sentinel + nonce contract as the codex verifier; gives the membrane a
+# rotatable cross-family judge so the quorum is builder=claude vs {codex, agy}
+# (never same-family self-grading). The membrane's default gate lane (LANE2,
+# family gemini). AGY is the sanctioned Gemini path (never `gemini -p`).
+scope = "city"
+provider = "antigravity"
+option_defaults = { permission_mode = "plan" }
+append_fragments = ["law0", "sentinel"]
