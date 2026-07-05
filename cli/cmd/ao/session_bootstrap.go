@@ -40,6 +40,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/promptsafe"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
 
@@ -315,12 +316,17 @@ func sessionBootstrapCanonMemory(cwd string, tokenBudget int, now time.Time) ([]
 		if l.Utility <= 0 {
 			l.Utility = types.InitialUtility
 		}
-		content := sessionBootstrapMemoryContent(l)
-		tokens := max(1, estimateTokens(strings.Join([]string{l.Title, content}, "\n")))
+		// Title + body are attacker-influenceable corpus content interpolated
+		// into agent-readable bootstrap output (human summary AND --json); strip
+		// harness delimiter tags at this single choke point so both paths are
+		// covered. (age-gascity-port-slate-irye.1)
+		title := promptsafe.SanitizeLeaf(l.Title)
+		content := promptsafe.SanitizeLeaf(sessionBootstrapMemoryContent(l))
+		tokens := max(1, estimateTokens(strings.Join([]string{title, content}, "\n")))
 		score := l.Utility * meta.confidence * maxFloat(l.FreshnessScore, 0.1)
 		item := SessionBootstrapMemoryItem{
 			ID:       l.ID,
-			Title:    l.Title,
+			Title:    title,
 			Content:  content,
 			Source:   l.Source,
 			Maturity: l.Maturity,
