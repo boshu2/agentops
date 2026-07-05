@@ -15,6 +15,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/adapters/corpus_fs"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/promptsafe"
 )
 
 // corpusInjectCmd is slice 3 of soc-y5vh.5 (cycle 146). Reads from the
@@ -89,6 +90,11 @@ func corpusInjectRun(ctx context.Context, opts corpusInjectOptions) error {
 	}
 	enc := json.NewEncoder(opts.writer)
 	for _, item := range items {
+		// Title/Body are untrusted corpus content emitted for an agent to read;
+		// strip harness delimiter tags before encoding. item is a range copy, so
+		// mutating it does not touch the source slice. (age-gascity-port-slate-irye.1)
+		item.Title = promptsafe.SanitizeLeaf(item.Title)
+		item.Body = promptsafe.SanitizeLeaf(item.Body)
 		if err := enc.Encode(item); err != nil {
 			return fmt.Errorf("corpus inject encode: %w", err)
 		}

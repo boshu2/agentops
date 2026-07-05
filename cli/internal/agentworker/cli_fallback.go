@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/promptsafe"
 )
 
 const defaultCLIFallbackWaitDelay = 2 * time.Second
@@ -99,7 +101,11 @@ func (w *CLIFallbackWorker) Start(ctx context.Context, req StartRequest) (AgentS
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(runCtx, command, args...)
 	cmd.Dir = strings.TrimSpace(req.CWD)
-	cmd.Env = append(os.Environ(), w.env...)
+	// Inherited secret-bearing env (tokens, API keys) is exposure the agent
+	// child never needs — the CLI authenticates from its own home. Strip it;
+	// explicit worker-config env (w.env) is the operator's allowlist, appended
+	// after the strip so it always survives. (age-gascity-port-slate-irye.1)
+	cmd.Env = append(promptsafe.StripSecretEnv(os.Environ()), w.env...)
 	cmd.Stdin = strings.NewReader(req.Prompt)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

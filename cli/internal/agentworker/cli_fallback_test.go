@@ -186,3 +186,42 @@ func processAlive(pid int) bool {
 	state := text[rparen+2]
 	return state != 'Z'
 }
+
+func TestCLIFallbackWorker_StripsInheritedSecretEnvKeepsExplicit(t *testing.T) {
+	// Inherited secret-bearing env must not reach the agent child; explicit
+	// worker-config env is the operator's allowlist and always survives, even
+	// when the key looks secret-bearing. (age-gascity-port-slate-irye.1)
+	t.Setenv("STRIPME_GITHUB_TOKEN", "leaked-secret")
+	worker, err := NewCLIFallbackWorker(CLIFallbackWorkerOptions{
+		Command:           "/bin/sh",
+		Args:              []string{"-c", `printf "tok=%s explicit=%s home=%s" "${STRIPME_GITHUB_TOKEN:-ABSENT}" "${EXPLICIT_API_KEY:-ABSENT}" "${HOME:-ABSENT}"`},
+		Env:               []string{"EXPLICIT_API_KEY=keepme"},
+		DisableCgroupCaps: true,
+		WallClockTimeout:  5 * time.Second,
+		CgroupNamePrefix:  "agentops-test",
+	})
+	if err != nil {
+		t.Fatalf("NewCLIFallbackWorker: %v", err)
+	}
+	session, err := worker.Start(context.Background(), StartRequest{
+		WorkerKind: WorkerKindCodex,
+		Provider:   ProviderCLIFallback,
+		Prompt:     "secret-env strip proof",
+	})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	transcript, err := session.Transcript(context.Background())
+	if err != nil {
+		t.Fatalf("Transcript: %v", err)
+	}
+	if !strings.Contains(transcript.Text, "tok=ABSENT") {
+		t.Fatalf("transcript = %q, want inherited STRIPME_GITHUB_TOKEN stripped (tok=ABSENT)", transcript.Text)
+	}
+	if !strings.Contains(transcript.Text, "explicit=keepme") {
+		t.Fatalf("transcript = %q, want explicit worker env preserved (explicit=keepme)", transcript.Text)
+	}
+	if strings.Contains(transcript.Text, "home=ABSENT") {
+		t.Fatalf("transcript = %q, want benign inherited env (HOME) preserved", transcript.Text)
+	}
+}
