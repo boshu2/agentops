@@ -1,0 +1,8 @@
+# verifier — verdict-only reviewer; input is ONLY diff + acceptance contract text.
+# Cross-family from builder (codex vs claude): author != judge, never self-grade.
+# Harness-level RBAC: permission_mode=plan makes "verifier never edits" a machine
+# fact. The membrane's default gate lane (LANE1, family gpt).
+scope = "city"
+provider = "codex"
+option_defaults = { permission_mode = "plan" }
+append_fragments = ["law0", "sentinel"]
