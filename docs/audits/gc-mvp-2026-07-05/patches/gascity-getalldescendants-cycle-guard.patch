@@ -1,0 +1,51 @@
+diff --git a/internal/runtime/tmux/tmux.go b/internal/runtime/tmux/tmux.go
+index 1eb5a2edb..5f95fe22a 100644
+--- a/internal/runtime/tmux/tmux.go
++++ b/internal/runtime/tmux/tmux.go
+@@ -773,11 +773,32 @@ func collectReparentedGroupMembers(pgid string, knownPIDs map[string]bool) []str
+ 	return reparented
+ }
+ 
++// maxDescendantDepth bounds getAllDescendants' recursion. Real process trees
++// are shallow (< 20 deep); this belt-and-suspenders cap only ever fires on a
++// pathological/cyclic walk, alongside the visited-set guard.
++const maxDescendantDepth = 40
++
+ // getAllDescendants recursively finds all descendant PIDs of a process.
+ // Returns PIDs in deepest-first order so killing them doesn't orphan grandchildren.
+ func getAllDescendants(pid string) []string {
++	return getAllDescendantsGuarded(pid, map[string]bool{pid: true}, 0)
++}
++
++// getAllDescendantsGuarded is the cycle-safe worker behind getAllDescendants.
++// PID reuse on a busy host can make `pgrep -P` report a descendant chain that
++// loops back onto an ancestor PID; the previous naive self-recursion then
++// walked forever, pegging a CPU and wedging the reconciler tick
++// (age-gc-adoption-u0he.7 — an interactive builder pane's large, churning
++// child tree deadlocked every subsequent reconcile). visited dedups PIDs
++// already on the walk (a PID has exactly one parent, so dedup is always
++// correct), and maxDescendantDepth bounds depth as a second stop.
++func getAllDescendantsGuarded(pid string, visited map[string]bool, depth int) []string {
+ 	var result []string
+ 
++	if depth > maxDescendantDepth {
++		return result
++	}
++
+ 	// Get direct children using pgrep
+ 	out, err := exec.Command("pgrep", "-P", pid).Output()
+ 	if err != nil {
+@@ -786,8 +807,12 @@ func getAllDescendants(pid string) []string {
+ 
+ 	children := strings.Fields(strings.TrimSpace(string(out)))
+ 	for _, child := range children {
++		if visited[child] {
++			continue // cycle / PID reuse — already walked; do not recurse again
++		}
++		visited[child] = true
+ 		// First add grandchildren (recursively) - deepest first
+-		result = append(result, getAllDescendants(child)...)
++		result = append(result, getAllDescendantsGuarded(child, visited, depth+1)...)
+ 		// Then add this child
+ 		result = append(result, child)
+ 	}
