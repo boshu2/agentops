@@ -79,6 +79,40 @@ The quest repo lives at `<city>/quests/<slug>` with a protected `main` carrying
 `CONTRACT.md` (the reviewers' ruler) and a `test.sh`. On CONFIRMED the source
 bead closes with an evidence-bound work record; on exhaustion it **stays open**.
 
+<!-- BEGIN planner-intake (age-gc-mvp-w2-nuiw.7) -->
+## Planner intake — one-line ask → shaped quest (operating-loop move 1)
+
+Stock gc has no "shape intent as a BDD acceptance contract" step: `mol-scoped-work`'s
+submit is *intentionally generic* (self-review only), so the close door has no
+default-FAIL ruler to judge against. This pack fills that move-1 gap with an
+**activated planner** and a **quest template** that ships as pack content.
+
+```bash
+# the mechanical half (deterministic; the planner invokes it):
+membrane/scaffold-quest.sh <slug> --ask "<one-line ask>"
+#   → copies quests/_template → quests/<slug>/, substitutes {{QUEST}}/{{ASK}},
+#     inits a git repo whose `main` carries the skeleton. Fail-closed: BLOCKED
+#     (exit 3) on a bad slug or an existing quest — it NEVER edits impl code.
+# the judgment half (the planner does this by hand, its ONE authored file):
+#   → author quests/<slug>/CONTRACT.md's numbered, default-FAIL Given/When/Then
+#     acceptance clauses, then create the quest bead + sling the builder.
+```
+
+`quests/_template/` (see its README) is the scaffold: `CONTRACT.md` (the ruler —
+numbered `N. [ ]` default-FAIL clauses, read from `main` by the close gate),
+`test.sh` (executable harness, red until implemented), and a placeholder
+`impl.sh`. On a **malformed/ambiguous** ask the planner emits
+`VERDICT: BLOCKED reason=<questions>` rather than guessing a contract.
+
+**RBAC (honest):** the planner's one write surface is scaffolding + authoring
+`CONTRACT.md`; it never touches impl code. gc's `permission_mode` is coarse
+(no path-scoped allowlist — see §Honest gaps #5), so the planner runs `auto-edit`
+and the *enforced* boundary is `scaffold-quest.sh` being the sole write path
+(fail-closed on existing quests), not a harness flag. The mechanical half is
+unit-proven in `tests/intake.bats` (well-formed scaffold + malformed→BLOCKED);
+the live planner-shapes-a-real-ask drill is a separate fitness exercise.
+<!-- END planner-intake -->
+
 ## Honest gaps (where gc's pack system couldn't express the membrane)
 
 1. **`reviewquorum.Finalize` is un-callable from a pack.** It lives in gascity's
@@ -102,3 +136,11 @@ bead closes with an evidence-bound work record; on exhaustion it **stays open**.
    default to the conventional `agentops-membrane` binding; a city that binds it
    differently must set the `MEMBRANE_LANE*` env overrides. Packs can't read
    their own binding name.
+5. **Planner write-scope is coarse, not path-allowlisted.** gc's harness
+   `permission_mode` is one of `plan | auto-edit | unrestricted` (gascity
+   `internal/worker/builtin/profiles.go`) — there is no "read-only EXCEPT
+   `quests/<slug>/`" mode. The planner must write its scaffold, so it runs
+   `auto-edit`; the *enforced* RBAC boundary is therefore mechanical, not a
+   harness flag: `membrane/scaffold-quest.sh` is the planner's sole write path
+   and is fail-closed on an existing quest (never edits impl code). The deny-list
+   in the planner prompt is the backstop.
