@@ -28,24 +28,22 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "ao",
 	Version: version,
-	Short:   "AgentOps Knowledge Compounding CLI",
-	Long: `ao is the CLI for AgentOps, a software-factory control plane for repo-native agent work.
+	Short:   "AgentOps CLI: validation gate + provenance for agent work",
+	Long: `ao is the CLI for AgentOps: a verification membrane for agent work. The loop
+produces validated output with proof — no verdict = not done.
 
-"Problem in. Value out. Intelligence compounds."
-
-Software Factory Lane:
-  ao factory start --goal "fix auth startup"
-  /rpi "fix auth startup"   or   ao orchestrate status
-  ao codex stop
-
-The Knowledge Flywheel underneath it:
-  Sessions compound via .agents/ + Smart Connections.
-  Others start fresh. You get smarter every session.
+The operating loop:
+  ao session bootstrap                  Orient any agent in this repo (run first)
+  ao lookup --query "<topic>"           Pull decay-ranked prior context
+  ao gate check --fast --scope head     The release gate before any push
 
 For AI agents:
   ao capabilities     Machine-readable CLI contract (JSON) — run this first.
   ao robot-docs       Paste-ready agent handbook.
   Append --json to any read-side command for structured output.
+
+If a command you relied on is gone, see docs/MIGRATION.md — every removed
+surface has a row naming its replacement (and the restore path when one exists).
 
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
@@ -170,6 +168,7 @@ func Execute() {
 			// surface — just map to the process exit code.
 			os.Exit(wikiHealthErr.ExitCode())
 		}
+		printRemovedCommandHint(os.Stderr, rootCmd, err)
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}

@@ -33,9 +33,9 @@ func robotDocsText() string {
 	var b strings.Builder
 	b.WriteString(`# ao — Agent Handbook
 
-ao is the AgentOps CLI: a software-factory control plane for repo-native
-agent work. This handbook is the contract — read it once, then drive ao
-without guessing.
+ao is the AgentOps CLI: a validation gate plus a provenance record for
+agent work — validated output with proof (no verdict = not done). This
+handbook is the contract — read it once, then drive ao without guessing.
 
 ## Output contract
 
@@ -73,7 +73,7 @@ ao capabilities                 # discover the contract
 ao status --json                # where am I, what's initialized
 ao doctor --robot-triage        # one-call health + remediation
 ao inject "<topic>"             # pull relevant prior knowledge
-ao orchestrate status           # inspect orchestration readiness
+ao gate check --fast --scope head   # the release gate before any push
 ` + "```" + `
 
 ## Environment
