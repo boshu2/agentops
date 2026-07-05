@@ -167,6 +167,33 @@ func TestPlanPawlDecide_DirFailsClosedOnBadDisposition(t *testing.T) {
 	}
 }
 
+// age-gascity-port-slate-irye.2: the age-5olx incident, driven end-to-end through
+// --dir. The failure_class / failure_reason (and disposition sentinel) JSON fields
+// flow through planpawl.JudgeVerdict's json tags with NO cmd plumbing; a warm panel
+// where codex+agy timed out must exit DEGRADED (5), not REDO (3) / PASS (0).
+func TestPlanPawlDecide_DegradedExitOnTransientDirVerdicts(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []struct{ name, body string }{
+		{"claude.json", `{"family":"claude","disposition":"PASS"}`},
+		{"codex.json", `{"family":"codex","disposition":"<timeout>"}`},
+		{"agy.json", `{"family":"agy","disposition":"PASS","failure_class":"transient","failure_reason":"provider_timeout"}`},
+	} {
+		if err := os.WriteFile(filepath.Join(dir, f.name), []byte(f.body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out, code := runDecide(t, nil, 1, 3, dir, false, false, false)
+	if code != planPawlExitDegraded {
+		t.Fatalf("want exit %d (DEGRADED) for a timed-out panel, got %d\n%s", planPawlExitDegraded, code, out)
+	}
+	if !strings.Contains(out, "decision: DEGRADED") {
+		t.Fatalf("want DEGRADED in output, got: %s", out)
+	}
+	if !strings.Contains(out, "degraded (transient lane loss)") {
+		t.Fatalf("want the degraded-families line, got: %s", out)
+	}
+}
+
 func TestPlanPawlDecide_NoVerdictsUsageError(t *testing.T) {
 	_, code := runDecide(t, nil, 1, 3, "", false, false, false)
 	if code != planPawlExitUsage {
