@@ -1,0 +1,82 @@
+diff --git a/internal/beads/contract/files.go b/internal/beads/contract/files.go
+index 8cdff0fb4..401b21be5 100644
+--- a/internal/beads/contract/files.go
++++ b/internal/beads/contract/files.go
+@@ -495,6 +495,16 @@ func EnsureCanonicalConfig(fs fsys.FS, path string, state ConfigState) (bool, er
+ 	// root cause of the 2026-06-08 town-wide wedge (ga-0eq). BD_BACKUP_ENABLED
+ 	// env-var suppression only covers gc's own calls, so bake it in too.
+ 	changed = setBool(root, "backup.enabled", false) || changed
++	// bd init auto-populates a git `sync.remote` from the scope repo's origin,
++	// and bd's post-commit sync then PUSHES bead/dolt tracker refs
++	// (refs/dolt/data, refs/heads/__dolt_remote_info__) to it. For a GC-managed
++	// store the canonical tracker is the city's Dolt server, never the code
++	// repo's git remote — so that push is always wrong, and on a public or
++	// CI/deploy-wired repo it silently leaks tracker data and fires spurious
++	// builds (observed: agentops-showcase → 2 BLOCKED Vercel deploys). Same
++	// class as the backup_export remote above: strip the whole `sync` block
++	// from the canonical config so no rig-add or reconcile can reintroduce it.
++	changed = deleteKeys(root, "sync") || changed
+ 	if state.EndpointOrigin != "" {
+ 		changed = setString(root, "gc.endpoint_origin", string(state.EndpointOrigin)) || changed
+ 	}
+diff --git a/internal/beads/contract/files_test.go b/internal/beads/contract/files_test.go
+index 8c3cf2ae0..28880c39a 100644
+--- a/internal/beads/contract/files_test.go
++++ b/internal/beads/contract/files_test.go
+@@ -391,6 +391,56 @@ func TestEnsureCanonicalConfigForcesAutoBackupOff(t *testing.T) {
+ 	})
+ }
+ 
++// TestEnsureCanonicalConfigStripsGitSyncRemote locks in the rig-add leak fix:
++// bd init auto-populates a `sync.remote` from the scope repo's git origin, and
++// bd's post-commit sync then pushes bead/dolt tracker refs to it. On a public
++// or CI/deploy-wired repo that silently leaks tracker data and fires spurious
++// builds (observed on agentops-showcase: refs/dolt/data + __dolt_remote_info__
++// pushed to GitHub → 2 BLOCKED Vercel deploys). The canonical store is the
++// city's Dolt, so the whole `sync` block must be stripped at config time — not
++// just from the freshly-added rig, but on every reconcile normalization so an
++// already-leaked scope self-heals.
++func TestEnsureCanonicalConfigStripsGitSyncRemote(t *testing.T) {
++	fs := fsys.OSFS{}
++	dir := t.TempDir()
++	path := filepath.Join(dir, "config.yaml")
++	// The exact nested shape bd init writes into a rig's .beads/config.yaml.
++	input := strings.Join([]string{
++		"issue-prefix: gc",
++		"dolt.auto-start: false",
++		"sync:",
++		`    remote: "git+ssh://git@github.com/boshu2/agentops-showcase.git"`,
++		"",
++	}, "\n")
++	if err := fs.WriteFile(path, []byte(input), 0o644); err != nil {
++		t.Fatal(err)
++	}
++
++	if _, err := EnsureCanonicalConfig(fs, path, ConfigState{
++		IssuePrefix:    "gc",
++		EndpointOrigin: EndpointOriginManagedCity,
++		EndpointStatus: EndpointStatusVerified,
++	}); err != nil {
++		t.Fatalf("EnsureCanonicalConfig() error = %v", err)
++	}
++
++	data, err := fs.ReadFile(path)
++	if err != nil {
++		t.Fatal(err)
++	}
++	text := string(data)
++	if strings.Contains(text, "sync:") {
++		t.Fatalf("config must strip the sync block, still present:\n%s", text)
++	}
++	if strings.Contains(text, "github.com") || strings.Contains(text, "remote:") {
++		t.Fatalf("config must not carry a git sync remote:\n%s", text)
++	}
++	// Sanity: the rest of the canonical shape is still written.
++	if !strings.Contains(text, "issue_prefix: gc") {
++		t.Fatalf("stripping sync must not drop other canonical keys:\n%s", text)
++	}
++}
++
+ func TestEnsureCanonicalConfigPreservesDoltDisableEventFlushOptOut(t *testing.T) {
+ 	fs := fsys.OSFS{}
+ 	dir := t.TempDir()

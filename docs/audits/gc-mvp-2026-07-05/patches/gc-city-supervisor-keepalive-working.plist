@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>GC_HOME</key>
+		<string>/Users/bo/dev/gc-city/.gc-home</string>
+		<key>GC_SUPERVISOR_PRESERVE_SESSIONS_ON_SIGNAL</key>
+		<string>1</string>
+		<key>HOME</key>
+		<string>/Users/bo</string>
+		<key>LANG</key>
+		<string>en_US.UTF-8</string>
+		<key>LOGNAME</key>
+		<string>bo</string>
+		<key>PATH</key>
+		<string>/Users/bo/.local/bin:/Users/bo/bin:/Users/bo/dev/gc-city/.gc-home/bin:/Users/bo/.local/share/zinit/polaris/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/bo/.local/share/../bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Applications/Little Snitch.app/Contents/Components:/Users/bo/.cargo/bin:/Users/bo/.amp/bin:/Users/bo/go/bin:/Users/bo/.bun/bin:/Users/bo/.claude/plugins/cache/claude-plugins-official/rust-analyzer-lsp/1.0.0/bin:/Users/bo/.claude/plugins/cache/claude-plugins-official/gopls-lsp/1.0.0/bin:/opt/local/bin:/opt/local/sbin</string>
+		<key>SHELL</key>
+		<string>/bin/zsh</string>
+		<key>USER</key>
+		<string>bo</string>
+		<key>XDG_CONFIG_HOME</key>
+		<string>/Users/bo/.config</string>
+	</dict>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>com.gascity.supervisor.gc-home-8f38627b</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/bo/dev/gascity/bin/gc</string>
+		<string>supervisor</string>
+		<string>run</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/bo/dev/gc-city/.gc-home/supervisor.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/bo/dev/gc-city/.gc-home/supervisor.log</string>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+</dict>
+</plist>
