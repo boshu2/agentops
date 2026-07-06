@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 64,
+    "skills": 66,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 149
+    "capabilities": 151
   },
   "surfaces": {
     "skills": [
@@ -35,6 +35,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
+      },
+      {
+        "name": "using-gc",
+        "tier": "cross-vendor",
+        "path": "skills/using-gc/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 3
       },
       {
         "name": "account-rotation",
@@ -371,6 +379,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 19
+      },
+      {
+        "name": "gc-membrane",
+        "tier": "library",
+        "path": "skills/gc-membrane/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "shared",
@@ -1304,8 +1320,8 @@
     ]
   },
   "capability_summary": {
-    "total": 149,
-    "skills": 64,
+    "total": 151,
+    "skills": 66,
     "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
@@ -2192,6 +2208,32 @@
       ],
       "path": "skills/flywheel/",
       "references": 4
+    },
+    {
+      "sku": "skill:gc-membrane",
+      "name": "gc-membrane",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC6",
+      "hex_role": "supporting",
+      "tier": "library",
+      "capability_class": "orchestration",
+      "purpose": "Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/gc-membrane/",
+      "references": 0
     },
     {
       "sku": "skill:goals",
@@ -3365,6 +3407,32 @@
       ],
       "path": "skills/using-atm/",
       "references": 0
+    },
+    {
+      "sku": "skill:using-gc",
+      "name": "using-gc",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC6",
+      "hex_role": "supporting",
+      "tier": "cross-vendor",
+      "capability_class": "orchestration",
+      "purpose": "Drive a Gas City (gc) factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc. Use when standing up, running, administering, or troubleshooting a gas city. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/using-gc/",
+      "references": 3
     },
     {
       "sku": "skill:validate",

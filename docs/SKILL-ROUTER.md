@@ -60,6 +60,10 @@ What are you trying to do?
 │   ├─ Multiple independent tasks ► /swarm
 │   └─ Full epic with waves ──────► /crank <epic-id>
 │
+├─ "City-shaped multi-quest work" (gas city — operator choice, coexists with NTM; never auto-routed)
+│   ├─ Stand up / drive / admin / unstick a city ─► /using-gc
+│   └─ The close door + pawl-verdict.v1 internals ► gc-membrane (reference)
+│
 ├─ "Ship a release"
 │   └─ Changelog + tag ──────────► /release <version>
 │

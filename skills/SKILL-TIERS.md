@@ -259,7 +259,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (61)
+### User-Facing Skills (63)
 
 **Judgment:**
 
@@ -353,6 +353,8 @@ These are how skills chain in practice:
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
 | **ms** | execution | meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
+| **using-gc** | cross-vendor | Drive a Gas City factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc — operator choice, coexists with NTM. |
+| **gc-membrane** | library | Reference for the agentops-membrane Gas City pack: close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC. Loaded JIT by using-gc. |
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |

@@ -1146,3 +1146,27 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder."
+  - skill:            using-gc
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/using-gc/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface."
+  - skill:            gc-membrane
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/gc-membrane/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc."

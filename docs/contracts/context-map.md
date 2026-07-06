@@ -65,6 +65,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
+- `gc-membrane` — Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: "gc-membrane", "membrane pack", "pawl-verdict.v1", "gc close door".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
 - `heal-skill` — Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
 - `ms` — meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
@@ -81,6 +82,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `test` — Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".
 - `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
 - `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
+- `using-gc` — Drive a Gas City (gc) factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc. Use when standing up, running, administering, or troubleshooting a gas city. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall", "stand up a membrane city".
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic

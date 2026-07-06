@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-03T02:38:57Z",
-  "skill_count": 64,
+  "generated_at": "2026-07-06T11:38:53Z",
+  "skill_count": 66,
   "skills": [
     {
       "name": "account-rotation",
@@ -504,6 +504,20 @@
       "codex_override_present": false
     },
     {
+      "name": "gc-membrane",
+      "description": "Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "goals",
       "description": "Maintain AgentOps goals. Triggers: \"goals\", \"maintain agentops goals.\", \"goals skill\".",
       "hexagonal_role": "domain",
@@ -593,7 +607,7 @@
     },
     {
       "name": "ms",
-      "description": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
+      "description": "meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1336,7 +1350,7 @@
     },
     {
       "name": "using-atm",
-      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence — including the continuity contract (renewal ticks, the two-tick stall rule, .agents/continuity/state.json). Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
+      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -1355,6 +1369,21 @@
         }
       ],
       "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "using-gc",
+      "description": "Drive a Gas City (gc) factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc. Use when standing up, running, administering, or troubleshooting a gas city. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer",
+        "team-topologies"
+      ],
+      "context_rel": [],
+      "references_count": 3,
       "codex_override_present": true
     },
     {
