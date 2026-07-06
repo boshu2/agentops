@@ -1,7 +1,7 @@
 # The Agent Factory — a Kubernetes-style control plane for stochastic workloads
 
-> **Store binding corrected (2026-06-17).** This spine originally named the state store / etcd-analog as
-> **bd/Dolt** — that is **retired**. The etcd-analog is now **two ledgers** that together play etcd: the
+> **Store binding corrected (2026-06-17).** This spine originally named AgentOps' own state store / etcd-analog as
+> **bd/Dolt** — AgentOps moved its own tracking off that (bd/dolt is instead the gascity substrate store, a different layer). The etcd-analog is now **two ledgers** that together play etcd: the
 > **bead ledger** (`br`, git-JSONL — work / desired state; `BEADS_DIR="$(ao beads dir)" br …`, synced via
 > `git -C "$(ao beads dir)" push`) and the **proof / verdict ledger** (`docs/provenance/ledger.jsonl` + yield
 > `gate-verdict` events — admission state). The control-plane *shape* (acceptance store → scheduler →
@@ -383,5 +383,8 @@ The etcd-analog is **two ledgers**, deliberately not flattened into one:
 - **Proof / verdict ledger** — `docs/provenance/ledger.jsonl` + the yield `gate-verdict` events:
   **admission state** (what has been verified and admitted; the in-situ catch-rate reads from here).
 
-bd/Dolt is retired (single-host SPOF, no offline lane). The two ledgers together provide the durable,
-HA-able state the control plane reconciles and admits against.
+bd/Dolt is **not AgentOps' own control-plane state store** — AgentOps' bead ledger moved to `br`
+(the earlier remote-Dolt binding was a single-host SPOF with no offline lane). bd/dolt is instead the
+gascity SUBSTRATE store — a different layer, the native store a gas-city factory runs on. The two
+ledgers here are AgentOps' own etcd-analog and together provide the durable, HA-able state the control
+plane reconciles and admits against.

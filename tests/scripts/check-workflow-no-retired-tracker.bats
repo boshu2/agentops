@@ -86,3 +86,22 @@ run_gate() { ( cd "$FIX" && bash scripts/check-workflow-no-retired-tracker.sh );
     run run_gate
     [ "$status" -eq 0 ]
 }
+
+# Substrate carve-out (age-gc-adoption-u0he): bd/dolt is the gascity SUBSTRATE
+# store, not this repo's tracker. A workflow line documenting the substrate layer
+# and explicitly annotated `gascity-substrate` is legitimate, not tracker drift.
+@test "exempts a bd reference on a line marked gascity-substrate" {
+    write_wf "sub.js" 'const note = `The gascity substrate runs \`bd ready\` natively — gascity-substrate store, not this repo tracker`'
+    run run_gate
+    [ "$status" -eq 0 ]
+}
+
+# The carve-out is scoped to marked substrate lines only — an unmarked bd command
+# on another line still fails even when a substrate-marked line exists.
+@test "still catches an unmarked bd command alongside a substrate-marked line" {
+    write_wf "mix.js" 'const a = `bd close ${id}`;
+const b = `gascity-substrate: bd ready is the substrate store`'
+    run run_gate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"bd close"* ]]
+}

@@ -14,7 +14,7 @@ BEADS_DIR="$(ao beads dir)" br update <id> --claim  # Claim work
 BEADS_DIR="$(ao beads dir)" br close <id> -r "Done" # Complete work
 ```
 
-**bd/Dolt is retired legacy (2026-06-11).** Do not run `bd` here. Sync the private ledger with `git -C "$(ao beads dir)" push`; never stage that ledger from the public repo.
+**Two-store truth:** `br` is this repo's tracker; `bd`/Dolt is the gascity substrate store (a different layer, not this repo's tracker). Do not run `bd` for this repo's tracking here. Sync the private ledger with `git -C "$(ao beads dir)" push`; never stage that ledger from the public repo.
 
 ## CLI development
 

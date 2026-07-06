@@ -79,7 +79,7 @@ BEADS_DIR="$(ao beads dir)" br ready
 BEADS_DIR="$(ao beads dir)" br update <id> --claim
 ```
 
-Do not use `bd` or Dolt — retired as of 2026-06-11. See [Dependencies](dependencies.md).
+Do not use `bd` or Dolt for **this repo's** tracking — `br` is AgentOps' own tracker. (bd/dolt is the gascity substrate store, a different layer, not this repo's tracker.) See [Dependencies](dependencies.md).
 
 ### 4) Hooks are opt-in, not a default
 

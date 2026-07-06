@@ -77,3 +77,33 @@ EOF
     [ "$status" -ne 0 ]
     [[ "$output" == *"br ready"* ]]
 }
+
+# Substrate carve-out (age-gc-adoption-u0he): bd/dolt is the gascity SUBSTRATE
+# store, first-class and embraced — a different layer from this repo's br tracker.
+# A line documenting the substrate and marked `gascity-substrate` is legitimate.
+@test "green: substrate-marked bd/dolt reference is exempt" {
+    cat > "$FIXTURE/AGENTS.md" <<'EOF'
+# CLI
+BEADS_DIR="$(ao beads dir)" br ready
+The gascity substrate store runs bd dolt natively — gascity-substrate layer, not this repo's tracker.
+Read ../AGENTS.md and docs/architecture/codebase-overview.md
+EOF
+    run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS"* ]]
+}
+
+# The carve-out is scoped: an unmarked live bd command still fails even when a
+# separate substrate-marked line is present.
+@test "red: unmarked bd command fails despite a substrate-marked line" {
+    cat > "$FIXTURE/AGENTS.md" <<'EOF'
+# CLI
+Use bd ready for this repo's work tracking.
+The gascity substrate store runs on bd dolt — gascity-substrate layer.
+BEADS_DIR="$(ao beads dir)" br ready
+Read ../AGENTS.md and docs/architecture/codebase-overview.md
+EOF
+    run bash "$SCRIPT" --agents-file "$FIXTURE/AGENTS.md"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"bd"* ]]
+}

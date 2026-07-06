@@ -2,7 +2,7 @@
 
 This matrix tracks external command dependencies in the AO CLI and how each command group is customized.
 
-> The tracker command is `br` (beads_rust), invoked as `BEADS_DIR="$(ao beads dir)" br <cmd>`; `bd`/Dolt is retired (2026-06-11). The `rpi` rows describe the load-bearing-legacy RPI lane, not the live operating loop.
+> This repo's tracker command is `br` (beads_rust), invoked as `BEADS_DIR="$(ao beads dir)" br <cmd>`; `bd`/Dolt is the gascity substrate store (a different layer), not this repo's tracker. The `rpi` rows describe the load-bearing-legacy RPI lane, not the live operating loop.
 
 Audit source:
 - `scripts/audit-cli-command-deps.sh`
