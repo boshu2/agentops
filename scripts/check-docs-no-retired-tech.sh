@@ -4,11 +4,14 @@
 # Ratchet from the 2026-06-17 docs staleness sweep (epic
 # age-docs-staleness-remediation-cko). Fails if a LIVE doc reintroduces a
 # command/phrase for a retired subsystem:
-#   - bd/Dolt tracker      → use `BEADS_DIR="$(ao beads dir)" br <cmd>`
+#   - bd/Dolt AS THIS REPO'S TRACKER → use `BEADS_DIR="$(ao beads dir)" br <cmd>`.
+#     NOTE (two-store truth): bd/dolt is NOT globally retired — it is the gascity
+#     SUBSTRATE store (a different layer). A line framed as the substrate store
+#     (SUBSTRATE_LANG below) is current truth, not a retired-tracker prescription.
 #   - worktree-local beads → use `ao beads dir`, never `$PWD/_beads` or `git -C _beads`
-#   - Gas City / gastown   → out-of-session substrate is NTM + MCP Agent Mail
 #   - agentopsd / in-repo daemon (ADR-0009 deleted it)
-#   - runtime=gc / gc bridge (removed from the CLI)
+#   - runtime=gc / gc bridge (removed from the CLI — the severed in-CLI bridge, NOT
+#     gascity itself: gascity is the ADOPTED substrate now, not retired tech)
 #   - `ao init --hooks` / hook-install (3.0 is hookless)
 #   - "branch protection blocks" / "CI is the authoritative gate" (push-to-main;
 #     the local pre-push Go gate is the routine release authority)
@@ -34,13 +37,17 @@ cd "$ROOT"
 . "$ROOT/scripts/lib/docs-scope.sh"
 # Pin the scope root: this gate always scans ITS repo's docs/, never a tree an
 # inherited DOCS_ROOT env var points at (the injection seam is for the lib's tests).
+# shellcheck disable=SC2034  # read by the sourced docs-scope.sh lib, not here
 DOCS_ROOT="$ROOT"
 
 # Live-doc scope: exclude dated/historical archives (same set as the sweep).
 mapfile -t DOCS < <(docs_scope_live_files)
 
 # Command/phrase-precise live-staleness patterns.
-PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b|BEADS_DIR=\$PWD/_beads|git -C _beads|pip install beads|brew upgrade beads|\bgt sling\b|gas[ -]?city|gastown|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
+# NOTE: `gas[ -]?city|gastown` was REMOVED from this pattern (age-gc-adoption-u0he):
+# gascity is now the ADOPTED substrate, not retired tech. The severed in-CLI
+# bridge stays flagged via `runtime=gc`.
+PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b|BEADS_DIR=\$PWD/_beads|git -C _beads|pip install beads|brew upgrade beads|\bgt sling\b|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
 
 # Doc-type exemptions (filename globs + first-15-lines historical banner + adr/)
 # are resolved by the shared lib's docs_scope_is_exempt; see scripts/lib/docs-scope.sh.
@@ -48,6 +55,16 @@ PATTERN='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doct
 # A matched line that ALSO carries removal/past-tense language is DESCRIBING the
 # retirement, not prescribing the retired tool — not an offender.
 REMOVAL_LANG='[Rr]emoved|[Rr]etired|[Dd]eleted|[Dd]eprecat|[Ss]uperseded|no longer|is gone|are gone|that procedure is gone|not a (selectable|valid)|NOT a selectable|rejected by|was \*\*removed'
+
+# Two-store carve-out (age-gc-adoption-u0he): a `bd`/`dolt` mention framed as the
+# gascity SUBSTRATE store is CURRENT TRUTH (a different layer from this repo's br
+# tracker), not a retired-tracker prescription. Such a line is exempt — but ONLY
+# when the hit is bd-tracker-class. Any other retired token on the same line
+# (runtime=gc, agentopsd, …) keeps the line flagged: substrate framing must
+# never fail-open the non-substrate retired tech (pawl refute on 8aom.3).
+SUBSTRATE_LANG='substrate store|gascity substrate|different layer|substrate (that )?a gas'
+BD_CLASS='\bbd (ready|list|show|update|close|create|dep|vc|dolt|ping|context|doctor|init|sync|merge-slot)\b'
+NON_SUBSTRATE='BEADS_DIR=\$PWD/_beads|git -C _beads|pip install beads|brew upgrade beads|\bgt sling\b|agentopsd|runtime=gc|ao init --hooks|branch protection blocks|CI is the authoritative gate'
 
 declare -i scanned=0 exempt=0
 offenders=()
@@ -58,6 +75,14 @@ for f in "${DOCS[@]}"; do
     while IFS= read -r line; do
       # skip lines that describe the removal rather than prescribe the tool
       printf '%s' "$line" | grep -qE "$REMOVAL_LANG" && continue
+      # skip lines framing bd/dolt as the gascity substrate store (two-store truth)
+      # — bd-tracker-class hits ONLY; a co-occurring non-substrate retired token
+      # (runtime=gc, agentopsd, …) keeps the line flagged (no fail-open).
+      if printf '%s' "$line" | grep -qiE "$SUBSTRATE_LANG" \
+         && printf '%s' "$line" | grep -qE "$BD_CLASS" \
+         && ! printf '%s' "$line" | grep -qE "$NON_SUBSTRATE"; then
+        continue
+      fi
       offenders+=("$f:$line")
     done <<< "$hits"
   fi

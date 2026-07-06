@@ -36,7 +36,16 @@ CAN="$ARCH/canonical-loop-model.md"
 LM="$ARCH/loop-map.md"
 
 # Lines that describe the retirement rather than prescribe the retired tool.
-REMOVAL_LANG='[Rr]etired|[Ss]uperseded|[Cc]orrected|[Rr]emoved|[Dd]eprecat|no longer|originally named'
+# Two-store truth (age-gc-integrate-8aom.3): a line saying AgentOps MOVED OFF
+# bd/Dolt, moved TO br, or that bd/Dolt is NOT the control-plane store, is a
+# removal statement, not a rebinding.
+REMOVAL_LANG='[Rr]etired|[Ss]uperseded|[Cc]orrected|[Rr]emoved|[Dd]eprecat|no longer|originally named|[Mm]oved( its own tracking)? off|[Mm]oved to `?br\b|is \*\*not\*\*'
+# Affirmative-rebinding OVERRIDE (pawl refutes on 8aom.3, rounds 2-3): a line
+# that AFFIRMS bd/Dolt as the control-plane/etcd/state store is an offender no
+# matter what removal prose co-occurs on the line ("moved off br and moved to
+# bd/Dolt ..." must still fail). Checked BEFORE the removal exemption; this
+# closes the adversarial-prose class instead of chasing regex variants.
+AFFIRM_REBIND='[Mm]oved to bd/?[Dd]olt|bd/?[Dd]olt (is|as|=|remains) (the|our|AgentOps.{0,4} own) (etcd|[Cc]ontrol.plane|[Ss]tate store)'
 
 failures=0
 fail() {
@@ -56,6 +65,11 @@ for f in "$AF" "$PA" "$CLM" "$PC" "$CAN" "$LM"; do
     if hits=$(grep -nE 'bd/?Dolt' "$f" 2>/dev/null); then
         while IFS= read -r line; do
             printf '%s' "$line" | grep -qE 'etcd|[Ss]tate store' || continue
+            # affirmative rebinding beats any co-occurring removal language
+            if printf '%s' "$line" | grep -qE "$AFFIRM_REBIND"; then
+                fail "$f reintroduces retired bd/Dolt store binding: ${line}"
+                continue
+            fi
             printf '%s' "$line" | grep -qE "$REMOVAL_LANG" && continue
             fail "$f reintroduces retired bd/Dolt store binding: ${line}"
         done <<< "$hits"

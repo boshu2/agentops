@@ -41,6 +41,24 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
+@test "red: two-store negation forms (moved off / moved to br / is **not**) are removal language, not rebinding" {
+    printf '\nbd/Dolt is **not** the control-plane state store; AgentOps moved its own tracking off that etcd-analog, moved to `br`.\n' >> "$TMP_ARCH/canonical-loop-model.md"
+    run env AGENTOPS_ARCH_DIR="$TMP_ARCH" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "red: 'moved to bd/Dolt' is an affirmative rebinding and still fails (no fail-open via moved-to)" {
+    printf '\nAgentOps moved to bd/Dolt as the control-plane state store.\n' >> "$TMP_ARCH/canonical-loop-model.md"
+    run env AGENTOPS_ARCH_DIR="$TMP_ARCH" bash "$SCRIPT"
+    [ "$status" -eq 1 ]
+}
+
+@test "red: affirmative rebinding beats co-occurring removal language (moved off br AND moved to bd/Dolt)" {
+    printf '\nAgentOps moved off br and moved to bd/Dolt as the control-plane state store.\n' >> "$TMP_ARCH/canonical-loop-model.md"
+    run env AGENTOPS_ARCH_DIR="$TMP_ARCH" bash "$SCRIPT"
+    [ "$status" -eq 1 ]
+}
+
 @test "red: dropping the two-altitude note while the agent is classified fails" {
     # Strip the reconciliation note from ports-and-adapters only.
     sed -i.bak 's/two altitudes/two scales/g; s/two-altitude/two-scale/g' "$TMP_ARCH/ports-and-adapters.md"
