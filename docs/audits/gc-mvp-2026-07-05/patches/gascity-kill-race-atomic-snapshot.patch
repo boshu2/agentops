@@ -1,3 +1,35 @@
+From aca2c98ff4e2e198fbcb2b70ae1e2dcd30e23086 Mon Sep 17 00:00:00 2001
+From: Boden Fuller <boden.fuller@gmail.com>
+Date: Mon, 6 Jul 2026 12:26:53 -0400
+Subject: [PATCH] =?UTF-8?q?patch(tmux):=20atomic-snapshot=20+=20identity-v?=
+ =?UTF-8?q?erified=20session=20teardown=20=E2=80=94=20fix=20PID-reuse=20ki?=
+ =?UTF-8?q?ll=20massacre?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+KillSession/KillPane{,WithProcesses,Excluding} discovered kill targets via a
+slow live pgrep walk (seconds under load), then looped kill -TERM by bare PID.
+During a stop/drain wave the collapsing agent trees free PIDs that the kernel
+recycles onto unrelated processes (Finder, Dock, tmux, editors, other panes)
+inside the walk->kill window, so the kill landed on the innocent new owner. On
+macOS the reparented-to-init (PPID==1) group-member step made every GUI app a
+candidate (launchd parents them all). Observed twice on 2026-07-06 (07:03,
+08:34): ~25 SIGTERMs in 5s took out the whole login session.
+
+Fix: discoverKillTargets snapshots the process table ONCE (ps -axo
+pid,ppid,pgid,lstart), builds the descendant tree + reparented set from that
+atomic snapshot, and stamps each target with its start time; killVerified
+re-checks the start time immediately before signaling, so a recycled PID (new
+start time) is skipped. Same local-fork lineage as the getAllDescendants
+cycle-guard. Unit-tested (blast-radius containment + cycle termination).
+---
+ internal/runtime/tmux/process_group_unix.go   |  54 ++++
+ .../runtime/tmux/process_group_windows.go     |  20 ++
+ internal/runtime/tmux/tmux.go                 | 266 ++++++++++--------
+ internal/runtime/tmux/tmux_unit_test.go       |  76 +++++
+ 4 files changed, 293 insertions(+), 123 deletions(-)
+
 diff --git a/internal/runtime/tmux/process_group_unix.go b/internal/runtime/tmux/process_group_unix.go
 index 98118361e..a81b0a223 100644
 --- a/internal/runtime/tmux/process_group_unix.go
@@ -537,3 +569,6 @@ index cbc17acd7..6d9a1d8fd 100644
  func TestProviderEnvSkipsEscapeForPiAlias(t *testing.T) {
  	if !providerEnvSkipsEscape("my-pi/tmux") {
  		t.Fatal("pi provider alias should skip pre-enter Escape")
+-- 
+2.55.0
+

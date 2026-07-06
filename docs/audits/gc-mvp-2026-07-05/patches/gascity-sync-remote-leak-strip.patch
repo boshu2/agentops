@@ -1,3 +1,28 @@
+From 3dde364372da2a8bac4aa8973be3b12cf24eefbe Mon Sep 17 00:00:00 2001
+From: Boden Fuller <boden.fuller@gmail.com>
+Date: Mon, 6 Jul 2026 12:26:53 -0400
+Subject: [PATCH] =?UTF-8?q?patch(beads):=20strip=20bd=20sync.remote=20from?=
+ =?UTF-8?q?=20canonical=20config=20=E2=80=94=20fix=20rig-add=20public-repo?=
+ =?UTF-8?q?=20leak?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+bd init auto-populates sync.remote from the scope repo git origin, and bd post-
+commit sync then PUSHES bead/dolt tracker refs (refs/dolt/data,
+refs/heads/__dolt_remote_info__) to it. On a public / CI-wired repo this
+silently leaks tracker data and fires spurious builds — observed on
+agentops-showcase: two BLOCKED Vercel deploys minutes into a gc rig audit.
+
+Fix: EnsureCanonicalConfig now deletes the whole sync block (deleteKeys root
+sync), same class + same site as the existing backup.enabled / export.auto
+strips. Runs on rig-add AND every reconcile normalization, so an already-leaked
+scope self-heals. Unit-tested.
+---
+ internal/beads/contract/files.go      | 10 ++++++
+ internal/beads/contract/files_test.go | 50 +++++++++++++++++++++++++++
+ 2 files changed, 60 insertions(+)
+
 diff --git a/internal/beads/contract/files.go b/internal/beads/contract/files.go
 index 8cdff0fb4..401b21be5 100644
 --- a/internal/beads/contract/files.go
@@ -80,3 +105,6 @@ index 8c3cf2ae0..28880c39a 100644
  func TestEnsureCanonicalConfigPreservesDoltDisableEventFlushOptOut(t *testing.T) {
  	fs := fsys.OSFS{}
  	dir := t.TempDir()
+-- 
+2.55.0
+
