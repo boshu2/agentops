@@ -25,22 +25,16 @@ here. The pane sits there; the round never advances.
 pane. This is exactly why `membrane/close-gate.sh` dispatches its review lanes
 with `gc session submit` and nothing else (see its `submit_lane`).
 
-**Mitigation (documented, partial).** Every round-transition that must wake a
-lane goes through `gc session submit`. A city that wants a belt-and-suspenders
-keepalive can add a cooldown order that **re-submits** a no-op nudge to a lane
-that has been idle past a budget — but the recovery verb it uses **must** be
-`gc session submit`, never kill/reset/send-keys:
-
-```toml
-# your-city/orders/membrane-lane-keepalive.toml  (illustrative — city-authored)
-[order]
-description = "Resubmit a nudge to any membrane reviewer lane idle past budget"
-trigger = "cooldown"
-interval = "5m"
-# The body MUST use `gc session submit` — the only verb that drains an idle pane.
-exec = "gc session submit agentops-membrane.verifier 'membrane keepalive: reply READY if idle' || true"
-idempotent = true
-```
+**Mitigation (SHIPPED — age-gc-adoption-u0he.2).** Every round-transition that
+must wake a lane goes through `gc session submit`. The belt-and-suspenders
+keepalive is now real pack content, registered on import:
+[`orders/membrane-lane-keepalive.toml`](orders/membrane-lane-keepalive.toml) →
+[`scripts/lane-keepalive.sh`](scripts/lane-keepalive.sh) — a cooldown order
+(5m) that re-submits a no-op nudge to a membrane LANE that is `draining` or
+awake-but-inactive past budget (`MEMBRANE_IDLE_BUDGET_S`, default 300s).
+Conservative by contract: lanes only (never builders/dispatcher), busy lanes
+left alone, and the recovery verb is `gc session submit` and nothing else —
+never kill/reset/send-keys.
 
 **Honest status: NOT fully solved.** The durable fix is upstream in gascity
 (read-only fork here): either the control-dispatcher issues a `session submit`
@@ -59,25 +53,14 @@ confirmation, and the lane never produces its `review-quorum.lane.v1` JSON. The
 close gate then correctly DEGRADES (transient lane loss, no attempt consumed),
 but the lane is effectively dead until a human clicks through.
 
-**Mitigation (documented setup step).** Pre-trust the hooks **before** the city
-runs any codex lane. Either pre-trust the user-global file, or point city codex
-sessions at a clean, pre-trusted `CODEX_HOME` so the modal never appears:
-
-```bash
-# Option A — pre-trust the user-global hooks file (one-time, per operator box):
-#   open codex once interactively and accept the hooks trust prompt, OR
-#   ensure ~/.codex/hooks.json is already present + trusted.
-
-# Option B — a clean, pre-trusted CODEX_HOME for city codex sessions
-#   (keeps the operator's global codex config untouched):
-export CODEX_HOME="$CITY/.gc/codex-home"
-mkdir -p "$CODEX_HOME"
-# seed a trusted (empty) hooks file so no modal fires:
-printf '{}\n' > "$CODEX_HOME/hooks.json"
-```
-
-Wire `CODEX_HOME` into the city's codex provider/session environment so every
-verifier lane inherits it.
+**Mitigation (SHIPPED setup step — age-gc-adoption-u0he.2).** Pre-trust the
+hooks **before** the city runs any codex lane:
+[`scripts/pretrust-codex-home.sh <city>`](scripts/pretrust-codex-home.sh)
+seeds a clean, city-scoped `CODEX_HOME` (`<city>/.gc/codex-home` with a
+trusted-empty `hooks.json` — the operator's global codex config stays
+untouched) and prints the exact `[providers.codex] env = { CODEX_HOME = … }`
+stanza to wire it. `install-gc-city.sh` runs this automatically. agy has no
+file seed — run the provider once interactively and accept its prompt.
 
 **Honest status: environmental, not a membrane bug.** This is a codex-CLI
 startup gate, outside the pack's reach. The mitigation is a **setup step**, not
@@ -86,6 +69,25 @@ code the pack can enforce; a city that skips it will see codex lanes DEGRADE
 is cleared.
 
 ---
+
+## Costs / usage facts — the honest state (not a pack gap)
+
+`gc costs` populates run rows (wall time) out of the box: the usage sink is
+default-on (`[usage] provider=""`/`"local"` → `.gc/usage.jsonl`; verified in
+`internal/config/config.go` UsageConfig). What stays EMPTY is the token /
+invocation columns — **sub-backed provider CLIs (claude, codex, agy) emit no
+usage facts to gc**, so there is nothing to sink. That is a provider-side gap
+the pack cannot fix; no `[usage]` config change helps. Consequence (also in
+the `using-gc` skill): treat `gc costs` as decision-support-when-populated
+and NEVER gate on it — unpriced models drop from totals (fail-open).
+
+## Diff-frame false-positive — FIXED in the close gate
+
+The fitness run's bonus finding (a weak lane REFUTED a correctly-placed file
+because the review diff is quest-repo-relative while the contract non-goal
+was city-relative) is closed at the source: `membrane/close-gate.sh`'s review
+request now carries an explicit PATH FRAME paragraph — placement findings
+require a path wrong in BOTH frames.
 
 ## What the pack DOES ship for self-monitoring
 

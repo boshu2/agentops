@@ -108,6 +108,13 @@ author. Your ENTIRE input is the acceptance contract and the diff below. Do NOT
 read the repo, run code, or contact the builder. Default-FAIL: anything the diff
 does not demonstrably satisfy is a finding.
 
+PATH FRAME (read before raising any placement finding): the diff paths are
+relative to the QUEST REPO ROOT — which the city mounts at quests/$QUEST/. A
+contract reference to quests/$QUEST/<file> and a bare diff path <file> are the
+SAME file in different frames. Never raise a file-placement/scope finding for
+that frame difference alone; placement findings require a path that is wrong in
+BOTH frames.
+
 Write your durable verdict as review-quorum.lane.v1 JSON to EXACTLY this path
 (the one file you may write):
   $out
