@@ -1,0 +1,539 @@
+diff --git a/internal/runtime/tmux/process_group_unix.go b/internal/runtime/tmux/process_group_unix.go
+index 98118361e..a81b0a223 100644
+--- a/internal/runtime/tmux/process_group_unix.go
++++ b/internal/runtime/tmux/process_group_unix.go
+@@ -47,3 +47,57 @@ func getProcessGroupMembers(pgid string) []string {
+ 	}
+ 	return members
+ }
++
++// procIdentity is one process's parent, group, and start time captured in a
++// single atomic ps snapshot. start is the identity token that survives PID
++// reuse: when the kernel recycles a PID onto a new process, that process has a
++// different start time, so a stale kill can be detected and skipped.
++type procIdentity struct {
++	ppid  string
++	pgid  string
++	start string
++}
++
++// snapshotProcessTable captures ppid, pgid, and start time for EVERY process in
++// one ps call, keyed by PID. Descendant discovery then walks this in-memory
++// snapshot instead of a slow live `pgrep -P` recursion (one exec per node,
++// seconds under load). The live walk was the arming half of the session-massacre
++// TOCTOU: during a stop/drain wave the agent trees collapse, the kernel recycles
++// their PIDs onto unrelated processes inside the walk→kill window, and the kill
++// loop then landed on whatever now owned each reused PID. A single atomic
++// snapshot removes the multi-second discovery window; killVerified closes the
++// residual gap. Returns nil on ps failure, which callers treat as "signal
++// nothing" (safe: tmux kill-session still tears the pane down).
++func snapshotProcessTable() map[string]procIdentity {
++	// pid/ppid/pgid are single numeric tokens; lstart is the trailing
++	// (space-containing) field, so parse the first three and join the rest.
++	out, err := exec.Command("ps", "-axo", "pid=,ppid=,pgid=,lstart=").Output()
++	if err != nil {
++		return nil
++	}
++	table := make(map[string]procIdentity)
++	for _, line := range strings.Split(string(out), "\n") {
++		fields := strings.Fields(line)
++		if len(fields) < 4 {
++			continue
++		}
++		table[fields[0]] = procIdentity{
++			ppid:  fields[1],
++			pgid:  fields[2],
++			start: strings.Join(fields[3:], " "),
++		}
++	}
++	return table
++}
++
++// processStartTime returns pid's current start time, normalized the same way as
++// snapshotProcessTable (collapsed whitespace) so the two are directly
++// comparable. Returns "" if the process is gone. Used to re-verify identity
++// immediately before signaling.
++func processStartTime(pid string) string {
++	out, err := exec.Command("ps", "-o", "lstart=", "-p", pid).Output()
++	if err != nil {
++		return ""
++	}
++	return strings.Join(strings.Fields(string(out)), " ")
++}
+diff --git a/internal/runtime/tmux/process_group_windows.go b/internal/runtime/tmux/process_group_windows.go
+index 9bf592870..0ec1068e1 100644
+--- a/internal/runtime/tmux/process_group_windows.go
++++ b/internal/runtime/tmux/process_group_windows.go
+@@ -57,6 +57,26 @@ func getProcessGroupMembers(pgid string) []string {
+ 	return []string{pgid}
+ }
+ 
++// procIdentity mirrors the unix type so cross-platform tmux.go compiles.
++type procIdentity struct {
++	ppid  string
++	pgid  string
++	start string
++}
++
++// snapshotProcessTable is a no-op on Windows: the POSIX PID-reuse kill race the
++// unix implementation guards against does not apply here (Gas City does not run
++// the signal-based teardown path on Windows). Returning nil makes callers signal
++// nothing and fall back to tmux kill-session.
++func snapshotProcessTable() map[string]procIdentity {
++	return nil
++}
++
++// processStartTime is unused on Windows (see snapshotProcessTable).
++func processStartTime(_ string) string {
++	return ""
++}
++
+ func processExists(pid int) (bool, error) {
+ 	filter := fmt.Sprintf("PID eq %d", pid)
+ 	out, err := exec.Command("tasklist", "/FI", filter, "/FO", "CSV", "/NH").Output()
+diff --git a/internal/runtime/tmux/tmux.go b/internal/runtime/tmux/tmux.go
+index 5f95fe22a..3b48d285b 100644
+--- a/internal/runtime/tmux/tmux.go
++++ b/internal/runtime/tmux/tmux.go
+@@ -581,45 +581,29 @@ func (t *Tmux) KillSessionWithProcesses(name string) error {
+ 	}
+ 
+ 	if pid != "" {
+-		// Walk the process tree for all descendants (catches processes that
+-		// called setsid() and created their own process groups)
+-		descendants := getAllDescendants(pid)
++		// Atomic snapshot discovery + identity-verified kills. Replaces the
++		// live tree walk that raced PID reuse and caused the session massacre
++		// (see discoverKillTargets / killVerified).
++		descendants, reparented, identity := discoverKillTargets(pid)
++		killList := append(descendants, reparented...)
+ 
+-		// Build known PID set for group membership verification
+-		knownPIDs := make(map[string]bool, len(descendants)+1)
+-		knownPIDs[pid] = true
+-		for _, d := range descendants {
+-			knownPIDs[d] = true
+-		}
+-
+-		// Find reparented processes from our process group. Instead of killing
+-		// the entire group blindly with syscall.Kill(-pgid, ...) — which could
+-		// hit unrelated processes sharing the same PGID — we enumerate group
+-		// members and only include those reparented to init (PPID == 1), which
+-		// indicates they were likely children in our tree that outlived their parent.
+-		pgid := getProcessGroupID(pid)
+-		if pgid != "" && pgid != "0" && pgid != "1" {
+-			reparented := collectReparentedGroupMembers(pgid, knownPIDs)
+-			descendants = append(descendants, reparented...)
+-		}
+-
+-		// Send SIGTERM to all descendants (deepest first to avoid orphaning)
+-		for _, dpid := range descendants {
+-			_ = exec.Command("kill", "-TERM", dpid).Run()
++		// Send SIGTERM to all targets (deepest first to avoid orphaning)
++		for _, dpid := range killList {
++			killVerified(dpid, "-TERM", identity[dpid])
+ 		}
+ 
+ 		// Wait for graceful shutdown (2s gives processes time to clean up)
+ 		time.Sleep(processKillGracePeriod)
+ 
+-		// Send SIGKILL to any remaining descendants
+-		for _, dpid := range descendants {
+-			_ = exec.Command("kill", "-KILL", dpid).Run()
++		// Send SIGKILL to any still-live targets
++		for _, dpid := range killList {
++			killVerified(dpid, "-KILL", identity[dpid])
+ 		}
+ 
+ 		// Kill the pane process itself (may have called setsid() and detached)
+-		_ = exec.Command("kill", "-TERM", pid).Run()
++		killVerified(pid, "-TERM", identity[pid])
+ 		time.Sleep(processKillGracePeriod)
+-		_ = exec.Command("kill", "-KILL", pid).Run()
++		killVerified(pid, "-KILL", identity[pid])
+ 	}
+ 
+ 	// Kill the tmux session
+@@ -655,27 +639,10 @@ func (t *Tmux) KillSessionWithProcessesExcluding(name string, excludePIDs []stri
+ 	}
+ 
+ 	if pid != "" {
+-		// Get the process group ID
+-		pgid := getProcessGroupID(pid)
+-
+-		// 1. Get all descendant PIDs recursively (catches processes that called setsid())
+-		descendants := getAllDescendants(pid)
+-
+-		// Build known PID set for group membership verification
+-		knownPIDs := make(map[string]bool, len(descendants)+1)
+-		knownPIDs[pid] = true
+-		for _, dpid := range descendants {
+-			knownPIDs[dpid] = true
+-		}
+-
+-		// 2. Get verified process group members (only reparented-to-init processes).
+-		// Instead of adding ALL group members — which could include unrelated
+-		// processes sharing the same PGID — we only add those that were reparented
+-		// to init (PPID == 1), indicating they were likely children in our tree.
+-		var reparented []string
+-		if pgid != "" && pgid != "0" && pgid != "1" {
+-			reparented = collectReparentedGroupMembers(pgid, knownPIDs)
+-		}
++		// Atomic snapshot discovery + identity-verified kills (see
++		// discoverKillTargets / killVerified) — the same session-massacre fix,
++		// with the self-kill exclusion set honored via computeExcludingKillSet.
++		descendants, reparented, identity := discoverKillTargets(pid)
+ 
+ 		// Partition the discovered process set into the descendant/group PIDs to
+ 		// terminate and whether the pane leader should be killed, honoring the
+@@ -685,7 +652,7 @@ func (t *Tmux) KillSessionWithProcessesExcluding(name string, excludePIDs []stri
+ 
+ 		// Send SIGTERM to all non-excluded processes
+ 		for _, dpid := range killList {
+-			_ = exec.Command("kill", "-TERM", dpid).Run()
++			killVerified(dpid, "-TERM", identity[dpid])
+ 		}
+ 
+ 		// Wait for graceful shutdown (2s gives processes time to clean up)
+@@ -693,15 +660,15 @@ func (t *Tmux) KillSessionWithProcessesExcluding(name string, excludePIDs []stri
+ 
+ 		// Send SIGKILL to any remaining non-excluded processes
+ 		for _, dpid := range killList {
+-			_ = exec.Command("kill", "-KILL", dpid).Run()
++			killVerified(dpid, "-KILL", identity[dpid])
+ 		}
+ 
+ 		// Kill the pane process itself (may have called setsid() and detached)
+ 		// Only if not excluded
+ 		if killPaneLeader {
+-			_ = exec.Command("kill", "-TERM", pid).Run()
++			killVerified(pid, "-TERM", identity[pid])
+ 			time.Sleep(processKillGracePeriod)
+-			_ = exec.Command("kill", "-KILL", pid).Run()
++			killVerified(pid, "-KILL", identity[pid])
+ 		}
+ 	}
+ 
+@@ -773,11 +740,105 @@ func collectReparentedGroupMembers(pgid string, knownPIDs map[string]bool) []str
+ 	return reparented
+ }
+ 
+-// maxDescendantDepth bounds getAllDescendants' recursion. Real process trees
+-// are shallow (< 20 deep); this belt-and-suspenders cap only ever fires on a
++// maxDescendantDepth bounds descendant discovery. Real process trees are shallow
++// (< 20 deep); this belt-and-suspenders cap only ever fires on a
+ // pathological/cyclic walk, alongside the visited-set guard.
+ const maxDescendantDepth = 40
+ 
++// discoverKillTargets atomically snapshots the process table ONCE and returns
++// root's descendants (deepest-first) plus process-group members reparented to
++// init, together with an identity map (pid -> start time captured at the
++// snapshot instant). The kill paths MUST discover through here rather than the
++// live getAllDescendants + collectReparentedGroupMembers walk.
++//
++// Why this exists (the session massacre): the old kill paths walked the process
++// tree live — one `pgrep -P` exec per node, seconds under load — then looped
++// `kill -TERM <pid>` over the collected PIDs. During a stop/drain wave the very
++// agent trees being torn down are collapsing, so the kernel recycles their PIDs
++// onto unrelated processes (Finder, Dock, tmux, editors, other agent panes)
++// inside the walk→kill window, and the kill landed on the innocent new owner.
++// Two changes close it: (1) one atomic snapshot removes the multi-second
++// discovery window and makes the descendant/PGID view internally consistent;
++// (2) every target carries the start time it had at snapshot instant, so
++// killVerified can re-check identity immediately before signaling and skip a PID
++// that has since been recycled. Returns empty on snapshot failure, so callers
++// signal nothing and rely on tmux kill-session (safe degradation).
++func discoverKillTargets(root string) (descendants []string, reparented []string, identity map[string]string) {
++	return buildKillTargetsFromSnapshot(root, snapshotProcessTable())
++}
++
++// buildKillTargetsFromSnapshot is the pure core of discoverKillTargets: given an
++// already-captured process snapshot it derives root's deepest-first descendants,
++// the reparented-to-init group members, and the identity map — performing no
++// I/O, so the discovery decision can be unit-tested with a hand-built snapshot
++// (like computeExcludingKillSet). Returns empty for an empty snapshot.
++func buildKillTargetsFromSnapshot(root string, snap map[string]procIdentity) (descendants []string, reparented []string, identity map[string]string) {
++	if len(snap) == 0 {
++		return nil, nil, nil
++	}
++
++	identity = make(map[string]string, len(snap))
++	childrenOf := make(map[string][]string, len(snap))
++	for pid, info := range snap {
++		childrenOf[info.ppid] = append(childrenOf[info.ppid], pid)
++	}
++
++	// Deepest-first descendant walk over the snapshot (no live process calls).
++	// visited dedups PID-reuse cycles; maxDescendantDepth is the second stop.
++	visited := map[string]bool{root: true}
++	var walk func(string, int)
++	walk = func(p string, depth int) {
++		if depth > maxDescendantDepth {
++			return
++		}
++		for _, child := range childrenOf[p] {
++			if visited[child] {
++				continue
++			}
++			visited[child] = true
++			walk(child, depth+1) // grandchildren first
++			descendants = append(descendants, child)
++			identity[child] = snap[child].start
++		}
++	}
++	walk(root, 0)
++	identity[root] = snap[root].start
++
++	// Add process-group members reparented to init (PPID==1) — likely our
++	// children that outlived their parent. Sourced from the SAME atomic
++	// snapshot, so PID/PGID reuse cannot smuggle in an unrelated live process
++	// (the failure mode that made every ppid==1 GUI app on macOS a candidate).
++	rootPGID := snap[root].pgid
++	if rootPGID != "" && rootPGID != "0" && rootPGID != "1" {
++		for pid, info := range snap {
++			if visited[pid] {
++				continue // already the root or a descendant
++			}
++			if info.pgid == rootPGID && info.ppid == "1" {
++				reparented = append(reparented, pid)
++				identity[pid] = info.start
++			}
++		}
++	}
++	return descendants, reparented, identity
++}
++
++// killVerified signals pid with sig ONLY if pid still reports the start time it
++// had when discovered (want). A PID that has exited or been recycled onto a
++// different process reports a different (or empty) start time and is skipped.
++// This is the guard that stops a stale kill from hitting whatever process now
++// owns a reused PID — the core of the session-massacre fix. An empty want (PID
++// absent from the snapshot) is never signaled.
++func killVerified(pid, sig, want string) {
++	if want == "" {
++		return
++	}
++	if processStartTime(pid) != want {
++		return
++	}
++	_ = exec.Command("kill", sig, pid).Run()
++}
++
+ // getAllDescendants recursively finds all descendant PIDs of a process.
+ // Returns PIDs in deepest-first order so killing them doesn't orphan grandchildren.
+ func getAllDescendants(pid string) []string {
+@@ -843,45 +904,29 @@ func (t *Tmux) KillPaneProcesses(pane string) error {
+ 		return fmt.Errorf("pane PID is empty")
+ 	}
+ 
+-	// Walk the process tree for all descendants (catches processes that
+-	// called setsid() and created their own process groups)
+-	descendants := getAllDescendants(pid)
+-
+-	// Build known PID set for group membership verification
+-	knownPIDs := make(map[string]bool, len(descendants)+1)
+-	knownPIDs[pid] = true
+-	for _, d := range descendants {
+-		knownPIDs[d] = true
+-	}
++	// Atomic snapshot discovery + identity-verified kills. Replaces the live
++	// tree walk that raced PID reuse (see discoverKillTargets / killVerified).
++	descendants, reparented, identity := discoverKillTargets(pid)
++	killList := append(descendants, reparented...)
+ 
+-	// Find reparented processes from our process group. Instead of killing
+-	// the entire group blindly with syscall.Kill(-pgid, ...) — which could
+-	// hit unrelated processes sharing the same PGID — we enumerate group
+-	// members and only include those reparented to init (PPID == 1).
+-	pgid := getProcessGroupID(pid)
+-	if pgid != "" && pgid != "0" && pgid != "1" {
+-		reparented := collectReparentedGroupMembers(pgid, knownPIDs)
+-		descendants = append(descendants, reparented...)
+-	}
+-
+-	// Send SIGTERM to all descendants (deepest first to avoid orphaning)
+-	for _, dpid := range descendants {
+-		_ = exec.Command("kill", "-TERM", dpid).Run()
++	// Send SIGTERM to all targets (deepest first to avoid orphaning)
++	for _, dpid := range killList {
++		killVerified(dpid, "-TERM", identity[dpid])
+ 	}
+ 
+ 	// Wait for graceful shutdown (2s gives processes time to clean up)
+ 	time.Sleep(processKillGracePeriod)
+ 
+-	// Send SIGKILL to any remaining descendants
+-	for _, dpid := range descendants {
+-		_ = exec.Command("kill", "-KILL", dpid).Run()
++	// Send SIGKILL to any still-live targets
++	for _, dpid := range killList {
++		killVerified(dpid, "-KILL", identity[dpid])
+ 	}
+ 
+ 	// Kill the pane process itself (may have called setsid() and detached,
+ 	// or may have no children like Claude Code)
+-	_ = exec.Command("kill", "-TERM", pid).Run()
++	killVerified(pid, "-TERM", identity[pid])
+ 	time.Sleep(processKillGracePeriod)
+-	_ = exec.Command("kill", "-KILL", pid).Run()
++	killVerified(pid, "-KILL", identity[pid])
+ 
+ 	return nil
+ }
+@@ -911,55 +956,30 @@ func (t *Tmux) KillPaneProcessesExcluding(pane string, excludePIDs []string) err
+ 		return fmt.Errorf("pane PID is empty")
+ 	}
+ 
+-	// Get all descendant PIDs recursively (returns deepest-first order)
+-	descendants := getAllDescendants(pid)
+-
+-	// Filter out excluded PIDs
+-	var filtered []string
+-	for _, dpid := range descendants {
+-		if !exclude[dpid] {
+-			filtered = append(filtered, dpid)
+-		}
+-	}
+-
+-	// Build known PID set for group membership verification
+-	knownPIDs := make(map[string]bool, len(descendants)+1)
+-	knownPIDs[pid] = true
+-	for _, d := range descendants {
+-		knownPIDs[d] = true
+-	}
+-
+-	// Find reparented processes from our process group. Instead of killing
+-	// the entire group blindly with syscall.Kill(-pgid, ...) — which could
+-	// hit unrelated processes sharing the same PGID — we enumerate group
+-	// members and only include those reparented to init (PPID == 1).
+-	pgid := getProcessGroupID(pid)
+-	if pgid != "" && pgid != "0" && pgid != "1" {
+-		for _, member := range collectReparentedGroupMembers(pgid, knownPIDs) {
+-			if !exclude[member] {
+-				filtered = append(filtered, member)
+-			}
+-		}
+-	}
++	// Atomic snapshot discovery + identity-verified kills (see
++	// discoverKillTargets / killVerified) — the same session-massacre fix,
++	// with the self-handoff exclusion set honored via computeExcludingKillSet.
++	descendants, reparented, identity := discoverKillTargets(pid)
++	killList, killPaneLeader := computeExcludingKillSet(pid, descendants, reparented, exclude)
+ 
+-	// Send SIGTERM to all non-excluded descendants (deepest first to avoid orphaning)
+-	for _, dpid := range filtered {
+-		_ = exec.Command("kill", "-TERM", dpid).Run()
++	// Send SIGTERM to all non-excluded targets (deepest first to avoid orphaning)
++	for _, dpid := range killList {
++		killVerified(dpid, "-TERM", identity[dpid])
+ 	}
+ 
+ 	// Wait for graceful shutdown (2s gives processes time to clean up)
+ 	time.Sleep(processKillGracePeriod)
+ 
+-	// Send SIGKILL to any remaining non-excluded descendants
+-	for _, dpid := range filtered {
+-		_ = exec.Command("kill", "-KILL", dpid).Run()
++	// Send SIGKILL to any remaining non-excluded targets
++	for _, dpid := range killList {
++		killVerified(dpid, "-KILL", identity[dpid])
+ 	}
+ 
+ 	// Kill the pane process itself only if not excluded
+-	if !exclude[pid] {
+-		_ = exec.Command("kill", "-TERM", pid).Run()
++	if killPaneLeader {
++		killVerified(pid, "-TERM", identity[pid])
+ 		time.Sleep(processKillGracePeriod)
+-		_ = exec.Command("kill", "-KILL", pid).Run()
++		killVerified(pid, "-KILL", identity[pid])
+ 	}
+ 
+ 	return nil
+diff --git a/internal/runtime/tmux/tmux_unit_test.go b/internal/runtime/tmux/tmux_unit_test.go
+index cbc17acd7..6d9a1d8fd 100644
+--- a/internal/runtime/tmux/tmux_unit_test.go
++++ b/internal/runtime/tmux/tmux_unit_test.go
+@@ -5,6 +5,82 @@ import (
+ 	"testing"
+ )
+ 
++// TestBuildKillTargetsFromSnapshot_ContainsBlastRadius is the acceptance
++// surface for the session-massacre fix. It proves the kill set is derived from
++// one atomic snapshot and stays confined to the pane's own tree + its genuinely
++// reparented group members — NOT every ppid==1 process, which on macOS is every
++// GUI app (launchd is PID 1's role), the bug that TERM'd Finder/Dock/tmux/etc.
++func TestBuildKillTargetsFromSnapshot_ContainsBlastRadius(t *testing.T) {
++	const (
++		pane      = "100" // pane leader, pgid 100
++		child     = "101" // agent's child shell
++		grandkid  = "102" // deepest — must appear before its parent (deepest-first)
++		orphan    = "103" // our child that outlived its parent: pgid 100, reparented to init
++		guiApp    = "200" // Finder-like: ppid==1 but a DIFFERENT pgid — must NOT be killed
++		otherPane = "300" // an unrelated pane's tree — must NOT be killed
++	)
++	snap := map[string]procIdentity{
++		pane:      {ppid: "1", pgid: "100", start: "Mon Jul 6 08:00:00 2026"},
++		child:     {ppid: pane, pgid: "100", start: "Mon Jul 6 08:00:01 2026"},
++		grandkid:  {ppid: child, pgid: "100", start: "Mon Jul 6 08:00:02 2026"},
++		orphan:    {ppid: "1", pgid: "100", start: "Mon Jul 6 08:00:03 2026"},
++		guiApp:    {ppid: "1", pgid: "200", start: "Mon Jul 6 07:30:00 2026"},
++		otherPane: {ppid: "1", pgid: "300", start: "Mon Jul 6 08:00:00 2026"},
++	}
++
++	descendants, reparented, identity := buildKillTargetsFromSnapshot(pane, snap)
++
++	// Descendants: the pane's tree, deepest-first (grandkid before child).
++	if gi, ci := slices.Index(descendants, grandkid), slices.Index(descendants, child); gi == -1 || ci == -1 || gi > ci {
++		t.Errorf("descendants must be deepest-first with %s before %s, got %v", grandkid, child, descendants)
++	}
++	// The reparented orphan (our pgid + ppid==1) is collected.
++	if !slices.Contains(reparented, orphan) {
++		t.Errorf("reparented orphan %s (our pgid, reparented to init) must be collected, got %v", orphan, reparented)
++	}
++	// BLAST-RADIUS GUARD: a ppid==1 GUI app on a different pgid is NEVER a target.
++	all := append(append([]string{}, descendants...), reparented...)
++	if slices.Contains(all, guiApp) {
++		t.Errorf("GUI app %s (ppid==1, foreign pgid) must NOT be killed — this is the session-massacre bug", guiApp)
++	}
++	if slices.Contains(all, otherPane) {
++		t.Errorf("unrelated pane %s must NOT be killed, got %v", otherPane, all)
++	}
++	// Identity map carries the snapshot start time for every target (killVerified
++	// re-checks it to skip a recycled PID).
++	for _, pid := range append(all, pane) {
++		if identity[pid] != snap[pid].start {
++			t.Errorf("identity[%s] = %q, want snapshot start %q", pid, identity[pid], snap[pid].start)
++		}
++	}
++}
++
++// TestBuildKillTargetsFromSnapshot_PIDReuseCycleTerminates proves the snapshot
++// walk is cycle-guarded: a snapshot whose ppid graph loops (PID reuse can make
++// a "child" point back at an ancestor) must terminate rather than recurse
++// forever. The visited-set dedup and maxDescendantDepth bound both stop it; a
++// regression would hang, which the test process's own timeout would catch.
++func TestBuildKillTargetsFromSnapshot_PIDReuseCycleTerminates(t *testing.T) {
++	// 100 -> 101 -> 102, plus 103 whose parent 102 also (via reuse) parents 100:
++	// the walk from 100 must not revisit 100 through the cycle.
++	snap := map[string]procIdentity{
++		"100": {ppid: "102", pgid: "100", start: "a"}, // cycle: 100's parent is its own descendant
++		"101": {ppid: "100", pgid: "100", start: "b"},
++		"102": {ppid: "101", pgid: "100", start: "c"},
++		"103": {ppid: "102", pgid: "100", start: "d"},
++	}
++
++	descendants, _, _ := buildKillTargetsFromSnapshot("100", snap)
++
++	// Terminates, and never lists the root itself as its own descendant.
++	if slices.Contains(descendants, "100") {
++		t.Errorf("root must not appear in its own descendants (cycle leak), got %v", descendants)
++	}
++	if !slices.Contains(descendants, "101") || !slices.Contains(descendants, "103") {
++		t.Errorf("expected the acyclic descendants 101 and 103, got %v", descendants)
++	}
++}
++
+ func TestProviderEnvSkipsEscapeForPiAlias(t *testing.T) {
+ 	if !providerEnvSkipsEscape("my-pi/tmux") {
+ 		t.Fatal("pi provider alias should skip pre-enter Escape")
