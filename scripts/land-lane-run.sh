@@ -92,8 +92,9 @@ GATE_CMD="${LAND_LANE_GATE_CMD:-}"
 GATE_ONLY_CMD="${LAND_LANE_GATE_ONLY_CMD:-}"
 LAND_CMD="${LAND_LANE_LAND_CMD:-}"
 AUTHOR_FAMILY="${LAND_LANE_AUTHOR_FAMILY:-operator}"
-# bd/Dolt is RETIRED legacy (single-host SPOF, no offline lane) — never fall back to
-# it. The lane closes via br only; AO_BIN resolves the live private ledger for the close.
+# bd/Dolt is the gascity substrate store, NOT this repo's tracker — never fall back
+# to it for the close (the earlier remote-Dolt binding was a single-host SPOF with no
+# offline lane). The lane closes via br only; AO_BIN resolves the live private ledger for the close.
 BR_BIN="${BR_BIN:-$(command -v br 2>/dev/null || true)}"
 AO_BIN="${AO_BIN:-$(command -v ao 2>/dev/null || true)}"
 FLAKY_RETRY_SCRIPT="${LAND_LANE_FLAKY_RETRY_SCRIPT:-$SCRIPT_DIR/land-lane-flaky-retry.sh}"

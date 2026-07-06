@@ -30,7 +30,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). Which skill runs which move → [`docs/SKILL-ROUTER.md`](docs/SKILL-ROUTER.md). `/rpi` is one turn's executor over this loop, **not** the primary navigation. The rest of this file is the mechanics each move uses; full workflow phases (claim → scope → ship → land), branch shape, and provenance live in [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md).
 
-**Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Resolve the live private ledger with `ao beads dir` before every direct `br` read/write, especially in linked worktrees where `$PWD/_beads` is usually absent. Invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C "$(ao beads dir)" push`, **never** `git add _beads`. **`bd`/Dolt is RETIRED LEGACY** (single-host SPOF with no offline lane) — do not run `bd`.
+**Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Resolve the live private ledger with `ao beads dir` before every direct `br` read/write, especially in linked worktrees where `$PWD/_beads` is usually absent. Invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C "$(ao beads dir)" push`, **never** `git add _beads`. **Two-store truth:** `br` is **AgentOps' own repo tracker** (this repo's beads). **`bd`/Dolt is the gascity SUBSTRATE store** — first-class and embraced, the native store a gas-city factory runs on (it engaged and killed the file-backend brittleness). They are **different layers**, not competitors: substrate store vs product-repo tracker. So do not run `bd` for **this repo's** tracking (use `br`) — but bd/dolt is legitimate wherever you are operating the gascity substrate.
 
 **Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. The `ao rpi` command surface was removed (f61c5f0e7); the operating loop is the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
 
@@ -69,7 +69,7 @@ schemas/          JSON schemas for config, provenance, packets
 docs/             Narrative architecture, ADRs, contracts, MkDocs site
 .agents/          Runtime knowledge corpus (gitignored — local only, not public truth)
 _beads/           Private br ledger (nested git repo — never git add _beads)
-.beads/           Legacy bd/Dolt config — preserved, not authoritative
+.beads/           Pre-br bd config for THIS repo's tracking — preserved, not authoritative (bd/dolt itself is the gascity substrate store)
 registry.json     Generated SKU catalog — do not hand-edit; make regen-all
 .claude/workflows/ Claude-only workflow scripts (kind: workflow)
 ```
@@ -88,7 +88,7 @@ ao session bootstrap → ao lookup → operating loop → ao gate check --fast -
 |-------|-------|
 | **Navigation** | [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — primary; `/rpi` is one turn's executor, not primary |
 | **Release authority** | Go gate in `cli/internal/gates/` (pre-push hook); legacy bash only via `AGENTOPS_GATE_BASH=1` |
-| **Tracker** | `BEADS_DIR="$(ao beads dir)" br …` — `bd`/Dolt retired |
+| **Tracker** | `BEADS_DIR="$(ao beads dir)" br …` — br is THIS repo's tracker; `bd`/Dolt is the gascity substrate store (a different layer) |
 | **Skills SSOT** | `skills/<slug>/SKILL.md` — never `~/.claude/skills/` |
 | **Runtime corpus** | `.agents/` gitignored; provenance in `docs/provenance/ledger.jsonl` |
 | **Out-of-session** | NTM + Agent Mail + `ao agent` — optional; AgentOps ships no daemon |
@@ -160,7 +160,7 @@ Run the local cockpit gate before pushing, then push the coherent bead arc direc
 | Mistake | Correct behavior |
 |---|---|
 | Edit `~/.claude/skills/` | Edit `skills/` in **this repo** |
-| Run `bd` / Dolt | `BEADS_DIR="$(ao beads dir)" br …` |
+| Run `bd` for THIS repo's tracking | `BEADS_DIR="$(ao beads dir)" br …` — bd/dolt is the gascity substrate store, not this repo's tracker |
 | Edit the shared canonical checkout under swarm load | **Git worktree** per bead |
 | `git add _beads` | Never — sync with `git -C "$(ao beads dir)" push` |
 | Hand-edit `registry.json` / generated maps | `make regen-all` from sources |

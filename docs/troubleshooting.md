@@ -93,8 +93,9 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
 
 > **Note (2026-06-11):** the tracker is **`br` (beads_rust)** at `_beads/`,
 > invoked through the resolved private ledger path: `BEADS_DIR="$(ao beads dir)" br <cmd>`.
-> `bd`/Dolt is retired. If you came from an older guide that ran `bd`/`brew upgrade
-> beads`, that procedure is gone.
+> `bd`/Dolt is **not this repo's tracker** — it is the gascity substrate store, a
+> different layer. If you came from an older guide that ran `bd`/`brew upgrade
+> beads` to track this repo's work, that procedure is gone — use `br`.
 
 If `BEADS_DIR="$(ao beads dir)" br ready --json` fails or the legacy `.beads/`
 config shadows the live `_beads/` ledger, you likely have a tracker config

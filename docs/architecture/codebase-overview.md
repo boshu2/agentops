@@ -100,7 +100,7 @@ BC6 Orchestration ──▶ dispatches whole skills (never decomposes RPI intern
 | `docs/` | Narrative architecture, ADRs, contracts, MkDocs site |
 | `.agents/` | **Runtime knowledge** (gitignored) — learnings, council, RPI queue |
 | `_beads/` | **Private br ledger** (nested git repo) — never stage it from the public repo |
-| `.beads/` | Legacy bd/Dolt config — preserved, not authoritative |
+| `.beads/` | Pre-br bd config for this repo's tracking — preserved, not authoritative (bd/dolt itself is the gascity substrate store) |
 | `registry.json` | Generated SKU catalog — **do not hand-edit** |
 | `.claude/workflows/` | Claude-only workflow scripts (kind: `workflow`) |
 | `.claude-plugin/`, `.codex-plugin/`, `.agy-plugin/` | Runtime install manifests |
@@ -303,7 +303,7 @@ These recur in audits and findings registries:
 | Footgun | Correct behavior |
 |---------|------------------|
 | Editing `~/.claude/skills/` | Edit `skills/` in **this repo** only |
-| Using `bd` / Dolt | Use **`br`** with `BEADS_DIR="$(ao beads dir)"` — bd is retired legacy |
+| Using `bd` / Dolt for this repo's tracking | Use **`br`** with `BEADS_DIR="$(ao beads dir)"` — bd/dolt is the gascity substrate store, a different layer, not this repo's tracker |
 | Editing canonical root under swarm load | Use a **worktree** per bead |
 | Staging the private ledger from the parent repo | Never — private nested repo; sync with `git -C "$(ao beads dir)" push` |
 | Hand-editing `registry.json` or context-map | Run `make regen-all` from source edits |

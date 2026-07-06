@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# check-cli-agents-tracker-drift.sh — Fail when cli/AGENTS.md drifts back to stale tracker text.
+# check-cli-agents-tracker-drift.sh — Fail when cli/AGENTS.md drifts off br.
 #
-# cli/AGENTS.md is a pointer stub to root AGENTS.md + br invocation. This gate
-# blocks live bd/Dolt examples, stale linked-worktree `$PWD/_beads` examples,
-# and hard-coded private-ledger git paths.
+# cli/AGENTS.md is a pointer stub to root AGENTS.md + br invocation. THIS repo's
+# tracker is br; this gate blocks live bd examples used as this repo's tracker,
+# stale linked-worktree `$PWD/_beads` examples, and hard-coded private-ledger git
+# paths.
+#
+# Two-store nuance (age-gc-adoption-u0he): bd/dolt is NOT retired globally — it is
+# the gascity SUBSTRATE store, a different layer from this repo's br tracker. A
+# line that legitimately documents that substrate store and carries the
+# `gascity-substrate` marker is exempt from the bd-command check below.
 #
 # Usage:
 #   bash scripts/check-cli-agents-tracker-drift.sh [--agents-file PATH]
@@ -45,12 +51,18 @@ fail() {
     failures=$((failures + 1))
 }
 
-if grep -Eiq '\bbd (ready|show|update|close|prime|onboard|vc|dolt|sync|dep)\b' "$agents_file"; then
-    fail "$agents_file must not document live bd commands (retired legacy tracker)"
+# Substrate carve-out (age-gc-adoption-u0he): bd/dolt is the gascity SUBSTRATE
+# store, not this repo's tracker. Strip lines explicitly annotated
+# `gascity-substrate` before scanning — documenting the substrate layer is
+# legitimate, only drifting THIS repo's tracking back to bd is not.
+bd_scan_body="$(grep -viF 'gascity-substrate' "$agents_file" || true)"
+
+if printf '%s\n' "$bd_scan_body" | grep -Eiq '\bbd (ready|show|update|close|prime|onboard|vc|dolt|sync|dep)\b'; then
+    fail "$agents_file must not document live bd commands as this repo's tracker (br is the tracker; bd/dolt is the gascity substrate store)"
 fi
 
-if grep -Eiq '\bbd dolt\b' "$agents_file"; then
-    fail "$agents_file must not document bd dolt commands (retired legacy tracker)"
+if printf '%s\n' "$bd_scan_body" | grep -Eiq '\bbd dolt\b'; then
+    fail "$agents_file must not document bd dolt as this repo's tracker (bd/dolt is the gascity substrate store, a different layer)"
 fi
 
 if grep -Fq 'BEADS_DIR=$PWD/_beads' "$agents_file"; then
