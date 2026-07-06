@@ -1,3 +1,17 @@
+From 8da4829bbaddbc708e46c946fe74d331cf1471d0 Mon Sep 17 00:00:00 2001
+From: boshu <241868352+boshu2@users.noreply.github.com>
+Date: Sun, 5 Jul 2026 18:14:23 -0400
+Subject: [PATCH] =?UTF-8?q?patch(tmux):=20cycle-guard=20getAllDescendants?=
+ =?UTF-8?q?=20=E2=80=94=20fix=20reconciler=20livelock=20on=20PID-reuse=20(?=
+ =?UTF-8?q?age-gc-adoption-u0he.7=20/=20factory-chain=20E1)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ internal/runtime/tmux/tmux.go | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
+
 diff --git a/internal/runtime/tmux/tmux.go b/internal/runtime/tmux/tmux.go
 index 1eb5a2edb..5f95fe22a 100644
 --- a/internal/runtime/tmux/tmux.go
@@ -49,3 +63,6 @@ index 1eb5a2edb..5f95fe22a 100644
  		// Then add this child
  		result = append(result, child)
  	}
+-- 
+2.55.0
+

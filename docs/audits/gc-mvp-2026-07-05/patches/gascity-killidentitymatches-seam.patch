@@ -1,0 +1,85 @@
+From 9b50969072ea44561834c5f4e0f5f2e645b162f9 Mon Sep 17 00:00:00 2001
+From: Boden Fuller <boden.fuller@gmail.com>
+Date: Mon, 6 Jul 2026 12:51:09 -0400
+Subject: [PATCH] patch(tmux): pure killIdentityMatches seam + PID-reuse skip
+ table test
+
+Extracts the pre-kill identity decision from killVerified into a pure
+function and pins all five dispositions (exact-match kills; recycled PID,
+gone process, absent-from-snapshot, both-empty all refuse). Closes the
+deterministic-test gap flagged by the fork-plan round-1 judge.
+(age-gc-adoption-u0he.8)
+---
+ internal/runtime/tmux/tmux.go           | 13 ++++++++----
+ internal/runtime/tmux/tmux_unit_test.go | 27 +++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 4 deletions(-)
+
+diff --git a/internal/runtime/tmux/tmux.go b/internal/runtime/tmux/tmux.go
+index 3b48d285b..d857c76cc 100644
+--- a/internal/runtime/tmux/tmux.go
++++ b/internal/runtime/tmux/tmux.go
+@@ -823,6 +823,14 @@ func buildKillTargetsFromSnapshot(root string, snap map[string]procIdentity) (de
+ 	return descendants, reparented, identity
+ }
+ 
++// killIdentityMatches is the pure pre-kill identity decision: signal only when
++// the target was discovered with a known start time (want) AND still reports
++// exactly that start time now. Empty want (PID absent from the discovery
++// snapshot) and empty current (process already gone) both refuse.
++func killIdentityMatches(current, want string) bool {
++	return want != "" && current == want
++}
++
+ // killVerified signals pid with sig ONLY if pid still reports the start time it
+ // had when discovered (want). A PID that has exited or been recycled onto a
+ // different process reports a different (or empty) start time and is skipped.
+@@ -830,10 +838,7 @@ func buildKillTargetsFromSnapshot(root string, snap map[string]procIdentity) (de
+ // owns a reused PID — the core of the session-massacre fix. An empty want (PID
+ // absent from the snapshot) is never signaled.
+ func killVerified(pid, sig, want string) {
+-	if want == "" {
+-		return
+-	}
+-	if processStartTime(pid) != want {
++	if !killIdentityMatches(processStartTime(pid), want) {
+ 		return
+ 	}
+ 	_ = exec.Command("kill", sig, pid).Run()
+diff --git a/internal/runtime/tmux/tmux_unit_test.go b/internal/runtime/tmux/tmux_unit_test.go
+index 6d9a1d8fd..340bdd043 100644
+--- a/internal/runtime/tmux/tmux_unit_test.go
++++ b/internal/runtime/tmux/tmux_unit_test.go
+@@ -160,3 +160,30 @@ func TestComputeExcludingKillSet_ExcludedPaneLeaderSurvives(t *testing.T) {
+ 		t.Error("an excluded pane leader must not be killed directly")
+ 	}
+ }
++
++// TestKillIdentityMatches_PIDReuseSkipsKill pins the pre-kill identity
++// decision that stops the session-massacre TOCTOU: a recycled PID (different
++// start time), an already-gone process (empty current), and a target that was
++// never in the discovery snapshot (empty want) must all refuse the signal;
++// only an exact start-time match may kill.
++func TestKillIdentityMatches_PIDReuseSkipsKill(t *testing.T) {
++	cases := []struct {
++		name    string
++		current string
++		want    string
++		signal  bool
++	}{
++		{"exact match kills", "Mon Jul 6 08:00:00 2026", "Mon Jul 6 08:00:00 2026", true},
++		{"recycled PID (different start) skips", "Mon Jul 6 08:34:37 2026", "Mon Jul 6 08:00:00 2026", false},
++		{"process gone (empty current) skips", "", "Mon Jul 6 08:00:00 2026", false},
++		{"not in snapshot (empty want) skips", "Mon Jul 6 08:00:00 2026", "", false},
++		{"both empty skips", "", "", false},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			if got := killIdentityMatches(tc.current, tc.want); got != tc.signal {
++				t.Errorf("killIdentityMatches(%q, %q) = %v, want %v", tc.current, tc.want, got, tc.signal)
++			}
++		})
++	}
++}
+-- 
+2.55.0
+
