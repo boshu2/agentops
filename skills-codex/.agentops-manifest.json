@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "3e8703d7a3b1cbe8f3c070568ee27d1dd27e89047d20713f0575c40bf44d9bc9",
+  "codex_override_catalog_hash": "e8e897d29f973e92266652f8afa575de82128052d891a9165548cd99ff8a49cd",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1042,6 +1042,18 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/ms is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "gc-membrane",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/gc-membrane is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "using-gc",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Auto-generated parity twin (codex-sync): skills/using-gc is the source of truth; no durable Codex-specific divergence yet."
       }
     ]
   },
@@ -1645,6 +1657,18 @@
       "source_skill": "skills/ms",
       "source_hash": "16aadca2a765f8344c95acde747b7e730588f5f96d36fe1f7cd357491dce0d67",
       "generated_hash": "b8429c7573797de53f9eae52ec378ea1c83b8b098e4e4e913914ce35e42336aa"
+    },
+    {
+      "name": "gc-membrane",
+      "source_skill": "skills/gc-membrane",
+      "source_hash": "84799ffcf06ccb6d16d7b3b62a65148b2e97412cb2f38ebe39a86da7c2b48199",
+      "generated_hash": "79329bbdd9e569602eafbb721578cfcb8c2109582b5cc92a1c17ba2496491fee"
+    },
+    {
+      "name": "using-gc",
+      "source_skill": "skills/using-gc",
+      "source_hash": "e49d56243b923a8d9e85d778a59de53fc5be8e57398c406d7d15233e15b4601c",
+      "generated_hash": "e01f0d3e8b217a98c231f7fe294604ab38610949053d7b0ca972f29626a9e014"
     }
   ]
 }

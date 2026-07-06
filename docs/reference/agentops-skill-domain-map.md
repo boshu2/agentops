@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-64 checked-in AgentOps skills before any broad rewrite, using current
+66 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 64 |
+| Skills audited | 66 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 64 / 64 |
+| Dispositions assigned | 66 / 66 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -85,6 +85,7 @@ Disposition meanings:
 | `eval-outcomes` | BC2 Validation | supporting | keep | Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar. |
 | `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift).. |
 | `flywheel` | BC1 Corpus | domain | update | Flywheel health kernel; needs productized self-test. |
+| `gc-membrane` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc.. |
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
 | `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes. |
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
@@ -122,6 +123,7 @@ Disposition meanings:
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
 | `toil-mining` | BC1 Corpus | supporting | keep | Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder.. |
 | `using-atm` | BC6 Orchestration | supporting | keep | Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
+| `using-gc` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface.. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder. |
 <!-- END:full-skill-map -->
