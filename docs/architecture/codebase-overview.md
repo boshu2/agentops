@@ -158,7 +158,7 @@ Full surface: generated [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md).
 |---------|--------|
 | `ao rpi phased/loop/serve/stream` | Compiled, heavily tested; **not** live orchestration path |
 | `scripts/pre-push-gate.sh` | Bash escape hatch — `AGENTOPS_GATE_BASH=1` only |
-| Gas City (`runtime=gc`) | **Removed** — bridge deleted |
+| Gas City (`runtime=gc`) | **Removed** — bridge deleted. gc itself lives beside as a blessed coexisting substrate (owned fork; drive via `skills/using-gc` + `packs/agentops-membrane`) |
 | In-repo daemon/scheduler | **Removed** — ADR-0009 |
 
 **Navigation rule:** [Operating Loop](operating-loop.md) is primary navigation for *how work flows*. `/rpi` is one turn's executor skill — not the primary substrate. Live multi-agent orchestration runs on NTM + Agent Mail under `.agents/agent-constitution.md`.

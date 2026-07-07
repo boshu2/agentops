@@ -53,8 +53,12 @@ bdq() { (cd "$CITY" && bd "$@"); }
 bead_json() { bdq show "$1" --json 2>/dev/null | jq 'if type=="array" then .[0] else . end'; }
 
 # --- stamp the iteration bead's failure class then exit non-zero (retry) -----
-# transient => native KindRetry re-spawns WITHOUT counting a refute (bead .1
-# degradation-awareness); hard => counts as a refute round.
+# HONEST CONTRACT (corrected 2026-07-06 RCA): on native graph.v2 the ralph
+# dispatcher NEVER reads gc.failure_class — EVERY nonzero check exit consumes
+# an attempt (transient and hard alike; gc internal/dispatch/control.go). The
+# class stamp below is evidence/telemetry for humans and the finalizer's
+# artifact trail, not retry-budget control. Budget transient flakes via the
+# formula's max_attempts instead.
 retry_exit() {  # $1=class(transient|hard) $2=reason
   bdq update "$GC_BEAD_ID" \
     --set-metadata "gc.outcome=fail" \

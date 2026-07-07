@@ -1411,7 +1411,7 @@
       "capability_class": "safety",
       "purpose": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1463,7 +1463,7 @@
       "capability_class": "execution",
       "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1585,7 +1585,7 @@
       "capability_class": "tracking",
       "purpose": "Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1704,7 +1704,7 @@
       "capability_class": "execution",
       "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1851,7 +1851,7 @@
       "capability_class": "validation",
       "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1882,7 +1882,7 @@
       "capability_class": "orchestration",
       "purpose": "Execute epics through waves. Triggers: \"crank an epic\", \"execute epics through waves\", \"drive the bead wave plan\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "refactor",
       "runtime_targets": [
         "claude",
         "codex"
@@ -1988,7 +1988,7 @@
       "capability_class": "planning",
       "purpose": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2028,7 +2028,7 @@
       "capability_class": "docs",
       "purpose": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2058,7 +2058,7 @@
       "capability_class": "docs",
       "purpose": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2095,7 +2095,7 @@
       "capability_class": "validation",
       "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: \"eval-outcomes\", \"eval outcomes\", \"grade agent or model output\".",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2174,7 +2174,7 @@
       "capability_class": "corpus",
       "purpose": "Check knowledge flywheel health. Triggers: \"flywheel\", \"check knowledge flywheel health.\", \"flywheel skill\".",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2246,7 +2246,7 @@
       "capability_class": "planning",
       "purpose": "Maintain AgentOps goals. Triggers: \"goals\", \"maintain agentops goals.\", \"goals skill\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2309,7 +2309,7 @@
       "capability_class": "authoring",
       "purpose": "Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2337,7 +2337,7 @@
       "capability_class": "execution",
       "purpose": "Implement one tracked issue. Triggers: \"implement\", \"implement one tracked issue.\", \"implement skill\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2425,7 +2425,7 @@
       "capability_class": "corpus",
       "purpose": ">-",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2465,7 +2465,7 @@
       "capability_class": "validation",
       "purpose": "Profile and optimize hotspots. Triggers: \"perf\", \"profile and optimize hotspots.\", \"perf skill\".",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2495,7 +2495,7 @@
       "capability_class": "planning",
       "purpose": "Decompose goals into issue plans. Triggers: \"plan\", \"decompose goals into issue plans.\", \"plan skill\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2533,7 +2533,7 @@
       "capability_class": "corpus",
       "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2574,7 +2574,7 @@
       "capability_class": "delivery",
       "purpose": "Prepare PR commits and body. Triggers: \"pr-prep\", \"pr prep\", \"prepare pr commits and body.\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2677,7 +2677,7 @@
       "capability_class": "planning",
       "purpose": "Create or refine PRODUCT.md. Triggers: \"product\", \"create or refine product.md.\", \"product skill\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2761,7 +2761,7 @@
       "capability_class": "validation",
       "purpose": ">-",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2791,7 +2791,7 @@
       "capability_class": "corpus",
       "purpose": "Recover session context. Triggers: \"recover\", \"recover session context.\", \"recover skill\".",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "refactor",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2826,7 +2826,7 @@
       "capability_class": "validation",
       "purpose": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2856,7 +2856,7 @@
       "capability_class": "execution",
       "purpose": "Execute safe refactors. Triggers: \"refactor\", \"execute safe refactors.\", \"refactor skill\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2886,7 +2886,7 @@
       "capability_class": "delivery",
       "purpose": "Run release validation. Triggers: \"run release validation\", \"cut a release\", \"check release readiness\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2917,7 +2917,7 @@
       "capability_class": "corpus",
       "purpose": "Explore and write findings. Triggers: \"research\", \"explore and write findings.\", \"research skill\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -2980,7 +2980,7 @@
       "capability_class": "validation",
       "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: \"review\", \"review diffs for risk find\", \"review skill\".",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3075,7 +3075,7 @@
       "capability_class": "authoring",
       "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3105,7 +3105,7 @@
       "capability_class": "safety",
       "purpose": "Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: \"scope\", \"hard-block edits outside declared frozen\", \"scope skill\".",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3166,7 +3166,7 @@
       "capability_class": "authoring",
       "purpose": "Shared AgentOps skill contracts. Triggers: \"shared\", \"shared agentops skill contracts.\", \"shared skill\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3198,7 +3198,7 @@
       "capability_class": "authoring",
       "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3228,7 +3228,7 @@
       "capability_class": "docs",
       "purpose": "Provide repo coding standards. Triggers: \"standards\", \"provide repo coding standards.\", \"standards skill\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3296,7 +3296,7 @@
       "capability_class": "orchestration",
       "purpose": "Dispatch parallel agents. Triggers: \"swarm\", \"dispatch parallel agents.\", \"swarm skill\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3329,7 +3329,7 @@
       "capability_class": "validation",
       "purpose": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
       "status": "active",
-      "disposition": "keep",
+      "disposition": "update",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3388,7 +3388,7 @@
       "capability_class": "orchestration",
       "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "status": "active",
-      "disposition": "refactor",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"
@@ -3445,7 +3445,7 @@
       "capability_class": "validation",
       "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "runtime_targets": [
         "claude",
         "codex"

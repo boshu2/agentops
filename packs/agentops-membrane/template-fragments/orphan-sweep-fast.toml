@@ -1,0 +1,17 @@
+# orphan-sweep-fast — city config fragment (paste into city.toml, or let
+# scripts/install-gc-city.sh write it).
+#
+# WHY: when a session's runtime dies while its bead still owns in_progress
+# work, the reconciler deliberately only diagnoses — the requeue is the core
+# pack's orphan-sweep exec order, whose stock cooldown is 5m. Since fresh pool
+# spawn demand is derived from UNASSIGNED ready work, a dead-agent-assigned
+# bead produces zero demand until the sweep fires: the city looks alive
+# (reconciler ticking) while work sits stranded for up to 5 minutes. gc's
+# native [orders] override drops that to <=1m — no fork patch, no pack fork of
+# the core script. (age-gc-adoption-u0he.14, R1 in the recovery memo; the
+# wedged-server ladder R2 is fixed in the fork's degraded-server
+# latch-and-recover patch.)
+
+[[orders.overrides]]
+name = "orphan-sweep"
+interval = "60s"
