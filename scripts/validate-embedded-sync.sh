@@ -62,6 +62,7 @@ check_file "$REPO_ROOT/scripts/lib/diff-identity.sh" "$EMBEDDED/pawl/scripts/lib
 # ebec.9: pawl-review.sh sources this unconditionally — absent from the bundle => the
 # embedded pawl-review dangles at runtime, so keep it byte-identical.
 check_file "$REPO_ROOT/scripts/lib/pawl-preflight.sh" "$EMBEDDED/pawl/scripts/lib/pawl-preflight.sh"
+check_file "$REPO_ROOT/scripts/lib/pawl-amend-guard.sh" "$EMBEDDED/pawl/scripts/lib/pawl-amend-guard.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then

@@ -36,8 +36,20 @@ PR="${2:-0}"
 ROOT="$(git rev-parse --show-toplevel)"
 VDIR="${AGENTOPS_PAWL_VERDICTS_DIR:-$ROOT/.agents/pawl-verdicts}"
 VF="$VDIR/$BEAD.json"
+_PAWL_LAND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 die() { echo "pawl-land: $*" >&2; exit 1; }
+
+# ebec.11: backstop the amend-into-#trivial-bind trap at land time too (the reviewer
+# catches it first, but a hand-run land should refuse loud rather than push a #trivial
+# tip that hides amended code as an opaque cockpit failure).
+# shellcheck source=scripts/lib/pawl-amend-guard.sh
+[[ -f "$_PAWL_LAND_DIR/lib/pawl-amend-guard.sh" ]] && . "$_PAWL_LAND_DIR/lib/pawl-amend-guard.sh"
+if declare -F pawl_amend_guard >/dev/null 2>&1; then
+  _land_amend_rc=0
+  pawl_amend_guard "$ROOT" "$(git -C "$ROOT" rev-parse HEAD)" || _land_amend_rc=$?
+  [[ "$_land_amend_rc" -eq 2 ]] && die "amend-into-#trivial-bind trap detected (see above) — rebuild the feat, re-run pawl-review, then re-land."
+fi
 
 # _tip_is_autobind <repo> <sha>: true when <sha> matches BOTH halves of the pawl auto-bind
 # signature — the #trivial marker in the subject AND every changed file under docs/provenance/
