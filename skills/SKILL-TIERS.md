@@ -133,120 +133,12 @@ User-facing: /post-mortem --quick (quick-capture), /post-mortem (full — mines 
 CLI:         ao compile, ao flywheel status, ao lookup, ao extract, ao forge, ao maturity
 ```
 
-## Which Skill Should I Use?
+## Which skill should I use?
 
-Start here. Match your intent to a skill.
-
-```
-What are you trying to do?
-│
-├─ "Prove it's done / validate" (the Membrane — no verdict = not done)
-│   ├─ Code ready to ship? ───────► /validate
-│   ├─ Plan ready to build? ──────► /pre-mortem
-│   ├─ Independent judges ────────► /council --quick validate
-│   ├─ Adversarial probe ─────────► /validate --debate
-│   ├─ Root-cause a bug ──────────► /validate --mode=pr
-│   ├─ Drive fixes to agreement ──► /converge
-│   ├─ Mid-epic drift check ──────► /reality-check
-│   ├─ Security + release gate ───► /security audit
-│   ├─ Landing 100+ files? ───────► /pre-land-refuters
-│   └─ Work ready to close? ──────► /post-mortem
-│
-├─ "Track it / bookkeep it" (the Bookkeeper)
-│   ├─ Break it into issues ──────► /plan
-│   ├─ Manage/close issues ───────► /beads-br
-│   ├─ Shape a fuzzy idea ────────► /discovery
-│   ├─ Build a single issue ──────► /implement
-│   ├─ Where was I? ──────────────► /status
-│   ├─ Save for next session ─────► /handoff
-│   └─ Recover after compaction ──► /status --recover
-│
-├─ "Build a feature"
-│   ├─ Small (1-2 files) ─────────► /implement
-│   ├─ Medium (3-6 issues) ───────► /plan → /crank
-│   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
-│
-├─ "Fix a bug"
-│   ├─ Know which file? ──────────► /implement <issue-id>
-│   └─ Need to investigate? ──────► /validate --mode=pr
-│
-├─ "Explore or research"
-│   ├─ Understand this codebase ──► /research
-│   ├─ Compare approaches ────────► /council research <topic>
-│   └─ Generate ideas ────────────► /discovery
-│
-├─ "Learn from past work"
-│   ├─ What do we know about X? ──► ao lookup <query>
-│   ├─ Save this insight ─────────► /post-mortem --quick "insight"
-│   ├─ Full retrospective ────────► /post-mortem
-│   └─ Trace a decision ─────────► /status --recover
-│
-├─ "Write or improve tests"
-│   ├─ Generate tests for code ───► /test <target>
-│   ├─ Find coverage gaps ────────► /test --coverage <scope>
-│   └─ TDD a new feature ────────► /test --tdd <feature>
-│
-├─ "Review code / a PR"
-│   ├─ Review a PR ───────────────► /validate --mode=pr <PR-number>
-│   ├─ Review agent output ───────► /validate --mode=pr <path>
-│   └─ Review local diff ─────────► /validate --mode=pr --diff
-│
-├─ "Refactor code"
-│   ├─ Refactor specific target ──► /refactor <file-or-function>
-│   ├─ Sweep for complexity ──────► /refactor --sweep <scope>
-│   └─ Extract method/module ─────► /refactor --extract <pattern>
-│
-├─ "Manage dependencies"
-│   ├─ Full health check ────────► /security audit
-│   ├─ Update dependencies ──────► /security update
-│   ├─ Vulnerability scan ───────► /security vuln
-│   └─ License compliance ───────► /security license
-│
-├─ "Start a new project"
-│   ├─ Scaffold project ─────────► /scaffold <language> <name>
-│   ├─ Add component ────────────► /scaffold component <type> <name>
-│   └─ Generate CI config ───────► /scaffold ci <platform>
-│
-├─ "Contribute upstream"
-│   └─ Full PR workflow ──────────► /pr-prep → /plan → /implement
-│
-├─ "Ship a release"
-│   └─ Changelog + tag ──────────► /release <version>
-│
-├─ "Parallelize work"
-│   ├─ Multiple independent tasks ► /swarm
-│   ├─ Codex agents specifically ─► /swarm
-│   └─ Full epic with waves ──────► /crank <epic-id>
-│
-└─ "First time here"
-    └─ Interactive tour ──────────► /status
-```
-
-### Composition patterns
-
-These are how skills chain in practice:
-
-| Pattern | Chain | When |
-|---------|-------|------|
-| **Quick fix** | `/implement` | One issue, clear scope |
-| **Quick ship** | `/implement` → `/push` | Implement, test, and push |
-| **Validated fix** | `/implement` → `/validate` | One issue, want confidence |
-| **Planned epic** | `/plan` → `/pre-mortem` → `/crank` → `/post-mortem` | Multi-issue, structured |
-| **Full pipeline** | `/rpi` (chains all above) | End-to-end, autonomous |
-| **Evolve loop** | `/evolve` (chains `/rpi` repeatedly) | Fitness-scored improvement |
-| **PR contribution** | `/pr-prep` → `/plan` → `/implement` → `/validate --mode=pr` → `/pr-prep` | External repo |
-| **Knowledge query** | `ao lookup` → `/research` (if gaps) | Understanding before building |
-| **Standalone review** | `/council validate <target>` | Ad-hoc multi-judge review |
-| **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |
-| **TDD feature** | `/implement <issue>` | TDD-first by default (skip with `--no-tdd`) |
-| **Scoped parallel** | `/crank <epic>` | Auto file-ownership map prevents conflicts |
-| **Test-first build** | `/test --tdd` → `/implement` | Write tests before code |
-| **Reviewed PR** | `/validate --mode=pr <PR>` → approve/request changes | Incoming PR review |
-| **Safe refactor** | `/refactor` → `/refactor` → `/test` | Find hotspots, refactor, verify |
-| **Dep hygiene** | `/security audit` → `/security update` → `/test` | Audit, update, verify |
-| **New project** | `/scaffold` → `/test` → `/push` | Bootstrap, verify, ship |
-
----
+One curated router exists: [docs/SKILLS.md](../docs/SKILLS.md) — the decision tree and
+composition patterns live THERE (single owner; the duplicate tree formerly here drifted
+and was removed 2026-07-07, age-skills-audit-fable-l6ic.6). This file owns the TIER
+taxonomy and the tier tables below, nothing else.
 
 ## Current Skill Tiers
 

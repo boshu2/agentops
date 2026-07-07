@@ -1,6 +1,6 @@
 ---
 name: scaffold
-description: Create project, component, or boilerplate
+description: Stamp project/component/CI scaffolds — but
 ---
 # Scaffold Skill
 

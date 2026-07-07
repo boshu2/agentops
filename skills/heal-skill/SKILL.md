@@ -1,6 +1,6 @@
 ---
 name: heal-skill
-description: 'Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".'
+description: 'Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".'
 practices:
 - refactoring
 - code-complete

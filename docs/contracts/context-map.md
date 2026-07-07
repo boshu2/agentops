@@ -13,7 +13,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves. Triggers: "crank an epic", "execute epics through waves", "drive the bead wave plan".
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
-- `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
+- `domain` — Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
 - `evolve` — Run autonomous improvement loops.
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `operationalize` — Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
@@ -31,14 +31,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, --add-dir scoping. Triggers: agy, antigravity, agy plugin, AGY evidence.
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
-- `converge` — Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
+- `converge` — Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
 - `pre-land-refuters` — Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.
 - `push` — Validate, commit, and push.
 - `research` — Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
 - `status` — Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".
-- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
+- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
 
 ### driven-adapter
 
@@ -48,33 +48,33 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### supporting
 
-- `account-rotation` — Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".
+- `account-rotation` — Switch coding-agent accounts on a usage/rate limit. Routes by host+agent: macOS+Claude to claude-acct; Codex/Gemini and Linux/WSL to caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".
-- `agent-native` — Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: "agent-native", "agent native", "make an out-of-session agent agentops-native".
+- `agent-native` — Make an out-of-session agent AgentOps-native via skills + the ao CLI + local cockpit proof + CI backstop telemetry, not runtime hooks. Triggers: "agent-native", "agent native", "make an out-of-session agent agentops-native".
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
-- `beads-br` — Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. Triggers: "beads-br", "beads br", "local-first issue tracker beads rust".
-- `beads-bv` — Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".
-- `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".
-- `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".
-- `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
+- `beads-br` — Local-first issue tracker (beads_rust) for AI agents — track tasks, manage dependencies, find ready work, sync via git JSONL. Triggers: "beads-br", "beads br", "local-first issue tracker beads rust".
+- `beads-bv` — Graph-aware task triage with bv and br — prioritize work, find bottlenecks, track dependencies across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".
+- `cass` — Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: "cass", "mine past agent sessions for", "cass skill".
+- `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) — user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".
+- `dcg` — Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
 - `gc-membrane` — Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: "gc-membrane", "membrane pack", "pawl-verdict.v1", "gc close door".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
-- `heal-skill` — Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
-- `ms` — meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
-- `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
+- `heal-skill` — Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
+- `ms` — meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
+- `ntm` — Orchestrate NTM tmux agent swarms and robot APIs — spawn/send panes, read robot state, triage, locks/mail, safety, pipelines. Single owner of swarm-tending doctrine. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".
 - `refactor` — Execute safe refactors. Triggers: "refactor", "execute safe refactors.", "refactor skill".
 - `release` — Run release validation. Triggers: "run release validation", "cut a release", "check release readiness".
 - `reverse-engineer` — Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
-- `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: "scaffold", "create project component or boilerplate".
+- `scaffold` — Stamp project/component/CI scaffolds — but reach for it mainly for the repo-specific domain-slice binding (generic trees a frontier model needs no skill for). Triggers: "scaffold", "create project component or boilerplate".
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `swarm` — Dispatch parallel agents. Triggers: "swarm", "dispatch parallel agents.", "swarm skill".
 - `test` — Generate tests and coverage plans. Triggers: "test", "generate tests and coverage plans.", "test skill".
 - `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
-- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
-- `using-gc` — Drive a Gas City (gc) factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc. Use when standing up, running, administering, or troubleshooting a gas city. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall", "stand up a membrane city".
+- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running the loop over a bead queue, then tend the swarm to convergence. Triggers: "use ATM as the out-of-session substrate", "spawn atm panes over a bead queue", "tend an unattended swarm", "renewal ticks", "two-tick stall rule".
+- `using-gc` — Drive a Gas City (gc) factory day-to-day — stand up a city, sling quests, watch the membrane close-gate, resolve stalls, converge. The vibing-with-ntm analog for gc. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall", "stand up a membrane city".
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
