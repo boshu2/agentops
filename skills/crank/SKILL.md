@@ -145,18 +145,20 @@ Issues remaining: N
 Iterations: M/50
 ```
 
-## Orchestrator-Merge + Reconcile Loop
+## Land Loop (per-bead, direct-main)
 
-When crank drives PRs to `main` itself (orchestrator-merge model), reconcile each PR mechanically:
+Crank lands each bead's slice to `main` **directly** — PR-per-bead is retired for THIS repo (external-repo variant at the end of this section). Land each bead from **its own worktree**, one at a time:
 
-1. **Poll** `gh pr checks <pr>` until all checks are terminal.
-2. **Block only on substantive fails.** A failing `claude-review` on a usage-limit message is non-blocking; only substantive non-`claude-review` failures block the merge.
-3. **Fix-forward stale/transient reds — never revert green work.** `correctness (ubuntu-latest)` tar-cache-restore exit-2 → `gh run rerun` **once**, then believe. `registry.json` / derived-surface or `contracts-sync` drift from another PR → `make regen-all` (scoped via `--skills` when only some skills changed), commit, push.
-4. **Merge only when green AND the pawl gate CONFIRMS.** Green CI is necessary but **NOT sufficient** — merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). A CONFIRMED, **evidence-bound, commit-current** pawl verdict ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md): all refuters CONFIRMED; the pawl's diversity floor met — **fresh-context by default** (≥1 refuter in a context other than the author's; model-agnostic), or **multi-model opt-in** (≥2 distinct canonical model families) where the pawl is opted up; real non-empty reviewer evidence, `head_sha` == the PR's live head) tied to this bead+PR must exist, or the merge is **refused (HOLD)**. **REFUTED → AUTO-REDO**: the loop re-works the findings and re-gates on its own, no human. A human is escalated to **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), at which point the disposition is `ESCALATE`/`HOLD` and the door stays closed (never auto-land on a breaker trip) — see pawls.md "Escalation — the circuit-breaker model". Then `gh pr merge --squash --admin`.
-5. **Close on confirmed-MERGED only.** `br close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `br --json` query (those flake to null/0).
-6. **Epic-close gate.** **NEVER close a parent epic before EVERY child PR is independently confirmed `MERGED`** — re-query `gh pr view --json state` per child first. One non-merged child aborts the close. (Post-mortem governance checkpoint: this is a hard gate, not advisory.)
+1. **Isolate.** The bead's slice is committed on HEAD in the bead's own `git worktree` (never the shared checkout), the HEAD message citing the bead id (the gate + pawl resolve the bead from it).
+2. **Gate.** `ao gate check --fast --scope head` — the local cockpit gate (also the pre-push hook; run it manually to fail fast). Fix-forward stale/transient reds, never revert green work; regenerate drifted derived surfaces (`registry.json` / `contracts-sync` → `make regen-all`, scoped via `--skills` when only some skills changed) and commit them WITH the change.
+3. **Review — the mutate-shared-trunk pawl.** `bash scripts/pawl-review.sh <bead> --scope head --author-family <family>` runs the cross-family refuter against the commit (declare the author's real family — the default is `claude`, so a codex author omitting it would get a same-family bind; with `--author-family codex` the same-family reviewer is refused and a non-codex `REVIEWER=` must be supplied) ([docs/contracts/pawls.md](../../docs/contracts/pawls.md); [`/pre-land-refuters`](../pre-land-refuters/SKILL.md)). CONFIRMED requires: all refuters CONFIRMED; the diversity floor met — **fresh-context by default** (≥1 refuter in a context other than the author's; model-agnostic), or **multi-model opt-in** (≥2 distinct canonical model families) where the pawl is opted up; real non-empty reviewer evidence; `head_sha` == the live commit. On CONFIRMED it writes the commit-bound verdict at `.agents/pawl-verdicts/<bead>.json`. **No CONFIRMED verdict ⇒ the bead does NOT land** — the pre-push gate refuses it (no verdict = not done). **REFUTED → AUTO-REDO:** the loop re-works the named defects and re-gates on its own, no human. Escalate to a human **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation) — disposition `ESCALATE`/`HOLD`, door stays closed (never auto-land on a breaker trip); see pawls.md "Escalation — the circuit-breaker model".
+4. **Land.** `bash scripts/pawl-land.sh <bead>` — fetch + rebase onto current `origin/main`, restamp the CONFIRMED verdict onto the post-rebase feat, single-shot `push origin HEAD:main`. Aborts without pushing on a rebase conflict (resolve locally, re-run pawl-review if the tree changed, re-land).
+5. **Close on landed-only.** `br close` a child bead ONLY after its commit is confirmed on trunk — `git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main` — never on a log line or a batch `br --json` query (those flake to null/0).
+6. **Epic-close gate.** **NEVER close a parent epic before EVERY child bead's commit is confirmed an ancestor of `origin/main`** (re-check `git merge-base --is-ancestor` per child; each child `br` CLOSED). One unlanded child aborts the close. (Post-mortem governance checkpoint: hard gate, not advisory.)
 
-> Enforce steps 4–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, **verifies a CONFIRMED, evidence-bound, commit-current pawl verdict (fresh-context default; multi-model opt-in) via `scripts/pawl-verdict.sh check <bead> <pr> --head <live-sha>` — exit 5/HOLD with no merge if absent/REFUTED/ESCALATE/diversity-floor-unmet/empty-or-stale-head/no-evidence/schema-invalid; also blocks exit 2 on still-PENDING CI (green is strictly necessary)**, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
+> Enforce steps 3–4 with the committed scripts, not by hand: `scripts/pawl-review.sh <bead> --scope head --author-family <family>` (runs the refuter; on CONFIRMED writes + verifies the commit-bound verdict via `scripts/pawl-verdict.sh`, REFUTED exit 3 prints the defects) then `scripts/pawl-land.sh <bead>` (rebase → restamp → single-shot push). The epic-close gate is `scripts/check-epic-children-closed.sh <epic>` (no-epic-close-with-open-child). All are hermetic-tested under `tests/scripts/`.
+
+> **External-repo variant (PR flow).** When crank targets an **external repo** (an upstream fork where you cannot push `main`), the land half becomes a PR: prepare it with [`/pr-prep`](../pr-prep/SKILL.md), then reconcile mechanically with `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls `gh pr checks`, reruns the lone correctness-ubuntu flake once, verifies the CONFIRMED pawl verdict via `scripts/pawl-verdict.sh check <bead> <pr> --head <live-sha>` — exit 5/HOLD if absent/REFUTED/ESCALATE/stale-head/no-evidence, merges `gh pr merge --squash --admin`, closes the bead only on confirmed `MERGED`). This path is for **external targets only** — never for landing AgentOps' own beads.
 
 ## The FIRE Loop
 
@@ -176,9 +178,9 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
   bounded set of beads until done. Crank's per-wave loop with a fixed input set (epic-id or bead
   list) and the epic-close gate IS the burndown: no new-work discovery, terminate on all-closed.
 - **`ship-loop` → single-bead fast lane.** Use when running the fast-lane internal ship cycle for
-  one closable bead or small slice: claim, test, implement, push, merge, close. That is a one-issue,
-  one-wave crank — the Orchestrator-Merge + Reconcile Loop above (confirmed-MERGED before close)
-  owns the merge/close half.
+  one closable bead or small slice: claim, test, implement, gate, pawl-review, pawl-land, close. That
+  is a one-issue, one-wave crank — the Land Loop above (CONFIRMED pawl verdict + landed-on-trunk
+  before close) owns the land/close half.
 
 ### Verb Disambiguation for Worker Prompts
 

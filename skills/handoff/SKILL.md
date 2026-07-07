@@ -9,7 +9,7 @@ practices:
 hexagonal_role: supporting
 consumes: []
 produces:
-- .agents/research/*.md
+- .agents/handoff/*.md
 context_rel: []
 skill_api_version: 1
 context:
@@ -20,7 +20,7 @@ context:
 metadata:
   tier: session
   dependencies: []
-output_contract: .agents/handoffs/YYYY-MM-DD-*.md
+output_contract: .agents/handoff/YYYY-MM-DD-*.md
 ---
 # Handoff Skill
 

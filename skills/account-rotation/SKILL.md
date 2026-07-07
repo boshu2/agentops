@@ -56,7 +56,7 @@ Tool: `dotfiles/bin/claude-acct`.
 ## macOS+Codex/Gemini & all Linux/WSL → `caam` (file swap)
 
 caam is the adopted file-based rotator and is correct here. It self-documents
-(there is intentionally no caam skill — the CLI is the doc):
+(the CLI is the doc; a dedicated `caam` skill also exists):
 
 ```bash
 caam status <tool>            # vault + health

@@ -221,8 +221,8 @@ QUICK COMMANDS
   $pre-mortem   Validate plan before coding
   $implement    Execute a single issue
   $crank        Autonomous epic execution
-  $validate   Full close-out and learnings
-  $validate         Targeted code review
+  $post-mortem  Full close-out and learnings
+  $validate     Targeted code review
 ══════════════════════════════════════════════════
 ```
 

@@ -34,7 +34,7 @@ output_contract: skills/council/schemas/verdict.json
 
 > **Purpose:** Is this plan/spec good enough to implement?
 
-> **Mandatory for 3+ issue epics.** Pre-mortem is enforced by hook when `/crank` is invoked on epics with 3+ child issues. 6/6 consecutive positive ROI. Bypass: `--skip-pre-mortem` flag or `AGENTOPS_SKIP_PRE_MORTEM_GATE=1`.
+> **Mandatory doctrine for 3+ issue epics.** Run pre-mortem before `/crank` on epics with 3+ child issues — operating doctrine, not a hook (AgentOps 3.0 is hookless). 6/6 consecutive positive ROI. Bypass: `--skip-pre-mortem` flag or `AGENTOPS_SKIP_PRE_MORTEM_GATE=1`.
 
 ## Loop position
 
@@ -234,7 +234,7 @@ For fanout class the duel **satisfies no-self-grading by construction**: the two
 
 Write to `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` using the full template (frontmatter, verdict table, pseudocode-fix format, decision gate) in [references/write-pre-mortem-output.md](references/write-pre-mortem-output.md). That reference also contains Step 4.5 (persist reusable findings to `.agents/findings/registry.jsonl`) and Step 4.6 (copy pseudocode fixes verbatim into plan issues so workers do not reimplement them from scratch).
 
-When Step 4.5 writes reusable findings, include `dedup_key` and refresh compiled findings with `finding-compiler.sh` when that hook exists.
+When Step 4.5 writes reusable findings, include `dedup_key` and refresh compiled findings by running `finding-compiler.sh` when it is available.
 
 The generated report must preserve this exact heading because downstream validators and ledger readers extract verdicts with a regex anchored to it:
 
