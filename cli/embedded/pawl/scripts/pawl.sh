@@ -88,6 +88,20 @@ probe_families() {
   for f in $PAWL_CANON_FAMILIES; do _cli_present "$(_family_bin "$f")" && echo "$f"; done
 }
 
+# Strict-benched families (A7 ruling; ebec.7): excluded from the DEFAULT route probe — a
+# benched family reviews only via an explicit pin (--tri/--models). NOT a rigor change:
+# quorum/tier math is untouched. Override: PAWL_BENCHED_FAMILIES (space-sep; empty = none).
+PAWL_BENCHED_FAMILIES="${PAWL_BENCHED_FAMILIES-agy}"
+
+# Default-route set: the install probe minus benched families. If benching would empty the
+# set (only benched CLIs installed) fall back to the raw probe — degraded beats none, and
+# the no-families die stays in cmd_up.
+resolve_default_families() {
+  local f keep=""
+  for f in $(probe_families); do case " $PAWL_BENCHED_FAMILIES " in *" $f "*) : ;; *) keep="$keep$f"$'\n' ;; esac; done
+  if [ -n "$keep" ]; then printf '%s' "$keep"; else probe_families; fi
+}
+
 # Normalize a pin (--dual/--tri or a --models csv of family tokens/aliases) to canonical family
 # tokens (space-sep, canonical order). Empty input -> empty (caller uses the probe). An unknown
 # token -> exit 2 (fail-fast on a typo'd pin, never a silent drop).
@@ -542,7 +556,8 @@ cmd_up() {
       case " $probe " in *" $f "*) : ;; *) die "pinned family '$f' (CLI '$(_family_bin "$f")') is not installed — drop it from --models or install it" ;; esac
     done
   else
-    enabled="$probe"
+    enabled="$(resolve_default_families | tr '\n' ' ')"
+    [ "$enabled" = "$probe" ] || log "default route excludes benched families [$PAWL_BENCHED_FAMILIES] — opt in via --models/--tri"
   fi
   set -- $enabled
   [ "$#" -ge 1 ] || die "no pawl families installed — need at least one of: claude, codex, agy"

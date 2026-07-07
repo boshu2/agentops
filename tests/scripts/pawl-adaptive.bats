@@ -160,3 +160,32 @@ setup() {
   [ "$(pawl_decide_agreement CONFIRMED '' '')" = "REFUTED:insufficient:1" ]
   [ "$(pawl_decide_agreement '' '' '')" = "REFUTED:insufficient:0" ]
 }
+
+# --- resolve_default_families: DEFAULT route excludes strict-benched families (ebec.7) ---
+# A benched family (A7: agy) stalls at ~3.5min/land contributing zero verdicts; the default
+# probe drops it. NOT a rigor change: explicit pins still admit it, quorum math untouched.
+
+@test "resolve_default_families: all three installed -> benched agy excluded from default" {
+  _cli_present() { return 0; }
+  run resolve_default_families
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s ' $output)" = "cc cod " ]
+}
+
+@test "resolve_default_families: bench override empty -> agy included again" {
+  _cli_present() { return 0; }
+  PAWL_BENCHED_FAMILIES=""
+  run resolve_default_families
+  [ "$(printf '%s ' $output)" = "cc cod agy " ]
+}
+
+@test "resolve_default_families: only benched family installed -> raw-probe fallback, never zero" {
+  _cli_present() { case "$1" in agy) return 0;; *) return 1;; esac; }
+  run resolve_default_families
+  [ "$(printf '%s ' $output)" = "agy " ]
+}
+
+@test "resolve_default_families: benched family still admitted via explicit pin (parse_pin unaffected)" {
+  run parse_pin agy
+  [ "$(printf '%s ' $output)" = "agy " ]
+}
