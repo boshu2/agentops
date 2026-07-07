@@ -164,3 +164,21 @@ PY
   # --check must not mutate: the duplicate row is still on disk.
   [ "$(_count_rows foo)" -eq 2 ]
 }
+
+@test "dupes-only drift (current hashes, no hash update) still persists the dedupe to DISK" {
+  # age-p2c7 review probe: when duplicate rows are the ONLY drift — the kept row's
+  # hashes are already current, so updated[] stays empty — the write must not be
+  # skipped: the manifest write is unconditional, not gated on the updated path.
+  bash "$SCRIPT"
+  local good; good="$(_manifest_hash foo)"
+  _add_dup_row foo "$good"
+  [ "$(_count_rows foo)" -eq 2 ]
+
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"duplicate row(s)"* ]]
+  [[ "$output" != *"Updated hashes"* ]]
+  # The dedupe reached disk: exactly one row per name, hash unchanged.
+  [ "$(_count_rows foo)" -eq 1 ]
+  [ "$(_manifest_hash foo)" = "$good" ]
+}
