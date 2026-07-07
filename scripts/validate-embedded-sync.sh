@@ -59,6 +59,9 @@ check_file "$REPO_ROOT/scripts/lib/verify-config.sh" "$EMBEDDED/pawl/scripts/lib
 # => the embedded rebind/check/converge cannot resolve the signature (fail-closed at the source),
 # so keep it byte-identical. (age-rk3r.9)
 check_file "$REPO_ROOT/scripts/lib/diff-identity.sh" "$EMBEDDED/pawl/scripts/lib/diff-identity.sh"
+# ebec.9: pawl-review.sh sources this unconditionally — absent from the bundle => the
+# embedded pawl-review dangles at runtime, so keep it byte-identical.
+check_file "$REPO_ROOT/scripts/lib/pawl-preflight.sh" "$EMBEDDED/pawl/scripts/lib/pawl-preflight.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then

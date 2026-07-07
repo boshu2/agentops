@@ -91,6 +91,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # change, not the bind commit.
 # shellcheck source=scripts/lib/trivial-waiver.sh
 . "$SCRIPT_DIR/lib/trivial-waiver.sh"
+# ebec.9: the DETERMINISTIC pre-reviewer gate — runs the reviewed repo's local
+# battery BEFORE the model reviewer and fails fast on red, so deterministic
+# defects never spend an expensive review round. Pure accelerator (never a false
+# blocker; see the lib header).
+# shellcheck source=scripts/lib/pawl-preflight.sh
+. "$SCRIPT_DIR/lib/pawl-preflight.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
@@ -1098,6 +1104,20 @@ head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 # review target — the guard's job is detecting worktree movement DURING the review;
 # the verdict's commit binding is carried separately in $head.
 export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
+
+# ebec.9 PREFLIGHT: run the deterministic battery BEFORE assembling the packet or
+# dispatching the reviewer. A CONFIRMED-red battery fails fast here (exit 3, the
+# same fix-and-re-run disposition as the smoke/REFUTED path) WITHOUT spending a
+# reviewer round — most of tonight's (2026-07-07) multi-round lands were
+# deterministic defects the model kept re-discovering. Pure accelerator: a battery
+# that can't run SKIPs and proceeds (the pre-push gate still backstops). Placed
+# before _REVIEW_T0 so the deterministic time is not counted as review wall-clock.
+_preflight_rc=0
+pawl_preflight "$scope" "$REPO_ROOT" || _preflight_rc=$?
+if [[ "$_preflight_rc" -eq 3 ]]; then
+  exit 3
+fi
+
 # Meter (ebec.1): review wall-clock starts here; both write sites below pass it
 # via --wall-seconds so every verdict carries cost telemetry.
 _REVIEW_T0="$(date +%s)"
