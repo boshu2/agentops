@@ -26,6 +26,14 @@ if grep -qE "^[[:space:]]*-[[:space:]]+skill:[[:space:]]+${SKILL}[[:space:]]*$" 
   exit 0
 fi
 
+# Newline-safe append: if the ledger's last line lacks a trailing \n, a bare
+# `cat >>` fuses the new row onto it (this once corrupted a rationale line).
+# tail -c1 inside $() strips a trailing newline, so non-empty output means the
+# last byte is NOT a newline.
+if [[ -s "$FILE" && -n "$(tail -c1 "$FILE")" ]]; then
+  printf '\n' >> "$FILE"
+fi
+
 cat >> "$FILE" <<EOF
   - skill:          $SKILL
     domain:         "BC4 Factory"

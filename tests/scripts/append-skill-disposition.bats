@@ -47,3 +47,17 @@ teardown() { rm -rf "$FIX"; }
   count=$(grep -cE "^[[:space:]]*-[[:space:]]+skill:[[:space:]]+existing[[:space:]]*$" "$FIX/docs/contracts/skill-dispositions.yaml")
   [ "$count" -eq 1 ]
 }
+
+@test "is newline-safe — appending to a file missing its trailing newline does not fuse rows" {
+  # Strip the trailing newline so the ledger ends mid-line (the corruption
+  # trigger: a bare `cat >>` used to fuse the new row onto the rationale line).
+  printf '%s' "$(cat "$FIX/docs/contracts/skill-dispositions.yaml")" > "$FIX/docs/contracts/skill-dispositions.yaml"
+  [ -n "$(tail -c1 "$FIX/docs/contracts/skill-dispositions.yaml")" ]  # precondition: no trailing \n
+
+  run bash "$HELPER" newskill "$FIX"
+  [ "$status" -eq 0 ]
+  # The prior last line must survive intact, un-fused with the new row.
+  grep -qE '^[[:space:]]*rationale:[[:space:]]+"already here"$' "$FIX/docs/contracts/skill-dispositions.yaml"
+  # And the new row must start on its own line.
+  grep -qE "^[[:space:]]*-[[:space:]]+skill:[[:space:]]+newskill[[:space:]]*$" "$FIX/docs/contracts/skill-dispositions.yaml"
+}
