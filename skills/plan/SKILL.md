@@ -55,7 +55,7 @@ planning overhead would exceed the implementation cost.
 
 ## Loop position
 
-Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [BDD intent issue](../../docs/templates/intent-issue.md); produces a [slice validation plan](../../docs/templates/slice-validation.md) — one slice per Given/When/Then row with a first-failing-test target, write-scope, bounded context, and ownership. Slices group into a wave only when every row of the wave-validity check passes (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Default to sequential when in doubt — parallel waves are an optimization, not a default.
+Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [BDD intent issue](../../docs/templates/intent-issue.md); produces a [slice validation plan](../../docs/templates/slice-validation.md) — one slice per Given/When/Then row with a first-failing-test target, write-scope, bounded context, and ownership. Slices group into a wave only when every row of the wave-validity check passes (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice) — the same rows [`/crank`](../crank/SKILL.md) re-checks as its wave-start hard gate, whose coupled-chain / derived-surface isolation detail crank owns ([../crank/references/parallel-wave-isolation.md](../crank/references/parallel-wave-isolation.md)); plan cites it rather than restating. Default to sequential when in doubt — parallel waves are an optimization, not a default.
 
 **CLI dependencies:** br (issue creation) and bv (graph triage). If br is unavailable, write the plan to `.agents/plans/` as markdown with issue descriptions, and use TaskList for tracking instead. The plan document is always created regardless of br availability.
 
@@ -200,6 +200,8 @@ Analyze the goal and break it into discrete, implementable issues. For each issu
 
 **Every bead this skill creates MUST carry an embedded `## Scenarios` block in Gherkin (Given/When/Then) — by default, without being asked.** Free-text-only acceptance is invalid (AGENTS.md: "Free-text acceptance is invalid — promote it to scenarios before work begins"). The operator never hand-specifies BDD: planning emits behavior-based acceptance as scenarios automatically.
 
+The intent → Gherkin → executed-red → bead-DAG **contract is owned by [`behavior-first-planning`](../behavior-first-planning/SKILL.md)**; this section states only the plan-specific mechanics (the `## Scenarios` block shape, its position relative to the `acceptance_criteria` YAML, and the admission gate), not a restatement of the discipline.
+
 Each bead body (and the parent epic body) carries a `## Scenarios` block of one or more scenarios:
 
 ```markdown
@@ -212,8 +214,7 @@ Scenario: <behavior named as an observable outcome>
 ```
 
 Rules:
-- One scenario per distinct Given/When/Then behavior; a bead with N behaviors carries N scenarios.
-- Scenarios describe **observable behavior**, not implementation steps.
+- Scenario granularity (one per distinct Given/When/Then behavior; N behaviors → N scenarios) and the observable-behavior-not-implementation rule are owned by [`behavior-first-planning`](../behavior-first-planning/SKILL.md).
 - The `## Scenarios` block sits in the bead description ABOVE the `acceptance_criteria` YAML; the YAML is the machine-checkable layer, Gherkin is the behavior layer (they are complementary, not substitutes).
 - This contract is enforced mechanically by the Step 7b.0 admission gate (`scripts/check-bead-scenario-coverage.sh --admission`, per `references/task-creation.md`): every created bead is piped through the gate post-creation, and a bead that fails admission must be fixed before the plan is reported DONE.
 

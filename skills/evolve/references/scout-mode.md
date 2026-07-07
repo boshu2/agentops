@@ -23,7 +23,7 @@ A scout cycle is **work**, not a stop. It MUST produce exactly one of:
 2. Map the **current shape** at the relevant boundary (what fields exist, what callers read it, what validators enforce).
 3. Run `bd create` to decompose the candidate into 2-N child beads, each ≤5 files and single-shape:
    ```bash
-   bd create "Slice 1 of <parent-title>: <smaller-scope>" \
+   BEADS_DIR="$(ao beads dir)" br create "Slice 1 of <parent-title>: <smaller-scope>" \
      --description="Carved from <parent-id> by scout-mode. Scope: <files/contract>" \
      --deps discovered-from:<parent-id> -t task -p <inherit> --json
    ```

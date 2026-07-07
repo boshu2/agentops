@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-07T16:16:51Z",
+  "generated_at": "2026-07-07T18:16:44Z",
   "skill_count": 58,
   "skills": [
     {
@@ -376,7 +376,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 11,
+      "references_count": 12,
       "codex_override_present": true
     },
     {
@@ -758,7 +758,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 0,
+      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -971,7 +971,7 @@
         "hexagonal-architecture"
       ],
       "context_rel": [],
-      "references_count": 2,
+      "references_count": 3,
       "codex_override_present": true
     },
     {
@@ -1193,7 +1193,7 @@
           "with": "swarm"
         }
       ],
-      "references_count": 0,
+      "references_count": 3,
       "codex_override_present": true
     },
     {

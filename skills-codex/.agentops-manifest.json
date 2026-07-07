@@ -1041,8 +1041,8 @@
     {
       "name": "behavior-first-planning",
       "source_skill": "skills/behavior-first-planning",
-      "source_hash": "d22c1bc4e5f05009683d2bdf206d0a8275176e737d256e8201c8a6b40399f544",
-      "generated_hash": "b69d13ee86141e321568c476d8b2ebec4e54c9cf112ec8b2a8f1a5465749fa6b"
+      "source_hash": "722d2c53b650710e30e2800878c789717a93d0f454d1be61e5930f2f3e462d44",
+      "generated_hash": "879ffa2d2e672b4b389ed42a0e787e9302c83d665f2345feebf2e3e28f733877"
     },
     {
       "name": "bootstrap",
@@ -1101,14 +1101,14 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "4d33ffa61ce0cdfda881a024b99c68355b4ca1e205768cf6b67716baecae7890",
-      "generated_hash": "6de42be4c4a1ce7ff196721030a71f8f1e055fb97cbf2053b37a768bd8733152"
+      "source_hash": "c6191c9bcfd975fb45523c128e4e102e1393d1d657ea856b2bbaab85b69ade74",
+      "generated_hash": "49db93d61ce567d3ece26179bb29940886e06b30092efd71cf8ddca9b2825fc1"
     },
     {
       "name": "doc",
       "source_skill": "skills/doc",
       "source_hash": "405fdf0ad6ddb17e4a8337c45b78e6f398428b2d1bf77cc992f20b21271233e7",
-      "generated_hash": "a2e9eed5b175d46930de99bca657badf4d1b4205c2d63bb2fd004fe8c9d85514"
+      "generated_hash": "6a07342d0ac8302d7aecf67f502622b8841478b361272499f93cffe3ed19fd4f"
     },
     {
       "name": "domain",
@@ -1120,7 +1120,7 @@
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "70b32e1760467bf3206312ca0d131f1e38da755a175b6253a4f35002fbefd649"
+      "generated_hash": "d8f6d648424bfc08cee1b766974553b60ceda927517cd670ecfa8f8454381c3b"
     },
     {
       "name": "goals",
@@ -1149,14 +1149,14 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "9c661533c990808d7b9948e359f82e26d7f86187617162355909336be6e358e8",
-      "generated_hash": "a4a99c9463d3785ffb9584aa90c1d62e0359596cfc8495b228b08d3a2df1d075"
+      "source_hash": "3dbf761b066f430b4df9c051885d7b290ec411df495088faa66f55eefc283871",
+      "generated_hash": "5dbbef75045a30047a64ee65d3b27def8c2b9e47f3becc71dd8b93493d2c9dff"
     },
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "233f59f2ab14f00efe09ca7efa2f6d41621eb110541e76e6311281d00c90a592",
-      "generated_hash": "bfc0c15245cdffa03c496b4ac5963e9da06e4572777fe581e6cc34071e6ec440"
+      "source_hash": "5a815556d28adfeef243391bf63008181fc0cbe5e70f5cffc496280cb39f202f",
+      "generated_hash": "e7125d9e23f9b4be90800acf10c13b4d837a716b447c56b7d2ca5e50377e4b6f"
     },
     {
       "name": "post-mortem",
@@ -1185,8 +1185,8 @@
     {
       "name": "product",
       "source_skill": "skills/product",
-      "source_hash": "0f12f62ee0e9d1a038e5270f30b8c61973fee3a2e058bfbd787430a9d6b4a69c",
-      "generated_hash": "6a0a2ad1cff09c0029fc9f716f80d329cd337464133b0d29859ef2d87d1cf007"
+      "source_hash": "e3225c88059e8232c495c84d7375becdd32e2ff80693462b58254ee2e6496822",
+      "generated_hash": "ab734df5de05d6a230d770a8d6d6c3551b654e58bf1fd23ca22f92b36a886baf"
     },
     {
       "name": "push",
@@ -1245,8 +1245,8 @@
     {
       "name": "scaffold",
       "source_skill": "skills/scaffold",
-      "source_hash": "b67b1f7cfd0d2317caff7506c1e81fcc82fccc0d2346aa7e7901731ae6b1a774",
-      "generated_hash": "79f5cf64df1161aac448362911b2abbf00b1b10928daed8fcee2afe912e75ab3"
+      "source_hash": "248852ce5b80dfb7f46fa2cb5f6eca8f0225b442eca613ee27d09d9a989c7f3f",
+      "generated_hash": "fdac3b87e2224af07673f205d8c9e26e0970cda9c1c995aac78af67f132dfc6b"
     },
     {
       "name": "scope",
@@ -1305,8 +1305,8 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "2b0f10df0a24ef6151196dfdd84e52924be75e61b7e97dcce36127f199a80dc1",
-      "generated_hash": "4f605684d45f8f8a5649470e85bc4a3e96c046d9bf979dec1543dc61b2db8577"
+      "source_hash": "54357eab8fa2d0384bc6e986b6b710d4e214ad090094fe3af6fc8241b13d8313",
+      "generated_hash": "e76f0796773fe8fa723270e54185f846309fb586c31a4701cc8739ded28ce516"
     },
     {
       "name": "validate",

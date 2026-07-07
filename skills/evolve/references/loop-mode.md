@@ -6,7 +6,7 @@
 
 1. `ao loop write-stop-marker` exits 1 unconditionally
 2. DORMANT/STOP/KILL markers are operator-only (operator writes by hand or via `ao loop operator-stop`)
-3. Scope-filter (Step 3) splits too-big work into smaller beads via `bd create --deps discovered-from:<parent>`, never halts
+3. Scope-filter (Step 3) splits too-big work into smaller beads via `br create --deps discovered-from:<parent>`, never halts
 4. Step 7 stop reasons are stripped of CONTEXT_BUDGET_EXHAUSTED; that becomes a non-sticky HANDOFF signal cleared by next cron-fire
 
 ## CLI primitives that enforce

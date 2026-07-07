@@ -16,7 +16,7 @@ This doc is the principle; the implementing references are listed below.
 |---|---|
 | Cycle outcome | `.agents/evolve/cycle-history.jsonl` (append-only, read at every cycle start) |
 | Hypothesis tracker | `.agents/evolve/hypotheses.jsonl` |
-| Queueable work | `bd ready` (Dolt-backed, out-of-band) |
+| Queueable work | `br ready` (git-JSONL-backed, out-of-band) |
 | Skill rules | `skills/<n>/SKILL.md` + `references/` (read fresh per cycle) |
 | Conversation context | **Decorative** — re-derives state from disk; never trusted alone |
 
@@ -59,7 +59,7 @@ prose, not in a gate)
    turns' messages.
 2. **Append, don't overwrite.** Each cycle appends one JSONL line. Never
    rewrite earlier cycles. The ledger is the audit trail.
-3. **Bead-driven work selection.** `bd ready` is the queue. Beads live in
+3. **Bead-driven work selection.** `br ready` is the queue. Beads live in
    Dolt; the conversation never owns work scheduling.
 4. **Falsify aspirational rules.** Any rule in `SKILL.md` that depends on
    the agent following it (vs. a harness gate enforcing it) will be
