@@ -24,6 +24,19 @@ type pawlVerdict struct {
 	Disposition     string        `json:"disposition"`
 	Refuters        []pawlRefuter `json:"refuters"`
 	CouncilArtifact string        `json:"council_artifact"`
+	Attempt         int           `json:"attempt"`
+	Degraded        bool          `json:"degraded"`
+	Cost            *pawlCost     `json:"cost"`
+}
+
+// pawlCost is the verification-economics meter object pawl-verdict.sh write
+// attaches when the caller supplies --wall-seconds (age-verification-economics-
+// ebec.1). tokens_est is a transcript-bytes/4 estimate over the refuter
+// evidence files unless the harness reported exact usage (estimated=false).
+type pawlCost struct {
+	WallSeconds float64 `json:"wall_seconds"`
+	TokensEst   int     `json:"tokens_est"`
+	Estimated   bool    `json:"estimated"`
 }
 
 // pawlRefuter is the subset of a pawl-verdict refuter entry the sensor reads:
@@ -133,7 +146,30 @@ func buildVerdictCommitEdge(v pawlVerdict) provenancegraph.Edge {
 		BeadID:         v.BeadID,
 		ReviewerFamily: deriveReviewerFamily(v.Refuters),
 		EvidencePath:   deriveEvidencePath(v),
+		// Verification-economics meter (ebec.1) + the previously-unsourced v1.1
+		// fields: all additive/omitempty — a verdict without cost/attempt/degraded
+		// produces a byte-identical pre-meter edge payload.
+		Degraded:  v.Degraded,
+		Rounds:    v.Attempt,
+		DurationS: costWallSeconds(v.Cost),
+		TokensEst: costTokensEst(v.Cost),
 	}
+}
+
+// costWallSeconds and costTokensEst project the optional meter object; a nil
+// cost yields zero values, which omitempty drops from the payload.
+func costWallSeconds(c *pawlCost) float64 {
+	if c == nil {
+		return 0
+	}
+	return c.WallSeconds
+}
+
+func costTokensEst(c *pawlCost) int {
+	if c == nil {
+		return 0
+	}
+	return c.TokensEst
 }
 
 var (

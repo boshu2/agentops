@@ -758,6 +758,8 @@ cmd_route() {
   mkdir -p "$(dirname "$ROUTE_LOCK")" 2>/dev/null || true
   date +%s > "$ROUTE_LOCK" 2>/dev/null || true
   trap 'rm -f "$ROUTE_LOCK" 2>/dev/null || true' RETURN
+  # Meter (ebec.1): route wall-clock anchor; both verdict writes pass it on.
+  local _route_t0; _route_t0="$(date +%s)"
   mkdir -p "$EVID_DIR"
   local ev_cc="$EVID_DIR/${bead}-opus.txt" ev_cod="$EVID_DIR/${bead}-codex.txt" ev_agy="$EVID_DIR/${bead}-agy.txt"
   # Per-route nonce scopes verdict parsing to THIS route (kills stale-scrollback +
@@ -931,6 +933,7 @@ cmd_route() {
     bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
       --disposition CONFIRMED --head "$head" \
       --author-context "pawl-route-author-${bead}" --mode "$mode" \
+      --wall-seconds "$(( $(date +%s) - _route_t0 ))" \
       "${rf[@]}" >&2
     log "ROUTE $bead: CONFIRMED (${confirmed}/${total} agree, tier=$TIER${degraded:+; $degraded}) — verdict recorded for head $head"
     echo "CONFIRMED"
@@ -950,6 +953,7 @@ cmd_route() {
     --disposition REFUTED --head "$head" \
     --author-context "pawl-route-author-${bead}" --mode "$mode" \
     "${rf[@]}" \
+    --wall-seconds "$(( $(date +%s) - _route_t0 ))" \
     --reason "standing-pawl route: ${degraded:-no agreement} (tier=$TIER; opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout})" >&2 || true
   log "ROUTE $bead: REFUTED/HOLD — tier=$TIER ${degraded:-no agreement} (evidence in $EVID_DIR)"
   echo "REFUTED"

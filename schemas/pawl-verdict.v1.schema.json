@@ -107,6 +107,17 @@
             "type": "boolean",
             "description": "Optional. TRUE when this verdict was produced under a DEGRADED review posture: the panel could not run at its configured strength (e.g. a reviewer family was unavailable and it fell back to a reduced-diversity or cold-fallback path) but a real review still ran. Lets downstream consumers (metrics, audits) distinguish a nominal verdict from one produced under a weaker-than-nominal configuration. Absent => nominal (not degraded)."
         },
+        "cost": {
+            "type": "object",
+            "description": "Optional verification-economics meter (age-verification-economics-ebec.1), attached when the reviewer runner passed --wall-seconds. tokens_est is estimated (transcript-bytes/4 over refuter evidence) unless estimated=false (exact harness usage, a later slice). Projected into the provenance ledger edge (duration_s, tokens_est) by ao provenance emit-verdict.",
+            "additionalProperties": false,
+            "required": ["wall_seconds", "tokens_est", "estimated"],
+            "properties": {
+                "wall_seconds": { "type": "number", "minimum": 0 },
+                "tokens_est": { "type": "integer", "minimum": 0 },
+                "estimated": { "type": "boolean" }
+            }
+        },
         "rebound_from_verdict": {
             "type": "string",
             "description": "Optional; part of the REBOUND lineage. Path to (or id of) the prior verdict artifact this one was re-bound FROM — the previously-recorded verdict whose real review this REBOUND descends from. Makes the re-bind auditable: the original review that actually ran is locatable from here."

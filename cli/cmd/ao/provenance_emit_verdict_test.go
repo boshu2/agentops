@@ -203,12 +203,74 @@ func TestBuildVerdictCommitEdge_V11Enrichment(t *testing.T) {
 			if e.BeadID != tc.v.BeadID {
 				t.Errorf("BeadID = %q, want %q (structured join key)", e.BeadID, tc.v.BeadID)
 			}
-			// No source in a v1 verdict file — must stay empty (additive).
-			if e.Degraded || e.Rounds != 0 || e.DurationS != 0 {
-				t.Errorf("degraded/rounds/duration_s should be empty, got %v/%d/%g",
-					e.Degraded, e.Rounds, e.DurationS)
+			// These fixtures carry no attempt/degraded/cost — the meter fields
+			// (ebec.1) must stay at zero so omitempty drops them (pre-meter shape).
+			if e.Degraded || e.Rounds != 0 || e.DurationS != 0 || e.TokensEst != 0 {
+				t.Errorf("degraded/rounds/duration_s/tokens_est should be empty, got %v/%d/%g/%d",
+					e.Degraded, e.Rounds, e.DurationS, e.TokensEst)
 			}
 		})
+	}
+}
+
+// TestBuildVerdictCommitEdge_CostMeter proves the verification-economics meter
+// (age-verification-economics-ebec.1): a verdict carrying attempt/degraded and
+// the cost object projects into the edge's rounds/degraded/duration_s/tokens_est
+// — and a nil cost stays fully absent (additive back-compat).
+func TestBuildVerdictCommitEdge_CostMeter(t *testing.T) {
+	withCost := pawlVerdict{
+		BeadID: "ag-cost", HeadSHA: "0123456789ab", Disposition: "CONFIRMED",
+		Refuters: []pawlRefuter{{Family: "gemini", Evidence: ".agents/e.txt"}},
+		Attempt:  2,
+		Degraded: true,
+		Cost:     &pawlCost{WallSeconds: 312.0, TokensEst: 48200, Estimated: true},
+	}
+	e := buildVerdictCommitEdge(withCost)
+	e.SchemaVersion = provenancegraph.SchemaVersion
+	e.TS = "2026-07-07T00:00:00Z"
+	if e.DurationS != 312.0 {
+		t.Errorf("DurationS = %g, want 312.0 (cost.wall_seconds)", e.DurationS)
+	}
+	if e.TokensEst != 48200 {
+		t.Errorf("TokensEst = %d, want 48200 (cost.tokens_est)", e.TokensEst)
+	}
+	if e.Rounds != 2 {
+		t.Errorf("Rounds = %d, want 2 (verdict attempt)", e.Rounds)
+	}
+	if !e.Degraded {
+		t.Errorf("Degraded = false, want true (verdict degraded)")
+	}
+
+	// Payload round-trip: the metered edge's payload JSON must carry the fields...
+	sealed, err := provenancegraph.Seal(e, "")
+	if err != nil {
+		t.Fatalf("SealEdge(metered): %v", err)
+	}
+	b, _ := json.Marshal(sealed)
+	for _, want := range []string{`"duration_s":312`, `"tokens_est":48200`, `"rounds":2`, `"degraded":true`} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("sealed metered edge missing %s in %s", want, string(b))
+		}
+	}
+
+	// ...and an unmetered verdict's payload must omit every meter field, so
+	// pre-meter records keep byte-identical payload hashes.
+	noCost := pawlVerdict{
+		BeadID: "ag-nocost", HeadSHA: "abcdef012345", Disposition: "CONFIRMED",
+		Refuters: []pawlRefuter{{Family: "gemini"}},
+	}
+	e2 := buildVerdictCommitEdge(noCost)
+	e2.SchemaVersion = provenancegraph.SchemaVersion
+	e2.TS = "2026-07-07T00:00:00Z"
+	sealed2, err := provenancegraph.Seal(e2, "")
+	if err != nil {
+		t.Fatalf("SealEdge(unmetered): %v", err)
+	}
+	b2, _ := json.Marshal(sealed2)
+	for _, absent := range []string{"duration_s", "tokens_est", "rounds", "degraded"} {
+		if strings.Contains(string(b2), absent) {
+			t.Errorf("unmetered edge unexpectedly carries %q: %s", absent, string(b2))
+		}
 	}
 }
 
