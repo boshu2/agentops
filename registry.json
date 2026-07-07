@@ -1323,7 +1323,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "safety",
-      "purpose": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
+      "purpose": "Switch coding-agent accounts on a usage/rate limit. Routes by host+agent: macOS+Claude to claude-acct; Codex/Gemini and Linux/WSL to caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1375,7 +1375,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "execution",
-      "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, local cockpit proof, and CI backstop telemetry instead of runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
+      "purpose": "Make an out-of-session agent AgentOps-native via skills + the ao CLI + local cockpit proof + CI backstop telemetry, not runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1469,7 +1469,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "tracking",
-      "purpose": "Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. Triggers: \"beads-br\", \"beads br\", \"local-first issue tracker beads rust\".",
+      "purpose": "Local-first issue tracker (beads_rust) for AI agents — track tasks, manage dependencies, find ready work, sync via git JSONL. Triggers: \"beads-br\", \"beads br\", \"local-first issue tracker beads rust\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1497,7 +1497,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "tracking",
-      "purpose": "Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
+      "purpose": "Graph-aware task triage with bv and br — prioritize work, find bottlenecks, track dependencies across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1590,7 +1590,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "corpus",
-      "purpose": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history. Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
+      "purpose": "Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1616,7 +1616,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "execution",
-      "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
+      "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) — user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1670,7 +1670,7 @@
       "hex_role": "driving-adapter",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: \"converge\", \"drive a fix re-run-judge-panel loop\", \"converge skill\".",
+      "purpose": "Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: \"converge\", \"drive a fix re-run-judge-panel loop\", \"converge skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1808,7 +1808,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "safety",
-      "purpose": "Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
+      "purpose": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1904,7 +1904,7 @@
       "hex_role": "domain",
       "tier": "knowledge",
       "capability_class": "docs",
-      "purpose": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
+      "purpose": "Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2075,7 +2075,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "authoring",
-      "purpose": "Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
+      "purpose": "Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2137,7 +2137,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "corpus",
-      "purpose": "meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
+      "purpose": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2165,7 +2165,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: \"ntm\", \"orchestrates ntm tmux agent swarms\", \"ntm skill\".",
+      "purpose": "Orchestrate NTM tmux agent swarms and robot APIs — spawn/send panes, read robot state, triage, locks/mail, safety, pipelines. Single owner of swarm-tending doctrine. Triggers: \"ntm\", \"orchestrates ntm tmux agent swarms\", \"ntm skill\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2717,7 +2717,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "authoring",
-      "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure. Triggers: \"scaffold\", \"create project component or boilerplate\".",
+      "purpose": "Stamp project/component/CI scaffolds — but reach for it mainly for the repo-specific domain-slice binding (generic trees a frontier model needs no skill for). Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -3033,7 +3033,7 @@
       "hex_role": "supporting",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence under the continuity contract. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
+      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running the loop over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3064,7 +3064,7 @@
       "hex_role": "supporting",
       "tier": "cross-vendor",
       "capability_class": "orchestration",
-      "purpose": "Drive a Gas City (gc) factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc. Use when standing up, running, administering, or troubleshooting a gas city. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
+      "purpose": "Drive a Gas City (gc) factory day-to-day — stand up a city, sling quests, watch the membrane close-gate, resolve stalls, converge. The vibing-with-ntm analog for gc. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3090,7 +3090,7 @@
       "hex_role": "driving-adapter",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [

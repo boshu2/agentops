@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: 'Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".'
+description: 'Switch coding-agent accounts on a usage/rate limit. Routes by host+agent: macOS+Claude to claude-acct; Codex/Gemini and Linux/WSL to caam. Triggers: "account-rotation", "account rotation", "switch coding-agent accounts on a".'
 practices:
 - pragmatic-programmer
 ---

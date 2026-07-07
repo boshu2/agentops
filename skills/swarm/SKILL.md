@@ -49,7 +49,7 @@ Three paths, lightest first — reach for the lightest that fits:
 | Path | What it is | Use when |
 |---|---|---|
 | **In-session Agent/Task fan-out** (lightest) | Spawn 2–3 `Agent` subagents in *this* session. No persistence, no worktrees, no attach, dies with the session. Read-only-friendly. | One-shot parallel work: independent drafts, fan-out analysis, fresh-eyes review. **Default for anything small.** See [`automation-shape-routing`](../automation-shape-routing/SKILL.md) shape 0. |
-| **`/swarm`** (middle) | Wave-gated working-tree execution with disjoint file ownership + conflict checks (this skill). | ≥2 independent units that **edit the working tree** and need isolation + wave-validity gating. |
+| **`/swarm`** (middle) | Wave-gated working-tree execution with disjoint file ownership + conflict checks (this skill). | ≥2 independent units that **edit the working tree** and need isolation + wave-validity (rows owned by [crank](../crank/SKILL.md) — see its wave-start hard gate + ../crank/references/parallel-wave-isolation.md; swarm cites, never restates) gating. |
 | **ATM** ([`/using-atm`](../using-atm/SKILL.md), heaviest) | Persistent tmux panes + human attach/steer + multi-vendor, running whole `/rpi`/`/evolve` loops. | Long-lived epics needing persistence and live steering — **not** one-shot tasks. Boot cost (esp. codex) alone can exceed doing it inline. |
 
 ## Loop position
