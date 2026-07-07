@@ -478,7 +478,12 @@ PY
     and ((.mode? // null) | (. == null) or (. as $m | (["fresh-context","multi-model"] | index($m)) != null))
     and (.refuters? | type == "array") and ((.refuters|length) >= 1)
     # no unknown top-level keys
-    and ((keys - ["schema_version","bead_id","pr","head_sha","disposition","generated_at","mode","author_context_id","attempt","refuters","council_artifact","degraded","rebound_from_verdict","rebound_from_sha","patch_id_proof"]) | length == 0)
+    and ((keys - ["schema_version","bead_id","pr","head_sha","disposition","generated_at","mode","author_context_id","attempt","refuters","council_artifact","degraded","cost","rebound_from_verdict","rebound_from_sha","patch_id_proof"]) | length == 0)
+    # cost (meter, ebec.1): optional; when present must be the exact 3-field shape
+    and ((.cost? // null) | (. == null) or
+         ((.wall_seconds? | type == "number") and (.tokens_est? | type == "number")
+          and (.estimated? | type == "boolean")
+          and ((keys - ["wall_seconds","tokens_est","estimated"]) | length == 0)))
     # each refuter: required family+verdict+context_id, correct types/enums, no
     # extras, family within the known alias set (canonical-roster check is separate)
     and (all(.refuters[];
