@@ -389,7 +389,7 @@ dispositions:
     path:             skills/behavior-first-planning/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Generative discipline behind the bdd-foundry workflow; extracted so behavior-first planning survives independent of the orchestrator (age-3va.2)"
+    rationale:        "Generative discipline behind the bdd-foundry workflow; extracted so behavior-first planning survives independent of the orchestrator (age-3va.2) [reaffirmed skills-audit-2026-07-06: single owner of the Gherkin contract (audit S11)]"
   - skill:            bootstrap
     domain:           "BC4 Factory"
     hexagonal_role:   driving-adapter
@@ -401,7 +401,7 @@ dispositions:
     path:             skills/bootstrap/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "First-run factory entrypoint; needs current 3.0/domain packet shape"
+    rationale:        "First-run factory entrypoint; needs current 3.0/domain packet shape [reaffirmed skills-audit-2026-07-06: stale /rpi next-step line (command removed)]"
   - skill:            compile
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -425,7 +425,7 @@ dispositions:
     path:             skills/converge/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill"
+    rationale:        "Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill [reaffirmed skills-audit-2026-07-06: clean memo over live ao converge]"
   - skill:            converter
     domain:           "BC4 Factory"
     hexagonal_role:   driven-adapter
@@ -437,11 +437,11 @@ dispositions:
     path:             skills/converter/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic)."
+    rationale:        "Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic). [reaffirmed skills-audit-2026-07-06: distinct format adapter; fix stale vibe comment]"
   - skill:            council
     domain:           "BC2 Validation"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -449,11 +449,11 @@ dispositions:
     path:             skills/council/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Core judgment gate; strengthen scenario and verdict self-test"
+    rationale:        "skills-audit-2026-07-06: KEEP - pre-work decision forum the pawl does not replace"
   - skill:            crank
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      refactor
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -461,7 +461,7 @@ dispositions:
     path:             skills/crank/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Wave executor; align with vertical-slice and conflict-free wave contract"
+    rationale:        "skills-audit-2026-07-06: UPDATE - retired PR-merge loop section -> push-to-main + pawl"
   - skill:            curate
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -477,7 +477,7 @@ dispositions:
   - skill:            discovery
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -485,11 +485,11 @@ dispositions:
     path:             skills/discovery/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Creates execution packets; add explicit loop-shape SELF-TEST"
+    rationale:        "skills-audit-2026-07-06: KEEP - top-used spine entry; cross-link behavior-first-planning"
   - skill:            doc
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -497,11 +497,11 @@ dispositions:
     path:             skills/doc/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Documentation factory adapter; keep tied to doc-release gates"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - default mode frontier-trivial; value is readme/oss reference-led modes"
   - skill:            domain
     domain:           "BC4 Factory"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -509,7 +509,7 @@ dispositions:
     path:             skills/domain/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Ubiquitous-language kernel; central to DDD"
+    rationale:        "skills-audit-2026-07-06: UPDATE - bd->br in How-to-use"
   - skill:            evolve
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -521,11 +521,11 @@ dispositions:
     path:             skills/evolve/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift)."
+    rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift). [reaffirmed skills-audit-2026-07-06: ~40pct retired procedure (PR-merge/autodev/hooks); align compounding claims to ADR-0004/0011]"
   - skill:            flywheel
     domain:           "BC1 Corpus"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -533,11 +533,11 @@ dispositions:
     path:             skills/flywheel/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Flywheel health kernel; needs productized self-test"
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - thin wrapper over ao flywheel status; monitor not miner"
   - skill:            goals
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -545,7 +545,7 @@ dispositions:
     path:             skills/goals/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Fitness source; use as evolution selection input"
+    rationale:        "skills-audit-2026-07-06: UPDATE - GOALS.yaml-first lead inverted from canonical GOALS.md v4"
   - skill:            handoff
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -557,11 +557,11 @@ dispositions:
     path:             skills/handoff/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Session continuity artifact; clarify promotion vs local-only notes"
+    rationale:        "Session continuity artifact; clarify promotion vs local-only notes [reaffirmed skills-audit-2026-07-06: frontmatter produces wrong; handoff/handoffs path split]"
   - skill:            heal-skill
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -569,11 +569,11 @@ dispositions:
     path:             skills/heal-skill/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Skill hygiene gate; should consume the new domain map"
+    rationale:        "skills-audit-2026-07-06: KEEP - corpus-wide hygiene pass; not a builder mode"
   - skill:            implement
     domain:           "BC3 Loop"
     hexagonal_role:   driving-adapter
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -581,11 +581,11 @@ dispositions:
     path:             skills/implement/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Slice executor; enforce first-failing-test language"
+    rationale:        "skills-audit-2026-07-06: KEEP - model references-led shape; Move-4 owner"
   - skill:            perf
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -593,11 +593,11 @@ dispositions:
     path:             skills/perf/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Performance profile-and-optimize loop; re-binned BC2→BC3 (ag-j3ge0 — drives optimization work inside the loop, not a fitness gate)"
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - ~90pct frontier-generic, zero repo bindings, 0 use; jsm skills cover"
   - skill:            plan
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -605,11 +605,11 @@ dispositions:
     path:             skills/plan/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Must output vertical slices and wave-validity checks"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - largest loop skill; dedupe Gherkin contract (owner: behavior-first-planning) + wave lore"
   - skill:            post-mortem
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -617,11 +617,11 @@ dispositions:
     path:             skills/post-mortem/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Loop closeout; connect to next-work and ratchet evidence"
+    rationale:        "skills-audit-2026-07-06: KEEP - move-7 anchor; absorbs curate mining half at the retire wave"
   - skill:            pr-prep
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -629,7 +629,7 @@ dispositions:
     path:             skills/pr-prep/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "PR publication adapter; align to evidence and release discipline"
+    rationale:        "skills-audit-2026-07-06: KEEP - scoped to external repos; unaffected by in-repo PR retirement"
   - skill:            pre-mortem
     domain:           "BC2 Validation"
     hexagonal_role:   domain
@@ -641,11 +641,11 @@ dispositions:
     path:             skills/pre-mortem/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Plan risk gate; add scenario/verdict self-test"
+    rationale:        "Plan risk gate; add scenario/verdict self-test [reaffirmed skills-audit-2026-07-06: dead hook-enforcement mandates (hookless 3.0); dedupe vs validate]"
   - skill:            product
     domain:           "BC3 Loop"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -653,7 +653,7 @@ dispositions:
     path:             skills/product/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Product intent source; important for loop work selection"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - collapse nine-framework name-drop table to a reference"
   - skill:            push
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
@@ -665,11 +665,11 @@ dispositions:
     path:             skills/push/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Git adapter; add branch/worktree disposition self-test"
+    rationale:        "Git adapter; add branch/worktree disposition self-test [reaffirmed skills-audit-2026-07-06: wire ao gate check --fast --scope head + pawl-land as THE ship path]"
   - skill:            recover
     domain:           "BC1 Corpus"
     hexagonal_role:   driving-adapter
-    disposition:      refactor
+    disposition:      merge-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -677,11 +677,11 @@ dispositions:
     path:             skills/recover/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Session recovery is valuable but currently structurally heavy"
+    rationale:        "skills-audit-2026-07-06: MERGE-REVIEW - merge into status as post-compaction mode; keep trigger surface"
   - skill:            red-team
     domain:           "BC2 Validation"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -689,11 +689,11 @@ dispositions:
     path:             skills/red-team/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Probe generator; add severity/evidence contract"
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - 1KB stub to mt-olympus; validate --debate absorbs"
   - skill:            refactor
     domain:           "BC3 Loop"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -701,11 +701,11 @@ dispositions:
     path:             skills/refactor/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Refactor generator; loop-side change execution (re-binned BC2→BC3, ag-j3ge0 — produces code changes inside the operating loop, not a validation gate)"
+    rationale:        "skills-audit-2026-07-06: KEEP - fix .agentscomplexity artifact-path typo"
   - skill:            release
     domain:           "BC2 Validation"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -713,11 +713,11 @@ dispositions:
     path:             skills/release/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Release gate driver; keep tied to local CI and evidence export"
+    rationale:        "skills-audit-2026-07-06: KEEP - references-led exemplar"
   - skill:            research
     domain:           "BC1 Corpus"
     hexagonal_role:   driving-adapter
-    disposition:      update
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -725,7 +725,7 @@ dispositions:
     path:             skills/research/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Knowledge acquisition entrypoint; add source/citation self-test"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - workhorse; dedupe references vs shared twins"
   - skill:            reverse-engineer
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -737,11 +737,11 @@ dispositions:
     path:             skills/reverse-engineer/SKILL.md
     aliases:          [reverse-engineer-rpi]
     supersedes:       reverse-engineer-rpi
-    rationale:        "External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline."
+    rationale:        "External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline. [reaffirmed skills-audit-2026-07-06: 47 refs are a tested teardown engine: depth-as-tooling]"
   - skill:            review
     domain:           "BC2 Validation"
     hexagonal_role:   driving-adapter
-    disposition:      update
+    disposition:      merge-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -749,7 +749,7 @@ dispositions:
     path:             skills/review/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Human-facing review gate; align to validator output contract"
+    rationale:        "skills-audit-2026-07-06: MERGE-REVIEW - merge into validate (declared absorption); bd-stale; ~0 use"
   - skill:            rpi
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -761,11 +761,11 @@ dispositions:
     path:             skills/rpi/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper)"
+    rationale:        "Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper) [reaffirmed skills-audit-2026-07-06: demote framing to one-turn executor; dedupe pawl/replan prose vs crank+pawls.md]"
   - skill:            scaffold
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -773,11 +773,11 @@ dispositions:
     path:             skills/scaffold/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Code/artifact scaffolder; add non-goal and validation examples"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - ~85pct generic templates; keep the domain-slice binding"
   - skill:            scope
     domain:           "BC5 Runtime"
     hexagonal_role:   driven-adapter
-    disposition:      keep
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -785,7 +785,7 @@ dispositions:
     path:             skills/scope/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Runtime filesystem gate; hard boundary skill"
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - enforcement premise inert: promised PreToolUse hook absent; promote-or-retire decision"
   - skill:            security
     domain:           "BC2 Validation"
     hexagonal_role:   driven-adapter
@@ -797,11 +797,11 @@ dispositions:
     path:             skills/security/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07)"
+    rationale:        "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07) [reaffirmed skills-audit-2026-07-06: script-backed distinct product domain]"
   - skill:            shared
     domain:           "BC4 Factory"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -809,11 +809,11 @@ dispositions:
     path:             skills/shared/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Shared contracts; avoid broad edits"
+    rationale:        "skills-audit-2026-07-06: UPDATE - bd->br in CLI fallback rows"
   - skill:            skill-builder
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -821,7 +821,7 @@ dispositions:
     path:             skills/skill-builder/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Builder should scaffold SELF-TEST and domain metadata by default"
+    rationale:        "skills-audit-2026-07-06: KEEP - core meta-skill; invokes converter+heal as real gates"
   - skill:            automation-shape-routing
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
@@ -833,7 +833,7 @@ dispositions:
     path:             skills/automation-shape-routing/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder"
+    rationale:        "Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder [reaffirmed skills-audit-2026-07-06: router distinct from builders; dedupe twice-stated spike numbers]"
   - skill:            workflow-builder
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
@@ -845,11 +845,11 @@ dispositions:
     path:             skills/workflow-builder/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder"
+    rationale:        "Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder [reaffirmed skills-audit-2026-07-06: thin distinct Workflow scaffold]"
   - skill:            standards
     domain:           "BC4 Factory"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -857,7 +857,7 @@ dispositions:
     path:             skills/standards/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Current pilot upgraded with SELF-TEST; continue incremental patches"
+    rationale:        "skills-audit-2026-07-06: UPDATE - index routes to retired vibe (20x, dead paths); content gold, wrapper stale"
   - skill:            status
     domain:           "BC3 Loop"
     hexagonal_role:   driving-adapter
@@ -869,11 +869,11 @@ dispositions:
     path:             skills/status/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Operator state surface; should show loop/domain/evidence status"
+    rationale:        "Operator state surface; should show loop/domain/evidence status [reaffirmed skills-audit-2026-07-06: duplicate /validate QUICK-COMMANDS line; becomes the one session surface]"
   - skill:            swarm
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -881,11 +881,11 @@ dispositions:
     path:             skills/swarm/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Multi-agent runtime adapter; align with conflict-free wave rules"
+    rationale:        "skills-audit-2026-07-06: REFACTOR - dedupe wave-validity lore; excise PR-reaping debris"
   - skill:            test
     domain:           "BC2 Validation"
     hexagonal_role:   supporting
-    disposition:      update
+    disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -893,11 +893,11 @@ dispositions:
     path:             skills/test/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Test generator; central to first-failing-test loop"
+    rationale:        "skills-audit-2026-07-06: KEEP - standalone value beyond implement (coverage/strategy/harnesses)"
   - skill:            validate
     domain:           "BC2 Validation"
     hexagonal_role:   driving-adapter
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -905,11 +905,11 @@ dispositions:
     path:             skills/validate/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
+    rationale:        "skills-audit-2026-07-06: UPDATE - strip rpi/PR-mode/dead judge-orchestration; align close path to pawl scripts; resolve Replaces claims"
   - skill:            eval-outcomes
     domain:           "BC2 Validation"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -917,11 +917,11 @@ dispositions:
     path:             skills/eval-outcomes/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - stub; validate scenario target + ao eval scenario cover it"
   - skill:            agent-native
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -929,11 +929,11 @@ dispositions:
     path:             skills/agent-native/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
+    rationale:        "skills-audit-2026-07-06: UPDATE - false not-yet-shipped caveat: ao agent bundle + ao mcp serve are live; clear allowlist entry"
   - skill:            using-atm
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -941,7 +941,7 @@ dispositions:
     path:             skills/using-atm/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
+    rationale:        "skills-audit-2026-07-06: REFACTOR - 432 lines with 0 reference files; extract meter-LIES/continuity/tmux to references/"
   - skill:            agent-mail
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -953,7 +953,7 @@ dispositions:
     path:             skills/agent-mail/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: highest-used substrate skill; disciplined boundary]"
   - skill:            agy-native
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
@@ -965,7 +965,7 @@ dispositions:
     path:             skills/agy-native/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: current (Gemini 3.5); nit: desc scoped-worktrees vs --add-dir body]"
   - skill:            beads-br
     domain:           "BC3 Loop"
     hexagonal_role:   supporting
@@ -977,11 +977,11 @@ dispositions:
     path:             skills/beads-br/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: current post-gc carve-out]"
   - skill:            beads-bv
     domain:           "BC3 Loop"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -989,11 +989,11 @@ dispositions:
     path:             skills/beads-bv/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "skills-audit-2026-07-06: UPDATE - examples use stale bd- ids + bare br without BEADS_DIR wrapper"
   - skill:            account-rotation
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      update
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -1001,7 +1001,7 @@ dispositions:
     path:             skills/account-rotation/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
+    rationale:        "skills-audit-2026-07-06: UPDATE - false no-caam-skill claim"
   - skill:            cass
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -1013,7 +1013,7 @@ dispositions:
     path:             skills/cass/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already)."
+    rationale:        "Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already). [reaffirmed skills-audit-2026-07-06: tight self-describing primitive]"
   - skill:            ms
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -1025,11 +1025,11 @@ dispositions:
     path:             skills/ms/SKILL.md
     aliases:          [meta_skill]
     supersedes:       null
-    rationale:        "Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass."
+    rationale:        "Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass. [reaffirmed skills-audit-2026-07-06: honest and current; documents its own footguns]"
   - skill:            cc-hooks
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
-    disposition:      keep
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -1037,7 +1037,7 @@ dispositions:
     path:             skills/cc-hooks/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "skills-audit-2026-07-06: REFACTOR - hookless-honest; dedupe doubled Absorbed-skills block"
   - skill:            codex-exec
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
@@ -1049,7 +1049,7 @@ dispositions:
     path:             skills/codex-exec/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: load-bearing LAW-0 headless path; dense not bloated]"
   - skill:            dcg
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
@@ -1061,7 +1061,7 @@ dispositions:
     path:             skills/dcg/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: honest safety host-tool]"
   - skill:            ntm
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1073,7 +1073,7 @@ dispositions:
     path:             skills/ntm/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: model progressive-disclosure; single owner of tending doctrine]"
   - skill:            rch
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
@@ -1085,7 +1085,7 @@ dispositions:
     path:             skills/rch/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: best-in-class wrapper; refuses --help duplication]"
   - skill:            sbh
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
@@ -1097,7 +1097,7 @@ dispositions:
     path:             skills/sbh/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: compact task-organized cheat-sheet]"
   - skill:            pre-land-refuters
     domain:           "BC2 Validation"
     hexagonal_role:   driving-adapter
@@ -1109,11 +1109,11 @@ dispositions:
     path:             skills/pre-land-refuters/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
+    rationale:        "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses. [reaffirmed skills-audit-2026-07-06: THE live pawl-path memo; excise vestigial PR-binding section]"
   - skill:            operationalize
     domain:           "BC1 Corpus"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -1121,11 +1121,11 @@ dispositions:
     path:             skills/operationalize/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam."
+    rationale:        "skills-audit-2026-07-06: REFACTOR - distinct route-to-enforcement lane; cut demoted-flywheel prose"
   - skill:            reality-check
     domain:           "BC2 Validation"
     hexagonal_role:   domain
-    disposition:      keep
+    disposition:      cut-review
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
@@ -1133,7 +1133,7 @@ dispositions:
     path:             skills/reality-check/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Seams epic ag-xwjlc: mid-epic drift audit (code vs claimed vision); complements status/validate/post-mortem."
+    rationale:        "skills-audit-2026-07-06: CUT-REVIEW - good but unreachable: user-invocable false, 0 use; promote-or-fold decision"
   - skill:            toil-mining
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting
@@ -1145,7 +1145,7 @@ dispositions:
     path:             skills/toil-mining/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder."
+    rationale:        "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder. [reaffirmed skills-audit-2026-07-06: cleanest of cluster; LAW-0-aware feeder]"
   - skill:            using-gc
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1157,7 +1157,7 @@ dispositions:
     path:             skills/using-gc/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface."
+    rationale:        "gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface. [reaffirmed skills-audit-2026-07-06: fresh four-jobs JIT split]"
   - skill:            gc-membrane
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1169,4 +1169,4 @@ dispositions:
     path:             skills/gc-membrane/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc."
+    rationale:        "gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc. [reaffirmed skills-audit-2026-07-06: current close-door reference]"
