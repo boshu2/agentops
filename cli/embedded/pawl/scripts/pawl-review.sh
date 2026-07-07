@@ -97,6 +97,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # blocker; see the lib header).
 # shellcheck source=scripts/lib/pawl-preflight.sh
 . "$SCRIPT_DIR/lib/pawl-preflight.sh"
+# ebec.11: detect the amend-into-#trivial-bind trap so the reviewer never wastes a
+# round reviewing STALE content behind a #trivial tip.
+# shellcheck source=scripts/lib/pawl-amend-guard.sh
+. "$SCRIPT_DIR/lib/pawl-amend-guard.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
@@ -1104,6 +1108,16 @@ head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 # review target — the guard's job is detecting worktree movement DURING the review;
 # the verdict's commit binding is carried separately in $head.
 export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
+
+# ebec.11 AMEND-GUARD: refuse BEFORE the review when the live HEAD is a #trivial
+# commit carrying non-provenance files (a fix amended into the auto-bind) — else the
+# reviewer walks past the #trivial tip and reviews stale content. scope=head only
+# (staged has no committed tip). Same fix-and-re-run disposition as a REFUTED.
+if [[ "$scope" == "head" ]]; then
+  _amend_rc=0
+  pawl_amend_guard "$REPO_ROOT" "${_live_head:-$head}" || _amend_rc=$?
+  [[ "$_amend_rc" -eq 2 ]] && exit 3
+fi
 
 # ebec.9 PREFLIGHT: run the deterministic battery BEFORE assembling the packet or
 # dispatching the reviewer. A CONFIRMED-red battery fails fast here (exit 3, the
