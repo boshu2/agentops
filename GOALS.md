@@ -222,6 +222,36 @@ The drive is unattended-end-to-end only when all five hold at once. Until then, 
 **Steer:** increase (route milestones reaching verified-done, toward the unattended end-to-end drive)
 **Tags:** destination, north-star
 
+### 17. Verification economics — hold the escape SLO at minimum token cost
+
+The membrane's guarantee (no verdict = not done) is priced, not free. This directive makes
+**discrimination per token** a measured fitness axis (assessment:
+[docs/audits/verification-economics.md](docs/audits/verification-economics.md); epic
+`age-verification-economics-ebec`). The ruler, in dependency order: **TPVD** (tokens per
+verified done), **VOR** (verification overhead ratio = verify spend ÷ produce spend),
+**CPCD** (cost per caught defect), and an explicit **escape SLO** with an error budget
+(current evidence: 0 escapes across the verdict corpus; rule-of-three CI bounds the true
+rate ≤ ~2%). Spend to the budget, not to zero: when the budget sits untouched at current
+spend, the membrane is over-provisioned — move a lane one tier cheaper and watch the meter.
+
+Honesty rules (binding): thresholds are set FROM measured meter data (two weeks minimum),
+never invented; claims stay inside the confidence interval the sample supports; the meter
+reads the harness, never producer self-report; cost columns print UNMEASURED until the
+meter bead (`.1`) lands. The observational surface is `scripts/verification-economics-report.sh`
+(warn-only gate `verification-economics` in the Gates table below); it FAILS only on a dead
+instrument, never on a threshold, until the ruler earns thresholds from data. Phase-2 work
+(risk router, context diet, cheap-tier default) stays DEFER until the ruler reads real
+numbers — act on data, not on the assessment.
+
+**Progress:** report instrument + warn-only gate landed 2026-07-06 (`b0149df9a`, bead `.2`;
+live: 322 verdict edges, 2.8% refute rate). Benched-family stall tax removed from the default
+pawl route 2026-07-07 (`335300b17`, bead `.7`, council-decided) — ~3.5 min/land recovered.
+Meter (`.1`) and data-derived thresholds pending.
+
+**Directive ID:** d-verification-economics-escape-slo-at-minimum-cost
+**Steer:** decrease (tokens per verified done at a held escape SLO)
+**Tags:** economics, warn-only
+
 ## Three-Gap Contract Proof Surface
 
 AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
