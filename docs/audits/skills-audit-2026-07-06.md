@@ -52,7 +52,7 @@ decision needed). Size = SKILL.md bytes; Use = 26-day invocations.
 | pre-mortem | 19.3K | 6 | FIX | "enforced by hook when /crank" — hookless 3.0; dedupe vs validate |
 | plan | 23.2K | 6 | TRIM | largest loop skill; dedupe Gherkin contract (owner: behavior-first-planning) + wave lore |
 | post-mortem | 17.1K | 5 | KEEP | move-7 anchor; on curate retire, absorb mining half (S3) |
-| swarm | 21.1K | 1 | TRIM+FIX | dedupe wave-validity lore; excise "worker's PR is confirmed MERGED" reaping |
+| swarm | 21.1K | 1 | TRIM | dedupe wave-validity lore; debris fix: excise "worker's PR is confirmed MERGED" reaping |
 | implement | 8.3K | 0 | KEEP | model shape; Move-4 owner |
 | test | 16.1K | 0 | KEEP | standalone value beyond implement (coverage/strategy/harnesses) |
 | refactor | 13.8K | 0 | KEEP | fix `.agentscomplexity/` path typo |
@@ -109,8 +109,9 @@ decision needed). Size = SKILL.md bytes; Use = 26-day invocations.
 
 \* evolve usage is 06-10 count; recover's 5 uses are 06-10 (0 recent). "—" = read-not-invoked by design.
 
-**Tally:** KEEP 35 · FIX 14 · TRIM 9 · MERGE 3 · RETIRE 4 · RESOLVE 2. Executing every
-RETIRE/MERGE lands the corpus at ~58–60 (converging with the branch's 62).
+**Tally (counted from the table, 66 rows):** KEEP 31 · FIX 14 · TRIM 11 · MERGE 3 ·
+RETIRE 5 · RESOLVE 2. Executing every RETIRE/MERGE lands the corpus at 58 (recover's
+merge rides epic child .7; converging with the branch's 62).
 
 ## 3. The five structural findings
 
@@ -187,6 +188,6 @@ on Bo's e3zk decision; the rest P2/P3.
 
 ## 7. Decision asks (Bo)
 
-1. **e3zk retire wave** (S3): execute the 4 retires + 2 merges? This audit is the fresh pass it demanded.
+1. **e3zk retire wave** (S3): execute the 5 retires + 2 merges? This audit is the fresh pass it demanded.
 2. **Spine redefinition** (S14): re-anchor the 15-skill spine on the live pawl path?
 3. **scope + reality-check resolves**: ship the missing enforcement / flip user-invocable, or retire each?
