@@ -51,6 +51,11 @@ Do not build external stall-detection or notification infra.
   cross-host dolt complex. Two-store rule: **bd/dolt is the city's substrate
   store; `br` remains the AgentOps repo tracker.** Never track agentops repo
   work in the city store or vice versa.
+- **The one-way seam across the two stores:**
+  `scripts/gc-outcomes-report.sh <city>` (agentops repo) — a READ-ONLY rollup
+  of closed work (outcomes, commits, source refs) + open work, fail-closed on
+  every unreadable/unparseable read. Paste relevant lines into a br bead note;
+  it is deliberately NOT a sync.
 
 ## Binary discipline (fork-built gc)
 
