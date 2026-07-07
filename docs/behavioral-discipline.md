@@ -13,7 +13,7 @@ The core idea is simple: good agents do not silently assume, overbuild, wander o
 | **Surgical changes** | drive-by refactors, unrelated edits, noisy diffs |
 | **Goal-driven execution** | weak verification, "looks done" changes, proof by assertion |
 
-AgentOps enforces this through the behavioral discipline standard in [`skills/standards/references/behavioral-discipline.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/behavioral-discipline.md), and through the active `/implement` and `/review` skill flows.
+AgentOps enforces this through the behavioral discipline standard in [`skills/standards/references/behavioral-discipline.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/behavioral-discipline.md), and through the active `/implement` and `/validate --mode=pr` (which folded the retired `/review`) skill flows.
 
 ## Before/After Examples
 
@@ -101,5 +101,5 @@ AgentOps enforces this through the behavioral discipline standard in [`skills/st
 
 - [`README.md`](https://github.com/boshu2/agentops/blob/main/README.md) gives the front-door version.
 - [`skills/implement/SKILL.md`](skills/implement.md) requires an execution frame before editing.
-- [`skills/review/SKILL.md`](skills/review.md) checks for hidden assumptions, speculative abstractions, and weak proof.
+- [`skills/validate/SKILL.md`](skills/validate.md) (`--mode=pr`, which absorbed the retired `/review`) checks for hidden assumptions, speculative abstractions, and weak proof.
 - [`skills/standards/references/behavioral-discipline.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/behavioral-discipline.md) is the reusable reference that the skills load.

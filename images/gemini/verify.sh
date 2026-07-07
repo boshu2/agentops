@@ -24,13 +24,16 @@ REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
 # skill-consolidation ledger (docs/contracts/skill-dispositions.yaml historical
 # merged-into chains + caam->account-rotation, refreshed 2026-07-04, age-085q).
 # Retired-with-no-successor slugs (ssh, gcloud, gh-cli, gh-actions, ...) dropped.
+# 2026-07-07 retire wave (age-skills-audit-fable-l6ic.12): red-team, curate,
+# compile, flywheel, recover, review dropped — merged into validate /
+# post-mortem / status per docs/audits/skills-audit-2026-07-06.md.
 core_skills=(
   rpi discovery research plan implement crank swarm validate
-  council pre-mortem red-team post-mortem curate compile flywheel
-  goals evolve bootstrap handoff recover
+  council pre-mortem post-mortem
+  goals evolve bootstrap handoff
   operationalize push scope status test
   skill-builder heal-skill
-  beads-br beads-bv agent-mail ntm cass dcg review
+  beads-br beads-bv agent-mail ntm cass dcg
   rch sbh cc-hooks account-rotation
 )
 

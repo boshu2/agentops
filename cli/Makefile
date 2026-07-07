@@ -27,7 +27,7 @@ sync-hooks:
 	@mkdir -p embedded/lib embedded/skills/standards/references embedded/skills/compile/scripts
 	@cp ../lib/chain-parser.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
-	@cp ../skills/compile/scripts/compile.sh embedded/skills/compile/scripts/compile.sh
+	@cp ../scripts/lib/flywheel-compile.sh embedded/skills/compile/scripts/compile.sh
 	@mkdir -p embedded/pawl/scripts embedded/pawl/scripts/lib embedded/pawl/schemas embedded/pawl/hooks
 	@cp ../scripts/pawl-review.sh ../scripts/pawl-verdict.sh ../scripts/pawl.sh embedded/pawl/scripts/
 	@cp ../scripts/gen-membrane-receipts.sh ../scripts/check-membrane-receipts-freshness.sh embedded/pawl/scripts/

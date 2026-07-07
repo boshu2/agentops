@@ -18,11 +18,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-# The 15 canonical spine slugs — the anti-re-bury anchor. This pinned list is
+# The 13 canonical spine slugs — the anti-re-bury anchor. This pinned list is
 # what forces a failure if the factory ever drops or renames a spine skill.
+# 2026-07-07 retire wave (age-skills-audit-fable-l6ic.12, audit
+# docs/audits/skills-audit-2026-07-06.md): review merged into validate
+# (--mode=pr) and red-team retired (validate --debate absorbs) — 15 -> 13.
 SPINE=(
-  # membrane (9)
-  validate review council pre-mortem red-team converge security reality-check pre-land-refuters
+  # membrane (7)
+  validate council pre-mortem converge security reality-check pre-land-refuters
   # bookkeeper (6)
   beads-br status handoff discovery plan implement
 )
@@ -48,8 +51,8 @@ for s in "${SPINE[@]}"; do
 done
 
 flagged_count="$(grep -l '^spine: true$' skills/*/SKILL.md 2>/dev/null | wc -l | tr -d ' ' || true)"
-[ "$flagged_count" = "15" ] \
-  || fail "expected exactly 15 skills flagged 'spine: true' repo-wide, found ${flagged_count:-0}"
+[ "$flagged_count" = "13" ] \
+  || fail "expected exactly 13 skills flagged 'spine: true' repo-wide, found ${flagged_count:-0}"
 
 flagged_sorted="$(grep -l '^spine: true$' skills/*/SKILL.md 2>/dev/null \
   | sed 's#^skills/##; s#/SKILL\.md$##' | sort || true)"
@@ -105,4 +108,4 @@ flow_line="$(grep -n '^## Flow Skills' "$ROUTER" | head -1 | cut -d: -f1)"
 [ "$end_line" -lt "$flow_line" ] \
   || fail "spine region overruns the rest of the router (END at $end_line, Flow Skills at $flow_line)"
 
-echo "PASS(spine-integrity): 15 spine skills exist, flagged spine:true, validate, and lead $ROUTER"
+echo "PASS(spine-integrity): 13 spine skills exist, flagged spine:true, validate, and lead $ROUTER"

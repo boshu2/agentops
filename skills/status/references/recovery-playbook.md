@@ -1,28 +1,8 @@
----
-name: recover
-description: 'Recover session context. Triggers: "recover", "recover session context.", "recover skill".'
-practices:
-- sre
-- legacy-code-seams
-- pragmatic-programmer
-hexagonal_role: driving-adapter
-consumes:
-- br
-- rpi
-produces:
-- .agents/rpi/*.md
-context_rel: []
-skill_api_version: 1
-context:
-  window: inherit
-  intent:
-    mode: none
-  intel_scope: none
-metadata:
-  tier: session
-  dependencies: []
-output_contract: 'stdout: recovered context summary'
----
+# Recovery playbook (absorbed from /recover, 2026-07-07)
+
+> Deep post-compaction recovery walkthrough, preserved verbatim from the retired
+> recover skill (merged into /status --recover; audit: docs/audits/skills-audit-2026-07-06.md).
+
 # /recover — Context Recovery After Compaction
 
 > **Purpose:** Help you get back up to speed after context compaction. Detects in-progress work (RPI runs, evolve cycles), loads relevant knowledge, and summarizes what you were doing and what's next. AgentOps 3.0's default recovery path is explicit (`ao session bootstrap`, `ao codex start` / `ao codex stop`); Codex native hooks are opt-in compatibility, not assumed.
@@ -374,5 +354,3 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 | JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure before returning to user. |
 
 ## Reference Documents
-
-- [references/recover.feature](references/recover.feature) — Executable spec: detect rpi phase from phased-state, surface claimed/ready br work, recent git, --json dashboard (soc-qk4b)

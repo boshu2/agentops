@@ -125,8 +125,11 @@ func TestAudit_RealRepo_L2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Audit failed: %v", err)
 	}
-	if got := len(report.Skills); got < 60 {
-		t.Errorf("expected >= 60 skills, got %d", got)
+	// Floor tracks the deliberate corpus size: 58 skills + _fixtures after the
+	// 2026-07-07 retire wave (docs/audits/skills-audit-2026-07-06.md, 66 -> 58).
+	// A drop BELOW the floor means skills went missing outside a governed retire.
+	if got := len(report.Skills); got < 55 {
+		t.Errorf("expected >= 55 skills, got %d", got)
 	}
 	if len(report.Errors) > 0 {
 		t.Logf("audit reports %d errors against real repo (informational):", len(report.Errors))

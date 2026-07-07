@@ -26,8 +26,10 @@ for f in "$REPO_ROOT"/skills/standards/references/*; do
     check_file "$f" "$EMBEDDED/skills/standards/references/$basename"
 done
 
-# Check skills/compile runtime script
-check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
+# Check the flywheel compile runtime script. Canonical home moved to scripts/lib/
+# when the compile SKILL retired (2026-07-07 wave, l6ic.12) — `ao compile` still
+# ships the embedded copy; the embedded PATH is unchanged (Go embed contract).
+check_file "$REPO_ROOT/scripts/lib/flywheel-compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
 
 # Check the pawl bundle: scripts + verdict schema embedded so `ao pawl review` runs
 # zero-config on a stranger's repo (no AgentOps checkout). The scripts/ + schemas/

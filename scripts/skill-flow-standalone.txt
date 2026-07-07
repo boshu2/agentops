@@ -77,3 +77,5 @@ vibing-with-ntm                  # standalone external-boundary or library/analy
 worktree-branch-rationalization  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 beads-bv                         # tracker-triage primitive; lost its only incoming edge when operating-loop-skill was pruned (ag-if7p) — leaf by design, like status
 converge                         # thin memo over the `ao converge` command (driving-adapter); no peer skill edge by design, like status
+using-gc                         # gc-substrate operator skill; drives the external gc CLI, no peer skill edge by design
+gc-membrane                      # JIT close-door reference loaded by using-gc via Read; no frontmatter edge by design

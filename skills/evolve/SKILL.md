@@ -10,7 +10,6 @@ consumes:
 - rpi
 - goals
 - post-mortem
-- compile
 produces:
 - git-changes
 - goals-fitness-delta
@@ -32,7 +31,6 @@ metadata:
   dependencies:
   - rpi
   - post-mortem
-  - compile
   triggers:
   - evolve
   - improve everything
@@ -540,4 +538,4 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [test](../test/SKILL.md) — Test generation and coverage analysis
 - [refactor](../refactor/SKILL.md) — Safe, verified refactoring
 - [security](../security/SKILL.md) — Dependency audit and vulnerability scanning (absorbs deps)
-- [perf](../perf/SKILL.md) — Performance profiling and benchmarking
+- [perf](../validate/SKILL.md) — Performance profiling and benchmarking

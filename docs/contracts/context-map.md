@@ -15,10 +15,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
 - `evolve` — Run autonomous improvement loops.
-- `flywheel` — Check knowledge flywheel health. Triggers: "flywheel", "check knowledge flywheel health.", "flywheel skill".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `operationalize` — Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
-- `perf` — Profile and optimize hotspots. Triggers: "perf", "profile and optimize hotspots.", "perf skill".
 - `plan` — Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".
 - `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
@@ -38,9 +36,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
 - `pre-land-refuters` — Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.
 - `push` — Validate, commit, and push.
-- `recover` — Recover session context. Triggers: "recover", "recover session context.", "recover skill".
 - `research` — Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
-- `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: "review", "review diffs for risk find", "review skill".
 - `status` — Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
 
@@ -60,18 +56,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `beads-bv` — Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".
 - `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills. Triggers: "cc-hooks", "cc hooks", "configure claude code hooks pretooluse".
-- `compile` — Compile .agents knowledge wiki. Triggers: "compile the knowledge wiki", "build the LLM wiki", "compile .agents into the wiki".
-- `curate` — Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: "curate skills from sessions", "mine transcripts for skill diffs", "what should be a skill".
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: "doc", "generate and validate repo docs", "doc skill".
-- `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: "eval-outcomes", "eval outcomes", "grade agent or model output".
 - `gc-membrane` — Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: "gc-membrane", "membrane pack", "pawl-verdict.v1", "gc close door".
 - `handoff` — Write compact session handoffs. Triggers: "handoff", "write compact session handoffs.", "handoff skill".
 - `heal-skill` — Repair skill hygiene, and deep-audit SKILL.md quality (absorbed from /skill-auditor). Triggers: "heal-skill", "heal skill", "repair skill hygiene", "skill-auditor", "audit skill", "skill audit".
 - `ms` — meta_skill (ms) — skill-search/load engine over both corpora (agentops + jsm). Use to find a skill, search skills, or load guidance. Consume via MCP, write via CLI. Triggers: "ms", "meta_skill", "skill search", "find a skill for", "load skill guidance".
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. Triggers: "ntm", "orchestrates ntm tmux agent swarms", "ntm skill".
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: "rch", "use when offloading slow builds", "rch skill".
-- `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors. Triggers: "refactor", "execute safe refactors.", "refactor skill".
 - `release` — Run release validation. Triggers: "run release validation", "cut a release", "check release readiness".
 - `reverse-engineer` — Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".
@@ -106,7 +98,6 @@ graph LR
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
   evolve -- "customer-of" --> rpi
-  flywheel -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-builder
   implement -- "customer-of" --> domain
@@ -117,7 +108,6 @@ graph LR
   operationalize -- "supplier-to" --> skill-builder
   operationalize -- "customer-of" --> validate
   operationalize -- "supplier-to" --> workflow-builder
-  perf -- "shared-kernel" --> standards
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
   pr-prep -- "customer-of" --> domain
@@ -126,9 +116,7 @@ graph LR
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
   reality-check -- "supplier-to" --> discovery
-  red-team -- "supplier-to" --> validate
   release -- "supplier-to" --> crank
-  review -- "customer-of" --> validate
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
   rpi -- "customer-of" --> validate
@@ -160,7 +148,6 @@ graph LR
 | `bootstrap` | consumes | product |
 | `bootstrap` | consumes | shared |
 | `codex-exec` | produces | codex-run-output |
-| `compile` | produces | .agents/compiled/lint-report.md |
 | `converge` | consumes | command-help |
 | `converge` | produces | stdout |
 | `converter` | produces | converted-skill |
@@ -174,7 +161,6 @@ graph LR
 | `crank` | consumes | validate |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
-| `curate` | produces | .agents/research/*.md |
 | `discovery` | consumes | plan |
 | `discovery` | consumes | pre-mortem |
 | `discovery` | consumes | research |
@@ -185,16 +171,11 @@ graph LR
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
-| `eval-outcomes` | consumes | council |
-| `eval-outcomes` | consumes | validate |
-| `eval-outcomes` | produces | skills/council/schemas/verdict.json |
-| `evolve` | consumes | compile |
 | `evolve` | consumes | goals |
 | `evolve` | consumes | post-mortem |
 | `evolve` | consumes | rpi |
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
-| `flywheel` | produces | .agents/learnings/*.md |
 | `goals` | produces | result.json |
 | `handoff` | produces | .agents/research/*.md |
 | `heal-skill` | produces | audit-report.json |
@@ -203,8 +184,6 @@ graph LR
 | `operationalize` | consumes | .agents/research/*.md |
 | `operationalize` | produces | .agents/operationalize/*.md |
 | `operationalize` | produces | routed-handoffs |
-| `perf` | consumes | repo-context |
-| `perf` | produces | result.json |
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |
 | `plan` | produces | execution-packet.json |
@@ -225,11 +204,6 @@ graph LR
 | `push` | produces | git-changes |
 | `reality-check` | consumes | implement |
 | `reality-check` | produces | result.json |
-| `recover` | consumes | br |
-| `recover` | consumes | rpi |
-| `recover` | produces | .agents/rpi/*.md |
-| `red-team` | consumes | repo-context |
-| `red-team` | produces | result.json |
 | `refactor` | consumes | repo-context |
 | `refactor` | produces | git-changes |
 | `release` | produces | result.json |
@@ -237,9 +211,6 @@ graph LR
 | `research` | produces | .agents/research/*.md |
 | `research` | produces | result.json |
 | `reverse-engineer` | produces | .agents/research/*.md |
-| `review` | consumes | github-pr |
-| `review` | consumes | validate |
-| `review` | produces | result.json |
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
 | `rpi` | consumes | domain |

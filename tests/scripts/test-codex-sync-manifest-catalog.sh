@@ -15,10 +15,19 @@ fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
   exit 1
 }
 
-if jq -e '.codex_override_catalog.skills[0].name == "compile"' "$MANIFEST" >/dev/null; then
-  pass "artifact manifest embeds codex override catalog"
+# Shape assertion, not a name pin: the old `skills[0].name == "compile"` broke the
+# moment compile retired (2026-07-07 wave) — pin the CONTRACT instead: the embed
+# exists, is non-empty, and carries no retired slug (l6ic.12 prune stays enforced).
+if jq -e '.codex_override_catalog.skills | length > 0' "$MANIFEST" >/dev/null; then
+  pass "artifact manifest embeds a non-empty codex override catalog"
 else
-  fail "artifact manifest should embed codex override catalog"
+  fail "artifact manifest should embed a non-empty codex override catalog"
+fi
+
+if jq -e '[.codex_override_catalog.skills[].name] | any(. == "compile" or . == "curate" or . == "review" or . == "recover" or . == "red-team" or . == "eval-outcomes" or . == "perf" or . == "flywheel") | not' "$MANIFEST" >/dev/null; then
+  pass "embedded catalog carries no retired skill rows"
+else
+  fail "embedded catalog still carries retired skill rows (2026-07-07 wave prune regressed)"
 fi
 
 if jq -e '.codex_override_catalog_hash | strings | length > 0' "$MANIFEST" >/dev/null; then

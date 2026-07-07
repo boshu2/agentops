@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 66,
+    "skills": 58,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
-    "eval_files": 56,
+    "eval_files": 55,
     "cli_commands": 71,
     "workflows": 4,
-    "capabilities": 151
+    "capabilities": 143
   },
   "surfaces": {
     "skills": [
@@ -125,14 +125,6 @@
         "reference_count": 6
       },
       {
-        "name": "eval-outcomes",
-        "tier": "execution",
-        "path": "skills/eval-outcomes/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "implement",
         "tier": "execution",
         "path": "skills/implement/",
@@ -155,14 +147,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 16
-      },
-      {
-        "name": "perf",
-        "tier": "execution",
-        "path": "skills/perf/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "plan",
@@ -277,36 +261,12 @@
         "reference_count": 0
       },
       {
-        "name": "compile",
-        "tier": "experimental",
-        "path": "skills/compile/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "curate",
-        "tier": "experimental",
-        "path": "skills/curate/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "evolve",
         "tier": "experimental",
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 27
-      },
-      {
-        "name": "flywheel",
-        "tier": "experimental",
-        "path": "skills/flywheel/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
       },
       {
         "name": "operationalize",
@@ -347,22 +307,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 14
-      },
-      {
-        "name": "red-team",
-        "tier": "judgment",
-        "path": "skills/red-team/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "review",
-        "tier": "judgment",
-        "path": "skills/review/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 5
       },
       {
         "name": "validate",
@@ -517,20 +461,12 @@
         "reference_count": 0
       },
       {
-        "name": "recover",
-        "tier": "session",
-        "path": "skills/recover/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "status",
         "tier": "session",
         "path": "skills/status/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
+        "reference_count": 1
       },
       {
         "name": "codex-exec",
@@ -583,7 +519,7 @@
       {
         "suite": "agentops-core",
         "path": "evals/agentops-core/",
-        "eval_count": 55,
+        "eval_count": 54,
         "evals": [
           "beads-issue-tracking",
           "cli-command-surface-matrix",
@@ -616,7 +552,6 @@
           "pre-push-gate-governance",
           "push-worktree-closeout",
           "ratchet-lifecycle-ledger",
-          "red-team-adversarial-validation",
           "release-security-gates",
           "remote-compute-contracts",
           "retag-release-governance",
@@ -676,9 +611,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "List learnings marked as anti-patterns",
         "bounded_context": "BC2",
-        "driven_by_skills": [
-          "flywheel"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao badge",
@@ -686,7 +619,6 @@
         "purpose": "Display knowledge flywheel health badge",
         "bounded_context": "BC2",
         "driven_by_skills": [
-          "flywheel",
           "status"
         ]
       },
@@ -745,10 +677,10 @@
         "name": "ao compile",
         "path": "cli/cmd/ao/",
         "purpose": "Compile .agents knowledge into an interlinked wiki",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": [
-          "compile",
-          "domain"
+          "domain",
+          "post-mortem"
         ]
       },
       {
@@ -770,10 +702,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Detect potentially contradictory learnings",
         "bounded_context": "BC1",
-        "driven_by_skills": [
-          "compile",
-          "flywheel"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao converge",
@@ -796,11 +725,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Detect near-duplicate learnings",
         "bounded_context": "BC1",
-        "driven_by_skills": [
-          "compile",
-          "curate",
-          "flywheel"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao demo",
@@ -859,10 +784,8 @@
         "name": "ao flywheel",
         "path": "cli/cmd/ao/",
         "purpose": "Knowledge flywheel operations",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "flywheel"
-        ]
+        "bounded_context": "",
+        "driven_by_skills": []
       },
       {
         "name": "ao forge",
@@ -870,7 +793,6 @@
         "purpose": "Extract knowledge from sources",
         "bounded_context": "",
         "driven_by_skills": [
-          "curate",
           "post-mortem"
         ]
       },
@@ -888,7 +810,6 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "agent-native",
-          "eval-outcomes",
           "evolve",
           "goals",
           "post-mortem",
@@ -953,13 +874,12 @@
           "discovery",
           "domain",
           "evolve",
-          "flywheel",
           "implement",
           "operationalize",
           "plan",
+          "post-mortem",
           "pre-mortem",
-          "recover",
-          "review",
+          "status",
           "swarm",
           "validate"
         ]
@@ -970,8 +890,7 @@
         "purpose": "Check and manage learning maturity levels",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "domain",
-          "flywheel"
+          "domain"
         ]
       },
       {
@@ -995,8 +914,6 @@
         "bounded_context": "BC2",
         "driven_by_skills": [
           "crank",
-          "curate",
-          "flywheel",
           "status"
         ]
       },
@@ -1006,7 +923,6 @@
         "purpose": "Extract knowledge signal from git, .agents/, and code",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "compile",
           "crank",
           "evolve"
         ]
@@ -1078,7 +994,6 @@
           "crank",
           "discovery",
           "evolve",
-          "flywheel",
           "handoff",
           "implement",
           "plan",
@@ -1178,9 +1093,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Show AgentOps status",
         "bounded_context": "BC3",
-        "driven_by_skills": [
-          "flywheel"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao trace",
@@ -1320,8 +1233,8 @@
     ]
   },
   "capability_summary": {
-    "total": 151,
-    "skills": 66,
+    "total": 143,
+    "skills": 58,
     "cli_commands": 71,
     "gates": 14,
     "reference_impls": 0
@@ -1748,39 +1661,6 @@
       "references": 0
     },
     {
-      "sku": "skill:compile",
-      "name": "compile",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": "Compile .agents knowledge wiki. Triggers: \"compile the knowledge wiki\", \"build the LLM wiki\", \"compile .agents into the wiki\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        ".agents/compiled/lint-report.md"
-      ],
-      "drives_commands": [
-        "ao compile",
-        "ao contradict",
-        "ao dedup",
-        "ao mine"
-      ],
-      "path": "skills/compile/",
-      "references": 4
-    },
-    {
       "sku": "skill:converge",
       "name": "converge",
       "type": "skill",
@@ -1918,40 +1798,6 @@
       "references": 31
     },
     {
-      "sku": "skill:curate",
-      "name": "curate",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": "Mine transcripts, .agents, br, and git for skill diffs, br updates, or rare wiki entries. Triggers: \"curate skills from sessions\", \"mine transcripts for skill diffs\", \"what should be a skill\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [
-        "ao dedup",
-        "ao forge",
-        "ao forge markdown",
-        "ao forge transcript",
-        "ao metrics"
-      ],
-      "path": "skills/curate/",
-      "references": 3
-    },
-    {
       "sku": "skill:dcg",
       "name": "dcg",
       "type": "skill",
@@ -2085,41 +1931,6 @@
       "references": 19
     },
     {
-      "sku": "skill:eval-outcomes",
-      "name": "eval-outcomes",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "validation",
-      "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario. Triggers: \"eval-outcomes\", \"eval outcomes\", \"grade agent or model output\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "validate",
-        "council"
-      ],
-      "produces": [
-        "skills/council/schemas/verdict.json"
-      ],
-      "drives_commands": [
-        "ao eval scenario add",
-        "ao eval scenario validate",
-        "ao goals"
-      ],
-      "path": "skills/eval-outcomes/",
-      "references": 0
-    },
-    {
       "sku": "skill:evolve",
       "name": "evolve",
       "type": "skill",
@@ -2142,8 +1953,7 @@
       "consumes": [
         "rpi",
         "goals",
-        "post-mortem",
-        "compile"
+        "post-mortem"
       ],
       "produces": [
         "git-changes",
@@ -2162,52 +1972,6 @@
       ],
       "path": "skills/evolve/",
       "references": 27
-    },
-    {
-      "sku": "skill:flywheel",
-      "name": "flywheel",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "domain",
-      "tier": "experimental",
-      "capability_class": "corpus",
-      "purpose": "Check knowledge flywheel health. Triggers: \"flywheel\", \"check knowledge flywheel health.\", \"flywheel skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        ".agents/learnings/*.md"
-      ],
-      "drives_commands": [
-        "ao anti-patterns",
-        "ao badge",
-        "ao constraint review",
-        "ao contradict",
-        "ao dedup",
-        "ao eval bench",
-        "ao flywheel",
-        "ao flywheel status",
-        "ao lookup",
-        "ao maturity",
-        "ao metrics",
-        "ao metrics baseline",
-        "ao metrics cite",
-        "ao metrics cite-report",
-        "ao metrics health",
-        "ao ratchet",
-        "ao status"
-      ],
-      "path": "skills/flywheel/",
-      "references": 4
     },
     {
       "sku": "skill:gc-membrane",
@@ -2455,36 +2219,6 @@
       "references": 3
     },
     {
-      "sku": "skill:perf",
-      "name": "perf",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "capability_class": "validation",
-      "purpose": "Profile and optimize hotspots. Triggers: \"perf\", \"profile and optimize hotspots.\", \"perf skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/perf/",
-      "references": 3
-    },
-    {
       "sku": "skill:plan",
       "name": "plan",
       "type": "skill",
@@ -2551,10 +2285,13 @@
         "result.json"
       ],
       "drives_commands": [
+        "ao compile",
         "ao flywheel close-loop",
+        "ao flywheel status",
         "ao forge",
         "ao forge markdown",
         "ao goals",
+        "ao lookup",
         "ao membrane triage",
         "ao metrics cite",
         "ao next-work materialize",
@@ -2781,71 +2518,6 @@
       "references": 0
     },
     {
-      "sku": "skill:recover",
-      "name": "recover",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "driving-adapter",
-      "tier": "session",
-      "capability_class": "corpus",
-      "purpose": "Recover session context. Triggers: \"recover\", \"recover session context.\", \"recover skill\".",
-      "status": "active",
-      "disposition": "refactor",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "br",
-        "rpi"
-      ],
-      "produces": [
-        ".agents/rpi/*.md"
-      ],
-      "drives_commands": [
-        "ao lookup",
-        "ao metrics cite",
-        "ao session bootstrap"
-      ],
-      "path": "skills/recover/",
-      "references": 0
-    },
-    {
-      "sku": "skill:red-team",
-      "name": "red-team",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/red-team/",
-      "references": 0
-    },
-    {
       "sku": "skill:refactor",
       "name": "refactor",
       "type": "skill",
@@ -2968,40 +2640,6 @@
       "drives_commands": [],
       "path": "skills/reverse-engineer/",
       "references": 0
-    },
-    {
-      "sku": "skill:review",
-      "name": "review",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driving-adapter",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs. Triggers: \"review\", \"review diffs for risk find\", \"review skill\".",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "github-pr",
-        "validate"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao lookup",
-        "ao metrics cite"
-      ],
-      "path": "skills/review/",
-      "references": 5
     },
     {
       "sku": "skill:rpi",
@@ -3275,15 +2913,18 @@
       ],
       "drives_commands": [
         "ao badge",
+        "ao lookup",
         "ao metrics",
+        "ao metrics cite",
         "ao pool list",
         "ao pool promote",
         "ao pool stage",
         "ao ratchet",
-        "ao reconcile"
+        "ao reconcile",
+        "ao session bootstrap"
       ],
       "path": "skills/status/",
-      "references": 0
+      "references": 1
     },
     {
       "sku": "skill:swarm",
@@ -3543,9 +3184,7 @@
       "bounded_context": "BC2",
       "purpose": "List learnings marked as anti-patterns",
       "status": "active",
-      "driven_by_skills": [
-        "flywheel"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -3564,7 +3203,6 @@
       "purpose": "Display knowledge flywheel health badge",
       "status": "active",
       "driven_by_skills": [
-        "flywheel",
         "status"
       ],
       "flags": [
@@ -3705,12 +3343,12 @@
       "sku": "cmd:ao.compile",
       "name": "ao compile",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Compile .agents knowledge into an interlinked wiki",
       "status": "active",
       "driven_by_skills": [
-        "compile",
-        "domain"
+        "domain",
+        "post-mortem"
       ],
       "flags": [
         "--batch-size",
@@ -3781,10 +3419,7 @@
       "bounded_context": "BC1",
       "purpose": "Detect potentially contradictory learnings",
       "status": "active",
-      "driven_by_skills": [
-        "compile",
-        "flywheel"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -3841,11 +3476,7 @@
       "bounded_context": "BC1",
       "purpose": "Detect near-duplicate learnings",
       "status": "active",
-      "driven_by_skills": [
-        "compile",
-        "curate",
-        "flywheel"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -4015,12 +3646,10 @@
       "sku": "cmd:ao.flywheel",
       "name": "ao flywheel",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Knowledge flywheel operations",
       "status": "active",
-      "driven_by_skills": [
-        "flywheel"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -4038,7 +3667,6 @@
       "purpose": "Extract knowledge from sources",
       "status": "active",
       "driven_by_skills": [
-        "curate",
         "post-mortem"
       ],
       "flags": [
@@ -4077,7 +3705,6 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
-        "eval-outcomes",
         "evolve",
         "goals",
         "post-mortem",
@@ -4229,13 +3856,12 @@
         "discovery",
         "domain",
         "evolve",
-        "flywheel",
         "implement",
         "operationalize",
         "plan",
+        "post-mortem",
         "pre-mortem",
-        "recover",
-        "review",
+        "status",
         "swarm",
         "validate"
       ],
@@ -4264,8 +3890,7 @@
       "purpose": "Check and manage learning maturity levels",
       "status": "active",
       "driven_by_skills": [
-        "domain",
-        "flywheel"
+        "domain"
       ],
       "flags": [
         "--apply",
@@ -4330,8 +3955,6 @@
       "status": "active",
       "driven_by_skills": [
         "crank",
-        "curate",
-        "flywheel",
         "status"
       ],
       "flags": [
@@ -4351,7 +3974,6 @@
       "purpose": "Extract knowledge signal from git, .agents/, and code",
       "status": "active",
       "driven_by_skills": [
-        "compile",
         "crank",
         "evolve"
       ],
@@ -4524,7 +4146,6 @@
         "crank",
         "discovery",
         "evolve",
-        "flywheel",
         "handoff",
         "implement",
         "plan",
@@ -4760,9 +4381,7 @@
       "bounded_context": "BC3",
       "purpose": "Show AgentOps status",
       "status": "active",
-      "driven_by_skills": [
-        "flywheel"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
