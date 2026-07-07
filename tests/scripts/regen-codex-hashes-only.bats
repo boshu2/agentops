@@ -109,3 +109,58 @@ PY
   [ "$status" -eq 2 ]
   [[ "$output" == *"requires a skill list"* ]]
 }
+
+# --- Manifest dedupe (one row per skill name) --------------------------------
+# Historical syncs appended duplicate skills[] rows and updated only one of a
+# pair in place, so drift was masked or misreported depending on which row a
+# reader's name-keyed dict kept. The writer now keys entries by name.
+
+# _count_rows <name> — how many manifest skills[] rows carry this name.
+_count_rows() {
+  python3 - "$1" <<'PY'
+import json, os, sys
+m = json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json")))
+print(sum(1 for e in m["skills"] if e.get("name") == sys.argv[1]))
+PY
+}
+
+# _add_dup_row <name> <hash> — append a duplicate manifest row for <name>.
+_add_dup_row() {
+  python3 - "$1" "$2" <<'PY'
+import json, os, sys
+p = os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json")
+m = json.load(open(p))
+m["skills"].append({"name": sys.argv[1], "generated_hash": sys.argv[2], "source_hash": ""})
+json.dump(m, open(p, "w"), indent=2)
+PY
+}
+
+@test "duplicate manifest rows collapse to one row per name (last row wins, then regen fixes it)" {
+  _add_dup_row foo "DUP_STALE_foo"
+  [ "$(_count_rows foo)" -eq 2 ]
+
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"duplicate row(s)"* ]]
+
+  [ "$(_count_rows foo)" -eq 1 ]
+  # The surviving row carries the freshly regenerated hash and agrees with the marker.
+  local foo; foo="$(_manifest_hash foo)"
+  [ "$foo" != "STALE_foo" ]
+  [ "$foo" != "DUP_STALE_foo" ]
+  [ "$(_marker_hash foo)" = "$foo" ]
+}
+
+@test "--check reports duplicate rows as drift (exit 1) without mutating the manifest" {
+  # Make all hashes current first so duplication is the ONLY drift.
+  bash "$SCRIPT"
+  local good; good="$(_manifest_hash foo)"
+  _add_dup_row foo "$good"
+  [ "$(_count_rows foo)" -eq 2 ]
+
+  run bash "$SCRIPT" --check
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"duplicate row(s)"* ]]
+  # --check must not mutate: the duplicate row is still on disk.
+  [ "$(_count_rows foo)" -eq 2 ]
+}
