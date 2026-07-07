@@ -29,7 +29,7 @@ skill (without the repo CLAUDE.md) must still honor these invariants:
 | **Indirection** | Resolve first with `ao beads dir`, then invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. A worktree-local ledger path is valid only in the canonical checkout; linked worktrees use git's common dir to reach the canonical private ledger. |
 | **Private repo** | `_beads/` is its **own git repository** (separate remote). Sync = `git -C "$(ao beads dir)" push`. |
 | **Never leak** | never stage the private ledger from the host repo — bead bodies carry private context; the host repo is public and gitignores the ledger. |
-| **bd is retired** | because the bd/Dolt remote-server lane was retired (2026-06-11) — do not run `bd` in a br repo; it appears only in explicitly-marked legacy notes. |
+| **bd is retired AS OUR TRACKER** | because the bd/Dolt remote-server lane was retired (2026-06-11) — do not run `bd` in a br repo; it appears only in explicitly-marked legacy notes. **Gas City carve-out (age-gc-integrate-8aom.2):** bd/dolt is gc's NATIVE city store and that is blessed — `bd`/`gc bd` inside a gc city dir (a dir with a `GC_HOME`/`.gc/` or a gc-managed `.beads/`, e.g. `~/gc/*`) is substrate operation, not a tracker violation. The seam: **br = agentops ledger** (git-JSONL); **bd/dolt = gc city-internal store**; outcomes cross one way via the read-only rollup (age-gc-adoption-u0he.6). Never point a gc city's bd at this repo's tracking, and never file agentops work in a city store. |
 | **Prefix filter** | to prevent cross-project leakage in shared DBs, filter queries by the repo's issue prefix (e.g. `ag-`) before trusting `br ready` output. |
 | **Writes fail closed** | because an empty/wrong `BEADS_DIR` makes br silently write a fallback tracker (age-gstf) — for `create`/`update`/`close`/`dep` use `BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR && br <write-cmd>`; `--require` refuses to print a path unless the directory holds a real ledger. |
 
@@ -198,9 +198,10 @@ BEADS_DIR="$(ao beads dir)" br list --json | jq '.issues[]? | select(.descriptio
 
 ### bd → br Migration (Docs)
 
-`bd` itself is retired — never run it (see the persist_intent invariants
-above). Use this checklist only when scrubbing legacy `bd` references from
-AGENTS.md or other docs:
+`bd` itself is retired as THIS repo's tracker — never run it here (see the
+persist_intent invariants above; gc city dirs are the blessed exception — bd
+is gc's native store). Use this checklist only when scrubbing legacy `bd`
+references from AGENTS.md or other docs:
 
 **Behavioral difference (only one):** `br sync` never runs git commands. After `BEADS_DIR="$(ao beads dir)" br sync --flush-only`, you must commit and push the private ledger with `git -C "$(ao beads dir)" add -A`, `git -C "$(ao beads dir)" commit`, and `git -C "$(ao beads dir)" push`.
 

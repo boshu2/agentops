@@ -185,24 +185,27 @@ We run the canon pattern; the Oracle is the part the canon cannot yet do.
 | Reconcile loop (controller) | reconcile-by-rejection loop | `rpi` (inner) / `evolve` (outer) | **built** |
 | kubelet / pod spawn | dispatch agents in fresh-context worktrees | `crank` / `swarm` (in-session); **NTM** swarm panes (out-of-session) | **built** |
 | etcd (quorum state) | acceptance + provenance store | **two ledgers**: bead ledger (`br`, git-JSONL — work state) + proof/verdict ledger (`docs/provenance/ledger.jsonl` + yield `gate-verdict` — admission state) | **git-JSONL + ledger** (single-host Dolt HA superseded; `ag-o2tc` context) |
-| API server + object model + watch/events | declared workload objects + the change stream controllers act on | — (the beads ledger is the store; the object/event surface is implicit) | **to build** |
-| Scheduler (resource fit) | place agent-tasks by capability/cost/model-fit | — (cron heartbeat only) | **to build** (`ag-xanm`) |
+| API server + object model + watch/events | declared workload objects + the change stream controllers act on | — (the beads ledger is the store; the object/event surface is implicit) | **to build** (in-repo lane); provided-by-gc in the city lane (`gc events` run_id/seq stream, typed bead objects) |
+| Scheduler (resource fit) | place agent-tasks by capability/cost/model-fit | — (cron heartbeat only) | **to build** (`ag-xanm`); provided-by-gc in the city lane (reconciler pools/scale-from-zero) |
 | Node pool / fungible nodes | fungible compute, heterogeneous by design | the fleet (Mac, bushido, cloud) | **partial** (`ag-xanm`) |
 | Liveness / readiness probe (runtime health) | is the agent alive / not stuck-looping? | `rpi` stall-detect (partial); no reschedule | **partial** |
 | Admission controller / validating webhook | gate every output before it lands — *is it correct?* | the membrane: author≠judge `liveness` kernel (`#737`) + CI convergence gate (`#746`) | **built at gate sites; universal path to build** |
-| Self-healing reschedule | node dies → work moves to live compute | — (the crash proved we lack it) | **to build** |
+| Self-healing reschedule | node dies → work moves to live compute | — (the crash proved we lack it) | **to build** (in-repo lane); provided-by-gc in the city lane (reconciler respawn + launchd KeepAlive supervisor, live-proven 2026-07-06) |
 | RBAC | author ≠ judge; role-capability matrix | `cli/internal/liveness/roles.go` (#733) | **built** |
 | Namespaces | isolated context per worker | worktrees + per-worker context | **built** |
 | Immutable/versioned config | version-locked binaries across nodes | `fleet-versions.env` + version-lockstep tooling | **built** (today) |
 | Out-of-session swarm runtime (controller-manager + node agent) | persistent agent panes, robot API, pipelines, serve | **NTM** (native tmux) | **built** |
 | Coordination (leases / events) | file locks, messaging, inboxes, conflict-prevention | **MCP Agent Mail** | **built** |
-| kubectl (operator surface) | where-is-everything / what's-stuck | NTM robot API (partial) | **to build** (`ag-7dnb`) |
+| kubectl (operator surface) | where-is-everything / what's-stuck | NTM robot API (partial) | **to build** (`ag-7dnb`); provided-by-gc in the city lane (dashboard, doctor, `gc status/session list`) |
 
-> **Substrate decision (load-bearing):** the orchestration substrate is **NTM** (native tmux
-> swarms) **+ MCP Agent Mail** (file locks, messaging, inboxes) — **not Gas City.** The gastown
-> SDK was deliberately **not adopted**: NTM's swarm runtime + Agent Mail's coordination cover
-> dispatch and conflict-prevention without the SDK dependency. Do not re-introduce `gc` as the
-> substrate in this architecture.
+> **Substrate decision (load-bearing; amended 2026-07-06):** the REFERENCE substrate is **NTM**
+> (native tmux swarms) **+ MCP Agent Mail** (file locks, messaging, inboxes). **Gas City is a
+> blessed COEXISTING substrate for city-shaped work** — operator-chosen, never auto-routed, with
+> the membrane composed on top as `packs/agentops-membrane` (the fail-closed close door gc lacks
+> natively; see `skills/using-gc` and the gc-mvp out-of-box gap map). The 2026-06 "not adopted"
+> call was re-decided 2026-07 after the properly-set-up native city proved orchestration wholesale;
+> what remains non-negotiable: `runtime=gc` stays removed (not a selectable runtime mode), no
+> `ao gc` surface; gc is reached via operator choice only.
 
 ## The novel primitive — the verification membrane
 
@@ -254,7 +257,7 @@ State and admission come before the scheduler — you can't schedule declared wo
 that don't exist yet, and you must not let unproven work land before the gate is universal.
 
 0. **IaC control-plane provisioning + version lockstep** — `fleet-versions.env`, `dolt-control-plane`, `ensure-dolt-version`. **done 2026-06-05.**
-1. **HA quorum state store** (`ag-o2tc`) — Dolt replication + failover; the control plane survives any single host. *in progress.*
+1. **HA quorum state store** (`ag-o2tc`) — SUPERSEDED: the store is git-JSONL + the provenance ledger (see the etcd row); city-store durability is gc’s own concern (its backup orders), not an AgentOps build step.
 2. **Control-plane API + object model + watch/events** — declared workload objects (goal + acceptance contract) and the change stream controllers act on. The contract layer everything else schedules and reconciles against. **(One-way door #2 — must be council-designed before any controller, scheduler, or agent codes against it.)**
 3. **Declarative workload + reconcile controller** — formalize the *already-built* `rpi`/`evolve` loop as a controller over those objects: a goal + acceptance contract → dispatch until admitted-or-rejected.
 4. **Membrane as the universal admission path** (`ag-xdrw`) — the author≠judge gate is built at specific sites (`#737`/`#746`); make it the *standing* gate every workload output passes before it lands.
@@ -290,7 +293,7 @@ swappable mechanism behind it.)
 
 | Decision | Reverse by |
 |---|---|
-| Substrate = NTM + Agent Mail | swap the swarm runtime behind the dispatch port (already pivoted once: *not* gascity) |
+| Substrate = NTM + Agent Mail | swap the swarm runtime behind the dispatch port (door exercised twice: gascity declined 2026-06, then adopted 2026-07 as a coexisting adapter — the pivot both ways proves the door is two-way) |
 | Scheduler algorithm (capability/cost/model-fit) | tune/replace behind the scheduling port |
 | Quorum roster (which model families) | add/remove models — the quorum *mechanism* is stable, the roster isn't |
 | HA topology (primary/standby vs N-way replication) | the *requirement* "survive single-host" is one-way; the *mechanism* is two-way |
@@ -388,3 +391,27 @@ bd/Dolt is **not AgentOps' own control-plane state store** — AgentOps' bead le
 gascity SUBSTRATE store — a different layer, the native store a gas-city factory runs on. The two
 ledgers here are AgentOps' own etcd-analog and together provide the durable, HA-able state the control
 plane reconciles and admits against.
+
+## 2026-07-06 delta — the substrate's own store (gc adoption reconciled)
+
+> Dated addition, same rule as the 2026-06-17 delta: not part of the 2026-06-05 ratification
+> lineage; carries its own gate (proposal: `.agents/proposals/2026-07-06-two-ledger-gc-reconcile.md`,
+> bead `age-gc-adoption-u0he.12`).
+
+Gas City was adopted as a **blessed coexisting substrate** for city-shaped work (fork owned:
+`boshu2/gascity`, FORKS-MAP F-4). This does NOT reopen one-way door #4: the factory's control-plane
+state store does **not** become gc's bd/dolt. The reconciliation is three layers:
+
+- **gc's bd/dolt city store** = the *substrate's own orchestration state*, behind the dispatch
+  port — an adapter's internals, exactly like NTM's tmux state. It holds the city's sessions,
+  convoys, pools, and step beads; it is not consulted by AgentOps governance.
+- **The two ledgers** (bead ledger `br` + proof/verdict ledger) remain AgentOps' etcd-analog —
+  desired state + admission state. Verdicts produced inside a city land as `pawl-verdict.v1`
+  artifacts and provenance edges, never only as city metadata.
+- **The seam is a read-only rollup** (`scripts/gc-outcomes-report.sh`, bead `age-gc-adoption-u0he.6`):
+  city outcomes are *reported* into br notes by the operator; there is no live sync, no shared
+  store, and no auto-routing of AgentOps work into a city.
+
+Falsifiers (any of these means re-open the door decision, not patch the doc): the backlog migrating
+into a city store; verdicts persisting only as city metadata; the read-only rollup proving
+insufficient for governance; gc becoming auto-routed.

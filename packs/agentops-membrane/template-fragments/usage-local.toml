@@ -1,0 +1,15 @@
+# usage-local.toml — the [usage] fragment install-gc-city.sh writes into a
+# membrane city's city.toml.
+#
+# Why this exists: sub-backed provider CLIs (claude, codex, agy) emit NO usage
+# facts — there is no usage.jsonl for gc's sink to ingest — so `gc costs`
+# token/invocation columns stay empty no matter what. provider = "local" makes
+# gc populate the RUN rows (wall time per run) itself, so `gc costs` is at
+# least decision-support instead of an empty table.
+#
+# Honest limits (RESIDUAL-GAPS.md § "Costs / usage facts"): token columns stay
+# empty (provider-side gap, not configurable away), and unpriced models drop
+# from totals (fail-open) — treat `gc costs` as decision-support-when-populated
+# and NEVER gate on it.
+[usage]
+provider = "local"

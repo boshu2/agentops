@@ -171,3 +171,13 @@ recovers; codex `~/.codex/hooks.json` trust modal → pre-trust in setup) are
 documented honestly in [`RESIDUAL-GAPS.md`](RESIDUAL-GAPS.md).
 <!-- END section: city self-verification (age-gc-mvp-w2-nuiw.6) -->
 
+## Cost metering (age-gc-adoption-u0he.1)
+
+Sub-backed provider CLIs (claude, codex, agy) emit no usage facts, so `gc
+costs` is empty out of the box. Writing `[usage] provider = "local"` into the
+city's `city.toml` makes gc populate the run rows (wall time) itself — the
+fragment, with the honest limits (token columns stay empty; unpriced models
+drop from totals, fail-open — never gate on costs), is single-sourced at
+[`template-fragments/usage-local.toml`](template-fragments/usage-local.toml).
+`scripts/install-gc-city.sh` applies it automatically.
+

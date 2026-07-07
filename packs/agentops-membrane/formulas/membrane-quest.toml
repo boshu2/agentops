@@ -50,10 +50,16 @@ after the membrane CONFIRMS.
 Steps IN ORDER:
 
 **1. Identify your step bead** (you close it in step 7). Its id is in
-`GC_BEAD_ID`; if unset, recover it:
+`GC_BEAD_ID`; if unset, recover it — the filter MUST exclude the dispatcher's
+gate bead (`gc.kind=ralph`), which carries this same title:
 ```bash
-BEAD_ID="${GC_BEAD_ID:-$(bd list --status open --json 2>/dev/null | jq -r '[.[] | select(.title=="Build: {{quest}}")][0].id // empty')}"
+BEAD_ID="${GC_BEAD_ID:-$(bd list --status open --json 2>/dev/null | jq -r '[.[] | select(.title=="Build: {{quest}}") | select((.metadata["gc.kind"] // "") != "ralph")][0].id // empty')}"
 ```
+**NEVER touch a bead whose metadata contains `gc.kind=ralph`** — that is the
+engine-owned gate/control bead; closing it yourself bypasses the membrane
+entirely (proven fail-open, 2026-07-06 canary: the builder closed the gate
+bead via this very title-recovery, the failed check's retry was orphaned, and
+the workflow finalized pass on a DEGRADED verdict).
 
 **2. Read prior membrane findings (redo semantics):**
 ```bash
@@ -104,7 +110,11 @@ membrane judges next; only its deterministic CONFIRMED closes the quest.)
 """
 
 [steps.check]
-max_attempts = 3
+# 5, not 3: on native graph.v2 EVERY failed check consumes an attempt — gc's
+# dispatcher never reads gc.failure_class on the ralph path, so a transient
+# reviewer-transport flake (DEGRADED) burns an attempt exactly like a REFUTED.
+# Budget: ~2 transport flakes + 3 real refute rounds. (2026-07-06 RCA.)
+max_attempts = 5
 
 [steps.check.check]
 mode = "exec"
