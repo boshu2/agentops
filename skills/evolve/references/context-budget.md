@@ -4,7 +4,7 @@
 
 **Current framing (soc-5qit, 2026-05-21):** context exhaustion is a *session-handoff signal*. The loop is continuous across compactions; a heavy session writes a non-sticky `HANDOFF` marker, exits the current cron-fire turn cleanly, and the NEXT cron-fire (running on harness-compacted or fresh context) automatically clears HANDOFF in Step 1 and resumes.
 
-This change was forced by an operator failure mode (2026-05-20→21): a cron-driven /evolve session shipped 6 PRs, accumulated context, then sticky-DORMANT'd despite 10+ unblocked P1 beads in `bd ready`. The prior design treated "this Claude session can't safely take on more work" as "the work itself is done" — a category error. The cron loop spans many sessions; one session's context is irrelevant to whether the backlog has work.
+This change was forced by an operator failure mode (2026-05-20→21): a cron-driven /evolve session shipped 6 PRs, accumulated context, then sticky-DORMANT'd despite 10+ unblocked P1 beads in `bd ready` (historical — tracker now `br ready`). The prior design treated "this Claude session can't safely take on more work" as "the work itself is done" — a category error. The cron loop spans many sessions; one session's context is irrelevant to whether the backlog has work.
 
 ## Why it's a real failure mode (still true)
 
@@ -68,7 +68,7 @@ When running the Claude-Code-harness self-perpetuation mode (see `references/aut
 
 ## What this is NOT
 
-- **Not a stop reason.** Stop reasons are operator override, max-cycles cap, regression-breaker, and genuine stagnation (bd ready=0 AND harvested=0 AND failing-goals=0 AND generators dry).
+- **Not a stop reason.** Stop reasons are operator override, max-cycles cap, regression-breaker, and genuine stagnation (BEADS_DIR="$(ao beads dir)" br ready=0 AND harvested=0 AND failing-goals=0 AND generators dry).
 - **Not a sticky marker.** DORMANT is sticky-with-auto-clear-on-new-work; HANDOFF is fully non-sticky and clears on next read.
 - **Not a "the work is done" signal.** It explicitly says "this session can't safely continue; the work is parked." The next session does the work.
 

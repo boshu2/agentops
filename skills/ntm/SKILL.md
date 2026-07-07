@@ -57,6 +57,10 @@ For any state-changing action, verify the live contract with `ntm --robot-capabi
   emits conclusions without evidence as not-done — re-dispatch with the bounded-input contract
   restated.
 
+## Tending doctrine (single owner)
+
+**`ntm` owns the swarm-tending doctrine** (age-skills-audit-fable-l6ic.8): the nudge → restart → stop → converged recovery ladder (the `Surface Selection` recovery order, `Pattern Tiers`, and the Anti-Patterns table incl. the OC-047 boot-race and never-kill-before-a-liveness-proof), the liveness truth stack (`Pre-Flight Checklist`), the **meter-LIES** reading discipline, and the **two-tick** stall rule — trip-wire detail in [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). The companion `using-atm` skill is the **substrate runner** (spawn + dispatch) and holds only **ATM-specific deltas** — its [`tending-loop.md`](../using-atm/references/tending-loop.md) and [`continuity-and-meter.md`](../using-atm/references/continuity-and-meter.md) are the ATM-runner view, not a second source of truth.
+
 ## The Loop (Mandatory)
 
 ```

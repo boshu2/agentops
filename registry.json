@@ -218,7 +218,7 @@
         "path": "skills/scaffold/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "scope",
@@ -257,8 +257,8 @@
         "tier": "execution",
         "path": "skills/using-atm/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 3
       },
       {
         "name": "evolve",
@@ -410,7 +410,7 @@
         "path": "skills/doc/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 11
+        "reference_count": 12
       },
       {
         "name": "goals",
@@ -426,7 +426,7 @@
         "path": "skills/product/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
+        "reference_count": 1
       },
       {
         "name": "release",
@@ -680,6 +680,7 @@
         "bounded_context": "",
         "driven_by_skills": [
           "domain",
+          "evolve",
           "post-mortem"
         ]
       },
@@ -1892,7 +1893,7 @@
       ],
       "drives_commands": [],
       "path": "skills/doc/",
-      "references": 11
+      "references": 12
     },
     {
       "sku": "skill:domain",
@@ -1963,9 +1964,11 @@
       "drives_commands": [
         "ao agent",
         "ao ci recent",
+        "ao compile",
+        "ao flywheel status",
+        "ao gate check",
         "ao goals",
         "ao lookup",
-        "ao metrics cite",
         "ao mine",
         "ao ratchet",
         "ao skills edit digest",
@@ -2430,7 +2433,7 @@
       ],
       "drives_commands": [],
       "path": "skills/product/",
-      "references": 0
+      "references": 1
     },
     {
       "sku": "skill:push",
@@ -2733,7 +2736,7 @@
         "ao goals"
       ],
       "path": "skills/scaffold/",
-      "references": 2
+      "references": 3
     },
     {
       "sku": "skill:scope",
@@ -3050,7 +3053,7 @@
         "ao agent bundle"
       ],
       "path": "skills/using-atm/",
-      "references": 0
+      "references": 3
     },
     {
       "sku": "skill:using-gc",
@@ -3351,6 +3354,7 @@
       "status": "active",
       "driven_by_skills": [
         "domain",
+        "evolve",
         "post-mortem"
       ],
       "flags": [
