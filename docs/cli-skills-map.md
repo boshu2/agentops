@@ -1,5 +1,7 @@
 # CLI ↔ Skills Wiring Map
 
+> **HISTORICAL SNAPSHOT (2026-04)** — predates the 2026-06/07 skill consolidations; names herein (vibe, retro, autodev, flywheel, curate, recover, …) may be retired. Regenerate before trusting.
+
 > Which `ao` commands are called by which skills — and vice versa.
 
 Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 73 generated CLI command headings, 69 source skills. (AgentOps 3.0 is hookless — there is no runtime hook surface; lifecycle work is driven by skills + the `ao` CLI, with the installed local cockpit pre-push gate as routine authority and CI as tag/PR/manual backstop telemetry.)

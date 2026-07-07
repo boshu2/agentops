@@ -28,7 +28,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driving-adapter
 
-- `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees. Triggers: agy, antigravity, agy plugin, AGY evidence.
+- `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, --add-dir scoping. Triggers: agy, antigravity, agy plugin, AGY evidence.
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `converge` — Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — loop and gates live in Go. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
@@ -177,7 +177,7 @@ graph LR
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
 | `goals` | produces | result.json |
-| `handoff` | produces | .agents/research/*.md |
+| `handoff` | produces | .agents/handoff/*.md |
 | `heal-skill` | produces | audit-report.json |
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |

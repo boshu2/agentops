@@ -16,7 +16,7 @@ Run a Claude loop *outside* an interactive Claude Code / Codex session — an An
 
 So an out-of-session agent becomes AgentOps-native by: **(a)** loading AgentOps skills into the Agent definition, **(b)** exposing the `ao` CLI as a callable tool (MCP or shell-tool) so the agent can `ao session bootstrap` / `ao lookup` / `ao validate` itself, and **(c)** running the same deterministic local validation/proof path on its outputs before the work is accepted. The Agent SDK's own hooks become an **optional thin adapter** for teams wanting in-loop interception — never the primary mechanism.
 
-> **Mechanism status (planned, not yet shipped).** This skill is the **doctrine layer** and lands first; the two concrete commands it names — `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd) — are open, ready beads under epic ag-7s9fo, not yet in the live CLI. The `ao session bootstrap` / `ao lookup` / `ao corpus inject` / `ao validate` / `ao goals measure` commands the bundled agent calls are real today. When ag-jspr and ag-higd land, remove this skill's entry from `scripts/skill-body-refs-allowlist.txt`.
+> **Mechanism status (live).** The two concrete commands this skill names — `ao agent bundle` and `ao mcp serve` — are live cobra commands in the `ao` CLI, alongside the `ao session bootstrap` / `ao lookup` / `ao corpus inject` / `ao validate` / `ao goals measure` commands the bundled agent calls.
 
 This is an **extension of two existing skills**, not a rewrite:
 - [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced by deterministic gate surfaces rather than runtime hooks.
@@ -97,4 +97,4 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
 - [eval-outcomes](../validate/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
 - [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `$rpi` skill loops (`ao agent bundle` produces the definition a managed-agents substrate runs)
-- [heal-skill](../heal-skill/SKILL.md) — deep audit mode (absorbed from skill-auditor): audit this skill before declaring stable
+- [heal-skill](../heal-skill/SKILL.md) — deep audit (audit.sh) this skill before declaring stable

@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-07T14:59:10Z",
+  "generated_at": "2026-07-07T16:16:51Z",
   "skill_count": 58,
   "skills": [
     {
@@ -469,7 +469,7 @@
       "user_invocable": false,
       "consumes": [],
       "produces": [
-        ".agents/research/*.md"
+        ".agents/handoff/*.md"
       ],
       "practices": [
         "adr",

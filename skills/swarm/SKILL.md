@@ -343,7 +343,7 @@ Read [references/shared-checkout-discipline.md](references/shared-checkout-disci
 
 Read [references/worktree-isolation.md](references/worktree-isolation.md) when you need to dispatch workers across multiple epics or run waves with overlapping files — covers isolation semantics per backend, effort levels, post-spawn verification, manual worktree creation/routing/merge-back, the Merge Arbiter Protocol, cleanup, and the `--worktrees` / `--no-worktrees` parameters.
 
-**Worktree reaping (teardown).** After a worker's PR is confirmed **MERGED** (`gh pr view --json state` = `MERGED`), reap its tree: `git worktree remove <path> --force` then `git worktree prune`. **Leave unmerged-PR worktrees intact.** Target zero orphaned worktrees — bound the live count to in-flight PRs. (The committed disposition gate scans the tracked file set, not live on-disk worktrees, so this teardown is the operational backstop.)
+**Worktree reaping (teardown).** THIS repo lands by direct push to `main`, so reap on the bead's **commit landing on trunk**, not on PR state. After a worker's slice is confirmed landed — its feat commit is an ancestor of `origin/main` (`git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main`) — the ancestor check is MANDATORY; a CLOSED bead alone is tracker state, never proof of landing — reap its tree: `git worktree remove <path> --force` then `git worktree prune`. **Leave un-landed worktrees intact.** Target zero orphaned worktrees — bound the live count to in-flight beads. (The committed disposition gate scans the tracked file set, not live on-disk worktrees, so this teardown is the operational backstop.) *(External-repo variant: where the land is a PR, gate reaping on `gh pr view --json state` = `MERGED` instead.)*
 
 ---
 

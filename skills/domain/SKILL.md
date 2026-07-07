@@ -58,7 +58,7 @@ structural primitives without operator consent.
 2. Load only the entries relevant to the current work. Do not preload the
    whole corpus — that defeats the JIT purpose.
 3. When applying an entry, cite it: include the entry slug in your output, plan,
-   commit message, or `bd` issue body so future sessions can trace the
+   commit message, or `br` issue body so future sessions can trace the
    reasoning.
 4. When you find a concept missing or misnamed, add a draft entry under
    `references/` and update `INDEX.md`. Promotion from `draft` to `canonical`

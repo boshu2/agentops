@@ -1786,6 +1786,7 @@
         "ao done",
         "ao flywheel close-loop",
         "ao forge transcript",
+        "ao gate check",
         "ao lookup",
         "ao metrics",
         "ao metrics cite",
@@ -2053,7 +2054,7 @@
       "supersedes": null,
       "consumes": [],
       "produces": [
-        ".agents/research/*.md"
+        ".agents/handoff/*.md"
       ],
       "drives_commands": [
         "ao ratchet",
@@ -2457,7 +2458,9 @@
       "produces": [
         "git-changes"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao gate check"
+      ],
       "path": "skills/push/",
       "references": 0
     },

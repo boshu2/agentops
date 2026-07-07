@@ -20,7 +20,7 @@ if [ "${AGENTOPS_CORPUS_FRESHNESS_SKIP:-0}" = "1" ]; then
 fi
 
 if [ ! -d "$SNAPSHOT_DIR" ]; then
-  echo "check-corpus-freshness: SKIP (no snapshot dir at $SNAPSHOT_DIR — run 'ao corpus snapshot' to initialize)"
+  echo "check-corpus-freshness: SKIP (no snapshot dir at $SNAPSHOT_DIR — 'make build-flywheel' restores 'ao corpus snapshot' to initialize)"
   exit 0
 fi
 
@@ -50,7 +50,7 @@ THRESHOLD_SECS=$(( THRESHOLD_DAYS * 86400 ))
 if [ "$AGE_SECS" -gt "$THRESHOLD_SECS" ]; then
   echo "check-corpus-freshness: FAIL — newest snapshot is ${AGE_DAYS}d old (>${THRESHOLD_DAYS}d threshold)"
   echo "  path: $LATEST"
-  echo "  fix:  ao corpus snapshot"
+  echo "  fix:  make build-flywheel to restore 'ao corpus snapshot', or set AGENTOPS_CORPUS_FRESHNESS_SKIP=1"
   exit 1
 fi
 

@@ -231,7 +231,7 @@ Bootstrap complete.
 | Hooks         | optional / activated / skipped / failed |
 | br            | present / recommended (not installed) |
 
-Repo is now AgentOps-ready. Next: /rpi "your first goal"
+Repo is now AgentOps-ready. Next: run the operating loop — /rpi "your first goal"
 ```
 
 ## Examples
