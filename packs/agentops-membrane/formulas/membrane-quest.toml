@@ -39,7 +39,14 @@ required = true
 id = "build"
 title = "Build: {{quest}}"
 type = "task"
-metadata = { "gc.run_target" = "agentops-membrane.builder", "quest" = "{{quest}}" }
+# gc.work_dir="." pins the ralph check's working directory to the CITY ROOT.
+# Without it the check inherits the workflow root's runtime-stamped work_dir —
+# gc's native per-bead worktree (<city>/<attempt-bead-id>) which this formula
+# never uses (the builder works in .worktrees/{{quest}}) — so the dispatcher's
+# chdir fails on the dangling path and the check NEVER RUNS (hello2 canary
+# 2026-07-06: attempt_log action=error "chdir .../ca-utu"). close-gate.sh
+# resolves everything from GC_CITY_PATH and needs no other cwd.
+metadata = { "gc.run_target" = "agentops-membrane.builder", "quest" = "{{quest}}", "gc.work_dir" = "." }
 description = """
 You are builder (see your role card). Quest: **{{quest}}**.
 
