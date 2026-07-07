@@ -114,10 +114,15 @@ type Edge struct {
 	Degraded       bool    `json:"degraded,omitempty"`
 	Rounds         int     `json:"rounds,omitempty"`
 	DurationS      float64 `json:"duration_s,omitempty"`
-	EvidencePath   string  `json:"evidence_path,omitempty"`
-	PrevHash       string  `json:"prev_hash"`
-	PayloadHash    string  `json:"payload_hash"`
-	Hash           string  `json:"hash"`
+	// TokensEst is the verification-economics meter (age-verification-economics-ebec.1):
+	// estimated tokens spent producing this verdict (transcript-bytes/4 when the
+	// harness reports no exact usage). Same additive/omitempty compatibility
+	// contract as the other v1.1 fields — zero omits, pre-meter records unchanged.
+	TokensEst    int    `json:"tokens_est,omitempty"`
+	EvidencePath string `json:"evidence_path,omitempty"`
+	PrevHash     string `json:"prev_hash"`
+	PayloadHash  string `json:"payload_hash"`
+	Hash         string `json:"hash"`
 }
 
 // edgePayload is the hash-input subset of an Edge: every field EXCEPT
@@ -142,6 +147,7 @@ type edgePayload struct {
 	Degraded       bool    `json:"degraded,omitempty"`
 	Rounds         int     `json:"rounds,omitempty"`
 	DurationS      float64 `json:"duration_s,omitempty"`
+	TokensEst      int     `json:"tokens_est,omitempty"`
 	EvidencePath   string  `json:"evidence_path,omitempty"`
 }
 
@@ -230,6 +236,7 @@ func ComputeHashes(e Edge) (payloadHash, hash string, err error) {
 		Degraded:       e.Degraded,
 		Rounds:         e.Rounds,
 		DurationS:      e.DurationS,
+		TokensEst:      e.TokensEst,
 		EvidencePath:   e.EvidencePath,
 	}
 	b, err := json.Marshal(payload)

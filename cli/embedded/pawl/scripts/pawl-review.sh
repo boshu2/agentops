@@ -1098,6 +1098,9 @@ head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 # review target — the guard's job is detecting worktree movement DURING the review;
 # the verdict's commit binding is carried separately in $head.
 export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
+# Meter (ebec.1): review wall-clock starts here; both write sites below pass it
+# via --wall-seconds so every verdict carries cost telemetry.
+_REVIEW_T0="$(date +%s)"
 # age-33nx: the routed warm path (pawl.sh route) binds its own resolved head; export
 # the review target so a walked-back review binds the routed verdict to the SAME
 # change commit the packet was built from.
@@ -1678,6 +1681,7 @@ if [[ "$strict" -eq 1 ]]; then
     --disposition CONFIRMED --head "$head" --mode multi-model \
     --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
     "${_strict_refuter_args[@]}" \
+    --wall-seconds "$(( $(date +%s) - ${_REVIEW_T0:-$(date +%s)} ))" \
     --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: STRICT verdict write failed" >&2; exit 1; }
   if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
     echo "pawl-review: STRICT CONFIRMED — two-family multi-model verdict written + verified for $bead @ ${head:0:12} (families: ${strict_trail}) — ready to push." >&2
@@ -1785,6 +1789,7 @@ fi
   --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
   --refuter "${reviewer_family}:CONFIRMED:${ctx}:${evidence}" \
   ${_degraded_args[@]+"${_degraded_args[@]}"} \
+  --wall-seconds "$(( $(date +%s) - ${_REVIEW_T0:-$(date +%s)} ))" \
   --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: verdict write failed" >&2; exit 1; }
 
 _deg_suffix=""; [[ "$degraded" == true ]] && _deg_suffix=" (DEGRADED fallback — see PAWL-FLOOR above)"

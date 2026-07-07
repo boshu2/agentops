@@ -1012,6 +1012,7 @@ do_write() {
   local bead="${1:-}" pr="${2:-}"; shift 2 || true
   local disposition="" head="" council="" attempt="1" mode="" author_ctx=""
   local difficulty="1" author_family="unknown" domain="" reason="" degraded=""
+  local wall_seconds=""
   local refuters=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -1036,6 +1037,11 @@ do_write() {
       --author-family)  author_family="${2:-}"; shift 2 ;;
       --domain)         domain="${2:-}"; shift 2 ;;
       --reason)         reason="${2:-}"; shift 2 ;;
+      # Verification-economics meter (age-verification-economics-ebec.1): the caller
+      # (pawl-review.sh / pawl.sh route) passes the review wall-clock; tokens are
+      # estimated below from refuter evidence sizes. Optional — absent => no cost
+      # object, byte-identical verdict for legacy callers.
+      --wall-seconds)   wall_seconds="${2:-}"; shift 2 ;;
       *)                echo "pawl-verdict write: unknown flag $1" >&2; return 2 ;;
     esac
   done
@@ -1086,6 +1092,25 @@ do_write() {
     fi
   done
 
+  # Meter (ebec.1): estimate tokens from the refuter evidence transcripts
+  # (bytes/4 — the flagged estimate; exact harness usage is a later slice). Only
+  # attached when the caller passed --wall-seconds; a bad value fails closed.
+  local cost_json=""
+  if [[ -n "$wall_seconds" ]]; then
+    case "$wall_seconds" in
+      ''|*[!0-9.]*) echo "pawl-verdict write: --wall-seconds must be numeric (got '$wall_seconds')" >&2; return 2 ;;
+    esac
+    local tok_total=0 _ev _sz
+    for tok in "${refuters[@]}"; do
+      _ev="${tok##*:}"
+      [[ "$_ev" == /* && -f "$_ev" ]] || continue
+      _sz="$(wc -c < "$_ev" 2>/dev/null | tr -d '[:space:]')" || _sz=0
+      tok_total=$(( tok_total + _sz / 4 ))
+    done
+    cost_json="$(jq -cn --argjson w "$wall_seconds" --argjson t "$tok_total" \
+      '{wall_seconds: $w, tokens_est: $t, estimated: true}')"
+  fi
+
   mkdir -p "$VDIR"
   local out="$VDIR/$bead.json" tmp
   tmp="$(mktemp "$VDIR/.$bead.XXXXXX")"
@@ -1101,6 +1126,7 @@ do_write() {
     --arg mode "$mode" \
     --arg author_ctx "$author_ctx" \
     --arg degraded "$degraded" \
+    --arg cost "$cost_json" \
     '{
        schema_version: "pawl-verdict.v1",
        bead_id: $bead,
@@ -1114,7 +1140,8 @@ do_write() {
      + (if $mode    != "" then {mode: $mode} else {} end)
      + (if $head    != "" then {head_sha: $head} else {} end)
      + (if $council != "" then {council_artifact: $council} else {} end)
-     + (if $degraded != "" then {degraded: ($degraded == "true")} else {} end)' \
+     + (if $degraded != "" then {degraded: ($degraded == "true")} else {} end)
+     + (if $cost != "" then {cost: ($cost | fromjson)} else {} end)' \
     > "$tmp" || { rm -f "$tmp"; die "failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
