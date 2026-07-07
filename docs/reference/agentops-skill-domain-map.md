@@ -60,72 +60,72 @@ Disposition meanings:
 <!-- BEGIN:full-skill-map -->
 | Skill | Domain | Hex role | First disposition | Rationale |
 |---|---|---|---|---|
-| `account-rotation` | BC5 Runtime | supporting | keep | Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill.. |
-| `agent-mail` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `agent-native` | BC5 Runtime | supporting | keep | Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival. |
-| `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
-| `beads-br` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `beads-bv` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `behavior-first-planning` | BC3 Loop | domain | keep | Generative discipline behind the bdd-foundry workflow; extracted so behavior-first planning survives independent of the orchestrator (age-3va.2). |
-| `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
-| `cass` | BC1 Corpus | supporting | keep | Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already).. |
-| `cc-hooks` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `account-rotation` | BC5 Runtime | supporting | update | skills-audit-2026-07-06: UPDATE - false no-caam-skill claim. |
+| `agent-mail` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: highest-used substrate skill; disciplined boundary]. |
+| `agent-native` | BC5 Runtime | supporting | update | skills-audit-2026-07-06: UPDATE - false not-yet-shipped caveat: ao agent bundle + ao mcp serve are live; clear allowlist entry. |
+| `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: current (Gemini 3.5); nit: desc scoped-worktrees vs --add-dir body]. |
+| `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder [reaffirmed skills-audit-2026-07-06: router distinct from builders; dedupe twice-stated spike numbers]. |
+| `beads-br` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: current post-gc carve-out]. |
+| `beads-bv` | BC3 Loop | supporting | update | skills-audit-2026-07-06: UPDATE - examples use stale bd- ids + bare br without BEADS_DIR wrapper. |
+| `behavior-first-planning` | BC3 Loop | domain | keep | Generative discipline behind the bdd-foundry workflow; extracted so behavior-first planning survives independent of the orchestrator (age-3va.2) [reaffirmed skills-audit-2026-07-06: single owner of the Gherkin contract (audit S11)]. |
+| `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape [reaffirmed skills-audit-2026-07-06: stale /rpi next-step line (command removed)]. |
+| `cass` | BC1 Corpus | supporting | keep | Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already). [reaffirmed skills-audit-2026-07-06: tight self-describing primitive]. |
+| `cc-hooks` | BC5 Runtime | supporting | refactor | skills-audit-2026-07-06: REFACTOR - hookless-honest; dedupe doubled Absorbed-skills block. |
+| `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: load-bearing LAW-0 headless path; dense not bloated]. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
-| `converge` | BC5 Runtime | driving-adapter | keep | Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill. |
-| `converter` | BC4 Factory | driven-adapter | keep | Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic).. |
-| `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
-| `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
+| `converge` | BC5 Runtime | driving-adapter | keep | Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill [reaffirmed skills-audit-2026-07-06: clean memo over live ao converge]. |
+| `converter` | BC4 Factory | driven-adapter | keep | Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic). [reaffirmed skills-audit-2026-07-06: distinct format adapter; fix stale vibe comment]. |
+| `council` | BC2 Validation | domain | keep | skills-audit-2026-07-06: KEEP - pre-work decision forum the pawl does not replace. |
+| `crank` | BC3 Loop | domain | update | skills-audit-2026-07-06: UPDATE - retired PR-merge loop section -> push-to-main + pawl. |
 | `curate` | BC1 Corpus | supporting | keep | Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
-| `dcg` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `discovery` | BC3 Loop | domain | update | Creates execution packets; add explicit loop-shape SELF-TEST. |
-| `doc` | BC4 Factory | supporting | update | Documentation factory adapter; keep tied to doc-release gates. |
-| `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
-| `eval-outcomes` | BC2 Validation | supporting | keep | Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar. |
-| `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift).. |
-| `flywheel` | BC1 Corpus | domain | update | Flywheel health kernel; needs productized self-test. |
-| `gc-membrane` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc.. |
-| `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
-| `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes. |
-| `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
-| `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
-| `ms` | BC1 Corpus | supporting | keep | Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass.. |
-| `ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `operationalize` | BC1 Corpus | domain | keep | Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam.. |
-| `perf` | BC3 Loop | domain | update | Performance profile-and-optimize loop; re-binned BC2→BC3 (ag-j3ge0 — drives optimization work inside the loop, not a fitness gate). |
-| `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
-| `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
-| `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
-| `pre-land-refuters` | BC2 Validation | driving-adapter | keep | Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses.. |
-| `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
-| `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
-| `push` | BC5 Runtime | driving-adapter | update | Git adapter; add branch/worktree disposition self-test. |
-| `rch` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `reality-check` | BC2 Validation | domain | keep | Seams epic ag-xwjlc: mid-epic drift audit (code vs claimed vision); complements status/validate/post-mortem.. |
-| `recover` | BC1 Corpus | driving-adapter | refactor | Session recovery is valuable but currently structurally heavy. |
-| `red-team` | BC2 Validation | supporting | update | Probe generator; add severity/evidence contract. |
-| `refactor` | BC3 Loop | supporting | update | Refactor generator; loop-side change execution (re-binned BC2→BC3, ag-j3ge0 — produces code changes inside the operating loop, not a validation gate). |
-| `release` | BC2 Validation | supporting | update | Release gate driver; keep tied to local CI and evidence export. |
-| `research` | BC1 Corpus | driving-adapter | update | Knowledge acquisition entrypoint; add source/citation self-test. |
-| `reverse-engineer` | BC1 Corpus | supporting | keep | External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline.. |
-| `review` | BC2 Validation | driving-adapter | update | Human-facing review gate; align to validator output contract. |
-| `rpi` | BC3 Loop | domain | refactor | Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper). |
-| `sbh` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `scaffold` | BC4 Factory | supporting | update | Code/artifact scaffolder; add non-goal and validation examples. |
-| `scope` | BC5 Runtime | driven-adapter | keep | Runtime filesystem gate; hard boundary skill. |
-| `security` | BC2 Validation | driven-adapter | keep | Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07). |
-| `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
-| `skill-builder` | BC4 Factory | supporting | update | Builder should scaffold SELF-TEST and domain metadata by default. |
-| `standards` | BC4 Factory | domain | keep | Current pilot upgraded with SELF-TEST; continue incremental patches. |
-| `status` | BC3 Loop | driving-adapter | update | Operator state surface; should show loop/domain/evidence status. |
-| `swarm` | BC6 Orchestration | supporting | update | Multi-agent runtime adapter; align with conflict-free wave rules. |
-| `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
-| `toil-mining` | BC1 Corpus | supporting | keep | Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder.. |
-| `using-atm` | BC6 Orchestration | supporting | keep | Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
-| `using-gc` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface.. |
-| `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
-| `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder. |
+| `dcg` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: honest safety host-tool]. |
+| `discovery` | BC3 Loop | domain | keep | skills-audit-2026-07-06: KEEP - top-used spine entry; cross-link behavior-first-planning. |
+| `doc` | BC4 Factory | supporting | refactor | skills-audit-2026-07-06: REFACTOR - default mode frontier-trivial; value is readme/oss reference-led modes. |
+| `domain` | BC4 Factory | domain | update | skills-audit-2026-07-06: UPDATE - bd->br in How-to-use. |
+| `eval-outcomes` | BC2 Validation | supporting | cut-review | skills-audit-2026-07-06: CUT-REVIEW - stub; validate scenario target + ao eval scenario cover it. |
+| `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift). [reaffirmed skills-audit-2026-07-06: ~40pct retired procedure (PR-merge/autodev/hooks); align compounding claims to ADR-0004/0011]. |
+| `flywheel` | BC1 Corpus | domain | cut-review | skills-audit-2026-07-06: CUT-REVIEW - thin wrapper over ao flywheel status; monitor not miner. |
+| `gc-membrane` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc. [reaffirmed skills-audit-2026-07-06: current close-door reference]. |
+| `goals` | BC3 Loop | domain | update | skills-audit-2026-07-06: UPDATE - GOALS.yaml-first lead inverted from canonical GOALS.md v4. |
+| `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes [reaffirmed skills-audit-2026-07-06: frontmatter produces wrong; handoff/handoffs path split]. |
+| `heal-skill` | BC4 Factory | supporting | keep | skills-audit-2026-07-06: KEEP - corpus-wide hygiene pass; not a builder mode. |
+| `implement` | BC3 Loop | driving-adapter | keep | skills-audit-2026-07-06: KEEP - model references-led shape; Move-4 owner. |
+| `ms` | BC1 Corpus | supporting | keep | Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass. [reaffirmed skills-audit-2026-07-06: honest and current; documents its own footguns]. |
+| `ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: model progressive-disclosure; single owner of tending doctrine]. |
+| `operationalize` | BC1 Corpus | domain | refactor | skills-audit-2026-07-06: REFACTOR - distinct route-to-enforcement lane; cut demoted-flywheel prose. |
+| `perf` | BC3 Loop | domain | cut-review | skills-audit-2026-07-06: CUT-REVIEW - ~90pct frontier-generic, zero repo bindings, 0 use; jsm skills cover. |
+| `plan` | BC3 Loop | domain | refactor | skills-audit-2026-07-06: REFACTOR - largest loop skill; dedupe Gherkin contract (owner: behavior-first-planning) + wave lore. |
+| `post-mortem` | BC3 Loop | domain | keep | skills-audit-2026-07-06: KEEP - move-7 anchor; absorbs curate mining half at the retire wave. |
+| `pr-prep` | BC5 Runtime | driving-adapter | keep | skills-audit-2026-07-06: KEEP - scoped to external repos; unaffected by in-repo PR retirement. |
+| `pre-land-refuters` | BC2 Validation | driving-adapter | keep | Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses. [reaffirmed skills-audit-2026-07-06: THE live pawl-path memo; excise vestigial PR-binding section]. |
+| `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test [reaffirmed skills-audit-2026-07-06: dead hook-enforcement mandates (hookless 3.0); dedupe vs validate]. |
+| `product` | BC3 Loop | domain | refactor | skills-audit-2026-07-06: REFACTOR - collapse nine-framework name-drop table to a reference. |
+| `push` | BC5 Runtime | driving-adapter | update | Git adapter; add branch/worktree disposition self-test [reaffirmed skills-audit-2026-07-06: wire ao gate check --fast --scope head + pawl-land as THE ship path]. |
+| `rch` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: best-in-class wrapper; refuses --help duplication]. |
+| `reality-check` | BC2 Validation | domain | cut-review | skills-audit-2026-07-06: CUT-REVIEW - good but unreachable: user-invocable false, 0 use; promote-or-fold decision. |
+| `recover` | BC1 Corpus | driving-adapter | merge-review | skills-audit-2026-07-06: MERGE-REVIEW - merge into status as post-compaction mode; keep trigger surface. |
+| `red-team` | BC2 Validation | supporting | cut-review | skills-audit-2026-07-06: CUT-REVIEW - 1KB stub to mt-olympus; validate --debate absorbs. |
+| `refactor` | BC3 Loop | supporting | keep | skills-audit-2026-07-06: KEEP - fix .agentscomplexity artifact-path typo. |
+| `release` | BC2 Validation | supporting | keep | skills-audit-2026-07-06: KEEP - references-led exemplar. |
+| `research` | BC1 Corpus | driving-adapter | refactor | skills-audit-2026-07-06: REFACTOR - workhorse; dedupe references vs shared twins. |
+| `reverse-engineer` | BC1 Corpus | supporting | keep | External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline. [reaffirmed skills-audit-2026-07-06: 47 refs are a tested teardown engine: depth-as-tooling]. |
+| `review` | BC2 Validation | driving-adapter | merge-review | skills-audit-2026-07-06: MERGE-REVIEW - merge into validate (declared absorption); bd-stale; ~0 use. |
+| `rpi` | BC3 Loop | domain | refactor | Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper) [reaffirmed skills-audit-2026-07-06: demote framing to one-turn executor; dedupe pawl/replan prose vs crank+pawls.md]. |
+| `sbh` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability. [reaffirmed skills-audit-2026-07-06: compact task-organized cheat-sheet]. |
+| `scaffold` | BC4 Factory | supporting | refactor | skills-audit-2026-07-06: REFACTOR - ~85pct generic templates; keep the domain-slice binding. |
+| `scope` | BC5 Runtime | driven-adapter | cut-review | skills-audit-2026-07-06: CUT-REVIEW - enforcement premise inert: promised PreToolUse hook absent; promote-or-retire decision. |
+| `security` | BC2 Validation | driven-adapter | keep | Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07) [reaffirmed skills-audit-2026-07-06: script-backed distinct product domain]. |
+| `shared` | BC4 Factory | domain | update | skills-audit-2026-07-06: UPDATE - bd->br in CLI fallback rows. |
+| `skill-builder` | BC4 Factory | supporting | keep | skills-audit-2026-07-06: KEEP - core meta-skill; invokes converter+heal as real gates. |
+| `standards` | BC4 Factory | domain | update | skills-audit-2026-07-06: UPDATE - index routes to retired vibe (20x, dead paths); content gold, wrapper stale. |
+| `status` | BC3 Loop | driving-adapter | update | Operator state surface; should show loop/domain/evidence status [reaffirmed skills-audit-2026-07-06: duplicate /validate QUICK-COMMANDS line; becomes the one session surface]. |
+| `swarm` | BC6 Orchestration | supporting | refactor | skills-audit-2026-07-06: REFACTOR - dedupe wave-validity lore; excise PR-reaping debris. |
+| `test` | BC2 Validation | supporting | keep | skills-audit-2026-07-06: KEEP - standalone value beyond implement (coverage/strategy/harnesses). |
+| `toil-mining` | BC1 Corpus | supporting | keep | Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder. [reaffirmed skills-audit-2026-07-06: cleanest of cluster; LAW-0-aware feeder]. |
+| `using-atm` | BC6 Orchestration | supporting | refactor | skills-audit-2026-07-06: REFACTOR - 432 lines with 0 reference files; extract meter-LIES/continuity/tmux to references/. |
+| `using-gc` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface. [reaffirmed skills-audit-2026-07-06: fresh four-jobs JIT split]. |
+| `validate` | BC2 Validation | driving-adapter | update | skills-audit-2026-07-06: UPDATE - strip rpi/PR-mode/dead judge-orchestration; align close path to pawl scripts; resolve Replaces claims. |
+| `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder [reaffirmed skills-audit-2026-07-06: thin distinct Workflow scaffold]. |
 <!-- END:full-skill-map -->
 
 ## Priority Queue
