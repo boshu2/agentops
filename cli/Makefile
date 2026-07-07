@@ -31,7 +31,7 @@ sync-hooks:
 	@mkdir -p embedded/pawl/scripts embedded/pawl/scripts/lib embedded/pawl/schemas embedded/pawl/hooks
 	@cp ../scripts/pawl-review.sh ../scripts/pawl-verdict.sh ../scripts/pawl.sh embedded/pawl/scripts/
 	@cp ../scripts/gen-membrane-receipts.sh ../scripts/check-membrane-receipts-freshness.sh embedded/pawl/scripts/
-	@cp ../scripts/lib/codex-exec.sh ../scripts/lib/verify-config.sh ../scripts/lib/diff-identity.sh embedded/pawl/scripts/lib/
+	@cp ../scripts/lib/codex-exec.sh ../scripts/lib/verify-config.sh ../scripts/lib/diff-identity.sh ../scripts/lib/pawl-preflight.sh embedded/pawl/scripts/lib/
 	@cp ../schemas/pawl-verdict.v1.schema.json embedded/pawl/schemas/
 	@cp ../scripts/hooks/pre-push-verify.template embedded/pawl/hooks/pre-push-verify.template
 
