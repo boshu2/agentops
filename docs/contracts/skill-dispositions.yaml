@@ -331,6 +331,44 @@ historical:
     merged-into:  curate
     date:         2026-07-02
     rationale:    "Retired via ao skills retire: merged into curate."
+  red-team:
+    state:        cut
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: cut."
+  eval-outcomes:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: merged into validate."
+  perf:
+    state:        cut
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: cut."
+  flywheel:
+    state:        merged-into
+    merged-into:  post-mortem
+    date:         2026-07-07
+    rationale:    "Retire wave (skills-audit-2026-07-06, l6ic.12): user surface absorbed by post-mortem's mining section; mechanical surface is `ao flywheel status`. merged-into (not cut) keeps the inbound ratchet -> flywheel redirect chain resolvable."
+  compile:
+    state:        merged-into
+    merged-into:  post-mortem
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: merged into post-mortem."
+  curate:
+    state:        merged-into
+    merged-into:  post-mortem
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: merged into post-mortem."
+  review:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: merged into validate."
+  recover:
+    state:        merged-into
+    merged-into:  status
+    date:         2026-07-07
+    rationale:    "Retired via ao skills retire: merged into status."
 workflows:
   ship-beads:
     kind:            workflow
@@ -402,18 +440,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "First-run factory entrypoint; needs current 3.0/domain packet shape"
-  - skill:            compile
-    domain:           "BC1 Corpus"
-    hexagonal_role:   supporting
-    disposition:      refactor
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/compile/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Corpus compiler is core; align read/write flows to Corpus ports"
   - skill:            converge
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
@@ -462,18 +488,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Wave executor; align with vertical-slice and conflict-free wave contract"
-  - skill:            curate
-    domain:           "BC1 Corpus"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/curate/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
   - skill:            discovery
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -522,18 +536,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift)."
-  - skill:            flywheel
-    domain:           "BC1 Corpus"
-    hexagonal_role:   domain
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/flywheel/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Flywheel health kernel; needs productized self-test"
   - skill:            goals
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -582,18 +584,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Slice executor; enforce first-failing-test language"
-  - skill:            perf
-    domain:           "BC3 Loop"
-    hexagonal_role:   domain
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/perf/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Performance profile-and-optimize loop; re-binned BC2→BC3 (ag-j3ge0 — drives optimization work inside the loop, not a fitness gate)"
   - skill:            plan
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -666,30 +656,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Git adapter; add branch/worktree disposition self-test"
-  - skill:            recover
-    domain:           "BC1 Corpus"
-    hexagonal_role:   driving-adapter
-    disposition:      refactor
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: corpus
-    path:             skills/recover/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Session recovery is valuable but currently structurally heavy"
-  - skill:            red-team
-    domain:           "BC2 Validation"
-    hexagonal_role:   supporting
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/red-team/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Probe generator; add severity/evidence contract"
   - skill:            refactor
     domain:           "BC3 Loop"
     hexagonal_role:   supporting
@@ -738,18 +704,6 @@ dispositions:
     aliases:          [reverse-engineer-rpi]
     supersedes:       reverse-engineer-rpi
     rationale:        "External-system teardown -> steal-map (have/gap/steal/park/reject) -> route one-way doors to /discovery. Revived + renamed from reverse-engineer-rpi (cut ag-s43tg S24), upgraded with the steal-map discipline."
-  - skill:            review
-    domain:           "BC2 Validation"
-    hexagonal_role:   driving-adapter
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/review/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Human-facing review gate; align to validator output contract"
   - skill:            rpi
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -906,18 +860,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:            eval-outcomes
-    domain:           "BC2 Validation"
-    hexagonal_role:   supporting
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/eval-outcomes/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"
   - skill:            agent-native
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting

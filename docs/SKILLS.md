@@ -25,7 +25,7 @@ What are you trying to do?
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   ├─ Independent judges ────────► /council validate recent
-│   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
+│   ├─ Adversarially probe it ────► /validate --debate
 │   ├─ Landing 100+ files? ───────► /pre-land-refuters
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
@@ -52,7 +52,7 @@ What are you trying to do?
 │
 ├─ "Fix a bug"
 │   ├─ Already scoped? ────────────► /implement <issue-id>
-│   └─ Need to investigate? ───────► /review (bug-hunt mode)
+│   └─ Need to investigate? ───────► /validate --mode=pr
 │
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /research
@@ -77,10 +77,10 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Compile knowledge ─────────► /curate --mode=forge or /compile
+│   ├─ Compile knowledge ─────────► /post-mortem  or  ao compile
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
-│   └─ Recover after compaction ──► /recover
+│   └─ Recover after compaction ──► /status --recover
 │
 └─ "First time here" ────────────► ao session bootstrap → /status
 ```
@@ -104,6 +104,8 @@ should feed the knowledge flywheel.
 ```
 
 **Use when:** The work is ready for final review, closeout, and learning capture.
+
+**Absorbed (retired 2026-07-07, folded here):** `/review` → `/validate --mode=pr` (diff/PR review); `/red-team` → `/validate --debate` (adversarial); `/eval-outcomes` → `/validate --mode=pre-impl --target=scenario` (CLI: `ao eval scenario`).
 
 ### /validate --mode=post-impl (absorbs /vibe)
 
@@ -134,22 +136,6 @@ Simulate failures before implementing. Includes error/rescue mapping (tabular ri
 
 **Output:** Failure modes, error/rescue maps, predictions with IDs, mitigation strategies, spec improvements
 
-### /review (absorbs /bug-hunt)
-
-Root cause analysis with git archaeology.
-
-```bash
-/review "login fails after password reset"
-```
-
-### /red-team
-
-Persona-based adversarial validation — probe a doc, skill, plan, or claim from constrained user perspectives for weaknesses, gaps, and unstated assumptions before it ships.
-
-```bash
-/red-team skills/council
-```
-
 ### /converge
 
 Drive a fix → re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop and gates live in Go.
@@ -168,7 +154,7 @@ Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measurin
 
 ### /security
 
-Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates — plus the composable binary/prompt-surface suite (offline red-team, policy gating).
+Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates — plus the composable binary/prompt-surface suite (offline redteam, policy gating).
 
 ```bash
 /security audit
@@ -207,6 +193,8 @@ Single-screen dashboard of project state.
 ```bash
 /status
 ```
+
+**Absorbed (retired 2026-07-07, folded here):** `/recover` → `/status --recover` (post-compaction recovery; deep playbook at `skills/status/references/recovery-playbook.md`).
 
 ### /handoff
 
@@ -334,8 +322,8 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 ### Knowledge queries (no slash command)
 
 Query knowledge artifacts across locations via the CLI. There is no standalone
-knowledge skill — use `/operationalize`, `/curate`, and `/compile` for
-corpus promotion, or run the CLI below for ad-hoc lookup.
+knowledge skill — use `/operationalize` and `/post-mortem` (with the `ao compile`
+CLI) for corpus promotion, or run the CLI below for ad-hoc lookup.
 
 ```bash
 ao lookup "patterns for rate limiting"
@@ -399,18 +387,10 @@ Interactive onboarding — mini RPI cycle for new users.
 Retirement pointer. The in-tree out-of-session compounding engine was removed
 (soc-2rtm0); scheduled, between-session knowledge compounding now runs via an
 adopted substrate, and AgentOps ships no out-of-session runner of its own.
-In-session knowledge primitives stay on-demand: `/curate`, `/compile`, and
-`ao lookup`. Daytime code compounding is `/evolve` via `/rpi`.
+In-session knowledge primitives stay on-demand: `/post-mortem`, the `ao compile`
+CLI, and `ao lookup`. Daytime code compounding is `/evolve` via `/rpi`.
 
 **Output:** none — this skill no longer drives an in-repo command.
-
-### /recover (absorbs /trace)
-
-Trace design decisions through knowledge artifacts.
-
-```bash
-/recover "why did we choose Redis?"
-```
 
 ### Knowledge operationalization
 
@@ -419,14 +399,6 @@ Operationalize a mature `.agents` corpus into reusable belief, playbook, briefin
 ```bash
 ao knowledge activate --goal "productize knowledge activation"
 ao knowledge gaps
-```
-
-### /recover
-
-Post-compaction context recovery. Detects in-progress RPI and evolve sessions, loads knowledge, shows recent work and pending tasks.
-
-```bash
-/recover                     # Recover context after compaction
 ```
 
 ### /evolve
@@ -490,18 +462,13 @@ phases, and flags.
 | Skill | Purpose |
 |-------|---------|
 | `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
-| `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
 | `/security` (absorbs deps) | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/product` | Maintain `PRODUCT.md` so validation and planning share the same product contract |
 | `/discovery` | Full discovery-phase orchestrator (ideation + search + research + plan + pre-mortem) |
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
-| `/perf` | Performance profiling, benchmarking, regression detection, optimization |
 | `/push` | Atomic test-commit-push with conventional-commit message |
-| `/red-team` | Persona-based adversarial validation — probes whether docs/skills actually work |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
-| `/review` | Structured review of incoming PRs, agent-generated changes, or diffs |
 | `/scaffold` | Project scaffolding, component generation, boilerplate |
-| `/eval-outcomes` (absorbs scenario) | Author/manage holdout scenarios in `.agents/holdout/` for behavioral validation |
 | `/test` | Test generation, coverage analysis, TDD workflow |
 
 ---
@@ -513,8 +480,6 @@ user-facing entry points:
 
 | Skill | Purpose |
 |-------|---------|
-| `curate` | Canonical unified miner — transcripts, `.agents/`, tracker, git (absorbs forge) |
-| `flywheel` | Knowledge health monitoring |
 | `standards` | Language-specific coding standards (auto-loaded by /validate, /implement) |
 | `shared` | Shared reference documents for multi-agent backends |
 | `beads-br` | Issue tracking reference (local-first beads_rust tracker) |

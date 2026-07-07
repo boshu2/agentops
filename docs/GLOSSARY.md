@@ -66,7 +66,7 @@ A long-haul autonomous run that executes while you are away, emitting morning wo
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
 
 ### Extract
-An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/curate/SKILL.md)
+An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/post-mortem/SKILL.md)
 
 ## F
 
@@ -80,7 +80,7 @@ The automated loop that extracts learnings from completed work, scores them for 
 A composite measure of whether the knowledge flywheel is actually compounding: retrieval rate, promotion rate, decay rate, and injection hit rate. Surfaced by `ao flywheel` commands and used by `/evolve` to steer improvements.
 
 ### Forge
-Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/curate/SKILL.md)
+Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/post-mortem/SKILL.md)
 
 ## G
 
@@ -144,7 +144,7 @@ A documentation grouping for domain-specific workflows and standards. Profiles o
 The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern-fresh-context-every-wave)
 
 ### Ratchet
-A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and the gate / pawl enforces it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/flywheel/SKILL.md)
+A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and the gate / pawl enforces it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/post-mortem/SKILL.md)
 
 ### Research
 The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](../skills/research/SKILL.md)
@@ -164,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
-A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 66 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
+A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 58 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
 A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](../skills/swarm/SKILL.md)

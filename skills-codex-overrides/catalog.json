@@ -101,12 +101,6 @@
       "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
     },
     {
-      "name": "compile",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-    },
-    {
       "name": "converge",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -129,12 +123,6 @@
       "treatment": "bespoke",
       "wave": "backbone",
       "reason": "Hands-free execution depends on Codex-native agent control, progress reporting, and scope discipline."
-    },
-    {
-      "name": "curate",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "dcg",
@@ -171,22 +159,10 @@
       "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
     },
     {
-      "name": "eval-outcomes",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for eval-outcomes"
-    },
-    {
       "name": "evolve",
       "treatment": "bespoke",
       "wave": "backbone",
       "reason": "The always-on improvement loop needs explicit Codex operating semantics around queues, generators, and persistence."
-    },
-    {
-      "name": "flywheel",
-      "treatment": "excluded",
-      "wave": "catalog-parity",
-      "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
     },
     {
       "name": "goals",
@@ -261,12 +237,6 @@
       "treatment": "excluded",
       "wave": "catalog-parity",
       "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-    },
-    {
-      "name": "perf",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "plan",
@@ -362,32 +332,6 @@
       "reason": "seams epic ag-xwjlc parity twin"
     },
     {
-      "name": "recover",
-      "treatment": "bespoke",
-      "wave": "core-execution",
-      "reason": "Context recovery is runtime-sensitive and needs Codex-specific evidence ordering and resume output.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Treat `skills/recover/SKILL.md` as the canonical recovery contract and `skills-codex/recover/SKILL.md` as the Codex-facing artifact.",
-          "Rebuild state from files, issues, generated artifacts, and git state before trusting chat memory.",
-          "Return recovery output in this order: `Resume Target`, `Evidence`, `Gaps or Conflicts`, `Next Step`.",
-          "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
-          "Make the `Next Step` directly executable by the current Codex session."
-        ]
-      }
-    },
-    {
-      "name": "red-team",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New adversarial validation skill; converter parity is acceptable."
-    },
-    {
       "name": "refactor",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -430,12 +374,6 @@
           "Keep backend fallback logic explicit: codex sub-agents, then background-task-fallback, then inline."
         ]
       }
-    },
-    {
-      "name": "review",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "rpi",

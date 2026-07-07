@@ -6,7 +6,7 @@ PLUGIN_DIR="$REPO_ROOT/.agy-plugin"
 
 # Operator-core set, resolved through the skill-consolidation ledger
 # (2026-07-04 refresh, age-085q): cass-memory/casr -> cass, caam ->
-# account-rotation, ubs -> review, planning-workflow -> plan,
+# account-rotation, ubs -> validate (review retired 2026-07-07), planning-workflow -> plan,
 # multi-model-triangulation -> council.
 core_skills=(
   agent-mail
@@ -16,7 +16,6 @@ core_skills=(
   cass
   dcg
   account-rotation
-  review
   plan
   council
   rch

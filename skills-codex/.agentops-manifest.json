@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "e8e897d29f973e92266652f8afa575de82128052d891a9165548cd99ff8a49cd",
+  "codex_override_catalog_hash": "35338f8e4830adb863dae613a6602b9e70447493c9764a4a204008d6cf11cc2f",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -33,12 +33,6 @@
       }
     ],
     "skills": [
-      {
-        "name": "compile",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-      },
       {
         "name": "autodev",
         "treatment": "parity_only",
@@ -111,12 +105,6 @@
         "treatment": "bespoke",
         "wave": "backbone",
         "reason": "The always-on improvement loop needs explicit Codex operating semantics around queues, generators, and persistence."
-      },
-      {
-        "name": "flywheel",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "forge",
@@ -268,32 +256,6 @@
         }
       },
       {
-        "name": "red-team",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New adversarial validation skill; converter parity is acceptable."
-      },
-      {
-        "name": "recover",
-        "treatment": "bespoke",
-        "wave": "core-execution",
-        "reason": "Context recovery is runtime-sensitive and needs Codex-specific evidence ordering and resume output.",
-        "operator_contract_required": true,
-        "operator_contract": {
-          "required_sections": [
-            "## Codex Execution Profile",
-            "## Guardrails"
-          ],
-          "required_markers": [
-            "Treat `skills/recover/SKILL.md` as the canonical recovery contract and `skills-codex/recover/SKILL.md` as the Codex-facing artifact.",
-            "Rebuild state from files, issues, generated artifacts, and git state before trusting chat memory.",
-            "Return recovery output in this order: `Resume Target`, `Evidence`, `Gaps or Conflicts`, `Next Step`.",
-            "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
-            "Make the `Next Step` directly executable by the current Codex session."
-          ]
-        }
-      },
-      {
         "name": "release",
         "treatment": "bespoke",
         "wave": "core-execution",
@@ -432,19 +394,7 @@
         "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
       },
       {
-        "name": "perf",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New lifecycle skill; converter parity is acceptable."
-      },
-      {
         "name": "refactor",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New lifecycle skill; converter parity is acceptable."
-      },
-      {
-        "name": "review",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "New lifecycle skill; converter parity is acceptable."
@@ -474,12 +424,6 @@
         "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
       },
       {
-        "name": "curate",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-      },
-      {
         "name": "validate",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -496,12 +440,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
-      },
-      {
-        "name": "eval-outcomes",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for eval-outcomes"
       },
       {
         "name": "agent-native",
@@ -1074,7 +1012,7 @@
       "name": "agent-native",
       "source_skill": "skills/agent-native",
       "source_hash": "5e60d4ffe006099bbe8da5cbf567346cf414ddb3d92c19c7bcb5c53799111e66",
-      "generated_hash": "87f84315cf4d69ed77a5abdc64c884feef940631c52a1843316b7c87668e179f"
+      "generated_hash": "78705d096c0c7d1e6a987abe3aa6c24fbfe3dc17562923200f879ad4ca86a84b"
     },
     {
       "name": "agy-native",
@@ -1179,16 +1117,10 @@
       "generated_hash": "d6ad2fa952d0010abe945fa20959a0cdcbd01dd925fa6b5e29e553a11e5f9a7d"
     },
     {
-      "name": "eval-outcomes",
-      "source_skill": "skills/eval-outcomes",
-      "source_hash": "80aa0ce9cd42ee0b7d6fb880cbf7224b8c34869c973c933a284cfd88c467b411",
-      "generated_hash": "767b467183040969b58b8ed170dd87b25bb4c5cbc478f12087478e529b4af775"
-    },
-    {
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "7d97e20b37fb6950c618cbeabfc3d32bf0ec6793207bcc74098ca7ed2f953adf"
+      "generated_hash": "70b32e1760467bf3206312ca0d131f1e38da755a175b6253a4f35002fbefd649"
     },
     {
       "name": "goals",
@@ -1206,7 +1138,7 @@
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
       "source_hash": "608c1b2524020793eab05138dd606a5facca8a736493305b71036202f5063efe",
-      "generated_hash": "5e049b9a0afc78d5d33ac0d9bc067d5d7ba36844d2f8aa79c6ab3129365504a9"
+      "generated_hash": "732f19c52b62d1a42c968e9eaefb6fa89bb58490136915b009f5729925eacf95"
     },
     {
       "name": "implement",
@@ -1221,12 +1153,6 @@
       "generated_hash": "a4a99c9463d3785ffb9584aa90c1d62e0359596cfc8495b228b08d3a2df1d075"
     },
     {
-      "name": "perf",
-      "source_skill": "skills/perf",
-      "source_hash": "55e41affbb4cc7ecfc0c37914919ca8a2df909f2ffb630892080a43062f9d500",
-      "generated_hash": "32295d7493c671fcd0d180d0e7bd67b91acea649125f2fb7c48584613911fcb1"
-    },
-    {
       "name": "plan",
       "source_skill": "skills/plan",
       "source_hash": "233f59f2ab14f00efe09ca7efa2f6d41621eb110541e76e6311281d00c90a592",
@@ -1236,7 +1162,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "c2183ff53b7de5a800af0febf3fb343320de42f69ce4f068ae1829568ed2b047",
-      "generated_hash": "94e662e6aff95498509ed7cee5045271adb1790abd7c2860d00abed6b7f91671"
+      "generated_hash": "ae7df2e53439d1839e4270665f18cb507f7bbe42c21974e42ac79ac0f2aff3cb"
     },
     {
       "name": "pr-prep",
@@ -1247,8 +1173,8 @@
     {
       "name": "pre-land-refuters",
       "source_skill": "skills/pre-land-refuters",
-      "source_hash": "04890ffb5fafc952dca666b1c477bd358536f6e577c1cc1fbcad11068da011e2",
-      "generated_hash": "91074a34561f613d01188d700c9cec35fc72741a4f63a8f4145eab1fc7b2bb3d"
+      "source_hash": "88bd5d634b44663a3ad2d7094cdb17543d72acc93d4b075919585837017d019c",
+      "generated_hash": "4aaff5256f78833b2005e7066a6969f62b60262ab12a656e55b6fcedadf3e605"
     },
     {
       "name": "pre-mortem",
@@ -1278,19 +1204,7 @@
       "name": "reality-check",
       "source_skill": "skills/reality-check",
       "source_hash": "a824052d17d4dd810add88606519471daf7e0acfca233b6a9d36ac3a6bc9e2e4",
-      "generated_hash": "f69ca59bb5376d68ad9b114c1cc34fb3ca0993f8fbf65df7a5001c27079f7561"
-    },
-    {
-      "name": "recover",
-      "source_skill": "skills/recover",
-      "source_hash": "146eebcef979859213aeebefd86f98d6fcc83c2cee677329ed323a2610e64a5c",
-      "generated_hash": "cd821e10de25d1f18cb933ab0c17f653c5e0535821cf1e25211b7aafb6c4fdd4"
-    },
-    {
-      "name": "red-team",
-      "source_skill": "skills/red-team",
-      "source_hash": "187038637929921fa21fa3f1e4afb293a1f93430a2d371971abaeff8c2a6f36c",
-      "generated_hash": "81c87508784c708a89901870fa361b5be0b529fc637169f169d4c4f11548cc12"
+      "generated_hash": "c7b3401ccfa4ee8f587a5e2b597316d2dda27765cd978ef97e531d236ad20f6a"
     },
     {
       "name": "refactor",
@@ -1315,12 +1229,6 @@
       "source_skill": "skills/reverse-engineer",
       "source_hash": "82a6bddd22472088bcb742a58853964b664f6af15df57886759c36043286366a",
       "generated_hash": "b89bb1b63a94fe03780a50f099675698b47338c4932d29269af24504378fbf70"
-    },
-    {
-      "name": "review",
-      "source_skill": "skills/review",
-      "source_hash": "cd6544c7443accfd36908fd1673b8cfc78c6572da2fb32eba1e9b074830eceff",
-      "generated_hash": "d00b4fa66bff517ab7dc462ec708e88f925e7acc61e4c113f7d64c486684cf88"
     },
     {
       "name": "rpi",
@@ -1362,7 +1270,7 @@
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
       "source_hash": "81185f0904aea0397ef2c305d9dcec882b7b2a866434dd6eebf8108cd4e0d701",
-      "generated_hash": "0085b1ccce90c524f4fd2f77868a1a8d686d53de7b05871f9863272722a6cf87"
+      "generated_hash": "b4a52959403adec99a88dea7405466f5a6c262091584301cf2d9e0df03d715a7"
     },
     {
       "name": "standards",
@@ -1373,8 +1281,8 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "ee0f37c22b71910285b525612d37848510a46ed5ca87f2e0ace84730fdfa487a",
-      "generated_hash": "ebffe4f1282c7e2e3083df17ae0a61c4a59f8d53b7b139da3ed358839dfbcb83"
+      "source_hash": "bebad53e69077e43dc6d742c7e6faf7883f9db32033080de71b071c6d3ad5625",
+      "generated_hash": "0b5d4976e83e3e4078c42623bd17c609c7880a01f3818ea530a4ef40625cb1f7"
     },
     {
       "name": "swarm",
@@ -1398,13 +1306,13 @@
       "name": "using-atm",
       "source_skill": "skills/using-atm",
       "source_hash": "2b0f10df0a24ef6151196dfdd84e52924be75e61b7e97dcce36127f199a80dc1",
-      "generated_hash": "00dcf0def6666b9d4f76deb4e9ae68c8362ec5ba916b73deed426de464919e2b"
+      "generated_hash": "4f605684d45f8f8a5649470e85bc4a3e96c046d9bf979dec1543dc61b2db8577"
     },
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "39827cd05efaaa5333750c753ca6d2893394d95019eb736f1f036aa4915740b1",
-      "generated_hash": "40f0ae7fa939f613dc4c51c198e336ce531a95edd8669f06f8e2fb871eff7c21"
+      "source_hash": "cf639eb4e00ba9fd5dc9d674f8d429a9dd42550d2c201c8b74291d7b59765868",
+      "generated_hash": "821134b739c0dc2f0acb0cdf86ccc5bb6fcd1bf3c8b67774753dd4cfee093838"
     },
     {
       "name": "workflow-builder",

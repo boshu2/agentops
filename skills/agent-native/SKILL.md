@@ -54,7 +54,7 @@ This is an **extension of two existing skills**, not a rewrite:
 
 - **This is a reframe of the retired "port hooks" idea, NOT a hook revival.** **Why:** hooks are runtime-coupled and fork the guardrail surface; skills + `ao` + CI are the portable 3.0 waist that works in any runtime.
 - **Single source of truth — no skill fork.** The cloud/SDK agent loads the *same* `skills/` files an interactive session uses. **Why:** a forked guardrail set drifts and defeats the corpus moat.
-- **Managed Agents are NOT ZDR.** Never bundle holdout `target`/`ground_truth`/PII into an Agent definition or its MCP tool responses. **Why:** anything sent to the cloud agent leaves the boundary permanently. For holdout-touching work see [eval-outcomes](../eval-outcomes/SKILL.md).
+- **Managed Agents are NOT ZDR.** Never bundle holdout `target`/`ground_truth`/PII into an Agent definition or its MCP tool responses. **Why:** anything sent to the cloud agent leaves the boundary permanently. For holdout-touching work see [eval-outcomes](../validate/SKILL.md).
 - **The deterministic gate is the boundary, not the adapter.** The optional SDK hook adapter is convenience, never the enforcement boundary. **Why:** a bypassed in-loop hook must not mean unvalidated work lands; the local cockpit/pre-push/pawl path is the routine authority and CI is PR/tag/manual backstop telemetry.
 
 ## Workflow
@@ -119,6 +119,6 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 - [references/codex-ntm-runtime.md](references/codex-ntm-runtime.md) — Codex/NTM runtime recipe (tmux pane swarms + agent-mail + direct `ao`)
 - [standards](../standards/SKILL.md) — the checklists the agent loads and deterministic gates enforce
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
-- [eval-outcomes](../eval-outcomes/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
+- [eval-outcomes](../validate/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
 - [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `/rpi` skill loops (`ao agent bundle` produces the definition a managed-agents substrate runs)
 - [heal-skill](../heal-skill/SKILL.md) — deep audit (audit.sh) this skill before declaring stable

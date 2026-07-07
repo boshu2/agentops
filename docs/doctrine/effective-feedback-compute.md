@@ -55,7 +55,7 @@ When a harness move produces feedback (a gate result, a tool observation, a revi
 - **R?** Is this new, or a repeat of an observation already in the trace? (repeat → discount/stop)
 - **M?** Will this change a later decision, and is it captured where the later decision will see it? (else it evaporates)
 
-A feedback event that fails any of these is `C_raw` masquerading as progress. This lens is the operational test behind `/validate`, `/review`, the gates, and the ratchet.
+A feedback event that fails any of these is `C_raw` masquerading as progress. This lens is the operational test behind `/validate` (incl. the folded `/review` mode), the gates, and the ratchet.
 
 ## Trace-observable scoring recipe (for the future `ao efc`)
 
