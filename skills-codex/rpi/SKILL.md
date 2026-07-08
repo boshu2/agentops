@@ -46,6 +46,37 @@ The transport may be a daemon job, process runner, or subagent wrapper, but it
 must execute the declared phase skill contract rather than doing phase work
 directly. See [references/isolation-contract.md](references/isolation-contract.md).
 
+## Phase Receipt Contract
+
+RPI cannot rely on memory or a final narrative to prove delegated skills ran.
+Every execution packet and phase summary MUST carry compact receipts for the
+orchestrator and the delegated phase skill. JSON artifacts use canonical skill
+slugs without `$` sigils:
+
+```json
+{
+  "skills_loaded": [
+    {"name": "rpi", "reason": "orchestrator"},
+    {"name": "discovery", "reason": "phase-1"}
+  ],
+  "phase_receipts": [
+    {
+      "phase": "discovery",
+      "skill": "discovery",
+      "status": "DONE",
+      "artifact": ".agents/rpi/phase-1-summary.md"
+    }
+  ]
+}
+```
+
+Markdown phase summaries include `## Skill Receipts` with one bullet per
+loaded skill, the phase it served, and the artifact/verdict it produced.
+Receipts do not replace transcript/runtime proof. They make `$discovery`,
+`$crank`, and `$validate` delegation auditable from disk when the transcript is
+unavailable and give validation or pre-land review a deterministic surface to
+reject missing phase execution.
+
 ## Context Density Rule
 
 At every phase boundary, preserve only context that carries intent, boundary,
