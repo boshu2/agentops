@@ -330,7 +330,7 @@ func Fix(opts Options) (*Report, error) {
 	locks := NewLockManager(filepath.Join(opts.RepoRoot, ".doctor", "locks"))
 	mctx := NewMutateContext(ra, caps, opts.HomeDir, locks, actionsFile, opts.DryRun)
 
-	totalActions, fixedCount, failed := applyFixers(opts.RepoRoot, mctx, env, findings)
+	totalActions, fixedCount, failed, skipped := applyFixers(opts.RepoRoot, mctx, env, findings)
 
 	rep.ActionsTaken = totalActions
 	rep.ActionsPath = filepath.Join(rep.RunDir, "actions.jsonl")
@@ -346,12 +346,21 @@ func Fix(opts Options) (*Report, error) {
 	} else {
 		rep.NextSteps = []string{rep.UndoCommand + "  # if --fix went wrong"}
 	}
+	// Surface ambiguous refusals (migration-owner discipline): these files were
+	// NOT rewritten because both the old and new form are present — a human must
+	// resolve each one. Never let them be swallowed by a green summary.
+	for _, s := range skipped {
+		rep.NextSteps = append(rep.NextSteps, "refused (ambiguous, resolve by hand): "+s)
+	}
 	rep.OK = rep.ExitCode == ExitHealthy
 	return rep, persistRun(ra, opts, rep, totalActions)
 }
 
 // applyFixers runs the registered fixer for each finding in dependency order.
-func applyFixers(repoRoot string, mctx *MutateContext, env *DetectEnv, findings []Finding) (actions, fixed int, failed bool) {
+// skipped collects units a fixer deliberately REFUSED as ambiguous (both old and
+// new form present — migration-owner discipline), so the caller can surface them
+// to the operator: an ambiguous refusal is not a completed fix.
+func applyFixers(repoRoot string, mctx *MutateContext, env *DetectEnv, findings []Finding) (actions, fixed int, failed bool, skipped []string) {
 	order := loadFixerOrder(repoRoot)
 	byFixer := groupFindingsByFixer(findings)
 	for _, fixerID := range orderFixers(order, byFixer) {
@@ -362,13 +371,14 @@ func applyFixers(repoRoot string, mctx *MutateContext, env *DetectEnv, findings 
 		}
 		res, err := fx.Fix(mctx.WithFixer(fixerID), env, fs)
 		actions += res.ActionsTaken
+		skipped = append(skipped, res.Skipped...)
 		if err != nil || !res.Fixed {
 			failed = true
 			continue
 		}
 		fixed += len(fs)
 	}
-	return actions, fixed, failed
+	return actions, fixed, failed, skipped
 }
 
 // groupFindingsByFixer buckets findings by the fixer that handles them. A fixer

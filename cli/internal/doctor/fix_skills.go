@@ -689,8 +689,70 @@ func rewriteStaleRefs(raw []byte) []byte {
 	return []byte(strings.Join(lines, "\n"))
 }
 
+// staleRefLineHasCommand reports whether cmd appears on line as a standalone
+// command (its trailing char is not a command-word char), mirroring
+// quality.ScanFileForDeprecatedCommands' boundary rule so detector, rewriter,
+// and the ambiguity guard agree on what "present" means.
+func staleRefLineHasCommand(line, cmd string) bool {
+	rest := line
+	for {
+		idx := strings.Index(rest, cmd)
+		if idx < 0 {
+			return false
+		}
+		after := idx + len(cmd)
+		if after >= len(rest) || !isCmdWordChar(rest[after]) {
+			return true
+		}
+		rest = rest[after:]
+	}
+}
+
+// staleRefAmbiguousCommands returns the deprecated commands in raw for which
+// BOTH the old form AND its replacement appear on ordinary (non-rename-doc)
+// lines. A file in this state is ambiguous under the migration-owner discipline
+// (skills/standards/references/migration-owner.md, rule 3): the owner cannot
+// tell a genuine stale usage from a deliberate reference, so it must refuse to
+// rewrite rather than guess. Each entry is rendered "old / new".
+func staleRefAmbiguousCommands(raw []byte) []string {
+	oldSeen := make(map[string]bool)
+	newSeen := make(map[string]bool)
+	for _, line := range strings.Split(string(raw), "\n") {
+		if isRenameDocLine(line) {
+			continue
+		}
+		for old, newCmd := range quality.DeprecatedCommands {
+			if staleRefLineHasCommand(line, old) {
+				oldSeen[old] = true
+			}
+			if staleRefLineHasCommand(line, newCmd) {
+				newSeen[old] = true
+			}
+		}
+	}
+	var amb []string
+	for old := range oldSeen {
+		if newSeen[old] {
+			amb = append(amb, old+" / "+quality.DeprecatedCommands[old])
+		}
+	}
+	sort.Strings(amb)
+	return amb
+}
+
+// staleRefRel renders file relative to repoRoot for operator-facing surfaces,
+// falling back to the absolute path when relativization fails.
+func staleRefRel(repoRoot, file string) string {
+	if rel, err := filepath.Rel(repoRoot, file); err == nil {
+		return filepath.ToSlash(rel)
+	}
+	return file
+}
+
 // skillsStaleCommandRefsFixer rewrites each affected file, substituting every
-// deprecated command for its replacement, atomically through Mutate.
+// deprecated command for its replacement, atomically through Mutate. Files that
+// hold BOTH a deprecated command and its replacement are refused as ambiguous
+// (migration-owner discipline) — skipped, surfaced, never guessed.
 type skillsStaleCommandRefsFixer struct{}
 
 func (skillsStaleCommandRefsFixer) ID() string { return "fm-skills-stale-command-refs" }
@@ -716,12 +778,26 @@ func (f skillsStaleCommandRefsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 		res.Fixed = true
 		return res, nil
 	}
+	// refused tracks files deliberately skipped as ambiguous, so the post-state
+	// verify does not mistake their surviving old-form refs for a fix failure.
+	refused := make(map[string]bool)
 	// 2/3/4. Rewrite each affected file atomically.
 	for _, file := range files {
 		raw, err := os.ReadFile(file)
 		if err != nil {
 			res.Err = fmt.Errorf("doctor: %s: read %s: %w", f.ID(), file, err)
 			return res, res.Err
+		}
+		// Migration-owner discipline (skills/standards/references/migration-owner.md,
+		// rule 3): REFUSE an ambiguous fix. A file that holds BOTH a deprecated
+		// command AND its replacement cannot be rewritten without guessing which
+		// reference the author meant to keep — skip it and surface it; a human
+		// decides. The refusal is scoped to the file, never the whole run.
+		if amb := staleRefAmbiguousCommands(raw); len(amb) > 0 {
+			refused[file] = true
+			res.Skipped = append(res.Skipped, fmt.Sprintf("%s (ambiguous: both forms present — %s)",
+				staleRefRel(env.RepoRoot, file), strings.Join(amb, "; ")))
+			continue
 		}
 		desired := rewriteStaleRefs(raw)
 		if string(desired) == string(raw) {
@@ -736,12 +812,19 @@ func (f skillsStaleCommandRefsFixer) Fix(ctx *MutateContext, env *DetectEnv, _ [
 			res.ActionsTaken++
 		}
 	}
-	// 5. Verify post-state.
-	if !ctx.DryRun && len(scanStaleRefFiles(env.RepoRoot)) != 0 {
-		res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
-		return res, res.Err
+	// 5. Verify post-state: the ONLY files that may still carry a deprecated ref
+	// are the ones we deliberately refused. Anything else is a real fix failure.
+	if !ctx.DryRun {
+		for _, file := range scanStaleRefFiles(env.RepoRoot) {
+			if !refused[file] {
+				res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
+				return res, res.Err
+			}
+		}
 	}
-	res.Fixed = true
+	// An ambiguous refusal is not "done": the finding stays unresolved until a
+	// human resolves the surfaced files, so Fixed is false while any remain.
+	res.Fixed = len(res.Skipped) == 0
 	return res, nil
 }
 

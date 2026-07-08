@@ -346,7 +346,7 @@
         "path": "skills/standards/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 23
+        "reference_count": 24
       },
       {
         "name": "agent-native",
@@ -2889,7 +2889,7 @@
         "ao ci"
       ],
       "path": "skills/standards/",
-      "references": 23
+      "references": 24
     },
     {
       "sku": "skill:status",
