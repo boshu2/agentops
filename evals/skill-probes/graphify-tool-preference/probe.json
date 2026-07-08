@@ -1,0 +1,16 @@
+{
+  "id": "graphify-tool-preference",
+  "skill": "graphify",
+  "tier": "reference",
+  "reps": 2,
+  "behavior": "invokes a graphify structural query (explain/path/query/search) BEFORE broad grep",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL, matches the original 2026-06-30 A/B; not statistical",
+  "honesty": "measures behavior-change (did the loaded guidance change the FIRST search action), not quality-uplift",
+  "calibration": {
+    "expected_verdict": "INERT",
+    "source": "2026-06-30 A/B (RPI --auto idea #2): control grep-first; treatment (same question + the /research Tier-1b instruction handed verbatim, graphify installed + a graph present) ALSO grep-first. 0/2 treatment agents used the tool.",
+    "memory": "doc-instruction-to-use-tool-before-grep-is-inert",
+    "fixtures_are": "RECONSTRUCTED from the documented 06-30 record (both arms grep-first, no graphify call) to calibrate the harness's classifier against a KNOWN-INERT case; they are not verbatim console captures."
+  }
+}

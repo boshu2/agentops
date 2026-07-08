@@ -115,6 +115,33 @@ func TestSkillIsolationGateIsWarnFirst(t *testing.T) {
 	}
 }
 
+func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
+	check, ok := gates.Default.Get("skill.probe-coverage")
+	if !ok {
+		t.Fatal("skill.probe-coverage gate is not registered")
+	}
+	if check.Backing != "check-skill-probe-coverage.sh" {
+		t.Fatalf("skill.probe-coverage backing = %q, want check-skill-probe-coverage.sh", check.Backing)
+	}
+	// The whole point (age-e508.1): advisory-first. A product-tier badge that is
+	// merely unmeasured must WARN, never block a release — the flip to blocking is
+	// made deliberately once the spine is probed.
+	if check.Blocking {
+		t.Fatal("skill.probe-coverage must be warn-first / non-blocking (advisory)")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("skill.probe-coverage tiers = %v, want Fast|Full", check.Tiers)
+	}
+	// Routed on skill changes + the MEASURED ledger + the probe scenarios so a new
+	// product skill or a ledger edit re-runs it (not always-run — the probe corpus
+	// is the scope).
+	for _, want := range []string{"skills/**", "skills/SKILL-TIERS.md", "evals/skill-probes/**", "scripts/check-skill-probe-coverage.sh"} {
+		if !gates.PathMatchesAny(check.Match, want) {
+			t.Fatalf("skill.probe-coverage must route on %q; match globs = %v", want, check.Match)
+		}
+	}
+}
+
 func TestLedgerPrefixPolicyGateIsWarnFirstLocalOnly(t *testing.T) {
 	check, ok := gates.Default.Get("always.ledger-prefix-policy")
 	if !ok {

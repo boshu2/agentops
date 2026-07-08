@@ -1,0 +1,11 @@
+{
+  "id": "crank",
+  "skill": "crank",
+  "tier": "execution",
+  "reps": 2,
+  "behavior": "emits a wave plan that does NOT co-schedule write-scope-colliding beads (B and C both write shared.go) in the same parallel wave",
+  "discriminator": "discriminator.sh",
+  "budget_note": "N=2 — DIRECTIONAL, not statistical",
+  "honesty": "measures behavior-change (does loading crank make the agent respect write-scope collisions when planning parallelism), NOT quality-uplift",
+  "spine_member": "workflow spine (discovery, crank, validate, implement, swarm, post-mortem) — the START SET per age-e508.1"
+}

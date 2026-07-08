@@ -1,0 +1,19 @@
+[control arm — question only, no skill guidance loaded]
+
+I'll investigate the release gate dependency structure.
+
+$ grep -rn "gate check" cli/cmd/ao/ | head
+cli/cmd/ao/gate.go:41:  // "ao gate check" entry point
+cli/cmd/ao/gate.go:88:  runGateCheck(...)
+
+$ rg -n "ScriptRunner|Backing" cli/internal/gates/ | head
+cli/internal/gates/scriptrunner.go:20: type ScriptRunner struct
+cli/internal/gates/checks/seed.go:210: Backing: "check-*.sh"
+
+$ grep -rn "func runGateCheck" cli/internal/gates/
+cli/internal/gates/orchestrator.go:60: func Run(...)
+
+Findings: `ao gate check` calls into cli/internal/gates orchestrator, which
+runs registered checks; script-backed checks shell out to scripts/check-*.sh
+via the ScriptRunner. I reconstructed the call path by grepping the cobra
+command and the gates package.
