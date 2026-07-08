@@ -2412,6 +2412,14 @@ ao membrane [command]
 
 **Subcommands:**
 
+#### `ao membrane calibrate`
+
+Run the standing membrane calibration harness (age-e508.2): measure the current
+
+```
+ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-dir <dir>] [flags]
+```
+
 #### `ao membrane catch`
 
 Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
