@@ -1963,6 +1963,14 @@ ao beads epic-status <epic-id> [flags]
       --terminal   Map the verdict to the process exit code (0 terminal / 2 not-terminal / 3 skipped).
 ```
 
+#### `ao beads exec`
+
+Forward a bead command verbatim to the resolved beads tracker (bd or br),
+
+```
+ao beads exec [args...] [flags]
+```
+
 #### `ao beads harvest`
 
 Reads a closed bead via 'bd show <id>' and writes its closure reason
