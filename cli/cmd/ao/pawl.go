@@ -38,7 +38,7 @@ const defaultPawlReviewScript = "scripts/pawl-review.sh"
 const defaultPawlServiceScript = "scripts/pawl.sh"
 
 var pawlReviewCmd = &cobra.Command{
-	Use:   "review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>]",
+	Use:   "review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>]",
 	Short: "Run the cross-family (codex) membrane review; on CONFIRMED write the commit-bound verdict",
 	Long: `Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 refuter against the commit and, on CONFIRMED, writes + verifies the commit-bound pawl

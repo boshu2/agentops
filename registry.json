@@ -114,7 +114,7 @@
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 31
+        "reference_count": 32
       },
       {
         "name": "dcg",
@@ -1792,12 +1792,15 @@
         "ao metrics",
         "ao metrics cite",
         "ao mine",
+        "ao pawl review",
         "ao pool list",
+        "ao provenance emit-verdict",
+        "ao provenance verify",
         "ao ratchet",
         "ao version"
       ],
       "path": "skills/crank/",
-      "references": 31
+      "references": 32
     },
     {
       "sku": "skill:dcg",

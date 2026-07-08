@@ -480,6 +480,8 @@ THIS repo lands by **direct push to main** — PR-per-bead is retired (external-
 3. **Land:** `bash scripts/pawl-land.sh <bead>` — fetch + rebase onto `origin/main`, restamp the verdict onto the post-rebase feat, single-shot push.
 4. **Close on landed-only:** `br close` a child bead ONLY after its commit is an ancestor of `origin/main` (`git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main`), never on a log line or batch `br --json` query. Never close a parent epic before EVERY child is landed (`scripts/check-epic-children-closed.sh <epic>`).
 
+**Multi-lane serialization + by-hand land.** When several lanes land onto a hot `main` at once, or when you land by hand via the `ao pawl review` CLI (which sets `PAWL_UNTRUSTED_REPO=1` and SKIPS auto-bind, so the sealed bind is manual), follow the serialized land-token discipline + the exact `[feat, #trivial-bind]` command sequence in [references/land-protocol.md](references/land-protocol.md) — one land at a time across lanes, `ao provenance emit-verdict` for the sealed bind (never a hand-appended ledger edge), and `git merge-base --is-ancestor` before every `br close`.
+
 **External-repo variant (PR flow).** When targeting an external repo where you cannot push `main`, the land half becomes a PR: prepare it with `$pr-prep`, then reconcile with `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (verifies the CONFIRMED pawl verdict via `scripts/pawl-verdict.sh check`, merges `gh pr merge --squash --admin`, closes on confirmed `MERGED`). External targets only — never for landing AgentOps' own beads.
 
 ### Step 7: Loop or Complete
@@ -563,6 +565,7 @@ fi
 - [references/commit-strategies.md](references/commit-strategies.md) - per-task vs wave-batch commits
 - [references/contract-template.md](references/contract-template.md) - contract template for worker specs
 - [references/failure-recovery.md](references/failure-recovery.md) - escalation and retry logic
+- [references/land-protocol.md](references/land-protocol.md) - serialized multi-lane land protocol: land-token, the [feat, #trivial-bind] sequence, stale-bind drop, failure playbook
 - [references/failure-taxonomy.md](references/failure-taxonomy.md) - failure classification
 - [references/fire.md](references/fire.md) - FIRE loop specification
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md) - Ralph Wiggum loop contract

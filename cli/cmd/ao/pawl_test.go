@@ -5,8 +5,21 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 )
+
+// TestPawlReviewUseDocumentsSmokeFlag guards that `ao pawl review`'s Use line documents
+// the --smoke reviewer-optional lane (parsed verbatim by scripts/pawl-review.sh). The crank
+// land-protocol reference (age-e508.3) cites `ao pawl review <bead> --scope head --smoke
+// "<check>"` as the false-REFUTE recovery command; the skill cli-snippets + body-refs gates
+// resolve that flag against this command's help text, so --smoke must stay discoverable here
+// or those gates false-fail the referenced command.
+func TestPawlReviewUseDocumentsSmokeFlag(t *testing.T) {
+	if !strings.Contains(pawlReviewCmd.Use, "--smoke") {
+		t.Fatalf("pawl review Use line must document --smoke (the reviewer-optional live-smoke lane); got %q", pawlReviewCmd.Use)
+	}
+}
 
 // writePawlTestRepo builds a minimal repo root resolveAgentsRepoRoot() accepts
 // (docs/contracts/agents-write-surfaces.md + skills/) plus a stub scripts/pawl-review.sh
