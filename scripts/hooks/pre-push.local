@@ -208,9 +208,13 @@ fi
 # Pawl gate (age-58o): push-to-main requires CONFIRMED pawl verdict bound to
 # the landing commit. Runs only when git supplied pre-push stdin (not during
 # standalone `ao gate check`). Skip: AGENTOPS_PREPUSH_SKIP_PAWL=1.
+# age-jmfl: this invocation runs OUTSIDE the Go gate's ScriptRunner, so the
+# ScriptRunner's AO_BIN=self injection cannot reach it — pass the fresh
+# gate binary explicitly so a re-targeted `ao gate check` (and any `ao provenance`)
+# inside the pawl check uses THIS run's binary, not a possibly-stale cli/bin/ao.
 if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
    && [ -x "${toplevel}/scripts/check-pawl-pre-push.sh" ]; then
-    bash "${toplevel}/scripts/check-pawl-pre-push.sh" <"$prepush_stdin" || gate_status=$?
+    AO_BIN="$_agentops_ao_gate" bash "${toplevel}/scripts/check-pawl-pre-push.sh" <"$prepush_stdin" || gate_status=$?
 fi
 
 # Pre-push emit records local OIDs that may never reach origin/main (age-0tn).
