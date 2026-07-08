@@ -101,32 +101,13 @@ same objective.
 ## Phase Receipt Contract
 
 RPI cannot rely on memory or a final narrative to prove delegated skills ran.
-Every execution packet and phase summary MUST carry compact receipts for the
-orchestrator and the delegated phase skill. JSON artifacts use canonical skill
-slugs without sigils:
-
-```json
-{
-  "skills_loaded": [
-    {"name": "rpi", "reason": "orchestrator"},
-    {"name": "discovery", "reason": "phase-1"}
-  ],
-  "phase_receipts": [
-    {
-      "phase": "discovery",
-      "skill": "discovery",
-      "status": "DONE",
-      "artifact": ".agents/rpi/phase-1-summary.md"
-    }
-  ]
-}
-```
-
-Markdown phase summaries include `## Skill Receipts` with one bullet per
-loaded skill, the phase it served, and the artifact/verdict it produced.
-Receipts do not replace transcript/runtime proof. They make delegation
-auditable from disk when the transcript is unavailable and give validation or
-pre-land review a deterministic surface to reject missing phase execution.
+Every execution packet and phase summary MUST carry compact receipts — JSON
+`skills_loaded` + `phase_receipts` (canonical slugs, no sigils) and a
+`## Skill Receipts` bullet list in each markdown phase summary. Receipts do not
+replace transcript/runtime proof; they make delegation auditable from disk when
+the transcript is unavailable and give validation or pre-land review a
+deterministic surface to reject missing phase execution. Full schema + example
+(the phase-receipt rule + fields): [references/phase-data-contracts.md](references/phase-data-contracts.md).
 
 ## Route And Classify
 
@@ -135,7 +116,7 @@ pre-land review a deterministic surface to reject missing phase execution.
    - default, `research`, `plan`, `pre-mortem`, `brainstorm` -> discovery
    - `implementation` or `crank` -> implementation
    - `validation`, `vibe`, or `post-mortem` -> validation
-3. If the input is a bead and `--from` is absent, resolve it with `br show`:
+3. If the input is a bead and `--from` is absent, resolve it with `ao beads exec show`:
    - epic -> implementation with that epic
    - child with parent -> implementation with the parent epic
 4. Classify complexity:
@@ -144,19 +125,10 @@ pre-land review a deterministic surface to reject missing phase execution.
    - `full`: `--deep`, complex-operation keyword, 2+ scope keywords, or >120 chars
 5. Log `RPI mode: rpi-phased (complexity: <level>)`.
 
-Track state compactly:
-
-```text
-rpi_state = {
-  goal: "<goal string>",
-  epic_id: null,
-  phase: "<discovery|implementation|validation>",
-  complexity: "<fast|standard|full>",
-  test_first: <true by default; false only when --no-test-first>,
-  cycle: 1,
-  verdicts: {}
-}
-```
+Track state compactly as `rpi_state`: `goal` (string), `epic_id` (null until
+discovered), `phase` (discovery|implementation|validation), `complexity`
+(fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle`
+(from 1), and `verdicts` ({}).
 
 Complex-operation keywords include `refactor`, `migrate`, `rewrite`,
 `redesign`, `rearchitect`, `overhaul`, `decouple`, `deprecate`, `split`,
@@ -264,17 +236,14 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 - [references/agile-replan-loop.md](references/agile-replan-loop.md) — the anti-waterfall rule: inter-wave re-plan, `--auto`-pivot bounds, anti-patterns
 - [references/rpi.feature](references/rpi.feature) — Executable spec: strict ordered phases, validation-never-skipped, context-density across handoffs (soc-qk4b.2)
 - [references/orchestrator-compression-anti-pattern.md](references/orchestrator-compression-anti-pattern.md) — Phase-skipping failure mode; rationalizations to reject
-- [references/autonomous-execution.md](references/autonomous-execution.md)
 - [references/installed-plugin-version-not-repo-head.md](references/installed-plugin-version-not-repo-head.md) — `/rpi` loads from `~/.claude/plugins/cache/`, not the repo working tree; verify which version is active before measuring
 - [references/complexity-scaling.md](references/complexity-scaling.md)
 - [references/context-windowing.md](references/context-windowing.md) — OPT-IN large-repo mode (`--large-repo`); NOT part of the default RPI path. Default discovery/research does not generate `.agents/rpi/context-shards/latest.json`.
-- [references/codex-executor.md](references/codex-executor.md)
 - [references/discovery-artifact-mode.md](references/discovery-artifact-mode.md)
 - [references/error-handling.md](references/error-handling.md)
-- [references/examples.md](references/examples.md)
 - [references/gate-retry-logic.md](references/gate-retry-logic.md)
 - [references/gate4-loop-and-spawn.md](references/gate4-loop-and-spawn.md)
 - [references/phase-budgets.md](references/phase-budgets.md)
-- [references/phase-data-contracts.md](references/phase-data-contracts.md)
-- [references/report-template.md](references/report-template.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
+
+> Also referenced inline above: [agile-replan-loop](references/agile-replan-loop.md), [rpi.feature](references/rpi.feature), [autonomous-execution](references/autonomous-execution.md), [codex-executor](references/codex-executor.md), [examples](references/examples.md), [phase-data-contracts](references/phase-data-contracts.md), [report-template](references/report-template.md).

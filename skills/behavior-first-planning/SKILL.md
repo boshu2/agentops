@@ -29,7 +29,7 @@ context:
     exclude:
     - HISTORY
   intel_scope: topic
-output_contract: behaviors.md (frozen Gherkin), acceptance-tests/ (executed-red), spec.md, acceptance-gated beads (via br create)
+output_contract: behaviors.md (frozen Gherkin), acceptance-tests/ (executed-red), spec.md, acceptance-gated beads (via ao beads exec create)
 ---
 
 # Behavior-First Planning

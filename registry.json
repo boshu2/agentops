@@ -1362,7 +1362,9 @@
       "supersedes": null,
       "consumes": [],
       "produces": [],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/agent-mail/",
       "references": 8
     },
@@ -1430,7 +1432,9 @@
       "produces": [
         "agy-run-evidence"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/agy-native/",
       "references": 1
     },
@@ -1784,6 +1788,7 @@
         "git-changes"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao done",
         "ao flywheel close-loop",
         "ao forge transcript",
@@ -1860,6 +1865,7 @@
         "execution-packet.json"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao lookup",
         "ao plan-pawl decide",
         "ao ratchet",
@@ -1966,6 +1972,7 @@
       ],
       "drives_commands": [
         "ao agent",
+        "ao beads exec",
         "ao ci recent",
         "ao compile",
         "ao flywheel status",
@@ -2063,6 +2070,7 @@
         ".agents/handoff/*.md"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao ratchet",
         "ao session handoff"
       ],
@@ -2124,6 +2132,7 @@
         "git-changes"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao lookup",
         "ao metrics cite",
         "ao ratchet"
@@ -2181,7 +2190,9 @@
       "supersedes": null,
       "consumes": [],
       "produces": [],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/ntm/",
       "references": 16
     },
@@ -2253,6 +2264,7 @@
         "execution-packet.json"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao beads verify",
         "ao lookup",
         "ao metrics cite",
@@ -2292,6 +2304,7 @@
         "result.json"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao compile",
         "ao flywheel close-loop",
         "ao flywheel status",
@@ -2523,7 +2536,9 @@
       "produces": [
         "result.json"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/reality-check/",
       "references": 0
     },
@@ -2681,6 +2696,7 @@
         ".agents/rpi/*.md"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao ratchet"
       ],
       "path": "skills/rpi/",
@@ -2923,6 +2939,7 @@
       ],
       "drives_commands": [
         "ao badge",
+        "ao beads exec",
         "ao lookup",
         "ao metrics",
         "ao metrics cite",
@@ -2996,7 +3013,9 @@
       "produces": [
         "result.json"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/test/",
       "references": 6
     },
@@ -3024,7 +3043,9 @@
       "produces": [
         "result.json"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao beads exec"
+      ],
       "path": "skills/toil-mining/",
       "references": 1
     },
@@ -3054,7 +3075,8 @@
       ],
       "drives_commands": [
         "ao agent",
-        "ao agent bundle"
+        "ao agent bundle",
+        "ao beads exec"
       ],
       "path": "skills/using-atm/",
       "references": 3
@@ -3110,6 +3132,7 @@
         "result.json"
       ],
       "drives_commands": [
+        "ao beads exec",
         "ao doctor",
         "ao goals",
         "ao lookup",

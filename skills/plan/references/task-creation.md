@@ -30,21 +30,21 @@ Parameters:
 
 ## Create Persistent Beads Issues for Ratchet Tracking
 
-If br CLI available, create beads issues to enable progress tracking across sessions:
+If a bead tracker is available, create beads issues to enable progress tracking across sessions:
 
 ```bash
 # Create epic first
-br create --title "<goal>" --type epic --label "planned"
+ao beads exec create --title "<goal>" --type epic --label "planned"
 
 # Create child issues (note the IDs returned)
-br create --title "<wave-1-task>" --body "<description>" --parent <epic-id> --label "planned"
+ao beads exec create --title "<wave-1-task>" --body "<description>" --parent <epic-id> --label "planned"
 # Returns: na-0001
 
-br create --title "<wave-2-task-depends-on-wave-1>" --body "<description>" --parent <epic-id> --label "planned"
+ao beads exec create --title "<wave-2-task-depends-on-wave-1>" --body "<description>" --parent <epic-id> --label "planned"
 # Returns: na-0002
 
 # Add blocking dependencies to form waves
-br dep add na-0001 na-0002
+ao beads exec dep add na-0001 na-0002
 # Now na-0002 is blocked by na-0001 → Wave 2
 ```
 
@@ -53,7 +53,7 @@ br dep add na-0001 na-0002
 When creating beads issues, embed the conformance checks from the plan as a fenced validation block in the issue description. This flows to worker validation metadata via /crank:
 
 ````
-br create --title "<task>" --body "Description...
+ao beads exec create --title "<task>" --body "Description...
 
 \`\`\`validation
 {\"files_exist\": [\"src/auth.go\"], \"content_check\": {\"file\": \"src/auth.go\", \"pattern\": \"func Authenticate\"}}
@@ -67,28 +67,28 @@ br create --title "<task>" --body "Description...
 
 ## Waves Are Formed by `blocks` Dependencies
 
-- Issues with NO blockers → Wave 1 (appear in `br ready` immediately)
+- Issues with NO blockers → Wave 1 (appear in `ao beads exec ready` immediately)
 - Issues blocked by Wave 1 → Wave 2 (appear when Wave 1 closes)
 - Issues blocked by Wave 2 → Wave 3 (appear when Wave 2 closes)
 
-**`br ready` returns the current wave** — all unblocked issues that can run in parallel.
+**`ao beads exec ready` returns the current wave** — all unblocked issues that can run in parallel.
 
-Beads-backed issues are the preferred path because they give `/crank` richer dependency data and make ratchet progress easier to inspect. When br is unavailable or degraded, keep the plan file + execution packet path accurate and continue in file-backed mode for `/crank` and `/validate`.
+Beads-backed issues are the preferred path because they give `/crank` richer dependency data and make ratchet progress easier to inspect. When the tracker is unavailable or degraded, keep the plan file + execution packet path accurate and continue in file-backed mode for `/crank` and `/validate`.
 
 ## Step 7b.0: Scenario Admission Gate (Blocking)
 
 Before the validation-block check, run the mechanical scenario admission gate over every created issue. The gate (`scripts/check-bead-scenario-coverage.sh --admission`) is the plan-time structural check: it passes only when the bead body carries at least one structurally complete scenario unit — a `Scenario:` block or a bare Given/When/Then stanza.
 
 ```bash
-if command -v br &>/dev/null; then
+if command -v ao &>/dev/null; then
     INADMISSIBLE=()
     for ISSUE_ID in $ALL_CREATED_ISSUES; do
-        BEADS_DIR="$(ao beads dir)" br show "$ISSUE_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+        ao beads exec show "$ISSUE_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
         RC=$?
         if [[ $RC -eq 1 ]]; then
             INADMISSIBLE+=("$ISSUE_ID")
         elif [[ $RC -eq 2 ]]; then
-            echo "TRACKER FAILURE: admission gate got no usable input for $ISSUE_ID (br down? empty body fetch?)."
+            echo "TRACKER FAILURE: admission gate got no usable input for $ISSUE_ID (tracker down? empty body fetch?)."
             echo "  Surface the infra failure and stop. Do NOT treat the bead as inadmissible."
             break
         fi
@@ -107,10 +107,10 @@ fi
 After creating all beads issues, verify that every issue body contains a fenced validation block. Missing validation blocks break the plan-to-crank pipeline — `/crank` cannot extract conformance checks from issues that lack them.
 
 ```bash
-if command -v br &>/dev/null && [[ -n "$EPIC_ID" ]]; then
+if command -v ao &>/dev/null && [[ -n "$EPIC_ID" ]]; then
     MISSING_VALIDATION=()
     for ISSUE_ID in $ALL_CREATED_ISSUES; do
-        if ! br show "$ISSUE_ID" 2>/dev/null | grep -q '```validation'; then
+        if ! ao beads exec show "$ISSUE_ID" 2>/dev/null | grep -q '```validation'; then
             MISSING_VALIDATION+=("$ISSUE_ID")
         fi
     done

@@ -21,13 +21,13 @@ A scout cycle is **work**, not a stop. It MUST produce exactly one of:
 
 1. Read the target file(s) named in the work item (no edits).
 2. Map the **current shape** at the relevant boundary (what fields exist, what callers read it, what validators enforce).
-3. Run `bd create` to decompose the candidate into 2-N child beads, each ≤5 files and single-shape:
+3. Run `ao beads exec create` to decompose the candidate into 2-N child beads, each ≤5 files and single-shape:
    ```bash
-   BEADS_DIR="$(ao beads dir)" br create "Slice 1 of <parent-title>: <smaller-scope>" \
+   ao beads exec create "Slice 1 of <parent-title>: <smaller-scope>" \
      --description="Carved from <parent-id> by scout-mode. Scope: <files/contract>" \
      --deps discovered-from:<parent-id> -t task -p <inherit> --json
    ```
-4. Update the parent bead with `bd update <parent-id> --notes "scout-split into: <child-ids>"`.
+4. Update the parent bead with `ao beads exec update <parent-id> --notes "scout-split into: <child-ids>"`.
 5. **Re-enter Step 3** so the smallest new child OR another ready bead gets claimed THIS cycle.
 
 ### Path B: Defer (preferred when the queue has other ready beads)

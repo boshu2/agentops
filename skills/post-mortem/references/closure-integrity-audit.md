@@ -75,8 +75,8 @@ For each closed child bead, verify evidence in precedence order: `commit`, then 
 EPIC_ID="<epic-id>"
 FAILURES=""
 
-# Get all children (parent-child dependents; br has no `children` subcommand)
-for child in $(br show "$EPIC_ID" --json 2>/dev/null | jq -r '.[0].dependents[]? | select(.dependency_type == "parent-child") | .id' | sort -u); do
+# Get all children (parent-child dependents; `ao beads exec children` works for bd and br)
+for child in $(ao beads exec children "$EPIC_ID" 2>/dev/null | sort -u); do
   # 1. Commit evidence: strongest path
   COMMITS=$(git log --oneline --all --grep="$child" 2>/dev/null | wc -l | tr -d ' ')
 
@@ -184,7 +184,7 @@ Minimum `repo_state` fields:
 Flag children with no meaningful description or title.
 
 ```bash
-for child in $(br show "$EPIC_ID" --json 2>/dev/null | jq -r '.[0].dependents[]? | select(.dependency_type == "parent-child") | .id' | sort -u); do
+for child in $(ao beads exec children "$EPIC_ID" 2>/dev/null | sort -u); do
   TITLE=$(br show "$child" --json 2>/dev/null | jq -r '.[0].title // ""')
   DESC=$(br show "$child" --json 2>/dev/null | jq -r '.[0].description // ""')
 
@@ -209,7 +209,7 @@ Verify all children in `br list` are linked to parent.
 
 ```bash
 # Children from parent's perspective (parent-child dependents)
-PARENT_CHILDREN=$(br show "$EPIC_ID" --json 2>/dev/null | jq -r '.[0].dependents[]? | select(.dependency_type == "parent-child") | .id')
+PARENT_CHILDREN=$(ao beads exec children "$EPIC_ID" 2>/dev/null)
 
 # Children from the full list (ids that namespace under the epic prefix)
 LIST_CHILDREN=$(br list --all --json 2>/dev/null | jq -r --arg e "$EPIC_ID" '.issues[] | .id | select(startswith($e + "."))')

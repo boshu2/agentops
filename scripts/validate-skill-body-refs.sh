@@ -244,6 +244,19 @@ def resolve_command(cmd_tokens):
     return None
 
 
+# Passthrough command chains disable flag parsing and forward args/flags verbatim
+# to a child process. `ao beads exec` (age-3mdu) forwards to the resolved tracker
+# (bd or br), so flags after it are the tracker's, never ao's — skip flag-checking.
+PASSTHROUGH_PREFIXES = (("beads", "exec"),)
+
+
+def is_passthrough(command):
+    if not command:
+        return False
+    ct = tuple(command)
+    return any(ct[: len(p)] == p for p in PASSTHROUGH_PREFIXES)
+
+
 def line_is_historical(line):
     low = line.lower()
     return "(historical)" in low or any(m in low for m in HISTORICAL_MARKERS)
@@ -322,6 +335,10 @@ for root in roots:
                     failures.append(
                         f"{rel}:{lineno}: unknown ao command `ao {' '.join(cmd_tokens)}`"
                     )
+                    continue
+                # `ao beads exec …` forwards flags to the tracker (bd/br); its
+                # flags are never in ao's help, so do not flag-check it.
+                if is_passthrough(resolved):
                     continue
                 if flag:
                     known = flags_by_path.get(resolved, set())

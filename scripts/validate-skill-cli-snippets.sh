@@ -77,6 +77,11 @@ def validate_snippet(path: pathlib.Path, lineno: int, snippet: str):
         failures.append(f"{path.relative_to(repo_root)}:{lineno}: unknown ao command in snippet: {snippet}")
         return
 
+    # `ao beads exec …` forwards flags verbatim to the tracker (bd/br); they are
+    # never in ao's help, so do not flag-check a passthrough command.
+    if resolver.is_passthrough(command):
+        return
+
     flags = []
     for token in tokens[1 + len(command):]:
         if not token.startswith("-"):
