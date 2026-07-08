@@ -2068,6 +2068,21 @@ ao beads stale-claims [flags]
       --threshold float   Staleness threshold in hours (claim updated more than N hours ago). (default 4)
 ```
 
+#### `ao beads tracker`
+
+Detect which beads tracker AgentOps will drive here and how it was
+
+```
+ao beads tracker [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for tracker
+      --json   Emit {tracker, binary, ledger_dir, source} as JSON
+```
+
 #### `ao beads verify`
 
 Reads a bead description via 'bd show <id>' and checks every file
