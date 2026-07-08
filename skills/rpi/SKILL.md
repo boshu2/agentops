@@ -98,6 +98,36 @@ packet objective. A child bead or one ready slice is context, not a replacement
 objective. `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the
 same objective.
 
+## Phase Receipt Contract
+
+RPI cannot rely on memory or a final narrative to prove delegated skills ran.
+Every execution packet and phase summary MUST carry compact receipts for the
+orchestrator and the delegated phase skill. JSON artifacts use canonical skill
+slugs without sigils:
+
+```json
+{
+  "skills_loaded": [
+    {"name": "rpi", "reason": "orchestrator"},
+    {"name": "discovery", "reason": "phase-1"}
+  ],
+  "phase_receipts": [
+    {
+      "phase": "discovery",
+      "skill": "discovery",
+      "status": "DONE",
+      "artifact": ".agents/rpi/phase-1-summary.md"
+    }
+  ]
+}
+```
+
+Markdown phase summaries include `## Skill Receipts` with one bullet per
+loaded skill, the phase it served, and the artifact/verdict it produced.
+Receipts do not replace transcript/runtime proof. They make delegation
+auditable from disk when the transcript is unavailable and give validation or
+pre-land review a deterministic surface to reject missing phase execution.
+
 ## Route And Classify
 
 1. Create `.agents/rpi/`.

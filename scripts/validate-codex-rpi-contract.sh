@@ -71,6 +71,18 @@ echo "=== Codex skill chaining defaults ==="
 
 require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validate` as **separate skill invocations**' \
   'rpi must default to Codex skill chaining across phases'
+require_contains "skills-codex/rpi/SKILL.md" '## Phase Receipt Contract' \
+  'rpi must define disk-backed phase receipts for delegated skill execution'
+require_contains "skills-codex/rpi/SKILL.md" '"phase_receipts"' \
+  'rpi must show the cumulative phase_receipts execution-packet field'
+require_contains "skills-codex/rpi/references/phase-data-contracts.md" '`skills_loaded`' \
+  'phase-data contracts must require skill receipts in RPI artifacts'
+require_contains "skills-codex/rpi/references/phase-data-contracts.md" '`phase_receipts`' \
+  'phase-data contracts must document cumulative phase receipts'
+require_contains "skills-codex/rpi/prompt.md" 'Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary' \
+  'rpi Codex prompt must preserve phase receipt enforcement'
+require_contains "skills/shared/references/strict-delegation-contract.md" '**Phase artifact receipts**' \
+  'shared strict-delegation contract must include file-backed receipt detection'
 # brainstorm/design folded into discovery, vibe into validate (ag-s43tg, 2026-06-12):
 # the chaining contract now names only surviving skills; absorbed modes are internal.
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \

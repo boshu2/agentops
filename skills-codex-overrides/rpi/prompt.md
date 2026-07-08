@@ -10,11 +10,12 @@ Run the full RPI lifecycle in a Codex-native way: direct in-session orchestratio
 4. If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.
 5. If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.
 6. Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.
-7. Prefer Codex sub-agents only for bounded sidecar work inside a phase, not for the lead orchestration path.
-8. Re-read `.agents/rpi/next-work.jsonl` after each cycle and honor claim, release, and consume semantics exactly.
-9. When the goal references Nightly, evolve, or an auto prompt, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.
-10. Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.
-11. Treat `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt to route or fix, not as background noise.
+7. Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, and `$validate` delegation is auditable from disk.
+8. Prefer Codex sub-agents only for bounded sidecar work inside a phase, not for the lead orchestration path.
+9. Re-read `.agents/rpi/next-work.jsonl` after each cycle and honor claim, release, and consume semantics exactly.
+10. When the goal references Nightly, evolve, or an auto prompt, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.
+11. Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.
+12. Treat `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt to route or fix, not as background noise.
 
 ## Guardrails
 
