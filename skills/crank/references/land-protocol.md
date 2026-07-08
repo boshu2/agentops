@@ -45,7 +45,7 @@ not the bind.
    — WHY: if `HEAD~2 == origin/main` it is a clean fast-forward → `git push origin HEAD:main`. If origin moved, use `scripts/pawl-land.sh <bead>` — it rebases onto the new tip AND **restamps the CONFIRMED verdict onto the post-rebase feat** (the catch-22 fix: rebase changes the feat sha the verdict was bound to).
 
 6. **Prove the landing before close.** `git merge-base --is-ancestor <feat-sha> origin/main`
-   — WHY: a push can be REFUSED (lost the race) while the surrounding compound command keeps going; check the push RC AND ancestry. Never read `origin/main`'s tip and assume it is yours. Only after ancestry passes: `BEADS_DIR="$(ao beads dir)" br close <bead>`.
+   — WHY: a push can be REFUSED (lost the race) while the surrounding compound command keeps going; check the push RC AND ancestry. Never read `origin/main`'s tip and assume it is yours. Only after ancestry passes: `ao beads exec close <bead>`.
 
 ## Stale-bind drop + re-pawl on tip change
 

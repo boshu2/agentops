@@ -29,7 +29,7 @@ context:
   intent:
     mode: task
   intel_scope: topic
-output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via br create)
+output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via ao beads exec create)
 ---
 # Plan Skill
 

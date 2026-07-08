@@ -68,7 +68,7 @@ When running the Claude-Code-harness self-perpetuation mode (see `references/aut
 
 ## What this is NOT
 
-- **Not a stop reason.** Stop reasons are operator override, max-cycles cap, regression-breaker, and genuine stagnation (BEADS_DIR="$(ao beads dir)" br ready=0 AND harvested=0 AND failing-goals=0 AND generators dry).
+- **Not a stop reason.** Stop reasons are operator override, max-cycles cap, regression-breaker, and genuine stagnation (`ao beads exec ready`=0 AND harvested=0 AND failing-goals=0 AND generators dry).
 - **Not a sticky marker.** DORMANT is sticky-with-auto-clear-on-new-work; HANDOFF is fully non-sticky and clears on next read.
 - **Not a "the work is done" signal.** It explicitly says "this session can't safely continue; the work is parked." The next session does the work.
 

@@ -42,12 +42,12 @@ Move **4 (TDD per slice)** of the [operating loop](../../docs/architecture/opera
 
 Execute a single issue from start to finish.
 
-**CLI dependencies:** br (beads_rust, issue tracking — invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`), ao (ratchet gates). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use the issue description directly and track progress via TaskList instead of beads.
+**CLI dependencies:** ao (issue tracking via `ao beads exec <cmd>` — it resolves the bead tracker, bd or br, and its ledger; plus ratchet gates). Optional — see `skills/shared/SKILL.md` for fallback table. If no tracker is available, use the issue description directly and track progress via TaskList instead of beads.
 
 ## When to use
 
 - Use `/implement <issue-id>` to implement a specific tracked issue.
-- Use `/implement` (no argument) to pick up next ready work via `br ready`.
+- Use `/implement` (no argument) to pick up next ready work via `ao beads exec ready`.
 - Use `/implement <description>` to implement an ad-hoc task without a tracked issue.
 
 ### Folded triggers (ag-s43tg wave 1): `pr-implement` routes here
@@ -72,7 +72,7 @@ Execute a single issue from start to finish.
 3. Agent edits `middleware/auth.go` to add token validation
 4. Runs `go test ./middleware/...` — all tests pass
 5. Commits with message "Add JWT token validation middleware\n\nImplements: ag-5k2"
-6. Closes issue via `BEADS_DIR="$(ao beads dir)" br close ag-5k2 --reason "commit:<sha> files:[middleware/auth.go]"`
+6. Closes issue via `ao beads exec close ag-5k2 --reason "commit:<sha> files:[middleware/auth.go]"`
 
 **Result:** Issue implemented, verified, committed, and closed. Ratchet recorded.
 
@@ -81,8 +81,8 @@ Execute a single issue from start to finish.
 **User says:** `/implement`
 
 **What happens:**
-1. Agent runs `br ready` — finds `ag-3b7` (first unblocked issue)
-2. Claims issue via `BEADS_DIR="$(ao beads dir)" br update ag-3b7 --status in_progress`
+1. Agent runs `ao beads exec ready` — finds `ag-3b7` (first unblocked issue)
+2. Claims issue via `ao beads exec update ag-3b7 --status in_progress`
 3. Implements and verifies
 4. Closes issue
 
@@ -160,7 +160,7 @@ Remaining: <what's left>
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Issue not found | Issue ID doesn't exist or local state looks stale | Run `BEADS_DIR="$(ao beads dir)" br show <id>` to verify; trust `_beads/issues.jsonl` (source of truth) if the SQLite cache looks stale |
+| Issue not found | Issue ID doesn't exist or local state looks stale | Run `ao beads exec show <id>` to verify; trust the tracker's source-of-truth ledger (for br, `_beads/issues.jsonl`) if the local cache looks stale |
 | GREEN mode violation | Edited a file not related to the issue scope | Revert unrelated changes. GREEN mode restricts edits to files relevant to the issue |
 | Verification gate fails | Tests fail or build breaks after implementation | Read the verification output, fix the specific failures, re-run verification |
 | "BLOCKED" status | Contract contradicts tests or is incomplete in GREEN mode | Write BLOCKED with specific reason, do NOT modify tests |

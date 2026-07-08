@@ -63,7 +63,7 @@ continuation surfaces, in this order:
 3. Re-read `AGENTS.md`/`CLAUDE.md` before resuming any claimed bead (two-correction
    rule applies after compaction).
 4. Report: what was in flight, the exact next action, and any claimed-but-unfinished
-   beads (`BEADS_DIR="$(ao beads dir)" br list --status in_progress`).
+   beads (`ao beads exec list --status in_progress`).
 
 The old skill's deep-recovery walkthrough survives at
 [references/recovery-playbook.md](references/recovery-playbook.md).
@@ -103,19 +103,17 @@ fi
 
 **Call 2 — Beads / Epic State:**
 ```bash
-if command -v br &>/dev/null; then
-  BEADS_DIR="$(ao beads dir 2>/dev/null)"
-  export BEADS_DIR
+if command -v ao &>/dev/null; then
   echo "=== EPIC ==="
-  br list --type epic --status open 2>/dev/null | head -5
+  ao beads exec list --type epic --status open 2>/dev/null | head -5
   echo "=== IN_PROGRESS ==="
-  br list --status in_progress 2>/dev/null | head -5
+  ao beads exec list --status in_progress 2>/dev/null | head -5
   echo "=== READY ==="
-  br ready 2>/dev/null | head -5
+  ao beads exec ready 2>/dev/null | head -5
   echo "=== TOTAL ==="
-  br list 2>/dev/null | wc -l
+  ao beads exec list 2>/dev/null | wc -l
 else
-  echo "BR_UNAVAILABLE"
+  echo "AO_UNAVAILABLE"
 fi
 ```
 
@@ -363,7 +361,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Shows "BR_UNAVAILABLE" or "AO_UNAVAILABLE" | CLI tools not installed or not in PATH | Install missing tools: `br` (beads_rust) or `ao`. Skill gracefully degrades by showing available state only. |
+| Shows "AO_UNAVAILABLE" | `ao` CLI not installed or not in PATH | Install `ao` (it resolves the bead tracker — bd or br — via `ao beads exec`). Skill gracefully degrades by showing available state only. |
 | Ratchet phase shows stale data | Old chain.jsonl not cleaned up | Check timestamp of `.agents/ao/chain.jsonl`. If stale, delete it or run `/validate` to complete cycle and reset state. |
 | Suggested action doesn't match intent | State-aware rules didn't capture edge case | Review priority table in Step 3. May need to refine conditions. Use `--json` to inspect raw state and debug rule matching. |
 | JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure with `jq .` before returning to user. |

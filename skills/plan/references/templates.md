@@ -437,7 +437,7 @@ Wave 2 (depends on Wave 1):
 
 ```bash
 # Implement one at a time
-br ready
+ao beads exec ready
 /implement xxx.core
 ```
 ```
