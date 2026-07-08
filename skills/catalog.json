@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-08T02:36:09Z",
+  "generated_at": "2026-07-08T12:02:42Z",
   "skill_count": 58,
   "skills": [
     {
@@ -312,7 +312,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 31,
+      "references_count": 32,
       "codex_override_present": true
     },
     {

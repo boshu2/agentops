@@ -156,6 +156,8 @@ Crank lands each bead's slice to `main` **directly** — PR-per-bead is retired 
 5. **Close on landed-only.** `br close` a child bead ONLY after its commit is confirmed on trunk — `git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main` — never on a log line or a batch `br --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child bead's commit is confirmed an ancestor of `origin/main`** (re-check `git merge-base --is-ancestor` per child; each child `br` CLOSED). One unlanded child aborts the close. (Post-mortem governance checkpoint: hard gate, not advisory.)
 
+**Multi-lane serialization + by-hand land.** When several lanes land onto a hot `main` at once, or when you land by hand via the `ao pawl review` CLI (which sets `PAWL_UNTRUSTED_REPO=1` and SKIPS auto-bind, so the sealed bind is manual), follow the serialized land-token discipline and the exact `[feat, #trivial-bind]` command sequence in [references/land-protocol.md](references/land-protocol.md) — one land at a time across lanes, `ao provenance emit-verdict` for the sealed bind (never a hand-appended ledger edge), and `git merge-base --is-ancestor` before every `br close`.
+
 > Enforce steps 3–4 with the committed scripts, not by hand: `scripts/pawl-review.sh <bead> --scope head --author-family <family>` (runs the refuter; on CONFIRMED writes + verifies the commit-bound verdict via `scripts/pawl-verdict.sh`, REFUTED exit 3 prints the defects) then `scripts/pawl-land.sh <bead>` (rebase → restamp → single-shot push). The epic-close gate is `scripts/check-epic-children-closed.sh <epic>` (no-epic-close-with-open-child). All are hermetic-tested under `tests/scripts/`.
 
 > **External-repo variant (PR flow).** When crank targets an **external repo** (an upstream fork where you cannot push `main`), the land half becomes a PR: prepare it with [`/pr-prep`](../pr-prep/SKILL.md), then reconcile mechanically with `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls `gh pr checks`, reruns the lone correctness-ubuntu flake once, verifies the CONFIRMED pawl verdict via `scripts/pawl-verdict.sh check <bead> <pr> --head <live-sha>` — exit 5/HOLD if absent/REFUTED/ESCALATE/stale-head/no-evidence, merges `gh pr merge --squash --admin`, closes the bead only on confirmed `MERGED`). This path is for **external targets only** — never for landing AgentOps' own beads.
@@ -233,6 +235,7 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 - [references/worktree-per-worker.md](references/worktree-per-worker.md)
 - [references/contract-template.md](references/contract-template.md)
 - [references/failure-recovery.md](references/failure-recovery.md)
+- [references/land-protocol.md](references/land-protocol.md) — serialized multi-lane land protocol: land-token, the `[feat, #trivial-bind]` sequence, stale-bind drop, failure playbook (age-e508.3)
 - [references/failure-taxonomy.md](references/failure-taxonomy.md)
 - [references/fire.md](references/fire.md)
 - [references/gc-pool-dispatch.md](references/gc-pool-dispatch.md)
