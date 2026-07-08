@@ -687,6 +687,64 @@ repro_argv_allowed() {
   return 0
 }
 
+# _repro_go_workdir <repo_root> <argv...> (age-n8dt): resolve the working directory + rebase the
+# package path for a `go` auto-repro so it runs from the ENCLOSING go.mod dir, NOT the repo root.
+# The Go module lives at cli/go.mod (a SUBDIR), so a repro like `go test ./cli/cmd/ao` run from the
+# repo root deterministically fails "go: cannot find main module" REGARDLESS of code correctness —
+# a spurious failure that makes a FALSE REFUTE stand (and cripples the false-refute catcher: a
+# CORRECT change names a PASSING repro; run from the wrong cwd it "fails"; the false refute stands).
+# This walks UP from the package path's directory to the nearest go.mod, and rewrites a
+# repo-root-relative package arg to be module-relative (strip the module subdir prefix:
+# ./cli/cmd/ao -> ./cmd/ao, ./cli/... -> ./...). Sets two globals for the caller:
+#   _REPRO_WORKDIR  the directory to cd into before running the argv
+#   _REPRO_ARGV     the argv to run (rewritten package token; otherwise byte-verbatim)
+# For a NON-go argv, or when no enclosing go.mod is found, _REPRO_WORKDIR=<repo_root> and _REPRO_ARGV
+# is verbatim. The argv is already argv-allowlisted (repro_argv_allowed); this only relocates the
+# cwd and rebases the ONE package-path token — it never widens what runs.
+_repro_go_workdir() {
+  local root="$1"; shift
+  _REPRO_WORKDIR="$root"
+  _REPRO_ARGV=("$@")
+  [[ "${1:-}" == "go" ]] || return 0
+  # Locate the package-path token: the first non-flag arg after the go subcommand (test/build/vet).
+  local i arg pkg="" pkg_idx=-1
+  for (( i=2; i<${#_REPRO_ARGV[@]}; i++ )); do
+    arg="${_REPRO_ARGV[i]}"
+    case "$arg" in
+      -*) continue ;;                                # a flag (e.g. -run TestFoo) — not the package
+      *)  pkg="$arg"; pkg_idx="$i"; break ;;
+    esac
+  done
+  [[ -n "$pkg" && "$pkg_idx" -ge 0 ]] || return 0
+  # Directory the package path names, relative to the repo root (drop ./ and the /... wildcard tail).
+  local body="${pkg#./}"                             # ./cli/cmd/ao -> cli/cmd/ao ; ./... -> ...
+  local probe_rel="${body%/...}"                     # cli/... -> cli
+  probe_rel="${probe_rel%...}"                        # bare ... -> ""
+  local probe="$root${probe_rel:+/$probe_rel}"
+  # Walk UP from the package dir to the nearest enclosing go.mod (string ops; dirs need not exist).
+  local m="$probe" module_root=""
+  while [[ "$m" == "$root"* ]]; do
+    if [[ -f "$m/go.mod" ]]; then module_root="$m"; break; fi
+    [[ "$m" == "$root" ]] && break
+    m="$(dirname "$m")"
+  done
+  [[ -n "$module_root" ]] || return 0                # no enclosing module -> run from root, verbatim
+  _REPRO_WORKDIR="$module_root"
+  # Rebase the package token to be relative to the module root: strip the module subdir prefix.
+  local subdir="${module_root#"$root"}"; subdir="${subdir#/}"   # e.g. cli  ('' if module_root==root)
+  local newbody="$body"
+  if [[ -n "$subdir" ]]; then
+    case "$body" in
+      "$subdir")   newbody="" ;;                     # ./cli -> .
+      "$subdir"/*) newbody="${body#"$subdir"/}" ;;   # cli/cmd/ao -> cmd/ao ; cli/... -> ...
+      *)           newbody="$body" ;;                # already module-relative -> unchanged
+    esac
+  fi
+  local newpkg
+  if [[ -z "$newbody" || "$newbody" == "." ]]; then newpkg="."; else newpkg="./$newbody"; fi
+  _REPRO_ARGV[pkg_idx]="$newpkg"
+}
+
 # build_tag_sibling_context <diff> <root> <budget> (age-kg5l): when the diff touches any
 # build-tagged (//go:build) .go file, emit a clearly-delimited CONTEXT-NOT-DIFF section of the
 # tag-SIBLING files a cross-family refuter reviewing ONLY the diff cannot see — the cause of the
@@ -1587,14 +1645,18 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
     if [[ -n "$repro_cmd" ]]; then
       read -r -a repro_argv <<<"$repro_cmd"   # ARGV-level tokenize; NOTHING goes to a shell
       if [[ "${#repro_argv[@]}" -ge 1 ]] && repro_argv_allowed "${repro_argv[@]}"; then
-        echo "pawl-review: REFUTED names a repro — running it ONCE (timeboxed, argv-allowlisted) to check the refute: ${repro_argv[*]}" >&2
+        # age-n8dt: a `go` repro must run from its ENCLOSING go.mod dir (this repo: cli/), NOT the
+        # repo root — else `go: cannot find main module` fails it regardless of code correctness
+        # (the wrong-cwd false-REFUTE class). Resolve the workdir + rebase the package token.
+        _repro_go_workdir "$REPO_ROOT" "${repro_argv[@]}"
+        echo "pawl-review: REFUTED names a repro — running it ONCE (timeboxed, argv-allowlisted) to check the refute: ${_REPRO_ARGV[*]} (cwd: $_REPRO_WORKDIR)" >&2
         repro_out="$(mktemp "${TMPDIR:-/tmp}/pawl-review-repro.XXXXXX")"
         _rt=(); read -r -a _rt <<<"$(codex_exec_timeout_cmd 300)" || true   # same timeout wrapper as the reviewer
         repro_rc=0
         if [[ "${#_rt[@]}" -gt 0 ]]; then
-          ( cd "$REPO_ROOT" && "${_rt[@]}" "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+          ( cd "$_REPRO_WORKDIR" && "${_rt[@]}" "${_REPRO_ARGV[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
         else
-          ( cd "$REPO_ROOT" && "${repro_argv[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
+          ( cd "$_REPRO_WORKDIR" && "${_REPRO_ARGV[@]}" ) >"$repro_out" 2>&1 || repro_rc=$?
         fi
         if [[ "$repro_rc" -eq 0 && -z "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
           echo "pawl-review: the named repro PASSED (exit 0) — the REFUTED is SUSPECT (false repro). Re-rolling the review ONCE (bounded)…" >&2
@@ -1606,7 +1668,8 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
         # repro FAILED, or we already re-rolled once (bounded) — the REFUTED STANDS. Attach evidence.
         {
           printf '\n=== AUTO-REPRO (age-6idm) — the REFUTED named a repro; it was run ONCE, timeboxed ===\n'
-          printf 'repro command: %s\n' "${repro_argv[*]}"
+          printf 'repro command: %s\n' "${_REPRO_ARGV[*]}"
+          printf 'repro cwd: %s (age-n8dt: a go repro runs from the enclosing go.mod dir, not the repo root)\n' "$_REPRO_WORKDIR"
           printf 'exit code: %s\n' "$repro_rc"
           if [[ -n "${PAWL_REROLLED_AFTER_FALSE_REPRO:-}" ]]; then
             printf 'NOTE: this review was already RE-ROLLED once after a false repro (rerolled_after_false_repro);\n'

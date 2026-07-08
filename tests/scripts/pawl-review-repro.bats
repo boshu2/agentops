@@ -177,3 +177,62 @@ REJECT"
   grep -q "already RE-ROLLED once" "$EVID"
   grep -q "go test ./cli/cmd/ao -run TestLegacy" "$GO_LOG"   # the repro DID run (just did not trigger a reroll)
 }
+
+# ---------------------------------------------------------------------------
+# age-n8dt: a `go` auto-repro must run from the ENCLOSING go.mod dir (this repo: cli/), NOT the
+# repo root — else `go: cannot find main module` fails it regardless of code correctness (the
+# wrong-cwd false-REFUTE class). _repro_go_workdir resolves the workdir + rebases the package token.
+# ---------------------------------------------------------------------------
+@test "_repro_go_workdir: rebases a go repro to the enclosing module dir (cli/) and strips the subdir prefix" {
+  local root="$TMP/synth"
+  mkdir -p "$root/cli/cmd/ao"
+  printf 'module example.com/x\ngo 1.22\n' > "$root/cli/go.mod"
+  # The OLD behavior ran the repro from the repo ROOT — which is EXACTLY the failure condition:
+  # there is no go.mod there, so `go` prints "cannot find main module" no matter the code.
+  [ ! -f "$root/go.mod" ]
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$root"'" go test ./cli/cmd/ao -run TestFoo; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  # cd target is the module dir (cli/) — where a go.mod EXISTS, so the module resolves…
+  [[ "$output" == *"WD=$root/cli"* ]]
+  [ -f "$root/cli/go.mod" ]
+  # …and the package arg is rebased module-relative (./cli/cmd/ao -> ./cmd/ao); flags kept verbatim.
+  [[ "$output" == *"ARGV=go test ./cmd/ao -run TestFoo"* ]]
+}
+
+@test "_repro_go_workdir: rewrites the ./cli/... wildcard to ./... at the module root" {
+  local root="$TMP/synth2"
+  mkdir -p "$root/cli/cmd"
+  printf 'module example.com/x\ngo 1.22\n' > "$root/cli/go.mod"
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$root"'" go build ./cli/...; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WD=$root/cli"* ]]
+  [[ "$output" == *"ARGV=go build ./..."* ]]
+}
+
+@test "_repro_go_workdir: a non-go repro (bats) is left VERBATIM, cwd = repo root" {
+  local root="$TMP/synth3"; mkdir -p "$root/cli"
+  printf 'module example.com/x\n' > "$root/cli/go.mod"
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$root"'" bats tests/scripts/x.bats; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WD=$root"* ]]
+  [[ "$output" != *"WD=$root/cli"* ]]        # non-go => NOT relocated into the module
+  [[ "$output" == *"ARGV=bats tests/scripts/x.bats"* ]]
+}
+
+@test "_repro_go_workdir: no enclosing go.mod => cwd stays repo root, argv verbatim" {
+  local root="$TMP/synth4"; mkdir -p "$root/pkg"   # no go.mod anywhere under root
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$root"'" go test ./pkg; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WD=$root"* ]]
+  [[ "$output" == *"ARGV=go test ./pkg"* ]]        # untouched — nothing to rebase
+}
+
+@test "_repro_go_workdir: resolves against the REAL repo (cli/go.mod exists) — go test ./cli/cmd/ao -> ./cmd/ao in cli/" {
+  # Guard: this repo's single module is at cli/go.mod (age-n8dt precondition).
+  [ -f "$REPO_ROOT/cli/go.mod" ]
+  [ ! -f "$REPO_ROOT/go.mod" ]
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$REPO_ROOT"'" go test ./cli/cmd/ao; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WD=$REPO_ROOT/cli"* ]]
+  [[ "$output" == *"ARGV=go test ./cmd/ao"* ]]
+}

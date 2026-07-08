@@ -39,6 +39,27 @@ build_ao() {
   )
 }
 
+# scrub_paths normalizes machine-specific ABSOLUTE paths out of --help captures
+# before they are written into COMMANDS.md. Any command whose --help emits the
+# checkout root ($REPO_ROOT), the user's home ($HOME), or a temp dir ($TMPDIR)
+# would otherwise bake a per-worktree path into the committed doc, making it
+# non-deterministic across checkouts (age-8ais per-commit detached worktrees) and
+# leaving derived.changed-scope unsatisfiable (age-je8h). This is a no-op on clean
+# help output (no such substring to match), so regen stays byte-identical. The
+# durable fix is the class-fix here; the Go help-purity test catches the leak at
+# its source (a command's live --help), not just at the doc. Longest/most-specific
+# path first ($REPO_ROOT is under $HOME in a worktree) so the broader rule can't
+# pre-empt it.
+scrub_paths() {
+  local -a sed_args=()
+  sed_args+=(-e "s#${REPO_ROOT}#<repo>#g")
+  if [[ -n "${HOME:-}" ]]; then
+    sed_args+=(-e "s#${HOME}#<home>#g")
+  fi
+  sed_args+=(-e "s#${TMPDIR:-/tmp}[^ ]*#<tmp>#g")
+  sed "${sed_args[@]}"
+}
+
 extract_commands() {
   awk '
     /^Usage:/ {after_usage=1; next}
@@ -144,7 +165,7 @@ emit_command_reference() {
 
   local -a command_path=("$@")
   local cmd_help
-  cmd_help="$("$AO_BIN" "${command_path[@]}" --help 2>&1 || true)"
+  cmd_help="$("$AO_BIN" "${command_path[@]}" --help 2>&1 | scrub_paths || true)"
 
   local description
   description="$(first_line "$cmd_help")"
@@ -217,7 +238,7 @@ generate() {
 DOC_HEADER
 
   local top_help
-  top_help="$("$AO_BIN" --help 2>&1)"
+  top_help="$("$AO_BIN" --help 2>&1 | scrub_paths)"
 
   cat <<'DOC_GLOBAL_FLAGS'
 ## Global Flags

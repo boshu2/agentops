@@ -28,6 +28,82 @@ type ScriptRunner struct {
 // NewScriptRunner returns a ScriptRunner rooted at repoRoot.
 func NewScriptRunner(repoRoot string) *ScriptRunner { return &ScriptRunner{repoRoot: repoRoot} }
 
+// gateSelfBinary resolves the ao binary currently executing the gate
+// (production: os.Executable()). It is indirected as a package var so a test
+// can simulate running as a differently-named binary — the AO_BIN self-injection
+// below is guarded on the executable BASENAME, and under `go test`
+// os.Executable() is the package test binary, not `ao`. Mirrors the
+// pawlSelfBinary / verifyInitSelfBinary indirection in cli/cmd/ao.
+var gateSelfBinary = os.Executable
+
+// aoBinInjection returns the AO_BIN value the gate should propagate to a spawned
+// sub-check given the running executable path exe, and whether to inject at all.
+//
+// age-jmfl: the release-authority path (pre-push) builds a FRESH temp `ao` and
+// runs `ao gate check` with it, but shell sub-checks (check-provenance-chain.sh,
+// check-pawl-pre-push.sh) resolve AO_BIN → $ROOT/cli/bin/ao → PATH `ao`. A STALE
+// cli/bin/ao (e.g. an old payload-hash algorithm) then FALSE-fails an
+// origin-identical ledger line. Propagating AO_BIN=<the running gate binary>
+// makes the gate's own fresh binary authoritative for its sub-scripts.
+//
+// The guard is deliberately on the basename, NOT a stat/regular-file test:
+// under `go test`, os.Executable() is the package test binary (`<pkg>.test`, a
+// real regular file), so a stat guard would inject the test binary and make a
+// sub-script run `"$AO_BIN" provenance verify` against a non-ao executable and
+// fail spuriously. The gate binary is named "ao" only in production
+// (`go build -o .../ao ./cmd/ao`).
+func aoBinInjection(exe string) (string, bool) {
+	if filepath.Base(exe) == "ao" {
+		return exe, true
+	}
+	return "", false
+}
+
+// buildCheckEnv composes the environment for a spawned sub-check. Precedence for
+// AO_BIN (exactly one value reaches the child): a caller-set AO_BIN in reqEnv
+// wins; else the running gate binary self-injects when it is named "ao"
+// (age-jmfl); else AO_BIN is left untouched. base is the command's already-
+// configured environment (typically cmd.Environ()).
+func buildCheckEnv(base []string, reqEnv map[string]string) []string {
+	aoBin, haveAOBin := "", false
+	if v, ok := reqEnv["AO_BIN"]; ok {
+		aoBin, haveAOBin = v, true // caller wins
+	} else if exe, err := gateSelfBinary(); err == nil {
+		aoBin, haveAOBin = aoBinInjection(exe)
+	}
+
+	env := base
+	if haveAOBin {
+		// Drop any ambient AO_BIN so the intended value is the single one the
+		// child resolves (getenv-first-match is libc-dependent otherwise).
+		env = stripEnvKey(env, "AO_BIN")
+	}
+	for k, v := range reqEnv {
+		if k == "AO_BIN" {
+			continue // re-appended below as the single authoritative value
+		}
+		env = append(env, k+"="+v)
+	}
+	if haveAOBin {
+		env = append(env, "AO_BIN="+aoBin)
+	}
+	return env
+}
+
+// stripEnvKey returns env with every "key=..." entry removed. It allocates a new
+// slice and does not mutate the input.
+func stripEnvKey(env []string, key string) []string {
+	prefix := key + "="
+	out := make([]string, 0, len(env))
+	for _, e := range env {
+		if strings.HasPrefix(e, prefix) {
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
 // Run executes the requested backing and returns its verdict.
 func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports.GateVerdict, error) {
 	if err := ctx.Err(); err != nil {
@@ -48,13 +124,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 	bashArgs := append([]string{script}, req.Args...)
 	cmd := exec.CommandContext(ctx, resolveBash(), bashArgs...)
 	cmd.Dir = s.repoRoot
-	if len(req.Env) > 0 {
-		env := cmd.Environ()
-		for k, v := range req.Env {
-			env = append(env, k+"="+v)
-		}
-		cmd.Env = env
-	}
+	cmd.Env = buildCheckEnv(cmd.Environ(), req.Env)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

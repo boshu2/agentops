@@ -58,7 +58,7 @@ Running --apply twice in a row is a no-op on the second pass.
 Examples:
   ao patterns repair-filenames                 # dry-run (default)
   ao patterns repair-filenames --apply         # perform renames
-  ao patterns repair-filenames --dir /tmp/p    # use a custom patterns dir`,
+  ao patterns repair-filenames --dir path/to/patterns   # use a custom patterns dir`,
 	RunE: runPatternsRepair,
 }
 
