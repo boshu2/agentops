@@ -179,7 +179,12 @@ Scenario: Fail-closed verdict on a hard finding
 Scenario: Transient lane loss never false-refutes
   Given a quest round where one reviewer lane is provider_unavailable
   When finalize.sh computes the verdict
-  Then the disposition is DEGRADED with exit 3 and no redo attempt is consumed
+  Then the disposition is DEGRADED with exit 3 and the quest is not falsely REFUTED
+
+Scenario: DEGRADED still consumes a redo attempt (budget pinned to the formula)
+  Given membrane-quest.toml sets max_attempts = 5 and the ralph dispatcher never reads gc.failure_class
+  When a check exits nonzero as DEGRADED (exit 3), exactly as for a REFUTED (exit 2)
+  Then one of max_attempts is consumed — a transient-loss flake burns budget like a real refute
 
 Scenario: One family can never confirm
   Given a quest round where all lane verdicts come from a single provider family
