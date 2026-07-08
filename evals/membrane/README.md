@@ -68,3 +68,34 @@ bash scripts/eval-membrane.sh --task fd-regression --task cleaner-median
 ```
 
 `generated_at` is emitted as a `GENERATED_AT_PLACEHOLDER` string for the caller to stamp.
+
+## Standing calibration — the ruler (`scripts/membrane-calibrate.sh`, age-e508.2)
+
+The one-shot runs above are *snapshots*. ADR-0011 names the structural problem: a
+*competent* membrane catches nearly everything at review, so real escapes are rare
+and the membrane's own catch-rate drifts **unmeasured**. `membrane-calibrate.sh` is
+the standing **ruler** — it re-measures the cold membrane against a **FROZEN**
+weak-producer trap corpus so any change is attributable to the membrane, never to
+producer noise.
+
+- **Frozen corpus** (`frozen/<task>/<pkg>/<file>.go`): the exact code a weak
+  producer would ship — 3 subtle false-done traps (each passes the *visible* test,
+  fails the *hidden* oracle) + 2 correct controls (measure the false-refute rate).
+  Overlaid onto the task scaffold by `producers/frozen-trap-producer.sh` (a
+  deterministic producer — no model, so a run is reproducible byte-for-byte).
+- **Entrypoint:** `ao membrane calibrate [--membrane-label <adapter>]` (thin wrapper)
+  or the script directly. Each `--membrane-label` keeps its OWN trend history, so
+  this is ALSO the instrument that calibrates a FALLBACK reviewer family (duel D3).
+- **Output:** a dated evidence file `docs/evals/membrane-calibration-<adapter>-<date>.md`
+  with verbatim per-trap outcomes + aggregate catch/false-refute rates + an honest
+  trend vs the prior run (plain `REGRESSION` on a drop over an unchanged corpus).
+  The trend spine is the append-only `docs/evals/membrane-calibration-history.jsonl`.
+- **Honesty (ADR-0011):** this CALIBRATES the *proven* membrane; it is **not**
+  evidence that the escape-corpus compounds. Scheduling is substrate-delegated
+  (ADR-0009): a cron line to `ao membrane calibrate`, never an in-repo daemon.
+
+```bash
+ao membrane calibrate --membrane-label codex          # baseline (cross-family reviewer)
+ao membrane calibrate --membrane-label agy-gemini \
+  --membrane-cmd 'agy -p "$1"'                         # a FALLBACK adapter, same ruler
+```

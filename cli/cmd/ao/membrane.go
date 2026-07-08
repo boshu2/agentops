@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -116,6 +117,79 @@ faith. (epic age-zpj5, S4)`,
 	RunE: runMembraneTriage,
 }
 
+// defaultMembraneCalibrateScript is the standing calibration harness (age-e508.2):
+// it runs the current COLD membrane against the FROZEN weak-producer trap corpus
+// and emits a dated evidence file with verbatim per-trap outcomes, aggregate
+// catch/false-refute rates, and an honest trend vs the prior run for that adapter.
+const defaultMembraneCalibrateScript = "scripts/membrane-calibrate.sh"
+
+var membraneCalibrateCmd = &cobra.Command{
+	Use:   "calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-dir <dir>]",
+	Short: "Calibrate the cold membrane's catch-rate against the frozen trap corpus (the standing ruler)",
+	Long: `Run the standing membrane calibration harness (age-e508.2): measure the current
+COLD membrane against the FROZEN weak-producer trap corpus (evals/membrane/frozen/)
+and write a dated evidence file with verbatim per-trap outcomes, aggregate
+catch-rate + false-refute-rate, and an honest trend vs the prior run.
+
+The producer arm is frozen code (not a stochastic model), so a run is reproducible
+byte-for-byte and any change is attributable to the MEMBRANE. The reviewer is
+pluggable via --membrane-cmd/--membrane-label, and each label keeps its OWN trend
+history — so this is ALSO the instrument that calibrates a FALLBACK reviewer family
+(duel D3). On an unchanged corpus a catch-rate drop is flagged REGRESSION plainly.
+
+HONESTY (ADR-0011): this CALIBRATES the proven membrane; it is NOT evidence that
+the escape-corpus compounds. Scheduling is substrate-delegated (ADR-0009): wire a
+cron line to this command, never an in-repo daemon. Forwards all flags verbatim to
+` + defaultMembraneCalibrateScript + `.`,
+	DisableFlagParsing: true,
+	RunE:               runMembraneCalibrate,
+}
+
+// runMembraneCalibrate forwards `ao membrane calibrate [args]` to
+// scripts/membrane-calibrate.sh verbatim (streaming its stdout/stderr), gated by
+// the same repo-trust boundary as the pawl live-script path, and propagating the
+// script's exit code so a REGRESSION-driven nonzero (if the harness ever adopts
+// one) surfaces unchanged. The frozen corpus + evidence output live in the repo.
+func runMembraneCalibrate(cmd *cobra.Command, args []string) error {
+	// With DisableFlagParsing, cobra forwards --help/-h into RunE instead of printing
+	// help itself. Intercept it BEFORE the repo-trust check so the command-surface doc
+	// generator (which captures `--help`) records the STATIC help, not a path-dependent
+	// RCE-guard error — that leak made cli/docs/COMMANDS.md non-deterministic across
+	// worktrees and left derived.changed-scope unsatisfiable (age-e508.2 land).
+	for _, a := range args {
+		if a == "--help" || a == "-h" {
+			return cmd.Help()
+		}
+	}
+	repoRoot, err := resolveAgentsRepoRoot()
+	if err != nil {
+		return err
+	}
+	if !repoScriptTrusted(repoRoot) {
+		return untrustedRepoScriptError(repoRoot, defaultMembraneCalibrateScript)
+	}
+	script := filepath.Join(repoRoot, defaultMembraneCalibrateScript)
+	if _, statErr := os.Stat(script); statErr != nil {
+		return fmt.Errorf("membrane calibrate script not found at %s: %w", script, statErr)
+	}
+	c := exec.Command("bash", append([]string{script}, args...)...) // #nosec G204 -- fixed in-repo script (trust-gated) + operator-supplied calibration flags.
+	c.Dir = repoRoot
+	c.Stdin = cmd.InOrStdin()
+	c.Stdout = cmd.OutOrStdout()
+	c.Stderr = cmd.ErrOrStderr()
+	runErr := c.Run()
+	if runErr == nil {
+		return nil
+	}
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	var exitErr *exec.ExitError
+	if errors.As(runErr, &exitErr) {
+		return &pawlReviewExitError{code: exitErr.ExitCode()}
+	}
+	return runErr
+}
+
 func init() {
 	membraneCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(membraneCmd)
@@ -123,6 +197,7 @@ func init() {
 	membraneCmd.AddCommand(membraneRecallCmd)
 	membraneCmd.AddCommand(membraneCatchCmd)
 	membraneCmd.AddCommand(membraneTriageCmd)
+	membraneCmd.AddCommand(membraneCalibrateCmd)
 
 	membraneDeriveCmd.Flags().StringVar(&membraneDeriveRun, "run", "", "Run id to scan for escapes (required)")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveDryRun, "dry-run", false, "Report what would be derived without writing files")

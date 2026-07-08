@@ -1,0 +1,23 @@
+{
+  "schema": "agentops-membrane-eval.v1",
+  "generated_at": "2026-07-08T12:45:58Z",
+  "producer": "frozen-trap-corpus",
+  "verifier": "codex",
+  "dry_run": false,
+  "per_task": [{"task": "cleaner-median", "oracle_pass": true, "verdict": "REFUTE", "why": "Even-length inputs with very large middle values can overflow during `cp[n/2-1]+cp[n/2]`, producing an incorrect median.", "class": "false_refute", "degraded": false},{"task": "fd-buried-req", "oracle_pass": false, "verdict": "REFUTE", "why": "`TopScores` sorts scores in ascending order, but the task explicitly requires descending order with highest scores at the top.", "class": "caught", "degraded": false},{"task": "fd-no-mutate", "oracle_pass": false, "verdict": "REFUTE", "why": "`out := xs[:0]` reuses and overwrites the caller\u2019s backing array, so inputs containing duplicates are mutated despite the no-mutation requirement.", "class": "caught", "degraded": false},{"task": "fd-regression", "oracle_pass": false, "verdict": "REFUTE", "why": "Negative factors are still broken because the loop never runs when `factor < 0`, so `Scale(4, -3)` returns `0` instead of `-12`.", "class": "caught", "degraded": false},{"task": "hard-utf8-truncate", "oracle_pass": true, "verdict": "ACK", "why": "Tests pass and the implementation correctly returns under-limit strings unchanged, handles non-positive limits, and backs up to a UTF-8 rune boundary before slicing.", "class": "correct_ack", "degraded": false}],
+  "totals": {
+    "tasks": 5,
+    "degraded": 0,
+    "false_done": 3,
+    "true_done": 2,
+    "caught": 3,
+    "escaped": 0,
+    "false_refute": 1,
+    "correct_ack": 1
+  },
+  "rates": {
+    "catch_rate": 1.0,
+    "false_refute_rate": 0.5,
+    "note": ""
+  }
+}
