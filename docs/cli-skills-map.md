@@ -36,7 +36,7 @@ Every `ao` command that is actively called by at least one skill.
 | `ao pool` | crank, status |
 | `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops |
 | `ao context` | crank, implement, swarm |
-| `ao codex` | autodev, brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation |
+| `ao codex` | autodev, brainstorm, crank, discovery, handoff, implement, quickstart, recover, research, rpi, status, using-agentops, validation |
 | `ao compile` | compile |
 | `ao maturity` | flywheel |
 | `ao constraint` | flywheel, post-mortem, retro |
@@ -77,7 +77,7 @@ Which `ao` commands each skill invokes.
 | **implement** | `codex ensure-start`, `context assemble`, `lookup`, `ratchet record`, `ratchet skip`, `ratchet spec`, `ratchet status` |
 | **inject** | `inject`, `lookup`, `search` |
 | **plan** | `lookup`, `ratchet record`, `rpi cleanup`, `rpi status`, `search` |
-| **post-mortem** | `codex ensure-stop`, `constraint activate`, `flywheel close-loop`, `forge`, `forge markdown`, `session close`, `temper validate` |
+| **post-mortem** | `constraint activate`, `flywheel close-loop`, `forge`, `forge markdown`, `forge transcript`, `session close`, `temper validate` |
 | **pre-mortem** | `lookup`, `ratchet record`, `search` |
 | **provenance** | `search` |
 | **quickstart** | `codex ensure-start`, `codex ensure-stop`, `codex status`, `flywheel status`, `hooks install`, `hooks test`, `init`, `quick-start`, `quickstart`, `rpi phased`, `seed`, `status` |
@@ -164,19 +164,12 @@ During Session
   → ao search --cite <type>
       → appends citations to .agents/ao/citations.jsonl when search results are adopted
 
-Codex Thread Closeout
-  → closeout-owner skill runs ao codex ensure-stop
-      → first call performs ao codex stop semantics once per thread
-      → later calls no-op for the same thread
-      → ao forge transcript (archived transcript or history fallback)
-      → ao flywheel close-loop
-      → ao dedup
-      → ao contradict
-      → ao maturity --expire --evict --curate
-
-Codex Health
-  → ao codex status
-      → reads capture / retrieval / promotion / citation health
+Post-Mortem Closeout
+  → post-mortem closeout runs ao session close --auto-extract
+      → resolves the current transcript, forges the session, extracts learnings
+      → fallback when transcript discovery must be explicit: ao forge transcript <path-or-glob> --queue
+  → ao flywheel close-loop --quiet
+      → ingests pending knowledge and runs close-loop maintenance
 ```
 
 If you want a runtime hook of your own (e.g. a PostToolUse gate), author one with the `hooks-authoring` skill — AgentOps ships none by default.

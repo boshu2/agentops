@@ -156,6 +156,14 @@ check_closeout() {
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
 }
 
+check_post_mortem_closeout() {
+  local file="$1"
+  require_contains "$file" 'ao session close --auto-extract' "post-mortem closeout must use ao session close --auto-extract"
+  require_contains "$file" 'ao flywheel close-loop --quiet' "post-mortem closeout must run ao flywheel close-loop --quiet"
+  require_not_contains "$file" 'ao codex ensure-stop' "post-mortem closeout must not use the archived Codex ensure-stop shim"
+  require_not_contains "$file" 'ao codex status' "post-mortem closeout must not depend on archived Codex status"
+}
+
 for file in "${spine_entry_files[@]}"; do
   check_entry "$file"
 done
@@ -169,7 +177,7 @@ for file in "${spine_closeout_files[@]}"; do
 done
 for file in "${frozen_closeout_files[@]}"; do
   resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
-  check_closeout "$file"
+  check_post_mortem_closeout "$file"
 done
 
 # quickstart folded into status, using-agentops into inject (ag-s43tg, 2026-06-12);
