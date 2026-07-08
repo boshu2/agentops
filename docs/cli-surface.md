@@ -15,6 +15,7 @@
 | `ao beads cluster` | `public-stateful-fixture-needed` | `allowlisted` | Requires a beads database fixture; apply mode mutates issue parents. |
 | `ao beads dir` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads epic-status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao beads exec` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads harvest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads resume` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
