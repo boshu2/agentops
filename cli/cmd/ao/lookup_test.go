@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -94,6 +95,60 @@ func TestLookupByID_NotFound(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "no artifact found") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestLookupByID_HardErrorNotFlattenedToNotFound is the read-federation guard
+// (age-gascity-port-slate-irye.5): a by-ID point read federates over three
+// sources (learnings, patterns, findings). If a source is unreachable/corrupt,
+// that HARD failure must surface — it must NEVER masquerade as "no artifact
+// found" (absence), which could drive a wrong close/skip.
+//
+// A cwd whose path contains an unterminated '[' char class forces filepath.Glob
+// to fail with ErrBadPattern for the patterns/findings collectors (they glob
+// cwd/.agents/<section>/*.md). That is a deterministic, root-proof stand-in for
+// a corrupt/unreadable source (a chmod-000 test is ignored when CI runs as root).
+func TestLookupByID_HardErrorNotFlattenedToNotFound(t *testing.T) {
+	base := t.TempDir()
+	cwd := filepath.Join(base, "wo[rk") // unterminated '[' -> ErrBadPattern in the section glob
+	for _, sub := range []string{"learnings", "patterns", "findings"} {
+		if err := os.MkdirAll(filepath.Join(cwd, ".agents", sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	err := lookupByID(cwd, "nonexistent-id", nil)
+	if err == nil {
+		t.Fatal("expected an error when a probe source is unreadable")
+	}
+	// The invariant: unreachable is not absent. A hard probe failure must not be
+	// flattened into the NotFound sentinel/message.
+	if errors.Is(err, ErrArtifactNotFound) {
+		t.Fatalf("hard probe error was flattened to ErrArtifactNotFound: %v", err)
+	}
+	if strings.Contains(err.Error(), "no artifact found") {
+		t.Fatalf("hard probe error was flattened to NotFound message: %v", err)
+	}
+	// It must be the actual hard read failure that surfaced.
+	if !errors.Is(err, filepath.ErrBadPattern) {
+		t.Fatalf("expected the underlying hard read error to surface, got %v", err)
+	}
+}
+
+// TestLookupByID_NotFoundSentinel verifies the clean-miss path still returns the
+// ErrArtifactNotFound sentinel (all sources readable, artifact simply absent).
+func TestLookupByID_NotFoundSentinel(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, sub := range []string{"learnings", "patterns", "findings"} {
+		if err := os.MkdirAll(filepath.Join(tmpDir, ".agents", sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Chdir(tmpDir)
+
+	err := lookupByID(tmpDir, "nonexistent-id", nil)
+	if !errors.Is(err, ErrArtifactNotFound) {
+		t.Fatalf("clean miss must return ErrArtifactNotFound, got %v", err)
 	}
 }
 

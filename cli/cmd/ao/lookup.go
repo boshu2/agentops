@@ -94,7 +94,12 @@ func runLookup(cmd *cobra.Command, args []string) error {
 	return lookupByQuery(cwd, cfg)
 }
 
-// lookupByID searches all learning and pattern files for a matching ID.
+// lookupByID federates a by-ID point read across the three knowledge sources
+// (learnings, patterns, findings). It preserves the FIRST hard (non-NotFound)
+// probe error and returns ErrArtifactNotFound ONLY when every source was a clean
+// miss — an unreachable/corrupt source must never masquerade as absence, which
+// could otherwise drive a wrong close/skip (age-gascity-port-slate-irye.5;
+// mirrors gascity storeref.Resolve).
 func lookupByID(cwd, id string, cfg *config.Config) error {
 	globalLearningsDir := ""
 	globalFindingsDir := ""
@@ -107,30 +112,51 @@ func lookupByID(cwd, id string, cfg *config.Config) error {
 		globalPatternsDir = cfg.Paths.GlobalPatternsDir
 	}
 
-	// Search learnings
-	learnings, _ := collectLearnings(cwd, "", MaxLearningsToInject*5, globalLearningsDir, 1.0)
-	for _, l := range learnings {
-		if matchesID(l.ID, l.Source, id) {
-			return outputLearning(cwd, l)
-		}
+	found, err := resolveFederated(
+		func() (bool, error) {
+			learnings, err := collectLearnings(cwd, "", MaxLearningsToInject*5, globalLearningsDir, 1.0)
+			if err != nil {
+				return false, fmt.Errorf("search learnings for %s: %w", id, err)
+			}
+			for _, l := range learnings {
+				if matchesID(l.ID, l.Source, id) {
+					return true, outputLearning(cwd, l)
+				}
+			}
+			return false, nil
+		},
+		func() (bool, error) {
+			patterns, err := collectPatterns(cwd, "", MaxPatternsToInject*5, globalPatternsDir, 1.0)
+			if err != nil {
+				return false, fmt.Errorf("search patterns for %s: %w", id, err)
+			}
+			for _, p := range patterns {
+				if matchesID(p.Name, p.FilePath, id) {
+					return true, outputPattern(cwd, p)
+				}
+			}
+			return false, nil
+		},
+		func() (bool, error) {
+			findings, err := collectFindings(cwd, "", MaxPatternsToInject*5, globalFindingsDir, 1.0)
+			if err != nil {
+				return false, fmt.Errorf("search findings for %s: %w", id, err)
+			}
+			for _, f := range findings {
+				if matchesID(f.ID, f.Source, id) {
+					return true, outputFinding(cwd, f)
+				}
+			}
+			return false, nil
+		},
+	)
+	if err != nil {
+		return err
 	}
-
-	// Search patterns
-	patterns, _ := collectPatterns(cwd, "", MaxPatternsToInject*5, globalPatternsDir, 1.0)
-	for _, p := range patterns {
-		if matchesID(p.Name, p.FilePath, id) {
-			return outputPattern(cwd, p)
-		}
+	if found {
+		return nil
 	}
-
-	findings, _ := collectFindings(cwd, "", MaxPatternsToInject*5, globalFindingsDir, 1.0)
-	for _, f := range findings {
-		if matchesID(f.ID, f.Source, id) {
-			return outputFinding(cwd, f)
-		}
-	}
-
-	return fmt.Errorf("no artifact found matching ID: %s", id)
+	return fmt.Errorf("%w: %s", ErrArtifactNotFound, id)
 }
 
 // matchesID checks if the given id matches the item's ID, name, or filename.
@@ -222,9 +248,21 @@ func lookupByQuery(cwd string, cfg *config.Config) error {
 		// already the curated tier.
 		learnings, patterns, findings = collectGoldKnowledge(filepath.Join(cwd, ".ao", "wiki"), query, limit)
 	} else {
-		learnings, _ = collectLearnings(cwd, query, limit*3, globalLearningsDir, globalWeight)
-		patterns, _ = collectPatterns(cwd, query, limit, globalPatternsDir, globalWeight)
-		findings, _ = collectFindings(cwd, query, limit, globalFindingsDir, globalWeight)
+		// Surface a hard read failure instead of flattening it into an empty
+		// result set — an unreachable source is not "no relevant knowledge"
+		// (age-gascity-port-slate-irye.5). Missing .agents/ dirs return (nil, nil),
+		// so this fires only on a genuine I/O/corrupt failure; the documented
+		// "missing → empty" behavior is unchanged.
+		var err error
+		if learnings, err = collectLearnings(cwd, query, limit*3, globalLearningsDir, globalWeight); err != nil {
+			return fmt.Errorf("collect learnings: %w", err)
+		}
+		if patterns, err = collectPatterns(cwd, query, limit, globalPatternsDir, globalWeight); err != nil {
+			return fmt.Errorf("collect patterns: %w", err)
+		}
+		if findings, err = collectFindings(cwd, query, limit, globalFindingsDir, globalWeight); err != nil {
+			return fmt.Errorf("collect findings: %w", err)
+		}
 	}
 
 	// Apply bead filter if specified
