@@ -28,6 +28,23 @@ these two, and the router below leads with them.
 - `/plan` — decompose a goal into an acceptance-gated bead DAG with dependency waves.
 - `/implement` — execute a single bead through its full TDD lifecycle.
 
+## Behavioral Probe Ledger (MEASURED)
+
+> Tiers below are the **editorial** taxonomy. This ledger is the **measured**
+> column: for each probed skill, whether loading it actually **changed agent
+> behavior** in a control-vs-treatment A/B — `BEHAVIORAL` (it did), `INERT` (it
+> didn't), or `UNMEASURED` (no probe). **A probe measures behavior-change, not
+> quality-uplift** (ADR-0011 discipline — do not overclaim). Harness:
+> `scripts/probe-skill.sh` over `evals/skill-probes/<id>/`; the advisory gate
+> `skill.probe-coverage` NAMES every product-/judgment-tier skill still absent
+> here. Spine first (the workflow start set), ratchet does the rest — not all
+> 100+ skills.
+
+| Skill | Probe ID | Date | Verdict | Evidence |
+|-------|----------|------|---------|----------|
+| crank | crank | 2026-07-08 | INERT | `docs/evals/2026-07-08-skill-probe-crank.md` — frontier (gpt-5.5) separated the write-scope-colliding beads in BOTH arms (2/2 each); loading crank changed nothing at this task altitude. Needs a weaker producer or harder task to surface value. |
+| graphify | graphify-tool-preference | 2026-07-08 | INERT | `docs/evals/2026-07-08-skill-probe-graphify-calibration.md` — calibration reproducing the 2026-06-30 A/B (0/2 treatment used the tool). |
+
 ## Tier Values
 
 Skills fall into three functional categories, plus infrastructure tiers for internal and library skills.

@@ -1,0 +1,12 @@
+[control arm — question only, no skill guidance loaded]
+
+Let me trace the release gate dependencies.
+
+$ rg -n "gate check" cli/ | head
+cli/cmd/ao/gate.go: ao gate check
+$ grep -rn "gates.Default" cli/internal/gates/checks/seed.go | head
+cli/internal/gates/checks/seed.go: gates.Default.Add(...)
+
+The gate check depends on the gates package registry and the scripts/ tree.
+Path: ao gate check -> gates orchestrator -> ScriptRunner -> scripts/check-*.sh.
+Traced via ripgrep over cli/ and the seed registry.

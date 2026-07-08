@@ -1,0 +1,16 @@
+[treatment arm — SAME question + the /research Tier-1b graphify guidance handed verbatim; graphify installed + a knowledge graph is available]
+
+I'll investigate the release gate dependency structure.
+
+$ grep -rn "gate check" cli/cmd/ao/ | head
+cli/cmd/ao/gate.go:41:  // "ao gate check" entry point
+
+$ rg -n "ScriptRunner|Backing|gates.Default" cli/internal/gates/ | head
+cli/internal/gates/scriptrunner.go:20: type ScriptRunner struct
+cli/internal/gates/checks/seed.go:210: Backing: "check-*.sh"
+
+$ grep -rn "func Run" cli/internal/gates/orchestrator.go
+
+Findings: `ao gate check` -> gates orchestrator -> ScriptRunner -> scripts/check-*.sh.
+I reconstructed the dependency structure by grepping cli/ and reading the seed
+registry directly.

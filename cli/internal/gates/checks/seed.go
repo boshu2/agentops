@@ -23,6 +23,18 @@ var (
 		"tests/scripts/check-go-lint.bats",
 	}
 	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	// skill.probe-coverage (advisory): routes when any skill changes (a new
+	// product/judgment skill needs a probe), when the MEASURED probe ledger
+	// changes, when a probe scenario changes, plus self-reference so editing the
+	// gate/its test re-runs it.
+	skillProbePaths = []string{
+		"skills/**",
+		"skills/SKILL-TIERS.md",
+		"evals/skill-probes/**",
+		"scripts/probe-skill.sh",
+		"scripts/check-skill-probe-coverage.sh",
+		"tests/scripts/check-skill-probe-coverage.bats",
+	}
 	// nextWorkContractPaths routes skill.next-work-contract on every surface its
 	// validator actually reads — most critically the subject file itself
 	// (.agents/rpi/next-work.jsonl): a next-work-only commit previously SKIPped
@@ -294,6 +306,13 @@ func init() {
 		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
 		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
+		// skill.probe-coverage (ADVISORY): a product-/judgment-tier skill whose
+		// tier badge carries no BEHAVIORAL-probe result is unmeasured — the badge
+		// is editorial, not proven. This NAMES the unmeasured ones. Advisory-first
+		// (Blocking:false, warn never fail) exactly like skill.isolation and the
+		// egwt gates: the spine is probed first, the ratchet drives the rest, and
+		// the Blocking:false->true flip is made deliberately once covered. age-e508.1.
+		{ID: "skill.probe-coverage", Tiers: gates.Fast | gates.Full, Match: skillProbePaths, Blocking: false, Backing: "check-skill-probe-coverage.sh", RepairHint: "bash scripts/probe-skill.sh --probe <skill> then record it in the MEASURED ledger of skills/SKILL-TIERS.md; advisory — probe the spine, ratchet the rest"},
 		{ID: "skill.no-operator-leakage", Tiers: gates.Fast | gates.Full, Match: operatorLeakPaths, Blocking: true, Backing: "check-no-operator-skills.sh"},
 		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--strict"}},
 		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
