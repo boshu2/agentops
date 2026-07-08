@@ -64,6 +64,13 @@ type FixResult struct {
 	ActionsTaken int
 	Fixed        bool
 	Err          error
+	// Skipped carries units the fixer deliberately REFUSED as ambiguous
+	// (migration-owner discipline: both old and new form present — never
+	// guess). Each entry is a human-readable path+reason surfaced to the
+	// operator; a non-empty Skipped means the fixer is not fully done and a
+	// human must resolve those units. See
+	// skills/standards/references/migration-owner.md.
+	Skipped []string
 }
 
 // Fixer repairs the issues a Detector finds. Every disk write a Fixer performs

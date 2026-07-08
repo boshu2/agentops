@@ -182,6 +182,65 @@ func TestSkillsStaleCommandRefsLongestFirst(t *testing.T) {
 	}
 }
 
+// TestSkillsStaleCommandRefsRefusesAmbiguous is the migration-owner discipline
+// proof (skills/standards/references/migration-owner.md, rule 3): when a file
+// holds BOTH a deprecated command AND its replacement, the fixer must REFUSE to
+// rewrite it — skip and surface, never guess which reference the author meant to
+// keep. The prior behavior rewrote the old form blindly, corrupting a deliberate
+// reference (or double-applying the rename).
+func TestSkillsStaleCommandRefsRefusesAmbiguous(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	// Both `ao state` (deprecated) and `ao session state` (its replacement)
+	// appear on ordinary (non-rename-doc) lines. The author references both on
+	// purpose — the migration owner cannot tell stale usage from a deliberate
+	// mention, so it must refuse.
+	ambMD := filepath.Join(repo, "skills", "amb", "SKILL.md")
+	original := "# Amb\n\nThe `ao state` command was renamed last release.\n" +
+		"Use `ao session state` from now on.\n"
+	writeSkillsFile(t, ambMD, original)
+	// A control file with ONLY the deprecated form must still be fixed in the
+	// same pass — the refusal is scoped to the ambiguous unit, not the run.
+	cleanMD := filepath.Join(repo, "skills", "clean", "SKILL.md")
+	writeSkillsFile(t, cleanMD, "Run `ao know inject` to load context.\n")
+
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+	mctx, _, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+
+	findings, _ := skillsStaleCommandRefsDetector{}.Detect(env)
+	res, err := skillsStaleCommandRefsFixer{}.Fix(mctx.WithFixer("fm-skills-stale-command-refs"), env, findings)
+	if err != nil {
+		t.Fatalf("Fix returned error (should refuse cleanly, not error): %v", err)
+	}
+
+	// The ambiguous file is left byte-for-byte unchanged (refused, not guessed).
+	got, _ := os.ReadFile(ambMD)
+	if string(got) != original {
+		t.Fatalf("ambiguous file was rewritten (guessed) instead of refused:\n got=%q\nwant=%q", got, original)
+	}
+	// The refusal is surfaced, not swallowed.
+	if len(res.Skipped) == 0 {
+		t.Fatal("ambiguous file must be surfaced in FixResult.Skipped, got none")
+	}
+	joined := strings.Join(res.Skipped, "\n")
+	if !strings.Contains(joined, "amb") {
+		t.Fatalf("Skipped surface does not name the ambiguous file: %q", res.Skipped)
+	}
+	// An unresolved ambiguous refusal is NOT a completed fix.
+	if res.Fixed {
+		t.Fatal("Fixed must be false while an ambiguous unit remains unresolved")
+	}
+	// The clean control file WAS fixed in the same pass.
+	gotClean, _ := os.ReadFile(cleanMD)
+	if string(gotClean) != "Run `ao inject` to load context.\n" {
+		t.Fatalf("clean file not fixed in the same pass: %q", gotClean)
+	}
+	if res.ActionsTaken != 1 {
+		t.Fatalf("ActionsTaken = %d, want 1 (only the clean file)", res.ActionsTaken)
+	}
+}
+
 // --- fm-skills-missing ------------------------------------------------------
 
 // TestSkillsMissingDetectAndFix verifies the detector fires when all roots are
