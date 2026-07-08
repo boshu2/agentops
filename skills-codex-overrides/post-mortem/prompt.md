@@ -13,5 +13,5 @@ Close out completed work in a Codex-native way: validate outcomes, extract durab
 1. Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle.
 2. Count resolution per item, not per batch entry, when reporting prior findings.
 3. Preserve evidence and source links so the next Codex cycle can act without re-deriving context.
-4. Own Codex closeout during the post-mortem flywheel phase; do not stack a generic session-close path on top of `ao codex ensure-stop`.
+4. Own Codex closeout during the post-mortem flywheel phase with `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.
 5. If a Codex-native override and the source skill diverge, keep behavior aligned with the source contract and then update the override.

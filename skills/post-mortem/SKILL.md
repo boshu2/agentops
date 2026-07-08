@@ -35,7 +35,7 @@ output_contract: skills/council/schemas/verdict.json
 
 > **Purpose:** Wrap up completed work — validate it shipped correctly, extract learnings, process the knowledge backlog, activate high-value insights, and retire stale knowledge.
 >
-> **Runtime note:** Hook-driven closeout is runtime-dependent. Claude/OpenCode can wire Phase 2-5 maintenance through lifecycle hooks. Codex CLI v0.115.0+ supports native hooks (same behavior). For older Codex versions without hook surfaces, finish closeout with `ao codex stop`.
+> **Runtime note:** Hook-driven closeout is runtime-dependent. Claude/OpenCode can wire Phase 2-5 maintenance through lifecycle hooks. Codex post-mortem closeout uses the default AgentOps session/flywheel commands, not the archived Codex lifecycle shims: finish with `ao session close --auto-extract` and `ao flywheel close-loop --quiet`.
 
 ## Loop position
 
@@ -91,14 +91,14 @@ Six phases:
 
 ### Codex Closeout
 
-Codex CLI v0.115.0+ has native hooks and handles closeout automatically (no extra steps needed). For older Codex versions (hookless fallback), run these after the post-mortem workflow writes learnings and next work:
+In Codex, run these after the post-mortem workflow writes learnings and next work:
 
 ```bash
-ao codex stop
-ao codex status
+ao session close --auto-extract
+ao flywheel close-loop --quiet
 ```
 
-`ao codex stop` uses the latest transcript or history fallback to queue/persist learnings and run close-loop maintenance without runtime hooks.
+`ao session close --auto-extract` resolves the current transcript, forges the session, extracts lightweight learnings, and reports flywheel impact. `ao flywheel close-loop --quiet` runs the supported close-loop maintenance. If transcript discovery needs to be explicit, use `ao forge transcript <path-or-glob> --queue` before `ao flywheel close-loop --quiet`.
 
 ---
 

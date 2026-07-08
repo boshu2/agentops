@@ -271,7 +271,7 @@
           "Treat `skills/post-mortem/SKILL.md` as the canonical close-out contract and `skills-codex/post-mortem/SKILL.md` as the Codex-facing artifact.",
           "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
           "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
-          "Own Codex closeout during the post-mortem flywheel phase by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.",
+          "Own Codex closeout during the post-mortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
           "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
         ]
       }
