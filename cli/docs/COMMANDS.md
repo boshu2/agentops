@@ -1947,6 +1947,22 @@ ao beads dir [flags]
       --require   Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger
 ```
 
+#### `ao beads epic-status`
+
+Emit a deterministic "is this epic/wave actually done" verdict, replacing
+
+```
+ao beads epic-status <epic-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help       help for epic-status
+      --json       Emit the verdict as a JSON object instead of a human-readable line.
+      --terminal   Map the verdict to the process exit code (0 terminal / 2 not-terminal / 3 skipped).
+```
+
 #### `ao beads harvest`
 
 Reads a closed bead via 'bd show <id>' and writes its closure reason

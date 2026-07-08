@@ -181,8 +181,9 @@ func init() {
 	beadsCmd.AddCommand(beadsVerifyCmd)
 	beadsCmd.AddCommand(beadsLintCmd)
 	beadsCmd.AddCommand(beadsHarvestCmd)
-	beadsCmd.AddCommand(beadsStaleCmd)  // soc-vuu6.27 slice 2
-	beadsCmd.AddCommand(beadsResumeCmd) // soc-vuu6.27 slice 3
+	beadsCmd.AddCommand(beadsStaleCmd)      // soc-vuu6.27 slice 2
+	beadsCmd.AddCommand(beadsResumeCmd)     // soc-vuu6.27 slice 3
+	beadsCmd.AddCommand(beadsEpicStatusCmd) // age-gascity-port-slate-irye.4
 
 	beadsDirCmd.Flags().BoolVar(&beadsDirJSON, "json", false,
 		"Emit {beads_dir, source} as JSON")
