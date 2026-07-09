@@ -966,6 +966,57 @@ _refuted_refuters() {
   printf '%s' "$out"
 }
 
+# age-2yh2: PURE — pick the evidence capture carrying the refuting reviewer's REAL
+# finding for the routed-REFUTED membrane catch: the FIRST pane (canonical cc->cod->agy
+# order) that actually voted REFUTED. Echoes NOTHING when no pane refuted (an
+# insufficient/all-timeout REFUTED carries no reviewer finding to salvage — the caller
+# skips the catch; the verdict write still logs the route outcome). Args: vc vd va
+# ev_cc ev_cod ev_agy (verdicts as in _refuted_refuters: CONFIRMED/REFUTED/""=timeout/n/a).
+_refuting_evidence() {
+  local vc="$1" vd="$2" va="$3" ecc="$4" ecod="$5" eagy="$6"
+  [ "$vc" = "REFUTED" ] && { printf '%s' "$ecc"; return 0; }
+  [ "$vd" = "REFUTED" ] && { printf '%s' "$ecod"; return 0; }
+  [ "$va" = "REFUTED" ] && { printf '%s' "$eagy"; return 0; }
+  return 0
+}
+
+# age-2yh2: resolve the trusted ao binary for the route path's membrane catch, preferring
+# the repo's build over a possibly-stale installed ao (a stale ao lacking `membrane catch`
+# would silently no-op the emit). Order: $AO_BIN, repo build ($ROOT/cli/bin/ao then
+# $ROOT/cli/ao), then PATH — pawl-review.sh's resolve_ao trusted-checkout order. No
+# untrusted-repo branch here: the standing service only ever runs against the trusted
+# checkout it lives in ($ROOT), never a stranger repo. Prints nothing when none is
+# executable (callers treat that as skip).
+_route_ao_bin() {
+  local c
+  for c in "${AO_BIN:-}" "$ROOT/cli/bin/ao" "$ROOT/cli/ao"; do
+    if [ -n "$c" ] && [ -x "$c" ]; then printf '%s\n' "$c"; return 0; fi
+  done
+  command -v ao 2>/dev/null
+}
+
+# age-2yh2: record a routed REFUTE as a STRUCTURED membrane catch carrying the refuting
+# reviewer's REAL finding — `ao membrane catch --evidence` runs the two-tier REFUTED-reason
+# salvage Go-side (age-ulab: the `REFUTED: <finding>` prose line, skipping the bare routed
+# `PAWL <nonce> REFUTED` sentinel) and resolves domain + affected paths from git, so the
+# catch is producer-actionable instead of the generic "standing-pawl route: …" reason the
+# verdict write carries. Mirrors emit_pawl_catch's contract (pawl-review.sh): fail-safe +
+# NON-BLOCKING — a missing evidence file, missing ao, or any error never affects the
+# REFUTED exit (the catch is observability, not a gate). PAWL_CATCH_CLASS/PAWL_CATCH_DETECTOR
+# pass through when set. Runs from $ROOT so the catch lands in the repo-root yield ledger.
+# Args: <bead> <head> <mode> <evidence-file> (empty/absent evidence => silent skip).
+_route_emit_catch() {
+  local bead="$1" head="$2" mode="$3" evfile="$4" ao_bin
+  [ -n "$evfile" ] && [ -s "$evfile" ] || return 0
+  ao_bin="$(_route_ao_bin)" && [ -n "$ao_bin" ] || return 0
+  local -a catch_args=()
+  [ -n "${PAWL_CATCH_CLASS:-}" ]    && catch_args+=(--class "$PAWL_CATCH_CLASS")
+  [ -n "${PAWL_CATCH_DETECTOR:-}" ] && catch_args+=(--detector-pattern "$PAWL_CATCH_DETECTOR")
+  ( cd "$ROOT" && "$ao_bin" membrane catch --bead "$bead" \
+      --evidence "$evfile" --head "$head" --mode "$mode" \
+      --scope head "${catch_args[@]}" ) >/dev/null 2>&1 || true
+}
+
 cmd_route() {
   load_session
   local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
@@ -1175,6 +1226,16 @@ cmd_route() {
     "${rf[@]}" \
     --wall-seconds "$(( $(date +%s) - _route_t0 ))" \
     --reason "standing-pawl route: ${degraded:-no agreement} (tier=$TIER; opus=${vc:-timeout} codex=${vd:-timeout} agy=${va:-timeout})" >&2 || true
+  # age-2yh2: ALSO record a structured membrane catch with the refuting reviewer's REAL
+  # finding (the generic route --reason above is a non-actionable pseudo-class). The
+  # first-refuter lane's capture is the evidence; no substantive refuter (all-timeout/
+  # insufficient) => _refuting_evidence echoes nothing and the emit skips — a timeout has
+  # no finding to salvage. SINGLE-RECORD: this is the only catch emit for a routed REFUTE —
+  # pawl-review.sh's routed-REFUTED branch deliberately does NOT call emit_pawl_catch
+  # (its $evidence file is never written on the routed path; see the guard comment there).
+  # Non-blocking + fail-safe: never affects the REFUTED exit below.
+  _route_emit_catch "$bead" "$head" "$mode" \
+    "$(_refuting_evidence "$vc" "$vd" "$va" "$ev_cc" "$ev_cod" "$ev_agy")" || true
   log "ROUTE $bead: REFUTED/HOLD — tier=$TIER ${degraded:-no agreement} (evidence in $EVID_DIR)"
   echo "REFUTED"
   return 1
