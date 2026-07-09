@@ -2,8 +2,8 @@
 
 No agent runs `claude -p` or `claude --print`, **ever** — not as a worker, not to "test", not "it's
 only the sub", not buried in a tool's config. It bills the API / burns the Claude Max weekly quota.
-**No rationalization makes it OK; do not reason past it.** Use `codex exec` (Codex Pro sub), the local
-bushido llama, or an interactive NTM Claude pane (NOT `gemini -p` — not a sub-path, not AGY).
+**No rationalization makes it OK; do not reason past it.** Use native Codex or the local shell.
+Use another runtime only when the operator explicitly asks to test that runtime (NOT `gemini -p`).
 Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks/no-claude-p-guard.sh`.
 
 ---
@@ -14,7 +14,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 > tiered siblings ([`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md), [`AGENTS-CI.md`](AGENTS-CI.md),
 > [`AGENTS-CODEX.md`](AGENTS-CODEX.md), [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)) carry the detail one hop away.
 
-**AgentOps is the verification membrane: the loop produces validated output with proof.** The product catches the agent declaring "done" when it isn't — every change is independently verified (a fresh-context, cross-family or deterministic check) and reaches *done* only with a proof artifact (a verdict in the ledger; **no verdict = not done**). **Every skill and tool feeds this one loop** — none is judged in isolation; a producer's output is not done until the membrane writes a verdict on it. The membrane's self-improvement **mechanism is proven**: each *escape* (a verdict that said CONFIRMED but later proved wrong) compiles into a check that catches it next time (the EM spine, e2e). Whether the **escape-corpus actually *compounds*** is a demoted, **unproven** hypothesis facing a structural data-starvation headwind — a *competent* membrane catches at review, so escapes are structurally rare (measured: 0 escapes across 130 real production verdicts; a stronger weak-producer's subtle compiling bugs still caught 3/3), making self-improvement anti-correlated with membrane quality ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)) — as is the knowledge corpus / flywheel it also compiles ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)). Neither is the product; the proven product is the verification itself (**no verdict = not done**). Plugin + CLI (hookless — skills + the `ao` CLI, with the local cockpit/pawl gate as release authority), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled runs.
+**AgentOps is the verification membrane: the loop produces validated output with proof.** The product catches the agent declaring "done" when it isn't — every change is verified by deterministic tests or gates by default and reaches *done* only with a proof artifact (a verdict in the ledger; **no verdict = not done**). Fresh-context Codex review and cross-family review are opt-in: use them only when the operator explicitly requests review fan-out. **Every skill and tool feeds this one loop** — none is judged in isolation; a producer's output is not done until the membrane writes a verdict on it. The membrane's self-improvement **mechanism is proven**: each *escape* (a verdict that said CONFIRMED but later proved wrong) compiles into a check that catches it next time (the EM spine, e2e). Whether the **escape-corpus actually *compounds*** is a demoted, **unproven** hypothesis facing a structural data-starvation headwind — a *competent* membrane catches at review, so escapes are structurally rare (measured: 0 escapes across 130 real production verdicts; a stronger weak-producer's subtle compiling bugs still caught 3/3), making self-improvement anti-correlated with membrane quality ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)) — as is the knowledge corpus / flywheel it also compiles ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)). Neither is the product; the proven product is the verification itself (**no verdict = not done**). Plugin + CLI (hookless — skills + the `ao` CLI, with the local cockpit/pawl gate as release authority), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled runs.
 
 ## How we work — every change goes through these seven moves
 
@@ -24,7 +24,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 2. **Track as a bead** when it leaves your head — the linked-intent packet carrying acceptance, BC tag, slice list, wave plan, accruing evidence. One-shot in-prompt work needs no bead. → `ao beads dir` then `BEADS_DIR=<that path> br …`
 3. **Slice vertically** through behavior — each slice cuts through whatever layers demonstrate one Given/When/Then, never a horizontal layer.
 4. **TDD per slice** — first the failing test (the slice's contract), then implementation. Code without a failing test has no acceptance surface. → `/implement`
-5. **Group into a wave only when write scopes do not collide** — parallelism is explicit ownership; default to sequential. ≥2 writers on a shared path ⇒ Agent Mail reserve first. → `/swarm`, `/crank`
+5. **Stay in one native Codex lane by default** — parallelism is opt-in, never inferred from repo activity or task size. Spawn Codex subagents only when the operator explicitly asks for fan-out. If explicitly running multiple writers, isolate them with disjoint worktrees and write scopes; use Agent Mail only when the operator explicitly requests that coordination substrate. → `/swarm`, `/crank`
 6. **Close the bead by proving its acceptance** — the gate here is the *windshield*: deterministic ground-truth that catches a confident hallucination re-planning alone can't. → `ao gate check --fast --scope head`, `/validate`
 7. **Capture evidence + learning, then ratchet** — promote what changes future behavior; kill artifacts that don't. → `/post-mortem` (`/curate` (retired, folded into `/post-mortem`) and the corpus-flywheel skills are experimental-tier — kept, not primary)
 
@@ -32,13 +32,14 @@ Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-
 
 **Tracker = `br` (beads_rust) + `bv`.** Offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache); triage with `bv` (`bv --robot-insights`). Resolve the live private ledger with `ao beads dir` before every direct `br` read/write, especially in linked worktrees where `$PWD/_beads` is usually absent. Invoke as `BEADS_DIR="$(ao beads dir)" br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C "$(ao beads dir)" push`, **never** `git add _beads`. **Two-store truth:** `br` is **AgentOps' own repo tracker** (this repo's beads). **`bd`/Dolt is the gascity SUBSTRATE store** — first-class and embraced, the native store a gas-city factory runs on (it engaged and killed the file-backend brittleness). They are **different layers**, not competitors: substrate store vs product-repo tracker. So do not run `bd` for **this repo's** tracking (use `br`) — but bd/dolt is legitimate wherever you are operating the gascity substrate.
 
-**Out-of-session orchestration** is a swappable substrate — AgentOps ships no daemon. Reference substrate: **NTM** (local tmux swarm) + **MCP Agent Mail** (`ao mcp serve`) + **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit. The `ao rpi` command surface was removed (f61c5f0e7); the operating loop is the live navigation path. Always-on is opt-in. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md). **Gas City (`gc`) is a blessed coexisting substrate for city-shaped work** — durable supervised agents over the bd/dolt store, with the AgentOps membrane composed on top as the [`packs/agentops-membrane`](packs/agentops-membrane/) close door. Operator choice, never auto-routed (no `runtime=gc`, no `ao gc`): drive it via [`skills/using-gc/SKILL.md`](skills/using-gc/SKILL.md) (standup · run · admin · troubleshoot) with [`skills/gc-membrane/SKILL.md`](skills/gc-membrane/SKILL.md) as the close-door reference.
+**Out-of-session orchestration is optional and operator-selected.** AgentOps ships no daemon. NTM, Agent Mail, managed-agents, and Gas City are available substrates, but agents MUST NOT start, register with, probe, or route work through them unless the operator explicitly asks for that substrate. The `ao rpi` command surface was removed (f61c5f0e7); the operating loop is the live navigation path. See [`docs/3.0.md`](docs/3.0.md) and [`docs/dependencies.md`](docs/dependencies.md).
 
-> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao lookup --query "<topic>"` to pull decay-ranked prior context.
+> **Runtime default: native Codex + local shell.** Do not automatically run `ao session bootstrap` or `ao lookup`; do not start NTM/ATM, Agent Mail, managed-agents, Gas City, or cross-model reviewers. Use those only when the operator explicitly requests them. `ao` remains the product CLI for repository commands and gates, not a mandatory session bootstrap or orchestration runtime.
+> This runtime-selection rule overrides sibling workflow or narrative docs that describe those optional substrates as automatic or mandatory. Those docs explain available workflows; they do not authorize starting one.
 
 ## Zero-context startup (read first)
 
-Run `ao session bootstrap`, then `ao lookup --query "<topic>"` for decay-ranked context. On your first message in a fresh session, read in this order:
+Read repository context directly from disk with native Codex tools. On your first message in a fresh session, read only what the task requires, using this order:
 
 1. [`docs/newcomer-guide.md`](docs/newcomer-guide.md) — practical repo orientation and learning path
 2. [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md) — consolidated subsystem map (BCs, ownership, gates, footguns)
@@ -78,10 +79,10 @@ Six bounded contexts: BC1 Corpus → BC6 Orchestration. Routing: [`docs/architec
 
 ## Active waist (3.0)
 
-In-session product path — run this unless a bead explicitly routes elsewhere:
+In-session product path — run this unless the operator explicitly routes elsewhere:
 
 ```text
-ao session bootstrap → ao lookup → operating loop → ao gate check --fast --scope head → push main
+read AGENTS.md + task-specific sources → native Codex + local shell → operating loop → deterministic tests/gate → push main
 ```
 
 | Layer | Where |
@@ -91,7 +92,7 @@ ao session bootstrap → ao lookup → operating loop → ao gate check --fast -
 | **Tracker** | `BEADS_DIR="$(ao beads dir)" br …` — br is THIS repo's tracker; `bd`/Dolt is the gascity substrate store (a different layer) |
 | **Skills SSOT** | `skills/<slug>/SKILL.md` — never `~/.claude/skills/` |
 | **Runtime corpus** | `.agents/` gitignored; provenance in `docs/provenance/ledger.jsonl` |
-| **Out-of-session** | NTM + Agent Mail + `ao agent` — optional; AgentOps ships no daemon |
+| **Out-of-session** | Operator-selected only; never auto-start NTM, Agent Mail, managed-agents, or Gas City |
 
 ## Foundation texts
 
@@ -111,7 +112,7 @@ Three drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI 
 - **First-edit rule.** First Edit/Write/Bash within your first 3 responses — execute first, research second.
 - **Intent echo.** Before a non-trivial task, state in ONE sentence what you understand; wait for confirmation on multi-file changes.
 - **Two-correction rule.** Corrected twice on the same task → STOP, re-read, restate what you now understand differently, confirm before retrying.
-- **Single-agent-first.** One capable agent with good bookkeeping is the default. Multi-agent (waves, NTM swarms, Agent Mail) is opt-in escalation — only at ≥2 active lanes; verify no write-scope overlap before spawning (file collisions are the #1 swarm failure). Detail: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) §8.
+- **Native-Codex-only by default.** One Codex agent using local shell tools is the default even when other worktrees or processes exist. Do not infer permission to orchestrate from detected concurrency. Codex subagent fan-out, cross-model review, NTM/ATM, Agent Mail, managed-agents, and Gas City all require an explicit operator request. When fan-out is requested, verify disjoint write scopes before spawning. Detail: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) §8.
 - **Before proposing new capability,** check it doesn't already exist — `skills/**/SKILL.md`, the `ao` surface (`cli/cmd/ao/`, `cli/docs/COMMANDS.md`), `GOALS.md`.
 
 ## Installing / updating skills
@@ -134,9 +135,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 ## Quick reference
 
 ```bash
-# Session + context (hookless — run explicitly)
-ao session bootstrap
-ao lookup --query "<query>"      # or: ao corpus inject --query "<query>"
+# Session + context
+# Read AGENTS.md and task-specific sources directly; no automatic bootstrap,
+# lookup, agent-mail registration, or orchestration startup.
 
 # Issue tracking (resolve first; linked worktrees do not carry _beads)
 BEADS_DIR="$(ao beads dir)" br ready
@@ -164,7 +165,7 @@ Run the local cockpit gate before pushing, then push the coherent bead arc direc
 | Edit the shared canonical checkout under swarm load | **Git worktree** per bead |
 | `git add _beads` | Never — sync with `git -C "$(ao beads dir)" push` |
 | Hand-edit `registry.json` / generated maps | `make regen-all` from sources |
-| Route new work through the (removed) `ao rpi` loop | Operating loop + NTM/Agent Mail substrate |
+| Route new work through the (removed) `ao rpi` loop | Native Codex operating loop; use an external substrate only when explicitly requested |
 | Trust stale narrative over executable behavior | Check `cli/`, generated docs, gates first |
 | Run `claude -p` / `claude --print` | **Forbidden** — LAW 0 above |
 
