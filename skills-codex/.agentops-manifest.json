@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "c973893c306eb725b89c04cc1b4e1f1a0f3399aca1c0eea148faab7a9df0412a",
+  "codex_override_catalog_hash": "1630b82dbdd0b35c3107ce02dbfbae7cf5a7fb71e53ce29ff9c316885e6a1442",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -997,7 +997,15 @@
         "name": "goal-design",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff."
+        "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff. Hookless startup guard is catalog-declared so parity regens preserve it (age-dcek refute-fix).",
+        "operator_contract": {
+          "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically."
+          ],
+          "required_sections": [
+            "## Codex Execution Profile"
+          ]
+        }
       }
     ]
   },
@@ -1131,8 +1139,8 @@
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "bcf738f0da4e11c4935204d6216cdef95f5b7a659fdea91c8038e6532f6ad5ed",
-      "generated_hash": "0744a5403df640715f7bcde06992b1b3a9e9bdb23b687a6548aaab4753c19ecc"
+      "source_hash": "9ee37e2614eb901904a5bbc22660761c24c72a5dd1c40c81e1095772f995a5a7",
+      "generated_hash": "61b6965d7fc96a35378fad551879a2a8d5184fcb3bd3e1f4bf42cfaccc0afe03"
     },
     {
       "name": "goals",
@@ -1341,8 +1349,8 @@
     {
       "name": "gc-membrane",
       "source_skill": "skills/gc-membrane",
-      "source_hash": "353a1af703627d4bb8acfecfb9826bf284891637a3a96e9f256b397bb78745c6",
-      "generated_hash": "38fd226414af458c4ef4e90842bdf557dd26ac55354ef5b8930d38c2cc8b569c"
+      "source_hash": "3cf929f139471a35f45e0081d85a13956495d82e2d54caa4c321df273f341aff",
+      "generated_hash": "c665bbd6e83057e1f282725d22058a0a1933272768af71e24dca19d6fa869aa3"
     },
     {
       "name": "using-gc",

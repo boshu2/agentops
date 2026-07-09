@@ -20,8 +20,8 @@ model: sonnet
 context:
   window: inherit
   intent:
-    mode: explicit
-  intel_scope: local
+    mode: task
+  intel_scope: topic
 metadata:
   tier: execution
   dependencies:
@@ -97,6 +97,32 @@ Given `/goal-design "<goal>" [--slug <slug>]`:
 6. **Hand off.** After validation, pass the packet path to `/discovery` or
    `/plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
    `S2`, or candidate behavior labels away.
+
+## Andon router (author it into driver.md)
+
+A long autonomous run is only safe if the goal carries its own escalation
+policy — a per-goal **class → tier** router, never a flat "escalate to me"
+(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon). When
+authoring `driver.md`, write the router as a table in the driver **body** and
+mirror its escalation semantics in the schema-validated `route_back_rules`
+frontmatter (auto → `validation_fails`, council →
+`promotion_contradicts_intent`, human → a breaker-trip clause in those rules):
+
+| One-way-door class | Tier | Machinery (reuse, never rebuild) |
+| --- | --- | --- |
+| Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
+| Architecture fork / plan-shape one-way door | **council** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
+| Money / legal / irreversible-external (the refusal lane) + any breaker trip | **human** | ESCALATE / HOLD — hand back to the operator |
+
+Every router carries the implicit final row: a slice that cannot pass
+validation in N rounds, an oscillation, or a scope-creep flag trips the
+breaker to **human** — stop and ask, never guess through it.
+
+**Schema limit (do not hack it):** the driver v1 schema is
+`additionalProperties: false` with no dedicated andon field, so the class →
+tier table lives in the driver body while `route_back_rules` carries the
+machine-checkable semantics. A driver v2 `andon_router` field is a candidate
+follow-up — do not modify the landed schemas, templates, or checker to add it.
 
 ## Output
 

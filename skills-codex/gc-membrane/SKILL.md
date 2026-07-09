@@ -1,6 +1,6 @@
 ---
 name: gc-membrane
-description: Reference for the agentops-membrane Gas City
+description: 'The agentops-membrane pack: fail-closed'
 ---
 # gc-membrane — the AgentOps close door for Gas City
 

@@ -19,9 +19,9 @@ check() {
 
 check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "frontmatter name" "grep -q '^name: goal-design' '$SKILL_DIR/SKILL.md'"
-check "lifecycle guard" "grep -q 'ao codex ensure-start' '$SKILL_DIR/SKILL.md'"
 check "helper documented" "grep -q 'scripts/goal-design-packet.py new' '$SKILL_DIR/SKILL.md'"
-check "prompt exists" "[ -f '$SKILL_DIR/prompt.md' ]"
+check "checker documented" "grep -q 'check-goal-design-packet.sh' '$SKILL_DIR/SKILL.md'"
+check "independent validation required" "grep -qi 'independent validation' '$SKILL_DIR/SKILL.md'"
 check "helper tests exist" "[ -f '$REPO_ROOT/tests/scripts/goal-design-packet.bats' ]"
 
 echo
