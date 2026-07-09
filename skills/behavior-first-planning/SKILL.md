@@ -99,6 +99,8 @@ Then apply the **mechanical gate** (compute it, do not self-report):
 
 A bead failing any check is **rejected**, not written. Only the gate-passed set advances.
 
+**Batch size — one behavior per slice (mechanical).** A slice bead delivers **exactly one** behavior = **one** Gherkin scenario; a slice carrying two or more is a batch, not a slice, and must be split. Enforce it mechanically, don't eyeball it: `bash scripts/check-slice-batch-size.sh <bead-id>` reads the bead body and FAILs on >1 scenario (naming the count and the scenarios to split), PASSes on exactly one, and WARNs on zero (advisory — a scenario-less task bead is not hard-blocked while this discipline is new). Run it at plan time before a slice becomes a bead, and again at **crank** time on any slice that *grew* — surfaced extra behavior becomes a follow-up bead, never absorbed into the current slice.
+
 ## The closing gate — validate BEFORE the tracker write
 
 Behavior-first planning is **not done when the beads are drafted — it is done when an independent reviewer confirms them.** Before writing anything to the tracker:
