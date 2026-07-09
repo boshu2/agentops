@@ -28,7 +28,7 @@ output_contract: PRODUCT.md
 ---
 # /product — Interactive PRODUCT.md Generation
 
-> **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability.
+> **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability into testable behaviors (the S2 handoff into the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this)).
 
 > **Purpose:** Guide the user through creating a `PRODUCT.md` that unlocks product-aware reviews in `/pre-mortem` and `/validate`, including the default quick-mode inline paths.
 
@@ -294,6 +294,7 @@ This file enables product-aware reviews:
 
 - **`/pre-mortem`** — Automatically loads product context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `product` perspective alongside plan-review judges.
 - **`/validate`** — Automatically loads developer-experience context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `developer-experience` perspective alongside code-review judges.
+- **`/discovery`** — turns the PMF wedge and 10-Star journey into the Gherkin acceptance behaviors that seed the loop; PRODUCT.md scope is the in-scope test for those behaviors.
 - **`/council --preset=product`** — Run product review on demand.
 - **`/council --preset=developer-experience`** — Run DX review on demand.
 

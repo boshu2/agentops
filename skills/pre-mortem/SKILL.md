@@ -169,6 +169,11 @@ Five mandatory checks run during council validation — temporal interrogation, 
 
 When a plan introduces a regex, grep, glob, or similar scope predicate, also apply [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md): require positive and negative examples before approval.
 
+**Narrow-waist slice checks (S1/S3/S4 — FAIL the plan if any fails).** The plan feeds the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this); confirm each slice can run it:
+- **One behavior per slice (S1):** reject any slice that bundles ≥2 Given/When/Then behaviors — send back to `/plan` for re-slicing.
+- **ATDD-red gate (S3):** each slice must name a runnable acceptance test authored to fail RED before implementation; a slice with no failing acceptance test is FAIL (no test = no contract).
+- **Refactor-separated (S4):** flag any slice that mixes a refactor with a feature, or whose refactor step changes a test — refactor-under-green is its own slice.
+
 **Re-baseline against what exists (mandatory when the plan proposes NEW
 construction).** A plan that says "build X" / "X is missing" / "the unbuilt
 arm" must prove X does not already exist — `grep`/read the codebase for the

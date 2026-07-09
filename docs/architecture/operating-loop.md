@@ -13,7 +13,24 @@ BDD-shaped intent issue
   → evidence + learning capture (under the promotion ratchet)
 ```
 
-> **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (escape → new check → re-measure) is the compounding that has a deterministic gradient.
+## The narrow-waist micro-cycle (canonical — every loop skill cites this)
+
+The 3.0 narrow waist ([3.0 → four load-bearing practices](../3.0.md#the-four-load-bearing-practices-the-narrow-waist)) executes, per slice, as **one** repeatable micro-cycle. This is the canonical statement of the shape; every operating-loop skill reinforces the SAME sequence rather than restating it:
+
+```text
+small batch          one behavior per slice — never a big-batch bundle           [S1]
+  → BDD              the behavior written as Gherkin (Given/When/Then)            [S2]
+  → ATDD             its acceptance test authored + run RED before code          [S3]
+  → green            smallest implementation that flips the test green           (S3→S4)
+  → refactor         refactor-UNDER-green as its own step; NEVER change a test   [S4]
+  → membrane         an independent verdict binds the slice's acceptance test    [S5]
+  → mine back        by-products of inference + lessons ratchet into the NEXT    [S6]
+                     loop (a gate catch → a check; an escape → a new gate)
+```
+
+Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), [`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md), the [pawl-gate](../contracts/pawls.md) (`no verdict = not done`); **S6 ratchet** — move 7 below + the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
+
+> **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane (S5) has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (S6: escape → new check → re-measure) is the compounding that has a deterministic gradient.
 
 The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md). Promote changes there first, then update this doc.
 
@@ -139,7 +156,9 @@ example to the test, gate, or eval that proved it.
 
 ### 7. Capture evidence and learning, then ratchet
 
-Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary). The corpus-flywheel skills `/curate`, `/flywheel`, and `/compile` are retired (2026-07-07 wave — folded into `/post-mortem`'s mining surface; mechanical surfaces live on the CLI: `ao compile`, `ao flywheel status`) and are no longer part of the primary ratchet.
+Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary).
+
+**S6 is not "write a learning" — it is "make the NEXT loop consume it."** A by-product of inference or a lesson learned is durable only when it lands as something a later move will *read* (the 3.0 rule "knowledge becomes constraints"). Route by class: a **membrane escape** (CONFIRMED-but-later-wrong) compiles into a mechanical gate/check (the escape→check ratchet); a **judgment lesson** compiles into a `/plan` planning-rule, a `/pre-mortem` check, or — when a gate caught a defect a green test missed — a new dimension appended to `docs/gate/findings-ledger.md`, which is exactly the ledger [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) reads to ratchet its Standing Review Dimensions. If nothing downstream reads the artifact, S6 did not happen — it is a landfill entry, not a ratchet ([3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules)). The corpus-flywheel skills `/curate`, `/flywheel`, and `/compile` are retired (2026-07-07 wave — folded into `/post-mortem`'s mining surface; mechanical surfaces live on the CLI: `ao compile`, `ao flywheel status`) and are no longer part of the primary ratchet.
 
 ### The loop closes here: re-plan on evidence, not just on failure
 

@@ -92,7 +92,11 @@ all **judgment-class**, so a gate is the exception, not the goal:
 - **Judgment-class** (the common case): bind a **producer-side fix** — a rule in the
   owning skill's standards, a `CLAUDE.md`/`AGENTS-*.md` footgun, a `/plan`
   planning-rule, or a `/discovery` pre-mortem check. For a judgment defect this **is**
-  the highest feasible binding, not a fallback. Then add a row to the
+  the highest feasible binding, not a fallback. **When a gate/adversary CAUGHT a defect
+  a green test missed, also append the dimension to `docs/gate/findings-ledger.md`** —
+  that is the ledger [`behavior-first-planning`](../../behavior-first-planning/SKILL.md)
+  reads to ratchet its Standing Review Dimensions, so the catch closes back into the
+  NEXT loop's planning (S6). Then add a row to the
   **[producer-defect register](../../../docs/architecture/producer-defect-register.md)**:
   the class, the fix + surface, and the recurrence count now (the "before").
 
