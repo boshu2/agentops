@@ -125,7 +125,15 @@ func absolutePathNeedles(t *testing.T, repoRoot string) []pathNeedle {
 		needles = append(needles, pathNeedle{name: "checkout root", value: repoRoot})
 	}
 	if tmp := os.Getenv("TMPDIR"); tmp != "" {
-		needles = append(needles, pathNeedle{name: "$TMPDIR", value: strings.TrimRight(tmp, "/") + "/"})
+		trimmed := strings.TrimRight(tmp, "/")
+		needles = append(needles, pathNeedle{name: "$TMPDIR", value: trimmed + "/"})
+		// macOS canonicalizes $TMPDIR (/var/folders/...) to its /private-prefixed realpath
+		// (/private/var/folders/...) via EvalSymlinks (the /var -> /private/var symlink); a
+		// command that resolves its temp path leaks THAT form, which the raw-$TMPDIR needle
+		// above would miss. Catch the canonicalized temp root at the source too. (age-i9ce)
+		if canon, err := filepath.EvalSymlinks(tmp); err == nil && strings.TrimRight(canon, "/") != trimmed {
+			needles = append(needles, pathNeedle{name: "canonicalized $TMPDIR", value: strings.TrimRight(canon, "/") + "/"})
+		}
 	}
 	return needles
 }

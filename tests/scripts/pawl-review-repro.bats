@@ -236,3 +236,18 @@ REJECT"
   [[ "$output" == *"WD=$REPO_ROOT/cli"* ]]
   [[ "$output" == *"ARGV=go test ./cmd/ao"* ]]
 }
+
+# age-7hgb: a NON-canonical, already-module-relative go repro (omitting the cli/ prefix real diff
+# paths carry) walks up from a nonexistent <root>/cmd/ao, finds no enclosing go.mod, and USED to
+# fall back to the repo ROOT verbatim -> `go: cannot find main module`. The root-fallback retry
+# relocates it to the single known module subdir (cli/) with the argv token left AS-IS.
+@test "_repro_go_workdir: age-7hgb root-fallback retry — go test ./cmd/ao (no cli/ prefix) resolves to cli/, argv verbatim" {
+  local root="$TMP/synth5"
+  mkdir -p "$root/cli/cmd/ao"
+  printf 'module example.com/x\ngo 1.22\n' > "$root/cli/go.mod"
+  [ ! -f "$root/go.mod" ]                            # no module at root: the old code fell back here and failed
+  run bash -c 'source "'"$SCRIPT"'"; _repro_go_workdir "'"$root"'" go test ./cmd/ao -run TestFoo; printf "WD=%s\n" "$_REPRO_WORKDIR"; printf "ARGV=%s\n" "${_REPRO_ARGV[*]}"'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WD=$root/cli"* ]]                # relocated into the single known module subdir…
+  [[ "$output" == *"ARGV=go test ./cmd/ao -run TestFoo"* ]]   # …with the already-module-relative token left AS-IS
+}
