@@ -155,13 +155,14 @@ Each `.agents/swarm/results/<id>.json` or the worker's final message SHOULD incl
 ```
 files_changed: [list of exact paths]
 commit_sha: <git rev-parse HEAD>   # or "no commit" + reason
+red_evidence: <the acceptance test output failing BEFORE impl>  # the slice's ATDD contract (S3)
 test_tail: <verbatim last N lines of test output>
 conflicts_surfaced: [list, or "none"]
 ```
 
-A result missing `commit_sha` or `test_tail` is treated as **unverified** until the
+A result missing `commit_sha`, `red_evidence`, or `test_tail` is treated as **unverified** until the
 orchestrator independently confirms persistence and test passage. The audit cost of
-trusting summaries exceeds the cost of requiring the fields.
+trusting summaries exceeds the cost of requiring the fields. Worker self-report is not the membrane: each slice still needs an independent verdict (cite crank's Land Loop pawl) before a wave closes — no verdict = not done (S5).
 
 ### Lane authority (POLICY, card 4 — applies when running a two-lane swarm)
 
@@ -195,7 +196,7 @@ TaskCreate -> Define tasks
 /swarm -> Execute in parallel
 ```
 
-The knowledge flywheel captures learnings from each agent.
+The knowledge flywheel captures learnings from each agent. Harvest `.agents/swarm/scope-escapes.jsonl` and the wave's by-products back into the next wave/loop (S6) — an escape a worker surfaced is next-loop input, not a dropped line. See [operating-loop.md → move 7](../../docs/architecture/operating-loop.md).
 
 ## Task Management Commands
 

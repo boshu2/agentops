@@ -49,6 +49,7 @@ same note:
 |---|---|---|
 | `AGENTS.md`/`CLAUDE.md` | always-on context | doctrine relevant to *most* turns in this repo |
 | a **SKILL.md** | JIT, model-invoked | contextual judgment that fires on a trigger |
+| `docs/gate/findings-ledger.md` | ratchets `behavior-first-planning`'s Standing Review Dimensions | a gate/adversary CAUGHT a defect a green test missed — feed it back so the NEXT loop's planning red-teams for it (S6 loop-closure) |
 | a **gate/hook** | mechanical, un-skippable | must-never-regress; cannot be left to judgment |
 
 Put it as high as needed and no higher: a hook for what an agent must not be
