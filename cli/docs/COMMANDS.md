@@ -2495,6 +2495,22 @@ ao membrane derive-checks --run <id> [flags]
       --run string   Run id to scan for escapes (required)
 ```
 
+#### `ao membrane digest`
+
+Mine the ABUNDANT catch corpus into a single GLOBAL top-N recurring-defect
+
+```
+ao membrane digest [--top N] [--json] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help      help for digest
+      --json      Also print the ranked digest as JSON (the checklist file is written either way)
+      --top int   How many top recurring catch classes to include (default 10)
+```
+
 #### `ao membrane recall`
 
 Recall the membrane's accumulated memory for one bounded context: every
