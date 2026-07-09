@@ -47,6 +47,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `evals` | persistent | cli, scripts | eval-evidence | Eval run outputs, promoted baselines, and suite execution state |
 | `findings` | persistent | scripts, skills | promotion-inbox | Mined findings awaiting promotion |
 | `git` | persistent | cli | git-cache | Git-derived state cached for the runtime |
+| `goal-design` | persistent | skills, operators, tests | goal-design-packet | Schema-backed goal-design packets (`intent.md` + `driver.md`) under `.agents/goal-design/<slug>/`; generated packets stay local runtime state and must pass `scripts/check-goal-design-packet.sh` plus independent validation before driving work |
 | `handoffs` | persistent | cli | durable-replay-artifact | Content-addressed handoff artifacts keyed by sha256 for job replay |
 | `harvest` | persistent | cli | promotion-artifact | Cross-rig promotion sweep output (`.agents/harvest/latest.json`) written by `ao harvest`; formerly covered by the retired `harvest` skill (folded into `curate --mode=harvest`, cp-dxa) |
 | `holdout` | persistent | cli, skills | scenario-store | Holdout scenarios stored outside the codebase view |
@@ -130,6 +131,7 @@ duel
 evals
 findings
 git
+goal-design
 handoffs
 harvest
 holdout
