@@ -102,10 +102,12 @@ all **judgment-class**, so a gate is the exception, not the goal:
 
 The two-strikes rule (once → handoff; repeats → promote; must-never-regress → gate,
 for the compilable case) is the admission bar. The **measurement** is the register's
-recurrence-before-vs-after: the *next* post-mortem that runs `ao membrane triage` fills
-the "after" — a class that recurs after its fix means the binding was too weak, so
-escalate it. Also classify a batch of the **unclassified-catch floor** each run — that
-floor is the register's fuel.
+recurrence-before-vs-after: run `ao membrane digest --deltas --since <fix-date>` (the
+fix's land date, e.g. `git show -s --format=%cI <sha>`) — it prints each class's
+`before=N since=M`, auto-derived from the catch corpus — and record the numbers in the
+register's "before → after" column. A class that recurs after its fix (`since > 0`)
+means the binding was too weak, so escalate it. Also classify a batch of the
+**unclassified-catch floor** each run — that floor is the register's fuel.
 
 > **Honest scope:** this route does not claim a compounding moat (ADR-0004/0011 remain
 > unproven, and we do not market ahead of them). It claims exactly one falsifiable

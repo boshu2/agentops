@@ -478,3 +478,62 @@ func TestIsPlaceholderReason(t *testing.T) {
 		}
 	}
 }
+
+// appendCatchAt records a REFUTED catch via the PRODUCTION writer at an explicit
+// timestamp — the fixture the deltas (before/after a cutoff) measurement needs.
+func appendCatchAt(t *testing.T, root, bead, headSHA, domain, reason string, attempt int, ts time.Time) {
+	t.Helper()
+	w := Writer{}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID:          bead,
+		RunID:           "run-1",
+		TS:              ts,
+		Difficulty:      1,
+		PawlVerdictRef:  PawlVerdictRef{BeadID: bead, HeadSHA: headSHA},
+		Disposition:     DispositionRefuted,
+		AuthorContextID: "ctx",
+		AuthorFamily:    "claude",
+		RefuterFamilies: []string{"codex"},
+		HeadSHA:         headSHA,
+		Attempt:         attempt,
+		Domain:          domain,
+		Reason:          reason,
+	}); err != nil {
+		t.Fatalf("append catch %s a%d: %v", bead, attempt, err)
+	}
+}
+
+// TestDetectCatches_InstanceTimestampsRoundCollapsed pins the per-instance TS the
+// deltas measurement (age-de5t) reads: each DISTINCT (bead, head) occurrence carries
+// the envelope ts of its FIRST REFUTED round (round-collapse: a later round on the
+// SAME occurrence never re-stamps it), and a second occurrence carries its own ts.
+func TestDetectCatches_InstanceTimestampsRoundCollapsed(t *testing.T) {
+	root := t.TempDir()
+	t1 := time.Date(2026, 7, 1, 9, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 7, 2, 9, 0, 0, 0, time.UTC)
+	t3 := time.Date(2026, 7, 8, 9, 0, 0, 0, time.UTC)
+	// Occurrence 1: two REFUTED rounds on the SAME (bead, head) — one instance, TS=t1.
+	appendCatchAt(t, root, "age-x1", "head0001", "go", "missing t.Cleanup restore of shared global", 1, t1)
+	appendCatchAt(t, root, "age-x1", "head0001", "go", "missing t.Cleanup restore of shared global", 2, t2)
+	// Occurrence 2: same class, different bead — second instance, TS=t3.
+	appendCatchAt(t, root, "age-x2", "head0002", "go", "missing t.Cleanup restore of shared global", 1, t3)
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	catches := DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("want 1 class, got %d: %#v", len(catches), catches)
+	}
+	c := catches[0]
+	if c.HitCount != 2 || len(c.Instances) != 2 {
+		t.Fatalf("want 2 round-collapsed instances, got HitCount=%d Instances=%d", c.HitCount, len(c.Instances))
+	}
+	if got, want := c.Instances[0].TS, t1.Format(time.RFC3339); got != want {
+		t.Errorf("instance[0].TS must be the FIRST round's envelope ts %q, got %q", want, got)
+	}
+	if got, want := c.Instances[1].TS, t3.Format(time.RFC3339); got != want {
+		t.Errorf("instance[1].TS = %q, want %q", got, want)
+	}
+}

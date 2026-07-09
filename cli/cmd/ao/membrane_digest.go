@@ -44,10 +44,12 @@ var (
 	membraneDigestTopN                int
 	membraneDigestJSON                bool
 	membraneDigestIncludePlaceholders bool
+	membraneDigestDeltas              bool
+	membraneDigestSince               string
 )
 
 var membraneDigestCmd = &cobra.Command{
-	Use:   "digest [--top N] [--json]",
+	Use:   "digest [--top N] [--json] [--deltas --since <date>]",
 	Short: "Mine the catch corpus into a GLOBAL top-N recurring-defect checklist the loop's START consumes",
 	Long: `Mine the ABUNDANT catch corpus into a single GLOBAL top-N recurring-defect
 checklist (age-xbmf). Every REFUTED gate-verdict carrying a domain+reason is a
@@ -76,7 +78,17 @@ planning reads): digest never writes the curated ledger, and the checklist is
 marked "do not hand-edit". --json additionally prints the ranked list as JSON.
 
 HONEST SCOPE (ADR-0004/0011): these are recurring catch classes to watch for,
-nothing more — no compounding-moat or self-improvement claim.`,
+nothing more — no compounding-moat or self-improvement claim.
+
+DELTAS MODE (age-de5t): --deltas --since <ISO-date|RFC3339> is the producer-defect
+register's honesty check — for each catch class it prints hits BEFORE vs hits SINCE
+the cutoff (a producer fix's land date, e.g. ` + "`git show -s --format=%cI <sha>`" + `),
+sorted still-recurring first (since DESC, before DESC); a 0-since class is marked
+improved. READ-ONLY: it writes no checklist and never edits the register — the
+post-mortem runner (BP.7) records the numbers into
+docs/architecture/producer-defect-register.md. --top does not apply (every class is
+shown, so the class you fixed is always visible); --json prints the same shape
+machine-readably.`,
 	RunE: runMembraneDigest,
 }
 
@@ -85,6 +97,8 @@ func init() {
 	membraneDigestCmd.Flags().IntVar(&membraneDigestTopN, "top", catchDigestDefaultTopN, "How many top recurring catch classes to include")
 	membraneDigestCmd.Flags().BoolVar(&membraneDigestJSON, "json", false, "Also print the ranked digest as JSON (the checklist file is written either way)")
 	membraneDigestCmd.Flags().BoolVar(&membraneDigestIncludePlaceholders, "include-placeholders", false, "Include reason-less placeholder classes (e.g. \"pawl-review REFUTED (see evidence)\") for corpus auditing; excluded by default so the checklist stays actionable")
+	membraneDigestCmd.Flags().BoolVar(&membraneDigestDeltas, "deltas", false, "Per-class recurrence before vs since --since (read-only; for the producer-defect register)")
+	membraneDigestCmd.Flags().StringVar(&membraneDigestSince, "since", "", "Cutoff for --deltas: an ISO date (2026-07-08, UTC midnight) or RFC3339 timestamp — typically a producer fix's land date")
 }
 
 // catchDigestEntry is one ranked recurring catch class in the digest.
@@ -236,6 +250,154 @@ func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders boo
 	}
 }
 
+// catchDeltaEntry is one class's recurrence split around the --since cutoff: how
+// often the membrane caught it BEFORE vs SINCE. It is the row the producer-defect
+// register's "Recurrence before → after" column is filled from (age-de5t).
+type catchDeltaEntry struct {
+	ClassKey string   `json:"class_key"`
+	Domain   string   `json:"domain"`
+	Reason   string   `json:"reason"`
+	Before   int      `json:"before"`
+	Since    int      `json:"since"`
+	Beads    []string `json:"beads,omitempty"`
+	// Improved marks the loop's success shape: the class WAS being caught (before>0)
+	// and has not recurred since the cutoff (since==0).
+	Improved    bool `json:"improved"`
+	Placeholder bool `json:"placeholder,omitempty"`
+}
+
+// catchDeltas is the whole deltas report — the --json shape and the render input.
+type catchDeltas struct {
+	GeneratedAt         string            `json:"generated_at"`
+	Since               string            `json:"since"`
+	TotalClasses        int               `json:"total_classes"`
+	PlaceholderClasses  int               `json:"placeholder_classes"`
+	IncludePlaceholders bool              `json:"include_placeholders"`
+	Entries             []catchDeltaEntry `json:"entries"`
+}
+
+// parseDeltaCutoff parses the --since cutoff: a bare ISO date (UTC midnight) or a
+// full RFC3339 timestamp. Deliberately git-free — resolving a ref would couple a
+// pure ledger measurement to repo state; the runner gets a fix's land date with
+// `git show -s --format=%cI <sha>` and pastes it. The result is normalized to UTC.
+func parseDeltaCutoff(s string) (time.Time, error) {
+	s = strings.TrimSpace(s)
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t.UTC(), nil
+	}
+	if t, err := time.Parse("2006-01-02", s); err == nil {
+		return t.UTC(), nil
+	}
+	return time.Time{}, fmt.Errorf("ao membrane digest: --since %q is not an ISO date (2026-07-08) or RFC3339 timestamp", s)
+}
+
+// buildCatchDeltas splits every class's round-collapsed instances around cutoff
+// (before: ts < cutoff; since: ts >= cutoff) and sorts still-recurring classes
+// first (Since DESC, then Before DESC, then ClassKey ASC) — so the classes whose
+// producer fixes did NOT hold lead, and every 0-since class trails as improved.
+// Placeholder classes are filtered exactly as in the default digest mode. Unlike
+// the digest this is a flat measurement, not an attention ranking: no topN, and
+// included placeholders sort inline (tagged), not below.
+func buildCatchDeltas(all []yieldledger.Catch, cutoff time.Time, includePlaceholders bool, now time.Time) catchDeltas {
+	d := catchDeltas{
+		GeneratedAt:         now.UTC().Format(time.RFC3339),
+		Since:               cutoff.UTC().Format(time.RFC3339),
+		TotalClasses:        len(all),
+		IncludePlaceholders: includePlaceholders,
+		Entries:             []catchDeltaEntry{},
+	}
+	for _, c := range all {
+		placeholder := yieldledger.IsPlaceholderReason(c.Reason)
+		if placeholder {
+			d.PlaceholderClasses++
+			if !includePlaceholders {
+				continue
+			}
+		}
+		before, since := 0, 0
+		for _, inst := range c.Instances {
+			// Load validates every envelope ts as RFC3339, so this parse cannot fail
+			// on a loaded ledger; if it ever did, count the hit as BEFORE — the
+			// conservative side (it can only understate an improvement, never fake one).
+			ts, err := time.Parse(time.RFC3339, inst.TS)
+			if err != nil || ts.Before(cutoff) {
+				before++
+			} else {
+				since++
+			}
+		}
+		d.Entries = append(d.Entries, catchDeltaEntry{
+			ClassKey:    c.ClassKey,
+			Domain:      c.Domain,
+			Reason:      c.Reason,
+			Before:      before,
+			Since:       since,
+			Beads:       c.Beads,
+			Improved:    before > 0 && since == 0,
+			Placeholder: placeholder,
+		})
+	}
+	sort.SliceStable(d.Entries, func(i, j int) bool {
+		a, b := d.Entries[i], d.Entries[j]
+		if a.Since != b.Since {
+			return a.Since > b.Since
+		}
+		if a.Before != b.Before {
+			return a.Before > b.Before
+		}
+		return a.ClassKey < b.ClassKey
+	})
+	return d
+}
+
+// runMembraneDigestDeltas is the --deltas lane: a READ-ONLY per-class
+// before/since measurement printed for the post-mortem runner to record into the
+// producer-defect register. It writes no checklist and never edits the register —
+// a doc-mutating command is a bigger decision than this measurement (age-de5t).
+func runMembraneDigestDeltas(cmd *cobra.Command) error {
+	cutoff, err := parseDeltaCutoff(membraneDigestSince)
+	if err != nil {
+		return err
+	}
+	root, err := repoRootOrCwd()
+	if err != nil {
+		return err
+	}
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return err
+	}
+	d := buildCatchDeltas(yieldledger.DetectCatches(ledger), cutoff, membraneDigestIncludePlaceholders, time.Now())
+
+	out := cmd.OutOrStdout()
+	if membraneDigestJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(d)
+	}
+	if len(d.Entries) == 0 {
+		if d.PlaceholderClasses > 0 && !d.IncludePlaceholders {
+			fmt.Fprintf(out, "membrane deltas: no actionable catch classes — filtered %d reason-less placeholder class(es) (--include-placeholders to audit)\n", d.PlaceholderClasses)
+		} else {
+			fmt.Fprintln(out, "membrane deltas: no catch classes in the ledger — nothing to measure")
+		}
+		return nil
+	}
+	fmt.Fprintf(out, "membrane deltas: %d catch class(es) vs cutoff %s — hits before vs since (0 since = improved)\n\n", len(d.Entries), d.Since)
+	for _, e := range d.Entries {
+		tag := ""
+		if e.Improved {
+			tag = " [improved]"
+		}
+		if e.Placeholder {
+			tag += " (placeholder)"
+		}
+		fmt.Fprintf(out, "  before=%d since=%d  %s (%s)%s\n", e.Before, e.Since, e.Reason, e.Domain, tag)
+	}
+	fmt.Fprintf(out, "\nRecord as \"before → after\" in docs/architecture/producer-defect-register.md (BP.7).\n")
+	return nil
+}
+
 // renderCatchDigest serializes the digest into the .agents/pre-mortem-checks/*.md
 // shape /pre-mortem's loader reads: YAML frontmatter (type: pre-mortem-check,
 // status: active, applicable_when) then a `# Pre-Mortem Check:` heading and the
@@ -301,6 +463,17 @@ func renderCatchDigest(d catchDigest) []byte {
 // runMembraneDigest loads the yield ledger, detects catch classes, ranks them
 // globally, and writes the checklist to the auto-mined pre-mortem-checks sink.
 func runMembraneDigest(cmd *cobra.Command, _ []string) error {
+	// --deltas/--since pair or neither: --since without --deltas would silently do
+	// nothing, and --deltas without a cutoff has nothing to measure against.
+	if membraneDigestSince != "" && !membraneDigestDeltas {
+		return fmt.Errorf("ao membrane digest: --since requires --deltas")
+	}
+	if membraneDigestDeltas {
+		if strings.TrimSpace(membraneDigestSince) == "" {
+			return fmt.Errorf("ao membrane digest: --deltas requires --since <ISO-date|RFC3339> (the producer fix's land date)")
+		}
+		return runMembraneDigestDeltas(cmd)
+	}
 	if membraneDigestTopN <= 0 {
 		return fmt.Errorf("ao membrane digest: --top must be > 0 (got %d)", membraneDigestTopN)
 	}

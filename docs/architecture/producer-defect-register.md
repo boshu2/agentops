@@ -10,6 +10,7 @@
 2. Classify: **compilable** → open a gate bead (Loop B, rare). **Judgment-class** → bind a producer fix (Loop C) and add a row below.
 3. Bind at the highest surface the defect's *nature* allows — for a judgment defect that is the skill/footgun/plan-rule, which is the correct binding, not a fallback.
 4. Fill `Recurrence before` from the catch count at fix time. Leave `Recurrence after` to be filled by the *next* post-mortem that runs triage — that is the measurement.
+5. Fill before/after mechanically via `ao membrane digest --deltas --since <fix-date>` (the fix's land date, e.g. `git show -s --format=%cI <sha>`; `--json` for the machine shape). Each class prints `before=N since=M`, auto-derived from the catch corpus: a `since=0` class is *improved*; a class still recurring sorts first — the binding was too weak, escalate it. The command is read-only; this register is where the numbers are recorded.
 
 ## Register
 
