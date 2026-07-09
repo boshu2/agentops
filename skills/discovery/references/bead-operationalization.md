@@ -94,7 +94,7 @@ ao beads exec create "E2E tests for <component>" -p 2 -t task --description "
 Compare against existing beads so ideas enhance rather than duplicate:
 
 ```bash
-br list --json | jq '.issues[]?.title'
+ao beads exec list --json | jq '.issues[]?.title'
 ```
 
 | Overlap type | Action |
@@ -133,7 +133,7 @@ Suggested per-pass focus:
 
 ```bash
 br dep cycles --json     # dependency cycles MUST be empty
-br ready --json | jq 'length'   # confirm actionable work exists
+ao beads exec ready --json | jq 'length'   # confirm actionable work exists
 br lint                  # hygiene: orphans, missing fields
 ```
 

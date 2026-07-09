@@ -109,6 +109,18 @@ func runBeadsExec(cmd *cobra.Command, args []string) error {
 		return runBeadsExecChildrenBR(cmd, res, cwd, args[1:])
 	}
 
+	// Shape divergence (age-f07z — closes the dual-support epic age-zcvn): bd and
+	// br emit DIFFERENT `--json` shapes for the READ verbs (list/ready/show), so
+	// shape-parsing skills could not safely pipe
+	// `ao beads exec <verb> --json | jq '<selector>'` across trackers. CANONICAL
+	// shape = br's (this repo is br; skills already parse it). br's output IS
+	// canonical — stream it verbatim, unchanged (no reorder/mutation). bd's is
+	// reshaped to canonical here. ONLY the read+`--json` case is special-cased;
+	// every other verb (and read verbs WITHOUT --json) streams verbatim.
+	if res.Tracker == trackerBD && len(args) >= 1 && isBeadsReadVerb(args[0]) && argsHaveJSONFlag(args) {
+		return execTrackerBDReadJSON(cmd, res, cwd, args)
+	}
+
 	return execTracker(cmd, res, cwd, args)
 }
 
@@ -174,9 +186,9 @@ type brShowDependent struct {
 
 // brShowIssue is the subset of a `br show <id> --json` array element we read.
 // `br show` emits a JSON ARRAY of matched issues, each carrying a `dependents`
-// array. (The full-output SHAPE divergence between this br envelope and bd's
-// flatter list is a LATER increment; this command only makes the child-id SET
-// available for both trackers.)
+// array. (The full-output SHAPE divergence between the tracker `--json` outputs
+// is now normalized for the READ verbs by execTrackerBDReadJSON — age-f07z; this
+// command only makes the child-id SET available for both trackers.)
 type brShowIssue struct {
 	ID         string            `json:"id"`
 	Dependents []brShowDependent `json:"dependents"`
@@ -186,8 +198,8 @@ type brShowIssue struct {
 // `br show <epic> --json`: it emits the id of every dependent with a
 // parent-child edge, one per line, preserving br's order. bd's native
 // `bd children` (the bd branch of runBeadsExec) prints bd's own list format;
-// normalizing the two OUTPUT shapes into one machine-readable form is a
-// follow-up increment.
+// the READ-verb (list/ready/show) `--json` shapes are normalized to one
+// machine-readable form by execTrackerBDReadJSON (age-f07z).
 func runBeadsExecChildrenBR(cmd *cobra.Command, res trackerResolution, cwd string, rest []string) error {
 	if len(rest) < 1 || strings.TrimSpace(rest[0]) == "" {
 		return fmt.Errorf("ao beads exec children: an epic id is required")
@@ -225,4 +237,154 @@ func runBeadsExecChildrenBR(cmd *cobra.Command, res trackerResolution, cwd strin
 		}
 	}
 	return nil
+}
+
+// isBeadsReadVerb reports whether verb is a bead READ command whose `--json`
+// output shape ao normalizes to the canonical (br) shape. Write verbs and read
+// verbs without --json are streamed verbatim (age-f07z).
+func isBeadsReadVerb(verb string) bool {
+	switch verb {
+	case "list", "ready", "show":
+		return true
+	default:
+		return false
+	}
+}
+
+// argsHaveJSONFlag reports whether the forwarded args request JSON output.
+func argsHaveJSONFlag(args []string) bool {
+	for _, a := range args {
+		if a == "--json" {
+			return true
+		}
+	}
+	return false
+}
+
+// execTrackerBDReadJSON runs a bd READ command with --json, CAPTURES its stdout
+// (rather than streaming), reshapes bd's shape into the canonical br shape, and
+// emits the canonical JSON — so shape-parsing skills can pipe
+// `ao beads exec <verb> --json | jq '<selector>'` identically for bd and br.
+// stderr and the child's exit code propagate EXACTLY as the streaming
+// passthrough (execTracker) does — no verdict = not done (age-f07z).
+func execTrackerBDReadJSON(cmd *cobra.Command, res trackerResolution, cwd string, args []string) error {
+	c := exec.Command(res.Binary, args...) // #nosec G204 -- res.Binary is the resolved bd binary; args are operator-supplied read flags forwarded verbatim.
+	c.Env = beadsExecChildEnv(res, cwd)
+	c.Dir = beadsExecChildDir(res, cwd)
+	c.Stdin = cmd.InOrStdin()
+	var stdout, stderr bytes.Buffer
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	runErr := c.Run()
+	// Surface bd's stderr for diagnostics regardless of exit status (matches the
+	// children path), then propagate a non-zero exit code UNCHANGED.
+	if msg := strings.TrimSpace(stderr.String()); msg != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), msg)
+	}
+	if runErr != nil {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+		var exitErr *exec.ExitError
+		if errors.As(runErr, &exitErr) {
+			return &beadsExitError{code: exitErr.ExitCode()}
+		}
+		return runErr
+	}
+	canonical, err := canonicalizeBDReadJSON(args[0], stdout.Bytes())
+	if err != nil {
+		// Unexpected bd output shape — never make a working passthrough worse:
+		// emit bd's raw stdout UNCHANGED (pre-normalization behavior).
+		_, _ = cmd.OutOrStdout().Write(stdout.Bytes())
+		return nil
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), string(canonical))
+	return nil
+}
+
+// canonicalIssueKeys are the fields every shape-parsing skill selector relies
+// on. bd omits an empty description (and, for `show`, the dependents[] array —
+// it reports only a dependent_count), so the reshape guarantees these keys
+// EXIST (as null / []) and jq selectors never break.
+var canonicalIssueKeys = []string{"id", "title", "description", "priority", "status"}
+
+// canonicalizeBDReadJSON reshapes bd's `<verb> --json` stdout into the canonical
+// br shape:
+//
+//	list  -> {"issues":[ <issue>, ... ]}  (bd emits a bare array -> wrap)
+//	ready -> [ <issue>, ... ]             (bd already emits a bare array)
+//	show  -> [ <issue>, ... ]             (bd already emits a bare array)
+//
+// It is field-PRESERVING: it NEVER drops bd's extra fields (issue_type,
+// close_reason, dependencies, comment_count, ...); it only normalizes the
+// ENVELOPE and guarantees the canonical keys exist. Fields bd omits are emitted
+// as null (scalars) or [] (dependents) so consumer jq selectors never break.
+// bd's default `show` carries no dependents[] array (only a dependent_count), so
+// on bd the reshape guarantees an EMPTY dependents[]; bd child enumeration
+// should use `ao beads exec children` (bd-native).
+func canonicalizeBDReadJSON(verb string, raw []byte) ([]byte, error) {
+	elems, err := decodeIssueArray(raw)
+	if err != nil {
+		return nil, err
+	}
+	if elems == nil {
+		// A missing/empty payload becomes an empty set, never JSON null — so
+		// `.issues | length` and `length` resolve to 0 instead of erroring.
+		elems = []map[string]json.RawMessage{}
+	}
+	isShow := verb == "show"
+	for _, e := range elems {
+		ensureCanonicalIssueKeys(e, isShow)
+	}
+	if verb == "list" {
+		return json.Marshal(map[string]any{"issues": elems})
+	}
+	// ready + show are bare arrays in the canonical shape.
+	return json.Marshal(elems)
+}
+
+// decodeIssueArray decodes a bd read payload into issue objects, tolerating a
+// bare JSON array (bd list/ready/show) or a {"issues":[...]} envelope. Each
+// element is kept as a raw field map so no field is lost or retyped.
+func decodeIssueArray(raw []byte) ([]map[string]json.RawMessage, error) {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return nil, fmt.Errorf("empty bd --json payload")
+	}
+	switch trimmed[0] {
+	case '[':
+		var arr []map[string]json.RawMessage
+		if err := json.Unmarshal(trimmed, &arr); err != nil {
+			return nil, err
+		}
+		return arr, nil
+	case '{':
+		var obj struct {
+			Issues []map[string]json.RawMessage `json:"issues"`
+		}
+		if err := json.Unmarshal(trimmed, &obj); err != nil {
+			return nil, err
+		}
+		return obj.Issues, nil
+	default:
+		return nil, fmt.Errorf("unexpected bd --json payload (not an array or object): %.32q", trimmed)
+	}
+}
+
+// ensureCanonicalIssueKeys adds any missing canonical field to elem as null and
+// (for `show`) guarantees a dependents[] array, so consumer jq selectors resolve
+// against a stable shape regardless of which fields bd emitted.
+func ensureCanonicalIssueKeys(elem map[string]json.RawMessage, isShow bool) {
+	if elem == nil {
+		return
+	}
+	for _, k := range canonicalIssueKeys {
+		if _, ok := elem[k]; !ok {
+			elem[k] = json.RawMessage("null")
+		}
+	}
+	if isShow {
+		if _, ok := elem["dependents"]; !ok {
+			elem["dependents"] = json.RawMessage("[]")
+		}
+	}
 }
