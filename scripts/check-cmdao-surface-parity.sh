@@ -240,7 +240,7 @@ while IFS= read -r cmd; do
 
   # executeCommand / Cobra SetArgs heuristic: Go tests often invoke subcommands
   # as comma-separated string args (e.g., executeCommand("scenario", "list"))
-  # rather than as the literal "ao scenario list" token the earlier checks look
+  # rather than as the literal "ao eval scenario list" token the earlier checks look
   # for. Detect this pattern for multi-word commands.
   if ! $covered && [[ "$cmd" == *" "* ]]; then
     # Build a regex like: "scenario"[[:space:]]*,[[:space:]]*"list"

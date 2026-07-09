@@ -113,6 +113,17 @@ ARTIFACT="${1:-recent}"  # path, PR ID, or "recent"
 # (folded into skill body; not a separate hook)
 ```
 
+If `ARTIFACT` is a goal-design packet directory containing `intent.md` and
+`driver.md`, run the deterministic packet checker before spawning or judging:
+
+```bash
+scripts/check-goal-design-packet.sh "$ARTIFACT"
+```
+
+Non-zero exit is a FAIL verdict. Include the command and output in
+`COMMANDS RUN:`. This is a pre-check inside the existing validator role, not a
+new mode.
+
 For `--mode=pre-impl`, also load:
 - `.agents/planning-rules/*.md` (compiled planning rules)
 - `.agents/findings/registry.jsonl` (active findings)

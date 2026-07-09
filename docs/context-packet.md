@@ -247,7 +247,7 @@ Use `/plan` to decompose work into tracked issues, or work ad-hoc.
 3. Never manually edit chain.jsonl — use `ao ratchet` subcommands.
 
 ### Handoff
-1. If your session ends before work is complete, run `ao handoff` or write a
+1. If your session ends before work is complete, run `ao session handoff` or write a
    brief summary of where you stopped and what remains.
 2. The next session starts with `ao session bootstrap`, then pulls handoff or
    topic context explicitly with `ao inject` / `ao lookup`.

@@ -500,6 +500,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Creates execution packets; add explicit loop-shape SELF-TEST"
+  - skill:            goal-design
+    domain:           "BC3 Loop"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/goal-design/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Creates checked intent/driver packets before discovery or planning; separates per-objective intent from GOALS.md fitness management"
   - skill:            doc
     domain:           "BC4 Factory"
     hexagonal_role:   supporting

@@ -82,7 +82,7 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 			Duration:       o.now().Sub(start),
 			Err:            runErr,
 		})
-		if opts.FailFast && isBlockingFail(plan.Check, verdict) {
+		if opts.FailFast && (isBlockingFail(plan.Check, verdict) || (plan.Check.Blocking && runErr != nil)) {
 			for _, pending := range selected[i+1:] {
 				skipped = append(skipped, SkippedCheck{
 					Check:  pending.Check,
@@ -188,10 +188,25 @@ func (o *Orchestrator) runOne(ctx context.Context, c Check, rc RunContext) (port
 	return o.runner.Run(ctx, ports.GateRunRequest{Name: ports.GateName(c.Backing), Args: c.Args, Env: c.Env})
 }
 
-// isBlockingFail reports whether a verdict should fail the run: only a FAIL on a
-// blocking check. A non-blocking FAIL (and any WARN/SKIP) is advisory.
+// isBlockingFail reports whether a verdict should fail the run. It is
+// fail-closed for blocking checks: a blocking check clears the run ONLY when it
+// definitively PASSed, WARNed (advisory), or SKIPped (a first-class
+// not-applicable verdict). FAIL, UNKNOWN, and any empty/unrecognized status
+// all fail the run — because a blocking gate that could not produce a verdict
+// (missing/unlaunchable backing script, empty gate name, native eval error) has
+// not proven the change. "No verdict = not done" applies to the gate's own
+// output: UNKNOWN is never a silent pass (audit A1 / ADR-0011 escape class).
+// A non-blocking check (of any status) is always advisory.
 func isBlockingFail(c Check, v ports.GateVerdict) bool {
-	return c.Blocking && v.Status == ports.GateStatusFail
+	if !c.Blocking {
+		return false
+	}
+	switch v.Status {
+	case ports.GateStatusPass, ports.GateStatusWarn, ports.GateStatusSkip:
+		return false
+	default:
+		return true
+	}
 }
 
 func fastSelectionReason(c Check, changed []string) (string, bool) {

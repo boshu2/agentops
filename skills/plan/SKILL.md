@@ -76,6 +76,23 @@ for the boundary from Discovery into Plan:
 
 Executable acceptance: [references/plan.feature](references/plan.feature) — consumes Discovery output, one slice per Given/When/Then row, wave-validity gate, durable slice-validation artifact.
 
+## Goal-Design Packet Input
+
+When the input is `.agents/goal-design/<slug>` or any directory containing
+`intent.md` and `driver.md`, run `scripts/check-goal-design-packet.sh <packet-dir>`
+before decomposition. Checker failure blocks planning.
+
+For a checker-clean packet:
+
+- Treat `driver.candidate_beads[]` as slice seeds.
+- Preserve each candidate `behavior` string and scenario ids exactly in the bead
+  `## Scenarios` block.
+- Map `first_failing_proof`, `write_scope`, and `close_signal` into the issue
+  acceptance criteria.
+- Carry `intent.boundaries.non_goals`, `rollback_or_containment`, and
+  `hard_rules` into the plan boundary section.
+- Do not create beads from a stale or unchecked packet.
+
 ## Flags
 
 | Flag | Default | Description |

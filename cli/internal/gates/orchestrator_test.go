@@ -171,6 +171,117 @@ func TestReport_ExitCode_NonBlockingFailIsAdvisory(t *testing.T) {
 	}
 }
 
+// TestReport_ExitCode_BlockingUnknownFailsClosed pins the audit-A1 fix: a
+// blocking check that returns UNKNOWN — exactly what ScriptRunner emits when its
+// backing script is missing or won't launch (scriptrunner.go:45,67) — must fail
+// the run. Before the fix, isBlockingFail matched only FAIL, so a blocking gate
+// that could not run silently passed: a fail-OPEN in the release authority
+// ("no verdict = not done" violated). UNKNOWN on a blocking check is now
+// fail-closed.
+func TestReport_ExitCode_BlockingUnknownFailsClosed(t *testing.T) {
+	r := NewRegistry()
+	if err := r.Add(Check{ID: "guard", Tiers: Full, Blocking: true, Backing: "missing-script"}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOrch(t, r, fakeFiles{}, map[ports.GateName]ports.GateVerdict{
+		"missing-script": {Status: ports.GateStatusUnknown, Reason: "no script scripts/missing-script"},
+	})
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.ExitCode() != 1 {
+		t.Errorf("ExitCode = %d, want 1 (blocking UNKNOWN must fail-closed — audit A1)", rep.ExitCode())
+	}
+}
+
+// TestReport_ExitCode_NonBlockingUnknownIsAdvisory keeps the blast radius tight:
+// only BLOCKING unknowns fail-close. A non-blocking check that can't run is still
+// advisory, exactly like a non-blocking FAIL.
+func TestReport_ExitCode_NonBlockingUnknownIsAdvisory(t *testing.T) {
+	r := NewRegistry()
+	if err := r.Add(Check{ID: "advisory", Tiers: Full, Blocking: false, Backing: "missing-script"}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOrch(t, r, fakeFiles{}, map[ports.GateName]ports.GateVerdict{
+		"missing-script": {Status: ports.GateStatusUnknown, Reason: "no script"},
+	})
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.ExitCode() != 0 {
+		t.Errorf("ExitCode = %d, want 0 (non-blocking UNKNOWN is advisory)", rep.ExitCode())
+	}
+}
+
+// TestReport_ExitCode_BlockingSkipStaysAdvisory guards against over-correction:
+// SKIP is a first-class "not applicable" verdict (exit 75), NOT a failure to
+// produce one. A blocking check that legitimately SKIPs must still pass the run.
+func TestReport_ExitCode_BlockingSkipStaysAdvisory(t *testing.T) {
+	r := NewRegistry()
+	if err := r.Add(Check{ID: "skipper", Tiers: Full, Blocking: true, Backing: "skipper"}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOrch(t, r, fakeFiles{}, map[ports.GateName]ports.GateVerdict{
+		"skipper": {Status: ports.GateStatusSkip, Reason: "exit 75 (structural skip)"},
+	})
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.ExitCode() != 0 {
+		t.Errorf("ExitCode = %d, want 0 (blocking SKIP is a legitimate not-applicable verdict)", rep.ExitCode())
+	}
+}
+
+// TestReport_ExitCode_BlockingEvalErrorFailsClosed covers the native-check twin
+// of A1: a blocking Run func that returns an error (could not evaluate at all)
+// must fail the run, not silently pass on its zero-value verdict.
+func TestReport_ExitCode_BlockingEvalErrorFailsClosed(t *testing.T) {
+	r := NewRegistry()
+	if err := r.Add(Check{ID: "native", Tiers: Full, Blocking: true, Run: func(context.Context, RunContext) (ports.GateVerdict, error) {
+		return ports.GateVerdict{}, errBlockingEval
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	o := testOrch(t, r, fakeFiles{}, nil)
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.ExitCode() != 1 {
+		t.Errorf("ExitCode = %d, want 1 (blocking eval error must fail-closed)", rep.ExitCode())
+	}
+}
+
+var errBlockingEval = errorString("native check could not evaluate")
+
+type errorString string
+
+func (e errorString) Error() string { return string(e) }
+
+// TestGateOrchestrator_FailFastStopsAfterBlockingUnknown proves fail-fast also
+// trips on a blocking UNKNOWN, not just a blocking FAIL.
+func TestGateOrchestrator_FailFastStopsAfterBlockingUnknown(t *testing.T) {
+	r := NewRegistry()
+	for _, id := range []string{"a", "b"} {
+		if err := r.Add(Check{ID: id, Tiers: Full, Blocking: true, Backing: id}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	o := testOrch(t, r, fakeFiles{}, map[ports.GateName]ports.GateVerdict{
+		"a": {Status: ports.GateStatusUnknown}, "b": {Status: ports.GateStatusFail},
+	})
+	rep, err := o.Run(context.Background(), RunOptions{Mode: Full, FailFast: true})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(rep.Results) != 1 {
+		t.Errorf("FailFast should stop after the blocking UNKNOWN; ran %d", len(rep.Results))
+	}
+}
+
 func TestGateOrchestrator_FailFastStopsAfterFirstBlockingFail(t *testing.T) {
 	r := NewRegistry()
 	for _, id := range []string{"a", "b", "c"} {

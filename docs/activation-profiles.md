@@ -14,8 +14,10 @@ Reasons:
 
 - The launch path must prove the language before freezing a CLI surface.
 - Existing commands already cover the in-session runtime path: `ao quick-start`,
-  `ao context packet`, `ao context assemble`, `/council`, `/rpi`,
-  `/validation`, and `ao evolve`. Out-of-session (always-on, scheduled) work is
+  `ao context packet`, `ao context assemble`, `/council`, `/rpi`, and
+  `/validation` (the `ao evolve` command was removed in 3.0 — use the `/evolve`
+  skill in-session, `ao goals measure` for fitness). Out-of-session (always-on,
+  scheduled) work is
   delegated to an orchestration substrate (the reference is NTM + MCP +
   managed-agents), not an AgentOps daemon.
 - The current `docs/profiles/` directory contains role-based documentation
@@ -212,12 +214,14 @@ of its own.
 
 ```bash
 # Drive the loop yourself in session (zero out-of-session dependency):
-ao rpi <bead>          # one cycle
-ao evolve              # many cycles toward a goal
+# The `ao rpi` and `ao evolve` commands were removed in 3.0 — drive the
+# seven-move operating loop in-session via the `/rpi` skill (one cycle) and the
+# `/evolve` skill (many cycles toward a goal); `ao goals measure` reports fitness.
 
-# To run it unattended, point a substrate at the repo: an NTM swarm slings
-# ready beads to workers that run `ao rpi`, or `ao agent` hands the loop to a
-# managed-agents driver. `ao mcp serve` exposes the ao tool surface either way.
+# To run it unattended, point a substrate at the repo: an NTM swarm slings ready
+# beads to workers that run the operating loop (the `ao rpi` command is gone),
+# or `ao agent` hands the loop to a managed-agents driver. `ao mcp serve`
+# exposes the ao tool surface either way.
 ```
 
 **Artifacts**

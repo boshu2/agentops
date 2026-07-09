@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""Create and maintain goal-design packets.
+
+The checker owns validation. This helper owns the boring but failure-prone
+authoring mechanics: writing the two packet files, computing the intent digest,
+and refreshing driver references after intent edits.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover - dependency guard for operator clarity
+    print("goal-design-packet: PyYAML is required", file=sys.stderr)
+    raise SystemExit(2)
+
+
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def fail(message: str, code: int = 1) -> None:
+    print(f"goal-design-packet: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def canonical_intent_ref(slug: str) -> str:
+    return f".agents/goal-design/{slug}/intent.md"
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def split_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        fail(f"{path} missing YAML frontmatter")
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        fail(f"{path} has unterminated YAML frontmatter")
+    raw = text[4:end]
+    data = yaml.safe_load(raw)
+    if not isinstance(data, dict):
+        fail(f"{path} frontmatter did not parse as a mapping")
+    return data, text[end + len("\n---\n") :]
+
+
+def render_markdown(data: dict[str, Any], body: str) -> str:
+    frontmatter = yaml.safe_dump(data, sort_keys=False, allow_unicode=False)
+    return f"---\n{frontmatter}---\n{body}"
+
+
+def validate_slug(slug: str) -> None:
+    if not SLUG_RE.match(slug):
+        fail(f"invalid slug {slug!r}; expected lowercase kebab-case")
+
+
+def intent_data(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "kind": "goal-design.intent",
+        "id": f"gd-intent-{args.slug}",
+        "slug": args.slug,
+        "created_at": args.created_at,
+        "status": "draft",
+        "objective": args.objective,
+        "why_it_matters": args.why,
+        "domain_terms": [
+            {
+                "term": "goal-design packet",
+                "definition": "The two-artifact intent and driver contract that turns a goal into loop-ready work.",
+                "source": "docs/contracts/goal-design-artifacts.md",
+            }
+        ],
+        "bdd": {
+            "feature": args.feature,
+            "scenarios": [
+                {
+                    "id": args.scenario_id,
+                    "name": args.scenario_name,
+                    "given": [args.given],
+                    "when": [args.when],
+                    "then": [args.then],
+                }
+            ],
+        },
+        "boundaries": {
+            "bounded_context": args.bounded_context,
+            "in_scope": args.in_scope,
+            "non_goals": args.non_goal,
+            "rollback_or_containment": args.rollback,
+        },
+        "evidence_for_done": {
+            "first_failing_proof": args.first_failing_proof,
+            "validation_command": f"scripts/check-goal-design-packet.sh .agents/goal-design/{args.slug}",
+            "evidence_path": str(Path(args.output_root) / args.slug),
+            "independent_gate": "validate",
+        },
+        "inputs_to_recheck": {
+            "repo_paths": args.repo_path,
+            "prior_artifacts": args.prior_artifact,
+            "live_surfaces": args.live_surface,
+            "stale_assumptions": args.stale_assumption,
+        },
+        "hard_rules": [
+            "Keep behavior slices small.",
+            "Refresh driver intent_ref.sha256 after every intent.md edit.",
+            "Run the checker and independent validation before the packet drives work.",
+        ],
+    }
+
+
+def intent_body(args: argparse.Namespace) -> str:
+    return f"""# Goal Design Intent: {args.slug}
+
+## Objective
+
+{args.objective}
+
+## BDD Behavior
+
+```gherkin
+Feature: {args.feature}
+
+  Scenario: {args.scenario_name}
+    Given {args.given}
+    When {args.when}
+    Then {args.then}
+```
+"""
+
+
+def driver_data(args: argparse.Namespace, digest: str) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "kind": "goal-design.driver",
+        "id": f"gd-driver-{args.slug}",
+        "slug": args.slug,
+        "created_at": args.created_at,
+        "status": "draft",
+        "intent_ref": {
+            "path": canonical_intent_ref(args.slug),
+            "sha256": digest,
+            "schema_version": 1,
+        },
+        "loop_routing": {
+            "delivery": "File or update one bead only after the packet validates.",
+            "rpi": "Run one inner tick over one behavior and one first failing proof.",
+            "promotion": "Promote only evidence-backed changes after validation.",
+            "knowledge": "Capture checker or validator misses as future guardrails.",
+        },
+        "candidate_beads": [
+            {
+                "id": "B1",
+                "behavior": args.behavior,
+                "bounded_context": args.bounded_context,
+                "first_failing_proof": args.first_failing_proof,
+                "write_scope": args.write_scope,
+                "close_signal": args.close_signal,
+            }
+        ],
+        "small_batch_gate": {
+            "one_behavior": True,
+            "one_bounded_context": True,
+            "one_primary_write_scope": True,
+            "one_acceptance_proof": True,
+            "split_required_if": [
+                "The change starts mixing unrelated behavior, write scopes, or product surfaces."
+            ],
+        },
+        "route_back_rules": {
+            "validation_fails": "Patch the packet contract or artifacts before filing work.",
+            "bead_closes_with_new_signal": "Use the close verdict to choose or revise the next candidate.",
+            "candidate_stale": "Re-read the named inputs, refresh the digest, and revalidate.",
+            "promotion_contradicts_intent": "Revise intent.md, refresh driver.md, and revalidate.",
+        },
+        "execution_mode": {
+            "default": "single-agent",
+            "escalations": {
+                "ntm_atm": "Only when durability, attach, or cross-model debate is required.",
+                "workflow": "Only for deterministic structured DAG needs.",
+            },
+        },
+        "artifact_validation": {
+            "checker_command": f"scripts/check-goal-design-packet.sh .agents/goal-design/{args.slug}",
+            "independent_validator": "validate",
+            "required_verdict": "PASS",
+        },
+    }
+
+
+def driver_body(args: argparse.Namespace, digest: str) -> str:
+    intent_ref = canonical_intent_ref(args.slug)
+    return f"""# Goal Design Driver: {args.slug}
+
+## Source Intent
+
+- Intent artifact: `{intent_ref}`
+- Intent digest: `{digest}`
+- Last validation verdict: none
+
+## Candidate Beads
+
+| Candidate | Behavior | Bounded context | First failing proof | Write scope | Close signal |
+| --- | --- | --- | --- | --- | --- |
+| B1 | {args.behavior} | {args.bounded_context} | {args.first_failing_proof} | {', '.join(args.write_scope)} | {args.close_signal} |
+"""
+
+
+def command_new(args: argparse.Namespace) -> int:
+    validate_slug(args.slug)
+    if not args.behavior:
+        args.behavior = f"{args.scenario_id}: {args.scenario_name}"
+
+    packet_dir = Path(args.output_root) / args.slug
+    intent_path = packet_dir / "intent.md"
+    driver_path = packet_dir / "driver.md"
+    if packet_dir.exists() and not args.force:
+        fail(f"packet already exists: {packet_dir} (use --force to overwrite)")
+
+    packet_dir.mkdir(parents=True, exist_ok=True)
+    intent_path.write_text(render_markdown(intent_data(args), intent_body(args)), encoding="utf-8")
+    digest = sha256_file(intent_path)
+    driver_path.write_text(render_markdown(driver_data(args, digest), driver_body(args, digest)), encoding="utf-8")
+
+    if args.check:
+        return run_checker(packet_dir)
+    print(packet_dir)
+    return 0
+
+
+def replace_or_append(body: str, pattern: str, replacement: str, fallback: str) -> str:
+    updated, count = re.subn(pattern, replacement, body, count=1, flags=re.MULTILINE)
+    if count:
+        return updated
+    if updated and not updated.endswith("\n"):
+        updated += "\n"
+    return f"{updated}\n{fallback}\n"
+
+
+def command_refresh_digest(args: argparse.Namespace) -> int:
+    packet_dir = Path(args.packet_dir)
+    intent_path = packet_dir / "intent.md"
+    driver_path = packet_dir / "driver.md"
+    if not intent_path.is_file() or not driver_path.is_file():
+        fail(f"packet must contain intent.md and driver.md: {packet_dir}", 2)
+
+    intent, _ = split_frontmatter(intent_path)
+    driver, body = split_frontmatter(driver_path)
+    slug = str(intent.get("slug", ""))
+    validate_slug(slug)
+    digest = sha256_file(intent_path)
+    if not SHA_RE.match(digest):
+        fail(f"computed invalid digest for {intent_path}", 2)
+
+    intent_ref = canonical_intent_ref(slug)
+    driver.setdefault("intent_ref", {})
+    driver["intent_ref"]["path"] = intent_ref
+    driver["intent_ref"]["sha256"] = digest
+    driver["intent_ref"]["schema_version"] = 1
+
+    body = replace_or_append(
+        body,
+        r"(- Intent artifact: `)[^`]+(`)",
+        rf"\g<1>{intent_ref}\2",
+        f"- Intent artifact: `{intent_ref}`",
+    )
+    body = replace_or_append(
+        body,
+        r"(- Intent digest: `)[^`]+(`)",
+        rf"\g<1>{digest}\2",
+        f"- Intent digest: `{digest}`",
+    )
+    driver_path.write_text(render_markdown(driver, body), encoding="utf-8")
+
+    if args.check:
+        return run_checker(packet_dir)
+    print(digest)
+    return 0
+
+
+def run_checker(packet_dir: Path) -> int:
+    checker = repo_root() / "scripts" / "check-goal-design-packet.sh"
+    return subprocess.run([str(checker), str(packet_dir)], check=False).returncode
+
+
+def command_check(args: argparse.Namespace) -> int:
+    return run_checker(Path(args.packet_dir))
+
+
+def parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Create and maintain goal-design packets.")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    new = sub.add_parser("new", help="Create a packet and compute its driver digest.")
+    new.add_argument("slug")
+    new.add_argument("--output-root", default=".agents/goal-design")
+    new.add_argument("--objective", required=True)
+    new.add_argument("--why", default="This goal should drive validated loop work.")
+    new.add_argument("--feature", default=None)
+    new.add_argument("--scenario-id", default="S1")
+    new.add_argument("--scenario-name", default=None)
+    new.add_argument("--given", default="A checked goal-design packet exists")
+    new.add_argument("--when", default="An agent uses it to drive loop work")
+    new.add_argument("--then", default="The packet validates before implementation starts")
+    new.add_argument("--bounded-context", default="bc-loop")
+    new.add_argument("--in-scope", action="append", default=None)
+    new.add_argument("--non-goal", action="append", default=None)
+    new.add_argument("--rollback", default="Delete or supersede the packet before it drives work.")
+    new.add_argument("--first-failing-proof", default="Define the first failing proof before implementation.")
+    new.add_argument("--behavior", default=None)
+    new.add_argument("--write-scope", action="append", default=None)
+    new.add_argument("--close-signal", default="Checker and independent validator pass.")
+    new.add_argument("--repo-path", action="append", default=None)
+    new.add_argument("--prior-artifact", action="append", default=None)
+    new.add_argument("--live-surface", action="append", default=None)
+    new.add_argument("--stale-assumption", action="append", default=None)
+    new.add_argument("--created-at", default=utc_now())
+    new.add_argument("--force", action="store_true")
+    new.add_argument("--no-check", dest="check", action="store_false")
+    new.set_defaults(check=True, func=command_new)
+
+    refresh = sub.add_parser("refresh-digest", help="Refresh driver intent_ref from intent.md.")
+    refresh.add_argument("packet_dir")
+    refresh.add_argument("--no-check", dest="check", action="store_false")
+    refresh.set_defaults(check=True, func=command_refresh_digest)
+
+    check = sub.add_parser("check", help="Run the packet checker.")
+    check.add_argument("packet_dir")
+    check.set_defaults(func=command_check)
+
+    return parser
+
+
+def normalize_args(args: argparse.Namespace) -> argparse.Namespace:
+    if args.command == "new":
+        if args.feature is None:
+            args.feature = args.objective
+        if args.scenario_name is None:
+            args.scenario_name = args.objective
+        args.in_scope = args.in_scope or [args.objective]
+        args.non_goal = args.non_goal or ["Do not implement outside the declared packet scope."]
+        args.write_scope = args.write_scope or ["TBD"]
+        args.repo_path = args.repo_path or ["AGENTS.md"]
+        args.prior_artifact = args.prior_artifact or ["none"]
+        args.live_surface = args.live_surface or ["git status --short"]
+        args.stale_assumption = args.stale_assumption or ["The target behavior may already exist."]
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = normalize_args(parser().parse_args(argv))
+    return int(args.func(args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

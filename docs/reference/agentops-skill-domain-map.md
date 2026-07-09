@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-58 checked-in AgentOps skills before any broad rewrite, using current
+59 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 58 |
+| Skills audited | 59 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 58 / 58 |
+| Dispositions assigned | 59 / 59 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -82,6 +82,7 @@ Disposition meanings:
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
 | `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift).. |
 | `gc-membrane` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc.. |
+| `goal-design` | BC3 Loop | driving-adapter | keep | Creates checked intent/driver packets before discovery or planning; separates per-objective intent from GOALS.md fitness management. |
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
 | `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes. |
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |

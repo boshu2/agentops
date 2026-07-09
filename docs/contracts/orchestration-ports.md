@@ -171,10 +171,12 @@ CI; the per-field shape is enforced by the JSON Schemas themselves at runtime.
 
 ## BC6 instrument layer (out-of-session waist)
 
-`ao orchestrate` is **not** a driving adapter and **not** a daemon. It is the
-BC6 **instrument lane** for out-of-session orchestration — deterministic probes
-and verdicts that operators and skills call before/after human `atm`/`am`
-procedure.
+`ao orchestrate` was **removed** in 3.0 (archived behind a `legacy` build tag;
+absent from the shipping binary). It was never a driving adapter or a daemon: it
+was the BC6 **instrument lane** for out-of-session orchestration — deterministic
+probes and verdicts that operators and skills called before/after human
+`atm`/`am` procedure. That surface is now reached through the NTM + MCP Agent
+Mail substrate (`ao mcp serve` / `ao agent`, per ADR-0009).
 
 | Role | Examples | Hex |
 |------|----------|-----|

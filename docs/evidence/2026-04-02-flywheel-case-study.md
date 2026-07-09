@@ -23,13 +23,13 @@ A single human prompt — "figure out a way to validate how well ao searches and
 | T+4 | Pre-mortem | Inline council review | 5 predictions: 2 significant bugs caught, 3 moderate improvements |
 | T+5 | Crank Wave 1 | Parallel agents: corpus + regression tests | 16 corpus files + 2 scoring tests, all pass |
 | T+6 | Crank Wave 2 | IR benchmark tests | 10 tests (P@3, MRR, freshness, maturity, global/local), all pass |
-| T+7 | Crank Wave 3 | CLI command | `ao retrieval-bench` with --corpus/--json/--k flags |
+| T+7 | Crank Wave 3 | CLI command | `ao eval bench` with --corpus/--json/--k flags |
 | T+8 | Post-mortem | Council + extraction | PASS verdict, 3 learnings, 2 next-work items |
 
 **Implementation commits (10:06 → 10:15, 9 minutes):**
 - `f7cd5659` feat(retrieval): add benchmark corpus and ranking regression tests
 - `8f988865` feat(retrieval): add IR quality benchmarks — P@3, MRR, ranking regression
-- `420b3568` feat(retrieval): add ao retrieval-bench CLI command
+- `420b3568` feat(retrieval): add ao eval bench CLI command
 - `aa45b6be` docs(cli): regenerate COMMANDS.md with retrieval-bench
 
 ---

@@ -21,7 +21,7 @@ For product doctrine read [AgentOps 3.0 — the north star](../3.0.md). For *how
 | Hooks | AgentOps 3.0 ships **zero** hooks; context is pulled explicitly |
 | `.agents/` | Runtime knowledge — **gitignored**; durable public truth goes to `docs/`, `GOALS.md`, or provenance ledger |
 | Worktrees | **Mandatory** for bead work when canonical root is contended — do not edit shared checkout |
-| RPI CLI | `ao rpi` is **load-bearing legacy code**, heavily tested — not the live orchestration substrate (NTM + Agent Mail is) |
+| RPI CLI | `ao rpi` was **removed in 3.0** (commit f61c5f0e7) — the RPI engine is gone; in-session navigation is the operating loop, out-of-session is NTM + Agent Mail |
 | Regen after inventory edits | `make regen-all` then `make regen-check` |
 
 ---
@@ -156,7 +156,7 @@ Full surface: generated [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md).
 
 | Surface | Status |
 |---------|--------|
-| `ao rpi phased/loop/serve/stream` | Compiled, heavily tested; **not** live orchestration path |
+| `ao rpi phased/loop/serve/stream` | **Removed in 3.0** (f61c5f0e7) — engine gone; use the operating loop in-session, NTM + Agent Mail out-of-session |
 | `scripts/pre-push-gate.sh` | Bash escape hatch — `AGENTOPS_GATE_BASH=1` only |
 | Gas City (`runtime=gc`) | **Removed** — bridge deleted. gc itself lives beside as a blessed coexisting substrate (owned fork; drive via `skills/using-gc` + `packs/agentops-membrane`) |
 | In-repo daemon/scheduler | **Removed** — ADR-0009 |
@@ -173,8 +173,8 @@ These names overlap in docs and code but are **not contradictory**. Use this tab
 |------|--------|---------|
 | Operating loop | Primary navigation | Seven-move doctrine in [operating-loop.md](operating-loop.md) — how work flows in-session |
 | `/rpi` skill | Live inner loop | One-turn executor skill; not primary navigation |
-| `ao rpi` CLI | Legacy lane | Load-bearing compiled code and tests; not the live workflow driver |
-| Substrate dispatch | Out-of-session | NTM/ATM runs a whole `ao rpi` loop as one dispatched unit |
+| `ao rpi` CLI | Removed (3.0) | Engine **removed** in f61c5f0e7 — was a load-bearing legacy lane; superseded by the operating loop (in-session) and NTM + Agent Mail (out-of-session) |
+| Substrate dispatch | Out-of-session | NTM/ATM dispatches a whole operating-loop run as one unit (the `ao rpi` loop it once wrapped was **removed** in 3.0) |
 
 ---
 

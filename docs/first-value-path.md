@@ -172,7 +172,8 @@ delegated to a substrate. The reference is the trio AgentOps actually runs on �
 (`ao agent`) — none of it AgentOps-owned.
 
 On the reference substrate, an NTM swarm (or a lead agent) runs `BEADS_DIR="$(ao beads dir)" br ready` and
-dispatches the next bead to a worker that runs `ao rpi <bead>`; scheduled
+dispatches the next bead to a worker that runs the operating loop over it (the
+in-session `/rpi` skill — the `ao rpi` command was removed in 3.0); scheduled
 maintenance (`ao compile`, `ao maturity --scan`) runs via a managed-agent driver
 or cron. The agents inherit the AgentOps skills via an overlay and run the same
 loop you just ran by hand. See the [AgentOps 3.0 north star](3.0.md) for the

@@ -14,7 +14,7 @@ git tag vX.Y.Z
 ├──────────────────────────────────────────────────────┤
 │  ./scripts/ci-local-release.sh                       │
 │  - validation + tests + smoke checks                 │
-│  - hook install + ao rpi smoke                       │
+│  - bootstrap + pawl smoke                            │
 │  - SBOM + security report artifacts                  │
 │  - release readiness score + SIL/VIL/HIL evidence    │
 └──────────────────────────────────────────────────────┘
@@ -191,7 +191,7 @@ Release validation is local-first and enforced by:
 ./scripts/ci-local-release.sh
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus workflow-rich HIL evidence or an explicit HIL waiver.
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, bootstrap and pawl smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus workflow-rich HIL evidence or an explicit HIL waiver.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes

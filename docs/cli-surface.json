@@ -1066,6 +1066,13 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "public-tested",
+      "command": "pawl doctor",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "unsafe-live",
       "command": "pawl down",
       "coverage_status": "allowlisted",
@@ -1106,6 +1113,13 @@
       "coverage_status": "allowlisted",
       "kind": "leaf",
       "reason": "Routes a packet to live opus+codex model panes (requires a standing service); ao wrapper exit-code-tested; pawl.sh route live-proven across 4 routes (ml8.2)."
+    },
+    {
+      "category": "public-tested",
+      "command": "pawl smoke",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",

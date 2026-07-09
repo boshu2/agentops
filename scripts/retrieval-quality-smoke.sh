@@ -57,7 +57,7 @@ else
     if ! (
         cd "$REPO_ROOT/cli"
         env -u AGENTOPS_RPI_RUNTIME -u AGENTOPS_RETRIEVAL_RERANK_ENDPOINT \
-            go run ./cmd/ao retrieval-bench \
+            go run ./cmd/ao eval bench \
                 --search-eval "$manifest_path" \
                 --search-root "$search_root" \
                 --search-compare-backends "$BACKENDS" \

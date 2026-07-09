@@ -13,6 +13,7 @@
 #   down                     kill the standing session (no orphan panes)
 #   reap                     tear down the session iff idle longer than PAWL_IDLE_TTL (no-op otherwise)
 #   health [--json]          per-pane liveness/readiness probe + the session's membrane tier
+#   doctor|smoke [--json]    read-only preflight: assert model/cwd/trust/atm/evidence readiness
 #   route <bead> <packet> [pr]   route a review packet to the ENABLED panes, require tier-
 #                                appropriate agreement, capture evidence, record the verdict
 #                                (pr default 0 = push-to-main)
@@ -41,6 +42,8 @@ set -euo pipefail
 SESSION="${PAWL_SESSION:-agentops--pawl-service}"
 LABEL="${PAWL_LABEL:-pawl-service}"
 PROJECT="${PAWL_PROJECT:-agentops}"
+PAWL_CLAUDE_MODEL="${PAWL_CLAUDE_MODEL:-claude-opus-4-8}"
+PAWL_CODEX_MODEL="${PAWL_CODEX_MODEL:-}"
 CC_PANE="${PAWL_CC_PANE:-1}"     # claude/opus pane (fresh-context refuter)
 COD_PANE="${PAWL_COD_PANE:-2}"   # codex pane (cross-family refuter)
 AGY_PANE="${PAWL_AGY_PANE:-3}"   # AGY/Antigravity pane (3rd cross-family refuter, Gemini 3.5 Flash)
@@ -86,6 +89,7 @@ _cli_present() { command -v "$1" >/dev/null 2>&1; }
 probe_families() {
   local f
   for f in $PAWL_CANON_FAMILIES; do _cli_present "$(_family_bin "$f")" && echo "$f"; done
+  return 0
 }
 
 # Strict-benched families (A7 ruling; ebec.7): excluded from the DEFAULT route probe — a
@@ -210,9 +214,17 @@ codex_state() {
     | grep '"state"' | head -1 | sed -E 's/.*"state": *"([^"]*)".*/\1/'
 }
 
+_pane_live_text() {
+  local pane="$1" lines="${2:-14}"
+  tmux capture-pane -p -t "${SESSION}.${pane}" 2>/dev/null | sed '/^[[:space:]]*$/d' | tail -n "$lines"
+}
+
 cc_ready() {
   # claude pane is route-ready when its input box is present (the ❯ prompt line)
-  tmux capture-pane -p -t "${SESSION}.${CC_PANE}" 2>/dev/null | grep -qE '❯|Try "'
+  local pane_txt
+  pane_txt="$(_pane_live_text "$CC_PANE")" || return 1
+  [ -z "$(detect_blocking_prompt "$pane_txt")" ] || return 1
+  printf '%s\n' "$pane_txt" | grep -qE '❯|Try "'
 }
 
 # claude pane is ALIVE (running the TUI) if its chrome is present — at the input box,
@@ -337,7 +349,7 @@ agy_dead() {
 # Classify a known blocking prompt from a pane's captured text. Echoes the type, or "" if none.
 detect_blocking_prompt() {
   local t="$1"
-  if printf '%s' "$t" | grep -qiE "trust this folder|trust this directory|requires permission to read"; then
+  if printf '%s' "$t" | grep -qiE "trust this folder|trust this directory|trust the contents of this directory|requires permission to read"; then
     echo trust-gate
   elif printf '%s' "$t" | grep -qiE "update now|skip until next version"; then
     # MENU form of codex's update prompt: "› 1. Update now (runs brew upgrade --cask codex) /
@@ -379,7 +391,7 @@ clear_known_prompts() {
   # "trust this folder" trigger a key-injection into a working reviewer pane (a lost-verdict fail-open).
   # Only the last few lines (the live prompt region) are inspected. The route also gates this on STALL
   # (it only calls clear on a pane producing NO new output), so keys can never hit a producing pane.
-  txt="$(tmux capture-pane -p -t "${SESSION}.${pane}" 2>/dev/null | tail -n 10)" || return 1
+  txt="$(_pane_live_text "$pane")" || return 1
   typ="$(detect_blocking_prompt "$txt")"
   [ -n "$typ" ] || return 1
   keys="$(prompt_dismiss_key "$typ")"
@@ -426,7 +438,7 @@ agy_ready() {
   # the stall-gated route poll) — never in this predicate.
   # Require a SUCCESSFUL capture that shows NO known blocking prompt (trust-gate OR the agy survey,
   # age-djfo) in the live bottom region; a capture failure -> NOT ready (fail-closed).
-  pane_txt="$(tmux capture-pane -p -t "${SESSION}.${AGY_PANE}" 2>/dev/null | tail -n 10)" || return 1
+  pane_txt="$(_pane_live_text "$AGY_PANE")" || return 1
   [ -z "$(detect_blocking_prompt "$pane_txt")" ]
 }
 
@@ -565,8 +577,8 @@ cmd_up() {
 
   # Build the atm spawn flags from the enabled set (canonical order: cc, then cod, then agy).
   local -a spawn_flags=(--no-user)
-  case " $ENABLED " in *" cc "*) spawn_flags+=(--cc=1:opus) ;; esac
-  case " $ENABLED " in *" cod "*) spawn_flags+=(--cod=1) ;; esac
+  case " $ENABLED " in *" cc "*) spawn_flags+=(--cc=1:"$PAWL_CLAUDE_MODEL") ;; esac
+  case " $ENABLED " in *" cod "*) if [ -n "$PAWL_CODEX_MODEL" ]; then spawn_flags+=(--cod=1:"$PAWL_CODEX_MODEL"); else spawn_flags+=(--cod=1); fi ;; esac
   case " $ENABLED " in *" agy "*) spawn_flags+=(--agy=1) ;; esac
 
   if session_exists; then
@@ -650,7 +662,7 @@ cmd_health() {
   case " $ENABLED " in *" cod "*)
     if [ "$cs" = "codex-live" ] || [ "$cs" = "goal-completed" ]; then
       local _ct _cb
-      _ct="$(tmux capture-pane -p -t "${SESSION}.${COD_PANE}" 2>/dev/null || true)"
+      _ct="$(_pane_live_text "$COD_PANE" 14 2>/dev/null || true)"
       _cb="$(detect_blocking_prompt "$_ct")"
       [ -n "$_cb" ] && cs="stuck:$_cb"
     fi ;;
@@ -668,6 +680,214 @@ cmd_health() {
   case " $ENABLED " in *" agy "*) [ "$agy" = "ready" ] || return 1 ;; esac
   return 0
 }
+
+# --- Read-only standing-pawl doctor / smoke preflight ---
+
+_json_escape() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g'
+}
+
+_realpath_or_self() {
+  realpath "$1" 2>/dev/null || printf '%s' "$1"
+}
+
+_pane_current_path() {
+  tmux display-message -p -t "${SESSION}.$1" '#{pane_current_path}' 2>/dev/null
+}
+
+_pane_model_text() {
+  tmux capture-pane -p -t "${SESSION}.$1" -S -80 2>/dev/null
+}
+
+_text_has_model() {
+  local text="$1" family="$2" expected="$3"
+  [ -n "$expected" ] || return 0
+  case "$family:$expected" in
+    cc:claude-opus-4-8)
+      printf '%s\n' "$text" | grep -qiE 'claude-opus-4-8|Opus[[:space:]]*4\.8'
+      ;;
+    *)
+      printf '%s\n' "$text" | grep -qiF -- "$expected"
+      ;;
+  esac
+}
+
+_standing_evidence_marker_policy_ready() {
+  local vf="$ROOT/scripts/pawl-verdict.sh"
+  [ -f "$vf" ] || return 1
+  grep -qF '_standing_pawl_context' "$vf" || return 1
+  case " $ENABLED " in
+    *" cod "*) grep -qF 'gpt:codex-pawl-pane-*' "$vf" || return 1 ;;
+  esac
+  case " $ENABLED " in
+    *" agy "*) grep -qF 'gemini:agy-pawl-pane-*' "$vf" || return 1 ;;
+  esac
+  return 0
+}
+
+DOCTOR_NAMES=()
+DOCTOR_OKS=()
+DOCTOR_DETAILS=()
+
+_doctor_reset() { DOCTOR_NAMES=(); DOCTOR_OKS=(); DOCTOR_DETAILS=(); }
+_doctor_add() {
+  DOCTOR_NAMES+=("$1")
+  DOCTOR_OKS+=("$2")
+  DOCTOR_DETAILS+=("$3")
+}
+_doctor_fail_count() {
+  local n=0 ok
+  for ok in "${DOCTOR_OKS[@]}"; do [ "$ok" = "true" ] || n=$((n + 1)); done
+  echo "$n"
+}
+_doctor_emit() {
+  local json="$1" fails="$2" i sep="" status="pass"
+  [ "$fails" -eq 0 ] || status="fail"
+  if [ "$json" -eq 1 ]; then
+    printf '{"status":"%s","checks":[' "$status"
+    for i in "${!DOCTOR_NAMES[@]}"; do
+      printf '%s{"name":"%s","ok":%s,"detail":"%s"}' \
+        "$sep" "$(_json_escape "${DOCTOR_NAMES[$i]}")" "${DOCTOR_OKS[$i]}" "$(_json_escape "${DOCTOR_DETAILS[$i]}")"
+      sep=","
+    done
+    printf ']}\n'
+  else
+    echo "pawl doctor: $(printf '%s' "$status" | tr '[:lower:]' '[:upper:]')"
+    for i in "${!DOCTOR_NAMES[@]}"; do
+      if [ "${DOCTOR_OKS[$i]}" = "true" ]; then
+        printf '  %-28s PASS  %s\n' "${DOCTOR_NAMES[$i]}" "${DOCTOR_DETAILS[$i]}"
+      else
+        printf '  %-28s FAIL  %s\n' "${DOCTOR_NAMES[$i]}" "${DOCTOR_DETAILS[$i]}"
+      fi
+    done
+  fi
+  [ "$fails" -eq 0 ]
+}
+
+cmd_doctor() {
+  load_session
+  local json=0
+  local expected_cwd="${PAWL_EXPECT_CWD:-$ROOT}"
+  local expect_cc="${PAWL_EXPECT_CLAUDE_MODEL:-$PAWL_CLAUDE_MODEL}"
+  local expect_cod="${PAWL_EXPECT_CODEX_MODEL:-${PAWL_CODEX_MODEL:-gpt-5.5}}"
+  local expect_agy="${PAWL_EXPECT_AGY_MODEL:-Gemini}"
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --json) json=1 ;;
+      --expected-cwd) shift; expected_cwd="${1:-}" ;;
+      --expected-cwd=*) expected_cwd="${1#--expected-cwd=}" ;;
+      --expected-claude-model) shift; expect_cc="${1:-}" ;;
+      --expected-claude-model=*) expect_cc="${1#--expected-claude-model=}" ;;
+      --expected-codex-model) shift; expect_cod="${1:-}" ;;
+      --expected-codex-model=*) expect_cod="${1#--expected-codex-model=}" ;;
+      --expected-agy-model) shift; expect_agy="${1:-}" ;;
+      --expected-agy-model=*) expect_agy="${1#--expected-agy-model=}" ;;
+      *) die "doctor: unknown flag $1" ;;
+    esac
+    shift || true
+  done
+
+  _doctor_reset
+
+  local atm_path ntm_path atm_real ntm_real
+  atm_path="$(command -v atm 2>/dev/null || true)"
+  ntm_path="$(command -v ntm 2>/dev/null || true)"
+  if [ -z "$atm_path" ]; then
+    _doctor_add atm-alias false "atm not found on PATH"
+  elif [ -n "$ntm_path" ]; then
+    atm_real="$(_realpath_or_self "$atm_path")"; ntm_real="$(_realpath_or_self "$ntm_path")"
+    if [ "$atm_real" = "$ntm_real" ]; then
+      _doctor_add atm-alias true "atm -> $atm_real"
+    else
+      _doctor_add atm-alias false "atm=$atm_real differs from ntm=$ntm_real"
+    fi
+  else
+    _doctor_add atm-alias true "atm=$atm_path (ntm not present)"
+  fi
+
+  if session_exists; then
+    _doctor_add session true "$SESSION exists; families=[$ENABLED]; tier=$TIER"
+  else
+    _doctor_add session false "$SESSION does not exist"
+  fi
+
+  if [ -n "$ENABLED" ]; then
+    _doctor_add families true "$ENABLED"
+  else
+    _doctor_add families false "no enabled families in session state"
+  fi
+
+  if session_exists; then
+    local expected_real cur cur_real txt block state model_txt f pane label expected
+    expected_real="$(_realpath_or_self "$expected_cwd")"
+    for f in $ENABLED; do
+      case "$f" in
+        cc)  pane="$CC_PANE";  label="claude"; expected="$expect_cc" ;;
+        cod) pane="$COD_PANE"; label="codex";  expected="$expect_cod" ;;
+        agy) pane="$AGY_PANE"; label="agy";    expected="$expect_agy" ;;
+        *) continue ;;
+      esac
+
+      cur="$(_pane_current_path "$pane" || true)"
+      cur_real="$(_realpath_or_self "$cur")"
+      if [ -n "$cur" ] && [ "$cur_real" = "$expected_real" ]; then
+        _doctor_add "$label-cwd" true "$cur"
+      else
+        _doctor_add "$label-cwd" false "got ${cur:-<unreadable>}; expected $expected_cwd"
+      fi
+
+      txt="$(_pane_live_text "$pane" 14 2>/dev/null || true)"
+      block="$(detect_blocking_prompt "$txt")"
+      if [ -z "$block" ]; then
+        _doctor_add "$label-trust-prompt" true "no known blocking prompt"
+      else
+        _doctor_add "$label-trust-prompt" false "blocked on $block"
+      fi
+
+      case "$f" in
+        cc)
+          if cc_ready; then
+            _doctor_add "$label-ready" true "input prompt present"
+          else
+            _doctor_add "$label-ready" false "claude pane not route-ready"
+          fi
+          ;;
+        cod)
+          state="$(codex_state || echo absent)"
+          case "$state" in
+            codex-live|goal-completed) _doctor_add "$label-ready" true "$state" ;;
+            *) _doctor_add "$label-ready" false "$state" ;;
+          esac
+          ;;
+        agy)
+          if agy_ready; then
+            _doctor_add "$label-ready" true "agy foreground and unblocked"
+          else
+            _doctor_add "$label-ready" false "agy pane not route-ready"
+          fi
+          ;;
+      esac
+
+      model_txt="$(_pane_model_text "$pane" 2>/dev/null || true)"
+      if _text_has_model "$model_txt" "$f" "$expected"; then
+        _doctor_add "$label-model" true "expected $expected"
+      else
+        _doctor_add "$label-model" false "expected $expected not visible in pane"
+      fi
+    done
+  fi
+
+  if _standing_evidence_marker_policy_ready; then
+    _doctor_add evidence-marker-policy true "standing pawl-pane contexts do not require cold-adapter footers"
+  else
+    _doctor_add evidence-marker-policy false "standing pane evidence policy is not ready"
+  fi
+
+  local fails; fails="$(_doctor_fail_count)"
+  _doctor_emit "$json" "$fails"
+}
+
+cmd_smoke() { cmd_doctor "$@"; }
 
 # Parse THIS route's verdict from a pane capture. Scoped by a per-route nonce so a
 # prior route's verdict still in the scrollback can never be read as this one's
@@ -1007,10 +1227,12 @@ case "${1:-}" in
   down)   shift; cmd_down "$@" ;;
   reap)   shift; cmd_reap "$@" ;;
   health) shift; cmd_health "$@" ;;
+  doctor) shift; cmd_doctor "$@" ;;
+  smoke)  shift; cmd_smoke "$@" ;;
   route)  shift; cmd_route "$@" ;;
   metrics) shift; cmd_metrics "$@" ;;
   *) cat >&2 <<'H'
-Usage: pawl.sh <up|down|reap|health|route|metrics>
+Usage: pawl.sh <up|down|reap|health|doctor|smoke|route|metrics>
   up [--dual|--tri|--models a,b,c]  spawn + readiness-gate the standing pawl session (idempotent).
                                     Default: probe installed CLIs (claude/codex/agy) and stand up
                                     the STRONGEST membrane possible. --dual=cc,cod; --tri=all;
@@ -1018,6 +1240,8 @@ Usage: pawl.sh <up|down|reap|health|route|metrics>
   down                              tear down the standing session
   reap                              tear down iff idle > PAWL_IDLE_TTL (substrate/cron schedules it)
   health [--json]                   per-pane liveness/readiness + the membrane tier
+  doctor|smoke [--json]             read-only preflight: assert atm alias, session, cwd, model,
+                                    trust-prompt, readiness, and standing evidence policy
   route <bead> <packet> [pr]        route to the enabled panes, require tier-appropriate agreement,
                                     record the verdict (mode=multi-model for >=2 families, else fresh-context)
   metrics [--json]                  SLO surface over recorded routes: p50/p95 latency + agreement rate

@@ -174,10 +174,10 @@ func TestCliConfigConfigFlagNotThreaded_FixerRefuses(t *testing.T) {
 
 // --- FM 3: missing-required-cli -------------------------------------------
 
-func TestCliConfigMissingRequiredCLI_DetectsMissingBd(t *testing.T) {
+func TestCliConfigMissingRequiredCLI_DetectsMissingBr(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	// Only git present, no bd.
+	// Only git present, no br.
 	writeFile(t, filepath.Join(fakebin, "git"), "#!/bin/sh\nexit 0\n")
 	if err := os.Chmod(filepath.Join(fakebin, "git"), 0o755); err != nil {
 		t.Fatalf("chmod: %v", err)
@@ -192,21 +192,21 @@ func TestCliConfigMissingRequiredCLI_DetectsMissingBd(t *testing.T) {
 	if f.Severity != "P1" {
 		t.Errorf("Severity = %q, want P1", f.Severity)
 	}
-	if !strings.Contains(f.Evidence.Query, "missing_clis=bd") {
-		t.Errorf("Evidence.Query missing bd: %q", f.Evidence.Query)
+	if !strings.Contains(f.Evidence.Query, "missing_clis=br") {
+		t.Errorf("Evidence.Query missing br: %q", f.Evidence.Query)
 	}
-	if strings.Contains(f.Evidence.Query, "missing_clis=bd,git") {
+	if strings.Contains(f.Evidence.Query, "missing_clis=br,git") {
 		t.Errorf("git wrongly reported missing: %q", f.Evidence.Query)
 	}
-	if !strings.Contains(f.Remediation.Command, "beads") {
-		t.Errorf("Remediation.Command lacks bd install hint: %q", f.Remediation.Command)
+	if !strings.Contains(f.Remediation.Command, "beads_rust") {
+		t.Errorf("Remediation.Command lacks br install hint: %q", f.Remediation.Command)
 	}
 }
 
 func TestCliConfigMissingRequiredCLI_AllPresentYieldsNoFinding(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	for _, name := range []string{"bd", "git"} {
+	for _, name := range []string{"br", "git"} {
 		p := filepath.Join(fakebin, name)
 		writeFile(t, p, "#!/bin/sh\nexit 0\n")
 		if err := os.Chmod(p, 0o755); err != nil {
@@ -221,6 +221,34 @@ func TestCliConfigMissingRequiredCLI_AllPresentYieldsNoFinding(t *testing.T) {
 	}
 	if len(fs) != 0 {
 		t.Fatalf("expected 0 findings, got %d: %+v", len(fs), fs)
+	}
+}
+
+func TestCliConfigMissingRequiredCLI_SymlinkEquivalentPathIsNotShadowed(t *testing.T) {
+	tmp := t.TempDir()
+	realbin := filepath.Join(tmp, "usr", "bin")
+	aliasbin := filepath.Join(tmp, "bin")
+	for _, name := range []string{"br", "git"} {
+		p := filepath.Join(realbin, name)
+		writeFile(t, p, "#!/bin/sh\nexit 0\n")
+		if err := os.Chmod(p, 0o755); err != nil {
+			t.Fatalf("chmod: %v", err)
+		}
+	}
+	if err := os.MkdirAll(aliasbin, 0o755); err != nil {
+		t.Fatalf("mkdir alias bin: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(realbin, "git"), filepath.Join(aliasbin, "git")); err != nil {
+		t.Skipf("symlink unavailable on this platform: %v", err)
+	}
+	t.Setenv("PATH", aliasbin+string(os.PathListSeparator)+realbin)
+
+	fs, err := missingRequiredCLIDetector{}.Detect(&DetectEnv{})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("expected 0 findings for symlink-equivalent git paths, got %d: %+v", len(fs), fs)
 	}
 }
 
@@ -243,7 +271,7 @@ func TestCliConfigMissingRequiredCLI_FixerRefuses(t *testing.T) {
 func TestCliConfigOptionalCodexAbsent_DetectsAbsence(t *testing.T) {
 	tmp := t.TempDir()
 	fakebin := filepath.Join(tmp, "fakebin")
-	for _, name := range []string{"bd", "git"} {
+	for _, name := range []string{"br", "git"} {
 		p := filepath.Join(fakebin, name)
 		writeFile(t, p, "#!/bin/sh\nexit 0\n")
 		if err := os.Chmod(p, 0o755); err != nil {
@@ -347,6 +375,54 @@ func TestCliConfigDevVersion_ReleaseBinaryYieldsNoFinding(t *testing.T) {
 	}
 	if len(fs) != 0 {
 		t.Fatalf("expected 0 findings for release version, got %d: %+v", len(fs), fs)
+	}
+}
+
+func TestCliConfigDevVersion_MultilineRcFallbackYieldsNoFinding(t *testing.T) {
+	tmp := t.TempDir()
+	fakebin := filepath.Join(tmp, "fakebin")
+	writeFile(t, filepath.Join(fakebin, "ao"), "#!/bin/sh\necho 'ao version 3.1.0-rc'\necho '  Go version: go1.26.3'\necho '  Platform: linux/amd64'\n")
+	if err := os.Chmod(filepath.Join(fakebin, "ao"), 0o755); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Setenv("PATH", fakebin)
+
+	if got := aoReportedVersion(); got != "3.1.0-rc" {
+		t.Fatalf("aoReportedVersion() = %q, want 3.1.0-rc", got)
+	}
+	fs, err := devVersionBuildIntegrityDetector{}.Detect(&DetectEnv{})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("expected 0 findings for multiline rc fallback, got %d: %+v", len(fs), fs)
+	}
+}
+
+func TestCliConfigDevVersion_DuplicateAOEvidenceIncludesPerPathVersions(t *testing.T) {
+	tmp := t.TempDir()
+	first := filepath.Join(tmp, "first")
+	second := filepath.Join(tmp, "second")
+	writeFile(t, filepath.Join(first, "ao"), "#!/bin/sh\necho 'ao version 3.1.0-rc'\n")
+	writeFile(t, filepath.Join(second, "ao"), "#!/bin/sh\necho 'ao version 2.41.1'\n")
+	for _, path := range []string{filepath.Join(first, "ao"), filepath.Join(second, "ao")} {
+		if err := os.Chmod(path, 0o755); err != nil {
+			t.Fatalf("chmod %s: %v", path, err)
+		}
+	}
+	t.Setenv("PATH", first+string(os.PathListSeparator)+second)
+
+	fs, err := devVersionBuildIntegrityDetector{}.Detect(&DetectEnv{})
+	if err != nil {
+		t.Fatalf("Detect error: %v", err)
+	}
+	f := findByID(t, fs, fmDevVersionBuildIntegrity)
+	if !strings.Contains(f.Evidence.Query, `reported_version="3.1.0-rc"`) {
+		t.Fatalf("Evidence.Query lacks primary version: %q", f.Evidence.Query)
+	}
+	if !strings.Contains(f.Evidence.Query, filepath.Join(first, "ao")+" (3.1.0-rc)") ||
+		!strings.Contains(f.Evidence.Query, filepath.Join(second, "ao")+" (2.41.1)") {
+		t.Fatalf("Evidence.Query lacks per-path versions: %q", f.Evidence.Query)
 	}
 }
 

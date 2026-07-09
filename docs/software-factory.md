@@ -40,7 +40,7 @@ The local pre-push Go gate (`ao gate check`) is the routine release authority (C
 
 ```bash
 /rpi "fix auth startup"            # in-session, any harness
-ao rpi phased "fix auth startup"   # in-session with phase-level resume control
+# the RPI CLI engine was removed in 3.0 -- the /rpi skill above is the live in-session path, driving the seven-move operating loop
 ```
 
 What used to be hook responsibilities are now explicit, pulled surfaces:
@@ -64,7 +64,7 @@ deleted (see [AgentOps 3.0 north star](3.0.md)).
 
 | Layer | Purpose | Primary surfaces |
 |------|---------|------------------|
-| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status` |
+| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi` (drives the seven-move operating loop; the old RPI CLI engine was removed in 3.0), NTM + MCP Agent Mail substrate for out-of-session runs |
 | Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
 | Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents) — not an AgentOps surface |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |

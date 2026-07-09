@@ -20,7 +20,7 @@ make trust and memory repeatable.
 | `origin/main:PRODUCT.md` | Read after `git fetch`; product direction has moved ahead of local main. |
 | `origin/main:GOALS.md` | Read after `git fetch`; Directive 12 is the governing loop-shape rule. |
 | `origin/main:PROGRAM.md` | Read after `git fetch`; defines mutable scope and vertical-slice policy. |
-| `origin/main:skills/evolve/SKILL.md` | Read after `git fetch`; includes current v2 `ao evolve` and loop-port direction. |
+| `origin/main:skills/evolve/SKILL.md` | Read after `git fetch`; documented the v2 `evolve` CLI subcommand (removed in 3.0 — use the `/evolve` skill in-session, `ao goals measure` for fitness) and loop-port direction. |
 | `docs/plans/2026-05-12-rescope-evolve-and-architecture.md` | Read from `origin/main`; defines BC1-BC5 and port waves. |
 
 Local freshness note: `git fetch` found local `main` diverged from
@@ -66,8 +66,8 @@ git rev-list --left-right --count HEAD...origin/main
 git status --short
 bash scripts/check-worktree-disposition.sh
 cd cli && env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao autodev validate --file ../PROGRAM.md --json
-ao evolve --help
-ao rpi loop --help
+# (removed in 3.0) the evolve CLI subcommand no longer exists — use the /evolve skill in-session; ao goals measure for fitness
+# (removed in 3.0, f61c5f0e7) the rpi-loop command no longer exists — drive the seven-move operating loop (docs/architecture/operating-loop.md) via the /rpi skill
 ao loop --help 2>/dev/null || true
 cd cli && go run ./cmd/ao loop --help
 ```
@@ -80,20 +80,19 @@ Rehearsal command:
 
 ```bash
 ao factory start --goal "AgentOps 3.0 domain evolution"
-ao evolve --dry-run --max-cycles 1 --repo-filter agentops --landing-policy off
+# (removed in 3.0) the evolve CLI subcommand and its --dry-run/--max-cycles/--repo-filter/--landing-policy flags no longer exist —
+# rehearse via the /evolve skill in-session; scheduled runs go through the external NTM + Agent Mail substrate (no in-repo daemon)
 ```
 
 First real command, after rehearsal:
 
 ```bash
-ao evolve "Land BC3 Loop slice for soc-y5vh.8" \
-  --max-cycles 1 \
-  --repo-filter agentops \
-  --lease \
-  --ensure-cleanup \
-  --auto-clean \
-  --gate-policy best-effort \
-  --landing-policy off
+# (removed in 3.0) the evolve CLI subcommand that ran "Land BC3 Loop slice for soc-y5vh.8" no longer exists.
+# Drive the slice via the /evolve skill in-session (ao goals measure for fitness);
+# scheduled runs go through the external NTM + Agent Mail substrate, not an in-repo daemon.
+# Former flags, no longer a CLI surface:
+#   --max-cycles 1 --repo-filter agentops --lease --ensure-cleanup
+#   --auto-clean --gate-policy best-effort --landing-policy off
 ```
 
 Landing stays manual or `/push`-driven until one unattended cycle is reviewed.

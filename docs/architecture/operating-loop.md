@@ -1,6 +1,6 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane). RPI naming (`/rpi` skill vs `ao rpi` CLI vs this loop): [codebase-overview — RPI terminology](codebase-overview.md#rpi-terminology).
+> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane). RPI naming (`/rpi` skill vs the now-removed `ao rpi` CLI — removed in 3.0, use the operating loop — vs this loop): [codebase-overview — RPI terminology](codebase-overview.md#rpi-terminology).
 
 AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
 

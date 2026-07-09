@@ -25,6 +25,7 @@ these two, and the router below leads with them.
 - `/status` — single-screen dashboard of project state.
 - `/handoff` — compact session handoff so the next turn continues instead of restarting.
 - `/discovery` — shape intent into a dense execution packet (ideate → search → research → plan → pre-mortem).
+- `/goal-design` — create checked `.agents/goal-design/<slug>/` intent and driver packets before discovery or planning.
 - `/plan` — decompose a goal into an acceptance-gated bead DAG with dependency waves.
 - `/implement` — execute a single bead through its full TDD lifecycle.
 
@@ -159,7 +160,7 @@ taxonomy and the tier tables below, nothing else.
 
 ## Current Skill Tiers
 
-### User-Facing Skills (56)
+### User-Facing Skills (57)
 
 **Judgment:**
 
@@ -180,6 +181,7 @@ taxonomy and the tier tables below, nothing else.
 | **implement** | execution | Full lifecycle for one task |
 | **crank** | execution | Autonomous epic execution — parallel waves |
 | **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → pre-mortem |
+| **goal-design** | execution | Create checked goal-design intent + driver packets before discovery or planning |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
@@ -292,6 +294,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **pr-prep** | validate | optional |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
 | **discovery** | research, plan, pre-mortem, shared | research+plan+pre-mortem required, shared optional |
+| **goal-design** | validate, discovery, plan | validate required after checker; discovery/plan consume checked packets |
 | **rpi** | discovery, crank, validate | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
 | **release** | - | - (standalone) |
@@ -372,6 +375,7 @@ session so the operator can see progress, phase transitions, and intervene.
 | rpi | Orchestrator | Keeps phase order, objective, retries, and operator visibility |
 | crank | Direct orchestrator | Wave reports visible when called directly |
 | discovery | Direct orchestrator | Gate visibility when called directly |
+| goal-design | Packet authoring | Digest refresh + checker before handoff |
 | validate | Direct orchestrator | Verdict visibility when called directly |
 | implement | Single-task | Single issue, medium duration |
 
@@ -385,6 +389,7 @@ returns artifact path, verdict, and next action.
 | Skill | Role | Why |
 |-------|------|-----|
 | discovery | Phase 1 contract | Research and planning context should not stay resident through implementation |
+| goal-design | Pre-discovery contract | Intent and driver identity should be checked before planning |
 | crank | Phase 2 contract | Wave execution context should not stay resident through validation |
 | validate | Phase 3 contract | Review and closeout context should not pollute the next lifecycle turn |
 

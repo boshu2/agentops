@@ -5,10 +5,11 @@
 > AgentOps 3.0 rearchitecture — AgentOps is in-session only and ships no daemon,
 > scheduler, or overnight runner of its own (see
 > [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The loop
-> (`ao rpi` / `ao evolve`, the `/dream` skill) runs in session; to run it
+> (the `/rpi` / `/evolve` / `/dream` skills; the `/rpi` / `/evolve` CLIs were **removed** in 3.0)
+> runs in session; to run it
 > unattended out of session, dispatch it on the **reference substrate**
 > (NTM + MCP + managed-agents): an NTM swarm (or a lead agent) slings ready beads
-> to workers that run `ao rpi`; scheduled maintenance runs via a managed-agent
+> to workers that run the `/rpi` skill (the seven-move operating loop); scheduled maintenance runs via a managed-agent
 > driver or cron. This runbook is retained for the repo-owned run-contract and
 > digest mechanics; treat the orchestration surface as the substrate, not an
 > AgentOps daemon.

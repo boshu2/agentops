@@ -58,7 +58,9 @@ Second-stage scenario:
 
 1. Reuse the same packet or verdict in a later engineering decision.
 2. Run the loop out of session: hand it to the reference substrate (NTM + MCP +
-   managed-agents) and let it dispatch ready beads to workers running `ao rpi`.
+   managed-agents) and let it dispatch ready beads to workers driving the
+   seven-move operating loop in-session (the `ao rpi` engine was **removed** in
+   3.0; workers use the `/rpi` skill).
 3. Report whether always-on compounding felt useful or premature.
 
 ## Interview Script
@@ -124,9 +126,10 @@ Record:
 
 - No always-on interest.
 - Interested but blocked.
-- Ran the loop in session (`ao rpi` / `ao evolve`).
+- Ran the loop in session (the `/rpi` and `/evolve` skills; the `ao rpi` and `ao evolve` CLIs were **removed** in 3.0 — `ao goals measure` for fitness).
 - Handed the loop to the reference substrate (NTM + MCP + managed-agents).
-- Substrate dispatch sent a ready bead to a worker running `ao rpi`.
+- Substrate dispatch sent a ready bead to a worker driving the operating loop
+  (the `ao rpi` engine was **removed** in 3.0; the `/rpi` skill drives it).
 - An out-of-session run completed and produced an inspected artifact.
 
 Do not count always-on substrate setup as first-value activation.

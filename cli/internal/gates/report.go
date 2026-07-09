@@ -23,10 +23,16 @@ type Report struct {
 	Coverage     *WorkflowCoverage
 }
 
-// ExitCode is 1 if any blocking check FAILed, else 0. WARN/SKIP and
-// non-blocking FAIL are advisory.
+// ExitCode is 1 if any blocking check failed the run, else 0. A blocking check
+// fails on FAIL, UNKNOWN, an empty/unrecognized status, or an evaluation error
+// (fail-closed — see isBlockingFail). WARN/SKIP and any non-blocking result are
+// advisory. A blocking check that could not be evaluated at all (res.Err) fails
+// the run even if it also returned a non-FAIL verdict.
 func (r *Report) ExitCode() int {
 	for _, res := range r.Results {
+		if res.Check.Blocking && res.Err != nil {
+			return 1
+		}
 		if isBlockingFail(res.Check, res.Verdict) {
 			return 1
 		}

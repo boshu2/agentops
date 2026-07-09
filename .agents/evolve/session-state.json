@@ -1,0 +1,16 @@
+{
+  "mode": "beads-only",
+  "mission": "Churn all 47 '3.0-alignment' beads into main via grouped PR chunks; steered in-session loop; agile pivots allowed; not waterfall.",
+  "cycle": 2,
+  "push_policy": "worktree -> PR -> merge to main when CI + claude-code-review green",
+  "grouping": "beads grouped into PR chunks (see pr-plan.md)",
+  "cap": "until all beads done",
+  "base_branch": "main",
+  "merged": [{"pr": 401, "beads": ["agentops-yxid", "agentops-obef"]}],
+  "in_flight_pr": {"num": 403, "branch": "feat/agentops-fr9-golangci-standard", "worktree": "/home/bo/dev/agentops-wt-pr4", "beads": ["agentops-fr9 (partial)", "agentops-tqc.3 (closed)"], "state": "ci-running"},
+  "next_cycle": "merge #403 when green; close agentops-fr9 (config infra delivered; errorlint/unconvert/unused folded into bs8/0l9) + confirm tqc.3 closed; prune wt-pr4; then PR-2 ci-timeouts (agentops-n52t)",
+  "lint_env": "golangci-lint v2.11.4 at /home/bo/go/bin; PATH needs /home/bo/go/bin + /home/linuxbrew/.linuxbrew/bin; uncap with --max-issues-per-linter=0 --max-same-issues=0; CI severity-tolerates errcheck/staticcheck",
+  "last_selected_source": "beads",
+  "generator_empty_streak": 0,
+  "kill_switch": ".agents/evolve/STOP"
+}

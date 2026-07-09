@@ -27,7 +27,7 @@ These describe data written and consumed at runtime — handoffs between session
 
 | Schema | Purpose |
 |--------|---------|
-| [`handoff.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/handoff.v1.schema.json) | Session-boundary handoff artifact written by `ao handoff`, pulled explicitly by `ao session bootstrap` / `ao inject`, or consumed by opt-in lifecycle hooks. |
+| [`handoff.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/handoff.v1.schema.json) | Session-boundary handoff artifact written by `ao session handoff`, pulled explicitly by `ao session bootstrap` / `ao inject`, or consumed by opt-in lifecycle hooks. |
 | [`memory-packet.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/memory-packet.v1.schema.json) | Boundary-memory packet for explicit lifecycle commands and optional externally-authored hooks. |
 | [`evidence-only-closure.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/evidence-only-closure.v1.schema.json) | Proof artifact for issue closures that rely on validation or policy evidence instead of a code delta. |
 | [`goal-design-intent.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/goal-design-intent.v1.schema.json) | YAML frontmatter for `.agents/goal-design/<slug>/intent.md`, the human-shaped goal-design source of truth. See [`Goal Design Artifacts`](contracts/goal-design-artifacts.md). |

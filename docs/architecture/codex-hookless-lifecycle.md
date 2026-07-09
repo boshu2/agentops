@@ -113,7 +113,7 @@ The Codex fallback reuses the existing pool and close-loop hygiene instead of in
 
 Use these non-release checks to verify the Codex fallback from the current worktree:
 
-- `bash scripts/test-codex-hookless-lifecycle.sh` builds the local `ao` binary, seeds a temp Codex home and temp repos, then verifies `ao codex ensure-start`, retrieval/citation, `ao codex ensure-stop`, `ao codex status`, and a tracker-degraded no-beads `ao rpi phased` flow.
+- `bash scripts/test-codex-hookless-lifecycle.sh` builds the local `ao` binary, seeds a temp Codex home and temp repos, then verifies `ao codex ensure-start`, retrieval/citation, `ao codex ensure-stop`, and `ao codex status`. (It no longer exercises the tracker-degraded no-beads `ao rpi phased` flow — the `ao rpi` engine was **removed** in 3.0; the seven-move operating loop, driven in-session by the `/rpi` skill, replaces it.)
 - `bash scripts/test-codex-native-install.sh --skip-lint` verifies the checked-in Codex plugin bundle and public installer flow in a temp home without cutting a tag.
 
 ## See Also

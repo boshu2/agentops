@@ -74,7 +74,7 @@ fi
 
 if ! (
     cd "$REPO_ROOT/cli"
-    env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao retrieval-bench \
+    env -u AGENTOPS_RPI_RUNTIME go run ./cmd/ao eval bench \
         --search-eval "$manifest_path" \
         --search-root "$SEARCH_ROOT" \
         --json

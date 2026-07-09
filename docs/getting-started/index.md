@@ -123,7 +123,7 @@ PASS/WARN/FAIL verdict.
 | Make the first validated change | `/rpi "a small goal"` | Discovery, implementation, validation, and learning artifacts exist |
 | Review code before shipping | `/council validate this PR` or `/vibe recent` | Verdict is recorded before merge |
 | Continue tracked work | `ao reconcile --json`, then `BEADS_DIR="$(ao beads dir)" br ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Main/release/bead evidence is clean before issue status and validation evidence are updated |
-| Run from the terminal | `ao factory start --goal "goal"`, then `ao rpi phased "goal"` | `ao rpi status` shows the phase result |
+| Run from the terminal | `ao factory start --goal "goal"`, then drive the seven-move operating loop in-session via the `/rpi` skill (the `ao rpi` engine was removed in 3.0) | Loop artifacts land in `.agents/`; monitor out-of-session runs via the NTM + MCP Agent Mail substrate (AgentOps ships no daemon) |
 
 ## Command Reference
 
@@ -131,7 +131,7 @@ PASS/WARN/FAIL verdict.
 ao quick-start     # Canonical repo seed and readiness repair
 ao quickstart      # Stable alias for the same golden path
 ao status          # Where was I?
-ao rpi phased "goal"  # Full terminal Research-Plan-Implement-Validate loop
+# ao rpi phased was removed in 3.0 — drive the operating loop in-session via the /rpi skill
 ```
 
 ## Learning path

@@ -28,9 +28,15 @@ type capabilitiesDoc struct {
 	GlobalFlags     []capFlag         `json:"global_flags"`
 	OutputFormats   []string          `json:"output_formats"`
 	ExitCodes       map[string]string `json:"exit_codes"`
-	EnvVars         map[string]string `json:"env_vars"`
-	RobotSurfaces   map[string]string `json:"robot_surfaces"`
-	CommandGroups   []capCommandGroup `json:"command_groups"`
+	// CommandExitCodes documents the per-command typed exit codes beyond the
+	// global {0,1,2} — the codes an agent must interpret to branch on a verdict
+	// (e.g. pawl REFUTED=3, plan-pawl BLOCKED=4, governor HARDEN=3). Only
+	// default-build commands are listed; legacy/flywheel-tagged commands (tick,
+	// corpus-scan) are omitted because they are absent from the shipping binary.
+	CommandExitCodes map[string]map[string]string `json:"command_exit_codes"`
+	EnvVars          map[string]string            `json:"env_vars"`
+	RobotSurfaces    map[string]string            `json:"robot_surfaces"`
+	CommandGroups    []capCommandGroup            `json:"command_groups"`
 }
 
 type capPlatform struct {
@@ -62,6 +68,34 @@ var capabilitiesExitCodes = map[string]string{
 	"0": "success",
 	"1": "error: usage error, runtime failure, or — for diagnostic commands — findings present",
 	"2": "diagnostic: partial result or bead claimed (command-specific; see that command's --help)",
+}
+
+// capabilitiesCommandExitCodes documents per-command typed exit codes beyond the
+// global {0,1,2} dictionary — the codes `Execute()` propagates from typed errors
+// so a shell/agent can branch on the verdict without parsing stdout (recon
+// 2026-07-02 audit A7). Values are kept in lockstep with the code's own exit-code
+// constants by TestCapabilitiesCommandExitCodesMatchConstants. Only default-build
+// commands appear: `tick` (//go:build legacy) and `corpus-scan` (//go:build
+// flywheel) are deliberately omitted — documenting codes for commands absent from
+// the shipping binary would be the exact contract inaccuracy this fix closes.
+var capabilitiesCommandExitCodes = map[string]map[string]string{
+	"pawl review": {
+		"0": "CONFIRMED — cross-family verdict written",
+		"1": "hard error",
+		"2": "usage error",
+		"3": "REFUTED — auto-redo",
+		"4": "--converge advisory-only (no lineage written)",
+	},
+	"plan-pawl decide": {
+		"0": "PASS — the door opens",
+		"2": "usage error",
+		"3": "REDO — auto-redo loop (no human)",
+		"4": "BLOCKED — a circuit breaker tripped (andon)",
+	},
+	"governor budget": {
+		"0": "ship — within error budget",
+		"3": "HARDEN — burn-rate over tolerance; stop the line",
+	},
 }
 
 // capabilitiesEnvVars documents the environment variables the CLI honors.
@@ -144,17 +178,18 @@ func buildCapabilitiesDoc() capabilitiesDoc {
 	sort.Slice(globalFlags, func(i, j int) bool { return globalFlags[i].Name < globalFlags[j].Name })
 
 	return capabilitiesDoc{
-		SchemaVersion:   capabilitiesContractVersion,
-		Tool:            "ao",
-		ToolVersion:     version,
-		ContractVersion: capabilitiesContractVersion,
-		Platform:        capPlatform{OS: runtime.GOOS, Arch: runtime.GOARCH},
-		GlobalFlags:     globalFlags,
-		OutputFormats:   []string{"table", "json", "yaml"},
-		ExitCodes:       capabilitiesExitCodes,
-		EnvVars:         capabilitiesEnvVars,
-		RobotSurfaces:   capabilitiesRobotSurfaces,
-		CommandGroups:   commandGroups,
+		SchemaVersion:    capabilitiesContractVersion,
+		Tool:             "ao",
+		ToolVersion:      version,
+		ContractVersion:  capabilitiesContractVersion,
+		Platform:         capPlatform{OS: runtime.GOOS, Arch: runtime.GOARCH},
+		GlobalFlags:      globalFlags,
+		OutputFormats:    []string{"table", "json", "yaml"},
+		ExitCodes:        capabilitiesExitCodes,
+		CommandExitCodes: capabilitiesCommandExitCodes,
+		EnvVars:          capabilitiesEnvVars,
+		RobotSurfaces:    capabilitiesRobotSurfaces,
+		CommandGroups:    commandGroups,
 	}
 }
 

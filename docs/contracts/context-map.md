@@ -32,6 +32,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `converge` — Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
+- `goal-design` — Create validated goal-design packets. Triggers: "goal prompt", "goal-design packet", "turn this goal into loop-ready work".
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
 - `pre-land-refuters` — Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.
@@ -176,6 +177,11 @@ graph LR
 | `evolve` | consumes | rpi |
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
+| `goal-design` | consumes | docs/templates/goal-design-driver.md |
+| `goal-design` | consumes | docs/templates/goal-design-intent.md |
+| `goal-design` | consumes | operator-goal |
+| `goal-design` | produces | .agents/goal-design/<slug>/driver.md |
+| `goal-design` | produces | .agents/goal-design/<slug>/intent.md |
 | `goals` | produces | result.json |
 | `handoff` | produces | .agents/handoff/*.md |
 | `heal-skill` | produces | audit-report.json |

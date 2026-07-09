@@ -22,4 +22,4 @@ The 3.0 north star demotes hooks to optional adapters ([docs/3.0.md](3.0.md)). T
 
 ## Legacy RPI lane removal
 
-The legacy RPI lane (`rpi_parallel`, `rpi_loop_supervisor`, `rpi_phased_tmux` + the `ao rpi parallel` / supervised-loop surfaces) is load-bearing but live — the phased engine kept its non-gc backends after the gc-bridge removal, and live code still references the lane's helpers. Removing it requires a caller-migration refactor, tracked as `soc-1gbpz`.
+The legacy RPI lane's internal backends (`rpi_parallel`, `rpi_loop_supervisor`, `rpi_phased_tmux`) are load-bearing but live — the `ao rpi parallel` / supervised-loop **command surfaces were removed** in f61c5f0e7 (the RPI engine is gone; drive the seven-move operating loop via the `/rpi` skill instead), yet the phased engine kept its non-gc backends after the gc-bridge removal and live code still references the lane's helpers. Removing the remaining internal helpers requires a caller-migration refactor, tracked as `soc-1gbpz`.

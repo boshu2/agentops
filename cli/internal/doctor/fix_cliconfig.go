@@ -65,8 +65,12 @@ func lookPathAll(name string) []string {
 		if runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0 {
 			continue
 		}
-		if !seen[cand] {
-			seen[cand] = true
+		key := cand
+		if resolved, err := filepath.EvalSymlinks(cand); err == nil {
+			key = resolved
+		}
+		if !seen[key] {
+			seen[key] = true
 			out = append(out, cand)
 		}
 	}
@@ -76,11 +80,11 @@ func lookPathAll(name string) []string {
 // installHintFor returns a platform-specific install command for a CLI.
 func installHintFor(name string) string {
 	switch name {
-	case "bd":
+	case "br":
 		if runtime.GOOS == "windows" {
-			return "bd: install Beads from its Windows release or use WSL/Homebrew"
+			return "br: install beads_rust from its Windows release or use WSL/Homebrew"
 		}
-		return "bd: brew install beads  (macOS)  |  see https://github.com/steveyegge/beads (Linux)"
+		return "br: install beads_rust; see AGENTS.md for the BEADS_DIR workflow"
 	case "git":
 		if runtime.GOOS == "windows" {
 			return "git: choco install git  |  https://git-scm.com/download/win"
@@ -317,7 +321,7 @@ func probeConfigSourceShape(repoRoot string) bool {
 
 const fmMissingRequiredCLI = "fm-cli-config-missing-required-cli"
 
-// missingRequiredCLIDetector flags a required external CLI (bd, git) absent
+// missingRequiredCLIDetector flags a required external CLI (br, git) absent
 // from PATH, or shadowed by a duplicate earlier on PATH.
 type missingRequiredCLIDetector struct{}
 
@@ -328,13 +332,13 @@ func (missingRequiredCLIDetector) EstimatedCostMS() int { return 5 }
 func (missingRequiredCLIDetector) OnlineRequired() bool { return false }
 func (missingRequiredCLIDetector) QuickPath() bool      { return true }
 func (missingRequiredCLIDetector) Describe() string {
-	return "Detects required external CLIs (bd, git) missing from PATH or shadowed by a duplicate."
+	return "Detects required external CLIs (br, git) missing from PATH or shadowed by a duplicate."
 }
 
-// Detect resolves every match for bd and git on PATH. It is pure: lookPathAll
+// Detect resolves every match for br and git on PATH. It is pure: lookPathAll
 // only reads $PATH and stats candidate files.
 func (missingRequiredCLIDetector) Detect(_ *DetectEnv) ([]Finding, error) {
-	required := []string{"bd", "git"}
+	required := []string{"br", "git"}
 	var missing, shadowed, hints []string
 	for _, name := range required {
 		resolved := lookPathAll(name)
@@ -423,8 +427,9 @@ func (optionalCodexAbsentDetector) Detect(_ *DetectEnv) ([]Finding, error) {
 
 const fmDevVersionBuildIntegrity = "fm-cli-config-dev-version-build-integrity"
 
-// semverWithVPrefix matches a release version like "v2.40.0".
-var semverWithVPrefix = regexp.MustCompile(`^v\d+\.\d+\.\d+`)
+// aoReleaseVersion matches published versions ("3.1.0", "v3.1.0") and the
+// documented source fallback used before the v3.1.0 tag is cut ("3.1.0-rc").
+var aoReleaseVersion = regexp.MustCompile(`^v?\d+\.\d+\.\d+(-rc(\.\d+)?)?$`)
 
 // devVersionBuildIntegrityDetector flags an `ao` binary that reports a
 // non-release version (dev/empty/non-semver) or is shadowed by another `ao`
@@ -446,7 +451,7 @@ func (devVersionBuildIntegrityDetector) Describe() string {
 func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) {
 	reported := aoReportedVersion()
 	suspect := reported == "" || reported == "dev" || reported == "vdev" ||
-		!semverWithVPrefix.MatchString(reported)
+		!aoReleaseVersion.MatchString(reported)
 
 	aoPaths := lookPathAll("ao")
 	shadowed := len(aoPaths) > 1
@@ -457,6 +462,8 @@ func (devVersionBuildIntegrityDetector) Detect(_ *DetectEnv) ([]Finding, error) 
 	pathDesc := strings.Join(aoPaths, ", ")
 	if pathDesc == "" {
 		pathDesc = "(ao not resolvable on PATH)"
+	} else {
+		pathDesc = describeAOPaths(aoPaths)
 	}
 	return []Finding{{
 		ID:         fmDevVersionBuildIntegrity,
@@ -488,16 +495,39 @@ func aoReportedVersion() string {
 	if err != nil {
 		return ""
 	}
+	return aoVersionAt(aoPath)
+}
+
+func aoVersionAt(aoPath string) string {
 	out, err := exec.Command(aoPath, "version").Output()
 	if err != nil {
 		return ""
 	}
-	// `ao version` prints e.g. "ao version dev" — take the last whitespace field.
-	fields := strings.Fields(string(out))
-	if len(fields) == 0 {
-		return ""
+	return parseAOVersionOutput(out)
+}
+
+func parseAOVersionOutput(out []byte) string {
+	// `ao version` prints a first line like "ao version 3.1.0-rc", followed
+	// by detail lines. Only the first version line carries the ao version.
+	for _, line := range strings.Split(string(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == "ao" && fields[1] == "version" {
+			return fields[2]
+		}
 	}
-	return fields[len(fields)-1]
+	return ""
+}
+
+func describeAOPaths(paths []string) string {
+	described := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if version := aoVersionAt(path); version != "" {
+			described = append(described, fmt.Sprintf("%s (%s)", path, version))
+			continue
+		}
+		described = append(described, path+" (version unknown)")
+	}
+	return strings.Join(described, ", ")
 }
 
 // ---------------------------------------------------------------------------

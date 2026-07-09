@@ -342,7 +342,7 @@ verified absent from validate.yml and pre-push-gate.sh). Rewrite scope:
 | docs/CHANGELOG.md | Dedupe (byte-identical 105K copy). **[VETO HONORED]** the duplicate is mechanically re-created: `pre-push-gate.sh` contains `cp CHANGELOG.md docs/CHANGELOG.md`. Delete that gate step and move the copy into the mkdocs build (`scripts/docs-build.sh`), or it resurrects on the next push. |
 | CHANGELOG.md | Keep at root (public repo needs history). **[ADV+]** root keeps only the current major; older majors archive under `docs/releases/archive/`. |
 | test_budget.env | Delete — zero consumers verified across scripts/, cli/, .github/, lib/, docs/. Dead state from a retired loop driver. |
-| MEMORY.md | Retire — stale projection of .agents/learnings (anti-dogfooding). Caveat: `ao memory` / `flywheel_close_loop.go` write it, so retirement is a small code change (point writers at .agents/) — propose as a bead. |
+| MEMORY.md | Retire — stale projection of .agents/learnings (anti-dogfooding). Caveat: `ao session memory` / `flywheel_close_loop.go` write it, so retirement is a small code change (point writers at .agents/) — propose as a bead. |
 | registry.json | Keep tracked for now; churn discipline (regen once per skill wave). **[ADV+]** file the untrack-and-regenerate-on-demand bead **in this plan**, not "later" — per-wave hash churn in a tracked generated file is the same disease the audit diagnoses elsewhere. |
 
 ---

@@ -149,7 +149,7 @@ func writePawlServiceTestRepo(t *testing.T, exitCode int) {
 	t.Cleanup(func() { testProjectDir = prevDir })
 }
 
-// ml8: `ao pawl up/down/health/route/metrics` forward to scripts/pawl.sh and propagate
+// ml8: `ao pawl up/down/health/doctor/smoke/route/metrics` forward to scripts/pawl.sh and propagate
 // its exit code verbatim (so e.g. a REFUTED route exits non-zero through ao).
 func TestPawlServiceCmd_DelegatesAndPropagatesExitCode(t *testing.T) {
 	for _, code := range []int{0, 1, 2} {
@@ -176,7 +176,7 @@ func TestPawlServiceCmd_DelegatesAndPropagatesExitCode(t *testing.T) {
 
 // The `ao pawl` surface exposes the full standing-service contract, not just `review`.
 func TestPawlCmd_HasServiceSubcommands(t *testing.T) {
-	want := map[string]bool{"up": false, "down": false, "reap": false, "health": false, "route": false, "metrics": false, "review": false}
+	want := map[string]bool{"up": false, "down": false, "reap": false, "health": false, "doctor": false, "smoke": false, "route": false, "metrics": false, "review": false}
 	for _, c := range pawlCmd.Commands() {
 		if _, ok := want[c.Name()]; ok {
 			want[c.Name()] = true
@@ -185,6 +185,21 @@ func TestPawlCmd_HasServiceSubcommands(t *testing.T) {
 	for name, found := range want {
 		if !found {
 			t.Errorf("ao pawl is missing subcommand %q", name)
+		}
+	}
+}
+
+func TestPawlCmd_DoctorSmokeRegisteredOnRoot(t *testing.T) {
+	for _, path := range [][]string{
+		{"pawl", "doctor"},
+		{"pawl", "smoke"},
+	} {
+		cmd, _, err := rootCmd.Find(path)
+		if err != nil {
+			t.Fatalf("rootCmd.Find(%v): %v", path, err)
+		}
+		if cmd == rootCmd {
+			t.Fatalf("rootCmd.Find(%v) returned rootCmd, not a leaf command", path)
 		}
 	}
 }

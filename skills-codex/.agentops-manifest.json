@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "35338f8e4830adb863dae613a6602b9e70447493c9764a4a204008d6cf11cc2f",
+  "codex_override_catalog_hash": "c973893c306eb725b89c04cc1b4e1f1a0f3399aca1c0eea148faab7a9df0412a",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -992,6 +992,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Auto-generated parity twin (codex-sync): skills/using-gc is the source of truth; no durable Codex-specific divergence yet."
+      },
+      {
+        "name": "goal-design",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff."
       }
     ]
   },
@@ -1090,7 +1096,7 @@
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
-      "generated_hash": "0818abd881220d3eb837a3c87080f9d8a6c5789168afb7462fdb7d249409cf06"
+      "generated_hash": "a9c67a2b462e99362cad36fde120c00d637f8062f8ba922fd5ab020ea3f853d3"
     },
     {
       "name": "dcg",
@@ -1101,8 +1107,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "c84296dd122411fdeddadbe3483c4398be8c735fc6b8e0deb812d57cb58925e5",
-      "generated_hash": "b32597fa0e202cbfc5c9eacbaec63ed7656b8f1bab5f887cd00eba5ec382b4ff"
+      "source_hash": "b91cfef8507d631305296110009e8813001bc534be10a05dda0c3b6814cc18ac",
+      "generated_hash": "5a6d5b85e48e3c0624dd0daaf855756fee124ba2e96ec240b4e14c0e6efc8500"
     },
     {
       "name": "doc",
@@ -1121,6 +1127,12 @@
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
       "generated_hash": "4607ff96607481f6f754bff5dd18250c8aa460dccb6c6a35b154e5a6fc1d5e6a"
+    },
+    {
+      "name": "goal-design",
+      "source_skill": "skills/goal-design",
+      "source_hash": "bcf738f0da4e11c4935204d6216cdef95f5b7a659fdea91c8038e6532f6ad5ed",
+      "generated_hash": "0744a5403df640715f7bcde06992b1b3a9e9bdb23b687a6548aaab4753c19ecc"
     },
     {
       "name": "goals",
@@ -1147,6 +1159,12 @@
       "generated_hash": "6af81e800bb0bca3b86687a34d0f72a2e9c2b28a96fd36064a7f9f655c26b094"
     },
     {
+      "name": "ms",
+      "source_skill": "skills/ms",
+      "source_hash": "69bd0b5e4bf51a644921c8213e83866b9496877e185e1bc6dc5c65191f47c993",
+      "generated_hash": "17bba2239a086fbcca936bfe8fdc0f881e767781221911f17107ff28c75688a3"
+    },
+    {
       "name": "ntm",
       "source_skill": "skills/ntm",
       "source_hash": "4904eb4b8b3b9efdc1674e0cc5bebad0cf1f6270a994b1de4c52407bb384315a",
@@ -1155,8 +1173,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "43767b7be402865e0109392f356dd9e46c52150f82e6e96e25ad8b113c3a5f36",
-      "generated_hash": "7952e8579398776441d4b2c03027dc063c21c39442be4af267ffc42ac222e012"
+      "source_hash": "76e61e31e0155f58296237691cedbf59c0d63b22cf967f3568e4e529b0f40877",
+      "generated_hash": "3520d4011f61ff64069ac460ae3e024b78fd71aede8d257d113f65383005c7cb"
     },
     {
       "name": "post-mortem",
@@ -1222,7 +1240,7 @@
       "name": "research",
       "source_skill": "skills/research",
       "source_hash": "351ef0b9c836a45e9a73700acc17d31f0bac6b00e31799d7738abe93dbfdf482",
-      "generated_hash": "9633645a67cbc17ae4ad789e83c7df141689939e3493e7d3d93a665798bc6159"
+      "generated_hash": "929ead3fd403965b8ece41ac96936af56386b5660f6459549269d69ef5e822a6"
     },
     {
       "name": "reverse-engineer",
@@ -1240,7 +1258,7 @@
       "name": "sbh",
       "source_skill": "skills/sbh",
       "source_hash": "d98846a1a9e0f03efe1a638fbefaf96ef1bb0345fdf9e7b9e4831038761da450",
-      "generated_hash": "a5091f250ec13743f8eb8dd942deb724c32bfdc68bfed11595653ed7be38dd85"
+      "generated_hash": "449612c4170faa2f8611685e695ec15f3d605cb341e8d6c9e7895247917b6e82"
     },
     {
       "name": "scaffold",
@@ -1311,20 +1329,14 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "1038567f89021f4d9816bb6c898405e06a4edf8235a9c34ae78d20e982f67934",
-      "generated_hash": "500c28824963796a51ea4a55c789f8ad4785b31074a1f021ba9a844ccef0ea0e"
+      "source_hash": "f1d62659bb2efc82c26f34233e0e6ddfa8ff8d8715384e4ae9ba06387c81a48b",
+      "generated_hash": "51d31f2c867bf2320d6ff11828effb4a02507c2c805dbf3e681ba9c744a6b95d"
     },
     {
       "name": "workflow-builder",
       "source_skill": "skills/workflow-builder",
       "source_hash": "ef7383f849e896cba600c169954ef96e9b70fbafc8ac0871fdedc341c783ca92",
       "generated_hash": "ef907b207cf43eef197bc2ec63e4ee5f2428099f6d2c928a09ecdf68b75226e7"
-    },
-    {
-      "name": "ms",
-      "source_skill": "skills/ms",
-      "source_hash": "69bd0b5e4bf51a644921c8213e83866b9496877e185e1bc6dc5c65191f47c993",
-      "generated_hash": "17bba2239a086fbcca936bfe8fdc0f881e767781221911f17107ff28c75688a3"
     },
     {
       "name": "gc-membrane",

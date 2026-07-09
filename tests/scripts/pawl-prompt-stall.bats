@@ -34,6 +34,11 @@ teardown() { export PATH="$ORIG_PATH"; rm -rf "$TMP"; }
   [ "$output" = "trust-gate" ]
 }
 
+@test "detect_blocking_prompt: codex trust-directory prompt -> trust-gate" {
+  run detect_blocking_prompt "Do you trust the contents of this directory? Press enter to continue"
+  [ "$output" = "trust-gate" ]
+}
+
 @test "detect_blocking_prompt: codex update dialog -> codex-update" {
   run detect_blocking_prompt "Update available 0.141 -> 0.142. Press enter to continue"
   [ "$output" = "codex-update" ]

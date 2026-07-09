@@ -143,7 +143,7 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 58 shared skills  │   `ao` Control Plane │ local pre-push gate  │
+│ 59 shared skills  │   `ao` Control Plane │ local pre-push gate  │
 │ plus runtime      │ repo-native retrieval│    + CI backstop     │
 │    artifacts      │ goals, and automation│ routine release path │
 └───────────────────┴──────────────────────┴───────────────────────┘
@@ -216,8 +216,8 @@ Backstop validation    validate.yml (CI)           Re-run compiled validation ga
 ```
 RETRIEVAL / CURATION        VALIDATION / RATCHETS    WORKFLOW / FITNESS
 ────────────────────        ─────────────────────    ──────────────────
-ao lookup                   ao ratchet status        ao rpi phased
-ao search                   ao ratchet record        ao rpi status
+ao lookup                   ao ratchet status        ao gate check
+ao search                   ao ratchet record        ao session bootstrap
 ao forge                    ao ratchet check         ao goals measure
 ao curate                   ao constraint activate   ao goals steer
 ao maturity                 ao constraint review     ao flywheel status

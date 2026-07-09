@@ -51,6 +51,8 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	writeSkillsFile(t, skillMD, original)
 	docMD := filepath.Join(repo, "docs", "sample.md")
 	writeSkillsFile(t, docMD, "Use `ao work rpi` to start.\n")
+	codexRefMD := filepath.Join(repo, "skills-codex", "sample", "references", "flow.md")
+	writeSkillsFile(t, codexRefMD, "Use `ao handoff` to pass context.\n")
 
 	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
 
@@ -73,8 +75,8 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	if !res.Fixed {
 		t.Fatal("Fix not marked Fixed")
 	}
-	if res.ActionsTaken != 2 {
-		t.Fatalf("ActionsTaken = %d, want 2", res.ActionsTaken)
+	if res.ActionsTaken != 3 {
+		t.Fatalf("ActionsTaken = %d, want 3", res.ActionsTaken)
 	}
 
 	// Substitution applied; arrow rename-doc line untouched.
@@ -88,6 +90,10 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	if string(gotDoc) != "Use `ao converge` to start.\n" {
 		t.Fatalf("docs/sample.md after fix = %q", gotDoc)
 	}
+	gotCodexRef, _ := os.ReadFile(codexRefMD)
+	if string(gotCodexRef) != "Use `ao session handoff` to pass context.\n" {
+		t.Fatalf("skills-codex reference after fix = %q", gotCodexRef)
+	}
 
 	// Backup exists, byte-identical to original.
 	backup := filepath.Join(ra.BackupsDir(), "skills", "sample", "SKILL.md")
@@ -99,13 +105,13 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 		t.Fatalf("backup = %q, want %q", bgot, original)
 	}
 
-	// actions.jsonl has exactly two lines, correct fixer id + op.
+	// actions.jsonl has exactly three lines, correct fixer id + op.
 	recs, err := readActions(ra.ActionsPath())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(recs) != 2 {
-		t.Fatalf("actions.jsonl lines = %d, want 2", len(recs))
+	if len(recs) != 3 {
+		t.Fatalf("actions.jsonl lines = %d, want 3", len(recs))
 	}
 	for _, r := range recs {
 		if r.Op != "WriteFile" || r.FixerID != "fm-skills-stale-command-refs" || !r.OK {
@@ -128,8 +134,8 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Undo: %v", err)
 	}
-	if ur.Restored != 2 {
-		t.Fatalf("Undo restored = %d, want 2", ur.Restored)
+	if ur.Restored != 3 {
+		t.Fatalf("Undo restored = %d, want 3", ur.Restored)
 	}
 	restored, _ := os.ReadFile(skillMD)
 	if string(restored) != original {

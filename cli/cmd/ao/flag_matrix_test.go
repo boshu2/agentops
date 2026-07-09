@@ -195,8 +195,8 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"compile",
 		"constraint",
 		"contradict",
-		// "curate" archived behind the flywheel build tag (age-nzwo); absent
-		// from the default binary this test builds.
+		// corpus/curate/defrag are archived behind //go:build flywheel; the
+		// default spine binary should not expose them.
 		"dedup",
 		"lookup",
 		"knowledge",

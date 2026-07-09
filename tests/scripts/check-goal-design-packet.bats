@@ -83,3 +83,34 @@ PY
     [ "$status" -ne 0 ]
     [[ "$output" == *"self-grading"* ]]
 }
+
+@test "driver slug must match intent slug" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    run "$SCRIPT" "$FIX/mismatched-slug"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"slug mismatch"* ]]
+}
+
+@test "driver intent_ref.path must identify the packet intent" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    run "$SCRIPT" "$FIX/misleading-intent-path"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"intent_ref.path"* ]]
+    [[ "$output" == *".agents/goal-design/misleading-intent-path/intent.md"* ]]
+}
+
+@test "candidate bead scenario ids must exist in intent scenarios" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    run "$SCRIPT" "$FIX/unknown-scenario-reference"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"candidate_beads/0/behavior"* ]]
+    [[ "$output" == *"S9"* ]]
+}
+
+@test "candidate bead behavior labels must map to intent scenarios" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    run "$SCRIPT" "$FIX/unknown-behavior-label"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"candidate_beads/0/behavior"* ]]
+    [[ "$output" == *"intent.bdd.scenarios"* ]]
+}

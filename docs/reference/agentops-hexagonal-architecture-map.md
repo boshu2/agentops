@@ -104,8 +104,8 @@ loop. The safe chain is:
 ```text
 agentops-evolution-bootstrap
   -> ao factory start
-  -> ao evolve --max-cycles 1 --landing-policy off
-  -> ao rpi phased for explicit one-off lifecycles
+  -> /evolve skill in-session for the improvement loop (ao evolve removed in 3.0; ao goals measure for fitness; scheduled runs via the external substrate)
+  -> the seven-move operating loop driven in-session by /rpi (ao rpi phased removed in 3.0; see docs/architecture/operating-loop.md)
   -> ao loop history/append/verify for typed BC3 cycle state
   -> /push or explicit git only after validation and authorization
 ```

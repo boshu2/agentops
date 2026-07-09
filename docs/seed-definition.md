@@ -89,8 +89,9 @@ AgentOps 3.0 ships **zero hooks**. The same lifecycle stages run through explici
 gate (`ao gate check`), not a local hook. Knowledge extraction is wired into the
 skills (`/evolve`, `/post-mortem`, the operating loop) that call these commands
 directly, and the pre-push gate enforces the ratchet on push (`validate.yml` is a
-tag/PR/manual backstop). `/rpi` and `ao rpi` remain load-bearing legacy, not the
-primary loop. If you want a bounded local gate of your own, author it with the
+tag/PR/manual backstop). The `/rpi` skill remains, but the `ao rpi` command was removed
+in 3.0 (the RPI engine is gone) — the seven-move operating loop is now the primary
+path. If you want a bounded local gate of your own, author it with the
 `hooks-authoring` skill — AgentOps ships none.
 
 **Meadows mapping:** #5 (rules), #6 (information flows -- the explicit commands and the pre-push gate ensure knowledge moves from session output to persistent storage to next session input).

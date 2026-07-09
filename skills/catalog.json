@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-09T03:51:36Z",
-  "skill_count": 58,
+  "generated_at": "2026-07-09T16:19:10Z",
+  "skill_count": 59,
   "skills": [
     {
       "name": "account-rotation",
@@ -356,7 +356,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 14,
+      "references_count": 15,
       "codex_override_present": true
     },
     {
@@ -434,6 +434,29 @@
       "produces": [],
       "practices": [
         "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "goal-design",
+      "description": "Create validated goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "operator-goal",
+        "docs/templates/goal-design-intent.md",
+        "docs/templates/goal-design-driver.md"
+      ],
+      "produces": [
+        ".agents/goal-design/<slug>/intent.md",
+        ".agents/goal-design/<slug>/driver.md"
+      ],
+      "practices": [
+        "bdd-gherkin",
+        "design-by-contract",
+        "tdd"
       ],
       "context_rel": [],
       "references_count": 0,

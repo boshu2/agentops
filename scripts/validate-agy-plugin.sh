@@ -56,7 +56,7 @@ jq -e '
 jq -e '
   .["agentops-dcg"].PreToolUse[0].matcher == "run_command"
   and .["agentops-dcg"].PreToolUse[0].hooks[0].command == "dcg"
-  and .["agentops-evidence-surface"].Stop[0].command == "ao handoff --help >/dev/null 2>&1 || true"
+  and .["agentops-evidence-surface"].Stop[0].command == "ao session handoff --help >/dev/null 2>&1 || true"
 ' "$PLUGIN_DIR/hooks.json" >/dev/null || fail "hooks.json does not expose the expected guard/evidence hooks"
 
 cmp -s "$PLUGIN_DIR/hooks.json" "$PLUGIN_DIR/hooks/hooks.json" || fail "root hooks.json and hooks/hooks.json drifted"

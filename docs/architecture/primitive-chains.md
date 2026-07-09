@@ -118,7 +118,7 @@ session start -> phased handoff -> handoff / recover -> session end -> next sess
 | Continuity Surface | Role |
 |--------------------|------|
 | `ao session bootstrap` / `ao inject` | Explicitly loads repo context and points at durable artifacts at session start |
-| `ao rpi phased` + phase manifests | Keeps each phase context-bounded and disk-backed |
+| Phase manifests (the `ao rpi phased` engine was **removed** in 3.0 — superseded by the operating loop, driven in-session by the `/rpi` skill) | Keeps each phase context-bounded and disk-backed |
 | `/handoff` | Leaves a structured continuation packet for the next operator |
 | `/recover` | Rehydrates in-progress work after compaction or interruption |
 | `ao forge transcript` + `ao flywheel close-loop` | Extracts end-of-session knowledge and closes the loop at stop time |
