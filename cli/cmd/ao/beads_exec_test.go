@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -268,6 +269,287 @@ echo "unexpected verb: $*"
 	}
 	if !strings.Contains(errbuf.String(), "boom") {
 		t.Errorf("br stderr not surfaced for diagnostics: %q", errbuf.String())
+	}
+}
+
+// TestRunBeadsExec_BRReadJSONIsCanonicalPassthrough: br's `list --json` output
+// is ALREADY canonical ({"issues":[...]} with br's extra envelope keys), so
+// ao streams it VERBATIM — no reshape, no field drop, no reorder (age-f07z).
+func TestRunBeadsExec_BRReadJSONIsCanonicalPassthrough(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	if err := os.Mkdir(filepath.Join(root, "_beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// br's real list envelope: {"issues":[...], total, has_more, limit, offset}.
+	writeTrackerShim(t, "br", `if [ "$1" = "list" ]; then
+cat <<'JSON'
+{"issues":[{"id":"age-1","title":"T","description":"d","priority":1,"status":"open"}],"total":1,"has_more":false,"limit":50,"offset":0}
+JSON
+exit 0
+fi
+echo "UNEXPECTED $*" >&2; exit 9
+`)
+	t.Setenv("AGENTOPS_TRACKER", "")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"list", "--json"}); err != nil {
+		t.Fatalf("runBeadsExec list --json (br): %v (stderr=%s)", err, errbuf.String())
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(out.String()), &obj); err != nil {
+		t.Fatalf("br list --json output not an object: %v\n%s", err, out.String())
+	}
+	if _, ok := obj["issues"]; !ok {
+		t.Errorf("canonical list output missing .issues:\n%s", out.String())
+	}
+	// br's extra envelope keys survive verbatim (proves no reshape/strip on br).
+	if _, ok := obj["total"]; !ok {
+		t.Errorf("br passthrough dropped its .total envelope key:\n%s", out.String())
+	}
+}
+
+// TestRunBeadsExec_BDListJSONReshapedToCanonical: bd's `list --json` bare array
+// is reshaped to the SAME canonical shape as br — {"issues":[...]} — with the
+// canonical .description key added and bd's extra fields preserved (age-f07z).
+func TestRunBeadsExec_BDListJSONReshapedToCanonical(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	// bd list --json: a BARE array, elements lacking `description` (bd omits it
+	// when empty), carrying a bd-only field (issue_type) that must survive.
+	writeTrackerShim(t, "bd", `if [ "$1" = "list" ] && [ "$2" = "--json" ]; then
+cat <<'JSON'
+[{"id":"bd-1","title":"Child A","priority":2,"status":"open","issue_type":"task"}]
+JSON
+exit 0
+fi
+echo "UNEXPECTED $*" >&2; exit 9
+`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"list", "--json"}); err != nil {
+		t.Fatalf("runBeadsExec list --json (bd): %v (stderr=%s)", err, errbuf.String())
+	}
+	var obj struct {
+		Issues []map[string]json.RawMessage `json:"issues"`
+	}
+	if err := json.Unmarshal([]byte(out.String()), &obj); err != nil {
+		t.Fatalf("bd list --json NOT reshaped to a {\"issues\":[...]} object: %v\n%s", err, out.String())
+	}
+	if len(obj.Issues) != 1 {
+		t.Fatalf("reshaped .issues length = %d, want 1:\n%s", len(obj.Issues), out.String())
+	}
+	el := obj.Issues[0]
+	if got := string(el["id"]); got != `"bd-1"` {
+		t.Errorf("reshaped .issues[0].id = %s, want \"bd-1\"", got)
+	}
+	if _, ok := el["description"]; !ok {
+		t.Errorf("reshape did not guarantee the canonical .description key:\n%s", out.String())
+	}
+	if _, ok := el["issue_type"]; !ok {
+		t.Errorf("reshape dropped bd's extra .issue_type field (must be field-preserving):\n%s", out.String())
+	}
+}
+
+// TestRunBeadsExec_BDShowJSONReshapedWithDependents: bd's `show --json` bare
+// array is reshaped to a canonical bare array whose elements carry the
+// guaranteed .description (null) and .dependents ([]) keys — so a
+// `jq '.[0].dependents[]?'` / `.[0].description` selector never breaks (age-f07z).
+func TestRunBeadsExec_BDShowJSONReshapedWithDependents(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	// bd show --json for an epic: bare array, NO description, NO dependents[]
+	// (bd's default show reports only a dependent_count).
+	writeTrackerShim(t, "bd", `if [ "$1" = "show" ]; then
+cat <<'JSON'
+[{"id":"bd-ep","title":"Epic","priority":1,"status":"open","issue_type":"epic","dependent_count":1}]
+JSON
+exit 0
+fi
+echo "UNEXPECTED $*" >&2; exit 9
+`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"show", "bd-ep", "--json"}); err != nil {
+		t.Fatalf("runBeadsExec show --json (bd): %v (stderr=%s)", err, errbuf.String())
+	}
+	var arr []map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(out.String()), &arr); err != nil {
+		t.Fatalf("bd show --json NOT reshaped to a bare array: %v\n%s", err, out.String())
+	}
+	if len(arr) != 1 {
+		t.Fatalf("reshaped show array length = %d, want 1:\n%s", len(arr), out.String())
+	}
+	el := arr[0]
+	if _, ok := el["description"]; !ok {
+		t.Errorf("reshape did not guarantee .description on show element:\n%s", out.String())
+	}
+	dep, ok := el["dependents"]
+	if !ok {
+		t.Fatalf("reshape did not guarantee .dependents on show element:\n%s", out.String())
+	}
+	if strings.TrimSpace(string(dep)) != "[]" {
+		t.Errorf("bd show missing dependents should reshape to [], got %s", string(dep))
+	}
+	if _, ok := el["issue_type"]; !ok {
+		t.Errorf("reshape dropped bd's extra .issue_type field on show:\n%s", out.String())
+	}
+}
+
+// TestRunBeadsExec_BDReadyJSONBareArrayPreserved: bd's `ready --json` bare array
+// stays a canonical bare array, so `jq length` counts issues (not object keys).
+func TestRunBeadsExec_BDReadyJSONBareArrayPreserved(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	writeTrackerShim(t, "bd", `if [ "$1" = "ready" ] && [ "$2" = "--json" ]; then
+cat <<'JSON'
+[{"id":"bd-a","title":"A","priority":1,"status":"open"},{"id":"bd-b","title":"B","priority":2,"status":"open"}]
+JSON
+exit 0
+fi
+echo "UNEXPECTED $*" >&2; exit 9
+`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"ready", "--json"}); err != nil {
+		t.Fatalf("runBeadsExec ready --json (bd): %v (stderr=%s)", err, errbuf.String())
+	}
+	var arr []map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(out.String()), &arr); err != nil {
+		t.Fatalf("bd ready --json NOT a bare array: %v\n%s", err, out.String())
+	}
+	if len(arr) != 2 {
+		t.Errorf("ready array length = %d, want 2 (so `jq length` counts issues):\n%s", len(arr), out.String())
+	}
+}
+
+// TestRunBeadsExec_BDReadWithoutJSONStreamsVerbatim: a bd READ verb WITHOUT
+// --json is NOT reshaped — it streams the human output verbatim (age-f07z).
+func TestRunBeadsExec_BDReadWithoutJSONStreamsVerbatim(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	writeTrackerShim(t, "bd", `echo "HUMAN: $*"`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"list"}); err != nil {
+		t.Fatalf("runBeadsExec list (bd, no --json): %v (stderr=%s)", err, errbuf.String())
+	}
+	if got := strings.TrimSpace(out.String()); got != "HUMAN: list" {
+		t.Errorf("bd read without --json must stream verbatim; got %q", got)
+	}
+}
+
+// TestRunBeadsExec_BDWriteVerbWithJSONStreamsVerbatim: a WRITE verb is never
+// reshaped even with --json — only list/ready/show are read verbs (age-f07z).
+func TestRunBeadsExec_BDWriteVerbWithJSONStreamsVerbatim(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	writeTrackerShim(t, "bd", `echo "RAW: $*"`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	if err := runBeadsExec(cmd, []string{"create", "title", "--json"}); err != nil {
+		t.Fatalf("runBeadsExec create --json (bd): %v (stderr=%s)", err, errbuf.String())
+	}
+	if got := strings.TrimSpace(out.String()); got != "RAW: create title --json" {
+		t.Errorf("bd write verb must stream verbatim (no reshape); got %q", got)
+	}
+}
+
+// TestRunBeadsExec_BDReadJSONPropagatesExitCode: the capture+reshape path must
+// propagate bd's exit code UNCHANGED and surface its stderr (age-f07z), matching
+// the streaming passthrough contract.
+func TestRunBeadsExec_BDReadJSONPropagatesExitCode(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	writeTrackerShim(t, "bd", `echo "boom" >&2
+exit 7
+`)
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(root)
+
+	var out, errbuf strings.Builder
+	cmd := newBeadsExecCmd(&out, &errbuf)
+	err := runBeadsExec(cmd, []string{"list", "--json"})
+	if err == nil {
+		t.Fatal("bd read+--json with a failing tracker = nil, want beadsExitError")
+	}
+	var exitErr *beadsExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("error type = %T, want *beadsExitError", err)
+	}
+	if exitErr.ExitCode() != 7 {
+		t.Errorf("exit code = %d, want 7 (propagated unchanged)", exitErr.ExitCode())
+	}
+	if !strings.Contains(errbuf.String(), "boom") {
+		t.Errorf("bd stderr not surfaced for diagnostics: %q", errbuf.String())
+	}
+}
+
+// TestCanonicalizeBDReadJSON_Unit: direct unit coverage of the reshape mapping
+// for each read verb (L1 regression net under the L2 command tests above).
+func TestCanonicalizeBDReadJSON_Unit(t *testing.T) {
+	// list: bare array -> {"issues":[...]}
+	got, err := canonicalizeBDReadJSON("list", []byte(`[{"id":"x","title":"t","priority":1,"status":"open"}]`))
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(string(got)), `{"issues":`) {
+		t.Errorf("list canonical must be an {\"issues\":...} object, got %s", got)
+	}
+	// empty list -> {"issues":[]}, never null (so `.issues | length` == 0)
+	got, err = canonicalizeBDReadJSON("list", []byte(`[]`))
+	if err != nil {
+		t.Fatalf("empty list: %v", err)
+	}
+	if strings.TrimSpace(string(got)) != `{"issues":[]}` {
+		t.Errorf("empty list canonical = %s, want {\"issues\":[]}", got)
+	}
+	// ready: bare array stays a bare array
+	got, err = canonicalizeBDReadJSON("ready", []byte(`[{"id":"y","title":"t","priority":1,"status":"open"}]`))
+	if err != nil {
+		t.Fatalf("ready: %v", err)
+	}
+	if !strings.HasPrefix(strings.TrimSpace(string(got)), "[") {
+		t.Errorf("ready canonical must stay a bare array, got %s", got)
+	}
+	// show: missing dependents/description are injected as []/null
+	got, err = canonicalizeBDReadJSON("show", []byte(`[{"id":"z","title":"t","priority":1,"status":"open"}]`))
+	if err != nil {
+		t.Fatalf("show: %v", err)
+	}
+	var arr []map[string]json.RawMessage
+	if err := json.Unmarshal(got, &arr); err != nil {
+		t.Fatalf("show output parse: %v", err)
+	}
+	if strings.TrimSpace(string(arr[0]["dependents"])) != "[]" {
+		t.Errorf("show must inject dependents=[], got %s", arr[0]["dependents"])
+	}
+	if strings.TrimSpace(string(arr[0]["description"])) != "null" {
+		t.Errorf("show must inject description=null, got %s", arr[0]["description"])
 	}
 }
 

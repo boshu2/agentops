@@ -1101,8 +1101,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "3232667196dfc02bc02a32e6f028fc501b7d33c1085c29602cf2445f7ccebd60",
-      "generated_hash": "87ed7badd7a29bea588134ceaa2637e91bb7f62012a3d267393add040f48b65e"
+      "source_hash": "7d974e2a20650521066cc2e5ea6025af90ab2587e06285ce9a5a5daecb71a131",
+      "generated_hash": "3e2f022c48c83b6f8f7bfd14083a8fb47a2c0ad9cb1dcf04a6948e9eaf5d2f16"
     },
     {
       "name": "doc",
@@ -1120,7 +1120,7 @@
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "cb7fc8a5e9a4373fdf711f676515172405f93e311d4e393a65175967dfe1082f"
+      "generated_hash": "4607ff96607481f6f754bff5dd18250c8aa460dccb6c6a35b154e5a6fc1d5e6a"
     },
     {
       "name": "goals",
@@ -1155,14 +1155,14 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "a75d2f49c91b40b30f209789af209379e0d9503a268d7b5282127db3cd5cd0d2",
-      "generated_hash": "68dc6b57e32d6ccb6289d359a09ad0c1eea097b465295fa6828d0aa890b22325"
+      "source_hash": "00767b8e5b83944b6bfda696741ef93cf3321a601b7316f04abd8041476b6e12",
+      "generated_hash": "182eb48d82ab92206684a59e4a861db3840250071b275f252539b6d62b8d0516"
     },
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "c2183ff53b7de5a800af0febf3fb343320de42f69ce4f068ae1829568ed2b047",
-      "generated_hash": "390bbd5b56ebbf8e8ee0e77e7ad04cc3d11b264589cadedcc1aa0e438d624e24"
+      "generated_hash": "be52f47372bac1b4228bd9a1bb544a9ffbce47c4ed62dbf6d5f62193afd08700"
     },
     {
       "name": "pr-prep",
