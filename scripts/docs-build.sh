@@ -54,11 +54,98 @@ case "$mode" in
         exec mkdocs serve --dev-addr 127.0.0.1:8000
         ;;
     --check|check)
-        # Strict build, discard output dir
+        # Strict build, discard output dir. `mkdocs build --strict` runs end-to-end
+        # (nothing is weakened); the exit is then reinterpreted against an allowlist of
+        # DISPOSITIONED warnings — intentional cross-references from docs/ pages to real
+        # repo artifacts outside the published site (skills/, scripts/, schemas/, evals/,
+        # repo-root docs). Any strict warning NOT in the allowlist still fails the check,
+        # so new/accidental broken links break the build. See
+        # docs/docs-build-dispositions.md + tests/docs/mkdocs-strict-allowlist.txt.
+        allowlist="$REPO_ROOT/tests/docs/mkdocs-strict-allowlist.txt"
         tmp_site="$(mktemp -d)"
-        trap 'rm -rf "$tmp_site"' EXIT
-        mkdocs build --strict --site-dir "$tmp_site"
-        echo "OK: mkdocs build --strict passed"
+        build_log="$(mktemp)"
+        # shellcheck disable=SC2064
+        trap "rm -rf '$tmp_site' '$build_log'" EXIT
+
+        set +e
+        mkdocs build --strict --site-dir "$tmp_site" >"$build_log" 2>&1
+        mkdocs_rc=$?
+        set -e
+
+        # Surface the full build log for the operator.
+        cat "$build_log"
+
+        # Hard errors (config/plugin failures) are never tolerated.
+        if grep -qE '^ERROR ' "$build_log"; then
+            echo "" >&2
+            echo "FAIL: mkdocs strict build hit a hard error (see log above)" >&2
+            exit 1
+        fi
+
+        warnings="$(grep -E '^WARNING ' "$build_log" || true)"
+
+        # A nonzero mkdocs exit that produced NO strict warnings (and no ^ERROR,
+        # checked above) is an UNEXPLAINED failure — mkdocs missing (exit 127),
+        # crashed, or a failure mode we do not pattern. Never certify OK on it:
+        # keying the pass purely on grepping the log would let a broken/missing
+        # mkdocs (e.g. a fake `mkdocs` that exits 127 first in PATH) print OK.
+        # A clean strict pass is rc=0; a strict-warnings failure is rc!=0 WITH
+        # warnings (dispositioned below). rc!=0 with no warnings is a hard fail.
+        if [[ "$mkdocs_rc" -ne 0 && -z "$warnings" ]]; then
+            echo "" >&2
+            echo "FAIL: mkdocs build --strict exited ${mkdocs_rc} with no strict warnings to" >&2
+            echo "      disposition — mkdocs is missing, crashed, or hit an unrecognized" >&2
+            echo "      failure. NOT certifying OK. See the build log above." >&2
+            exit 1
+        fi
+
+        if [[ -z "$warnings" ]]; then
+            echo "OK: mkdocs build --strict passed (0 warnings)"
+            exit 0
+        fi
+
+        # Filter comments/blank lines out of the allowlist, then subtract exact,
+        # whole-line matches. Anything left is an un-dispositioned warning.
+        allow_tmp="$(mktemp)"
+        # shellcheck disable=SC2064
+        trap "rm -rf '$tmp_site' '$build_log' '$allow_tmp'" EXIT
+        if [[ -f "$allowlist" ]]; then
+            grep -vE '^[[:space:]]*(#|$)' "$allowlist" > "$allow_tmp" || true
+        fi
+
+        if [[ -s "$allow_tmp" ]]; then
+            undisposed="$(printf '%s\n' "$warnings" | grep -vxF -f "$allow_tmp" || true)"
+        else
+            undisposed="$warnings"
+        fi
+
+        if [[ -n "$undisposed" ]]; then
+            echo "" >&2
+            echo "FAIL: un-dispositioned mkdocs strict warnings. Fix the link, or — only if it" >&2
+            echo "      is an intentional cross-reference to a real repo artifact outside the" >&2
+            echo "      docs site — add the verbatim line to tests/docs/mkdocs-strict-allowlist.txt:" >&2
+            printf '%s\n' "$undisposed" >&2
+            exit 1
+        fi
+
+        # All warnings are dispositioned — but a nonzero mkdocs exit must be EXPLAINED
+        # by the strict-warnings abort, not a crash that merely ALSO emitted an
+        # allowlisted warning. mkdocs prints "Aborted with N warnings in strict mode!"
+        # only when it aborts ON warnings; a Python crash/traceback exits nonzero
+        # WITHOUT that line. So a nonzero exit lacking the signature is a hard failure
+        # (contract: hard errors are never tolerated), even though the allowlist emptied
+        # `undisposed`. (Closes: a fake mkdocs that prints one allowlisted warning + a
+        # traceback and exits 1 would otherwise certify OK.)
+        if [[ "$mkdocs_rc" -ne 0 ]] && ! grep -qE 'Aborted with [0-9]+ warning.* in strict mode' "$build_log"; then
+            echo "" >&2
+            echo "FAIL: mkdocs build --strict exited ${mkdocs_rc} without the strict-warnings" >&2
+            echo "      abort signature — it crashed rather than aborting on warnings, so the" >&2
+            echo "      allowlist must not certify it OK. See the build log above." >&2
+            exit 1
+        fi
+
+        allowed_count="$(printf '%s\n' "$warnings" | grep -c '^WARNING ' || true)"
+        echo "OK: mkdocs build --strict clean; ${allowed_count} dispositioned cross-references tolerated (tests/docs/mkdocs-strict-allowlist.txt)"
         ;;
     --clean|clean)
         rm -rf _site

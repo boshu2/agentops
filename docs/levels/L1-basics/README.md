@@ -41,4 +41,4 @@ See the `demo/` directory for real session transcripts.
 
 ## Next Level
 
-Once comfortable with single-session work, progress to [L2-persistence](../L2-persistence/) to add cross-session memory.
+Once comfortable with single-session work, progress to [L2-persistence](../L2-persistence/README.md) to add cross-session memory.

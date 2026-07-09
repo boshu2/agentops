@@ -66,7 +66,7 @@ supports (does not prove) TIERED_MIDDLE.
 
 The value half was **subsequently tested** once a stronger producer
 (Qwen2.5-Coder-32B) supplied real compiling-but-subtly-wrong samples (see
-[the stronger-producer run](./membrane-escape-harvest-no-escape.md#update--stronger-producer-qwen25-coder-32b-the-substrate-exists-but-the-membrane-still-catches)).
+[the stronger-producer run](./membrane-escape-harvest-no-escape.md#update-stronger-producer-qwen25-coder-32b-the-substrate-exists-but-the-membrane-still-catches-2026-06-22)).
 Qwen shipped two compiling subtle schema bugs (`rfd-codex-schema`,
 `rfd-nested-schema`) that the Haiku **panel** caught 3/3. The transfer test:
 does a catch-derived check help a **cheaper tier** (a single, terse "fast skim"

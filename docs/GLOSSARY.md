@@ -107,7 +107,7 @@ A shell script that fires automatically on agent lifecycle events. **AgentOps 3.
 Historical name for session-start knowledge loading. Retired as a skill: on-demand retrieval is `ao lookup --query "<topic>"`, and knowledge activation (beliefs/playbooks/briefings/gaps) lives in the operationalize skill. [Full documentation](../skills/operationalize/SKILL.md)
 
 ### Issue
-A discrete unit of trackable work, stored as a bead. Created by `/plan`, executed by `/implement` or `/crank`. Has status, dependencies, and parent/child relationships. [Full documentation](SKILLS.md#beads)
+A discrete unit of trackable work, stored as a bead. Created by `/plan`, executed by `/implement` or `/crank`. Has status, dependencies, and parent/child relationships. [Full documentation](SKILLS.md#beads-br)
 
 ## J
 

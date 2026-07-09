@@ -46,4 +46,4 @@ Add the `.agents/` directory for cross-session memory.
 
 ## Next Level
 
-Once comfortable with persistence, progress to [L3-state-management](../L3-state-management/) to add issue tracking.
+Once comfortable with persistence, progress to [L3-state-management](../L3-state-management/README.md) to add issue tracking.

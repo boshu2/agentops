@@ -1,0 +1,78 @@
+# MkDocs strict-build dispositioned warnings (age-y0ww)
+#
+# Each line below is an EXACT mkdocs --strict WARNING that scripts/docs-build.sh
+# --check tolerates because it is an INTENTIONAL cross-reference from a docs/ page
+# to a real repo artifact that lives OUTSIDE the published site (docs_dir). These
+# links resolve for repo/GitHub readers; mkdocs cannot resolve them because the
+# target is not part of the built site. See docs/docs-build-dispositions.md for the
+# per-class rationale.
+#
+# Format: the verbatim `WARNING -  ...` line mkdocs emits (whole-line, exact match).
+# The check FAILS on any strict warning NOT listed here, so NEW/accidental broken
+# links still break the build — this is a baseline, not a blanket suppression.
+# Add a line here ONLY after confirming the target is a real repo artifact that is
+# deliberately outside the docs site; prefer FIXING the link when a docs-site target
+# exists. Blank lines and lines starting with '#' are ignored.
+#
+# Regenerate/refresh after an intentional doc move:
+#   scripts/docs-build.sh --check   # prints any un-dispositioned warning verbatim
+
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/beads-br/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/council/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/crank/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/handoff/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/operationalize/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/post-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/pre-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/research/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/standards/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/swarm/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/validate/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'SKILL-ROUTER.md' contains a link '../skills/ms/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'SKILLS.md' contains a link '../skills/ms/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-CI.md', but the target '../AGENTS-CI.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-CODEX.md', but the target '../AGENTS-CODEX.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-RUNTIME.md', but the target '../AGENTS-RUNTIME.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-WORKFLOW.md', but the target '../AGENTS-WORKFLOW.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../GOALS.md', but the target '../GOALS.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../cli/docs/COMMANDS.md', but the target '../cli/docs/COMMANDS.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../skills/SKILL-TIERS.md', but the target '../skills/SKILL-TIERS.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/control-loop-model.md' contains a link '../../PRODUCT.md', but the target '../PRODUCT.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/operating-loop.md' contains a link '../../skills/automation-shape-routing/SKILL.md', but the target '../skills/automation-shape-routing/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/operating-loop.md' contains a link '../../skills/rpi/references/agile-replan-loop.md', but the target '../skills/rpi/references/agile-replan-loop.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/operating-loop.md' contains a link '../../skills/using-atm/SKILL.md#when-to-use-atm-vs-am-the-4-case-matrix', but the target '../skills/using-atm/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'architecture/workflow-conformance-pattern.md' contains a link '../../.claude/workflows/operating-loop.js', but the target '../.claude/workflows/operating-loop.js' is not found among documentation files.
+WARNING -  Doc file 'architecture/workflow-conformance-pattern.md' contains a link '../../skills/workflow-builder/SKILL.md', but the target '../skills/workflow-builder/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'comparisons/vs-hosted-code-review.md' contains a link '../../README.md#the-honest-version', but the target '../README.md' is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/council/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/post-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/pre-mortem/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'context-lifecycle.md' contains a link '../skills/validate/SKILL.md', but the target is not found among documentation files.
+WARNING -  Doc file 'contracts/corpus-learning-seam.md' contains a link '../../schemas/learning.v1.schema.json', but the target '../schemas/learning.v1.schema.json' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../scripts/evolve/halt-check.sh', but the target '../scripts/evolve/halt-check.sh' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../scripts/pawl-review.sh', but the target '../scripts/pawl-review.sh' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../scripts/pawl.sh', but the target '../scripts/pawl.sh' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/dcg/SKILL.md', but the target '../skills/dcg/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/discovery/SKILL.md', but the target '../skills/discovery/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/pre-land-refuters/SKILL.md', but the target '../skills/pre-land-refuters/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/scope/SKILL.md', but the target '../skills/scope/SKILL.md' is not found among documentation files.
+WARNING -  Doc file 'doctrine/lineage-and-theory.md' contains a link '../../PRODUCT.md#strategic-bet', but the target '../PRODUCT.md' is not found among documentation files.
+WARNING -  Doc file 'doctrine/lineage-and-theory.md' contains a link '../../PRODUCT.md', but the target '../PRODUCT.md' is not found among documentation files.
+WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../schemas/pawl-verdict.v1.schema.json', but the target '../schemas/pawl-verdict.v1.schema.json' is not found among documentation files.
+WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../scripts/pawl-verdict.sh', but the target '../scripts/pawl-verdict.sh' is not found among documentation files.
+WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../scripts/reconcile-pr.sh', but the target '../scripts/reconcile-pr.sh' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md', but the target '../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/escape-rate-series.jsonl', but the target '../evals/membrane/harvest-2026-06-22/escape-rate-series.jsonl' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/harvest-to-ledger.sh', but the target '../evals/membrane/harvest-2026-06-22/harvest-to-ledger.sh' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/run-harvest-series.sh', but the target '../evals/membrane/harvest-2026-06-22/run-harvest-series.sh' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/scorecard.json', but the target '../evals/membrane/harvest-2026-06-22/scorecard.json' is not found among documentation files.
+WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/summarize-series.py', but the target '../evals/membrane/harvest-2026-06-22/summarize-series.py' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/membrane-compare-2026-06-23/A-local-qwen.json', but the target '../evals/membrane/membrane-compare-2026-06-23/A-local-qwen.json' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/membrane-compare-2026-06-23/B-codex.json', but the target '../evals/membrane/membrane-compare-2026-06-23/B-codex.json' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/subtle-escape-2026-06-23/A-local.json', but the target '../evals/membrane/subtle-escape-2026-06-23/A-local.json' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/subtle-escape-2026-06-23/B-codex.json', but the target '../evals/membrane/subtle-escape-2026-06-23/B-codex.json' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/subtle-escape-2026-06-23/full-A-local.json', but the target '../evals/membrane/subtle-escape-2026-06-23/full-A-local.json' is not found among documentation files.
+WARNING -  Doc file 'evals/local-membrane-vs-codex-2026-06-23.md' contains a link '../../evals/membrane/subtle-escape-2026-06-23/full-B-codex.json', but the target '../evals/membrane/subtle-escape-2026-06-23/full-B-codex.json' is not found among documentation files.
+WARNING -  Doc file 'evals/membrane-escape-harvest-no-escape.md' contains a link '../../evals/membrane/flywheel-harvest.workflow.js', but the target '../evals/membrane/flywheel-harvest.workflow.js' is not found among documentation files.
+WARNING -  Doc file 'evals/membrane-escape-harvest-no-escape.md' contains a link '../../evals/membrane/harvest.sh', but the target '../evals/membrane/harvest.sh' is not found among documentation files.
+WARNING -  Doc file 'skills/heal-skill.md' contains a link 'schemas/audit-report.json', but the target 'skills/schemas/audit-report.json' is not found among documentation files.

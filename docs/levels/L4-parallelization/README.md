@@ -143,4 +143,4 @@ Agents do ONE thing. Mayor handles orchestration.
 
 ## Next Level
 
-Once comfortable with waves, progress to [L5-orchestration](../L5-orchestration/) for full autonomy with `/crank`.
+Once comfortable with waves, progress to [L5-orchestration](../L5-orchestration/README.md) for full autonomy with `/crank`.
