@@ -167,6 +167,64 @@ func normalizeReason(reason string) string {
 	return strings.Join(kept, "-")
 }
 
+// placeholderReasonTokens are the disposition/route boilerplate a reason-less pawl
+// REFUTE stamps ("pawl-review REFUTED (see evidence)"). They carry NO defect content.
+// Kept SEPARATE from reasonStopwords: those are English glue; these are membrane-
+// verdict words that a real defect sentence would never consist of ENTIRELY.
+var placeholderReasonTokens = map[string]bool{
+	"pawl": true, "review": true, "refuted": true, "confirmed": true,
+	"see": true, "evidence": true,
+}
+
+// placeholderMaxRawLen is the raw-length floor below which a reason cannot carry any
+// defect content — it catches bare single-token reasons ("r") the token pass keeps.
+const placeholderMaxRawLen = 2
+
+// pawlBoilerplateReason matches the pawl's own verdict STAMP as a reason — a reason
+// that BEGINS "pawl-review REFUTED/CONFIRMED …" (whatever bead id or "(see evidence)"
+// trails it). This is never a defect description; a real reason names the DEFECT
+// ("gate-routing gap …", "missing t.Cleanup …"), never the verdict. Anchoring here
+// catches the DIGIT-LESS bead-id variants ("… for age-landq-self (see evidence)") that
+// stripBeadRefs deliberately leaves intact, without touching any real defect sentence.
+var pawlBoilerplateReason = regexp.MustCompile(`(?i)^\s*pawl[- ]review\s+(refuted|confirmed)\b`)
+
+// IsPlaceholderReason reports whether a catch reason is a NON-substantive placeholder:
+// a reason-less pawl verdict ("pawl-review REFUTED (see evidence)"), a bare token
+// ("r"), the bare disposition word ("REFUTED"), or anything that reduces to disposition
+// boilerplate + bead-id refs with no defect content. Such a reason names no defect, so
+// a pre-mortem checklist built from it is pure noise — `ao membrane digest` filters
+// these by default (age-7758).
+//
+// CONSERVATIVE by construction — it must NEVER mis-flag a real defect sentence:
+//   - it reuses the SAME normalization the class key uses (lowercase, strip bead-id
+//     refs via stripBeadRefs, drop stopwords), so incidental glue never counts; and
+//   - it declares a placeholder only when ZERO substantive tokens survive — a token is
+//     substantive unless it is disposition boilerplate or a residual bead-id/version
+//     fragment (contains a digit). One real content word ("unguarded", "gate-routing",
+//     "fail") is enough to make the whole reason substantive.
+func IsPlaceholderReason(reason string) bool {
+	if len(strings.TrimSpace(reason)) <= placeholderMaxRawLen {
+		return true // "", "r" — too short to carry any defect content
+	}
+	if pawlBoilerplateReason.MatchString(reason) {
+		return true // the pawl verdict stamp itself — no defect content, any bead id
+	}
+	normalized := normalizeReason(reason) // lowercase, strip bead refs, drop stopwords
+	if normalized == "" {
+		return true // all-stopword / all-bead-ref reason
+	}
+	for _, tok := range strings.Split(normalized, "-") {
+		if tok == "" || placeholderReasonTokens[tok] {
+			continue
+		}
+		if strings.ContainsAny(tok, "0123456789") {
+			continue // residual bead-id / version fragment, not defect content
+		}
+		return false // a surviving content token → substantive
+	}
+	return true
+}
+
 // slugify lowercases and collapses any run of non-alphanumerics to a single '-',
 // trimming leading/trailing '-'. An empty input yields "".
 func slugify(s string) string {

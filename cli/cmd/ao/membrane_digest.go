@@ -41,8 +41,9 @@ const (
 )
 
 var (
-	membraneDigestTopN int
-	membraneDigestJSON bool
+	membraneDigestTopN                int
+	membraneDigestJSON                bool
+	membraneDigestIncludePlaceholders bool
 )
 
 var membraneDigestCmd = &cobra.Command{
@@ -61,6 +62,13 @@ writes escape checks into, so the START of the loop front-loads the most-recurri
 misses before touching anything. This is the domain-LESS twin of
 ` + "`ao membrane recall --include-catches`" + ` (a per-domain review-time query).
 
+ACTIONABLE by default: reason-less PLACEHOLDER classes — a bare pawl verdict
+("pawl-review REFUTED (see evidence)"), a bare token ("r"), disposition boilerplate
+— carry no defect content, so a "watch for: pawl-review REFUTED" line is pure noise.
+They are EXCLUDED by default so real-reason classes lead the checklist. Pass
+--include-placeholders to restore them (for corpus auditing) — they always rank BELOW
+every actionable class.
+
 The file is (re)generated on every run — idempotent, safe to re-run. It is the
 AUTO-mined sink and is kept SEPARATE from the human-curated
 docs/gate/findings-ledger.md (the Standing Review Dimensions that behavior-first
@@ -76,6 +84,7 @@ func init() {
 	membraneCmd.AddCommand(membraneDigestCmd)
 	membraneDigestCmd.Flags().IntVar(&membraneDigestTopN, "top", catchDigestDefaultTopN, "How many top recurring catch classes to include")
 	membraneDigestCmd.Flags().BoolVar(&membraneDigestJSON, "json", false, "Also print the ranked digest as JSON (the checklist file is written either way)")
+	membraneDigestCmd.Flags().BoolVar(&membraneDigestIncludePlaceholders, "include-placeholders", false, "Include reason-less placeholder classes (e.g. \"pawl-review REFUTED (see evidence)\") for corpus auditing; excluded by default so the checklist stays actionable")
 }
 
 // catchDigestEntry is one ranked recurring catch class in the digest.
@@ -89,15 +98,26 @@ type catchDigestEntry struct {
 	AffectedPaths []string `json:"affected_paths,omitempty"`
 	// WatchFor is the deterministic "watch-for-this" imperative (no LLM call).
 	WatchFor string `json:"watch_for"`
+	// Placeholder marks a reason-less class (no defect content) — only ever surfaced
+	// under --include-placeholders, and always ranked below the actionable classes.
+	Placeholder bool `json:"placeholder,omitempty"`
 }
 
 // catchDigest is the whole ranked digest — the JSON shape and the render input.
 type catchDigest struct {
-	GeneratedAt  string             `json:"generated_at"`
-	TopN         int                `json:"top_n"`
-	TotalClasses int                `json:"total_classes"`
-	TotalHits    int                `json:"total_hits"`
-	Entries      []catchDigestEntry `json:"entries"`
+	GeneratedAt string `json:"generated_at"`
+	TopN        int    `json:"top_n"`
+	// TotalClasses is the FULL corpus size (actionable + placeholder), so the digest
+	// reports how much it summarizes even when placeholders are filtered out.
+	TotalClasses int `json:"total_classes"`
+	// ActionableClasses is the count of real-reason (non-placeholder) classes — what a
+	// planner can actually act on. PlaceholderClasses is the reason-less remainder that
+	// is filtered by default (age-7758).
+	ActionableClasses   int                `json:"actionable_classes"`
+	PlaceholderClasses  int                `json:"placeholder_classes"`
+	IncludePlaceholders bool               `json:"include_placeholders"`
+	TotalHits           int                `json:"total_hits"`
+	Entries             []catchDigestEntry `json:"entries"`
 }
 
 // rankCatchDigest returns catches sorted by HitCount DESC, tie-broken by ClassKey
@@ -153,12 +173,39 @@ func digestPathsHint(paths []string) string {
 	return s
 }
 
-// buildCatchDigest ranks every catch class and assembles the digest. now is
-// injected so the render is deterministic under test. totalClasses/totalHits are
-// computed over ALL classes (not just the top-N) so the checklist reports how much
-// of the corpus it summarizes.
-func buildCatchDigest(all []yieldledger.Catch, topN int, now time.Time) catchDigest {
-	ranked := rankCatchDigest(all, topN)
+// buildCatchDigest partitions catch classes into ACTIONABLE (a real defect reason)
+// and PLACEHOLDER (reason-less boilerplate — "pawl-review REFUTED (see evidence)", a
+// bare token) via yieldledger.IsPlaceholderReason, then ranks and assembles the digest.
+//
+// The whole point of the digest is an ACTIONABLE pre-mortem checklist, so placeholders
+// are EXCLUDED by default: injecting "watch for: pawl-review REFUTED (see evidence)" is
+// pure noise. --include-placeholders (includePlaceholders=true) restores them for
+// corpus auditing, but always BELOW every actionable class — real-reason classes lead,
+// then placeholders, then topN truncates the combined list (so it trims placeholders
+// before any actionable class). now is injected for deterministic render under test;
+// TotalClasses/TotalHits are over ALL classes so the checklist reports what it filtered.
+func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders bool, now time.Time) catchDigest {
+	var actionable, placeholders []yieldledger.Catch
+	for _, c := range all {
+		if yieldledger.IsPlaceholderReason(c.Reason) {
+			placeholders = append(placeholders, c)
+		} else {
+			actionable = append(actionable, c)
+		}
+	}
+
+	var ranked []yieldledger.Catch
+	if includePlaceholders {
+		// Actionable classes ALWAYS lead; placeholders trail. topN caps the combined
+		// list, so it trims placeholders before it ever drops an actionable class.
+		ranked = append(rankCatchDigest(actionable, 0), rankCatchDigest(placeholders, 0)...)
+		if topN > 0 && len(ranked) > topN {
+			ranked = ranked[:topN]
+		}
+	} else {
+		ranked = rankCatchDigest(actionable, topN)
+	}
+
 	totalHits := 0
 	for _, c := range all {
 		totalHits += c.HitCount
@@ -174,14 +221,18 @@ func buildCatchDigest(all []yieldledger.Catch, topN int, now time.Time) catchDig
 			Beads:         c.Beads,
 			AffectedPaths: c.AffectedPaths,
 			WatchFor:      catchWatchFor(c),
+			Placeholder:   yieldledger.IsPlaceholderReason(c.Reason),
 		})
 	}
 	return catchDigest{
-		GeneratedAt:  now.UTC().Format(time.RFC3339),
-		TopN:         topN,
-		TotalClasses: len(all),
-		TotalHits:    totalHits,
-		Entries:      entries,
+		GeneratedAt:         now.UTC().Format(time.RFC3339),
+		TopN:                topN,
+		TotalClasses:        len(all),
+		ActionableClasses:   len(actionable),
+		PlaceholderClasses:  len(placeholders),
+		IncludePlaceholders: includePlaceholders,
+		TotalHits:           totalHits,
+		Entries:             entries,
 	}
 }
 
@@ -213,14 +264,35 @@ func renderCatchDigest(d catchDigest) []byte {
 	b.WriteString("and is kept separate from the human-curated `docs/gate/findings-ledger.md` (the\n")
 	b.WriteString("Standing Review Dimensions). **Do not hand-edit this file.**\n\n")
 
+	// Reason-less placeholder classes ("pawl-review REFUTED (see evidence)", bare "r")
+	// carry no defect content, so they are filtered by default (age-7758). Report the
+	// filtering honestly so a reader knows the corpus is larger than the checklist.
+	if d.PlaceholderClasses > 0 && !d.IncludePlaceholders {
+		fmt.Fprintf(&b, "_Filtered %d reason-less placeholder class(es) with no defect content "+
+			"(run `ao membrane digest --include-placeholders` to audit them)._\n\n", d.PlaceholderClasses)
+	}
+
 	if len(d.Entries) == 0 {
-		b.WriteString("_No classifiable catch classes recorded yet — clean corpus (or no data)._\n")
+		if d.TotalClasses == 0 {
+			b.WriteString("_No classifiable catch classes recorded yet — clean corpus (or no data)._\n")
+		} else {
+			// Corpus is non-empty but ENTIRELY placeholders: the honest result is an
+			// empty actionable checklist — the corpus needs real-reason catches to accrue.
+			fmt.Fprintf(&b, "_No actionable catch classes yet — all %d recorded class(es) are reason-less "+
+				"placeholders. The checklist becomes useful as real-reason catches accrue._\n", d.PlaceholderClasses)
+		}
 		return []byte(b.String())
 	}
 
 	for _, e := range d.Entries {
-		// One imperative line per class: "<reason> -> watch for it ...".
-		fmt.Fprintf(&b, "%d. **[×%d]** %s → %s\n", e.Rank, e.HitCount, e.Reason, e.WatchFor)
+		// One imperative line per class: "<reason> -> watch for it ...". A placeholder
+		// (only shown under --include-placeholders) is tagged so it is never mistaken
+		// for an actionable line.
+		tag := ""
+		if e.Placeholder {
+			tag = " _(placeholder — no defect content)_"
+		}
+		fmt.Fprintf(&b, "%d. **[×%d]** %s → %s%s\n", e.Rank, e.HitCount, e.Reason, e.WatchFor, tag)
 	}
 	b.WriteString("\nSource: `.agents/yield/yield-ledger.jsonl` (catch corpus).\n")
 	return []byte(b.String())
@@ -243,7 +315,7 @@ func runMembraneDigest(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	digest := buildCatchDigest(yieldledger.DetectCatches(ledger), membraneDigestTopN, time.Now())
+	digest := buildCatchDigest(yieldledger.DetectCatches(ledger), membraneDigestTopN, membraneDigestIncludePlaceholders, time.Now())
 
 	abs := filepath.Join(root, filepath.FromSlash(catchDigestRelPath))
 	if err := writeFindingFileAtomic(abs, renderCatchDigest(digest), 0o644); err != nil {
@@ -257,13 +329,30 @@ func runMembraneDigest(cmd *cobra.Command, _ []string) error {
 		return enc.Encode(digest)
 	}
 	if len(digest.Entries) == 0 {
-		fmt.Fprintf(out, "membrane digest: no classifiable catch classes yet — wrote empty checklist to %s\n", catchDigestRelPath)
+		if digest.PlaceholderClasses > 0 && !digest.IncludePlaceholders {
+			fmt.Fprintf(out, "membrane digest: no ACTIONABLE catch classes yet — filtered %d reason-less placeholder class(es); wrote checklist to %s (--include-placeholders to audit)\n",
+				digest.PlaceholderClasses, catchDigestRelPath)
+		} else {
+			fmt.Fprintf(out, "membrane digest: no classifiable catch classes yet — wrote empty checklist to %s\n", catchDigestRelPath)
+		}
 		return nil
 	}
-	fmt.Fprintf(out, "membrane digest: top %d of %d recurring catch class(es) → %s\n\n",
-		len(digest.Entries), digest.TotalClasses, catchDigestRelPath)
+	denom := digest.ActionableClasses
+	suffix := ""
+	if digest.IncludePlaceholders {
+		denom = digest.TotalClasses
+		suffix = " (incl. placeholders)"
+	} else if digest.PlaceholderClasses > 0 {
+		suffix = fmt.Sprintf(" (filtered %d reason-less placeholder class(es))", digest.PlaceholderClasses)
+	}
+	fmt.Fprintf(out, "membrane digest: top %d of %d catch class(es)%s → %s\n\n",
+		len(digest.Entries), denom, suffix, catchDigestRelPath)
 	for _, e := range digest.Entries {
-		fmt.Fprintf(out, "  %d. [×%d] %s → %s\n", e.Rank, e.HitCount, e.Reason, e.WatchFor)
+		tag := ""
+		if e.Placeholder {
+			tag = " (placeholder)"
+		}
+		fmt.Fprintf(out, "  %d. [×%d] %s → %s%s\n", e.Rank, e.HitCount, e.Reason, e.WatchFor, tag)
 	}
 	return nil
 }
