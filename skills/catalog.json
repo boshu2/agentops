@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-07-09T16:19:10Z",
+  "generated_at": "2026-07-09T18:36:22Z",
   "skill_count": 59,
   "skills": [
     {
@@ -427,7 +427,7 @@
     },
     {
       "name": "gc-membrane",
-      "description": "Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
+      "description": "The agentops-membrane pack: fail-closed cross-family verdict-bound close door on stock gc — close gate, finalize, pawl-verdict.v1, RBAC, quest intake, doctor. JIT via using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],

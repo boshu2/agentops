@@ -540,7 +540,15 @@
       "name": "goal-design",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff."
+      "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff. Hookless startup guard is catalog-declared so parity regens preserve it (age-dcek refute-fix).",
+      "operator_contract": {
+        "required_markers": [
+          "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically."
+        ],
+        "required_sections": [
+          "## Codex Execution Profile"
+        ]
+      }
     }
   ]
 }

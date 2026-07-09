@@ -1,14 +1,8 @@
 ---
 name: goal-design
-description: "Create validated goal-design packets."
+description: Create validated goal-design packets.
 ---
 # $goal-design — Validated Intent Packet Authoring
-
-> **Loop position:** pre-discovery adapter for move 1 of the operating loop.
-> It turns a human goal into a checked `intent.md` + `driver.md` packet that
-> `$discovery` and `$plan` can consume without relying on chat context.
-
-**Execute this workflow. Do not only describe it.**
 
 ## Codex Lifecycle Guard
 
@@ -19,6 +13,14 @@ When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
 ao codex ensure-start 2>/dev/null || true
 ```
 
+The CLI records startup once per thread and skips duplicates automatically.
+
+> **Loop position:** pre-discovery adapter for move 1 of the operating loop.
+> It turns a human goal into a checked `intent.md` + `driver.md` packet that
+> `$discovery` and `$plan` can consume without relying on chat context.
+
+**Execute this workflow. Do not only describe it.**
+
 ## Purpose
 
 Use `$goal-design` when the goal is important enough to leave chat but not yet
@@ -28,6 +30,17 @@ requires an independent validation verdict before the packet drives work.
 
 Do not use `$goals` for this. `$goals` maintains `GOALS.md` fitness specs;
 `$goal-design` creates a per-objective intent packet.
+
+## Inputs
+
+Given `$goal-design "<goal>" [--slug <slug>]`:
+
+| Input | Meaning |
+| --- | --- |
+| goal | Human objective to shape as BDD |
+| `--slug` | Optional packet slug; default is kebab-case from goal |
+| `--scenario-id` | Optional first scenario id; default `S1` |
+| `--bounded-context` | Optional BC tag; default `bc-loop` until evidence says otherwise |
 
 ## Workflow
 
@@ -44,7 +57,8 @@ Do not use `$goals` for this. `$goals` maintains `GOALS.md` fitness specs;
      --write-scope "<path or glob>"
    ```
 
-3. **Refresh after edits.** If you edit `intent.md`, run:
+3. **Edit deliberately.** If you edit `intent.md`, refresh `driver.md` before
+   checking:
 
    ```bash
    scripts/goal-design-packet.py refresh-digest .agents/goal-design/<slug>
@@ -68,6 +82,39 @@ Do not use `$goals` for this. `$goals` maintains `GOALS.md` fitness specs;
    `$plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
    `S2`, or candidate behavior labels away.
 
+## Andon router (author it into driver.md)
+
+A long autonomous run is only safe if the goal carries its own escalation
+policy — a per-goal **class → tier** router, never a flat "escalate to me"
+(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon). When
+authoring `driver.md`, write the router as a table in the driver **body** and
+mirror its escalation semantics in the schema-validated `route_back_rules`
+frontmatter (auto → `validation_fails`, council →
+`promotion_contradicts_intent`, human → a breaker-trip clause in those rules):
+
+| One-way-door class | Tier | Machinery (reuse, never rebuild) |
+| --- | --- | --- |
+| Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
+| Architecture fork / plan-shape one-way door | **council** | `$council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `$converge` |
+| Money / legal / irreversible-external (the refusal lane) + any breaker trip | **human** | ESCALATE / HOLD — hand back to the operator |
+
+Every router carries the implicit final row: a slice that cannot pass
+validation in N rounds, an oscillation, or a scope-creep flag trips the
+breaker to **human** — stop and ask, never guess through it.
+
+**Schema limit (do not hack it):** the driver v1 schema is
+`additionalProperties: false` with no dedicated andon field, so the class →
+tier table lives in the driver body while `route_back_rules` carries the
+machine-checkable semantics. A driver v2 `andon_router` field is a candidate
+follow-up — do not modify the landed schemas, templates, or checker to add it.
+
+## Output
+
+- `.agents/goal-design/<slug>/intent.md`
+- `.agents/goal-design/<slug>/driver.md`
+- Checker output from `scripts/check-goal-design-packet.sh`
+- Independent validation verdict path or summary
+
 ## Done
 
 `$goal-design` is done only when:
@@ -77,6 +124,22 @@ Do not use `$goals` for this. `$goals` maintains `GOALS.md` fitness specs;
 3. The independent validator returns `PASS` or `WARN` with no blocker.
 4. The next action is explicit: `$discovery .agents/goal-design/<slug>` or
    `$plan .agents/goal-design/<slug>`.
+
+## Scenarios
+
+```gherkin
+Feature: Goal-design packets carry validated intent into the loop
+  Scenario: Create a checked packet before discovery
+    Given a human objective that should not stay only in chat
+    When $goal-design writes intent.md and driver.md
+    Then scripts/check-goal-design-packet.sh passes
+    And the packet names an independent validation verdict before $discovery or $plan consumes it
+
+  Scenario: Reject stale or inconsistent packet identity
+    Given driver.md points at stale, mismatched, or unknown intent content
+    When the packet checker runs
+    Then it exits non-zero before planning or implementation starts
+```
 
 ## Non-Goals
 

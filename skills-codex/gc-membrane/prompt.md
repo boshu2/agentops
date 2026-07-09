@@ -1,6 +1,6 @@
 # gc-membrane
 
-Reference for the agentops-membrane Gas City pack: the fail-closed, cross-family, verdict-bound close door composed onto stock gc — close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC, quest intake, doctor checks. Loaded JIT by using-gc. Triggers: "gc-membrane", "membrane pack", "pawl-verdict.v1", "gc close door".
+The agentops-membrane pack: fail-closed cross-family verdict-bound close door on stock gc — close gate, finalize, pawl-verdict.v1, RBAC, quest intake, doctor. JIT via using-gc. Triggers: "gc-membrane", "membrane pack", "pawl-verdict.v1", "gc close door".
 
 ## Instructions
 
