@@ -1532,7 +1532,12 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
                     "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
     if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
       echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
-      emit_pawl_catch multi-model
+      # age-2yh2 double-record guard: NO emit_pawl_catch here. pawl.sh cmd_route records
+      # the structured catch itself (_route_emit_catch) from the REFUTING lane's per-family
+      # capture — the reviewer's REAL finding. The old emit here read the global $evidence
+      # (${bead}-pawl-review.txt), which the routed path NEVER writes: absent => placeholder
+      # boilerplate, or worse STALE content from a prior cold review of the same bead. One
+      # recorder per routed REFUTE, at the point that owns the evidence.
       exit 3
     fi
     echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
