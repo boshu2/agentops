@@ -152,6 +152,17 @@ emit_pawl_catch() {
   [[ -n "${bead:-}" && -n "${head:-}" ]] || return 0
   reason="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*REFUTED' "${evidence:-/dev/null}" 2>/dev/null | tail -1 \
             | sed -E 's/^[[:space:]]*VERDICT:[[:space:]]*REFUTED[[:space:]:—-]*//I' | cut -c1-200)"
+  # Multi-family / routed REFUTEs do NOT emit a `VERDICT: REFUTED <text>` sentinel — the
+  # routed sentinel is `PAWL <nonce> REFUTED` with no trailing reason — so the sentinel
+  # grep above yields empty and the catch would fall to the generic placeholder below,
+  # landing in the UNCLASSIFIED floor. Before that, salvage the reviewer's substantive
+  # `REFUTED: <finding>` prose line (the actual defect text) so multi-family catches carry
+  # a real reason and can be synthesized into a recurring class (ADR-0014, the loop's fuel).
+  if [[ -z "$reason" ]]; then
+    reason="$(grep -iE 'REFUTED[:]' "${evidence:-/dev/null}" 2>/dev/null \
+              | grep -ivE 'PAWL[[:space:]]+r?[0-9a-fx]+[[:space:]]+REFUTED|VERDICT[:]' \
+              | head -1 | sed -E 's/^.*REFUTED[:[:space:]]+//I' | cut -c1-200)"
+  fi
   # De-bead-ided fallback (age-jjt8): NO $bead in the reason. class_key = domain + normalize(reason),
   # so a bead in the fallback minted a per-bead class and made cross-bead recurrence invisible. Without
   # it, unlabeled catches collapse to ONE per-domain class; the bead id is still on the row's bead field
