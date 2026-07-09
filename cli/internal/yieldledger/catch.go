@@ -44,6 +44,11 @@ type Catch struct {
 type CatchInstance struct {
 	HeadSHA       string
 	AffectedPaths []string
+	// TS is the envelope ts (RFC3339, validated on load) of the FIRST REFUTED round
+	// of this (bead, head) occurrence — round-collapsed like HitCount, so a later
+	// review round on the SAME occurrence never re-stamps it. It is what the
+	// before/after-a-fix recurrence measurement splits on (age-de5t).
+	TS string
 }
 
 // classKeyVersion prefixes every class key so the normalization can evolve later
@@ -316,6 +321,7 @@ func DetectCatches(l *Ledger) []Catch {
 			c.Instances = append(c.Instances, CatchInstance{
 				HeadSHA:       gv.HeadSHA,
 				AffectedPaths: append([]string(nil), gv.AffectedPaths...),
+				TS:            ev.TS,
 			})
 		}
 	}

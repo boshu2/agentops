@@ -289,10 +289,13 @@ func setDigestProjectDir(t *testing.T, root string) {
 	origProjectDir := testProjectDir
 	testProjectDir = root
 	origTop, origJSON, origIncl := membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders
+	origDeltas, origSince := membraneDigestDeltas, membraneDigestSince
 	membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders = catchDigestDefaultTopN, false, false
+	membraneDigestDeltas, membraneDigestSince = false, ""
 	t.Cleanup(func() {
 		testProjectDir = origProjectDir
 		membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders = origTop, origJSON, origIncl
+		membraneDigestDeltas, membraneDigestSince = origDeltas, origSince
 		membraneDigestCmd.SetOut(nil)
 	})
 }
@@ -478,5 +481,185 @@ func TestRunMembraneDigest_RejectsNonPositiveTop(t *testing.T) {
 	membraneDigestTopN = 0
 	if err := runMembraneDigest(membraneDigestCmd, nil); err == nil {
 		t.Fatal("--top 0 must be rejected")
+	}
+}
+
+// seedCatchAt emits one REFUTED catch verdict at an explicit timestamp via the
+// production Writer (fixture fidelity, as seedCatch) — the deltas measurement
+// splits per-class hits on the envelope ts, so tests control it exactly.
+func seedCatchAt(t *testing.T, root, bead, domain, reason string, paths []string, ts time.Time) {
+	t.Helper()
+	in := buildCatchInput(bead, domain, reason, paths, "", "", "", "", "abcdef0", "", ts)
+	w := yieldledger.Writer{}
+	if _, err := w.AppendGateVerdict(root, in); err != nil {
+		t.Fatalf("seedCatchAt(%s/%s): %v", domain, bead, err)
+	}
+}
+
+// deltaCutoff is the fix date D the Gherkin pins: 3 catches of class X land before
+// it, 1 after.
+var deltaCutoff = time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC)
+
+// seedDeltaLedger seeds the acceptance corpus: class X (shell) with 3 hits before
+// deltaCutoff and 1 since; class Y (docs) with 2 before and 0 since (improved).
+func seedDeltaLedger(t *testing.T, root string) {
+	t.Helper()
+	const reasonX = "unguarded cmdsub aborts under set -e"
+	const reasonY = "stale retired surface referenced in shipped docs"
+	seedCatchAt(t, root, "age-x1", "shell", reasonX, []string{"scripts/a.sh"}, deltaCutoff.AddDate(0, 0, -5))
+	seedCatchAt(t, root, "age-x2", "shell", reasonX, []string{"scripts/b.sh"}, deltaCutoff.AddDate(0, 0, -3))
+	seedCatchAt(t, root, "age-x3", "shell", reasonX, []string{"scripts/c.sh"}, deltaCutoff.AddDate(0, 0, -1))
+	seedCatchAt(t, root, "age-x4", "shell", reasonX, []string{"scripts/d.sh"}, deltaCutoff.Add(10*time.Hour))
+	seedCatchAt(t, root, "age-y1", "docs", reasonY, []string{"README.md"}, deltaCutoff.AddDate(0, 0, -4))
+	seedCatchAt(t, root, "age-y2", "docs", reasonY, []string{"docs/x.md"}, deltaCutoff.AddDate(0, 0, -2))
+}
+
+// TestParseDeltaCutoff pins the accepted --since forms: a bare ISO date (UTC
+// midnight) or a full RFC3339 timestamp; anything else is a hard error.
+func TestParseDeltaCutoff(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    time.Time
+		wantErr bool
+	}{
+		{name: "ISO date is UTC midnight", in: "2026-07-08", want: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC)},
+		{name: "full RFC3339", in: "2026-07-08T15:30:00Z", want: time.Date(2026, 7, 8, 15, 30, 0, 0, time.UTC)},
+		{name: "RFC3339 with offset normalizes", in: "2026-07-08T02:00:00+02:00", want: time.Date(2026, 7, 8, 0, 0, 0, 0, time.UTC)},
+		{name: "garbage rejected", in: "next tuesday", wantErr: true},
+		{name: "empty rejected", in: "", wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseDeltaCutoff(tc.in)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("parseDeltaCutoff(%q) must error, got %v", tc.in, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parseDeltaCutoff(%q): %v", tc.in, err)
+			}
+			if !got.Equal(tc.want) {
+				t.Errorf("parseDeltaCutoff(%q) = %v, want %v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestRunMembraneDigest_DeltasBeforeAfter is the Gherkin happy path (age-de5t):
+// GIVEN class X with 3 catches before D and 1 after, WHEN `--deltas --since D`
+// runs, THEN X's row shows before=3 since=1; class Y (0 since) trails as improved.
+// Deltas is a read-only measurement: it must NOT write the checklist sink.
+func TestRunMembraneDigest_DeltasBeforeAfter(t *testing.T) {
+	root := t.TempDir()
+	setDigestProjectDir(t, root)
+	seedDeltaLedger(t, root)
+
+	var buf bytes.Buffer
+	membraneDigestCmd.SetOut(&buf)
+	membraneDigestDeltas, membraneDigestSince = true, "2026-07-08"
+	if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
+		t.Fatalf("runMembraneDigest --deltas: %v", err)
+	}
+	out := buf.String()
+	t.Logf("deltas output:\n%s", out)
+
+	if !strings.Contains(out, "before=3 since=1") {
+		t.Errorf("class X row must show before=3 since=1; got:\n%s", out)
+	}
+	if !strings.Contains(out, "before=2 since=0") {
+		t.Errorf("class Y row must show before=2 since=0; got:\n%s", out)
+	}
+	// Sort: since DESC — the still-recurring class X leads; the 0-since class Y
+	// trails, marked improved.
+	posX := strings.Index(out, "unguarded cmdsub")
+	posY := strings.Index(out, "stale retired surface")
+	if !(posX >= 0 && posX < posY) {
+		t.Errorf("still-recurring class must sort before the improved one: X=%d Y=%d", posX, posY)
+	}
+	improvedLine := out[posY:]
+	if !strings.Contains(improvedLine, "improved") {
+		t.Errorf("0-since class must be marked improved; got:\n%s", improvedLine)
+	}
+	// Read-only: no checklist file (that is the default mode's sink, not a measurement's).
+	if _, err := os.Stat(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md")); !os.IsNotExist(err) {
+		t.Errorf("--deltas must not write the checklist sink (stat err=%v)", err)
+	}
+}
+
+// TestRunMembraneDigest_DeltasJSON asserts the machine shape the post-mortem
+// runner consumes: per-class before/since counts plus the normalized cutoff.
+func TestRunMembraneDigest_DeltasJSON(t *testing.T) {
+	root := t.TempDir()
+	setDigestProjectDir(t, root)
+	seedDeltaLedger(t, root)
+
+	var buf bytes.Buffer
+	membraneDigestCmd.SetOut(&buf)
+	membraneDigestDeltas, membraneDigestSince, membraneDigestJSON = true, "2026-07-08", true
+	if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
+		t.Fatalf("runMembraneDigest --deltas --json: %v", err)
+	}
+
+	var got catchDeltas
+	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+		t.Fatalf("--deltas --json output is not valid JSON: %v\n%s", err, buf.String())
+	}
+	t.Logf("json: since=%s classes=%d", got.Since, got.TotalClasses)
+	if got.Since != "2026-07-08T00:00:00Z" {
+		t.Errorf("cutoff must be normalized RFC3339 UTC, got %q", got.Since)
+	}
+	if got.TotalClasses != 2 || len(got.Entries) != 2 {
+		t.Fatalf("want 2 classes, got total=%d entries=%d", got.TotalClasses, len(got.Entries))
+	}
+	x, y := got.Entries[0], got.Entries[1]
+	if x.Domain != "shell" || x.Before != 3 || x.Since != 1 || x.Improved {
+		t.Errorf("entry[0] must be shell before=3 since=1 improved=false, got %+v", x)
+	}
+	if y.Domain != "docs" || y.Before != 2 || y.Since != 0 || !y.Improved {
+		t.Errorf("entry[1] must be docs before=2 since=0 improved=true, got %+v", y)
+	}
+	if x.ClassKey == "" || y.ClassKey == "" {
+		t.Errorf("entries must carry class keys, got %+v / %+v", x, y)
+	}
+}
+
+// TestRunMembraneDigest_DeltasEmptyLedger is the edge: an empty ledger yields a
+// clean empty result, exit 0 — never an error.
+func TestRunMembraneDigest_DeltasEmptyLedger(t *testing.T) {
+	root := t.TempDir()
+	setDigestProjectDir(t, root)
+
+	var buf bytes.Buffer
+	membraneDigestCmd.SetOut(&buf)
+	membraneDigestDeltas, membraneDigestSince = true, "2026-07-08"
+	if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
+		t.Fatalf("--deltas on an empty ledger must exit 0, got: %v", err)
+	}
+	if !strings.Contains(buf.String(), "no catch classes") {
+		t.Errorf("empty ledger must say so cleanly, got:\n%s", buf.String())
+	}
+}
+
+// TestRunMembraneDigest_DeltasFlagValidation guards the flag pairing: --since
+// requires --deltas, --deltas requires --since, and a bad cutoff is rejected.
+func TestRunMembraneDigest_DeltasFlagValidation(t *testing.T) {
+	root := t.TempDir()
+	setDigestProjectDir(t, root)
+	membraneDigestCmd.SetOut(&bytes.Buffer{})
+
+	membraneDigestDeltas, membraneDigestSince = true, ""
+	if err := runMembraneDigest(membraneDigestCmd, nil); err == nil {
+		t.Error("--deltas without --since must be rejected")
+	}
+	membraneDigestDeltas, membraneDigestSince = false, "2026-07-08"
+	if err := runMembraneDigest(membraneDigestCmd, nil); err == nil {
+		t.Error("--since without --deltas must be rejected")
+	}
+	membraneDigestDeltas, membraneDigestSince = true, "not-a-date"
+	if err := runMembraneDigest(membraneDigestCmd, nil); err == nil {
+		t.Error("an unparsable --since must be rejected")
 	}
 }

@@ -2502,15 +2502,17 @@ ao membrane derive-checks --run <id> [flags]
 Mine the ABUNDANT catch corpus into a single GLOBAL top-N recurring-defect
 
 ```
-ao membrane digest [--top N] [--json] [flags]
+ao membrane digest [--top N] [--json] [--deltas --since <date>] [flags]
 ```
 
 **Flags:**
 
 ```
+      --deltas                 Per-class recurrence before vs since --since (read-only; for the producer-defect register)
   -h, --help                   help for digest
       --include-placeholders   Include reason-less placeholder classes (e.g. "pawl-review REFUTED (see evidence)") for corpus auditing; excluded by default so the checklist stays actionable
       --json                   Also print the ranked digest as JSON (the checklist file is written either way)
+      --since string           Cutoff for --deltas: an ISO date (2026-07-08, UTC midnight) or RFC3339 timestamp — typically a producer fix's land date
       --top int                How many top recurring catch classes to include (default 10)
 ```
 
