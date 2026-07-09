@@ -188,13 +188,13 @@ undercounted locus list).
 
 ### Step 4: Decompose into Issues
 
-Analyze the goal and break it into discrete, implementable issues. For each issue define:
+Analyze the goal and break it into discrete, implementable issues. **Decompose by behavior, not by file or feature-bundle (PR-010):** each slice delivers exactly one Given/When/Then behavior (a small batch), and every refactor is its OWN slice — never folded into a feature slice ("refactor then feature" is two slices). Small batches and refactor-after-green are the load-bearing quality moves; test-first *ordering* is not (Finster 2026, `skills/standards/references/agentic-workflow-evidence.md`). For each issue define:
 - **Title**: Clear action verb (e.g., "Add authentication middleware")
 - **Description**: What needs to be done
 - **Dependencies**: Which issues must complete first (if any)
 - **Scenarios**: A Gherkin `## Scenarios` block (Given/When/Then) — **mandatory by default** for every bead (see Scenarios contract below)
 - **Acceptance criteria**: How to verify it's done — emitted as a fenced YAML `acceptance_criteria` block (see contract below)
-- **Test levels**: Which pyramid levels (L0–L3) this issue's tests cover
+- **Test levels**: Which pyramid levels (L0–L3) this issue's tests cover — **throttled to the slice's stakes (PR-011):** small/low-risk fully-specified slices get L2 + L1 regression guards only; reserve full mutation (BF3) and the heavier BF1–BF9 corpus for critical, security, or high-blast-radius slices. Maximal thoroughness on a low-risk slice is the over-testing tax (costs multiples, ossifies the code).
 
 #### Gherkin Scenarios Contract (mandatory, default)
 
@@ -257,7 +257,7 @@ Group issues by dependencies for parallel execution:
 - **Wave 3**: Issues depending on Wave 2
 - Continue until all issues assigned
 
-**Planning Rules Compliance (Mandatory Gate):** After computing waves, fill in the Planning Rules Compliance checklist (PR-001 through PR-007) in the plan document — see the table in [references/plan-document-template.md](references/plan-document-template.md). Read [references/planning-rules.md](references/planning-rules.md) for detection questions and evidence. Every rule MUST have an explicit justification or N/A rationale. If any row has an empty Justification column, mark the plan output as **INCOMPLETE** and do not proceed to Step 5.5.
+**Planning Rules Compliance (Mandatory Gate):** After computing waves, fill in the Planning Rules Compliance checklist (PR-001 through PR-011) in the plan document — see the table in [references/plan-document-template.md](references/plan-document-template.md). Read [references/planning-rules.md](references/planning-rules.md) for detection questions and evidence. Every rule MUST have an explicit justification or N/A rationale. If any row has an empty Justification column, mark the plan output as **INCOMPLETE** and do not proceed to Step 5.5.
 
 ### Step 5.5: File Dependency Matrix (MANDATORY)
 
