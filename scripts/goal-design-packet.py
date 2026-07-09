@@ -297,6 +297,78 @@ def command_refresh_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[str, Any], draft: bool) -> str:
+    # Goal-API workers often run in fresh worktrees where gitignored .agents/
+    # does not exist; absolute paths keep the packet reachable from anywhere.
+    packet_dir = packet_dir.absolute()
+    objective = str(intent.get("objective", "")).strip()
+    beads = driver.get("candidate_beads") or []
+    first = beads[0] if isinstance(beads, list) and beads else {}
+    bead_id = str(first.get("id", "B1"))
+    behavior = str(first.get("behavior", "")).strip()
+    lines: list[str] = []
+    if draft:
+        lines.append("[DRAFT PACKET - NOT VALIDATED. Preview only; validate before dispatch.]")
+    lines += [
+        f"Execute the goal-design packet at {packet_dir}.",
+        "",
+        f"Read {packet_dir}/intent.md and {packet_dir}/driver.md FIRST - they are the",
+        "contract and override everything else, including this prompt.",
+        "",
+        f"Objective: {objective}",
+        f"Candidate: {bead_id} - {behavior}",
+        "",
+        "Rules: write ONLY within the candidate's write_scope; respect the intent's non_goals.",
+        "Done means the driver's first_failing_proof command exits 0 AND its close_signal",
+        "holds - run the proof verbatim; no proof, not done.",
+        "When blocked, follow the driver's andon router (auto -> council -> human);",
+        "stop and hand back rather than guess past a breaker.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+GOAL_API_PROMPT_LIMIT = 4000  # goal-API hard ceiling; --max-chars may only tighten it
+
+
+def command_prompt(args: argparse.Namespace) -> int:
+    if args.max_chars < 1 or args.max_chars > GOAL_API_PROMPT_LIMIT:
+        fail(
+            f"--max-chars must be within 1..{GOAL_API_PROMPT_LIMIT} (the goal-API hard "
+            "ceiling); it can tighten the budget, never raise or disable it"
+        )
+    packet_dir = Path(args.packet_dir)
+    intent_path = packet_dir / "intent.md"
+    driver_path = packet_dir / "driver.md"
+    if not intent_path.is_file() or not driver_path.is_file():
+        fail(f"packet must contain intent.md and driver.md: {packet_dir}", 2)
+
+    if run_checker(packet_dir) != 0:
+        fail(
+            f"packet checker failed for {packet_dir}; repair the packet (e.g. "
+            "refresh-digest) before emitting a dispatch prompt"
+        )
+
+    intent, _ = split_frontmatter(intent_path)
+    driver, _ = split_frontmatter(driver_path)
+    statuses = {str(intent.get("status", "draft")), str(driver.get("status", "draft"))}
+    draft = statuses != {"validated"}
+    if draft and not args.allow_draft:
+        fail(
+            f"packet is not validated (statuses: {sorted(statuses)}); run the checker "
+            "plus independent validation first, or pass --allow-draft for a preview"
+        )
+
+    prompt = dispatch_prompt_text(packet_dir, intent, driver, draft)
+    if len(prompt) > args.max_chars:
+        fail(
+            f"dispatch prompt is {len(prompt)} chars, over the max-chars budget of "
+            f"{args.max_chars} (goal-API ceiling {GOAL_API_PROMPT_LIMIT}); tighten "
+            "the packet's objective or behavior text"
+        )
+    print(prompt, end="")
+    return 0
+
+
 def run_checker(packet_dir: Path) -> int:
     checker = repo_root() / "scripts" / "check-goal-design-packet.sh"
     return subprocess.run([str(checker), str(packet_dir)], check=False).returncode
@@ -346,6 +418,15 @@ def parser() -> argparse.ArgumentParser:
     check = sub.add_parser("check", help="Run the packet checker.")
     check.add_argument("packet_dir")
     check.set_defaults(func=command_check)
+
+    prompt = sub.add_parser(
+        "prompt",
+        help="Emit a small dispatch prompt pointing a goal-API worker (codex/claude goals) at the packet.",
+    )
+    prompt.add_argument("packet_dir")
+    prompt.add_argument("--allow-draft", action="store_true")
+    prompt.add_argument("--max-chars", type=int, default=4000)
+    prompt.set_defaults(func=command_prompt)
 
     return parser
 

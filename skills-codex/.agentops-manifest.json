@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "1ea73739b6f9a5e14f2885551d6ace698b52613a504c4c64dd3db8831a2e8b83",
+  "codex_override_catalog_hash": "1630b82dbdd0b35c3107ce02dbfbae7cf5a7fb71e53ce29ff9c316885e6a1442",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1139,8 +1139,8 @@
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "9ee37e2614eb901904a5bbc22660761c24c72a5dd1c40c81e1095772f995a5a7",
-      "generated_hash": "61b6965d7fc96a35378fad551879a2a8d5184fcb3bd3e1f4bf42cfaccc0afe03"
+      "source_hash": "3ec1c9d910837fa278155c7cca4794b7c915e67876e1a751ef8370c57da65e4d",
+      "generated_hash": "6a88afc92c1731c61be9cf2823bee3c41dbb52b763dc5dae9d02bad18580e818"
     },
     {
       "name": "goals",

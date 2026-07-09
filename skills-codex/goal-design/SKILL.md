@@ -81,6 +81,18 @@ Given `$goal-design "<goal>" [--slug <slug>]`:
 6. **Hand off.** After validation, pass the packet path to `$discovery` or
    `$plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
    `S2`, or candidate behavior labels away.
+7. **Emit the dispatch prompt.** When the packet executes out-of-session via a
+   goal API (codex goals, claude goals, an NTM/ATM pane, `bushido spawn`),
+   emit the small copyable prompt that points the worker at the packet:
+
+   ```bash
+   scripts/goal-design-packet.py prompt .agents/goal-design/<slug>
+   ```
+
+   Paste the output verbatim into the goal command. It fails closed on a
+   draft packet (validate first; `--allow-draft` for a preview) and on prompts
+   over 4000 characters (the codex goal-API limit). The packet files remain
+   the contract of record; the prompt only aims the worker at them.
 
 ## Andon router (author it into driver.md)
 
@@ -114,6 +126,8 @@ follow-up — do not modify the landed schemas, templates, or checker to add it.
 - `.agents/goal-design/<slug>/driver.md`
 - Checker output from `scripts/check-goal-design-packet.sh`
 - Independent validation verdict path or summary
+- Copyable dispatch prompt (`scripts/goal-design-packet.py prompt <packet>`)
+  when a goal API executes the packet out-of-session
 
 ## Done
 
@@ -122,8 +136,9 @@ follow-up — do not modify the landed schemas, templates, or checker to add it.
 1. The packet contains both required files.
 2. `scripts/check-goal-design-packet.sh .agents/goal-design/<slug>` exits 0.
 3. The independent validator returns `PASS` or `WARN` with no blocker.
-4. The next action is explicit: `$discovery .agents/goal-design/<slug>` or
-   `$plan .agents/goal-design/<slug>`.
+4. The next action is explicit: `$discovery .agents/goal-design/<slug>`,
+   `$plan .agents/goal-design/<slug>`, or an emitted dispatch prompt handed to
+   a goal API (codex/claude goals).
 
 ## Scenarios
 
@@ -139,6 +154,12 @@ Feature: Goal-design packets carry validated intent into the loop
     Given driver.md points at stale, mismatched, or unknown intent content
     When the packet checker runs
     Then it exits non-zero before planning or implementation starts
+
+  Scenario: Emit a dispatch prompt for goal APIs
+    Given a validated goal-design packet
+    When goal-design-packet.py prompt runs against it
+    Then a copyable prompt under 4000 characters points the worker at intent.md and driver.md
+    And a draft packet is refused unless --allow-draft is passed
 ```
 
 ## Non-Goals
