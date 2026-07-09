@@ -1,6 +1,7 @@
 package yieldledger
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -105,11 +106,45 @@ var reasonStopwords = map[string]bool{
 	"as": true, "at": true, "by": true, "be": true, "are": true, "but": true,
 }
 
-// normalizeReason lowercases, strips non-alphanumerics to spaces, collapses
-// whitespace, drops stopwords, and keeps the first 8 significant tokens joined
-// by '-'. Pure; same reason → same normalized form.
+// beadRefContext matches a bead REFERENCE in the "for <id>" / "bead <id>" context
+// the pawl emits (e.g. "pawl-review REFUTED for age-55qz.2 (see evidence)"). The id
+// is a prefix + one-or-more hyphen segments + optional dot segments — USER-GENERAL,
+// so ANY prefix (age-, bd-, a user's own myproj-) matches; "age-" is NOT hardcoded.
+// Group 2 is the candidate id; stripBeadRefs strips it only when it also carries a
+// DIGIT (see below). Multi-hyphen slugs (age-focus-membrane-bookkeeper-m1wg.13) are
+// captured whole so the entire id collapses, not just its first segment.
+var beadRefContext = regexp.MustCompile(`(?i)\b(for|bead)\s+([a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+)*)`)
+
+// stripBeadRefs removes bead-id fragments from a reason BEFORE keying, so two catch
+// reasons that differ ONLY by their bead id ("...for age-55qz.2..." vs "...for age-z1pv...")
+// collapse to the SAME class instead of fragmenting into sparse singletons (age-oxzc).
+//
+// It combines BOTH safe levers so it strips bead ids but never ordinary hyphenated
+// words: (a) the id must contain a DIGIT — real bead slugs do (55qz, z1pv, m1wg,
+// 04h2.2), whereas "cross-family" / "tmux-send-keys" / "send-keys" do NOT; AND (b) it
+// only fires in the "for <id>" / "bead <id>" context the pawl emits — so a compound
+// like "pawl-review" (no for/bead before it) or "cross-family" is left untouched even
+// though the former is hyphenated. Requiring BOTH is deliberately conservative:
+// TRADEOFF — a digit-less bead id ("age-landq-self") or an id NOT in for/bead context
+// survives as its own class (a rare miss), which we accept over the worse failure of
+// mangling a real technical term. On the live ledger every "for X-<digit>" is in fact
+// a bead ref, so the over-strip risk is empirically zero while 14/15 fragmented pawl
+// classes collapse. Input is already lowercased by the caller.
+func stripBeadRefs(lowered string) string {
+	return beadRefContext.ReplaceAllStringFunc(lowered, func(m string) string {
+		sub := beadRefContext.FindStringSubmatch(m) // sub[1]=for|bead, sub[2]=candidate id
+		if strings.ContainsAny(sub[2], "0123456789") {
+			return sub[1] + " " // keep the connective, drop the id
+		}
+		return m // no digit → not a bead ref we strip (precision over over-stripping)
+	})
+}
+
+// normalizeReason lowercases, strips bead-id references (see stripBeadRefs), strips
+// non-alphanumerics to spaces, collapses whitespace, drops stopwords, and keeps the
+// first 8 significant tokens joined by '-'. Pure; same reason → same normalized form.
 func normalizeReason(reason string) string {
-	lowered := strings.ToLower(reason)
+	lowered := stripBeadRefs(strings.ToLower(reason))
 	var b strings.Builder
 	for _, r := range lowered {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {

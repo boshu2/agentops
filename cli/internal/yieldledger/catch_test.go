@@ -209,6 +209,82 @@ func TestClassKeyFor_DeBeadIdedFallbackCollapsesAcrossBeads(t *testing.T) {
 	}
 }
 
+// age-oxzc scenario 1: two catch reasons that differ ONLY in the bead-id fragment
+// must collapse to the SAME class key — the bead-id is stripped before keying, so
+// "pawl-review REFUTED for age-55qz.2 (see evidence)" and "...for age-z1pv..." are
+// recognized as the ONE recurring defect they are (not two sparse singletons).
+func TestClassKeyFor_BeadDriftReasonsCollapseToOneClass(t *testing.T) {
+	a := ClassKeyFor("scripts", "pawl-review REFUTED for age-55qz.2 (see evidence)", "", "")
+	b := ClassKeyFor("scripts", "pawl-review REFUTED for age-z1pv (see evidence)", "", "")
+	if a != b {
+		t.Fatalf("bead-drifting reasons must key EQUAL (bead-id stripped):\n a=%q\n b=%q", a, b)
+	}
+	// And the surviving class is the de-bead-ided reason, not something mangled.
+	if want := "v1:scripts/pawl-review-refuted-see-evidence"; a != want {
+		t.Fatalf("collapsed class key wrong:\n got  %q\n want %q", a, want)
+	}
+}
+
+// age-oxzc — USER-GENERAL: bead ids are <prefix>-<slug> for ANY prefix, so the strip
+// must not hardcode "age-". Digit-bearing bead-refs in the "for <id>" context collapse
+// regardless of prefix, including multi-hyphen slugs; a digit-LESS ref is deliberately
+// NOT stripped (precision over over-stripping — accepted tradeoff, rare 1-hit classes).
+func TestClassKeyFor_BeadPrefixVariantsCollapse(t *testing.T) {
+	base := ClassKeyFor("scripts", "pawl-review REFUTED (see evidence)", "", "")
+	// Different prefixes, all digit-bearing -> all collapse to the de-bead-ided base.
+	for _, reason := range []string{
+		"pawl-review REFUTED for age-55qz.2 (see evidence)",
+		"pawl-review REFUTED for bd-abc123 (see evidence)",
+		"pawl-review REFUTED for myproj-x.4 (see evidence)",
+		"pawl-review REFUTED for age-focus-membrane-bookkeeper-m1wg.13 (see evidence)", // multi-hyphen slug
+	} {
+		if got := ClassKeyFor("scripts", reason, "", ""); got != base {
+			t.Fatalf("digit-bearing bead-ref must collapse to base\n reason %q\n got    %q\n base   %q", reason, got, base)
+		}
+	}
+	// A digit-LESS ref ("age-landq-self") is NOT stripped — documented precision tradeoff.
+	if got := ClassKeyFor("scripts", "pawl-review REFUTED for age-landq-self (see evidence)", "", ""); got == base {
+		t.Fatalf("digit-less bead-ref should NOT collapse (precision tradeoff), but it did: %q", got)
+	}
+}
+
+// age-oxzc scenario 2 (safety): the strip must NOT mangle ordinary hyphenated
+// technical terms. Every meaningful token of a normal reason survives.
+func TestNormalizeReason_PreservesHyphenatedWords(t *testing.T) {
+	got := normalizeReason("cross-family tmux-send-keys race in the ready predicate")
+	for _, tok := range []string{"cross", "family", "tmux", "send", "keys", "race", "ready", "predicate"} {
+		if !strings.Contains("-"+got+"-", "-"+tok+"-") {
+			t.Fatalf("hyphenated word mangled: token %q missing from normalized %q", tok, got)
+		}
+	}
+}
+
+// age-oxzc payoff at READ time: DetectCatches recomputes the class key, so two catches
+// on DIFFERENT beads whose reasons differ only by bead-id must group into ONE class
+// (HitCount 2, both beads). Round-tripped through the production writer (fixture fidelity).
+func TestDetectCatches_BeadDriftReasonsGroupToOneClass(t *testing.T) {
+	root := t.TempDir()
+	appendCatch(t, root, "age-55qz", "head0a01", "scripts",
+		"pawl-review REFUTED for age-55qz.2 (see evidence)", "", 1, []string{"scripts/pawl-review.sh"})
+	appendCatch(t, root, "age-z1pv", "head0b02", "scripts",
+		"pawl-review REFUTED for age-z1pv (see evidence)", "", 1, []string{"scripts/pawl-review.sh"})
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	catches := DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("two bead-drifting reasons must group into ONE class, got %d: %#v", len(catches), catches)
+	}
+	if catches[0].HitCount != 2 {
+		t.Fatalf("two distinct beads in the collapsed class must count as 2 hits, got %d", catches[0].HitCount)
+	}
+	if len(catches[0].Beads) != 2 {
+		t.Fatalf("collapsed class must list both beads, got %v", catches[0].Beads)
+	}
+}
+
 // A REAL line copied verbatim from the live ledger (a LEGACY bead-keyed catch that
 // predates the class field) must still parse AND classify unchanged — the read path is
 // fully backward compatible; a legacy row keeps its per-bead legacy class, never an
