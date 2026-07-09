@@ -67,6 +67,10 @@ func TestNoUnguardedCobraWriterLeak(t *testing.T) {
 var writerResetHelpers = map[string]bool{
 	"resetSkillsResolveFlags": true,
 	"resetSkillsCheckFlags":   true,
+	// setDigestProjectDir registers a t.Cleanup that resets membraneDigestCmd's
+	// out-writer (SetOut(nil)) — the SAME command every `ao membrane digest` test
+	// sets — so a SetOut after it is guarded (age-xbmf).
+	"setDigestProjectDir": true,
 }
 
 func writerResetHelperNames() []string {
