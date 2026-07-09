@@ -586,7 +586,7 @@ Remaining: <what's left>
 - **Follow patterns** - match existing code style
 - **Verify changes** - run tests or sanity checks
 - **Commit with context** - reference the issue ID
-- **Close the issue** - update status when done
+- **Close the issue** - update status when done, then run `$crank`'s Close checkpoint (Step 6.5): a closed bead is a sensor reading — if what it taught falsifies an assumption the remaining plan depends on, surface it for re-planning instead of silently proceeding (age-cysr)
 
 ## Without Beads
 
