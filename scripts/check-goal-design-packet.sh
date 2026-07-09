@@ -13,7 +13,7 @@ Usage: scripts/check-goal-design-packet.sh <packet-dir>
 
 Validates .agents/goal-design/<slug>/intent.md and driver.md frontmatter against
 schemas/goal-design-*.v1.schema.json, then checks driver intent_ref.sha256
-against the current intent.md bytes.
+against the current intent.md bytes plus cross-file identity.
 USAGE
 }
 
@@ -138,6 +138,54 @@ def detect_self_grading(intent_data, driver_data, intent_text: str, driver_text:
             fail(f"self-grading language: matched {pattern}")
 
 
+def check_cross_file_identity(intent_data, driver_data) -> None:
+    intent_slug = str(intent_data["slug"])
+    driver_slug = str(driver_data["slug"])
+    if intent_slug != driver_slug:
+        fail(f"slug mismatch: intent.slug {intent_slug!r} does not match driver.slug {driver_slug!r}")
+
+    expected_intent_ref = f".agents/goal-design/{intent_slug}/intent.md"
+    actual_intent_ref = str(driver_data["intent_ref"]["path"])
+    if actual_intent_ref != expected_intent_ref:
+        fail(
+            "driver intent_ref.path must identify packet intent: "
+            f"expected {expected_intent_ref!r}, found {actual_intent_ref!r}"
+        )
+
+
+def normalize_label(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
+def check_candidate_scenario_mapping(intent_data, driver_data) -> None:
+    scenarios = intent_data["bdd"]["scenarios"]
+    scenario_ids = {str(scenario["id"]) for scenario in scenarios}
+    scenario_names = {
+        normalize_label(str(scenario["name"]))
+        for scenario in scenarios
+        if str(scenario["name"]).strip()
+    }
+
+    for index, candidate in enumerate(driver_data["candidate_beads"]):
+        behavior = str(candidate["behavior"])
+        scenario_refs = re.findall(r"\bS[0-9]+\b", behavior)
+        unknown_refs = sorted({ref for ref in scenario_refs if ref not in scenario_ids})
+        if unknown_refs:
+            fail(
+                f"candidate_beads/{index}/behavior references scenario ids not present "
+                f"in intent.bdd.scenarios: {', '.join(unknown_refs)}"
+            )
+        if scenario_refs:
+            continue
+
+        normalized_behavior = normalize_label(behavior)
+        if not any(name in normalized_behavior for name in scenario_names):
+            fail(
+                f"candidate_beads/{index}/behavior must reference an id or name "
+                "from intent.bdd.scenarios"
+            )
+
+
 for required in (intent_path, driver_path, intent_schema_path, driver_schema_path):
     require_file(required)
 
@@ -155,6 +203,8 @@ if expected_sha != actual_sha:
         f"expected {expected_sha}, found {actual_sha}"
     )
 
+check_cross_file_identity(intent_data, driver_data)
+check_candidate_scenario_mapping(intent_data, driver_data)
 detect_self_grading(intent_data, driver_data, intent_text, driver_text)
 
 print(f"goal-design packet valid: {packet_dir}")

@@ -21,7 +21,7 @@ AgentOps turns session output into durable environment state. AgentOps 3.0 ships
 
 | Mode | Start path | Closeout path | What runs the stages |
 |------|------------|---------------|----------------------|
-| Any runtime (hookless default) | `ao inject` / `ao codex start` / `ao rpi phased` | `ao forge transcript` + `ao flywheel close-loop` (or `ao codex stop`) | Startup context assembly, transcript discovery, citation capture, and close-loop status through explicit commands — portable across Claude, Codex, and OpenCode |
+| Any runtime (hookless default) | `ao inject` / `ao codex start`, then drive the seven-move operating loop via the `/rpi` skill (`ao rpi phased` was **removed** in 3.0) | `ao forge transcript` + `ao flywheel close-loop` (or `ao codex stop`) | Startup context assembly, transcript discovery, citation capture, and close-loop status through explicit commands — portable across Claude, Codex, and OpenCode |
 | Self-authored gate (optional) | A hook you write with the `hooks-authoring` skill | A hook you write with the `hooks-authoring` skill | Only what you choose to wire; AgentOps ships no hooks, so nothing fires unless you author it |
 
 ## The Flywheel

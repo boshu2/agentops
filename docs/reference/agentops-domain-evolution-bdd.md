@@ -52,7 +52,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
     Given the worktree is clean, synced, and branch-attached
     And the installed ao binary exposes the same required commands as the source-built CLI
     When the operator starts an unattended evolution cycle
-    Then "ao evolve" runs with lease, cleanup, and bounded max-cycle settings
+    Then "ao evolve" (removed in 3.0 — use the /evolve skill in-session and `ao goals measure` for fitness; scheduled runs go through the external NTM + Agent Mail substrate, not an in-repo daemon) ran with lease, cleanup, and bounded max-cycle settings
     And landing policy starts as "off" until a reviewed cycle proves safe
     And commit or sync-push landing is used only after explicit authorization
 

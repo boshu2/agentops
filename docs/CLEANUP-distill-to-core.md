@@ -22,7 +22,7 @@ Feature: AgentOps distilled to the mind
     And it does NOT call itself "the control plane" (that is MTO)
 
   Scenario: orchestration is relocated, not stranded
-    Given a user who runs `ao autodev` / `ao cron` / `ao pool` / `ao operator` / `ao orchestrate`
+    Given a user who runs `ao autodev` / `ao cron` / `ao pool` / `ao operator` / `ao orchestrate` (the last of which was removed in 3.0 — archived behind the legacy build)
     When they run it after the cleanup
     Then they get a deprecation pointer to MTO, never a silent break
 
@@ -50,7 +50,7 @@ Feature: AgentOps distilled to the mind
 
 ## Slices (vertical — each a bead, each with its own acceptance)
 1. **Re-identify** *(non-breaking)* — rewrite README + `docs/3.0.md` lead: AgentOps = the worker's mind (in-session loop + context compiler + corpus); strike "control plane" (MTO's title). Acceptance: identity scenario.
-2. **Relocate orchestration → MTO** *(deprecate-stub, don't hard-delete)* — `autodev`, `batch_*`, `cron*`, `pool*`, `operator`, `rpi serve` become stubs that point to MTO. **`ao orchestrate` is exempt** — it is the BC6 out-of-session instrument waist (`select`, `preflight`, `verify`, `tools`, `route`, `shape`); expand in-repo, do not stub to MTO. Acceptance: relocate scenario (orchestrate exempt).
+2. **Relocate orchestration → MTO** *(deprecate-stub, don't hard-delete)* — `autodev`, `batch_*`, `cron*`, `pool*`, `operator`, `rpi serve` become stubs that point to MTO. **`ao orchestrate` was originally exempt** — it was the BC6 out-of-session instrument waist (`select`, `preflight`, `verify`, `tools`, `route`, `shape`) planned to expand in-repo; but it was since **removed in 3.0** (archived behind the legacy build), and that surface is now exposed by the NTM + MCP Agent Mail substrate (`ao mcp serve` / `ao agent`), not expanded in-repo. Acceptance: relocate scenario (orchestrate exempt).
 3. **Resolve the ambiguous** *(split by scope)* — `eval` / `goals` / `defrag` / `notebook` / `beads`: this-session scope → keep; fleet/pool scope → relocate. Acceptance: each resolved + tested.
 4. **Conform + lock the seam** — worker validation = claim (never binding verdict); core conforms to `agentops-core-sdk`. Acceptance: seam + conform scenarios.
 5. **Integrate `meta_skill` (ms) as the skill-evolution engine** — *how the mind tends and evolves itself.* ms mines CASS → candidate skills + anti-patterns + cross-project patterns + bandit ranking + prune proposals. **It PROPOSES; the AgentOps flywheel gate (+ MTO assurance for fleet) PROMOTES** (same single-writer seam as worker=claim / MTO=verdict, one altitude down). ms is the evolution *engine*, NOT the catalog manager (it can't ingest Anthropic `SKILL.md` — 2026-05-31 verdict holds); the 81 Anthropic `SKILL.md` stay the runtime catalog. **Format fork:** (A) adapter Anthropic-`SKILL.md`↔ms [now], (B) adopt ms store, (C) contribute Anthropic-import to ms upstream [durable]. Acceptance: ms-evolution scenario below. (bead ag-452u; ref github.com/Dicklesworthstone/meta_skill)

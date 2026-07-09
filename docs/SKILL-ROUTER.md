@@ -26,6 +26,7 @@ What are you trying to do?
 ├─ "Track it / bookkeep it" (the Bookkeeper)
 │   ├─ Break it into issues ──────► /plan
 │   ├─ Manage/close issues ───────► /beads-br
+│   ├─ Turn a goal into a loop-ready packet ─► /goal-design
 │   ├─ Shape a fuzzy idea ────────► /discovery --ideate
 │   ├─ Build a single issue ──────► /implement
 │   ├─ Where was I? ──────────────► /status

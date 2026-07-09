@@ -289,6 +289,40 @@ func TestWriterAppendsWithoutClobber(t *testing.T) {
 	}
 }
 
+// TestWriterUsesDurableAtomicWrite locks the recon-2026-07-02 W6 hardening: the
+// verdict ledger — the "no verdict = not done" source of truth — is written
+// through storage.AtomicWriteFile (body fsync + rename + parent-dir fsync), not a
+// hand-rolled non-fsync tmp+rename. Observable contract: the on-disk file carries
+// the 0600 mode AtomicWriteFile enforces, and no temp residue (.tmp*) is left in
+// the ledger directory. A regression to a private un-fsynced writer would drop
+// the mode guarantee and/or leak temp files, tripping this test.
+func TestWriterUsesDurableAtomicWrite(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{Now: func() time.Time { return time.Date(2026, 5, 17, 20, 0, 0, 0, time.UTC) }}
+	if _, err := w.AppendIteration(root, IterationInput{
+		DirectiveID: "d-dur", RunTime: time.Date(2026, 5, 17, 10, 0, 0, 0, time.UTC),
+		ScenarioVerdict: VerdictFail, ScenarioSatisfaction: 0.4, ScenarioCount: 3, EvaluatedCount: 3, RunID: "r1",
+	}); err != nil {
+		t.Fatalf("AppendIteration: %v", err)
+	}
+	ledgerPath := filepath.Join(root, filepath.FromSlash(ArtifactRelPath))
+	info, err := os.Stat(ledgerPath)
+	if err != nil {
+		t.Fatalf("stat ledger: %v", err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Errorf("ledger mode = %o, want 600 (the perm AtomicWriteFile enforces)", got)
+	}
+	// AtomicWriteFile writes a random .tmp-* sibling then renames it away; none may remain.
+	residue, err := filepath.Glob(filepath.Join(filepath.Dir(ledgerPath), ".tmp*"))
+	if err != nil {
+		t.Fatalf("glob temp residue: %v", err)
+	}
+	if len(residue) != 0 {
+		t.Errorf("leftover temp file(s) after atomic write: %v", residue)
+	}
+}
+
 // TestLoadMissingLedger verifies a missing ledger is an empty ledger, no error.
 func TestLoadMissingLedger(t *testing.T) {
 	ledger, err := Load(t.TempDir())

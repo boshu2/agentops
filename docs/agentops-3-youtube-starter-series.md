@@ -158,8 +158,9 @@ with clearer context.
 **Demo beats**
 
 1. Recap the packet and verdict artifact.
-2. Run the loop in session: the operating loop (primary) or the legacy
-   `ao rpi <bead>` executor (one cycle), `ao evolve` (many).
+2. Run the loop in session via the operating loop (primary), driven by the
+   `/rpi` skill (one cycle) or the `/evolve` skill (many). The legacy
+   `ao rpi <bead>` and `ao evolve` CLI executors were removed in 3.0.
 3. To run it out of session, hand the loop to the substrate
    (NTM + MCP Agent Mail); e.g. an NTM tmux swarm (or a lead agent) runs
    `BEADS_DIR="$(ao beads dir)" br ready` and dispatches ready beads to workers.
@@ -174,7 +175,7 @@ session.
 
 **Measurement fields**
 
-- In-session loop runs (operating loop / `ao evolve`) before opting into always-on.
+- In-session loop runs (operating loop / `/evolve` skill) before opting into always-on.
 - Substrate dispatch screenshots or reports.
 - Questions about safety boundaries and source mutation.
 

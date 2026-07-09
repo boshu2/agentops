@@ -94,7 +94,7 @@ substrate — AgentOps ships no daemon or scheduler of its own; see
 # An NTM tmux swarm dispatches the next ready bead to a worker pane,
 # coordinated through MCP Agent Mail locks and inboxes. The worker runs the
 # operating loop (docs/architecture/operating-loop.md) as its turn executor.
-# (`ao rpi <bead-id>` is load-bearing LEGACY, not the live loop.)
+# (`ao rpi <bead-id>` was **removed** in 3.0 (commit f61c5f0e7); the operating loop is the live path.)
 ```
 
 ## Expected Outputs

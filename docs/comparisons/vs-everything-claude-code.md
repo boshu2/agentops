@@ -58,7 +58,7 @@ validates, all in one workflow with state preserved across the model
 boundaries. The handoff is the feature.
 
 ```
-$ ao rpi "add rate limiting to /login"
+/rpi "add rate limiting to /login"   # in-session skill drives the seven-move operating loop (ao rpi removed in 3.0)
 [research/claude]    found 3 prior auth changes in .agents/decisions/
 [plan/claude]        proposed: token bucket, 5/min per IP, Redis-backed
 [pre-mortem/codex]   WARN: Redis unreachable case unhandled

@@ -19,7 +19,6 @@
 # do NOT edit those to burn them down.
 #
 # Comments (#...) and blank lines are ignored. Keep this list sorted.
-docs/3.0.md
 docs/activation-profiles.md
 docs/agentops-brief.md
 docs/agentops-system-map.md

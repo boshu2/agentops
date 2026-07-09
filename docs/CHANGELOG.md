@@ -390,7 +390,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - **Dream RunLoop invariant coverage** — `TestRunLoop_LiveTreeHashInvariant_AllStatuses` locks the `IsCorpusCompounded()` and live-tree mutation invariant across deterministically reproducible terminal statuses.
 - **Dream failed-summary contract coverage** — regression tests now lock the `finalizeOvernightSummary` contract for MEASURE consecutive-failure halts and persisted iteration history.
 - **Dream operator mode** — `ao overnight start|run|report|setup` adds a private overnight lane with shared `dream.*` config, keep-awake defaults, scheduler/bootstrap guidance, council-ready runner packets, and DreamScape-style morning summaries
-- **Nightly live retrieval proof** — the dream-cycle now runs `ao retrieval-bench --live --json`, emits retrieval proof in nightly summaries, and keeps a visible artifact trail for flywheel health
+- **Nightly live retrieval proof** — the dream-cycle now runs `ao eval bench --live --json`, emits retrieval proof in nightly summaries, and keeps a visible artifact trail for flywheel health
 - **Pattern-to-skill drafts** — repeated patterns can now generate review-only skill drafts under `.agents/skill-drafts/` during flywheel close-loop
 - **Fresh-repo onboarding welcome** — new session-start routing helps first-time repos enter discovery, implementation, or validation without needing the full RPI lane first
 - **Docs-site and contribution proof surfaces** — GitHub Pages navigation, comparison pages, behavioral-discipline guidance, strategic-doc validation patterns, and a first-skill guide expand the public proof surface
@@ -459,7 +459,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
   - Satisfaction scoring (0.0-1.0 probabilistic) in verdict schema v4, replacing boolean-only PASS/FAIL
   - Agent-built behavioral specs generated during `/implement` Step 5c
   - `/scenario` skill for authoring and managing holdout scenarios
-  - `ao scenario init|list|validate` CLI commands (4 subcommands, 11 tests)
+  - `ao eval scenario init|list|validate` CLI commands (4 subcommands, 11 tests)
   - STEP 1.8 in `/validation` pipeline evaluating holdout scenarios + agent specs
   - `schemas/scenario.v1.schema.json` defining the holdout scenario format
 - **Flywheel gate command** — `ao flywheel gate` checks readiness for retrieval-expansion work (research closure, rho threshold, holdout precision@K)
@@ -496,7 +496,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 ### Added
 
 - **Backlog hygiene gates** — added `bd-audit.sh`, `bd-cluster.sh`, and Crank/Codex guidance for cleaning stale or mergeable beads before execution
-- **Retrieval benchmarking and global scope** — added `ao retrieval-bench`, benchmark corpora, `--live`, `--global`, and nightly IR regression coverage
+- **Retrieval benchmarking and global scope** — added `ao eval bench`, benchmark corpora, `--live`, `--global`, and nightly IR regression coverage
 - **`/red-team` adversarial validation** — added a persona-based validation skill plus checked-in Codex runtime artifacts
 - **Software factory operator lane** — added a CLI/operator surface and Claude factory startup routing for software-factory workflows
 - **Flywheel maintenance utilities** — added global garbage purge tooling and nightly retrieval benchmarking for knowledge quality tracking
@@ -890,7 +890,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Added
 - Flywheel loop closure — `ao session close --auto-extract` produces lightweight learnings and auto-handoff at session boundary
-- Handoff-to-learnings bridge — `ao handoff` now extracts decisions into `.agents/learnings/` automatically
+- Handoff-to-learnings bridge — `ao session handoff` now extracts decisions into `.agents/learnings/` automatically
 - Session-type scoring in `ao inject --session-type` — 30% boost for matching session context (career, debug, research, brainstorm)
 - Identity artifact support — `ao inject --profile` surfaces `.agents/profile.md` in session context
 - MEMORY.md auto-promotion in `ao flywheel close-loop` (Step 7) after maturity transitions
@@ -899,7 +899,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 - Knowledge mining — `ao mine` and `ao defrag` commands for automated codebase intelligence
 - Context declarations — `ao inject --for <skill>` reads skill frontmatter `context:` block for scoped retrieval
 - Sections include allowlist and context artifact directories for skill-scoped injection
-- `ao handoff` command for structured session boundary isolation
+- `ao session handoff` command for structured session boundary isolation
 - Behavioral guardrails — 3-layer hook defense-in-depth (intent-echo, research-loop-detector, task-validation-gate)
 - Context enforcement hook and run-id namespaced artifact paths
 - Headless invocation standards and RPI phase runner
@@ -1035,7 +1035,7 @@ AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what run
 
 ### Added
 - `ao notebook update` command — compound MEMORY.md loop that merges latest session insights into structured sections
-- `ao memory sync` command — sync session history to repo-root MEMORY.md with managed block markers for cross-runtime access (Codex, OpenCode)
+- `ao session memory sync` command — sync session history to repo-root MEMORY.md with managed block markers for cross-runtime access (Codex, OpenCode)
 - `ao seed` command — plant AgentOps in any repository with auto-detected templates (go-cli, python-lib, web-app, rust-cli, generic)
 - `ao lookup` command — retrieve specific knowledge artifacts by ID or relevance query (two-phase complement to `ao inject --index-only`)
 - `ao constraint` command family — manage compiled constraints (list, activate, retire, review)

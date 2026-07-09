@@ -35,6 +35,7 @@ What are you trying to do?
 ├─ "Track it / bookkeep it" (the Bookkeeper)
 │   ├─ Break it into issues ──────► /plan
 │   ├─ Manage/close issues ───────► /beads-br
+│   ├─ Turn a goal into a loop-ready packet ─► /goal-design
 │   ├─ Shape a fuzzy idea ────────► /discovery --ideate
 │   ├─ Build a single issue ──────► /implement
 │   ├─ Where was I? ──────────────► /status
@@ -213,6 +214,17 @@ Structured idea exploration. Four phases: assess clarity, understand idea, explo
 ```
 
 **Output:** `.agents/discovery/YYYY-MM-DD-<slug>.md`
+
+### /goal-design
+
+Create a schema-backed `.agents/goal-design/<slug>/` packet with checked
+`intent.md` and `driver.md` artifacts before discovery or planning.
+
+```bash
+/goal-design "harden packet identity checks"
+```
+
+**Output:** `.agents/goal-design/<slug>/intent.md` and `driver.md`
 
 ### /plan
 
@@ -465,6 +477,7 @@ phases, and flags.
 | `/security` (absorbs deps) | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/product` | Maintain `PRODUCT.md` so validation and planning share the same product contract |
 | `/discovery` | Full discovery-phase orchestrator (ideation + search + research + plan + pre-mortem) |
+| `/goal-design` | Create checked goal-design packets before discovery or planning |
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
 | `/push` | Atomic test-commit-push with conventional-commit message |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
@@ -521,8 +534,8 @@ Skills integrate with the ao CLI for orchestration:
 
 | Skill | ao CLI Command |
 |-------|----------------|
-| `/research` | `ao lookup`, `ao search`, `ao rpi phased` |
+| `/research` | `ao lookup`, `ao search` (the `/rpi` engine was removed in 3.0 — driven in-session by the operating loop) |
 | `/post-mortem --quick` | `ao forge markdown`, `ao session close` |
 | `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
 | `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
-| `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |
+| `/crank` | `ao ratchet`, `ao flywheel status` (the `/rpi` engine was removed in 3.0; waves now drive via the operating loop + NTM/Agent Mail substrate) |

@@ -175,8 +175,9 @@ day loop starts against a better environment.
 In v2.36.0, the CLI exposes this split directly:
 
 ```bash
-ao evolve --max-cycles 1
-ao rpi loop --supervisor --max-cycles 1
+# ao evolve was removed in 3.0 — run the /evolve skill in-session; ao goals measure gives the fitness read
+ao goals measure
+# ao rpi loop was removed in 3.0 — drive the seven-move operating loop in-session via the /rpi skill (docs/architecture/operating-loop.md)
 ao search "prior rate limit fixes"
 ao lookup --query "repo release lessons"
 ```

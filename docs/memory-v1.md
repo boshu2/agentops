@@ -13,7 +13,7 @@
 >
 > **Corrected decision: do NOT make `ao` "the one memory that retires cm." Adopt cm + cass
 > directly** (fork them if you want full ownership — they're MIT). `ao recall` /
-> `ao memory ingest-claude` shipped (nyfq.5/.6/.7) but are PARKED as a learning, not a
+> `ao session memory ingest-claude` shipped (nyfq.5/.6/.7) but are PARKED as a learning, not a
 > foundation; do not point users at them as-is. Remaining beads (.1/.2/.3/.4/.8) are closed
 > as "reinventing a free open-source tool, worse." The lesson: **re-baseline a build against
 > existing tools BEFORE writing code** — this epic never did that against cm, the tool

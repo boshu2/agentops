@@ -25,24 +25,28 @@ setup() {
 @test "probe_families: only claude installed -> cc (single family)" {
   _cli_present() { case "$1" in claude) return 0;; *) return 1;; esac; }
   run probe_families
+  [ "$status" -eq 0 ]
   [ "$(printf '%s ' $output)" = "cc " ]
 }
 
 @test "probe_families: claude+codex (no agy) -> cc cod" {
   _cli_present() { case "$1" in claude|codex) return 0;; *) return 1;; esac; }
   run probe_families
+  [ "$status" -eq 0 ]
   [ "$(printf '%s ' $output)" = "cc cod " ]
 }
 
 @test "probe_families: claude+agy (no codex) -> cc agy (canonical order preserved)" {
   _cli_present() { case "$1" in claude|agy) return 0;; *) return 1;; esac; }
   run probe_families
+  [ "$status" -eq 0 ]
   [ "$(printf '%s ' $output)" = "cc agy " ]
 }
 
 @test "probe_families: nothing installed -> empty" {
   _cli_present() { return 1; }
   run probe_families
+  [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
 
@@ -113,6 +117,25 @@ setup() {
 @test "min_confirm_for_tier: multi needs 2, fresh needs 1" {
   [ "$(min_confirm_for_tier multi)" = "2" ]
   [ "$(min_confirm_for_tier fresh)" = "1" ]
+}
+
+# --- doctor/smoke model preflight helpers ---
+
+@test "_text_has_model: claude-opus-4-8 accepts the Opus 4.8 TUI display" {
+  run _text_has_model "Claude Code v2.1.198 · Opus 4.8" cc claude-opus-4-8
+  [ "$status" -eq 0 ]
+}
+
+@test "_text_has_model: claude-opus-4-8 rejects a different Claude model display" {
+  run _text_has_model "Claude Code v2.1.198 · Sonnet 4.5" cc claude-opus-4-8
+  [ "$status" -ne 0 ]
+}
+
+@test "_text_has_model: codex model check requires the expected model token" {
+  run _text_has_model "Codex 0.142.5 · gpt-5.5 xhigh" cod gpt-5.5
+  [ "$status" -eq 0 ]
+  run _text_has_model "Codex 0.142.5 · gpt-5.5 xhigh" cod gpt-5.3
+  [ "$status" -ne 0 ]
 }
 
 # --- pawl_decide <min> <verdicts...>: generalized over N enabled panes ---

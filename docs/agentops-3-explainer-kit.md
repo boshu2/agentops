@@ -125,8 +125,9 @@ After the user sees one packet and one verdict:
 
 ```bash
 # The substrate dispatches a whole loop as one unit: it spawns an agent that
-# runs the /rpi skill over the next ready bead — it never drives the loop's insides:
-ao rpi <bead-id>
+# runs the /rpi skill over the next ready bead — it never drives the loop's insides.
+# (The `ao rpi <bead-id>` engine was removed in 3.0; the loop now runs in-session
+# via the /rpi skill, dispatched out-of-session by the NTM + MCP Agent Mail substrate.)
 # Scheduled maintenance (Dream reports, wiki curation, release checks) is driven
 # by the substrate's triggers (NTM swarm, cron, or MCP). See docs/dependencies.md.
 ```

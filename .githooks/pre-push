@@ -4,12 +4,18 @@
 #
 # Pre-push hook: delegates to bd for issue tracking.
 #
-# Historical bd shim. This tracked .githooks directory is not the live AgentOps
-# cockpit gate on current installs; core.hooksPath points at .git/hooks, where
-# scripts/install-pre-push-gate.sh chains scripts/hooks/pre-push.local.
-# The old CI-only gate decision in local-pre-push-gate-retirement.md is
-# superseded. Current direct-main release authority is local pre-push + ao gate
-# + full randomized race + pawl check; GitHub Actions are tag/PR/manual backstop.
+# Historical bd shim. This tracked .githooks directory is NOT the live AgentOps
+# cockpit gate. The live gate is installed by scripts/install-pre-push-gate.sh
+# into git-common-dir/hooks (i.e. .git/hooks), which chains
+# scripts/hooks/pre-push.local (ao gate + race + pawl check).
+#
+# IMPORTANT (recon-2026-07-02 audit A2): git honors this dir ONLY if
+# core.hooksPath is unset or points here. A bd install (or any tool) can redirect
+# core.hooksPath at its own dir (e.g. .beads/hooks) — and then git runs ONLY that
+# dir and the AgentOps gate never fires. Verify with `git config --get
+# core.hooksPath`; the installer now DETECTS and REFUSES a hijacked hooksPath.
+# Direct-main release authority is local pre-push + ao gate + full randomized race
+# + pawl check; GitHub Actions are tag/PR/manual backstop.
 
 set -euo pipefail
 

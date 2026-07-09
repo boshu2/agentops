@@ -1,7 +1,8 @@
 # Domain-Slice Manifests
 
 This directory holds per-domain `manifest.yaml` files — durable, git-tracked
-declarations of DDD bounded context slices used by `ao rpi phased --domain`.
+declarations of DDD bounded context slices once consumed by the now-removed
+`ao rpi phased --domain` engine (superseded in 3.0 by the seven-move operating loop).
 
 ## One directory per domain
 
@@ -11,12 +12,15 @@ docs/domains/
     manifest.yaml      # source of truth for this domain slice
 ```
 
-The `<domain-name>` matches the `domain` field in the manifest and is passed
+The `<domain-name>` matches the `domain` field in the manifest and was passed
 directly to `--domain`:
 
 ```
-ao rpi phased --domain goals "Add satisfaction gate to ao goals measure"
-ao rpi phased --domain rpi   "Wire domainSliceManifest into phased loader"
+# ao rpi was removed in 3.0 — these --domain invocations no longer exist;
+# shown only to illustrate how <domain-name> mapped to --domain. Drive the
+# loop via the /rpi skill over the seven-move operating loop instead.
+ao rpi phased --domain goals "Add satisfaction gate to ao goals measure"   # removed in 3.0
+ao rpi phased --domain rpi   "Wire domainSliceManifest into phased loader"  # removed in 3.0
 ```
 
 ## What a manifest declares

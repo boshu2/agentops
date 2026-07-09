@@ -69,6 +69,8 @@ func init() {
 	pawlCmd.AddCommand(pawlServiceCmd("down", "down", "Tear down the standing pawl-service (no orphan panes)"))
 	pawlCmd.AddCommand(pawlServiceCmd("reap", "reap", "Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)"))
 	pawlCmd.AddCommand(pawlServiceCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service + the membrane tier"))
+	pawlCmd.AddCommand(pawlServiceCmd("doctor", "doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Read-only standing pawl preflight: assert atm alias, session, pane cwd/model, trust prompts, readiness, and evidence policy"))
+	pawlCmd.AddCommand(pawlServiceCmd("smoke", "smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Alias for pawl doctor: non-mutating readiness smoke before routing real reviews"))
 	pawlCmd.AddCommand(pawlServiceCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict"))
 	pawlCmd.AddCommand(pawlServiceCmd("metrics", "metrics [--json]", "p50/p95 route latency + agreement-rate SLOs over the recorded routes"))
 }

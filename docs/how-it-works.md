@@ -147,7 +147,7 @@ tag/PR/manual backstop, not the gate on every `main` push.
 
 | Former hook responsibility | Hookless surface | Gap closed |
 |----------------------------|------------------|------------|
-| Startup maintenance / handoff recovery / factory-state staging | `ao knowledge brief`, `ao context assemble`, `ao handoff` | Runtime continuity |
+| Startup maintenance / handoff recovery / factory-state staging | `ao knowledge brief`, `ao context assemble`, `ao session handoff` | Runtime continuity |
 | Transcript mining / maturity management / defrag | `/curate --mode=forge`, `ao maturity`, `ao compile` at session close | Durable learning, Loop closure |
 | Flywheel close | `ao flywheel close-loop` / `/retro` | Loop closure |
 | Prompt guidance / context pressure | `ao lookup`, factory briefings (pulled, not injected) | Judgment validation |
@@ -178,20 +178,16 @@ For repos over ~1500 files, `/rpi` uses deterministic shards to keep each worker
 
 ## Phased RPI — Fresh Context Per Phase
 
-`ao rpi phased "goal"` runs each phase in its own session — no context bleed between phases. Use `/rpi` when context fits in one session. Use `ao rpi phased` when you need phase-level resume control. For autonomous control-plane operation, use the canonical path `ao rpi loop --supervisor`.
+`/rpi "goal"` runs the seven-move loop inside the current session when context fits. For phase-level resume control or unattended operation, dispatch the whole loop through the out-of-session substrate (NTM + MCP Agent Mail + managed-agents), not an AgentOps daemon.
 
 ## Parallel RPI — N Epics in Isolated Worktrees
 
-`ao rpi parallel` runs multiple epics concurrently, each in its own git worktree. Every epic gets a full 3-phase lifecycle (discovery → implementation → validation) with zero cross-contamination, then merges back sequentially.
+`/crank` runs multiple epics concurrently, each in its own git worktree. Every epic gets a full 3-phase lifecycle (discovery → implementation → validation) with zero cross-contamination, then merges back sequentially.
+
+Use `/crank` to split independent epics into coordinated lanes with explicit ownership and merge order.
 
 ```
-ao rpi parallel --manifest epics.json        # Named epics with merge order
-ao rpi parallel "add auth" "add logging"     # Inline goals (auto-named)
-ao rpi parallel --no-merge --manifest m.json # Leave worktrees for manual review
-```
-
-```
-                   ao rpi parallel
+                   /crank
                          │
          ┌───────────────┼───────────────┐
          ▼               ▼               ▼

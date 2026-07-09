@@ -110,6 +110,11 @@ func readDaemonActivation(repoRoot string) (daemonActivation, bool) {
 	return act, true
 }
 
+func openclawSnapshotDirExists(repoRoot string) bool {
+	info, err := os.Stat(filepath.Join(repoRoot, openclaw.SnapshotDirRel))
+	return err == nil && info.IsDir()
+}
+
 // httpGetBounded performs a read-only HTTP GET under a hard wall-clock
 // deadline. It returns the response body, HTTP status, and any transport
 // error. A wedged endpoint cannot hang `ao doctor` past the deadline.
@@ -152,6 +157,9 @@ func (openclawHealthUnreachableDetector) QuickPath() bool      { return false }
 func (openclawHealthUnreachableDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	act, ok := readDaemonActivation(env.RepoRoot)
 	if !ok {
+		if !openclawSnapshotDirExists(env.RepoRoot) {
+			return nil, nil
+		}
 		return []Finding{healthFinding("activation_missing", "")}, nil
 	}
 	kind, detail := probeOpenClawHealth(act.BaseURL)
@@ -293,7 +301,7 @@ func openclawHealthReport(kind, detail string) string {
 
 // snapshotObservation classifies the OpenClaw consumer snapshot state.
 type snapshotObservation struct {
-	kind            string // "file_ok" | "latest_missing" | "schema_mismatch" | "torn_latest" | "torn_no_recovery"
+	kind            string // "not_configured" | "file_ok" | "latest_missing" | "schema_mismatch" | "torn_latest" | "torn_no_recovery"
 	schemaVersion   int
 	goodVersionFile string // basename of the recovery snap_*.json (torn_latest only)
 }
@@ -316,6 +324,14 @@ func (openclawSnapshotStaleDetector) QuickPath() bool      { return false }
 // only reads files and parses JSON.
 func observeSnapshot(repoRoot string) snapshotObservation {
 	snapDir := filepath.Join(repoRoot, openclaw.SnapshotDirRel)
+	if _, err := os.Stat(snapDir); err != nil {
+		if os.IsNotExist(err) {
+			if _, activated := readDaemonActivation(repoRoot); !activated {
+				return snapshotObservation{kind: "not_configured"}
+			}
+		}
+		return snapshotObservation{kind: "latest_missing"}
+	}
 	latestPath := filepath.Join(snapDir, "latest.json")
 	raw, err := os.ReadFile(latestPath)
 	if err != nil {
@@ -390,7 +406,7 @@ func newestValidVersionSnapshot(snapDir string) string {
 // not healthy. auto_fixable is true ONLY for the torn-latest sub-case. PURE.
 func (openclawSnapshotStaleDetector) Detect(env *DetectEnv) ([]Finding, error) {
 	obs := observeSnapshot(env.RepoRoot)
-	if obs.kind == "file_ok" {
+	if obs.kind == "not_configured" || obs.kind == "file_ok" {
 		return nil, nil
 	}
 	autoFixable := obs.kind == "torn_latest"
@@ -436,7 +452,7 @@ func (openclawSnapshotStaleFixer) AutoFixable() bool { return true }
 // and writes a detect-only advisory report through Mutate.
 func (openclawSnapshotStaleFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	obs := observeSnapshot(env.RepoRoot)
-	if obs.kind == "file_ok" {
+	if obs.kind == "not_configured" || obs.kind == "file_ok" {
 		return FixResult{FixerID: fmOpenClawSnapshotStale, Fixed: true}, nil
 	}
 	if obs.kind == "torn_latest" {

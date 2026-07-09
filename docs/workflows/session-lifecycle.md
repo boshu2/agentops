@@ -50,10 +50,10 @@ hookless — nothing auto-injects orientation). `ao factory start` keeps the
 operator lane explicit: build a bounded briefing if the corpus can support it,
 then drive the operating loop.
 
-> **`/rpi` and `ao rpi` are load-bearing LEGACY, not the live path.** The phased
-> RPI loop (`/rpi "fix auth startup"`, `ao rpi phased`, `ao rpi status`) still
-> compiles and is the one-turn executor referenced below, but new work is driven
-> through the operating loop above — not routed through the RPI loop.
+> **`/rpi` is the live one-turn executor; the `ao rpi` CLI was removed in 3.0.**
+> The `/rpi` skill (`/rpi "fix auth startup"`) still drives one turn over the
+> operating loop, but the phased RPI *CLI* — `ao rpi phased`, `ao rpi status` — was **removed** (commit f61c5f0e7); the RPI engine is gone.
+> New work is driven through the operating loop above, not routed through a standalone RPI loop.
 
 ### Option 3: Dream Compounding Run
 
@@ -123,7 +123,7 @@ SessionEnd would normally run.
 |------|-------|----------|-------|
 | Opt-in hook-capable | Natural language, `/session-start`, or authored startup hooks | Natural language, `/session-end`, or authored session-end hooks | Use only when you author/install hooks; `CLAUDE.md` remains the startup surface |
 | Codex optional native hooks | Quiet native `SessionStart` maintenance plus explicit `ao codex start` / `ao codex ensure-start` when context retrieval is needed | Native `Stop` hook for turn-scope close-loop; explicit `ao codex stop` / `ao codex ensure-stop` for transcript-driven closeout | Opt-in with `install-codex.sh --with-hooks`; startup hooks stay quiet and no native `SessionEnd` event exists today |
-| Codex hookless default | `ao factory start --goal "<goal>"`, `ao rpi phased`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface required; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
+| Codex hookless default | `ao factory start --goal "<goal>"`, `/rpi`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface required; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
 | Dream compounding run | `/dream "<goal>"` (foreground, in session) | Reads `summary.json` / `summary.md` from the run dir | Private local compounding in a watchable session. Running it unattended is out-of-session orchestration, delegated to a substrate (the reference is NTM + MCP + managed-agents) — AgentOps ships no daemon or scheduler |
 | Manual fallback | `ao inject`, `ao lookup` | `ao forge transcript`, `ao flywheel close-loop` | Lowest-level portable path |
 

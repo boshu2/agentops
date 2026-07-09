@@ -90,10 +90,10 @@ for the boundary between Discovery and Plan:
 
 Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
+Goal-design packet inputs (`intent.md` + `driver.md`) use [references/goal-design-packet-input.md](references/goal-design-packet-input.md): run the checker before research; failure blocks; checked packets feed density fields and candidate slice seeds, not a `$plan` replacement.
+
 ## Plan-Pawl Duel Gate
-
 ### Risk-class routing: MVP vertical slice vs fanout (decide FIRST)
-
 The duel is for one-way doors, not every slice. Route first:
 
 - **Fanout class** (architecture forks, one-way-door decisions, cross-agent

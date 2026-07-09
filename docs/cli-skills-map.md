@@ -30,7 +30,7 @@ Every `ao` command that is actively called by at least one skill.
 | `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe |
 | `ao goals` | goals, evolve |
 | `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe |
-| `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm |
+| `ao rpi` — **removed in 3.0** (f61c5f0e7); the RPI engine is gone. The loop is now the seven-move operating loop driven in-session by the `/rpi` skill, with out-of-session runs on the NTM + MCP Agent Mail substrate (AgentOps ships no daemon) | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm |
 | `ao autodev` | autodev |
 | `ao flywheel` | crank, evolve, flywheel, post-mortem, quickstart, retro, status |
 | `ao pool` | crank, status |
@@ -41,7 +41,7 @@ Every `ao` command that is actively called by at least one skill.
 | `ao maturity` | flywheel |
 | `ao constraint` | flywheel, post-mortem, retro |
 | `ao badge` | flywheel, status |
-| `ao retrieval-bench` | flywheel |
+| `ao eval bench` | flywheel |
 | `ao seed` | quickstart |
 | `ao notebook` | retro |
 | `ao dedup` | flywheel |
@@ -112,7 +112,7 @@ These are active skill-level reads or writes that do not go through an `ao` subc
 
 ## Orphan Commands
 
-Commands that exist in the Go CLI but are not called by any skill. All are intentionally uncalled — user utilities, hidden internals, or CI-only. (`ao memory` and `ao extract` were previously invoked only by runtime hooks, which AgentOps 3.0 no longer ships; they remain available as direct commands.)
+Commands that exist in the Go CLI but are not called by any skill. All are intentionally uncalled — user utilities, hidden internals, or CI-only. (`ao session memory` and `ao extract` were previously invoked only by runtime hooks, which AgentOps 3.0 no longer ships; they remain available as direct commands.)
 
 | Command | Category | Notes |
 |---------|----------|-------|
@@ -126,12 +126,12 @@ Commands that exist in the Go CLI but are not called by any skill. All are inten
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |
 | `ao trace` | User utility | Artifact tracing |
 | `ao gate` | CI/test | Promotion gate — called in test scripts |
-| `ao memory` | Internal | Memory sync (previously a hook caller) |
+| `ao session memory` | Internal | Memory sync (previously a hook caller) |
 | `ao extract` | Internal | Learning extraction (previously a hook caller) |
 | `ao feedback` | Hidden | UI for providing feedback on learnings |
 | `ao feedback-loop` | Internal | Async feedback processing |
 | `ao batch-feedback` | Hidden | Batch feedback processing |
-| `ao session-outcome` | Hidden | Session outcome recording |
+| `ao eval session-outcome` | Hidden | Session outcome recording |
 | `ao store` | Hidden | Vector store management |
 | `ao index` | Hidden | Indexing utility |
 | `ao task-sync` | Hidden | Task synchronization |

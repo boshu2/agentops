@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 // Writer appends verdict ledger records without clobbering existing records.
@@ -87,23 +89,21 @@ func ledgerPath(projectRoot string) string {
 	return filepath.Join(projectRoot, filepath.FromSlash(ArtifactRelPath))
 }
 
-// writeLedger serializes ledger to path atomically via tmp + rename.
+// writeLedger serializes ledger to path durably and atomically via the canonical
+// storage.AtomicWriteFile (temp write + file fsync + rename + parent-dir fsync).
+// The prior hand-rolled tmp+rename fsynced neither the body nor the directory, so
+// a crash could lose or corrupt a just-recorded verdict — unacceptable for the
+// verdict ledger, the "no verdict = not done" source of truth (recon-2026-07-02
+// W6). AtomicWriteFile also creates the parent dir, so the explicit MkdirAll is
+// no longer needed here.
 func writeLedger(path string, ledger *Ledger) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-		return fmt.Errorf("create verdict ledger directory: %w", err)
-	}
 	data, err := json.MarshalIndent(ledger, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal verdict ledger: %w", err)
 	}
 	data = append(data, '\n')
-
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
-		return fmt.Errorf("write verdict ledger tmp: %w", err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		return fmt.Errorf("rename verdict ledger artifact: %w", err)
+	if err := storage.AtomicWriteFile(path, data, 0o600); err != nil {
+		return fmt.Errorf("write verdict ledger: %w", err)
 	}
 	return nil
 }

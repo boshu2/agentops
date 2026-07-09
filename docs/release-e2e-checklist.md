@@ -10,7 +10,7 @@ Use this before you tag. The release process in [RELEASING](RELEASING.md) is the
 |---|---|
 | "Is the release process itself current?" | [RELEASING](RELEASING.md) and its pre-release checklist |
 | "Did the local gate produce the expected evidence?" | `.agents/releases/local-ci/<timestamp>/` for SBOM, security report, eval reports, readiness, HIL evidence, digital-twin/VIL evidence, and the manifest |
-| "Did the bootstrap + `ao rpi` smoke actually run?" | Fast gate markers: `ao init`/bootstrap smoke and `ao rpi` smoke (3.0 is hookless — no hook-install smoke) |
+| "Did the bootstrap smoke actually run?" | Fast gate marker printed as `ao init + ao rpi smoke` — but the `ao rpi` sub-checks were **removed** in 3.0 with the RPI engine, so only the `ao init`/bootstrap part is live (3.0 is hookless — no hook-install smoke) |
 | "Did the release smoke path fail after a fast pass?" | Re-run `bash scripts/ci-local-release.sh` and inspect the failing section before tagging |
 | "Was the release already tagged or partially published?" | [RELEASING](RELEASING.md#failure-modes) and [Incident Runbook](INCIDENT-RUNBOOK.md) |
 
@@ -29,7 +29,7 @@ Expect:
   - `Codex runtime sections`
   - `Codex artifact metadata`
   - `Skill runtime parity`
-  - `ao init`/bootstrap + `ao rpi` smoke
+  - `ao init + ao rpi smoke` (the `ao rpi` sub-smoke was **removed** in 3.0 — only the `ao init`/bootstrap check is live)
 
 Reference test: `tests/integration/test-release-e2e-validation.sh`.
 
@@ -40,7 +40,7 @@ Run:
 ```bash
 bash scripts/ci-local-release.sh \
   --release-version X.Y.Z \
-  --hil-target 'local:bushido:ao version && ao init --help && ao doctor && ao rpi status'
+  --hil-target 'local:bushido:ao version && ao init --help && ao doctor --quick && ao session bootstrap >/dev/null'
 ```
 
 Expect:
@@ -76,11 +76,11 @@ Use this when editing Codex runtime guidance or AGENTS runtime sections.
 AgentOps 3.0 is **hookless** — it ships zero hooks, so there is no hook-install
 smoke check. The local gate includes this release E2E smoke check:
 
-- `ao init + ao rpi smoke` validates (in a fresh git repo):
+- `ao init + ao pawl smoke` validates (in a fresh git repo):
   - `ao init` (creates `.agents/`; no hooks installed)
-  - `ao rpi status`
-  - `ao rpi --help`
-  - `ao rpi phased --help`
+  - `ao pawl smoke`
+  - `ao session bootstrap`
+  - `/rpi --help`
 
 If the fast gate passes but this smoke path fails, treat the release as blocked.
 Inspect the corresponding gate output, then rerun the full local gate so the fix

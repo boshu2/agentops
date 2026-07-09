@@ -11,6 +11,7 @@ description: >-
 practices:
 - pragmatic-programmer
 ---
+
 # SBH — Storage Ballast Helper
 
 Prevents disk-full disasters via ballast files, artifact scanning, and predictive pressure monitoring. Three-pronged: ballast (instant space), scanner (stale artifacts), special locations (/tmp, /dev/shm, swap).

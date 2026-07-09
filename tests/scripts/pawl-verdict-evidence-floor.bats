@@ -103,6 +103,16 @@ write_v() {
   [[ "$output" == *"tokens used"* ]]
 }
 
+@test "standing codex pawl-pane evidence without cold-adapter marker: ENFORCE => AUTHORIZES" {
+  # Standing TUI evidence is not the cold Codex adapter subprocess; its proof surface is the
+  # nonce-bound route transcript plus captured pane output, so it must not inherit the adapter
+  # footer requirement. The previous test still locks the cold-adapter rejection.
+  write_v standing_codex "gpt:CONFIRMED:codex-pawl-pane-gpt55:$TMP/nomarker_gpt.txt"
+  PAWL_FLOOR_ENFORCE=1 run bash "$SCRIPT" check standing_codex 0 --dir "$TMP/verdicts" --head "$SHA"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"merge authorized"* ]]
+}
+
 @test "agy/gemini refuter missing 'VERDICT:' marker: ENFORCE => HOLD naming the adapter" {
   write_v nomk_agy "agy:CONFIRMED:fresh:$TMP/nomarker_agy.txt"   # has file:line substance, no VERDICT: token
   PAWL_FLOOR_ENFORCE=1 run bash "$SCRIPT" check nomk_agy 0 --dir "$TMP/verdicts" --head "$SHA"

@@ -580,6 +580,17 @@ _family_genuine_marker() {
 # REPO_ROOT in-checkout). Absolute paths stay. Using YIELD_ROOT (not the script-relative
 # REPO_ROOT) is what makes evidence written repo-relative resolvable on the embedded path —
 # where REPO_ROOT is the extracted-bundle temp dir, not the user's repo. (age-rk3r.9)
+
+# _standing_pawl_context <canonical-family> <context-id> — true for evidence captured from an
+# already-running interactive pawl pane. The cold-adapter genuine-run marker contract applies to
+# codex/agy adapter subprocesses; standing TUI panes prove execution by the nonce-bound route
+# transcript plus pane evidence instead, and do not emit the cold adapter's footer.
+_standing_pawl_context() {
+  case "$1:$2" in
+    gpt:codex-pawl-pane-*|gemini:agy-pawl-pane-*|claude:opus-pawl-pane-*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 _resolve_ev_path() {
   local p="$1"
   [[ -z "$p" ]] && { printf ''; return; }
@@ -630,17 +641,20 @@ pawl_evidence_floor() {
 
   # (2) PER-ADAPTER GENUINE-RUN MARKER — each refuter attributable to a cold adapter
   #     (gpt=codex / gemini=agy) must carry that adapter's genuine-run marker in its OWN
-  #     evidence, so a real cross-family review can be told apart from a lazy stub/echo. A
+  #     evidence, so a real cross-family review can be told apart from a lazy stub/echo.
+  #     Standing interactive pawl-pane contexts are not cold adapters and are skipped here:
+  #     their evidence contract is the nonce-bound route transcript + captured pane text. A
   #     family with no cold-adapter marker yet (claude) is advisory-skipped (amendment 1);
   #     a refuter with no evidence path is skipped (the substance gate already requires a
   #     real evidence surface to exist somewhere).
-  local rfam rnorm rev repath marker
-  while IFS=$'\t' read -r rfam rev; do
+  local rfam rctx rnorm rev repath marker
+  while IFS=$'\t' read -r rfam rctx rev; do
     [[ -z "$rfam" ]] && continue
     rnorm="$(normalize_family "$rfam")"
     [[ -z "$rnorm" ]] && continue
     marker="$(_family_genuine_marker "$rnorm")"
     [[ -z "$marker" ]] && continue          # no cold-adapter marker for this family — advisory skip
+    _standing_pawl_context "$rnorm" "$rctx" && continue
     [[ -z "$rev" ]] && continue             # no evidence path recorded — skip (substance gate covers presence)
     repath="$(_resolve_ev_path "$rev")"
     [[ -s "$repath" ]] || continue
@@ -652,7 +666,7 @@ pawl_evidence_floor() {
         echo "PAWL-FLOOR: WARN (advisory; adapter genuine-run floor) — refuter family '$rnorm' evidence '$rev' lacks the adapter genuine-run marker '$marker'; would HOLD once the floor enforces (on/after $FLOOR_ENFORCE_AFTER). Still authorizing (advisory window)." >&2
       fi
     fi
-  done < <(jq -r '.refuters[] | [(.family // ""), (.evidence // "")] | @tsv' "$f" 2>/dev/null)
+  done < <(jq -r '.refuters[] | [(.family // ""), (.context_id // ""), (.evidence // "")] | @tsv' "$f" 2>/dev/null)
 
   [[ "$enforcing" -eq 0 && "$held" -eq 1 ]] && return 1
   return 0

@@ -1,6 +1,6 @@
 # Retrieval Comparison Contract
 
-The search-eval path of `ao retrieval-bench` is the deterministic decision
+The search-eval path of `ao eval bench` is the deterministic decision
 gate for changing AgentOps retrieval behavior. It compares named backends over
 the same manifest, search root, and `k`, then reports additive metrics for each
 backend.
@@ -16,7 +16,7 @@ bash scripts/retrieval-quality-smoke.sh
 By default the smoke runs:
 
 ```bash
-ao retrieval-bench \
+ao eval bench \
   --search-eval cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json \
   --search-root "$REPO_ROOT" \
   --search-compare-backends local-lexical,ao-auto,agentic-rg,wiki-link-expand,rerank-llamacpp \

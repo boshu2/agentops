@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 58,
+    "skills": 59,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
     "cli_commands": 72,
     "workflows": 4,
-    "capabilities": 144
+    "capabilities": 145
   },
   "surfaces": {
     "skills": [
@@ -123,6 +123,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 6
+      },
+      {
+        "name": "goal-design",
+        "tier": "execution",
+        "path": "skills/goal-design/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "implement",
@@ -370,7 +378,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 15
       },
       {
         "name": "heal-skill",
@@ -483,7 +491,7 @@
         "name": "evolve",
         "path": ".agents/evolve/",
         "purpose": "Evolve skill session outputs",
-        "file_count": 1
+        "file_count": 2
       },
       {
         "name": "findings",
@@ -1241,8 +1249,8 @@
     ]
   },
   "capability_summary": {
-    "total": 144,
-    "skills": 58,
+    "total": 145,
+    "skills": 59,
     "cli_commands": 72,
     "gates": 14,
     "reference_impls": 0
@@ -1810,6 +1818,7 @@
         "ao provenance emit-verdict",
         "ao provenance verify",
         "ao ratchet",
+        "ao session handoff",
         "ao version"
       ],
       "path": "skills/crank/",
@@ -1880,7 +1889,7 @@
         "ao search"
       ],
       "path": "skills/discovery/",
-      "references": 14
+      "references": 15
     },
     {
       "sku": "skill:doc",
@@ -2019,6 +2028,39 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/gc-membrane/",
+      "references": 0
+    },
+    {
+      "sku": "skill:goal-design",
+      "name": "goal-design",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "capability_class": "planning",
+      "purpose": "Create validated goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "operator-goal",
+        "docs/templates/goal-design-intent.md",
+        "docs/templates/goal-design-driver.md"
+      ],
+      "produces": [
+        ".agents/goal-design/<slug>/intent.md",
+        ".agents/goal-design/<slug>/driver.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/goal-design/",
       "references": 0
     },
     {

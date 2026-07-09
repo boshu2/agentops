@@ -36,7 +36,8 @@ repo-root `.agents/` packet.
 ## Readers
 
 - `scripts/check-goal-design-packet.sh` extracts both frontmatter blocks,
-  validates them against the versioned schemas, and checks digest integrity.
+  validates them against the versioned schemas, checks digest integrity, and
+  verifies cross-file identity.
 - `/validate` or an equivalent independent validator reads a checker-clean
   packet before it can file beads, dispatch NTM/Workflow execution, or drive
   implementation work.
@@ -51,11 +52,16 @@ A packet is valid only when all of these are true:
 2. `driver.md` validates against `goal-design-driver.v1`.
 3. `driver.intent_ref.sha256` equals the SHA-256 digest of the current
    `intent.md` bytes in the packet directory.
-4. The driver names independent validation and does not contain self-grading
+4. `driver.slug` equals `intent.slug`, and `driver.intent_ref.path` is the
+   canonical `.agents/goal-design/<slug>/intent.md` path for that packet.
+5. Each `candidate_beads[].behavior` references at least one declared BDD
+   scenario by scenario id, such as `S1`, or by the scenario `name`; unknown
+   scenario ids are invalid.
+6. The driver names independent validation and does not contain self-grading
    language.
-5. Candidate beads name one behavior, one bounded context, one write scope, one
+7. Candidate beads name one behavior, one bounded context, one write scope, one
    first failing proof, and one close signal.
-6. Route-back rules say how validation failures, closed-bead evidence, stale
+8. Route-back rules say how validation failures, closed-bead evidence, stale
    candidates, and contradictory promotion signals change the next decision.
 
 Run:

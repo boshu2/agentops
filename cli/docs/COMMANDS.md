@@ -3753,6 +3753,14 @@ ao pawl [command]
 
 **Subcommands:**
 
+#### `ao pawl doctor`
+
+Read-only standing pawl preflight: assert atm alias, session, pane cwd/model, trust prompts, readiness, and evidence policy
+
+```
+ao pawl doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL] [flags]
+```
+
 #### `ao pawl down`
 
 Tear down the standing pawl-service (no orphan panes)
@@ -3799,6 +3807,14 @@ Route a review packet to the warm cross-family panel; require tier-appropriate a
 
 ```
 ao pawl route <bead> <packet> [pr] [flags]
+```
+
+#### `ao pawl smoke`
+
+Alias for pawl doctor: non-mutating readiness smoke before routing real reviews
+
+```
+ao pawl smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL] [flags]
 ```
 
 #### `ao pawl up`

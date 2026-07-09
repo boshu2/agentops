@@ -23,6 +23,37 @@ case "$common" in
     *) common="$(cd "$common" && pwd)" ;;
 esac
 hooks_dir="${common}/hooks"
+
+# Guard against a hijacked core.hooksPath (recon-2026-07-02 W4 / audit A2). When
+# core.hooksPath is set, git runs THAT dir and IGNORES ${common}/hooks entirely —
+# so a bd install (or any tool) that redirects core.hooksPath at its own dir (e.g.
+# .beads/hooks) leaves the gate we install here INERT: the installer "succeeds"
+# but ao gate never runs on push. Detect it and refuse, so the operator fixes the
+# redirect instead of trusting a gate that will not fire. Opt out with
+# AGENTOPS_ALLOW_HOOKSPATH=1 (installs anyway, knowing the gate stays inert).
+hookspath="$(git config --get core.hooksPath 2>/dev/null || true)"
+if [[ -n "$hookspath" ]]; then
+    case "$hookspath" in
+        /*) resolved_hookspath="$hookspath" ;;
+        *)  resolved_hookspath="$(cd "$repo_root" 2>/dev/null && cd "$hookspath" 2>/dev/null && pwd || echo "$hookspath")" ;;
+    esac
+    if [[ "$resolved_hookspath" != "$hooks_dir" ]]; then
+        echo "!!  core.hooksPath is set to '${hookspath}' (resolved: ${resolved_hookspath})," >&2
+        echo "    but this gate installs into '${hooks_dir}'. git runs the hooksPath dir and" >&2
+        echo "    IGNORES ${hooks_dir} — the gate would be installed but INERT on push." >&2
+        echo "" >&2
+        echo "    Remediation (pick one):" >&2
+        echo "      * git config --unset core.hooksPath      # then re-run this installer" >&2
+        echo "      * or chain scripts/hooks/pre-push.local from '${resolved_hookspath}/pre-push'" >&2
+        echo "    Override (install anyway, gate stays inert): AGENTOPS_ALLOW_HOOKSPATH=1" >&2
+        if [[ "${AGENTOPS_ALLOW_HOOKSPATH:-0}" != "1" ]]; then
+            echo "ERROR: refusing to install an inert gate. Fix core.hooksPath or set AGENTOPS_ALLOW_HOOKSPATH=1." >&2
+            exit 1
+        fi
+        echo "    AGENTOPS_ALLOW_HOOKSPATH=1 set — installing anyway; the gate will NOT run until core.hooksPath is fixed." >&2
+    fi
+fi
+
 mkdir -p "$hooks_dir"
 
 src="${repo_root}/scripts/hooks/pre-push.local"

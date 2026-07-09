@@ -1093,6 +1093,13 @@ else
     run_step "Release binary validation" run_release_binary_validation
 fi
 
+# Build-tag archive mechanism (ADR-0012 / recon-2026-07-02 audit A8): the default
+# build must OMIT the archived command sets and -tags flywheel|legacy must restore
+# them buildably. Cheap (compiles 4 tag variants) and a real bitrot guard, so it
+# runs in every mode — archived satellite code (ao orchestrate/loop/tick/corpus)
+# can no longer silently stop compiling between manual `make verify-buildtags` runs.
+run_step "Build-tag archive mechanism (verify-buildtags)" ./scripts/verify-buildtags.sh
+
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
 run_step_bg "ao init + live-waist smoke" run_init_live_waist_smoke

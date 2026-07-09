@@ -104,10 +104,28 @@ func TestBridgesAutoFixableFlags(t *testing.T) {
 	}
 }
 
+// TestBridgesOpenClawHealthNotConfiguredYieldsNoFinding verifies optional
+// OpenClaw health stays quiet when the bridge has never been activated.
+func TestBridgesOpenClawHealthNotConfiguredYieldsNoFinding(t *testing.T) {
+	repo := t.TempDir()
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
+
+	fs, err := openclawHealthUnreachableDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("findings = %d, want 0 for unconfigured OpenClaw: %+v", len(fs), fs)
+	}
+}
+
 // TestBridgesOpenClawHealthActivationMissing verifies the detector fires the
-// activation-missing sub-case when there is no activation file.
+// activation-missing sub-case when OpenClaw state exists but activation does not.
 func TestBridgesOpenClawHealthActivationMissing(t *testing.T) {
 	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, openclaw.SnapshotDirRel), 0o700); err != nil {
+		t.Fatal(err)
+	}
 	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir(), Online: true}
 
 	fs, err := openclawHealthUnreachableDetector{}.Detect(env)
@@ -171,6 +189,46 @@ func TestBridgesOpenClawHealthUnreachableFixerRefuses(t *testing.T) {
 	}
 	if !strings.Contains(string(body), "OpenClaw") {
 		t.Errorf("report missing OpenClaw remediation guidance: %q", body)
+	}
+}
+
+// TestBridgesSnapshotNotConfiguredYieldsNoFinding verifies an absent optional
+// OpenClaw bridge does not make full doctor fail on a hookless 3.0 checkout.
+func TestBridgesSnapshotNotConfiguredYieldsNoFinding(t *testing.T) {
+	repo := t.TempDir()
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
+
+	fs, err := openclawSnapshotStaleDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(fs) != 0 {
+		t.Fatalf("findings = %d, want 0 for unconfigured OpenClaw: %+v", len(fs), fs)
+	}
+}
+
+// TestBridgesSnapshotActivatedLatestMissingDetects verifies a configured
+// OpenClaw bridge still reports when its snapshot is absent.
+func TestBridgesSnapshotActivatedLatestMissingDetects(t *testing.T) {
+	repo := t.TempDir()
+	actDir := filepath.Join(repo, ".agents", "daemon")
+	if err := os.MkdirAll(actDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(actDir, "activation.json"), []byte(`{"base_url":"http://127.0.0.1:1"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
+
+	fs, err := openclawSnapshotStaleDetector{}.Detect(env)
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(fs) != 1 {
+		t.Fatalf("findings = %d, want 1", len(fs))
+	}
+	if !strings.HasPrefix(fs[0].Evidence.File, "latest_missing:") {
+		t.Errorf("evidence = %q, want latest_missing classification", fs[0].Evidence.File)
 	}
 }
 

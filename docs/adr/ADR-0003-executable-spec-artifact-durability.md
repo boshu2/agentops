@@ -15,7 +15,7 @@ acceptance criteria are durable.
 Today they are not:
 
 - `GOALS.md` is git-tracked. The directive→scenario *link* survives.
-- `ao scenario add` writes scenario JSON to `.agents/holdout/`.
+- `ao eval scenario add` writes scenario JSON to `.agents/holdout/`.
 - Repo-root `.agents/` is **never git-tracked** — `.gitignore` excludes
   `/.agents/` explicitly, and `AGENTS.md` declares it local/private runtime
   state. It was wiped by routine cleanup on 2026-05-07 (Directive 11 /
@@ -38,7 +38,7 @@ Distinguish two scenario lifecycle states and give each a home.
 
 ### 1. `local_holdout` scenarios — stay in `.agents/holdout/`
 
-`ao scenario add` continues to write to `.agents/holdout/`. These are ad hoc,
+`ao eval scenario add` continues to write to `.agents/holdout/`. These are ad hoc,
 agent-isolated holdout scenarios used for evaluation. They are intentionally
 untracked and intentionally unreadable by implementing agents. Nothing about
 the holdout workflow changes.

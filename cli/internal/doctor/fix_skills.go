@@ -562,6 +562,7 @@ func staleRefScanGlobs(repo string) []string {
 		filepath.Join(repo, "skills", "*", "SKILL.md"),
 		filepath.Join(repo, "skills", "*", "references", "*.md"),
 		filepath.Join(repo, "skills-codex", "*", "SKILL.md"),
+		filepath.Join(repo, "skills-codex", "*", "references", "*.md"),
 		filepath.Join(repo, "skills-codex-overrides", "*", "*.md"),
 		filepath.Join(repo, "docs", "*.md"),
 		filepath.Join(repo, "docs", "*", "*.md"),

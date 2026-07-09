@@ -535,6 +535,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Auto-generated parity twin (codex-sync): skills/using-gc is the source of truth; no durable Codex-specific divergence yet."
+    },
+    {
+      "name": "goal-design",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Goal-design packet authoring is a shared loop input with Codex helper usage and checker handoff."
     }
   ]
 }

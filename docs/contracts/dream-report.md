@@ -185,7 +185,7 @@ them `pending`.
 | `evidence` | array of strings | `["retrieval coverage=0.33"]` | Concrete supporting evidence |
 | `target_files` | array of strings | `["cli/cmd/ao/overnight.go"]` | Candidate files to inspect first |
 | `likely_tests` | array of strings | `["cli/cmd/ao/overnight_test.go"]` | Likely tests to run or extend |
-| `morning_command` | string | `"ao rpi phased \"Repair Dream retrieval coverage\""` | Exact morning execution command |
+| `morning_command` | string | `"/rpi \"Repair Dream retrieval coverage\""` (the pre-3.0 `ao rpi phased` form was **removed** in 3.0; packets now drive the seven-move operating loop via the in-session `/rpi` skill) | Exact morning execution command |
 | `bead_id` | string | `"na-1234"` | Linked bead when br/bead sync succeeds |
 | `artifact_path` | string | `".../morning-packets/01-....json"` | Per-packet artifact path |
 

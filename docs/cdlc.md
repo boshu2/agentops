@@ -18,7 +18,7 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
 | Postmortems | Automated postmortems (`/post-mortem` → learnings) |
 | Runbooks | Skills + planning rules |
-| Software factories | The in-session loop (`ao rpi`, `/evolve`) run out of session on an orchestration substrate (reference: NTM + MCP + managed-agents) |
+| Software factories | The in-session operating loop (driven by `/rpi` + `/evolve`; the `ao rpi` CLI engine was **removed** in 3.0) run out of session on an orchestration substrate (reference: NTM + MCP + managed-agents) |
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
@@ -207,7 +207,7 @@ Monitor whether delivered context produces good outcomes.
 - SkillLoadEvent + session-outcome — link "what was loaded" to "how it went"
 - Citation tracking — `.agents/ao/citations.jsonl` records every artifact retrieval
 - Context monitor — track context window usage and budget
-- `ao session-outcome` — compute session reward signal from transcript patterns
+- `ao eval session-outcome` — compute session reward signal from transcript patterns
 
 Observation is the phase that closes the gap between "we shipped context" and "the context worked." Every PR rejection is feedback on context. Every user correction is a signal. Every production failure in generated code traces back to missing context.
 

@@ -4,7 +4,7 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│   58 Skills       │   76 CLI Commands    │   Hookless (CI-gated) │
+│   59 Skills       │   76 CLI Commands    │   Hookless (CI-gated) │
 │  (workflows)      │  (ao binary)         │  (validate.yml)       │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
@@ -123,8 +123,8 @@ ao flywheel / compile  (explicit command — no auto-hook)
 KNOWLEDGE FLYWHEEL          VALIDATION GATES         SESSION / LIFECYCLE
 ──────────────────          ────────────────         ───────────────────
 ao forge                    ao gate pending          ao session close
-ao pool ingest              ao gate approve          ao rpi status
-ao pool promote             ao gate reject           ao rpi cancel
+ao pool ingest              ao gate approve          ao session bootstrap
+ao pool promote             ao gate reject           ao gate check
 ao lookup                   ao ratchet status        ao session bootstrap
 ao lookup                   ao ratchet record        ao config
 ao search                   ao ratchet check
@@ -189,4 +189,4 @@ post-mortem          crank                  goals               standards
 
 ---
 
-*58 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*
+*59 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*

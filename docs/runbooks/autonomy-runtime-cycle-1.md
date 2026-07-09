@@ -2,17 +2,17 @@
 
 **Date:** 2026-05-20
 **Scope:** Safe activation of AgentOps cycle-1 in-session autonomy surfaces: RPI
-phased runs and `ao evolve` supervisor loops.
+phased runs and `/evolve` supervisor loops.
 
 > **3.0 note:** the daemon-backed job-execution lane this runbook originally
 > covered (`ao daemon jobs submit`, the `agentopsd` control plane) was **removed**
 > in the AgentOps 3.0 rearchitecture — AgentOps is in-session only and ships no
 > daemon of its own (see
 > [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The in-session
-> loop (`ao rpi`, `ao evolve`) runs end-to-end in a plain session; to run it
+> loop (`/rpi`, `/evolve`) runs end-to-end in a plain session; to run it
 > unattended out of session, dispatch it on the **reference substrate**
 > (NTM + MCP + managed-agents) — an NTM swarm (or a lead agent) slings ready
-> beads to workers that run `ao rpi`. This
+> beads to workers that run `/rpi`. This
 > runbook now covers the in-session surfaces only.
 
 ## Activation
@@ -25,19 +25,19 @@ phased runs and `ao evolve` supervisor loops.
    - `docs/contracts/rpi-run-registry.md`
    - `docs/documentation-index.md` references the RPI contracts.
 4. Execute the target RPI run in dry/safe mode first and confirm no regressions in run artifacts and the bead ledger:
-   - `ao rpi phased --dry-run "<goal>"` for one explicit run
-   - `ao evolve --dry-run --max-cycles 1 "<goal>"` for the supervisor loop surface
-   - `ao evolve --dream-only` for knowledge-only cycles
-   - `ao rpi status` to inspect produced artifacts.
+   - `/rpi --dry-run "<goal>"` for one explicit run
+   - `/evolve --dry-run --max-cycles 1 "<goal>"` for the supervisor loop surface
+   - `/evolve --dream-only` for knowledge-only cycles
+   - `BEADS_DIR="$(ao beads dir)" br show <id>` to inspect produced artifacts.
 
 ## Feature Flags
 
 Cycle-1 runtime controls are in-session command flags:
 
-- `ao evolve --supervisor=true` is the default supervised loop posture.
-- `ao evolve --max-cycles <n>` bounds autonomous iterations.
-- `ao evolve --dream-first` / `--dream-only` limits work to knowledge compounding before or instead of code cycles.
-- `ao rpi phased --runtime <name>` and `--runtime-cmd <cmd>` select the worker runtime for phased execution.
+- `/evolve --supervisor=true` is the default supervised loop posture.
+- `/evolve --max-cycles <n>` bounds autonomous iterations.
+- `/evolve --dream-first` / `--dream-only` limits work to knowledge compounding before or instead of code cycles.
+- `/rpi --runtime <name>` and `--runtime-cmd <cmd>` select the worker runtime for phased execution.
 
 Activation rule:
 
@@ -66,7 +66,7 @@ Verify lifecycle and orchestration evidence via:
 1. RPI / bead events include the relevant lifecycle markers and payload fields.
    - RPI phased state and artifacts live under `.agents/rpi/`.
    - Out-of-session job events (when dispatched on the substrate) are inspectable through the substrate's own event surface, not an AgentOps daemon.
-2. RPI run ledger / bead store contains attempt records for affected beads (`BEADS_DIR="$(ao beads dir)" br show <id>`, `ao rpi status`).
+2. RPI run ledger / bead store contains attempt records for affected beads (`BEADS_DIR="$(ao beads dir)" br show <id>`).
 3. RPI tests pass:
    - `cd cli && go test ./internal/rpi/...`
 4. Autonomy smoke remains green:
@@ -84,8 +84,8 @@ Verify lifecycle and orchestration evidence via:
 | Concern | AgentOps surface |
 |---|---|
 | CLI | `ao <cmd>` |
-| One bounded autonomy run | `ao rpi phased "<goal>"` |
-| Supervised loop | `ao evolve --max-cycles <n> "<goal>"` or `ao rpi loop` |
+| One bounded autonomy run | `/rpi "<goal>"` |
+| Supervised loop | `/evolve --max-cycles <n> "<goal>"` or `/evolve` |
 | Work claim | `BEADS_DIR="$(ao beads dir)" br update <id> --claim` |
 | Validation | `/vibe`, `/council`, `ao goals validate`, `scripts/ci-local-release.sh` |
 | Knowledge extraction | `ao forge` |
