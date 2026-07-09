@@ -56,3 +56,98 @@ setup() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"slug mismatch"* ]]
 }
+
+@test "prompt emits a small dispatch prompt for a validated packet" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new dispatch-packet \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Emit a dispatch prompt for goal APIs" \
+        --scenario-name "Emit a dispatch prompt for goal APIs" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/dispatch-packet"
+
+    sed -i.bak 's/^status: draft$/status: validated/' "$packet/intent.md" "$packet/driver.md"
+    rm -f "$packet/intent.md.bak" "$packet/driver.md.bak"
+    "$TOOL" refresh-digest "$packet" >/dev/null
+
+    run "$TOOL" prompt "$packet"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"$packet/intent.md"* ]]
+    [[ "$output" == *"$packet/driver.md"* ]]
+    [[ "$output" == *"first_failing_proof"* ]]
+    [[ "$output" == *"B1"* ]]
+    [ "${#output}" -lt 4000 ]
+}
+
+@test "prompt refuses a draft packet without --allow-draft" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new draft-dispatch \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Refuse to dispatch a draft packet" \
+        --scenario-name "Refuse to dispatch a draft packet" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/draft-dispatch"
+
+    run "$TOOL" prompt "$packet"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"not validated"* ]]
+
+    run "$TOOL" prompt "$packet" --allow-draft
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"DRAFT"* ]]
+}
+
+@test "prompt fails closed when over the max-chars budget" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new oversize-dispatch \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Overflow the dispatch prompt budget" \
+        --scenario-name "Overflow the dispatch prompt budget" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/oversize-dispatch"
+
+    run "$TOOL" prompt "$packet" --allow-draft --max-chars 50
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"max-chars"* ]]
+}
+
+@test "prompt cannot raise or disable the goal-API ceiling via --max-chars" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new ceiling-dispatch \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Hold the goal-API prompt ceiling" \
+        --scenario-name "Hold the goal-API prompt ceiling" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/ceiling-dispatch"
+
+    run "$TOOL" prompt "$packet" --allow-draft --max-chars 5000
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"1..4000"* ]]
+
+    run "$TOOL" prompt "$packet" --allow-draft --max-chars 0
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"1..4000"* ]]
+}
+
+@test "prompt refuses a checker-dirty packet (stale digest after intent edit)" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new stale-dispatch \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Refuse to dispatch a stale packet" \
+        --scenario-name "Refuse to dispatch a stale packet" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/stale-dispatch"
+    sed -i.bak 's/^status: draft$/status: validated/' "$packet/intent.md" "$packet/driver.md"
+    rm -f "$packet/intent.md.bak" "$packet/driver.md.bak"
+    "$TOOL" refresh-digest "$packet" >/dev/null
+
+    printf '\nStale-making edit.\n' >> "$packet/intent.md"
+    run "$TOOL" prompt "$packet"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"checker failed"* ]]
+}
