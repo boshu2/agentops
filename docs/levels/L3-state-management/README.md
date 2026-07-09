@@ -50,4 +50,4 @@ BEADS_DIR="$(ao beads dir)" br sync --flush-only        # Export the git-JSONL l
 
 ## Next Level
 
-Once comfortable with issue tracking, progress to [L4-parallelization](../L4-parallelization/) to execute waves.
+Once comfortable with issue tracking, progress to [L4-parallelization](../L4-parallelization/README.md) to execute waves.

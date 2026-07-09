@@ -9,7 +9,7 @@
 ## The rule
 
 1. About to take an action? Check it against the pawl list **and the [blast-radius rule](#the-blast-radius-rule-the-list-is-examples-not-the-boundary)** below.
-2. **A pawl (on the list, OR it trips any clause of the blast-radius rule) → fire the gate** ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)): an independent **fresh-context** reviewer (a separate invocation, no shared accumulated context with the author) must confirm before the action proceeds. Fail-closed (ambiguity → hold, never silent-proceed). Fresh-context is the **default** diversity mode; a pawl can be **opted up to multi-model** (≥2 model families) per the [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default) section below.
+2. **A pawl (on the list, OR it trips any clause of the blast-radius rule) → fire the gate** ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)): an independent **fresh-context** reviewer (a separate invocation, no shared accumulated context with the author) must confirm before the action proceeds. Fail-closed (ambiguity → hold, never silent-proceed). Fresh-context is the **default** diversity mode; a pawl can be **opted up to multi-model** (≥2 model families) per the [Diversity mode](#diversity-mode-per-pawl-fresh-context-by-default) section below.
 3. **Not a pawl (not on the list AND it trips no clause of the blast-radius rule) → chaos.** Just run it. No gate, no review, no ceremony. Iterate as wrong as you want between pawls — the pawls **reduce irreversible regression to the known one-way doors**, so between them you only ever touch state you can recover. (The list is the common instances; the **rule** is the authority — if an action trips a clause but isn't listed, it is still a pawl, and it's a missing list entry to add.)
 
 Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It makes every wrong turn expensive and kills the cheap iteration that makes agents productive. The ratchet works **because** the pawls are few and sit only at the irreversible points. Adding a pawl is adding a tread you now validate — do it only when the action is genuinely one-way.
@@ -24,10 +24,10 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 | **schema / contract change** | Changing an interface, schema, or contract other code/agents depend on; regenerating a factory surface; repointing a contract test or canary | Downstream consumers break silently — "looks fine here" ≠ fine for them | [`scope`](../../skills/scope/SKILL.md) (frozen dirs) · contract-canary gates |
 | **credential / authority change** | Granting access, rotating or overwriting a credential, changing permissions or who-can-do-what | A granted/leaked credential or authority can't be cleanly un-granted; trust changes propagate | [`dcg`](../../skills/dcg/SKILL.md) · `claude-acct` fail-closed verify |
 | **spend** | Actions that cost real money or burn quota at scale: paid API runs, large agent fan-outs, deploys that bill | Money/quota is spent; you can't un-spend it | *(partial: fan-out consent)* |
-| **plan-pawl** *(`multi-model`)* | Committing a **fanout-class / irreversible discovery plan** — an architecture fork, a one-way-door decision, a contract/coordination change — *before* the fan-out builds on it | Once N agents (or one expensive wave) build on the wrong plan SHAPE, the direction is costly-to-impossible to reverse; the plan is the architecture, and the architecture is the one-way door | the SAME enforcement as every pawl — the [`multi-model` diversity mode](#diversity-mode--per-pawl-fresh-context-by-default) (fresh-context floor **plus** ≥2 families) + [REFUTED→auto-redo loop + circuit-breaker](#escalation--the-circuit-breaker-model) **verbatim**, written through `schemas/pawl-verdict.v1.schema.json`. Invoked by the [`discovery`](../../skills/discovery/SKILL.md) skill's plan-pawl **duel** over the plan artifact (the consumer-side wiring is delivered by epic `age-plan-pawl-9yib`) |
+| **plan-pawl** *(`multi-model`)* | Committing a **fanout-class / irreversible discovery plan** — an architecture fork, a one-way-door decision, a contract/coordination change — *before* the fan-out builds on it | Once N agents (or one expensive wave) build on the wrong plan SHAPE, the direction is costly-to-impossible to reverse; the plan is the architecture, and the architecture is the one-way door | the SAME enforcement as every pawl — the [`multi-model` diversity mode](#diversity-mode-per-pawl-fresh-context-by-default) (fresh-context floor **plus** ≥2 families) + [REFUTED→auto-redo loop + circuit-breaker](#escalation-the-circuit-breaker-model) **verbatim**, written through `schemas/pawl-verdict.v1.schema.json`. Invoked by the [`discovery`](../../skills/discovery/SKILL.md) skill's plan-pawl **duel** over the plan artifact (the consumer-side wiring is delivered by epic `age-plan-pawl-9yib`) |
 
 > **Scope note (plan-pawl).** The plan-pawl gates the plan's **SHAPE**, never behavior — it is the
-> [`multi-model`](#diversity-mode--per-pawl-fresh-context-by-default) mode applied to the discovery
+> [`multi-model`](#diversity-mode-per-pawl-fresh-context-by-default) mode applied to the discovery
 > *plan artifact* instead of a code diff (recombination + naming, not a new engine). It **never**
 > replaces the acceptance-test layer: a clean cross-family plan review still misses defects only a
 > running test catches (the 2026-06-12 auth-bypass learning). It is **risk-class-gated** — ON for
@@ -36,7 +36,7 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 > cross-family-review gates (the single-judge fanout approval + the pre-mortem council) into one gate
 > — that consumer-side fusion is wired into the discovery skill by epic `age-plan-pawl-9yib` (this
 > contract row defines the pawl + its governance; it does not itself edit the discovery skill). The escalation governor (auto-redo on REFUTED;
-> human only on a tripped circuit breaker) is the [circuit-breaker model](#escalation--the-circuit-breaker-model) above, unchanged.
+> human only on a tripped circuit breaker) is the [circuit-breaker model](#escalation-the-circuit-breaker-model) above, unchanged.
 
 ## The blast-radius rule (the list is examples, not the boundary)
 
@@ -198,7 +198,7 @@ The model has two layers: a **default auto-redo loop**, and a set of **tunable c
 
 This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl and auto-redoes on REFUTED; pulling a human in is the exception that fires only when a tunable circuit breaker trips — and until the human acts, the pawl **holds**.
 
-> **Scope note (threat model).** The pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by reviewer(s) meeting the pawl's **diversity mode** — fresh-context (≥1 fresh red-team, model-agnostic) by default, or multi-model (the fresh-context floor **plus** ≥2 roster-validated families — strictly stronger) where a pawl is opted up (see [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default)).
+> **Scope note (threat model).** The pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by reviewer(s) meeting the pawl's **diversity mode** — fresh-context (≥1 fresh red-team, model-agnostic) by default, or multi-model (the fresh-context floor **plus** ≥2 roster-validated families — strictly stronger) where a pawl is opted up (see [Diversity mode](#diversity-mode-per-pawl-fresh-context-by-default)).
 
 ## Directive precedence — autonomy never overrides a human gate
 
@@ -208,7 +208,7 @@ A pawl **HOLD** (the merge held on a breaker trip, above) and a **human STOP/KIL
 the boundary: **no drive directive overrides a HOLD or a human STOP**, and "be autonomous" is *never* authorization to
 self-approve a door a human deliberately gated.
 
-- The two HOLD senses are distinct: a **breaker-HOLD** holds the *merge* until a breaker clears (the [Escalation](#escalation--the-circuit-breaker-model) model above); a **human STOP marker** halts the *loop* (the evolve Red Button / [`halt-check.sh`](../../scripts/evolve/halt-check.sh) — pre-cycle, mechanical, "not prose the agent can rationalize past"). Neither is overridable by a drive directive.
+- The two HOLD senses are distinct: a **breaker-HOLD** holds the *merge* until a breaker clears (the [Escalation](#escalation-the-circuit-breaker-model) model above); a **human STOP marker** halts the *loop* (the evolve Red Button / [`halt-check.sh`](../../scripts/evolve/halt-check.sh) — pre-cycle, mechanical, "not prose the agent can rationalize past"). Neither is overridable by a drive directive.
 - This **generalizes the evolve Red Button to the in-session path**: an explicit human-authorization gate (a typed ACK on an irreversible action) is a marker in the boundary — an active drive directive does not consume or satisfy it. A drive loop may re-enter and re-present the gate; it does not cross it. Crossing requires the marker cleared by the human, not by the directive that said "keep going".
 
 ## Adding a pawl
@@ -230,7 +230,7 @@ The cross-family pawl can run as a **standing warm service** (`ao pawl up` — c
 
 ## Strict two-family cold quorum — the portable `multi-model` door (age-rk3r.13)
 
-The [`multi-model`](#diversity-mode--per-pawl-fresh-context-by-default) mode above is the strongest
+The [`multi-model`](#diversity-mode-per-pawl-fresh-context-by-default) mode above is the strongest
 diversity requirement, and until now the only place it ran *portably* was the warm tri-family duel
 (operator machinery). **`ao verify --strict`** (or the `strict: true` key in `.aoverify.yaml` →
 `PAWL_STRICT`) is the **cold, portable** `multi-model` door: it runs **two DISTINCT strict-eligible

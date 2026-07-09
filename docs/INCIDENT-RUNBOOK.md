@@ -10,7 +10,7 @@
 1. [Emergency Kill Switches](#1-emergency-kill-switches)
 2. [Scenario A: Broken Skills After Update](#2-scenario-a-broken-skills-after-update)
 3. [Scenario B: Evolve Pushed Bad Code to Main](#3-scenario-b-evolve-pushed-bad-code-to-main)
-4. [Scenario C: Skills Not Loading / CI Gate Failing](#4-scenario-c-skills-not-loading--ci-gate-failing)
+4. [Scenario C: Skills Not Loading / CI Gate Failing](#4-scenario-c-skills-not-loading-ci-gate-failing)
 5. [Rollback Options](#5-rollback-options)
 6. [Root Cause Analysis](#6-root-cause-analysis)
 7. [Prevention Checklist](#7-prevention-checklist)
@@ -31,7 +31,7 @@ echo "incident $(date -Iseconds)" > ~/.config/evolve/KILL
 > session start, so there is no global "disable hooks" recovery step to take. Orientation is
 > explicit (`ao session bootstrap`, `ao inject`) and CI (`.github/workflows/validate.yml`) is the
 > authoritative gate. If you authored your own hooks via the `hooks-authoring` skill, see the
-> note under [Scenario C](#4-scenario-c-skills-not-loading--ci-gate-failing) for how to disable them.
+> note under [Scenario C](#4-scenario-c-skills-not-loading-ci-gate-failing) for how to disable them.
 
 ---
 

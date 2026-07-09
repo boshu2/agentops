@@ -107,7 +107,7 @@ scripts/docs-build.sh --serve
 
 MkDocs-specific expectations:
 
-- Every internal link must resolve. `mkdocs build --strict` fails on unresolved relative links; `tests/docs/validate-links.sh` catches the same class without a Python toolchain.
+- Every internal link must resolve. `mkdocs build --strict` fails on unresolved relative links; `tests/docs/validate-links.sh` catches the same class without a Python toolchain. `--check` tolerates only the enumerated, intentional cross-references in `tests/docs/mkdocs-strict-allowlist.txt` (docs pages linking to real repo artifacts outside the site) — see [Docs-Build Dispositions](docs-build-dispositions.md); any *other* strict warning fails the build, so fix the link rather than silencing it.
 - Skill pages and the CLI reference are **generated at build time** from `skills/**/SKILL.md` and `cli/docs/COMMANDS.md` respectively — do not hand-author `docs/skills/*.md` or `docs/cli/commands.md`.
 - Navigation is declared in `mkdocs.yml` under `nav:`. New top-level docs need an entry there.
 

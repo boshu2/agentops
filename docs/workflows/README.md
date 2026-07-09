@@ -88,7 +88,7 @@ tree.
 **When to use:** Coordinating N autonomous workers through shared memory (stigmergy) without central orchestration.
 **Complexity:** High (advanced, multi-session)
 **Key skills:** /swarm
-**Deep dive:** [meta-observer/](meta-observer/) (pattern guide, examples, showcase)
+**Deep dive:** [meta-observer/](meta-observer/README.md) (pattern guide, examples, showcase)
 
 ## Flowchart
 
