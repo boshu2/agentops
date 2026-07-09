@@ -787,3 +787,318 @@ func TestRunMembraneTriage_InsufficientDataBelowFloor(t *testing.T) {
 		t.Fatalf("INSUFFICIENT-DATA must explain the honest stance, got:\n%s", out)
 	}
 }
+
+// ── age-ulab: --evidence reason-extraction + domain/paths resolution ─────────
+// These port emit_pawl_catch's bash two-tier salvage into Go; the fixtures are
+// the exact evidence shapes pawl-review produces (sentinel, routed multi-family,
+// prose finding, neither).
+
+// extractRefutedReason applies the two-tier REFUTED reason salvage: tier 1 is
+// the last `VERDICT: REFUTED <text>` sentinel line (prefix stripped, 200-char
+// cap); tier 2 (when tier 1 yields nothing) is the first substantive
+// `REFUTED: <finding>` prose line that is neither a routed `PAWL <nonce>
+// REFUTED` sentinel nor a VERDICT line. Empty when neither tier hits.
+func TestExtractRefutedReason_TwoTierSalvage(t *testing.T) {
+	long := strings.Repeat("x", 250)
+	cases := []struct {
+		name     string
+		evidence string
+		want     string
+	}{
+		{
+			name:     "tier1 single-reviewer sentinel with trailing reason",
+			evidence: "Reviewed the diff.\nVERDICT: REFUTED — the gate fails open on empty input\n",
+			want:     "the gate fails open on empty input",
+		},
+		{
+			name:     "tier1 last sentinel wins over earlier ones",
+			evidence: "VERDICT: REFUTED first finding\nsome analysis\nVERDICT: REFUTED second finding\n",
+			want:     "second finding",
+		},
+		{
+			name:     "tier1 colon separator and indentation tolerated, case-insensitive",
+			evidence: "  verdict: refuted: The Gate Lies\n",
+			want:     "The Gate Lies",
+		},
+		{
+			name:     "tier1 caps the reason at 200 chars",
+			evidence: "VERDICT: REFUTED " + long + "\n",
+			want:     long[:200],
+		},
+		{
+			name: "tier2 multi-family prose finding (routed sentinel carries no reason)",
+			evidence: "family codex says:\n" +
+				"REFUTED: the audit fails open when the ledger is missing\n" +
+				"PAWL r123 REFUTED\n",
+			want: "the audit fails open when the ledger is missing",
+		},
+		{
+			name: "tier2 skips routed sentinels and VERDICT lines",
+			evidence: "PAWL rdeadbeef REFUTED\n" +
+				"the final VERDICT: REFUTED: not this one\n" +
+				"REFUTED: silent error swallowing in the retry loop\n",
+			want: "silent error swallowing in the retry loop",
+		},
+		{
+			name:     "tier2 strips greedily through the last REFUTED marker (bash sed parity)",
+			evidence: "codex REFUTED: the check REFUTED: twice\n",
+			want:     "twice",
+		},
+		{
+			name:     "bare sentinel with no trailing text falls through to tier2 prose",
+			evidence: "VERDICT: REFUTED\nREFUTED: the embedded copy drifted from source\n",
+			want:     "the embedded copy drifted from source",
+		},
+		{
+			name:     "neither tier hits -> empty (caller applies the placeholder)",
+			evidence: "Reviewed. All checks pass.\nVERDICT: CONFIRMED\n",
+			want:     "",
+		},
+		{
+			name:     "empty evidence -> empty",
+			evidence: "",
+			want:     "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := extractRefutedReason(tc.evidence); got != tc.want {
+				t.Fatalf("extractRefutedReason() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// makeCatchEvidenceRepo builds a temp git repo with committed files under two
+// top dirs and returns (root, headSHA). The commit shape drives domain-from-
+// top-dir + paths-from-git resolution.
+func makeCatchEvidenceRepo(t *testing.T, files map[string]string) (string, string) {
+	t.Helper()
+	root := realPathForTest(t, t.TempDir())
+	initHistoryFixtureGitRepo(t, root)
+	for name, content := range files {
+		abs := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(abs, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	runFixtureGit(t, root, nil, "add", "-A")
+	runFixtureGit(t, root, nil, "commit", "-m", "fixture")
+	head := strings.TrimSpace(runFixtureGit(t, root, nil, "rev-parse", "HEAD"))
+	return root, head
+}
+
+// setMembraneCatchFlags sets the shared cobra flag globals for one
+// runMembraneCatch invocation and restores ALL of them via t.Cleanup
+// (.claude/rules/go.md test-isolation rule).
+func setMembraneCatchFlags(t *testing.T, set func()) {
+	t.Helper()
+	ob, od, orr, ocl := membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass
+	op, odet, ohd, omo := membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode
+	oev, osc := membraneCatchEvidence, membraneCatchScope
+	t.Cleanup(func() {
+		membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = ob, od, orr, ocl
+		membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = op, odet, ohd, omo
+		membraneCatchEvidence, membraneCatchScope = oev, osc
+	})
+	membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = "", "", "", ""
+	membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = nil, "", "", ""
+	membraneCatchEvidence, membraneCatchScope = "", "head"
+	membraneCatchCmd.SetOut(&bytes.Buffer{})
+	t.Cleanup(func() { membraneCatchCmd.SetOut(nil) })
+	set()
+}
+
+// `ao membrane catch --evidence` extracts the reason from the evidence file and
+// resolves domain (first path component of the first changed file) + affected
+// paths (changed files) from git at --head. (age-ulab)
+func TestMembraneCatch_EvidenceExtractsReasonDomainPaths(t *testing.T) {
+	root, head := makeCatchEvidenceRepo(t, map[string]string{
+		"scripts/a.sh": "echo a\n",
+		"scripts/b.sh": "echo b\n",
+	})
+	evidence := filepath.Join(root, "evidence.txt")
+	if err := os.WriteFile(evidence, []byte("Reviewed.\nVERDICT: REFUTED — reads the wrong ledger path\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t1"
+		membraneCatchEvidence = evidence
+		membraneCatchHead = head
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("runMembraneCatch: %v", err)
+	}
+	l, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("want 1 catch class, got %d", len(catches))
+	}
+	c := catches[0]
+	if c.Reason != "reads the wrong ledger path" {
+		t.Fatalf("reason = %q, want the extracted sentinel text", c.Reason)
+	}
+	if c.Domain != "scripts" {
+		t.Fatalf("domain = %q, want first path component of first changed file (scripts)", c.Domain)
+	}
+	wantPaths := []string{"scripts/a.sh", "scripts/b.sh"}
+	if len(c.AffectedPaths) != len(wantPaths) || c.AffectedPaths[0] != wantPaths[0] || c.AffectedPaths[1] != wantPaths[1] {
+		t.Fatalf("affected paths = %v, want %v", c.AffectedPaths, wantPaths)
+	}
+}
+
+// Multi-family evidence: the routed `PAWL <nonce> REFUTED` sentinel carries no
+// reason — the substantive `REFUTED: <finding>` prose line is salvaged. (age-9931 parity)
+func TestMembraneCatch_EvidenceMultiFamilyProseSalvage(t *testing.T) {
+	root, head := makeCatchEvidenceRepo(t, map[string]string{"cli/x.go": "package x\n"})
+	evidence := filepath.Join(root, "evidence.txt")
+	body := "family gemini:\nREFUTED: the audit fails open when the head sha is unbound\nPAWL r123 REFUTED\n"
+	if err := os.WriteFile(evidence, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t2"
+		membraneCatchEvidence = evidence
+		membraneCatchHead = head
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("runMembraneCatch: %v", err)
+	}
+	l, _ := yieldledger.Load(root)
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 || catches[0].Reason != "the audit fails open when the head sha is unbound" {
+		t.Fatalf("multi-family prose salvage failed; got %+v", catches)
+	}
+	if catches[0].Domain != "cli" {
+		t.Fatalf("domain = %q, want cli", catches[0].Domain)
+	}
+}
+
+// Evidence with neither tier -> the placeholder reason (never an empty reason,
+// which would land in the UNCLASSIFIED floor with no text at all).
+func TestMembraneCatch_EvidencePlaceholderWhenNoRefutedText(t *testing.T) {
+	root, head := makeCatchEvidenceRepo(t, map[string]string{"docs/y.md": "hi\n"})
+	evidence := filepath.Join(root, "evidence.txt")
+	if err := os.WriteFile(evidence, []byte("clean review, nothing refuted\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t3"
+		membraneCatchEvidence = evidence
+		membraneCatchHead = head
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("runMembraneCatch: %v", err)
+	}
+	l, _ := yieldledger.Load(root)
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 || catches[0].Reason != "pawl-review REFUTED (see evidence)" {
+		t.Fatalf("want placeholder reason, got %+v", catches)
+	}
+}
+
+// A caller-supplied --reason (and --domain/--paths) wins over extraction —
+// explicit orchestrator intent beats the salvage heuristics.
+func TestMembraneCatch_EvidenceCallerFlagsWin(t *testing.T) {
+	root, head := makeCatchEvidenceRepo(t, map[string]string{"scripts/z.sh": "echo z\n"})
+	evidence := filepath.Join(root, "evidence.txt")
+	if err := os.WriteFile(evidence, []byte("VERDICT: REFUTED — extracted text must lose\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t4"
+		membraneCatchEvidence = evidence
+		membraneCatchHead = head
+		membraneCatchReason = "explicit caller reason"
+		membraneCatchDomain = "pawl"
+		membraneCatchPaths = []string{"scripts/other.sh"}
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("runMembraneCatch: %v", err)
+	}
+	l, _ := yieldledger.Load(root)
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 {
+		t.Fatalf("want 1 catch, got %d", len(catches))
+	}
+	c := catches[0]
+	if c.Reason != "explicit caller reason" || c.Domain != "pawl" {
+		t.Fatalf("caller flags must win over extraction; got %+v", c)
+	}
+	if len(c.AffectedPaths) != 1 || c.AffectedPaths[0] != "scripts/other.sh" {
+		t.Fatalf("caller --paths must win, got %v", c.AffectedPaths)
+	}
+}
+
+// --scope staged resolves domain/paths from the index (git diff --cached), the
+// same seam pawl-review uses for scope=staged reviews.
+func TestMembraneCatch_EvidenceStagedScope(t *testing.T) {
+	root, head := makeCatchEvidenceRepo(t, map[string]string{"docs/base.md": "base\n"})
+	// Stage (do not commit) a new file under a DIFFERENT top dir.
+	abs := filepath.Join(root, "cli", "staged.go")
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(abs, []byte("package staged\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runFixtureGit(t, root, nil, "add", "cli/staged.go")
+	evidence := filepath.Join(root, "evidence.txt")
+	if err := os.WriteFile(evidence, []byte("VERDICT: REFUTED — staged change refuted\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	origProjectDir := testProjectDir
+	testProjectDir = root
+	t.Cleanup(func() { testProjectDir = origProjectDir })
+
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t5"
+		membraneCatchEvidence = evidence
+		membraneCatchHead = head
+		membraneCatchScope = "staged"
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err != nil {
+		t.Fatalf("runMembraneCatch: %v", err)
+	}
+	l, _ := yieldledger.Load(root)
+	catches := yieldledger.DetectCatches(l)
+	if len(catches) != 1 || catches[0].Domain != "cli" {
+		t.Fatalf("staged scope must resolve domain from the index; got %+v", catches)
+	}
+	if len(catches[0].AffectedPaths) != 1 || catches[0].AffectedPaths[0] != "cli/staged.go" {
+		t.Fatalf("staged paths = %v, want [cli/staged.go]", catches[0].AffectedPaths)
+	}
+}
+
+// Without --evidence the original contract is unchanged: --bead, --domain and
+// --reason are all required.
+func TestMembraneCatch_NoEvidenceStillRequiresDomainReason(t *testing.T) {
+	setMembraneCatchFlags(t, func() {
+		membraneCatchBead = "age-ulab-t6"
+	})
+	if err := runMembraneCatch(membraneCatchCmd, nil); err == nil {
+		t.Fatal("catch without --evidence and without --domain/--reason must error")
+	}
+}
