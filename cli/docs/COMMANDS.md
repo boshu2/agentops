@@ -4432,6 +4432,22 @@ ao yield gauge --run <id> [--json] [--c-delta <float>] [flags]
       --run string      factory run/cycle id to compute gauges for (required)
 ```
 
+#### `ao yield report`
+
+Print what an autonomous loop did — and what it parked for you — without
+
+```
+ao yield report [--since <RFC3339|duration>] [--json] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for report
+      --json           emit the full report struct as JSON
+      --since string   cutoff: an RFC3339 instant or a duration lookback like 8h (default 24h)
+```
+
 #### `ao yield tokens`
 
 Parse a Claude Code or Codex session transcript and sum the real token

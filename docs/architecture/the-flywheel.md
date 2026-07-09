@@ -150,7 +150,7 @@ a defect class *before* it reaches the pawl. Detail + honest status:
 | Small-batch-by-Gherkin enforcement | **specced** | `age-74yi` |
 | Goal-crafting skill | **specced** | `age-znst` |
 | Close-time learning checkpoint | **landed** | crank Land Loop "Close checkpoint" + implement close rule (`age-cysr`) |
-| Async governance surface (yield + andon) | **specced** | `age-mv67` |
+| Async governance surface (yield + andon) | **landed** | `ao yield report` (`age-mv67`) |
 | gc as autonomous substrate | **exists**, composition proven | the gc adoption arc |
 
 This doc will be wrong the moment a slice teaches us something — which is the point. It is a

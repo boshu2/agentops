@@ -71,6 +71,10 @@ var writerResetHelpers = map[string]bool{
 	// out-writer (SetOut(nil)) — the SAME command every `ao membrane digest` test
 	// sets — so a SetOut after it is guarded (age-xbmf).
 	"setDigestProjectDir": true,
+	// setYieldReportState registers a t.Cleanup that resets yieldReportCmd's
+	// out/err writers — the SAME command every `ao yield report` test sets
+	// (age-mv67, mirroring the setDigestProjectDir precedent).
+	"setYieldReportState": true,
 }
 
 func writerResetHelperNames() []string {
