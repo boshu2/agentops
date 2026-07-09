@@ -261,4 +261,5 @@
 | `ao worktree gc` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao yield emit` | `public-stateful-fixture-needed` | `allowlisted` | Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm). |
 | `ao yield gauge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao yield report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao yield tokens` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
