@@ -127,7 +127,7 @@ GREEN mode rules live in [references/green-mode.md](references/green-mode.md). T
 - **Follow patterns** - match existing code style
 - **Verify changes** - run tests or sanity checks
 - **Commit with context** - reference the issue ID
-- **Close the issue** - update status when done
+- **Close the issue** - update status when done, then run crank's [Close checkpoint](../crank/SKILL.md#close-checkpoint--a-closed-bead-is-a-sensor-reading-age-cysr): a closed bead is a sensor reading — if what it taught falsifies an assumption the remaining plan depends on, surface it for re-planning instead of silently proceeding (age-cysr)
 
 ## Without Beads
 
