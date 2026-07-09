@@ -1552,6 +1552,16 @@ ao goals steer remove <number> [flags]
 
 ---
 
+### `ao land`
+
+Land one reviewed bead the trusted way, in one verb. 'ao land' builds NOTHING
+
+```
+ao land <bead-id> [flags]
+```
+
+---
+
 ### `ao session`
 
 Session lifecycle operations.

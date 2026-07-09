@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,6 +75,50 @@ func runTrustedRepoScript(repoRoot, rel string, args ...string) (bool, error) {
 	// the wrapped error above.
 	if len(out) > 0 {
 		_, _ = os.Stderr.Write(out)
+	}
+	return true, nil
+}
+
+// runTrustedRepoScriptStreaming is runTrustedRepoScript's STREAMING sibling: it
+// wires the gated script's stdio straight to the provided reader/writers (so a
+// long-running land script — scripts/pawl-land.sh's rebase → pre-push gate →
+// single push — streams live instead of buffering to the very end), and appends
+// extraEnv to the child environment (e.g. the AO_BIN pin so preflight + verdict
+// emit + the gate share ONE fresh binary). It enforces the EXACT SAME
+// repoScriptTrusted (aoBinaryInside) RCE boundary as runTrustedRepoScript — the
+// only reason it lives here in the trust-boundary file rather than being written
+// at the call site is so every bash-exec-of-a-repo-script stays behind this one
+// gate (the TestNoUngatedRepoScriptExec AST guard).
+//
+// Returns (executed, err) with the same contract as runTrustedRepoScript:
+//   - executed=false, err=nil                 → script absent (nothing to run)
+//   - executed=false, errUntrustedRepoScript  → untrusted repo, deliberately skipped
+//   - executed=true,  err=nil                 → ran cleanly
+//   - executed=true,  err!=nil                → ran and failed (err is the raw *exec.ExitError,
+//                                               so callers can propagate the exit CODE verbatim)
+func runTrustedRepoScriptStreaming(repoRoot, rel string, stdin io.Reader, stdout, stderr io.Writer, extraEnv []string, args ...string) (bool, error) {
+	script := filepath.Join(repoRoot, filepath.FromSlash(rel))
+	if _, err := os.Stat(script); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("stat repo script %s: %w", rel, err)
+	}
+	if !repoScriptTrusted(repoRoot) {
+		return false, errUntrustedRepoScript
+	}
+	cmd := exec.Command("bash", append([]string{script}, args...)...) // #nosec G204 -- repo-root-relative script gated by repoScriptTrusted (aoBinaryInside boundary); never a user-supplied path.
+	cmd.Dir = repoRoot
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
+	if err := cmd.Run(); err != nil {
+		// Return the raw error (an *exec.ExitError on a non-zero exit) so the caller
+		// can propagate the script's exit code verbatim — the land verb needs it.
+		return true, err
 	}
 	return true, nil
 }

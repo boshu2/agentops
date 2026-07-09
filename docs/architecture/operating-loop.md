@@ -118,6 +118,8 @@ Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; 
 
 Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validate`, `/council`, `/pre-land-refuters`.
 
+The land itself is one verb: **`ao land <bead>`** is the canonical land path. It builds a fresh in-checkout `ao` and re-execs through it so the pawl review runs the LIVE/trusted path (an installed `ao` fails `aoBinaryInside` and takes the cold, un-auto-binding stranger path), pins `AO_BIN` for preflight + the gate, runs `ao pawl review <bead> --scope head` (cross-family codex refuter; **auto-binds** the commit-bound verdict on CONFIRM — no hand `ao provenance emit-verdict`/`#trivial` bind step), then hands off to the atomic land machinery (`scripts/pawl-land.sh`: rebase `origin/main` → restamp → single push through the deterministic pre-push gate — the *windshield*). REFUTED / NO-VERDICT stops the land (exit non-zero); no verdict = not done.
+
 When a cycle is logged, the CycleTrace can carry the closeout join explicitly:
 `bead_id`, `acceptance_examples`, `validation_commands`, and
 `closeout_verdict`. That join is the reviewer path from a bead's Gherkin
