@@ -128,7 +128,7 @@ func TestRenderCatchDigest_ByteIdempotent(t *testing.T) {
 	d := buildCatchDigest([]yieldledger.Catch{
 		{ClassKey: "v1:shell/top", Domain: "shell", Reason: "unguarded cmdsub aborts under set -e", HitCount: 5, Beads: []string{"age-a", "age-b"}, AffectedPaths: []string{"scripts/x.sh"}},
 		{ClassKey: "v1:docs/stale", Domain: "docs", Reason: "stale retired surface referenced in shipped docs", HitCount: 2, Beads: []string{"age-c"}},
-	}, 10, fixedDigestClock)
+	}, 10, false, fixedDigestClock)
 
 	first := renderCatchDigest(d)
 	second := renderCatchDigest(d)
@@ -155,6 +155,121 @@ func TestRenderCatchDigest_ByteIdempotent(t *testing.T) {
 	}
 }
 
+// TestBuildCatchDigest_ExcludesPlaceholdersByDefault is Scenario 1 (age-7758): a
+// reason-less placeholder class must NOT out-rank a real-reason class even when it has
+// a HIGHER raw HitCount. By default placeholders are excluded entirely, so the real
+// class leads and the placeholders are gone.
+func TestBuildCatchDigest_ExcludesPlaceholdersByDefault(t *testing.T) {
+	in := []yieldledger.Catch{
+		// A placeholder with the HIGHEST hit count — the noise that dominates today.
+		{ClassKey: "v1:docs/pawl", Domain: "docs", Reason: "pawl-review REFUTED (see evidence)", HitCount: 25},
+		// A bare-token placeholder.
+		{ClassKey: "v1:cli/bare", Domain: "cli", Reason: "r", HitCount: 4},
+		// The one real, actionable class — buried at HitCount 1 under the placeholders.
+		{ClassKey: "v1:gates/real", Domain: "gates", Reason: "gate-routing gap: a .agents edit skips its own contract gate", HitCount: 1},
+	}
+
+	d := buildCatchDigest(in, 10, false, fixedDigestClock)
+
+	if d.TotalClasses != 3 {
+		t.Errorf("TotalClasses should report the full corpus (3), got %d", d.TotalClasses)
+	}
+	if d.PlaceholderClasses != 2 {
+		t.Errorf("want 2 placeholder classes reported, got %d", d.PlaceholderClasses)
+	}
+	if len(d.Entries) != 1 {
+		t.Fatalf("default must exclude both placeholders, keeping only the 1 real class; got %d entries: %+v", len(d.Entries), d.Entries)
+	}
+	if d.Entries[0].Reason != "gate-routing gap: a .agents edit skips its own contract gate" {
+		t.Errorf("the lone actionable class must lead; got %q", d.Entries[0].Reason)
+	}
+	// The placeholders (higher HitCount) must NOT appear at all.
+	for _, e := range d.Entries {
+		if yieldledger.IsPlaceholderReason(e.Reason) {
+			t.Errorf("placeholder reason leaked into default digest: %q", e.Reason)
+		}
+	}
+}
+
+// TestBuildCatchDigest_IncludePlaceholders is Scenario 2 (age-7758): the escape hatch
+// shows EVERYTHING for corpus auditing, but real-reason classes still lead — a
+// placeholder with a higher HitCount ranks BELOW every actionable class.
+func TestBuildCatchDigest_IncludePlaceholders(t *testing.T) {
+	in := []yieldledger.Catch{
+		{ClassKey: "v1:docs/pawl", Domain: "docs", Reason: "pawl-review REFUTED (see evidence)", HitCount: 25},
+		{ClassKey: "v1:gates/real", Domain: "gates", Reason: "gate-routing gap: a .agents edit skips its own contract gate", HitCount: 1},
+	}
+
+	d := buildCatchDigest(in, 10, true, fixedDigestClock)
+
+	if len(d.Entries) != 2 {
+		t.Fatalf("--include-placeholders must show all classes; got %d", len(d.Entries))
+	}
+	// Real class first despite lower HitCount; placeholder trails.
+	if yieldledger.IsPlaceholderReason(d.Entries[0].Reason) {
+		t.Errorf("real-reason class must lead even in audit mode; entry[0]=%q", d.Entries[0].Reason)
+	}
+	if !d.Entries[1].Placeholder {
+		t.Errorf("the trailing entry must be flagged Placeholder=true; got %+v", d.Entries[1])
+	}
+	if d.Entries[0].Rank != 1 || d.Entries[1].Rank != 2 {
+		t.Errorf("ranks must be contiguous 1,2; got %d,%d", d.Entries[0].Rank, d.Entries[1].Rank)
+	}
+}
+
+// TestRunMembraneDigest_FiltersPlaceholdersE2E is the e2e acceptance: seed a real
+// ledger mixing placeholder classes (higher hit counts) and one real-reason class,
+// then assert the WRITTEN checklist leads with the actionable reason and drops the
+// placeholders by default — and that --include-placeholders restores them below it.
+func TestRunMembraneDigest_FiltersPlaceholdersE2E(t *testing.T) {
+	root := t.TempDir()
+	setDigestProjectDir(t, root)
+
+	// Two placeholder classes recur heavily; the one real class hits once.
+	seedCatch(t, root, "age-1", "docs", "pawl-review REFUTED (see evidence)", []string{"README.md"})
+	seedCatch(t, root, "age-2", "docs", "pawl-review REFUTED (see evidence)", []string{"docs/x.md"})
+	seedCatch(t, root, "age-3", "docs", "pawl-review REFUTED (see evidence)", []string{"docs/y.md"})
+	seedCatch(t, root, "age-4", "cli", "r", []string{"cli/a.go"})
+	seedCatch(t, root, "age-5", "gates", "gate-routing gap: a .agents edit skips its own contract gate", []string{"scripts/gate.sh"})
+
+	readDigest := func(includePlaceholders bool) string {
+		var buf bytes.Buffer
+		membraneDigestCmd.SetOut(&buf)
+		membraneDigestTopN = catchDigestDefaultTopN
+		membraneDigestIncludePlaceholders = includePlaceholders
+		if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
+			t.Fatalf("runMembraneDigest(include=%v): %v", includePlaceholders, err)
+		}
+		raw, err := os.ReadFile(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md"))
+		if err != nil {
+			t.Fatalf("digest not written: %v", err)
+		}
+		return string(raw)
+	}
+
+	// Default: the actionable class leads; the placeholders are gone.
+	def := readDigest(false)
+	t.Logf("DEFAULT digest:\n%s", def)
+	if !strings.Contains(def, "gate-routing gap") {
+		t.Errorf("default digest must surface the actionable class; body:\n%s", def)
+	}
+	if strings.Contains(def, "pawl-review REFUTED") {
+		t.Errorf("default digest must exclude the pawl-review placeholder; body:\n%s", def)
+	}
+
+	// Audit: --include-placeholders restores them, but the real class still leads.
+	all := readDigest(true)
+	t.Logf("INCLUDE-PLACEHOLDERS digest:\n%s", all)
+	if !strings.Contains(all, "pawl-review REFUTED") {
+		t.Errorf("--include-placeholders must restore placeholder classes; body:\n%s", all)
+	}
+	posReal := strings.Index(all, "gate-routing gap")
+	posPlaceholder := strings.Index(all, "pawl-review REFUTED")
+	if !(posReal >= 0 && posReal < posPlaceholder) {
+		t.Errorf("real class must rank above placeholder even in audit mode: real=%d placeholder=%d", posReal, posPlaceholder)
+	}
+}
+
 // seedCatch emits one REFUTED catch verdict into root's yield ledger via the
 // production Writer — the same path recall/triage read, so the fixture is the real
 // persisted shape (go.md: guard-test fixtures use the production writer).
@@ -173,11 +288,11 @@ func setDigestProjectDir(t *testing.T, root string) {
 	t.Helper()
 	origProjectDir := testProjectDir
 	testProjectDir = root
-	origTop, origJSON := membraneDigestTopN, membraneDigestJSON
-	membraneDigestTopN, membraneDigestJSON = catchDigestDefaultTopN, false
+	origTop, origJSON, origIncl := membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders
+	membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders = catchDigestDefaultTopN, false, false
 	t.Cleanup(func() {
 		testProjectDir = origProjectDir
-		membraneDigestTopN, membraneDigestJSON = origTop, origJSON
+		membraneDigestTopN, membraneDigestJSON, membraneDigestIncludePlaceholders = origTop, origJSON, origIncl
 		membraneDigestCmd.SetOut(nil)
 	})
 }

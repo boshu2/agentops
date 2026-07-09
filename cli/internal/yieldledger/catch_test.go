@@ -432,3 +432,49 @@ func TestDetectCatches_RoundCollapse(t *testing.T) {
 		t.Fatalf("want 2 distinct beads recorded, got %v", c2[0].Beads)
 	}
 }
+
+// TestIsPlaceholderReason is the placeholder-detector contract (age-7758): a
+// reason-less pawl verdict / bare token / disposition boilerplate is a placeholder
+// (true); a substantive defect sentence is NOT (false). The false cases are the
+// load-bearing guard — mis-flagging a real reason would silently drop actionable
+// content from the digest.
+func TestIsPlaceholderReason(t *testing.T) {
+	placeholders := []string{
+		"pawl-review REFUTED (see evidence)",
+		"pawl-review REFUTED for age-55qz.2 (see evidence)",
+		"pawl-review REFUTED for age-focus-membrane-bookkeeper-m1wg.13 (see evidence)",
+		// DIGIT-LESS bead id: stripBeadRefs deliberately leaves "age-landq-self" intact,
+		// so the pawl-stamp anchor is what catches this one (regression for the miss the
+		// real ledger surfaced).
+		"pawl-review REFUTED for age-landq-self (see evidence)",
+		"REFUTED",
+		"r",
+		"",
+		"   ",
+		"see evidence",
+		"pawl review confirmed",
+	}
+	for _, r := range placeholders {
+		if !IsPlaceholderReason(r) {
+			t.Errorf("IsPlaceholderReason(%q) = false, want true (non-substantive placeholder)", r)
+		}
+	}
+
+	// GUARD: real defect sentences must NEVER be flagged as placeholders.
+	substantive := []string{
+		"unguarded cmdsub aborts under set -e",
+		"stale retired surface referenced in shipped docs",
+		"missing t.Cleanup restore of shared global",
+		"gate-routing gap: deterministic check existed but the contract glob skips .agents edits",
+		"off-by-one in the wave slice boundary drops the last bead",
+		"fail-open: bd resolution error swallowed, gate passes on empty ledger",
+		// A real defect that MENTIONS the pawl mid-sentence must NOT be flagged — the
+		// anchor only fires on a reason that BEGINS with the verdict stamp.
+		"pawl service degraded so the review silently fell back to a warm cache",
+	}
+	for _, r := range substantive {
+		if IsPlaceholderReason(r) {
+			t.Errorf("IsPlaceholderReason(%q) = true, want false (real defect sentence mis-flagged)", r)
+		}
+	}
+}

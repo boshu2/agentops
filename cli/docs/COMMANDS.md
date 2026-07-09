@@ -2506,9 +2506,10 @@ ao membrane digest [--top N] [--json] [flags]
 **Flags:**
 
 ```
-  -h, --help      help for digest
-      --json      Also print the ranked digest as JSON (the checklist file is written either way)
-      --top int   How many top recurring catch classes to include (default 10)
+  -h, --help                   help for digest
+      --include-placeholders   Include reason-less placeholder classes (e.g. "pawl-review REFUTED (see evidence)") for corpus auditing; excluded by default so the checklist stays actionable
+      --json                   Also print the ranked digest as JSON (the checklist file is written either way)
+      --top int                How many top recurring catch classes to include (default 10)
 ```
 
 #### `ao membrane recall`
