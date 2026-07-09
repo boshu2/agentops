@@ -118,7 +118,9 @@ GREEN mode rules live in [references/green-mode.md](references/green-mode.md). T
 
 ## Key Rules
 
-- **TDD by default** - write failing tests before implementing (skip with `--no-tdd`)
+- **TDD by default** - write failing tests before implementing (skip with `--no-tdd`). Test-first is the default because the failing test is the slice's contract and its regression guard — but empirically the *test-first ordering* is not what drives quality (Finster 2026; see the `standards` skill's agentic-workflow-evidence reference); code-first / test-after (`--no-tdd`) is a defensible cost-efficient variant on fully-specified small tasks provided the two refactor invariants below hold.
+- **Refactor after every green — it is the load-bearing move.** Refactor under green as its own commit after each behavior, never deferred to one final pass (deferred-refactor workflows were the worst-performing cluster in the study above). **Never let a refactor step change a test** — a test change during refactor means behavior changed, which is a new slice, not a refactor.
+- **One behavior per cycle (small batch).** Implement one behavior, keep the suite green, refactor, move to the next — small batches beat all-at-once.
 - **Lifecycle skills fire automatically** - /test, /review, /refactor run at appropriate steps (disable with `--no-lifecycle`)
 - **Explore first** - understand before changing
 - **Edit, don't rewrite** - prefer Edit tool over Write tool

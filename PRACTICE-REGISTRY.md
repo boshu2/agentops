@@ -33,6 +33,13 @@ source. Only practices that survived contact with real production are listed.
   exist.
 - **DORA-at-scale empirical research** — Forsgren / Humble / Kim *Accelerate*
   (2018) plus the State-of-DevOps reports. Replicated across cohorts.
+- **Empirical agent-workflow measurement** — Finster, "Agentic Workflows: Do
+  Agents Work?" (2026). Controlled 2×2×2 study (test-ordering × batch × authorship)
+  with hidden acceptance tests. Isolated *which* human practices transfer to
+  agents: refactor-after-every-green and small batches drive quality;
+  test-first *ordering* and split authorship do not. Sharpens the repo's `tdd`
+  and `refactoring` slugs; digest in
+  `skills/standards/references/agentic-workflow-evidence.md`.
 
 ### 2018-2023 — cloud-native maturity, observability, platform engineering
 

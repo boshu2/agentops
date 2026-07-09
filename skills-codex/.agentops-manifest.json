@@ -1143,8 +1143,8 @@
     {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "27eed6174e45cd3d2e5e4afada28ba7cb71d7cea89442a56274b3b02c7362a1f",
-      "generated_hash": "4d6f0de81711534842610310f664f341966d65338690847e09daf5dcc2726f7d"
+      "source_hash": "d8373a151dea2aa7270f7ae6f1ee2ba1cc925f2ad7acd172009d4aa3ecff0e10",
+      "generated_hash": "6af81e800bb0bca3b86687a34d0f72a2e9c2b28a96fd36064a7f9f655c26b094"
     },
     {
       "name": "ntm",
@@ -1275,8 +1275,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "7da2905e2b31681a9e826100f57d65ac9441860e470763da36339066a39f7718",
-      "generated_hash": "9923041fdca13deb7832ee728c510d47dc03493a29c2b58afcd501735ec2e3fb"
+      "source_hash": "0524fb2f7671b802939d863bd714d345cc4a78699dbafc1f4d92234788deedf8",
+      "generated_hash": "931119e73069a90ce83eeb5acaded7bf424d977ac46aa3e43ad3ecb1180c645d"
     },
     {
       "name": "status",
