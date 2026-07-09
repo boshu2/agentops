@@ -255,6 +255,8 @@ Bridge / framing docs:
 
 - [Templates Overview](templates/README.md) — Templates index
 - [Intent Issue Template](templates/intent-issue.md) — BDD-shaped intent issue (Given/When/Then acceptance examples, bounded context, slice candidates) — produced by `/discovery`, consumed by `/plan`
+- [Goal Design Intent Template](templates/goal-design-intent.md) — Schema-backed `.agents/goal-design/<slug>/intent.md` template for objective, BDD behavior, boundaries, evidence, stale inputs, and hard rules
+- [Goal Design Driver Template](templates/goal-design-driver.md) — Schema-backed `.agents/goal-design/<slug>/driver.md` template for four-loop routing, candidate beads, route-back rules, digest integrity, and validation policy
 - [Slice Validation Plan Template](templates/slice-validation.md) — Per-slice proof with first failing test, write-scope, wave-validity check, and roll-up acceptance — produced by `/plan`, executed by `/validate`
 - [Workflow Template](templates/workflow.template.md) — Template for new workflows
 - [Agent Template](templates/agent.template.md) — Template for new agents
@@ -316,6 +318,7 @@ Bridge / framing docs:
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [AO / MTO Seam](contracts/ao-mto-seam.md) — Reduction contract separating the lean AO image from the outer MTO factory and routing RELOCATE surfaces through MTO, vendor-adapter, or defer-load-bearing seams
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
+- [Goal Design Artifacts](contracts/goal-design-artifacts.md) — Two-artifact contract for `.agents/goal-design/<slug>/intent.md` and `driver.md`, including schemas, digest integrity, validation, lifecycle, and route-back rules
 - [CI Path-Filter / Gate-Target Coverage Audit](contracts/ci-pathfilter-coverage-audit.md) — Repo-wide audit (ag-g9ex) of the invariant "a CI gate that reads a file must be triggered by a path-filter covering that file" (the #634/#638 class). Findings table for every file-reading gate in `validate.yml`, the two gaps fixed (AGENTS tiered-split siblings; wiring-closure GOALS.md de-wire), and the `--admin` self-merge governance policy. Guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`.
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children

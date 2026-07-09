@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/goal-design-intent.v1.schema.json",
+  "title": "AgentOps Goal Design Intent v1",
+  "description": "YAML frontmatter contract for .agents/goal-design/<slug>/intent.md, the human-shaped source of truth for a goal-design packet.",
+  "practices": ["bdd-gherkin", "design-by-contract", "tdd"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "id",
+    "slug",
+    "created_at",
+    "status",
+    "objective",
+    "why_it_matters",
+    "domain_terms",
+    "bdd",
+    "boundaries",
+    "evidence_for_done",
+    "inputs_to_recheck",
+    "hard_rules"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "kind": {
+      "type": "string",
+      "const": "goal-design.intent"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^gd-intent-[a-z0-9][a-z0-9-]*$"
+    },
+    "slug": {
+      "$ref": "#/$defs/slug"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "validated", "superseded"]
+    },
+    "objective": {
+      "$ref": "#/$defs/non_empty_string"
+    },
+    "why_it_matters": {
+      "$ref": "#/$defs/non_empty_string"
+    },
+    "domain_terms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["term", "definition", "source"],
+        "properties": {
+          "term": {
+            "$ref": "#/$defs/non_empty_string"
+          },
+          "definition": {
+            "$ref": "#/$defs/non_empty_string"
+          },
+          "source": {
+            "$ref": "#/$defs/non_empty_string"
+          }
+        }
+      }
+    },
+    "bdd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "scenarios"],
+      "properties": {
+        "feature": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "given", "when", "then"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^S[0-9]+$"
+              },
+              "name": {
+                "$ref": "#/$defs/non_empty_string"
+              },
+              "given": {
+                "$ref": "#/$defs/non_empty_string_list"
+              },
+              "when": {
+                "$ref": "#/$defs/non_empty_string_list"
+              },
+              "then": {
+                "$ref": "#/$defs/non_empty_string_list"
+              }
+            }
+          }
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bounded_context", "in_scope", "non_goals", "rollback_or_containment"],
+      "properties": {
+        "bounded_context": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "in_scope": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "non_goals": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "rollback_or_containment": {
+          "$ref": "#/$defs/non_empty_string"
+        }
+      }
+    },
+    "evidence_for_done": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "first_failing_proof",
+        "validation_command",
+        "evidence_path",
+        "independent_gate"
+      ],
+      "properties": {
+        "first_failing_proof": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "validation_command": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "evidence_path": {
+          "$ref": "#/$defs/non_empty_string"
+        },
+        "independent_gate": {
+          "$ref": "#/$defs/non_empty_string"
+        }
+      }
+    },
+    "inputs_to_recheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_paths", "prior_artifacts", "live_surfaces", "stale_assumptions"],
+      "properties": {
+        "repo_paths": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "prior_artifacts": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "live_surfaces": {
+          "$ref": "#/$defs/non_empty_string_list"
+        },
+        "stale_assumptions": {
+          "$ref": "#/$defs/non_empty_string_list"
+        }
+      }
+    },
+    "hard_rules": {
+      "$ref": "#/$defs/non_empty_string_list"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_empty_string_list": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/non_empty_string"
+      }
+    }
+  }
+}

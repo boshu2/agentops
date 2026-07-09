@@ -111,6 +111,13 @@ skills, the runtime, and external integrations.
     PerspectivePlan, SynthesisPacket, and ApprovalEdge contract for Fable-gated
     Codex discovery before bead creation.
 
+-   :material-bullseye-arrow: **[Goal Design Artifacts](goal-design-artifacts.md)**
+
+    ---
+
+    Two-artifact packet contract for goal-design `intent.md` and `driver.md`
+    files, including schema validation, digest integrity, and route-back rules.
+
 -   :material-api: **[Codex Skill API](codex-skill-api.md)**
 
     ---
