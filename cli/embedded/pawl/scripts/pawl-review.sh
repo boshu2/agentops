@@ -728,7 +728,17 @@ _repro_go_workdir() {
     [[ "$m" == "$root" ]] && break
     m="$(dirname "$m")"
   done
-  [[ -n "$module_root" ]] || return 0                # no enclosing module -> run from root, verbatim
+  if [[ -z "$module_root" ]]; then
+    # ROOT-FALLBACK RETRY (age-7hgb): a NON-canonical, already-module-relative `go` repro
+    # (e.g. `go test ./cmd/ao`, omitting the `cli/` prefix real diff paths carry) walks up
+    # from a NONEXISTENT <root>/cmd/ao, finds no enclosing go.mod, and would fall back to
+    # <root> VERBATIM -> `go: cannot find main module` regardless of code correctness. Retry
+    # against the single known module subdir: if <root>/cli/go.mod exists, run from there and
+    # leave the argv package token AS-IS (it is already module-relative). Only for a `go` argv
+    # (guarded above); canonical `./cli/...` resolves module_root above and never reaches here.
+    [[ -f "$root/cli/go.mod" ]] && _REPRO_WORKDIR="$root/cli"
+    return 0                                          # no enclosing module (or the cli/ retry) -> argv verbatim
+  fi
   _REPRO_WORKDIR="$module_root"
   # Rebase the package token to be relative to the module root: strip the module subdir prefix.
   local subdir="${module_root#"$root"}"; subdir="${subdir#/}"   # e.g. cli  ('' if module_root==root)

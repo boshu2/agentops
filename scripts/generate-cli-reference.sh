@@ -56,7 +56,23 @@ scrub_paths() {
   if [[ -n "${HOME:-}" ]]; then
     sed_args+=(-e "s#${HOME}#<home>#g")
   fi
-  sed_args+=(-e "s#${TMPDIR:-/tmp}[^ ]*#<tmp>#g")
+  # $TMPDIR and its macOS-canonicalized twin. macOS EvalSymlinks/realpath resolves the
+  # /var -> /private/var symlink, so a command that canonicalizes its temp path (mktemp -d
+  # then realpath, os.MkdirTemp under a symlinked TMPDIR) emits the /private-prefixed form
+  # (/private/var/folders/...). The raw-$TMPDIR rule alone would leave that half-scrubbed
+  # (/private<tmp>), so scrub the MOST-SPECIFIC (longest) forms FIRST — the realpath-
+  # canonicalized TMPDIR, then the literal /private-prefixed $TMPDIR — before the raw
+  # $TMPDIR, so a broader rule can't pre-empt them. No-op on clean help output. (age-i9ce)
+  local tmp="${TMPDIR:-/tmp}"
+  local tmp_canon=""
+  if command -v realpath >/dev/null 2>&1; then
+    tmp_canon="$(realpath "$tmp" 2>/dev/null || true)"
+  fi
+  if [[ -n "$tmp_canon" && "$tmp_canon" != "$tmp" ]]; then
+    sed_args+=(-e "s#${tmp_canon}[^ ]*#<tmp>#g")
+  fi
+  sed_args+=(-e "s#/private${tmp}[^ ]*#<tmp>#g")
+  sed_args+=(-e "s#${tmp}[^ ]*#<tmp>#g")
   sed "${sed_args[@]}"
 }
 
