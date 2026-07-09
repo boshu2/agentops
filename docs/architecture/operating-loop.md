@@ -98,6 +98,18 @@ Per slice, in order:
 
 Skill: `/implement` operates on one slice at a time.
 
+**Step 3 is the load-bearing move, and one behavior per cycle is the batch.** A controlled study of
+agent-run workflows (Finster 2026 — see the `standards` skill's `agentic-workflow-evidence` reference)
+found that stripping refactor-under-green out of TDD erased its entire quality advantage, while
+test-first *ordering* alone contributed nothing measurable, and small batches (one behavior per
+cycle) beat all-at-once across the board. Two invariants follow: refactor after **every** green
+(not deferred to one final pass — deferred-refactor workflows were the worst-performing cluster),
+and **never let a refactor step change a test** (a test change during refactor means behavior
+changed — that is a new slice, not a refactor). The repo keeps the first failing test as the
+default because it is the slice's contract and its regression guard; code-first / test-after
+(`--no-tdd`) is a defensible cost-efficient variant on fully-specified small tasks *as long as*
+those two invariants hold.
+
 ### 5. Group into a wave only when write scopes do not collide
 
 Wave validity is a hard gate, applied row by row:
