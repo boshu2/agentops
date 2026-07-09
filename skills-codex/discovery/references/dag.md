@@ -46,6 +46,7 @@ discovery_state = {
     constraint: [],
     next_action: null
   },
+  known_risks: [],
   verdict: null
 }
 ```
@@ -122,6 +123,32 @@ Apply each returned item explicitly:
 
 Write the ranked result path to `ranked_packet_path`. If no artifact exists,
 record a short inline list of citation paths only.
+
+**Catch-digest known risks (same context-assembly pass, age-8rrz).** `ao lookup`
+retrieves prior art; the catch digest retrieves prior *defects*. Read it here so
+slices are shaped around recurring defect classes BEFORE pre-mortem even runs —
+this is the same `.agents/pre-mortem-checks/catch-digest.md` sink `/pre-mortem`
+Step 1.4 loads as `known_risks`, consumed one move earlier. Honest scope
+(ADR-0004/0011): these are recurring catch classes to watch for, nothing more.
+
+```bash
+# Fresh mine (regenerates + prints the digest); if ao or the subcommand is
+# unavailable, fall back to the last written digest file.
+ao membrane digest --json 2>/dev/null \
+  || cat .agents/pre-mortem-checks/catch-digest.md 2>/dev/null \
+  || true  # fail-open: no digest AND no ledger -> skip silently (no catch corpus yet)
+```
+
+From the digest entries, keep the classes whose `domain` or `affected_paths`
+match the goal's domain(s), and record the top matches into the state's
+`known_risks` — one line per class: `[×<hit_count>] <reason> — watch for it
+when working in <domain>`. No match, empty digest, or no corpus at all →
+leave `known_risks: []` and continue silently; discovery MUST NOT block or
+warn loudly over a missing catch corpus.
+
+Contract (Gherkin): GIVEN a catch corpus with a recurring class in domain D
+and a discovery goal touching D, WHEN discovery assembles the execution
+packet, THEN the class appears in the packet's `known_risks`.
 
 ### STEP 3 - Research Contract
 
@@ -293,6 +320,13 @@ The packet is the narrow waist. It contains the six density fields, artifact
 paths, criteria, validation lanes, tracker state, test levels, complexity, and
 next action. It does not contain raw research, raw plan prose, or raw council
 deliberation.
+
+Carry the state's `known_risks` (STEP 2 catch-digest matches) into the packet
+through its `risks` array — the schema
+(`schemas/execution-packet.schema.json`) is `additionalProperties: false`, and
+top-level `risks` is its channel for exactly this. Write one string per matched
+class, prefixed `known-risk(catch-digest):`, so each reads as a recurring catch
+class to watch for — not an escape. Empty `known_risks` adds nothing.
 
 After the packet is written, stamp the orchestration-shape decision onto it. The
 live (skill-driven) packet write does NOT route through the Go seed-writer, so
