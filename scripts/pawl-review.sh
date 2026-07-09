@@ -1068,6 +1068,55 @@ command -v jq >/dev/null 2>&1 || {
   exit 2
 }
 
+# age-7k3i EARLY USER-READINESS PREFLIGHT (shift-left epic age-tc0l): a user whose ONLY
+# installed agent CLI is claude has NO cold reviewer — the cold path is codex-first BY
+# DESIGN (LAW 0: never `claude -p`, so there is no cold claude adapter; REVIEWER=agy is
+# the sanctioned cold failover). Before this check that user only found out DEEP in the
+# run (CODEX_EXEC_MISSING=2 from lib/codex-exec.sh, after the amend-guard / deterministic
+# battery / smoke / packet build), with no guidance. So BEFORE any review work: resolve
+# every usable reviewer for THIS run (default codex; REVIEWER / PAWL_REVIEWER_CHAIN
+# honored — all roster-validated above) and when NONE has its CLI on PATH, exit 2 NOW
+# with a named, actionable message. Same bin resolution as the in-loop MISSING
+# precondition (_reviewer_spec; a bin-less adapter like local-mlx has no PATH bin to
+# check — the lib owns its eval-only refusal — so it never triggers this exit), and the
+# in-loop check stays as defense-in-depth + the mid-chain failover MISSING path. When ANY
+# usable reviewer is reachable this block changes NOTHING (the chain loop below still
+# owns failover/degradation). NON-strict only: STRICT derives its voters from the
+# eligibility seam and already did its own reachability + honest-UNAVAILABLE/HOLD
+# handling above (exit 5 — a strict outage must never become an exit-2 precondition).
+if [[ "$strict" -eq 0 ]]; then
+  _pf_reachable=0; _pf_missing=""; _pf_first=""; _pf_first_bin=""
+  for _pf in "${usable_reviewers[@]}"; do
+    _pf_spec="$(_reviewer_spec "$_pf")" || continue   # cannot fail: members were roster-validated above
+    _pf_name="$(printf '%s' "$_pf_spec" | cut -f1)"
+    _pf_bin="$(printf '%s' "$_pf_spec" | cut -f2)"
+    [[ -n "$_pf_first" ]] || { _pf_first="$_pf_name"; _pf_first_bin="$_pf_bin"; }
+    if { [[ "$_pf_name" == "codex" ]] || [[ -n "$_pf_bin" ]]; } && ! command -v "$_pf_bin" >/dev/null 2>&1; then
+      _pf_missing="${_pf_missing}${_pf_missing:+, }'$_pf_name' (bin '$_pf_bin')"
+    else
+      _pf_reachable=1
+    fi
+  done
+  if [[ "$_pf_reachable" -eq 0 ]]; then
+    {
+      echo "pawl-review: MISSING DEPENDENCY — the cold reviewer for this run is '$_pf_first' and its CLI ('$_pf_first_bin') is not on PATH (missing: $_pf_missing)."
+      echo "  Nothing was reviewed and nothing was written (early user-readiness preflight, age-7k3i)."
+      echo "  The cold review path needs a SECOND installed model family — there is NO cold claude adapter"
+      echo "  (LAW 0: never 'claude -p'), so a claude-only install cannot serve it. Your options:"
+      echo "    - install the '$_pf_first' CLI and put it on PATH, or"
+      if [[ "$_pf_first" == "codex" ]]; then
+        echo "    - re-run with REVIEWER=agy (the Gemini cold failover) if the agy CLI is installed, or"
+      else
+        echo "    - re-run with the default codex reviewer (unset REVIEWER) if the codex CLI is installed, or"
+      fi
+      echo "    - stand up the adaptive standing service: ao pawl up (it uses ANY installed reviewer family)."
+      echo "  (exit 2 = precondition, not a REFUTE)"
+    } >&2
+    triage_block MISSING ""
+    exit 2
+  fi
+fi
+
 # The kill-budget snapshot. INITIAL value here; FINALIZED after the large-diff scaling
 # below (see the age-iian re-snapshot). age-iian (FOLDED into age-rk3r.1): historically this
 # was the ONLY snapshot and it was captured BEFORE scale_review_timeout reassigns $TIMEOUT,
