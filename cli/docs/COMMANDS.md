@@ -2458,7 +2458,7 @@ ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-d
 Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 
 ```
-ao membrane catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
+ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
 ```
 
 **Flags:**
@@ -2469,6 +2469,7 @@ ao membrane catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--
       --detector-kind string      Optional detector kind (e.g. regex)
       --detector-pattern string   Optional regex that mechanically detects this class (makes it a compile candidate)
       --domain string             Bounded-context / work-class tag (required)
+      --evidence string           Pawl-review evidence file: derive --reason (two-tier REFUTED salvage), --domain (first changed file's top dir) and --paths (changed files, first 20); explicit flags win
       --globs string              Optional path globs scoping the detector pattern
       --head string               Commit sha the catch was found at (default: git HEAD)
   -h, --help                      help for catch
@@ -2476,6 +2477,7 @@ ao membrane catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--
       --paths strings             Concrete repo-relative file paths the catch touches (comma-separated or repeated)
       --reason string             What was caught — the defect (required; the class reason when no --class given)
       --run string                Run id (default: membrane-catch)
+      --scope string              With --evidence: changed-file scope — head (files in the --head commit) or staged (the index) (default "head")
 ```
 
 #### `ao membrane derive-checks`

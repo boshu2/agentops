@@ -51,6 +51,8 @@ var (
 	membraneCatchMode     string
 	membraneCatchHead     string
 	membraneCatchRun      string
+	membraneCatchEvidence string
+	membraneCatchScope    string
 
 	membraneTriageJSON bool
 )
@@ -88,7 +90,7 @@ here before so the same class of miss is caught one altitude earlier.`,
 }
 
 var membraneCatchCmd = &cobra.Command{
-	Use:   "catch --bead <id> --domain <bc> --reason <what> [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
+	Use:   "catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
 	Short: "Record a membrane CATCH — a REFUTED defect, as a structured class the membrane remembers",
 	Long: `Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 context (--domain), what was caught (--reason), and the affected files (--paths),
@@ -97,7 +99,15 @@ PAIR, structurally rare), a catch is the ABUNDANT signal — every real REFUTE i
 one. The catch is keyed by a catch-native class_key (computed at emit from
 domain+reason[+detector]) so DetectCatches/recall can group recurring classes,
 and carries affected_paths so even a judgment-class catch is path-recallable.
-This is the manual twin of the pawl-review REFUTED branch. (epic age-zpj5, S2)`,
+This is the manual twin of the pawl-review REFUTED branch. (epic age-zpj5, S2)
+
+With --evidence <file> the reason/domain/paths are DERIVED (age-ulab — the Go
+port of pawl-review's emit_pawl_catch): the reason via the two-tier REFUTED
+salvage (the last 'VERDICT: REFUTED <text>' sentinel, else the first
+substantive 'REFUTED: <finding>' prose line multi-family reviews emit, else a
+placeholder); the domain from the first changed file's top path component; the
+affected paths from git by --scope (the --head commit, or the index for
+staged). Any explicit --reason/--domain/--paths wins over extraction.`,
 	RunE: runMembraneCatch,
 }
 
@@ -219,6 +229,8 @@ func init() {
 	membraneCatchCmd.Flags().StringVar(&membraneCatchMode, "mode", "", "Pawl diversity mode: fresh-context (default) | multi-model | deterministic")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchHead, "head", "", "Commit sha the catch was found at (default: git HEAD)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchRun, "run", "", "Run id (default: membrane-catch)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchEvidence, "evidence", "", "Pawl-review evidence file: derive --reason (two-tier REFUTED salvage), --domain (first changed file's top dir) and --paths (changed files, first 20); explicit flags win")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchScope, "scope", "head", "With --evidence: changed-file scope — head (files in the --head commit) or staged (the index)")
 
 	membraneTriageCmd.Flags().BoolVar(&membraneTriageJSON, "json", false, "Emit the triage result as JSON")
 }
@@ -316,10 +328,127 @@ func buildCatchInput(bead, domain, reason string, paths []string, detector, glob
 // verbatim in triage. (age-jjt8)
 var classSlugRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
-// runMembraneCatch records a catch via the production Writer. (epic age-zpj5, S2)
+// The two-tier REFUTED reason salvage (age-ulab — Go port of emit_pawl_catch's
+// grep/sed in scripts/pawl-review.sh). Tier 1 keys on the single-reviewer
+// `VERDICT: REFUTED <text>` sentinel; tier 2 (age-9931 parity) salvages the
+// substantive `REFUTED: <finding>` prose line multi-family reviews emit,
+// excluding the routed `PAWL <nonce> REFUTED` sentinel (which carries no
+// reason) and any VERDICT line.
+var (
+	catchVerdictSentinelRe = regexp.MustCompile(`(?i)^[ \t]*VERDICT:[ \t]*REFUTED`)
+	catchVerdictStripRe    = regexp.MustCompile(`(?i)^[ \t]*VERDICT:[ \t]*REFUTED[\s:—-]*`)
+	catchRoutedSentinelRe  = regexp.MustCompile(`(?i)PAWL\s+r?[0-9a-fx]+\s+REFUTED`)
+	catchProseRe           = regexp.MustCompile(`(?i)REFUTED:`)
+	catchVerdictAnyRe      = regexp.MustCompile(`(?i)VERDICT:`)
+	catchProseStripRe      = regexp.MustCompile(`(?i)^.*REFUTED[:\s]+`)
+)
+
+// catchReasonCap is the reason length cap (the bash `cut -c1-200`).
+const catchReasonCap = 200
+
+// extractRefutedReason applies the two-tier salvage to a pawl-review evidence
+// body and returns the extracted reason, capped at catchReasonCap runes —
+// or "" when neither tier hits (the caller applies the placeholder). Tier 1:
+// the LAST `VERDICT: REFUTED <text>` sentinel line, prefix stripped. Tier 2
+// (only when tier 1 yields no text — routed multi-family REFUTEs emit a bare
+// sentinel): the FIRST `REFUTED: <finding>` prose line that is neither a
+// routed `PAWL <nonce> REFUTED` sentinel nor a VERDICT line, stripped through
+// its last REFUTED marker (bash sed greedy parity). (age-ulab)
+func extractRefutedReason(evidence string) string {
+	lines := strings.Split(evidence, "\n")
+	// Tier 1: the last sentinel line only (bash `grep | tail -1`).
+	for i := len(lines) - 1; i >= 0; i-- {
+		if !catchVerdictSentinelRe.MatchString(lines[i]) {
+			continue
+		}
+		if r := capReason(strings.TrimSpace(catchVerdictStripRe.ReplaceAllString(lines[i], ""))); r != "" {
+			return r
+		}
+		break // bare sentinel — fall through to the tier-2 prose salvage
+	}
+	// Tier 2: the first substantive prose finding (bash `grep | grep -v | head -1`).
+	for _, line := range lines {
+		if !catchProseRe.MatchString(line) || catchRoutedSentinelRe.MatchString(line) || catchVerdictAnyRe.MatchString(line) {
+			continue
+		}
+		return capReason(strings.TrimSpace(catchProseStripRe.ReplaceAllString(line, "")))
+	}
+	return ""
+}
+
+// capReason truncates s to at most catchReasonCap runes.
+func capReason(s string) string {
+	if utf8.RuneCountInString(s) <= catchReasonCap {
+		return s
+	}
+	return string([]rune(s)[:catchReasonCap])
+}
+
+// changedFilesForCatch lists the changed files a catch covers, computed from
+// git by scope exactly as pawl-review's emit_pawl_catch does: the files of the
+// --head commit for scope=head, the index for scope=staged. BEST-EFFORT — nil
+// on any git error (the caller falls back to the pawl-review domain): the
+// catch is observability, not a gate. (age-ulab)
+func changedFilesForCatch(root, scope, head string) []string {
+	var args []string
+	if scope == "staged" {
+		args = []string{"-c", "core.fsmonitor=", "-C", root, "diff", "--cached", "--no-ext-diff", "--no-textconv", "--name-only", "--no-color"}
+	} else {
+		ref := strings.TrimSpace(head)
+		if ref == "" {
+			ref = "HEAD"
+		}
+		args = []string{"-c", "core.fsmonitor=", "-C", root, "show", ref, "--no-ext-diff", "--no-textconv", "--name-only", "--format=", "--no-color"}
+	}
+	out, err := exec.Command("git", args...).Output() // #nosec G204 -- fixed git binary; ref is a commit sha from the local review.
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.TrimSpace(line) != "" {
+			files = append(files, line)
+		}
+	}
+	return files
+}
+
+// catchDomainFromFiles resolves the catch domain: the first path component of
+// the first changed file, falling back to "pawl-review" when nothing resolved
+// (bash `head -1 | cut -d/ -f1` parity). (age-ulab)
+func catchDomainFromFiles(files []string) string {
+	if len(files) == 0 {
+		return "pawl-review"
+	}
+	d := files[0]
+	if i := strings.IndexByte(d, '/'); i >= 0 {
+		d = d[:i]
+	}
+	if d == "" {
+		return "pawl-review"
+	}
+	return d
+}
+
+// runMembraneCatch records a catch via the production Writer. With --evidence
+// it additionally derives reason/domain/paths (age-ulab — the Go absorption of
+// pawl-review.sh's emit_pawl_catch): reason via extractRefutedReason over the
+// evidence file, domain + affected paths from git by --scope. Explicit
+// --reason/--domain/--paths always win over extraction. (epic age-zpj5, S2)
 func runMembraneCatch(cmd *cobra.Command, _ []string) error {
-	if strings.TrimSpace(membraneCatchBead) == "" || strings.TrimSpace(membraneCatchDomain) == "" || strings.TrimSpace(membraneCatchReason) == "" {
-		return fmt.Errorf("ao membrane catch: --bead, --domain, and --reason are required")
+	evidencePath := strings.TrimSpace(membraneCatchEvidence)
+	if strings.TrimSpace(membraneCatchBead) == "" {
+		return fmt.Errorf("ao membrane catch: --bead is required")
+	}
+	if evidencePath == "" && (strings.TrimSpace(membraneCatchDomain) == "" || strings.TrimSpace(membraneCatchReason) == "") {
+		return fmt.Errorf("ao membrane catch: --bead, --domain, and --reason are required (or pass --evidence to derive reason/domain/paths)")
+	}
+	scope := strings.TrimSpace(membraneCatchScope)
+	if scope == "" {
+		scope = "head"
+	}
+	if scope != "head" && scope != "staged" {
+		return fmt.Errorf("ao membrane catch: --scope must be head or staged, got %q", scope)
 	}
 	class := strings.TrimSpace(membraneCatchClass)
 	if class != "" && !classSlugRe.MatchString(class) {
@@ -339,15 +468,44 @@ func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 	if utf8.RuneCountInString(head) < 7 {
 		return fmt.Errorf("ao membrane catch: need a >=7-char --head (commit sha); none resolved (pass --head or run inside a git repo)")
 	}
-	in := buildCatchInput(membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchPaths,
+	reason := strings.TrimSpace(membraneCatchReason)
+	domain := strings.TrimSpace(membraneCatchDomain)
+	paths := membraneCatchPaths
+	if evidencePath != "" {
+		if reason == "" {
+			content, readErr := os.ReadFile(evidencePath) // #nosec G304 -- operator-supplied evidence path; read-only.
+			if readErr != nil {
+				// Fail-safe (emit_pawl_catch parity): an unreadable evidence file
+				// must not LOSE the catch — warn and fall to the placeholder.
+				fmt.Fprintf(cmd.ErrOrStderr(), "membrane: warning: cannot read --evidence %s: %v\n", evidencePath, readErr)
+			}
+			reason = extractRefutedReason(string(content))
+			if reason == "" {
+				reason = "pawl-review REFUTED (see evidence)"
+			}
+		}
+		if domain == "" || len(paths) == 0 {
+			files := changedFilesForCatch(root, scope, head)
+			if domain == "" {
+				domain = catchDomainFromFiles(files)
+			}
+			if len(paths) == 0 {
+				if len(files) > 20 {
+					files = files[:20] // bash `head -20` parity
+				}
+				paths = files
+			}
+		}
+	}
+	in := buildCatchInput(membraneCatchBead, domain, reason, paths,
 		membraneCatchDetector, membraneCatchGlobs, membraneCatchKind, membraneCatchMode, head, membraneCatchRun, time.Now().UTC())
 	in.Class = class
 	w := yieldledger.Writer{}
 	if _, err := w.AppendGateVerdict(root, in); err != nil {
 		return fmt.Errorf("ao membrane catch: emit: %w", err)
 	}
-	ck := yieldledger.ClassKeyFor(membraneCatchDomain, membraneCatchReason, membraneCatchDetector, class)
-	fmt.Fprintf(cmd.OutOrStdout(), "membrane: recorded catch for %s@%s — class %s (domain=%s)\n", membraneCatchBead, head[:7], ck, membraneCatchDomain)
+	ck := yieldledger.ClassKeyFor(domain, reason, membraneCatchDetector, class)
+	fmt.Fprintf(cmd.OutOrStdout(), "membrane: recorded catch for %s@%s — class %s (domain=%s)\n", membraneCatchBead, head[:7], ck, domain)
 	return nil
 }
 

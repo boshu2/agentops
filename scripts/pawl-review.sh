@@ -140,58 +140,34 @@ resolve_ao() {
 }
 
 # emit_pawl_catch <mode>: record this REFUTE as a structured membrane catch (epic
-# age-zpj5, S2) so DetectCatches/recall can group recurring classes — domain from
-# the changed-files' top dir, reason from the REFUTED verdict text, paths from the
-# reviewed files. Fail-safe + NON-BLOCKING: a missing `ao` or any error never blocks
-# the REFUTED exit (the catch is observability, not a gate). Reads the globals
-# (bead/head/evidence/review_files) at call time.
+# age-zpj5, S2) so DetectCatches/recall can group recurring classes. The extraction
+# lives Go-side (age-ulab): `ao membrane catch --evidence` performs the two-tier
+# REFUTED reason salvage (sentinel then multi-family prose, age-9931), resolves the
+# domain from the changed-files' top dir, and the affected paths from git by --scope
+# — the fragile grep/sed pipeline this function used to carry. Fail-safe +
+# NON-BLOCKING: a missing `ao` or any error never blocks the REFUTED exit (the catch
+# is observability, not a gate). Reads the globals (bead/head/evidence/scope) at
+# call time.
 emit_pawl_catch() {
-  local mode="${1:-fresh-context}" ao_bin reason domain paths files
+  local mode="${1:-fresh-context}" ao_bin
   local -a catch_args=()
   ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   [[ -n "${bead:-}" && -n "${head:-}" ]] || return 0
-  reason="$(grep -iE '^[[:space:]]*VERDICT:[[:space:]]*REFUTED' "${evidence:-/dev/null}" 2>/dev/null | tail -1 \
-            | sed -E 's/^[[:space:]]*VERDICT:[[:space:]]*REFUTED[[:space:]:—-]*//I' | cut -c1-200)"
-  # Multi-family / routed REFUTEs do NOT emit a `VERDICT: REFUTED <text>` sentinel — the
-  # routed sentinel is `PAWL <nonce> REFUTED` with no trailing reason — so the sentinel
-  # grep above yields empty and the catch would fall to the generic placeholder below,
-  # landing in the UNCLASSIFIED floor. Before that, salvage the reviewer's substantive
-  # `REFUTED: <finding>` prose line (the actual defect text) so multi-family catches carry
-  # a real reason and can be synthesized into a recurring class (ADR-0014, the loop's fuel).
-  if [[ -z "$reason" ]]; then
-    reason="$(grep -iE 'REFUTED[:]' "${evidence:-/dev/null}" 2>/dev/null \
-              | grep -ivE 'PAWL[[:space:]]+r?[0-9a-fx]+[[:space:]]+REFUTED|VERDICT[:]' \
-              | head -1 | sed -E 's/^.*REFUTED[:[:space:]]+//I' | cut -c1-200)"
-  fi
-  # De-bead-ided fallback (age-jjt8): NO $bead in the reason. class_key = domain + normalize(reason),
-  # so a bead in the fallback minted a per-bead class and made cross-bead recurrence invisible. Without
-  # it, unlabeled catches collapse to ONE per-domain class; the bead id is still on the row's bead field
-  # (no information loss). An explicit --class (below) overrides this reason as the class identity.
-  [[ -n "$reason" ]] || reason="pawl-review REFUTED (see evidence)"
   # Optional orchestrator-supplied SEMANTIC class + mechanical detector, passed through when set. The
   # class makes the catch CROSS-BEAD (a stable slug instead of the bead-drifting reason); the detector
-  # populates detector_pattern so the class becomes a compile candidate (was NEVER set -> compilability
-  # 0.00 by construction). Both optional; validated ao-side. (age-jjt8 defects 1+2)
+  # populates detector_pattern so the class becomes a compile candidate. Both optional; validated
+  # ao-side. (age-jjt8 defects 1+2)
   [[ -n "${PAWL_CATCH_CLASS:-}" ]]    && catch_args+=(--class "$PAWL_CATCH_CLASS")
   [[ -n "${PAWL_CATCH_DETECTOR:-}" ]] && catch_args+=(--detector-pattern "$PAWL_CATCH_DETECTOR")
-  # Changed files for affected_paths — computed DIRECTLY from git by scope, NOT from
-  # $review_files (which pawl-review only populates for LARGE diffs > MAX_INLINE_BYTES),
-  # so a NORMAL small-diff catch is still path-recallable.
-  case "${scope:-head}" in
-    staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
-    *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show "${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
-  esac
-  domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
-  [[ -n "$domain" ]] || domain="pawl-review"
-  paths="$(printf '%s\n' "$files" | head -20 | tr '\n' ',' | sed 's/,$//')" # portable join (BSD paste -sd is unreliable)
-  [[ -n "$paths" ]] && catch_args+=(--paths "$paths") # += : never clobber the class/detector args set above
   # Run from $REPO_ROOT (the REVIEWED repo): `ao membrane catch` roots its ledger via
   # repoRootOrCwd() from its cwd, so without this a pawl-review invoked from a different
   # cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in repoB) would write the catch to
   # the WRONG .agents/yield and recall in the reviewed repo would never see it. Subshell
-  # cd so the rest of the script's cwd is untouched.
-  ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane catch --bead "$bead" --domain "$domain" \
-      --reason "$reason" --head "$head" --mode "$mode" "${catch_args[@]}" ) >/dev/null 2>&1 || true
+  # cd so the rest of the script's cwd is untouched. $head is the resolved sha of
+  # $review_target, so --scope head reads the same commit the review covered.
+  ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane catch --bead "$bead" \
+      --evidence "${evidence:-/dev/null}" --head "$head" --mode "$mode" \
+      --scope "${scope:-head}" "${catch_args[@]}" ) >/dev/null 2>&1 || true
 }
 
 # recall_prior_catches: print the MEMBRANE MEMORY block (prior catches in this change's
