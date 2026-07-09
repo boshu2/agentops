@@ -14,8 +14,8 @@
 
 1. **Claim.** `BEADS_DIR="$(ao beads dir)" br ready --json` → pick a bead → `BEADS_DIR="$(ao beads dir)" br update <id> --claim --json`. **No bead, no push.** If the work is genuinely new, `BEADS_DIR="$(ao beads dir)" br create "Title" -t task -p 2 --body "..." --json` first (deps: `--deps blocks:<id>` or `BEADS_DIR="$(ao beads dir)" br dep add <child> <parent>`).
 2. **Scope.** Read the live bead body with `BEADS_DIR="$(ao beads dir)" br show <id> --json` before editing. Its acceptance is the contract: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
-3. **Ship.** `git worktree add wt-<bead-id> -b <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout (canonical-root rules: [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)). Implement. The pre-push gate runs automatically on push (the hook); run `ao gate check --fast --scope head` manually first to fail fast. Then run the **pawl review** — `scripts/pawl-review.sh <bead>` — which dispatches the **codex** refuter against the commit (cross-family for a Claude/Gemini author; it **REFUSES a same-family codex author** — review codex-authored work with a different-family reviewer, e.g. `--author-family codex` is rejected) and, on CONFIRMED, writes the commit-bound verdict the pre-push gate requires (REFUTED prints the defects to fix + re-run; LAW 0: never `claude -p`). **Push-to-main is refused without a CONFIRMED verdict** ([`check-pawl-pre-push.sh`](scripts/check-pawl-pre-push.sh); a `#trivial` provenance-only commit is the only waiver). The review discipline + `multi-model` opt-up: [`pre-land-refuters`](skills/pre-land-refuters/SKILL.md).
-4. **Land.** Push to `main` (the gate runs in the hook; rebase-on-reject). GitHub Actions are not part of the routine landing path; run them manually or through release tags only when explicitly needed. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
+3. **Ship.** `git worktree add wt-<bead-id> -b <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout (canonical-root rules: [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)). Implement, commit the bead's code as HEAD. Run `ao gate check --fast --scope head` to fail fast before you land.
+4. **Land.** **`ao land <bead>` is the canonical land verb** — one command does the whole trusted land. It (0) builds a fresh in-checkout `ao` and re-execs through it so the review runs the **LIVE/trusted path** (an installed `~/.local/bin/ao` fails `aoBinaryInside` and would otherwise take the cold, un-auto-binding stranger path), (1) pins `AO_BIN` to that fresh binary for preflight + the gate, (2) brings the standing pawl-service up (best-effort), (3) runs the cross-family **pawl review** (`ao pawl review <bead> --scope head`) — the **codex** refuter against the commit (cross-family for a Claude/Gemini author; it **REFUSES a same-family codex author** — review codex-authored work with a different-family reviewer; LAW 0: never `claude -p`), which on **CONFIRMED auto-binds** the commit-bound verdict the gate requires (a single `#trivial` provenance commit — no hand `ao provenance emit-verdict` step), and (4) hands off to the atomic land machinery ([`scripts/pawl-land.sh`](scripts/pawl-land.sh): fetch → rebase `origin/main` → restamp the verdict onto the post-rebase feat → single push through the gate) plus the trunk-bound provenance emit. On **REFUTED / NO-VERDICT it stops and exits non-zero — no land** (fix the printed defects, recommit, re-run). **Push-to-main is refused without a CONFIRMED verdict** ([`check-pawl-pre-push.sh`](scripts/check-pawl-pre-push.sh); a `#trivial` provenance-only commit is the only waiver). Bootstrap wrinkle: from a stale installed `ao`, run `cd <checkout> && make build && ./cli/bin/ao land <bead>` once. Review discipline + `multi-model` opt-up: [`pre-land-refuters`](skills/pre-land-refuters/SKILL.md). GitHub Actions are not part of the routine landing path. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
 
 ### Branch + Direct-Main Shape
 
@@ -24,7 +24,7 @@
 | Branch | `<type>/<bead-id>-<scenario-token>-<short-slug>` · ≤80 chars · `<scenario-token>` = full slug if it fits, else `<slug-prefix>-<hash8>` |
 | Commit title | `<type>(<scope>): <subject> (<bead-id>)` |
 | Required evidence | bead id in commit message or close reason · local gate output path or summary · bounded context when relevant |
-| Land | Push to `main` after the cockpit gate passes · rebase-on-reject (git serializes concurrent pushers) · no force-push · no deletes |
+| Land | `ao land <bead>` (canonical) — fresh in-checkout binary → trusted pawl review (auto-bind on CONFIRM) → atomic `pawl-land.sh` (rebase-on-reject, single push) · no force-push · no deletes |
 | Gate | cockpit pre-push gate (blocking, in the hook) + optional/manual Actions backstop. No PR review (PR flow retired — ag-qidx) |
 
 ### Multi-agent discipline (shared checkout)
@@ -152,12 +152,13 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds. For **user-facing CLI changes**, also run the installed-binary smoke (`cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh`) so the closeout proves the installed `ao` matches the build — not the stale product path — before declaring it usable.
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through its own PRIVATE repo, never this public one:
+4. **LAND + PUSH TO REMOTE** - a reviewed bead lands with **`ao land <bead>`** (fresh in-checkout binary → trusted pawl review with auto-bound verdict → atomic `pawl-land.sh` push through the gate); that is the code-landing path, not a bare `git push`. Then sync the tracker (its own PRIVATE repo, never this public one) and push any residual:
    ```bash
+   ao land <bead>                                     # land the reviewed bead's arc (verdict auto-bound, single push)
    git pull --rebase
    BEADS_DIR="$(ao beads dir)" br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
    git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: <summary>" && git -C "$(ao beads dir)" push  # if tracker changes are pending
-   git push
+   git push                                            # any residual non-bead commits (docs, tooling) not already landed by ao land
    git status  # MUST show "up to date with origin"
    ```
 5. **Clean up** - Clear stashes, prune remote branches, and validate worktree disposition

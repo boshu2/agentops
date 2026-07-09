@@ -130,6 +130,14 @@ func Execute() {
 			// silences cobra's error print; just map to the process exit code.
 			os.Exit(verifyPrePushErr.ExitCode())
 		}
+		var landErr *landExitError
+		if errors.As(err, &landErr) {
+			// The exit code IS the outcome in `ao land` (0 landed; a re-exec'd
+			// child's code, or a pawl-land / gate / push failure otherwise). The
+			// underlying step already printed its reason via streamed stdio;
+			// propagate the code with no extra cobra noise.
+			os.Exit(landErr.ExitCode())
+		}
 		var beadsErr *beadsExitError
 		if errors.As(err, &beadsErr) {
 			// The exit code IS the verdict in `ao beads verify|lint|audit`:

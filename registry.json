@@ -6,9 +6,9 @@
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
-    "cli_commands": 71,
+    "cli_commands": 72,
     "workflows": 4,
-    "capabilities": 143
+    "capabilities": 144
   },
   "surfaces": {
     "skills": [
@@ -864,6 +864,13 @@
         ]
       },
       {
+        "name": "ao land",
+        "path": "cli/cmd/ao/",
+        "purpose": "Land a bead through the trusted pawl path with a fresh in-checkout binary, then atomic pawl-land",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao lookup",
         "path": "cli/cmd/ao/",
         "purpose": "Retrieve specific knowledge artifacts by ID or query",
@@ -1234,9 +1241,9 @@
     ]
   },
   "capability_summary": {
-    "total": 143,
+    "total": 144,
     "skills": 58,
-    "cli_commands": 71,
+    "cli_commands": 72,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1276,6 +1283,7 @@
     "inject",
     "install-guards",
     "knowledge",
+    "land",
     "lookup",
     "maturity",
     "mcp",
@@ -3872,6 +3880,24 @@
         "--dry-run",
         "--json",
         "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.land",
+      "name": "ao land",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Land a bead through the trusted pawl path with a fresh in-checkout binary, then atomic pawl-land",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--scope",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

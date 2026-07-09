@@ -934,6 +934,13 @@
     },
     {
       "category": "public-tested",
+      "command": "land",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "lookup",
       "coverage_status": "covered",
       "kind": "leaf",
