@@ -1,30 +1,25 @@
 // practices: [dora-metrics, trunk-based-development]
 //
 // The VERIFIED FRONTIER — the async-membrane governance line in
-// `ao yield report` (age-fdae, R1 of epic age-xnet).
+// `ao yield report` (age-fdae R1; resolution delegated to the frontier
+// package in R3a, epic age-xnet).
 //
 // With async verification, commits land on origin/main BEFORE their verdicts
-// bind. The frontier is the last-known-good sha: the highest origin/main
-// commit whose walked ancestors ALL satisfy RESOLVED under the arms available
-// today —
-//
-//  1. a CONFIRMED verdict→commit edge in docs/provenance/ledger.jsonl, or
-//  2. the #trivial provenance-only waiver (the exact pawl_trivial_waiver
-//     semantics from scripts/lib/trivial-waiver.sh, ported — never a parallel
-//     re-derivation), DOMINATED by any REFUTED verdict on the commit.
-//
-// Every commit above the frontier is the PENDING WINDOW: landed, awaiting its
-// verdict (short sha, bead id from the subject, age). Read-only computation
-// over the provenance ledger + git ancestry; the walk is bounded at
-// frontierMaxWalk commits (CAUTION, age-fdae) — commits older than the
-// horizon are assumed resolved. Compensation arms arrive in R3a/R4: extend
-// resolveCommitToday, nothing else.
+// bind. The frontier is the last-known-good sha: the highest first-parent
+// (mainline) origin/main commit whose walked ancestry is RESOLVED. RESOLVED
+// itself has exactly ONE implementation — cli/internal/frontier's
+// uniform-precedence evaluator (CONFIRMED pawl verdict ∨ #trivial
+// provenance-only waiver ∨ verified-by-compensation ∨ resolved-by-compensator,
+// with REFUTED dominating every non-resolution arm). This file owns only the
+// REPORT surface: snapshotting origin/main's COMMITTED ledger (never the
+// worktree file — the age-fdae refute-fix), delegating to frontier.Compute,
+// and rendering the pending window (short sha, bead id from the subject,
+// age). The walk stays bounded at frontierMaxWalk commits (CAUTION,
+// age-fdae); commits older than the horizon are assumed resolved.
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -33,6 +28,9 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/frontier"
+	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
 const (
@@ -45,33 +43,18 @@ const (
 	// older than the horizon are assumed resolved.
 	frontierMaxWalk = 200
 	// provenanceLedgerRelPath is the repo-rooted provenance ledger holding
-	// the verdict→commit edges the CONFIRMED arm reads.
+	// the verdict→commit edges the frontier evaluator reads.
 	provenanceLedgerRelPath = "docs/provenance/ledger.jsonl"
 )
 
-// frontierCommit is one origin/main commit in the bounded walk.
+// frontierCommit is one origin/main mainline commit in the bounded walk — the
+// display row source for the pending window (message-body reads live in the
+// frontier evaluator, which reads the repo itself).
 type frontierCommit struct {
 	SHA     string
 	Subject string
-	Body    string
 	When    time.Time
 }
-
-// commitVerdicts is the verdict evidence the provenance ledger binds to one
-// commit sha (a commit can carry both after a REFUTED→CONFIRMED re-review).
-type commitVerdicts struct {
-	Confirmed bool
-	Refuted   bool
-}
-
-// frontierArm names which RESOLVED arm satisfied a commit ("" = unresolved).
-type frontierArm string
-
-const (
-	frontierArmNone      frontierArm = ""
-	frontierArmConfirmed frontierArm = "confirmed-verdict"
-	frontierArmWaiver    frontierArm = "trivial-waiver"
-)
 
 // yieldReportPendingCommit is one origin/main commit above the verified
 // frontier — landed, awaiting its verdict.
@@ -84,160 +67,38 @@ type yieldReportPendingCommit struct {
 	TS      string `json:"ts,omitempty"`
 }
 
-// resolveCommitToday evaluates the RESOLVED predicate for one origin/main
-// commit under the arms available TODAY (the R3a extensibility seam — future
-// compensation arms extend THIS chain; callers depend only on "some arm
-// resolved it"):
-//
-//  1. CONFIRMED verdict edge — a cross-family verdict bound to the commit in
-//     the provenance ledger. An earlier REFUTED on the same commit does not
-//     undo a later CONFIRMED (re-review supersedes).
-//  2. #trivial provenance-only waiver — an author assertion, so any REFUTED
-//     verdict on the commit DOMINATES it: refuted evidence beats asserted
-//     triviality.
-func resolveCommitToday(c frontierCommit, v commitVerdicts, waived func(frontierCommit) bool) frontierArm {
-	if v.Confirmed {
-		return frontierArmConfirmed
-	}
-	if !v.Refuted && waived(c) {
-		return frontierArmWaiver
-	}
-	return frontierArmNone
-}
-
-// trivialMarkerSubjectRe / trivialMarkerBodyRe port the age-w2ny marker
-// grammar from scripts/lib/trivial-waiver.sh verbatim: #trivial is a marker
-// only as a TRAILING tag at the end of the subject or a standalone body line.
-// A prose mention (mid-subject or in-body) never waives — that was the
-// historical fail-open where any commit could bypass the pawl by naming
-// #trivial.
-var (
-	trivialMarkerSubjectRe = regexp.MustCompile(`(?i)(^|[ \t])#trivial[ \t]*$`)
-	trivialMarkerBodyRe    = regexp.MustCompile(`(?im)^[ \t]*#trivial[ \t]*$`)
-)
-
-// hasTrivialMarker reports whether the commit message carries an explicit
-// #trivial marker per the age-w2ny grammar.
-func hasTrivialMarker(subject, body string) bool {
-	return trivialMarkerSubjectRe.MatchString(subject) || trivialMarkerBodyRe.MatchString(body)
-}
-
-// trivialWaiverDiffOK verifies the age-u43w arm of the waiver: the commit's
-// diff touches ONLY docs/provenance/ paths. Fail-closed: a failed diff-tree
-// or an empty changed-file list cannot prove triviality, so it does not
-// waive. --no-renames forces a rename INTO docs/provenance/ to expose its
-// non-provenance source path.
-func trivialWaiverDiffOK(root, sha string) bool {
-	cmd := exec.Command("git", "-C", root, "diff-tree", // #nosec G204 nosemgrep -- root from resolveProjectDir, sha from git rev-list output; fixed read-only git query.
-		"--no-commit-id", "--no-renames", "--name-only", "-r", sha)
-	out, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	changed := false
-	for _, f := range strings.Split(string(out), "\n") {
-		f = strings.TrimSpace(f)
-		if f == "" {
-			continue
-		}
-		changed = true
-		if !strings.HasPrefix(f, "docs/provenance/") {
-			return false
-		}
-	}
-	return changed
-}
-
-// commitTriviallyWaived is the production waiver predicate: explicit marker
-// AND provenance-only diff, both required.
-func commitTriviallyWaived(root string) func(frontierCommit) bool {
-	return func(c frontierCommit) bool {
-		return hasTrivialMarker(c.Subject, c.Body) && trivialWaiverDiffOK(root, c.SHA)
-	}
-}
-
-// provenanceVerdictEdge is the subset of one provenance-ledger line the
-// frontier reads (real shape: from_id "<bead>@<sha7>", to_id full commit sha,
-// disposition inside evidence_ref — see docs/provenance/ledger.jsonl).
-type provenanceVerdictEdge struct {
-	FromType    string `json:"from_type"`
-	ToID        string `json:"to_id"`
-	ToType      string `json:"to_type"`
-	EvidenceRef string `json:"evidence_ref"`
-}
-
-// frontierDispositionRe extracts the verdict disposition from an
-// evidence_ref like "pawl-verdict age-mv67 disposition=CONFIRMED".
-var frontierDispositionRe = regexp.MustCompile(`disposition=([A-Z]+)`)
-
-// loadCommitVerdicts indexes the provenance ledger's verdict→commit edges by
-// commit sha. A missing ledger is an empty index, not an error (a fresh repo
-// has no provenance yet); malformed lines are skipped — this is a read-only
-// report, not a ledger validator.
-func loadCommitVerdicts(root string) map[string]commitVerdicts {
-	idx := map[string]commitVerdicts{}
-	// The frontier describes origin/main, so its verdict evidence must come from
-	// origin/main's COMMITTED ledger — never the worktree file, where an
-	// uncommitted/unlanded CONFIRMED edge could certify a published commit the
-	// published ref carries no evidence for (age-fdae refute-fix). Fail-closed:
-	// if the ref-scoped read fails, no verdicts resolve and the frontier holds.
+// loadOriginLedgerEdges snapshots the provenance ledger AS COMMITTED on
+// origin/main (`git show <ref>:<path>`) and decodes it with the production
+// reader. The frontier describes origin/main, so its verdict evidence must
+// come from origin/main's COMMITTED ledger — never the worktree file, where
+// an uncommitted CONFIRMED edge could certify a published commit the
+// published ref carries no evidence for (the age-fdae refute-fix, preserved
+// across the R3a delegation). A ref without the ledger (fresh repo) is an
+// empty snapshot, not an error — fail-closed: no evidence, nothing resolves.
+// A committed ledger that does not decode IS an error the report surfaces as
+// a degraded frontier: the audit authority never silently drops a corrupt
+// record (provenancegraph.Store.Read discipline).
+func loadOriginLedgerEdges(root string) ([]provenancegraph.Edge, error) {
 	cmd := exec.Command("git", "-C", root, "show", frontierRef+":"+provenanceLedgerRelPath) // #nosec G204 -- fixed argv over a well-known repo-relative path.
 	out, err := cmd.Output()
 	if err != nil {
-		return idx
+		return nil, nil // no committed ledger on the ref: empty snapshot, frontier holds
 	}
-	sc := bufio.NewScanner(bytes.NewReader(out))
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" {
-			continue
-		}
-		var e provenanceVerdictEdge
-		if json.Unmarshal([]byte(line), &e) != nil {
-			continue
-		}
-		if e.FromType != "verdict" || e.ToType != "commit" {
-			continue
-		}
-		m := frontierDispositionRe.FindStringSubmatch(e.EvidenceRef)
-		if m == nil {
-			continue
-		}
-		key := frontierSHAKey(e.ToID)
-		if key == "" {
-			continue
-		}
-		v := idx[key]
-		switch m[1] {
-		case "CONFIRMED":
-			v.Confirmed = true
-		case "REFUTED":
-			v.Refuted = true
-		}
-		idx[key] = v
+	edges, err := provenancegraph.DecodeEdges(bytes.NewReader(out))
+	if err != nil {
+		return nil, fmt.Errorf("committed ledger %s:%s: %w", frontierRef, provenanceLedgerRelPath, err)
 	}
-	return idx
-}
-
-// frontierSHAKey normalizes a commit sha to the 12-hex-prefix key the verdict
-// index uses, tolerating abbreviated shas in ledger to_id fields.
-func frontierSHAKey(sha string) string {
-	sha = strings.ToLower(strings.TrimSpace(sha))
-	if len(sha) > 12 {
-		return sha[:12]
-	}
-	return sha
+	return edges, nil
 }
 
 // listFrontierCommits walks origin/main newest-first, bounded at
-// frontierMaxWalk, in ONE git call (%x1f field / %x1e record separators so
-// multi-line bodies survive). --first-parent keeps the walk on the mainline —
-// the frontier vouches for what landed on main, not for interior branch
-// topology.
+// frontierMaxWalk, in ONE git call (%x1f field / %x1e record separators).
+// --first-parent keeps the walk on the mainline — the frontier vouches for
+// what landed on main, not for interior branch topology, and
+// frontier.Compute's candidates share the same first-parent lineage.
 func listFrontierCommits(root string) ([]frontierCommit, error) {
 	cmd := exec.Command("git", "-C", root, "log", "--first-parent", // #nosec G204 nosemgrep -- root from resolveProjectDir; fixed read-only git query.
-		"-n", strconv.Itoa(frontierMaxWalk), "--format=%H%x1f%ct%x1f%s%x1f%b%x1e", frontierRef)
+		"-n", strconv.Itoa(frontierMaxWalk), "--format=%H%x1f%ct%x1f%s%x1e", frontierRef)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -257,8 +118,8 @@ func listFrontierCommits(root string) ([]frontierCommit, error) {
 		if strings.TrimSpace(rec) == "" {
 			continue
 		}
-		parts := strings.SplitN(rec, "\x1f", 4)
-		if len(parts) != 4 {
+		parts := strings.SplitN(rec, "\x1f", 3)
+		if len(parts) != 3 {
 			continue
 		}
 		var when time.Time
@@ -268,37 +129,10 @@ func listFrontierCommits(root string) ([]frontierCommit, error) {
 		out = append(out, frontierCommit{
 			SHA:     parts[0],
 			When:    when,
-			Subject: parts[2],
-			Body:    strings.TrimRight(parts[3], "\n"),
+			Subject: strings.TrimRight(parts[2], "\n"),
 		})
 	}
 	return out, nil
-}
-
-// computeFrontier finds the LKG frontier within the bounded walk: the highest
-// (newest) commit at-or-below which EVERY walked commit is RESOLVED. Input is
-// newest-first (git log order). Returns the frontier sha ("" when even the
-// oldest walked commit is unresolved) and the pending window: every commit
-// above the frontier, newest first — including already-resolved commits above
-// an unresolved ancestor, whose LKG status is not yet reachable.
-func computeFrontier(commits []frontierCommit, resolve func(frontierCommit) frontierArm) (string, []frontierCommit) {
-	oldestUnresolved := -1
-	for i := len(commits) - 1; i >= 0; i-- {
-		if resolve(commits[i]) == frontierArmNone {
-			oldestUnresolved = i
-			break
-		}
-	}
-	switch {
-	case len(commits) == 0:
-		return "", nil
-	case oldestUnresolved == -1:
-		return commits[0].SHA, nil
-	case oldestUnresolved+1 < len(commits):
-		return commits[oldestUnresolved+1].SHA, commits[:oldestUnresolved+1]
-	default:
-		return "", commits
-	}
 }
 
 // frontierBeadParenRe / frontierBeadForRe extract the bead id from a commit
@@ -323,11 +157,13 @@ func beadIDFromSubject(subject string) string {
 	return ""
 }
 
-// buildFrontierSection computes the VERIFIED FRONTIER over origin/main:
-// frontier sha + pending-window rows. Read-only; a git failure (no repo, no
-// origin/main) degrades to an error the report prints, never fatal. The git
-// root is re-derived from the project dir so the section is correct from a
-// subdirectory (mirroring repoRootOrCwd).
+// buildFrontierSection computes the VERIFIED FRONTIER over origin/main by
+// delegating RESOLVED to frontier.Compute — the single evaluator the close
+// gate and the land lane share — then rendering the pending window as the
+// mainline commits above the frontier sha. Read-only; a git failure (no repo,
+// no origin/main) degrades to an error the report prints, never fatal. The
+// git root is re-derived from the project dir so the section is correct from
+// a subdirectory (mirroring repoRootOrCwd).
 func buildFrontierSection(root string, now time.Time) (string, []yieldReportPendingCommit, error) {
 	pending := []yieldReportPendingCommit{}
 	gitRoot := root
@@ -338,13 +174,18 @@ func buildFrontierSection(root string, now time.Time) (string, []yieldReportPend
 	if err != nil {
 		return "", pending, err
 	}
-	verdicts := loadCommitVerdicts(gitRoot)
-	waived := commitTriviallyWaived(gitRoot)
-	resolve := func(c frontierCommit) frontierArm {
-		return resolveCommitToday(c, verdicts[frontierSHAKey(c.SHA)], waived)
+	edges, err := loadOriginLedgerEdges(gitRoot)
+	if err != nil {
+		return "", pending, err
 	}
-	frontierSHA, pendingCommits := computeFrontier(commits, resolve)
-	for _, c := range pendingCommits {
+	res, err := frontier.Compute(gitRoot, edges, frontierRef, frontierMaxWalk)
+	if err != nil {
+		return "", pending, err
+	}
+	for _, c := range commits {
+		if c.SHA == res.SHA {
+			break
+		}
 		pending = append(pending, yieldReportPendingCommit{
 			SHA:     c.SHA,
 			Short:   shortSHA(c.SHA),
@@ -354,7 +195,7 @@ func buildFrontierSection(root string, now time.Time) (string, []yieldReportPend
 			TS:      rfc3339OrEmpty(c.When),
 		})
 	}
-	return frontierSHA, pending, nil
+	return res.SHA, pending, nil
 }
 
 // renderFrontierText writes the VERIFIED FRONTIER section of the text report:

@@ -193,11 +193,16 @@ func TestYieldReportFrontier_TrivialWaiverAndEmptyWindow(t *testing.T) {
 	c1 := frontierCommitFixture(t, root, "feat(core): real work (age-dddd)", "", "code.txt", reportTestNow.Add(-3*time.Hour))
 	// Seed BEFORE the bind commit so c2 IS the production-shape bind: the
 	// commit that carries the ledger edge for c1 and itself waives (#trivial,
-	// provenance-only). The frontier reads the committed ledger at origin/main.
+	// provenance-only). Commit the SEEDED ledger itself (valid JSONL — the
+	// production reader hard-errors on malformed committed lines, so the
+	// fixture must keep the real persisted shape). The frontier reads the
+	// committed ledger at origin/main.
 	seedProvenanceVerdict(t, root, "age-dddd", c1, "CONFIRMED")
-	c2 := frontierCommitFixture(t, root,
-		"chore(provenance): bind pawl CONFIRMED verdict for age-dddd #trivial", "",
-		"docs/provenance/ledger.jsonl", reportTestNow.Add(-1*time.Hour))
+	when := reportTestNow.Add(-1 * time.Hour)
+	frontierGit(t, root, when, "add", "docs/provenance")
+	frontierGit(t, root, when, "commit", "-q", "-m",
+		"chore(provenance): bind pawl CONFIRMED verdict for age-dddd #trivial")
+	c2 := frontierGit(t, root, when, "rev-parse", "HEAD")
 	publishOriginMain(t, root)
 	setYieldReportState(t, root)
 
@@ -240,6 +245,35 @@ func TestYieldReportFrontier_RefutedDominatesWaiver(t *testing.T) {
 	}
 	if len(doc.Pending) != 2 || doc.Pending[1].SHA != c2 {
 		t.Errorf("pending = %+v, want [fixture bind, refuted #trivial commit %s]", doc.Pending, c2)
+	}
+}
+
+// TestYieldReportFrontier_RefutedThenConfirmedSameSHAHolds pins the R3a
+// delegation: the live frontier shares the frontier package's UNIFORM
+// precedence (TestPrecedence_RefutedDominatesConfirmed) — a sha carrying any
+// REFUTED verdict and no resolution edge stays UNRESOLVED even when a later
+// same-sha re-review CONFIRMED it. The retired local resolver let CONFIRMED
+// supersede an earlier REFUTED ("re-review supersedes"); two disagreeing
+// RESOLVED implementations was the coherence fail this test buries.
+func TestYieldReportFrontier_RefutedThenConfirmedSameSHAHolds(t *testing.T) {
+	root := newFrontierRepo(t)
+	c1 := frontierCommitFixture(t, root, "feat(core): base (age-hhhh)", "", "code.txt", reportTestNow.Add(-6*time.Hour))
+	c2 := frontierCommitFixture(t, root, "feat(core): contested (age-iiii)", "", "code.txt", reportTestNow.Add(-3*time.Hour))
+	seedProvenanceVerdict(t, root, "age-hhhh", c1, "CONFIRMED")
+	seedProvenanceVerdict(t, root, "age-iiii", c2, "REFUTED")
+	seedProvenanceVerdict(t, root, "age-iiii", c2, "CONFIRMED") // same-sha re-review, no resolves edge
+	commitLedgerAndPublish(t, root)
+	setYieldReportState(t, root)
+
+	doc := decodeReport(t)
+	if doc.FrontierError != "" {
+		t.Fatalf("frontier error = %q, want none", doc.FrontierError)
+	}
+	if doc.FrontierSHA != c1 {
+		t.Errorf("frontier_sha = %q, want %q: REFUTED dominates a bare same-sha CONFIRMED (uniform precedence — resolution only via a resolves edge)", doc.FrontierSHA, c1)
+	}
+	if len(doc.Pending) != 2 || doc.Pending[1].SHA != c2 {
+		t.Errorf("pending = %+v, want [fixture bind, contested commit %s]", doc.Pending, c2)
 	}
 }
 
@@ -291,64 +325,13 @@ func TestYieldReportFrontier_DegradesWithoutOriginMain(t *testing.T) {
 	}
 }
 
-// TestHasTrivialMarker ports the age-w2ny marker grammar cases from
-// scripts/lib/trivial-waiver.sh: #trivial waives only as a TRAILING subject
-// tag or a standalone body line — never a prose mention (the historical
-// fail-open where naming #trivial mid-subject bypassed the pawl).
-func TestHasTrivialMarker(t *testing.T) {
-	cases := []struct {
-		name    string
-		subject string
-		body    string
-		want    bool
-	}{
-		{name: "trailing subject tag", subject: "chore(provenance): bind verdict #trivial", want: true},
-		{name: "case-insensitive", subject: "chore(provenance): bind verdict #TRIVIAL", want: true},
-		{name: "mid-subject prose mention", subject: "fix(pawl): prevent #trivial from bypassing pawl", want: false},
-		{name: "standalone body line", subject: "feat: thing", body: "resolved.\n\n#trivial\n", want: true},
-		{name: "indented body line", subject: "feat: thing", body: "  #trivial  ", want: true},
-		{name: "body prose mention", subject: "feat: thing", body: "this mentions #trivial in prose", want: false},
-		{name: "no marker", subject: "feat: thing", want: false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := hasTrivialMarker(tc.subject, tc.body); got != tc.want {
-				t.Errorf("hasTrivialMarker(%q, %q) = %v, want %v", tc.subject, tc.body, got, tc.want)
-			}
-		})
-	}
-}
-
-// TestResolveCommitToday pins the arm precedence of the RESOLVED-today seam:
-// CONFIRMED resolves outright (even alongside an earlier REFUTED — re-review
-// supersedes); the waiver arm resolves only absent ANY refute; otherwise
-// unresolved.
-func TestResolveCommitToday(t *testing.T) {
-	cases := []struct {
-		name      string
-		confirmed bool
-		refuted   bool
-		waivable  bool
-		want      frontierArm
-	}{
-		{name: "confirmed", confirmed: true, want: frontierArmConfirmed},
-		{name: "confirmed after refute (re-review)", confirmed: true, refuted: true, want: frontierArmConfirmed},
-		{name: "waiver", waivable: true, want: frontierArmWaiver},
-		{name: "refuted dominates waiver", refuted: true, waivable: true, want: frontierArmNone},
-		{name: "nothing", want: frontierArmNone},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := resolveCommitToday(frontierCommit{SHA: "abc"},
-				commitVerdicts{Confirmed: tc.confirmed, Refuted: tc.refuted},
-				func(frontierCommit) bool { return tc.waivable })
-			if got != tc.want {
-				t.Errorf("resolveCommitToday(confirmed=%v refuted=%v waivable=%v) = %q, want %q",
-					tc.confirmed, tc.refuted, tc.waivable, got, tc.want)
-			}
-		})
-	}
-}
+// NOTE (R3a delegation): the local resolver unit tests that lived here —
+// TestHasTrivialMarker, TestResolveCommitToday, TestComputeFrontier,
+// TestTrivialWaiverDiffOK — moved WITH their subject: RESOLVED now has one
+// implementation in cli/internal/frontier, pinned by TestTrivialWaiver_Lockstep
+// (marker grammar + diff arm), TestPrecedence_RefutedDominatesConfirmed
+// (uniform precedence), and the walk-math acceptance tests there. This file
+// keeps only the report-surface integration tests plus beadIDFromSubject.
 
 // TestBeadIDFromSubject pins the pending-window bead extraction: the trailing
 // parenthesized id convention, the bind-commit "for <bead>" form, and honest
@@ -372,102 +355,3 @@ func TestBeadIDFromSubject(t *testing.T) {
 	}
 }
 
-// TestComputeFrontier is the pure L1 over the walk math: newest-first input,
-// frontier = the commit below the OLDEST unresolved one, pending = everything
-// above it (resolved commits above an unresolved ancestor are still pending —
-// their LKG status is unreachable).
-func TestComputeFrontier(t *testing.T) {
-	mk := func(shas ...string) []frontierCommit {
-		out := make([]frontierCommit, 0, len(shas))
-		for _, s := range shas {
-			out = append(out, frontierCommit{SHA: s})
-		}
-		return out
-	}
-	resolver := func(resolved map[string]bool) func(frontierCommit) frontierArm {
-		return func(c frontierCommit) frontierArm {
-			if resolved[c.SHA] {
-				return frontierArmConfirmed
-			}
-			return frontierArmNone
-		}
-	}
-	pendingSHAs := func(pending []frontierCommit) []string {
-		out := make([]string, 0, len(pending))
-		for _, c := range pending {
-			out = append(out, c.SHA)
-		}
-		return out
-	}
-
-	cases := []struct {
-		name         string
-		commits      []frontierCommit
-		resolved     map[string]bool
-		wantFrontier string
-		wantPending  []string
-	}{
-		{
-			name: "all resolved — frontier is the tip", commits: mk("t", "m", "b"),
-			resolved: map[string]bool{"t": true, "m": true, "b": true},
-			wantFrontier: "t", wantPending: []string{},
-		},
-		{
-			name: "unresolved middle — resolved tip still pending", commits: mk("t", "m", "b"),
-			resolved: map[string]bool{"t": true, "b": true},
-			wantFrontier: "b", wantPending: []string{"t", "m"},
-		},
-		{
-			name: "oldest walked commit unresolved — no frontier in window", commits: mk("t", "m", "b"),
-			resolved: map[string]bool{"t": true, "m": true},
-			wantFrontier: "", wantPending: []string{"t", "m", "b"},
-		},
-		{
-			name: "empty walk", commits: nil,
-			wantFrontier: "", wantPending: []string{},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			frontier, pending := computeFrontier(tc.commits, resolver(tc.resolved))
-			if frontier != tc.wantFrontier {
-				t.Errorf("frontier = %q, want %q", frontier, tc.wantFrontier)
-			}
-			got := pendingSHAs(pending)
-			if len(got) != len(tc.wantPending) {
-				t.Fatalf("pending = %v, want %v", got, tc.wantPending)
-			}
-			for i := range got {
-				if got[i] != tc.wantPending[i] {
-					t.Errorf("pending[%d] = %q, want %q", i, got[i], tc.wantPending[i])
-				}
-			}
-		})
-	}
-}
-
-// TestTrivialWaiverDiffOK pins the ported age-u43w diff arm against a real
-// repo: provenance-only diffs waive; any non-provenance path refuses; a bogus
-// sha fails closed.
-func TestTrivialWaiverDiffOK(t *testing.T) {
-	root := newFrontierRepo(t)
-	// Base commit first: diff-tree (matching scripts/lib/trivial-waiver.sh, no
-	// --root) yields an empty list for a ROOT commit and fail-closes — correct
-	// waiver semantics, but a provenance commit as the repo root is a shape
-	// production never produces (fixture-fidelity rule).
-	frontierCommitFixture(t, root, "chore: base", "", "code.txt", reportTestNow.Add(-3*time.Hour))
-	prov := frontierCommitFixture(t, root, "chore(provenance): bind #trivial", "",
-		"docs/provenance/ledger.jsonl", reportTestNow.Add(-2*time.Hour))
-	mixed := frontierCommitFixture(t, root, "chore(provenance): sneaky #trivial", "",
-		"cli/code.go", reportTestNow.Add(-1*time.Hour))
-
-	if !trivialWaiverDiffOK(root, prov) {
-		t.Errorf("provenance-only diff at %s must waive", shortSHA(prov))
-	}
-	if trivialWaiverDiffOK(root, mixed) {
-		t.Errorf("non-provenance diff at %s must NOT waive", shortSHA(mixed))
-	}
-	if trivialWaiverDiffOK(root, "0000000000000000000000000000000000000000") {
-		t.Errorf("unresolvable sha must fail closed, not waive")
-	}
-}
