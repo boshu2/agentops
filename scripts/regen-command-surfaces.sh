@@ -15,10 +15,11 @@
 #   regen, zero hand-edits.
 #
 # SOURCES OF TRUTH (single, each)
-#   * registered command set  -> the LIVE cobra tree, via the Go test
+#   * registered command set  -> the DEFAULT production cobra spine, via the Go test
 #       `TestDumpRegisteredTopLevelCommands` (AO_DUMP_REGISTERED_CMDS=1). It walks
-#       rootCmd.Commands() — the exact set the two expectedCmds literals must
-#       match (sorted, `help` excluded). A test, not a subcommand, so emitting
+#       which applies pruneToDefaultSpine before walking rootCmd.Commands() —
+#       the exact set the two expectedCmds literals must match (sorted, `help`
+#       excluded). A test, not a subcommand, so emitting
 #       the list does not itself add a registered command.
 #   * heading counts          -> cli/docs/COMMANDS.md (itself generated from the
 #       cobra tree by generate-cli-reference.sh). top = `### \`ao `, sub =
@@ -82,8 +83,8 @@ mapfile -t CMDS < <(
     | grep -E '^[a-z0-9][a-z0-9-]*$' \
     | sort -u
 )
-if [[ "${#CMDS[@]}" -lt 45 ]]; then
-  echo "ERROR: dumper returned only ${#CMDS[@]} commands (expected >=45); build/test failure?" >&2
+if [[ "${#CMDS[@]}" -lt 25 ]]; then
+  echo "ERROR: dumper returned only ${#CMDS[@]} commands (expected >=25 for the ADR-0012 spine); build/test failure?" >&2
   exit 2
 fi
 
