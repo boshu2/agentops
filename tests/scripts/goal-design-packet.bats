@@ -151,3 +151,101 @@ setup() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"checker failed"* ]]
 }
+
+@test "mark-validated stamps verdict, flips status, refreshes digest" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new marked-packet \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Mark a packet validated with evidence" \
+        --scenario-name "Mark a packet validated with evidence" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/marked-packet"
+
+    run "$TOOL" mark-validated "$packet" --verdict "PASS (codex exec cross-family, round 1, 2026-07-09)"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"goal-design packet valid"* ]]
+    grep -q "^status: validated" "$packet/intent.md"
+    grep -q "^status: validated" "$packet/driver.md"
+    grep -qF -- "- Last validation verdict: PASS (codex exec cross-family, round 1, 2026-07-09)" "$packet/driver.md"
+
+    run "$TOOL" prompt "$packet"
+    [ "$status" -eq 0 ]
+}
+
+@test "mark-validated refuses a non-PASS/WARN or empty verdict" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new unmarked-packet \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Refuse weak validation evidence" \
+        --scenario-name "Refuse weak validation evidence" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/unmarked-packet"
+
+    run "$TOOL" mark-validated "$packet" --verdict "FAIL blockers remain"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"PASS or WARN"* ]]
+    grep -q "^status: draft" "$packet/intent.md"
+}
+
+@test "new scaffolds the andon router into the driver body" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new andon-packet \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Scaffold the andon router" \
+        --scenario-name "Scaffold the andon router" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    driver="$BATS_TEST_TMPDIR/.agents/goal-design/andon-packet/driver.md"
+    grep -q "## Andon Router" "$driver"
+    grep -q "ao gate check --fast --scope head" "$driver"
+    grep -q "refusal lane" "$driver"
+}
+
+@test "mark-validated rolls back when the checker rejects the stamped packet" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new rollback-packet \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Never leave a broken packet certified" \
+        --scenario-name "Never leave a broken packet certified" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/rollback-packet"
+
+    sed -i.bak 's/^objective: .*$/objective: ""/' "$packet/intent.md"
+    rm -f "$packet/intent.md.bak"
+    before_intent="$(sha256sum "$packet/intent.md" | awk '{print $1}')"
+    before_driver="$(sha256sum "$packet/driver.md" | awk '{print $1}')"
+
+    run "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-09)"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"restored"* ]]
+    [ "$(sha256sum "$packet/intent.md" | awk '{print $1}')" = "$before_intent" ]
+    [ "$(sha256sum "$packet/driver.md" | awk '{print $1}')" = "$before_driver" ]
+    grep -q "^status: draft" "$packet/intent.md"
+
+    run "$TOOL" mark-validated "$packet" --verdict "PASS (validator)" --no-check
+    [ "$status" -ne 0 ]
+}
+
+@test "mark-validated leaves a malformed-driver packet byte-identical" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new malformed-driver \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Never partially certify a packet" \
+        --scenario-name "Never partially certify a packet" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/malformed-driver"
+
+    printf 'not frontmatter at all\n' > "$packet/driver.md"
+    before_intent="$(sha256sum "$packet/intent.md" | awk '{print $1}')"
+    before_driver="$(sha256sum "$packet/driver.md" | awk '{print $1}')"
+
+    run "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-09)"
+    [ "$status" -ne 0 ]
+    [ "$(sha256sum "$packet/intent.md" | awk '{print $1}')" = "$before_intent" ]
+    [ "$(sha256sum "$packet/driver.md" | awk '{print $1}')" = "$before_driver" ]
+    grep -q "^status: draft" "$packet/intent.md"
+}
