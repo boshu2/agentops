@@ -864,3 +864,30 @@ func TestComputeGauges_EscapeRateNoConfirmed(t *testing.T) {
 		t.Error("EscapeRateNote should explain the nil")
 	}
 }
+
+// TestSpendOf_TokensTotalFallback locks the age-ivoq gauge contract: when a
+// usage surface reported only a combined total (codex exec "tokens used"),
+// tokens_out is 0 and the spend measure must fall back to tokens_total —
+// otherwise the R ruler reads measured spend as zero. An explicit tokens_out
+// still wins (no double counting).
+func TestSpendOf_TokensTotalFallback(t *testing.T) {
+	cases := []struct {
+		name string
+		body UsageBody
+		want int
+	}{
+		{"total-only measured usage counts", UsageBody{TokensOut: 0, TokensTotal: 800}, 800},
+		{"explicit tokens_out wins over total", UsageBody{TokensOut: 20, TokensTotal: 800}, 20},
+		{"all-zero stays zero", UsageBody{}, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := spendOf(&tc.body); got != tc.want {
+				t.Errorf("spendOf(%+v) = %d, want %d", tc.body, got, tc.want)
+			}
+		})
+	}
+	if got := spendOf(nil); got != 0 {
+		t.Errorf("spendOf(nil) = %d, want 0", got)
+	}
+}

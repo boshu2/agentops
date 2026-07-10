@@ -358,3 +358,51 @@ func TestWriteGaugeReport_EscapeRateRow(t *testing.T) {
 		t.Errorf("report missing the rubber-stamp framing:\n%s", out)
 	}
 }
+
+// TestEmitYieldEvent_UsageCarriesMeterSources locks the age-ivoq CLI seam (the
+// same seam that silently dropped detector fields in EM.2.10): a usage emit via
+// `ao yield emit usage --json '{...tokens_total/tokens_source/cost_source...}'`
+// must thread the meter fields to the writer — and an ambiguous all-zero body
+// (the shape behind 549/549 cost_usd=0 rows) must come back stamped explicitly
+// unknown, never silently zero.
+func TestEmitYieldEvent_UsageCarriesMeterSources(t *testing.T) {
+	root := t.TempDir()
+	ts := time.Date(2026, 7, 9, 14, 0, 0, 0, time.UTC)
+
+	measured := `{"tokens_in":0,"tokens_out":0,"tokens_total":17068,"tokens_source":"measured","cost_usd":0,"cost_source":"unknown","wall_clock_s":248,"model":"gpt","phase":"review"}`
+	if err := emitYieldEvent(root, yieldledger.EventUsage, "age-m", "r1", ts, measured); err != nil {
+		t.Fatalf("emit measured usage: %v", err)
+	}
+	ambiguous := `{"tokens_in":0,"tokens_out":0,"cost_usd":0,"wall_clock_s":0,"model":"unknown","phase":"review"}`
+	if err := emitYieldEvent(root, yieldledger.EventUsage, "age-z", "r1", ts, ambiguous); err != nil {
+		t.Fatalf("emit ambiguous usage: %v", err)
+	}
+
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	m := ledger.UsageFor("age-m")
+	if len(m) != 1 {
+		t.Fatalf("UsageFor(age-m) = %d rows, want 1", len(m))
+	}
+	if got := m[0].Usage.TokensTotal; got != 17068 {
+		t.Errorf("tokens_total = %d, want 17068 (CLI seam dropped the meter field)", got)
+	}
+	if got := m[0].Usage.TokensSource; got != yieldledger.SourceMeasured {
+		t.Errorf("tokens_source = %q, want %q", got, yieldledger.SourceMeasured)
+	}
+	if got := m[0].Usage.CostSource; got != yieldledger.SourceUnknown {
+		t.Errorf("cost_source = %q, want %q", got, yieldledger.SourceUnknown)
+	}
+	z := ledger.UsageFor("age-z")
+	if len(z) != 1 {
+		t.Fatalf("UsageFor(age-z) = %d rows, want 1", len(z))
+	}
+	if got := z[0].Usage.CostSource; got != yieldledger.SourceUnknown {
+		t.Errorf("ambiguous-zero cost_source = %q, want %q (must be stamped at the writer)", got, yieldledger.SourceUnknown)
+	}
+	if got := z[0].Usage.TokensSource; got != yieldledger.SourceUnknown {
+		t.Errorf("ambiguous-zero tokens_source = %q, want %q", got, yieldledger.SourceUnknown)
+	}
+}

@@ -430,7 +430,17 @@ func emitYieldEvent(root, kind, bead, run string, ts time.Time, jsonBody string)
 		if _, err := w.AppendUsage(root, yieldledger.UsageInput{
 			BeadID: bead, RunID: run, TS: ts,
 			TokensIn: b.TokensIn, TokensOut: b.TokensOut, CostUSD: b.CostUSD,
+			// age-ivoq: thread the meter fields through the CLI seam (the same
+			// seam that silently dropped detector_pattern in EM.2.10) — else
+			// `ao yield emit usage --json '{...tokens_total/tokens_source/
+			// cost_source...}'` (the pawl-verdict.sh path) loses the measurement
+			// and the D17 ruler stays zero.
+			TokensTotal: b.TokensTotal, TokensSource: b.TokensSource, CostSource: b.CostSource,
 			WallClockS: b.WallClockS, Model: b.Model, Phase: b.Phase, CategoryHint: b.CategoryHint,
+			// Attempt threads through too: without it the per-run idempotency key
+			// (bead, run, phase, attempt) collapses distinct re-review attempts,
+			// under-counting spend (age-ivoq round-2 reviewer counterexample).
+			Attempt: b.Attempt,
 		}); err != nil {
 			return err
 		}

@@ -61,11 +61,11 @@ bash "$PAWL_VERDICT" write age-test-r 0 \
 check "REFUTED verdict emitted exactly one gate-verdict event" \
   "[ \"\$(gv_count age-test-r REFUTED)\" = '1' ]"
 check "the event carries cross_family=true (2 distinct families)" \
-  "jq -e 'select(.bead_id==\"age-test-r\") | .body.cross_family==true' '$LEDGER' >/dev/null"
+  "jq -e 'select(.event==\"gate-verdict\" and .bead_id==\"age-test-r\") | .body.cross_family==true' '$LEDGER' >/dev/null"
 check "refuter_families normalized to [claude,gpt]" \
-  "[ \"\$(jq -r 'select(.bead_id==\"age-test-r\") | .body.refuter_families | sort | join(\",\")' '$LEDGER')\" = 'claude,gpt' ]"
+  "[ \"\$(jq -r 'select(.event==\"gate-verdict\" and .bead_id==\"age-test-r\") | .body.refuter_families | sort | join(\",\")' '$LEDGER')\" = 'claude,gpt' ]"
 check "what-was-missed reason recorded" \
-  "jq -e 'select(.bead_id==\"age-test-r\") | .body.reason==\"missed a fail-open\"' '$LEDGER' >/dev/null"
+  "jq -e 'select(.event==\"gate-verdict\" and .bead_id==\"age-test-r\") | .body.reason==\"missed a fail-open\"' '$LEDGER' >/dev/null"
 
 # 2) idempotency: identical re-run adds NO duplicate
 bash "$PAWL_VERDICT" write age-test-r 0 \
@@ -89,7 +89,7 @@ bash "$PAWL_VERDICT" write age-test-norm 0 \
   --refuter "codex:CONFIRMED:ctx-codex:$TMP/ev1" \
   --refuter "gpt:CONFIRMED:ctx-gpt:$TMP/ev2" >/dev/null 2>&1 || true
 check "codex+gpt collapse to one family → cross_family=false (not gamed)" \
-  "jq -e 'select(.bead_id==\"age-test-norm\") | .body.cross_family==false' '$LEDGER' >/dev/null"
+  "jq -e 'select(.event==\"gate-verdict\" and .bead_id==\"age-test-norm\") | .body.cross_family==false' '$LEDGER' >/dev/null"
 
 # 4b) JOIN PROOF (cross-family REFUTE was a false alarm): an `accept` whose
 #     gate_verdict_ref.head_sha == the REVIEWED head admits against the chokepoint's
@@ -144,6 +144,58 @@ check "subdir-invoked emit lands in the REPO_ROOT ledger (cwd-independent)" \
 check "subdir-invoked emit did NOT create a stray subdir ledger" \
   "[ ! -e '$REPO/sub/deep/.agents/yield/yield-ledger.jsonl' ]"
 
+# 6) age-ivoq METER: the write chokepoint records REAL reviewer usage. codex exec
+#    prints a cumulative "tokens used" total into the evidence transcript; the
+#    verdict cost must carry THAT number (estimated=false), not bytes/4 of a
+#    57-byte summary — and a companion usage event (phase=review) must land in
+#    the yield ledger with explicit tokens_source/cost_source, so the D17 ruler
+#    reads data instead of 549/549 silent zeros.
+usage_count() { jq -c --arg b "$1" 'select(.event=="usage" and .bead_id==$b)' "$LEDGER" 2>/dev/null | grep -c . ; }
+EV_METERED="$TMP/ev-metered"
+printf 'No blocking defects found.\n\nVERDICT: CONFIRMED\ntokens used\n17,068\n' > "$EV_METERED"
+bash "$PAWL_VERDICT" write age-meter 0 \
+  --disposition CONFIRMED --head "$HEAD_SHA" --author-context ctx-author \
+  --refuter "gpt:CONFIRMED:ctx-gpt:$EV_METERED" \
+  --wall-seconds 42 >/dev/null 2>&1 || true
+check "verdict cost carries the REAL codex total (tokens_est=17068, estimated=false)" \
+  "jq -e '.cost.tokens_est==17068 and .cost.estimated==false and .cost.wall_seconds==42' '$REPO/.agents/pawl-verdicts/age-meter.json' >/dev/null"
+check "usage event: measured tokens_total + explicit sources (never a silent zero)" \
+  "jq -e 'select(.event==\"usage\" and .bead_id==\"age-meter\") | .body.tokens_total==17068 and .body.tokens_source==\"measured\" and .body.cost_source==\"unknown\" and .body.phase==\"review\" and .body.wall_clock_s==42 and .body.model==\"gpt\"' '$LEDGER' >/dev/null"
+
+# 6b) no usage surface in the evidence → the HONEST estimate path: bytes/4,
+#     flagged estimated=true on the verdict and tokens_source=estimated on the
+#     usage event — an estimate never masquerades as a measurement.
+EV_PLAIN="$TMP/ev-plain"
+printf 'VERDICT: CONFIRMED — reviewed the full diff, no blocking defects found here.\n' > "$EV_PLAIN"
+bash "$PAWL_VERDICT" write age-meter-est 0 \
+  --disposition CONFIRMED --head "$HEAD_SHA" --author-context ctx-author \
+  --refuter "gpt:CONFIRMED:ctx-gpt:$EV_PLAIN" \
+  --wall-seconds 7 >/dev/null 2>&1 || true
+check "no tokens-used line → verdict cost stays a flagged estimate (estimated=true)" \
+  "jq -e '.cost.estimated==true and .cost.tokens_est>0' '$REPO/.agents/pawl-verdicts/age-meter-est.json' >/dev/null"
+check "usage event records the estimate as tokens_source=estimated" \
+  "jq -e 'select(.event==\"usage\" and .bead_id==\"age-meter-est\") | .body.tokens_source==\"estimated\" and .body.tokens_total>0 and .body.cost_source==\"unknown\"' '$LEDGER' >/dev/null"
+
+# 6c) usage emit is idempotent per run: a literal re-run adds NO duplicate spend
+#     (double-counting would inflate R exactly like the gate-verdict dup would Q).
+bash "$PAWL_VERDICT" write age-meter 0 \
+  --disposition CONFIRMED --head "$HEAD_SHA" --author-context ctx-author \
+  --refuter "gpt:CONFIRMED:ctx-gpt:$EV_METERED" \
+  --wall-seconds 42 >/dev/null 2>&1 || true
+check "usage re-run emits NO duplicate (still exactly one for age-meter)" \
+  "[ \"\$(usage_count age-meter)\" = '1' ]"
+
+# 6d) legacy caller (no --wall-seconds): the verdict stays byte-identical (no
+#     cost object), but the review's REAL tokens are still metered into the
+#     yield ledger — usage availability doesn't depend on the wall-clock flag.
+bash "$PAWL_VERDICT" write age-meter-nowall 0 \
+  --disposition CONFIRMED --head "$HEAD_SHA" --author-context ctx-author \
+  --refuter "gpt:CONFIRMED:ctx-gpt:$EV_METERED" >/dev/null 2>&1 || true
+check "no --wall-seconds → verdict carries NO cost object (legacy contract intact)" \
+  "jq -e 'has(\"cost\") | not' '$REPO/.agents/pawl-verdicts/age-meter-nowall.json' >/dev/null"
+check "…but the usage event still carries the measured tokens (wall_clock_s=0)" \
+  "jq -e 'select(.event==\"usage\" and .bead_id==\"age-meter-nowall\") | .body.tokens_total==17068 and .body.tokens_source==\"measured\" and .body.wall_clock_s==0' '$LEDGER' >/dev/null"
+
 # 5) the yield log does NOT pollute the tracked tree — it lives under gitignored
 #    .agents/. (The provenance ledger under docs/ is a separate, pre-existing
 #    tracked artifact and is not this change's concern.)
@@ -154,5 +206,5 @@ check "no yield artifact appears as a tracked/untracked-non-ignored change" \
   "[ -z \"\$(git -C '$REPO' status --porcelain .agents/)\" ]"
 
 echo
-if [[ "$fails" -eq 0 ]]; then echo "ALL PASS (14 checks)"; exit 0; fi
+if [[ "$fails" -eq 0 ]]; then echo "ALL PASS (21 checks)"; exit 0; fi
 echo "$fails CHECK(S) FAILED"; exit 1

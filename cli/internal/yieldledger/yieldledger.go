@@ -85,6 +85,24 @@ const (
 	CategoryCoordination = "coordination"
 )
 
+// Meter source values for a usage event's tokens_source / cost_source
+// (age-ivoq): HOW a spend number was obtained, so a zero is never ambiguous.
+// Empty ("") is a legacy pre-meter row (semantics implicitly unknown; 549/549
+// such rows carried cost_usd=0 with no way to tell measured-zero from
+// never-measured — the broken-D17-ruler bug). A zero with SourceMeasured means
+// MEASURED zero; SourceUnknown means the meter had no surface to read.
+const (
+	// SourceMeasured marks a value read from a real usage surface (e.g. the
+	// codex exec "tokens used" total in the reviewer evidence transcript).
+	SourceMeasured = "measured"
+	// SourceEstimated marks an honest estimate (e.g. transcript-bytes/4),
+	// never presented as exact.
+	SourceEstimated = "estimated"
+	// SourceUnknown marks an explicitly-unknown value: no usage surface was
+	// available. Stamped at the writer chokepoint on ambiguous zeros.
+	SourceUnknown = "unknown"
+)
+
 // PawlVerdictRef references a pawl-verdict.v1 object by bead_id + head_sha. It is
 // the link between the yield ledger and the (closed) pawl-verdict schema; the
 // ledger never inlines or mutates the pawl-verdict.
@@ -153,9 +171,33 @@ type GateVerdictBody struct {
 
 // UsageBody is the typed payload of a usage event. Feeds gauges R, L, and A/R.
 type UsageBody struct {
-	TokensIn     int     `json:"tokens_in"`
-	TokensOut    int     `json:"tokens_out"`
+	TokensIn  int `json:"tokens_in"`
+	TokensOut int `json:"tokens_out"`
+	// TokensTotal carries a COMBINED token total when the usage surface reports
+	// only a total (codex exec prints one "tokens used" number, not an in/out
+	// split). 0 when tokens_in/tokens_out carry the split. Recording the
+	// total under a fabricated in/out split would be dishonest; a separate field
+	// keeps the measurement truthful (age-ivoq). Deliberately NOT omitempty: a
+	// MEASURED zero total must persist as an explicit tokens_total:0 in the row
+	// — eliding it would make measured-zero indistinguishable from never-measured,
+	// the exact ambiguity the meter exists to kill (reviewer counterexample 3b).
+	TokensTotal int `json:"tokens_total"`
+	// TokensSource says how the token numbers were obtained: SourceMeasured |
+	// SourceEstimated | SourceUnknown. Empty = legacy pre-meter row.
+	TokensSource string  `json:"tokens_source,omitempty"`
 	CostUSD      float64 `json:"cost_usd"`
+	// CostSource says how cost_usd was obtained. SourceUnknown makes a zero
+	// EXPLICIT (no cost surface — e.g. a subscription-backed reviewer with no
+	// marginal price); zero + SourceMeasured means measured-zero. Empty = legacy
+	// pre-meter row. The writer stamps ambiguous zeros (age-ivoq).
+	CostSource string `json:"cost_source,omitempty"`
+	// Attempt distinguishes DISTINCT review attempts of one bead within one run
+	// (attempt 1 REFUTED, attempt 2 CONFIRMED — both real spend). The same-run
+	// idempotency key is (bead, run, phase, attempt): keying without attempt
+	// silently dropped legitimate re-review spend (age-ivoq round-2 reviewer
+	// counterexample); keying on measured values double-counted replays.
+	// omitempty: absent reads as attempt 1 (the dedup treats // 1).
+	Attempt int `json:"attempt,omitempty"`
 	WallClockS   float64 `json:"wall_clock_s"`
 	Model        string  `json:"model"`
 	Phase        string  `json:"phase"`
@@ -226,11 +268,17 @@ type UsageInput struct {
 	TS           time.Time
 	TokensIn     int
 	TokensOut    int
+	TokensTotal  int
+	TokensSource string
 	CostUSD      float64
+	CostSource   string
 	WallClockS   float64
 	Model        string
 	Phase        string
 	CategoryHint string
+	// Attempt distinguishes distinct review attempts in one run (age-ivoq); it
+	// is the last component of the per-run usage idempotency key.
+	Attempt int
 }
 
 // validDisposition reports whether d is a recognized pawl disposition.
@@ -273,6 +321,35 @@ func validCategoryHint(c string) bool {
 	default:
 		return false
 	}
+}
+
+// validSource reports whether s is a recognized meter source. The empty string
+// is allowed (legacy pre-meter rows carry no source claim).
+func validSource(s string) bool {
+	switch s {
+	case "", SourceMeasured, SourceEstimated, SourceUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// StampUsageSources makes ambiguous zero-valued meter fields EXPLICIT at the
+// writer chokepoint (age-ivoq): a usage row whose cost_usd is zero with no
+// cost_source claim is stamped SourceUnknown — so on every NEW row a zero can
+// only mean measured-zero when the caller SAYS so (CostSource=SourceMeasured).
+// Same for tokens: all-zero token fields with no tokens_source become
+// SourceUnknown. A declared source is NEVER overwritten, and non-zero values
+// without a source are left as-is (the ambiguity being killed is the silent
+// zero that broke the D17 ruler, not legacy non-zero rows).
+func StampUsageSources(in UsageInput) UsageInput {
+	if in.CostSource == "" && in.CostUSD == 0 {
+		in.CostSource = SourceUnknown
+	}
+	if in.TokensSource == "" && in.TokensIn == 0 && in.TokensOut == 0 && in.TokensTotal == 0 {
+		in.TokensSource = SourceUnknown
+	}
+	return in
 }
 
 // validRef reports whether a PawlVerdictRef is structurally complete.
@@ -339,11 +416,15 @@ func newUsageEvent(in UsageInput) Event {
 		Usage: &UsageBody{
 			TokensIn:     in.TokensIn,
 			TokensOut:    in.TokensOut,
+			TokensTotal:  in.TokensTotal,
+			TokensSource: in.TokensSource,
 			CostUSD:      in.CostUSD,
+			CostSource:   in.CostSource,
 			WallClockS:   in.WallClockS,
 			Model:        in.Model,
 			Phase:        in.Phase,
 			CategoryHint: in.CategoryHint,
+			Attempt:      in.Attempt,
 		},
 	}
 }
@@ -443,6 +524,15 @@ func validateUsageEvent(e Event) string {
 	b := e.Usage
 	if b.TokensIn < 0 || b.TokensOut < 0 {
 		return "usage body negative token count"
+	}
+	if b.TokensTotal < 0 {
+		return "usage body negative tokens_total"
+	}
+	if !validSource(b.TokensSource) {
+		return "usage body invalid tokens_source: " + b.TokensSource
+	}
+	if !validSource(b.CostSource) {
+		return "usage body invalid cost_source: " + b.CostSource
 	}
 	if b.CostUSD < 0 {
 		return "usage body negative cost_usd"

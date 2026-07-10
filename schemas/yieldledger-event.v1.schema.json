@@ -1,312 +1,404 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://agentops.dev/schemas/yieldledger-event.v1.schema.json",
-    "title": "AgentOps Yield Ledger Event v1",
-    "description": "A durable, append-only, BEAD-KEYED operational event in the dynamo yield ledger. Built for ag-grcz3 (the instrument) and read by ag-qzinh (the gauges) per .agents/specs/2026-06-14-yield-vector-and-ledger-event-gap.md. Today no such stream exists: the EventBus is in-memory only, verdictledger is directive-scoped, the rpi ledger is run-scoped, and PROV is an edge ledger — so per-bead yield (A, R, A/R, Q, E, L) is not computable from data. This schema closes that gap. Every event carries the common envelope {event, bead_id, run_id, ts, body}; the body is a typed payload discriminated by `event` (accept | gate-verdict | usage). The gate-verdict body REFERENCES a pawl-verdict by pawl_verdict_ref (bead_id+head_sha) and PROJECTS its fields — it does NOT inline or mutate the closed pawl-verdict.v1 object (additionalProperties:false). author_family, cross_family, and difficulty live ONLY here, never written back to the pawl-verdict. Emission is fail-open observability, not a gate: it must never block a merge. The runtime artifact is append-only JSONL at .agents/yield/yield-ledger.jsonl (untracked) — ONE event envelope per line so concurrent fungible lanes can each O_APPEND without read-modify-write contention; each line conforms to one of the accept | gate-verdict | usage event $defs below. This schema and its fixtures are tracked.",
-    "practices": ["dora-metrics", "llm-eval-harness", "adr"],
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["schema_version", "generated_at", "events"],
-    "properties": {
-        "schema_version": {
-            "type": "string",
-            "const": "yieldledger-event.v1",
-            "description": "Schema discriminator."
-        },
-        "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "RFC3339 timestamp when this ledger file was last rewritten."
-        },
-        "events": {
-            "type": "array",
-            "description": "Append-only events in emission order (oldest first). accept, gate-verdict, and usage events are interleaved on the timeline and discriminated by the `event` field of the envelope.",
-            "items": {
-                "oneOf": [
-                    {"$ref": "#/$defs/accept_event"},
-                    {"$ref": "#/$defs/gate_verdict_event"},
-                    {"$ref": "#/$defs/usage_event"}
-                ]
-            }
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/yieldledger-event.v1.schema.json",
+  "title": "AgentOps Yield Ledger Event v1",
+  "description": "A durable, append-only, BEAD-KEYED operational event in the dynamo yield ledger. Built for ag-grcz3 (the instrument) and read by ag-qzinh (the gauges) per .agents/specs/2026-06-14-yield-vector-and-ledger-event-gap.md. Today no such stream exists: the EventBus is in-memory only, verdictledger is directive-scoped, the rpi ledger is run-scoped, and PROV is an edge ledger — so per-bead yield (A, R, A/R, Q, E, L) is not computable from data. This schema closes that gap. Every event carries the common envelope {event, bead_id, run_id, ts, body}; the body is a typed payload discriminated by `event` (accept | gate-verdict | usage). The gate-verdict body REFERENCES a pawl-verdict by pawl_verdict_ref (bead_id+head_sha) and PROJECTS its fields — it does NOT inline or mutate the closed pawl-verdict.v1 object (additionalProperties:false). author_family, cross_family, and difficulty live ONLY here, never written back to the pawl-verdict. Emission is fail-open observability, not a gate: it must never block a merge. The runtime artifact is append-only JSONL at .agents/yield/yield-ledger.jsonl (untracked) — ONE event envelope per line so concurrent fungible lanes can each O_APPEND without read-modify-write contention; each line conforms to one of the accept | gate-verdict | usage event $defs below. This schema and its fixtures are tracked.",
+  "practices": [
+    "dora-metrics",
+    "llm-eval-harness",
+    "adr"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "events"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "yieldledger-event.v1",
+      "description": "Schema discriminator."
     },
-    "$defs": {
-        "accept_event": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "A bead reached gated merge to trunk (terminal accept). Feeds gauge A.",
-            "required": ["event", "bead_id", "run_id", "ts", "body"],
-            "properties": {
-                "event": {
-                    "const": "accept",
-                    "description": "Envelope discriminator: a terminal-accept event."
-                },
-                "bead_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The bead this accept terminates."
-                },
-                "run_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The factory run/cycle this event belongs to."
-                },
-                "ts": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "RFC3339 timestamp of the accept."
-                },
-                "body": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["merge_sha", "merged_by", "gate_verdict_ref"],
-                    "properties": {
-                        "merge_sha": {
-                            "type": "string",
-                            "minLength": 7,
-                            "description": "The trunk commit the bead merged as."
-                        },
-                        "merged_by": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "The identity (orchestrator/lane) that performed the merge."
-                        },
-                        "gate_verdict_ref": {
-                            "$ref": "#/$defs/pawl_verdict_ref",
-                            "description": "Reference (bead_id+head_sha) to the authorizing pawl-verdict — NOT inlined."
-                        }
-                    }
-                }
-            }
-        },
-        "gate_verdict_event": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "A review panel completed on a bead. EVERY attempted bead emits >=1 (including a REFUTE). Feeds gauges Q and E. PROJECTS a pawl-verdict by reference; carries the difficulty weight, author_family (emit-time orchestrator input), and derived SoD bits that live ONLY in the yield ledger.",
-            "required": ["event", "bead_id", "run_id", "ts", "body"],
-            "properties": {
-                "event": {
-                    "const": "gate-verdict",
-                    "description": "Envelope discriminator: a gate-verdict event."
-                },
-                "bead_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The attempted bead this verdict reviewed."
-                },
-                "run_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The factory run/cycle this event belongs to."
-                },
-                "ts": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "RFC3339 timestamp of the gate verdict."
-                },
-                "body": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "difficulty",
-                        "pawl_verdict_ref",
-                        "disposition",
-                        "head_sha",
-                        "attempt",
-                        "author_context_id",
-                        "refuter_families",
-                        "author_family",
-                        "cross_family",
-                        "author_ne_reviewer",
-                        "evidence_present"
-                    ],
-                    "properties": {
-                        "difficulty": {
-                            "type": "number",
-                            "minimum": 0,
-                            "description": "Scope weight w — intrinsic to the bead, set by a non-author (see spec §F). Lives on gate-verdict so attempted-but-rejected beads are still weight-able in Q's denominator. Q is difficulty-weighted; trivial beads contribute little to numerator AND denominator."
-                        },
-                        "pawl_verdict_ref": {
-                            "$ref": "#/$defs/pawl_verdict_ref",
-                            "description": "Reference (bead_id+head_sha) to the projected pawl-verdict.v1 — NOT inlined; pawl-verdict.v1 is closed."
-                        },
-                        "disposition": {
-                            "type": "string",
-                            "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD"],
-                            "description": "Projected panel disposition. ESCALATE/HOLD feed E (autonomy watch)."
-                        },
-                        "head_sha": {
-                            "type": "string",
-                            "minLength": 7,
-                            "description": "Commit-binding: the PR head the panel reviewed. A verdict goes STALE on re-push, blocking gate-shopping across re-pushes — makes 'clean first pass' verifiable for Q."
-                        },
-                        "attempt": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "description": "Which re-gate attempt produced this verdict. attempt>1 plus usage{phase:rework} rows is how rework is attributed (no separate event)."
-                        },
-                        "mode": {
-                            "type": "string",
-                            "enum": ["fresh-context", "multi-model", "deterministic"],
-                            "description": "Projected pawl diversity mode (optional; absent => fresh-context). `deterministic` marks a verdict from the deterministic gate tier — what emit-deterministic-catch.sh writes for a gate-blocked catch (matches Go validMode/ModeDeterministic)."
-                        },
-                        "domain": {
-                            "type": "string",
-                            "description": "Optional bounded-context / work-class tag the verdict happened in (e.g. concurrency, gate-policy, docs). Gives the slow loop a dimension to query escapes by. (age-membrane-memory-j9c6.1)"
-                        },
-                        "reason": {
-                            "type": "string",
-                            "description": "Optional verdict rationale; on a REFUTED verdict it is the what-was-missed signal a derived membrane-check is built from. (age-membrane-memory-j9c6.1)"
-                        },
-                        "class": {
-                            "type": "string",
-                            "description": "Optional SEMANTIC class slug supplied at emit (--class). When present it — not the free-text reason — is the class-identity component of class_key, so the same label on DIFFERENT beads collapses to ONE cross-bead class (a reason-derived key drifts with bead-specific wording and stayed invisible). Absent on historical rows, which key from reason. Slug shape: lowercase [a-z0-9] words joined by '-'. (age-jjt8)"
-                        },
-                        "author_context_id": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "The authoring worker session's context id (projected from the pawl-verdict). Used to derive author_ne_reviewer."
-                        },
-                        "refuter_families": {
-                            "type": "array",
-                            "description": "Canonical model families among the refuters (projected). Used to derive cross_family.",
-                            "items": {"type": "string", "minLength": 1}
-                        },
-                        "author_family": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "The authoring lane's model family — an EMIT-TIME input from the orchestrator that dispatched the authoring lane, NOT read from the pawl-verdict (which has no author-family field). Lives ONLY in the yield ledger."
-                        },
-                        "cross_family": {
-                            "type": "boolean",
-                            "description": "Derived: >=2 distinct canonical families among the refuters."
-                        },
-                        "author_ne_reviewer": {
-                            "type": "boolean",
-                            "description": "Derived: author_context_id is NOT among the refuter context ids (author != reviewer)."
-                        },
-                        "evidence_present": {
-                            "type": "boolean",
-                            "description": "Derived: the pawl-verdict.sh panel-or-refuter evidence check passed (a review actually ran)."
-                        },
-                        "detector_pattern": {
-                            "type": "string",
-                            "description": "On an overturning-REFUTED, a regex the membrane compiles into a draft constraint so the escape's class is mechanically re-introducible. Absent -> the finding stays advisory. (EM.2.10; schema-added with the catch fields, epic age-zpj5 S1)"
-                        },
-                        "constraint_path_globs": {
-                            "type": "string",
-                            "description": "Path globs scoping detector_pattern when compiled into a constraint. (EM.2.10)"
-                        },
-                        "detector_kind": {
-                            "type": "string",
-                            "description": "The kind of detector_pattern (e.g. regex). (EM.2.10)"
-                        },
-                        "class_key": {
-                            "type": "string",
-                            "description": "Catch-native, versioned class identity for a REFUTED catch: v1:slug(domain)/slug(normalized reason)[/slug(detector)], computed at emit. Lets recall + recurrence group catches without anyone authoring a regex. (epic age-zpj5, membrane PROVE-FIRST S1)"
-                        },
-                        "affected_paths": {
-                            "type": "array",
-                            "description": "Concrete repo-relative FILE paths from the reviewed diff, INDEPENDENT of detector metadata so a judgment-class catch (no detector) is still path-recallable. (epic age-zpj5, S1)",
-                            "items": {"type": "string", "minLength": 1}
-                        }
-                    }
-                }
-            }
-        },
-        "usage_event": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Per-bead model spend was observed. Feeds gauges R, L, and A/R. The category_hint is an emit-time best guess; the authoritative L classification is a read-time join (ag-qzinh) — this row is never mutated to reclassify.",
-            "required": ["event", "bead_id", "run_id", "ts", "body"],
-            "properties": {
-                "event": {
-                    "const": "usage",
-                    "description": "Envelope discriminator: a usage event."
-                },
-                "bead_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The bead this spend is attributed to."
-                },
-                "run_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The factory run/cycle this event belongs to."
-                },
-                "ts": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "RFC3339 timestamp of the usage observation."
-                },
-                "body": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                        "tokens_in",
-                        "tokens_out",
-                        "cost_usd",
-                        "wall_clock_s",
-                        "model",
-                        "phase"
-                    ],
-                    "properties": {
-                        "tokens_in": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Input tokens consumed."
-                        },
-                        "tokens_out": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Output tokens produced."
-                        },
-                        "cost_usd": {
-                            "type": "number",
-                            "minimum": 0,
-                            "description": "Dollar cost of this spend."
-                        },
-                        "wall_clock_s": {
-                            "type": "number",
-                            "minimum": 0,
-                            "description": "Wall-clock seconds elapsed."
-                        },
-                        "model": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "The model that incurred the spend."
-                        },
-                        "phase": {
-                            "type": "string",
-                            "enum": ["plan", "implement", "review", "rework", "coordination"],
-                            "description": "Which phase of the bead's lifecycle this spend occurred in."
-                        },
-                        "category_hint": {
-                            "type": "string",
-                            "enum": ["productive", "rework", "coordination"],
-                            "description": "Emit-time best-guess loss category. ADVISORY ONLY — the authoritative L classification is a read-time join in ag-qzinh; a row emitted 'productive' on a bead later REFUTED is correctly counted as loss without mutating the ledger."
-                        }
-                    }
-                }
-            }
-        },
-        "pawl_verdict_ref": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "A reference to a pawl-verdict.v1 object by bead_id + head_sha — the link between the yield ledger and the (closed) pawl-verdict schema. Never inlines or mutates the pawl-verdict.",
-            "required": ["bead_id", "head_sha"],
-            "properties": {
-                "bead_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The pawl-verdict's bead_id."
-                },
-                "head_sha": {
-                    "type": "string",
-                    "minLength": 7,
-                    "description": "The pawl-verdict's head_sha (commit-binding)."
-                }
-            }
-        }
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp when this ledger file was last rewritten."
+    },
+    "events": {
+      "type": "array",
+      "description": "Append-only events in emission order (oldest first). accept, gate-verdict, and usage events are interleaved on the timeline and discriminated by the `event` field of the envelope.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/accept_event"
+          },
+          {
+            "$ref": "#/$defs/gate_verdict_event"
+          },
+          {
+            "$ref": "#/$defs/usage_event"
+          }
+        ]
+      }
     }
+  },
+  "$defs": {
+    "accept_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A bead reached gated merge to trunk (terminal accept). Feeds gauge A.",
+      "required": [
+        "event",
+        "bead_id",
+        "run_id",
+        "ts",
+        "body"
+      ],
+      "properties": {
+        "event": {
+          "const": "accept",
+          "description": "Envelope discriminator: a terminal-accept event."
+        },
+        "bead_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The bead this accept terminates."
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The factory run/cycle this event belongs to."
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC3339 timestamp of the accept."
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "merge_sha",
+            "merged_by",
+            "gate_verdict_ref"
+          ],
+          "properties": {
+            "merge_sha": {
+              "type": "string",
+              "minLength": 7,
+              "description": "The trunk commit the bead merged as."
+            },
+            "merged_by": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The identity (orchestrator/lane) that performed the merge."
+            },
+            "gate_verdict_ref": {
+              "$ref": "#/$defs/pawl_verdict_ref",
+              "description": "Reference (bead_id+head_sha) to the authorizing pawl-verdict — NOT inlined."
+            }
+          }
+        }
+      }
+    },
+    "gate_verdict_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A review panel completed on a bead. EVERY attempted bead emits >=1 (including a REFUTE). Feeds gauges Q and E. PROJECTS a pawl-verdict by reference; carries the difficulty weight, author_family (emit-time orchestrator input), and derived SoD bits that live ONLY in the yield ledger.",
+      "required": [
+        "event",
+        "bead_id",
+        "run_id",
+        "ts",
+        "body"
+      ],
+      "properties": {
+        "event": {
+          "const": "gate-verdict",
+          "description": "Envelope discriminator: a gate-verdict event."
+        },
+        "bead_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The attempted bead this verdict reviewed."
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The factory run/cycle this event belongs to."
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC3339 timestamp of the gate verdict."
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "difficulty",
+            "pawl_verdict_ref",
+            "disposition",
+            "head_sha",
+            "attempt",
+            "author_context_id",
+            "refuter_families",
+            "author_family",
+            "cross_family",
+            "author_ne_reviewer",
+            "evidence_present"
+          ],
+          "properties": {
+            "difficulty": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Scope weight w — intrinsic to the bead, set by a non-author (see spec §F). Lives on gate-verdict so attempted-but-rejected beads are still weight-able in Q's denominator. Q is difficulty-weighted; trivial beads contribute little to numerator AND denominator."
+            },
+            "pawl_verdict_ref": {
+              "$ref": "#/$defs/pawl_verdict_ref",
+              "description": "Reference (bead_id+head_sha) to the projected pawl-verdict.v1 — NOT inlined; pawl-verdict.v1 is closed."
+            },
+            "disposition": {
+              "type": "string",
+              "enum": [
+                "CONFIRMED",
+                "REFUTED",
+                "ESCALATE",
+                "HOLD"
+              ],
+              "description": "Projected panel disposition. ESCALATE/HOLD feed E (autonomy watch)."
+            },
+            "head_sha": {
+              "type": "string",
+              "minLength": 7,
+              "description": "Commit-binding: the PR head the panel reviewed. A verdict goes STALE on re-push, blocking gate-shopping across re-pushes — makes 'clean first pass' verifiable for Q."
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Which re-gate attempt produced this verdict. attempt>1 plus usage{phase:rework} rows is how rework is attributed (no separate event)."
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "fresh-context",
+                "multi-model",
+                "deterministic"
+              ],
+              "description": "Projected pawl diversity mode (optional; absent => fresh-context). `deterministic` marks a verdict from the deterministic gate tier — what emit-deterministic-catch.sh writes for a gate-blocked catch (matches Go validMode/ModeDeterministic)."
+            },
+            "domain": {
+              "type": "string",
+              "description": "Optional bounded-context / work-class tag the verdict happened in (e.g. concurrency, gate-policy, docs). Gives the slow loop a dimension to query escapes by. (age-membrane-memory-j9c6.1)"
+            },
+            "reason": {
+              "type": "string",
+              "description": "Optional verdict rationale; on a REFUTED verdict it is the what-was-missed signal a derived membrane-check is built from. (age-membrane-memory-j9c6.1)"
+            },
+            "class": {
+              "type": "string",
+              "description": "Optional SEMANTIC class slug supplied at emit (--class). When present it — not the free-text reason — is the class-identity component of class_key, so the same label on DIFFERENT beads collapses to ONE cross-bead class (a reason-derived key drifts with bead-specific wording and stayed invisible). Absent on historical rows, which key from reason. Slug shape: lowercase [a-z0-9] words joined by '-'. (age-jjt8)"
+            },
+            "author_context_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The authoring worker session's context id (projected from the pawl-verdict). Used to derive author_ne_reviewer."
+            },
+            "refuter_families": {
+              "type": "array",
+              "description": "Canonical model families among the refuters (projected). Used to derive cross_family.",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "author_family": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The authoring lane's model family — an EMIT-TIME input from the orchestrator that dispatched the authoring lane, NOT read from the pawl-verdict (which has no author-family field). Lives ONLY in the yield ledger."
+            },
+            "cross_family": {
+              "type": "boolean",
+              "description": "Derived: >=2 distinct canonical families among the refuters."
+            },
+            "author_ne_reviewer": {
+              "type": "boolean",
+              "description": "Derived: author_context_id is NOT among the refuter context ids (author != reviewer)."
+            },
+            "evidence_present": {
+              "type": "boolean",
+              "description": "Derived: the pawl-verdict.sh panel-or-refuter evidence check passed (a review actually ran)."
+            },
+            "detector_pattern": {
+              "type": "string",
+              "description": "On an overturning-REFUTED, a regex the membrane compiles into a draft constraint so the escape's class is mechanically re-introducible. Absent -> the finding stays advisory. (EM.2.10; schema-added with the catch fields, epic age-zpj5 S1)"
+            },
+            "constraint_path_globs": {
+              "type": "string",
+              "description": "Path globs scoping detector_pattern when compiled into a constraint. (EM.2.10)"
+            },
+            "detector_kind": {
+              "type": "string",
+              "description": "The kind of detector_pattern (e.g. regex). (EM.2.10)"
+            },
+            "class_key": {
+              "type": "string",
+              "description": "Catch-native, versioned class identity for a REFUTED catch: v1:slug(domain)/slug(normalized reason)[/slug(detector)], computed at emit. Lets recall + recurrence group catches without anyone authoring a regex. (epic age-zpj5, membrane PROVE-FIRST S1)"
+            },
+            "affected_paths": {
+              "type": "array",
+              "description": "Concrete repo-relative FILE paths from the reviewed diff, INDEPENDENT of detector metadata so a judgment-class catch (no detector) is still path-recallable. (epic age-zpj5, S1)",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "usage_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-bead model spend was observed. Feeds gauges R, L, and A/R. The category_hint is an emit-time best guess; the authoritative L classification is a read-time join (ag-qzinh) — this row is never mutated to reclassify.",
+      "required": [
+        "event",
+        "bead_id",
+        "run_id",
+        "ts",
+        "body"
+      ],
+      "properties": {
+        "event": {
+          "const": "usage",
+          "description": "Envelope discriminator: a usage event."
+        },
+        "bead_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The bead this spend is attributed to."
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The factory run/cycle this event belongs to."
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC3339 timestamp of the usage observation."
+        },
+        "body": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tokens_in",
+            "tokens_out",
+            "cost_usd",
+            "wall_clock_s",
+            "model",
+            "phase"
+          ],
+          "properties": {
+            "tokens_in": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Input tokens consumed."
+            },
+            "tokens_out": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Output tokens produced."
+            },
+            "tokens_total": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Combined token total when the usage surface reports only a total (the codex exec 'tokens used' line reports one number, not an in/out split). 0/absent when tokens_in/tokens_out carry the split — a fabricated split would be dishonest (age-ivoq)."
+            },
+            "tokens_source": {
+              "type": "string",
+              "enum": [
+                "measured",
+                "estimated",
+                "unknown"
+              ],
+              "description": "How the token numbers were obtained (age-ivoq): measured (a real usage surface, e.g. the codex exec 'tokens used' total), estimated (an honest flagged estimate, e.g. transcript-bytes/4), or unknown (no surface — the zero is EXPLICIT). Absent = legacy pre-meter row. Zero tokens with 'measured' means measured-zero; the writer stamps ambiguous zeros 'unknown'."
+            },
+            "cost_usd": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Dollar cost of this spend."
+            },
+            "cost_source": {
+              "type": "string",
+              "enum": [
+                "measured",
+                "estimated",
+                "unknown"
+              ],
+              "description": "How cost_usd was obtained (age-ivoq). 'unknown' makes a zero EXPLICIT (no cost surface — e.g. a subscription-backed reviewer with no marginal price; fabricating a price would lie to the D17 ruler). Absent = legacy pre-meter row (the 549/549 cost_usd=0 ambiguity this field ends). Zero + 'measured' means measured-zero; the writer stamps ambiguous zeros 'unknown'."
+            },
+            "wall_clock_s": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Wall-clock seconds elapsed."
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The model that incurred the spend."
+            },
+            "phase": {
+              "type": "string",
+              "enum": [
+                "plan",
+                "implement",
+                "review",
+                "rework",
+                "coordination"
+              ],
+              "description": "Which phase of the bead's lifecycle this spend occurred in."
+            },
+            "category_hint": {
+              "type": "string",
+              "enum": [
+                "productive",
+                "rework",
+                "coordination"
+              ],
+              "description": "Emit-time best-guess loss category. ADVISORY ONLY — the authoritative L classification is a read-time join in ag-qzinh; a row emitted 'productive' on a bead later REFUTED is correctly counted as loss without mutating the ledger."
+            },
+            "attempt": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Distinct review attempt within one run (age-ivoq): the same-run idempotency identity is (bead, run, phase, attempt); absent reads as attempt 1. Keying without attempt dropped legitimate re-review spend; keying on measured values double-counted replays."
+            }
+          }
+        }
+      }
+    },
+    "pawl_verdict_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A reference to a pawl-verdict.v1 object by bead_id + head_sha — the link between the yield ledger and the (closed) pawl-verdict schema. Never inlines or mutates the pawl-verdict.",
+      "required": [
+        "bead_id",
+        "head_sha"
+      ],
+      "properties": {
+        "bead_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The pawl-verdict's bead_id."
+        },
+        "head_sha": {
+          "type": "string",
+          "minLength": 7,
+          "description": "The pawl-verdict's head_sha (commit-binding)."
+        }
+      }
+    }
+  }
 }

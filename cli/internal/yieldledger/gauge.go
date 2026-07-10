@@ -20,8 +20,11 @@ import (
 
 // SpendMeasure names which usage field the R / A_over_R / L denominators sum.
 // The spec lets ag-qzinh pick tokens_out or tokens_in+out; we make the choice
-// explicit and report it in the output so a reader knows what R means.
-const SpendMeasure = "tokens_out"
+// explicit and report it in the output so a reader knows what R means. When a
+// usage surface reported only a combined total (tokens_out=0, tokens_total>0 —
+// the codex exec "tokens used" shape), the total is counted instead so measured
+// spend never reads as zero (age-ivoq).
+const SpendMeasure = "tokens_out (tokens_total fallback)"
 
 // LossCategory is a read-time loss classification of a single usage row.
 type LossCategory string
@@ -145,9 +148,15 @@ func spendOf(u *UsageBody) int {
 	if u == nil {
 		return 0
 	}
-	// SpendMeasure == tokens_out: tokens_out is the produced-output measure, the
-	// most defensible "raw input consumed to produce work" proxy that is symmetric
-	// between accepted and rejected beads.
+	// SpendMeasure: tokens_out is the produced-output measure, the most
+	// defensible "raw input consumed to produce work" proxy that is symmetric
+	// between accepted and rejected beads. When the surface reported only a
+	// combined total (codex exec "tokens used"), tokens_out is 0 and the total
+	// is the only truthful number — count it rather than reading measured spend
+	// as zero (age-ivoq). An explicit tokens_out always wins (no double count).
+	if u.TokensOut == 0 && u.TokensTotal > 0 {
+		return u.TokensTotal
+	}
 	return u.TokensOut
 }
 

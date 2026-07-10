@@ -36,7 +36,13 @@ func (w Writer) AppendGateVerdict(projectRoot string, in GateVerdictInput) (*Led
 }
 
 // AppendUsage appends one usage event and returns the resulting ledger view.
+// Before appending it stamps the meter sources (age-ivoq): an ambiguous zero
+// cost/token value with no source claim becomes an EXPLICIT SourceUnknown, so
+// no new row can carry a silent zero (zero must mean measured-zero). Running at
+// the writer chokepoint gives every emitter (CLI, scripts, Go callers) the
+// guarantee, mirroring the gate-verdict escape-sentinel stamp above.
 func (w Writer) AppendUsage(projectRoot string, in UsageInput) (*Ledger, error) {
+	in = StampUsageSources(in)
 	return w.appendValidated(projectRoot, newUsageEvent(in), "usage")
 }
 

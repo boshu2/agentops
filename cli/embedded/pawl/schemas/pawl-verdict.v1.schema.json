@@ -109,7 +109,7 @@
         },
         "cost": {
             "type": "object",
-            "description": "Optional verification-economics meter (age-verification-economics-ebec.1), attached when the reviewer runner passed --wall-seconds. tokens_est is estimated (transcript-bytes/4 over refuter evidence) unless estimated=false (exact harness usage, a later slice). Projected into the provenance ledger edge (duration_s, tokens_est) by ao provenance emit-verdict.",
+            "description": "Optional verification-economics meter (age-verification-economics-ebec.1), attached when the reviewer runner passed --wall-seconds. tokens_est carries the REAL harness usage parsed from the refuter evidence (the codex exec 'tokens used' total) with estimated=false when available (age-ivoq); otherwise the flagged transcript-bytes/4 estimate with estimated=true. Projected into the provenance ledger edge (duration_s, tokens_est) by ao provenance emit-verdict.",
             "additionalProperties": false,
             "required": ["wall_seconds", "tokens_est", "estimated"],
             "properties": {
