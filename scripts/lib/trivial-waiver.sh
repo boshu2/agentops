@@ -7,6 +7,13 @@
 # never drift. Do NOT copy this logic anywhere — source this file and call
 # pawl_trivial_waiver.
 #
+# LOCKSTEP TWIN (age-ekam): cli/internal/frontier/waiver.go carries the Go
+# port of this predicate for in-process consumers (the LKG frontier / close
+# gate — library code cannot exec repo scripts, per the age-rk3r.6 trust
+# boundary). The port maps this function's return codes 1:1 and is pinned by
+# TestTrivialWaiver_Lockstep. Any semantic change HERE must land in
+# waiver.go in the same commit, and vice versa.
+#
 # shellcheck shell=bash
 
 # pawl_trivial_waiver <git_repo> <sha> [label]

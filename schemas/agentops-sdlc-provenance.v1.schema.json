@@ -81,6 +81,11 @@
       "minimum": 0,
       "description": "Optional, additive v1.1 verdict-record enrichment (age-rk3r.3): wall-clock seconds the verified-done review took — a cost-of-verified-done substrate. Payload-included (hash-protected, same additivity + compatibility boundary as reviewer_family); omitted when absent/zero. The v1 pawl-verdict file carries no source for this yet, so it stays absent until the cost bead (.16) populates it."
     },
+    "tokens_est": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional, additive verification-economics meter (age-verification-economics-ebec.1): estimated tokens spent producing this verdict (transcript-bytes/4 when the harness reports no exact usage). Payload-included (hash-protected), additive via omitempty — a zero/absent meter omits the field and pre-meter records marshal byte-identically (same compatibility contract as the other v1.1 fields). This property was omitted when the meter field landed in cli/internal/provenancegraph/edge.go; added retroactively (age-ekam) to keep the schema in lockstep with the executable shape."
+    },
     "evidence_path": {
       "type": "string",
       "minLength": 1,
@@ -136,9 +141,10 @@
         "wasAttributedTo",
         "wasInfluencedBy",
         "wasRevisionOf",
-        "wasInvalidatedBy"
+        "wasInvalidatedBy",
+        "resolves"
       ],
-      "description": "Typed provenance relation, named with the W3C PROV-O / PROV-DM standard vocabulary so an external auditor recognizes the term (ag-lmdx.7). The enum ENFORCES the standard verbs: a colloquial value such as 'derives_from' or the prior AgentOps-local 'artifact_derived_from' is rejected in favor of the PROV-O term 'wasDerivedFrom'. Edge direction is from->to. Mapping from the prior AgentOps-local vocabulary: decision_produces_artifact->wasGeneratedBy (artifact wasGeneratedBy the decision activity), decision_authorizes->wasAssociatedWith, artifact_derived_from->wasDerivedFrom, scenario_covers_artifact->wasInformedBy, verdict_attests_artifact->wasAttributedTo, bead_scopes_decision->wasInfluencedBy, commit_implements_decision->wasRevisionOf, learning_revises_decision->wasInvalidatedBy. Guard-read/queryable fields (from_id, to_id, relation, trust_tier, and the hash-chain anchors) are first-class top-level columns of each ledger record, never buried inside a nested JSON payload, because Dolt JSON-path generated-column indexing is unreliable; any Dolt projection of this ledger MUST materialize these as real columns rather than indexing JSON paths."
+      "description": "Typed provenance relation, named with the W3C PROV-O / PROV-DM standard vocabulary so an external auditor recognizes the term (ag-lmdx.7). The enum ENFORCES the standard verbs: a colloquial value such as 'derives_from' or the prior AgentOps-local 'artifact_derived_from' is rejected in favor of the PROV-O term 'wasDerivedFrom'. Edge direction is from->to. Mapping from the prior AgentOps-local vocabulary: decision_produces_artifact->wasGeneratedBy (artifact wasGeneratedBy the decision activity), decision_authorizes->wasAssociatedWith, artifact_derived_from->wasDerivedFrom, scenario_covers_artifact->wasInformedBy, verdict_attests_artifact->wasAttributedTo, bead_scopes_decision->wasInfluencedBy, commit_implements_decision->wasRevisionOf, learning_revises_decision->wasInvalidatedBy. 'resolves' is the one deliberate non-PROV-O addition (age-ekam, epic age-xnet): a commit->commit resolution edge from a landed compensating commit (mechanical revert or fix-forward) to the REFUTED commit it resolves. Validity floor (enforced by the LKG-frontier computation, cli/internal/frontier): compensator is a strict descendant of the refuted sha, the chain is acyclic, exactly one live edge per refuted sha, and evidence_ref records the refuting verdict id, the refuting verdict's repro executed green at the compensating sha, and the auto-filed P0 fix bead (also denormalized into bead_id). Guard-read/queryable fields (from_id, to_id, relation, trust_tier, and the hash-chain anchors) are first-class top-level columns of each ledger record, never buried inside a nested JSON payload, because Dolt JSON-path generated-column indexing is unreliable; any Dolt projection of this ledger MUST materialize these as real columns rather than indexing JSON paths."
     },
     "sha256_hex": {
       "type": "string",

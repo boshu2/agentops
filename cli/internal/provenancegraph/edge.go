@@ -52,6 +52,18 @@ var NodeTypes = []string{
 // wasAttributedTo, bead_scopes_decision->wasInfluencedBy,
 // commit_implements_decision->wasRevisionOf, learning_revises_decision->
 // wasInvalidatedBy.
+//
+// "resolves" is the one deliberate non-PROV-O addition (age-ekam, epic
+// age-xnet A1/A6/A7): a commit→commit resolution edge from a landed
+// compensating commit (mechanical revert or fix-forward) to the REFUTED
+// commit it resolves. It is appended by the compensator lane and consumed by
+// the LKG-frontier computation (cli/internal/frontier), which enforces the
+// duel-hardened validity floor — strict-descendant compensator, acyclicity,
+// one live edge per refuted sha, and the refuting verdict's repro executed
+// GREEN at the compensating sha recorded in evidence_ref plus the P0-fix-bead
+// binding. No PROV-O verb carries the "compensates a refuted change"
+// semantics without overloading an existing meaning, so the ledger names it
+// literally.
 var Relations = []string{
 	"wasGeneratedBy",
 	"wasAssociatedWith",
@@ -61,6 +73,7 @@ var Relations = []string{
 	"wasInfluencedBy",
 	"wasRevisionOf",
 	"wasInvalidatedBy",
+	"resolves",
 }
 
 // TrustTiers is the closed, monotonic set of trust tiers (authored > inferred
