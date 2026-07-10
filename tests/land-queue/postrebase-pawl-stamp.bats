@@ -159,6 +159,23 @@ make_local_bead_commit() {
   [ ! -f "$REPO/.git/pre-push-count" ]
 }
 
+@test "pawl-land refuses when origin/main advanced after an upstream-range review" {
+  make_base_fixture "base"
+  make_local_bead_commit local.txt local
+  reviewed_base="$(git -C "$REPO" rev-parse origin/main)"
+  write_confirmed_verdict "$BEAD" "$A_SHA"
+  advance_origin_unrelated
+
+  cd "$REPO"
+  run bash "$REPO/scripts/pawl-land.sh" "$BEAD" 0 "$reviewed_base"
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"advanced after review"* ]]
+  [ "$(git -C "$REPO" rev-parse HEAD)" = "$A_SHA" ]
+  [ "$(git -C "$ORIGIN" rev-parse refs/heads/main)" = "$UPSTREAM_SHA" ]
+  [ ! -f "$REPO/.git/pre-push-count" ]
+}
+
 @test "pawl-land: a provenance-only FEAT (no #trivial marker) stays the verdict target — never rebound to its parent" {
   # Cross-family refute (age-fkps landing): classifying the tip by FILES alone would
   # misread a legitimate provenance-only feat (a deliberate ledger re-seal) as the
