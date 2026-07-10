@@ -101,6 +101,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # round reviewing STALE content behind a #trivial tip.
 # shellcheck source=scripts/lib/pawl-amend-guard.sh
 . "$SCRIPT_DIR/lib/pawl-amend-guard.sh"
+# wckn: refuse when the review target commit cites a DIFFERENT bead — the verdict
+# would bind the wrong tree (the 2026-07-09 wrong-tree class).
+# shellcheck source=scripts/lib/pawl-tip-coherence.sh
+. "$SCRIPT_DIR/lib/pawl-tip-coherence.sh"
+# np1e: evidence lives in the CANONICAL checkout so it survives disposable
+# worktrees and ledger evidence_path never dangles.
+# shellcheck source=scripts/lib/pawl-evidence-dir.sh
+. "$SCRIPT_DIR/lib/pawl-evidence-dir.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
 # The standing-pawl service script (overridable for tests). Always the real script next
 # to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
@@ -109,7 +117,9 @@ PAWL_SH="${PAWL_SERVICE_SCRIPT:-$SCRIPT_DIR/pawl.sh}"
 # the real script next to this one.
 REPO_ROOT="${AGENTOPS_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 VERDICT_DIR="${AGENTOPS_PAWL_VERDICT_DIR:-$REPO_ROOT/.agents/pawl-verdicts}"
-EVIDENCE_DIR="$REPO_ROOT/.agents/pawl-evidence"
+# np1e: canonical-checkout evidence dir (git-common-dir parent) — a review run in
+# a linked land worktree must not write transcripts that die with the worktree.
+EVIDENCE_DIR="$(pawl_evidence_dir "$REPO_ROOT")"
 
 # resolve_ao: print the ao binary path, preferring the REPO's build over a possibly
 # STALE installed `ao`. A globally-installed ao can lag the repo and lack a newly-added
@@ -159,13 +169,16 @@ emit_pawl_catch() {
   # ao-side. (age-jjt8 defects 1+2)
   [[ -n "${PAWL_CATCH_CLASS:-}" ]]    && catch_args+=(--class "$PAWL_CATCH_CLASS")
   [[ -n "${PAWL_CATCH_DETECTOR:-}" ]] && catch_args+=(--detector-pattern "$PAWL_CATCH_DETECTOR")
-  # Run from $REPO_ROOT (the REVIEWED repo): `ao membrane catch` roots its ledger via
-  # repoRootOrCwd() from its cwd, so without this a pawl-review invoked from a different
-  # cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in repoB) would write the catch to
-  # the WRONG .agents/yield and recall in the reviewed repo would never see it. Subshell
-  # cd so the rest of the script's cwd is untouched. $head is the resolved sha of
-  # $review_target, so --scope head reads the same commit the review covered.
-  ( cd "${REPO_ROOT:-.}" && "$ao_bin" membrane catch --bead "$bead" \
+  # Run from the CANONICAL root of $REPO_ROOT (the REVIEWED repo): `ao membrane catch`
+  # roots its ledger via repoRootOrCwd() from its cwd, so without this a pawl-review
+  # invoked from a different cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in
+  # repoB) would write the catch to the WRONG .agents/yield and recall in the reviewed
+  # repo would never see it. np1e: for a LINKED WORKTREE the canonical root is the main
+  # checkout — a catch written into a disposable land worktree dies with `git worktree
+  # remove`; the shared object store means $head resolves identically from either.
+  # Subshell cd so the rest of the script's cwd is untouched. $head is the resolved
+  # sha of $review_target, so --scope head reads the same commit the review covered.
+  ( cd "$(pawl_canonical_root "${REPO_ROOT:-.}")" && "$ao_bin" membrane catch --bead "$bead" \
       --evidence "${evidence:-/dev/null}" --head "$head" --mode "$mode" \
       --scope "${scope:-head}" "${catch_args[@]}" ) >/dev/null 2>&1 || true
 }
@@ -1221,6 +1234,17 @@ if [[ "$scope" == "head" ]]; then
   _amend_rc=0
   pawl_amend_guard "$REPO_ROOT" "${_live_head:-$head}" || _amend_rc=$?
   [[ "$_amend_rc" -eq 2 ]] && exit 3
+fi
+
+# wckn TIP-COHERENCE: refuse BEFORE the review when the review target (the
+# possibly walked-back $head, i.e. the commit whose diff the reviewer will see)
+# cites a different bead than the one under review — the verdict would bind the
+# wrong tree. Positive-mismatch only (a commit citing no ids of the bead's
+# prefix is never blocked). Same fix-and-re-run disposition as a REFUTED.
+if [[ "$scope" == "head" ]]; then
+  _tip_rc=0
+  pawl_tip_coherence "$REPO_ROOT" "$head" "$bead" || _tip_rc=$?
+  [[ "$_tip_rc" -eq 2 ]] && exit 3
 fi
 
 # ebec.9 PREFLIGHT: run the deterministic battery BEFORE assembling the packet or
