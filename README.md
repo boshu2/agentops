@@ -41,15 +41,15 @@ brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew ins
 # Or release binaries / build from source (cli/README.md).
 ```
 
-**Track `main` (optional).** Want the latest skills the moment they land instead of waiting for a plugin release? Clone the repo and symlink its skills onto Claude Code's live tier — they then follow `git pull`, no reinstall:
+**Live skills from a clone (optional).** Already have the repo checked out? `ao skills link` *symlinks* its skills into the live tier of **every agent runtime you have installed** — `~/.claude/skills`, `~/.codex/skills`, `~/.gemini/skills` (AGY), `~/.cursor/skills` — so, unlike the copy-based installers above (which snapshot the skills at install time), your local edits and every `git pull` take effect next session with **no re-copy**:
 
 ```bash
 git clone https://github.com/boshu2/agentops && cd agentops
-ao skills link            # symlink every repo skill into ~/.claude/skills (idempotent, non-destructive)
-# keep up:  git pull && ao skills link   # re-run to pick up newly-added skills
+ao skills link              # symlink repo skills into every installed runtime (idempotent, non-destructive)
+git pull && ao skills link  # after a pull: mint links for any newly-added skills
 ```
 
-Opt-in and additive — the plugin install above stays the stable, versioned channel. `ao skills link` never copies or clobbers: existing non-AgentOps skills (e.g. other marketplaces) are reported as conflicts and left untouched.
+Opt-in — the live/edit-in-place tier for people working from a clone; the installers above stay the copy-based path for everyone else. Never copies or clobbers: existing non-AgentOps skills (e.g. other marketplaces) are reported as conflicts and left untouched. `--dest <dir>` targets one specific dir instead.
 
 Installs hookless. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Dependencies: [docs/dependencies.md](docs/dependencies.md) · Day-2 ops (update, backup, recovery): [docs/install-day2-ops.md](docs/install-day2-ops.md).
 

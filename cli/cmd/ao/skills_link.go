@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,6 +27,9 @@ type skillLinkResult struct {
 	Linked    []string `json:"linked"`
 	Present   []string `json:"present"`
 	Conflicts []string `json:"conflicts"`
+	// Err is this destination's error, if any. A per-dest error does NOT abort
+	// the fan-out — every other installed runtime is still linked and reported.
+	Err string `json:"error,omitempty"`
 }
 
 // linkMissingSkills scans srcDir for skill directories (a subdir holding a
@@ -97,17 +101,19 @@ func linkMissingSkills(srcDir, destDir string, dryRun bool) (skillLinkResult, er
 
 var skillsLinkCmd = &cobra.Command{
 	Use:   "link",
-	Short: "Symlink repo skills that are missing from ~/.claude/skills (live tier)",
+	Short: "Symlink repo skills into every installed runtime's live tier (Claude, Codex, AGY, Cursor)",
 	Long: `Scan skills/ and create a live-tier symlink for every skill dir that has
-no entry yet in the destination (default ~/.claude/skills). Idempotent and
-non-destructive: skills already linked are left alone, and a name owned by a
-real directory (a foreign corpus such as jsm) is reported as a conflict and
-never clobbered.
+no entry yet. By DEFAULT it links into EVERY agent runtime you have installed —
+~/.claude/skills, ~/.codex/skills, ~/.gemini/skills (AGY/Gemini), and
+~/.cursor/skills — detected by the runtime's config dir existing under $HOME;
+--dest overrides to a single dir. Idempotent and non-destructive: skills already
+linked are left alone, and a name owned by a real directory (a foreign corpus
+such as jsm) is reported as a conflict and never clobbered.
 
-This is the focused "a new skill landed but Claude can't see it" fix: merging a
-new skill dir to main puts files in the repo but mints no symlink, and
-/reload-skills only re-reads links that already exist. Run this and the new
-skill is live next session.
+This is the focused "a new skill landed but the agent can't see it" fix: merging
+a new skill dir to main puts files in the repo but mints no symlink, and
+/reload-skills only re-reads links that already exist. Run this and the new skill
+is live next session — in every runtime, not just Claude.
 
 Track main (optional): this is how to follow the latest skills from a repo clone
 instead of waiting for a plugin release. Clone the repo, run this once, then
@@ -118,17 +124,17 @@ replacement; must be run from inside the agentops repo (guarded).
 Repairing an existing wrong/broken link is out of scope — use
 dotfiles/bin/link-skill --relink for that copy-verify-replace path.
 
-  ao skills link                       # link missing into ~/.claude/skills
-  ao skills link --dry-run             # show what's missing without linking
-  git pull && ao skills link           # track main: pick up newly-landed skills
-  ao skills link --dest ~/.codex/skills`,
+  ao skills link                        # link missing into every installed runtime
+  ao skills link --dry-run              # show what's missing without linking
+  git pull && ao skills link            # track main: pick up newly-landed skills
+  ao skills link --dest ~/.codex/skills # link into ONE specific dir only`,
 	Args: cobra.NoArgs,
 	RunE: runSkillsLink,
 }
 
 func init() {
 	skillsCmd.AddCommand(skillsLinkCmd)
-	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Destination skills dir (default ~/.claude/skills)")
+	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor)")
 	skillsLinkCmd.Flags().BoolVar(&skillsLinkJSON, "json", false, "Emit machine-readable JSON")
 }
 
@@ -160,6 +166,40 @@ func resolveRepoSkillsDir() (string, error) {
 	return skillsDir, nil
 }
 
+// runtimeConfigDirs are the per-agent config dirs whose skills/ subdir is that
+// runtime's live tier. AgentOps skills are identical across runtimes, so a
+// default `ao skills link` links into EVERY runtime the user actually has
+// installed — Claude AND Codex (~/.codex/skills) AND AGY/Gemini
+// (~/.gemini/skills) AND Cursor — not just Claude. Detection is by the config
+// dir existing under $HOME (matches dotfiles/bin/link-skill --all coverage).
+// Order is display order.
+var runtimeConfigDirs = []string{".claude", ".codex", ".gemini", ".cursor"}
+
+// resolveTargetDests returns the skills dirs to link into. An explicit --dest
+// wins as the single target. Otherwise it returns <home>/<rt>/skills for every
+// runtime config dir that EXISTS under $HOME, so Codex and AGY users get live
+// skills too. Falls back to ~/.claude/skills when no runtime is detected (a sane
+// default rather than linking nothing).
+func resolveTargetDests(explicitDest string) ([]string, error) {
+	if strings.TrimSpace(explicitDest) != "" {
+		return []string{explicitDest}, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve home dir for default --dest: %w", err)
+	}
+	var dests []string
+	for _, rt := range runtimeConfigDirs {
+		if isDir(filepath.Join(home, rt)) {
+			dests = append(dests, filepath.Join(home, rt, "skills"))
+		}
+	}
+	if len(dests) == 0 {
+		dests = []string{filepath.Join(home, ".claude", "skills")}
+	}
+	return dests, nil
+}
+
 func runSkillsLink(cmd *cobra.Command, args []string) error {
 	skillsDir, err := resolveRepoSkillsDir()
 	if err != nil {
@@ -167,30 +207,62 @@ func runSkillsLink(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	dest := skillsLinkDest
-	if dest == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			cmd.SilenceUsage = true
-			return fmt.Errorf("resolve home dir for default --dest: %w", err)
-		}
-		dest = filepath.Join(home, ".claude", "skills")
-	}
-
-	res, err := linkMissingSkills(skillsDir, dest, GetDryRun())
+	dests, err := resolveTargetDests(skillsLinkDest)
 	if err != nil {
 		cmd.SilenceUsage = true
 		return err
 	}
 
+	results, anyErr := linkAllDests(skillsDir, dests, GetDryRun())
+
 	if skillsLinkJSON {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+		if eerr := enc.Encode(results); eerr != nil {
+			return eerr
+		}
+	} else {
+		out := cmd.OutOrStdout()
+		for _, res := range results {
+			renderLinkResult(out, res)
+		}
 	}
 
-	out := cmd.OutOrStdout()
+	// A per-dest failure is reported per-dest above but must still surface as a
+	// non-zero exit — after every runtime was attempted, never before.
+	if anyErr {
+		cmd.SilenceUsage = true
+		return fmt.Errorf("one or more runtime skill dirs could not be linked (see per-runtime errors)")
+	}
+	return nil
+}
+
+// linkAllDests links the repo skills into every destination, RESILIENTLY: a
+// per-dest error is captured on that dest's result and the fan-out continues to
+// the remaining runtimes rather than aborting (which would leave earlier dests
+// mutated and later ones silently skipped). Returns the per-dest results and
+// whether any dest errored.
+func linkAllDests(srcDir string, dests []string, dryRun bool) ([]skillLinkResult, bool) {
+	results := make([]skillLinkResult, 0, len(dests))
+	anyErr := false
+	for _, dest := range dests {
+		res, err := linkMissingSkills(srcDir, dest, dryRun)
+		if err != nil {
+			res.Err = err.Error()
+			anyErr = true
+		}
+		results = append(results, res)
+	}
+	return results, anyErr
+}
+
+// renderLinkResult prints one destination's link summary.
+func renderLinkResult(out io.Writer, res skillLinkResult) {
 	fmt.Fprintf(out, "Skills link → %s\n", res.Dest)
+	if res.Err != "" {
+		fmt.Fprintf(out, "  ERROR: %s (other runtimes still attempted)\n", res.Err)
+		return
+	}
 	if res.DryRun {
 		fmt.Fprintf(out, "  missing (dry-run, not linked): %d\n", len(res.Linked))
 	} else {
@@ -211,5 +283,4 @@ func runSkillsLink(cmd *cobra.Command, args []string) error {
 	if len(res.Linked) == 0 && len(res.Conflicts) == 0 {
 		fmt.Fprintln(out, "  all repo skills already live-linked.")
 	}
-	return nil
 }
