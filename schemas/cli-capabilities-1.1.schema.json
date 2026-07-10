@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/cli-capabilities-1.1.schema.json",
+  "title": "AgentOps recursive CLI capabilities 1.1",
+  "type": "object",
+  "required": ["schema_version", "contract_version", "command_groups", "commands"],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "contract_version": {"const": "1.1"},
+    "command_groups": {"type": "array"},
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "use", "short", "args", "output", "effects", "exit_codes"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^ao(?:[.][a-z0-9-]+)+$"},
+          "path": {"type": "string", "pattern": "^ao "},
+          "use": {"type": "string"},
+          "short": {"type": "string"},
+          "args": {"enum": ["none", "exact", "range", "arbitrary", "subcommands-only"]},
+          "output": {"enum": ["structured", "passthrough", "none"]},
+          "effects": {"enum": ["pure", "read", "write", "process", "network", "mixed"]},
+          "exit_codes": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
