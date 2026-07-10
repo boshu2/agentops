@@ -41,7 +41,7 @@ brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew ins
 # Or release binaries / build from source (cli/README.md).
 ```
 
-**Live skills from a clone (optional).** Already have the repo checked out? `ao skills link` *symlinks* its skills into the live tier of **every agent runtime you have installed** — `~/.claude/skills`, `~/.codex/skills`, `~/.gemini/skills` (AGY), `~/.cursor/skills` — so, unlike the copy-based installers above (which snapshot the skills at install time), your local edits and every `git pull` take effect next session with **no re-copy**:
+**Live skills from a clone (optional).** Already have the repo checked out? `ao skills link` *symlinks* its skills into the live tier of **every agent runtime you have installed** — `~/.claude/skills`, `~/.codex/skills`, `~/.gemini/skills` (AGY), `~/.cursor/skills`, `~/.pi/skills` — so, unlike the copy-based installers above (which snapshot the skills at install time), your local edits and every `git pull` take effect next session with **no re-copy**:
 
 ```bash
 git clone https://github.com/boshu2/agentops && cd agentops

@@ -36,8 +36,8 @@ func TestResolveTargetDests(t *testing.T) {
 	t.Run("fans out to installed runtimes", func(t *testing.T) {
 		home := t.TempDir()
 		t.Setenv("HOME", home)
-		// Codex + AGY installed; Claude + Cursor absent.
-		for _, rt := range []string{".codex", ".gemini"} {
+		// Codex + AGY + Pi installed; Claude + Cursor absent.
+		for _, rt := range []string{".codex", ".gemini", ".pi"} {
 			if err := os.MkdirAll(filepath.Join(home, rt), 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -46,7 +46,11 @@ func TestResolveTargetDests(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		want := []string{filepath.Join(home, ".codex", "skills"), filepath.Join(home, ".gemini", "skills")}
+		want := []string{
+			filepath.Join(home, ".codex", "skills"),
+			filepath.Join(home, ".gemini", "skills"),
+			filepath.Join(home, ".pi", "skills"),
+		}
 		if len(got) != len(want) {
 			t.Fatalf("got %v, want %v", got, want)
 		}
