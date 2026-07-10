@@ -28,13 +28,18 @@ func TestDefaultSpineMatchesADR0012Allowlist(t *testing.T) {
 			continue
 		}
 		seen[command.Name()] = true
-		if !approvedDefaultSpine[command.Name()] {
-			unexpected = append(unexpected, command.Name())
-		}
 	}
 	for command := range approvedDefaultSpine {
 		if !seen[command] {
 			missing = append(missing, command)
+		}
+		if _, retained := defaultSpineCommands[command]; !retained {
+			missing = append(missing, command+"(boundary)")
+		}
+	}
+	for command := range defaultSpineCommands {
+		if !approvedDefaultSpine[command] {
+			unexpected = append(unexpected, command)
 		}
 	}
 	sort.Strings(unexpected)
