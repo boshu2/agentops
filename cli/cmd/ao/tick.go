@@ -64,7 +64,11 @@ func (rt tickRuntime) run(name string, args ...string) ([]byte, int, error) {
 	c := exec.Command(name, args...)
 	c.Dir = rt.workDir
 	env := append(os.Environ(), rt.env...)
-	if name == "br" {
+	// resolveTracker returns an absolute binary when BR is installed. Match the
+	// executable basename as well as the bare command so resolved BR calls keep
+	// the same canonical-ledger environment as direct `br` calls, especially in
+	// linked worktrees where $PWD/_beads is intentionally absent.
+	if name == trackerBR || filepath.Base(name) == trackerBR {
 		if _, ok := beadsEnvValue(env); !ok {
 			env = append(env, "BEADS_DIR="+resolveBeadsDir(rt.workDir, env).Path)
 		}
