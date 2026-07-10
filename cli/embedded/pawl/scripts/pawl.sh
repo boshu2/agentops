@@ -54,13 +54,15 @@ PAWL_IDLE_TTL="${PAWL_IDLE_TTL:-1800}"       # idle seconds before `reap` tears 
 PAWL_STALL_GIVEUP="${PAWL_STALL_GIVEUP:-150}"  # age-djfo: a pane showing NO new output for this
                                                # long is given up (alive-but-stuck) -> degrade fast
                                                # instead of burning the full ROUTE_TIMEOUT. 0 disables.
-PAWL_ENGAGE_DEADLINE="${PAWL_ENGAGE_DEADLINE:-240}"  # age-55qz.10: ABSOLUTE per-pane deadline — a pane
-                                               # with NO verdict by this many seconds is given up
-                                               # (degrade), even while it KEEPS changing output. The
-                                               # cksum-stall heuristic above misses a compacting opus
-                                               # pane (it re-renders every tick, so it never "stalls")
-                                               # which would otherwise burn the full ROUTE_TIMEOUT. Set
-                                               # < ROUTE_TIMEOUT to bound wasted wait; 0 disables.
+# age-55qz.10: ABSOLUTE per-pane deadline — a pane with NO verdict by this many seconds is
+# given up (degrade), even while it KEEPS changing output (the cksum-stall heuristic misses a
+# compacting opus pane that re-renders every tick). verification-surface-honesty S3: an
+# EXPLICIT env value is an operator override and wins as-is (0 disables); left unset,
+# cmd_route derives the effective deadline from recorded route metrics via
+# resolve_engage_deadline (>= measured p95, capped at ROUTE_TIMEOUT) — a 240s static default
+# under a 261s measured panel p50 degraded two live routes into give-ups on 2026-07-10.
+PAWL_ENGAGE_DEADLINE_EXPLICIT="${PAWL_ENGAGE_DEADLINE:+1}"
+PAWL_ENGAGE_DEADLINE="${PAWL_ENGAGE_DEADLINE:-240}"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ROUTE_LOCK="${PAWL_ROUTE_LOCK:-$ROOT/$STATE_DIR/route.lock}"  # age-yvrp: a route in progress writes
                                                # its start epoch here; down/reap refuse to kill a
@@ -418,6 +420,40 @@ _stall_over_budget() { [ "${2:-0}" -gt 0 ] && [ "${1:-0}" -ge "${2}" ]; }
 # OUTPUT to go quiet), this fires on wall-clock alone, so it catches a pane that keeps re-rendering
 # (compacting opus) yet never produces a verdict. Arg1=seconds waited. 0 (default) disables.
 _engage_over_deadline() { [ "${PAWL_ENGAGE_DEADLINE:-0}" -gt 0 ] && [ "${1:-0}" -ge "${PAWL_ENGAGE_DEADLINE}" ]; }
+
+# resolve_engage_deadline <metrics-file>: echo the EFFECTIVE per-pane engage-deadline
+# (verification-surface-honesty S3). Pure over its inputs (metrics file + env) — locked by
+# tests/scripts/pawl-engage-deadline.bats.
+#   - PAWL_ENGAGE_DEADLINE_EXPLICIT=1 (operator set the env var) -> the override wins as-is;
+#   - else max(static default, measured p95 over the recorded route latencies — the same
+#     formula as cmd_metrics), capped at ROUTE_TIMEOUT: the hard ceiling, so low-n or
+#     timeout-truncated samples can never ratchet the deadline past the route's own budget;
+#   - missing/empty/unparseable metrics -> the static default unchanged (corrupt lines skip).
+resolve_engage_deadline() {
+  local mf="${1:-}"
+  if [ "${PAWL_ENGAGE_DEADLINE_EXPLICIT:-}" = "1" ]; then echo "$PAWL_ENGAGE_DEADLINE"; return 0; fi
+  local eff="${PAWL_ENGAGE_DEADLINE:-240}" ceil="${ROUTE_TIMEOUT:-320}" p95=""
+  if [ -n "$mf" ] && [ -s "$mf" ]; then
+    p95="$(python3 - "$mf" <<'PY' 2>/dev/null || true
+import json,sys
+lat=[]
+for l in open(sys.argv[1]):
+    l=l.strip()
+    if not l: continue
+    try: lat.append(int(json.loads(l).get("latency_s",0)))
+    except Exception: continue
+lat.sort()
+print(lat[min(len(lat)-1,int(round(0.95*(len(lat)-1))))] if lat else "")
+PY
+)"
+  fi
+  case "$p95" in
+    ""|*[!0-9]*) : ;;
+    *) if [ "$p95" -gt "$eff" ]; then eff="$p95"; fi ;;
+  esac
+  if [ "$eff" -gt "$ceil" ]; then eff="$ceil"; fi
+  echo "$eff"
+}
 
 # agy pane is READY when the agy binary is POSITIVELY the foreground process AND it is not
 # sitting on the trust gate. Fail-CLOSED on every uncertainty so a missing/unreadable pane, a
@@ -946,6 +982,27 @@ pawl_decide() {
 # Back-compat: the original 3-pane all-CONFIRM rule == pawl_decide with min 2.
 pawl_decide_agreement() { pawl_decide 2 "$@"; }
 
+# route_outcome <decision> <session-lost 0|1>: map pawl_decide's pure quorum decision plus
+# the standing session's availability onto the OUTCOME the route records and binds
+# (verification-surface-honesty S3). The quorum itself is UNTOUCHED — what counts as
+# CONFIRMED is identical. The honesty split: a REFUTED bind is a DEFECT CLAIM, so only a
+# pane that actually voted REFUTED may produce one; a no-substantive-refuter degrade binds
+# HOLD (schema-valid; fail-closed at every door — pawl-verdict.sh check authorizes only
+# CONFIRMED, so nothing that blocked before passes now). Pure — locked by
+# tests/scripts/pawl-engage-deadline.bats.
+#   CONFIRMED:<detail>:N                  -> CONFIRMED:<detail>  (a met quorum survives session loss)
+#   REFUTED:refuted:N                     -> REFUTED:refuted     (>=1 real refutation, even on loss)
+#   REFUTED:insufficient:N + session up   -> HOLD:insufficient-reviewers (deadline/stall give-ups)
+#   REFUTED:insufficient:N + session lost -> HOLD:service-unavailable   (panel vanished mid-route)
+route_outcome() {
+  local decision="$1" lost="${2:-0}"
+  local disp="${decision%%:*}" detail
+  detail="$(printf '%s' "$decision" | cut -d: -f2)"
+  if [ "$disp" = "CONFIRMED" ]; then echo "CONFIRMED:${detail}"; return 0; fi
+  if [ "$detail" = "refuted" ]; then echo "REFUTED:refuted"; return 0; fi
+  if [ "$lost" = "1" ]; then echo "HOLD:service-unavailable"; else echo "HOLD:insufficient-reviewers"; fi
+}
+
 # age-pawl-good-bar #4: PURE — build the REFUTED/HOLD-path refuter list from the panes' ACTUAL
 # emitted verdicts. Echoes one "family:verdict:context:evidence" spec per line for every pane that
 # really voted (CONFIRMED or REFUTED). A timed-out pane (empty verdict) is OMITTED — recording it as
@@ -1044,7 +1101,10 @@ cmd_route() {
   { cat "$packet"; printf '\n\n--- VERDICT FORMAT (required) ---\nEnd your reply with ONE line exactly:\n  PAWL %s <the single word CONFIRMED or REFUTED>\n' "$nonce"; } > "$rp"
 
   local minc; minc="$(min_confirm_for_tier "$TIER")"
-  log "route $bead -> [$ENABLED] tier=$TIER min=$minc (packet=$packet, pr=$pr, nonce=$nonce)"
+  # S3: derive the effective engage-deadline from the recorded route metrics (an explicit
+  # operator PAWL_ENGAGE_DEADLINE wins inside resolve_engage_deadline).
+  PAWL_ENGAGE_DEADLINE="$(resolve_engage_deadline "$ROOT/$STATE_DIR/metrics.jsonl")"
+  log "route $bead -> [$ENABLED] tier=$TIER min=$minc engage-deadline=${PAWL_ENGAGE_DEADLINE}s (packet=$packet, pr=$pr, nonce=$nonce)"
 
   # Send to ONLY the enabled panes. Robust sends (retry + respawn); never `die` on a flaky send.
   case " $ENABLED " in *" cc "*) cc_send "$rp"  || log "claude pane did not engage on send — poll/reroute will recover" ;; esac
@@ -1057,13 +1117,20 @@ cmd_route() {
   case " $ENABLED " in *" cc "*) vc="" ;; esac
   case " $ENABLED " in *" cod "*) vd="" ;; esac
   case " $ENABLED " in *" agy "*) va="" ;; esac
-  local waited=0 cc_rr=0 cod_rr=0 agy_rr=0 cs=""
+  local waited=0 cc_rr=0 cod_rr=0 agy_rr=0 cs="" session_lost=0
   # age-djfo (c): per-pane stall give-up. cksum (POSIX, always present — a change-detector, not
   # crypto) of recent output; unchanged for PAWL_STALL_GIVEUP seconds => alive-but-stuck => give
   # up (degrade) instead of burning the full ROUTE_TIMEOUT. Clearing a known prompt CHANGES the
   # output, so a CLEARABLE block resets the stall (the pane unblocks) rather than being given up.
   local cc_h="" cod_h="" agy_h="" cc_st=0 cod_st=0 agy_st=0 cc_gu=0 cod_gu=0 agy_gu=0 _h
   while [ "$waited" -lt "$ROUTE_TIMEOUT" ]; do
+    # S3: a reaped/vanished standing session must surface as HOLD:service-unavailable, never
+    # burn down into a defect-claiming REFUTED — break to the outcome mapping below.
+    if ! session_exists; then
+      log "standing session $SESSION disappeared mid-route — degrading to HOLD (service-unavailable)"
+      session_lost=1
+      break
+    fi
     [ -z "$vc" ] && vc="$(verdict_of "$CC_PANE" "$nonce")"
     [ -z "$vd" ] && vd="$(verdict_of "$COD_PANE" "$nonce")"
     [ -z "$va" ] && va="$(verdict_of "$AGY_PANE" "$nonce")"
@@ -1168,10 +1235,17 @@ cmd_route() {
   local total="${#verds[@]}"
   local _decision disposition detail confirmed degraded=""
   _decision="$(pawl_decide "$minc" "${verds[@]}")"
-  disposition="${_decision%%:*}"; detail="$(printf '%s' "$_decision" | cut -d: -f2)"; confirmed="${_decision##*:}"
+  confirmed="${_decision##*:}"
+  # S3 honesty split: record and bind the OUTCOME (route_outcome over the quorum decision +
+  # session availability), never the raw quorum token — a no-substantive-refuter degrade is
+  # HOLD (insufficient-reviewers / service-unavailable), not a defect-claiming REFUTED. The
+  # quorum decision itself (pawl_decide) is untouched.
+  local _outcome; _outcome="$(route_outcome "$_decision" "$session_lost")"
+  disposition="${_outcome%%:*}"; detail="${_outcome##*:}"
   case "$detail" in
-    degraded)     degraded="degraded: ${confirmed}/${total} families CONFIRMED (tier=$TIER min=${minc} still met)" ;;
-    insufficient) degraded="insufficient reviewers: ${confirmed}/${total} CONFIRMED (tier=$TIER needs >=${minc})" ;;
+    degraded)               degraded="degraded: ${confirmed}/${total} families CONFIRMED (tier=$TIER min=${minc} still met)" ;;
+    insufficient-reviewers) degraded="insufficient reviewers: ${confirmed}/${total} CONFIRMED (tier=$TIER needs >=${minc}) — deadline/stall give-ups, no substantive refutation" ;;
+    service-unavailable)    degraded="standing pawl session disappeared mid-route (${confirmed}/${total} CONFIRMED before loss)" ;;
   esac
 
   # One SLO datapoint per route — non-blocking + fail-safe (must NEVER affect the verdict).
@@ -1221,7 +1295,7 @@ cmd_route() {
   while IFS= read -r _spec; do [ -n "$_spec" ] && rf+=(--refuter "$_spec"); done \
     < <(_refuted_refuters "$vc" "$vd" "$va" "$ev_cc" "$ev_cod" "$ev_agy")
   bash "$ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
-    --disposition REFUTED --head "$head" \
+    --disposition "$disposition" --head "$head" \
     --author-context "pawl-route-author-${bead}" --mode "$mode" \
     "${rf[@]}" \
     --wall-seconds "$(( $(date +%s) - _route_t0 ))" \
@@ -1236,8 +1310,8 @@ cmd_route() {
   # Non-blocking + fail-safe: never affects the REFUTED exit below.
   _route_emit_catch "$bead" "$head" "$mode" \
     "$(_refuting_evidence "$vc" "$vd" "$va" "$ev_cc" "$ev_cod" "$ev_agy")" || true
-  log "ROUTE $bead: REFUTED/HOLD — tier=$TIER ${degraded:-no agreement} (evidence in $EVID_DIR)"
-  echo "REFUTED"
+  log "ROUTE $bead: $disposition — tier=$TIER ${degraded:-no agreement} (evidence in $EVID_DIR)"
+  echo "$disposition"
   return 1
 }
 
