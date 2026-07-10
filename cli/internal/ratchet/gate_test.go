@@ -318,6 +318,12 @@ func restrictSearchOrder(t *testing.T) {
 
 func prependFakeCommand(t *testing.T, name string, body string) {
 	t.Helper()
+	// Tracker consumers resolve br|bd before execution. Tests that install a
+	// fake tracker must select that same backend explicitly; otherwise a real br
+	// earlier on the host PATH can bypass the fixture.
+	if name == "br" || name == "bd" {
+		t.Setenv("AGENTOPS_TRACKER", name)
+	}
 
 	binDir := t.TempDir()
 	scriptPath := filepath.Join(binDir, name)
