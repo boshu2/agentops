@@ -1139,8 +1139,8 @@
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "3ec1c9d910837fa278155c7cca4794b7c915e67876e1a751ef8370c57da65e4d",
-      "generated_hash": "6a88afc92c1731c61be9cf2823bee3c41dbb52b763dc5dae9d02bad18580e818"
+      "source_hash": "ba28699da3150dd8250f32177f75cad12456beadff426e489e359ece398668c9",
+      "generated_hash": "6cc759d72103bdef1bd05afdfb64b97c76bb5e783251c5fad7c0f70c49d2a84a"
     },
     {
       "name": "goals",

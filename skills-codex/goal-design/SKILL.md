@@ -76,7 +76,17 @@ Given `$goal-design "<goal>" [--slug <slug>]`:
 
 5. **Get independent validation.** Invoke `$validate .agents/goal-design/<slug>`
    or an equivalent fresh-context validator. A checker-clean packet with no
-   independent verdict is not ready to drive work.
+   independent verdict is not ready to drive work. Record the verdict with the
+   evidence-bound transition (never hand-edit `status:`):
+
+   ```bash
+   scripts/goal-design-packet.py mark-validated .agents/goal-design/<slug> \
+     --verdict "PASS (<validator>, <date>)"
+   ```
+
+   It refuses FAIL/empty verdicts, flips both statuses, stamps the driver's
+   `Last validation verdict` line, refreshes the digest, and re-runs the checker
+   in one move.
 
 6. **Hand off.** After validation, pass the packet path to `$discovery` or
    `$plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
@@ -98,7 +108,10 @@ Given `$goal-design "<goal>" [--slug <slug>]`:
 
 A long autonomous run is only safe if the goal carries its own escalation
 policy — a per-goal **class → tier** router, never a flat "escalate to me"
-(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon). When
+(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon). The
+helper's `new` command scaffolds the canonical router table into the driver
+body — replace its TODO row with the goal-specific one-way-door rows before
+dispatch; do not leave the placeholder. When
 authoring `driver.md`, write the router as a table in the driver **body** and
 mirror its escalation semantics in the schema-validated `route_back_rules`
 frontmatter (auto → `validation_fails`, council →
