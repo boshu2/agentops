@@ -8,7 +8,11 @@
 //     the catches the membrane recorded (classed REFUTEs, via
 //     yieldledger.DetectCatches on the in-window events), and the beads the
 //     tracker closed in the window.
-//  2. ANDON QUEUE — what the loop parked for a human: blocked beads,
+//  2. VERIFIED FRONTIER — the last-known-good origin/main sha (every walked
+//     ancestor RESOLVED: CONFIRMED verdict edge or #trivial provenance-only
+//     waiver) plus the pending window of landed commits awaiting verdicts
+//     (age-fdae; computation in yield_frontier.go).
+//  3. ANDON QUEUE — what the loop parked for a human: blocked beads,
 //     ESCALATE/HOLD pawl verdicts, and any REFUTED verdict whose bead is
 //     still open (a stalled slice). Each row: id, why parked, age.
 //
@@ -72,6 +76,14 @@ Sections:
   YIELD        gate-verdict counts (CONFIRMED/REFUTED/ESCALATE/HOLD) since the
                cutoff, the catches recorded (classed membrane REFUTEs), and the
                beads closed in the window.
+  VERIFIED FRONTIER
+               the last-known-good origin/main sha — the highest commit whose
+               walked ancestors ALL resolve (a CONFIRMED verdict edge in
+               docs/provenance/ledger.jsonl, or the #trivial provenance-only
+               waiver; a REFUTED verdict beats the waiver) — plus the pending
+               window: each landed commit above the frontier still awaiting
+               its verdict (sha, bead, age). Empty window ⇒ the frontier IS
+               origin/main. Walk bounded at 200 commits.
   ANDON QUEUE  what needs a human: blocked beads, ESCALATE/HOLD pawl verdicts,
                and any REFUTED verdict whose bead is still open (a stalled
                slice). Each row: id, why parked, age.
@@ -165,8 +177,18 @@ type yieldReportDoc struct {
 	Since       string                `json:"since"`
 	GeneratedAt string                `json:"generated_at"`
 	Yield       yieldReportYield      `json:"yield"`
-	AndonQueue  []yieldReportAndonRow `json:"andon_queue"`
-	BeadsError  string                `json:"beads_error,omitempty"`
+	// FrontierSHA is the VERIFIED FRONTIER: the highest origin/main commit
+	// whose walked ancestors ALL satisfy RESOLVED (age-fdae; "" when no
+	// walked commit qualifies or the frontier is unavailable).
+	FrontierSHA string `json:"frontier_sha"`
+	// Pending is the pending window: every origin/main commit above the
+	// frontier, newest first — landed, awaiting its verdict.
+	Pending []yieldReportPendingCommit `json:"pending"`
+	// FrontierError reports a degraded frontier (no git repo, no
+	// origin/main) — reported, never fatal, like BeadsError.
+	FrontierError string                `json:"frontier_error,omitempty"`
+	AndonQueue    []yieldReportAndonRow `json:"andon_queue"`
+	BeadsError    string                `json:"beads_error,omitempty"`
 }
 
 // runYieldReport wires the cobra invocation to the report core.
@@ -226,6 +248,13 @@ func buildYieldReport(ledger *yieldledger.Ledger, root string, since, now time.T
 	window := windowedLedger(ledger, since)
 	doc.Yield.Verdicts = countReportVerdicts(window)
 	doc.Yield.Catches = reportCatches(window)
+
+	frontierSHA, pending, frontierErr := buildFrontierSection(root, now)
+	if frontierErr != nil {
+		doc.FrontierError = frontierErr.Error()
+	}
+	doc.FrontierSHA = frontierSHA
+	doc.Pending = pending
 
 	beads, beadsErr := fetchReportBeads(root)
 	if beadsErr != nil {
@@ -548,6 +577,10 @@ func writeYieldReportText(out io.Writer, doc yieldReportDoc, now time.Time) erro
 		if err := tw.Flush(); err != nil {
 			return err
 		}
+	}
+
+	if err := renderFrontierText(out, doc); err != nil {
+		return err
 	}
 
 	fmt.Fprintln(out, "\nANDON QUEUE — what the loop parked for you")
