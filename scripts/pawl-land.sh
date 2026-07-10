@@ -28,11 +28,18 @@
 # Preconditions: the bead's code is already committed (HEAD cites the bead) and a CONFIRMED
 # pawl verdict exists at .agents/pawl-verdicts/<bead>.json (e.g. via `pawl.sh route`).
 #
-# Usage: pawl-land.sh <bead> [pr]    (pr default 0 = push-to-main)
+# When [review-base] is supplied (the `ao land` upstream-range path), origin/main
+# must still equal that exact commit after the post-review fetch. An advance HOLDs
+# and requires a fresh review; a multi-commit range verdict is never restamped
+# across an unreviewed base change. Direct legacy callers that omit it retain the
+# rebase/restamp behavior below.
+#
+# Usage: pawl-land.sh <bead> [pr] [review-base]    (pr default 0 = push-to-main)
 set -euo pipefail
 
 BEAD="${1:?usage: pawl-land.sh <bead> [pr]}"
 PR="${2:-0}"
+REVIEW_BASE="${3:-}"
 ROOT="$(git rev-parse --show-toplevel)"
 VDIR="${AGENTOPS_PAWL_VERDICTS_DIR:-$ROOT/.agents/pawl-verdicts}"
 VF="$VDIR/$BEAD.json"
@@ -80,6 +87,16 @@ case "$HEAD_MSG" in
 esac
 
 git -C "$ROOT" fetch origin main --quiet
+if [[ -n "$REVIEW_BASE" ]]; then
+  REVIEW_BASE="$(git -C "$ROOT" rev-parse --verify "${REVIEW_BASE}^{commit}" 2>/dev/null)" \
+    || die "review base '$3' is not a commit — rerun ao land"
+  CURRENT_BASE="$(git -C "$ROOT" rev-parse --verify origin/main 2>/dev/null)" \
+    || die "cannot resolve origin/main after fetch"
+  [[ "$CURRENT_BASE" == "$REVIEW_BASE" ]] \
+    || die "origin/main advanced after review (${REVIEW_BASE:0:12} -> ${CURRENT_BASE:0:12}); refusing to restamp an upstream-range verdict across an unreviewed base — rerun ao land"
+  git -C "$ROOT" merge-base --is-ancestor "$REVIEW_BASE" HEAD \
+    || die "reviewed base ${REVIEW_BASE:0:12} is not an ancestor of HEAD — rerun ao land"
+fi
 if ! git -C "$ROOT" rebase origin/main; then
   git -C "$ROOT" rebase --abort >/dev/null 2>&1 || true
   die "rebase onto origin/main failed; aborted without pushing. Resolve the conflict locally, rerun pawl review if the tree changes, then rerun pawl-land."

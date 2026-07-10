@@ -17,6 +17,12 @@ import (
 // guard against a re-exec loop (the realpath check below is the primary guard).
 const landReexecEnv = "AO_LAND_REEXECED"
 
+// landReviewBaseEnv carries the exact origin/main commit that the parent fetched
+// and rebased onto before it built the fresh review binary. The re-exec'd child
+// passes the same commit to pawl-land, which refuses if origin/main advances while
+// the upstream-range review is running.
+const landReviewBaseEnv = "AO_LAND_REVIEW_BASE"
+
 // landExitError carries the process exit code `ao land` maps to, so the exit code
 // is meaningful on any failure (a re-exec'd child's code, a pawl-land / gate / push
 // failure). Mirrors pawlReviewExitError; wired into root.go's Execute.
@@ -39,7 +45,8 @@ aoBinaryInside(repoRoot), so 'ao pawl review' on your own checkout takes the
 stranger/UNTRUSTED path (cold review, PAWL_NO_SERVICE=1, no verdict auto-bind).
 'ao land' closes that gap deterministically:
 
-  0. Build a fresh in-checkout binary (cli/bin/ao) so the review runs under a binary
+  0. Fetch origin/main and rebase before review, then capture that exact base. Build
+     a fresh in-checkout binary (cli/bin/ao) from the rebased source so the review runs under a binary
      that is BOTH HEAD-fresh AND physically inside the checkout — aoBinaryInside()
      passes, so the review takes the LIVE (trusted) path: warm auto-up + deterministic
      preflight + verdict AUTO-BIND. Re-exec the whole verb through that fresh binary.
@@ -48,12 +55,14 @@ stranger/UNTRUSTED path (cold review, PAWL_NO_SERVICE=1, no verdict auto-bind).
      pre-push gate never fall back to a stale in-checkout binary).
   2. Warm-service liveness — bring the standing pawl-service up once if it is down
      (best-effort; a cold review still works, never a hard fail on warm-up).
-  3. Run 'ao pawl review <bead> --scope head' on the LIVE path — auto-bind fires on
+  3. Run 'ao pawl review <bead> --scope upstream' on the LIVE path — the packet
+     covers the complete configured-upstream...tip delta, and auto-bind fires on
      CONFIRM (emits the single #trivial verdict commit). REFUTED / NO-VERDICT stops
      here (exit non-zero, no land).
-  4. On CONFIRM, hand off to scripts/pawl-land.sh (fetch → rebase origin/main →
-     restamp the verdict onto the post-rebase feat → single push through the gate),
-     then scripts/post-land-provenance-emit.sh for the trunk-bound landed edge.
+  4. On CONFIRM, hand off to scripts/pawl-land.sh with the reviewed base. A remote
+     advance during review HOLDs and requires a fresh review; otherwise it performs
+     the single push through the gate. Then post-land-provenance-emit.sh records the
+     trunk-bound landed edge.
 
 RCE SAFETY: the same aoBinaryInside(repoRoot) trust test the pawl already uses gates
 every repo-script exec (never forgeable marker files). 'ao land' requires a genuine
@@ -80,6 +89,42 @@ var landBuildFreshBinary = func(repoRoot, dest string) error {
 	c.Stdout = os.Stderr
 	c.Stderr = os.Stderr
 	return c.Run()
+}
+
+// landPrepareReviewBase moves the branch onto the exact remote base the pawl will
+// review. It deliberately runs BEFORE the fresh binary is built: a rebase can
+// change the source, so building first would make the supposedly HEAD-fresh binary
+// stale. A conflict is aborted and fails closed before any reviewer is spent.
+var landPrepareReviewBase = func(cmd *cobra.Command, repoRoot string) (string, error) {
+	fetch := exec.Command("git", "-C", repoRoot, "fetch", "origin", "main", "--quiet")
+	fetch.Stdin = cmd.InOrStdin()
+	fetch.Stdout = cmd.OutOrStdout()
+	fetch.Stderr = cmd.ErrOrStderr()
+	if err := fetch.Run(); err != nil {
+		return "", fmt.Errorf("fetching origin/main before review: %w", err)
+	}
+
+	rebase := exec.Command("git", "-C", repoRoot, "rebase", "origin/main")
+	rebase.Stdin = cmd.InOrStdin()
+	rebase.Stdout = cmd.OutOrStdout()
+	rebase.Stderr = cmd.ErrOrStderr()
+	if err := rebase.Run(); err != nil {
+		_ = exec.Command("git", "-C", repoRoot, "rebase", "--abort").Run()
+		return "", fmt.Errorf("rebasing onto origin/main before review (aborted; resolve the conflict and retry): %w", err)
+	}
+
+	base, err := exec.Command("git", "-C", repoRoot, "rev-parse", "origin/main").Output()
+	if err != nil {
+		return "", fmt.Errorf("resolving reviewed origin/main: %w", err)
+	}
+	reviewedBase := strings.TrimSpace(string(base))
+	if len(reviewedBase) < 7 {
+		return "", fmt.Errorf("resolving reviewed origin/main returned an invalid commit %q", reviewedBase)
+	}
+	if err := exec.Command("git", "-C", repoRoot, "merge-base", "--is-ancestor", reviewedBase, "HEAD").Run(); err != nil {
+		return "", fmt.Errorf("reviewed base %s is not an ancestor of HEAD after rebase", reviewedBase)
+	}
+	return reviewedBase, nil
 }
 
 // landReexec re-runs the whole `land` verb under the fresh binary (Step 1). Returns
@@ -119,12 +164,12 @@ var landEnsureWarmService = func(cmd *cobra.Command, repoRoot, aoBin string) {
 	}
 }
 
-// landRunReview runs the existing `ao pawl review <bead> --scope head` machinery
+// landRunReview runs the existing `ao pawl review <bead> --scope upstream` machinery
 // in-process (Step 3). Because the caller is the fresh in-checkout binary,
 // runPawlReview takes the LIVE (trusted) path — auto-bind fires on CONFIRM. It
 // returns nil on CONFIRM (exit 0) and a *pawlReviewExitError on REFUTED/NO-VERDICT.
 var landRunReview = func(cmd *cobra.Command, bead string) error {
-	return runPawlReview(cmd, []string{bead, "--scope", "head"})
+	return runPawlReview(cmd, []string{bead, "--scope", "upstream"})
 }
 
 // landRunScript runs a repo land script (scripts/pawl-land.sh / post-land-provenance)
@@ -161,8 +206,26 @@ func runLand(cmd *cobra.Command, args []string) error {
 	}
 	freshBin := filepath.Join(repoRoot, "cli", "bin", "ao")
 	reexeced := os.Getenv(landReexecEnv) == "1"
+	reviewedBase := strings.TrimSpace(os.Getenv(landReviewBaseEnv))
 
-	// Step 0: build a fresh in-checkout binary so the review runs the LIVE (trusted)
+	// Step 0: establish the exact branch base BEFORE building the fresh binary.
+	// The re-exec'd child inherits the captured base; it must never fetch/rebase a
+	// second time before review because that would change the object the parent built.
+	if !reexeced {
+		fmt.Fprintln(cmd.ErrOrStderr(), "ao land: fetching + rebasing onto origin/main before the full upstream-range review…")
+		var prepareErr error
+		reviewedBase, prepareErr = landPrepareReviewBase(cmd, repoRoot)
+		if prepareErr != nil {
+			return fmt.Errorf("ao land: preparing the reviewed branch base failed: %w", prepareErr)
+		}
+		if err := os.Setenv(landReviewBaseEnv, reviewedBase); err != nil {
+			return fmt.Errorf("ao land: carrying reviewed base %s into the fresh child: %w", reviewedBase, err)
+		}
+	} else if len(reviewedBase) < 7 {
+		return fmt.Errorf("ao land: re-exec'd child is missing %s; refusing to review an unknown branch base", landReviewBaseEnv)
+	}
+
+	// Step 1: build a fresh in-checkout binary so the review runs the LIVE (trusted)
 	// path — HEAD-fresh AND physically inside the checkout ⇒ aoBinaryInside() passes ⇒
 	// warm auto-up + preflight + auto-bind all enabled. Skipped in the re-exec'd child
 	// (its parent just built it).
@@ -173,7 +236,7 @@ func runLand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Step 1: re-exec the whole verb through the fresh binary if we are not it, so
+	// Step 2: re-exec the whole verb through the fresh binary if we are not it, so
 	// aoBinaryInside(repoRoot) passes for every step that follows (the trusted path).
 	if !runningAoIsFresh(freshBin) {
 		code, reErr := landReexec(cmd, freshBin, args)
@@ -186,7 +249,7 @@ func runLand(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Step 2: pin AO_BIN so preflight + verdict emit + the pre-push gate all share the
+	// Step 3: pin AO_BIN so preflight + verdict emit + the pre-push gate all share the
 	// ONE fresh binary. VERIFIED GAP: the live path passes extraEnv=nil, so unlike the
 	// cold path it does NOT pin AO_BIN — without this pin a stale in-checkout binary
 	// could resolve for those child steps.
@@ -194,22 +257,22 @@ func runLand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ao land: pinning AO_BIN=%s: %w", freshBin, err)
 	}
 
-	// Step 3 (warm-service liveness, best-effort — never hard-fails on warm-up).
+	// Step 4 (warm-service liveness, best-effort — never hard-fails on warm-up).
 	landEnsureWarmService(cmd, repoRoot, freshBin)
 
-	// Step 4: run the pawl review on the LIVE path. auto-bind fires on CONFIRM; a
+	// Step 5: run the pawl review on the LIVE path. auto-bind fires on CONFIRM; a
 	// REFUTED / NO-VERDICT stops the land here (the review already printed the verdict
 	// + defects and carries its own exit code).
-	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: running the cross-family pawl review for %s (scope head, trusted path)…\n", bead)
+	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: running the cross-family pawl review for %s (scope upstream from %s, trusted path)…\n", bead, reviewedBase[:12])
 	if reviewErr := landRunReview(cmd, bead); reviewErr != nil {
 		return reviewErr
 	}
 
-	// Step 5: CONFIRM — the auto-bind emitted the single #trivial verdict commit. Hand
-	// off to the atomic land machinery (rebase → restamp under PAWL_AUTOBIND=0 → single
-	// push through the gate).
-	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: CONFIRMED — handing off to scripts/pawl-land.sh (rebase → restamp → single push)…\n")
-	executed, landErr := landRunScript(cmd, repoRoot, freshBin, "scripts/pawl-land.sh", bead)
+	// Step 6: CONFIRM — the auto-bind emitted the single #trivial verdict commit. Hand
+	// off with the exact reviewed base. pawl-land fetches once more and refuses if
+	// origin/main advanced; a range verdict is never silently restamped onto a new base.
+	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: CONFIRMED — handing off to scripts/pawl-land.sh (remote-base check → single push)…\n")
+	executed, landErr := landRunScript(cmd, repoRoot, freshBin, "scripts/pawl-land.sh", bead, "0", reviewedBase)
 	if landErr != nil {
 		var exitErr *exec.ExitError
 		if errors.As(landErr, &exitErr) {

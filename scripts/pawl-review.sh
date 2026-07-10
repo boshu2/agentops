@@ -12,7 +12,8 @@
 #                        construction). LAW 0: NEVER `claude -p`; the refuter is codex.
 #
 # Flow: diff -> adversarial refuter prompt -> codex exec -> parse VERDICT -> evidence
-#   - CONFIRMED (scope head): write + verify the commit-bound verdict (exit 0).
+#   - CONFIRMED (scope head/upstream): write + verify the commit-bound verdict
+#       (exit 0). upstream reviews the complete configured-upstream..tip delta.
 #   - CONFIRMED (scope staged): REVIEW-ONLY — print the verdict, write NOTHING (there is
 #       no commit to bind), exit 0. Commit, then re-run with --scope head to certify.
 #   - REFUTED:   print the defects + save them as the evidence file (for the author to
@@ -58,7 +59,7 @@
 # the non-strict alternative) and exits 5 — it NEVER fakes a strict pass and NEVER degrades to one
 # family. Flipping ONE list (add a graduated family to STRICT_ELIGIBLE_FAMILIES) enables real strict.
 #
-# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
+# Usage: pawl-review.sh <bead-id> [--scope head|staged|upstream] [--converge] [--strict] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
 # Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 5 STRICT HOLD/UNAVAILABLE (no second strict-eligible cold family, or a family outage — never degrades) · 2 usage/precondition · 1 hard error.
 set -uo pipefail
 
@@ -193,6 +194,7 @@ recall_prior_catches() {
   ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   case "${scope:-head}" in
     staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    upstream) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff "${review_base:?}".."${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
     *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show "${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
@@ -1191,7 +1193,7 @@ run_review() {
 # current commit. The verdict then binds to the reviewed change commit — exactly the
 # state a first-round review produces before its own bind commit lands on top.
 review_target="HEAD"
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _live_head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
   if [[ -n "$_live_head" ]]; then
     _walk="$_live_head"; _walked=0
@@ -1207,10 +1209,25 @@ if [[ "$scope" == "head" ]]; then
     fi
   fi
 fi
+review_base=""
+upstream_ref=""
+if [[ "$scope" == "upstream" ]]; then
+  upstream_ref="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)" || upstream_ref=""
+  if [[ -z "$upstream_ref" ]]; then
+    echo "pawl-review: --scope upstream requires a configured upstream branch (for landing, set this branch to track origin/main); nothing reviewed" >&2
+    exit 2
+  fi
+  review_base="$(git -C "$REPO_ROOT" merge-base "$upstream_ref" "$review_target" 2>/dev/null)" || review_base=""
+  if [[ -z "$review_base" ]]; then
+    echo "pawl-review: cannot resolve a merge-base between configured upstream '$upstream_ref' and $review_target; nothing reviewed" >&2
+    exit 2
+  fi
+fi
 case "$scope" in
   head)   diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
   staged) diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
-  *) echo "pawl-review: --scope must be head|staged" >&2; exit 2 ;;
+  upstream) diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
+  *) echo "pawl-review: --scope must be head|staged|upstream" >&2; exit 2 ;;
 esac
 head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
@@ -1230,7 +1247,7 @@ export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
 # commit carrying non-provenance files (a fix amended into the auto-bind) — else the
 # reviewer walks past the #trivial tip and reviews stale content. scope=head only
 # (staged has no committed tip). Same fix-and-re-run disposition as a REFUTED.
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _amend_rc=0
   pawl_amend_guard "$REPO_ROOT" "${_live_head:-$head}" || _amend_rc=$?
   [[ "$_amend_rc" -eq 2 ]] && exit 3
@@ -1241,7 +1258,7 @@ fi
 # cites a different bead than the one under review — the verdict would bind the
 # wrong tree. Positive-mismatch only (a commit citing no ids of the bead's
 # prefix is never blocked). Same fix-and-re-run disposition as a REFUTED.
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _tip_rc=0
   pawl_tip_coherence "$REPO_ROOT" "$head" "$bead" || _tip_rc=$?
   [[ "$_tip_rc" -eq 2 ]] && exit 3
@@ -1255,7 +1272,9 @@ fi
 # that can't run SKIPs and proceeds (the pre-push gate still backstops). Placed
 # before _REVIEW_T0 so the deterministic time is not counted as review wall-clock.
 _preflight_rc=0
-pawl_preflight "$scope" "$REPO_ROOT" || _preflight_rc=$?
+_preflight_scope="$scope"
+[[ "$scope" == "upstream" ]] && _preflight_scope="head"
+pawl_preflight "$_preflight_scope" "$REPO_ROOT" || _preflight_rc=$?
 if [[ "$_preflight_rc" -eq 3 ]]; then
   exit 3
 fi
@@ -1276,6 +1295,7 @@ if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   case "$scope" in
     head)   review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --stat --format= --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
     staged) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    upstream) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
 fi
 review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$review_files" "$REPO_ROOT")"

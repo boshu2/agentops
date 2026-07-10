@@ -90,7 +90,7 @@ here before so the same class of miss is caught one altitude earlier.`,
 }
 
 var membraneCatchCmd = &cobra.Command{
-	Use:   "catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
+	Use:   "catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
 	Short: "Record a membrane CATCH — a REFUTED defect, as a structured class the membrane remembers",
 	Long: `Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 context (--domain), what was caught (--reason), and the affected files (--paths),
@@ -230,7 +230,7 @@ func init() {
 	membraneCatchCmd.Flags().StringVar(&membraneCatchHead, "head", "", "Commit sha the catch was found at (default: git HEAD)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchRun, "run", "", "Run id (default: membrane-catch)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchEvidence, "evidence", "", "Pawl-review evidence file: derive --reason (two-tier REFUTED salvage), --domain (first changed file's top dir) and --paths (changed files, first 20); explicit flags win")
-	membraneCatchCmd.Flags().StringVar(&membraneCatchScope, "scope", "head", "With --evidence: changed-file scope — head (files in the --head commit) or staged (the index)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchScope, "scope", "head", "With --evidence: changed-file scope — head (the --head commit), staged (the index), or upstream (configured-upstream merge-base through --head)")
 
 	membraneTriageCmd.Flags().BoolVar(&membraneTriageJSON, "json", false, "Emit the triage result as JSON")
 }
@@ -386,14 +386,30 @@ func capReason(s string) string {
 
 // changedFilesForCatch lists the changed files a catch covers, computed from
 // git by scope exactly as pawl-review's emit_pawl_catch does: the files of the
-// --head commit for scope=head, the index for scope=staged. BEST-EFFORT — nil
+// --head commit for scope=head, the index for scope=staged, or configured-
+// upstream merge-base through --head for scope=upstream. BEST-EFFORT — nil
 // on any git error (the caller falls back to the pawl-review domain): the
 // catch is observability, not a gate. (age-ulab)
 func changedFilesForCatch(root, scope, head string) []string {
 	var args []string
-	if scope == "staged" {
+	switch scope {
+	case "staged":
 		args = []string{"-c", "core.fsmonitor=", "-C", root, "diff", "--cached", "--no-ext-diff", "--no-textconv", "--name-only", "--no-color"}
-	} else {
+	case "upstream":
+		ref := strings.TrimSpace(head)
+		if ref == "" {
+			ref = "HEAD"
+		}
+		upstream, err := exec.Command("git", "-C", root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}").Output()
+		if err != nil {
+			return nil
+		}
+		base, err := exec.Command("git", "-C", root, "merge-base", strings.TrimSpace(string(upstream)), ref).Output()
+		if err != nil || strings.TrimSpace(string(base)) == "" {
+			return nil
+		}
+		args = []string{"-c", "core.fsmonitor=", "-C", root, "diff", strings.TrimSpace(string(base)) + ".." + ref, "--no-ext-diff", "--no-textconv", "--name-only", "--no-color"}
+	default:
 		ref := strings.TrimSpace(head)
 		if ref == "" {
 			ref = "HEAD"
@@ -447,8 +463,8 @@ func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 	if scope == "" {
 		scope = "head"
 	}
-	if scope != "head" && scope != "staged" {
-		return fmt.Errorf("ao membrane catch: --scope must be head or staged, got %q", scope)
+	if scope != "head" && scope != "staged" && scope != "upstream" {
+		return fmt.Errorf("ao membrane catch: --scope must be head, staged, or upstream, got %q", scope)
 	}
 	class := strings.TrimSpace(membraneCatchClass)
 	if class != "" && !classSlugRe.MatchString(class) {

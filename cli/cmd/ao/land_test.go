@@ -19,14 +19,17 @@ type landTestHarness struct {
 	repo     string
 	freshBin string
 	// captured invocation record
-	built       bool
-	reexeced    bool
-	reexecFresh string
-	warmed      bool
-	reviewAOBIN string // AO_BIN as seen by the review seam (proves Step-2 pin)
-	reviewedBd  string
-	scripts     []string // rel paths passed to landRunScript, in order
-	scriptAOBIN []string // AO_BIN pinned per script call
+	built        bool
+	reexeced     bool
+	reexecFresh  string
+	warmed       bool
+	prepared     bool
+	reviewedBase string
+	reviewAOBIN  string // AO_BIN as seen by the review seam (proves Step-2 pin)
+	reviewedBd   string
+	scripts      []string // rel paths passed to landRunScript, in order
+	scriptArgs   [][]string
+	scriptAOBIN  []string // AO_BIN pinned per script call
 }
 
 func newLandHarness(t *testing.T) *landTestHarness {
@@ -56,11 +59,13 @@ func newLandHarness(t *testing.T) *landTestHarness {
 	// AO_LAND_REEXECED unset so the parent (not re-exec'd) path runs by default.
 	t.Setenv("AO_BIN", "")
 	t.Setenv(landReexecEnv, "")
+	t.Setenv(landReviewBaseEnv, "")
 
 	// Save every shared seam/global.
 	prevDir := testProjectDir
 	prevSelf := pawlSelfBinary
 	prevBuild := landBuildFreshBinary
+	prevPrepare := landPrepareReviewBase
 	prevReexec := landReexec
 	prevWarm := landEnsureWarmService
 	prevReview := landRunReview
@@ -69,6 +74,7 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		testProjectDir = prevDir
 		pawlSelfBinary = prevSelf
 		landBuildFreshBinary = prevBuild
+		landPrepareReviewBase = prevPrepare
 		landReexec = prevReexec
 		landEnsureWarmService = prevWarm
 		landRunReview = prevReview
@@ -89,6 +95,11 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		}
 		return os.WriteFile(dest, []byte("fresh"), 0o755)
 	}
+	landPrepareReviewBase = func(_ *cobra.Command, _ string) (string, error) {
+		h.prepared = true
+		h.reviewedBase = "0123456789abcdef0123456789abcdef01234567"
+		return h.reviewedBase, nil
+	}
 	landReexec = func(_ *cobra.Command, freshBin string, _ []string) (int, error) {
 		h.reexeced = true
 		h.reexecFresh = freshBin
@@ -100,8 +111,9 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		h.reviewAOBIN = os.Getenv("AO_BIN")
 		return nil // CONFIRM by default
 	}
-	landRunScript = func(_ *cobra.Command, _, aoBin, rel string, _ ...string) (bool, error) {
+	landRunScript = func(_ *cobra.Command, _, aoBin, rel string, args ...string) (bool, error) {
 		h.scripts = append(h.scripts, rel)
+		h.scriptArgs = append(h.scriptArgs, append([]string(nil), args...))
 		h.scriptAOBIN = append(h.scriptAOBIN, aoBin)
 		return true, nil
 	}
@@ -128,6 +140,9 @@ func TestLand_ConfirmHandoffToPawlLand(t *testing.T) {
 	if !h.built {
 		t.Error("Step 0: fresh binary was not built")
 	}
+	if !h.prepared {
+		t.Error("Step 0: reviewed origin/main base was not prepared before the review")
+	}
 	if h.reexeced {
 		t.Error("Step 1: must NOT re-exec when already running the fresh binary")
 	}
@@ -146,6 +161,10 @@ func TestLand_ConfirmHandoffToPawlLand(t *testing.T) {
 		if h.scripts[i] != want {
 			t.Errorf("script[%d] = %q, want %q", i, h.scripts[i], want)
 		}
+	}
+	wantLandArgs := []string{"age-test", "0", h.reviewedBase}
+	if got := h.scriptArgs[0]; strings.Join(got, "\x00") != strings.Join(wantLandArgs, "\x00") {
+		t.Errorf("pawl-land args = %q, want %q", got, wantLandArgs)
 	}
 }
 
@@ -330,5 +349,36 @@ func TestLand_SourceReviewsUpstreamRangeAndHandsBaseToPawlLand(t *testing.T) {
 		if !strings.Contains(text, want) {
 			t.Errorf("ao land source missing truthful range-review contract %q", want)
 		}
+	}
+}
+
+func TestLand_PrepareFailureStopsBeforeBuildReviewOrLand(t *testing.T) {
+	h := newLandHarness(t)
+	landPrepareReviewBase = func(_ *cobra.Command, _ string) (string, error) {
+		h.prepared = true
+		return "", errors.New("rebase conflict")
+	}
+	err := runLandCmd(t, "age-test")
+	if err == nil || !strings.Contains(err.Error(), "preparing the reviewed branch base") {
+		t.Fatalf("prepare failure = %v, want actionable stop", err)
+	}
+	if h.built || h.reviewedBd != "" || len(h.scripts) != 0 {
+		t.Fatalf("prepare failure must stop before build/review/land: built=%v review=%q scripts=%v", h.built, h.reviewedBd, h.scripts)
+	}
+}
+
+func TestLand_ReexecChildRequiresAndReusesPreparedBase(t *testing.T) {
+	h := newLandHarness(t)
+	t.Setenv(landReexecEnv, "1")
+	t.Setenv(landReviewBaseEnv, "abcdef0123456789abcdef0123456789abcdef01")
+	if err := runLandCmd(t, "age-test"); err != nil {
+		t.Fatalf("reexec child: %v", err)
+	}
+	if h.prepared || h.built {
+		t.Fatalf("reexec child must reuse parent preparation/build: prepared=%v built=%v", h.prepared, h.built)
+	}
+	want := "abcdef0123456789abcdef0123456789abcdef01"
+	if got := h.scriptArgs[0][2]; got != want {
+		t.Fatalf("pawl-land reviewed base = %q, want inherited %q", got, want)
 	}
 }
