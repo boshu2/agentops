@@ -43,7 +43,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "validated", "superseded"]
+      "enum": ["draft", "validated", "superseded", "closed"]
     },
     "intent_ref": {
       "type": "object",

@@ -249,3 +249,155 @@ setup() {
     [ "$(sha256sum "$packet/driver.md" | awk '{print $1}')" = "$before_driver" ]
     grep -q "^status: draft" "$packet/intent.md"
 }
+
+@test "close flips both statuses and stamps evidence-bound dispositions" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new close-happy \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Close a packet with evidence-bound dispositions" \
+        --scenario-name "Close a packet with evidence-bound dispositions" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/close-happy"
+    "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-10)" >/dev/null
+
+    run "$TOOL" close "$packet" --candidate "B1=closed:commit abc123 + PASS verdict 2026-07-10"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"goal-design packet valid"* ]]
+    grep -q "^status: closed" "$packet/intent.md"
+    grep -q "^status: closed" "$packet/driver.md"
+    grep -q "^- Closed: " "$packet/driver.md"
+    grep -qF -- "(prior status: validated)" "$packet/driver.md"
+    grep -qF -- "- Disposition B1: closed - commit abc123 + PASS verdict 2026-07-10" "$packet/driver.md"
+
+    expected="$(sha256sum "$packet/intent.md" | awk '{print $1}')"
+    grep -qF "sha256: $expected" "$packet/driver.md"
+    run "$CHECKER" "$packet"
+    [ "$status" -eq 0 ]
+}
+
+@test "close refuses when candidate dispositions are missing and reports all of them" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new close-missing \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Refuse to close without full dispositions" \
+        --scenario-name "Refuse to close without full dispositions" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/close-missing"
+
+    # Give the fixture driver a second candidate so partial coverage is detectable.
+    python3 - "$packet/driver.md" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+end = text.find("\n---\n", 4)
+data = yaml.safe_load(text[4:end])
+second = dict(data["candidate_beads"][0])
+second["id"] = "B2"
+data["candidate_beads"].append(second)
+path.write_text("---\n" + yaml.safe_dump(data, sort_keys=False) + "---\n" + text[end + 5:], encoding="utf-8")
+PY
+
+    cp "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cp "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    run "$TOOL" close "$packet"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"B1"* ]]
+    [[ "$output" == *"B2"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    run "$TOOL" close "$packet" --candidate "B1=closed:bats suite green"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"B2"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+    grep -q "^status: draft" "$packet/intent.md"
+    grep -q "^status: draft" "$packet/driver.md"
+}
+
+@test "close rolls back when the checker rejects the closed packet" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new close-rollback \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Never leave a broken packet closed" \
+        --scenario-name "Never leave a broken packet closed" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/close-rollback"
+
+    sed -i.bak 's/^objective: .*$/objective: ""/' "$packet/intent.md"
+    rm -f "$packet/intent.md.bak"
+    cp "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cp "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    run "$TOOL" close "$packet" --candidate "B1=dropped:premise went stale"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"restored"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+    grep -q "^status: draft" "$packet/intent.md"
+}
+
+@test "mark-validated refuses to reopen a closed packet" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new closed-guard \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Never silently reopen a terminal packet" \
+        --scenario-name "Never silently reopen a terminal packet" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/closed-guard"
+    "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-10)" >/dev/null
+    "$TOOL" close "$packet" --candidate "B1=closed:bats suite green + checker exit 0" >/dev/null
+
+    cp "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cp "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    run "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-10)"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"closed"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+    grep -q "^status: closed" "$packet/intent.md"
+    grep -q "^status: closed" "$packet/driver.md"
+}
+
+@test "close refuses an already-closed or superseded packet" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new close-terminal \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Refuse to close a terminal packet twice" \
+        --scenario-name "Refuse to close a terminal packet twice" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/goal-design-packet.py" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/close-terminal"
+    "$TOOL" mark-validated "$packet" --verdict "PASS (validator, 2026-07-10)" >/dev/null
+    "$TOOL" close "$packet" --candidate "B1=closed:shipped with evidence" >/dev/null
+
+    cp "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cp "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    run "$TOOL" close "$packet" --candidate "B1=closed:shipped again"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"draft or validated"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.before"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.before"
+
+    sed -i.bak 's/^status: closed$/status: superseded/' "$packet/intent.md" "$packet/driver.md"
+    rm -f "$packet/intent.md.bak" "$packet/driver.md.bak"
+    cp "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.superseded"
+    cp "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.superseded"
+
+    run "$TOOL" close "$packet" --candidate "B1=closed:shipped again"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"draft or validated"* ]]
+    cmp -s "$packet/intent.md" "$BATS_TEST_TMPDIR/intent.superseded"
+    cmp -s "$packet/driver.md" "$BATS_TEST_TMPDIR/driver.superseded"
+}
