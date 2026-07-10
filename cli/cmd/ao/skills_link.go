@@ -109,11 +109,18 @@ new skill dir to main puts files in the repo but mints no symlink, and
 /reload-skills only re-reads links that already exist. Run this and the new
 skill is live next session.
 
+Track main (optional): this is how to follow the latest skills from a repo clone
+instead of waiting for a plugin release. Clone the repo, run this once, then
+'git pull && ao skills link' to keep up — the symlinks point at the repo, so
+edits are live with no reinstall. Additive to the plugin install, never a
+replacement; must be run from inside the agentops repo (guarded).
+
 Repairing an existing wrong/broken link is out of scope — use
 dotfiles/bin/link-skill --relink for that copy-verify-replace path.
 
   ao skills link                       # link missing into ~/.claude/skills
   ao skills link --dry-run             # show what's missing without linking
+  git pull && ao skills link           # track main: pick up newly-landed skills
   ao skills link --dest ~/.codex/skills`,
 	Args: cobra.NoArgs,
 	RunE: runSkillsLink,

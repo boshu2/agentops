@@ -3,8 +3,21 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+// The command's --help is the user-facing contract for the optional track-main
+// install path (age-4asp): documenting it there is the whole point, so guard it
+// against silent removal.
+func TestSkillsLinkHelp_DocumentsTrackMain(t *testing.T) {
+	long := skillsLinkCmd.Long
+	for _, want := range []string{"Track main", "git pull && ao skills link"} {
+		if !strings.Contains(long, want) {
+			t.Errorf("`ao skills link --help` no longer documents the track-main workflow: missing %q", want)
+		}
+	}
+}
 
 // mkSkill creates dir/<name>/SKILL.md so linkMissingSkills recognizes it as a skill.
 func mkSkill(t *testing.T, dir, name string) {
