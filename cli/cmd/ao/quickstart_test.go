@@ -103,11 +103,13 @@ func TestQuickstart_CreateTasksFile_ValidJSON(t *testing.T) {
 
 func TestQuickstart_ShowNextSteps_WithBeads(t *testing.T) {
 	out, _ := captureStdout(t, func() error { showNextSteps(true); return nil })
-	if !strings.Contains(out, "br ready") {
-		t.Errorf("with beads=true, expected 'br ready' tracker reference in output:\n%s", out)
+	if !strings.Contains(out, "ao beads ready") {
+		t.Errorf("with beads=true, expected selected-tracker route 'ao beads ready' in output:\n%s", out)
 	}
-	if !strings.Contains(out, "ao factory start") {
-		t.Errorf("with beads=true, expected factory lane in output:\n%s", out)
+	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
+		if strings.Contains(out, tombstone) {
+			t.Errorf("with beads=true, quick-start teaches removed path %q:\n%s", tombstone, out)
+		}
 	}
 }
 
@@ -116,8 +118,10 @@ func TestQuickstart_ShowNextSteps_WithoutBeads(t *testing.T) {
 	if out == "" {
 		t.Error("expected non-empty output for next steps")
 	}
-	if !strings.Contains(out, "ao factory start") {
-		t.Errorf("without beads, expected factory lane in output:\n%s", out)
+	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
+		if strings.Contains(out, tombstone) {
+			t.Errorf("without beads, quick-start teaches removed path %q:\n%s", tombstone, out)
+		}
 	}
 }
 
@@ -411,6 +415,63 @@ func TestQuickstart_quickstartBeadsStep_noBeads(t *testing.T) {
 	}
 }
 
+func TestQuickstart_initBeadsUsesSelectedBDWithoutBR(t *testing.T) {
+	root := t.TempDir()
+	binDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "tracker.log")
+	bdPath := filepath.Join(binDir, "bd")
+	stub := "#!/bin/sh\nprintf '%s\\n' \"$*\" > \"$TRACKER_LOG\"\n"
+	if err := os.WriteFile(bdPath, []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("TRACKER_LOG", logPath)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", binDir)
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	if err := initBeadsWithApp(root, NewApp()); err != nil {
+		t.Fatalf("initBeadsWithApp with selected bd and no br: %v", err)
+	}
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("selected bd was not executed: %v", err)
+	}
+	if got := strings.TrimSpace(string(data)); !strings.HasPrefix(got, "init --prefix ") {
+		t.Fatalf("bd argv = %q, want init --prefix <prefix>", got)
+	}
+}
+
+func TestQuickstart_selectedTrackerUnavailableFailsClosed(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	oldNoBeads, oldMinimal := noBeads, minimal
+	noBeads, minimal = false, false
+	t.Cleanup(func() {
+		noBeads, minimal = oldNoBeads, oldMinimal
+	})
+
+	_, err := executeCommand("quick-start")
+	if err == nil {
+		t.Fatal("quick-start with selected unavailable bd returned success, want fail-closed error")
+	}
+	if strings.Contains(err.Error(), "br command not found") {
+		t.Fatalf("quick-start bypassed selected bd and checked br: %v", err)
+	}
+	if !strings.Contains(err.Error(), "bd") {
+		t.Fatalf("quick-start error = %q, want selected backend bd named", err)
+	}
+}
+
 // --- quickstartClaudeMdStep tests ---
 
 func TestQuickstart_quickstartClaudeMdStep_creates(t *testing.T) {
@@ -531,7 +592,7 @@ func TestQuickstart_showNextSteps_withBeads(t *testing.T) {
 		showNextSteps(true)
 	})
 
-	if !strings.Contains(got, "Tracked work") {
+	if !strings.Contains(got, "Select tracked work") {
 		t.Fatalf("expected beads next steps, got: %s", got)
 	}
 }
@@ -541,7 +602,7 @@ func TestQuickstart_showNextSteps_withoutBeads(t *testing.T) {
 		showNextSteps(false)
 	})
 
-	if !strings.Contains(got, "Start your agent in this repo") {
+	if !strings.Contains(got, "Inspect repository readiness") {
 		t.Fatalf("expected no-beads next steps, got: %s", got)
 	}
 }

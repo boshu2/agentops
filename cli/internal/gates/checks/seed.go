@@ -60,6 +60,7 @@ var (
 	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
 	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
 	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
+	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
 	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
 	// 6-file set — it scans every LIVE docs/** file (plus the pinned doctrine
@@ -330,6 +331,7 @@ func init() {
 		{ID: "go.test-home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-home-isolation.sh"},
 		{ID: "go.complexity", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-complexity.sh"},
 		{ID: "go.cli-reference", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "generate-cli-reference.sh", Args: []string{"--check"}},
+		{ID: "go.cli-contract", Tiers: gates.Fast | gates.Full, Match: cliContractPaths, Blocking: true, Backing: "check-cli-contract.sh"},
 		{ID: "go.cli-surface-counts", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "update-cli-surface-counts.sh"},
 		{ID: "go.test-count-regression", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-count-regression.sh"},
 		{ID: "go.test-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},

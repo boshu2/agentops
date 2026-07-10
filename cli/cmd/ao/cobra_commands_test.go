@@ -362,95 +362,35 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
-		"agent",
-		"agents",
-		"anti-patterns",
-		"badge",
-		"batch-feedback",
 		"beads",
-		"buildtags",
-		"canon",
 		"capabilities",
-		"chaos-test",
-		"ci",
-		"citation",
 		"claim",
 		"close",
-		"compile",
 		"completion",
 		"config",
-		"constraint",
-		"context",
-		"contradict",
-		"converge",
 		"council-gate",
-		"dedup",
-		"demo",
 		"doctor",
 		"done",
 		"eval",
-		"extract",
-		"feedback",
-		"feedback-loop",
-		"findings",
-		"flywheel",
-		"forge",
 		"gate",
 		"goals",
 		"governor",
-		"guard-status",
-		"handoff",
-		"index",
 		"init",
-		"inject",
-		"install-guards",
-		"knowledge",
 		"land",
-		"lookup",
-		"maturity",
-		"mcp",
 		"membrane",
-		"memory",
-		"metrics",
-		"migrate",
-		"mine",
-		"next-work",
-		"notebook",
-		"patterns",
 		"pawl",
 		"plan-pawl",
-		"pool",
 		"provenance",
 		"quick-start",
-		"ratchet",
 		"ready",
-		"reconcile",
-		"redact",
-		"registry",
-		"rehydrate",
-		"retrieval-bench",
 		"robot-docs",
-		"scope",
-		"search",
-		"seed",
 		"session",
-		"session-outcome",
-		"sessions",
 		"skills",
 		"status",
-		"store",
-		"task-feedback",
-		"task-status",
-		"task-sync",
-		"temper",
-		"trace",
 		"validate",
 		"verdict-gate",
 		"verify",
 		"version",
-		"vibe-check",
-		"wiki",
-		"worktree",
 		"yield",
 	}
 	cmdSet := make(map[string]bool)
@@ -500,103 +440,44 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	if len(archiveBuildTags) > 0 {
 		t.Skipf("spine-conformance test: archive build tags active (%v); the restored build is a documented superset", archiveBuildTags)
 	}
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	root := rootCmd
 	registered := make(map[string]bool)
 	for _, cmd := range root.Commands() {
 		registered[cmd.Name()] = true
 	}
 
-	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
-		"agent",
-		"agents",
-		"anti-patterns",
-		"badge",
-		"batch-feedback",
 		"beads",
-		"buildtags",
-		"canon",
 		"capabilities",
-		"chaos-test",
-		"ci",
-		"citation",
 		"claim",
 		"close",
-		"compile",
 		"completion",
 		"config",
-		"constraint",
-		"context",
-		"contradict",
-		"converge",
 		"council-gate",
-		"dedup",
-		"demo",
 		"doctor",
 		"done",
 		"eval",
-		"extract",
-		"feedback",
-		"feedback-loop",
-		"findings",
-		"flywheel",
-		"forge",
 		"gate",
 		"goals",
 		"governor",
-		"guard-status",
-		"handoff",
-		"index",
 		"init",
-		"inject",
-		"install-guards",
-		"knowledge",
 		"land",
-		"lookup",
-		"maturity",
-		"mcp",
 		"membrane",
-		"memory",
-		"metrics",
-		"migrate",
-		"mine",
-		"next-work",
-		"notebook",
-		"patterns",
 		"pawl",
 		"plan-pawl",
-		"pool",
 		"provenance",
 		"quick-start",
-		"ratchet",
 		"ready",
-		"reconcile",
-		"redact",
-		"registry",
-		"rehydrate",
-		"retrieval-bench",
 		"robot-docs",
-		"scope",
-		"search",
-		"seed",
 		"session",
-		"session-outcome",
-		"sessions",
 		"skills",
 		"status",
-		"store",
-		"task-feedback",
-		"task-status",
-		"task-sync",
-		"temper",
-		"trace",
 		"validate",
 		"verdict-gate",
 		"verify",
 		"version",
-		"vibe-check",
-		"wiki",
-		"worktree",
 		"yield",
 	}
 
@@ -2513,8 +2394,8 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		if !strings.Contains(buf.String(), "br create") {
-			t.Error("expected 'br create' in next steps with beads")
+		if !strings.Contains(buf.String(), "ao beads ready") {
+			t.Error("expected selected-tracker ready route in next steps with beads")
 		}
 	})
 
@@ -2528,8 +2409,8 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		if !strings.Contains(buf.String(), "br init") {
-			t.Error("expected 'br init' in next steps without beads")
+		if !strings.Contains(buf.String(), "ao status") {
+			t.Error("expected readiness inspection in next steps without beads")
 		}
 	})
 }

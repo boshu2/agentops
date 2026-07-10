@@ -205,7 +205,7 @@ We run the canon pattern; the Oracle is the part the canon cannot yet do.
 > natively; see `skills/using-gc` and the gc-mvp out-of-box gap map). The 2026-06 "not adopted"
 > call was re-decided 2026-07 after the properly-set-up native city proved orchestration wholesale;
 > what remains non-negotiable: `runtime=gc` stays removed (not a selectable runtime mode), no
-> `ao gc` surface; gc is reached via operator choice only.
+> no `ao gc` surface exists; gc is reached via operator choice only.
 
 ## The novel primitive — the verification membrane
 

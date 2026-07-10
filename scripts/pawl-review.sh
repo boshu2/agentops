@@ -12,7 +12,8 @@
 #                        construction). LAW 0: NEVER `claude -p`; the refuter is codex.
 #
 # Flow: diff -> adversarial refuter prompt -> codex exec -> parse VERDICT -> evidence
-#   - CONFIRMED (scope head): write + verify the commit-bound verdict (exit 0).
+#   - CONFIRMED (scope head/upstream): write + verify the commit-bound verdict
+#       (exit 0). upstream reviews the complete configured-upstream..tip delta.
 #   - CONFIRMED (scope staged): REVIEW-ONLY — print the verdict, write NOTHING (there is
 #       no commit to bind), exit 0. Commit, then re-run with --scope head to certify.
 #   - REFUTED:   print the defects + save them as the evidence file (for the author to
@@ -58,7 +59,7 @@
 # the non-strict alternative) and exits 5 — it NEVER fakes a strict pass and NEVER degrades to one
 # family. Flipping ONE list (add a graduated family to STRICT_ELIGIBLE_FAMILIES) enables real strict.
 #
-# Usage: pawl-review.sh <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
+# Usage: pawl-review.sh <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context "<extra>"] [--smoke "<cmd>"]
 # Exit:  0 CONFIRMED(+written for head) · 3 REFUTED (incl. live-smoke red/stall) · 4 --converge advisory-only (no lineage) · 5 STRICT HOLD/UNAVAILABLE (no second strict-eligible cold family, or a family outage — never degrades) · 2 usage/precondition · 1 hard error.
 set -uo pipefail
 
@@ -169,6 +170,7 @@ emit_pawl_catch() {
   # ao-side. (age-jjt8 defects 1+2)
   [[ -n "${PAWL_CATCH_CLASS:-}" ]]    && catch_args+=(--class "$PAWL_CATCH_CLASS")
   [[ -n "${PAWL_CATCH_DETECTOR:-}" ]] && catch_args+=(--detector-pattern "$PAWL_CATCH_DETECTOR")
+  [[ "${scope:-head}" == "upstream" && -n "${review_base:-}" ]] && catch_args+=(--base "$review_base")
   # Run from the CANONICAL root of $REPO_ROOT (the REVIEWED repo): `ao membrane catch`
   # roots its ledger via repoRootOrCwd() from its cwd, so without this a pawl-review
   # invoked from a different cwd / another repo (AGENTOPS_REPO_ROOT=repoA, cwd in
@@ -193,6 +195,7 @@ recall_prior_catches() {
   ao_bin="$(resolve_ao)"; [[ -n "$ao_bin" ]] || return 0
   case "${scope:-head}" in
     staged) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    upstream) files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" diff "${review_base:?}".."${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
     *)      files="$(git -c core.fsmonitor= -C "${REPO_ROOT:-.}" show "${review_target:-HEAD}" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
   domain="$(printf '%s\n' "$files" | head -1 | cut -d/ -f1)"
@@ -246,7 +249,7 @@ MAX_INLINE_BYTES="${PAWL_MAX_INLINE_BYTES:-65536}"   # 64KB — inline the commo
 # JSON is line-cheap but byte-huge, so the line cap alone would copy it wholesale). Overridable.
 SMOKE_EVIDENCE_MAX_BYTES="${PAWL_SMOKE_EVIDENCE_MAX_BYTES:-8192}"   # 8KB/side (head+tail = 16KB), < MAX_INLINE_BYTES
 
-bead=""; scope="head"; extra=""; author_family="claude"; converge=0; smoke_cmd=""
+bead=""; scope="head"; review_base_arg=""; extra=""; author_family="claude"; converge=0; smoke_cmd=""
 # age-rk3r.13: STRICT two-family cold quorum — opt-in. Default OFF (PAWL_STRICT from the .5/.17
 # config bridge, or the --strict flag). When ON, the review requires TWO DISTINCT strict-eligible
 # cold families to BOTH CONFIRMED and REFUSES to degrade to a single family on an outage (HOLD).
@@ -847,6 +850,7 @@ PAWL_ORIG_ARGS=("$@")
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --scope)         need_val "$1" "${2:-}"; scope="$2"; shift 2 ;;
+    --base)          need_val "$1" "${2:-}"; review_base_arg="$2"; shift 2 ;;
     --author-family) need_val "$1" "${2:-}"; author_family="$2"; shift 2 ;;
     --context)       need_val "$1" "${2:-}"; extra="$2"; shift 2 ;;
     --smoke)         need_val "$1" "${2:-}"; smoke_cmd="$2"; shift 2 ;;
@@ -857,6 +861,10 @@ while [[ $# -gt 0 ]]; do
     *)               bead="$1"; shift ;;
   esac
 done
+if [[ -n "$review_base_arg" && "$scope" != "upstream" ]]; then
+  echo "pawl-review: --base is valid only with --scope upstream" >&2
+  exit 2
+fi
 # age-rk3r.10: the change-id (bead) is a LABEL ONLY — it keys the verdict/evidence file names and
 # is echoed into the reviewer packet; it is NEVER validated against a tracker (recon-confirmed). So
 # when it is OMITTED, DERIVE a label rather than bouncing the caller a round trip (a coordinator hit
@@ -1191,7 +1199,7 @@ run_review() {
 # current commit. The verdict then binds to the reviewed change commit — exactly the
 # state a first-round review produces before its own bind commit lands on top.
 review_target="HEAD"
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _live_head="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
   if [[ -n "$_live_head" ]]; then
     _walk="$_live_head"; _walked=0
@@ -1207,10 +1215,33 @@ if [[ "$scope" == "head" ]]; then
     fi
   fi
 fi
+review_base=""
+upstream_ref=""
+if [[ "$scope" == "upstream" ]]; then
+  if [[ -n "$review_base_arg" ]]; then
+    review_base="$(git -C "$REPO_ROOT" rev-parse --verify "${review_base_arg}^{commit}" 2>/dev/null)" || review_base=""
+    [[ -n "$review_base" ]] || { echo "pawl-review: explicit --base '$review_base_arg' is not a commit; nothing reviewed" >&2; exit 2; }
+    git -C "$REPO_ROOT" merge-base --is-ancestor "$review_base" "$review_target" 2>/dev/null \
+      || { echo "pawl-review: explicit --base ${review_base:0:12} is not an ancestor of $review_target; nothing reviewed" >&2; exit 2; }
+    upstream_ref="<explicit-base>"
+  else
+    upstream_ref="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)" || upstream_ref=""
+    if [[ -z "$upstream_ref" ]]; then
+      echo "pawl-review: --scope upstream requires a configured upstream branch or explicit --base; nothing reviewed" >&2
+      exit 2
+    fi
+    review_base="$(git -C "$REPO_ROOT" merge-base "$upstream_ref" "$review_target" 2>/dev/null)" || review_base=""
+    if [[ -z "$review_base" ]]; then
+      echo "pawl-review: cannot resolve a merge-base between configured upstream '$upstream_ref' and $review_target; nothing reviewed" >&2
+      exit 2
+    fi
+  fi
+fi
 case "$scope" in
   head)   diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
   staged) diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
-  *) echo "pawl-review: --scope must be head|staged" >&2; exit 2 ;;
+  upstream) diff="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --no-color 2>/dev/null)" ;;
+  *) echo "pawl-review: --scope must be head|staged|upstream" >&2; exit 2 ;;
 esac
 head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
@@ -1230,7 +1261,7 @@ export PAWL_REVIEW_START_HEAD="${_live_head:-$head}"
 # commit carrying non-provenance files (a fix amended into the auto-bind) — else the
 # reviewer walks past the #trivial tip and reviews stale content. scope=head only
 # (staged has no committed tip). Same fix-and-re-run disposition as a REFUTED.
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _amend_rc=0
   pawl_amend_guard "$REPO_ROOT" "${_live_head:-$head}" || _amend_rc=$?
   [[ "$_amend_rc" -eq 2 ]] && exit 3
@@ -1241,7 +1272,7 @@ fi
 # cites a different bead than the one under review — the verdict would bind the
 # wrong tree. Positive-mismatch only (a commit citing no ids of the bead's
 # prefix is never blocked). Same fix-and-re-run disposition as a REFUTED.
-if [[ "$scope" == "head" ]]; then
+if [[ "$scope" == "head" || "$scope" == "upstream" ]]; then
   _tip_rc=0
   pawl_tip_coherence "$REPO_ROOT" "$head" "$bead" || _tip_rc=$?
   [[ "$_tip_rc" -eq 2 ]] && exit 3
@@ -1255,7 +1286,9 @@ fi
 # that can't run SKIPs and proceeds (the pre-push gate still backstops). Placed
 # before _REVIEW_T0 so the deterministic time is not counted as review wall-clock.
 _preflight_rc=0
-pawl_preflight "$scope" "$REPO_ROOT" || _preflight_rc=$?
+_preflight_scope="$scope"
+[[ "$scope" == "upstream" ]] && _preflight_scope="head"
+pawl_preflight "$_preflight_scope" "$REPO_ROOT" || _preflight_rc=$?
 if [[ "$_preflight_rc" -eq 3 ]]; then
   exit 3
 fi
@@ -1276,6 +1309,7 @@ if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
   case "$scope" in
     head)   review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --stat --format= --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" show "$review_target" --no-ext-diff --no-textconv --name-only --format= --no-color 2>/dev/null | sed '/^$/d')" ;;
     staged) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff --cached --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
+    upstream) review_stat="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --stat --no-color 2>/dev/null)"; review_files="$(git -c core.fsmonitor= -C "$REPO_ROOT" diff "$review_base".."$review_target" --no-ext-diff --no-textconv --name-only --no-color 2>/dev/null | sed '/^$/d')" ;;
   esac
 fi
 review_body="$(build_review_body "$diff" "$MAX_INLINE_BYTES" "$review_stat" "$review_files" "$REPO_ROOT")"
@@ -1452,7 +1486,7 @@ $extra
 Reply with nothing but your review. The FINAL line is the verdict: the token "VERDICT:" then one space then exactly one uppercase word, either CONFIRMED (no blocking defect found) or REFUTED (a blocking defect found). If you refute, put a "DEFECTS:" header above that final line with one concrete defect per line (the symptom and why it matters). (This instruction deliberately does not print a ready-made verdict line, so that an echo of this prompt cannot be mistaken for your verdict.)
 $prior_catches
 $smoke_evidence
-=== CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}) ===
+=== CHANGE UNDER REVIEW (bead $bead, scope $scope, head ${head:0:12}${review_base:+, base ${review_base:0:12}}) ===
 PROMPT
   printf '%s\n' "$review_body"
 } > "$prompt_file"
@@ -1543,7 +1577,7 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
   # age-rk3r.13: STRICT runs COLD, one review PER family, to collect two DISTINCT evidence files —
   # it must NOT route to the warm single-verdict pawl-service (which writes ONE codex-family verdict).
   # `"$strict" -eq 0` gates both the auto-up and the route below onto the non-strict path only.
-  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
+  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && ( "$scope" == "head" || "$scope" == "upstream" ) && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
      && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
     echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
     bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
@@ -1562,7 +1596,7 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
   # age-rk3r.13: `"$strict" -eq 0` — STRICT stays on the cold per-family path (it collects two
   # distinct cold evidences and writes ONE multi-model verdict itself; the warm route would write a
   # single codex-family verdict, defeating the quorum).
-  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && "$scope" == "head" && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
+  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && ( "$scope" == "head" || "$scope" == "upstream" ) && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
      && bash "$PAWL_SH" health >/dev/null 2>&1; then
     route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
     # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
@@ -1576,7 +1610,7 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
       # age-rk3r.7: the SAME live-smoke runtime evidence goes into the routed packet too, so a
       # head-scope review through the warm pawl-service also sees the running-code proof.
       [[ -n "$smoke_evidence" ]] && printf '%s\n' "$smoke_evidence"
-      printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s) ===\n' "$bead" "$scope" "${head:0:12}"
+      printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s%s) ===\n' "$bead" "$scope" "${head:0:12}" "${review_base:+, base ${review_base:0:12}}"
       printf '%s\n' "$review_body"
     } > "$route_pkt"
     echo "pawl-review: routing through the standing pawl-service (warm cross-family panel, ml8.7)…" >&2

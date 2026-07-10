@@ -22,6 +22,15 @@ func TestPawlReviewUseDocumentsSmokeFlag(t *testing.T) {
 	}
 }
 
+func TestPawlReviewUseDocumentsUpstreamScope(t *testing.T) {
+	if !strings.Contains(pawlReviewCmd.Use, "head|staged|upstream") {
+		t.Fatalf("pawl review Use line must document the full configured-upstream range; got %q", pawlReviewCmd.Use)
+	}
+	if !strings.Contains(pawlReviewCmd.Use, "--base <sha>") {
+		t.Fatalf("pawl review Use line must document exact range-base pinning; got %q", pawlReviewCmd.Use)
+	}
+}
+
 // writePawlTestRepo builds a minimal repo root resolveAgentsRepoRoot() accepts
 // (docs/contracts/agents-write-surfaces.md + skills/) plus a stub scripts/pawl-review.sh
 // that exits with the given code, and points testProjectDir at it. Restores all shared
