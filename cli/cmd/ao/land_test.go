@@ -343,6 +343,7 @@ func TestLand_SourceReviewsUpstreamRangeAndHandsBaseToPawlLand(t *testing.T) {
 	text := string(source)
 	for _, want := range []string{
 		`"--scope", "upstream"`,
+		`"--base", reviewedBase`,
 		"landPrepareReviewBase",
 		`"scripts/pawl-land.sh", bead, "0", reviewedBase`,
 	} {
