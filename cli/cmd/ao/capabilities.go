@@ -9,6 +9,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
 // capabilitiesContractVersion is the version of the top-level capabilities
@@ -198,6 +199,14 @@ func buildCapabilitiesDoc() capabilitiesDoc {
 }
 
 func runCapabilities(cmd *cobra.Command, _ []string) error {
+	if GetOutput() == "yaml" {
+		data, err := yaml.Marshal(buildCapabilitiesDoc())
+		if err != nil {
+			return err
+		}
+		_, err = cmd.OutOrStdout().Write(data)
+		return err
+	}
 	enc := json.NewEncoder(cmd.OutOrStdout())
 	enc.SetIndent("", "  ")
 	return enc.Encode(buildCapabilitiesDoc())
