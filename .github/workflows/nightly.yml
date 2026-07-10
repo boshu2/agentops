@@ -124,13 +124,19 @@ jobs:
       - name: Install scanner tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install semgrep ruff radon pytest
+          python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1 pytest==9.1.1
 
-          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
-          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
+          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
+          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@v8.30.1
 
           # golangci-lint
           GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+
+          # govulncheck — known-CVE reachability over the module graph + stdlib
+          # (sweep 2026-07-09 M-2: the blind spot that let GO-2026-4970 sit a week).
+          # The nightly run is the STANDING lane: it catches CVEs published after
+          # the code landed, which no diff-triggered gate can.
+          GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
           # trivy — pinned tag, download-then-execute. Piping a mutable-branch
           # install script into sh was the semgrep gha-curl-pipe-shell CRITICAL
@@ -140,7 +146,7 @@ jobs:
           sh /tmp/trivy-install.sh -b /usr/local/bin v0.72.0
 
           # hadolint
-          curl -sSfL -o /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64"
+          curl -sSfL -o /usr/local/bin/hadolint "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64"
           chmod +x /usr/local/bin/hadolint
 
       - name: Run security gate (full)

@@ -206,7 +206,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq shellcheck
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           pip install jsonschema pyyaml
 
@@ -297,7 +297,7 @@ jobs:
       - name: Install yq (skill-schema)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
       - name: Install jq
@@ -810,12 +810,15 @@ jobs:
             done
           }
           retry python -m pip install --upgrade pip
-          retry python -m pip install semgrep ruff radon
-          retry env GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
-          retry env GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
+          retry python -m pip install semgrep==1.169.0 ruff==0.15.21 radon==6.0.1
+          retry env GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
+          retry env GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@v8.30.1
           retry env GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
-          retry bash -c 'curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin'
-          retry bash -c 'curl -sL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o /tmp/hadolint && chmod +x /tmp/hadolint && sudo mv /tmp/hadolint /usr/local/bin/hadolint'
+          retry env GOBIN=/usr/local/bin go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+          # trivy — pinned tag, download-then-execute (mirrors nightly.yml; piping a
+          # mutable-branch script into sh is the gha-curl-pipe-shell supply-chain class).
+          retry bash -c 'curl -sSfL -o /tmp/trivy-install.sh https://raw.githubusercontent.com/aquasecurity/trivy/v0.72.0/contrib/install.sh && sh /tmp/trivy-install.sh -b /usr/local/bin v0.72.0'
+          retry bash -c 'curl -sL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /tmp/hadolint && chmod +x /tmp/hadolint && sudo mv /tmp/hadolint /usr/local/bin/hadolint'
 
       - name: Run security toolchain gate
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
