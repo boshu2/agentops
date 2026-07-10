@@ -4253,6 +4253,22 @@ ao skills graph [flags]
   -h, --help            help for graph
 ```
 
+#### `ao skills link`
+
+Scan skills/ and create a live-tier symlink for every skill dir that has
+
+```
+ao skills link [flags]
+```
+
+**Flags:**
+
+```
+      --dest string   Destination skills dir (default ~/.claude/skills)
+  -h, --help          help for link
+      --json          Emit machine-readable JSON
+```
+
 #### `ao skills list`
 
 Filter the generated skill catalog by hexagonal role, produced or

@@ -465,13 +465,6 @@
     },
     {
       "category": "public-tested",
-      "command": "eval scenario-ab",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "eval scenario add",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -500,14 +493,21 @@
     },
     {
       "category": "public-tested",
-      "command": "eval scenario-moat",
+      "command": "eval scenario validate",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
-      "command": "eval scenario validate",
+      "command": "eval scenario-ab",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "eval scenario-moat",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1473,20 +1473,6 @@
     },
     {
       "category": "public-tested",
-      "command": "sessions index",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "manual-only",
-      "command": "sessions spawn",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Spawns runtime sessions and requires live terminal/runtime state."
-    },
-    {
-      "category": "public-tested",
       "command": "session state admit",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1529,6 +1515,20 @@
     },
     {
       "category": "public-tested",
+      "command": "sessions index",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "manual-only",
+      "command": "sessions spawn",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Spawns runtime sessions and requires live terminal/runtime state."
+    },
+    {
+      "category": "public-tested",
       "command": "skills check",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1565,6 +1565,13 @@
     {
       "category": "public-tested",
       "command": "skills graph",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills link",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
