@@ -167,6 +167,43 @@ func TestVerifyFile_TamperedPayloadFieldCaught(t *testing.T) {
 	}
 }
 
+// TestVerifyFile_PayloadMismatchNamesReaderSkew is verification-surface-honesty
+// S4: from THIS reader's seat a payload_hash mismatch is indistinguishable
+// between real tampering and a stale reader whose payload fieldset lags the
+// writer's (live 2026-07-10: an installed ao false-flagged the real ledger as
+// BROKEN at line 423 while a fresh build verified all 441 records). The error
+// surface must therefore name reader-version/hashing skew as a possible cause
+// and instruct rebuilding ao before the ledger is treated as tampered.
+func TestVerifyFile_PayloadMismatchNamesReaderSkew(t *testing.T) {
+	store, path := seedVerifyLedger(t)
+	lines := readLines(t, path)
+
+	var e Edge
+	if err := json.Unmarshal([]byte(lines[1]), &e); err != nil {
+		t.Fatalf("unmarshal row2: %v", err)
+	}
+	e.ToID = "evil.go" // stale hashes — reader-side this IS what skew looks like
+	b, _ := json.Marshal(e)
+	lines[1] = string(b)
+	writeLines(t, path, lines)
+
+	res, err := store.VerifyFile()
+	if err != nil {
+		t.Fatalf("VerifyFile: %v", err)
+	}
+	if res.Pass {
+		t.Fatal("payload mismatch passed verification")
+	}
+	if !strings.Contains(res.Message, payloadHashSkewHint) {
+		t.Fatalf("message = %q, must carry the shared reader-skew hint %q", res.Message, payloadHashSkewHint)
+	}
+	for _, phrase := range []string{"reader", "rebuild ao", "tampered"} {
+		if !strings.Contains(res.Message, phrase) {
+			t.Errorf("message = %q, must name %q", res.Message, phrase)
+		}
+	}
+}
+
 // TestVerifyFile_ForgedHashCaught: flip the chain anchor (hash) of a row → fail.
 func TestVerifyFile_ForgedHashCaught(t *testing.T) {
 	store, path := seedVerifyLedger(t)

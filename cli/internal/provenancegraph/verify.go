@@ -99,7 +99,7 @@ func (s *Store) VerifyFile() (VerifyResult, error) {
 				Pass:            false,
 				RecordCount:     count,
 				FirstBrokenLine: lineNo,
-				Message:         "payload_hash mismatch (record content was altered)",
+				Message:         payloadHashSkewHint,
 			}, nil
 		}
 		if e.Hash != hash {
