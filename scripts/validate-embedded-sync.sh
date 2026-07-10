@@ -63,6 +63,10 @@ check_file "$REPO_ROOT/scripts/lib/diff-identity.sh" "$EMBEDDED/pawl/scripts/lib
 # embedded pawl-review dangles at runtime, so keep it byte-identical.
 check_file "$REPO_ROOT/scripts/lib/pawl-preflight.sh" "$EMBEDDED/pawl/scripts/lib/pawl-preflight.sh"
 check_file "$REPO_ROOT/scripts/lib/pawl-amend-guard.sh" "$EMBEDDED/pawl/scripts/lib/pawl-amend-guard.sh"
+# wckn + np1e: both sourced unconditionally by pawl-review.sh (tip-coherence guard;
+# canonical evidence/catch rooting) — same dangling-bundle class as pawl-preflight.
+check_file "$REPO_ROOT/scripts/lib/pawl-tip-coherence.sh" "$EMBEDDED/pawl/scripts/lib/pawl-tip-coherence.sh"
+check_file "$REPO_ROOT/scripts/lib/pawl-evidence-dir.sh" "$EMBEDDED/pawl/scripts/lib/pawl-evidence-dir.sh"
 check_file "$REPO_ROOT/schemas/pawl-verdict.v1.schema.json" "$EMBEDDED/pawl/schemas/pawl-verdict.v1.schema.json"
 
 if [[ $ERRORS -gt 0 ]]; then
