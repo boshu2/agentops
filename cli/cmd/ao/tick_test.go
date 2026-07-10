@@ -282,6 +282,35 @@ func TestTickLedgerDirResolution(t *testing.T) {
 	}
 }
 
+func TestTickRunTrackerResolvedBRPropagatesLedgerDir(t *testing.T) {
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("BEADS_DIR", "")
+	dir := t.TempDir()
+	ledger := filepath.Join(dir, "_beads")
+	fakebin := filepath.Join(dir, "fakebin")
+	for _, path := range []string{ledger, fakebin} {
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fakeBR := `#!/usr/bin/env bash
+printf '%s\n' "${BEADS_DIR:-missing}"
+`
+	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	rt := tickRuntime{workDir: dir}
+	out, code, err := rt.runTracker("ready", "--json")
+	if err != nil || code != 0 {
+		t.Fatalf("runTracker() error=%v code=%d out=%q", err, code, out)
+	}
+	if got := strings.TrimSpace(string(out)); got != ledger {
+		t.Fatalf("resolved absolute BR saw BEADS_DIR=%q, want %q", got, ledger)
+	}
+}
+
 func TestTickStagePath(t *testing.T) {
 	tests := []struct {
 		name string
