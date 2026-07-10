@@ -133,6 +133,15 @@ if ! ( cd "$repo" && "$AO" quick-start --no-beads </dev/null ) >"$qs_log" 2>&1; 
 fi
 grep -qF "ao verify $CHANGE_ID" "$qs_log" \
   || { sed 's/^/[quick-start] /' "$qs_log" >&2; fail "quick-start did not print the golden-path command 'ao verify $CHANGE_ID'"; }
+for removed in 'ao factory' 'ao orchestrate' 'ao codex' '/rpi' '/validation'; do
+  if grep -qF "$removed" "$qs_log"; then
+    sed 's/^/[quick-start] /' "$qs_log" >&2
+    fail "quick-start emitted removed route '$removed'"
+  fi
+done
+last_ao=$(grep -o 'ao [[:alnum:]][[:alnum:]_-]*[^[:cntrl:]]*' "$qs_log" | tail -1)
+[[ "$last_ao" == "ao verify $CHANGE_ID" ]] \
+  || fail "quick-start terminal ao command is '$last_ao', want 'ao verify $CHANGE_ID'"
 log "quick-start OK (printed the exact next command)"
 
 log "STEP 2/3: small change, committed"

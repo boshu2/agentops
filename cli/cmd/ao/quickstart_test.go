@@ -106,8 +106,10 @@ func TestQuickstart_ShowNextSteps_WithBeads(t *testing.T) {
 	if !strings.Contains(out, "br ready") {
 		t.Errorf("with beads=true, expected 'br ready' tracker reference in output:\n%s", out)
 	}
-	if !strings.Contains(out, "ao factory start") {
-		t.Errorf("with beads=true, expected factory lane in output:\n%s", out)
+	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
+		if strings.Contains(out, tombstone) {
+			t.Errorf("with beads=true, quick-start teaches removed path %q:\n%s", tombstone, out)
+		}
 	}
 }
 
@@ -116,8 +118,10 @@ func TestQuickstart_ShowNextSteps_WithoutBeads(t *testing.T) {
 	if out == "" {
 		t.Error("expected non-empty output for next steps")
 	}
-	if !strings.Contains(out, "ao factory start") {
-		t.Errorf("without beads, expected factory lane in output:\n%s", out)
+	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
+		if strings.Contains(out, tombstone) {
+			t.Errorf("without beads, quick-start teaches removed path %q:\n%s", tombstone, out)
+		}
 	}
 }
 
