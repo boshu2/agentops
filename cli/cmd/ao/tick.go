@@ -214,19 +214,23 @@ type tickCounts struct {
 }
 
 func tickReady(rt tickRuntime) error {
-	readyOut, code, err := rt.runTracker("ready", "--json")
+	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
+	if err != nil {
+		return err
+	}
+	readyOut, code, err := rt.run(resolution.Binary, "ready", "--json")
 	if err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "br ready --json failed"}
+		return &tickExitError{code: code, msg: resolution.Tracker + " ready --json failed"}
 	}
 	ready := tickParseBeads(readyOut)
 
-	allOut, code, err := rt.runTracker("list", "--all", "--json")
+	allOut, code, err := rt.run(resolution.Binary, "list", "--all", "--json")
 	if err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "br list --all --json failed"}
+		return &tickExitError{code: code, msg: resolution.Tracker + " list --all --json failed"}
 	}
 	all := tickParseBeads(allOut)
 	state := tickReadyState{
-		StateSource: "br",
+		StateSource: resolution.Tracker,
 		GitHead:     tickGitRevParse(rt),
 		Ready:       ready,
 		Counts:      tickCountBeads(ready, all),
@@ -266,6 +270,10 @@ func tickParseBeads(out []byte) []tickBead {
 	}
 	if err := json.Unmarshal(out, &wrapped); err == nil {
 		return wrapped.Issues
+	}
+	var single tickBead
+	if err := json.Unmarshal(out, &single); err == nil && single.ID != "" {
+		return []tickBead{single}
 	}
 	return nil
 }
@@ -327,57 +335,79 @@ func tickAnyOpenOrInProgress(list []tickBead) bool {
 }
 
 func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
+	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
+	if err != nil {
+		return err
+	}
+	return tickCloseResolved(rt, resolution, id, msg, evidence, paths)
+}
+
+func tickCloseResolved(rt tickRuntime, resolution trackerResolution, id, msg, evidence string, paths []string) error {
 	evFirst := tickFirstEvidenceToken(evidence)
 	if reason := tickEvidenceRefusal(rt, evidence, evFirst); reason != "" {
 		fmt.Fprintf(rt.stderr, "REFUSED close %s: evidence %q %s\n", id, evidence, reason)
 		return &tickExitError{code: tickExitCloseRef}
 	}
 
-	ledgerDir := tickLedgerDir(rt)
-	before := tickGitRevParseInDir(rt, ledgerDir)
-	if before == "" {
-		before = "none"
-	}
-	if _, code, err := rt.runTracker("close", id, "--reason", "evidence: "+evidence); err != nil || code != 0 {
-		fmt.Fprintf(rt.stderr, "FAILED close %s: br close failed or skipped; no files staged\n", id)
-		return &tickExitError{code: tickExitCloseFail}
-	}
-	if _, code, err := rt.runTracker("sync", "--flush-only"); err != nil || code != 0 {
-		_, _, _ = rt.runTracker("sync")
-	}
-	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
-	metadataPath := filepath.Join(ledgerDir, "metadata.json")
-	if !tickLedgerShowsClosed(issuesPath, id) {
-		_, _, _ = rt.runTracker("update", id, "--status", "open")
-		_, _, _ = rt.runTracker("sync", "--flush-only")
-		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger does not show a closed bead after br close; bead reopened\n", id)
+	ledgerDir := resolution.LedgerDir
+	if _, code, err := rt.run(resolution.Binary, "close", id, "--reason", "evidence: "+evidence); err != nil || code != 0 {
+		fmt.Fprintf(rt.stderr, "FAILED close %s: %s close failed or skipped; no files staged\n", id, resolution.Tracker)
 		return &tickExitError{code: tickExitCloseFail}
 	}
 
-	ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
-	if tickPathExists(rt.workDir, metadataPath) {
-		ledgerStage = append(ledgerStage, "metadata.json")
-	}
-	if _, code, err := rt.run("git", ledgerStage...); err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "ledger git add failed"}
-	}
-	ledgerCommitOut, code, err := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
-	ledgerCommitNoop := false
-	if err != nil || code != 0 {
-		if tickGitCommitNothingToCommit(ledgerCommitOut) {
-			ledgerCommitNoop = true
-		} else {
-			return &tickExitError{code: code, msg: "ledger git commit failed"}
+	closedRef := "none"
+	if resolution.Tracker == trackerBR {
+		before := tickGitRevParseInDir(rt, ledgerDir)
+		if before == "" {
+			before = "none"
 		}
-	}
-	after := tickGitRevParseInDir(rt, ledgerDir)
-	if after == "" {
-		after = "none"
-	}
-	if before == after && !ledgerCommitNoop {
-		_, _, _ = rt.runTracker("update", id, "--status", "open")
-		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
-		return &tickExitError{code: tickExitNoCommit}
+		if _, code, syncErr := rt.run(resolution.Binary, "sync", "--flush-only"); syncErr != nil || code != 0 {
+			_, _, _ = rt.run(resolution.Binary, "sync")
+		}
+		issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
+		metadataPath := filepath.Join(ledgerDir, "metadata.json")
+		if !tickLedgerShowsClosed(issuesPath, id) {
+			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+			_, _, _ = rt.run(resolution.Binary, "sync", "--flush-only")
+			fmt.Fprintf(rt.stderr, "FAILED close %s: %s ledger does not show a closed bead after close; bead reopened\n", id, resolution.Tracker)
+			return &tickExitError{code: tickExitCloseFail}
+		}
+
+		ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
+		if tickPathExists(rt.workDir, metadataPath) {
+			ledgerStage = append(ledgerStage, "metadata.json")
+		}
+		if _, code, addErr := rt.run("git", ledgerStage...); addErr != nil || code != 0 {
+			return &tickExitError{code: code, msg: "ledger git add failed"}
+		}
+		ledgerCommitOut, code, commitErr := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
+		ledgerCommitNoop := false
+		if commitErr != nil || code != 0 {
+			if tickGitCommitNothingToCommit(ledgerCommitOut) {
+				ledgerCommitNoop = true
+			} else {
+				return &tickExitError{code: code, msg: "ledger git commit failed"}
+			}
+		}
+		after := tickGitRevParseInDir(rt, ledgerDir)
+		if after == "" {
+			after = "none"
+		}
+		if before == after && !ledgerCommitNoop {
+			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+			fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
+			return &tickExitError{code: tickExitNoCommit}
+		}
+		closedRef = after
+	} else {
+		// bd persists into its Dolt-backed store itself. Never inspect, stage, or
+		// commit the unrelated BR JSONL ledger; verify through the selected bd
+		// backend instead.
+		if !tickTrackerShowsClosed(rt, resolution, id) {
+			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+			fmt.Fprintf(rt.stderr, "FAILED close %s: %s does not report the issue closed; issue reopened\n", id, resolution.Tracker)
+			return &tickExitError{code: tickExitCloseFail}
+		}
 	}
 
 	stage := tickPublicStagePaths(rt, ledgerDir, evFirst, paths)
@@ -391,12 +421,22 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 			return &tickExitError{code: code, msg: "git commit failed"}
 		}
 	}
-	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(after))
+	if resolution.Tracker == trackerBD {
+		closedRef = tickGitRevParse(rt)
+		if closedRef == "" {
+			closedRef = "none"
+		}
+	}
+	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(closedRef))
 	return nil
 }
 
 func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) error {
-	if tickLedgerShowsClosed(filepath.Join(tickLedgerDir(rt), "issues.jsonl"), id) {
+	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
+	if err != nil {
+		return err
+	}
+	if tickTrackerShowsClosed(rt, resolution, id) {
 		after := tickGitRevParse(rt)
 		if after == "" {
 			after = "none"
@@ -404,7 +444,26 @@ func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) err
 		fmt.Fprintf(rt.stdout, "already closed %s @ %s\n", id, tickShortSHA(after))
 		return nil
 	}
-	return tickClose(rt, id, msg, evidence, paths)
+	return tickCloseResolved(rt, resolution, id, msg, evidence, paths)
+}
+
+func tickTrackerShowsClosed(rt tickRuntime, resolution trackerResolution, id string) bool {
+	if resolution.Tracker == trackerBR {
+		return tickLedgerShowsClosed(filepath.Join(resolution.LedgerDir, "issues.jsonl"), id)
+	}
+	queries := [][]string{{"show", id, "--json"}, {"list", "--all", "--json"}}
+	for _, args := range queries {
+		out, code, err := rt.run(resolution.Binary, args...)
+		if err != nil || code != 0 {
+			continue
+		}
+		for _, item := range tickParseBeads(out) {
+			if item.ID == id && item.Status == "closed" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // tickEvidenceRefusal applies the close-evidence gate and returns a non-empty
