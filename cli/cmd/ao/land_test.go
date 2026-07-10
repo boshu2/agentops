@@ -315,3 +315,20 @@ func TestLand_CommandWiring(t *testing.T) {
 		t.Error("land must reject more than one arg")
 	}
 }
+
+func TestLand_SourceReviewsUpstreamRangeAndHandsBaseToPawlLand(t *testing.T) {
+	source, err := os.ReadFile(findRepoFileForTest(t, "cli", "cmd", "ao", "land.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	for _, want := range []string{
+		`"--scope", "upstream"`,
+		"landPrepareReviewBase",
+		`"scripts/pawl-land.sh", bead, "0", reviewedBase`,
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("ao land source missing truthful range-review contract %q", want)
+		}
+	}
+}

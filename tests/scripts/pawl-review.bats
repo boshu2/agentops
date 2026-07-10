@@ -14,6 +14,7 @@ setup() {
   cat > "$BIN/codex" <<'STUB'
 #!/usr/bin/env bash
 prompt="$(cat)"   # the refuter prompt
+[[ -n "${PKT_CAPTURE:-}" ]] && printf '%s\n' "$prompt" > "$PKT_CAPTURE"
 # CONVERGE_AWARE: model the real flow — REFUTE the adversarial pass (cosmetic tail), but
 # CONFIRM the calibrated convergence pass (so adversarial records lineage, converge certifies).
 if [[ "${CODEX_CONVERGE_AWARE:-0}" == "1" ]]; then
@@ -117,6 +118,36 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   [ "$status" -eq 0 ]
   [[ "$output" == *"review-only"* ]]
   [ ! -f "$VFILE" ]   # staged has no commit to bind — must not certify HEAD
+}
+
+@test "pawl-review: scope=upstream reviews every branch commit and binds the tip" {
+  base="$(git rev-parse HEAD~1)"
+  origin="$TMP/origin.git"
+  git init --bare --quiet "$origin"
+  git remote add origin "$origin"
+  git push --quiet origin "$base":refs/heads/main
+  git fetch --quiet origin main
+  git branch --set-upstream-to=origin/main >/dev/null
+  printf 'second branch commit\n' > second.txt
+  git add second.txt
+  git commit --quiet -m "fix(x): second branch commit (age-rev-test)"
+  tip="$(git rev-parse HEAD)"
+  packet="$TMP/upstream-packet.txt"
+
+  PKT_CAPTURE="$packet" CODEX_STUB="VERDICT: CONFIRMED" \
+    run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope upstream
+
+  [ "$status" -eq 0 ]
+  grep -q 'scope upstream' "$packet"
+  grep -q 'README.md' "$packet"
+  grep -q 'second.txt' "$packet"
+  [ "$(jq -r '.head_sha' "$VFILE")" = "$tip" ]
+}
+
+@test "pawl-review: scope=upstream fails closed without a configured upstream" {
+  run env PATH="$BIN:$PATH" bash "$SCRIPT" age-rev-test --scope upstream
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"configured upstream"* ]]
 }
 
 @test "pawl-review: same-family author (codex == the codex refuter) is REFUSED (defect #2)" {
