@@ -37,7 +37,7 @@ func init() {
 func pruneToDefaultSpine(root *cobra.Command) []*cobra.Command {
 	var removed []*cobra.Command
 	for _, command := range append([]*cobra.Command(nil), root.Commands()...) {
-		if _, retained := defaultSpineCommands[command.Name()]; retained || command.Name() == "completion" {
+		if _, retained := defaultSpineCommands[command.Name()]; retained || command.Name() == "completion" || command.Name() == "help" {
 			continue
 		}
 		root.RemoveCommand(command)
