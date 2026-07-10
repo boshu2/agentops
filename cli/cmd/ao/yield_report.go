@@ -202,7 +202,10 @@ type yieldReportDoc struct {
 
 // runYieldReport wires the cobra invocation to the report core.
 func runYieldReport(cmd *cobra.Command, _ []string) error {
-	root, err := resolveProjectDir()
+	// repoRootOrCwd, not resolveProjectDir: every data source below is a
+	// repo-rooted artifact, and a raw cwd from a subdirectory (e.g. cli/)
+	// silently empties the report (verification-surface-honesty S1).
+	root, err := repoRootOrCwd()
 	if err != nil {
 		return err
 	}
