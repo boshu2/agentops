@@ -645,8 +645,8 @@
     {
       "name": "codebase-recon",
       "source_skill": "skills/codebase-recon",
-      "source_hash": "04de875c2afc5b7a1cc506f4730c70df5e82445a6557f0530ef589781492d836",
-      "generated_hash": "7a6ce7a2d911f1dc74ff1c75c5f1d8381208c3c22046db21ef2b28aa452b35f6"
+      "source_hash": "0fa0669f3b41294c06e963575f9f55e6ae1f13a2e7f9e5bfabf61bea3f6e97ec",
+      "generated_hash": "d9de566083466b7c481b02e57490e551ef692ffff2f3993eaef52dc99d47ccb2"
     },
     {
       "name": "codex-exec",
@@ -705,8 +705,8 @@
     {
       "name": "dueling-idea-genies",
       "source_skill": "skills/dueling-idea-genies",
-      "source_hash": "51535a87b010f6e6bb823b64f12a0ffd2ed857c5118e3dac59f7e276560c1219",
-      "generated_hash": "cb10f21fb60a3f251c2785f36b0e8c616e10adcf63aab0ce7dd9a0c64fe9d5ca"
+      "source_hash": "54461063437bc65d21f5cc956aeebb02355a8427e35b23453f2f1f284e0e18b8",
+      "generated_hash": "677edb0d5c87b9dff9f3c2579c048a11e7b13b23f2ae6560701d8643de154e53"
     },
     {
       "name": "evolve",
@@ -747,8 +747,8 @@
     {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
-      "source_hash": "f7c2c36642748855436cea4d2dd732d0be7d853dcd4b1dfbf138aec329bb9da7",
-      "generated_hash": "bc30c243e143c6b53d87bef8b6f4920ecf62971df8bb02a67031112fa7aff421"
+      "source_hash": "8194e90c041f861ee6bf91e1a672ba1686264148dcfc5a45c71573e10c63a308",
+      "generated_hash": "61f272666021c8eff0c1c4ed1dc45ec5907d67c019c3a7a10a7460ed3b0c217d"
     },
     {
       "name": "implement",
@@ -771,14 +771,14 @@
     {
       "name": "pattern-mining",
       "source_skill": "skills/pattern-mining",
-      "source_hash": "a8475fd3bcd3c4a7d162f38fd9cf76f8566c1b0ff7218ee9f73ef8baec27af4d",
-      "generated_hash": "7b3ac58d2722741531f54d93451ba244d32aac21622dd7b6b32097342b539d7f"
+      "source_hash": "41342d3aa8ca8d3df5b543525d0490c7808bd7ea335a34ac451a2333f99782c2",
+      "generated_hash": "1aeba427539dfae4eb2fe7f8c752cab7e1021a231d996a0ac5399068053a7a7c"
     },
     {
       "name": "pawl-review",
       "source_skill": "skills/pawl-review",
-      "source_hash": "5e1727c70112fa5797b0d57499d28aad5c08f658631c3667016dd151c12eac9e",
-      "generated_hash": "c332f8bd3d7d32f6bbd0b8d605764eb49db8e0d2d0e38660eff2c1e4d243ae96"
+      "source_hash": "3f4868b503f32921d0953ad0dc61ee759225659c6597b48fb328036160c40fe2",
+      "generated_hash": "57925feecf5d484016c77bf4731061d5462cd47ee91977f835510abb5a628b2f"
     },
     {
       "name": "plan",
