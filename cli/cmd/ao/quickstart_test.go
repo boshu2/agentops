@@ -415,6 +415,63 @@ func TestQuickstart_quickstartBeadsStep_noBeads(t *testing.T) {
 	}
 }
 
+func TestQuickstart_initBeadsUsesSelectedBDWithoutBR(t *testing.T) {
+	root := t.TempDir()
+	binDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "tracker.log")
+	bdPath := filepath.Join(binDir, "bd")
+	stub := "#!/bin/sh\nprintf '%s\\n' \"$*\" > \"$TRACKER_LOG\"\n"
+	if err := os.WriteFile(bdPath, []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("TRACKER_LOG", logPath)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", binDir)
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	if err := initBeadsWithApp(root, NewApp()); err != nil {
+		t.Fatalf("initBeadsWithApp with selected bd and no br: %v", err)
+	}
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("selected bd was not executed: %v", err)
+	}
+	if got := strings.TrimSpace(string(data)); !strings.HasPrefix(got, "init --prefix ") {
+		t.Fatalf("bd argv = %q, want init --prefix <prefix>", got)
+	}
+}
+
+func TestQuickstart_selectedTrackerUnavailableFailsClosed(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	oldNoBeads, oldMinimal := noBeads, minimal
+	noBeads, minimal = false, false
+	t.Cleanup(func() {
+		noBeads, minimal = oldNoBeads, oldMinimal
+	})
+
+	_, err := executeCommand("quick-start")
+	if err == nil {
+		t.Fatal("quick-start with selected unavailable bd returned success, want fail-closed error")
+	}
+	if strings.Contains(err.Error(), "br command not found") {
+		t.Fatalf("quick-start bypassed selected bd and checked br: %v", err)
+	}
+	if !strings.Contains(err.Error(), "bd") {
+		t.Fatalf("quick-start error = %q, want selected backend bd named", err)
+	}
+}
+
 // --- quickstartClaudeMdStep tests ---
 
 func TestQuickstart_quickstartClaudeMdStep_creates(t *testing.T) {

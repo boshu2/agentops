@@ -35,6 +35,10 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 		// REBOUND rebind/check AND --converge lineage — so the stranger/embedded bundle MUST carry
 		// it or the embedded rebind/check/converge cannot resolve the signature (age-rk3r.9).
 		{"pawl/scripts/lib/diff-identity.sh", []string{"scripts", "lib", "diff-identity.sh"}},
+		// pawl-review.sh unconditionally sources the shared #trivial waiver helper.
+		// Omitting it makes the extracted first-verdict path log a missing-source
+		// error before the reviewer can run.
+		{"pawl/scripts/lib/trivial-waiver.sh", []string{"scripts", "lib", "trivial-waiver.sh"}},
 		// The membrane-receipts generator + freshness check ride along so `ao verify
 		// receipts` renders a repo's proof page from the embedded bundle on the stranger
 		// path (age-rk3r.12); they must stay byte-identical to the repo scripts.
@@ -84,6 +88,7 @@ func TestExtractPawlBundle(t *testing.T) {
 		// The shared diff-identity signature extracts into the same sibling scripts/lib/ so both
 		// embedded pawl-verdict + pawl-review resolve the ONE byte-exact denylist (age-rk3r.9).
 		filepath.Join("scripts", "lib", "diff-identity.sh"),
+		filepath.Join("scripts", "lib", "trivial-waiver.sh"),
 		// The membrane-receipts generator + freshness check must extract executable so
 		// `ao verify receipts` renders a repo's proof page from the bundle on the
 		// stranger path (age-rk3r.12).
