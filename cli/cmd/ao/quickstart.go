@@ -24,7 +24,7 @@ This command:
   1. Creates .agents/ directory structure
   2. Optionally initializes beads (git-native issues)
   3. Creates starter knowledge pack
-  4. Shows the software-factory operator lane
+  4. Shows one live operating-loop path
   5. Ends one command away from a first verdict: it readies the provenance
      ledger path, checks a reviewer CLI is reachable (the same check as
      'ao doctor'), and prints the exact 'ao verify' command to run next
@@ -291,7 +291,7 @@ func printReadinessSummary(report *lifecycle.ReadinessReport) {
 		}
 		fmt.Printf("  %-13s %s (%d/%d)\n", string(layer)+":", status, present, total)
 	}
-	fmt.Println("\nNext: pick a golden path below, or run /rpi \"your first objective\"")
+	fmt.Println("\nNext: follow the live operating-loop path below.")
 }
 
 func readinessLayerStatus(report *lifecycle.ReadinessReport, layer lifecycle.ReadinessLayer) (int, int, string) {
@@ -351,11 +351,7 @@ Long sessions accumulate errors. Context pollution causes drift.
 
 ## Solution
 
-Fresh Claude session for each RPI phase:
-- /research → new session
-- /plan → new session
-- /implement → new session
-- /post-mortem → new session
+Use a fresh context for each operating-loop phase and persist the handoff on disk.
 
 ## The 40% Rule
 
@@ -378,13 +374,12 @@ Implementation failures are expensive. Debugging takes longer than preventing.
 
 ## Solution
 
-Run /pre-mortem on P0/P1 work BEFORE /crank:
+Run a pre-mortem on P0/P1 work before implementation:
 
 ` + "```bash" + `
-/pre-mortem .agents/specs/my-feature.md
+ao session bootstrap
 # Review findings
-# Then implement
-/crank
+# Then implement through the declared skill contract
 ` + "```" + `
 
 ## Evidence
@@ -412,7 +407,7 @@ Pre-mortem caught 6 critical issues before implementation:
    - Work that isn't pushed didn't happen
    - ` + "`git push`" + ` is the final step
 
-2. **Run /post-mortem after epics**
+2. **Run a post-mortem after epics**
    - Captures learnings for the flywheel
    - Creates patterns from experience
 
@@ -523,8 +518,8 @@ func createProjectClaudeMd(cwd string) error {
 
 `+"```bash"+`
 ao quick-start        # Repair or inspect the repo seed
-br ready              # See unblocked issues when beads is enabled
-/rpi "objective"      # Run discovery, implementation, validation
+ao session bootstrap  # Orient the agent in this repository
+ao beads ready        # See unblocked issues when tracking is enabled
 `+"```"+`
 
 ## Session Protocol
@@ -532,7 +527,7 @@ br ready              # See unblocked issues when beads is enabled
 `+"```bash"+`
 # Start
 ao status             # Check AgentOps state
-br ready              # Find available work
+ao beads ready        # Find available work through the selected tracker
 
 # End
 git add .
@@ -553,45 +548,53 @@ git push              # NEVER stop before pushing
 	return os.WriteFile(filepath.Join(cwd, "CLAUDE.md"), []byte(content), 0600)
 }
 
+type quickstartJourneyStep struct {
+	Title    string
+	Commands []string
+}
+
+func quickstartJourney(hasBeads bool) []quickstartJourneyStep {
+	steps := []quickstartJourneyStep{{
+		Title:    "Orient the agent",
+		Commands: []string{"ao session bootstrap"},
+	}}
+	if hasBeads {
+		steps = append(steps, quickstartJourneyStep{
+			Title:    "Select tracked work",
+			Commands: []string{"ao beads tracker", "ao beads ready"},
+		})
+	} else {
+		steps = append(steps, quickstartJourneyStep{
+			Title:    "Inspect repository readiness",
+			Commands: []string{"ao status"},
+		})
+	}
+	steps = append(steps, quickstartJourneyStep{
+		Title:    "Prove the committed change",
+		Commands: []string{firstVerdictCommand},
+	})
+	return steps
+}
+
 func showNextSteps(hasBeads bool) {
 	fmt.Print(`
 ═══════════════════════════════════════════════════════════════════
-                          GOLDEN PATHS
+                           LIVE PATH
 ═══════════════════════════════════════════════════════════════════
 `)
-
-	if hasBeads {
-		fmt.Println(`  1. First validated change:
-     $ ao factory start --goal "your first objective"
-     > /rpi "your first objective"
-
-  2. Tracked work:
-     $ br ready
-     $ br create "My first task"
-
-  3. Orchestration instruments:
-     $ ao orchestrate status
-     $ ao orchestrate shape --help
-
-  4. Close the learning loop:
-     > /validation
-     $ ao codex stop  # Codex hookless fallback only`)
-	} else {
-		fmt.Println(`  1. First validated change:
-     $ ao factory start --goal "your first objective"
-     > /rpi "your first objective"
-
-  2. Start your agent in this repo:
-     > /quickstart
-     > /rpi "your first objective"
-
-  3. Orchestration instruments:
-     $ ao orchestrate status
-     $ ao orchestrate shape --help
-
-  4. Add tracked execution when ready:
-     $ br init
-     $ br create "My first task"`)
+	for i, step := range quickstartJourney(hasBeads) {
+		fmt.Printf("  %d. %s:\n", i+1, step.Title)
+		for _, command := range step.Commands {
+			// The final verdict is rendered once, with readiness information, by
+			// printFirstVerdictStep. Keeping it in the typed journey makes the
+			// terminal contract explicit without printing two competing paths.
+			if command == firstVerdictCommand {
+				fmt.Println("     (the final step below)")
+				continue
+			}
+			fmt.Printf("     $ %s\n", command)
+		}
+		fmt.Println()
 	}
 
 	fmt.Print(`
