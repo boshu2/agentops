@@ -898,15 +898,15 @@ func setMembraneCatchFlags(t *testing.T, set func()) {
 	t.Helper()
 	ob, od, orr, ocl := membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass
 	op, odet, ohd, omo := membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode
-	oev, osc := membraneCatchEvidence, membraneCatchScope
+	oev, osc, obase := membraneCatchEvidence, membraneCatchScope, membraneCatchBase
 	t.Cleanup(func() {
 		membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = ob, od, orr, ocl
 		membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = op, odet, ohd, omo
-		membraneCatchEvidence, membraneCatchScope = oev, osc
+		membraneCatchEvidence, membraneCatchScope, membraneCatchBase = oev, osc, obase
 	})
 	membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = "", "", "", ""
 	membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = nil, "", "", ""
-	membraneCatchEvidence, membraneCatchScope = "", "head"
+	membraneCatchEvidence, membraneCatchScope, membraneCatchBase = "", "head", ""
 	membraneCatchCmd.SetOut(&bytes.Buffer{})
 	t.Cleanup(func() { membraneCatchCmd.SetOut(nil) })
 	set()

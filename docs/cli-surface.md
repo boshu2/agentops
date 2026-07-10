@@ -132,8 +132,6 @@
 | `ao session state review-request` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session state validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session state verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao sessions index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao sessions spawn` | `manual-only` | `allowlisted` | Spawns runtime sessions and requires live terminal/runtime state. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills edit digest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
