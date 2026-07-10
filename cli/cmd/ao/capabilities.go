@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"sort"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -13,7 +14,7 @@ import (
 // capabilitiesContractVersion is the version of the top-level capabilities
 // contract. Bump it on any breaking change to the JSON shape so agents can
 // pin against a known schema.
-const capabilitiesContractVersion = "1.0"
+const capabilitiesContractVersion = "1.1"
 
 // capabilitiesDoc is the machine-readable contract for the whole `ao` CLI,
 // emitted by `ao capabilities`. It lets an agent read the command surface,
@@ -37,6 +38,7 @@ type capabilitiesDoc struct {
 	EnvVars          map[string]string            `json:"env_vars"`
 	RobotSurfaces    map[string]string            `json:"robot_surfaces"`
 	CommandGroups    []capCommandGroup            `json:"command_groups"`
+	Commands         []clicontract.Command        `json:"commands"`
 }
 
 type capPlatform struct {
@@ -91,6 +93,7 @@ var capabilitiesCommandExitCodes = map[string]map[string]string{
 		"2": "usage error",
 		"3": "REDO — auto-redo loop (no human)",
 		"4": "BLOCKED — a circuit breaker tripped (andon)",
+		"5": "DEGRADED — transient panel lane loss below quorum; retry the panel",
 	},
 	"governor budget": {
 		"0": "ship — within error budget",
@@ -190,6 +193,7 @@ func buildCapabilitiesDoc() capabilitiesDoc {
 		EnvVars:          capabilitiesEnvVars,
 		RobotSurfaces:    capabilitiesRobotSurfaces,
 		CommandGroups:    commandGroups,
+		Commands:         clicontract.Inspect(rootCmd, capabilitiesCommandExitCodes),
 	}
 }
 
