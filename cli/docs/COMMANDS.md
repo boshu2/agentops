@@ -1655,12 +1655,13 @@ ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-d
 Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 
 ```
-ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
+ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--base <sha>] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
 ```
 
 **Flags:**
 
 ```
+      --base string               With --scope upstream: exact reviewed ancestor commit (default: configured-upstream merge-base)
       --bead string               Bead id the catch was found on (required)
       --class string              Optional SEMANTIC class slug (e.g. stale-retired-surface). When set it keys the class CROSS-BEAD (the same label on different beads is ONE class), instead of the bead-drifting reason. Slug shape: lowercase [a-z0-9] words joined by '-'
       --detector-kind string      Optional detector kind (e.g. regex)
@@ -1900,7 +1901,7 @@ ao pawl reap [flags]
 Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 
 ```
-ao pawl review <bead-id> [--scope head|staged|upstream] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
+ao pawl review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
 ```
 
 #### `ao pawl route`

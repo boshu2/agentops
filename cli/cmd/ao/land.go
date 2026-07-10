@@ -168,8 +168,8 @@ var landEnsureWarmService = func(cmd *cobra.Command, repoRoot, aoBin string) {
 // in-process (Step 3). Because the caller is the fresh in-checkout binary,
 // runPawlReview takes the LIVE (trusted) path — auto-bind fires on CONFIRM. It
 // returns nil on CONFIRM (exit 0) and a *pawlReviewExitError on REFUTED/NO-VERDICT.
-var landRunReview = func(cmd *cobra.Command, bead string) error {
-	return runPawlReview(cmd, []string{bead, "--scope", "upstream"})
+var landRunReview = func(cmd *cobra.Command, bead, reviewedBase string) error {
+	return runPawlReview(cmd, []string{bead, "--scope", "upstream", "--base", reviewedBase})
 }
 
 // landRunScript runs a repo land script (scripts/pawl-land.sh / post-land-provenance)
@@ -264,7 +264,7 @@ func runLand(cmd *cobra.Command, args []string) error {
 	// REFUTED / NO-VERDICT stops the land here (the review already printed the verdict
 	// + defects and carries its own exit code).
 	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: running the cross-family pawl review for %s (scope upstream from %s, trusted path)…\n", bead, reviewedBase[:12])
-	if reviewErr := landRunReview(cmd, bead); reviewErr != nil {
+	if reviewErr := landRunReview(cmd, bead, reviewedBase); reviewErr != nil {
 		return reviewErr
 	}
 

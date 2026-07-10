@@ -106,8 +106,9 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		return 0, nil
 	}
 	landEnsureWarmService = func(_ *cobra.Command, _, _ string) { h.warmed = true }
-	landRunReview = func(_ *cobra.Command, bead string) error {
+	landRunReview = func(_ *cobra.Command, bead, reviewedBase string) error {
 		h.reviewedBd = bead
+		h.reviewedBase = reviewedBase
 		h.reviewAOBIN = os.Getenv("AO_BIN")
 		return nil // CONFIRM by default
 	}
@@ -242,7 +243,7 @@ func TestLand_ReexecNonZeroCodePropagates(t *testing.T) {
 // review's exit code is surfaced (never a false land on a non-CONFIRM verdict).
 func TestLand_RefutedReviewStopsBeforePawlLand(t *testing.T) {
 	h := newLandHarness(t)
-	landRunReview = func(_ *cobra.Command, bead string) error {
+	landRunReview = func(_ *cobra.Command, bead, _ string) error {
 		h.reviewedBd = bead
 		return &pawlReviewExitError{code: 3} // REFUTED
 	}

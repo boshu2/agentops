@@ -50,6 +50,7 @@ var (
 	membraneCatchKind     string
 	membraneCatchMode     string
 	membraneCatchHead     string
+	membraneCatchBase     string
 	membraneCatchRun      string
 	membraneCatchEvidence string
 	membraneCatchScope    string
@@ -90,7 +91,7 @@ here before so the same class of miss is caught one altitude earlier.`,
 }
 
 var membraneCatchCmd = &cobra.Command{
-	Use:   "catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
+	Use:   "catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--base <sha>] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>]",
 	Short: "Record a membrane CATCH — a REFUTED defect, as a structured class the membrane remembers",
 	Long: `Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 context (--domain), what was caught (--reason), and the affected files (--paths),
@@ -106,8 +107,10 @@ port of pawl-review's emit_pawl_catch): the reason via the two-tier REFUTED
 salvage (the last 'VERDICT: REFUTED <text>' sentinel, else the first
 substantive 'REFUTED: <finding>' prose line multi-family reviews emit, else a
 placeholder); the domain from the first changed file's top path component; the
-affected paths from git by --scope (the --head commit, or the index for
-staged). Any explicit --reason/--domain/--paths wins over extraction.`,
+affected paths from git by --scope (the --head commit, the index for staged,
+or the upstream range). For upstream, --base pins the exact reviewed ancestor;
+without it the configured-upstream merge-base is used. Any explicit
+--reason/--domain/--paths wins over extraction.`,
 	RunE: runMembraneCatch,
 }
 
@@ -228,6 +231,7 @@ func init() {
 	membraneCatchCmd.Flags().StringVar(&membraneCatchKind, "detector-kind", "", "Optional detector kind (e.g. regex)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchMode, "mode", "", "Pawl diversity mode: fresh-context (default) | multi-model | deterministic")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchHead, "head", "", "Commit sha the catch was found at (default: git HEAD)")
+	membraneCatchCmd.Flags().StringVar(&membraneCatchBase, "base", "", "With --scope upstream: exact reviewed ancestor commit (default: configured-upstream merge-base)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchRun, "run", "", "Run id (default: membrane-catch)")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchEvidence, "evidence", "", "Pawl-review evidence file: derive --reason (two-tier REFUTED salvage), --domain (first changed file's top dir) and --paths (changed files, first 20); explicit flags win")
 	membraneCatchCmd.Flags().StringVar(&membraneCatchScope, "scope", "head", "With --evidence: changed-file scope — head (the --head commit), staged (the index), or upstream (configured-upstream merge-base through --head)")
@@ -390,7 +394,7 @@ func capReason(s string) string {
 // upstream merge-base through --head for scope=upstream. BEST-EFFORT — nil
 // on any git error (the caller falls back to the pawl-review domain): the
 // catch is observability, not a gate. (age-ulab)
-func changedFilesForCatch(root, scope, head string) []string {
+func changedFilesForCatch(root, scope, head, exactBase string) []string {
 	var args []string
 	switch scope {
 	case "staged":
@@ -400,15 +404,19 @@ func changedFilesForCatch(root, scope, head string) []string {
 		if ref == "" {
 			ref = "HEAD"
 		}
-		upstream, err := exec.Command("git", "-C", root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}").Output()
-		if err != nil {
-			return nil
+		base := strings.TrimSpace(exactBase)
+		if base == "" {
+			upstream, err := exec.Command("git", "-C", root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}").Output()
+			if err != nil {
+				return nil
+			}
+			resolved, err := exec.Command("git", "-C", root, "merge-base", strings.TrimSpace(string(upstream)), ref).Output()
+			if err != nil || strings.TrimSpace(string(resolved)) == "" {
+				return nil
+			}
+			base = strings.TrimSpace(string(resolved))
 		}
-		base, err := exec.Command("git", "-C", root, "merge-base", strings.TrimSpace(string(upstream)), ref).Output()
-		if err != nil || strings.TrimSpace(string(base)) == "" {
-			return nil
-		}
-		args = []string{"-c", "core.fsmonitor=", "-C", root, "diff", strings.TrimSpace(string(base)) + ".." + ref, "--no-ext-diff", "--no-textconv", "--name-only", "--no-color"}
+		args = []string{"-c", "core.fsmonitor=", "-C", root, "diff", base + ".." + ref, "--no-ext-diff", "--no-textconv", "--name-only", "--no-color"}
 	default:
 		ref := strings.TrimSpace(head)
 		if ref == "" {
@@ -427,6 +435,28 @@ func changedFilesForCatch(root, scope, head string) []string {
 		}
 	}
 	return files
+}
+
+// resolveCatchBase validates and canonicalizes the optional exact ancestor used
+// by upstream-range catches. Keeping this boundary separate also makes the
+// mutation-heavy command handler easier to audit.
+func resolveCatchBase(root, scope, head, candidate string) (string, error) {
+	base := strings.TrimSpace(candidate)
+	if base == "" {
+		return "", nil
+	}
+	if scope != "upstream" {
+		return "", fmt.Errorf("ao membrane catch: --base is valid only with --scope upstream")
+	}
+	resolved, err := exec.Command("git", "-C", root, "rev-parse", "--verify", base+"^{commit}").Output()
+	if err != nil {
+		return "", fmt.Errorf("ao membrane catch: --base %q is not a commit", base)
+	}
+	base = strings.TrimSpace(string(resolved))
+	if err := exec.Command("git", "-C", root, "merge-base", "--is-ancestor", base, head).Run(); err != nil {
+		return "", fmt.Errorf("ao membrane catch: --base %s is not an ancestor of --head %s", base, head)
+	}
+	return base, nil
 }
 
 // catchDomainFromFiles resolves the catch domain: the first path component of
@@ -484,6 +514,10 @@ func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 	if utf8.RuneCountInString(head) < 7 {
 		return fmt.Errorf("ao membrane catch: need a >=7-char --head (commit sha); none resolved (pass --head or run inside a git repo)")
 	}
+	base, err := resolveCatchBase(root, scope, head, membraneCatchBase)
+	if err != nil {
+		return err
+	}
 	reason := strings.TrimSpace(membraneCatchReason)
 	domain := strings.TrimSpace(membraneCatchDomain)
 	paths := membraneCatchPaths
@@ -501,7 +535,7 @@ func runMembraneCatch(cmd *cobra.Command, _ []string) error {
 			}
 		}
 		if domain == "" || len(paths) == 0 {
-			files := changedFilesForCatch(root, scope, head)
+			files := changedFilesForCatch(root, scope, head, base)
 			if domain == "" {
 				domain = catchDomainFromFiles(files)
 			}
