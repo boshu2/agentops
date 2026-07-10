@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -58,6 +59,45 @@ func TestTickReadyStateCounts(t *testing.T) {
 	}
 }
 
+func TestTickReadyReportsResolvedBDStateSource(t *testing.T) {
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	dir := t.TempDir()
+	fakebin := filepath.Join(dir, "fakebin")
+	if err := os.MkdirAll(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(fakebin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fakeBD := `#!/usr/bin/env bash
+case "${1:-}" in
+  ready) printf '%s\n' '[{"id":"agentops-next","status":"open"}]' ;;
+  list)  printf '%s\n' '[{"id":"agentops-next","status":"open"},{"id":"agentops-done","status":"closed"}]' ;;
+  *) echo "unexpected bd call: $*" >&2; exit 43 ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(fakebin, "bd"), []byte(fakeBD), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
+	if err := tickReady(rt); err != nil {
+		t.Fatalf("tickReady() error: %v (stderr=%q)", err, stderr.String())
+	}
+	var state tickReadyState
+	if err := json.Unmarshal(stdout.Bytes(), &state); err != nil {
+		t.Fatalf("decode ready state: %v\n%s", err, stdout.String())
+	}
+	if state.StateSource != trackerBD {
+		t.Fatalf("state_source = %q, want %q", state.StateSource, trackerBD)
+	}
+	if state.Next != "agentops-next" {
+		t.Fatalf("next = %q, want agentops-next", state.Next)
+	}
+}
+
 // tickTestLedgerLine reproduces the real persisted br issues.jsonl line shape
 // (full field set as flushed by `br sync --flush-only`), not a minimal
 // hand-built marker — see standards test-pyramid "Fixture Fidelity".
@@ -92,6 +132,90 @@ func TestTickClosePortAlreadyClosedIsIdempotent(t *testing.T) {
 				t.Fatalf("tickClosePort() stdout = %q", got)
 			}
 		})
+	}
+}
+
+func TestTickClosePortBDDoesNotTrustOrCommitBRLedger(t *testing.T) {
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "")
+	dir := t.TempDir()
+	for _, sub := range []string{"_beads", ".beads", "fakebin"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A stale/matching BR record must never short-circuit a BD close.
+	if err := os.WriteFile(filepath.Join(dir, "_beads", "issues.jsonl"), []byte(tickTestLedgerLine("agentops-123", "closed")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "proof.md"), []byte("durable proof\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	runGit("init", "-q")
+	runGit("add", "proof.md")
+	runGit("commit", "-q", "-m", "seed")
+
+	stateFile := filepath.Join(dir, "bd-state")
+	logFile := filepath.Join(dir, "bd.log")
+	if err := os.WriteFile(stateFile, []byte("open\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fakeBD := `#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${TICK_TEST_BD_LOG:?}"
+case "${1:-}" in
+  show)
+    status="$(tr -d '\n' < "${TICK_TEST_BD_STATE:?}")"
+    printf '[{"id":"%s","status":"%s"}]\n' "${2:-}" "$status"
+    ;;
+  close) printf 'closed\n' > "${TICK_TEST_BD_STATE:?}" ;;
+  update) printf 'open\n' > "${TICK_TEST_BD_STATE:?}" ;;
+  list)
+    status="$(tr -d '\n' < "${TICK_TEST_BD_STATE:?}")"
+    printf '[{"id":"agentops-123","status":"%s"}]\n' "$status"
+    ;;
+  *) echo "unexpected bd call: $*" >&2; exit 43 ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(dir, "fakebin", "bd"), []byte(fakeBD), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", filepath.Join(dir, "fakebin")+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TICK_TEST_BD_STATE", stateFile)
+	t.Setenv("TICK_TEST_BD_LOG", logFile)
+
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
+	if err := tickClosePort(rt, "agentops-123", "close bd issue", "proof.md", nil); err != nil {
+		t.Fatalf("tickClosePort() error: %v (stderr=%q)", err, stderr.String())
+	}
+	logBody, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("bd was never invoked: %v", err)
+	}
+	logText := string(logBody)
+	if !strings.Contains(logText, "close agentops-123 --reason evidence: proof.md") {
+		t.Fatalf("BD close missing; calls:\n%s", logText)
+	}
+	if strings.Contains(logText, "sync") {
+		t.Fatalf("BR-only sync leaked into BD close; calls:\n%s", logText)
+	}
+	cmd := exec.Command("git", "diff", "--cached", "--name-only")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git diff --cached: %v\n%s", err, out)
+	} else if strings.Contains(string(out), ".beads") || strings.Contains(string(out), "_beads") {
+		t.Fatalf("tracker ledger was staged in public repo: %s", out)
 	}
 }
 
