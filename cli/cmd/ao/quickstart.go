@@ -479,7 +479,11 @@ func initBeads(cwd string) error {
 	}
 
 	// Run br init
-	cmd := exec.Command("br", "init", "--prefix", prefix)
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(resolution.Binary, "init", "--prefix", prefix) // #nosec G204 -- selected br|bd binary.
 	cmd.Dir = cwd
 	output, err := cmd.CombinedOutput()
 	if err != nil {
