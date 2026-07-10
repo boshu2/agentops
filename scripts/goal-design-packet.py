@@ -409,6 +409,13 @@ def command_mark_validated(args: argparse.Namespace) -> int:
     slug = str(intent.get("slug", ""))
     validate_slug(slug)
 
+    statuses = {str(intent.get("status", "draft")), str(driver.get("status", "draft"))}
+    if "closed" in statuses:
+        fail(
+            f"packet is closed (statuses: {sorted(statuses)}); closed is terminal — "
+            "mark-validated must not reopen it; author a replacement packet instead"
+        )
+
     intent["status"] = "validated"
     new_intent_text = render_markdown(intent, intent_body_text)
     digest = hashlib.sha256(new_intent_text.encode("utf-8")).hexdigest()
@@ -451,6 +458,124 @@ def command_mark_validated(args: argparse.Namespace) -> int:
         fail(
             f"checker rejected the stamped packet; {packet_dir} restored to its "
             "pre-transition state — repair the packet, then rerun mark-validated"
+        )
+    return 0
+
+
+DISPOSITION_KINDS = ("closed", "dropped", "superseded")
+
+
+def parse_dispositions(specs: list[str]) -> dict[str, tuple[str, str]]:
+    dispositions: dict[str, tuple[str, str]] = {}
+    for spec in specs:
+        bead_id, eq, rest = spec.partition("=")
+        kind, colon, detail = rest.partition(":")
+        if not eq or not colon or kind not in DISPOSITION_KINDS:
+            fail(
+                f"malformed --candidate {spec!r}; expected <id>=closed:<evidence>, "
+                "<id>=dropped:<reason>, or <id>=superseded:<by>"
+            )
+        if not detail.strip():
+            fail(f"--candidate {spec!r} has empty disposition detail (evidence/reason/target)")
+        if bead_id in dispositions:
+            fail(f"duplicate disposition for candidate {bead_id}")
+        dispositions[bead_id] = (kind, detail.strip())
+    return dispositions
+
+
+def command_close(args: argparse.Namespace) -> int:
+    dispositions = parse_dispositions(args.candidate or [])
+    packet_dir = Path(args.packet_dir)
+    intent_path = packet_dir / "intent.md"
+    driver_path = packet_dir / "driver.md"
+    if not intent_path.is_file() or not driver_path.is_file():
+        fail(f"packet must contain intent.md and driver.md: {packet_dir}", 2)
+
+    original_intent = intent_path.read_bytes()
+    original_driver = driver_path.read_bytes()
+
+    # Parse BOTH files and render the closed content fully in memory BEFORE
+    # any write: every refusal below leaves the packet byte-identical to its
+    # pre-transition state.
+    intent, intent_body_text = split_frontmatter(intent_path)
+    driver, body = split_frontmatter(driver_path)
+    slug = str(intent.get("slug", ""))
+    validate_slug(slug)
+
+    intent_status = str(intent.get("status", "draft"))
+    driver_status = str(driver.get("status", "draft"))
+    statuses = {intent_status, driver_status}
+    if statuses - {"draft", "validated"}:
+        fail(
+            f"close is legal only from draft or validated (statuses: {sorted(statuses)}); "
+            "a closed or superseded packet is terminal"
+        )
+
+    candidates = driver.get("candidate_beads") or []
+    candidate_ids = [str(item.get("id", "")) for item in candidates if isinstance(item, dict)]
+    if not candidate_ids:
+        fail(f"driver declares no candidate beads to close: {driver_path}")
+    unknown = sorted(set(dispositions) - set(candidate_ids))
+    if unknown:
+        fail(
+            f"unknown candidate ids: {', '.join(unknown)} "
+            f"(driver declares: {', '.join(candidate_ids)})"
+        )
+    missing = [cid for cid in candidate_ids if cid not in dispositions]
+    if missing:
+        fail(
+            "every candidate bead needs an evidence-bound disposition; "
+            f"missing: {', '.join(missing)}"
+        )
+
+    prior_status = (
+        intent_status
+        if intent_status == driver_status
+        else f"intent={intent_status}, driver={driver_status}"
+    )
+
+    intent["status"] = "closed"
+    new_intent_text = render_markdown(intent, intent_body_text)
+    digest = hashlib.sha256(new_intent_text.encode("utf-8")).hexdigest()
+    intent_ref = canonical_intent_ref(slug)
+
+    driver["status"] = "closed"
+    driver.setdefault("intent_ref", {})
+    driver["intent_ref"]["path"] = intent_ref
+    driver["intent_ref"]["sha256"] = digest
+    driver["intent_ref"]["schema_version"] = 1
+    body = replace_or_append(
+        body,
+        r"(- Intent digest: `)[^`]+(`)",
+        rf"\g<1>{digest}\2",
+        f"- Intent digest: `{digest}`",
+    )
+    stamp_lines = [f"- Closed: {utc_now()} (prior status: {prior_status})"]
+    for cid in candidate_ids:
+        kind, detail = dispositions[cid]
+        stamp_lines.append(f"- Disposition {cid}: {kind} - {detail}")
+    if not body.endswith("\n"):
+        body += "\n"
+    body += "\n" + "\n".join(stamp_lines) + "\n"
+    new_driver_text = render_markdown(driver, body)
+
+    # Same no-opt-out transactional shape as mark-validated: a packet may carry
+    # status closed only if the checker accepts the exact stamped bytes. ANY
+    # failure past this point restores the originals.
+    try:
+        intent_path.write_text(new_intent_text, encoding="utf-8")
+        driver_path.write_text(new_driver_text, encoding="utf-8")
+        checker_rc = run_checker(packet_dir)
+    except BaseException:
+        intent_path.write_bytes(original_intent)
+        driver_path.write_bytes(original_driver)
+        raise
+    if checker_rc != 0:
+        intent_path.write_bytes(original_intent)
+        driver_path.write_bytes(original_driver)
+        fail(
+            f"checker rejected the closed packet; {packet_dir} restored to its "
+            "pre-transition state — repair the packet, then rerun close"
         )
     return 0
 
@@ -512,6 +637,21 @@ def parser() -> argparse.ArgumentParser:
     mark.add_argument("packet_dir")
     mark.add_argument("--verdict", required=True)
     mark.set_defaults(func=command_mark_validated)
+
+    close = sub.add_parser(
+        "close",
+        help="Close a packet with per-candidate evidence: flip statuses to closed, stamp dispositions, refresh the digest, re-check.",
+    )
+    close.add_argument("packet_dir")
+    close.add_argument(
+        "--candidate",
+        action="append",
+        default=None,
+        metavar="ID=KIND:DETAIL",
+        help="Repeatable disposition: <id>=closed:<evidence>, <id>=dropped:<reason>, "
+        "or <id>=superseded:<by>; every driver candidate bead needs exactly one.",
+    )
+    close.set_defaults(func=command_close)
 
     prompt = sub.add_parser(
         "prompt",

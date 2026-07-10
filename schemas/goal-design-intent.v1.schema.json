@@ -44,7 +44,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "validated", "superseded"]
+      "enum": ["draft", "validated", "superseded", "closed"]
     },
     "objective": {
       "$ref": "#/$defs/non_empty_string"
