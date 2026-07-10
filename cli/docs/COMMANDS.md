@@ -1655,7 +1655,7 @@ ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-d
 Record a catch out-of-band: a REFUTED gate-verdict carrying the bounded
 
 ```
-ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
+ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>) [--scope head|staged|upstream] [--class <slug>] [--paths f1,f2] [--detector-pattern <re> --globs <g> --detector-kind <k>] [flags]
 ```
 
 **Flags:**
@@ -1674,7 +1674,7 @@ ao membrane catch --bead <id> (--domain <bc> --reason <what> | --evidence <file>
       --paths strings             Concrete repo-relative file paths the catch touches (comma-separated or repeated)
       --reason string             What was caught — the defect (required; the class reason when no --class given)
       --run string                Run id (default: membrane-catch)
-      --scope string              With --evidence: changed-file scope — head (files in the --head commit) or staged (the index) (default "head")
+      --scope string              With --evidence: changed-file scope — head (the --head commit), staged (the index), or upstream (configured-upstream merge-base through --head) (default "head")
 ```
 
 #### `ao membrane derive-checks`
@@ -1900,7 +1900,7 @@ ao pawl reap [flags]
 Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 
 ```
-ao pawl review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
+ao pawl review <bead-id> [--scope head|staged|upstream] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
 ```
 
 #### `ao pawl route`

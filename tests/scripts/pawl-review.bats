@@ -7,6 +7,9 @@
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+  # Reviewer/packet contract tests must not inherit a developer's installed ao
+  # and run the deterministic gate against these deliberately tiny fixtures.
+  export PAWL_NO_PREFLIGHT=1
   SCRIPT="$REPO_ROOT/scripts/pawl-review.sh"
   TMP="$(mktemp -d)"
   ORIG_DIR="$PWD"
