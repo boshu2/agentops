@@ -265,7 +265,7 @@ func TestRunMembraneDigest_FiltersPlaceholdersE2E(t *testing.T) {
 	}
 	posReal := strings.Index(all, "gate-routing gap")
 	posPlaceholder := strings.Index(all, "pawl-review REFUTED")
-	if !(posReal >= 0 && posReal < posPlaceholder) {
+	if posReal < 0 || posReal >= posPlaceholder {
 		t.Errorf("real class must rank above placeholder even in audit mode: real=%d placeholder=%d", posReal, posPlaceholder)
 	}
 }
@@ -362,7 +362,7 @@ func TestRunMembraneDigest_WritesChecklistToPreMortemChecks(t *testing.T) {
 	posTop := strings.Index(body, "unguarded cmdsub")
 	posMid := strings.Index(body, "stale retired surface")
 	posLow := strings.Index(body, "missing t.Cleanup")
-	if !(posTop >= 0 && posTop < posMid && posMid < posLow) {
+	if posTop < 0 || posTop >= posMid || posMid >= posLow {
 		t.Errorf("digest not ranked by HitCount desc: top=%d mid=%d low=%d", posTop, posMid, posLow)
 	}
 	if !strings.Contains(body, "×3") {
@@ -576,7 +576,7 @@ func TestRunMembraneDigest_DeltasBeforeAfter(t *testing.T) {
 	// trails, marked improved.
 	posX := strings.Index(out, "unguarded cmdsub")
 	posY := strings.Index(out, "stale retired surface")
-	if !(posX >= 0 && posX < posY) {
+	if posX < 0 || posX >= posY {
 		t.Errorf("still-recurring class must sort before the improved one: X=%d Y=%d", posX, posY)
 	}
 	improvedLine := out[posY:]

@@ -49,8 +49,10 @@ var appKey = appKeyType{}
 
 // AppFromContext retrieves the App from a cobra command's context.
 func AppFromContext(ctx context.Context) *App {
-	if v, ok := ctx.Value(appKey).(*App); ok {
-		return v
+	if ctx != nil {
+		if v, ok := ctx.Value(appKey).(*App); ok {
+			return v
+		}
 	}
 	return NewApp()
 }

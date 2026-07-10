@@ -17,7 +17,11 @@ func init() {
 func declareMissingArgsPolicies(parent *cobra.Command) {
 	for _, command := range parent.Commands() {
 		if (command.Run != nil || command.RunE != nil) && command.Args == nil {
-			command.Args = compatibleArgsPolicy(command.Use)
+			if command.DisableFlagParsing {
+				command.Args = cobra.ArbitraryArgs
+			} else {
+				command.Args = compatibleArgsPolicy(command.Use)
+			}
 		}
 		declareMissingArgsPolicies(command)
 	}
@@ -33,7 +37,8 @@ func compatibleArgsPolicy(use string) cobra.PositionalArgs {
 			optionValue = false
 			continue
 		}
-		if strings.HasPrefix(field, "-") {
+		trimmed := strings.TrimLeft(field, "[")
+		if strings.HasPrefix(trimmed, "-") {
 			optionValue = !strings.Contains(field, "=")
 			continue
 		}

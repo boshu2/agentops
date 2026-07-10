@@ -1644,7 +1644,11 @@ ao membrane [command]
 
 #### `ao membrane calibrate`
 
-Error: accepts between 3 and 6 arg(s), received 1
+Run the standing membrane calibration harness (age-e508.2): measure the current
+
+```
+ao membrane calibrate [--membrane-label <adapter>] [--membrane-cmd <c>] [--out-dir <dir>] [flags]
+```
 
 #### `ao membrane catch`
 
@@ -1861,7 +1865,11 @@ ao pawl doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [-
 
 #### `ao pawl down`
 
-Error: unknown command "--help" for "ao pawl down"
+Tear down the standing pawl-service (no orphan panes)
+
+```
+ao pawl down [flags]
+```
 
 #### `ao pawl health`
 
@@ -1881,15 +1889,27 @@ ao pawl metrics [--json] [flags]
 
 #### `ao pawl reap`
 
-Error: unknown command "--help" for "ao pawl reap"
+Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)
+
+```
+ao pawl reap [flags]
+```
 
 #### `ao pawl review`
 
-Error: accepts between 4 and 10 arg(s), received 1
+Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
+
+```
+ao pawl review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
+```
 
 #### `ao pawl route`
 
-Error: accepts between 2 and 3 arg(s), received 1
+Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict
+
+```
+ao pawl route <bead> <packet> [pr] [flags]
+```
 
 #### `ao pawl smoke`
 
@@ -2360,7 +2380,53 @@ ao verdict-gate <file|-> [flags]
 
 ### `ao verify`
 
-Error: accepts between 3 and 8 arg(s), received 1
+Run an independent cross-family review of your change and, on CONFIRMED, write
+
+```
+ao verify [command]
+```
+
+**Subcommands:**
+
+#### `ao verify init`
+
+Install a pre-push hook into THIS git repository that refuses any push to
+
+```
+ao verify init [--remove] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for init
+      --remove   Uninstall the ratchet, restoring any pre-existing pre-push hook byte-identically
+```
+
+#### `ao verify receipts`
+
+Render the membrane-receipts proof page for THIS git repository from its
+
+```
+ao verify receipts [flags]
+```
+
+#### `ao verify stats`
+
+Report the COST of verified-done from the committed provenance ledger
+
+```
+ao verify stats [flags]
+```
+
+**Flags:**
+
+```
+      --days int        Trailing window in days for the trend section (<=0 = all time) (default 30)
+  -h, --help            help for stats
+      --json            Emit machine-readable JSON (stdout-as-data)
+      --ledger string   Ledger path override (default: repo docs/provenance/ledger.jsonl)
+```
 
 ---
 

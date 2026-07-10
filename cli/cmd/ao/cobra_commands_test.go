@@ -457,61 +457,17 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	if len(archiveBuildTags) > 0 {
 		t.Skipf("spine-conformance test: archive build tags active (%v); the restored build is a documented superset", archiveBuildTags)
 	}
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	root := rootCmd
 	registered := make(map[string]bool)
 	for _, cmd := range root.Commands() {
 		registered[cmd.Name()] = true
 	}
 
-	// Same list as TestCobraCommandTreeRegistration
-	expectedCmds := []string{
-		"batch-feedback",
-		"beads",
-		"buildtags",
-		"capabilities",
-		"chaos-test",
-		"claim",
-		"close",
-		"completion",
-		"config",
-		"context",
-		"council-gate",
-		"doctor",
-		"done",
-		"eval",
-		"feedback",
-		"gate",
-		"goals",
-		"governor",
-		"handoff",
-		"index",
-		"init",
-		"land",
-		"membrane",
-		"memory",
-		"migrate",
-		"pawl",
-		"plan-pawl",
-		"provenance",
-		"quick-start",
-		"ready",
-		"rehydrate",
-		"retrieval-bench",
-		"robot-docs",
-		"session",
-		"session-outcome",
-		"skills",
-		"status",
-		"store",
-		"task-feedback",
-		"task-status",
-		"task-sync",
-		"temper",
-		"validate",
-		"verdict-gate",
-		"verify",
-		"version",
-		"yield",
+	expectedCmds := []string{"completion"}
+	for name := range defaultSpineCommands {
+		expectedCmds = append(expectedCmds, name)
 	}
 
 	// Every expected command must be registered
