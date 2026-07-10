@@ -831,6 +831,91 @@ run_gosec() {
 }
 
 # ============================================================================
+# TOOL: govulncheck (known-CVE reachability: module graph + Go stdlib)
+# ============================================================================
+# Sweep 2026-07-09-claude M-2 (age-govulncheck-standing-lane-eg2n): gosec/
+# semgrep/gitleaks cover own-code classes; NOTHING checked the module graph or
+# the pinned toolchain's stdlib against the vulnerability database — exactly
+# why GO-2026-4970 (an os.Root escape, this repo's containment primitive) sat
+# undetected for a week after a clean scan. Every reachable finding counts as
+# SECURITY HIGH: govulncheck's default callgraph mode only reports vulns whose
+# code paths are actually reachable, so a finding here is a known CVE on a live
+# path — the gate must BLOCK, not warn.
+run_govulncheck() {
+    local output_file="$OUTPUT_DIR/govulncheck.txt"
+    local stderr_file="$OUTPUT_DIR/govulncheck.stderr.txt"
+
+    if [[ "$GATE" == "true" ]] && ! target_has_any_ext go mod sum; then
+        echo "NO_GO_CHANGES_IN_TARGET" > "$output_file"
+        TOOL_STATUS["govulncheck"]="skipped"
+        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
+        return 0
+    fi
+
+    if ! run_tool "govulncheck" govulncheck; then return 0; fi
+
+    local modules
+    modules="$(discover_go_modules)"
+    if [[ -z "$modules" ]]; then
+        echo "NO_GO_MODULES" > "$output_file"
+        TOOL_STATUS["govulncheck"]="skipped"
+        TOOLS_SKIPPED=$((TOOLS_SKIPPED + 1))
+        return 0
+    fi
+
+    : > "$stderr_file"
+    : > "$output_file"
+
+    local vuln_count=0
+    while IFS= read -r module_dir; do
+        [[ -z "$module_dir" ]] && continue
+
+        local module_out module_stderr module_rc
+        module_out="$(mktemp)"
+        module_stderr="$(mktemp)"
+
+        echo "== govulncheck: $module_dir ==" >> "$output_file"
+        module_rc=0
+        (cd "$module_dir" && govulncheck ./... > "$module_out" 2> "$module_stderr") || module_rc=$?
+
+        cat "$module_out" >> "$output_file"
+        echo "" >> "$output_file"
+
+        # Exit 0 = clean, 3 = vulns found (both are successful RUNS); anything
+        # else (network/vulndb/toolchain failure) is a tool error — fail loud,
+        # never silently green.
+        if [[ "$module_rc" -ne 0 && "$module_rc" -ne 3 ]]; then
+            {
+                echo "ERROR: govulncheck exited $module_rc in $module_dir"
+                [[ -s "$module_stderr" ]] && cat "$module_stderr"
+            } >> "$stderr_file"
+        else
+            local module_vulns
+            module_vulns=$(grep -c '^Vulnerability #' "$module_out" 2>/dev/null || true)
+            module_vulns=${module_vulns:-0}
+            module_vulns=$(echo "$module_vulns" | tr -d '[:space:]')
+            vuln_count=$((vuln_count + module_vulns))
+        fi
+
+        rm -f "$module_out" "$module_stderr"
+    done <<< "$modules"
+
+    if [[ -s "$stderr_file" ]]; then
+        TOOL_STATUS["govulncheck"]="error"
+        cat "$stderr_file" >> "$output_file"
+        return 0
+    fi
+
+    if [[ "$vuln_count" -gt 0 ]]; then
+        HIGH_COUNT=$((HIGH_COUNT + vuln_count))
+        SECURITY_HIGH_COUNT=$((SECURITY_HIGH_COUNT + vuln_count))
+        TOOL_STATUS["govulncheck"]="findings"
+    else
+        TOOL_STATUS["govulncheck"]="pass"
+    fi
+}
+
+# ============================================================================
 # TOOL: hadolint (Dockerfile)
 # ============================================================================
 run_hadolint() {
@@ -889,6 +974,7 @@ run_radon
 run_semgrep
 run_trivy
 run_gosec
+run_govulncheck
 run_hadolint
 run_pytest
 run_gotest
@@ -909,7 +995,7 @@ fi
 # Build tools JSON object
 TOOLS_JSON="{"
 first=true
-for tool in ruff golangci-lint gitleaks shellcheck radon semgrep trivy gosec hadolint pytest go-test; do
+for tool in ruff golangci-lint gitleaks shellcheck radon semgrep trivy gosec govulncheck hadolint pytest go-test; do
     status="${TOOL_STATUS[$tool]:-not_run}"
     if [[ "$first" == "true" ]]; then
         first=false
