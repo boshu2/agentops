@@ -61,22 +61,22 @@ func init() {
 }
 
 // quickstartBeadsStep handles step 3: beads initialization or skip.
-func quickstartBeadsStep(cwd string) {
-	quickstartBeadsStepWithApp(cwd, NewApp())
+func quickstartBeadsStep(cwd string) error {
+	return quickstartBeadsStepWithApp(cwd, NewApp())
 }
 
-func quickstartBeadsStepWithApp(cwd string, app *App) {
+func quickstartBeadsStepWithApp(cwd string, app *App) error {
 	if !noBeads {
 		fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
 		if err := initBeadsWithApp(cwd, app); err != nil {
-			fmt.Printf("  ⚠ Beads init skipped: %v\n", err)
-			fmt.Println("  → You can run 'br init' later to enable git-native issues")
+			return fmt.Errorf("tracker initialization failed: %w", err)
 		}
 	} else {
 		fmt.Println("\n━━━ STEP 3: Skipping beads (--no-beads) ━━━")
 		fmt.Println("  → Issues will be tracked in .agents/tasks.json instead")
 		createTasksFile(cwd)
 	}
+	return nil
 }
 
 // quickstartClaudeMdStep handles step 4: create CLAUDE.md if missing.
@@ -209,8 +209,7 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 			FirstVerdict: firstVerdict,
 		})
 	}
-	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
-	return nil
+	return finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
 }
 
 func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
@@ -223,8 +222,10 @@ func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
 	return true, nil
 }
 
-func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) {
-	quickstartBeadsStepWithApp(cwd, app)
+func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
+	if err := quickstartBeadsStepWithApp(cwd, app); err != nil {
+		return err
+	}
 	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
 	if claudeAlreadyExisted {
 		fmt.Println("  ✓ CLAUDE.md already exists")
@@ -239,6 +240,7 @@ func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, r
 	printReadinessSummary(report)
 	showNextSteps(!noBeads)
 	printFirstVerdictStep(firstVerdict)
+	return nil
 }
 
 func outputQuickstartResult(result quickstartResult) error {
@@ -452,15 +454,19 @@ func initBeads(cwd string) error {
 }
 
 func initBeadsWithApp(cwd string, app *App) error {
-	// Check if beads is available
-	if _, err := app.LookPath("br"); err != nil {
-		return fmt.Errorf("br command not found (install beads_rust; see AGENTS.md for tracker setup)")
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return err
 	}
+	binary, err := app.LookPath(resolution.Tracker)
+	if err != nil {
+		return fmt.Errorf("selected tracker %s command not found: %w", resolution.Tracker, err)
+	}
+	resolution.Binary = binary
 
 	// Check if already initialized
-	beadsDir := filepath.Join(cwd, ".beads")
-	if _, err := os.Stat(beadsDir); err == nil {
-		fmt.Println("  ✓ Beads already initialized")
+	if _, err := os.Stat(resolution.LedgerDir); err == nil {
+		fmt.Printf("  ✓ %s tracker already initialized\n", resolution.Tracker)
 		return nil
 	}
 
@@ -485,19 +491,16 @@ func initBeadsWithApp(cwd string, app *App) error {
 		prefix = strings.TrimSpace(prefix)
 	}
 
-	// Run br init
-	resolution, err := resolveTracker(cwd, os.Environ())
-	if err != nil {
-		return err
-	}
+	// Run the selected tracker. Availability and execution use the same resolved
+	// backend so an explicit bd selection can never be preflighted as br.
 	cmd := app.ExecCommand(resolution.Binary, "init", "--prefix", prefix) // #nosec G204 -- selected br|bd binary.
 	cmd.Dir = cwd
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("br init failed: %s", string(output))
+		return fmt.Errorf("%s init failed: %s", resolution.Tracker, string(output))
 	}
 
-	fmt.Printf("  ✓ Beads initialized with prefix '%s'\n", prefix)
+	fmt.Printf("  ✓ %s tracker initialized with prefix '%s'\n", resolution.Tracker, prefix)
 	return nil
 }
 
