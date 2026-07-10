@@ -8,8 +8,7 @@
     "eval_files": 55,
     "cli_commands": 29,
     "workflows": 4,
-    "capabilities": 148
-    "capabilities": 102
+    "capabilities": 105
   },
   "surfaces": {
     "skills": [
@@ -621,40 +620,6 @@
     ],
     "cli_commands": [
       {
-        "name": "ao agent",
-        "path": "cli/cmd/ao/",
-        "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "domain",
-          "evolve",
-          "shared"
-        ]
-      },
-      {
-        "name": "ao agents",
-        "path": "cli/cmd/ao/",
-        "purpose": "Inspect and manage .agents/ contracts and surfaces",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao anti-patterns",
-        "path": "cli/cmd/ao/",
-        "purpose": "List learnings marked as anti-patterns",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao badge",
-        "path": "cli/cmd/ao/",
-        "purpose": "Display knowledge flywheel health badge",
-        "bounded_context": "BC2",
-        "driven_by_skills": [
-          "status"
-        ]
-      },
-      {
         "name": "ao beads",
         "path": "cli/cmd/ao/",
         "purpose": "Complementary tooling for the bd (beads) issue tracker",
@@ -760,43 +725,6 @@
         "name": "ao land",
         "path": "cli/cmd/ao/",
         "purpose": "Land a bead through the trusted pawl path with a fresh in-checkout binary, then atomic pawl-land",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao lookup",
-        "path": "cli/cmd/ao/",
-        "purpose": "Retrieve specific knowledge artifacts by ID or query",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "bootstrap",
-          "crank",
-          "discovery",
-          "domain",
-          "evolve",
-          "implement",
-          "operationalize",
-          "plan",
-          "post-mortem",
-          "pre-mortem",
-          "status",
-          "swarm",
-          "validate"
-        ]
-      },
-      {
-        "name": "ao maturity",
-        "path": "cli/cmd/ao/",
-        "purpose": "Check and manage learning maturity levels",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "domain"
-        ]
-      },
-      {
-        "name": "ao mcp",
-        "path": "cli/cmd/ao/",
-        "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
         "bounded_context": "",
         "driven_by_skills": []
       },
@@ -988,11 +916,8 @@
     ]
   },
   "capability_summary": {
-    "total": 148,
+    "total": 105,
     "skills": 62,
-    "cli_commands": 72,
-    "total": 102,
-    "skills": 59,
     "cli_commands": 29,
     "gates": 14,
     "reference_impls": 0
@@ -1117,13 +1042,6 @@
       "produces": [
         "agent-worker-evidence",
         "worker-handoff"
-        "docs/contracts/agent-runtime-profile.md"
-      ],
-      "drives_commands": [
-        "ao gate check",
-        "ao goals",
-        "ao session bootstrap",
-        "ao validate"
       ],
       "drives_commands": [],
       "path": "skills/agent-native/",
@@ -1547,10 +1465,6 @@
         "ao beads exec",
         "ao done",
         "ao gate check",
-        "ao lookup",
-        "ao metrics",
-        "ao metrics cite",
-        "ao mine",
         "ao pawl",
         "ao pawl review",
         "ao provenance emit-verdict",
@@ -1753,10 +1667,7 @@
         "ao beads exec",
         "ao gate check",
         "ao goals",
-        "ao lookup",
-        "ao mine",
         "ao pawl",
-        "ao ratchet",
         "ao skills edit digest",
         "ao skills edit seal"
       ],
@@ -2166,13 +2077,7 @@
       "drives_commands": [
         "ao beads exec",
         "ao beads verify",
-        "ao lookup",
-        "ao metrics cite",
-        "ao plan-pawl decide",
-        "ao ratchet",
-        "ao search",
-        "ao worktree gc"
-        "ao beads verify"
+        "ao plan-pawl decide"
       ],
       "path": "skills/plan/",
       "references": 14
@@ -2550,9 +2455,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao pawl",
-        "ao ratchet"
-        "ao beads exec"
+        "ao pawl"
       ],
       "path": "skills/rpi/",
       "references": 18
@@ -2886,36 +2789,6 @@
       "references": 1
     },
     {
-      "sku": "skill:using-atm",
-      "name": "using-atm",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running the loop over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
-      "path": "skills/using-atm/",
-      "references": 3
-    },
-    {
       "sku": "skill:using-gc",
       "name": "using-gc",
       "type": "skill",
@@ -2969,12 +2842,7 @@
         "ao beads exec",
         "ao doctor",
         "ao goals",
-        "ao lookup",
-        "ao metrics cite",
-        "ao pawl",
-        "ao ratchet",
-        "ao search"
-        "ao goals"
+        "ao pawl"
       ],
       "path": "skills/validate/",
       "references": 23
@@ -3006,81 +2874,6 @@
       "drives_commands": [],
       "path": "skills/workflow-builder/",
       "references": 0
-    },
-    {
-      "sku": "cmd:ao.agent",
-      "name": "ao agent",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
-      "status": "active",
-      "driven_by_skills": [
-        "domain",
-        "evolve",
-        "shared"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.agents",
-      "name": "ao agents",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Inspect and manage .agents/ contracts and surfaces",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.anti-patterns",
-      "name": "ao anti-patterns",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "List learnings marked as anti-patterns",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--format",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.badge",
-      "name": "ao badge",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Display knowledge flywheel health badge",
-      "status": "active",
-      "driven_by_skills": [
-        "status"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
     },
     {
       "sku": "cmd:ao.beads",
@@ -3353,92 +3146,6 @@
         "--json",
         "--output",
         "--scope",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.lookup",
-      "name": "ao lookup",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Retrieve specific knowledge artifacts by ID or query",
-      "status": "active",
-      "driven_by_skills": [
-        "bootstrap",
-        "crank",
-        "discovery",
-        "domain",
-        "evolve",
-        "implement",
-        "operationalize",
-        "plan",
-        "post-mortem",
-        "pre-mortem",
-        "status",
-        "swarm",
-        "validate"
-      ],
-      "flags": [
-        "--bead",
-        "--cite",
-        "--config",
-        "--dry-run",
-        "--gold",
-        "--json",
-        "--limit",
-        "--no-cite",
-        "--output",
-        "--pointers",
-        "--query",
-        "--session",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.maturity",
-      "name": "ao maturity",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Check and manage learning maturity levels",
-      "status": "active",
-      "driven_by_skills": [
-        "domain"
-      ],
-      "flags": [
-        "--apply",
-        "--archive",
-        "--config",
-        "--curate",
-        "--dry-run",
-        "--evict",
-        "--expire",
-        "--global",
-        "--json",
-        "--migrate-md",
-        "--output",
-        "--recalibrate",
-        "--scan",
-        "--target-size",
-        "--uncited-days",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.mcp",
-      "name": "ao mcp",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
