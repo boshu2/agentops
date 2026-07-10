@@ -27,6 +27,7 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  graph_root: true
   tier: experimental
   dependencies:
   - rpi
@@ -46,7 +47,7 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > **Experimental tier.** Autonomous long-loop; run attended or dispatched onto a substrate, never as an in-repo daemon (ADR-0009).
 
-**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (pawl review, `/validate --mixed`, `/pre-land-refuters`) fires ONCE at the cycle's **bead-acceptance / land pawl** — not per slice or wave. The per-cycle regression gate (Step 5) is **chaos**: cheap and wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe" — that re-creates the waterfall the ratchet avoids.
+**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (`/validate`, `/pawl-review`, then `ao pawl`) fires once at bead acceptance, not per slice or wave.
 
 **The loop runs as this skill.** `evolve` selects work and invokes complete `/rpi --auto` cycles — that *is* the loop. Each cycle's post-mortem checkpoint is a **re-plan point** (re-scope / reorder / drop / add to the remaining queue from what the cycle taught), one altitude up from `/rpi`'s [agile re-plan loop](../rpi/references/agile-replan-loop.md) — agile across cycles, not a fixed backlog. Substrates dispatch the whole loop as one unit through NTM, Agent Mail, or `ao agent`; the former RPI CLI wrappers are retired (ADR-0009).
 

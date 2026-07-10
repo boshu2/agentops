@@ -1,6 +1,6 @@
 ---
 name: using-gc
-description: Drive a Gas City (gc) factory day-to-day —
+description: Drive an explicitly selected Gas City
 ---
 # Using Gas City — the operator loop
 
@@ -21,13 +21,31 @@ dashboard, doctor). Never rebuild it. The membrane is the one add-on.
   `runtime=gc` in AgentOps (severed, soc-2rtm0). No gc subcommand lives under
   the `ao` CLI, ever. This skill routes to **gc's own native surface**
   (`gc status --json`, `gc events`, `gc doctor --json`, `gc session …`) and
-  never wraps it.
+never wraps it.
 - **LAW 0 applies inside a city**: gc's builtin claude provider defaults to
   `print_args = ["-p"]` (headless title-gen + `gc prompt` sinks). Every city
   MUST set `[providers.claude] print_args = []` (and the same on
   `antigravity`), guarded by the `law0-print-args` doctor check.
 - **The membrane never merges.** CONFIRMED closes the quest bead; a human
   merges the branch. No convenience crosses that line.
+
+### Optional portable lanes
+
+Inside an explicitly selected city, a bounded quest role may delegate through
+the same AgentOps ports used elsewhere:
+
+- `AgentWorker` (`cli/internal/agentworker/types.go`) for a worker whose
+  workspace, role, lifecycle, artifacts, and retirement are portable;
+- `ReviewLanePort` (`cli/internal/ports/review_lane.go`) for one immutable,
+  fresh, read-only reviewer result handed back to the GC membrane;
+- `AgentMailPort` only when multiple live delegated actors need identity,
+  reservations, acknowledgements, or handoff.
+
+The owners remain [`agent-native`](../agent-native/SKILL.md) and
+[`pawl-review`](../pawl-review/SKILL.md); NTM is one possible worker adapter.
+These are optional partnership edges, never hard dependencies or automatic
+fallbacks. GC still owns the quest store/supervision and its membrane still
+owns the close door. GC and NTM each operate when the other is absent.
 
 ## When to use / when to skip
 
@@ -36,7 +54,7 @@ wedged, or draining; reading verdicts; city admin (doctor, orders, backup,
 binary rebuild); deciding whether a city is healthy.
 
 **Skip:** in-session parallel fan-out (→ `swarm`); unattended bead-queue work
-on our own swarm substrate (→ `using-atm`); choosing an automation shape at
+on portable NTM worker panes (→ `agent-native` + `ntm`); choosing an automation shape at
 all (→ `automation-shape-routing`). City-shaped multi-quest work is an
 **operator choice**, not an auto-route.
 

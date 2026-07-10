@@ -146,7 +146,7 @@ Everything below ships in the skill. Read whichever is relevant.
 
 - **`sbh`** — disk-pressure defense for AI coding workloads. Use when `RCH-E210/211/215/216` fires.
 - **`agent-mail`** — file reservations and messaging between agents. Use before `rch fleet deploy` or any worker config edit in a swarm.
-- **`ntm`** / **`vibing-with-ntm`** — multi-agent tmux orchestration; common parent context for agents that hit rch failures.
+- **`agent-native`** / **`ntm`** — portable worker lifecycle and NTM mechanics for agents that hit rch failures.
 - **`cass`** — search prior agent sessions; the skill ships `scripts/mine_rch_history.sh` as a fallback when cass index has dead pointers.
 
 ---

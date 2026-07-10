@@ -7,9 +7,8 @@ practices:
 - tdd
 hexagonal_role: driving-adapter
 consumes:
-- operator-goal
-- docs/templates/goal-design-intent.md
-- docs/templates/goal-design-driver.md
+- project-goals
+- existing-docs
 produces:
 - .agents/goal-design/<slug>/intent.md
 - .agents/goal-design/<slug>/driver.md
@@ -23,6 +22,7 @@ context:
     mode: task
   intel_scope: topic
 metadata:
+  graph_root: true
   tier: execution
   dependencies:
   - validate
@@ -108,7 +108,7 @@ Given `/goal-design "<goal>" [--slug <slug>]`:
    `/plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
    `S2`, or candidate behavior labels away.
 7. **Emit the dispatch prompt.** When the packet executes out-of-session via a
-   goal API (codex goals, claude goals, an NTM/ATM pane, `bushido spawn`),
+   goal API (codex goals, claude goals, an NTM pane, `bushido spawn`),
    emit the small copyable prompt that points the worker at the packet:
 
    ```bash

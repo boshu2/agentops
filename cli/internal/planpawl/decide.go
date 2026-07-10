@@ -6,7 +6,7 @@
 //
 // This package contains NO model calls and NO I/O of its own: it is the windshield
 // — a pure, deterministic decider. Spawning the panes, waiting on verdict files,
-// and the re-judge loop are the skill's job (dual-pane-atm); they feed verdicts in
+// and the re-judge loop are the skill's job (dueling-idea-genies); they feed verdicts in
 // and act on the decision out.
 package planpawl
 

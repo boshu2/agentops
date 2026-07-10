@@ -229,6 +229,7 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   declare -A changed_codex_skills=()
   declare -A changed_source_refs=()
   declare -A changed_source_skillmd=()
+  declare -A changed_source_content=()
   declare -A changed_codex_content=()
 
   for changed_file in "${changed_files[@]}"; do
@@ -244,8 +245,9 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
         # references/** is mirrored near-verbatim into the Codex twin, so a
         # source references edit MUST be accompanied by a twin content change.
         case "$changed_file" in
-          skills/*/references/*) changed_source_refs["$skill_name"]=1 ;;
+          skills/*/references/*) changed_source_refs["$skill_name"]=1; changed_source_content["$skill_name"]=1 ;;
           skills/*/SKILL.md)     changed_source_skillmd["$skill_name"]=1 ;;
+          *)                     changed_source_content["$skill_name"]=1 ;;
         esac
         ;;
       skills-codex/*/*)
@@ -267,7 +269,13 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
 
   for skill_name in "${!changed_source_skills[@]}"; do
     is_bespoke "$skill_name" || continue  # parity: codex-sync regenerates + drift-gates
-    if [[ -z "${changed_codex_skills[$skill_name]+x}" ]]; then
+    needs_twin_update=0
+    if [[ -n "${changed_source_content[$skill_name]+x}" ]]; then
+      needs_twin_update=1
+    elif [[ -n "${changed_source_skillmd[$skill_name]+x}" ]] && source_skill_body_changed "$SCOPE" "$skill_name"; then
+      needs_twin_update=1
+    fi
+    if [[ "$needs_twin_update" -eq 1 && -z "${changed_codex_skills[$skill_name]+x}" ]]; then
       fail "source skill changed without matching checked-in Codex update: skills/$skill_name -> skills-codex/$skill_name"
     fi
   done

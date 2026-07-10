@@ -24,6 +24,7 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  graph_root: true
   tier: product
   dependencies: []
 output_contract: 'stdout: security scan report'

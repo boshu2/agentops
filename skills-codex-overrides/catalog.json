@@ -283,12 +283,6 @@
       "reason": "Preparing a PR in Codex needs a tighter artifact checklist and explicit user-review boundary."
     },
     {
-      "name": "pre-land-refuters",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
-    },
-    {
       "name": "pre-mortem",
       "treatment": "bespoke",
       "wave": "core-execution",
@@ -495,12 +489,6 @@
       "reason": "seams epic ag-xwjlc parity twin"
     },
     {
-      "name": "using-atm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "ATM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
-    },
-    {
       "name": "validate",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -549,6 +537,36 @@
           "## Codex Execution Profile"
         ]
       }
+    },
+    {
+      "name": "idea-genie",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Evidence-grounded opportunity artifact is runtime-portable."
+    },
+    {
+      "name": "dueling-idea-genies",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Sealed challenge artifact and plan-pawl handoff are runtime-portable."
+    },
+    {
+      "name": "codebase-recon",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Evidence-bounded recon and delta contracts are runtime-portable."
+    },
+    {
+      "name": "pattern-mining",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Exemplar and holdout validation contract is runtime-portable."
+    },
+    {
+      "name": "pawl-review",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Immutable reviewer-lane contract is runtime-portable; concrete adapters stay behind ports."
     }
   ]
 }

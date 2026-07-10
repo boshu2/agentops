@@ -46,7 +46,7 @@ const depositGateEnv = "AO_DEPOSIT_GATE"
 
 // GateVerdict is the proof that a reward deposit is licensed: the outcome the
 // trail contributed to passed a gate. Source names the producer (e.g.
-// "pre-land-refuters", "holdout", "hindsight-critic") for provenance.
+// "pawl-review", "holdout", "hindsight-critic") for provenance.
 type GateVerdict struct {
 	Passed bool
 	Source string

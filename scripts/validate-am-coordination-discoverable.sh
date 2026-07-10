@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Validator for cp-jgcl: a fresh agent must be able to DISCOVER how to send an
 # Agent Mail message from the skills, and the documented CLI verb must exist.
-# Guards against regressing the agent-mail / using-atm discoverability fix.
+# Guards against regressing the agent-mail / agent-native discoverability fix.
 #
 # Exit 0 = pass, 1 = fail. Pure read-only checks; safe to run anywhere `am` is on PATH.
 set -uo pipefail
@@ -10,7 +10,7 @@ note() { printf '%s %s\n' "$1" "$2"; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AM_SKILL="$ROOT/skills/agent-mail/SKILL.md"
-ATM_SKILL="$ROOT/skills/using-atm/SKILL.md"
+FACTORY_SKILL="$ROOT/skills/agent-native/SKILL.md"
 
 # 1) The working send verb must actually exist in the am CLI.
 if am mail send --help >/dev/null 2>&1; then
@@ -19,8 +19,8 @@ else
   note "FAIL" "'am mail send --help' did not succeed (send verb missing/moved)"; fail=1
 fi
 
-# 2) Both coordination skills must document the CLI send verb (not only the MCP tool).
-for f in "$AM_SKILL" "$ATM_SKILL"; do
+# 2) Both coordination surfaces must document the CLI send verb (not only the MCP tool).
+for f in "$AM_SKILL" "$FACTORY_SKILL"; do
   if grep -q "am mail send" "$f" 2>/dev/null; then
     note "PASS" "$(basename "$(dirname "$f")")/SKILL.md documents 'am mail send'"
   else

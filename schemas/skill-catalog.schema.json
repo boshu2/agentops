@@ -8,7 +8,7 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1",
+      "const": "2",
       "description": "Bumped when schema changes; consumers gate on this."
     },
     "generated_at": {
@@ -29,7 +29,7 @@
   "definitions": {
     "skill": {
       "type": "object",
-      "required": ["name", "description", "hexagonal_role", "consumes", "produces", "context_rel", "user_invocable", "references_count", "codex_override_present"],
+      "required": ["name", "description", "hexagonal_role", "consumes", "produces", "dependencies", "context_rel", "user_invocable", "graph_root", "references_count", "codex_override_present"],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -55,6 +55,12 @@
           "items": { "type": "string" },
           "description": "Port / artifact names this skill writes."
         },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Directed execution/delegation edges from metadata.dependencies."
+        },
         "context_rel": {
           "type": "array",
           "items": {
@@ -75,6 +81,10 @@
         "user_invocable": {
           "type": "boolean",
           "description": "True when the skill is meant to be invoked directly by an operator (`user-invocable: true` in frontmatter)."
+        },
+        "graph_root": {
+          "type": "boolean",
+          "description": "Explicit zero-inbound graph entry point. User-invocable alone does not make an orphan reachable."
         },
         "codex_override_present": {
           "type": "boolean",

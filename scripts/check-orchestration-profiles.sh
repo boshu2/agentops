@@ -1,42 +1,26 @@
 #!/usr/bin/env bash
-# check-orchestration-profiles.sh — drift gate for profiles yaml ↔ dual-pane-atm checklist
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 profiles="$repo_root/docs/contracts/orchestration-profiles.yaml"
-checklist="$repo_root/skills/dual-pane-atm/references/spawn-checklist.md"
-
-if [[ ! -f "$profiles" ]]; then
-  echo "FAIL: missing $profiles" >&2
-  exit 1
-fi
-if [[ ! -f "$checklist" ]]; then
-  echo "FAIL: missing $checklist" >&2
-  exit 1
-fi
+lifecycle="$repo_root/skills/agent-native/references/agent-lifecycle.md"
 
 status=0
 fail() { echo "FAIL: $*" >&2; status=1; }
+[ -f "$profiles" ] || fail "missing $profiles"
+[ -f "$lifecycle" ] || fail "missing $lifecycle"
 
-for token in "--no-user" "--cc=1:opus" "--cod=1:gpt-5.5" "--agy=1"; do
-  if ! grep -F -- "$token" "$profiles" >/dev/null; then
-    fail "profiles yaml missing spawn token $token"
-  fi
+for token in '--robot-spawn=${session}' '--spawn-cod=1' '--spawn-cod=2' '--spawn-no-user' '--spawn-wait' '--spawn-dir=${worktree}' '--spawn-cc=1' '--spawn-agy=1'; do
+  grep -F -- "$token" "$profiles" >/dev/null || fail "profiles missing live NTM token $token"
 done
-
-for marker in "ao orchestrate preflight" "ao orchestrate verify"; do
-  if ! grep -qF "$marker" "$checklist"; then
-    fail "spawn-checklist missing instrument lane marker: $marker"
-  fi
+for role in Orchestrator Worker Verifier Scribe Heartbeat; do
+  grep -q "$role" "$profiles" || fail "profiles missing role $role"
 done
-
-for id in dual-pane tri-vendor; do
-  if ! grep -q "profile_id: $id" "$profiles"; then
-    fail "profiles yaml missing profile_id $id"
-  fi
+for id in ntm-workers ntm-pawl dual-pane tri-vendor; do
+  grep -q "profile_id: $id" "$profiles" || fail "profiles missing $id"
 done
+grep -q 'suspect' "$lifecycle" || fail "agent lifecycle missing suspicion state"
+grep -q 'nudged' "$lifecycle" || fail "agent lifecycle missing bounded nudge state"
 
-if [[ $status -eq 0 ]]; then
-  echo "OK: orchestration profiles drift gate"
-fi
-exit $status
+[ "$status" -ne 0 ] || echo "OK: orchestration profiles drift gate"
+exit "$status"

@@ -45,20 +45,27 @@ type ProfileSpec struct {
 	ProfileID        string         `yaml:"profile_id"`
 	Extends          string         `yaml:"extends,omitempty"`
 	Shape            string         `yaml:"shape,omitempty"`
+	OwnerSkill       string         `yaml:"owner_skill,omitempty"`
 	RequiredTools    []string       `yaml:"required_tools"`
+	OptionalTools    []string       `yaml:"optional_tools,omitempty"`
+	Roles            []string       `yaml:"roles,omitempty"`
 	Panes            []ProfilePane  `yaml:"panes"`
 	SpawnArgv        [][]string     `yaml:"spawn_argv"`
 	SpawnArgvAdd     [][]string     `yaml:"spawn_argv_add"`
+	LifecycleMarkers map[string]any `yaml:"lifecycle_markers,omitempty"`
+	RequestContract  string         `yaml:"request_contract,omitempty"`
+	ResultContract   string         `yaml:"result_contract,omitempty"`
 	ChecklistMarkers map[string]any `yaml:"checklist_markers"`
 	SendContracts    map[string]any `yaml:"send_contracts,omitempty"`
 }
 
 // ProfilePane is one pane slot in a profile.
 type ProfilePane struct {
-	Slot    int    `yaml:"slot" json:"slot"`
-	Runtime string `yaml:"runtime" json:"runtime"`
-	Model   string `yaml:"model,omitempty" json:"model,omitempty"`
-	Role    string `yaml:"role,omitempty" json:"role,omitempty"`
+	Slot     int    `yaml:"slot" json:"slot"`
+	Runtime  string `yaml:"runtime" json:"runtime"`
+	Model    string `yaml:"model,omitempty" json:"model,omitempty"`
+	Role     string `yaml:"role,omitempty" json:"role,omitempty"`
+	ReadOnly bool   `yaml:"read_only,omitempty" json:"read_only,omitempty"`
 }
 
 // LoadToolsContract reads orchestration-tools.yaml under repoRoot.
@@ -120,11 +127,23 @@ func mergeProfile(base, overlay ProfileSpec) ProfileSpec {
 	if overlay.Shape != "" {
 		out.Shape = overlay.Shape
 	}
+	if overlay.OwnerSkill != "" {
+		out.OwnerSkill = overlay.OwnerSkill
+	}
 	if len(overlay.RequiredTools) > 0 {
 		out.RequiredTools = overlay.RequiredTools
 	}
+	if len(overlay.OptionalTools) > 0 {
+		out.OptionalTools = overlay.OptionalTools
+	}
+	if len(overlay.Roles) > 0 {
+		out.Roles = overlay.Roles
+	}
 	if len(overlay.Panes) > 0 {
 		out.Panes = overlay.Panes
+	}
+	if len(overlay.SpawnArgv) > 0 {
+		out.SpawnArgv = overlay.SpawnArgv
 	}
 	if len(overlay.SpawnArgvAdd) > 0 {
 		out.SpawnArgv = append(append([][]string{}, out.SpawnArgv...), overlay.SpawnArgvAdd...)
@@ -139,6 +158,15 @@ func mergeProfile(base, overlay ProfileSpec) ProfileSpec {
 	}
 	if overlay.SendContracts != nil {
 		out.SendContracts = overlay.SendContracts
+	}
+	if overlay.LifecycleMarkers != nil {
+		out.LifecycleMarkers = overlay.LifecycleMarkers
+	}
+	if overlay.RequestContract != "" {
+		out.RequestContract = overlay.RequestContract
+	}
+	if overlay.ResultContract != "" {
+		out.ResultContract = overlay.ResultContract
 	}
 	return out
 }

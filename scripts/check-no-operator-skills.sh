@@ -19,7 +19,7 @@
 #
 # SCOPE: only unambiguous operator-personal-IDENTITY slugs are denied. General
 # craft skills (de-slopify, teacher-mode, etc.) are product skills and are NOT
-# on this list. Substrate skills (ntm, using-atm, vibing-with-ntm, swarm) are
+# on this list. Substrate skills (ntm, agent-native, agent-mail, swarm) are
 # legitimate product skills, not operator-personal — also NOT denied.
 #
 # Usage:

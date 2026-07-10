@@ -21,6 +21,8 @@ metadata:
   dependencies:
   - council
   - beads-br
+  - operationalize
+  - toil-mining
 context:
   window: fork
   intent:
@@ -304,7 +306,7 @@ should change. See the `/goals` skill.
 - `skills/council/SKILL.md` — Multi-model validation council
 - `skills/validate/SKILL.md` — Council validates code (`/validate` after coding)
 - `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
-- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — its council artifact (`.agents/council/*-pre-land-*.md`) is landing evidence this post-mortem consumes
+- [`pawl-review`](../pawl-review/SKILL.md) — its contained lane evidence is landing evidence this post-mortem may consume
 
 
 ## Reference Documents

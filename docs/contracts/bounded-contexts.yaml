@@ -45,6 +45,7 @@ bounded_contexts:
       - validation
       - vibe
       - council
+      - pawl-review
       - gates
       - evals
       - CI scripts
@@ -53,6 +54,7 @@ bounded_contexts:
       - CIStatusPort
       - ScenarioRunnerPort
       - EvidenceBinderPort
+      - ReviewLanePort
 
   - id: BC3
     name: Loop
@@ -106,6 +108,7 @@ bounded_contexts:
       - EventBusPort
       - GitPort
       - IssueTrackerPort
+      - AgentWorkerPort
 
   - id: BC6
     name: Orchestration
@@ -115,9 +118,6 @@ bounded_contexts:
       - ntm
       - swarm
       - agent-mail
-      - using-atm
-      - vibing-with-ntm
-      - continuity-loop
     ports:
       - OrchestrationPort
       - SwarmDispatchPort

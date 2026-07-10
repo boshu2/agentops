@@ -17,6 +17,11 @@ the per-slice acceptance verdict, so do not double-gate. Its verdict binds to th
 slice's BDD/ATDD acceptance test; author != judge; every REFUTE feeds a lesson into
 the next loop's `$pre-mortem` checks (S6).
 
+For mixed-family work, `$agent-native` may drive durable roles over NTM while
+bounded in-session lanes use the native Codex agent surface. Landing oracles are
+owned by `$pawl-review`; `ao pawl` owns the deterministic panel verdict. Route
+contested one-way-door ideas through `$dueling-idea-genies` before planning.
+
 ## Examples
 
 - Run council from the canonical location in the mt-olympus repository.

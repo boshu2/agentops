@@ -1,0 +1,30 @@
+{
+  "implementation_context_id": "/root/clean_room_skill_drafts",
+  "allowed_path_prompt": "Read only frozen AgentOps behaviors, spec, bead manifest, clean-room provenance, acceptance tests, listed AgentOps-owned consumer skills, the frontmatter schema, and source conventions. Do not read external skill roots. Write only skills/idea-genie, skills/dueling-idea-genies, skills/codebase-recon, and skills/pattern-mining.",
+  "allowed_path_prompt_sha256": "e89efb7f8aac5a711e704107e17aedc7751caf812483fd36a8a1a658e8544b44",
+  "manifest_sha256": {
+    "official": "7642c6f23753f01d305eafb73bc4abd6b60ef01cc138de01ba20fb77bf31f909",
+    "companions": "f64f66ae0291accd42e95e93f0b1b553fe7917e191e7e092dcc3be3bdcd20232"
+  },
+  "compared_source_paths": [
+    "skills/idea-genie",
+    "skills/dueling-idea-genies",
+    "skills/codebase-recon",
+    "skills/pattern-mining"
+  ],
+  "external_root": [
+    "/Users/bo/dev/skill-library/idea-wizard",
+    "/Users/bo/dev/skill-library/dueling-idea-wizards",
+    "/Users/bo/.codex/skills/codebase-archaeology",
+    "/Users/bo/.codex/skills/codebase-audit",
+    "/Users/bo/.codex/skills/codebase-report",
+    "/Users/bo/.codex/skills/codebase-pattern-extraction"
+  ],
+  "longest_shared_sequence_words": 5,
+  "similarity_threshold_words": 24,
+  "similarity_disposition": "PASS_BELOW_THRESHOLD",
+  "ci_denylist": "PASS",
+  "independent_review": "PASS",
+  "review_context": "/root/jsms_corpus_research",
+  "limitations": "Behavioral re-specification plus isolated drafting, not a legal double-blind clean room; the integrating research context had prior-art exposure."
+}

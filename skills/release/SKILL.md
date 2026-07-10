@@ -23,6 +23,7 @@ context:
   intel_scope: full
 user-invocable: true
 metadata:
+  graph_root: true
   tier: product
   dependencies: []
 output_contract: CHANGELOG.md update, git tag, exact-SHA CI verdict handoff

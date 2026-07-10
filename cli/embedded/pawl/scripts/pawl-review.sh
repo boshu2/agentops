@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pawl-review.sh — RUN the cross-family membrane review and, on CONFIRMED, write the
 # pawl verdict. This is the missing executable half of the pawl: `pawl-verdict.sh`
-# write/check is the verdict BOOKKEEPING, and pre-land-refuters is the DOCS — but
+# write/check is the verdict BOOKKEEPING, and pawl-review owns reviewer lanes — but
 # actually running the fresh-context adversarial review (the thing that produces the
 # verdict) was a manual codex-exec + prompt + parse + write dance repeated on every
 # land. This makes it one command.

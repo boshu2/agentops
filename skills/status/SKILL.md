@@ -20,8 +20,9 @@ context:
     mode: none
   intel_scope: none
 metadata:
+  graph_root: true
   tier: session
-  dependencies: []
+  dependencies: [sbh]
 output_contract: 'stdout: dashboard'
 ---
 # /status — Workflow Dashboard

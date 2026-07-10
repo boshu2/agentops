@@ -199,8 +199,8 @@ Generate, then duel:
    Then write one `SynthesisPacket` that selects or merges the winning plan,
    records rejected alternatives, and carries open questions.
 2. Run the cross-family DUEL over the `SynthesisPacket`: two judge panes from
-   DISTINCT model families (e.g. Claude + Codex via
-   [`using-atm`](../../using-atm/SKILL.md), `--no-user`, fresh-context by
+   DISTINCT model families through [`agent-native`](../../agent-native/SKILL.md)
+   over NTM, `--no-user`, fresh-context by
    construction). Each pane writes one judge verdict
    (`{family,disposition,warn_class,judgment_flag}`) to `.agents/duel/<run-id>/`.
 3. Decide deterministically — never by reading the panes yourself:
@@ -334,7 +334,7 @@ this is the live wire that makes `orchestration_decision` carry a validated
 shape: `ao orchestrate shape` reads the packet, gathers observable ground truth
 (Agent Mail live-writer count + per-lane reservation write-sets via
 `orchestration.ValidateShape`), and overrides any confabulated proposal. Add
-`--unattended` when the work must outlive the session (durability axis → ATM):
+`--unattended` when the work must outlive the session (durability axis → AgentWorker over NTM):
 
 ```bash
 ao orchestrate shape 2>/dev/null || true # add --unattended for out-of-session/durable runs

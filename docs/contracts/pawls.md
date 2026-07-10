@@ -9,7 +9,7 @@
 ## The rule
 
 1. About to take an action? Check it against the pawl list **and the [blast-radius rule](#the-blast-radius-rule-the-list-is-examples-not-the-boundary)** below.
-2. **A pawl (on the list, OR it trips any clause of the blast-radius rule) → fire the gate** ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)): an independent **fresh-context** reviewer (a separate invocation, no shared accumulated context with the author) must confirm before the action proceeds. Fail-closed (ambiguity → hold, never silent-proceed). Fresh-context is the **default** diversity mode; a pawl can be **opted up to multi-model** (≥2 model families) per the [Diversity mode](#diversity-mode-per-pawl-fresh-context-by-default) section below.
+2. **A pawl (on the list, OR it trips any clause of the blast-radius rule) → fire the gate**: [`/pawl-review`](../../skills/pawl-review/SKILL.md) obtains independent fresh-context lane evidence, then `ao pawl` applies diversity and binds the decision. Fail-closed (ambiguity → hold, never silent-proceed).
 3. **Not a pawl (not on the list AND it trips no clause of the blast-radius rule) → chaos.** Just run it. No gate, no review, no ceremony. Iterate as wrong as you want between pawls — the pawls **reduce irreversible regression to the known one-way doors**, so between them you only ever touch state you can recover. (The list is the common instances; the **rule** is the authority — if an action trips a clause but isn't listed, it is still a pawl, and it's a missing list entry to add.)
 
 Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It makes every wrong turn expensive and kills the cheap iteration that makes agents productive. The ratchet works **because** the pawls are few and sit only at the irreversible points. Adding a pawl is adding a tread you now validate — do it only when the action is genuinely one-way.
@@ -18,7 +18,7 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 
 | Pawl | What it is | Why irreversible | Already guarded by |
 |---|---|---|---|
-| **mutate shared trunk** | Push/merge into the **shared** trunk (not a local merge); close a bead as accepted; **or rewrite a shared ref** — `git push --force`, history rewrite on a pushed branch | Shared ground-truth; a bad merge or rewritten ref propagates to every consumer and can't be cleanly un-done | pre-push gate (`scripts/hooks/pre-push.local` → `scripts/check-pawl-pre-push.sh` on push-to-main, pr=0) · `/pre-land-refuters` · PR merge (`scripts/reconcile-pr.sh` requires CONFIRMED pawl verdict via `scripts/pawl-verdict.sh check`; green CI alone never authorizes; schema `schemas/pawl-verdict.v1.schema.json`) |
+| **mutate shared trunk** | Push/merge into the **shared** trunk (not a local merge); close a bead as accepted; **or rewrite a shared ref** | Shared ground-truth propagates to every consumer | pre-push gate · `/pawl-review` lane evidence · `ao pawl` CONFIRMED verdict bound to current head |
 | **delete** | Destroying data/code/state: `rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy` | The thing is gone; no undo | [`dcg`](../../skills/dcg/SKILL.md) (destructive-command guard) |
 | **external-send / shared-state mutation** | Anything that affects state outside your local sandbox: publish, post, deploy, email, a PR/issue to a forge, a side-effectful API call, sending to a person, **or writing to a shared/prod store** (a shared DB, a deployed service's state) | Caching / indexing / people / downstream consumers make it un-retractable even if later "deleted" | *(this list is the trigger)* |
 | **schema / contract change** | Changing an interface, schema, or contract other code/agents depend on; regenerating a factory surface; repointing a contract test or canary | Downstream consumers break silently — "looks fine here" ≠ fine for them | [`scope`](../../skills/scope/SKILL.md) (frozen dirs) · contract-canary gates |
@@ -178,7 +178,7 @@ converge — a *different* non-blocking nit every round — that is the circuit-
 ## Escalation — the circuit-breaker model
 
 **The human is NOT needed at a pawl by default.** A pawl fires the pawl gate
-([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)) **autonomously — model reviews model.**
+([`/pawl-review`](../../skills/pawl-review/SKILL.md)) **autonomously — model reviews model.**
 The loop self-corrects; the human is the exception a *circuit breaker* trips into, not the checkpoint.
 
 The model has two layers: a **default auto-redo loop**, and a set of **tunable circuit breakers** that govern when that loop stops and hands off to a human.
@@ -204,7 +204,7 @@ This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and 
 
 A pawl **HOLD** (the merge held on a breaker trip, above) and a **human STOP/KILL marker** both live in the
 **deterministic boundary**. An **autonomous-drive directive** — `/goal`'s "do not pause to ask" Stop-hook, `/loop`'s
-"keep driving", on-the-loop / ATM unattended runs — lives in the **stochastic reasoning core**. The core cannot relax
+"keep driving", on-the-loop / NTM unattended runs — lives in the **stochastic reasoning core**. The core cannot relax
 the boundary: **no drive directive overrides a HOLD or a human STOP**, and "be autonomous" is *never* authorization to
 self-approve a door a human deliberately gated.
 

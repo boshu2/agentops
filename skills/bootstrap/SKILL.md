@@ -21,12 +21,14 @@ context:
     mode: task
   intel_scope: none
 metadata:
+  graph_root: true
   tier: session
   dependencies:
   - goals
   - product
   - doc
   - shared
+  - scaffold
 output_contract: .agents/ directory structure, GOALS.md, PRODUCT.md
 ---
 # /bootstrap

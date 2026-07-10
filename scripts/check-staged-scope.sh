@@ -5,7 +5,7 @@
 # THE FAILURE THIS PREVENTS (2026-06-29): the agentops checkout "runs hot" with
 # parallel sessions. A concurrent lane can stage its files in the index between
 # your `git add` and your `git commit`; a bare `git commit` then sweeps them in.
-# This happened live to a pre-land-refuters skill commit (GOALS.md/PRODUCT.md/
+# This happened live to a historical landing-review skill commit (GOALS.md/PRODUCT.md/
 # .gitignore from another lane rode along) — despite the worktree rule being a
 # documented footgun. Advisory knowledge did not prevent it. This is the
 # mechanical surface that does.

@@ -41,7 +41,7 @@ Spawn isolated agents to execute tasks in parallel. Fresh context per agent (Ral
 > isolation. If it's **one deliverable**, **pure analysis/investigation**, or
 > **no working-tree edits**, do NOT swarm — use the lighter path below. Reaching
 > for the machinery on a small task costs more than the task (real failure
-> 2026-06-15: an ATM-codex swarm pointed at a ~9-idea content task wedged on
+> 2026-06-15: a persistent Codex pane swarm pointed at a ~9-idea content task wedged on
 > codex boot; in-session Agent fan-out did it in one pass).
 
 Three paths, lightest first — reach for the lightest that fits:
@@ -50,7 +50,7 @@ Three paths, lightest first — reach for the lightest that fits:
 |---|---|---|
 | **In-session Agent/Task fan-out** (lightest) | Spawn 2–3 `Agent` subagents in *this* session. No persistence, no worktrees, no attach, dies with the session. Read-only-friendly. | One-shot parallel work: independent drafts, fan-out analysis, fresh-eyes review. **Default for anything small.** See [`automation-shape-routing`](../automation-shape-routing/SKILL.md) shape 0. |
 | **`/swarm`** (middle) | Wave-gated working-tree execution with disjoint file ownership + conflict checks (this skill). | ≥2 independent units that **edit the working tree** and need isolation + wave-validity (rows owned by [crank](../crank/SKILL.md) — see its wave-start hard gate + ../crank/references/parallel-wave-isolation.md; swarm cites, never restates) gating. |
-| **ATM** ([`/using-atm`](../using-atm/SKILL.md), heaviest) | Persistent tmux panes + human attach/steer + multi-vendor, running whole `/rpi`/`/evolve` loops. | Long-lived epics needing persistence and live steering — **not** one-shot tasks. Boot cost (esp. codex) alone can exceed doing it inline. |
+| **Persistent workers** ([`/agent-native`](../agent-native/SKILL.md) + [`/ntm`](../ntm/SKILL.md), heaviest) | Portable role lifecycle over persistent NTM panes, running whole `/rpi`/`/evolve` loops. | Long-lived epics needing persistence and live steering — **not** one-shot tasks. Boot cost can exceed doing it inline. |
 
 ## Loop position
 
@@ -364,7 +364,7 @@ Read [references/troubleshooting.md](references/troubleshooting.md) for full dia
 
 ## Related skills
 
-- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate when a swarm needs persistent panes and human attach/steer.
+- [`/agent-native`](../agent-native/SKILL.md) + [`/ntm`](../ntm/SKILL.md) — out-of-session worker lifecycle and NTM mechanics when persistence and live steering are justified.
 
 ## Reference Documents
 

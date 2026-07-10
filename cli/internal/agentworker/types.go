@@ -22,6 +22,7 @@ type Provider string
 
 const (
 	ProviderGasCity     Provider = "gascity"
+	ProviderNTM         Provider = "ntm"
 	ProviderCLIFallback Provider = "cli-fallback"
 )
 

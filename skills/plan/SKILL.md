@@ -17,6 +17,7 @@ context_rel:
   with: standards
 skill_api_version: 1
 metadata:
+  graph_root: true
   tier: execution
   dependencies:
   - research
@@ -24,6 +25,8 @@ metadata:
   - pre-mortem
   - crank
   - implement
+  - scope
+  - dueling-idea-genies
 context:
   window: fork
   intent:
@@ -154,7 +157,7 @@ If research files exist, read the most recent one and verify it contains substan
 
 When the plan is likely to span more than one execution session AND it contains
 at least one contested operator-default decision, recommend the
-dueling-idea-wizards route (`/council --mode=debate --focus=ideas`) on the
+`dueling-idea-genies` route (an `idea-challenge.v1` packet for `ao plan-pawl decide`) on the
 strategic question before decomposition. Treat it as advisory, not a hard
 prerequisite: skip it for single-session plans or plans with no meaningful
 contested default. Evidence from the 2026-05-17 Mt Olympus run: a roughly

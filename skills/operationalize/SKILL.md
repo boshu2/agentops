@@ -9,6 +9,7 @@ practices:
 hexagonal_role: domain
 consumes:
 - .agents/research/*.md
+- pattern-mining.v1
 produces:
 - .agents/operationalize/*.md
 - routed-handoffs
@@ -19,6 +20,8 @@ context_rel:
   with: automation-shape-routing
 - kind: customer-of
   with: validate
+- kind: customer-of
+  with: pattern-mining
 - kind: supplier-to
   with: skill-builder
 - kind: supplier-to
@@ -193,14 +196,17 @@ here from the retired `/inject` skill (lineage: the former `knowledge-activation
 skill, cp-auc) — *operationalizes* a mature `.agents` corpus into durable operator
 surfaces (beliefs, playbooks, briefings, gaps). Where retrieval reads, activation
 promotes; the two are the read and write-to-surface halves of the same flywheel.
-Activation is the **fourth step** of the global-corpus workflow:
+Activation follows the live capture-and-ratchet workflow:
 
-1. `/curate --mode=harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
-2. `/compile` — synthesize raw artifacts into `.agents/compiled/`
-3. *(optional)* `/curate --mode=dream` overnight — bounded compounding loop
-4. **knowledge activation** — lift compiled knowledge into playbooks, beliefs, and runtime briefings
+1. `/post-mortem` captures only evidence that changes future behavior.
+2. `/pattern-mining` tests repeated shapes before promotion.
+3. `/operationalize` routes an earned rule to its weakest durable mechanism.
+4. **knowledge activation** lifts mature evidence into playbooks, beliefs, and runtime briefings.
 
-`/compile` remains the hygiene loop; activation owns corpus operationalization. Use it when the problem is no longer "capture more knowledge" but: promote the strongest recurring claims into a belief system, turn healthy topics into reusable playbooks, compile a small goal-time briefing, and surface thin topics and promotion gaps before they calcify.
+Activation owns corpus operationalization. Use it when the problem is no longer
+"capture more knowledge" but promoting strong recurring claims, turning healthy
+topics into reusable playbooks, building a small goal-time briefing, and
+surfacing thin topics before they calcify.
 
 ### Command contract
 

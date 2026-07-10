@@ -121,7 +121,7 @@ the DAG step is STEP 3.5 in [`references/dag.md`](references/dag.md).
 2. Winnow those into one `SynthesisPacket` (selected plan, rejected alternatives,
    rationale, open questions, risks).
 3. Run the cross-family DUEL: two distinct-family judge panes (e.g. Claude + Codex
-   via [`using-atm`](../using-atm/SKILL.md), `--no-user`, fresh-context by
+   via [`agent-native`](../agent-native/SKILL.md) with [`ntm`](../ntm/SKILL.md), `--no-user`, fresh-context by
    construction) each write one judge verdict to `.agents/duel/<run-id>/`.
 4. Decide deterministically — never read the panes yourself:
    `ao plan-pawl decide --dir .agents/duel/<run-id> --round <N> --max-rounds <duel-rounds>`.

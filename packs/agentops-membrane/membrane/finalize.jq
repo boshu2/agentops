@@ -11,9 +11,9 @@
 # test (tests/finalize.bats). Divergences from stock gc, all deliberate:
 #   - a per-round NONCE the lane must echo (anti-replay / anti-stale-verdict);
 #   - a cross-family precondition (>=2 distinct provider families required);
-#   - degradation-awareness surfaced as a distinct DEGRADED disposition
-#     (transient lane loss must never be a false REFUTE and must not consume a
-#     redo attempt) — stock Finalize returns verdict=blocked/failure_class
+#   - degradation-awareness surfaced as a distinct internal DEGRADED decision
+#     (transient lane loss must never be a false REFUTE; native GC still consumes
+#     the failed check attempt) — stock Finalize returns verdict=blocked/failure_class
 #     transient; we map that to DEGRADED for the gate's retry semantics.
 #
 # Input (via --slurpfile lanes / --arg):
@@ -29,7 +29,7 @@
 # Output: a decision object { disposition, failure_class, failure_reason,
 #   findings_count, findings, present_families }. disposition is one of
 #   CONFIRMED | REFUTED | DEGRADED. The wrapper maps that to exit code + the
-#   pawl-verdict.v1 artifact + the gc.failure_class bead metadata.
+#   canonical terminal artifact or nonsemantic attempt artifact + metadata.
 
 def norm: (. // "") | ascii_downcase | gsub("^[[:space:]]+|[[:space:]]+$"; "");
 

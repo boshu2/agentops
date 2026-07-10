@@ -24,8 +24,9 @@ context:
     - TASK
   intel_scope: none
 metadata:
+  graph_root: true
   tier: execution
-  dependencies: []
+  dependencies: [pr-prep, pawl-review]
   triggers:
   - push
   - ship it
@@ -74,7 +75,7 @@ bash scripts/pawl-review.sh <bead> --scope head --author-family <claude|codex|ge
 
 Dispatches the **codex** refuter (fresh-context, read-only, verdict-only) against the HEAD commit. **Declare your real `--author-family`** — the cross-family guarantee is enforced *relative to the author*, and the script's default is `claude`: a Codex-runtime author that omits the flag would silently get a same-family codex verdict. With `--author-family codex` the script REFUSES the same-family bind — a codex author must ALSO route the reviewer to another family (`REVIEWER=agy …`), since the default reviewer is codex and the exclusion would otherwise leave no reviewer (exit 2). On **CONFIRMED** (exit 0) it writes the commit-bound verdict at `.agents/pawl-verdicts/<bead>.json` that the pre-push gate requires. On **REFUTED** (exit 3) it prints the defects + saves them as evidence — fix, re-commit, and re-run; a REFUTED is final for that commit. LAW 0: the refuter is codex, never `claude -p`.
 
-Use `--scope staged` for a REVIEW-ONLY pass before committing (prints the verdict, writes nothing — no commit to bind); certify with `--scope head` after committing. Review discipline, `--strict` two-family, and the multi-model opt-up: [pre-land-refuters](../pre-land-refuters/SKILL.md).
+Use `--scope staged` for a review-only pass before committing; certify with `--scope head` after committing. Reviewer execution and evidence handoff: [pawl-review](../pawl-review/SKILL.md). `ao pawl` owns the verdict.
 
 ### Step 4: Land — deterministic single-shot push
 

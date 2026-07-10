@@ -53,7 +53,7 @@ Codex is a first-class runtime in this repo.
 > **Pointer twins are exempt from the mirror requirement (`parity_policy: pointer`).**
 > Distinct from bespoke: some twins are deliberately THIN POINTERS — they carry no
 > mirrored prose, just "the source skill is the source of truth — read it first"
-> plus a short Codex Runtime Contract (e.g. `pre-land-refuters`, `agent-mail`,
+> plus a short Codex Runtime Contract (e.g. `pawl-review`, `agent-mail`,
 > `ntm`; ~16 of them). For these there is nothing to mirror, so a source-only prose
 > edit must NOT demand twin churn. Declare it once in the twin's frontmatter:
 > ```yaml

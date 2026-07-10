@@ -13,7 +13,7 @@ context_rel:
 - kind: customer-of
   with: automation-shape-routing
 - kind: shared-kernel
-  with: operating-loop-workflow
+  with: operationalize
 skill_api_version: 1
 context:
   window: fork
@@ -25,8 +25,7 @@ context:
   intel_scope: topic
 metadata:
   tier: meta
-  dependencies:
-  - automation-shape-routing
+  dependencies: []
 output_contract: 'a runnable .claude/workflows/<name>.js with a meta block and agent()/parallel()/pipeline()/phase() body'
 ---
 
@@ -41,8 +40,8 @@ output_contract: 'a runnable .claude/workflows/<name>.js with a meta block and a
 
 ## Confirm the shape first
 
-Do NOT scaffold a workflow for: an attach-and-steer run (→ NTM: `ntm` /
-`using-atm`), or a hard-sequential edit-loop with no parallelism (→ plain
+Do NOT scaffold a workflow for: an attach-and-steer run (→ `agent-native` +
+`ntm`), or a hard-sequential edit-loop with no parallelism (→ plain
 skill: `skill-builder`). If unconfirmed, run `automation-shape-routing`.
 
 ## The template

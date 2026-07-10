@@ -25,9 +25,11 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  graph_root: true
   tier: judgment
   dependencies:
   - standards
+  - agy-native
   replaces: judge
 output_contract: skills/council/schemas/verdict.json
 ---
@@ -59,10 +61,11 @@ Council also fires for the use-cases of two folded-in skills:
 ## Mixed-model (cross-family) panel
 
 When the decision wants a **mixed-model / cross-family** panel rather than
-single-model judges, the duel substrate is **`/dual-pane-atm`** — durable
-Opus + Codex (+AGY) panes, or its in-session variant (Agent `model:` override +
-`codex exec`) that **`/discovery`'s fanout gate** runs. `/reverse-engineer`
-routes one-way-door steal decisions into council.
+single-model judges, use `agent-native` for durable role-shaped lanes over NTM
+or an in-session variant (`codex exec` plus the available native agent surface).
+For a landing oracle, each fresh read-only lane is owned by `pawl-review` and
+the deterministic `ao pawl` membrane owns the panel decision. `/discovery`
+routes one-way-door idea choices through `dueling-idea-genies` before planning.
 
 ## Examples
 

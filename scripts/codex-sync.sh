@@ -611,7 +611,37 @@ for name in source_skills:
         overrides_skills.append(catalog_entry)
     generated.append(name)
 
+# Rebuild the runtime artifact inventory from the actual generated directories.
+# Source retirement can delete a twin before this generator runs; an append-only
+# manifest would otherwise retain a ghost row forever. The embedded treatment
+# catalog is likewise a projection of the authoritative overrides catalog, not
+# a second hand-maintained store.
+desired_manifest_skills = []
+existing_manifest_by_name = {
+    entry.get("name"): entry for entry in manifest_skills if entry.get("name")
+}
+for twin_dir in sorted(p for p in codex_root.iterdir() if p.is_dir() and (p / "SKILL.md").exists()):
+    marker_path = twin_dir / marker_name
+    if not marker_path.exists():
+        continue  # the manifest validator reports the missing marker fail-closed
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    entry = dict(existing_manifest_by_name.get(twin_dir.name, {}))
+    entry.update(
+        name=twin_dir.name,
+        source_skill=marker.get("source_skill", f"skills/{twin_dir.name}"),
+        source_hash=marker.get("source_hash", ""),
+        generated_hash=marker.get("generated_hash", ""),
+    )
+    desired_manifest_skills.append(entry)
+
+manifest_inventory_drift = manifest_skills != desired_manifest_skills
+embedded_catalog_drift = manifest_catalog_skills != overrides_skills
+
 if check_only:
+    if manifest_inventory_drift:
+        drift.append(("<manifest>", ["artifact inventory differs from skills-codex directories"]))
+    if embedded_catalog_drift:
+        drift.append(("<manifest-catalog>", ["embedded treatment catalog differs from authoritative overrides catalog"]))
     if drift:
         print(f"codex-sync drift: {len(drift)} parity twin(s) differ from generator output:")
         for n, reasons in drift:
@@ -621,7 +651,10 @@ if check_only:
     print("codex-sync: all parity twins match generator output.")
     sys.exit(0)
 
-if generated:
+manifest_skills[:] = desired_manifest_skills
+manifest_catalog_skills[:] = [dict(entry) for entry in overrides_skills]
+
+if generated or manifest_inventory_drift or embedded_catalog_drift:
     # Recompute the embedded catalog hash (same algorithm as
     # register-new-codex-skill.sh) so the manifest catalog stays self-consistent.
     catalog_for_hash = json.dumps(
@@ -635,7 +668,10 @@ if generated:
     overrides_catalog_path.write_text(
         json.dumps(overrides_catalog, indent=2) + "\n", encoding="utf-8"
     )
-    print(f"codex-sync: generated {len(generated)} twin(s): {', '.join(generated)}")
+    if generated:
+        print(f"codex-sync: generated {len(generated)} twin(s): {', '.join(generated)}")
+    else:
+        print("codex-sync: refreshed manifest projections")
 else:
     print("codex-sync: nothing to generate (all parity twins present).")
 PY

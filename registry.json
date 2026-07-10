@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 59,
+    "skills": 62,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
     "cli_commands": 72,
     "workflows": 4,
-    "capabilities": 145
+    "capabilities": 148
   },
   "surfaces": {
     "skills": [
@@ -101,6 +101,14 @@
         "reference_count": 7
       },
       {
+        "name": "codebase-recon",
+        "tier": "execution",
+        "path": "skills/codebase-recon/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
         "name": "converge",
         "tier": "execution",
         "path": "skills/converge/",
@@ -125,11 +133,27 @@
         "reference_count": 6
       },
       {
+        "name": "dueling-idea-genies",
+        "tier": "execution",
+        "path": "skills/dueling-idea-genies/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
         "name": "goal-design",
         "tier": "execution",
         "path": "skills/goal-design/",
         "has_skill_md": true,
         "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "idea-genie",
+        "tier": "execution",
+        "path": "skills/idea-genie/",
+        "has_skill_md": true,
+        "has_references": true,
         "reference_count": 0
       },
       {
@@ -155,6 +179,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 16
+      },
+      {
+        "name": "pattern-mining",
+        "tier": "execution",
+        "path": "skills/pattern-mining/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
       },
       {
         "name": "plan",
@@ -261,14 +293,6 @@
         "reference_count": 1
       },
       {
-        "name": "using-atm",
-        "tier": "execution",
-        "path": "skills/using-atm/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "evolve",
         "tier": "experimental",
         "path": "skills/evolve/",
@@ -293,20 +317,20 @@
         "reference_count": 0
       },
       {
+        "name": "pawl-review",
+        "tier": "judgment",
+        "path": "skills/pawl-review/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
+      },
+      {
         "name": "post-mortem",
         "tier": "judgment",
         "path": "skills/post-mortem/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 22
-      },
-      {
-        "name": "pre-land-refuters",
-        "tier": "judgment",
-        "path": "skills/pre-land-refuters/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
       },
       {
         "name": "pre-mortem",
@@ -362,7 +386,7 @@
         "path": "skills/agent-native/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 2
       },
       {
         "name": "automation-shape-routing",
@@ -603,8 +627,7 @@
         "driven_by_skills": [
           "domain",
           "evolve",
-          "shared",
-          "using-atm"
+          "shared"
         ]
       },
       {
@@ -818,7 +841,6 @@
         "purpose": "Fitness goal measurement and validation",
         "bounded_context": "BC3",
         "driven_by_skills": [
-          "agent-native",
           "evolve",
           "goals",
           "post-mortem",
@@ -884,7 +906,6 @@
         "purpose": "Retrieve specific knowledge artifacts by ID or query",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "agent-native",
           "bootstrap",
           "crank",
           "discovery",
@@ -969,7 +990,15 @@
         "path": "cli/cmd/ao/",
         "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "council",
+          "crank",
+          "evolve",
+          "pawl-review",
+          "push",
+          "rpi",
+          "validate"
+        ]
       },
       {
         "name": "ao plan-pawl",
@@ -1123,9 +1152,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
         "bounded_context": "BC2",
-        "driven_by_skills": [
-          "agent-native"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao verdict-gate",
@@ -1249,8 +1276,8 @@
     ]
   },
   "capability_summary": {
-    "total": 145,
-    "skills": 59,
+    "total": 148,
+    "skills": 62,
     "cli_commands": 72,
     "gates": 14,
     "reference_impls": 0
@@ -1376,8 +1403,14 @@
       "parity_policy": "required",
       "aliases": [],
       "supersedes": null,
-      "consumes": [],
-      "produces": [],
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "agent-identity",
+        "file-reservation",
+        "acknowledged-handoff"
+      ],
       "drives_commands": [
         "ao beads exec"
       ],
@@ -1393,7 +1426,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "execution",
-      "purpose": "Make an out-of-session agent AgentOps-native via skills + the ao CLI + local cockpit proof + CI backstop telemetry, not runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
+      "purpose": "Run persistent software-factory workers through a substrate-neutral lifecycle with observable readiness, engagement, evidence, bounded recovery, and handoff. Triggers: \"agent-native factory\", \"role-shaped agent panes\", \"supervise persistent workers\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1405,24 +1438,17 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "standards",
-        "converter",
-        "validate"
+        "specification",
+        "existing-tracked-work",
+        "task-intent"
       ],
       "produces": [
-        "docs/contracts/agent-runtime-profile.md"
+        "agent-worker-evidence",
+        "worker-handoff"
       ],
-      "drives_commands": [
-        "ao agent bundle",
-        "ao gate check",
-        "ao goals",
-        "ao lookup",
-        "ao mcp serve",
-        "ao session bootstrap",
-        "ao validate"
-      ],
+      "drives_commands": [],
       "path": "skills/agent-native/",
-      "references": 3
+      "references": 2
     },
     {
       "sku": "skill:agy-native",
@@ -1463,7 +1489,7 @@
       "hex_role": "supporting",
       "tier": "meta",
       "capability_class": "planning",
-      "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "purpose": "Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: \"build automation\", \"which orchestration shape\", \"should this use NTM\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1474,8 +1500,12 @@
       "parity_policy": "required",
       "aliases": [],
       "supersedes": null,
-      "consumes": [],
-      "produces": [],
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "automation-shape-verdict"
+      ],
       "drives_commands": [],
       "path": "skills/automation-shape-routing/",
       "references": 0
@@ -1654,6 +1684,38 @@
       "references": 7
     },
     {
+      "sku": "skill:codebase-recon",
+      "name": "codebase-recon",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "capability_class": "corpus",
+      "purpose": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "repo-context",
+        "existing-docs"
+      ],
+      "produces": [
+        "codebase-recon.v1",
+        "evidence-bounded-recon-report"
+      ],
+      "drives_commands": [],
+      "path": "skills/codebase-recon/",
+      "references": 0
+    },
+    {
       "sku": "skill:codex-exec",
       "name": "codex-exec",
       "type": "skill",
@@ -1768,7 +1830,9 @@
         "result.json",
         "verdict.json"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao pawl"
+      ],
       "path": "skills/council/",
       "references": 0
     },
@@ -1813,6 +1877,7 @@
         "ao metrics",
         "ao metrics cite",
         "ao mine",
+        "ao pawl",
         "ao pawl review",
         "ao pool list",
         "ao provenance emit-verdict",
@@ -1959,6 +2024,39 @@
       "references": 19
     },
     {
+      "sku": "skill:dueling-idea-genies",
+      "name": "dueling-idea-genies",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "execution",
+      "capability_class": "validation",
+      "purpose": "Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this irreversible idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "idea-portfolio.v1",
+        "task-question"
+      ],
+      "produces": [
+        "idea-challenge.v1"
+      ],
+      "drives_commands": [
+        "ao plan-pawl decide"
+      ],
+      "path": "skills/dueling-idea-genies/",
+      "references": 0
+    },
+    {
       "sku": "skill:evolve",
       "name": "evolve",
       "type": "skill",
@@ -1997,6 +2095,7 @@
         "ao goals",
         "ao lookup",
         "ao mine",
+        "ao pawl",
         "ao ratchet",
         "ao skills edit digest",
         "ao skills edit seal"
@@ -2051,9 +2150,8 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "operator-goal",
-        "docs/templates/goal-design-intent.md",
-        "docs/templates/goal-design-driver.md"
+        "project-goals",
+        "existing-docs"
       ],
       "produces": [
         ".agents/goal-design/<slug>/intent.md",
@@ -2159,6 +2257,37 @@
       "references": 4
     },
     {
+      "sku": "skill:idea-genie",
+      "name": "idea-genie",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "capability_class": "planning",
+      "purpose": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"generate ideas from repository evidence\", \"what should we build next\", \"find supported opportunities\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "repo-context",
+        "task-question"
+      ],
+      "produces": [
+        "idea-portfolio.v1"
+      ],
+      "drives_commands": [],
+      "path": "skills/idea-genie/",
+      "references": 0
+    },
+    {
       "sku": "skill:implement",
       "name": "implement",
       "type": "skill",
@@ -2241,8 +2370,13 @@
       "parity_policy": "required",
       "aliases": [],
       "supersedes": null,
-      "consumes": [],
-      "produces": [],
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "ntm-robot-state",
+        "agent-worker-transcript"
+      ],
       "drives_commands": [
         "ao beads exec"
       ],
@@ -2270,7 +2404,8 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        ".agents/research/*.md"
+        ".agents/research/*.md",
+        "pattern-mining.v1"
       ],
       "produces": [
         ".agents/operationalize/*.md",
@@ -2288,6 +2423,72 @@
       ],
       "path": "skills/operationalize/",
       "references": 3
+    },
+    {
+      "sku": "skill:pattern-mining",
+      "name": "pattern-mining",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "capability_class": "corpus",
+      "purpose": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "repo-context",
+        "task-question"
+      ],
+      "produces": [
+        "pattern-mining.v1"
+      ],
+      "drives_commands": [],
+      "path": "skills/pattern-mining/",
+      "references": 0
+    },
+    {
+      "sku": "skill:pawl-review",
+      "name": "pawl-review",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driving-adapter",
+      "tier": "judgment",
+      "capability_class": "validation",
+      "purpose": "Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: \"run a pawl reviewer\", \"fresh-context review lane\", \"collect independent review evidence\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [
+        "pre-land-refuters"
+      ],
+      "supersedes": "pre-land-refuters",
+      "consumes": [
+        "code-under-review",
+        "specification"
+      ],
+      "produces": [
+        "review-lane-result.v1"
+      ],
+      "drives_commands": [
+        "ao pawl"
+      ],
+      "path": "skills/pawl-review/",
+      "references": 0
     },
     {
       "sku": "skill:plan",
@@ -2321,6 +2522,7 @@
         "ao beads verify",
         "ao lookup",
         "ao metrics cite",
+        "ao plan-pawl decide",
         "ao ratchet",
         "ao search",
         "ao worktree gc"
@@ -2404,41 +2606,6 @@
       "drives_commands": [],
       "path": "skills/pr-prep/",
       "references": 4
-    },
-    {
-      "sku": "skill:pre-land-refuters",
-      "name": "pre-land-refuters",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driving-adapter",
-      "tier": "judgment",
-      "capability_class": "validation",
-      "purpose": "Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "validate",
-        "codex-exec"
-      ],
-      "produces": [
-        ".agents/council/*.md"
-      ],
-      "drives_commands": [
-        "ao pawl review",
-        "ao pawl route",
-        "ao pawl up"
-      ],
-      "path": "skills/pre-land-refuters/",
-      "references": 0
     },
     {
       "sku": "skill:pre-mortem",
@@ -2533,7 +2700,8 @@
         "git-changes"
       ],
       "drives_commands": [
-        "ao gate check"
+        "ao gate check",
+        "ao pawl"
       ],
       "path": "skills/push/",
       "references": 0
@@ -2751,6 +2919,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
+        "ao pawl",
         "ao ratchet"
       ],
       "path": "skills/rpi/",
@@ -3104,38 +3273,6 @@
       "references": 1
     },
     {
-      "sku": "skill:using-atm",
-      "name": "using-atm",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC6",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "capability_class": "orchestration",
-      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running the loop over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
-      "status": "active",
-      "disposition": "keep",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [
-        "ao agent",
-        "ao agent bundle",
-        "ao beads exec"
-      ],
-      "path": "skills/using-atm/",
-      "references": 3
-    },
-    {
       "sku": "skill:using-gc",
       "name": "using-gc",
       "type": "skill",
@@ -3144,7 +3281,7 @@
       "hex_role": "supporting",
       "tier": "cross-vendor",
       "capability_class": "orchestration",
-      "purpose": "Drive a Gas City (gc) factory day-to-day — stand up a city, sling quests, watch the membrane close-gate, resolve stalls, converge. The vibing-with-ntm analog for gc. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
+      "purpose": "Drive an explicitly selected Gas City factory: stand up a city, sling quests, watch the AgentOps membrane close gate, resolve stalls, and converge. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -3191,6 +3328,7 @@
         "ao goals",
         "ao lookup",
         "ao metrics cite",
+        "ao pawl",
         "ao ratchet",
         "ao search"
       ],
@@ -3235,8 +3373,7 @@
       "driven_by_skills": [
         "domain",
         "evolve",
-        "shared",
-        "using-atm"
+        "shared"
       ],
       "flags": [
         "--config",
@@ -3792,7 +3929,6 @@
       "purpose": "Fitness goal measurement and validation",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
         "evolve",
         "goals",
         "post-mortem",
@@ -3956,7 +4092,6 @@
       "purpose": "Retrieve specific knowledge artifacts by ID or query",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
         "bootstrap",
         "crank",
         "discovery",
@@ -4155,7 +4290,15 @@
       "bounded_context": "",
       "purpose": "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "council",
+        "crank",
+        "evolve",
+        "pawl-review",
+        "push",
+        "rpi",
+        "validate"
+      ],
       "flags": [
         "--config",
         "--dry-run",
@@ -4522,9 +4665,7 @@
       "bounded_context": "BC2",
       "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
       "status": "active",
-      "driven_by_skills": [
-        "agent-native"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--bead",
         "--changes",

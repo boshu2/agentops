@@ -20,6 +20,7 @@ context:
     mode: none
   intel_scope: none
 metadata:
+  graph_root: true
   tier: orchestration
   dependencies: []
 output_contract: 'stdout: converge claim + bounded-loop outcome'

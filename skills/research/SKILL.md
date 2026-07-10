@@ -16,7 +16,7 @@ skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:
   tier: execution
-  dependencies: []
+  dependencies: [cass, ms, reverse-engineer, codebase-recon, pattern-mining]
 context:
   window: fork
   intent:

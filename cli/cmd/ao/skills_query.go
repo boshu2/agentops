@@ -67,13 +67,16 @@ Examples:
 
 var skillsGraphCmd = &cobra.Command{
 	Use:   "graph",
-	Short: "Render the skill consumes-graph",
-	Long: `Render the skill dependency graph (A --> B means A consumes B) from
-skills/catalog.json. Only the Mermaid flowchart format is supported.
+	Short: "Render the generated skill dependency graph",
+	Long: `Render the skill execution/delegation graph (A --> B means A declares
+B in metadata.dependencies) from skills/catalog.json. Mermaid is the compact
+human view; JSON carries typed dependency/context edges and topology diagnostics
+for Graphify and other explorers.
 
 Examples:
   ao skills graph
-  ao skills graph --format mermaid`,
+  ao skills graph --format mermaid
+  ao skills graph --format json`,
 	RunE: runSkillsGraph,
 }
 
@@ -93,7 +96,7 @@ func init() {
 	skillsConsumersCmd.Flags().BoolVar(&skillsConsumersJSON, "json", false, "Emit machine-readable JSON")
 	skillsProducersCmd.Flags().BoolVar(&skillsProducersJSON, "json", false, "Emit machine-readable JSON")
 
-	skillsGraphCmd.Flags().StringVar(&skillsGraphFormat, "format", "mermaid", "Graph output format (mermaid)")
+	skillsGraphCmd.Flags().StringVar(&skillsGraphFormat, "format", "mermaid", "Graph output format (mermaid|json)")
 }
 
 // loadCatalogOrErr loads skills/catalog.json with a remediation hint on failure.
@@ -171,16 +174,25 @@ func runSkillsProducers(cmd *cobra.Command, args []string) error {
 }
 
 func runSkillsGraph(cmd *cobra.Command, _ []string) error {
-	if skillsGraphFormat != "mermaid" {
-		cmd.SilenceUsage = true
-		return fmt.Errorf("unsupported --format %q (only 'mermaid' is supported)", skillsGraphFormat)
-	}
 	cat, err := loadCatalogOrErr(cmd)
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(cmd.OutOrStdout(), skills.Mermaid(cat.Skills))
-	return nil
+	switch skillsGraphFormat {
+	case "mermaid":
+		fmt.Fprint(cmd.OutOrStdout(), skills.Mermaid(cat.Skills))
+		return nil
+	case "json":
+		raw, err := skills.GraphJSON(cat.Skills)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+		return nil
+	default:
+		cmd.SilenceUsage = true
+		return fmt.Errorf("unsupported --format %q (use mermaid or json)", skillsGraphFormat)
+	}
 }
 
 // renderNameList prints a sorted slice of skill names as JSON or one-per-line

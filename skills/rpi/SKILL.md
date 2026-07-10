@@ -36,6 +36,7 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  graph_root: true
   tier: meta
   dependencies:
   - domain
@@ -63,7 +64,7 @@ you need the full autonomy contract.
 `/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → bead acceptance → evidence + learning mined back into the next loop. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/curate --mode=forge`/`/post-mortem`), and enforces these loop-level invariants:
 
 - **Agile, not waterfall — the plan is a hypothesis.** Every wave closes with a **re-plan, not just a retry** (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
-- **No move-skipping, but validation cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Strict delegation is on by default; phases never compress; the lifecycle objective is preserved across the loop. "Validation cannot be skipped" means the *bead-acceptance pawl* validates fully — NOT that every intermediate slice pays the heavy cross-family panel. The acceptance roll-up + heavy gates (full council, `/validate --mixed`, `/pre-land-refuters`) fire **once, at the bead-acceptance / merge-to-main pawl** (the ratchet's lock). Intermediate slices are **chaos**: cheap local checks (build, TDD red→green, light inline wave-acceptance judges) run freely; the heavy panel never fires per slice. A pawl on every tread is the waterfall the ratchet exists to avoid.
+- **No move-skipping, but validation cadence is pawl-gated, not per-tread.** The acceptance roll-up plus heavy gates (`/validate`, optional council, `/pawl-review`, then `ao pawl`) fire once at bead acceptance. Intermediate slices use cheap local checks.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path. `/crank` runs **refactor-under-green as its own step after green** — the load-bearing quality move — and a refactor must never change a test (S4; test-first *ordering* alone is not the quality lever).
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
 - **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
@@ -155,7 +156,7 @@ Enter at the routed phase and run every phase after it.
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)) — once per RPI objective at acceptance, not per slice. **The merge-to-main pawl fires regardless of complexity:** any work crossing the shared-trunk door — fast/standard included — invokes the pawl gate [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push (pawls.md makes mutate-shared-trunk complexity-independent). Complexity scales the gate's DEPTH, never exempts it: every door gets at least the **fresh-context default** (≥1 fresh-context refuter, model-agnostic); higher-irreversibility doors are opted up to **multi-model** (≥2 distinct families), and `full` arcs (100+ files, factory regen, contract-test repoints, capability removal) get full council — neither skips the gate. **REFUTED → AUTO-REDO**: refuted findings re-crank like a validation FAIL, autonomously and with no human (the default self-correcting path); a human is escalated to **only when a tunable circuit breaker trips** (max-attempts — here the 3-attempt cap — time budget, cost/quota, or oscillation), per pawls.md "Escalation — the circuit-breaker model". The gate is the door, never per slice.
+   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the bead-acceptance pawl, once per objective. Any work crossing shared trunk obtains fresh evidence through [`/pawl-review`](../pawl-review/SKILL.md); `ao pawl` applies the complexity-scaled diversity and verdict gate.
 4. **Re-plan (mandatory between waves; the loop's hinge).** With remaining waves, run the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) before the next — a post-mortem/discovery delta that MAY mutate the remaining plan (autonomous under `--auto`). No remaining waves → straight to Report.
 5. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
    status using [references/report-template.md](references/report-template.md).
@@ -229,7 +230,7 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 
 ## Related skills
 
-- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate for running whole `/rpi` loops over a bead queue.
+- [`/agent-native`](../agent-native/SKILL.md) + [`/ntm`](../ntm/SKILL.md) — portable out-of-session workers and NTM pane mechanics for whole `/rpi` loops.
 
 ## Reference Documents
 

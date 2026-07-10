@@ -70,9 +70,9 @@ ntm send <session> --pane=3 --file packet-agy.md
 **Do not** use `agy -p` / `gemini -p` for swarm workers (LAW 0).
 
 **`--gmi` vs AGY:** `--gmi` selects **Gemini CLI** (`gmi` agent type) panes.
-**AGY / Antigravity** is a separate agent family (`agy`); tri-vendor smoke uses
-`--agy` at spawn and send time. See
-[`/using-atm`](../../using-atm/SKILL.md) § Tri-vendor.
+**AGY / Antigravity** is a separate agent family (`agy`); a multi-runtime smoke
+uses `--agy` at spawn and send time. See [`agent-native`](../../agent-native/SKILL.md)
+for role ownership and proof requirements.
 
 ## Pane selectors
 

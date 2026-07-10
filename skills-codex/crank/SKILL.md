@@ -478,7 +478,7 @@ git commit -m "feat(<scope>): wave $wave - $COMPLETED_COUNT issues completed"
 THIS repo lands by **direct push to main** — PR-per-bead is retired (external-repo variant below). Land each bead from its own worktree:
 
 1. **Gate:** `ao gate check --fast --scope head` — the local cockpit gate (also the pre-push hook; run it manually to fail fast).
-2. **Review:** `REVIEWER=agy bash scripts/pawl-review.sh <bead> --scope head --author-family codex` — the cross-family refuter against the commit. Codex-runtime authors need BOTH halves: `--author-family codex` (default is `claude`; omitting it silently permits a same-family codex bind) AND a non-codex `REVIEWER` (the default reviewer IS codex, which the declared family then excludes — without the override the script exits 2). **CONFIRMED (exit 0) writes the commit-bound verdict the pre-push gate requires; no CONFIRMED verdict ⇒ the bead does NOT land** (no verdict = not done). **REFUTED (exit 3) -> AUTO-REDO** the named defects and re-gate; escalate to a human only on a circuit-breaker trip (max-attempts / time / cost / oscillation), door stays closed.
+2. **Review:** `$pawl-review` runs immutable fresh reviewer lanes and hands their contained evidence to `ao pawl`. `ao pawl` alone owns diversity, commit binding, and admission. **No CONFIRMED verdict means the bead does not land.** REFUTED routes back to re-work; breaker exhaustion HOLDs.
 3. **Land:** `bash scripts/pawl-land.sh <bead>` — fetch + rebase onto `origin/main`, restamp the verdict onto the post-rebase feat, single-shot push.
 4. **Close on landed-only:** `ao beads exec close` a child bead ONLY after its commit is an ancestor of `origin/main` (`git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main`), never on a log line or batch `br --json` query. Never close a parent epic before EVERY child is landed (`scripts/check-epic-children-closed.sh <epic>`).
 
@@ -558,7 +558,7 @@ fi
 
 ## Related skills
 
-- $using-atm — out-of-session ATM substrate for long-running $crank waves over a bead queue.
+- `$agent-native` + `$ntm` — portable persistent-worker lifecycle and NTM mechanics for long-running `$crank` waves.
 
 ## Reference Documents
 

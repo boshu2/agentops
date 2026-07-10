@@ -652,6 +652,7 @@ should change. See `skills/goals/SKILL.md`.
 - `skills/council/SKILL.md` — Multi-model validation council
 - `skills/validate/SKILL.md` — Council validates code (`$validate` after coding)
 - `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
+- `$pawl-review` — contained fresh-lane evidence that the landing membrane consumes
 
 
 ## Reference Documents

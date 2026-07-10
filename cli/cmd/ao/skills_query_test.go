@@ -174,6 +174,33 @@ func TestSkillsGraph_RejectsUnknownFormat(t *testing.T) {
 	}
 }
 
+func TestSkillsGraph_JSONCarriesTypedTopologyDiagnostics(t *testing.T) {
+	prev := skillsGraphFormat
+	defer func() { skillsGraphFormat = prev }()
+	skillsGraphFormat = "json"
+
+	c, out, _ := newCmd()
+	if err := runSkillsGraph(c, nil); err != nil {
+		t.Fatalf("runSkillsGraph: %v", err)
+	}
+	var got skills.SkillGraph
+	if err := json.Unmarshal(out.Bytes(), &got); err != nil {
+		t.Fatalf("stdout is not a SkillGraph: %v\n%s", err, out.String())
+	}
+	if got.SchemaVersion != "skill-graph.v1" {
+		t.Fatalf("schema_version = %q, want skill-graph.v1", got.SchemaVersion)
+	}
+	if len(got.Nodes) == 0 || len(got.Edges) == 0 {
+		t.Fatalf("graph must carry nodes and typed edges: %+v", got)
+	}
+	if got.Diagnostics.EntryPoints == nil || got.Diagnostics.DanglingEdges == nil {
+		t.Fatalf("graph diagnostics must encode empty arrays, not null: %+v", got.Diagnostics)
+	}
+	if len(got.Diagnostics.DanglingEdges) != 0 || len(got.Diagnostics.DependencyCycles) != 0 || len(got.Diagnostics.UnreachableNonRoots) != 0 {
+		t.Fatalf("live graph must fail closed before command output; diagnostics = %+v", got.Diagnostics)
+	}
+}
+
 // resetListFilters clears all package-level list flag state so tests don't
 // leak filter values into one another.
 func resetListFilters() {

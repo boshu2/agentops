@@ -15,6 +15,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROBE="zzz-codex-sync-accept-probe"
+ORPHAN="zzz-codex-sync-orphan-probe"
 SRC_DIR="$ROOT/skills/$PROBE"
 TWIN_DIR="$ROOT/skills-codex/$PROBE"
 MANIFEST="$ROOT/skills-codex/.agentops-manifest.json"
@@ -30,16 +31,17 @@ cleanup() {
         "$TWIN_DIR/SKILL.md" "$TWIN_DIR/prompt.md" \
         "$TWIN_DIR/.agentops-generated.json" "$TWIN_DIR/references/deep-dive.md" 2>/dev/null || true
   rmdir "$SRC_DIR/references" "$SRC_DIR" "$TWIN_DIR/references" "$TWIN_DIR" 2>/dev/null || true
-  PROBE="$PROBE" python3 - "$MANIFEST" "$OVERRIDES" <<'PY' 2>/dev/null || true
+  PROBE="$PROBE" ORPHAN="$ORPHAN" python3 - "$MANIFEST" "$OVERRIDES" <<'PY' 2>/dev/null || true
 import hashlib, json, os, sys
 probe = os.environ["PROBE"]
+orphan = os.environ["ORPHAN"]
 for path in sys.argv[1:]:
     data = json.loads(open(path, encoding="utf-8").read())
     if "skills" in data:
-        data["skills"] = [e for e in data["skills"] if e.get("name") != probe]
+        data["skills"] = [e for e in data["skills"] if e.get("name") not in {probe, orphan}]
     cat = data.get("codex_override_catalog")
     if isinstance(cat, dict) and "skills" in cat:
-        cat["skills"] = [e for e in cat["skills"] if e.get("name") != probe]
+        cat["skills"] = [e for e in cat["skills"] if e.get("name") not in {probe, orphan}]
         # Recompute the embedded catalog hash so removing the probe leaves the
         # manifest byte-identical to its pre-test baseline (no stale-hash drift).
         blob = json.dumps(
@@ -139,6 +141,33 @@ if bash "$ROOT/scripts/codex-sync.sh" --check --only "$PROBE" >/dev/null 2>&1; t
   pass "codex-sync --check is clean after generation"
 else
   fail "codex-sync --check still reports drift"
+fi
+
+echo "== 6. assert stale manifest-only skills are pruned =="
+PROBE="$PROBE" ORPHAN="$ORPHAN" python3 - "$MANIFEST" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+data = json.loads(open(path, encoding="utf-8").read())
+orphan = os.environ["ORPHAN"]
+data.setdefault("skills", []).append({
+    "name": orphan,
+    "source_skill": f"skills/{orphan}",
+    "source_hash": "stale",
+    "generated_hash": "stale",
+})
+data.setdefault("codex_override_catalog", {}).setdefault("skills", []).append({
+    "name": orphan,
+    "treatment": "parity_only",
+    "wave": "catalog-parity",
+    "reason": "stale probe",
+})
+open(path, "w", encoding="utf-8").write(json.dumps(data, indent=2) + "\n")
+PY
+bash "$ROOT/scripts/codex-sync.sh" --only "$PROBE" >/dev/null
+if ! jq -e --arg n "$ORPHAN" '([.skills[].name, .codex_override_catalog.skills[].name] | flatten | index($n)) == null' "$MANIFEST" >/dev/null; then
+  fail "codex-sync retained a stale manifest-only skill"
+else
+  pass "codex-sync prunes stale manifest-only skills"
 fi
 
 echo

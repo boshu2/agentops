@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/gc-membrane",
   "layout": "modular",
-  "source_hash": "3cf929f139471a35f45e0081d85a13956495d82e2d54caa4c321df273f341aff",
-  "generated_hash": "c665bbd6e83057e1f282725d22058a0a1933272768af71e24dca19d6fa869aa3"
+  "source_hash": "56cd44f5a11f7e77f1359d97e3dbcb75d47abf518fc2448c42ea709e9eb8745f",
+  "generated_hash": "1ffbf566984363035f0db415d6df928cc8e9c8154ac5f72964d4357c88c6e7e1"
 }

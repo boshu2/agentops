@@ -4,11 +4,9 @@ description: Orchestrate NTM tmux agent swarms and robot
 ---
 <!-- TOC: One Rule | Outcome | Cold Start | Mandatory Loop | NTM Action Card | Surface Selection | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Output | Operating Notes | Reference Index | Related Skills -->
 
-> **Scope:** this skill is AgentOps **operating doctrine** for NTM. The binary is self-describing — for command syntax, flags, schemas, and examples use `ntm --robot-docs=quickstart|commands|examples|exit-codes`, `ntm --robot-capabilities`, `ntm --robot-schema=all`, or `ntm --help`. Never trust this file (or any notes) over the live contract. For tending loops, marching orders, unstick ladders, and swarm cadence, use the companion `using-atm` skill (the former `vibing-with-ntm` tending doctrine is folded into `$ntm`).
+> **Scope:** this skill is AgentOps operating doctrine for the external NTM binary. The binary is self-describing — query its live robot help, capability, schema, and snapshot surfaces before state changes. Never trust remembered syntax over the executable contract. `agent-native` owns the portable worker lifecycle; this skill owns NTM-specific pane mechanics only.
 
-> **`atm` is the same binary.** `atm` (Bo's fork/alias, `~/.local/bin/atm`) is byte-identical to `ntm` — same `--help`, same `--robot-*` surface, same flags, same exit codes. Every `ntm …` form documented here and in the references applies verbatim to `atm …`, and vice-versa. Use them interchangeably; the companion out-of-session substrate skill is literally named `using-atm`. When `--robot-capabilities` matters, query whichever binary you invoked — they resolve to the same contract.
-
-# NTM — Named Tmux Manager
+# NTM — external pane adapter
 
 > **The One Rule:** Discover the live NTM contract first, then use the least interactive surface that can prove and execute the action. No `--robot-capabilities` / `--robot-snapshot` evidence -> no automation assumption.
 
@@ -31,7 +29,7 @@ If the snapshot or attention feed disagrees with what the command said happened,
 | Situation | Start here |
 |---|---|
 | You need NTM doctrine, then exact syntax via `--robot-docs` / references | This skill |
-| You are tending an already-running swarm and deciding whether to nudge, restart, stand down, or dispatch marching orders | `$using-atm` (tending loop) |
+| You are tending an already-running worker factory | `$agent-native` for lifecycle policy, then this skill for NTM mechanics |
 | You are running a Brenner-style hypothesis investigation or incident RCA through NTM panes | `brennerbot-with-ntm` |
 | You only need Beads or BV mechanics | `$beads-br` or `$beads-bv` |
 
@@ -52,7 +50,7 @@ For any state-changing action, verify the live contract with `ntm --robot-capabi
 
 ## Tending doctrine (single owner)
 
-**`ntm` owns the swarm-tending doctrine** (age-skills-audit-fable-l6ic.8): the nudge → restart → stop → converged recovery ladder (the `Surface Selection` recovery order, `Pattern Tiers`, and the Anti-Patterns table incl. the OC-047 boot-race and never-kill-before-a-liveness-proof), the liveness truth stack (`Pre-Flight Checklist`), the **meter-LIES** reading discipline, and the **two-tick** stall rule — trip-wire detail in [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). The companion `using-atm` skill is the **substrate runner** (spawn + dispatch) and holds only **ATM-specific deltas** — its [`tending-loop.md`](../using-atm/references/tending-loop.md) and [`continuity-and-meter.md`](../using-atm/references/continuity-and-meter.md) are the ATM-runner view, not a second source of truth.
+**`agent-native` owns lifecycle policy; `ntm` owns NTM mechanics.** Apply the suspect → bounded nudge → replace policy from `agent-native`; use the recovery commands, liveness truth stack, boot-race warnings, and executable robot contract documented here to enact it.
 
 ## The Loop (Mandatory)
 
@@ -189,7 +187,7 @@ Drop-in examples live under `assets/`:
 
 ## Related Skills
 
-- **`using-atm`** — the companion **operator / substrate** skill: spawn + dispatch, the swarm tending loop, continuity renewal ticks. Use it whenever the question is "how do I run the swarm well?" rather than "what does NTM do?" (The former `vibing-with-ntm` tending doctrine is folded into `$ntm`.)
+- **`agent-native`** — portable factory roles, worker lifecycle, bounded recovery, evidence, and retirement.
 - `agent-mail` for inboxes, contact handshakes, and file reservations
 - `br` for bead state changes and syncing
 - `bv` for graph-aware task prioritization

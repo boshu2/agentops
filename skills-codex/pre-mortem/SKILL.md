@@ -590,6 +590,7 @@ $pre-mortem                    ← You are here
 ## See Also
 
 - `../council/SKILL.md` — Multi-model validation council
+- `../pawl-review/SKILL.md` — fresh read-only reviewer execution for a finished diff; this skill attacks the plan before work
 - `../plan/SKILL.md` — Create implementation plans
 - `../validate/SKILL.md` — Validate code after implementation
 

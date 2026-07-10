@@ -15,15 +15,18 @@ func fixture() []CatalogEntry {
 			Description:   "Run autonomous improvement loops.",
 			HexagonalRole: "driving-adapter",
 			Consumes:      []string{"rpi", "goals"},
+			Dependencies:  []string{"rpi", "goals"},
 			Produces:      []string{"verdict-ledger"},
 			Practices:     []string{"tdd", "dora-metrics"},
 			UserInvocable: true,
+			GraphRoot:     true,
 		},
 		{
 			Name:          "rpi",
 			Description:   "Run discovery, crank, validation.",
 			HexagonalRole: "domain",
 			Consumes:      []string{"discovery"},
+			Dependencies:  []string{"discovery"},
 			Produces:      []string{"verdict-ledger", "handoff"},
 			Practices:     []string{"tdd"},
 			UserInvocable: true,
@@ -191,7 +194,7 @@ func TestMermaid_OmitsUnknownEdges(t *testing.T) {
 func TestLoadCatalog_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	const body = `{
-  "schema_version": "1",
+  "schema_version": "2",
   "generated_at": "2026-05-31T00:00:00Z",
   "skill_count": 1,
   "skills": [
@@ -201,9 +204,11 @@ func TestLoadCatalog_RoundTrip(t *testing.T) {
       "hexagonal_role": "driving-adapter",
       "consumes": ["rpi"],
       "produces": ["verdict-ledger"],
+      "dependencies": ["rpi"],
       "context_rel": [],
       "practices": ["tdd"],
       "user_invocable": true,
+      "graph_root": true,
       "codex_override_present": false,
       "references_count": 2
     }
@@ -216,8 +221,8 @@ func TestLoadCatalog_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadCatalog: %v", err)
 	}
-	if cat.SchemaVersion != "1" {
-		t.Errorf("schema_version: want 1, got %q", cat.SchemaVersion)
+	if cat.SchemaVersion != "2" {
+		t.Errorf("schema_version: want 2, got %q", cat.SchemaVersion)
 	}
 	if cat.SkillCount != 1 || len(cat.Skills) != 1 {
 		t.Fatalf("skill_count: want 1/1, got %d/%d", cat.SkillCount, len(cat.Skills))

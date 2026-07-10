@@ -15,7 +15,7 @@ import (
 )
 
 // Exit codes for `ao plan-pawl decide` — the exit code IS the decision, so the
-// skill (dual-pane-atm) can branch on it without parsing.
+// skill (dueling-idea-genies) can branch on it without parsing.
 const (
 	planPawlExitPass     = 0 // PASS — the door opens
 	planPawlExitUsage    = 2 // bad invocation
@@ -51,7 +51,7 @@ instead of a code diff. The duel runs >= 2 model-family judge panes over the pla
 the 'decide' subcommand is the DETERMINISTIC core that turns their verdicts into one
 of three decisions — PASS / REDO / BLOCKED — with the circuit-breaker governance
 inherited verbatim from pawls.md. Pane spawning and the re-judge loop are the skill's
-job (dual-pane-atm); this decider is the windshield: deterministic, no model.`,
+job (dueling-idea-genies); this decider is the windshield: deterministic, no model.`,
 }
 
 var planPawlDecideCmd = &cobra.Command{

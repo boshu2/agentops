@@ -40,7 +40,7 @@ A naive line-based match —
 `grep -qE '(^|[;&|]|&&|\|\|)[[:space:]]*(am|atm|ntm)([[:space:]]|$)'` —
 **over-matches**: `grep` is line-oriented, so `^` matches *every* heredoc-body
 line, and a quoted `|ntm` inside an argument reads as a top-level `|` delimiter.
-A `br create "t" --body "...mentions am/atm/ntm and agent-mail|ntm|using-atm..."`
+A `br create "t" --body "...mentions am/atm/ntm and agent-mail|ntm|agent-native..."`
 would falsely fire even though no coordination command is being *run*.
 
 The fix below matches `am`/`atm`/`ntm`/`tmux send-keys` **only as an actual
@@ -106,7 +106,7 @@ mkdir -p "$dir" 2>/dev/null || true
 cat >&2 <<'MSG'
 ⛔ SKILL-FIRST (coordination): load the skill before hand-rolling the AM/ATM CLI.
   • am  (Agent Mail)          → Skill tool: agent-mail
-  • atm / ntm (ATM swarm)     → Skill tool: ntm   (or using-atm)
+  • atm / ntm pane command    → Skill tool: ntm; agent-native for role lifecycle
   • tmux send-keys to a pane  → Skill tool: ntm
 The skill carries the command surface + doctrine — don't reverse-engineer the CLI.
 Fires once per session and self-relaxes after the skill loads. Re-run your command.
@@ -129,7 +129,7 @@ set -uo pipefail
 input="$(cat)"
 skill="$(printf '%s' "$input" | jq -r '.tool_input.skill // ""')"
 case "$skill" in
-  agent-mail|ntm|using-atm)
+  agent-mail|ntm|agent-native)
     sid="$(printf '%s' "$input" | jq -r '.session_id // "nosession"')"
     dir="${TMPDIR:-/tmp}/claude-coordguard"
     mkdir -p "$dir" 2>/dev/null || true
@@ -180,7 +180,7 @@ Save as `tests/skill-first-coord-guard.bats` and run with `bats <file>`:
 #   FIRE (exit 2):   am robot status · atm up · ntm --robot-attention
 #                    git commit -m x && am mail send · tmux send-keys -t x hi
 #   SILENT (exit 0): ls -la · npm test · team build · echo "I am here"
-#                    br create "t" --body "...am/atm/ntm... agent-mail|ntm|using-atm..."
+#                    br create "t" --body "...am/atm/ntm... agent-mail|ntm|agent-native..."
 GUARD="${GUARD:-$HOME/.claude/hooks/skill-first-coord-guard.sh}"
 
 setup() { export TMPDIR="$(mktemp -d)"; }
@@ -200,7 +200,7 @@ run_guard() { # $1=command $2=session_id
 @test "SILENT: team build"                   { run run_guard 'team build' "s8";                   [ "$status" -eq 0 ]; [ -z "$output" ]; }
 @test "SILENT: echo quoted am"              { run run_guard 'echo "I am here"' "s9";             [ "$status" -eq 0 ]; [ -z "$output" ]; }
 @test "SILENT: br create body mentions am/atm/ntm (false-positive guard)" {
-  run run_guard 'br create "t" --body "...am/atm/ntm... agent-mail|ntm|using-atm..."' "s10"
+  run run_guard 'br create "t" --body "...am/atm/ntm... agent-mail|ntm|agent-native..."' "s10"
   [ "$status" -eq 0 ]; [ -z "$output" ]
 }
 
