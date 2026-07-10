@@ -232,6 +232,51 @@ func distinctFamilies(vs []JudgeVerdict) []string {
 	return out
 }
 
+func tallyVerdicts(verdicts []JudgeVerdict, out *Outcome) (fails int, surviving, degraded []string) {
+	seenSurviving := map[string]bool{}
+	seenDegraded := map[string]bool{}
+	for _, v := range verdicts {
+		switch laneFailureClass(v) {
+		case FailureTransient:
+			fam := normalizeOrRaw(v.Family)
+			if !seenDegraded[fam] {
+				seenDegraded[fam] = true
+				degraded = append(degraded, fam)
+			}
+			continue
+		case FailureHard:
+			fails++
+			continue
+		}
+		family := normalizeFamily(v.Family)
+		if family == "" {
+			fails++
+			continue
+		}
+		if !seenSurviving[family] {
+			seenSurviving[family] = true
+			surviving = append(surviving, family)
+		}
+		switch normDisposition(v.Disposition) {
+		case PASS:
+		case FAIL:
+			fails++
+		case WARN:
+			switch normWarnClass(v.WarnClass) {
+			case Mechanical:
+				out.AutoApplied = append(out.AutoApplied, normalizeOrRaw(v.Family))
+			case Judgment:
+				out.SurfacedWarns = append(out.SurfacedWarns, normalizeOrRaw(v.Family))
+			default:
+				fails++
+			}
+		default:
+			fails++
+		}
+	}
+	return fails, surviving, degraded
+}
+
 // Decide applies the deterministic quorum/round/breaker rules. Precedence (high
 // to low) — a breaker always wins over the no-FAIL quorum check:
 //
@@ -299,66 +344,7 @@ func Decide(in Input) Outcome {
 	// PASS/FAIL/WARN (missing, empty, or garbage — e.g. a malformed --dir verdict
 	// JSON) is counted as a FAIL, never silently treated as clean. The decider is
 	// the windshield: it must not trust its inputs.
-	var fails int
-	var surviving []string // distinct roster families with a real (non-transient) verdict
-	seenSurviving := map[string]bool{}
-	var degraded []string // families whose lane transiently failed (evidence)
-	seenDegraded := map[string]bool{}
-	for _, v := range in.Verdicts {
-		switch laneFailureClass(v) {
-		case FailureTransient:
-			// A retryable outage — NOT a refutation. Excluded from the FAIL tally AND
-			// from quorum coverage; recorded so the decision is honest about the loss.
-			fam := normalizeOrRaw(v.Family)
-			if !seenDegraded[fam] {
-				seenDegraded[fam] = true
-				degraded = append(degraded, fam)
-			}
-			continue
-		case FailureHard:
-			// A non-retryable infra failure is a refutation (fail-closed, unchanged);
-			// it produced no trustworthy verdict, so it does not count toward coverage.
-			fails++
-			continue
-		}
-		// FailureNone: no infra failure reported — the ordinary quorum path.
-		//
-		// FAIL-CLOSED on the family too: a pane from an unrecognized/off-roster
-		// family is a malformed duel (operator error), not a free pass. It is
-		// counted as a refutation so a junk pane can never pad a quorum — e.g.
-		// claude:PASS + gpt:PASS + llama:PASS must REDO (fix the setup), never PASS.
-		if normalizeFamily(v.Family) == "" {
-			fails++
-			continue
-		}
-		if rf := normalizeFamily(v.Family); !seenSurviving[rf] {
-			seenSurviving[rf] = true
-			surviving = append(surviving, rf)
-		}
-		switch normDisposition(v.Disposition) {
-		case PASS:
-			// no-op: a clean pane
-		case FAIL:
-			fails++
-		case WARN:
-			// FAIL-CLOSED on the warn_class too: a WARN is non-blocking ONLY when the
-			// judge EXPLICITLY declares it. A mechanical WARN auto-applies + re-judges
-			// (REDO); a judgment WARN is surfaced + accepted (can PASS). A WARN with a
-			// missing/unknown warn_class must NOT silently get the lenient
-			// judgment-and-PASS path — it counts as a blocking concern (REDO).
-			switch normWarnClass(v.WarnClass) {
-			case Mechanical:
-				out.AutoApplied = append(out.AutoApplied, normalizeOrRaw(v.Family))
-			case Judgment:
-				out.SurfacedWarns = append(out.SurfacedWarns, normalizeOrRaw(v.Family))
-			default:
-				fails++
-			}
-		default:
-			// Unrecognized/missing disposition -> fail-closed.
-			fails++
-		}
-	}
+	fails, surviving, degraded := tallyVerdicts(in.Verdicts, &out)
 	out.DegradedFamilies = degraded
 	out.Degraded = len(degraded) > 0
 

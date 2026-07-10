@@ -22,6 +22,8 @@ func TestCobraConformance(t *testing.T) {
 	if len(archiveBuildTags) > 0 {
 		t.Skipf("spine-conformance test: archive build tags active (%v); the restored build is a documented superset", archiveBuildTags)
 	}
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	rootCmd.InitDefaultHelpCmd()
 
 	docsPath := filepath.Join("..", "..", "docs", "COMMANDS.md")

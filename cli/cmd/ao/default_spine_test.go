@@ -21,6 +21,8 @@ func TestDefaultSpineMatchesADR0012Allowlist(t *testing.T) {
 	if len(archiveBuildTags) != 0 {
 		t.Skip("restoration build")
 	}
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
 	var unexpected, missing []string
 	seen := map[string]bool{}
 	for _, command := range rootCmd.Commands() {
@@ -40,6 +42,11 @@ func TestDefaultSpineMatchesADR0012Allowlist(t *testing.T) {
 	for command := range defaultSpineCommands {
 		if !approvedDefaultSpine[command] {
 			unexpected = append(unexpected, command)
+		}
+	}
+	for command := range seen {
+		if !approvedDefaultSpine[command] {
+			unexpected = append(unexpected, command+"(registered)")
 		}
 	}
 	sort.Strings(unexpected)

@@ -46,6 +46,34 @@ func TestSeedChecksHaveValidShape(t *testing.T) {
 	}
 }
 
+func TestCLIContractGateRoutesRelevantChangesOnly(t *testing.T) {
+	check, ok := gates.Default.Get("go.cli-contract")
+	if !ok {
+		t.Fatal("go.cli-contract gate is not registered")
+	}
+	if check.Backing != "check-cli-contract.sh" || !check.Blocking {
+		t.Fatalf("go.cli-contract = %+v, want blocking check-cli-contract.sh", check)
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("go.cli-contract tiers = %v, want Fast|Full", check.Tiers)
+	}
+	for _, path := range []string{
+		"cli/cmd/ao/root.go",
+		"docs/cli-surface.md",
+		"scripts/generate-cli-reference.sh",
+		"tests/cli_contract_gate.bats",
+	} {
+		if !gates.PathMatchesAny(check.Match, path) {
+			t.Errorf("go.cli-contract does not route relevant path %q", path)
+		}
+	}
+	for _, path := range []string{"docs/adr/ADR-0001-example.md", "skills/test/SKILL.md"} {
+		if gates.PathMatchesAny(check.Match, path) {
+			t.Errorf("go.cli-contract incorrectly routes irrelevant path %q", path)
+		}
+	}
+}
+
 func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 	changed, ok := gates.Default.Get("derived.changed-scope")
 	if !ok {

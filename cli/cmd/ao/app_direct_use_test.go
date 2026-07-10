@@ -15,6 +15,14 @@ func TestAppDirectInvocationHasProductionPorts(t *testing.T) {
 	}
 }
 
+func TestAppNilContextHasProductionPorts(t *testing.T) {
+	var nilContext context.Context
+	app := AppFromContext(nilContext)
+	if app == nil || app.ExecCommand == nil || app.LookPath == nil || app.Stdout == nil || app.Stderr == nil {
+		t.Fatalf("nil command context has no usable App ports: %+v", app)
+	}
+}
+
 func TestDirectExecRatchetQuickstartUsesApp(t *testing.T) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "quickstart.go", nil, 0)

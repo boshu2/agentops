@@ -1011,7 +1011,21 @@
     },
     {
       "category": "public-tested",
-      "command": "verify",
+      "command": "verify init",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "verify receipts",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "verify stats",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

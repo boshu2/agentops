@@ -7,7 +7,7 @@ setup() {
 @test "CLI Go lint has zero findings" {
   run bash -c "cd '$REPO_ROOT/cli' && ../scripts/golangci-lint-v2.sh run ./..."
   [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  [ "$output" = "0 issues." ]
 }
 
 @test "CLI generated reference has zero drift" {

@@ -28,10 +28,24 @@ func init() {
 	if len(archiveBuildTags) != 0 || strings.HasSuffix(os.Args[0], ".test") {
 		return
 	}
-	for _, command := range append([]*cobra.Command(nil), rootCmd.Commands()...) {
-		if _, retained := defaultSpineCommands[command.Name()]; retained || command.Hidden || command.Name() == "completion" {
+	pruneToDefaultSpine(rootCmd)
+}
+
+// pruneToDefaultSpine applies the production membership boundary and returns
+// the commands it removed. Tests use the returned slice to restore the full
+// archive tree after checking the production view.
+func pruneToDefaultSpine(root *cobra.Command) []*cobra.Command {
+	var removed []*cobra.Command
+	for _, command := range append([]*cobra.Command(nil), root.Commands()...) {
+		if _, retained := defaultSpineCommands[command.Name()]; retained || command.Name() == "completion" {
 			continue
 		}
-		rootCmd.RemoveCommand(command)
+		root.RemoveCommand(command)
+		removed = append(removed, command)
 	}
+	return removed
+}
+
+func restorePrunedCommands(root *cobra.Command, commands []*cobra.Command) {
+	root.AddCommand(commands...)
 }

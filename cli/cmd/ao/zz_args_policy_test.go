@@ -15,6 +15,7 @@ func TestCompatibleArgsPolicyPreservesUseGrammar(t *testing.T) {
 		{use: "status", accepted: []int{0}, rejected: []int{1}},
 		{use: "show <id>", accepted: []int{1}, rejected: []int{0, 2}},
 		{use: "close <id> [paths...]", accepted: []int{1, 3}, rejected: []int{0}},
+		{use: "calibrate [--label <value>] [--out <dir>]", accepted: []int{0}, rejected: []int{1}},
 	}
 	for _, test := range tests {
 		policy := compatibleArgsPolicy(test.use)
@@ -28,6 +29,17 @@ func TestCompatibleArgsPolicyPreservesUseGrammar(t *testing.T) {
 			if err := policy(command, make([]string, count)); err == nil {
 				t.Errorf("%s accepted %d args", test.use, count)
 			}
+		}
+	}
+}
+
+func TestDisableFlagParsingCommandsAcceptForwardedFlags(t *testing.T) {
+	for _, command := range []*cobra.Command{membraneCalibrateCmd, verifyCmd, pawlReviewCmd} {
+		if command.Args == nil {
+			t.Fatalf("%s has no Args policy", command.CommandPath())
+		}
+		if err := command.Args(command, []string{"--help"}); err != nil {
+			t.Errorf("%s rejected a forwarded flag: %v", command.CommandPath(), err)
 		}
 	}
 }
