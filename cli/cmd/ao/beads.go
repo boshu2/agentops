@@ -61,14 +61,20 @@ func (e *beadsExitError) ExitCode() int { return e.code }
 // this to avoid a hard dependency on the real binary. Production code calls
 // `bd` via PATH; if absent, the caller emits a graceful warning and returns.
 var execBD = func(args ...string) ([]byte, error) {
-	cmd := exec.Command("bd", args...)
+	cwd, _ := os.Getwd()
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.Command(resolution.Binary, args...) // #nosec G204 -- selected br|bd binary.
 	return cmd.Output()
 }
 
 // bdAvailable reports whether the bd binary is reachable via PATH. Tests
 // override this for deterministic behaviour.
 var bdAvailable = func() bool {
-	_, err := exec.LookPath("bd")
+	cwd, _ := os.Getwd()
+	_, err := resolveTracker(cwd, os.Environ())
 	return err == nil
 }
 

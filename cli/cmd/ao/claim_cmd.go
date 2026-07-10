@@ -117,7 +117,7 @@ func runClaim(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return cmd.Help()
 	}
-	return tickPassthrough(newTickRuntime(cmd), "br", "update", args[0], "--claim")
+	return tickTrackerPassthrough(newTickRuntime(cmd), "update", args[0], "--claim")
 }
 
 func runClaimBind(cmd *cobra.Command, _ []string) error {

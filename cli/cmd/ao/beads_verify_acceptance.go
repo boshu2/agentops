@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -40,7 +41,15 @@ import (
 // ledger — the br-native analog of execBD. BEADS_DIR is inherited from the
 // process environment (exec.Command keeps os.Environ by default).
 var execBR = func(args ...string) ([]byte, error) {
-	cmd := exec.Command("br", args...)
+	cwd, _ := os.Getwd()
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return nil, err
+	}
+	if resolution.Tracker != trackerBR {
+		return nil, fmt.Errorf("verify-acceptance requires the BR acceptance wire; selected tracker is %s", resolution.Tracker)
+	}
+	cmd := exec.Command(resolution.Binary, args...) // #nosec G204 -- selected BR binary.
 	return cmd.Output()
 }
 

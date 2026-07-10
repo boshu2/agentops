@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // NewProduction wires the refinery with git/bd/gates-backed adapters rooted at
@@ -82,7 +83,11 @@ func (b *bdBeadFiler) FileFixBead(ctx context.Context, sha string, checks []stri
 		short = short[:8]
 	}
 	title := fmt.Sprintf("fix: main %s poisoned — deterministic gate failure (%s)", short, strings.Join(checks, ", "))
-	out, err := run(ctx, b.repoRoot, "bd", "create", title, "--type", "task", "--labels", "refinery,blocking", "--json")
+	resolution, err := trackerresolve.Resolve(b.repoRoot, os.Environ())
+	if err != nil {
+		return "", err
+	}
+	out, err := run(ctx, b.repoRoot, resolution.Binary, "create", title, "--type", "task", "--labels", "refinery,blocking", "--json")
 	if err != nil {
 		return "", err
 	}

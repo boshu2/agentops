@@ -2,9 +2,12 @@ package goalstrace
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // scenariosLineRe matches an explicit "Scenarios: <id>[, <id>...]" line in a
@@ -74,17 +77,21 @@ func NewExecBeadQuerier() BeadQuerier {
 
 // Available reports whether the bd binary is reachable via PATH.
 func (execBeadQuerier) Available() bool {
-	_, err := exec.LookPath("bd")
+	_, err := trackerresolve.Resolve("", os.Environ())
 	return err == nil
 }
 
 // Beads runs `bd list --json --all` and parses the result. Both an array and
 // a {"issues": [...]} envelope are accepted since bd output has varied.
 func (execBeadQuerier) Beads() ([]beadRecord, error) {
-	out, err := exec.Command("bd", "list", "--json", "--all").Output()
+	resolution, err := trackerresolve.Resolve("", os.Environ())
 	if err != nil {
-		// Retry without --all for older bd versions.
-		out, err = exec.Command("bd", "list", "--json").Output()
+		return nil, err
+	}
+	out, err := exec.Command(resolution.Binary, "list", "--json", "--all").Output() // #nosec G204 -- selected br|bd binary.
+	if err != nil {
+		// Retry without --all for older tracker versions, never on another backend.
+		out, err = exec.Command(resolution.Binary, "list", "--json").Output() // #nosec G204 -- selected br|bd binary.
 		if err != nil {
 			return nil, err
 		}

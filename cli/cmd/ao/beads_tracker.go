@@ -32,9 +32,16 @@ func beadsTrackerCommandContext(ctx context.Context, args ...string) *exec.Cmd {
 }
 
 func beadsTrackerCommandContextInDir(ctx context.Context, cwd string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, "br", args...)
+	resolution, err := resolveTracker(cwd, os.Environ())
+	binary := "__agentops_tracker_resolution_failed__"
+	if err == nil {
+		binary = resolution.Binary
+	}
+	cmd := exec.CommandContext(ctx, binary, args...) // #nosec G204 -- binary is constrained to the selected br|bd tracker.
 	cmd.Dir = cwd
-	cmd.Env = beadsTrackerEnvForDir(cwd)
+	if err == nil && resolution.Tracker == trackerBR {
+		cmd.Env = beadsTrackerEnvForDir(cwd)
+	}
 	return cmd
 }
 
