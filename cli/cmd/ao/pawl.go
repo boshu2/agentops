@@ -40,7 +40,7 @@ const defaultPawlReviewScript = "scripts/pawl-review.sh"
 const defaultPawlServiceScript = "scripts/pawl.sh"
 
 var pawlReviewCmd = &cobra.Command{
-	Use:   "review <bead-id> [--scope head|staged] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>]",
+	Use:   "review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>]",
 	Short: "Run the cross-family (codex) membrane review; on CONFIRMED write the commit-bound verdict",
 	Long: `Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
 refuter against the commit and, on CONFIRMED, writes + verifies the commit-bound pawl
@@ -48,6 +48,12 @@ verdict the pre-push gate requires (REFUTED prints the defects + exits 3; --conv
 advisory-only without adversarial lineage and exits 4). LAW 0: the refuter is codex (a
 cross-family reviewer), never a same-model self-review. All arguments after 'review' are
 forwarded verbatim to the script.
+
+--scope upstream reviews the complete configured-upstream merge-base through the
+review target and binds the verdict to that target. With --base, that exact
+ancestor commit replaces configured-upstream discovery. 'ao land' always pins
+the origin/main commit it fetched before review, so the independent packet covers
+the same branch delta that the guarded push would introduce.
 
 --strict (age-rk3r.13): the OPT-IN two-family cold quorum for the highest-irreversibility
 doors — TWO DISTINCT strict-eligible cold families must BOTH CONFIRMED, and strict REFUSES

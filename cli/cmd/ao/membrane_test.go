@@ -898,15 +898,15 @@ func setMembraneCatchFlags(t *testing.T, set func()) {
 	t.Helper()
 	ob, od, orr, ocl := membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass
 	op, odet, ohd, omo := membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode
-	oev, osc := membraneCatchEvidence, membraneCatchScope
+	oev, osc, obase := membraneCatchEvidence, membraneCatchScope, membraneCatchBase
 	t.Cleanup(func() {
 		membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = ob, od, orr, ocl
 		membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = op, odet, ohd, omo
-		membraneCatchEvidence, membraneCatchScope = oev, osc
+		membraneCatchEvidence, membraneCatchScope, membraneCatchBase = oev, osc, obase
 	})
 	membraneCatchBead, membraneCatchDomain, membraneCatchReason, membraneCatchClass = "", "", "", ""
 	membraneCatchPaths, membraneCatchDetector, membraneCatchHead, membraneCatchMode = nil, "", "", ""
-	membraneCatchEvidence, membraneCatchScope = "", "head"
+	membraneCatchEvidence, membraneCatchScope, membraneCatchBase = "", "head", ""
 	membraneCatchCmd.SetOut(&bytes.Buffer{})
 	t.Cleanup(func() { membraneCatchCmd.SetOut(nil) })
 	set()
@@ -1089,6 +1089,12 @@ func TestMembraneCatch_EvidenceStagedScope(t *testing.T) {
 	}
 	if len(catches[0].AffectedPaths) != 1 || catches[0].AffectedPaths[0] != "cli/staged.go" {
 		t.Fatalf("staged paths = %v, want [cli/staged.go]", catches[0].AffectedPaths)
+	}
+}
+
+func TestMembraneCatch_DocumentsExactUpstreamBase(t *testing.T) {
+	if membraneCatchCmd.Flags().Lookup("base") == nil {
+		t.Fatal("membrane catch needs --base so an upstream-range REFUTE records the exact reviewed paths")
 	}
 }
 

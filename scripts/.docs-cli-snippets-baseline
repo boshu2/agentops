@@ -1,48 +1,12 @@
-# scripts/.docs-cli-snippets-baseline
-# FILENAME-pinned allowlist for check-docs-cli-snippets.sh (age-gate-the-ungated-egwt.4).
-#
-# Each line is a live doc that currently cites a removed/renamed ao command
-# (ao rpi, ao evolve, ao factory, ao daemon, ao activate, ...). The gate
-# fails if a NON-baselined live doc cites a dead command, AND fails if a
-# baselined file no longer triggers ANY finding (prune it — the allowlist
-# only shrinks). Burn a file down (use the live equivalent or historical
-# wording), then delete its line here.
-#
-# dyr0-lane-owned golden paths (first-value-path, getting-started/**,
-# examples/**) STAY baselined — do not edit those pages in this lane.
-docs/3.0.md
+# Filename-pinned temporary allowlist for live docs that still prescribe a removed ao command.
+# The liveness gate fails on new offenders and on stale entries; this list only shrinks.
 docs/activation-profiles.md
-docs/agentops-3-explainer-kit.md
-docs/agentops-3-pmf-evidence-loop.md
-docs/agentops-3-youtube-starter-series.md
-docs/architecture/codebase-overview.md
-docs/architecture/codex-hookless-lifecycle.md
-docs/architecture/operating-loop.md
-docs/architecture/primitive-chains.md
-docs/cdlc.md
-docs/CLEANUP-distill-to-core.md
-docs/cli-skills-map.md
 docs/contracts/agent-native-mechanism.md
-docs/contracts/agents-write-surfaces.md
 docs/doctrine/effective-feedback-compute.md
 docs/domain-practice-packets.md
-docs/domains/README.md
 docs/examples/agentops-3-council-verdict-example.md
-docs/examples/agentops-3-domain-practice-packet.md
 docs/first-value-path.md
-docs/getting-started/index.md
 docs/GLOSSARY.md
-docs/how-it-works.md
-docs/knowledge-flywheel.md
 docs/positioning/12-factors-validation-lens.md
-docs/positioning/hn-devto-article.md
 docs/reference/agentops-domain-evolution-plan.md
-docs/release-e2e-checklist.md
-docs/RELEASING.md
-docs/ROADMAP.md
-docs/runbooks/autonomy-runtime-cycle-1.md
-docs/runbooks/nightly-evolution.md
-docs/seed-definition.md
-docs/SKILLS.md
-docs/software-factory.md
 docs/workflows/session-lifecycle.md

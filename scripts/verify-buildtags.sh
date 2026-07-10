@@ -4,9 +4,9 @@
 #
 # The default `go build` must OMIT the archived command sets; the `flywheel` and
 # `legacy` tags must restore them. We can't grep for archived commands until
-# .13/.14 move real commands behind the tags, so this checks the mechanism via
-# the hidden `ao buildtags` introspection surface:
-#   default build        -> "spine"            (no archive tags compiled in)
+# Tagged builds retain the hidden `ao buildtags` introspection surface. The
+# default ADR-0012 spine deliberately removes that archived command entirely:
+#   default build        -> `ao buildtags` absent
 #   -tags flywheel       -> "flywheel"
 #   -tags legacy         -> "legacy"
 #   -tags flywheel legacy-> "flywheel" + "legacy"
@@ -52,11 +52,12 @@ expect() { # expect <binary> <substr> <present|absent>
 
 echo "verify-buildtags: default (spine) build…"
 build "$TMP/ao-spine"
-if ! "$TMP/ao-spine" buildtags 2>/dev/null | grep -q "spine"; then
-	echo "FAIL: default build should report 'spine'" >&2; exit 1
+if spine_out="$("$TMP/ao-spine" buildtags 2>&1)"; then
+	echo "FAIL: default build must omit archived 'ao buildtags'" >&2; exit 1
 fi
-expect "$TMP/ao-spine" "flywheel" absent
-expect "$TMP/ao-spine" "legacy"   absent
+if ! printf '%s\n' "$spine_out" | grep -q 'unknown command "buildtags"'; then
+	echo "FAIL: default build did not reject archived 'ao buildtags': $spine_out" >&2; exit 1
+fi
 
 echo "verify-buildtags: -tags flywheel…"
 build "$TMP/ao-flywheel" flywheel

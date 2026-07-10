@@ -3,9 +3,12 @@ package ratchet
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // BdCLITimeout is the maximum duration to wait for bd CLI commands.
@@ -244,7 +247,11 @@ func (g *GateChecker) findEpic(status string) (string, error) {
 	defer cancel()
 
 	// Call bd list --type epic --status <status>
-	cmd := exec.CommandContext(ctx, "bd", "list", "--type", "epic", "--status", status)
+	resolution, resolveErr := trackerresolve.Resolve(g.locator.startDir, os.Environ())
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	cmd := exec.CommandContext(ctx, resolution.Binary, "list", "--type", "epic", "--status", status) // #nosec G204 -- selected br|bd binary.
 	out, err := cmd.Output()
 	if err != nil {
 		// Check if the error was due to context timeout

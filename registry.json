@@ -6,9 +6,9 @@
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
-    "cli_commands": 72,
+    "cli_commands": 29,
     "workflows": 4,
-    "capabilities": 148
+    "capabilities": 105
   },
   "surfaces": {
     "skills": [
@@ -620,50 +620,9 @@
     ],
     "cli_commands": [
       {
-        "name": "ao agent",
-        "path": "cli/cmd/ao/",
-        "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "domain",
-          "evolve",
-          "shared"
-        ]
-      },
-      {
-        "name": "ao agents",
-        "path": "cli/cmd/ao/",
-        "purpose": "Inspect and manage .agents/ contracts and surfaces",
-        "bounded_context": "BC4",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao anti-patterns",
-        "path": "cli/cmd/ao/",
-        "purpose": "List learnings marked as anti-patterns",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao badge",
-        "path": "cli/cmd/ao/",
-        "purpose": "Display knowledge flywheel health badge",
-        "bounded_context": "BC2",
-        "driven_by_skills": [
-          "status"
-        ]
-      },
-      {
         "name": "ao beads",
         "path": "cli/cmd/ao/",
         "purpose": "Complementary tooling for the bd (beads) issue tracker",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao canon",
-        "path": "cli/cmd/ao/",
-        "purpose": "Team-knowledge canon: learnings earned by independent attestation",
         "bounded_context": "",
         "driven_by_skills": []
       },
@@ -672,22 +631,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Print the machine-readable CLI contract (JSON)",
         "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao ci",
-        "path": "cli/cmd/ao/",
-        "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
-        "bounded_context": "BC2",
-        "driven_by_skills": [
-          "standards"
-        ]
-      },
-      {
-        "name": "ao citation",
-        "path": "cli/cmd/ao/",
-        "purpose": "BC1 CitationPort operations (verify file/function/symbol citations)",
-        "bounded_context": "BC1",
         "driven_by_skills": []
       },
       {
@@ -705,17 +648,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao compile",
-        "path": "cli/cmd/ao/",
-        "purpose": "Compile .agents knowledge into an interlinked wiki",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "domain",
-          "evolve",
-          "post-mortem"
-        ]
-      },
-      {
         "name": "ao config",
         "path": "cli/cmd/ao/",
         "purpose": "Manage configuration",
@@ -723,47 +655,10 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao constraint",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage compiled constraints",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao contradict",
-        "path": "cli/cmd/ao/",
-        "purpose": "Detect potentially contradictory learnings",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao converge",
-        "path": "cli/cmd/ao/",
-        "purpose": "Bounded fix -> re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK",
-        "bounded_context": "BC5",
-        "driven_by_skills": [
-          "converge"
-        ]
-      },
-      {
         "name": "ao council-gate",
         "path": "cli/cmd/ao/",
         "purpose": "Fail-closed two-plus judge verdict aggregation",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao dedup",
-        "path": "cli/cmd/ao/",
-        "purpose": "Detect near-duplicate learnings",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao demo",
-        "path": "cli/cmd/ao/",
-        "purpose": "Show the council-first AgentOps 3.0 value path",
-        "bounded_context": "BC3",
         "driven_by_skills": []
       },
       {
@@ -790,43 +685,6 @@
         "purpose": "Run deterministic local evaluation suites",
         "bounded_context": "BC2",
         "driven_by_skills": []
-      },
-      {
-        "name": "ao extract",
-        "path": "cli/cmd/ao/",
-        "purpose": "Process pending learning extractions",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao feedback-loop",
-        "path": "cli/cmd/ao/",
-        "purpose": "Close the MemRL feedback loop for a session",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao findings",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage promoted findings",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao flywheel",
-        "path": "cli/cmd/ao/",
-        "purpose": "Knowledge flywheel operations",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao forge",
-        "path": "cli/cmd/ao/",
-        "purpose": "Extract knowledge from sources",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "post-mortem"
-        ]
       },
       {
         "name": "ao gate",
@@ -857,41 +715,11 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao guard-status",
-        "path": "cli/cmd/ao/",
-        "purpose": "Verify guard hook and validator launcher installation",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao init",
         "path": "cli/cmd/ao/",
         "purpose": "Initialize AgentOps in the current repository",
         "bounded_context": "BC4",
         "driven_by_skills": []
-      },
-      {
-        "name": "ao inject",
-        "path": "cli/cmd/ao/",
-        "purpose": "Output relevant knowledge for explicit or JIT injection",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao install-guards",
-        "path": "cli/cmd/ao/",
-        "purpose": "Install repo-local git guard hooks",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao knowledge",
-        "path": "cli/cmd/ao/",
-        "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "operationalize"
-        ]
       },
       {
         "name": "ao land",
@@ -901,88 +729,10 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao lookup",
-        "path": "cli/cmd/ao/",
-        "purpose": "Retrieve specific knowledge artifacts by ID or query",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "bootstrap",
-          "crank",
-          "discovery",
-          "domain",
-          "evolve",
-          "implement",
-          "operationalize",
-          "plan",
-          "post-mortem",
-          "pre-mortem",
-          "status",
-          "swarm",
-          "validate"
-        ]
-      },
-      {
-        "name": "ao maturity",
-        "path": "cli/cmd/ao/",
-        "purpose": "Check and manage learning maturity levels",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "domain"
-        ]
-      },
-      {
-        "name": "ao mcp",
-        "path": "cli/cmd/ao/",
-        "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao membrane",
         "path": "cli/cmd/ao/",
         "purpose": "Self-improving membrane: turn escapes into membrane checks",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao metrics",
-        "path": "cli/cmd/ao/",
-        "purpose": "Knowledge flywheel metrics",
-        "bounded_context": "BC2",
-        "driven_by_skills": [
-          "crank",
-          "status"
-        ]
-      },
-      {
-        "name": "ao mine",
-        "path": "cli/cmd/ao/",
-        "purpose": "Extract knowledge signal from git, .agents/, and code",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "crank",
-          "evolve"
-        ]
-      },
-      {
-        "name": "ao next-work",
-        "path": "cli/cmd/ao/",
-        "purpose": "Operate on the harvested next-work queue (.agents/rpi/next-work.jsonl)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao notebook",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage the session notebook (MEMORY.md)",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao patterns",
-        "path": "cli/cmd/ao/",
-        "purpose": "Inspect and repair .agents/patterns/ artifacts",
-        "bounded_context": "BC1",
         "driven_by_skills": []
       },
       {
@@ -1008,13 +758,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao pool",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage quality pools",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao provenance",
         "path": "cli/cmd/ao/",
         "purpose": "Write and read the SDLC provenance edge ledger",
@@ -1031,52 +774,10 @@
         ]
       },
       {
-        "name": "ao ratchet",
-        "path": "cli/cmd/ao/",
-        "purpose": "Brownian Ratchet workflow tracking",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "crank",
-          "discovery",
-          "evolve",
-          "handoff",
-          "implement",
-          "plan",
-          "pre-mortem",
-          "rpi",
-          "status",
-          "validate"
-        ]
-      },
-      {
         "name": "ao ready",
         "path": "cli/cmd/ao/",
         "purpose": "Print harness-neutral ready bead state as JSON",
         "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao reconcile",
-        "path": "cli/cmd/ao/",
-        "purpose": "Join git, CI, release, beads, and .agents truth into one report",
-        "bounded_context": "",
-        "driven_by_skills": [
-          "release",
-          "status"
-        ]
-      },
-      {
-        "name": "ao redact",
-        "path": "cli/cmd/ao/",
-        "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
-        "bounded_context": "",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao registry",
-        "path": "cli/cmd/ao/",
-        "purpose": "Query the unified registry",
-        "bounded_context": "BC4",
         "driven_by_skills": []
       },
       {
@@ -1087,42 +788,9 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao scope",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage edit-scope guard (freeze, unfreeze, status)",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao search",
-        "path": "cli/cmd/ao/",
-        "purpose": "Search workspace session history and repo-local knowledge",
-        "bounded_context": "BC1",
-        "driven_by_skills": [
-          "discovery",
-          "plan",
-          "pre-mortem",
-          "validate"
-        ]
-      },
-      {
-        "name": "ao seed",
-        "path": "cli/cmd/ao/",
-        "purpose": "Plant the seed in any repository",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
         "name": "ao session",
         "path": "cli/cmd/ao/",
         "purpose": "Session lifecycle operations",
-        "bounded_context": "BC5",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao sessions",
-        "path": "cli/cmd/ao/",
-        "purpose": "Manage indexed session pages",
         "bounded_context": "BC5",
         "driven_by_skills": []
       },
@@ -1138,13 +806,6 @@
         "path": "cli/cmd/ao/",
         "purpose": "Show AgentOps status",
         "bounded_context": "BC3",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao trace",
-        "path": "cli/cmd/ao/",
-        "purpose": "Track artifact provenance",
-        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1177,27 +838,6 @@
           "crank",
           "shared"
         ]
-      },
-      {
-        "name": "ao vibe-check",
-        "path": "cli/cmd/ao/",
-        "purpose": "Analyze codebase health and vibe",
-        "bounded_context": "BC2",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao wiki",
-        "path": "cli/cmd/ao/",
-        "purpose": "Unified wiki knowledge surface (experimental)",
-        "bounded_context": "BC1",
-        "driven_by_skills": []
-      },
-      {
-        "name": "ao worktree",
-        "path": "cli/cmd/ao/",
-        "purpose": "Worktree maintenance utilities",
-        "bounded_context": "",
-        "driven_by_skills": []
       },
       {
         "name": "ao yield",
@@ -1276,84 +916,41 @@
     ]
   },
   "capability_summary": {
-    "total": 148,
+    "total": 105,
     "skills": 62,
-    "cli_commands": 72,
+    "cli_commands": 29,
     "gates": 14,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
-    "agent",
-    "agents",
-    "anti-patterns",
-    "badge",
     "beads",
-    "canon",
     "capabilities",
-    "ci",
-    "citation",
     "claim",
     "close",
-    "compile",
     "config",
-    "constraint",
-    "contradict",
-    "converge",
     "council-gate",
-    "dedup",
-    "demo",
     "doctor",
     "done",
     "eval",
-    "extract",
-    "feedback-loop",
-    "findings",
-    "flywheel",
-    "forge",
     "gate",
     "goals",
     "governor",
-    "guard-status",
     "init",
-    "inject",
-    "install-guards",
-    "knowledge",
     "land",
-    "lookup",
-    "maturity",
-    "mcp",
     "membrane",
-    "metrics",
-    "mine",
-    "next-work",
-    "notebook",
-    "patterns",
     "pawl",
     "plan-pawl",
-    "pool",
     "provenance",
     "quick-start",
-    "ratchet",
     "ready",
-    "reconcile",
-    "redact",
-    "registry",
     "robot-docs",
-    "scope",
-    "search",
-    "seed",
     "session",
-    "sessions",
     "skills",
     "status",
-    "trace",
     "validate",
     "verdict-gate",
     "verify",
     "version",
-    "vibe-check",
-    "wiki",
-    "worktree",
     "yield"
   ],
   "capabilities": [
@@ -1624,7 +1221,6 @@
       "produces": [],
       "drives_commands": [
         "ao gate check",
-        "ao lookup",
         "ao quick-start",
         "ao session bootstrap"
       ],
@@ -1769,9 +1365,7 @@
       "produces": [
         "stdout"
       ],
-      "drives_commands": [
-        "ao converge"
-      ],
+      "drives_commands": [],
       "path": "skills/converge/",
       "references": 0
     },
@@ -1870,19 +1464,11 @@
       "drives_commands": [
         "ao beads exec",
         "ao done",
-        "ao flywheel close-loop",
-        "ao forge transcript",
         "ao gate check",
-        "ao lookup",
-        "ao metrics",
-        "ao metrics cite",
-        "ao mine",
         "ao pawl",
         "ao pawl review",
-        "ao pool list",
         "ao provenance emit-verdict",
         "ao provenance verify",
-        "ao ratchet",
         "ao session handoff",
         "ao version"
       ],
@@ -1948,10 +1534,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao lookup",
-        "ao plan-pawl decide",
-        "ao ratchet",
-        "ao search"
+        "ao plan-pawl decide"
       ],
       "path": "skills/discovery/",
       "references": 15
@@ -2011,13 +1594,8 @@
         "stdout"
       ],
       "drives_commands": [
-        "ao agent",
-        "ao compile",
         "ao eval run",
         "ao gate check",
-        "ao lookup",
-        "ao maturity",
-        "ao mcp serve",
         "ao session bootstrap"
       ],
       "path": "skills/domain/",
@@ -2086,17 +1664,10 @@
         "goals-fitness-delta"
       ],
       "drives_commands": [
-        "ao agent",
         "ao beads exec",
-        "ao ci recent",
-        "ao compile",
-        "ao flywheel status",
         "ao gate check",
         "ao goals",
-        "ao lookup",
-        "ao mine",
         "ao pawl",
-        "ao ratchet",
         "ao skills edit digest",
         "ao skills edit seal"
       ],
@@ -2190,7 +1761,6 @@
       ],
       "drives_commands": [
         "ao eval scenario",
-        "ao flywheel status",
         "ao goals"
       ],
       "path": "skills/goals/",
@@ -2222,7 +1792,6 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao ratchet",
         "ao session handoff"
       ],
       "path": "skills/handoff/",
@@ -2314,10 +1883,7 @@
         "git-changes"
       ],
       "drives_commands": [
-        "ao beads exec",
-        "ao lookup",
-        "ao metrics cite",
-        "ao ratchet"
+        "ao beads exec"
       ],
       "path": "skills/implement/",
       "references": 7
@@ -2411,16 +1977,7 @@
         ".agents/operationalize/*.md",
         "routed-handoffs"
       ],
-      "drives_commands": [
-        "ao knowledge",
-        "ao knowledge activate",
-        "ao knowledge beliefs",
-        "ao knowledge brief",
-        "ao knowledge gaps",
-        "ao knowledge playbooks",
-        "ao lookup",
-        "ao metrics cite"
-      ],
+      "drives_commands": [],
       "path": "skills/operationalize/",
       "references": 3
     },
@@ -2520,12 +2077,7 @@
       "drives_commands": [
         "ao beads exec",
         "ao beads verify",
-        "ao lookup",
-        "ao metrics cite",
-        "ao plan-pawl decide",
-        "ao ratchet",
-        "ao search",
-        "ao worktree gc"
+        "ao plan-pawl decide"
       ],
       "path": "skills/plan/",
       "references": 14
@@ -2560,18 +2112,9 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao compile",
-        "ao flywheel close-loop",
-        "ao flywheel status",
-        "ao forge",
-        "ao forge markdown",
-        "ao forge transcript",
         "ao goals",
-        "ao lookup",
         "ao membrane digest",
         "ao membrane triage",
-        "ao metrics cite",
-        "ao next-work materialize",
         "ao session close"
       ],
       "path": "skills/post-mortem/",
@@ -2636,11 +2179,7 @@
       ],
       "drives_commands": [
         "ao beads verify",
-        "ao lookup",
-        "ao metrics cite",
-        "ao plan-pawl decide",
-        "ao ratchet",
-        "ao search"
+        "ao plan-pawl decide"
       ],
       "path": "skills/pre-mortem/",
       "references": 14
@@ -2819,8 +2358,7 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao goals",
-        "ao reconcile"
+        "ao goals"
       ],
       "path": "skills/release/",
       "references": 8
@@ -2852,9 +2390,7 @@
         ".agents/research/*.md",
         "result.json"
       ],
-      "drives_commands": [
-        "ao metrics cite"
-      ],
+      "drives_commands": [],
       "path": "skills/research/",
       "references": 18
     },
@@ -2919,8 +2455,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao pawl",
-        "ao ratchet"
+        "ao pawl"
       ],
       "path": "skills/rpi/",
       "references": 18
@@ -3005,10 +2540,7 @@
       "produces": [
         "filesystem-gate"
       ],
-      "drives_commands": [
-        "ao scope freeze",
-        "ao scope unfreeze"
-      ],
+      "drives_commands": [],
       "path": "skills/scope/",
       "references": 3
     },
@@ -3067,7 +2599,6 @@
         "stdout"
       ],
       "drives_commands": [
-        "ao agent",
         "ao beads verify",
         "ao version"
       ],
@@ -3098,9 +2629,7 @@
       "produces": [
         "converted-skill"
       ],
-      "drives_commands": [
-        "ao flywheel close-loop"
-      ],
+      "drives_commands": [],
       "path": "skills/skill-builder/",
       "references": 4
     },
@@ -3128,9 +2657,7 @@
       "produces": [
         "stdout"
       ],
-      "drives_commands": [
-        "ao ci"
-      ],
+      "drives_commands": [],
       "path": "skills/standards/",
       "references": 25
     },
@@ -3161,16 +2688,7 @@
         "stdout"
       ],
       "drives_commands": [
-        "ao badge",
         "ao beads exec",
-        "ao lookup",
-        "ao metrics",
-        "ao metrics cite",
-        "ao pool list",
-        "ao pool promote",
-        "ao pool stage",
-        "ao ratchet",
-        "ao reconcile",
         "ao session bootstrap"
       ],
       "path": "skills/status/",
@@ -3203,9 +2721,7 @@
       "produces": [
         ".agents/swarm/results/*.json"
       ],
-      "drives_commands": [
-        "ao lookup"
-      ],
+      "drives_commands": [],
       "path": "skills/swarm/",
       "references": 21
     },
@@ -3326,11 +2842,7 @@
         "ao beads exec",
         "ao doctor",
         "ao goals",
-        "ao lookup",
-        "ao metrics cite",
-        "ao pawl",
-        "ao ratchet",
-        "ao search"
+        "ao pawl"
       ],
       "path": "skills/validate/",
       "references": 23
@@ -3364,81 +2876,6 @@
       "references": 0
     },
     {
-      "sku": "cmd:ao.agent",
-      "name": "ao agent",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
-      "status": "active",
-      "driven_by_skills": [
-        "domain",
-        "evolve",
-        "shared"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.agents",
-      "name": "ao agents",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Inspect and manage .agents/ contracts and surfaces",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.anti-patterns",
-      "name": "ao anti-patterns",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "List learnings marked as anti-patterns",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--format",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.badge",
-      "name": "ao badge",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Display knowledge flywheel health badge",
-      "status": "active",
-      "driven_by_skills": [
-        "status"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.beads",
       "name": "ao beads",
       "type": "cli-command",
@@ -3456,65 +2893,11 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.canon",
-      "name": "ao canon",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Team-knowledge canon: learnings earned by independent attestation",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.capabilities",
       "name": "ao capabilities",
       "type": "cli-command",
       "bounded_context": "BC5",
       "purpose": "Print the machine-readable CLI contract (JSON)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.ci",
-      "name": "ao ci",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
-      "status": "active",
-      "driven_by_skills": [
-        "standards"
-      ],
-      "flags": [
-        "--commit",
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.citation",
-      "name": "ao citation",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "BC1 CitationPort operations (verify file/function/symbol citations)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -3564,45 +2947,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.compile",
-      "name": "ao compile",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Compile .agents knowledge into an interlinked wiki",
-      "status": "active",
-      "driven_by_skills": [
-        "domain",
-        "evolve",
-        "post-mortem"
-      ],
-      "flags": [
-        "--batch-size",
-        "--compile-only",
-        "--config",
-        "--defrag-only",
-        "--dry-run",
-        "--force",
-        "--force-repair",
-        "--full",
-        "--gold",
-        "--incremental",
-        "--json",
-        "--lint-only",
-        "--max-batches",
-        "--mine-only",
-        "--output",
-        "--output-dir",
-        "--quiet",
-        "--repair",
-        "--reset",
-        "--runtime",
-        "--since",
-        "--sources",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.config",
       "name": "ao config",
       "type": "cli-command",
@@ -3621,63 +2965,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.constraint",
-      "name": "ao constraint",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Manage compiled constraints",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.contradict",
-      "name": "ao contradict",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Detect potentially contradictory learnings",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.converge",
-      "name": "ao converge",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Bounded fix -> re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK",
-      "status": "active",
-      "driven_by_skills": [
-        "converge"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--kill-dir",
-        "--max-rounds",
-        "--min-contexts",
-        "--output",
-        "--require-cross-family",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.council-gate",
       "name": "ao council-gate",
       "type": "cli-command",
@@ -3690,44 +2977,6 @@
         "--dry-run",
         "--json",
         "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.dedup",
-      "name": "ao dedup",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Detect near-duplicate learnings",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--merge",
-        "--output",
-        "--verbose",
-        "--yes"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.demo",
-      "name": "ao demo",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Show the council-first AgentOps 3.0 value path",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--concepts",
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--quick",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -3805,105 +3054,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.extract",
-      "name": "ao extract",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Process pending learning extractions",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--all",
-        "--bead",
-        "--clear",
-        "--config",
-        "--dry-run",
-        "--json",
-        "--max-content",
-        "--output",
-        "--queue",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.feedback-loop",
-      "name": "ao feedback-loop",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Close the MemRL feedback loop for a session",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--alpha",
-        "--citation-type",
-        "--config",
-        "--drain",
-        "--drain-reward",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--reward",
-        "--session",
-        "--transcript",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.findings",
-      "name": "ao findings",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Manage promoted findings",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.flywheel",
-      "name": "ao flywheel",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Knowledge flywheel operations",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.forge",
-      "name": "ao forge",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Extract knowledge from sources",
-      "status": "active",
-      "driven_by_skills": [
-        "post-mortem"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.gate",
       "name": "ao gate",
       "type": "cli-command",
@@ -3965,23 +3115,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.guard-status",
-      "name": "ao guard-status",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Verify guard hook and validator launcher installation",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.init",
       "name": "ao init",
       "type": "cli-command",
@@ -3995,73 +3128,6 @@
         "--json",
         "--output",
         "--stealth",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.inject",
-      "name": "ao inject",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Output relevant knowledge for explicit or JIT injection",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--apply-decay",
-        "--bead",
-        "--config",
-        "--context",
-        "--dry-run",
-        "--for",
-        "--format",
-        "--index-only",
-        "--json",
-        "--max-tokens",
-        "--no-cite",
-        "--output",
-        "--predecessor",
-        "--profile",
-        "--quarantine-flagged",
-        "--session",
-        "--session-type",
-        "--utility-weight",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.install-guards",
-      "name": "ao install-guards",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Install repo-local git guard hooks",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.knowledge",
-      "name": "ao knowledge",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
-      "status": "active",
-      "driven_by_skills": [
-        "operationalize"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -4085,193 +3151,11 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.lookup",
-      "name": "ao lookup",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Retrieve specific knowledge artifacts by ID or query",
-      "status": "active",
-      "driven_by_skills": [
-        "bootstrap",
-        "crank",
-        "discovery",
-        "domain",
-        "evolve",
-        "implement",
-        "operationalize",
-        "plan",
-        "post-mortem",
-        "pre-mortem",
-        "status",
-        "swarm",
-        "validate"
-      ],
-      "flags": [
-        "--bead",
-        "--cite",
-        "--config",
-        "--dry-run",
-        "--gold",
-        "--json",
-        "--limit",
-        "--no-cite",
-        "--output",
-        "--pointers",
-        "--query",
-        "--session",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.maturity",
-      "name": "ao maturity",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Check and manage learning maturity levels",
-      "status": "active",
-      "driven_by_skills": [
-        "domain"
-      ],
-      "flags": [
-        "--apply",
-        "--archive",
-        "--config",
-        "--curate",
-        "--dry-run",
-        "--evict",
-        "--expire",
-        "--global",
-        "--json",
-        "--migrate-md",
-        "--output",
-        "--recalibrate",
-        "--scan",
-        "--target-size",
-        "--uncited-days",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.mcp",
-      "name": "ao mcp",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.membrane",
       "name": "ao membrane",
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Self-improving membrane: turn escapes into membrane checks",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.metrics",
-      "name": "ao metrics",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Knowledge flywheel metrics",
-      "status": "active",
-      "driven_by_skills": [
-        "crank",
-        "status"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.mine",
-      "name": "ao mine",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Extract knowledge signal from git, .agents/, and code",
-      "status": "active",
-      "driven_by_skills": [
-        "crank",
-        "evolve"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--emit-work-items",
-        "--json",
-        "--output",
-        "--output-dir",
-        "--quiet",
-        "--since",
-        "--sources",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.next-work",
-      "name": "ao next-work",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Operate on the harvested next-work queue (.agents/rpi/next-work.jsonl)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.notebook",
-      "name": "ao notebook",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Manage the session notebook (MEMORY.md)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.patterns",
-      "name": "ao patterns",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Inspect and repair .agents/patterns/ artifacts",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -4329,24 +3213,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.pool",
-      "name": "ao pool",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Manage quality pools",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--tier",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.provenance",
       "name": "ao provenance",
       "type": "cli-command",
@@ -4385,96 +3251,11 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.ratchet",
-      "name": "ao ratchet",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Brownian Ratchet workflow tracking",
-      "status": "active",
-      "driven_by_skills": [
-        "crank",
-        "discovery",
-        "evolve",
-        "handoff",
-        "implement",
-        "plan",
-        "pre-mortem",
-        "rpi",
-        "status",
-        "validate"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.ready",
       "name": "ao ready",
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Print harness-neutral ready bead state as JSON",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.reconcile",
-      "name": "ao reconcile",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Join git, CI, release, beads, and .agents truth into one report",
-      "status": "active",
-      "driven_by_skills": [
-        "release",
-        "status"
-      ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--limit",
-        "--output",
-        "--repo",
-        "--since",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.redact",
-      "name": "ao redact",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.registry",
-      "name": "ao registry",
-      "type": "cli-command",
-      "bounded_context": "BC4",
-      "purpose": "Query the unified registry",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -4504,74 +3285,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.scope",
-      "name": "ao scope",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Manage edit-scope guard (freeze, unfreeze, status)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--lock",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.search",
-      "name": "ao search",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Search workspace session history and repo-local knowledge",
-      "status": "active",
-      "driven_by_skills": [
-        "discovery",
-        "plan",
-        "pre-mortem",
-        "validate"
-      ],
-      "flags": [
-        "--cass",
-        "--cite",
-        "--config",
-        "--dry-run",
-        "--json",
-        "--limit",
-        "--local",
-        "--output",
-        "--session",
-        "--type",
-        "--use-sc",
-        "--verbose",
-        "--workspace"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.seed",
-      "name": "ao seed",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Plant the seed in any repository",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--force",
-        "--hooks",
-        "--json",
-        "--output",
-        "--template",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.session",
       "name": "ao session",
       "type": "cli-command",
@@ -4585,23 +3298,6 @@
         "--json",
         "--output",
         "--session",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.sessions",
-      "name": "ao sessions",
-      "type": "cli-command",
-      "bounded_context": "BC5",
-      "purpose": "Manage indexed session pages",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -4634,24 +3330,6 @@
       "flags": [
         "--config",
         "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.trace",
-      "name": "ao trace",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Track artifact provenance",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--graph",
         "--json",
         "--output",
         "--verbose"
@@ -4739,61 +3417,6 @@
         "crank",
         "shared"
       ],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.vibe-check",
-      "name": "ao vibe-check",
-      "type": "cli-command",
-      "bounded_context": "BC2",
-      "purpose": "Analyze codebase health and vibe",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--full",
-        "--json",
-        "--markdown",
-        "--output",
-        "--repo",
-        "--since",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.wiki",
-      "name": "ao wiki",
-      "type": "cli-command",
-      "bounded_context": "BC1",
-      "purpose": "Unified wiki knowledge surface (experimental)",
-      "status": "active",
-      "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.worktree",
-      "name": "ao worktree",
-      "type": "cli-command",
-      "bounded_context": "",
-      "purpose": "Worktree maintenance utilities",
-      "status": "active",
-      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",

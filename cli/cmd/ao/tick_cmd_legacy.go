@@ -57,7 +57,7 @@ var tickClaimCmd = &cobra.Command{
 	Short: "Claim a bead through br",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickPassthrough(newTickRuntime(cmd), "br", "update", args[0], "--claim")
+		return tickTrackerPassthrough(newTickRuntime(cmd), "update", args[0], "--claim")
 	},
 }
 
@@ -66,7 +66,7 @@ var tickReopenCmd = &cobra.Command{
 	Short: "Reopen a bead after failed validation",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickPassthrough(newTickRuntime(cmd), "br", "update", args[0], "--status", "open")
+		return tickTrackerPassthrough(newTickRuntime(cmd), "update", args[0], "--status", "open")
 	},
 }
 

@@ -82,6 +82,14 @@ func (rt tickRuntime) run(name string, args ...string) ([]byte, int, error) {
 	return out, 127, err
 }
 
+func (rt tickRuntime) runTracker(args ...string) ([]byte, int, error) {
+	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
+	if err != nil {
+		return nil, 127, err
+	}
+	return rt.run(resolution.Binary, args...)
+}
+
 var verdictGateCmd = &cobra.Command{
 	Use:   "verdict-gate <file|->",
 	Short: "Reject verdicts without commands and independent judge identity",
@@ -172,6 +180,17 @@ func tickPassthrough(rt tickRuntime, name string, args ...string) error {
 	return nil
 }
 
+func tickTrackerPassthrough(rt tickRuntime, args ...string) error {
+	out, code, err := rt.runTracker(args...)
+	if len(out) > 0 {
+		_, _ = rt.stdout.Write(out)
+	}
+	if err != nil {
+		return &tickExitError{code: code, msg: strings.TrimSpace(err.Error())}
+	}
+	return nil
+}
+
 type tickBead struct {
 	ID       string `json:"id"`
 	Title    string `json:"title,omitempty"`
@@ -195,13 +214,13 @@ type tickCounts struct {
 }
 
 func tickReady(rt tickRuntime) error {
-	readyOut, code, err := rt.run("br", "ready", "--json")
+	readyOut, code, err := rt.runTracker("ready", "--json")
 	if err != nil || code != 0 {
 		return &tickExitError{code: code, msg: "br ready --json failed"}
 	}
 	ready := tickParseBeads(readyOut)
 
-	allOut, code, err := rt.run("br", "list", "--all", "--json")
+	allOut, code, err := rt.runTracker("list", "--all", "--json")
 	if err != nil || code != 0 {
 		return &tickExitError{code: code, msg: "br list --all --json failed"}
 	}
@@ -221,12 +240,12 @@ func tickReady(rt tickRuntime) error {
 }
 
 func tickNextReady(rt tickRuntime) string {
-	if out, code, err := rt.run("br", "ready", "--json"); err == nil && code == 0 {
+	if out, code, err := rt.runTracker("ready", "--json"); err == nil && code == 0 {
 		if id := tickFirstReadyFromJSON(out); id != "" {
 			return id
 		}
 	}
-	out, _, _ := rt.run("br", "ready")
+	out, _, _ := rt.runTracker("ready")
 	return regexp.MustCompile(`cp-[A-Za-z0-9.]+`).FindString(string(out))
 }
 
@@ -267,7 +286,7 @@ func tickCountBeads(ready, all []tickBead) tickCounts {
 }
 
 func tickStatus(rt tickRuntime) error {
-	out, _, _ := rt.run("br", "ready")
+	out, _, _ := rt.runTracker("ready")
 	if regexp.MustCompile(`cp-`).Match(out) {
 		_, _ = rt.stdout.Write(out)
 		return nil
@@ -281,7 +300,7 @@ func tickStatus(rt tickRuntime) error {
 }
 
 func tickHasOpenOrInProgress(rt tickRuntime) bool {
-	out, code, err := rt.run("br", "list", "--all", "--json")
+	out, code, err := rt.runTracker("list", "--all", "--json")
 	if err != nil || code != 0 {
 		return false
 	}
@@ -319,18 +338,18 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 	if before == "" {
 		before = "none"
 	}
-	if _, code, err := rt.run("br", "close", id, "--reason", "evidence: "+evidence); err != nil || code != 0 {
+	if _, code, err := rt.runTracker("close", id, "--reason", "evidence: "+evidence); err != nil || code != 0 {
 		fmt.Fprintf(rt.stderr, "FAILED close %s: br close failed or skipped; no files staged\n", id)
 		return &tickExitError{code: tickExitCloseFail}
 	}
-	if _, code, err := rt.run("br", "sync", "--flush-only"); err != nil || code != 0 {
-		_, _, _ = rt.run("br", "sync")
+	if _, code, err := rt.runTracker("sync", "--flush-only"); err != nil || code != 0 {
+		_, _, _ = rt.runTracker("sync")
 	}
 	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
 	metadataPath := filepath.Join(ledgerDir, "metadata.json")
 	if !tickLedgerShowsClosed(issuesPath, id) {
-		_, _, _ = rt.run("br", "update", id, "--status", "open")
-		_, _, _ = rt.run("br", "sync", "--flush-only")
+		_, _, _ = rt.runTracker("update", id, "--status", "open")
+		_, _, _ = rt.runTracker("sync", "--flush-only")
 		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger does not show a closed bead after br close; bead reopened\n", id)
 		return &tickExitError{code: tickExitCloseFail}
 	}
@@ -356,7 +375,7 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 		after = "none"
 	}
 	if before == after && !ledgerCommitNoop {
-		_, _, _ = rt.run("br", "update", id, "--status", "open")
+		_, _, _ = rt.runTracker("update", id, "--status", "open")
 		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
 		return &tickExitError{code: tickExitNoCommit}
 	}
@@ -1087,7 +1106,7 @@ func tickSmoke(rt tickRuntime) error {
 	} else {
 		failLine("6 found claude in -p/--print mode on a tracked script surface")
 	}
-	if _, code, err := rt.run("br", "ready"); err == nil && code == 0 {
+	if _, code, err := rt.runTracker("ready"); err == nil && code == 0 {
 		if _, code, err := rt.run("git", "rev-parse", "HEAD"); err == nil && code == 0 {
 			passLine("7 br ready + git rev-parse HEAD resolve")
 		} else {

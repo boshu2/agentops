@@ -48,8 +48,8 @@ surface has a row naming its replacement (and the restore path when one exists).
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if jsonFlag {
-			output = "json"
+		if err := negotiateOutput(cmd); err != nil {
+			return err
 		}
 		syncConfigFlagToEnv()
 		if err := worktreeconfig.SanitizeGitProcessEnv(); err != nil {
@@ -75,6 +75,26 @@ Use "ao <command> --help" for more information about a command.`,
 
 		return nil
 	},
+}
+
+func negotiateOutput(cmd *cobra.Command) error {
+	outputFlag := cmd.Root().PersistentFlags().Lookup("output")
+	jsonOutputFlag := cmd.Root().PersistentFlags().Lookup("json")
+	requestedOutput := outputFlag != nil && outputFlag.Changed
+	requestedJSON := jsonOutputFlag != nil && jsonOutputFlag.Changed && jsonFlag
+
+	switch output {
+	case "table", "json", "yaml":
+	default:
+		return fmt.Errorf("unsupported output format %q (want table, json, or yaml)", output)
+	}
+	if requestedJSON && requestedOutput && output != "json" {
+		return fmt.Errorf("conflicting output formats: --json requests json while --output requests %s", output)
+	}
+	if requestedJSON {
+		output = "json"
+	}
+	return nil
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -5,12 +5,6 @@
 
 | Command | Category | Coverage | Reason |
 |---------|----------|----------|--------|
-| `ao agent bundle` | `public-tested` | `allowlisted` | Covered by vendorimage agentbundle adapter tests and command registration tests. |
-| `ao agents doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao agents inspect` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao agents lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao anti-patterns` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao badge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads audit` | `public-stateful-fixture-needed` | `allowlisted` | Requires a beads database fixture; auto-close mode mutates issue state. |
 | `ao beads cluster` | `public-stateful-fixture-needed` | `allowlisted` | Requires a beads database fixture; apply mode mutates issue parents. |
 | `ao beads dir` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -25,31 +19,14 @@
 | `ao beads tracker` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads verify-acceptance` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao canon cite` | `public-stateful-fixture-needed` | `allowlisted` | Requires an isolated canon ledger and citation fixture. |
-| `ao canon promote` | `public-stateful-fixture-needed` | `allowlisted` | Mutates canon promotion state and needs a disposable canon fixture. |
-| `ao canon status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao canon verify` | `public-stateful-fixture-needed` | `allowlisted` | Verifies canon evidence against repo-local canon fixtures not present in release smoke. |
 | `ao capabilities` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao ci latest` | `manual-only` | `allowlisted` | Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture. |
-| `ao ci recent` | `manual-only` | `allowlisted` | Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture. |
-| `ao citation verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim bind` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim list` | `public-stateful-fixture-needed` | `allowlisted` | Reads claim-evidence stores and needs an isolated claim fixture. |
 | `ao close` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao compile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root; subcommand generation has focused tests. |
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint activate` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
-| `ao constraint list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao constraint retire` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
-| `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
-| `ao contradict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao converge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao council-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao dedup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation capabilities and needs a controlled home/repo fixture. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state and needs a controlled home/repo fixture. |
 | `ao doctor explain` | `public-stateful-fixture-needed` | `allowlisted` | Explains doctor findings from local state and needs a controlled findings fixture. |
@@ -85,22 +62,6 @@
 | `ao eval task list` | `public-stateful-fixture-needed` | `allowlisted` | Reads eval task manifests and needs a representative eval fixture. |
 | `ao eval task run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval task show` | `public-stateful-fixture-needed` | `allowlisted` | Reads eval task manifests and needs a representative eval fixture. |
-| `ao extract` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao feedback-loop` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao findings export` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao findings list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao findings pull` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao findings retire` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao findings stats` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao flywheel close-loop` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao flywheel compare` | `public-stateful-fixture-needed` | `allowlisted` | Requires primary and shadow metric fixtures for meaningful comparison. |
-| `ao flywheel gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao flywheel nudge` | `public-tested` | `allowlisted` | Covered by flywheel status smoke behavior. |
-| `ao flywheel status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao forge batch` | `public-tested` | `allowlisted` | Covered by batch forge tests. |
-| `ao forge markdown` | `public-tested` | `allowlisted` | Covered by forge helper tests. |
-| `ao forge review` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao forge transcript` | `public-tested` | `allowlisted` | Covered by forge helper tests. |
 | `ao gate approve` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate bulk-approve` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -127,35 +88,15 @@
 | `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao governor budget` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao governor noise-band` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao guard-status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao install-guards` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao knowledge activate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao knowledge beliefs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao knowledge brief` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao knowledge gaps` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao knowledge playbooks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao land` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao lookup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao mcp serve` | `public-tested` | `allowlisted` | Covered by mcpsurface and mcptransport adapter tests and command registration tests. |
 | `ao membrane calibrate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane catch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane derive-checks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane digest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane recall` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao membrane triage` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
-| `ao metrics cite` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
-| `ao metrics cite-report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao metrics health` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao metrics report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao next-work materialize` | `public-tested` | `allowlisted` | Covered by nextworkmaterialize adapter tests and command registration tests. |
-| `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pawl doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pawl down` | `unsafe-live` | `allowlisted` | Kills the live standing opus+codex ATM pawl-service; ao wrapper exit-code-tested (TestPawlServiceCmd); pawl.sh down live-proven (ml8.1). |
 | `ao pawl health` | `unsafe-live` | `allowlisted` | Probes a live standing ATM pawl-service; ao wrapper exit-code-tested; pawl.sh health live-proven. |
@@ -166,15 +107,6 @@
 | `ao pawl smoke` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pawl up` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao plan-pawl decide` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
-| `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |
-| `ao pool ingest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao pool list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao pool promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
-| `ao pool reindex` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao pool reject` | `public-tested` | `allowlisted` | Covered by pool command tests. |
-| `ao pool show` | `public-tested` | `allowlisted` | Covered by pool command tests. |
-| `ao pool stage` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao provenance add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance emit-landed` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance emit-verdict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -187,28 +119,8 @@
 | `ao provenance trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao provenance verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao quick-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao ratchet check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao ratchet find` | `public-tested` | `allowlisted` | Covered through search and inject command behavior. |
-| `ao ratchet migrate` | `public-stateful-fixture-needed` | `allowlisted` | Migrates legacy ratchet artifacts. |
-| `ao ratchet migrate-artifacts` | `public-stateful-fixture-needed` | `allowlisted` | Adds frontmatter to .agents artifacts. |
-| `ao ratchet next` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao ratchet promote` | `public-stateful-fixture-needed` | `allowlisted` | Promotes artifact state across tiers. |
-| `ao ratchet record` | `public-stateful-fixture-needed` | `allowlisted` | Records workflow step completion. |
-| `ao ratchet skip` | `public-stateful-fixture-needed` | `allowlisted` | Records intentional skip state. |
-| `ao ratchet spec` | `public-tested` | `allowlisted` | Covered through ratchet status behavior. |
-| `ao ratchet status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao ratchet trace` | `public-tested` | `allowlisted` | Covered through trace command behavior. |
-| `ao ratchet validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao reconcile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao registry list` | `public-stateful-fixture-needed` | `allowlisted` | Reads generated registry state and needs a representative registry fixture. |
 | `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao scope freeze` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao scope status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao scope unfreeze` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao seed` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session close` | `public-tested` | `allowlisted` | Covered by session close tests. |
 | `ao session handoff` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -220,8 +132,6 @@
 | `ao session state review-request` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session state validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session state verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao sessions index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao sessions spawn` | `manual-only` | `allowlisted` | Spawns runtime sessions and requires live terminal/runtime state. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills consumers` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills edit digest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -234,32 +144,12 @@
 | `ao skills resolve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao skills retire` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao verdict-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao verify init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao verify receipts` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao verify stats` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao vibe-check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki add` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki gold` | `public-stateful-fixture-needed` | `allowlisted` | Reads .agents and writes the .ao/wiki OKF gold wiki; compiler logic covered by cli/internal/wiki/gold_test.go. |
-| `ao wiki index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki inject` | `public-stateful-fixture-needed` | `allowlisted` | Reads and writes wiki/corpus state and needs an isolated wiki fixture. |
-| `ao wiki lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki promote` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki query` | `public-stateful-fixture-needed` | `allowlisted` | Queries wiki/corpus indexes and needs a representative wiki fixture. |
-| `ao wiki recompile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki remove` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao wiki use` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao worktree create` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao worktree gc` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao yield emit` | `public-stateful-fixture-needed` | `allowlisted` | Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm). |
 | `ao yield gauge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao yield report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
