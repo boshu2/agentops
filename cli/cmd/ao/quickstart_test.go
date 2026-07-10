@@ -103,8 +103,8 @@ func TestQuickstart_CreateTasksFile_ValidJSON(t *testing.T) {
 
 func TestQuickstart_ShowNextSteps_WithBeads(t *testing.T) {
 	out, _ := captureStdout(t, func() error { showNextSteps(true); return nil })
-	if !strings.Contains(out, "br ready") {
-		t.Errorf("with beads=true, expected 'br ready' tracker reference in output:\n%s", out)
+	if !strings.Contains(out, "ao beads ready") {
+		t.Errorf("with beads=true, expected selected-tracker route 'ao beads ready' in output:\n%s", out)
 	}
 	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
 		if strings.Contains(out, tombstone) {
@@ -535,7 +535,7 @@ func TestQuickstart_showNextSteps_withBeads(t *testing.T) {
 		showNextSteps(true)
 	})
 
-	if !strings.Contains(got, "Tracked work") {
+	if !strings.Contains(got, "Select tracked work") {
 		t.Fatalf("expected beads next steps, got: %s", got)
 	}
 }
@@ -545,7 +545,7 @@ func TestQuickstart_showNextSteps_withoutBeads(t *testing.T) {
 		showNextSteps(false)
 	})
 
-	if !strings.Contains(got, "Start your agent in this repo") {
+	if !strings.Contains(got, "Inspect repository readiness") {
 		t.Fatalf("expected no-beads next steps, got: %s", got)
 	}
 }
