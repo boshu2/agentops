@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -22,6 +23,13 @@ func aoBinary(t *testing.T) string {
 		t.Skipf("ao binary not found at %s — run 'cd cli && make build' first", binPath)
 	}
 	return binPath
+}
+
+func approvedDefaultSpineBinaryCommand(args []string) bool {
+	if len(args) == 0 || args[0] == "completion" {
+		return true
+	}
+	return approvedDefaultSpine[args[0]]
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +65,9 @@ func TestFlagMatrix_JSONOutput(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		if !approvedDefaultSpineBinaryCommand(tt.args) {
+			continue
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := exec.Command(bin, tt.args...)
 			cmd.Dir = findRepoRoot(t)
@@ -99,6 +110,20 @@ func TestFlagMatrix_QuietMode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		if !approvedDefaultSpineBinaryCommand(tt.args) {
+			t.Run(tt.name+"-archived", func(t *testing.T) {
+				cmd := exec.Command(bin, tt.args[0], "--help")
+				cmd.Dir = findRepoRoot(t)
+				out, err := cmd.CombinedOutput()
+				if err == nil {
+					t.Fatalf("archived command %q unexpectedly executes in the default spine", tt.args[0])
+				}
+				if !strings.Contains(string(out), "unknown command") {
+					t.Fatalf("archived command %q failed for the wrong reason:\n%s", tt.args[0], out)
+				}
+			})
+			continue
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			tmp := t.TempDir()
@@ -152,6 +177,9 @@ func TestFlagMatrix_InvalidFlags(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		if !approvedDefaultSpineBinaryCommand(tt.args) {
+			continue
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := exec.Command(bin, tt.args...)
 			cmd.Dir = findRepoRoot(t)
@@ -182,50 +210,11 @@ func TestFlagMatrix_InvalidFlags(t *testing.T) {
 func TestFlagMatrix_HelpConsistency(t *testing.T) {
 	bin := aoBinary(t)
 
-	commands := []string{
-		"version",
-		"status",
-		"doctor",
-		"seed",
-		"completion",
-		// Deprecated aliases (still show help)
-		"search",
-		"inject",
-		"badge",
-		"compile",
-		"constraint",
-		"contradict",
-		// corpus/curate/defrag are archived behind //go:build flywheel; the
-		// default spine binary should not expose them.
-		"dedup",
-		"lookup",
-		"knowledge",
-		"memory",
-		"notebook",
-		"metrics",
-		"goals",
-		"ratchet",
-		"retrieval-bench",
-		"pool",
-		"flywheel",
-		"forge",
-		"session",
-		"config",
-		"trace",
-		"maturity",
-		"anti-patterns",
-		"gate",
-		"init",
-		"demo",
-		"vibe-check",
-		"quick-start",
-		// Former namespace commands now top-level
-		"forge",
-		"pool",
-		"ratchet",
-		"memory",
-		"seed",
+	commands := []string{"completion"}
+	for command := range approvedDefaultSpine {
+		commands = append(commands, command)
 	}
+	sort.Strings(commands)
 
 	for _, cmd := range commands {
 		t.Run(cmd, func(t *testing.T) {

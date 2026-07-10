@@ -11,6 +11,16 @@ import (
 // should still set Args adjacent to Use; this full-tree pass is the ratchet that
 // prevents legacy nil policy from surviving indefinitely.
 func init() {
+	// Cobra otherwise synthesizes `help` lazily during execution. Initialize it
+	// before the whole-tree policy pass so test order cannot expose a public
+	// runnable with nil Args. Help accepts command paths of arbitrary depth.
+	rootCmd.InitDefaultHelpCmd()
+	for _, command := range rootCmd.Commands() {
+		if command.Name() == "help" {
+			command.Args = cobra.ArbitraryArgs
+			break
+		}
+	}
 	declareMissingArgsPolicies(rootCmd)
 }
 
