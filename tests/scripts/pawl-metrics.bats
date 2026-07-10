@@ -70,3 +70,51 @@ EOF
   [ "$status" -eq 0 ]
   [ "$(echo "$output" | jq -r '.routes')" -eq 3 ]   # the 3 valid rows still computed; corrupt skipped
 }
+
+@test "pawl metrics: corrupt rows are reported EXPLICITLY, not silently skipped (age-l3xj D5)" {
+  _seed3
+  printf '{"ts":"partial","latency_s":  \n' >> "$MF"
+  printf 'not json at all\n' >> "$MF"
+  run bash -c "cd '$TMP' && bash '$PAWL' metrics --json"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e . >/dev/null                       # output stays valid JSON
+  [ "$(echo "$output" | jq -r '.skipped_corrupt')" -eq 2 ]  # the skip is visible
+  run bash -c "cd '$TMP' && bash '$PAWL' metrics"
+  [[ "$output" == *"skipped 2 corrupt"* ]]
+}
+
+@test "pawl metrics: clean file reports skipped_corrupt=0" {
+  _seed3
+  run bash -c "cd '$TMP' && bash '$PAWL' metrics --json"
+  [ "$(echo "$output" | jq -r '.skipped_corrupt')" -eq 0 ]
+}
+
+# age-l3xj (refuter rounds 22+26): EVERY `python3 -` heredoc in pawl.sh must use isolated mode
+# (-I) — Python puts cwd first on sys.path, so on the untrusted-repo path a repo-planted json.py
+# would be imported and executed. This grep-guard catches any non-isolated invocation (round 26
+# was a THIRD invocation, resolve_engage_deadline, added by a merge after the round-22 fix).
+@test "every python3 heredoc invocation in pawl.sh uses isolated mode (-I)" {
+  REPO_ROOT="$(git rev-parse --show-toplevel)"
+  # A `python3 -` (stdin script) that is NOT `python3 -I` is the vulnerable form.
+  run bash -c "grep -nE 'python3 +-[^I]' '$REPO_ROOT/scripts/pawl.sh' | grep -vE 'command -v|>/dev/null' || true"
+  [ -z "$output" ]
+  # And the embedded copy stays in sync.
+  run bash -c "grep -nE 'python3 +-[^I]' '$REPO_ROOT/cli/embedded/pawl/scripts/pawl.sh' | grep -vE 'command -v|>/dev/null' || true"
+  [ -z "$output" ]
+}
+
+# age-l3xj (refuter round 22): `pawl metrics` runs `python3 - ... <<PY; import json`. Python puts
+# cwd first on sys.path, so on the untrusted-repo path a repo-planted json.py would be imported and
+# EXECUTED even for read-only metrics. Isolated mode (python3 -I) drops cwd from sys.path.
+@test "pawl metrics: a repo-planted json.py is NEVER imported/executed (python3 -I isolation)" {
+  _seed3
+  # Plant a hostile json.py in the CWD the metrics run uses.
+  cat > "$TMP/json.py" <<EOF
+import os
+open(os.path.join("$TMP", "PWNED"), "w").write("x")
+EOF
+  run bash -c "cd '$TMP' && bash '$PAWL' metrics --json"
+  [ "$status" -eq 0 ]
+  [ ! -e "$TMP/PWNED" ]                       # the planted json.py was NOT executed
+  [ "$(echo "$output" | jq -r '.routes')" -eq 3 ]   # stdlib json parsed the metrics correctly
+}
