@@ -1,33 +1,13 @@
-# ao - AgentOps CLI
+# ao — AgentOps CLI
 
-`ao` is the automation and control-plane surface for AgentOps. Use it when you
-want the operational layer to run headlessly: stage briefings, inspect
-bookkeeping, drive repeatable flows, or run overnight compounding without
-staying inside an interactive skill.
+`ao` is the local verification membrane and durable bookkeeper for agent work.
+It turns a committed change into an independently checked verdict and records
+that verdict in a hash-chained provenance ledger: no verdict means not done.
 
-One important lane inside the CLI is the software-factory surface. That lane
-makes the work order, delivery flow, and closeout explicit instead of leaving
-them implicit in chat state.
-
-The short version:
-
-```bash
-ao quick-start
-ao factory start --goal "fix auth startup"
-ao rpi phased "fix auth startup"
-ao overnight report
-```
-
-That lane keeps four concerns explicit:
-
-1. `ao factory start` surfaces a bounded work order by compiling a goal-time
-   briefing when the corpus supports it, then running Codex startup.
-2. `ao rpi phased` runs the delivery flow with fresh context per phase, and
-   `ao rpi status` lets the operator inspect long-running work.
-3. `ao overnight start` and `ao overnight report` run the private Dream flow
-   against the real local corpus and return a morning packet.
-4. `ao codex stop` and `ao flywheel close-loop` close the bookkeeping loop so
-   the session leaves behind learnings, citations, and handoff state.
+The default binary intentionally exposes the membrane/bookkeeper spine from
+[ADR-0012](../docs/adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md).
+Experimental corpus/flywheel commands are restorable with the `flywheel` build
+tag; retired factory/orchestration commands are restorable with `legacy`.
 
 ## Install
 
@@ -35,66 +15,59 @@ That lane keeps four concerns explicit:
 go install github.com/boshu2/agentops/cli/cmd/ao@latest
 ```
 
-## Quick Start
+## One live path
+
+From a repository root:
 
 ```bash
-# From your repo root: create .agents/, starter knowledge surfaces, and hooks
 ao quick-start
-
-# Start a goal with briefing-first runtime context
-ao factory start --goal "fix auth startup"
-
-# Run the delivery flow
-ao rpi phased "fix auth startup"
-
-# Optional: set up and run a private overnight Dream
-ao overnight setup
-ao overnight start --goal "tighten auth startup"
-ao overnight report
+ao session bootstrap
+ao beads tracker
+ao beads ready
+git add .
+git commit -m "fix: first validated change"
+ao verify my-first-change
+ao gate check --fast --scope head
 ```
 
-If you prefer the skill-first path, use `/rpi "fix auth startup"` after
-`ao factory start`, and use `/dream` when you want the same overnight engine
-through an interactive skill surface instead of a headless CLI command.
+`ao quick-start` creates the local readiness seed. `ao session bootstrap`
+orients the agent. `ao beads tracker` reports the selected BR/BD backend, and
+all tracker consumers use that same selection. `ao verify` obtains and records
+the first independent verdict. The gate is the final pre-push windshield.
 
-That's it. In Claude Code, `CLAUDE.md` remains the startup surface. The
-installed hooks stay silent and only prepare runtime state for the higher-level
-flows.
+## Default surfaces
 
-## Operator Surfaces
+| Surface | Purpose |
+|---|---|
+| `ao capabilities` | Recursive, versioned machine contract for the live command tree |
+| `ao quick-start` | Seed a repository and print the one live first-verdict path |
+| `ao beads` | Resolve and operate through the selected tracker |
+| `ao pawl` / `ao verify` | Independent review and commit-bound verdict |
+| `ao gate` / `ao validate` | Deterministic release checks and verdict-as-exit-code validation |
+| `ao provenance` | Append, inspect, export, and verify the hash-chained ledger |
+| `ao session` | Session bootstrap and closeout bookkeeping |
+| `ao goals` / `ao claim` | Intent, fitness, ownership, and evidence bindings |
+| `ao skills` | Inspect the checked-in skill contracts |
 
-**SessionStart**: Performs startup maintenance, recovers handoff state, and can
-stage `factory-goal.txt` / `factory-briefing.txt` without injecting context.
+Machine consumers should begin with `ao capabilities`. Global output formats
+are closed to `table`, `json`, and `yaml`; a leaf-local flag with the same name
+retains its local meaning.
 
-**UserPromptSubmit**: When startup lacked a goal, the first substantive prompt
-can be captured as silent factory intake and staged for later explicit use.
+## Build variants
 
-**SessionEnd**: Extracts learnings and updates the feedback loop.
+```bash
+go build ./cmd/ao
+go build -tags flywheel ./cmd/ao
+go build -tags legacy ./cmd/ao
+go build -tags 'flywheel legacy' ./cmd/ao
+```
 
-| Command | Purpose |
-|---------|---------|
-| `ao factory start --goal "<goal>"` | Compile briefing-first startup context, then run explicit Codex start |
-| `ao knowledge brief --goal "<goal>"` | Build the task-time briefing directly |
-| `ao codex start` | Lower-level hookless Codex startup |
-| `ao rpi phased "<goal>"` | CLI-first Discovery -> Implementation -> Validation lane |
-| `ao rpi status` | Monitor long-running phased work |
-| `ao overnight setup` | Detect host/runtime constraints and persist Dream config |
-| `ao overnight start --goal "<goal>"` | Run the local overnight compounding flow |
-| `ao overnight report` | Render the latest Dream summary and council state |
-| `ao codex stop` | Close the loop explicitly at session end |
-
-## Underlying Primitives
-
-These commands remain important, but they sit below the higher-level flows:
-
-- `ao knowledge` for belief/playbook/briefing refresh and gap reporting
-- `ao context assemble` for a five-section task briefing
-- `ao lookup` and `ao search` for direct retrieval
-- `ao forge transcript` and `ao flywheel close-loop` for manual lifecycle work
+Run `../scripts/verify-buildtags.sh` from this directory's parent to prove all
+variants compile and that the default executable membership remains focused.
 
 ## Reference
 
-- [Software Factory Surface](../docs/software-factory.md)
-- [Dream Report Contract](../docs/contracts/dream-report.md)
-- [Session Lifecycle](../docs/workflows/session-lifecycle.md)
-- [CLI Reference](docs/COMMANDS.md)
+- [Generated CLI reference](docs/COMMANDS.md)
+- [ADR-0012](../docs/adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md)
+- [Operating loop](../docs/architecture/operating-loop.md)
+- [Pawl contract](../docs/contracts/pawls.md)
