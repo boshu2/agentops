@@ -736,12 +736,41 @@ func tickRunVerdictGate(rt tickRuntime, path string) error {
 	return nil
 }
 
+// tickVerdictLineCap is the deliberate maximum length of a single line in a
+// council verdict artifact. It raises the implicit 64KB bufio.Scanner token
+// limit to a bounded ceiling: any legitimate verdict line fits well under it,
+// while a pathological line beyond it fails the scan closed rather than silently
+// truncating the rest of the artifact.
+const tickVerdictLineCap = 1 << 20 // 1 MiB
+
+// tickScanVerdictLines reads a verdict artifact into its lines with an explicit,
+// bounded scan buffer and surfaces any scanner error — including a line longer
+// than tickVerdictLineCap. Callers in the council verdict path MUST fail closed
+// on a non-nil error: an artifact that cannot be fully scanned must never be
+// treated as a PASS (Codex sweep F-03 — an unchecked scanner.Err() let a
+// 70000-byte line hide a trailing FAIL behind a truncated scan).
+func tickScanVerdictLines(text string) ([]string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	scanner.Buffer(make([]byte, 0, 64*1024), tickVerdictLineCap)
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return lines, nil
+}
+
 func tickVerdictHasCommandsRun(text string) bool {
+	lines, err := tickScanVerdictLines(text)
+	if err != nil {
+		// Fail closed: an unscannable artifact has no verifiable COMMANDS RUN body.
+		return false
+	}
 	inBlock := false
 	commandHeader := regexp.MustCompile(`(?i)commands[ _-]*run`)
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	for scanner.Scan() {
-		line := scanner.Text()
+	for _, line := range lines {
 		lower := strings.ToLower(line)
 		if commandHeader.MatchString(line) {
 			inBlock = true
@@ -886,9 +915,14 @@ func tickVerdictMetadataValue(text string, keys ...string) string {
 	for _, key := range keys {
 		wanted[tickNormalizeMetadataKey(key)] = true
 	}
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+	lines, err := tickScanVerdictLines(text)
+	if err != nil {
+		// Fail closed: an unscannable artifact yields no trusted metadata, which
+		// surfaces as an identity gap upstream.
+		return ""
+	}
+	for _, raw := range lines {
+		line := strings.TrimSpace(raw)
 		line = strings.TrimPrefix(line, "-")
 		line = strings.TrimPrefix(strings.TrimSpace(line), "*")
 		line = strings.TrimSpace(line)
@@ -930,11 +964,15 @@ func tickUnknownModelFamily(family string) bool {
 }
 
 func tickVerdictTokenCounts(text string) (pass, fail int) {
+	lines, err := tickScanVerdictLines(text)
+	if err != nil {
+		// Fail closed: an unscannable artifact yields no PASS token. Returning
+		// (0, 0) lands in the council's default branch (unverified), never a PASS.
+		return 0, 0
+	}
 	passRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*PASS\b`)
 	failRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*FAIL\b`)
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	for scanner.Scan() {
-		line := scanner.Text()
+	for _, line := range lines {
 		if passRE.MatchString(line) {
 			pass++
 		}

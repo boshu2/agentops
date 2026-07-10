@@ -806,6 +806,61 @@ func TestTickCouncilGateMatrix(t *testing.T) {
 // S1b.4 acceptance test). Self-judge (by context) and duplicate-context
 // fail-closed are covered there.
 
+// TestCouncilVerdictOversizedLine proves the council verdict parser fails closed
+// on an artifact it cannot fully scan. A default bufio.Scanner stops at 64KB and,
+// with an unchecked scanner.Err(), silently truncates the rest of the file — so a
+// verdict whose well-formed PASS prelude is followed by an oversized line then a
+// trailing FAIL was counted as a clean PASS (fail-open, Codex sweep F-03). The
+// well-formed prelude is built via the production tickTestVerdict writer so the
+// fixture is faithful (a control assertion proves it genuinely PASSes on its own).
+func TestCouncilVerdictOversizedLine(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+
+	// A genuine second PASS with a distinct judge context so the council has the
+	// two independent contexts a PASS quorum requires.
+	otherPass := write("other-pass.md", tickTestVerdict("codex", "athena", "claude-code", "claude", "PASS", "ao tick guard-status"))
+
+	// The well-formed prelude the attack is built on — produced by the production
+	// verdict writer, distinct context from otherPass.
+	prelude := tickTestVerdict("codex", "windyelm", "gemini-cli", "gemini", "PASS", "ao tick verdict-gate -")
+
+	// Control: the prelude alone is a genuine, independently-verifiable PASS. If
+	// this does not PASS, the fixture is malformed and the attack cases prove
+	// nothing.
+	control := write("control.md", prelude)
+	if code := tickExitCode(tickCouncilGate(rt, []string{otherPass, control})); code != 0 {
+		t.Fatalf("control council code = %d, want 0 — well-formed prelude is not a genuine PASS; fixture is not faithful", code)
+	}
+
+	// Attack A (the F-03 reproduction): the same prelude, then a 70000-byte line
+	// (past the 64KB default scan token), then a trailing FAIL. Pre-fix the
+	// oversized line stops the scanner before the FAIL, so the verdict counts as a
+	// clean PASS and the council PASSes (code 0) — a fail-open. Post-fix the
+	// council must not PASS.
+	hiddenFail := write("hidden-fail.md", prelude+strings.Repeat("A", 70000)+"\nVERDICT: FAIL\n")
+	if code := tickExitCode(tickCouncilGate(rt, []string{otherPass, hiddenFail})); code == 0 {
+		t.Fatal("council PASSed (code 0) with a 70000-byte line hiding a trailing FAIL — fail-open: the scanner truncated the artifact and never saw the FAIL")
+	}
+
+	// Attack B (the scanner.Err() path directly): a line past the deliberate scan
+	// cap (1 MiB, tickVerdictLineCap) with no hidden FAIL. An artifact that cannot
+	// be fully scanned must never be treated as a PASS. Pre-fix the overflow is
+	// silently ignored and the prelude's PASS is honored (code 0); post-fix the
+	// overflow must fail closed.
+	overflow := write("overflow.md", prelude+strings.Repeat("A", (1<<20)+1)+"\n")
+	if code := tickExitCode(tickCouncilGate(rt, []string{otherPass, overflow})); code == 0 {
+		t.Fatal("council PASSed (code 0) with a line past the scan cap — fail-open: scanner overflow did not surface")
+	}
+}
+
 func TestTickLedgerShowsClosed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "issues.jsonl")
 	body := `{"id":"cp-open","status":"open"}` + "\n" +
