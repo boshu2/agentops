@@ -310,7 +310,7 @@ func VerifyChain(records []Edge) (int, error) {
 			return i + 1, fmt.Errorf("record %d: %w", i+1, err)
 		}
 		if rec.PayloadHash != payloadHash {
-			return i + 1, fmt.Errorf("record %d: payload_hash mismatch", i+1)
+			return i + 1, fmt.Errorf("record %d: %s", i+1, payloadHashSkewHint)
 		}
 		if rec.Hash != hash {
 			return i + 1, fmt.Errorf("record %d: hash mismatch", i+1)

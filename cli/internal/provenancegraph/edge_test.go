@@ -139,6 +139,28 @@ func TestVerifyChain_DetectsTamper(t *testing.T) {
 	}
 }
 
+// TestVerifyChain_PayloadMismatchNamesReaderSkew is the second S4 mismatch
+// site (verification-surface-honesty): VerifyChain's record-level
+// payload_hash error must carry the SAME reader-skew hint as VerifyFile —
+// both surfaces must instruct rebuilding ao before the ledger is treated as
+// tampered.
+func TestVerifyChain_PayloadMismatchNamesReaderSkew(t *testing.T) {
+	a, err := Seal(validEdge(), "")
+	if err != nil {
+		t.Fatalf("seal a: %v", err)
+	}
+	tampered := a
+	tampered.ToID = "evil/path" // stale payload_hash — reader-side identical to skew
+
+	idx, cerr := VerifyChain([]Edge{tampered})
+	if cerr == nil || idx != 1 {
+		t.Fatalf("VerifyChain: idx=%d err=%v, want 1/non-nil", idx, cerr)
+	}
+	if !strings.Contains(cerr.Error(), payloadHashSkewHint) {
+		t.Fatalf("error = %q, must carry the shared reader-skew hint %q", cerr.Error(), payloadHashSkewHint)
+	}
+}
+
 // TestJoinKeys_AreNonPayload_HashUnaffected is the load-bearing invariant for
 // ag-5qltf: the additive (bead_id, merge_sha) mesh join keys MUST NOT enter the
 // payload hash. If they did, every edge committed before the fields existed
