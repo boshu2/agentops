@@ -4264,7 +4264,7 @@ ao skills link [flags]
 **Flags:**
 
 ```
-      --dest string   Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor)
+      --dest string   Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)
   -h, --help          help for link
       --json          Emit machine-readable JSON
 ```

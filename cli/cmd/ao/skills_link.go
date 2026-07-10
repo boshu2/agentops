@@ -104,8 +104,8 @@ var skillsLinkCmd = &cobra.Command{
 	Short: "Symlink repo skills into every installed runtime's live tier (Claude, Codex, AGY, Cursor)",
 	Long: `Scan skills/ and create a live-tier symlink for every skill dir that has
 no entry yet. By DEFAULT it links into EVERY agent runtime you have installed —
-~/.claude/skills, ~/.codex/skills, ~/.gemini/skills (AGY/Gemini), and
-~/.cursor/skills — detected by the runtime's config dir existing under $HOME;
+~/.claude/skills, ~/.codex/skills, ~/.gemini/skills (AGY/Gemini), ~/.cursor/skills,
+and ~/.pi/skills — detected by the runtime's config dir existing under $HOME;
 --dest overrides to a single dir. Idempotent and non-destructive: skills already
 linked are left alone, and a name owned by a real directory (a foreign corpus
 such as jsm) is reported as a conflict and never clobbered.
@@ -134,7 +134,7 @@ dotfiles/bin/link-skill --relink for that copy-verify-replace path.
 
 func init() {
 	skillsCmd.AddCommand(skillsLinkCmd)
-	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor)")
+	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)")
 	skillsLinkCmd.Flags().BoolVar(&skillsLinkJSON, "json", false, "Emit machine-readable JSON")
 }
 
@@ -169,11 +169,10 @@ func resolveRepoSkillsDir() (string, error) {
 // runtimeConfigDirs are the per-agent config dirs whose skills/ subdir is that
 // runtime's live tier. AgentOps skills are identical across runtimes, so a
 // default `ao skills link` links into EVERY runtime the user actually has
-// installed — Claude AND Codex (~/.codex/skills) AND AGY/Gemini
-// (~/.gemini/skills) AND Cursor — not just Claude. Detection is by the config
-// dir existing under $HOME (matches dotfiles/bin/link-skill --all coverage).
-// Order is display order.
-var runtimeConfigDirs = []string{".claude", ".codex", ".gemini", ".cursor"}
+// installed — Claude, Codex (~/.codex/skills), AGY/Gemini (~/.gemini/skills),
+// Cursor, and Pi (~/.pi/skills) — not just Claude. Detection is by the config
+// dir existing under $HOME. Order is display order.
+var runtimeConfigDirs = []string{".claude", ".codex", ".gemini", ".cursor", ".pi"}
 
 // resolveTargetDests returns the skills dirs to link into. An explicit --dest
 // wins as the single target. Otherwise it returns <home>/<rt>/skills for every
