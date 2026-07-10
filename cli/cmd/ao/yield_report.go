@@ -548,10 +548,13 @@ func sweepStalePackets(root string, beads map[string][]reportBead, now time.Time
 // evidence found. A packet is stale only when its status is draft/validated
 // in every artifact that declares one (closed or superseded anywhere is
 // terminal — never flagged) AND at least one mechanical evidence arm holds:
-// a CONFIRMED verdict edge in the provenance ledger naming the slug, or a
-// driver candidate bead resolving to a CLOSED tracker bead. A packet with no
-// evidence is never flagged; bare git-log slug mentions are deliberately not
-// an arm (the packet-creation commit always names the slug).
+// a CONFIRMED verdict edge in the provenance ledger naming the slug, a
+// driver candidate bead resolving to a CLOSED tracker bead, or a landed
+// trunk commit whose subject cites the slug together with a candidate id.
+// A packet with no evidence is never flagged; bare git-log slug mentions are
+// deliberately not an arm (the packet-creation commit always names the slug —
+// the landed-commit arm requires a candidate id precisely so it can never
+// self-trigger on that commit).
 func stalePacketRow(root, dir string, beads map[string][]reportBead, now time.Time) (yieldReportAndonRow, bool) {
 	intentText := readPacketArtifact(filepath.Join(dir, "intent.md"))
 	driverText := readPacketArtifact(filepath.Join(dir, "driver.md"))
@@ -566,6 +569,7 @@ func stalePacketRow(root, dir string, beads map[string][]reportBead, now time.Ti
 		return yieldReportAndonRow{}, false
 	}
 	slug := firstNonEmpty(driverFM["slug"], intentFM["slug"], filepath.Base(dir))
+	candidateIDs := packetCandidateBeadIDs(driverText)
 
 	evidence := []string{}
 	parkedAt := time.Time{}
@@ -573,7 +577,13 @@ func stalePacketRow(root, dir string, beads map[string][]reportBead, now time.Ti
 		evidence = append(evidence, why)
 		parkedAt = ts
 	}
-	if why, ts := stalePacketClosedBeadEvidence(packetCandidateBeadIDs(driverText), beads["closed"]); why != "" {
+	if why, ts := stalePacketClosedBeadEvidence(candidateIDs, beads["closed"]); why != "" {
+		evidence = append(evidence, why)
+		if parkedAt.IsZero() || (!ts.IsZero() && ts.Before(parkedAt)) {
+			parkedAt = ts
+		}
+	}
+	if why, ts := stalePacketLandedCommitEvidence(root, slug, candidateIDs); why != "" {
 		evidence = append(evidence, why)
 		if parkedAt.IsZero() || (!ts.IsZero() && ts.Before(parkedAt)) {
 			parkedAt = ts
@@ -724,6 +734,79 @@ func stalePacketClosedBeadEvidence(candidateIDs []string, closed []reportBead) (
 		}
 	}
 	return "", time.Time{}
+}
+
+// stalePacketLandedCommitEvidence is evidence arm (c) (verification-surface-
+// honesty S2): a landed trunk commit whose SUBJECT cites the packet slug
+// together with one of the driver's candidate bead ids. Requiring the
+// candidate id is what keeps the arm non-self-triggering: the packet-creation
+// commit names the slug alone, so bare slug matching (the rejected design)
+// would flag every packet the moment it is committed. `git log --grep` is
+// only a pre-filter; the subject predicate is enforced here. Tolerant like
+// the other arms: no git repo at root, or no matching commit, skips silently.
+// The OLDEST matching commit wins so Since reflects when the work first
+// landed.
+func stalePacketLandedCommitEvidence(root, slug string, candidateIDs []string) (string, time.Time) {
+	if slug == "" || len(candidateIDs) == 0 {
+		return "", time.Time{}
+	}
+	cmd := exec.Command("git", "-C", root, "log", "--fixed-strings", "--grep", slug, "--format=%H%x09%cI%x09%s")
+	cmd.Env = gitDiscoveryEnv()
+	out, err := cmd.Output()
+	if err != nil {
+		return "", time.Time{}
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	for i := len(lines) - 1; i >= 0; i-- { // git log is newest-first; walk oldest-first
+		parts := strings.SplitN(lines[i], "\t", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		sha, ciso, subject := parts[0], parts[1], parts[2]
+		if len(sha) < 12 || !strings.Contains(subject, slug) {
+			continue
+		}
+		for _, cid := range candidateIDs {
+			if !containsWord(subject, cid) {
+				continue
+			}
+			why := fmt.Sprintf("landed commit %s cites candidate %s (%q)", sha[:12], cid, subject)
+			ts, terr := time.Parse(time.RFC3339, ciso)
+			if terr != nil {
+				return why, time.Time{}
+			}
+			return why, ts.UTC()
+		}
+	}
+	return "", time.Time{}
+}
+
+// containsWord reports whether word occurs in s bounded by non-alphanumerics
+// (so candidate "B1" never matches inside "B12" or "AB1x").
+func containsWord(s, word string) bool {
+	if word == "" {
+		return false
+	}
+	for start := 0; ; {
+		i := strings.Index(s[start:], word)
+		if i < 0 {
+			return false
+		}
+		i += start
+		before, after := i-1, i+len(word)
+		leftOK := before < 0 || !isWordChar(s[before])
+		rightOK := after >= len(s) || !isWordChar(s[after])
+		if leftOK && rightOK {
+			return true
+		}
+		start = i + 1
+	}
+}
+
+// isWordChar reports whether b is an ASCII letter or digit (the word-boundary
+// alphabet for candidate-id matching).
+func isWordChar(b byte) bool {
+	return b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
 }
 
 // firstParseableTime returns the first candidate that parses as RFC3339, or the

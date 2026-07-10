@@ -306,6 +306,76 @@ func TestRunYieldReport_DraftPacketWithoutEvidenceNotFlagged(t *testing.T) {
 	}
 }
 
+// TestRunYieldReport_StalePacketFlaggedByLandedCommit is scenario S2 of
+// verification-surface-honesty (evidence arm c): a draft packet whose ONLY
+// shipped evidence is a landed trunk commit whose SUBJECT cites the slug
+// together with a driver candidate id is flagged, with that commit named —
+// no provenance ledger and no tracker rows at all.
+func TestRunYieldReport_StalePacketFlaggedByLandedCommit(t *testing.T) {
+	root := gitInitRepoT(t)
+	setYieldReportState(t, root)
+	slug := "landed-arm-fixture"
+	writeStalePacketFixture(t, root, slug, "draft", "B1")
+	sha := commitFileT(t, root, "src.txt", "the slice", "feat(loop): fixture slice lands (landed-arm-fixture B1)")
+
+	doc := decodeReport(t)
+	rows := stalePacketRows(doc)
+	if len(rows) != 1 {
+		t.Fatalf("stale-packet rows = %d, want exactly 1; queue: %+v", len(rows), doc.AndonQueue)
+	}
+	row := rows[0]
+	if row.ID != slug {
+		t.Errorf("row.ID = %q, want %q", row.ID, slug)
+	}
+	wantPath := ".agents/goal-design/" + slug
+	if !strings.Contains(row.Why, wantPath) {
+		t.Errorf("row.Why = %q, must name the packet path %q", row.Why, wantPath)
+	}
+	if !strings.Contains(row.Why, sha[:12]) {
+		t.Errorf("row.Why = %q, must name the landed commit %s", row.Why, sha[:12])
+	}
+	if !strings.Contains(row.Why, "B1") {
+		t.Errorf("row.Why = %q, must name the cited candidate B1", row.Why)
+	}
+	wantSince := gitCommitTimeUTC(t, root, sha)
+	if row.Since != wantSince {
+		t.Errorf("row.Since = %q, want the landed commit's committer date %q", row.Since, wantSince)
+	}
+}
+
+// TestRunYieldReport_PacketCreationCommitNeverSelfTriggers is the S2 negative
+// arm: a draft packet whose ONLY slug mention anywhere is its own
+// packet-creation commit (slug in the subject, NO candidate id) is never
+// flagged — the landed-commit arm must not degenerate into bare git-log slug
+// matching (the rejected self-triggering design).
+func TestRunYieldReport_PacketCreationCommitNeverSelfTriggers(t *testing.T) {
+	root := gitInitRepoT(t)
+	setYieldReportState(t, root)
+	slug := "creation-only-fixture"
+	writeStalePacketFixture(t, root, slug, "draft", "B1")
+	commitFileT(t, root, "notes.txt", "packet", "docs(goal-design): add creation-only-fixture packet")
+
+	doc := decodeReport(t)
+	if rows := stalePacketRows(doc); len(rows) != 0 {
+		t.Errorf("creation-commit-only packet flagged (self-triggering arm): %+v", rows)
+	}
+	if len(doc.AndonQueue) != 0 {
+		t.Errorf("andon queue = %+v, want empty", doc.AndonQueue)
+	}
+}
+
+// gitCommitTimeUTC returns sha's committer date as UTC RFC3339 — the shape
+// rfc3339OrEmpty renders into row.Since.
+func gitCommitTimeUTC(t *testing.T, repo, sha string) string {
+	t.Helper()
+	raw := runGitT(t, repo, "show", "-s", "--format=%cI", sha)
+	ts, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		t.Fatalf("parse committer date %q: %v", raw, err)
+	}
+	return ts.UTC().Format(time.RFC3339)
+}
+
 // TestRunYieldReport_StalePacketFlaggedFromSubdirCwd is scenario S1 of
 // verification-surface-honesty: the sweep must flag a stale packet identically
 // when the command runs from a repo SUBDIRECTORY. It drives the command-level
