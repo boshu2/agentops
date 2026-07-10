@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -63,9 +62,13 @@ func init() {
 
 // quickstartBeadsStep handles step 3: beads initialization or skip.
 func quickstartBeadsStep(cwd string) {
+	quickstartBeadsStepWithApp(cwd, NewApp())
+}
+
+func quickstartBeadsStepWithApp(cwd string, app *App) {
 	if !noBeads {
 		fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
-		if err := initBeads(cwd); err != nil {
+		if err := initBeadsWithApp(cwd, app); err != nil {
 			fmt.Printf("  ⚠ Beads init skipped: %v\n", err)
 			fmt.Println("  → You can run 'br init' later to enable git-native issues")
 		}
@@ -121,7 +124,7 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 		return runQuickstartMinimal(cwd, opts, jsonMode)
 	}
 
-	return runQuickstartFull(cwd, opts, jsonMode)
+	return runQuickstartFull(cwd, opts, jsonMode, AppFromContext(cmd.Context()))
 }
 
 func runQuickstartDryRun(cwd string, opts lifecycle.ReadinessOptions) error {
@@ -168,7 +171,7 @@ func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode 
 	return nil
 }
 
-func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool) error {
+func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool, app *App) error {
 	if !jsonMode {
 		fmt.Println("━━━ STEP 1: Applying core repo seed ━━━")
 	}
@@ -206,7 +209,7 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 			FirstVerdict: firstVerdict,
 		})
 	}
-	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict)
+	finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
 	return nil
 }
 
@@ -220,8 +223,8 @@ func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
 	return true, nil
 }
 
-func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo) {
-	quickstartBeadsStep(cwd)
+func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) {
+	quickstartBeadsStepWithApp(cwd, app)
 	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
 	if claudeAlreadyExisted {
 		fmt.Println("  ✓ CLAUDE.md already exists")
@@ -445,8 +448,12 @@ Pre-mortem caught 6 critical issues before implementation:
 }
 
 func initBeads(cwd string) error {
+	return initBeadsWithApp(cwd, NewApp())
+}
+
+func initBeadsWithApp(cwd string, app *App) error {
 	// Check if beads is available
-	if _, err := exec.LookPath("br"); err != nil {
+	if _, err := app.LookPath("br"); err != nil {
 		return fmt.Errorf("br command not found (install beads_rust; see AGENTS.md for tracker setup)")
 	}
 
@@ -483,7 +490,7 @@ func initBeads(cwd string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(resolution.Binary, "init", "--prefix", prefix) // #nosec G204 -- selected br|bd binary.
+	cmd := app.ExecCommand(resolution.Binary, "init", "--prefix", prefix) // #nosec G204 -- selected br|bd binary.
 	cmd.Dir = cwd
 	output, err := cmd.CombinedOutput()
 	if err != nil {

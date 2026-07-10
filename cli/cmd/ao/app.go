@@ -52,5 +52,5 @@ func AppFromContext(ctx context.Context) *App {
 	if v, ok := ctx.Value(appKey).(*App); ok {
 		return v
 	}
-	return nil
+	return NewApp()
 }
