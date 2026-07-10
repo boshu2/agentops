@@ -226,6 +226,26 @@ The cross-family pawl can run as a **standing warm service** (`ao pawl up` — c
   - **NTM:** call `ao pawl reap` on a tending tick.
 - Without a schedule, the panes stay warm until an explicit `ao pawl down`. That is safe — the membrane gates on the recorded verdict, never on a live pane — it just holds account slots.
 
+### Service-command contract (age-l3xj hardening)
+
+Every `ao pawl` service verb (`up`/`down`/`reap`/`health`/`doctor`/`smoke`/`route`/`metrics`) runs under the **same trust split** as `ao pawl review`:
+
+- **Genuine checkout** (the running `ao` binary physically lives inside the resolved AgentOps repo — forge-proof, unlike marker files): the LIVE `scripts/pawl.sh` runs, so a script edit is exercised immediately.
+- **Installed binary, any git repo**: the **embedded** `pawl.sh` bundle runs against that repo, with a sanitized environment (trusted PATH, `BASH_ENV`/`ENV`/`GIT_EXTERNAL_DIFF` neutralized, `PAWL_UNTRUSTED_REPO=1`). A repo-planted `scripts/pawl.sh` is **never executed**. The session's family/pane **layout** is a property of the (global) tmux session, so it lives in a **session-scoped shared** file (`${TMPDIR:-/tmp}/pawl-session-<session>.json`) — a second repo routing to one existing `PAWL_SESSION` reads the same layout `up` wrote, not a wrong default. The per-repo `metrics.jsonl` stays under **that repo's** `.agents/pawl/`; a symlink anywhere in the state path (ancestor or leaf) is refused/neutralized so writes never escape the repo.
+- **Outside any git repo**: fail closed before mutation, naming the requirement.
+
+**`ao pawl up` (spawn).** `atm spawn <project>` roots its panes at `projects_base/<project>` — there is no cwd flag — so `up` can only spawn correctly when the repo is a **direct child of the ATM `projects_base`**. The project defaults to the `basename` of the git toplevel (`PAWL_PROJECT` overrides). Before spawning, `up` **verifies** that `projects_base/<project>` resolves back to this repo; if it does not (a nested worktree, or a repo outside `projects_base`), it **fails closed before any mutation** with an actionable message — never spawning into the wrong directory. When the target session already exists, `up` is idempotent (no spawn, no verification). The read-only verbs and `route` are fully cross-repo regardless.
+
+**Dry-run.** Global `--dry-run` on a mutating verb (`up`/`down`/`reap`/`route`/`review`) — in either `--dry-run` or `--dry-run=true` form — executes **nothing** (no tmux/NTM spawn/kill/send, no state/verdict/metric/lock write) and reports the exact planned action; with `--json` it emits exactly one JSON object (`action`, `dry_run`, `mutated`, `session`, `families`, `tier`, `planned_steps`). The planned `session` is derived exactly as a real run would (`${PROJECT}--${LABEL}`). Read-only verbs (`health`/`doctor`/`smoke`/`metrics`) may inspect real state under `--dry-run` but run with `PAWL_DRY_RUN=1`, which suppresses even prompt-clearing key sends.
+
+**Route lease.** Exactly one route owns the service at a time. The lease is an atomic lock **directory** (`mkdir` is the sole ownership barrier) with owner metadata at `<lease>/owner`, keyed by **session** — the protected resource is the global tmux session, so it defaults to `${TMPDIR:-/tmp}/pawl-lease-<session>.lock`, **not** under any repo. `PAWL_ROUTE_LOCK` overrides; a path that is not a lease directory (it holds nothing but `owner`), or a symlink, is refused — never recursively deleted. Concurrency safety:
+
+- A second concurrent `route` fails closed before sending to any pane or writing evidence; `down`/`reap` acquire the same lease before teardown (no check-then-kill race).
+- A **stale** lease (crashed route) is broken under a **generation-scoped break-token** so exactly one breaker acts per generation and a peer's fresh lease is never touched. The freshness window is `2*ROUTE_TIMEOUT`.
+- A **background heartbeat**, tied to the route process lifetime, refreshes the lease across every phase (send/respawn AND poll), so a live route is never mistaken for stale; it dies with the route, so a crashed lease still ages out. Release is **ownership-checked** (only the owning pid removes it).
+
+**Route ids + evidence.** Bead ids are containment-validated (`[A-Za-z0-9._-]`, 1–64 chars, leading alphanumeric) **before** any file write, so evidence/state paths cannot escape their roots. Per-route packet/evidence files are scoped by **session and repo** (`${TMPDIR:-/tmp}/pawl-evidence-<session>-<repo>/`, `PAWL_EVID_DIR` overrides), and the lease/evidence slug uses a reversible (injective) encoding, so two repos — even under one shared `PAWL_SESSION` — never collide on evidence. On the embedded path the route's verdict is written into the **caller's** repo (`--dir`), never into the extracted script bundle the CLI discards on exit.
+
 **Tier transparency.** A routed verdict is stamped `multi-model` (≥2 families — the real cross-family gate) or `fresh-context` (1 family — a single fresh-context refuter, weaker). A high-irreversibility door (push-to-main) demands `multi-model` and refuses a `fresh-context` verdict; `ao pawl review` and the pre-push gate surface the achieved tier so a single-family land is a conscious choice, not silent.
 
 ## Strict two-family cold quorum — the portable `multi-model` door (age-rk3r.13)

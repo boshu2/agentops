@@ -462,3 +462,214 @@ func TestRunPawlReview_ForgedMarkersUsesEmbedded(t *testing.T) {
 		t.Fatal("SECURITY: forged markers caused the repo's PLANTED scripts/pawl-review.sh to be EXECUTED (RCE via trust-boundary forgery)")
 	}
 }
+
+// TestPawlServiceCmd_ForgedRepoNeverExecutesPlantedScript is the D4 regression: an
+// INSTALLED ao (binary outside the repo) on a repo with FORGED AgentOps markers and a
+// planted scripts/pawl.sh must NEVER execute the planted script for ANY service verb —
+// the same aoBinaryInside trust gate `ao pawl review` already has must route service
+// commands to the embedded bundle.
+func TestPawlServiceCmd_ForgedRepoNeverExecutesPlantedScript(t *testing.T) {
+	for _, tool := range []string{"bash", "git"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skipf("needs %s on PATH", tool)
+		}
+	}
+	useFakeSelfAo(t) // installed-ao simulation: trusted binary lives OUTSIDE the repo.
+
+	repo := t.TempDir()
+	gitRun := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	gitRun("init", "--quiet")
+	// FORGE the AgentOps markers + plant a hostile scripts/pawl.sh.
+	if err := os.MkdirAll(filepath.Join(repo, "docs", "contracts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "docs", "contracts", "agents-write-surfaces.md"), []byte("forged"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(repo, "PWNED")
+	if err := os.MkdirAll(filepath.Join(repo, "scripts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "scripts", "pawl.sh"), []byte("#!/usr/bin/env bash\ntouch "+sentinel+"\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// BASH_ENV injection must be neutralized on the service path too.
+	evil := filepath.Join(repo, "evil.sh")
+	if err := os.WriteFile(evil, []byte("touch "+sentinel+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BASH_ENV", evil)
+
+	prevDir := testProjectDir
+	testProjectDir = repo
+	t.Cleanup(func() { testProjectDir = prevDir })
+
+	// `metrics` is read-only + fast: with no recorded routes the embedded script prints
+	// the no-routes line and exits 0. The planted script would touch the sentinel.
+	cmd := pawlServiceCmd("metrics", "metrics", "test")
+	var out strings.Builder
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := cmd.RunE(cmd, nil)
+
+	if _, serr := os.Stat(sentinel); serr == nil {
+		t.Fatal("SECURITY/D4: forged markers caused the repo's PLANTED scripts/pawl.sh to be EXECUTED by an installed ao")
+	}
+	if err != nil {
+		t.Fatalf("embedded service path should run cleanly on the forged repo (metrics, no routes), got %v\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "no routed beads") {
+		t.Fatalf("expected the EMBEDDED pawl.sh metrics output, got: %q", out.String())
+	}
+}
+
+// TestPawlServiceCmd_OrdinaryRepoUsesEmbedded is the D3 regression (observed: `ao pawl up`
+// from /Users/bo/dev/personal-site died with "locating AgentOps repo root"). From an
+// ordinary git repo an installed ao must have a coherent contract: run the embedded
+// bundle with state resolved under THAT repo, not fail on AgentOps marker discovery.
+func TestPawlServiceCmd_OrdinaryRepoUsesEmbedded(t *testing.T) {
+	for _, tool := range []string{"bash", "git"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			t.Skipf("needs %s on PATH", tool)
+		}
+	}
+	useFakeSelfAo(t)
+
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "--quiet").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+
+	prevDir := testProjectDir
+	testProjectDir = repo
+	t.Cleanup(func() { testProjectDir = prevDir })
+
+	cmd := pawlServiceCmd("metrics", "metrics", "test")
+	var out strings.Builder
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := cmd.RunE(cmd, nil)
+	if err != nil {
+		if strings.Contains(err.Error(), "locating AgentOps repo root") {
+			t.Fatalf("D3: cross-repo service command still fails on AgentOps marker discovery: %v", err)
+		}
+		t.Fatalf("ordinary-repo pawl metrics should succeed via the embedded bundle, got %v\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "no routed beads") {
+		t.Fatalf("expected embedded pawl.sh metrics output, got: %q", out.String())
+	}
+}
+
+// TestEmbeddedPawlBundleCarriesVerdictWriterSibling is the regression for the cross-family
+// refuter's catch on age-l3xj: scripts/pawl.sh's route path invokes the verdict writer, and
+// it must resolve SCRIPT-RELATIVE ($PAWL_SCRIPT_DIR/pawl-verdict.sh) — NOT "$ROOT/scripts/
+// pawl-verdict.sh". $ROOT is the CALLER's repo (git toplevel of cwd), so on the embedded
+// stranger path the $ROOT form would execute the untrusted repo's planted verdict writer
+// (re-opening the RCE the trust split closes) and would simply not exist in an ordinary
+// repo. This test pins both halves: the source carries no $ROOT-relative sibling exec, and
+// the extracted trusted bundle carries pawl-verdict.sh next to pawl.sh so the
+// script-relative resolution succeeds.
+func TestEmbeddedPawlBundleCarriesVerdictWriterSibling(t *testing.T) {
+	src, err := embedded.PawlFS.ReadFile("pawl/scripts/pawl.sh")
+	if err != nil {
+		t.Fatalf("read embedded pawl.sh: %v", err)
+	}
+	for _, forbidden := range []string{`bash "$ROOT/scripts/`, `"$ROOT/scripts/pawl-verdict.sh"`} {
+		if strings.Contains(string(src), forbidden) {
+			t.Fatalf("SECURITY: pawl.sh execs a sibling script via $ROOT (the untrusted caller repo): found %q", forbidden)
+		}
+	}
+	if !strings.Contains(string(src), "PAWL_VERDICT_SH") {
+		t.Fatal("pawl.sh must resolve the verdict writer via the script-relative PAWL_VERDICT_SH")
+	}
+	// The extracted bundle must place pawl-verdict.sh as a sibling of pawl.sh, or the
+	// script-relative resolution fails on the embedded path.
+	dir, cleanup, err := extractPawlBundle()
+	if err != nil {
+		t.Fatalf("extractPawlBundle: %v", err)
+	}
+	defer cleanup()
+	for _, rel := range []string{
+		filepath.Join("scripts", "pawl.sh"),
+		filepath.Join("scripts", "pawl-verdict.sh"),
+	} {
+		if _, statErr := os.Stat(filepath.Join(dir, rel)); statErr != nil {
+			t.Fatalf("extracted bundle missing %s (script-relative verdict write would fail): %v", rel, statErr)
+		}
+	}
+}
+
+// TestPawlServiceCmd_OutsideGitRepoFailsClosed: with no AgentOps checkout AND no git repo,
+// a service command must fail BEFORE mutation with an actionable message, never fall back
+// to something ambiguous.
+func TestPawlServiceCmd_OutsideGitRepoFailsClosed(t *testing.T) {
+	useFakeSelfAo(t)
+	dir := t.TempDir() // not a git repo, no markers
+
+	prevDir := testProjectDir
+	testProjectDir = dir
+	t.Cleanup(func() { testProjectDir = prevDir })
+
+	cmd := pawlServiceCmd("up", "up", "test")
+	var out strings.Builder
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("outside any git repo, pawl up must fail closed (state has no stable root), got nil")
+	}
+	if !strings.Contains(err.Error(), "git repository") {
+		t.Fatalf("fail-closed error must name the requirement (a git repository / AgentOps root), got: %v", err)
+	}
+}
+
+// TestPawlServiceColdEnv locks the SERVICE stranger-path env seams: same sanitization as
+// the review cold env (trusted PATH, BASH_ENV/ENV/GIT_EXTERNAL_DIFF neutralized,
+// PAWL_UNTRUSTED_REPO, AO_BIN pin) but WITHOUT PAWL_NO_SERVICE — service verbs manage the
+// standing service; disabling it would silently no-op the very thing being commanded.
+func TestPawlServiceColdEnv(t *testing.T) {
+	env := pawlServiceColdEnv("/home/stranger/their-repo")
+	want := map[string]bool{
+		"AGENTOPS_REPO_ROOT=/home/stranger/their-repo": false,
+		"PAWL_UNTRUSTED_REPO=1":                        false,
+		"BASH_ENV=":                                    false,
+		"ENV=":                                         false,
+		"GIT_EXTERNAL_DIFF=":                           false,
+	}
+	var sawAOBin bool
+	for _, e := range env {
+		if _, ok := want[e]; ok {
+			want[e] = true
+		}
+		if strings.HasPrefix(e, "AO_BIN=") && len(e) > len("AO_BIN=") {
+			sawAOBin = true
+		}
+		if e == "PAWL_NO_SERVICE=1" {
+			t.Fatal("pawlServiceColdEnv must NOT set PAWL_NO_SERVICE=1 (service verbs manage the service)")
+		}
+		if strings.HasPrefix(e, "PATH=") {
+			for _, p := range strings.Split(strings.TrimPrefix(e, "PATH="), string(os.PathListSeparator)) {
+				if p == "" || p == "." || !filepath.IsAbs(p) {
+					t.Fatalf("service cold PATH not sanitized: contains %q", p)
+				}
+			}
+		}
+	}
+	for k, seen := range want {
+		if !seen {
+			t.Fatalf("pawlServiceColdEnv missing %q (got %v)", k, env)
+		}
+	}
+	if !sawAOBin {
+		t.Fatalf("pawlServiceColdEnv missing a non-empty AO_BIN; got %v", env)
+	}
+}
