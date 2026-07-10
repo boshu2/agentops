@@ -137,11 +137,11 @@ artifact_validation:
 | {{BEAD}} | S1: fixture behavior |
 `
 
-// stalePacketCloseStamp is the driver-body close stamp a CLOSED packet carries
-// (docs/contracts/goal-design-artifacts.md "Closing a packet").
+// stalePacketCloseStamp is the driver-body close stamp a CLOSED packet carries,
+// byte-matching the production close tool's appended shape: a blank line, then
+// bare stamp bullets — no heading (scripts/goal-design-packet.py stamp_lines;
+// real example: .agents/goal-design/evidence-bound-post-mortem-closeout).
 const stalePacketCloseStamp = `
-## Close-out
-
 - Closed: 2026-07-09T10:00:00Z (prior status: validated)
 - Disposition {{BEAD}}: closed - fixture bead landed with verdict
 `
@@ -303,6 +303,46 @@ func TestRunYieldReport_DraftPacketWithoutEvidenceNotFlagged(t *testing.T) {
 	}
 	if len(doc.AndonQueue) != 0 {
 		t.Errorf("andon queue = %+v, want empty", doc.AndonQueue)
+	}
+}
+
+// TestRunYieldReport_StalePacketFlaggedFromSubdirCwd is scenario S1 of
+// verification-surface-honesty: the sweep must flag a stale packet identically
+// when the command runs from a repo SUBDIRECTORY. It drives the command-level
+// root-resolution seam (testProjectDir simulates the cwd runYieldReport
+// resolves), not buildAndonQueue with a pre-resolved root — running `ao yield
+// report` from cli/ silently reported no stale packets on 2026-07-10.
+func TestRunYieldReport_StalePacketFlaggedFromSubdirCwd(t *testing.T) {
+	root := gitInitRepoT(t)
+	setYieldReportState(t, root)
+	slug := "subdir-cwd-fixture"
+	writeStalePacketFixture(t, root, slug, "draft", "B1")
+	edgeTS := reportTestNow.Add(-30 * time.Hour).UTC().Format(time.RFC3339)
+	writeStaleSweepLedger(t, root, confirmedVerdictEdgeLine(slug, edgeTS))
+
+	subdir := filepath.Join(root, "cli")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir subdir: %v", err)
+	}
+	// setYieldReportState pointed the command at root and registered cleanup;
+	// re-point it at the subdirectory to simulate a subdir invocation.
+	testProjectDir = subdir
+
+	doc := decodeReport(t)
+	rows := stalePacketRows(doc)
+	if len(rows) != 1 {
+		t.Fatalf("stale-packet rows from subdir cwd = %d, want exactly 1 (sweep went cwd-blind); queue: %+v", len(rows), doc.AndonQueue)
+	}
+	row := rows[0]
+	if row.ID != slug {
+		t.Errorf("row.ID = %q, want %q", row.ID, slug)
+	}
+	wantPath := ".agents/goal-design/" + slug
+	if !strings.Contains(row.Why, wantPath) {
+		t.Errorf("row.Why = %q, must name the packet path %q", row.Why, wantPath)
+	}
+	if row.Since != edgeTS {
+		t.Errorf("row.Since = %q, want the verdict-edge ts %q", row.Since, edgeTS)
 	}
 }
 
