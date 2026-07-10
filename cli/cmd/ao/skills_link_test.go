@@ -8,15 +8,67 @@ import (
 )
 
 // The command's --help is the user-facing contract for the optional track-main
-// install path (age-4asp): documenting it there is the whole point, so guard it
-// against silent removal.
-func TestSkillsLinkHelp_DocumentsTrackMain(t *testing.T) {
+// install path (age-4asp) and for its multi-runtime coverage (age-ivcba):
+// documenting them there is the whole point, so guard against silent removal.
+func TestSkillsLinkHelp_DocumentsTrackMainAndRuntimes(t *testing.T) {
 	long := skillsLinkCmd.Long
-	for _, want := range []string{"Track main", "git pull && ao skills link"} {
+	for _, want := range []string{"Track main", "git pull && ao skills link", "~/.codex/skills", "~/.gemini/skills"} {
 		if !strings.Contains(long, want) {
-			t.Errorf("`ao skills link --help` no longer documents the track-main workflow: missing %q", want)
+			t.Errorf("`ao skills link --help` no longer documents %q", want)
 		}
 	}
+}
+
+// resolveTargetDests must fan out to every INSTALLED runtime (Codex/AGY too, not
+// just Claude), honor an explicit --dest, and fall back to Claude when no runtime
+// is present (age-ivcba). t.Setenv isolates $HOME so os.UserHomeDir is controlled.
+func TestResolveTargetDests(t *testing.T) {
+	t.Run("explicit dest wins", func(t *testing.T) {
+		got, err := resolveTargetDests("/custom/skills")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if len(got) != 1 || got[0] != "/custom/skills" {
+			t.Fatalf("got %v, want [/custom/skills]", got)
+		}
+	})
+
+	t.Run("fans out to installed runtimes", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		// Codex + AGY installed; Claude + Cursor absent.
+		for _, rt := range []string{".codex", ".gemini"} {
+			if err := os.MkdirAll(filepath.Join(home, rt), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		got, err := resolveTargetDests("")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		want := []string{filepath.Join(home, ".codex", "skills"), filepath.Join(home, ".gemini", "skills")}
+		if len(got) != len(want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("got %v, want %v", got, want)
+			}
+		}
+	})
+
+	t.Run("falls back to claude when no runtime present", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		got, err := resolveTargetDests("")
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		want := filepath.Join(home, ".claude", "skills")
+		if len(got) != 1 || got[0] != want {
+			t.Fatalf("got %v, want [%s]", got, want)
+		}
+	})
 }
 
 // mkSkill creates dir/<name>/SKILL.md so linkMissingSkills recognizes it as a skill.
@@ -212,5 +264,45 @@ func TestResolveRepoSkillsDir_InsideRepoResolvesAbsolute(t *testing.T) {
 	}
 	if !filepath.IsAbs(dir) {
 		t.Fatalf("resolved skills dir = %q, want an absolute path", dir)
+	}
+}
+
+// Cross-family refuter regression (codex-fresh-review, age-d686g): the fan-out
+// must be RESILIENT — a per-dest failure records an error on that dest but must
+// NOT abort the loop, so a failing runtime (listed first) never skips the ones
+// after it. Earlier: the loop returned on the first error.
+func TestLinkAllDests_ResilientAcrossDests(t *testing.T) {
+	src := t.TempDir()
+	mkSkill(t, src, "alpha")
+
+	good := t.TempDir()
+	// A bad dest whose PARENT is a regular file → os.MkdirAll(dest) fails.
+	badParent := filepath.Join(t.TempDir(), "afile")
+	if err := os.WriteFile(badParent, []byte("x"), 0o644); err != nil {
+		t.Fatalf("write bad parent: %v", err)
+	}
+	bad := filepath.Join(badParent, "skills")
+
+	// bad FIRST: the good dest after it must still be linked.
+	results, anyErr := linkAllDests(src, []string{bad, good}, false)
+
+	if !anyErr {
+		t.Fatal("anyErr should be true when a dest fails")
+	}
+	if len(results) != 2 {
+		t.Fatalf("want 2 per-dest results (never skip), got %d", len(results))
+	}
+	if results[0].Err == "" {
+		t.Fatalf("the failing dest should carry Err, got %+v", results[0])
+	}
+	if results[1].Err != "" {
+		t.Fatalf("the good dest should succeed despite the earlier failure, got Err=%q", results[1].Err)
+	}
+	if len(results[1].Linked) != 1 || results[1].Linked[0] != "alpha" {
+		t.Fatalf("good dest Linked = %v, want [alpha]", results[1].Linked)
+	}
+	// The good dest was actually mutated (link exists on disk).
+	if _, err := os.Lstat(filepath.Join(good, "alpha")); err != nil {
+		t.Fatalf("good dest was skipped after the earlier failure: %v", err)
 	}
 }
