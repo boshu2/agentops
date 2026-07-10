@@ -470,3 +470,119 @@ func TestRejectedAndHoldVerdictsRoundTrip(t *testing.T) {
 		t.Errorf("second verdict disposition = %q, want HOLD", gvs[1].GateVerdict.Disposition)
 	}
 }
+
+// TestAppendUsage_AmbiguousZeroStampedExplicitUnknown is the age-ivoq D17-ruler
+// contract: a usage row whose meter fields are all zero WITH NO source claim
+// (the exact shape the retired reconcile-pr flow emitted 549/549 times) must be
+// stamped cost_source/tokens_source = "unknown" at the writer chokepoint — zero
+// may only ever mean measured-zero when a caller SAYS so.
+func TestAppendUsage_AmbiguousZeroStampedExplicitUnknown(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	ts := time.Date(2026, 7, 9, 12, 0, 0, 0, time.UTC)
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "age-zero", RunID: "r1", TS: ts,
+		TokensIn: 0, TokensOut: 0, CostUSD: 0, WallClockS: 0,
+		Model: "unknown", Phase: PhaseReview,
+	}); err != nil {
+		t.Fatalf("AppendUsage: %v", err)
+	}
+	loaded, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	rows := loaded.UsageFor("age-zero")
+	if len(rows) != 1 {
+		t.Fatalf("UsageFor(age-zero) = %d rows, want 1", len(rows))
+	}
+	u := rows[0].Usage
+	if u.CostSource != SourceUnknown {
+		t.Errorf("cost_source = %q, want %q (an unclaimed zero cost must be EXPLICITLY unknown, never silent)", u.CostSource, SourceUnknown)
+	}
+	if u.TokensSource != SourceUnknown {
+		t.Errorf("tokens_source = %q, want %q (all-zero tokens with no claim must be explicitly unknown)", u.TokensSource, SourceUnknown)
+	}
+}
+
+// TestAppendUsage_MeasuredMeterRoundTrip proves real measured reviewer usage
+// (the codex-exec "tokens used" total) survives the production writer+reader
+// round-trip exactly, and that a DECLARED source is never overwritten by the
+// ambiguity stamp — including the measured-zero cost case (zero means
+// measured-zero only when claimed).
+func TestAppendUsage_MeasuredMeterRoundTrip(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	ts := time.Date(2026, 7, 9, 12, 30, 0, 0, time.UTC)
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "age-meter", RunID: "r1", TS: ts,
+		TokensIn: 0, TokensOut: 0, TokensTotal: 17068, TokensSource: SourceMeasured,
+		CostUSD: 0, CostSource: SourceUnknown,
+		WallClockS: 248, Model: "gpt", Phase: PhaseReview,
+	}); err != nil {
+		t.Fatalf("AppendUsage: %v", err)
+	}
+	// Measured-zero cost: an explicit "measured" claim on a zero must be preserved.
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "age-meter-zero", RunID: "r1", TS: ts,
+		CostUSD: 0, CostSource: SourceMeasured,
+		TokensTotal: 12, TokensSource: SourceEstimated,
+		Model: "local", Phase: PhaseReview,
+	}); err != nil {
+		t.Fatalf("AppendUsage (measured-zero): %v", err)
+	}
+	loaded, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	u := loaded.UsageFor("age-meter")[0].Usage
+	if u.TokensTotal != 17068 {
+		t.Errorf("tokens_total = %d, want 17068 (the real codex-exec total, not bytes/4)", u.TokensTotal)
+	}
+	if u.TokensSource != SourceMeasured {
+		t.Errorf("tokens_source = %q, want %q", u.TokensSource, SourceMeasured)
+	}
+	if u.CostSource != SourceUnknown {
+		t.Errorf("cost_source = %q, want %q", u.CostSource, SourceUnknown)
+	}
+	if u.WallClockS != 248 {
+		t.Errorf("wall_clock_s = %v, want 248", u.WallClockS)
+	}
+	z := loaded.UsageFor("age-meter-zero")[0].Usage
+	if z.CostSource != SourceMeasured {
+		t.Errorf("measured-zero cost_source = %q, want %q (declared source must never be overwritten)", z.CostSource, SourceMeasured)
+	}
+	if z.TokensSource != SourceEstimated {
+		t.Errorf("tokens_source = %q, want %q", z.TokensSource, SourceEstimated)
+	}
+}
+
+// TestValidateUsage_MeterFieldsRejectsBadValues locks the closed enum for the
+// age-ivoq meter fields: sources are ""|measured|estimated|unknown and
+// tokens_total is non-negative — a typo'd source is a REJECT, not a silent pass.
+func TestValidateUsage_MeterFieldsRejectsBadValues(t *testing.T) {
+	base := func() UsageInput {
+		return UsageInput{
+			BeadID: "ag-x", RunID: "r1",
+			TS:    time.Date(2026, 7, 9, 13, 0, 0, 0, time.UTC),
+			Model: "m", Phase: PhaseReview,
+		}
+	}
+	cases := []struct {
+		name   string
+		mutate func(*UsageInput)
+	}{
+		{"negative tokens_total", func(in *UsageInput) { in.TokensTotal = -1 }},
+		{"bogus tokens_source", func(in *UsageInput) { in.TokensSource = "vibes" }},
+		{"bogus cost_source", func(in *UsageInput) { in.CostSource = "guessed" }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			in := base()
+			tc.mutate(&in)
+			if _, err := (Writer{}).AppendUsage(root, in); err == nil {
+				t.Error("AppendUsage accepted an invalid meter field, want error")
+			}
+		})
+	}
+}

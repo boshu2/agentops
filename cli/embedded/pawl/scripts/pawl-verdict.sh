@@ -1024,6 +1024,75 @@ do_check() {
   return 0
 }
 
+# _meter_extract_tokens <refuter-token>... — the meter's ENTIRE token-extraction
+# path, isolated in one function so the fail-open contract is STRUCTURAL: the
+# caller invokes it in a guarded command substitution and shape-validates the
+# output, so ANY parse failure inside here (malformed number, awk error, a
+# future bug) degrades to tokens_source=unknown instead of aborting the verdict
+# write. The reviewer counterexample: a leading-zero next-line total ("08") hit
+# bash OCTAL arithmetic ("value too great for base") — a FATAL expansion error
+# that killed do_write BEFORE the verdict existed. No bare arithmetic on parsed
+# values may run at do_write top level; sums here force base-10 via $((10#...))
+# on regex-validated digit strings.
+#
+# Parsing rules (the provenance contract):
+#   - evidence is everything AFTER the third ':' field (fam:verdict:ctx:EVIDENCE)
+#     so a path containing ':' stays intact — never ${tok##*:} (that truncates
+#     at the LAST colon and loses the file entirely);
+#   - same-line totals anchor to the number IMMEDIATELY AFTER the "tokens used"
+#     marker (digits/commas only, optional ':'/'=' separator) — never a number
+#     elsewhere on the line ("attempt 2 tokens used: 1,234" must read 1234);
+#   - next-line totals must be a digits/commas-only line;
+#   - the LAST occurrence per file is the final cumulative total;
+#   - a parsed 0 is a MEASURED zero (zero means measured-zero), never
+#     reclassified as a bytes/4 estimate.
+# Output: "TOKENS measured" | "TOKENS estimated" | nothing (no evidence).
+_meter_extract_tokens() {
+  local tok rest ev sz real real_total=0 est_total=0 have_ev=0 have_real=0
+  for tok in "$@"; do
+    rest="${tok#*:}"                 # verdict:ctx[:evidence]
+    [[ "$rest" == *:* ]] || continue
+    rest="${rest#*:}"                # ctx[:evidence]
+    [[ "$rest" == *:* ]] || continue
+    ev="${rest#*:}"                  # evidence (may itself contain ':')
+    [[ "$ev" == /* && -f "$ev" ]] || continue
+    have_ev=1
+    real="$(awk '
+      /tokens used/ {
+        s = $0
+        sub(/^.*tokens used/, "", s)
+        # The number must be a COMPLETE token: optional :/=, the digits/commas,
+        # then a NON-alphanumeric boundary or end-of-line. Anchoring the trailing
+        # boundary rejects malformed text like "tokens used: 1x" (which a partial
+        # [0-9]+ match would have silently recorded as a MEASURED 1). No valid
+        # boundary => not a clean total => fall through to the next-line probe.
+        if (match(s, /^[[:space:]]*[:=]?[[:space:]]*[0-9][0-9,]*([^0-9A-Za-z,]|$)/)) {
+          v = substr(s, RSTART, RLENGTH); gsub(/[^0-9]/, "", v); last = v; next
+        }
+        want = 1; next
+      }
+      want == 1 {
+        # Next-line total: the WHOLE line must be digits/commas (no trailing junk).
+        if (match($0, /^[[:space:]]*[0-9][0-9,]*[[:space:]]*$/)) { v = $0; gsub(/[^0-9]/, "", v); last = v }
+        want = 0
+      }
+      END { if (last != "") print last }
+    ' "$ev" 2>/dev/null)" || real=""
+    if [[ "$real" =~ ^[0-9]+$ ]]; then
+      have_real=1
+      real_total=$(( real_total + 10#$real ))
+    fi
+    sz="$(wc -c < "$ev" 2>/dev/null | tr -d '[:space:]')" || sz=0
+    [[ "$sz" =~ ^[0-9]+$ ]] || sz=0
+    est_total=$(( est_total + 10#$sz / 4 ))
+  done
+  if (( have_real )); then
+    printf '%s measured\n' "$real_total"
+  elif (( have_ev )); then
+    printf '%s estimated\n' "$est_total"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # write <bead> <pr> --disposition D --refuter fam:verdict [...] [opts]
 # ---------------------------------------------------------------------------
@@ -1111,23 +1180,36 @@ do_write() {
     fi
   done
 
-  # Meter (ebec.1): estimate tokens from the refuter evidence transcripts
-  # (bytes/4 — the flagged estimate; exact harness usage is a later slice). Only
-  # attached when the caller passed --wall-seconds; a bad value fails closed.
+  # Meter (ebec.1 + age-ivoq): the review's token spend, from the best available
+  # surface. FIRST parse REAL usage out of the refuter evidence transcripts —
+  # codex exec prints a cumulative "tokens used" total (same line or the next
+  # line; the LAST occurrence per file is the final total). Only when no real
+  # usage line exists fall back to the flagged bytes/4 estimate. This was the
+  # broken-ruler bug: the estimate ran bytes/4 over a 57-byte verdict summary
+  # (tokens_est=14) while the real total (17,068) sat unparsed in the same file.
+  # meter_source travels with the number: measured | estimated | "" (no evidence
+  # OR any extraction failure — the meter must NEVER block the verdict write, so
+  # the whole extraction runs inside _meter_extract_tokens behind a guarded
+  # substitution + output-shape validation; a parse bug degrades to unknown).
+  local meter_tokens=0 meter_source="" _meter_out=""
+  _meter_out="$(_meter_extract_tokens "${refuters[@]}" 2>/dev/null)" || _meter_out=""
+  if [[ "$_meter_out" =~ ^([0-9]+)[[:space:]](measured|estimated)$ ]]; then
+    meter_tokens="${BASH_REMATCH[1]}"
+    meter_source="${BASH_REMATCH[2]}"
+  fi
+  # The verdict cost object stays gated on --wall-seconds (legacy callers get a
+  # byte-identical verdict); a bad value fails closed. estimated=false only when
+  # the tokens are the parsed real total — an estimate never claims measurement.
   local cost_json=""
   if [[ -n "$wall_seconds" ]]; then
     case "$wall_seconds" in
       ''|*[!0-9.]*) echo "pawl-verdict write: --wall-seconds must be numeric (got '$wall_seconds')" >&2; return 2 ;;
     esac
-    local tok_total=0 _ev _sz
-    for tok in "${refuters[@]}"; do
-      _ev="${tok##*:}"
-      [[ "$_ev" == /* && -f "$_ev" ]] || continue
-      _sz="$(wc -c < "$_ev" 2>/dev/null | tr -d '[:space:]')" || _sz=0
-      tok_total=$(( tok_total + _sz / 4 ))
-    done
-    cost_json="$(jq -cn --argjson w "$wall_seconds" --argjson t "$tok_total" \
-      '{wall_seconds: $w, tokens_est: $t, estimated: true}')"
+    local _cost_estimated=true
+    [[ "$meter_source" == "measured" ]] && _cost_estimated=false
+    cost_json="$(jq -cn --argjson w "$wall_seconds" --argjson t "$meter_tokens" \
+      --argjson est "$_cost_estimated" \
+      '{wall_seconds: $w, tokens_est: $t, estimated: $est}')"
   fi
 
   mkdir -p "$VDIR"
@@ -1192,6 +1274,12 @@ do_write() {
   emit_yield_gate_verdict "$bead" "$disposition" "$head" "$attempt" "$mode" \
     "$author_ctx" "$out" "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$bead}}" "$difficulty" \
     "$author_family" "$domain" "$reason"
+
+  # age-ivoq: companion usage event — the review's REAL spend (or an explicit
+  # estimate/unknown; never a silent zero) so the D17 ruler reads data. Same
+  # run-id resolution as the gate-verdict emit above; best-effort, fail-open.
+  emit_yield_usage_review "$bead" "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$bead}}" \
+    "${wall_seconds:-0}" "$meter_tokens" "$meter_source" "$out" "$attempt"
 }
 
 # emit_yield_gate_verdict appends one gate-verdict event to the yield ledger for
@@ -1267,6 +1355,68 @@ emit_yield_gate_verdict() {
   # $_ao is resolved ABOVE (before this cd) to an absolute trusted binary, so cd-ing
   # into a possibly-untrusted YIELD_ROOT can never make a bare `ao` hit a planted ./ao.
   ( cd "$YIELD_ROOT" && "$_ao" yield emit gate-verdict --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
+}
+
+# emit_yield_usage_review appends one usage event (phase=review) to the yield
+# ledger for a panel verdict — the verification-economics meter's data plane
+# (age-ivoq). tokens_total/tokens_source carry the review's REAL token spend
+# when the evidence transcript reported it (the codex exec "tokens used" line),
+# an honest bytes/4 estimate otherwise, or an explicit unknown — never a silent
+# zero (the D17-ruler bug: 549/549 usage rows at cost_usd=0 with no way to tell
+# measured-zero from never-measured). cost_usd comes from AO_YIELD_COST_USD when
+# the orchestrator supplies a real number (cost_source=measured); otherwise it
+# is recorded EXPLICITLY unknown — a subscription-backed reviewer has no
+# marginal price and fabricating one would lie to the ruler. Best-effort,
+# fail-open, and idempotent per run like the gate-verdict emit above.
+emit_yield_usage_review() {
+  local bead="$1" run_id="$2" wall="$3" tokens="$4" tokens_source="$5" vfile="$6" attempt="${7:-1}"
+  # Attempts are 1-indexed; empty or non-numeric coerce to 1. NUMERIC input is
+  # then base-10 normalized so EVERY zero spelling (0, 00, 000, 0x0…) collapses
+  # to the same value before the <1 guard — a partial "|0" case still admitted
+  # "00", which omitempty drops and reads back as 1, recreating the collision.
+  case "$attempt" in ''|*[!0-9]*) attempt=1 ;; *) attempt=$((10#$attempt)); (( attempt >= 1 )) || attempt=1 ;; esac
+  local _ao; _ao="$(_ao_bin)" || return 0
+  [[ -n "$_ao" ]] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  [[ -s "$vfile" ]] || return 0
+  case "$wall" in ''|*[!0-9.]*) wall=0 ;; esac
+  # No evidence surface at all => tokens are explicitly unknown, not zero-ish.
+  if [[ -z "$tokens_source" ]]; then tokens=0; tokens_source="unknown"; fi
+  case "$tokens" in ''|*[!0-9]*) tokens=0 ;; esac
+  # model: the reviewer families that produced this verdict — the honest label
+  # available at this chokepoint (exact model ids are the harness's business).
+  local model
+  model="$(jq -r '[.refuters[]?.family // empty] | unique | join("+")' "$vfile" 2>/dev/null)" || model=""
+  [[ -n "$model" ]] || model="unknown"
+  local cost_usd="${AO_YIELD_COST_USD:-}" cost_source="measured"
+  case "$cost_usd" in
+    ''|*[!0-9.]*) cost_usd=0; cost_source="unknown" ;;
+  esac
+  local body
+  body="$(jq -cn --argjson t "$tokens" --argjson w "$wall" --argjson c "$cost_usd" \
+    --arg tsrc "$tokens_source" --arg csrc "$cost_source" --arg model "$model" \
+    --argjson attempt "$attempt" '
+    {tokens_in: 0, tokens_out: 0, tokens_total: $t, tokens_source: $tsrc,
+     cost_usd: $c, cost_source: $csrc, wall_clock_s: $w, model: $model,
+     phase: "review", attempt: $attempt}' \
+    2>/dev/null)" || return 0
+  [[ -n "$body" ]] || return 0
+  # Best-effort same-run idempotency: the dedup key is the review event's
+  # stable IDENTITY — (bead, run, phase, ATTEMPT) — NEVER its measured values.
+  # Keying on tokens/wall was the double-count bug (a replayed emit with wall
+  # 10s then 11s read as "new"); keying WITHOUT attempt was the round-2
+  # over-dedup bug: attempt 1 (REFUTED) and attempt 2 (CONFIRMED) in the same
+  # run are DISTINCT reviews that both spent tokens — dropping the second
+  # silently under-counted spend. Same attempt replayed => one row; a new
+  # attempt or a later run still logs.
+  local ledger="$YIELD_ROOT/.agents/yield/yield-ledger.jsonl"
+  if [[ -f "$ledger" ]] && jq -e --arg run "$run_id" --arg b "$bead" --argjson a "$attempt" '
+      select(.event=="usage" and .run_id==$run and .bead_id==$b
+        and (.body.phase=="review") and ((.body.attempt // 1) == $a))' "$ledger" >/dev/null 2>&1; then
+    return 0
+  fi
+  # cwd + trusted-binary rationale: same as the gate-verdict emit above.
+  ( cd "$YIELD_ROOT" && "$_ao" yield emit usage --bead "$bead" --run "$run_id" --json "$body" ) >/dev/null 2>&1 || true
 }
 
 # rebind <bead> <pr> --head NEWSHA [--dir D]
