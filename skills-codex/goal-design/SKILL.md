@@ -92,7 +92,7 @@ Given `$goal-design "<goal>" [--slug <slug>]`:
    `$plan`. Preserve scenario ids and names exactly; do not paraphrase `S1`,
    `S2`, or candidate behavior labels away.
 7. **Emit the dispatch prompt.** When the packet executes out-of-session via a
-   goal API (codex goals, claude goals, an NTM/ATM pane, `bushido spawn`),
+   goal API (codex goals, claude goals, an NTM pane, `bushido spawn`),
    emit the small copyable prompt that points the worker at the packet:
 
    ```bash

@@ -1,15 +1,17 @@
 {
-  "schema_version": "1",
-  "generated_at": "2026-07-09T18:36:22Z",
-  "skill_count": 59,
+  "schema_version": "2",
+  "generated_at": "2026-07-10T13:07:36Z",
+  "skill_count": 62,
   "skills": [
     {
       "name": "account-rotation",
       "description": "Switch coding-agent accounts on a usage/rate limit. Routes by host+agent: macOS+Claude to claude-acct; Codex/Gemini and Linux/WSL to caam. Triggers: \"account-rotation\", \"account rotation\", \"switch coding-agent accounts on a\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -22,34 +24,73 @@
       "description": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: \"agent-mail\", \"agent mail\", \"use when coordinating agents with\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
-      "produces": [],
+      "graph_root": false,
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "agent-identity",
+        "file-reservation",
+        "acknowledged-handoff"
+      ],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "agent-native"
+        }
+      ],
       "references_count": 8,
       "codex_override_present": true
     },
     {
       "name": "agent-native",
-      "description": "Make an out-of-session agent AgentOps-native via skills + the ao CLI + local cockpit proof + CI backstop telemetry, not runtime hooks. Triggers: \"agent-native\", \"agent native\", \"make an out-of-session agent agentops-native\".",
+      "description": "Run persistent software-factory workers through a substrate-neutral lifecycle with observable readiness, engagement, evidence, bounded recovery, and handoff. Triggers: \"agent-native factory\", \"role-shaped agent panes\", \"supervise persistent workers\".",
       "hexagonal_role": "supporting",
-      "user_invocable": false,
+      "user_invocable": true,
+      "graph_root": false,
       "consumes": [
-        "standards",
-        "converter",
-        "validate"
+        "specification",
+        "existing-tracked-work",
+        "task-intent"
       ],
       "produces": [
-        "docs/contracts/agent-runtime-profile.md"
+        "agent-worker-evidence",
+        "worker-handoff"
+      ],
+      "dependencies": [
+        "standards",
+        "converter",
+        "ntm",
+        "agent-mail"
       ],
       "practices": [
         "continuous-delivery",
-        "ddd"
+        "ddd",
+        "team-topologies"
       ],
-      "context_rel": [],
-      "references_count": 3,
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "ntm"
+        },
+        {
+          "kind": "customer-of",
+          "with": "agent-mail"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "crank"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "using-gc"
+        }
+      ],
+      "references_count": 2,
       "codex_override_present": true
     },
     {
@@ -57,9 +98,16 @@
       "description": "|-",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "agy-run-evidence"
+      ],
+      "dependencies": [
+        "ntm",
+        "beads-br",
+        "dcg",
+        "agent-mail"
       ],
       "practices": [
         "team-topologies",
@@ -71,11 +119,21 @@
     },
     {
       "name": "automation-shape-routing",
-      "description": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "description": "Front door for agent automation: choose inline, bounded fanout, reusable skill/workflow/gate, persistent agent-native workers, or explicit Gas City. Triggers: \"build automation\", \"which orchestration shape\", \"should this use NTM\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
-      "produces": [],
+      "graph_root": false,
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "automation-shape-verdict"
+      ],
+      "dependencies": [
+        "skill-builder",
+        "workflow-builder",
+        "agent-native"
+      ],
       "practices": [
         "hexagonal-architecture",
         "team-topologies",
@@ -92,6 +150,14 @@
         },
         {
           "kind": "supplier-to",
+          "with": "agent-native"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "using-gc"
+        },
+        {
+          "kind": "supplier-to",
           "with": "operationalize"
         }
       ],
@@ -103,8 +169,12 @@
       "description": "Local-first issue tracker (beads_rust) for AI agents — track tasks, manage dependencies, find ready work, sync via git JSONL. Triggers: \"beads-br\", \"beads br\", \"local-first issue tracker beads rust\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [],
       "produces": [],
+      "dependencies": [
+        "beads-bv"
+      ],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -117,8 +187,10 @@
       "description": "Graph-aware task triage with bv and br — prioritize work, find bottlenecks, track dependencies across projects. Triggers: \"beads-bv\", \"beads bv\", \"graph-aware task triage with bv\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -131,12 +203,18 @@
       "description": "Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: \"plan behavior-first\", \"acceptance-first planning\", \"give these beads runnable done-criteria\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "standards"
       ],
       "produces": [
         ".agents/plans/*.md",
         "br-issue"
+      ],
+      "dependencies": [
+        "plan",
+        "implement",
+        "beads-br"
       ],
       "practices": [
         "bdd-gherkin",
@@ -157,6 +235,7 @@
       "description": "Initialize AgentOps project files. Triggers: \"initialize AgentOps\", \"bootstrap project files\", \"set up .agents scaffolding\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "goals",
         "product",
@@ -164,6 +243,13 @@
         "shared"
       ],
       "produces": [],
+      "dependencies": [
+        "goals",
+        "product",
+        "doc",
+        "shared",
+        "scaffold"
+      ],
       "practices": [
         "containers",
         "hermetic-builds",
@@ -178,8 +264,10 @@
       "description": "Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: \"cass\", \"mine past agent sessions for\", \"cass skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -192,8 +280,10 @@
       "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) — user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -202,13 +292,58 @@
       "codex_override_present": true
     },
     {
+      "name": "codebase-recon",
+      "description": "Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: \"build a repository mental model\", \"trace this codebase\", \"refresh the prior recon\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "repo-context",
+        "existing-docs"
+      ],
+      "produces": [
+        "codebase-recon.v1",
+        "evidence-bounded-recon-report"
+      ],
+      "dependencies": [
+        "validate",
+        "doc"
+      ],
+      "practices": [
+        "legacy-code-seams",
+        "ddd-bounded-context",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "research"
+        },
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        },
+        {
+          "kind": "customer-of",
+          "with": "doc"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "codex-exec",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "codex-run-output"
+      ],
+      "dependencies": [
+        "ntm",
+        "account-rotation"
       ],
       "practices": [
         "pragmatic-programmer",
@@ -217,7 +352,7 @@
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "codex-sandbox-evidence"
+          "with": "pawl-review"
         }
       ],
       "references_count": 0,
@@ -228,12 +363,14 @@
       "description": "Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: \"converge\", \"drive a fix re-run-judge-panel loop\", \"converge skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "command-help"
       ],
       "produces": [
         "stdout"
       ],
+      "dependencies": [],
       "practices": [
         "design-by-contract",
         "llm-eval-harness"
@@ -247,10 +384,12 @@
       "description": "Convert AgentOps skill formats. Triggers: \"converter\", \"convert agentops skill formats.\", \"converter skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "converted-skill"
       ],
+      "dependencies": [],
       "practices": [
         "refactoring",
         "design-patterns"
@@ -264,12 +403,17 @@
       "description": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "standards"
       ],
       "produces": [
         "result.json",
         "verdict.json"
+      ],
+      "dependencies": [
+        "standards",
+        "agy-native"
       ],
       "practices": [
         "llm-eval-harness",
@@ -290,6 +434,7 @@
       "description": "Execute epics through waves. Triggers: \"crank an epic\", \"execute epics through waves\", \"drive the bead wave plan\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "beads-br",
         "implement",
@@ -300,6 +445,17 @@
       "produces": [
         ".agents/swarm/results/*.json",
         "git-changes"
+      ],
+      "dependencies": [
+        "swarm",
+        "validate",
+        "implement",
+        "beads-br",
+        "post-mortem",
+        "agent-native",
+        "automation-shape-routing",
+        "dcg",
+        "pawl-review"
       ],
       "practices": [
         "continuous-delivery",
@@ -320,8 +476,10 @@
       "description": "Handle blocked destructive commands and configure agent safety guardrails. Triggers: \"dcg\", \"handle blocked destructive commands. use\", \"dcg skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -334,6 +492,7 @@
       "description": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "plan",
         "pre-mortem",
@@ -344,6 +503,15 @@
         ".agents/plans/*.md",
         "br-issue",
         "execution-packet.json"
+      ],
+      "dependencies": [
+        "research",
+        "plan",
+        "pre-mortem",
+        "shared",
+        "behavior-first-planning",
+        "idea-genie",
+        "dueling-idea-genies"
       ],
       "practices": [
         "adr",
@@ -364,11 +532,16 @@
       "description": "Generate and validate repo docs, READMEs, and OSS doc packs. Triggers: \"doc\", \"generate and validate repo docs\", \"doc skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "repo-context"
       ],
       "produces": [
         "documentation"
+      ],
+      "dependencies": [
+        "standards",
+        "council"
       ],
       "practices": [
         "wiki-knowledge-surface",
@@ -384,10 +557,12 @@
       "description": "Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: \"domain\", \"canonical vocabulary for human-ai software\", \"domain skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "stdout"
       ],
+      "dependencies": [],
       "practices": [
         "ddd-bounded-context",
         "wiki-knowledge-surface",
@@ -398,10 +573,50 @@
       "codex_override_present": true
     },
     {
+      "name": "dueling-idea-genies",
+      "description": "Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this irreversible idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "idea-portfolio.v1",
+        "task-question"
+      ],
+      "produces": [
+        "idea-challenge.v1"
+      ],
+      "dependencies": [
+        "idea-genie",
+        "council"
+      ],
+      "practices": [
+        "design-by-contract",
+        "llm-eval-harness",
+        "adr"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "idea-genie"
+        },
+        {
+          "kind": "customer-of",
+          "with": "council"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "plan"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "evolve",
       "description": "Run autonomous improvement loops.",
       "hexagonal_role": "domain",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "rpi",
         "goals",
@@ -410,6 +625,10 @@
       "produces": [
         "git-changes",
         "goals-fitness-delta"
+      ],
+      "dependencies": [
+        "rpi",
+        "post-mortem"
       ],
       "practices": [
         "lean-startup",
@@ -430,8 +649,10 @@
       "description": "The agentops-membrane pack: fail-closed cross-family verdict-bound close door on stock gc — close gate, finalize, pawl-verdict.v1, RBAC, quest intake, doctor. JIT via using-gc. Triggers: \"gc-membrane\", \"membrane pack\", \"pawl-verdict.v1\", \"gc close door\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -444,14 +665,18 @@
       "description": "Create validated goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
-        "operator-goal",
-        "docs/templates/goal-design-intent.md",
-        "docs/templates/goal-design-driver.md"
+        "project-goals",
+        "existing-docs"
       ],
       "produces": [
         ".agents/goal-design/<slug>/intent.md",
         ".agents/goal-design/<slug>/driver.md"
+      ],
+      "dependencies": [
+        "validate",
+        "discovery"
       ],
       "practices": [
         "bdd-gherkin",
@@ -467,10 +692,12 @@
       "description": "Maintain AgentOps goals. Triggers: \"goals\", \"maintain agentops goals.\", \"goals skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "result.json"
       ],
+      "dependencies": [],
       "practices": [
         "dora-metrics",
         "lean-startup",
@@ -490,10 +717,12 @@
       "description": "Write compact session handoffs. Triggers: \"handoff\", \"write compact session handoffs.\", \"handoff skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [],
       "produces": [
         ".agents/handoff/*.md"
       ],
+      "dependencies": [],
       "practices": [
         "adr",
         "wiki-knowledge-surface",
@@ -508,10 +737,12 @@
       "description": "Repair skill hygiene and deep-audit SKILL.md quality (absorbed skill-auditor). Triggers: \"heal-skill\", \"heal skill\", \"repair skill hygiene\", \"skill-auditor\", \"audit skill\", \"skill audit\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "audit-report.json"
       ],
+      "dependencies": [],
       "practices": [
         "refactoring",
         "code-complete"
@@ -526,15 +757,61 @@
       "codex_override_present": true
     },
     {
+      "name": "idea-genie",
+      "description": "Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: \"generate ideas from repository evidence\", \"what should we build next\", \"find supported opportunities\".",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "repo-context",
+        "task-question"
+      ],
+      "produces": [
+        "idea-portfolio.v1"
+      ],
+      "dependencies": [
+        "research"
+      ],
+      "practices": [
+        "bdd-gherkin",
+        "lean-startup",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "research"
+        },
+        {
+          "kind": "customer-of",
+          "with": "behavior-first-planning"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "discovery"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "implement",
       "description": "Implement one tracked issue. Triggers: \"implement\", \"implement one tracked issue.\", \"implement skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "domain"
       ],
       "produces": [
         "git-changes"
+      ],
+      "dependencies": [
+        "beads-br",
+        "standards",
+        "rch",
+        "refactor",
+        "test"
       ],
       "practices": [
         "tdd",
@@ -555,8 +832,10 @@
       "description": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -569,12 +848,24 @@
       "description": "Orchestrate NTM tmux agent swarms and robot APIs — spawn/send panes, read robot state, triage, locks/mail, safety, pipelines. Single owner of swarm-tending doctrine. Triggers: \"ntm\", \"orchestrates ntm tmux agent swarms\", \"ntm skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
-      "produces": [],
+      "graph_root": false,
+      "consumes": [
+        "task-intent"
+      ],
+      "produces": [
+        "ntm-robot-state",
+        "agent-worker-transcript"
+      ],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "agent-native"
+        }
+      ],
       "references_count": 16,
       "codex_override_present": true
     },
@@ -583,12 +874,22 @@
       "description": ">-",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
-        ".agents/research/*.md"
+        ".agents/research/*.md",
+        "pattern-mining.v1"
       ],
       "produces": [
         ".agents/operationalize/*.md",
         "routed-handoffs"
+      ],
+      "dependencies": [
+        "automation-shape-routing",
+        "skill-builder",
+        "workflow-builder",
+        "cc-hooks",
+        "beads-br",
+        "validate"
       ],
       "practices": [
         "wiki-knowledge-surface",
@@ -607,6 +908,10 @@
         {
           "kind": "customer-of",
           "with": "validate"
+        },
+        {
+          "kind": "customer-of",
+          "with": "pattern-mining"
         },
         {
           "kind": "supplier-to",
@@ -629,16 +934,108 @@
       "codex_override_present": false
     },
     {
+      "name": "pattern-mining",
+      "description": "Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: \"mine a recurring code pattern\", \"is this abstraction earned\", \"extract invariants from implementations\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "repo-context",
+        "task-question"
+      ],
+      "produces": [
+        "pattern-mining.v1"
+      ],
+      "dependencies": [
+        "operationalize",
+        "validate"
+      ],
+      "practices": [
+        "design-patterns",
+        "legacy-code-seams",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "research"
+        },
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "operationalize"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "pawl-review",
+      "description": "Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: \"run a pawl reviewer\", \"fresh-context review lane\", \"collect independent review evidence\".",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "code-under-review",
+        "specification"
+      ],
+      "produces": [
+        "review-lane-result.v1"
+      ],
+      "dependencies": [
+        "codex-exec",
+        "agy-native"
+      ],
+      "practices": [
+        "llm-eval-harness",
+        "design-by-contract",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "codex-exec"
+        },
+        {
+          "kind": "customer-of",
+          "with": "agy-native"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "using-gc"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "plan",
       "description": "Decompose goals into issue plans. Triggers: \"plan\", \"decompose goals into issue plans.\", \"plan skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "standards"
       ],
       "produces": [
         ".agents/plans/*.md",
         "execution-packet.json"
+      ],
+      "dependencies": [
+        "research",
+        "beads-br",
+        "pre-mortem",
+        "crank",
+        "implement",
+        "scope",
+        "dueling-idea-genies"
       ],
       "practices": [
         "adr",
@@ -659,6 +1056,7 @@
       "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "implement",
         "validate",
@@ -666,6 +1064,12 @@
       ],
       "produces": [
         "result.json"
+      ],
+      "dependencies": [
+        "council",
+        "beads-br",
+        "operationalize",
+        "toil-mining"
       ],
       "practices": [
         "dora-metrics",
@@ -686,12 +1090,14 @@
       "description": "Prepare PR commits and body. Triggers: \"pr-prep\", \"pr prep\", \"prepare pr commits and body.\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "domain"
       ],
       "produces": [
         "git-changes"
       ],
+      "dependencies": [],
       "practices": [
         "continuous-integration",
         "continuous-delivery",
@@ -707,45 +1113,20 @@
       "codex_override_present": true
     },
     {
-      "name": "pre-land-refuters",
-      "description": "Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "validate",
-        "codex-exec"
-      ],
-      "produces": [
-        ".agents/council/*.md"
-      ],
-      "practices": [
-        "llm-eval-harness",
-        "ai-assisted-dev"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "validate"
-        },
-        {
-          "kind": "customer-of",
-          "with": "codex-exec"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "pre-mortem",
       "description": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "standards"
       ],
       "produces": [
         "result.json",
         "verdict.json"
+      ],
+      "dependencies": [
+        "council"
       ],
       "practices": [
         "adr",
@@ -766,10 +1147,12 @@
       "description": "Create or refine PRODUCT.md. Triggers: \"product\", \"create or refine product.md.\", \"product skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "result.json"
       ],
+      "dependencies": [],
       "practices": [
         "lean-startup",
         "mythical-man-month",
@@ -789,11 +1172,16 @@
       "description": "Validate, commit, and push.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "git-changes"
       ],
       "produces": [
         "git-changes"
+      ],
+      "dependencies": [
+        "pr-prep",
+        "pawl-review"
       ],
       "practices": [
         "continuous-delivery",
@@ -809,8 +1197,10 @@
       "description": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. Triggers: \"rch\", \"use when offloading slow builds\", \"rch skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -823,11 +1213,16 @@
       "description": ">-",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "implement"
       ],
       "produces": [
         "result.json"
+      ],
+      "dependencies": [
+        "discovery",
+        "beads-br"
       ],
       "practices": [
         "lean-startup",
@@ -847,11 +1242,17 @@
       "description": "Execute safe refactors. Triggers: \"refactor\", \"execute safe refactors.\", \"refactor skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "repo-context"
       ],
       "produces": [
         "git-changes"
+      ],
+      "dependencies": [
+        "standards",
+        "beads-br",
+        "pattern-mining"
       ],
       "practices": [
         "refactoring",
@@ -867,10 +1268,12 @@
       "description": "Run release validation. Triggers: \"run release validation\", \"cut a release\", \"check release readiness\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [],
       "produces": [
         "result.json"
       ],
+      "dependencies": [],
       "practices": [
         "continuous-delivery",
         "gitops",
@@ -890,12 +1293,20 @@
       "description": "Explore and write findings. Triggers: \"research\", \"explore and write findings.\", \"research skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "repo-context"
       ],
       "produces": [
         ".agents/research/*.md",
         "result.json"
+      ],
+      "dependencies": [
+        "cass",
+        "ms",
+        "reverse-engineer",
+        "codebase-recon",
+        "pattern-mining"
       ],
       "practices": [
         "wiki-knowledge-surface",
@@ -911,10 +1322,12 @@
       "description": "Reverse-engineer an authorized repo, binary, or product into a verifiable feature inventory and adoption map. Triggers: \"reverse-engineer X\", \"tear down Y\", \"what should we steal from Z\", \"evaluate competitor/upstream\", \"should we fork/adopt/build-native\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         ".agents/research/*.md"
       ],
+      "dependencies": [],
       "practices": [
         "legacy-code-seams",
         "ddd-bounded-context",
@@ -929,6 +1342,7 @@
       "description": "Run discovery, crank, validation. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [
         "crank",
         "discovery",
@@ -937,6 +1351,12 @@
       ],
       "produces": [
         ".agents/rpi/*.md"
+      ],
+      "dependencies": [
+        "domain",
+        "discovery",
+        "crank",
+        "validate"
       ],
       "practices": [
         "bdd-gherkin",
@@ -970,8 +1390,10 @@
       "description": ">-",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer"
       ],
@@ -984,9 +1406,13 @@
       "description": "Stamp project/component/CI scaffolds — but reach for it mainly for the repo-specific domain-slice binding (generic trees a frontier model needs no skill for). Triggers: \"scaffold\", \"create project component or boilerplate\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "converted-skill"
+      ],
+      "dependencies": [
+        "standards"
       ],
       "practices": [
         "pragmatic-programmer",
@@ -1002,10 +1428,12 @@
       "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes. Triggers: \"scope\", \"hard-block edits outside declared frozen\", \"scope skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "filesystem-gate"
       ],
+      "dependencies": [],
       "practices": [
         "ddd-bounded-context",
         "design-by-contract",
@@ -1025,12 +1453,14 @@
       "description": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: \"security\", \"run repository security scans for\", \"security skill\".",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "repo-context"
       ],
       "produces": [
         "security-report.json"
       ],
+      "dependencies": [],
       "practices": [
         "supply-chain-integrity",
         "design-by-contract",
@@ -1050,10 +1480,12 @@
       "description": "Shared AgentOps skill contracts. Triggers: \"shared\", \"shared agentops skill contracts.\", \"shared skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "stdout"
       ],
+      "dependencies": [],
       "practices": [
         "design-by-contract",
         "pragmatic-programmer",
@@ -1068,9 +1500,14 @@
       "description": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "converted-skill"
+      ],
+      "dependencies": [
+        "heal-skill",
+        "converter"
       ],
       "practices": [
         "code-complete",
@@ -1095,10 +1532,12 @@
       "description": "Provide repo coding standards. Triggers: \"standards\", \"provide repo coding standards.\", \"standards skill\".",
       "hexagonal_role": "domain",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "stdout"
       ],
+      "dependencies": [],
       "practices": [
         "code-complete",
         "design-patterns",
@@ -1113,11 +1552,15 @@
       "description": "Show AgentOps work status. Triggers: \"status\", \"show agentops work status.\", \"status skill\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
+      "graph_root": true,
       "consumes": [
         "br"
       ],
       "produces": [
         "stdout"
+      ],
+      "dependencies": [
+        "sbh"
       ],
       "practices": [
         "dora-metrics",
@@ -1132,12 +1575,17 @@
       "description": "Dispatch parallel agents. Triggers: \"swarm\", \"dispatch parallel agents.\", \"swarm skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "implement",
         "validate"
       ],
       "produces": [
         ".agents/swarm/results/*.json"
+      ],
+      "dependencies": [
+        "implement",
+        "validate"
       ],
       "practices": [
         "microservices",
@@ -1158,12 +1606,16 @@
       "description": "Generate tests and coverage plans. Triggers: \"test\", \"generate tests and coverage plans.\", \"test skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [
         "standards",
         "repo-context"
       ],
       "produces": [
         "result.json"
+      ],
+      "dependencies": [
+        "standards"
       ],
       "practices": [
         "tdd",
@@ -1179,9 +1631,13 @@
       "description": ">-",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "result.json"
+      ],
+      "dependencies": [
+        "automation-shape-routing"
       ],
       "practices": [
         "sre",
@@ -1197,40 +1653,34 @@
       "codex_override_present": true
     },
     {
-      "name": "using-atm",
-      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running the loop over a bead queue, then tend the swarm to convergence. Triggers: \"use ATM as the out-of-session substrate\", \"spawn atm panes over a bead queue\", \"tend an unattended swarm\", \"renewal ticks\", \"two-tick stall rule\".",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "practices": [
-        "team-topologies",
-        "agile-manifesto",
-        "mythical-man-month"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "swarm"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
       "name": "using-gc",
-      "description": "Drive a Gas City (gc) factory day-to-day — stand up a city, sling quests, watch the membrane close-gate, resolve stalls, converge. The vibing-with-ntm analog for gc. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\", \"stand up a membrane city\".",
+      "description": "Drive an explicitly selected Gas City factory: stand up a city, sling quests, watch the AgentOps membrane close gate, resolve stalls, and converge. Triggers: \"using-gc\", \"gas city\", \"drive a gc city\", \"sling a quest\", \"gc stall\".",
       "hexagonal_role": "supporting",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [],
       "produces": [],
+      "dependencies": [
+        "gc-membrane"
+      ],
       "practices": [
         "pragmatic-programmer",
         "team-topologies"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "gc-membrane"
+        },
+        {
+          "kind": "partnership",
+          "with": "agent-native"
+        },
+        {
+          "kind": "partnership",
+          "with": "pawl-review"
+        }
+      ],
       "references_count": 3,
       "codex_override_present": true
     },
@@ -1239,9 +1689,13 @@
       "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
+      "graph_root": true,
       "consumes": [],
       "produces": [
         "result.json"
+      ],
+      "dependencies": [
+        "pawl-review"
       ],
       "practices": [
         "design-by-contract",
@@ -1256,10 +1710,12 @@
       "description": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
+      "graph_root": false,
       "consumes": [],
       "produces": [
         "workflow-script"
       ],
+      "dependencies": [],
       "practices": [
         "pragmatic-programmer",
         "hexagonal-architecture",
@@ -1272,7 +1728,7 @@
         },
         {
           "kind": "shared-kernel",
-          "with": "operating-loop-workflow"
+          "with": "operationalize"
         }
       ],
       "references_count": 0,

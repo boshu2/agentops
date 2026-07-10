@@ -25,7 +25,7 @@ cd "$REPO_ROOT"
 # (--mode=pr) and red-team retired (validate --debate absorbs) — 15 -> 13.
 SPINE=(
   # membrane (7)
-  validate council pre-mortem converge security reality-check pre-land-refuters
+  validate council pre-mortem converge security reality-check pawl-review
   # bookkeeper (6)
   beads-br status handoff discovery plan implement
 )

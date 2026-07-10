@@ -80,8 +80,8 @@ For a checker-clean packet:
    `Applied findings:` line, even when the value is `none`.
 4. **Recommend a strategic duel when warranted.** If the plan spans more than
    one execution session and has at least one contested operator-default
-   decision, recommend the dueling-idea-wizards route
-   (`$council --mode=debate --focus=ideas`) before decomposition. Keep it
+   decision, recommend `$dueling-idea-genies` and hand its `idea-challenge.v1`
+   packet to `ao plan-pawl decide` before decomposition. Keep it
    advisory, not mandatory. Skip it for single-session or non-contested plans.
    Evidence from the 2026-05-17 Mt Olympus run: roughly 22 min wall-clock,
    3/5 operator defaults flipped, and one already-shipped adapter bug surfaced.

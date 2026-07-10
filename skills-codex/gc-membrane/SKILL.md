@@ -25,7 +25,7 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
 |---|---|
 | `formulas/membrane-quest.toml` | v2 workflow: worktree build with `[steps.check]` → `close-gate.sh`, `max_attempts = 5`, check `gc.work_dir` pinned to the city root, ralph-gate-bead protection in the recovery snippet |
 | `membrane/close-gate.sh` | the close door (run by the dispatcher, never an agent) |
-| `membrane/finalize.jq` + `finalize.sh` | deterministic verdict — the `reviewquorum.Finalize` rollup ported to jq, hardened |
+| `membrane/finalize.jq` + `finalize.sh` | deterministic decision: canonical `pawl-verdict.v1` only for terminal semantics; `gc-review-attempt.v1` for transport degradation |
 | `membrane/scaffold-quest.sh` + `quests/_template/` | move-1 intake: default-FAIL `CONTRACT.md`, red `test.sh` |
 | `agents/{planner,builder,verifier,agy-verifier,opus-verifier}` | trinity + third family + claude-family failover lane, RBAC via harness config |
 | `doctor/law0-print-args`, `doctor/membrane-health` | blocking doctor checks |
@@ -48,7 +48,7 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
    ONLY the diff + contract to **≥2 cross-family reviewer lanes** via
    `gc session submit` (the only verb that reliably drains an idle pane) →
    collects `review-quorum.lane.v1` JSONs → hands to the finalizer.
-4. **Finalize** (`finalize.jq`) computes the verdict. **Precedence:
+4. **Finalize** (`finalize.jq`) computes the decision. **Precedence:
    hard > transient > findings > pass**, hardened beyond the upstream rollup:
    - **Nonce anti-replay:** a lane verdict without the exact round nonce is
      rejected as stale.
@@ -60,6 +60,10 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
      ralph dispatcher never reads `gc.failure_class` — every nonzero check
      exit consumes one of `max_attempts` (5), DEGRADED included; the class
      stamp is evidence, not budget control.
+   - **Artifact separation:** CONFIRMED/REFUTED write a closed-schema canonical
+     verdict whose refuter evidence is copied to contained nonempty files.
+     DEGRADED removes the round verdict path and writes a nonsemantic
+     `gc-review-attempt.v1`; it cannot overwrite the latest terminal verdict.
 5. **Outcome:** exit 0 CONFIRMED → the dispatcher closes the ralph gate
    bead with the ENGINE fingerprint (final `gc.attempt_log` entry
    `outcome=pass`) and the workflow finalizes pass; any nonzero exit →

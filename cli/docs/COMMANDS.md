@@ -4240,7 +4240,7 @@ ao skills find <intent> [flags]
 
 #### `ao skills graph`
 
-Render the skill dependency graph (A --> B means A consumes B) from
+Render the skill execution/delegation graph (A --> B means A declares
 
 ```
 ao skills graph [flags]
@@ -4249,7 +4249,7 @@ ao skills graph [flags]
 **Flags:**
 
 ```
-      --format string   Graph output format (mermaid) (default "mermaid")
+      --format string   Graph output format (mermaid|json) (default "mermaid")
   -h, --help            help for graph
 ```
 

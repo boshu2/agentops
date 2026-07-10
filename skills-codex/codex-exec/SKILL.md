@@ -11,7 +11,7 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
 - **Never API-bill a worker.** Do NOT set `OPENAI_API_KEY` in a worker's env, and do NOT use `codex login --with-api-key`. **Why:** that flips Codex from flat-rate sub billing to per-token API billing — the Codex twin of the banned `claude -p`. A factory cycle on API keys silently burns real money. (Mirror of the "never `claude -p` for workers" rule.)
   - WRONG: `OPENAI_API_KEY=sk-... codex exec -C "$REPO" "<task>"` · CORRECT: `codex login status  # Logged in using ChatGPT` then `codex exec -C "$REPO" -s workspace-write "<task>"`
 - **Confirm the sub before dispatch.** Run `codex login status` and require `Logged in using ChatGPT`. **Why:** a worker that "runs fine" on a leaked API token bills per token; the check is the only thing standing between a green run and a surprise invoice.
-- **Pipe the prompt (or close stdin) in any non-TTY lane — else codex HANGS.** A positional-arg `codex exec "<prompt>"` run with non-TTY stdin (background, `&`, ATM/NTM pane, cron, piped, inherited-pipe) still **reads stdin** — it prints `Reading additional input from stdin...` and blocks **forever** when that stdin never reaches EOF (the classic idle open pipe). **Why:** codex appends piped stdin as a `<stdin>` block even when a positional prompt is present, so an open idle stdin is an unterminated read. For unattended/background/factory lanes the safe DEFAULT is to **pipe the prompt** — `printf '%s' "$P" | codex exec … -` (or `cat prompt.txt | codex exec … -`) — or **close stdin** — `codex exec "<prompt>" </dev/null`. The bare positional form is fine only for an interactive TTY.
+- **Pipe the prompt (or close stdin) in any non-TTY lane — else codex HANGS.** A positional-arg `codex exec "<prompt>"` run with non-TTY stdin (background, `&`, NTM pane, cron, piped, inherited-pipe) still reads stdin and can block forever without EOF. For unattended/factory lanes, pipe the prompt to `codex exec … -` or close stdin with `</dev/null`.
 - **Pick the sandbox deliberately.** `-s read-only` for offline validators, `-s workspace-write` for workers that must edit, `-s danger-full-access` only inside an already-sandboxed host. **Why:** `codex exec` runs model-generated shell commands; the sandbox is the blast radius.
 - **Network-touching validators are the exception — use `-s danger-full-access`.** A validator that must `git fetch`, clone a repo, or hit any network endpoint will FALSE-FAIL under `-s read-only`, because the sandbox blocks `connect` syscalls — the failure is an infrastructure artifact, not a real verdict. On an already-sandboxed host, give network validators `-s danger-full-access`. Offline validators stay `-s read-only`.
 - **`--dangerously-bypass-approvals-and-sandbox` is for externally-sandboxed hosts only.** **Why:** it removes every guardrail in one flag; use it only when the OS/container is the sandbox.
@@ -78,7 +78,7 @@ codex exec -C /path/to/repo -s danger-full-access \
   "Fetch origin/main, validate the change against it. Output VERDICT: PASS|FAIL + reasons."
 
 # Stdin prompt (orchestrator piping the task in) — the SAFE DEFAULT for any
-# unattended/background/ATM-pane/cron lane. The trailing `-` reads the prompt
+# unattended/background/NTM-pane/cron lane. The trailing `-` reads the prompt
 # from the pipe and gives codex an immediate EOF, so it can't stall on
 # "Reading additional input from stdin..." (see Critical Constraints).
 printf '%s' "$TASK_PROMPT" | codex exec -C "$REPO" -s workspace-write -
@@ -185,7 +185,7 @@ receipts, image-health). Full packet:
    ~90 minutes vertical slice, then decide. New work becomes follow-up beads,
    not scope absorbed into the active bead (risk-class routing:
    [`discovery`](../discovery/SKILL.md)).
-6. **Approval evidence needs a durable proof surface.** If Fable/ATM approval
+6. **Approval evidence needs a durable proof surface.** If interactive-pane approval
    gates implementation, mirror the council artifact or a compact proof packet
    to a tracked durable path before the gating bead/epic closes (the codex-approval
    Fable-approval bridge and its closeout rule are folded into this skill).
@@ -199,13 +199,13 @@ receipts, image-health). Full packet:
 | `not a git repository` error | `-C` points outside a repo | Add `--skip-git-repo-check` (or point `-C` at a repo) |
 | Worker can't write files | `-s read-only` | Use `-s workspace-write`; add `--add-dir` for paths outside the root |
 | `resume` finds nothing | Prior run used `--ephemeral`, or wrong cwd | Don't use `--ephemeral` for resumable work; try `resume --all` to drop cwd filtering |
-| Hangs on `Reading additional input from stdin...` | Non-TTY stdin (background/`&`/ATM pane/cron) with no EOF — codex reads stdin even with a positional prompt | Pipe the prompt (`printf '%s' "$P" \| codex exec … -`) or add `</dev/null` to the positional form |
+| Hangs on `Reading additional input from stdin...` | Non-TTY stdin (background/NTM pane/cron) with no EOF | Pipe the prompt (`printf '%s' "$P" \| codex exec … -`) or add `</dev/null` |
 | Empty / truncated output in a loop | Parsing terminal text | Use `-o FILE` or `--json` and read the structured result |
 | Rate-limited on the Pro lane | One account saturated | Switch lanes with `caam exec codex <other-profile> --` |
 
 ## See Also / References
 
 - `ntm` — Claude worker panes (the Claude-side lane; never `claude -p`)
-- `using-atm` — driving codex as an ATM **TUI pane** (keystroke / `--codex-goal` flow, `atm codex` readiness gates) vs this skill's **headless** `codex exec` (stdin/positional). Different dispatch mechanics, same auth/sub rules — conflating them is how "positional arg → background hang" and "send → wedged TUI pane" co-occur.
+- `agent-native` + `ntm` — driving Codex as an interactive NTM pane vs this skill's headless `codex exec`. Their dispatch mechanics differ even though auth rules overlap.
 - `account-rotation` — host-routed account switching; on Codex/Gemini and Linux/WSL lanes the swap tool is `caam` (isolated multi-account profiles for the 4-lane flywheel: Claude Max ×2 + Codex Pro + Gemini)
 - `dcg` — destructive-command guard that can enforce the never-API-bill rule · Memory "Never claude -p for workers 2026-06-06" — the Claude-side twin of this skill's core rule

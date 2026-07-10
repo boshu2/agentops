@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "1630b82dbdd0b35c3107ce02dbfbae7cf5a7fb71e53ce29ff9c316885e6a1442",
+  "codex_override_catalog_hash": "7cccea21452419af933d23c54831856210faba3183c8a7df04d0ab9938cf5fab",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -34,31 +34,82 @@
     ],
     "skills": [
       {
-        "name": "autodev",
+        "name": "account-rotation",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands.",
-        "operator_contract": {
-          "required_sections": [
-            "## Codex Execution Profile",
-            "## Guardrails"
-          ],
-          "required_markers": [
-            "Do not shell out to a retired CLI wrapper as the Codex default; invoke `$evolve` or `$rpi` for skill handoff."
-          ]
-        }
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
       },
       {
-        "name": "beads",
-        "treatment": "bespoke",
-        "wave": "backbone",
-        "reason": "Issue routing and dependency edits are a core Codex workflow and need explicit runtime-facing operator guidance."
+        "name": "agent-mail",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "agent-native",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+      },
+      {
+        "name": "agy-native",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "automation-shape-routing",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
+      },
+      {
+        "name": "beads-br",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "beads-bv",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "behavior-first-planning",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned parity wrapper; source behavior (the four-phase behavior-first planning discipline) lives in skills/behavior-first-planning, Codex profile stays parity-only until durable Codex-specific divergence is proven."
       },
       {
         "name": "bootstrap",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "cass",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "cc-hooks",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "codex-exec",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "converge",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
       },
       {
         "name": "converter",
@@ -77,6 +128,12 @@
         "treatment": "bespoke",
         "wave": "backbone",
         "reason": "Hands-free execution depends on Codex-native agent control, progress reporting, and scope discipline."
+      },
+      {
+        "name": "dcg",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
       },
       {
         "name": "discovery",
@@ -101,16 +158,16 @@
         "reason": "Documentation work benefits from Codex-specific emphasis on repo-grounded evidence and validation commands."
       },
       {
+        "name": "domain",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
+      },
+      {
         "name": "evolve",
         "treatment": "bespoke",
         "wave": "backbone",
         "reason": "The always-on improvement loop needs explicit Codex operating semantics around queues, generators, and persistence."
-      },
-      {
-        "name": "forge",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
       },
       {
         "name": "goals",
@@ -175,7 +232,13 @@
         }
       },
       {
-        "name": "inject",
+        "name": "ntm",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "operationalize",
         "treatment": "excluded",
         "wave": "catalog-parity",
         "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
@@ -213,7 +276,7 @@
             "Treat `skills/post-mortem/SKILL.md` as the canonical close-out contract and `skills-codex/post-mortem/SKILL.md` as the Codex-facing artifact.",
             "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
             "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
-            "Own Codex closeout during the post-mortem flywheel phase by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.",
+            "Own Codex closeout during the post-mortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
             "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
           ]
         }
@@ -254,6 +317,24 @@
             "If push fails, stay in recovery mode until it succeeds or a real blocker is identified"
           ]
         }
+      },
+      {
+        "name": "rch",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "reality-check",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "seams epic ag-xwjlc parity twin"
+      },
+      {
+        "name": "refactor",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
       },
       {
         "name": "release",
@@ -307,18 +388,37 @@
           "required_markers": [
             "In Codex hookless mode, run `ao codex ensure-start` before phase orchestration; the CLI records startup once per thread and skips duplicates automatically.",
             "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
-            "Keep a single lifecycle objective spine across discovery, crank, and validation. Never replace it with a child issue ID or one ready slice from `bd ready`, `bd show`, or `.agents/rpi/next-work.jsonl`.",
+            "Keep a single lifecycle objective spine across discovery, crank, and validation. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
             "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
             "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
             "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
+            "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, and `$validate` delegation is auditable from disk.",
             "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
             "Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.",
-            "Route `bd` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
+            "Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
             "claim, release, and consume semantics exactly",
             "claim before work, consume on success, release on failure or interruption",
             "Do not stop after a partial phase result; only stop on `<promise>BLOCKED</promise>`, retry-budget exhaustion, or final completion. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
           ]
         }
+      },
+      {
+        "name": "sbh",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "scaffold",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "New lifecycle skill; converter parity is acceptable."
+      },
+      {
+        "name": "scope",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
       },
       {
         "name": "security",
@@ -333,16 +433,16 @@
         "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
       },
       {
+        "name": "skill-builder",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
+      },
+      {
         "name": "standards",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Standards are loaded as reference material and do not currently need a Codex-specific prompt layer."
-      },
-      {
-        "name": "domain",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
       },
       {
         "name": "status",
@@ -382,556 +482,10 @@
         }
       },
       {
-        "name": "skill-auditor",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
-      },
-      {
-        "name": "skill-builder",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-      },
-      {
-        "name": "refactor",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New lifecycle skill; converter parity is acceptable."
-      },
-      {
-        "name": "scaffold",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New lifecycle skill; converter parity is acceptable."
-      },
-      {
         "name": "test",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "New lifecycle skill; converter parity is acceptable."
-      },
-      {
-        "name": "scope",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
-      },
-      {
-        "name": "system-tuning",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
-      },
-      {
-        "name": "validate",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
-      },
-      {
-        "name": "automation-shape-routing",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
-      },
-      {
-        "name": "workflow-builder",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
-      },
-      {
-        "name": "agent-native",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
-      },
-      {
-        "name": "bd-first-memory-migration",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for bd-first-memory-migration"
-      },
-      {
-        "name": "acfs",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-      },
-      {
-        "name": "agy-native",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-      },
-      {
-        "name": "codex-exec",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-      },
-      {
-        "name": "agent-mail",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "beads-br",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "beads-bv",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "beads-workflow",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "cass",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "cc-hooks",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "dcg",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "gcloud",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "gh-actions",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "gh-cli",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "gh-triage-ru",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "ntm",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "process-triage",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "rch",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "repeatedly-apply-skill",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "research-software",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "ru-multi-repo-workflow",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "sbh",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "ssh",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "system-performance-remediation",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "vibing-with-ntm",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "cli-agent-ux-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "artifact-clarity-pass",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "measured-performance-optimization",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "installer-quality-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "dependency-update-safety",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "production-placeholder-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "layered-defect-hunt",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "performance-profile-triage",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "project-readme-craft",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "release-readiness-gate",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "behavior-preserving-simplification",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "contract-conformance-testing",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "fuzz-test-design",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "golden-artifact-testing",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "metamorphic-test-design",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "live-service-e2e-testing",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "work-contract-portability",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "automation-loop-hardening",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "legacy-codebase-recon",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "codebase-risk-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "implementation-pattern-mining",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "codebase-briefing-report",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "concurrency-deadlock-remediation",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "native-debugger-triage",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "mcp-interface-design",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "project-reasoning-lens-analysis",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "expertise-to-procedure",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "project-reality-check",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "spec-reliability-implementation",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "bead-tracker-migration",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "changelog-quality-pass",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "repository-hygiene-sweep",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "stash-hygiene-sweep",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "worktree-branch-rationalization",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "idea-option-forge",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "filesystem-path-rationalization",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "ripgrep-search-discipline",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-search-integration",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-port-validation-gauntlet",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "external-search-triage",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "cli-doctoring-workflow",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-sqlite-cli-architecture",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-crate-release-readiness",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-ub-risk-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "rust-unsafe-boundary-audit",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-      },
-      {
-        "name": "agy-headless-evidence",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for AGY image operator skill."
-      },
-      {
-        "name": "storage-watchdog-ops",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Operator runbook for the ACFS storage watchdog Go daemon; codex-native shell/systemctl idioms."
-      },
-      {
-        "name": "codebase-archaeology",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-      },
-      {
-        "name": "codebase-pattern-extraction",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-      },
-      {
-        "name": "codebase-report",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-      },
-      {
-        "name": "account-rotation",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "codex-approval",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
-      },
-      {
-        "name": "pre-land-refuters",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
-      },
-      {
-        "name": "continuity-loop",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "seams epic ag-xwjlc parity twin"
-      },
-      {
-        "name": "operationalize",
-        "treatment": "excluded",
-        "wave": "catalog-parity",
-        "reason": "Spine-excluded (age-focus-membrane-bookkeeper-m1wg.19): demoted to the experimental tier; Codex twin dropped \u2014 no runtime twin ships."
-      },
-      {
-        "name": "reality-check",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "seams epic ag-xwjlc parity twin"
       },
       {
         "name": "toil-mining",
@@ -940,40 +494,22 @@
         "reason": "seams epic ag-xwjlc parity twin"
       },
       {
-        "name": "converge",
+        "name": "validate",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
+        "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
       },
       {
-        "name": "dual-pane-atm",
+        "name": "workflow-builder",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Dual-pane ATM orchestration is documentation-led and portable across runtimes; Codex parity is sufficient until durable Codex-only divergence is proven."
+        "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
       },
       {
         "name": "reverse-engineer",
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for reverse-engineer"
-      },
-      {
-        "name": "behavior-first-planning",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex-owned parity wrapper; source behavior (the four-phase behavior-first planning discipline) lives in skills/behavior-first-planning, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-      },
-      {
-        "name": "orchestrate",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "BC6 out-of-session instrument lane; Codex parity twin for route/preflight/verify procedure"
-      },
-      {
-        "name": "using-atm",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "ATM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
       },
       {
         "name": "ms",
@@ -1006,6 +542,36 @@
             "## Codex Execution Profile"
           ]
         }
+      },
+      {
+        "name": "idea-genie",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Evidence-grounded opportunity artifact is runtime-portable."
+      },
+      {
+        "name": "dueling-idea-genies",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Sealed challenge artifact and plan-pawl handoff are runtime-portable."
+      },
+      {
+        "name": "codebase-recon",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Evidence-bounded recon and delta contracts are runtime-portable."
+      },
+      {
+        "name": "pattern-mining",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Exemplar and holdout validation contract is runtime-portable."
+      },
+      {
+        "name": "pawl-review",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Immutable reviewer-lane contract is runtime-portable; concrete adapters stay behind ports."
       }
     ]
   },
@@ -1019,31 +585,31 @@
     {
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
-      "source_hash": "339bcface7d133d6ad118e30d32e5ff2294e6e9750606917a0d3eaaa0e77fda6",
-      "generated_hash": "a4d4792e02762ad1d91330c3ffc0f959a8c2036d624cb32f20ec41616f89f6ae"
+      "source_hash": "7b643ae0c8d4252745fc93ecf0358c596c84732f1fdc65d3e0b6f3fc8cd89531",
+      "generated_hash": "5453503932545c9306b55c58f769f87efeee034c16c25abcaf5c91402d223e18"
     },
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "30f5ecf62e415377a12aa04c2d10f9737b5812a26353117a5360da04338ae03a",
-      "generated_hash": "c430e6b850ae3ce332efb78f8b52ed9007faa054ebe3220f8a4b3c59fd660b3a"
+      "source_hash": "ff64ec3daf1c982f5eb61be0ba99a3ac0f79d970d2a628b59cb97d0bccc7fc1e",
+      "generated_hash": "47af644897c7c6baa8a3717c336e980e00e625c7706c88b302cbd8a97057e518"
     },
     {
       "name": "agy-native",
       "source_skill": "skills/agy-native",
-      "source_hash": "07c93017f1874b6a9a69ab0310777577a467cb2aacaeaacbb492f32ae8819725",
-      "generated_hash": "c3dd6e613d1a679aeae6fc1a6e645119fdc532613e468d13984b0773e38fe810"
+      "source_hash": "e0f58bd44ea37523ff64bb61b25af3b6e6126e0681a91e6567065f55063c9e3a",
+      "generated_hash": "30971d6ca8da3e17bb27253b72c411d379ffa5f37b97bb44d313215a3609200c"
     },
     {
       "name": "automation-shape-routing",
       "source_skill": "skills/automation-shape-routing",
-      "source_hash": "9f0142cf38b44cc6017a7f5dce5f4261801958e7d03295569151b1cf6c3b2544",
-      "generated_hash": "f386cf4fe838e6014fdc0a06d2cfc43d49ecb2d313d1f2af3f0c333986e70036"
+      "source_hash": "0f5ca880c9880a853e6fad7e86661e58e93dfed56eac53cd78637684ab20c26a",
+      "generated_hash": "d8bb05549bdf357e12e1bf08d6bbcd3c475274b184f0862fcdc266e5b9611201"
     },
     {
       "name": "beads-br",
       "source_skill": "skills/beads-br",
-      "source_hash": "0b47139b9aa5739fa792a4f0334da7fd539505ca346b7726a0499359d5772a37",
+      "source_hash": "45957bce40ea7fc91b72734403529dab58329c8a814c296935a4e5cc6d4c1b39",
       "generated_hash": "9ebd07492708236a98424a5456ad0ed223c79cc6f52533b247bac4c810068c6d"
     },
     {
@@ -1061,7 +627,7 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "69b339ec66f43fe463e397719f1229121e207af14a42c7cca6d3d21a676e624f",
+      "source_hash": "473438609f7a4926fa15fb090675a8e2f4e24691b5aadcc7ea269d331200f7c4",
       "generated_hash": "48fb9da12611b15170b56c30e6aee55ece37caf2d6748de0f67a76a13bdd4062"
     },
     {
@@ -1077,15 +643,21 @@
       "generated_hash": "4157dd0d335cbb49f743b5e0cfc149c12d508bebb1493778019505bf86881e7b"
     },
     {
+      "name": "codebase-recon",
+      "source_skill": "skills/codebase-recon",
+      "source_hash": "04de875c2afc5b7a1cc506f4730c70df5e82445a6557f0530ef589781492d836",
+      "generated_hash": "7a6ce7a2d911f1dc74ff1c75c5f1d8381208c3c22046db21ef2b28aa452b35f6"
+    },
+    {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "a66ee784f3b51b2d42c6e29c4b5cef5addcb1189369d01328f30fe0bfa206328",
-      "generated_hash": "0867128a92d72c12c71a373afbb0395e0a1770b3ed9d21b5fddb5bb3b0634257"
+      "source_hash": "a638c8e424cb47098f7e7f68b979dfc5da8f635259710274a8c7d30f4de3ff90",
+      "generated_hash": "71b614d2c11b9c55995aafcf56bddf1cc623e6c345ad8d68e14a6b054084726f"
     },
     {
       "name": "converge",
       "source_skill": "skills/converge",
-      "source_hash": "2eba87d30ca6e5bdd5ac1af0f76f6a210c73fffea1a077d740a630e11e10c631",
+      "source_hash": "07bea92e9f69eaccb683b67c7ef69171e4978bfe1b52a971dd5bcb9be7dbf0df",
       "generated_hash": "3aeca887520c90c2afec958a26414dd7d4549a73fe790c2db17094f3f416de21"
     },
     {
@@ -1097,14 +669,14 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "8c312fbe7492bd1639484269d9fb25f2651c718619575ca67e4a838c7b7c868f",
-      "generated_hash": "0a71317e6b44c848c345932097eeafa059b1e24df281913bd9ebfe7c2d3cacda"
+      "source_hash": "abe4bc22866285bd8c2cdcbe01482fad990ad083b3cbbcc9dabda46df27aa474",
+      "generated_hash": "e5f6790b340e0d05c5ac20bb714660dbaffe89391256d8c16e47915f636c126f"
     },
     {
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
-      "generated_hash": "0882bca3b4251ff3f37fb1bec46f2bb5d9d71081e61c8ee3633f43304a9d32df"
+      "generated_hash": "c05658f8b0da897546f11beb8e6439fd2d32a2867777afb9a0b27f57c5ac1674"
     },
     {
       "name": "dcg",
@@ -1115,8 +687,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "55c28ea28193ca65d1e7715858e6660341a921a03d0f7389f6b22b163b38f87f",
-      "generated_hash": "16a9723b477d7fe75822438ddde7859b17413d0cc4b62e7bd76f1246f7780508"
+      "source_hash": "dda8851815f06f0f1a682215001a737370e380edb69a5828a4f98858fb87f0eb",
+      "generated_hash": "4267ac229b650e00ad9e866b8609fb20861355cafebba8f6e320fb3bca3eb442"
     },
     {
       "name": "doc",
@@ -1131,16 +703,28 @@
       "generated_hash": "13e5503ca5f627736aadf918d10ebb69de1a7a7a813231eabbbee67879f7b1dd"
     },
     {
+      "name": "dueling-idea-genies",
+      "source_skill": "skills/dueling-idea-genies",
+      "source_hash": "51535a87b010f6e6bb823b64f12a0ffd2ed857c5118e3dac59f7e276560c1219",
+      "generated_hash": "cb10f21fb60a3f251c2785f36b0e8c616e10adcf63aab0ce7dd9a0c64fe9d5ca"
+    },
+    {
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "4607ff96607481f6f754bff5dd18250c8aa460dccb6c6a35b154e5a6fc1d5e6a"
+      "generated_hash": "afbd2597b8eb8105252b4a748711c2691ff2ce353d35f97f325269bbde34ac7d"
+    },
+    {
+      "name": "gc-membrane",
+      "source_skill": "skills/gc-membrane",
+      "source_hash": "56cd44f5a11f7e77f1359d97e3dbcb75d47abf518fc2448c42ea709e9eb8745f",
+      "generated_hash": "1ffbf566984363035f0db415d6df928cc8e9c8154ac5f72964d4357c88c6e7e1"
     },
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "ba28699da3150dd8250f32177f75cad12456beadff426e489e359ece398668c9",
-      "generated_hash": "6cc759d72103bdef1bd05afdfb64b97c76bb5e783251c5fad7c0f70c49d2a84a"
+      "source_hash": "8e9187f82c7e7a4b366f51d183d247ec1960cbedcd8030a510cc25cb274e629c",
+      "generated_hash": "6d808cdfd1f50ebcbe9505cf8c47366babb1a23f3ce161f5742e2d3430ddfdd3"
     },
     {
       "name": "goals",
@@ -1151,7 +735,7 @@
     {
       "name": "handoff",
       "source_skill": "skills/handoff",
-      "source_hash": "ec807b2ab44aa63d3e68b0af99b01ac4f817d9aa15c2c17980ce81d1a66b8c03",
+      "source_hash": "d67274504d4e08509cd20378fa38fbef8acc257070d0672261cf08eb7e867e07",
       "generated_hash": "a529cc137a2f8049edf50a9baf6838fed330e6d1490f3c171a0a148c9c467d7b"
     },
     {
@@ -1161,9 +745,15 @@
       "generated_hash": "bc2da45d83103fd71c42480a066cf5637ed9f5a829eb488b3ad91301d9ee1b89"
     },
     {
+      "name": "idea-genie",
+      "source_skill": "skills/idea-genie",
+      "source_hash": "f7c2c36642748855436cea4d2dd732d0be7d853dcd4b1dfbf138aec329bb9da7",
+      "generated_hash": "bc30c243e143c6b53d87bef8b6f4920ecf62971df8bb02a67031112fa7aff421"
+    },
+    {
       "name": "implement",
       "source_skill": "skills/implement",
-      "source_hash": "37f4facd5e769df69544f82c3c0455affa9279062b2e8d000f16bedd7ff7ada6",
+      "source_hash": "ce7bac2730be63b5a070c4ec425eb236120bbb8ed6120d0e8fda4b6ab48c9714",
       "generated_hash": "10f5eaf7ea529938b705bd49cbd33060d08b65431e1ab87aa0c767b70ae21c92"
     },
     {
@@ -1175,20 +765,32 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "4904eb4b8b3b9efdc1674e0cc5bebad0cf1f6270a994b1de4c52407bb384315a",
-      "generated_hash": "37b046f0b0744e3deef4f206250114b98245c90d35f8fba0362246b9216642ae"
+      "source_hash": "45745ed6b5ee232d28668bb03f6cb81eb6c49f7b209bde69f4137bd9d410cebd",
+      "generated_hash": "8547a4403054b8adffc724fff6ab438a5071f5f108217e9479b3a36ff1de8a1f"
+    },
+    {
+      "name": "pattern-mining",
+      "source_skill": "skills/pattern-mining",
+      "source_hash": "a8475fd3bcd3c4a7d162f38fd9cf76f8566c1b0ff7218ee9f73ef8baec27af4d",
+      "generated_hash": "7b3ac58d2722741531f54d93451ba244d32aac21622dd7b6b32097342b539d7f"
+    },
+    {
+      "name": "pawl-review",
+      "source_skill": "skills/pawl-review",
+      "source_hash": "5e1727c70112fa5797b0d57499d28aad5c08f658631c3667016dd151c12eac9e",
+      "generated_hash": "c332f8bd3d7d32f6bbd0b8d605764eb49db8e0d2d0e38660eff2c1e4d243ae96"
     },
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "76e61e31e0155f58296237691cedbf59c0d63b22cf967f3568e4e529b0f40877",
-      "generated_hash": "3520d4011f61ff64069ac460ae3e024b78fd71aede8d257d113f65383005c7cb"
+      "source_hash": "ede2b25d93d499b44c9fd96451bd1f427c952c3cbe0f3c98663c7c6e830e2bef",
+      "generated_hash": "aaeba3f5be1fb9d8408713cce3f870297c0e2a9e19f702a9465599011c6b999f"
     },
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "c2183ff53b7de5a800af0febf3fb343320de42f69ce4f068ae1829568ed2b047",
-      "generated_hash": "2a6dfed4834387e09be4e53fad4f101e77f3c852af79a2154bddde730da9435b"
+      "generated_hash": "dc878a0fa04a891b5e35e21372e94ba697098464fb705e46d6fc2e256e78c64c"
     },
     {
       "name": "pr-prep",
@@ -1197,16 +799,10 @@
       "generated_hash": "a192d22003d4c9518476f56e9289a64706a1fd542b22377e18824d76a00f26ae"
     },
     {
-      "name": "pre-land-refuters",
-      "source_skill": "skills/pre-land-refuters",
-      "source_hash": "12bd6cf00984252edb50b6ce61e299006ddff5a6846bafbc180b4fc7778997c0",
-      "generated_hash": "ad437f3ec2e326ee26457bccb7d330fce255241b4af12a7e8d48149708fe1633"
-    },
-    {
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
-      "source_hash": "6f0075ddf4ff5e83960b45cbc1d2c4df883dd97ea474ee474cbd77a6f8d0b39a",
-      "generated_hash": "ba8fb275f5c68f696655d30f3d3a0513f029add058f1ec289f9e126adbfb0870"
+      "source_hash": "76af9281b174b4f0cedbdef4cefe9eb0f4e62f6c674ea7bf9edf40663ed5cfe3",
+      "generated_hash": "648283abf05e827a409740e673261ea918b26068573fc425f882be0d34f4893d"
     },
     {
       "name": "product",
@@ -1218,24 +814,24 @@
       "name": "push",
       "source_skill": "skills/push",
       "source_hash": "f28fcd367aac3f9806cf4504a94ef7f4eef497bd79ad1fbe762811a48fffc977",
-      "generated_hash": "cac3be78a46416ef0695a86d7f8c36839c728007f65fb61ef66f6e2461b55912"
+      "generated_hash": "e6f1ba97d779ef0473c61fca4821d0824f5858665592be23d07cfbc43212cbb5"
     },
     {
       "name": "rch",
       "source_skill": "skills/rch",
-      "source_hash": "9a1736b281ca6e37b2ea99e9e57cdb6b184539c82dbd82323f7c7c4937ad22b5",
-      "generated_hash": "9cf0311dbd470b15340b00c581cd09b7f466c0eadf35dd58abae691768ca470a"
+      "source_hash": "8acdb18dfca92a0f74b825a55919652a48ba019a41a959fcaf1dc4239d4443ef",
+      "generated_hash": "66a9faf8688f99543648d52f6de00a2b28bd9e45d034e86c22e71a13b9a71b12"
     },
     {
       "name": "reality-check",
       "source_skill": "skills/reality-check",
-      "source_hash": "1a0484abdd76bd9f75653ee94fa3062ccd1628b583f6f83162a7fed343e5e338",
+      "source_hash": "11c9bec95938de80f117ad1aadfef238759ad6efd6b8c8e83af0d9f88c27f6f8",
       "generated_hash": "1c2f9e86b99fe67e59e8bde18db50ba5d4f48f7e11adef93bd1b84e0c8db5246"
     },
     {
       "name": "refactor",
       "source_skill": "skills/refactor",
-      "source_hash": "5af5da257cae1abdf5a8534241623aa2fc5bda92b95198ec8756c35bf07c6ff0",
+      "source_hash": "dab17a91ce82c88ceed8e83271fdb64642ee24cadb2fe4b4d6f1998ead9a7f29",
       "generated_hash": "e5f8a0683ee5331fd39162b273e4f5e418c45ead4295e6139df591d0a97c66df"
     },
     {
@@ -1260,7 +856,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "05691eddcdf1eb9b0e3c6c39ce0e631b039710ee310041a45ab91ab0d98a6b63",
-      "generated_hash": "74038c8376d4a23603b1660501395e561ff367b3d3a9c721aed92918ccc35ce6"
+      "generated_hash": "c3682b3653e820838b3be00c4c9439b30218de8e83b0412816e53af605aa6297"
     },
     {
       "name": "sbh",
@@ -1283,7 +879,7 @@
     {
       "name": "security",
       "source_skill": "skills/security",
-      "source_hash": "d67de5e6769138cefc7740b7263337e94699cb43308265014685a07ae5b8ef21",
+      "source_hash": "b5ffb28a258ff95de951f668b4fd374e449f314a766e992f9e3d9fec70f67e19",
       "generated_hash": "eea104b937723f72fd65e4e1c7f0a778bf97c95337638fc8ab47a1b645b6fc83"
     },
     {
@@ -1307,14 +903,14 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "844476c03dea53e83180eca2e3d10d65d6d21dc4a231ba0c9745eff18cfcde27",
+      "source_hash": "78d83f3d9f4f344af7322661e92bc0f3fbdd966e6a21a39f42614b2e405eb902",
       "generated_hash": "3cdf27e1b1d862910a9d1f7a550d8c0c19e9ef697caf1e333da3dc8e4017d616"
     },
     {
       "name": "swarm",
       "source_skill": "skills/swarm",
       "source_hash": "50c29741ffa33d5fbaba44d89f8319921fb1063631997af01214cf196dc4f57b",
-      "generated_hash": "e5ee7bc0d7bbffb5708ec8358392e5f0c7ff2291c828733152a41f2ed3b6190f"
+      "generated_hash": "c0c7f32ca3bb73aa5225c131c3dc368668f3e910ff8affc411884e1988d392be"
     },
     {
       "name": "test",
@@ -1329,34 +925,22 @@
       "generated_hash": "497eb57fcacf8e97094b942d8bd0ce5a975582d6209d18d0378c61a32f06fd65"
     },
     {
-      "name": "using-atm",
-      "source_skill": "skills/using-atm",
-      "source_hash": "8d30422dd10ae6dc888e27cdfa11d791b3ec981a2543d900204657a119f3ecd5",
-      "generated_hash": "2a0868b87115b239ebda9a95d9beec78987514e2bf89c94e117dac8deeee9a3b"
+      "name": "using-gc",
+      "source_skill": "skills/using-gc",
+      "source_hash": "2fce8dcbc0cc7954a3babda87b59366166e6cc06cb30c1a9878ab2ef259fcb95",
+      "generated_hash": "760db2a66c4428dd6b65784746d3fc464293a825d238fe23e47f349bc30b0783"
     },
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "f1d62659bb2efc82c26f34233e0e6ddfa8ff8d8715384e4ae9ba06387c81a48b",
-      "generated_hash": "51d31f2c867bf2320d6ff11828effb4a02507c2c805dbf3e681ba9c744a6b95d"
+      "source_hash": "3f641fea543ae5ff7056cfa8610b9e1457d180dc5d379a2dedfb5665553212f2",
+      "generated_hash": "793082c9bc78c18a14f485f32555fa9ae1ad9c52a2432efd85d035a4e64b74b0"
     },
     {
       "name": "workflow-builder",
       "source_skill": "skills/workflow-builder",
-      "source_hash": "ef7383f849e896cba600c169954ef96e9b70fbafc8ac0871fdedc341c783ca92",
-      "generated_hash": "ef907b207cf43eef197bc2ec63e4ee5f2428099f6d2c928a09ecdf68b75226e7"
-    },
-    {
-      "name": "gc-membrane",
-      "source_skill": "skills/gc-membrane",
-      "source_hash": "3cf929f139471a35f45e0081d85a13956495d82e2d54caa4c321df273f341aff",
-      "generated_hash": "c665bbd6e83057e1f282725d22058a0a1933272768af71e24dca19d6fa869aa3"
-    },
-    {
-      "name": "using-gc",
-      "source_skill": "skills/using-gc",
-      "source_hash": "f75d0e54c1e63f47629885f9808f62403e6c90601094526bf8b34bd13593361a",
-      "generated_hash": "4097df320af6f0ea7d3d45637d3b22be48ecbf9bae52b513adc1b31edac9f69f"
+      "source_hash": "b2475179b4b2e8f6c34dee8a2a6fba617ec9d68a86ca552630a51c5d5b9aa260",
+      "generated_hash": "8068abd43cfbbc95635a0db7ecc1b3455352446677f641225c8a64aa0bd0f931"
     }
   ]
 }

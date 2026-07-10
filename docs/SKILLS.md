@@ -26,7 +26,7 @@ What are you trying to do?
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   ├─ Independent judges ────────► /council validate recent
 │   ├─ Adversarially probe it ────► /validate --debate
-│   ├─ Landing 100+ files? ───────► /pre-land-refuters
+│   ├─ Need fresh pawl evidence? ──► /pawl-review → ao pawl
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
 │   ├─ Security + release gate ───► /security
@@ -161,12 +161,13 @@ Run repository security scans for vulnerabilities, dependency risk, secrets, and
 /security audit
 ```
 
-### /pre-land-refuters
+### /pawl-review
 
-Before landing a large change, dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack the completion claim at the shared-trunk pawl.
+Run one immutable, fresh, read-only reviewer lane and hand its contained evidence
+to `ao pawl`. The skill does not decide or write the panel verdict.
 
 ```bash
-/pre-land-refuters
+/pawl-review
 ```
 
 ---
@@ -297,7 +298,7 @@ Parallel agent spawning for concurrent task execution.
 ### Runtime-native multi-agent lanes
 
 Spawn parallel execution agents through the current runtime/substrate. Use
-`/swarm` for the skill-level entry point; use Codex subagents or NTM/ATM when
+`/swarm` for the skill-level entry point; use Codex subagents or NTM when
 the active runtime owns that transport.
 
 ```bash

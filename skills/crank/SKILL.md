@@ -29,6 +29,7 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  graph_root: true
   tier: execution
   dependencies:
   - swarm
@@ -36,6 +37,10 @@ metadata:
   - implement
   - beads-br
   - post-mortem
+  - agent-native
+  - automation-shape-routing
+  - dcg
+  - pawl-review
 output_contract: code changes across wave execution, .agents/swarm/results/*.json
 ---
 # Crank Skill
@@ -151,7 +156,7 @@ Crank lands each bead's slice to `main` **directly** — PR-per-bead is retired 
 
 1. **Isolate.** The bead's slice is committed on HEAD in the bead's own `git worktree` (never the shared checkout), the HEAD message citing the bead id (the gate + pawl resolve the bead from it).
 2. **Gate.** `ao gate check --fast --scope head` — the local cockpit gate (also the pre-push hook; run it manually to fail fast). Fix-forward stale/transient reds, never revert green work; regenerate drifted derived surfaces (`registry.json` / `contracts-sync` → `make regen-all`, scoped via `--skills` when only some skills changed) and commit them WITH the change.
-3. **Review — the mutate-shared-trunk pawl.** `bash scripts/pawl-review.sh <bead> --scope head --author-family <family>` runs the cross-family refuter against the commit (declare the author's real family — the default is `claude`, so a codex author omitting it would get a same-family bind; with `--author-family codex` the same-family reviewer is refused and a non-codex `REVIEWER=` must be supplied) ([docs/contracts/pawls.md](../../docs/contracts/pawls.md); [`/pre-land-refuters`](../pre-land-refuters/SKILL.md)). CONFIRMED requires: all refuters CONFIRMED; the diversity floor met — **fresh-context by default** (≥1 refuter in a context other than the author's; model-agnostic), or **multi-model opt-in** (≥2 distinct canonical model families) where the pawl is opted up; real non-empty reviewer evidence; `head_sha` == the live commit. On CONFIRMED it writes the commit-bound verdict at `.agents/pawl-verdicts/<bead>.json`. **No CONFIRMED verdict ⇒ the bead does NOT land** — the pre-push gate refuses it (no verdict = not done). **REFUTED → AUTO-REDO:** the loop re-works the named defects and re-gates on its own, no human. Escalate to a human **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation) — disposition `ESCALATE`/`HOLD`, door stays closed (never auto-land on a breaker trip); see pawls.md "Escalation — the circuit-breaker model".
+3. **Review — the mutate-shared-trunk pawl.** `pawl-review` runs immutable fresh reviewer lanes and hands evidence to `ao pawl`; `ao pawl` alone applies diversity, commit binding, and admission ([docs/contracts/pawls.md](../../docs/contracts/pawls.md); [`/pawl-review`](../pawl-review/SKILL.md)). CONFIRMED requires all refuters confirmed, the selected diversity floor, real nonempty evidence, and a verdict bound to the live head. No CONFIRMED verdict means no land. REFUTED routes back to re-work; circuit-breaker exhaustion HOLDs.
 4. **Land.** `bash scripts/pawl-land.sh <bead>` — fetch + rebase onto current `origin/main`, restamp the CONFIRMED verdict onto the post-rebase feat, single-shot `push origin HEAD:main`. Aborts without pushing on a rebase conflict (resolve locally, re-run pawl-review if the tree changed, re-land).
 5. **Close on landed-only.** `ao beads exec close` a child bead ONLY after its commit is confirmed on trunk — `git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main` — never on a log line or a batch `br --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child bead's commit is confirmed an ancestor of `origin/main`** (re-check `git merge-base --is-ancestor` per child; each child `br` CLOSED). One unlanded child aborts the close. (Post-mortem governance checkpoint: hard gate, not advisory.)
@@ -178,7 +183,7 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 - Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
 - Use `/swarm` for every wave, preserve fresh per-issue context, and refuse to continue past unresolved conflicts or the 50-wave cap.
-- Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): the wave-acceptance check uses the **lightweight inline judges** described in `references/wave-patterns.md` ("Wave Acceptance Check") — no skill invocations, no cross-family panel, no context explosion. Fix CRITICAL findings before advancing and keep looping until every issue/task is done. The **heavy** validation (full council, `/validate --mixed`, `/pre-land-refuters`) is reserved for the **bead-acceptance / merge-to-main pawl** — the Final Batched Validation (Step 7) and downstream `/validate` closeout, NOT per intermediate wave.
+- Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): use lightweight inline checks between waves. Reserve `/validate`, council, and `/pawl-review` evidence for the bead-acceptance / merge-to-main pawl, not every intermediate wave.
 - Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
 
 ### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
@@ -228,7 +233,7 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 
 ## Related skills
 
-- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate for long-running `/crank` waves over a bead queue.
+- [`/agent-native`](../agent-native/SKILL.md) — portable persistent-worker lifecycle; use [`/ntm`](../ntm/SKILL.md) for NTM pane mechanics.
 
 ## Reference Documents
 

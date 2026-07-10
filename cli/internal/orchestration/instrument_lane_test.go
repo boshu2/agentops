@@ -8,23 +8,75 @@ import (
 	"testing"
 )
 
-func TestLoadProfilesContract_MergesTriVendor(t *testing.T) {
+func TestLoadProfilesContract_DualHasTwoRoleShapedPanes(t *testing.T) {
 	root := findRepoRootForTest(t)
 	profiles, err := LoadProfilesContract(root)
 	if err != nil {
 		t.Fatalf("LoadProfilesContract: %v", err)
 	}
-	tv, err := profiles.ProfileByID("tri-vendor")
+	dual, err := profiles.ProfileByID("dual-pane")
 	if err != nil {
 		t.Fatalf("ProfileByID: %v", err)
 	}
-	if len(tv.Panes) != 3 {
-		t.Fatalf("panes = %d, want 3", len(tv.Panes))
+	if len(dual.Panes) != 2 {
+		t.Fatalf("panes = %d, want 2 role-shaped lanes", len(dual.Panes))
 	}
-	flat := tv.SpawnArgvFlat()
-	want := []string{"--no-user", "--cc=1:opus", "--cod=1:gpt-5.5", "--agy=1"}
-	if len(flat) < len(want) {
-		t.Fatalf("spawn argv %v, want at least %v", flat, want)
+	if dual.OwnerSkill != "agent-native" {
+		t.Fatalf("owner_skill = %q, want agent-native", dual.OwnerSkill)
+	}
+	if dual.Panes[0].Role != "Orchestrator" || dual.Panes[1].Role != "Worker" {
+		t.Fatalf("dual roles = %+v, want Orchestrator + Worker", dual.Panes)
+	}
+	assertProfileTokens(t, dual, []string{
+		"--robot-spawn=${session}",
+		"--spawn-cod=2",
+		"--spawn-no-user",
+		"--spawn-wait",
+		"--spawn-dir=${worktree}",
+	})
+}
+
+func TestLoadProfilesContract_TriHasThreeVendorPanes(t *testing.T) {
+	root := findRepoRootForTest(t)
+	profiles, err := LoadProfilesContract(root)
+	if err != nil {
+		t.Fatalf("LoadProfilesContract: %v", err)
+	}
+	tri, err := profiles.ProfileByID("tri-vendor")
+	if err != nil {
+		t.Fatalf("ProfileByID: %v", err)
+	}
+	if len(tri.Panes) != 3 {
+		t.Fatalf("panes = %d, want 3 vendor lanes", len(tri.Panes))
+	}
+	if tri.Panes[0].Runtime != "claude" || tri.Panes[1].Runtime != "codex" || tri.Panes[2].Runtime != "agy" {
+		t.Fatalf("tri runtimes = %+v, want claude + codex + agy", tri.Panes)
+	}
+	if tri.Panes[2].Role != "Verifier" || !tri.Panes[2].ReadOnly {
+		t.Fatalf("third pane = %+v, want read-only Verifier", tri.Panes[2])
+	}
+	assertProfileTokens(t, tri, []string{
+		"--robot-spawn=${session}",
+		"--spawn-cod=1",
+		"--spawn-no-user",
+		"--spawn-wait",
+		"--spawn-dir=${worktree}",
+		"--spawn-cc=1",
+		"--spawn-agy=1",
+	})
+}
+
+func assertProfileTokens(t *testing.T, profile ProfileSpec, want []string) {
+	t.Helper()
+	flat := profile.SpawnArgvFlat()
+	seen := make(map[string]bool, len(flat))
+	for _, token := range flat {
+		seen[token] = true
+	}
+	for _, token := range want {
+		if !seen[token] {
+			t.Fatalf("spawn argv %v missing %q", flat, token)
+		}
 	}
 }
 

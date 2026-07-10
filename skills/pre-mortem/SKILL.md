@@ -17,6 +17,7 @@ context_rel:
   with: standards
 skill_api_version: 1
 metadata:
+  graph_root: true
   tier: judgment
   dependencies:
   - council
@@ -289,7 +290,7 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
-- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — same adversarial stance aimed at the finished diff: this skill attacks the plan pre-work; that one attacks the completion claim pre-push
+- [`pawl-review`](../pawl-review/SKILL.md) — fresh reviewer execution for the finished diff; this skill attacks the plan before work
 - `skills/plan/SKILL.md` — Create implementation plans
 - `skills/validate/SKILL.md` — Validate code after implementation
 

@@ -90,15 +90,18 @@ parse_frontmatter() {
     BEGIN {
       cur_key = ""
       in_list = 0
+      in_metadata = 0
       list_buf = ""
       ctx_in = 0
       ctx_buf = ""
       ctx_kind = ""; ctx_with = ""
       out["name"] = ""; out["description"] = ""
       out["hexagonal_role"] = ""; out["user_invocable"] = "false"
+      out["graph_root"] = "false"
       list_vals["consumes"] = ""
       list_vals["produces"] = ""
       list_vals["practices"] = ""
+      list_vals["dependencies"] = ""
       ctx_list = ""
     }
     {
@@ -110,6 +113,38 @@ parse_frontmatter() {
       for (i = 1; i <= n; i++) {
         line = lines[i]
         if (line ~ /^[[:space:]]*$/) { continue }
+        # Nested metadata fields are execution-graph source data. Handle both
+        # inline (`dependencies: [a, b]`) and block list forms.
+        if (in_metadata && line ~ /^[[:space:]]+graph_root:[[:space:]]*/) {
+          val = line; sub(/^[[:space:]]+graph_root:[[:space:]]*/, "", val); val = trim(val)
+          out["graph_root"] = (val == "true" ? "true" : "false")
+          in_list = 0; cur_key = ""
+          continue
+        }
+        if (in_metadata && line ~ /^[[:space:]]+dependencies:[[:space:]]*\[/) {
+          val = line; sub(/^[[:space:]]+dependencies:[[:space:]]*\[/, "", val); sub(/\][[:space:]]*$/, "", val)
+          count = split(val, parts, ",")
+          for (j = 1; j <= count; j++) {
+            item = trim(parts[j]); gsub(/^['\''\"]|['\''\"]$/, "", item)
+            if (item != "") list_vals["dependencies"] = list_vals["dependencies"] (list_vals["dependencies"] == "" ? "" : ",") jstr(item)
+          }
+          in_list = 0; cur_key = ""
+          continue
+        }
+        if (in_metadata && line ~ /^[[:space:]]+dependencies:[[:space:]]*$/) {
+          in_list = 1; cur_key = "dependencies"
+          continue
+        }
+        if (in_metadata && in_list && cur_key == "dependencies" && line ~ /^[[:space:]]+-[[:space:]]+[^[:space:]]/) {
+          item = line; sub(/^[[:space:]]+-[[:space:]]+/, "", item); item = trim(item)
+          if (list_vals[cur_key] == "") list_vals[cur_key] = jstr(item)
+          else list_vals[cur_key] = list_vals[cur_key] "," jstr(item)
+          continue
+        }
+        if (in_metadata && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_-]*:/) {
+          in_list = 0; cur_key = ""
+          continue
+        }
         # Top-level scalar (key: value)
         if (line ~ /^[A-Za-z_][A-Za-z0-9_-]*:[[:space:]]*[^[:space:]].*$/) {
           # Flush any pending list state, including a half-built context_rel
@@ -121,6 +156,7 @@ parse_frontmatter() {
           }
           in_list = 0; cur_key = ""
           ctx_in = 0
+          in_metadata = 0
           key = line; sub(/:.*/, "", key)
           val = line; sub(/^[^:]*:[[:space:]]*/, "", val); val = trim(val)
           # Strip surrounding quotes if quoted
@@ -144,6 +180,8 @@ parse_frontmatter() {
           }
           ctx_in = (key == "context_rel" ? 1 : 0)
           if (ctx_in) { cur_key = "" ; in_list = 0; continue }
+          in_metadata = (key == "metadata" ? 1 : 0)
+          if (in_metadata) { cur_key = ""; in_list = 0; continue }
           in_list = (key == "consumes" || key == "produces" || key == "practices") ? 1 : 0
           cur_key = key
           continue
@@ -178,8 +216,10 @@ parse_frontmatter() {
       printf "%s:%s,", jstr("description"), jstr(out["description"])
       printf "%s:%s,", jstr("hexagonal_role"), jstr(out["hexagonal_role"])
       printf "%s:%s,", jstr("user_invocable"), out["user_invocable"]
+      printf "%s:%s,", jstr("graph_root"), out["graph_root"]
       printf "%s:[%s],", jstr("consumes"), list_vals["consumes"]
       printf "%s:[%s],", jstr("produces"), list_vals["produces"]
+      printf "%s:[%s],", jstr("dependencies"), list_vals["dependencies"]
       printf "%s:[%s],", jstr("practices"), list_vals["practices"]
       printf "%s:[%s]", jstr("context_rel"), ctx_list
       printf "}"
@@ -225,7 +265,7 @@ CATALOG_JSON="$(jq -c \
   --arg ts "$NOW" \
   --argjson count "$skill_count" \
   --slurpfile skills "$TMP_PAYLOAD" \
-  -n '{schema_version:"1", generated_at:$ts, skill_count:$count, skills:$skills[0]}')"
+  -n '{schema_version:"2", generated_at:$ts, skill_count:$count, skills:$skills[0]}')"
 
 case "$MODE" in
   stdout)
@@ -244,6 +284,7 @@ case "$MODE" in
       exit 0
     fi
     echo "generate-skill-catalog: DRIFT — committed catalog differs from regeneration" >&2
+    echo "Regenerate with: bash scripts/generate-skill-catalog.sh" >&2
     diff <(printf '%s' "$old_norm") <(printf '%s' "$new_norm") | head -40 >&2 || true
     exit 1
     ;;

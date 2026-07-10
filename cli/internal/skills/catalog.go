@@ -34,9 +34,11 @@ type CatalogEntry struct {
 	HexagonalRole        string       `json:"hexagonal_role"`
 	Consumes             []string     `json:"consumes"`
 	Produces             []string     `json:"produces"`
+	Dependencies         []string     `json:"dependencies"`
 	ContextRel           []ContextRel `json:"context_rel"`
 	Practices            []string     `json:"practices"`
 	UserInvocable        bool         `json:"user_invocable"`
+	GraphRoot            bool         `json:"graph_root"`
 	CodexOverridePresent bool         `json:"codex_override_present"`
 	ReferencesCount      int          `json:"references_count"`
 }
@@ -126,8 +128,8 @@ func Producers(entries []CatalogEntry, output string) []string {
 	return out
 }
 
-// Mermaid renders the consumes graph as a Mermaid flowchart. Each skill is a
-// node; an edge A-->B means A consumes B. Output is deterministic: nodes and
+// Mermaid renders the execution-dependency graph as a Mermaid flowchart. Each
+// skill is a node; an edge A-->B means A delegates to or requires B. Output is
 // edges are emitted in sorted order. Only edges whose target is a known skill
 // are drawn, so the diagram stays inside the catalog.
 func Mermaid(entries []CatalogEntry) string {
@@ -144,7 +146,7 @@ func Mermaid(entries []CatalogEntry) string {
 		fmt.Fprintf(&b, "  %s[%s]\n", mermaidID(e.Name), e.Name)
 	}
 	for _, e := range sorted {
-		deps := append([]string(nil), e.Consumes...)
+		deps := append([]string(nil), e.Dependencies...)
 		sort.Strings(deps)
 		for _, dep := range deps {
 			if !known[dep] {

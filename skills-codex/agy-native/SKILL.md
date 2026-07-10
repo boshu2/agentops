@@ -148,7 +148,7 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 - **[references/distribution-and-run-control.md](references/distribution-and-run-control.md)** — full plugin verb list, install-vs-link discipline, mutation protocol, the permission×output×scope matrix (AGY equivalents for retired gemini flags), and the brain evidence layout.
 - Research input: `~/.agents/research/agy-native-harness-2026-06-06.md` (AGY primitives, official docs index, open questions).
-- [`$using-atm`](../using-atm/SKILL.md) — **in-ATM AGY** (interactive pane-3 TUI via `atm send`; the dual-pane tri-vendor duel is folded in) vs this skill's **headless** `agy --print` / sidecar paths; do not conflate them.
+- [`$agent-native`](../agent-native/SKILL.md) + [`$ntm`](../ntm/SKILL.md) — interactive AGY worker panes vs this skill's headless adapter paths; do not conflate their dispatch mechanics.
 - Sibling AGY skills: `agy-rules-workflows` (goal/schedule loop law), `agy-mcp-plugins` (MCP servers + plugin packaging), `agy-headless-evidence` (agentapi sidecar + JSONL evidence).
 - Sibling images / loop substrate: `ntm` (tmux swarms), `beads-br` (br tracker), `agent-mail` (coordination), `dcg` (destructive-command guard), `caam` (account lanes).
 - Loop doctrine: control-plane LEARNINGS (author!=judge, evidence-gated close); memory `never claude -p for workers`; ACFS invoke-never-rebuild + fork-and-own doctrine.

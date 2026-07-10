@@ -10,7 +10,7 @@ description: "Run autonomous improvement loops."
 
 **Codex orchestration default:** keep the skill name `$evolve`. In Codex, run the loop by chaining Codex skills — `$evolve` selects work and invokes complete `$rpi --auto` cycles. Each cycle's post-mortem checkpoint is a **re-plan point** (re-scope / reorder / drop / add to the remaining queue), one altitude up from `$rpi`'s [agile re-plan loop](../rpi/references/agile-replan-loop.md) — agile across cycles, not a fixed backlog. Substrates dispatch the whole loop as one unit through NTM, Agent Mail, or `ao agent`; former RPI CLI wrappers are retired (ADR-0009).
 
-**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (pawl review, `$validate --mixed`, `$pre-land-refuters`) fires ONCE at the cycle's **bead-acceptance / land pawl** — not per slice or wave. The per-cycle regression gate (Step 5) is **chaos**: cheap, wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe".
+**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (`$validate`, `$pawl-review`, then `ao pawl`) fires ONCE at the cycle's **bead-acceptance / land pawl** — not per slice or wave. The per-cycle regression gate (Step 5) is **chaos**: cheap, wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe".
 
 **Operator cadence:** post-mortem finished work → measure repo state → select the next highest-value item → let `$rpi` run research → plan → pre-mortem → implement → validate → harvest follow-ups → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
 
@@ -260,4 +260,3 @@ Treat retired CLI wrappers as terminal: the old ao-evolve / ao-rpi CLI commands 
 (ag-llni) — never invoke them as Codex defaults; they exist only behind `-tags legacy`.
 In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations. Repo-local
 PROGRAM.md/AUTODEV.md contracts load per the pointer in the body above.
-

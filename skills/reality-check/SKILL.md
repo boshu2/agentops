@@ -25,6 +25,7 @@ context:
     - HISTORY
   intel_scope: full
 metadata:
+  graph_root: true
   tier: judgment
   dependencies:
   - discovery

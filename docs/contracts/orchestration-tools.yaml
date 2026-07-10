@@ -1,39 +1,39 @@
-# Orchestration tool matrix — declarative SOT for ao orchestrate tools/preflight.
+# External orchestration adapter matrix.
 # Gate: scripts/check-orchestration-contracts.sh
 
 version_floors:
-  atm:
-    min_version: "0.1.0"
-    note: "Bo ATM fork (~/dev/ntm); probe records discovered version at runtime"
+  ntm:
+    min_version: "1.18.3"
+    note: "Probe the installed external binary at runtime; executable contract wins."
+  am:
+    min_version: "0.3.10"
+    note: "Probe am capabilities --json before coordination writes."
 
 tools:
-  - id: atm
-    binary: atm
-    probe_args: ["version"]
-    required_for: [atm-only, both, tri-vendor, dual-pane]
-  - id: am
-    binary: am
-    probe_args: ["robot", "health"]
-    required_for: [am-only, both]
-    optional: true
   - id: ntm
     binary: ntm
-    probe_args: ["--robot-capabilities"]
+    probe_args: ["--robot-help"]
+    required_for: [ntm-workers, ntm-pawl, dual-pane, tri-vendor]
+    ownership: external
+  - id: am
+    binary: am
+    probe_args: ["capabilities", "--json"]
+    required_for: [coordinated-writers]
     optional: true
-  - id: claude
-    binary: claude
-    probe_args: ["--version"]
-    required_for: [dual-pane, tri-vendor]
+    ownership: external
   - id: codex
     binary: codex
     probe_args: ["--version"]
-    required_for: [dual-pane, tri-vendor]
+    required_for: [ntm-workers, ntm-pawl, dual-pane, tri-vendor]
+  - id: claude
+    binary: claude
+    probe_args: ["--version"]
+    required_for: [tri-vendor]
   - id: agy
     binary: agy
     probe_args: ["--version"]
     required_for: [tri-vendor]
-    optional: true
   - id: tmux
     binary: tmux
     probe_args: ["list-sessions"]
-    required_for: [atm-only, both, tri-vendor, dual-pane]
+    required_for: [ntm-workers, ntm-pawl, dual-pane, tri-vendor]

@@ -41,8 +41,10 @@ mkdir -p "$(dirname "${OUT_FILE}")"
 # minimal and avoid quoting issues.
 SKILLS_DIR="${SKILLS_DIR}" OUT_FILE="${OUT_FILE}" python3 - <<'PYEOF'
 import io
+import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -56,6 +58,7 @@ except Exception as e:
 
 SKILLS_DIR = Path(os.environ["SKILLS_DIR"])
 OUT_FILE = Path(os.environ["OUT_FILE"])
+REPO_ROOT = SKILLS_DIR.parent
 
 # Valid hexagonal_role enum from schemas/skill-frontmatter.v2.schema.json plus
 # "unclassified" used for skills missing the field.
@@ -151,41 +154,115 @@ def normalize_context_rel(value):
     return edges
 
 
-# 1. Discover skills (alphabetical by slug). Leading-underscore dirs (e.g.
-#    skills/_fixtures/) are non-skill scaffolding — planted test fixtures — and
-#    are excluded so they never enter the generated context map.
-skill_dirs = sorted(
-    p
-    for p in SKILLS_DIR.iterdir()
-    if p.is_dir() and not p.name.startswith("_") and (p / "SKILL.md").is_file()
+# 1. Generate the catalog in-memory and consume it as the sole graph
+# projection. This avoids a second dependency/context parser in the context-map
+# generator while still reflecting uncommitted frontmatter edits.
+catalog_run = subprocess.run(
+    ["bash", str(REPO_ROOT / "scripts/generate-skill-catalog.sh"), "--stdout"],
+    cwd=REPO_ROOT,
+    text=True,
+    capture_output=True,
 )
+if catalog_run.returncode != 0:
+    sys.stderr.write(catalog_run.stderr)
+    sys.exit(catalog_run.returncode)
+catalog = json.loads(catalog_run.stdout)
+catalog_entries = sorted(catalog.get("skills", []), key=lambda item: item.get("name", ""))
 
 skills_by_role = {role: [] for role in ROLES_ORDER}
 mermaid_edges = []  # (source_slug, target_slug, kind)
 dataflow_rows = []  # (skill_slug, direction, artifact)
+dependency_edges = []  # (source_slug, target_slug)
+graph_roots = []
+user_invocable = []
 
-for sd in skill_dirs:
-    slug = sd.name
-    fm = parse_frontmatter(sd / "SKILL.md")
-    role = fm.get("hexagonal_role")
+for entry in catalog_entries:
+    slug = str(entry.get("name", ""))
+    role = entry.get("hexagonal_role")
     if not isinstance(role, str) or role not in ROLES_ORDER:
         role = "unclassified"
-    desc = short_description(fm)
+    desc = str(entry.get("description", "")).strip()
     skills_by_role[role].append((slug, desc))
 
-    for kind, target in normalize_context_rel(fm.get("context_rel")):
-        mermaid_edges.append((slug, target, kind))
+    for rel in entry.get("context_rel", []):
+        if isinstance(rel, dict) and rel.get("kind") and rel.get("with"):
+            mermaid_edges.append((slug, str(rel["with"]), str(rel["kind"])))
 
-    for art in normalize_string_list(fm.get("consumes")):
+    for art in sorted(entry.get("consumes", [])):
         dataflow_rows.append((slug, "consumes", art))
-    for art in normalize_string_list(fm.get("produces")):
+    for art in sorted(entry.get("produces", [])):
         dataflow_rows.append((slug, "produces", art))
+    for dep in sorted(entry.get("dependencies", [])):
+        dependency_edges.append((slug, str(dep)))
+    if entry.get("graph_root") is True:
+        graph_roots.append(slug)
+    if entry.get("user_invocable") is True:
+        user_invocable.append(slug)
 
 # 2. Deterministic sort of all output collections.
 for role in ROLES_ORDER:
     skills_by_role[role].sort(key=lambda t: t[0])
 mermaid_edges.sort(key=lambda t: (t[0], t[1], t[2]))
 dataflow_rows.sort(key=lambda t: (t[0], t[1], t[2]))
+dependency_edges.sort()
+graph_roots.sort()
+user_invocable.sort()
+
+# Topology diagnostics are derived from the catalog, never hand-maintained.
+names = [str(entry.get("name", "")) for entry in catalog_entries]
+known = set(names)
+duplicate_nodes = sorted({name for name in names if names.count(name) > 1})
+dangling_edges = sorted(
+    [(src, dst, "dependency") for src, dst in dependency_edges if dst not in known]
+    + [(src, dst, "context:" + kind) for src, dst, kind in mermaid_edges if dst not in known]
+)
+deps = {name: [] for name in known}
+inbound = {name: 0 for name in known}
+for src, dst in dependency_edges:
+    if dst in known:
+        deps[src].append(dst)
+        inbound[dst] += 1
+
+reachable = set()
+stack = list(graph_roots)
+while stack:
+    name = stack.pop()
+    if name in reachable:
+        continue
+    reachable.add(name)
+    stack.extend(deps.get(name, []))
+unreachable = sorted(name for name in known if name not in reachable and name not in graph_roots)
+zero_inbound = sorted(name for name in known if inbound[name] == 0)
+
+cycles = []
+state = {}
+path = []
+def visit(name):
+    state[name] = 1
+    path.append(name)
+    for dep in sorted(deps.get(name, [])):
+        if state.get(dep, 0) == 0:
+            visit(dep)
+        elif state.get(dep) == 1:
+            start = path.index(dep)
+            cycle = path[start:] + [dep]
+            if cycle not in cycles:
+                cycles.append(cycle)
+    path.pop()
+    state[name] = 2
+for name in sorted(known):
+    if state.get(name, 0) == 0:
+        visit(name)
+cycles.sort()
+
+topology_failures = []
+if duplicate_nodes: topology_failures.append("duplicate nodes: " + ", ".join(duplicate_nodes))
+if dangling_edges: topology_failures.append("dangling edges: " + ", ".join("%s->%s(%s)" % edge for edge in dangling_edges))
+if cycles: topology_failures.append("dependency cycles: " + "; ".join(" -> ".join(c) for c in cycles))
+if unreachable: topology_failures.append("unreachable non-roots: " + ", ".join(unreachable))
+if topology_failures:
+    sys.stderr.write("generate-context-map: invalid skill topology: %s\n" % "; ".join(topology_failures))
+    sys.exit(1)
 
 
 def md_escape_pipe(s: str) -> str:
@@ -230,6 +307,29 @@ for role in ROLES_ORDER:
 
 buf.write("## Context relationships\n")
 buf.write("\n")
+
+buf.write("## Execution dependencies\n")
+buf.write("\n")
+buf.write("`A --> B` means skill A declares B in `metadata.dependencies`. ")
+buf.write("`user-invocable` does not make an orphan a graph root.\n\n")
+buf.write("```mermaid\n")
+buf.write("graph LR\n")
+for name in names:
+    buf.write('  %s["%s"]\n' % (name.replace("-", "_"), name))
+for src, dst in dependency_edges:
+    if dst in known:
+        buf.write("  %s --> %s\n" % (src.replace("-", "_"), dst.replace("-", "_")))
+buf.write("```\n\n")
+
+buf.write("## Topology diagnostics\n\n")
+buf.write("| Diagnostic | Values |\n")
+buf.write("|---|---|\n")
+buf.write("| Explicit graph roots | %s |\n" % (", ".join("`%s`" % x for x in graph_roots) or "_(none)_"))
+buf.write("| User-invocable skills | %s |\n" % (", ".join("`%s`" % x for x in user_invocable) or "_(none)_"))
+buf.write("| Zero-inbound skills | %s |\n" % (", ".join("`%s`" % x for x in zero_inbound) or "_(none)_"))
+buf.write("| Dangling targets | _(none)_ |\n")
+buf.write("| Dependency cycles | _(none)_ |\n")
+buf.write("| Unreachable non-roots | _(none)_ |\n\n")
 buf.write("```mermaid\n")
 buf.write("graph LR\n")
 if mermaid_edges:
@@ -269,5 +369,7 @@ print("skills: %d total" % sum(totals.values()))
 for role in ROLES_ORDER:
     print("  %s: %d" % (role, totals[role]))
 print("context_rel edges: %d" % len(mermaid_edges))
+print("dependency edges: %d" % len(dependency_edges))
+print("graph roots: %d" % len(graph_roots))
 print("data-flow rows: %d" % len(dataflow_rows))
 PYEOF

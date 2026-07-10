@@ -6,7 +6,7 @@
 #
 # This is the executable enforcement behind the prose "merge-to-main requires
 # green CI AND a real review of THIS commit" by reviewer(s) meeting the pawl's
-# diversity mode. The /pre-land-refuters (or /council) panel WRITES a verdict
+# diversity mode. The /pawl-review lanes (or /council) feed evidence; ao pawl WRITES a verdict
 # here; scripts/reconcile-pr.sh READS it before merging.
 #
 # THREAT MODEL — this defends against a SLOPPY agent that skips the real review

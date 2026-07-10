@@ -175,12 +175,12 @@ CI; the per-field shape is enforced by the JSON Schemas themselves at runtime.
 absent from the shipping binary). It was never a driving adapter or a daemon: it
 was the BC6 **instrument lane** for out-of-session orchestration — deterministic
 probes and verdicts that operators and skills called before/after human
-`atm`/`am` procedure. That surface is now reached through the NTM + MCP Agent
+NTM/Agent Mail procedure. That surface is reached through the external NTM + Agent
 Mail substrate (`ao mcp serve` / `ao agent`, per ADR-0009).
 
 | Role | Examples | Hex |
 |------|----------|-----|
-| **Driving adapters** (who wakes the loop) | Agent session, ATM panes, `/goal`, cron | Swappable per ADR-0009 |
+| **Driving adapters** (who wakes the loop) | Agent session, NTM panes, `/goal`, cron, explicit GC city | Swappable per ADR-0009 |
 | **Instrument lane** (windshield) | `preflight`, `verify`, `tools`, `status`, `route`, `select`, `shape` | Guard + driven instruments |
 | **Earn-it wrappers** (not committed Phase 1) | `spawn`, `send`, `reserve`, `teardown` | Thin passthrough — defer |
 
@@ -191,6 +191,6 @@ chain as gate check). Profiles contract SOT:
 `docs/contracts/orchestration-tools.yaml`.
 
 At the zoom level of classic ports-and-adapters prose, **ingress** is the
-driving adapter (agent/ATM/`/goal`); **instruments** are the `ao` commands the
+driving adapter (agent/NTM/`/goal`/GC); **instruments** are the `ao` commands the
 controller calls for ground truth. Both statements are true at different zoom
 levels.

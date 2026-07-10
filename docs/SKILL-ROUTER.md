@@ -17,7 +17,7 @@ What are you trying to do?
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   ├─ Independent judges ────────► /council validate recent
 │   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
-│   ├─ Landing 100+ files? ───────► /pre-land-refuters
+│   ├─ Fresh immutable landing lane ► /pawl-review → ao pawl
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
 │   ├─ Security + release gate ───► /security
@@ -27,7 +27,7 @@ What are you trying to do?
 │   ├─ Break it into issues ──────► /plan
 │   ├─ Manage/close issues ───────► /beads-br
 │   ├─ Turn a goal into a loop-ready packet ─► /goal-design
-│   ├─ Shape a fuzzy idea ────────► /discovery --ideate
+│   ├─ Shape a fuzzy idea ────────► /idea-genie → /discovery
 │   ├─ Build a single issue ──────► /implement
 │   ├─ Where was I? ──────────────► /status
 │   └─ Save for next session ─────► /handoff
@@ -47,11 +47,14 @@ What are you trying to do?
 │   └─ Need to investigate? ───────► /review (bug-hunt mode)
 │
 ├─ "Explore or research"
-│   ├─ Understand this codebase ──► /research
+│   ├─ Understand this codebase ──► /codebase-recon
 │   ├─ Compare approaches ────────► /council research <topic>
-│   └─ Generate ideas ────────────► /discovery --ideate
+│   ├─ Generate ideas ────────────► /idea-genie
+│   ├─ Contest a one-way-door choice ► /dueling-idea-genies
+│   └─ Research an external topic ► /research
 │
 ├─ "Learn from past work"
+│   ├─ Extract a recurring code shape ─► /pattern-mining → /operationalize
 │   ├─ Turn the corpus into operator surfaces ─► /operationalize
 │   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
 │   ├─ Save this insight ─────────► /post-mortem --quick "insight"
@@ -59,7 +62,8 @@ What are you trying to do?
 │
 ├─ "Parallelize work"
 │   ├─ Multiple independent tasks ► /swarm
-│   └─ Full epic with waves ──────► /crank <epic-id>
+│   ├─ Full epic with waves ──────► /crank <epic-id>
+│   └─ Persistent pane roles/factory ► /agent-native + /ntm (+ /agent-mail on contention)
 │
 ├─ "City-shaped multi-quest work" (gas city — operator choice, coexists with NTM; never auto-routed)
 │   ├─ Stand up / drive / admin / unstick a city ─► /using-gc
@@ -69,7 +73,8 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Compile knowledge ─────────► /curate --mode=forge or /compile (experimental tier)
+│   ├─ Compile a reusable operator surface ► /operationalize
+│   ├─ Capture the session learning ─► /post-mortem
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover

@@ -239,7 +239,7 @@ interactive, and loop examples.
 
 ## Related skills
 
-- $using-atm — out-of-session ATM substrate for running whole $rpi loops over a bead queue.
+- `$agent-native` + `$ntm` — portable out-of-session roles and NTM pane mechanics for running whole `$rpi` loops over a bead queue.
 
 ## Reference Documents
 

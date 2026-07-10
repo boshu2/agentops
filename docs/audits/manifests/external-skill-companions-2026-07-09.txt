@@ -1,0 +1,27 @@
+# local registry names minus official manifest
+# full-local sha256: 290f7006917342788d7291b56d096bad6b5d8a5f2e577d5eec88d71d126d14dc
+ab-testing
+admin-page-for-nextjs-sites
+agent-ergonomics-and-intuitiveness-maximization-for-cli-tools
+agent-mail
+automating-your-automations
+bd-to-br-migration
+beads-br
+beads-bv
+beads-workflow
+brenner
+browser-extension-automation
+browser-testing-with-ntm
+caam
+cass-memory
+cc-hooks
+changelog-md-workmanship
+deadlock-finder-and-fixer
+detect-forgotten-sessions-post-crash
+document-to-latex
+papers
+planning-workflow
+redacting-sensitive-parts-of-screencast-videos
+rg-optimized
+testing-metamorphic
+transcribing-audio-from-calls-and-meetings

@@ -50,7 +50,8 @@ the keepalive above.
 **Symptom.** A verifier `codex` session can wedge at startup on the user-global
 `~/.codex/hooks.json` **trust modal** — codex blocks awaiting interactive
 confirmation, and the lane never produces its `review-quorum.lane.v1` JSON. The
-close gate then correctly DEGRADES (transient lane loss, no attempt consumed),
+close gate then correctly DEGRADES without fabricating a semantic verdict;
+native graph.v2 still consumes that failed check attempt,
 but the lane is effectively dead until a human clicks through.
 
 **Mitigation (SHIPPED setup step — age-gc-adoption-u0he.2).** Pre-trust the

@@ -20,8 +20,9 @@
 #      them to membrane/finalize.sh — the DETERMINISTIC verdict (a faithful port
 #      of reviewquorum.Finalize; see finalize.jq header for why a port);
 #   4. fail-closes: CONFIRMED (exit 0) closes; a hard finding REFUTES (respawn
-#      builder, consume an attempt); transient lane loss DEGRADES (retry the
-#      lane, DO NOT consume an attempt) — degradation is never a false refute.
+#      builder, consume an attempt); transient lane loss DEGRADES into a
+#      nonsemantic attempt artifact — degradation is never a false refute, but
+#      native GC consumes every failed check attempt.
 #
 # It NEVER merges, pushes, or touches any branch. A human merges.
 #
@@ -175,6 +176,7 @@ done
 
 # --- deterministic verdict (finalize.sh) -------------------------------------
 PAWL="$EX/pawl-verdict-round-$ROUND.json"
+ATTEMPT="$EX/review-attempt-round-$ROUND.json"
 LANE_FILES=()
 [ -s "$LANE1_OUT" ] && LANE_FILES+=("$LANE1_OUT")
 [ -s "$LANE2_OUT" ] && LANE_FILES+=("$LANE2_OUT")
@@ -185,13 +187,20 @@ AUTHOR_SESSION="$(bdq list --json --limit 200 2>/dev/null | jq -r '[(if type=="a
   --nonce "$NONCE" --round "$ROUND" --subject "$QUEST" --base-ref "main" \
   --expected-families "$LANE1_FAMILY,$LANE2_FAMILY" \
   --head-sha "$HEAD_SHA" --author "${AUTHOR_SESSION:-builder}" \
-  --out "$PAWL" --evidence-dir "$EX" -- "${LANE_FILES[@]:-}"
+  --out "$PAWL" --attempt-out "$ATTEMPT" --evidence-dir "$EX/evidence-round-$ROUND" -- "${LANE_FILES[@]:-}"
 FIN_EXIT=$?
-cp "$PAWL" "$EX/pawl-verdict.json" 2>/dev/null || true
-DISPOSITION="$(jq -r '.disposition' "$PAWL" 2>/dev/null || echo REFUTED)"
-FCLASS="$(jq -r '.failure_class' "$PAWL" 2>/dev/null || echo hard)"
-FREASON="$(jq -r '.failure_reason' "$PAWL" 2>/dev/null || echo finalize_error)"
-log "verdict round $ROUND: $DISPOSITION (class=$FCLASS) artifact=$PAWL"
+if [ "$FIN_EXIT" -eq 3 ]; then
+  DISPOSITION="DEGRADED"
+  FCLASS="$(jq -r '.failure_class' "$ATTEMPT" 2>/dev/null || echo transient)"
+  FREASON="$(jq -r '.failure_reason' "$ATTEMPT" 2>/dev/null || echo finalize_error)"
+  log "review attempt round $ROUND: $DISPOSITION (class=$FCLASS) artifact=$ATTEMPT"
+else
+  cp "$PAWL" "$EX/pawl-verdict.json" 2>/dev/null || true
+  DISPOSITION="$(jq -r '.disposition' "$PAWL" 2>/dev/null || echo REFUTED)"
+  FCLASS="$( [ "$FIN_EXIT" -eq 0 ] && echo none || echo hard )"
+  FREASON="$(printf '%s' "$DISPOSITION" | tr '[:upper:]' '[:lower:]')"
+  log "verdict round $ROUND: $DISPOSITION (class=$FCLASS) artifact=$PAWL"
+fi
 
 case "$FIN_EXIT" in
   0)  # CONFIRMED — stamp the evidence-bound work record and CLOSE (exit 0)
@@ -203,6 +212,6 @@ case "$FIN_EXIT" in
       --set-metadata "gc.work_verification=membrane/$QUEST/pawl-verdict-round-$ROUND.json" >/dev/null 2>&1 || true
     log "CONFIRMED — close authorized (a human merges $BRANCH)"
     exit 0 ;;
-  3)  retry_exit transient "$FREASON" ;;   # DEGRADED — no attempt consumed
+  3)  retry_exit transient "$FREASON" ;;   # DEGRADED — native GC consumes failed checks
   *)  retry_exit hard "$FREASON" ;;         # REFUTED — respawn builder
 esac

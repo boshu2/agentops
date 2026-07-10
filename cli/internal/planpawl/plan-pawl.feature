@@ -5,7 +5,7 @@
 # plan; this feature is the DETERMINISTIC core that turns their verdicts into one
 # of three decisions — PASS / REDO / BLOCKED — with the circuit-breaker governance
 # inherited verbatim from pawls.md. Pane spawning + the re-judge loop live in the
-# skill (dual-pane-atm); this decider is the windshield: deterministic, no model.
+# skill (dueling-idea-genies); this decider is the windshield: deterministic, no model.
 
 Feature: Plan-pawl duel decision
 

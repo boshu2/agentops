@@ -16,10 +16,14 @@ context_rel:
   with: domain
 skill_api_version: 1
 metadata:
+  graph_root: true
   tier: execution
   dependencies:
   - beads-br
   - standards
+  - rch
+  - refactor
+  - test
 context:
   window: isolated
   intent:

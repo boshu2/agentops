@@ -34,7 +34,7 @@ gc formula list       # membrane-quest slingable
 | Piece | Doctrine it encodes |
 |---|---|
 | `membrane/finalize.{sh,jq}` | **No verdict = not done.** The deterministic close-door verdict — a faithful port of `reviewquorum.Finalize`'s rollup (`hard > transient > findings > pass`), plus a per-round **nonce** (anti-stale), a **cross-family precondition** (≥2 distinct families), and **degradation-awareness** (transient lane loss ⇒ DEGRADED, never a false REFUTE). Pure, side-effect-free, `bash`+`jq` only — so correctness is unit-proven cheaply (`tests/finalize.bats`). |
-| `membrane/close-gate.sh` | The fail-closed door itself. Deterministic pre-gates (branch exists, non-empty diff, contract present) → route **only** the diff + acceptance contract to ≥2 **cross-family, fresh-context** reviewers (LAW 0: never `claude -p`) → deterministic `finalize` → CONFIRMED closes, hard finding REFUTES (consume an attempt), transient DEGRADES (retry, **no** attempt consumed). **Never merges or pushes — a human merges.** Writes a `pawl-verdict.v1` artifact per round. |
+| `membrane/close-gate.sh` | The fail-closed door itself. Deterministic pre-gates (branch exists, non-empty diff, contract present) → route **only** the diff + acceptance contract to ≥2 **cross-family, fresh-context** reviewers (LAW 0: never `claude -p`) → deterministic `finalize` → CONFIRMED closes, hard finding REFUTES, transient loss DEGRADES without fabricating judgment. Native graph.v2 consumes every failed check attempt, including degradation. **Never merges or pushes — a human merges.** Writes canonical `pawl-verdict.v1` only for terminal semantic results; degradation writes `gc-review-attempt.v1`. |
 | `formulas/membrane-quest.toml` | The build/redo/retry are **native** (worktree isolation + `[steps.check].max_attempts` bounded auto-redo, run by the core control-dispatcher); only the CLOSE is ours. |
 | `doctor/law0-print-args/` | **LAW 0 as structure**, not prose: fails (exit 2, blocking) if any claude- or agy-backed provider carries a live `print_args` (the headless `claude -p` / `--print` billing sink). |
 | `agents/{planner,builder,verifier,agy-verifier}/` | The trinity with **harness-level RBAC** (`option_defaults.permission_mode = "plan"` makes planner/verifier read-only a machine fact; builder keeps write, only in its worktree) and the `VERDICT:` sentinel. Author ≠ judge; judges are a **different family**. |
@@ -180,4 +180,3 @@ fragment, with the honest limits (token columns stay empty; unpriced models
 drop from totals, fail-open — never gate on costs), is single-sourced at
 [`template-fragments/usage-local.toml`](template-fragments/usage-local.toml).
 `scripts/install-gc-city.sh` applies it automatically.
-

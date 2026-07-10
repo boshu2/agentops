@@ -5,14 +5,19 @@
 # and asserting the disposition + exit code + pawl-verdict.v1 shape.
 #
 # The four contract paths (bead .1 asks): CONFIRMED, REFUTED (hard finding),
-# DEGRADED (transient lane loss — no attempt consumed), and nonce-missing
+# DEGRADED (transient lane loss — nonsemantic, but native GC still consumes a
+# failed check attempt), and nonce-missing
 # rejection (stale verdict → fail-closed).
 
 setup() {
   PACK="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  REPO="$(cd "$PACK/../.." && pwd)"
   FIN="$PACK/membrane/finalize.sh"
   TMP="$BATS_TEST_TMPDIR"
   OUT="$TMP/pawl.json"
+  ATTEMPT="$TMP/attempt.json"
+  EVDIR="$TMP/evidence"
+  SCHEMA="$REPO/schemas/pawl-verdict.v1.schema.json"
   chmod +x "$FIN" 2>/dev/null || true
 }
 
@@ -32,68 +37,91 @@ lane() {
 run_finalize() {
   run "$FIN" --nonce n1 --round 1 --subject age-x --base-ref main \
     --expected-families "gpt,gemini" --head-sha deadbeef --author builder-1 \
-    --out "$OUT" -- "$@"
+    --out "$OUT" --attempt-out "$ATTEMPT" --evidence-dir "$EVDIR" -- "$@"
 }
 
-@test "PATH 1 — CONFIRMED: two cross-family lanes pass, nonce matches (exit 0)" {
+assert_canonical_verdict() {
+  python3 - "$SCHEMA" "$OUT" <<'PY'
+import json, pathlib, sys
+import jsonschema
+
+schema = json.load(open(sys.argv[1]))
+verdict = json.load(open(sys.argv[2]))
+jsonschema.validate(verdict, schema)
+root = pathlib.Path(verdict["refuters"][0]["evidence"]).parent.resolve()
+for refuter in verdict["refuters"]:
+    evidence = pathlib.Path(refuter["evidence"])
+    assert evidence.is_file() and evidence.stat().st_size > 0
+    assert evidence.resolve().is_relative_to(root)
+PY
+}
+
+@test "CANONICAL PATH 1 — CONFIRMED is schema-valid and evidence-bound" {
   lane "$TMP/a.json" codex-lane gpt pass none "" n1
   lane "$TMP/b.json" agy-lane gemini pass none "" n1
   run_finalize "$TMP/a.json" "$TMP/b.json"
   [ "$status" -eq 0 ]
   [[ "$output" == CONFIRMED* ]]
+  assert_canonical_verdict
   [ "$(jq -r '.disposition' "$OUT")" = "CONFIRMED" ]
   [ "$(jq -r '.schema_version' "$OUT")" = "pawl-verdict.v1" ]
   [ "$(jq -r '.head_sha' "$OUT")" = "deadbeef" ]
-  [ "$(jq -r '.nonce' "$OUT")" = "n1" ]
   [ "$(jq '.refuters | length' "$OUT")" -eq 2 ]
+  [ "$(jq '[.refuters[].verdict] | all(. == "CONFIRMED")' "$OUT")" = true ]
+  [ ! -e "$ATTEMPT" ]
 }
 
-@test "PATH 2 — REFUTED: a hard fail lane with a finding (exit 2)" {
+@test "CANONICAL PATH 2 — REFUTED is schema-valid and preserves lane semantics" {
   lane "$TMP/a.json" codex-lane gpt fail none "" n1 '[{"title":"missing max","body":"x","file":"calc.sh","severity":"high"}]'
   lane "$TMP/b.json" agy-lane gemini pass none "" n1
   run_finalize "$TMP/a.json" "$TMP/b.json"
   [ "$status" -eq 2 ]
   [[ "$output" == REFUTED* ]]
+  assert_canonical_verdict
   [ "$(jq -r '.disposition' "$OUT")" = "REFUTED" ]
-  [ "$(jq -r '.failure_class' "$OUT")" = "hard" ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *lane_failed* ]]
+  [ "$(jq -r '.refuters[] | select(.context_id == "codex-lane") | .verdict' "$OUT")" = "REFUTED" ]
+  [ "$(jq -r '.refuters[] | select(.context_id == "agy-lane") | .verdict' "$OUT")" = "CONFIRMED" ]
 }
 
-@test "PATH 3 — DEGRADED: transient lane loss does not consume an attempt (exit 3)" {
+@test "CANONICAL PATH 3 — DEGRADED writes a nonsemantic attempt artifact, never a fake pawl verdict" {
   lane "$TMP/a.json" codex-lane gpt pass none "" n1
   lane "$TMP/b.json" agy-lane gemini blocked transient provider_rate_limited n1
   run_finalize "$TMP/a.json" "$TMP/b.json"
   [ "$status" -eq 3 ]
   [[ "$output" == DEGRADED* ]]
-  [ "$(jq -r '.disposition' "$OUT")" = "DEGRADED" ]
-  [ "$(jq -r '.failure_class' "$OUT")" = "transient" ]
+  [ ! -e "$OUT" ]
+  [ "$(jq -r '.schema_version' "$ATTEMPT")" = "gc-review-attempt.v1" ]
+  [ "$(jq -r '.outcome' "$ATTEMPT")" = "DEGRADED" ]
+  [ "$(jq -r '.failure_class' "$ATTEMPT")" = "transient" ]
 }
 
-@test "PATH 3b — DEGRADED: an expected family simply did not report (exit 3)" {
+@test "CANONICAL PATH 3b — missing family cannot overwrite the latest terminal verdict" {
+  printf '%s\n' '{"schema_version":"pawl-verdict.v1","sentinel":"keep"}' > "$OUT"
   lane "$TMP/a.json" codex-lane gpt pass none "" n1
   run_finalize "$TMP/a.json"    # gemini lane missing entirely
   [ "$status" -eq 3 ]
-  [ "$(jq -r '.disposition' "$OUT")" = "DEGRADED" ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *provider_unavailable* ]]
+  [ ! -e "$OUT" ]
+  [[ "$(jq -r '.failure_reason' "$ATTEMPT")" == *provider_unavailable* ]]
 }
 
-@test "PATH 4 — REFUTED: nonce mismatch is a stale verdict, fail-closed (exit 2)" {
+@test "CANONICAL PATH 4 — nonce mismatch is a schema-valid fail-closed REFUTED" {
   lane "$TMP/a.json" codex-lane gpt pass none "" n0   # wrong nonce
   lane "$TMP/b.json" agy-lane gemini pass none "" n1
   run_finalize "$TMP/a.json" "$TMP/b.json"
   [ "$status" -eq 2 ]
+  assert_canonical_verdict
   [ "$(jq -r '.disposition' "$OUT")" = "REFUTED" ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *nonce_mismatch* ]]
+  [ "$(jq -r '.refuters[] | select(.context_id == "codex-lane") | .verdict' "$OUT")" = "REFUTED" ]
 }
 
-@test "PATH 5 — DEGRADED: zero lanes (no reviewer output) = awaiting, not refute (exit 3)" {
+@test "CANONICAL PATH 5 — zero lanes produce only an awaiting-reviewers attempt" {
   run_finalize
   [ "$status" -eq 3 ]
-  [ "$(jq -r '.disposition' "$OUT")" = "DEGRADED" ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *awaiting_reviewers* ]]
+  [ ! -e "$OUT" ]
+  [[ "$(jq -r '.failure_reason' "$ATTEMPT")" == *awaiting_reviewers* ]]
 }
 
-@test "PATH 6 — REFUTED: same-family quorum is not cross-family (fail-closed)" {
+@test "CANONICAL PATH 6 — same-family quorum is schema-valid fail-closed REFUTED" {
   # both lanes gpt: cross-family precondition unmet -> hard, not a silent pass
   run "$FIN" --nonce n1 --round 1 --subject age-x --base-ref main \
     --expected-families "gpt,gpt" --head-sha deadbeef --author builder-1 \
@@ -101,10 +129,10 @@ run_finalize() {
   lane "$TMP/a.json" codex-lane gpt pass none "" n1
   run "$FIN" --nonce n1 --round 1 --subject age-x --base-ref main \
     --expected-families "gpt" --head-sha deadbeef --author builder-1 \
-    --out "$OUT" -- "$TMP/a.json"
+    --out "$OUT" --attempt-out "$ATTEMPT" --evidence-dir "$EVDIR" -- "$TMP/a.json"
   [ "$status" -eq 2 ]
+  assert_canonical_verdict
   [ "$(jq -r '.disposition' "$OUT")" = "REFUTED" ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *cross_family_precondition_unmet* ]]
 }
 
 @test "read-only violation (verifier mutated files) is a hard REFUTED" {
@@ -114,5 +142,15 @@ run_finalize() {
   lane "$TMP/b.json" agy-lane gemini pass none "" n1
   run_finalize "$TMP/a2.json" "$TMP/b.json"
   [ "$status" -eq 2 ]
-  [[ "$(jq -r '.failure_reason' "$OUT")" == *read_only_mutation_detected* ]]
+  assert_canonical_verdict
+  [ "$(jq -r '.refuters[] | select(.context_id == "codex-lane") | .verdict' "$OUT")" = "REFUTED" ]
+}
+
+@test "CANONICAL evidence paths stay contained when a lane id is hostile" {
+  lane "$TMP/a.json" "../../escape" gpt pass none "" n1
+  lane "$TMP/b.json" agy-lane gemini pass none "" n1
+  run_finalize "$TMP/a.json" "$TMP/b.json"
+  [ "$status" -eq 0 ]
+  assert_canonical_verdict
+  [ ! -e "$TMP/escape.json" ]
 }

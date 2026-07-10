@@ -142,8 +142,8 @@ For `--mode=pr`, fetch the PR diff (`gh pr diff <id>` or path).
 > door this orchestration is NOT the operative machinery** — that door is driven by the pawl scripts:
 > `scripts/pawl-review.sh` runs the cross-family refuter and, on CONFIRMED, `scripts/pawl-verdict.sh`
 > writes the commit-bound verdict the pre-push gate enforces (see [`$push`](../push/SKILL.md) and
-> [`pre-land-refuters`](../pre-land-refuters/SKILL.md)). Use this skill to validate the WORK; use the
-> pawl to certify the LANDING — they compose, not compete. The judge machinery below is retained for
+> [`pawl-review`](../pawl-review/SKILL.md)). Use this skill to validate the WORK; use
+> `ao pawl` to certify the LANDING — they compose, not compete. The judge machinery below is retained for
 > that pre-work / non-merge scope, not deleted.
 
 ### Step 3: Determine spawn backend
@@ -357,7 +357,7 @@ measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
 - `skills/rpi/SKILL.md` — orchestrator that fires `$validate --mode=pre-impl` after `$plan`
 - `skills/curate/SKILL.md` — miner role (paired canonical skill)
 - `schemas/verdict.v1.schema.json` — output contract
-- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — the mutate-shared-trunk pawl: a self-administered DONE is a claim, so an unbiased fresh-context refuter (model-agnostic by default; multi-model ≥2 families opt-in for the highest-irreversibility doors) attacks it at the push boundary **regardless of complexity** (complexity scales the panel's depth, never exempts the gate); its CONFIRMED verdict is enforced executably by `scripts/reconcile-pr.sh`
+- [`pawl-review`](../pawl-review/SKILL.md) — executes immutable fresh reviewer lanes and hands evidence to `ao pawl`; the membrane alone binds the commit verdict
 
 ## Reference Documents
 

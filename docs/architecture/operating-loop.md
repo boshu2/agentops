@@ -28,7 +28,7 @@ small batch          one behavior per slice — never a big-batch bundle        
                      loop (a gate catch → a check; an escape → a new gate)
 ```
 
-Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), [`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md), the [pawl-gate](../contracts/pawls.md) (`no verdict = not done`); **S6 ratchet** — move 7 below + the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
+Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), [`/pawl-review`](../../skills/pawl-review/SKILL.md), and the [pawl-gate](../contracts/pawls.md) (`no verdict = not done`); **S6 ratchet** — move 7 below + the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
 
 > **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane (S5) has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (S6: escape → new check → re-measure) is the compounding that has a deterministic gradient.
 
@@ -58,7 +58,7 @@ The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-c
    loop tunes it *across* runs, governed so it doesn't thrash.
 8. **Single-agent-first; orchestration is opt-in escalation.** The default
    execution shape is one capable agent working in-session with good
-   bookkeeping. Multi-agent orchestration — parallel waves, ATM swarms, Agent
+   bookkeeping. Multi-agent orchestration — parallel waves, persistent NTM workers, Agent
    Mail coordination — is an *escalation you reach for*, never a substrate you
    start from. **Escalation trigger (observable):** escalate only when you are
    creating **two or more active lanes** — independent read/review lanes whose
@@ -66,16 +66,17 @@ The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-c
    **disjoint write scopes**. When ≥2 lanes/panes share the repo, Agent Mail
    registration and file reservations are mandatory before writes. With only
    one active writer, stay single-agent and use normal bookkeeping.
-   **ATM and AM are *separate* escalations on different axes — never a package.**
-   ATM (the out-of-session substrate) answers a **durability/wall-clock** need —
+   **NTM and Agent Mail are separate adapters on different axes.**
+   Persistent NTM workers answer a **durability/wall-clock** need —
    work must outlive your session or run unattended. AM (coordination) answers a
    **contention** need — ≥2 writers can touch the same path. You reach for either
-   *alone*: AM-without-ATM is the common case (two in-session lanes sharing a
-   repo); ATM-without-AM is an unattended **file-disjoint** queue. **Asymmetry
+   alone: Agent Mail without NTM is common for in-session lanes; NTM without
+   Agent Mail is valid for one writer or a file-disjoint queue. **Asymmetry
    guardrail:** the de-mandate removes the single-writer *session-start tax*, not
    the *collision guard* — the `≥2-writers → reserve` reflex stays non-negotiable
    (an unneeded AM call costs one command; a missing one silently clobbers a
-   shared file). Full 4-case matrix: [`using-atm`](../../skills/using-atm/SKILL.md#when-to-use-atm-vs-am-the-4-case-matrix).
+   shared file). Portable lifecycle: [`agent-native`](../../skills/agent-native/SKILL.md);
+   pane mechanics: [`ntm`](../../skills/ntm/SKILL.md).
    (Shape routing detail: [`automation-shape-routing`](../../skills/automation-shape-routing/SKILL.md)
    — "shape 0" is the default front door; `AGENTOPS_ORCHESTRATION=off` pins the
    beads floor.)
@@ -145,7 +146,7 @@ Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; 
 
 ### 6. Close the bead by proving its acceptance
 
-Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validate`, `/council`, `/pre-land-refuters`.
+Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validate`, `/council`, `/pawl-review`; `ao pawl` binds the verdict.
 
 The land itself is one verb: **`ao land <bead>`** is the canonical land path. It builds a fresh in-checkout `ao` and re-execs through it so the pawl review runs the LIVE/trusted path (an installed `ao` fails `aoBinaryInside` and takes the cold, un-auto-binding stranger path), pins `AO_BIN` for preflight + the gate, runs `ao pawl review <bead> --scope head` (cross-family codex refuter; **auto-binds** the commit-bound verdict on CONFIRM — no hand `ao provenance emit-verdict`/`#trivial` bind step), then hands off to the atomic land machinery (`scripts/pawl-land.sh`: rebase `origin/main` → restamp → single push through the deterministic pre-push gate — the *windshield*). REFUTED / NO-VERDICT stops the land (exit non-zero); no verdict = not done.
 
@@ -190,10 +191,10 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 | Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
 | Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
-| Slice validation | `validate`, `council`, `pre-land-refuters` | Per-slice acceptance proof |
+| Slice validation | `validate`, `council`, `pawl-review` | Acceptance proof plus independent lane evidence |
 | Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
 | Capture | `post-mortem`, `forge` | Evidence + promoted learnings |
-| Compound | `flywheel`, `compile`, `operationalize` | Learnings → patterns → rules → gates |
+| Compound | `pattern-mining`, `operationalize` | Earned patterns → rules → weakest durable mechanism |
 
 ## How the loop composes with the architectural seams
 

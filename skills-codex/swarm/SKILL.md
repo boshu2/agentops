@@ -214,7 +214,7 @@ THIS repo lands by direct push to `main`, so reap a worker's worktree on the bea
 
 ## Related skills
 
-- $using-atm — out-of-session ATM substrate when a swarm needs persistent panes and human attach/steer.
+- `$agent-native` + `$ntm` — portable out-of-session roles and NTM pane mechanics when persistence and live steering are justified.
 
 ## Reference Documents
 

@@ -25,6 +25,7 @@ metadata:
   dependencies:
   - standards
   - beads-br
+  - pattern-mining
 output_contract: code changes with regression verification
 ---
 # Refactor Skill

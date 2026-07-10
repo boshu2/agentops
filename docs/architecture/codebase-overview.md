@@ -42,7 +42,7 @@ Four product layers (public framing):
 | **Bookkeeping** | work vanishes between sessions | `.agents/`, RPI packets, council verdicts |
 | **Context compiler** | agents start cold | `ao inject`, skills, execution packets |
 | **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/pre-mortem`, `ao gate` |
-| **Knowledge flywheel** | lessons don't compound | `/curate --mode=forge`, promotion ratchet, `ao lookup` |
+| **Knowledge flywheel** | lessons don't compound | `/post-mortem`, `/pattern-mining`, `/operationalize`, promotion ratchet, `ao lookup` |
 
 **Honest fitness posture:** the apparatus to measure corpus delta exists; live-agent uplift is **not yet proven**. See [AgentOps effectiveness evidence](../evals/agentops-effectiveness-evidence.md).
 
@@ -69,7 +69,7 @@ Product and code route through six DDD bounded contexts. Full routing: [Componen
 
 | BC | Name | Center of gravity |
 |----|------|-------------------|
-| **BC1** | Corpus | `.agents/`, `ao inject`, `/curate --mode=forge`, `/compile`, `/harvest` |
+| **BC1** | Corpus | `.agents/`, `ao inject`, `/post-mortem`, `/pattern-mining`, `/operationalize`, `/harvest` |
 | **BC2** | Validation | `ao gate check`, `/validate`, `/council`, `/vibe` |
 | **BC3** | Loop | operating loop, `/evolve`, `br`, goals, autodev |
 | **BC4** | Factory | skill-builder, registries, standards, dispositions |
@@ -174,7 +174,7 @@ These names overlap in docs and code but are **not contradictory**. Use this tab
 | Operating loop | Primary navigation | Seven-move doctrine in [operating-loop.md](operating-loop.md) — how work flows in-session |
 | `/rpi` skill | Live inner loop | One-turn executor skill; not primary navigation |
 | `ao rpi` CLI | Removed (3.0) | Engine **removed** in f61c5f0e7 — was a load-bearing legacy lane; superseded by the operating loop (in-session) and NTM + Agent Mail (out-of-session) |
-| Substrate dispatch | Out-of-session | NTM/ATM dispatches a whole operating-loop run as one unit (the `ao rpi` loop it once wrapped was **removed** in 3.0) |
+| Substrate dispatch | Out-of-session | `/agent-native` drives portable roles through NTM and uses Agent Mail only for contested writes; GC remains an explicit coexisting adapter (the `ao rpi` loop once wrapped here was **removed** in 3.0) |
 
 ---
 
@@ -249,7 +249,8 @@ cd cli && go test ./internal/gates/checks -count=1   # registry parity tests
 ## Knowledge flywheel
 
 ```text
-Work → /curate --mode=forge → .agents/learnings/pending/
+Work → /post-mortem → /pattern-mining → /operationalize
+     → .agents/learnings/pending/
      → pool score → promote (gold/silver/bronze)
      → ao lookup (decay-ranked, cited) → next session
      → gates enforce promotion ratchet

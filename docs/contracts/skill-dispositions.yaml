@@ -274,14 +274,14 @@ historical:
 #   path            the canonical .js path
   dual-pane-atm:
     state:        merged-into
-    merged-into:  using-atm
+    merged-into:  agent-native
     date:         2026-07-01
-    rationale:    "Retired via ao skills retire: merged into using-atm."
+    rationale:    "Historical pane lifecycle now resolves through agent-native and ntm."
   orchestrate:
     state:        merged-into
-    merged-into:  using-atm
+    merged-into:  agent-native
     date:         2026-07-01
-    rationale:    "Retired via ao skills retire: merged into using-atm."
+    rationale:    "Historical orchestration lifecycle now resolves through agent-native."
   codex-approval:
     state:        merged-into
     merged-into:  codex-exec
@@ -297,6 +297,16 @@ historical:
     merged-into:  ntm
     date:         2026-07-01
     rationale:    "Retired via ao skills retire: merged into ntm."
+  using-atm:
+    state:        merged-into
+    merged-into:  agent-native
+    date:         2026-07-09
+    rationale:    "Portable lifecycle merged into agent-native; NTM mechanics stay in ntm, multi-lane coordination in agent-mail, and reviewer execution in pawl-review."
+  pre-land-refuters:
+    state:        merged-into
+    merged-into:  pawl-review
+    date:         2026-07-09
+    rationale:    "Generalized to transport-neutral immutable reviewer-lane execution; ao pawl remains the verdict owner."
   acfs:
     state:        cut
     date:         2026-07-02
@@ -318,9 +328,9 @@ historical:
     rationale:    "Retired via ao skills retire: merged into beads-br."
   continuity-loop:
     state:        merged-into
-    merged-into:  using-atm
+    merged-into:  agent-native
     date:         2026-07-02
-    rationale:    "Retired via ao skills retire: merged into using-atm."
+    rationale:    "Historical continuity lifecycle now resolves through agent-native."
   inject:
     state:        merged-into
     merged-into:  operationalize
@@ -883,19 +893,67 @@ dispositions:
     path:             skills/agent-native/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
-  - skill:            using-atm
-    domain:           "BC6 Orchestration"
+    rationale:        "Portable AgentWorker lifecycle for persistent role-shaped factories; NTM, Agent Mail, and GC remain adapters behind explicit operator routing."
+  - skill:            idea-genie
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/idea-genie/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Original evidence-grounded opportunity portfolio with adaptive saturation; discovery retains BDD persistence."
+  - skill:            dueling-idea-genies
+    domain:           "BC2 Validation"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/dueling-idea-genies/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Original sealed idea challenge packet; ao plan-pawl remains the decision owner."
+  - skill:            codebase-recon
+    domain:           "BC1 Corpus"
     hexagonal_role:   supporting
     disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
-    capability_class: orchestration
-    path:             skills/using-atm/SKILL.md
+    capability_class: corpus
+    path:             skills/codebase-recon/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
+    rationale:        "Formalizes the existing recurring recon packs with evidence bounds and verified delta mode."
+  - skill:            pattern-mining
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/pattern-mining/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Promotes abstractions only after three exemplars, holdout, and back-application; weak evidence stays hypothesis."
+  - skill:            pawl-review
+    domain:           "BC2 Validation"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/pawl-review/SKILL.md
+    aliases:          [pre-land-refuters]
+    supersedes:       pre-land-refuters
+    rationale:        "Immutable transport-neutral reviewer-lane execution; ao pawl alone binds the panel verdict."
   - skill:            agent-mail
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting
@@ -1052,18 +1110,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:            pre-land-refuters
-    domain:           "BC2 Validation"
-    hexagonal_role:   driving-adapter
-    disposition:      keep
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: validation
-    path:             skills/pre-land-refuters/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
   - skill:            operationalize
     domain:           "BC1 Corpus"
     hexagonal_role:   domain
@@ -1111,7 +1157,7 @@ dispositions:
     path:             skills/using-gc/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "gc adoption (age-gc-integrate-8aom.1 / age-gc-adoption-u0he.3): the vibing-with-ntm analog for driving a gas city — operator-choice substrate beside NTM, routes to gc's native surface."
+    rationale:        "Operator-choice Gas City driver beside NTM, with optional portable worker/reviewer partnership and GC-native close door."
   - skill:            gc-membrane
     domain:           "BC6 Orchestration"
     hexagonal_role:   supporting

@@ -1,6 +1,6 @@
 # using-gc
 
-Drive a Gas City (gc) factory day-to-day — stand up a city, sling quests, watch the membrane close-gate, resolve stalls, converge. The vibing-with-ntm analog for gc. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall", "stand up a membrane city".
+Drive an explicitly selected Gas City factory: stand up a city, sling quests, watch the AgentOps membrane close gate, resolve stalls, and converge. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall".
 
 ## Instructions
 

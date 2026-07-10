@@ -18,6 +18,7 @@ context:
     mode: none
   intel_scope: none
 metadata:
+  graph_root: true
   tier: session
   dependencies: []
 output_contract: .agents/handoff/YYYY-MM-DD-*.md

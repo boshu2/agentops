@@ -17,7 +17,7 @@ these two, and the router below leads with them.
 - `/converge` — drive a fix → re-run-judge-panel loop to terminal agreement or a hard BLOCK.
 - `/security` — repository security scans (vulns, dependency risk, secrets) plus release gating.
 - `/reality-check` — mid-epic drift audit: code is ground truth, the plan is the measuring stick.
-- `/pre-land-refuters` — fresh-context refuters attack the completion claim at the shared-trunk pawl before landing.
+- `/pawl-review` — fresh-context reviewer execution hands evidence to the shared-trunk pawl without self-grading.
 
 **The Bookkeeper — tracking + session spine:**
 
@@ -59,7 +59,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **session** | Execution | Session continuity and status | handoff, status |
 | **utility** | Execution | Standalone tools | converter, scaffold, security |
 | **contribute** | Execution | Upstream PR workflow | pr-prep |
-| **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-atm |
+| **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-gc |
 | **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | (none active) |
 | **meta** | Internal | Skills about skills | heal-skill, skill-builder |
@@ -160,7 +160,7 @@ taxonomy and the tier tables below, nothing else.
 
 ## Current Skill Tiers
 
-### User-Facing Skills (57)
+### User-Facing Skills (60)
 
 **Judgment:**
 
@@ -168,7 +168,7 @@ taxonomy and the tier tables below, nothing else.
 |-------|------|-------------|
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
-| **pre-land-refuters** | judgment | Use before landing any 100+ file change: dispatch unbiased Fable + codex refuters to attack the completion claim. |
+| **pawl-review** | judgment | Run an immutable fresh-context reviewer lane and hand evidence to ao pawl. |
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
 
@@ -183,7 +183,6 @@ taxonomy and the tier tables below, nothing else.
 | **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → pre-mortem |
 | **goal-design** | execution | Create checked goal-design intent + driver packets before discovery or planning |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
-| **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
 | **evolve** | experimental | Autonomous fitness-scored improvement loop |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
@@ -248,7 +247,7 @@ taxonomy and the tier tables below, nothing else.
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
 | **ms** | execution | meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Use when you need to find a skill for a task, search skills, or load runnable skill guidance. Consume via MCP, write/admin via CLI. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
-| **using-gc** | cross-vendor | Drive a Gas City factory day-to-day: stand up a correct native city, sling quests, watch the membrane close gate, resolve the known stalls, read pawl-verdict.v1, converge. The vibing-with-ntm analog for gc — operator choice, coexists with NTM. |
+| **using-gc** | cross-vendor | Drive an explicitly selected Gas City factory and its AgentOps membrane; optional portable worker/reviewer composition, never automatic fallback. |
 | **gc-membrane** | library | Reference for the agentops-membrane Gas City pack: close-gate mechanics, finalize semantics (nonce, ≥2 families, DEGRADED), pawl-verdict.v1 anatomy, trinity RBAC. Loaded JIT by using-gc. |
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
@@ -259,6 +258,10 @@ taxonomy and the tier tables below, nothing else.
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
 | **behavior-first-planning** | execution | 'Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".' |
 | **reverse-engineer** | execution | 'Reverse-engineer an external system you own or are authorized to analyze — repo, binary, or product — into a mechanically-verifiable feature inventory + spec set, then a steal-map (have/gap/steal/park/reject) onto our own surfaces. Use when evaluating a competitor, upstream, fork, or reference tool for what to adopt. Triggers: "reverse-engineer X", "tear down Y", "what should we steal from Z", "evaluate competitor/upstream", "should we fork/adopt/build-native".' |
+| **codebase-recon** | execution | 'Reconstruct a repository as cited entry-to-test flows, bounded claims, and a reusable baseline or verified delta. Triggers: "build a repository mental model", "trace this codebase", "refresh the prior recon".' |
+| **dueling-idea-genies** | execution | 'Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".' |
+| **idea-genie** | execution | 'Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".' |
+| **pattern-mining** | execution | 'Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: "mine a recurring code pattern", "is this abstraction earned", "extract invariants from implementations".' |
 
 ### Internal Skills (2) — `metadata.internal: true`
 
@@ -316,7 +319,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 
 | Vendor | CLI | Command |
 |--------|-----|---------|
-| Claude | `claude` | Interactive ATM/NTM pane only; print mode is forbidden |
+| Claude | `claude` | Interactive NTM pane only; print mode is forbidden |
 | Codex | `codex` | `codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
 | OpenCode | `opencode` | (similar pattern) |
 
