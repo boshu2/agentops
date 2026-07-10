@@ -13,8 +13,11 @@
 //     waiver) plus the pending window of landed commits awaiting verdicts
 //     (age-fdae; computation in yield_frontier.go).
 //  3. ANDON QUEUE — what the loop parked for a human: blocked beads,
-//     ESCALATE/HOLD pawl verdicts, and any REFUTED verdict whose bead is
-//     still open (a stalled slice). Each row: id, why parked, age.
+//     ESCALATE/HOLD pawl verdicts, any REFUTED verdict whose bead is
+//     still open (a stalled slice), and stale goal-design packets — a
+//     draft/validated packet under .agents/goal-design/ whose candidate work
+//     demonstrably shipped (evidence-bound-goal-closeout S3). Each row: id,
+//     why parked, age.
 //
 // Doctrine: docs/architecture/the-flywheel.md — "The human moves from in the
 // loop to on it": review asynchronously the yield and the andon queue, the two
@@ -37,6 +40,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -44,6 +48,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/wiki"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -85,8 +90,11 @@ Sections:
                its verdict (sha, bead, age). Empty window ⇒ the frontier IS
                origin/main. Walk bounded at 200 commits.
   ANDON QUEUE  what needs a human: blocked beads, ESCALATE/HOLD pawl verdicts,
-               and any REFUTED verdict whose bead is still open (a stalled
-               slice). Each row: id, why parked, age.
+               any REFUTED verdict whose bead is still open (a stalled
+               slice), and stale goal-design packets (still draft/validated
+               under .agents/goal-design/ while a CONFIRMED provenance verdict
+               or a closed candidate bead proves the work shipped). Each row:
+               id, why parked, age.
 
 Data sources: the yield ledger (.agents/yield/yield-ledger.jsonl) and the
 resolved beads tracker (bd or br — the same tracker-agnostic resolution
@@ -155,17 +163,18 @@ type yieldReportYield struct {
 
 // Andon row kinds — why a row is parked.
 const (
-	andonKindBlocked  = "blocked"
-	andonKindEscalate = "escalate"
-	andonKindHold     = "hold"
-	andonKindStalled  = "stalled"
+	andonKindBlocked     = "blocked"
+	andonKindEscalate    = "escalate"
+	andonKindHold        = "hold"
+	andonKindStalled     = "stalled"
+	andonKindStalePacket = "stale-packet"
 )
 
 // yieldReportAndonRow is one parked item awaiting a human: the bead, why it is
 // parked, and how long it has been waiting.
 type yieldReportAndonRow struct {
 	ID    string `json:"id"`
-	Kind  string `json:"kind"` // blocked | escalate | hold | stalled
+	Kind  string `json:"kind"` // blocked | escalate | hold | stalled | stale-packet
 	Why   string `json:"why"`
 	Age   string `json:"age"`
 	Since string `json:"since,omitempty"` // RFC3339 of when it parked, when known
@@ -261,7 +270,7 @@ func buildYieldReport(ledger *yieldledger.Ledger, root string, since, now time.T
 		doc.BeadsError = beadsErr.Error()
 	}
 	doc.Yield.ClosedBeads = reportClosedBeads(beads["closed"], since)
-	doc.AndonQueue = buildAndonQueue(window, beads, since, now)
+	doc.AndonQueue = buildAndonQueue(root, window, beads, since, now)
 	return doc
 }
 
@@ -367,10 +376,11 @@ func reportClosedBeads(closed []reportBead, since time.Time) []yieldReportClosed
 	return out
 }
 
-// buildAndonQueue assembles the parked-for-a-human rows from the three
-// sources, deduped per bead (blocked wins over a verdict row, ESCALATE/HOLD
-// wins over stalled), oldest-parked first.
-func buildAndonQueue(window *yieldledger.Ledger, beads map[string][]reportBead, since, now time.Time) []yieldReportAndonRow {
+// buildAndonQueue assembles the parked-for-a-human rows from the four
+// sources, deduped per id (blocked wins over a verdict row, ESCALATE/HOLD
+// wins over stalled, bead rows win over a same-id stale-packet row),
+// oldest-parked first.
+func buildAndonQueue(root string, window *yieldledger.Ledger, beads map[string][]reportBead, since, now time.Time) []yieldReportAndonRow {
 	rows := []yieldReportAndonRow{}
 	seen := map[string]bool{}
 	add := func(row yieldReportAndonRow) {
@@ -423,6 +433,13 @@ func buildAndonQueue(window *yieldledger.Ledger, beads map[string][]reportBead, 
 				Age: fmtReportAge(now.Sub(ts)), Since: rfc3339OrEmpty(ts), Title: titles[v.bead],
 			})
 		}
+	}
+
+	// 4) Stale goal-design packets — still draft/validated while their
+	// candidate work demonstrably shipped (evidence-bound-goal-closeout S3).
+	// Pull-style at report time, never a daemon (ADR-0009).
+	for _, row := range sweepStalePackets(root, beads, now) {
+		add(row)
 	}
 
 	sort.SliceStable(rows, func(i, j int) bool {
@@ -495,6 +512,215 @@ func beadStatusSet(beads map[string][]reportBead, statuses ...string) map[string
 		}
 	}
 	return out
+}
+
+// goalDesignRelDir is the repo-rooted directory the stale-packet sweep globs.
+const goalDesignRelDir = ".agents/goal-design"
+
+// sweepStalePackets is andon source 4: the stale goal-design-packet sweep
+// (evidence-bound-goal-closeout S3). It globs <root>/.agents/goal-design/*/
+// and flags every packet still in draft or validated whose candidate work
+// demonstrably shipped. Pull-style at report time from files already on disk
+// — no daemon, no background anything (ADR-0009). Tolerant by design: an
+// unreadable dir, artifact, or ledger line is skipped, never fatal.
+func sweepStalePackets(root string, beads map[string][]reportBead, now time.Time) []yieldReportAndonRow {
+	dirs, err := filepath.Glob(filepath.Join(root, goalDesignRelDir, "*"))
+	if err != nil || len(dirs) == 0 {
+		return nil
+	}
+	rows := []yieldReportAndonRow{}
+	for _, dir := range dirs { // Glob output is sorted — deterministic sweep order.
+		if info, statErr := os.Stat(dir); statErr != nil || !info.IsDir() {
+			continue
+		}
+		if row, ok := stalePacketRow(root, dir, beads, now); ok {
+			rows = append(rows, row)
+		}
+	}
+	return rows
+}
+
+// stalePacketRow evaluates ONE packet dir and, when it is stale, returns its
+// andon row: id = the packet slug, why = the packet path + the closing
+// evidence found. A packet is stale only when its status is draft/validated
+// in every artifact that declares one (closed or superseded anywhere is
+// terminal — never flagged) AND at least one mechanical evidence arm holds:
+// a CONFIRMED verdict edge in the provenance ledger naming the slug, or a
+// driver candidate bead resolving to a CLOSED tracker bead. A packet with no
+// evidence is never flagged; bare git-log slug mentions are deliberately not
+// an arm (the packet-creation commit always names the slug).
+func stalePacketRow(root, dir string, beads map[string][]reportBead, now time.Time) (yieldReportAndonRow, bool) {
+	intentText := readPacketArtifact(filepath.Join(dir, "intent.md"))
+	driverText := readPacketArtifact(filepath.Join(dir, "driver.md"))
+	if intentText == "" && driverText == "" {
+		return yieldReportAndonRow{}, false
+	}
+	codec := wiki.FrontmatterCodec{}
+	intentFM := codec.ExtractStringFields(strings.Split(intentText, "\n"), "status", "slug")
+	driverFM := codec.ExtractStringFields(strings.Split(driverText, "\n"), "status", "slug")
+	status, eligible := stalePacketStatus(intentFM["status"], driverFM["status"])
+	if !eligible {
+		return yieldReportAndonRow{}, false
+	}
+	slug := firstNonEmpty(driverFM["slug"], intentFM["slug"], filepath.Base(dir))
+
+	evidence := []string{}
+	parkedAt := time.Time{}
+	if why, ts := stalePacketLedgerEvidence(root, slug); why != "" {
+		evidence = append(evidence, why)
+		parkedAt = ts
+	}
+	if why, ts := stalePacketClosedBeadEvidence(packetCandidateBeadIDs(driverText), beads["closed"]); why != "" {
+		evidence = append(evidence, why)
+		if parkedAt.IsZero() || (!ts.IsZero() && ts.Before(parkedAt)) {
+			parkedAt = ts
+		}
+	}
+	if len(evidence) == 0 {
+		return yieldReportAndonRow{}, false
+	}
+
+	age := "0m"
+	if !parkedAt.IsZero() {
+		age = fmtReportAge(now.Sub(parkedAt))
+	}
+	return yieldReportAndonRow{
+		ID:   slug,
+		Kind: andonKindStalePacket,
+		Why: fmt.Sprintf("stale goal-design packet %s/%s (status %s) — %s",
+			goalDesignRelDir, filepath.Base(dir), status, strings.Join(evidence, "; ")),
+		Age:   age,
+		Since: rfc3339OrEmpty(parkedAt),
+	}, true
+}
+
+// stalePacketStatus folds the per-artifact statuses into (display status,
+// sweep-eligible). closed/superseded in ANY artifact is terminal; eligibility
+// requires draft or validated in at least one. Unknown or missing statuses
+// alone never flag a packet (tolerant: fail toward silence, not false alarms).
+func stalePacketStatus(statuses ...string) (string, bool) {
+	display, eligible := "", false
+	for _, s := range statuses {
+		switch s {
+		case "closed", "superseded":
+			return s, false
+		case "draft", "validated":
+			display, eligible = s, true
+		}
+	}
+	return display, eligible
+}
+
+// readPacketArtifact reads one packet artifact, mapping any error (missing
+// file, unreadable) to "" — the sweep is advisory and tolerant.
+func readPacketArtifact(path string) string {
+	data, err := os.ReadFile(path) // #nosec G304 -- path is <root>/.agents/goal-design/<dir>/{intent,driver}.md under the resolved project dir.
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+// packetCandidateBeadIDs extracts candidate_beads[].id values from the driver
+// frontmatter with a tolerant line scan: inside the frontmatter block, collect
+// "- id:" entries between the top-level "candidate_beads:" key and the next
+// top-level key. The top-level artifact "id:" field is never collected.
+func packetCandidateBeadIDs(driverText string) []string {
+	ids := []string{}
+	inFrontmatter, inCandidates := false, false
+	dashes := 0
+	for _, line := range strings.Split(driverText, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			dashes++
+			if dashes >= 2 {
+				break
+			}
+			inFrontmatter = true
+			continue
+		}
+		if !inFrontmatter {
+			continue
+		}
+		if strings.HasPrefix(line, "candidate_beads:") {
+			inCandidates = true
+			continue
+		}
+		if inCandidates && line != "" && line[0] != ' ' && line[0] != '-' {
+			inCandidates = false // next top-level key ends the block
+		}
+		if !inCandidates {
+			continue
+		}
+		if rest, ok := strings.CutPrefix(trimmed, "- id:"); ok {
+			if id := strings.Trim(strings.TrimSpace(rest), `"'`); id != "" {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids
+}
+
+// stalePacketLedgerEvidence is evidence arm (a): scan the worktree provenance
+// ledger for a CONFIRMED verdict edge naming the packet slug in bead_id or
+// evidence_ref. Line-tolerant on purpose — the sweep only needs the edge to
+// parse, not the hash chain to verify (the frontier owns strict reads); a
+// missing ledger or an undecodable line is silently skipped. Returns the
+// evidence sentence and the latest matching edge ts.
+func stalePacketLedgerEvidence(root, slug string) (string, time.Time) {
+	data, err := os.ReadFile(filepath.Join(root, provenanceLedgerRelPath)) // #nosec G304 -- fixed repo-relative path under the resolved project dir.
+	if err != nil {
+		return "", time.Time{}
+	}
+	why := ""
+	latest := time.Time{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var edge struct {
+			FromType    string `json:"from_type"`
+			BeadID      string `json:"bead_id"`
+			EvidenceRef string `json:"evidence_ref"`
+			TS          string `json:"ts"`
+		}
+		if json.Unmarshal([]byte(line), &edge) != nil {
+			continue // tolerant sweep: skip undecodable lines
+		}
+		if edge.FromType != "verdict" || !strings.Contains(edge.EvidenceRef, "disposition=CONFIRMED") {
+			continue
+		}
+		if !strings.Contains(edge.BeadID, slug) && !strings.Contains(edge.EvidenceRef, slug) {
+			continue
+		}
+		why = fmt.Sprintf("CONFIRMED verdict edge naming %s in %s", slug, provenanceLedgerRelPath)
+		if ts, terr := time.Parse(time.RFC3339, edge.TS); terr == nil && ts.After(latest) {
+			latest = ts
+		}
+	}
+	return why, latest
+}
+
+// stalePacketClosedBeadEvidence is evidence arm (b): the first driver
+// candidate bead id that resolves to a CLOSED bead in the already-fetched
+// tracker rows. When no tracker rows were fetchable (unresolvable tracker,
+// degraded fetch) the closed list is empty and the arm skips silently.
+func stalePacketClosedBeadEvidence(candidateIDs []string, closed []reportBead) (string, time.Time) {
+	if len(candidateIDs) == 0 || len(closed) == 0 {
+		return "", time.Time{}
+	}
+	closedByID := make(map[string]reportBead, len(closed))
+	for _, b := range closed {
+		closedByID[b.ID] = b
+	}
+	for _, id := range candidateIDs {
+		if b, ok := closedByID[id]; ok {
+			return fmt.Sprintf("candidate bead %s closed in tracker", id),
+				firstParseableTime(b.ClosedAt, b.UpdatedAt)
+		}
+	}
+	return "", time.Time{}
 }
 
 // firstParseableTime returns the first candidate that parses as RFC3339, or the
