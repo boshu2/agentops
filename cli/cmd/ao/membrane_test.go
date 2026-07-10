@@ -1092,6 +1092,12 @@ func TestMembraneCatch_EvidenceStagedScope(t *testing.T) {
 	}
 }
 
+func TestMembraneCatch_DocumentsExactUpstreamBase(t *testing.T) {
+	if membraneCatchCmd.Flags().Lookup("base") == nil {
+		t.Fatal("membrane catch needs --base so an upstream-range REFUTE records the exact reviewed paths")
+	}
+}
+
 // Without --evidence the original contract is unchanged: --bead, --domain and
 // --reason are all required.
 func TestMembraneCatch_NoEvidenceStillRequiresDomainReason(t *testing.T) {

@@ -153,6 +153,31 @@ teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
   [[ "$output" == *"configured upstream"* ]]
 }
 
+@test "pawl-review: explicit upstream base overrides a misleading configured upstream" {
+  exact_base="$(git rev-parse HEAD~1)"
+  origin="$TMP/origin-base.git"
+  git init --bare --quiet "$origin"
+  git remote add base-origin "$origin"
+  # The configured upstream points at the current tip, which would hide the
+  # existing README change. The explicit landing base must remain authoritative.
+  git push --quiet base-origin HEAD:refs/heads/decoy "$exact_base":refs/heads/main
+  git fetch --quiet base-origin
+  git branch --set-upstream-to=base-origin/decoy >/dev/null
+  printf 'later branch commit\n' > later.txt
+  git add later.txt
+  git commit --quiet -m "fix(x): later branch commit (age-rev-test)"
+  packet="$TMP/exact-base-packet.txt"
+
+  PKT_CAPTURE="$packet" CODEX_STUB="VERDICT: CONFIRMED" \
+    run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=1 \
+    bash "$SCRIPT" age-rev-test --scope upstream --base "$exact_base"
+
+  [ "$status" -eq 0 ]
+  grep -q 'README.md' "$packet"
+  grep -q 'later.txt' "$packet"
+  grep -q "base ${exact_base:0:12}" "$packet"
+}
+
 @test "pawl-review: same-family author (codex == the codex refuter) is REFUSED (defect #2)" {
   # A codex/openai/gpt author + the codex refuter is a SAME-family review, not the
   # cross-family check this command provides — refuse, write nothing.
@@ -365,6 +390,18 @@ py_setup() {
   [[ "$output" == *"VERIFIED by pawl-verdict.sh check"* ]]
   [ -f "$VFILE" ]
   grep -q CONFIRMED "$VFILE"
+}
+
+@test "pawl-review: upstream range routes through the warm multi-model service" {
+  base="$(git rev-parse HEAD~1)"
+  stub="$(_pawl_service_stub)"
+  run env PATH="$BIN:$PATH" PAWL_NO_SERVICE=0 PAWL_SERVICE_SCRIPT="$stub" \
+    STUB_HEALTH_RC=0 STUB_ROUTE_RC=0 STUB_ROUTE_DISP=CONFIRMED STUB_VALID=1 \
+    bash "$SCRIPT" age-rev-test --scope upstream --base "$base"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"routing through the standing pawl-service"* ]]
+  [[ "$output" == *"VERIFIED by pawl-verdict.sh check"* ]]
+  [ -f "$VFILE" ]
 }
 
 @test "pawl-review: a routed CONFIRMED with an INVALID verdict FAILS the real check and falls back — never fail-open (ml8.7)" {
