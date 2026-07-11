@@ -139,6 +139,9 @@ var (
 		"scripts/check-docs-demoted-claims.sh",
 		"scripts/.docs-demoted-claims-baseline",
 		"tests/scripts/check-docs-demoted-claims.bats",
+		// shared ratchet mechanics: a lib edit must re-run every consumer
+		// (age-ratchet-lib-extraction-bv7d.2, pre-mortem FM3)
+		"scripts/lib/ratchet.sh",
 	}
 	// docs.duplicates shasums every live doc and fails on a byte-identical pair
 	// over the line threshold — an anti-regrowth guard after a docs-lifecycle
