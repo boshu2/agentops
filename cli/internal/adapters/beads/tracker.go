@@ -109,6 +109,37 @@ func (tracker *Tracker) ListInProgress(ctx context.Context) ([]byte, error) {
 	return nil, err
 }
 
+func (tracker *Tracker) Show(ctx context.Context, beadID string) (beadsapp.StaleBeadRecord, error) {
+	output, err := tracker.Output(ctx, "show", beadID, "--json")
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return beadsapp.StaleBeadRecord{}, fmt.Errorf("br show %s exited %d: %s", beadID, exitErr.ExitCode(), string(exitErr.Stderr))
+		}
+		return beadsapp.StaleBeadRecord{}, err
+	}
+	return beadsapp.ParseShownBead(output, beadID)
+}
+
+func (tracker *Tracker) Claim(ctx context.Context, beadID, agent string) error {
+	resolved, err := tracker.Resolve()
+	if err != nil {
+		return err
+	}
+	args := []string{"update", beadID, "--claim"}
+	if agent != "" {
+		args = append(args, "--actor", agent)
+	}
+	command := exec.CommandContext(ctx, resolved.Binary, args...) // #nosec G204 -- trackerresolve constrains the binary to br|bd.
+	command.Dir = resolved.WorkDir
+	command.Env = append([]string(nil), resolved.ChildEnv...)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("br update --claim failed: %w: %s", err, string(output))
+	}
+	return nil
+}
+
 func (tracker *Tracker) context() (string, []string, error) {
 	if tracker == nil || tracker.workingDirectory == nil || tracker.environment == nil || tracker.lookPath == nil {
 		return "", nil, fmt.Errorf("beads tracker adapter is not configured")
