@@ -3,6 +3,7 @@ package beads
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -96,6 +97,18 @@ func (tracker *Tracker) Output(ctx context.Context, args ...string) ([]byte, err
 	return command.Output()
 }
 
+func (tracker *Tracker) ListInProgress(ctx context.Context) ([]byte, error) {
+	output, err := tracker.Output(ctx, "list", "--status", "in_progress", "--json", "--limit", "500")
+	if err == nil {
+		return output, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return nil, fmt.Errorf("br list exited %d: %s", exitErr.ExitCode(), string(exitErr.Stderr))
+	}
+	return nil, err
+}
+
 func (tracker *Tracker) context() (string, []string, error) {
 	if tracker == nil || tracker.workingDirectory == nil || tracker.environment == nil || tracker.lookPath == nil {
 		return "", nil, fmt.Errorf("beads tracker adapter is not configured")
@@ -110,3 +123,4 @@ func (tracker *Tracker) context() (string, []string, error) {
 var _ beadsapp.TrackerResolver = (*Tracker)(nil)
 var _ beadsapp.TrackerClient = (*Tracker)(nil)
 var _ beadsapp.LedgerInspector = (*Tracker)(nil)
+var _ beadsapp.StaleSource = (*Tracker)(nil)

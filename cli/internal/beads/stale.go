@@ -3,9 +3,34 @@
 package beads
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 )
+
+type StaleSource interface {
+	ListInProgress(context.Context) ([]byte, error)
+}
+
+type StaleSourceFunc func(context.Context) ([]byte, error)
+
+func (function StaleSourceFunc) ListInProgress(ctx context.Context) ([]byte, error) {
+	return function(ctx)
+}
+
+func DetectStale(ctx context.Context, source StaleSource, now time.Time, thresholdHours float64) ([]StaleEvent, error) {
+	raw, err := source.ListInProgress(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var records []StaleBeadRecord
+	if err := json.Unmarshal(raw, &records); err != nil {
+		return nil, fmt.Errorf("parse br list: %w", err)
+	}
+	return ComputeStaleEvents(records, now.UTC(), thresholdHours), nil
+}
 
 // StaleBeadRecord is the subset of tracker list output needed for staleness.
 type StaleBeadRecord struct {
