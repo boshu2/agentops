@@ -203,3 +203,19 @@ write_v() {
   [[ "$output" == *"subst=authorize"* ]]
   [[ "$output" == *"thin=hold"* ]]
 }
+
+# age-pawl-intent-zhndq.10 (measured 2026-07-11): the floor's false-positive rate on REAL reviews is
+# 76% (199/261 live verdicts FLOOR-fail, incl. verdicts from reviews that caught real defects) — the
+# check conflates "no defects found" with "no review performed", so a clean CONFIRM always fails it.
+# The 2026-07-16 auto-flip would therefore have started HOLDing ~76% of real reviews on a CALENDAR
+# TRIGGER with nobody watching. This test pins the defusal: enforcement must NOT be reachable by the
+# clock alone in the near term — it is an explicit, evidence-gated decision (or PAWL_FLOOR_ENFORCE=1).
+@test "floor: the enforce date cannot auto-fire in the near term (76% FP measured; explicit flip only)" {
+  # The default flip date must be comfortably in the future, not days away.
+  run bash -c 'grep -E "^FLOOR_ENFORCE_AFTER=" "'"$BATS_TEST_DIRNAME"'/../../scripts/pawl-verdict.sh"'
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"2026-07-16"* ]]     # the defused time-bomb
+  [[ "$output" == *"2027-"* ]]          # pushed out deliberately
+  # And the operator override still works both ways (tests/opt-in enforcement stays possible).
+  [[ "$output" == *"PAWL_FLOOR_ENFORCE_AFTER"* ]]
+}
