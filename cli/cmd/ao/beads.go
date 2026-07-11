@@ -284,11 +284,7 @@ func runBeadsDir(cmd *cobra.Command, _ []string) error {
 // environment: which tracker (bd|br), its resolved binary, its ledger
 // directory, and how it was selected (age-fvr8).
 func runBeadsTrackerCmd(cmd *cobra.Command, _ []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	res, err := resolveTracker(cwd, os.Environ())
+	res, err := currentBeadsTracker().Resolve()
 	if err != nil {
 		return err
 	}
