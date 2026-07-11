@@ -143,7 +143,7 @@ ao doctor [command]
       --online            Enable network probes (default: offline-only)
       --only strings      Scope to a subset of detectors or subsystems
       --quick             Run only fast-path detectors (< 200ms)
-      --robot             Alias for --json with structured wrapper
+      --robot             Alias for stable JSON report output
       --robot-triage      Emit the mega-command triage JSON
       --severity string   Minimum severity to emit (P0|P1|P2|P3) (default "P3")
       --since string      Diff findings against an earlier run

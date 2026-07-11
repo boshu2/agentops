@@ -15,6 +15,39 @@ import (
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
+func TestDoctorMutationRequestCopiesCommandFlags(t *testing.T) {
+	oldOnly, oldSkip := doctorOnly, doctorSkip
+	oldQuick, oldOnline := doctorQuick, doctorOnline
+	oldSeverity, oldDryRun := doctorSeverity, doctorDryRun
+	oldRobot := doctorRobot
+	t.Cleanup(func() {
+		doctorOnly, doctorSkip = oldOnly, oldSkip
+		doctorQuick, doctorOnline = oldQuick, oldOnline
+		doctorSeverity, doctorDryRun = oldSeverity, oldDryRun
+		doctorRobot = oldRobot
+	})
+
+	doctorOnly = []string{"one"}
+	doctorSkip = []string{"two"}
+	doctorQuick = true
+	doctorOnline = true
+	doctorSeverity = "P2"
+	doctorDryRun = true
+	doctorRobot = true
+
+	request := doctorMutationRequest()
+	if len(request.Only) != 1 || request.Only[0] != "one" || len(request.Skip) != 1 || request.Skip[0] != "two" {
+		t.Fatalf("request=%+v", request)
+	}
+	if !request.Quick || !request.Online || request.Severity != "P2" || !request.DryRun || !request.JSON {
+		t.Fatalf("request=%+v", request)
+	}
+	doctorOnly[0] = "changed"
+	if request.Only[0] != "one" {
+		t.Fatalf("request aliases command flags: %+v", request)
+	}
+}
+
 func TestComputeResult(t *testing.T) {
 	tests := []struct {
 		name       string
