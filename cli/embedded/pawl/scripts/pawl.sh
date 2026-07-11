@@ -55,6 +55,22 @@ PAWL_CODEX_MODEL="${PAWL_CODEX_MODEL:-}"
 CC_PANE="${PAWL_CC_PANE:-1}"     # claude/opus pane (fresh-context refuter)
 COD_PANE="${PAWL_COD_PANE:-2}"   # codex pane (cross-family refuter)
 AGY_PANE="${PAWL_AGY_PANE:-3}"   # AGY/Antigravity pane (3rd cross-family refuter, Gemini 3.5 Flash)
+# ── Swarm-binary seam (age-hk5zg.3 / S3) ──────────────────────────────────────
+# The standing service drives the NTM swarm CLI. The PUBLIC binary name is `ntm`;
+# `atm` is the operator's personal alias into a local dist. Resolve ntm FIRST and fall
+# back to atm only when ntm is absent, so the shipped scripts work on the public tool
+# name, not one operator's alias. PAWL_SWARM_BIN overrides (tests / nonstandard
+# installs). Resolved ONCE at load; every swarm invocation goes through "$SWARM" —
+# never a bare hardcoded binary name (locked by tests/scripts/pawl-swarm-bin.bats).
+_pawl_swarm_bin() {
+  if [ -n "${PAWL_SWARM_BIN:-}" ]; then printf '%s' "$PAWL_SWARM_BIN"; return 0; fi
+  if command -v ntm >/dev/null 2>&1; then printf 'ntm'; return 0; fi
+  if command -v atm >/dev/null 2>&1; then printf 'atm'; return 0; fi
+  # Neither installed: name the PUBLIC binary so downstream "command not found" errors
+  # point users at the tool they should install, not the operator alias.
+  printf 'ntm'
+}
+SWARM="$(_pawl_swarm_bin)"
 # age-l3xj (cross-family refuter catch): the per-route packet + evidence files are named by BEAD
 # ($EVID_DIR/${bead}.packet.md, ${bead}-codex.txt); a GLOBAL /tmp/pawl-evidence meant two sessions
 # (two repos) routing the SAME bead id wrote identical paths — one overwrote the other's evidence,
@@ -198,7 +214,7 @@ _pawl_unlink_if_symlink() {
 # live atm config, then NTM_PROJECTS_BASE, then the conventional ~/dev. Pure read (no spawn).
 _pawl_projects_base() {
   local pb=""
-  pb="$(atm config get projects_base 2>/dev/null | tr -d '[:space:]')"
+  pb="$("$SWARM" config get projects_base 2>/dev/null | tr -d '[:space:]')"
   [ -n "$pb" ] || pb="${NTM_PROJECTS_BASE:-}"
   [ -n "$pb" ] || pb="$HOME/dev"
   printf '%s' "$pb"
@@ -387,7 +403,7 @@ PY
 session_exists() { tmux has-session -t "$SESSION" 2>/dev/null; }
 
 codex_state() {
-  atm codex preflight --session "$SESSION" --pane "$COD_PANE" --json 2>/dev/null \
+  "$SWARM" codex preflight --session "$SESSION" --pane "$COD_PANE" --json 2>/dev/null \
     | grep '"state"' | head -1 | sed -E 's/.*"state": *"([^"]*)".*/\1/'
 }
 
@@ -456,7 +472,7 @@ rotate_account() {
 respawn_pane() {
   local pane="$1" kind="$2"
   log "respawning $kind pane $pane (degraded)"
-  atm respawn "$SESSION" --panes="$pane" --force >/dev/null 2>&1 || true
+  "$SWARM" respawn "$SESSION" --panes="$pane" --force >/dev/null 2>&1 || true
   for _ in $(seq 1 20); do
     if [ "$kind" = "cod" ]; then
       case "$(codex_state || true)" in codex-live|goal-completed) return 0 ;; esac
@@ -477,11 +493,11 @@ respawn_pane() {
 cod_send() {
   local rp="$1" try st
   for try in 1 2 3; do
-    atm send "$SESSION" --pane="$COD_PANE" --codex-goal \
+    "$SWARM" send "$SESSION" --pane="$COD_PANE" --codex-goal \
       "Follow the adversarial review instructions in the file $rp and obey its final VERDICT FORMAT line. Read the file now." \
       --no-cass-check --force-non-interactive --json >/dev/null 2>&1 || true
     sleep 3
-    if atm codex wait-goal-engaged --session "$SESSION" --pane "$COD_PANE" --json 2>/dev/null \
+    if "$SWARM" codex wait-goal-engaged --session "$SESSION" --pane "$COD_PANE" --json 2>/dev/null \
          | grep -q '"outcome": *"engaged"'; then
       return 0
     fi
@@ -680,7 +696,7 @@ _family_send() {   # $1=pane $2=cc|agy (respawn kind) $3=packet-file
   for try in 1 2 3; do
     before="$(_pane_activity "$pane")"
     # age-9rmh: PATH + read-now instruction (see header) — never a `--file` paste that the agy TUI drops.
-    out="$(atm send "$SESSION" --pane="$pane" --no-cass-check --force-non-interactive --json \
+    out="$("$SWARM" send "$SESSION" --pane="$pane" --no-cass-check --force-non-interactive --json \
       "Follow the adversarial review instructions in the file $rp and obey its final VERDICT FORMAT line. Read the file now." \
       2>/dev/null || true)"
     if printf '%s' "$out" | grep -q '"delivered":1'; then
@@ -1063,11 +1079,11 @@ cmd_up() {
     # resolve to a DIFFERENT (or missing) directory. Verify before mutating — never spawn into the
     # wrong repo — and fail closed with an actionable message naming the requirement (the spec's
     # cross-repo fallback: work when safe, else fail before mutation, never ambiguous).
-    _pawl_verify_spawn_target || die "ao pawl up: this repo ($ROOT) is not a direct child of the ATM projects_base ($(_pawl_projects_base)), so 'atm spawn $PROJECT' would target '$(_pawl_projects_base)/$PROJECT' (the wrong/missing directory). Run 'ao pawl up' from a repo directly under $(_pawl_projects_base); OR set PAWL_PROJECT to a valid atm project name; OR set PAWL_SESSION to route to an existing standing session (e.g. the operator's 'agentops--pawl-service')."
+    _pawl_verify_spawn_target || die "ao pawl up: this repo ($ROOT) is not a direct child of the NTM projects_base ($(_pawl_projects_base)), so '$SWARM spawn $PROJECT' would target '$(_pawl_projects_base)/$PROJECT' (the wrong/missing directory). ao pawl up is an OPERATOR command requiring the NTM swarm substrate — plain 'ao pawl review' needs none of this. Run 'ao pawl up' from a repo directly under $(_pawl_projects_base); OR set PAWL_PROJECT to a valid $SWARM project name; OR set PAWL_SESSION to route to an existing standing session (e.g. the operator's 'agentops--pawl-service')."
     log "spawning standing pawl session $SESSION (families: $ENABLED, tier=$TIER, no-user)"
-    atm spawn "$PROJECT" --label "$LABEL" "${spawn_flags[@]}" \
+    "$SWARM" spawn "$PROJECT" --label "$LABEL" "${spawn_flags[@]}" \
       --no-cass-context --ready-timeout=2m --json >/dev/null 2>&1 \
-      || die "atm spawn failed"
+      || die "$SWARM spawn failed"
   fi
 
   # Readiness gate over ONLY the enabled panes (boot race). agy boots slower; keep 45 ticks.
@@ -1110,7 +1126,7 @@ cmd_down() {
     trap '_route_lock_release' RETURN
   fi
   if session_exists; then
-    atm kill "$SESSION" --json >/dev/null 2>&1 || tmux kill-session -t "$SESSION" 2>/dev/null || true
+    "$SWARM" kill "$SESSION" --json >/dev/null 2>&1 || tmux kill-session -t "$SESSION" 2>/dev/null || true
     # Remove the session-scoped state (never follow a symlink at that leaf).
     _pawl_unlink_if_symlink "$SESSION_JSON"; rm -f "$SESSION_JSON" 2>/dev/null || true
     log "DOWN: killed $SESSION"
@@ -1274,20 +1290,33 @@ cmd_doctor() {
 
   _doctor_reset
 
+  # ntm-first (age-hk5zg.3): report the swarm binary the resolver actually picked. The
+  # public 'ntm' is preferred; 'atm' is the operator-alias fallback; PAWL_SWARM_BIN pins.
   local atm_path ntm_path atm_real ntm_real
   atm_path="$(command -v atm 2>/dev/null || true)"
   ntm_path="$(command -v ntm 2>/dev/null || true)"
-  if [ -z "$atm_path" ]; then
-    _doctor_add atm-alias false "atm not found on PATH"
-  elif [ -n "$ntm_path" ]; then
-    atm_real="$(_realpath_or_self "$atm_path")"; ntm_real="$(_realpath_or_self "$ntm_path")"
-    if [ "$atm_real" = "$ntm_real" ]; then
-      _doctor_add atm-alias true "atm -> $atm_real"
+  if [ -n "${PAWL_SWARM_BIN:-}" ]; then
+    if command -v "$SWARM" >/dev/null 2>&1 || [ -x "$SWARM" ]; then
+      _doctor_add swarm-bin true "PAWL_SWARM_BIN=$SWARM (pinned)"
     else
-      _doctor_add atm-alias false "atm=$atm_real differs from ntm=$ntm_real"
+      _doctor_add swarm-bin false "PAWL_SWARM_BIN=$SWARM is not executable"
     fi
+  elif [ -n "$ntm_path" ]; then
+    ntm_real="$(_realpath_or_self "$ntm_path")"
+    if [ -n "$atm_path" ]; then
+      atm_real="$(_realpath_or_self "$atm_path")"
+      if [ "$atm_real" = "$ntm_real" ]; then
+        _doctor_add swarm-bin true "ntm -> $ntm_real (atm is the same binary)"
+      else
+        _doctor_add swarm-bin true "ntm -> $ntm_real (NOTE: a different 'atm'=$atm_real also on PATH; ntm wins)"
+      fi
+    else
+      _doctor_add swarm-bin true "ntm -> $ntm_real"
+    fi
+  elif [ -n "$atm_path" ]; then
+    _doctor_add swarm-bin true "atm=$atm_path (operator-alias fallback; public 'ntm' not on PATH)"
   else
-    _doctor_add atm-alias true "atm=$atm_path (ntm not present)"
+    _doctor_add swarm-bin false "no swarm binary: neither 'ntm' nor 'atm' on PATH (install NTM)"
   fi
 
   if session_exists; then
@@ -1848,7 +1877,7 @@ Usage: pawl.sh <up|down|reap|health|doctor|smoke|route|metrics>
   down                              tear down the standing session
   reap                              tear down iff idle > PAWL_IDLE_TTL (substrate/cron schedules it)
   health [--json]                   per-pane liveness/readiness + the membrane tier
-  doctor|smoke [--json]             read-only preflight: assert atm alias, session, cwd, model,
+  doctor|smoke [--json]             read-only preflight: assert swarm binary (ntm-first), session, cwd, model,
                                     trust-prompt, readiness, and standing evidence policy
   route <bead> <packet> [pr]        route to the enabled panes, require tier-appropriate agreement,
                                     record the verdict (mode=multi-model for >=2 families, else fresh-context)

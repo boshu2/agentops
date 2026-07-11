@@ -70,5 +70,5 @@ teardown() { export PATH="$ORIG_PATH"; rm -rf "$TMP"; unset NTM_PROJECTS_BASE PA
   _set_panes_from_enabled() { :; }
   run cmd_up
   [ "$status" -ne 0 ]
-  [[ "$output" == *"not a direct child of the ATM projects_base"* ]]
+  [[ "$output" == *"not a direct child of the NTM projects_base"* ]]
 }
