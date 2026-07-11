@@ -81,14 +81,7 @@ var tickVerdictGateCmd = &cobra.Command{
 	},
 }
 
-var tickCouncilGateCmd = &cobra.Command{
-	Use:   "council-gate <verdict1> <verdict2> [...]",
-	Short: "Fail-closed two-plus judge verdict aggregation",
-	Args:  cobra.MinimumNArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickCouncilGate(newTickRuntime(cmd), args)
-	},
-}
+var tickCouncilGateCommand = councilGateModule.LegacyCommand()
 
 var tickInstallGuardsCmd = &cobra.Command{
 	Use:   "install-guards",
@@ -127,7 +120,7 @@ func init() {
 		tickReopenCmd,
 		tickCloseCmd,
 		tickVerdictGateCmd,
-		tickCouncilGateCmd,
+		tickCouncilGateCommand,
 		tickInstallGuardsCmd,
 		tickGuardStatusCmd,
 		tickSmokeCmd,

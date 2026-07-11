@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/liveness"
+	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
 	"github.com/spf13/cobra"
 )
 
@@ -114,15 +114,6 @@ var verdictGateCmd = &cobra.Command{
 	},
 }
 
-var councilGateCmd = &cobra.Command{
-	Use:   "council-gate <verdict1> <verdict2> [...]",
-	Short: "Fail-closed two-plus judge verdict aggregation",
-	Args:  cobra.MinimumNArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickCouncilGate(newTickRuntime(cmd), args)
-	},
-}
-
 var installGuardsCmd = &cobra.Command{
 	Use:   "install-guards",
 	Short: "Install repo-local git guard hooks",
@@ -167,7 +158,6 @@ func init() {
 	rootCmd.AddCommand(
 		readyCmd,
 		verdictGateCmd,
-		councilGateCmd,
 		installGuardsCmd,
 		guardStatusCmd,
 		chaosTestCmd,
@@ -373,263 +363,16 @@ func tickRunVerdictGate(rt tickRuntime, path string) error {
 	if err != nil {
 		return err
 	}
-	if !tickVerdictHasCommandsRun(text) {
+	if !verdictparse.HasCommandsRun(text) {
 		fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
 		return &tickExitError{code: tickExitUnverified}
 	}
-	if _, gaps := tickVerdictIdentity(text); len(gaps) > 0 {
+	if _, gaps := verdictparse.Identity(text); len(gaps) > 0 {
 		fmt.Fprintf(rt.stderr, "REJECTED: verdict identity unproven: %s\n", strings.Join(gaps, "; "))
 		return &tickExitError{code: tickExitUnverified}
 	}
 	fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites commands and independent judge identity")
 	return nil
-}
-
-// tickVerdictLineCap is the deliberate maximum length of a single line in a
-// council verdict artifact. It raises the implicit 64KB bufio.Scanner token
-// limit to a bounded ceiling: any legitimate verdict line fits well under it,
-// while a pathological line beyond it fails the scan closed rather than silently
-// truncating the rest of the artifact.
-const tickVerdictLineCap = 1 << 20 // 1 MiB
-
-// tickScanVerdictLines reads a verdict artifact into its lines with an explicit,
-// bounded scan buffer and surfaces any scanner error — including a line longer
-// than tickVerdictLineCap. Callers in the council verdict path MUST fail closed
-// on a non-nil error: an artifact that cannot be fully scanned must never be
-// treated as a PASS (Codex sweep F-03 — an unchecked scanner.Err() let a
-// 70000-byte line hide a trailing FAIL behind a truncated scan).
-func tickScanVerdictLines(text string) ([]string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	scanner.Buffer(make([]byte, 0, 64*1024), tickVerdictLineCap)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
-}
-
-func tickVerdictHasCommandsRun(text string) bool {
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact has no verifiable COMMANDS RUN body.
-		return false
-	}
-	inBlock := false
-	commandHeader := regexp.MustCompile(`(?i)commands[ _-]*run`)
-	for _, line := range lines {
-		lower := strings.ToLower(line)
-		if commandHeader.MatchString(line) {
-			inBlock = true
-			if i := strings.Index(line, ":"); i >= 0 && strings.TrimSpace(line[i+1:]) != "" {
-				return true
-			}
-			continue
-		}
-		if inBlock && regexp.MustCompile(`^\s*reasons`).MatchString(lower) {
-			inBlock = false
-		}
-		if inBlock && strings.TrimSpace(line) != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func tickCouncilGate(rt tickRuntime, paths []string) error {
-	n := len(paths)
-	pass, fail, unverified := 0, 0, 0
-	families := map[string]bool{}
-	judges := map[string]bool{}
-	contexts := map[string]bool{}
-	for _, path := range paths {
-		text, err := tickReadVerdict(rt, path)
-		identity, identityGaps := tickVerdictIdentity(text)
-		// A verdict with any identity gap — now including a missing context_id or a
-		// judge context equal to the author context (self-judge) — is unverified and
-		// fails closed.
-		if err != nil || !tickVerdictHasCommandsRun(text) || len(identityGaps) > 0 {
-			unverified++
-			continue
-		}
-		// The independence axis is the judge CONTEXT, not the judge name: a
-		// duplicate context is one judge regardless of how it labels itself.
-		// Canonicalize first so a single judge cannot forge "distinct" contexts via
-		// whitespace/case/unicode variants.
-		canonCtx := liveness.CanonicalizeContextID(identity.ContextID)
-		if contexts[canonCtx] {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge context %q does not count as an independent judge\n", identity.ContextID)
-			return &tickExitError{code: tickExitCouncil}
-		}
-		contexts[canonCtx] = true
-		// Retain the judge-name dedup as a secondary guard.
-		if judges[identity.JudgeName] {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge %q does not count as an independent judge\n", identity.JudgeName)
-			return &tickExitError{code: tickExitCouncil}
-		}
-		judges[identity.JudgeName] = true
-		p, f := tickVerdictTokenCounts(text)
-		switch {
-		case p == 1 && f == 0:
-			pass++
-			families[identity.JudgeModelFamily] = true
-		case f == 1 && p == 0:
-			fail++
-		default:
-			unverified++
-		}
-	}
-	if unverified > 0 {
-		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d verdict(s) unverified (no COMMANDS RUN / identity gap)\n", unverified, n)
-		return &tickExitError{code: tickExitCouncil}
-	}
-	if pass == n {
-		// Context floor: need >=2 distinct non-author judge contexts.
-		if len(contexts) < 2 {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: PASS quorum has %d distinct judge context; need at least 2 independent contexts\n", len(contexts))
-			return &tickExitError{code: tickExitCouncil}
-		}
-		// Optional cross-family strengthener: only gated when explicitly required.
-		if rt.requireCrossFamily && len(families) < 2 {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: --require-cross-family set but PASS quorum spans %d model family; need at least 2 (cross-family)\n", len(families))
-			return &tickExitError{code: tickExitCouncil}
-		}
-		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous across %d distinct contexts (%d model families)\n", pass, n, len(contexts), len(families))
-		return nil
-	}
-	if fail == n {
-		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d judges FAIL\n", fail, n)
-		return &tickExitError{code: tickExitCouncil}
-	}
-	fmt.Fprintf(rt.stderr, "DISAGREEMENT: %d PASS / %d FAIL - fail-closed; dispatch tie-break\n", pass, fail)
-	return &tickExitError{code: tickExitDisagree}
-}
-
-type tickVerdictIdentityInfo struct {
-	Author           string
-	JudgeName        string
-	JudgeProgram     string
-	JudgeModelFamily string
-	// ContextID is the judge's session-identity axis (the independence axis): two
-	// distinct ContextIDs are two independent judges even on the same model.
-	ContextID string
-	// AuthorContextID is the author's context — a judge whose ContextID equals it
-	// is self-judging and fails closed.
-	AuthorContextID string
-}
-
-func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
-	info := tickVerdictIdentityInfo{
-		Author:           tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author", "author_id", "author-id", "author id", "author_name", "author-name", "author name")),
-		JudgeName:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge", "judge_name", "judge-name", "judge name", "judge_id", "judge-id", "judge id")),
-		JudgeProgram:     tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge_program", "judge-program", "judge program", "program", "validator_program", "validator-program", "validator program")),
-		JudgeModelFamily: tickNormalizeModelFamily(tickVerdictMetadataValue(text, "judge_model_family", "judge-model-family", "judge model family", "model_family", "model-family", "model family", "family")),
-		ContextID:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "context_id", "context-id", "context id", "validator_session", "validator-session", "validator session")),
-		AuthorContextID:  tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author_context_id", "author-context-id", "author context id")),
-	}
-	var gaps []string
-	if info.Author == "" {
-		gaps = append(gaps, "missing author")
-	}
-	if info.JudgeName == "" {
-		gaps = append(gaps, "missing judge.name")
-	}
-	if info.JudgeProgram == "" {
-		gaps = append(gaps, "missing judge.program")
-	}
-	if info.JudgeModelFamily == "" {
-		gaps = append(gaps, "missing judge.model_family")
-	} else if tickUnknownModelFamily(info.JudgeModelFamily) {
-		gaps = append(gaps, "judge.model_family is unknown")
-	}
-	if info.ContextID == "" {
-		gaps = append(gaps, "missing judge.context_id")
-	}
-	if info.Author != "" && info.JudgeName != "" && info.Author == info.JudgeName {
-		gaps = append(gaps, "judge.name equals author")
-	}
-	if info.AuthorContextID != "" && info.ContextID != "" && info.AuthorContextID == info.ContextID {
-		gaps = append(gaps, "judge.context_id equals author context")
-	}
-	if tickVerdictMetadataValue(text, "allow_self", "allow-self", "allow self", "self_waiver", "self-waiver", "self waiver") != "" {
-		gaps = append(gaps, "self-judge waiver must be external and principal-logged, not verdict-authored")
-	}
-	return info, gaps
-}
-
-func tickVerdictMetadataValue(text string, keys ...string) string {
-	wanted := map[string]bool{}
-	for _, key := range keys {
-		wanted[tickNormalizeMetadataKey(key)] = true
-	}
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact yields no trusted metadata, which
-		// surfaces as an identity gap upstream.
-		return ""
-	}
-	for _, raw := range lines {
-		line := strings.TrimSpace(raw)
-		line = strings.TrimPrefix(line, "-")
-		line = strings.TrimPrefix(strings.TrimSpace(line), "*")
-		line = strings.TrimSpace(line)
-		i := strings.Index(line, ":")
-		if i < 0 {
-			continue
-		}
-		key := tickNormalizeMetadataKey(line[:i])
-		if !wanted[key] {
-			continue
-		}
-		return strings.Trim(strings.TrimSpace(line[i+1:]), "`\"'")
-	}
-	return ""
-}
-
-func tickNormalizeMetadataKey(key string) string {
-	key = strings.ToLower(strings.TrimSpace(key))
-	key = strings.ReplaceAll(key, "-", "_")
-	key = strings.ReplaceAll(key, " ", "_")
-	return key
-}
-
-func tickNormalizeIdentityValue(value string) string {
-	return strings.TrimSpace(value)
-}
-
-func tickNormalizeModelFamily(value string) string {
-	return strings.ToLower(strings.TrimSpace(value))
-}
-
-func tickUnknownModelFamily(family string) bool {
-	switch strings.ToLower(strings.TrimSpace(family)) {
-	case "", "unknown", "none", "n/a", "na", "unset":
-		return true
-	default:
-		return false
-	}
-}
-
-func tickVerdictTokenCounts(text string) (pass, fail int) {
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact yields no PASS token. Returning
-		// (0, 0) lands in the council's default branch (unverified), never a PASS.
-		return 0, 0
-	}
-	passRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*PASS\b`)
-	failRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*FAIL\b`)
-	for _, line := range lines {
-		if passRE.MatchString(line) {
-			pass++
-		}
-		if failRE.MatchString(line) {
-			fail++
-		}
-	}
-	return pass, fail
 }
 
 func tickInstallGuards(rt tickRuntime) error {
@@ -688,8 +431,8 @@ func tickSmoke(rt tickRuntime) error {
 		failLine("1 guard-status NOT active")
 	}
 
-	if !tickVerdictHasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
-		tickVerdictHasCommandsRun("COMMANDS RUN:\n  ao tick guard-status\nREASONS: ok\n") {
+	if !verdictparse.HasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
+		verdictparse.HasCommandsRun("COMMANDS RUN:\n  ao tick guard-status\nREASONS: ok\n") {
 		passLine("2 verdict-gate rejects empty / accepts cited")
 	} else {
 		failLine("2 verdict-gate command body matrix failed")
@@ -713,15 +456,15 @@ func tickSmoke(rt tickRuntime) error {
 	quietRT := rt
 	quietRT.stdout = io.Discard
 	quietRT.stderr = io.Discard
-	if tickExitCode(tickCouncilGate(quietRT, []string{pass1, pass2})) == 0 &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, fail1})) == tickExitDisagree &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, unver})) == tickExitCouncil &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, contra})) == tickExitCouncil {
+	if tickExitCode(runCouncilGate(quietRT, []string{pass1, pass2})) == 0 &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, fail1})) == tickExitDisagree &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, unver})) == tickExitCouncil &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, contra})) == tickExitCouncil {
 		passLine("3 council-gate 2PASS/mixed/unverified/contradictory")
 	} else {
 		failLine("3 council-gate matrix failed")
 	}
-	if !tickVerdictHasCommandsRun("VERDICT: FAIL\n") {
+	if !verdictparse.HasCommandsRun("VERDICT: FAIL\n") {
 		passLine("4 chaos bare-verdict rejected")
 	} else {
 		failLine("4 chaos bare-verdict accepted")
