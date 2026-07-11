@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "family": "beads",
+  "checks": [
+    {
+      "id": "beads-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-beads.XXXXXX); trap 'rm -r \"$tmp\"' EXIT; (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" beads --help >\"$tmp/help\"; grep -q 'Commands that help maintain the bd issue tracker' \"$tmp/help\"; if \"$tmp/ao\" beads verify >\"$tmp/rejected.out\" 2>\"$tmp/rejected.err\"; then exit 1; fi; test ! -s \"$tmp/rejected.out\"; grep -qx 'Error: accepts 1 arg(s), received 0' \"$tmp/rejected.err\"; mkdir -p \"$tmp/repo/.beads\" \"$tmp/bin\"; git -C \"$tmp/repo\" init -q; printf '%s\\n' '#!/usr/bin/env bash' 'printf \"%s\\n\" \"$*\" >>\"$TRACE_FILE\"' 'printf \"[]\\n\"' >\"$tmp/bin/bd\"; chmod +x \"$tmp/bin/bd\"; (cd \"$tmp/repo\" && PATH=\"$tmp/bin:$PATH\" TRACE_FILE=\"$tmp/trace\" \"$tmp/ao\" beads tracker --json >\"$tmp/tracker.json\"); jq -e '.tracker == \"bd\" and .source == \"ledger\" and (.ledger_dir | endswith(\"/.beads\"))' \"$tmp/tracker.json\" >/dev/null; (cd \"$tmp/repo\" && PATH=\"$tmp/bin:$PATH\" TRACE_FILE=\"$tmp/trace\" \"$tmp/ao\" beads exec ready --json >\"$tmp/exec.json\"); grep -qx 'ready --json' \"$tmp/trace\"; jq -e 'type == \"array\" and length == 0' \"$tmp/exec.json\" >/dev/null"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "aliases": {"status": "not_applicable", "reason": "The ao beads command declares no aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "rejected_args": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "stdout": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "stderr": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "exit_classes": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "tracker_selection": {"status": "evidence", "evidence": ["beads-black-box"]},
+    "ordered_effects": {"status": "evidence", "evidence": ["beads-black-box"]}
+  }
+}
