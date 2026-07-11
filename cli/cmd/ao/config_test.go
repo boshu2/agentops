@@ -501,3 +501,37 @@ func TestRunConfig_ShowTable_NoEnvVars(t *testing.T) {
 		t.Errorf("expected '(none set)' for no env vars, got: %q", stdout)
 	}
 }
+
+func TestConfigCommandsRejectPositionalArgs(t *testing.T) {
+	if err := configCmd.Args(configCmd, []string{"junk"}); err == nil {
+		t.Fatal("config accepted an unexpected positional argument")
+	}
+	if err := configModelsCmd.Args(configModelsCmd, []string{"junk"}); err == nil {
+		t.Fatal("config models accepted an unexpected positional argument")
+	}
+}
+
+func TestRunConfigModelsSortsSkillOverrides(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("AGENTOPS_CONFIG", "")
+	if err := os.MkdirAll(filepath.Join(dir, ".agentops"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "models:\n  skill_overrides:\n    zebra: budget\n    alpha: quality\n"
+	if err := os.WriteFile(filepath.Join(dir, ".agentops", "config.yaml"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	oldOutput := output
+	output = "table"
+	defer func() { output = oldOutput }()
+	stdout, err := captureStdout(t, func() error { return runConfigModels(&cobra.Command{}, nil) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	alpha := strings.Index(stdout, "alpha")
+	zebra := strings.Index(stdout, "zebra")
+	if alpha < 0 || zebra < 0 || alpha > zebra {
+		t.Fatalf("skill overrides are not sorted:\n%s", stdout)
+	}
+}
