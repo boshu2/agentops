@@ -777,8 +777,8 @@
     {
       "name": "pawl-review",
       "source_skill": "skills/pawl-review",
-      "source_hash": "3f4868b503f32921d0953ad0dc61ee759225659c6597b48fb328036160c40fe2",
-      "generated_hash": "57925feecf5d484016c77bf4731061d5462cd47ee91977f835510abb5a628b2f"
+      "source_hash": "af01432b4f6c8690877f1bc350bbeed1d0244634c84f7ff0891feb93d0f64c45",
+      "generated_hash": "dce47e82fad40bf934f59ac29e74a253f14672208f51d4c23d2aea49a2f85b04"
     },
     {
       "name": "plan",
