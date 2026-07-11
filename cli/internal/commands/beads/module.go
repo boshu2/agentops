@@ -4,10 +4,14 @@
 package beads
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 )
 
@@ -61,11 +65,14 @@ type Runner interface {
 }
 
 type Module struct {
-	runner Runner
+	runner    Runner
+	resolver  beadsapp.TrackerResolver
+	inspector beadsapp.LedgerInspector
+	executor  beadsapp.TrackerExecutor
 }
 
-func NewModule(runner Runner) Module {
-	return Module{runner: runner}
+func NewModule(runner Runner, resolver beadsapp.TrackerResolver, inspector beadsapp.LedgerInspector, executor beadsapp.TrackerExecutor) Module {
+	return Module{runner: runner, resolver: resolver, inspector: inspector, executor: executor}
 }
 
 func (Module) Contract() clicontract.CommandContract {
@@ -123,8 +130,8 @@ func (module Module) dirCommand() *cobra.Command {
 	command := &cobra.Command{Use: "dir", Short: "Print the resolved live br ledger directory", Args: cobra.NoArgs}
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit {beads_dir, source} as JSON")
 	command.Flags().BoolVar(&options.Require, "require", false, "Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger")
-	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationDir, args, options)
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		return module.runDir(command, options)
 	}
 	return command
 }
@@ -133,8 +140,8 @@ func (module Module) trackerCommand() *cobra.Command {
 	var options Options
 	command := &cobra.Command{Use: "tracker", Short: "Print the resolved beads tracker (bd or br) for this environment", Args: cobra.NoArgs}
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit {tracker, binary, ledger_dir, source} as JSON")
-	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationTracker, args, options)
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		return module.runTracker(command, options)
 	}
 	return command
 }
@@ -202,9 +209,82 @@ func (module Module) execCommand() *cobra.Command {
 		DisableFlagParsing: true,
 	}
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationExec, args, Options{})
+		return module.runExec(command, args)
 	}
 	return command
+}
+
+func (module Module) runDir(command *cobra.Command, options Options) error {
+	if module.resolver == nil || module.inspector == nil {
+		return fmt.Errorf("beads directory ports are not configured")
+	}
+	if !module.resolver.BeadsDirOverride() {
+		if resolved, err := module.resolver.Resolve(); err == nil && resolved.Tracker == beadsapp.TrackerBD {
+			if options.Require {
+				if reason := beadsapp.LedgerMissing(beadsapp.TrackerBD, module.inspector.InspectLedger(resolved.LedgerDir)); reason != "" {
+					return fmt.Errorf("beads dir --require: %s (resolved %s for tracker bd via %s); refusing to print a path a bd write could silently fall back from", reason, resolved.LedgerDir, resolved.Source)
+				}
+			}
+			return writeDirectory(command, options.JSON, resolved.LedgerDir, resolved.Source)
+		}
+	}
+	resolved, err := module.resolver.BRLedger()
+	if err != nil {
+		return err
+	}
+	if options.Require {
+		if reason := beadsapp.LedgerMissing(beadsapp.TrackerBR, module.inspector.InspectLedger(resolved.Path)); reason != "" {
+			return fmt.Errorf("beads dir --require: %s (resolved %s via %s); refusing to print a path a br write could silently fall back from", reason, resolved.Path, resolved.Source)
+		}
+	}
+	return writeDirectory(command, options.JSON, resolved.Path, resolved.Source)
+}
+
+func writeDirectory(command *cobra.Command, asJSON bool, path, source string) error {
+	if asJSON {
+		return json.NewEncoder(command.OutOrStdout()).Encode(map[string]string{"beads_dir": path, "source": source})
+	}
+	_, err := fmt.Fprintln(command.OutOrStdout(), path)
+	return err
+}
+
+func (module Module) runTracker(command *cobra.Command, options Options) error {
+	if module.resolver == nil {
+		return fmt.Errorf("beads tracker resolver is not configured")
+	}
+	resolved, err := module.resolver.Resolve()
+	if err != nil {
+		return err
+	}
+	if options.JSON {
+		return json.NewEncoder(command.OutOrStdout()).Encode(resolved)
+	}
+	output := command.OutOrStdout()
+	fmt.Fprintf(output, "tracker     %s\n", resolved.Tracker)
+	fmt.Fprintf(output, "binary      %s\n", resolved.Binary)
+	fmt.Fprintf(output, "ledger_dir  %s\n", resolved.LedgerDir)
+	fmt.Fprintf(output, "source      %s\n", resolved.Source)
+	return nil
+}
+
+func (module Module) runExec(command *cobra.Command, args []string) error {
+	for _, argument := range args {
+		if argument == "--help" || argument == "-h" {
+			return command.Help()
+		}
+	}
+	if module.executor == nil {
+		return fmt.Errorf("beads tracker executor is not configured")
+	}
+	err := module.executor.Execute(context.Background(), args, beadsapp.ExecStreams{
+		Stdin: command.InOrStdin(), Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(),
+	})
+	var exitError interface{ ExitCode() int }
+	if errors.As(err, &exitError) {
+		command.SilenceUsage = true
+		command.SilenceErrors = true
+	}
+	return err
 }
 
 func (module Module) resumeCommand() *cobra.Command {
