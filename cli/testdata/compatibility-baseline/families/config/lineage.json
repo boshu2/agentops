@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "family": "config",
+  "old_implementation_sha": "bd3f65176e27f7bd0b20589626d7d61a26f6eb3a",
+  "freeze_sha": "3034cfa9bff8b86b46a36f381d06f65192bea425",
+  "fixture_sha256": "3c5dd5a716854332a3985b91b3beb9a12cce656747625fac79371f2e54f10ff8",
+  "ownership_sha256": "0414989420add10ca0f3ce0a5e491a9b5ce9dadd98b346b3ce7ae991e2af9b80",
+  "scope_sha256": "7ab979017b4cf7d74fabcbe09c78f83feb70e740e575565e5daea9237e0e04bb",
+  "migration_state": "migrating"
+}
