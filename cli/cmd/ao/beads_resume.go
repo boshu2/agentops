@@ -15,15 +15,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
@@ -65,30 +62,13 @@ func init() {
 // (assignee + updated_at) BEFORE the claim transfer, so we can record the
 // prior revision. Production: shells out to `br show <id> --json`.
 var beadsResumeShowFunc = func(ctx context.Context, beadID string) (staleBeadRecord, error) {
-	out, err := beadsTrackerCommandContext(ctx, "show", beadID, "--json").Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return staleBeadRecord{}, fmt.Errorf("br show %s exited %d: %s", beadID, exitErr.ExitCode(), string(exitErr.Stderr))
-		}
-		return staleBeadRecord{}, err
-	}
-	return beadsapp.ParseShownBead(out, beadID)
+	return currentBeadsTracker().Show(ctx, beadID)
 }
 
 // beadsResumeClaimFunc is the test seam for performing the atomic update.
 // Production: `br update <id> --claim --actor <agent>`.
 var beadsResumeClaimFunc = func(ctx context.Context, beadID, agent string) error {
-	args := []string{"update", beadID, "--claim"}
-	if agent != "" {
-		args = append(args, "--actor", agent)
-	}
-	cmd := beadsTrackerCommandContext(ctx, args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("br update --claim failed: %w: %s", err, string(out))
-	}
-	return nil
+	return currentBeadsTracker().Claim(ctx, beadID, agent)
 }
 
 // beadsResumeAppendLedger is the test seam for writing the provenance event.
@@ -97,20 +77,10 @@ var beadsResumeClaimFunc = func(ctx context.Context, beadID, agent string) error
 // extends staleEvent with new_claimant + transfer) without us introducing
 // an interface.
 var beadsResumeAppendLedger = func(ledgerPath string, event any) error {
-	if err := os.MkdirAll(filepath.Dir(ledgerPath), 0o755); err != nil {
-		return fmt.Errorf("mkdir ledger dir: %w", err)
-	}
-	f, err := os.OpenFile(ledgerPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("open ledger: %w", err)
-	}
-	defer func() { _ = f.Close() }()
-	enc := json.NewEncoder(f)
-	if err := enc.Encode(event); err != nil {
-		return fmt.Errorf("encode event: %w", err)
-	}
-	return nil
+	return currentBeadsRuntime().AppendEvent(ledgerPath, event)
 }
+
+func currentBeadsRuntime() beadsadapter.Runtime { return beadsadapter.NewRuntime() }
 
 func runBeadsResume(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
@@ -131,7 +101,7 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Compute now (test override OK).
-	now := time.Now().UTC()
+	now := currentBeadsRuntime().Now()
 	if beadsResumeNowOverride != "" {
 		parsed, err := time.Parse(time.RFC3339, beadsResumeNowOverride)
 		if err != nil {
@@ -143,7 +113,7 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	// 3. Resolve the new claimant id.
 	agent := beadsResumeAgentID
 	if agent == "" {
-		agent = os.Getenv("BEADS_ACTOR")
+		agent = currentBeadsRuntime().Actor()
 	}
 	if agent == "" {
 		agent = "ao-beads-resume"
@@ -169,17 +139,9 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	transferred := beadsapp.BuildTransferredEvent(beadID, agent, prior, posterior, now)
 
 	// 7. Resolve ledger path relative to repo root.
-	cwd, err := os.Getwd()
+	ledger, err := currentBeadsRuntime().ResolveRepoPath(beadsResumeLedgerPath)
 	if err != nil {
-		return fmt.Errorf("resolve cwd: %w", err)
-	}
-	root, err := repoRootForBeads(cwd)
-	if err != nil {
-		return fmt.Errorf("resolve repo root: %w", err)
-	}
-	ledger := beadsResumeLedgerPath
-	if !filepath.IsAbs(ledger) {
-		ledger = filepath.Join(root, ledger)
+		return err
 	}
 
 	// Write the full claim_transferred shape (with new_claimant + transfer).
