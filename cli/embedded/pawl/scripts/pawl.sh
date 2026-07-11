@@ -1870,15 +1870,40 @@ def pct(p):
     return lat[min(len(lat)-1,int(round((p/100.0)*(len(lat)-1))))]
 agree=sum(1 for r in rows if r.get("agreement")=="agree")
 dis=n-agree
+# F7 (age-pawl-intent-zhndq.7): per-PANEL legibility. Group by the family-set that served each
+# route so the operator SEES which panel config is healthy vs collapsing — the audit found tri
+# (cc cod agy) reached FULL agreement 0/22 times while dual (cc cod) was fine, and nothing
+# surfaced it. A family-set whose full-agreement rate is <30% over a meaningful sample (>=5
+# routes) is flagged AGREEMENT-COLLAPSE so a bad panel is a visible signal, not silent history.
+def _p50(vals):
+    v=sorted(vals)
+    return v[min(len(v)-1,int(round(0.5*(len(v)-1))))] if v else 0
+groups={}
+for r in rows:
+    fam=(r.get("families") or "(unknown)")
+    g=groups.setdefault(fam,{"routes":0,"agree":0,"lat":[]})
+    g["routes"]+=1
+    if r.get("agreement")=="agree": g["agree"]+=1
+    g["lat"].append(int(r.get("latency_s",0)))
+by_fam={}
+for fam,g in groups.items():
+    rate=round(g["agree"]/g["routes"],3) if g["routes"] else 0
+    by_fam[fam]={"routes":g["routes"],"agree":g["agree"],"agreement_rate":rate,
+                 "latency_p50_s":_p50(g["lat"]),
+                 "collapse":bool(g["routes"]>=5 and rate<0.30)}
 out={"routes":n,"latency_p50_s":pct(50),"latency_p95_s":pct(95),
      "agreement_rate":round(agree/n,3) if n else 0,"agree":agree,"disagreements":dis,
-     "skipped_corrupt":skipped}
+     "by_families":by_fam,"skipped_corrupt":skipped}
 if asjson:
     print(json.dumps(out))
 else:
     print(f"pawl metrics: {n} routed beads")
     print(f"  latency p50={out['latency_p50_s']}s p95={out['latency_p95_s']}s")
     print(f"  agreement {agree}/{n} ({out['agreement_rate']}); disagreements={dis}")
+    print("  by panel (family-set -> full-agreement, p50 latency):")
+    for fam,g in sorted(by_fam.items(), key=lambda kv:-kv[1]["routes"]):
+        warn=" ⚠ AGREEMENT-COLLAPSE (consider benching a family: ao pawl reap/up --dual)" if g["collapse"] else ""
+        print(f"    {fam}: {g['agree']}/{g['routes']} agree ({g['agreement_rate']}), p50={g['latency_p50_s']}s{warn}")
     if skipped:
         print(f"  skipped {skipped} corrupt row(s) in {mf}")
 PY
