@@ -28,15 +28,15 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
 var beadsExecCmd = &cobra.Command{
@@ -153,18 +153,7 @@ func execTracker(cmd *cobra.Command, res trackerResolution, cwd string, args []s
 // its working directory — and any inherited BEADS_DIR is stripped so it cannot
 // mislead bd.
 func beadsExecChildEnv(res trackerResolution, _ string) []string {
-	base := os.Environ()
-	out := make([]string, 0, len(base)+1)
-	for _, e := range base {
-		if strings.HasPrefix(e, "BEADS_DIR=") {
-			continue
-		}
-		out = append(out, e)
-	}
-	if res.Tracker == trackerBR {
-		out = append(out, "BEADS_DIR="+res.LedgerDir)
-	}
-	return out
+	return beadsapp.ChildEnvironment(os.Environ(), beadsapp.TrackerResolution{Tracker: res.Tracker, LedgerDir: res.LedgerDir})
 }
 
 // beadsExecChildDir returns the child's working directory. bd resolves its
@@ -172,26 +161,7 @@ func beadsExecChildEnv(res trackerResolution, _ string) []string {
 // the resolved .beads dir, worktree-aware). br takes its ledger from BEADS_DIR,
 // so it runs from the caller's cwd unchanged.
 func beadsExecChildDir(res trackerResolution, cwd string) string {
-	if res.Tracker == trackerBD {
-		return filepath.Dir(res.LedgerDir)
-	}
-	return cwd
-}
-
-// brShowDependent is the subset of a dependent entry in `br show <id> --json`.
-type brShowDependent struct {
-	ID             string `json:"id"`
-	DependencyType string `json:"dependency_type"`
-}
-
-// brShowIssue is the subset of a `br show <id> --json` array element we read.
-// `br show` emits a JSON ARRAY of matched issues, each carrying a `dependents`
-// array. (The full-output SHAPE divergence between the tracker `--json` outputs
-// is now normalized for the READ verbs by execTrackerBDReadJSON — age-f07z; this
-// command only makes the child-id SET available for both trackers.)
-type brShowIssue struct {
-	ID         string            `json:"id"`
-	Dependents []brShowDependent `json:"dependents"`
+	return beadsapp.ChildDirectory(beadsapp.TrackerResolution{Tracker: res.Tracker, LedgerDir: res.LedgerDir}, cwd)
 }
 
 // runBeadsExecChildrenBR synthesizes `children` for br from
@@ -224,17 +194,13 @@ func runBeadsExecChildrenBR(cmd *cobra.Command, res trackerResolution, cwd strin
 		}
 		return fmt.Errorf("br show %s --json: %w", epic, err)
 	}
-	var issues []brShowIssue
-	if err := json.Unmarshal(stdout.Bytes(), &issues); err != nil {
+	children, err := beadsapp.BRChildren(stdout.Bytes())
+	if err != nil {
 		return fmt.Errorf("parse br show %s --json: %w", epic, err)
 	}
 	out := cmd.OutOrStdout()
-	for _, iss := range issues {
-		for _, d := range iss.Dependents {
-			if d.DependencyType == "parent-child" {
-				fmt.Fprintln(out, d.ID)
-			}
-		}
+	for _, child := range children {
+		fmt.Fprintln(out, child)
 	}
 	return nil
 }
@@ -243,22 +209,12 @@ func runBeadsExecChildrenBR(cmd *cobra.Command, res trackerResolution, cwd strin
 // output shape ao normalizes to the canonical (br) shape. Write verbs and read
 // verbs without --json are streamed verbatim (age-f07z).
 func isBeadsReadVerb(verb string) bool {
-	switch verb {
-	case "list", "ready", "show":
-		return true
-	default:
-		return false
-	}
+	return beadsapp.IsReadVerb(verb)
 }
 
 // argsHaveJSONFlag reports whether the forwarded args request JSON output.
 func argsHaveJSONFlag(args []string) bool {
-	for _, a := range args {
-		if a == "--json" {
-			return true
-		}
-	}
-	return false
+	return beadsapp.ArgsHaveJSONFlag(args)
 }
 
 // execTrackerBDReadJSON runs a bd READ command with --json, CAPTURES its stdout
@@ -301,12 +257,6 @@ func execTrackerBDReadJSON(cmd *cobra.Command, res trackerResolution, cwd string
 	return nil
 }
 
-// canonicalIssueKeys are the fields every shape-parsing skill selector relies
-// on. bd omits an empty description (and, for `show`, the dependents[] array —
-// it reports only a dependent_count), so the reshape guarantees these keys
-// EXIST (as null / []) and jq selectors never break.
-var canonicalIssueKeys = []string{"id", "title", "description", "priority", "status"}
-
 // canonicalizeBDReadJSON reshapes bd's `<verb> --json` stdout into the canonical
 // br shape:
 //
@@ -322,69 +272,5 @@ var canonicalIssueKeys = []string{"id", "title", "description", "priority", "sta
 // on bd the reshape guarantees an EMPTY dependents[]; bd child enumeration
 // should use `ao beads exec children` (bd-native).
 func canonicalizeBDReadJSON(verb string, raw []byte) ([]byte, error) {
-	elems, err := decodeIssueArray(raw)
-	if err != nil {
-		return nil, err
-	}
-	if elems == nil {
-		// A missing/empty payload becomes an empty set, never JSON null — so
-		// `.issues | length` and `length` resolve to 0 instead of erroring.
-		elems = []map[string]json.RawMessage{}
-	}
-	isShow := verb == "show"
-	for _, e := range elems {
-		ensureCanonicalIssueKeys(e, isShow)
-	}
-	if verb == "list" {
-		return json.Marshal(map[string]any{"issues": elems})
-	}
-	// ready + show are bare arrays in the canonical shape.
-	return json.Marshal(elems)
-}
-
-// decodeIssueArray decodes a bd read payload into issue objects, tolerating a
-// bare JSON array (bd list/ready/show) or a {"issues":[...]} envelope. Each
-// element is kept as a raw field map so no field is lost or retyped.
-func decodeIssueArray(raw []byte) ([]map[string]json.RawMessage, error) {
-	trimmed := bytes.TrimSpace(raw)
-	if len(trimmed) == 0 {
-		return nil, fmt.Errorf("empty bd --json payload")
-	}
-	switch trimmed[0] {
-	case '[':
-		var arr []map[string]json.RawMessage
-		if err := json.Unmarshal(trimmed, &arr); err != nil {
-			return nil, err
-		}
-		return arr, nil
-	case '{':
-		var obj struct {
-			Issues []map[string]json.RawMessage `json:"issues"`
-		}
-		if err := json.Unmarshal(trimmed, &obj); err != nil {
-			return nil, err
-		}
-		return obj.Issues, nil
-	default:
-		return nil, fmt.Errorf("unexpected bd --json payload (not an array or object): %.32q", trimmed)
-	}
-}
-
-// ensureCanonicalIssueKeys adds any missing canonical field to elem as null and
-// (for `show`) guarantees a dependents[] array, so consumer jq selectors resolve
-// against a stable shape regardless of which fields bd emitted.
-func ensureCanonicalIssueKeys(elem map[string]json.RawMessage, isShow bool) {
-	if elem == nil {
-		return
-	}
-	for _, k := range canonicalIssueKeys {
-		if _, ok := elem[k]; !ok {
-			elem[k] = json.RawMessage("null")
-		}
-	}
-	if isShow {
-		if _, ok := elem["dependents"]; !ok {
-			elem["dependents"] = json.RawMessage("[]")
-		}
-	}
+	return beadsapp.CanonicalizeBDReadJSON(verb, raw)
 }
