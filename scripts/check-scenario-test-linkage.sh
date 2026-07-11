@@ -42,6 +42,11 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Shared shrink-only ratchet mechanics (allowlist parse + parameterized stale
+# predicate — this gate KEEPS its exists-only stale semantics; upgrading to
+# full stale-prune is age-scenario-linkage-stale-upgrade-570y, a separate
+# blocking-gate behavior change). age-ratchet-lib-extraction-bv7d.7.
+. "$REPO_ROOT/scripts/lib/ratchet.sh"
 ALLOWLIST="$REPO_ROOT/scripts/.scenario-linkage-allow"
 WARN_ONLY=0
 JSON=0
@@ -59,16 +64,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Load allowlisted feature files (repo-relative paths, one per line; '#' comments
-# and blank lines ignored).
+# and blank lines ignored) via the shared lib (trailing-comment mode = the
+# original strip-trailing-#-then-trim parse; an unreadable allowlist is loud).
 declare -A ALLOWED=()
-if [[ -f "$ALLOWLIST" ]]; then
-    while IFS= read -r entry; do
-        entry="${entry%%#*}"                       # strip trailing comment
-        entry="$(printf '%s' "$entry" | xargs)"    # trim whitespace
-        [[ -z "$entry" ]] && continue
-        ALLOWED["$entry"]=1
-    done < "$ALLOWLIST"
-fi
+allow_data="$(ratchet_load_pinned "$ALLOWLIST" trailing-comment)" \
+    || { echo "check-scenario-test-linkage: cannot read $ALLOWLIST" >&2; exit 2; }
+while IFS= read -r entry; do
+    [[ -n "$entry" ]] && ALLOWED["$entry"]=1
+done <<< "$allow_data"
 
 # Resolve a @covered-by target to an error string, or empty on success.
 # Arg: the target spec after "@covered-by:" — "path" or "path::Name".
@@ -203,14 +206,16 @@ while IFS= read -r -d '' feature; do
 done < <(find "$REPO_ROOT/skills" -path '*/references/*.feature' -type f -print0 | sort -z)
 
 # Detect stale allowlist entries: a listed file that no longer exists.
+# (Exists-only predicate via the lib — deliberately NOT the full stale-prune;
+# emitted in allowlist-file order, deterministic.)
+_allow_entry_exists() { [[ -f "$REPO_ROOT/$1" ]]; }
 stale_allow=0
-for rel in "${!ALLOWED[@]}"; do
-    if [[ ! -f "$REPO_ROOT/$rel" ]]; then
-        ERROR_LINES+=("allowlist: '$rel' is listed in scripts/.scenario-linkage-allow but the file no longer exists — remove the stale entry")
-        errors=$((errors + 1))
-        stale_allow=$((stale_allow + 1))
-    fi
-done
+while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    ERROR_LINES+=("allowlist: '$rel' is listed in scripts/.scenario-linkage-allow but the file no longer exists — remove the stale entry")
+    errors=$((errors + 1))
+    stale_allow=$((stale_allow + 1))
+done < <(ratchet_stale_entries_by _allow_entry_exists "$ALLOWLIST" trailing-comment)
 
 if [[ $JSON -eq 1 ]]; then
     printf '{"feature_files":%d,"allowlisted_files":%d,"scenarios_total":%d,"scenarios_linked":%d,"scenarios_allowlisted":%d,"errors":%d,"stale_allowlist_entries":%d,"result":"%s"}\n' \
