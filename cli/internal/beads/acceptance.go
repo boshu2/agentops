@@ -17,56 +17,35 @@
 // It is advisory by default (prints a per-bead verdict, exits 0) so it can run
 // over today's ledger as an adoption ratchet. With --strict, any FAIL or
 // UNDEFINED maps to a non-zero exit — the gate posture for new/changed beads.
-package main
+package beads
 
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 	"unicode"
 
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/scenarios"
 )
 
-// execBR is the single entry point for shelling out to br (beads_rust), the
-// sanctioned tracker. It is a package var so tests inject a fake without a live
-// ledger — the br-native analog of beadsTrackerOutput. BEADS_DIR is inherited from the
-// process environment (exec.Command keeps os.Environ by default).
-var execBR = func(args ...string) ([]byte, error) {
-	cwd, _ := os.Getwd()
-	resolution, err := resolveTracker(cwd, os.Environ())
-	if err != nil {
-		return nil, err
-	}
-	if resolution.Tracker != trackerBR {
-		return nil, fmt.Errorf("verify-acceptance requires the BR acceptance wire; selected tracker is %s", resolution.Tracker)
-	}
-	cmd := exec.Command(resolution.Binary, args...) // #nosec G204 -- selected BR binary.
-	return cmd.Output()
-}
-
-// acceptBead is the subset of a br bead the verifier needs.
-type acceptBead struct {
+// AcceptanceBead is the subset of a br bead the verifier needs.
+type AcceptanceBead struct {
 	ID          string `json:"id"`
 	IssueType   string `json:"issue_type"`
 	Description string `json:"description"`
 }
 
-// acceptanceVerdict is the per-bead outcome.
-type acceptanceVerdict string
+// AcceptanceVerdict is the per-bead outcome.
+type AcceptanceVerdict string
 
 const (
-	acPass      acceptanceVerdict = "PASS"
-	acFail      acceptanceVerdict = "FAIL"
-	acUndefined acceptanceVerdict = "UNDEFINED"
+	AcceptancePass      AcceptanceVerdict = "PASS"
+	AcceptanceFail      AcceptanceVerdict = "FAIL"
+	AcceptanceUndefined AcceptanceVerdict = "UNDEFINED"
 )
 
 // brErrorEnvelope matches br's `{"error": {...}}` failure shape. br emits this
@@ -80,10 +59,10 @@ type brErrorEnvelope struct {
 	} `json:"error"`
 }
 
-// parseBeadsFromBRJSON parses `br show <id...> --format json` output into beads.
+// ParseBeadsFromBRJSON parses `br show <id...> --format json` output into beads.
 // br emits a JSON array; it emits an `{"error":...}` object (exit 0) when an id
 // is not found — that object is rejected, never coerced to a bead.
-func parseBeadsFromBRJSON(out []byte) ([]acceptBead, error) {
+func ParseBeadsFromBRJSON(out []byte) ([]AcceptanceBead, error) {
 	trimmed := bytes.TrimSpace(out)
 	if len(trimmed) == 0 {
 		return nil, fmt.Errorf("br returned no output")
@@ -95,7 +74,7 @@ func parseBeadsFromBRJSON(out []byte) ([]acceptBead, error) {
 		}
 		return nil, fmt.Errorf("br returned an object, not the expected bead array")
 	}
-	var beads []acceptBead
+	var beads []AcceptanceBead
 	if err := json.Unmarshal(trimmed, &beads); err != nil {
 		return nil, fmt.Errorf("parse br json array: %w", err)
 	}
@@ -164,29 +143,29 @@ func isPlaceholder(s string) bool {
 // cross-family REFUTE).
 var acIDPattern = regexp.MustCompile(`^ac-[a-z0-9][a-z0-9._-]*\.[0-9]+$`)
 
-// checkAcceptanceContract applies the per-type acceptance contract and returns
+// CheckAcceptanceContract applies the per-type acceptance contract and returns
 // the verdict plus, for FAIL, the named missing elements. Beyond the per-type
 // SHAPE check it also runs CONTENT-QUALITY validation (age-xmkn): a section or
 // criterion that is structurally present but only a placeholder ("TBD"), and a
 // fenced acceptance_criteria block whose parsed criteria violate the canonical
 // authored contract, both FAIL — even when the shape check alone would pass.
-func checkAcceptanceContract(b acceptBead) (acceptanceVerdict, []string) {
+func CheckAcceptanceContract(b AcceptanceBead) (AcceptanceVerdict, []string) {
 	verdict, missing := checkAcceptanceShape(b)
 	// Content-quality only sharpens a would-be PASS into a FAIL; it never rescues
 	// an already-failing or UNDEFINED verdict. A present-but-invalid
 	// acceptance_criteria block is a content defect on any type.
-	if verdict == acPass {
-		if problems := validateAcceptanceCriteriaContent(b.Description); len(problems) > 0 {
-			return acFail, problems
+	if verdict == AcceptancePass {
+		if problems := ValidateAcceptanceCriteriaContent(b.Description); len(problems) > 0 {
+			return AcceptanceFail, problems
 		}
 	}
 	return verdict, missing
 }
 
 // checkAcceptanceShape is the per-type SHAPE contract (the original
-// checkAcceptanceContract body): the right section headings / structural tokens
+// CheckAcceptanceContract body): the right section headings / structural tokens
 // for the bead's issue_type, now with placeholder-only bodies rejected.
-func checkAcceptanceShape(b acceptBead) (acceptanceVerdict, []string) {
+func checkAcceptanceShape(b AcceptanceBead) (AcceptanceVerdict, []string) {
 	desc := b.Description
 	switch strings.ToLower(strings.TrimSpace(b.IssueType)) {
 	case "feature":
@@ -198,9 +177,9 @@ func checkAcceptanceShape(b acceptBead) (acceptanceVerdict, []string) {
 			missing = append(missing, "test: a TDD signal (acceptance_criteria / check_command / check_type: test_pass)")
 		}
 		if len(missing) > 0 {
-			return acFail, missing
+			return AcceptanceFail, missing
 		}
-		return acPass, nil
+		return AcceptancePass, nil
 	case "spike":
 		return single(desc, []string{"decision", "decisions"}, "decision-criteria: a 'Decision' / 'Decision Criteria' section heading")
 	case "design":
@@ -218,11 +197,11 @@ func checkAcceptanceShape(b acceptBead) (acceptanceVerdict, []string) {
 		// children. Returning N/A here was a fail-open (cross-family REFUTE):
 		// `--strict` would pass a task/epic with no acceptance at all.
 		if hasAcceptanceSignal(desc) {
-			return acPass, nil
+			return AcceptancePass, nil
 		}
-		return acFail, []string{"acceptance: a measurable acceptance_criteria block or 'Acceptance' section heading (every bead requires acceptance per skills/plan/SKILL.md)"}
+		return AcceptanceFail, []string{"acceptance: a measurable acceptance_criteria block or 'Acceptance' section heading (every bead requires acceptance per skills/plan/SKILL.md)"}
 	default:
-		return acUndefined, nil
+		return AcceptanceUndefined, nil
 	}
 }
 
@@ -303,11 +282,11 @@ func sectionHasRealContent(desc string, keywords []string) bool {
 
 // single passes when a markdown heading matches one of the keywords AND that
 // section carries real (non-placeholder) body content — not just the heading.
-func single(desc string, keywords []string, missingMsg string) (acceptanceVerdict, []string) {
+func single(desc string, keywords []string, missingMsg string) (AcceptanceVerdict, []string) {
 	if sectionHasRealContent(desc, keywords) {
-		return acPass, nil
+		return AcceptancePass, nil
 	}
-	return acFail, []string{missingMsg}
+	return AcceptanceFail, []string{missingMsg}
 }
 
 // sectionBody returns the body lines under the FIRST heading whose words
@@ -344,20 +323,20 @@ func sectionBody(desc string, keywords []string) (string, bool) {
 
 // checkListContract passes when a matching section heading exists AND at least
 // one bullet list item appears WITHIN that section.
-func checkListContract(desc string, keywords []string, missingMsg string) (acceptanceVerdict, []string) {
+func checkListContract(desc string, keywords []string, missingMsg string) (AcceptanceVerdict, []string) {
 	if body, ok := sectionBody(desc, keywords); ok && hasListItem(body) {
-		return acPass, nil
+		return AcceptancePass, nil
 	}
-	return acFail, []string{missingMsg}
+	return AcceptanceFail, []string{missingMsg}
 }
 
 // checkCheckboxContract passes when a matching section heading exists AND at
 // least one markdown checkbox appears WITHIN that section.
-func checkCheckboxContract(desc string, keywords []string, missingMsg string) (acceptanceVerdict, []string) {
+func checkCheckboxContract(desc string, keywords []string, missingMsg string) (AcceptanceVerdict, []string) {
 	if body, ok := sectionBody(desc, keywords); ok && hasCheckbox(body) {
-		return acPass, nil
+		return AcceptancePass, nil
 	}
-	return acFail, []string{missingMsg}
+	return AcceptanceFail, []string{missingMsg}
 }
 
 // acListItem matches a REAL markdown list item: an unordered (-,*,+) or ordered
@@ -465,13 +444,13 @@ func extractAcceptanceCriteriaYAML(desc string) string {
 	return strings.Join(out, "\n")
 }
 
-// validateAcceptanceCriteriaContent parses the embedded acceptance_criteria block
+// ValidateAcceptanceCriteriaContent parses the embedded acceptance_criteria block
 // and validates each criterion against the canonical authored contract (age-xmkn):
 // a measurable (non-placeholder) description, a valid check_type, a check_command
 // for runnable check_types, and agent_judge when check_type == custom_rubric. It
 // returns content-quality problems (empty when the block is absent or valid). A
 // present-but-unparseable block is itself a problem (a malformed contract).
-func validateAcceptanceCriteriaContent(desc string) []string {
+func ValidateAcceptanceCriteriaContent(desc string) []string {
 	raw := extractAcceptanceCriteriaYAML(desc)
 	if raw == "" {
 		return nil // no block present — the SHAPE check owns "block required"
@@ -513,21 +492,36 @@ func validateAcceptanceCriteriaContent(desc string) []string {
 	return problems
 }
 
-type acceptanceResult struct {
+type AcceptanceResult struct {
 	BeadID    string            `json:"bead_id"`
 	IssueType string            `json:"issue_type"`
-	Verdict   acceptanceVerdict `json:"verdict"`
+	Verdict   AcceptanceVerdict `json:"verdict"`
 	Missing   []string          `json:"missing,omitempty"`
 }
 
-func executeBeadsVerifyAcceptance(cmd *cobra.Command, ids []string, strict, asJSON bool) error {
-	out, err := execBR(append([]string{"show", "--format", "json"}, ids...)...)
-	if err != nil {
-		return fmt.Errorf("br show %v: %w", ids, err)
+type AcceptanceRepository interface {
+	ShowAcceptance([]string) ([]byte, error)
+}
+
+type AcceptanceUseCases interface {
+	VerifyAcceptance([]string) ([]AcceptanceResult, bool, error)
+}
+
+type AcceptanceService struct {
+	Repository AcceptanceRepository
+}
+
+func (service AcceptanceService) VerifyAcceptance(ids []string) ([]AcceptanceResult, bool, error) {
+	if service.Repository == nil {
+		return nil, false, fmt.Errorf("beads acceptance repository is not configured")
 	}
-	beads, err := parseBeadsFromBRJSON(out)
+	out, err := service.Repository.ShowAcceptance(ids)
 	if err != nil {
-		return fmt.Errorf("read beads: %w", err)
+		return nil, false, fmt.Errorf("br show %v: %w", ids, err)
+	}
+	beads, err := ParseBeadsFromBRJSON(out)
+	if err != nil {
+		return nil, false, fmt.Errorf("read beads: %w", err)
 	}
 
 	// Defense-in-depth (cross-family REFUTE): never silently verify fewer beads
@@ -546,41 +540,20 @@ func executeBeadsVerifyAcceptance(cmd *cobra.Command, ids []string, strict, asJS
 		}
 	}
 	if len(absent) > 0 {
-		return fmt.Errorf("br did not return requested bead(s): %s", strings.Join(absent, ", "))
+		return nil, false, fmt.Errorf("br did not return requested bead(s): %s", strings.Join(absent, ", "))
 	}
 
-	results := make([]acceptanceResult, 0, len(beads))
+	results := make([]AcceptanceResult, 0, len(beads))
 	nonPass := false
 	for _, b := range beads {
-		v, missing := checkAcceptanceContract(b)
-		results = append(results, acceptanceResult{BeadID: b.ID, IssueType: b.IssueType, Verdict: v, Missing: missing})
-		if v == acFail || v == acUndefined {
+		v, missing := CheckAcceptanceContract(b)
+		results = append(results, AcceptanceResult{BeadID: b.ID, IssueType: b.IssueType, Verdict: v, Missing: missing})
+		if v == AcceptanceFail || v == AcceptanceUndefined {
 			nonPass = true
 		}
 	}
 
-	if asJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(results); err != nil {
-			return err
-		}
-	} else {
-		for _, r := range results {
-			fmt.Fprintf(cmd.OutOrStdout(), "%s [%s] %s\n", r.Verdict, r.IssueType, r.BeadID)
-			for _, m := range r.Missing {
-				fmt.Fprintf(cmd.OutOrStdout(), "    missing: %s\n", m)
-			}
-		}
-	}
-
-	if strict && nonPass {
-		return &beadsVerdictError{code: 1}
-	}
-	return nil
+	return results, nonPass, nil
 }
 
-// asBeadsExit is a thin errors.As wrapper used by tests.
-func asBeadsExit(err error, target **beadsVerdictError) bool {
-	return errors.As(err, target)
-}
+var _ AcceptanceUseCases = AcceptanceService{}

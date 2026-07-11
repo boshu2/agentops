@@ -1,13 +1,66 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	beadscommands "github.com/boshu2/agentops/cli/internal/commands/beads"
 	"github.com/spf13/cobra"
 )
+
+type acceptBead = beadsapp.AcceptanceBead
+type acceptanceVerdict = beadsapp.AcceptanceVerdict
+
+const (
+	acPass      = beadsapp.AcceptancePass
+	acFail      = beadsapp.AcceptanceFail
+	acUndefined = beadsapp.AcceptanceUndefined
+)
+
+var parseBeadsFromBRJSON = beadsapp.ParseBeadsFromBRJSON
+var checkAcceptanceContract = beadsapp.CheckAcceptanceContract
+var validateAcceptanceCriteriaContent = beadsapp.ValidateAcceptanceCriteriaContent
+
+var execBR = func(...string) ([]byte, error) { return nil, errors.New("execBR test seam is not configured") }
+
+type acceptanceRepositoryFunc func([]string) ([]byte, error)
+
+func (function acceptanceRepositoryFunc) ShowAcceptance(ids []string) ([]byte, error) {
+	return function(ids)
+}
+
+func executeBeadsVerifyAcceptance(command *cobra.Command, ids []string, strict, asJSON bool) error {
+	service := beadsapp.AcceptanceService{Repository: acceptanceRepositoryFunc(func(ids []string) ([]byte, error) {
+		return execBR(append([]string{"show", "--format", "json"}, ids...)...)
+	})}
+	results, nonPass, err := service.VerifyAcceptance(ids)
+	if err != nil {
+		return err
+	}
+	if asJSON {
+		encoder := json.NewEncoder(command.OutOrStdout())
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(results); err != nil {
+			return err
+		}
+	} else {
+		for _, result := range results {
+			fmt.Fprintf(command.OutOrStdout(), "%s [%s] %s\n", result.Verdict, result.IssueType, result.BeadID)
+			for _, missing := range result.Missing {
+				fmt.Fprintf(command.OutOrStdout(), "    missing: %s\n", missing)
+			}
+		}
+	}
+	if strict && nonPass {
+		return &beadsVerdictError{code: 1}
+	}
+	return nil
+}
+
+func asBeadsExit(err error, target **beadsVerdictError) bool { return errors.As(err, target) }
 
 // White-box behavior tests keep private throwaway commands for stream and flag
 // control. Production command ownership lives in internal/commands/beads.
@@ -94,7 +147,7 @@ func executeBeadsExec(command *cobra.Command, args []string) error {
 func newTestBeadsCommand(name string) *cobra.Command {
 	tracker := currentBeadsTracker()
 	runtime := beadsadapter.NewRuntime()
-	root := beadscommands.NewModule(nil, tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker, runtime, runtime, nil, nil).Command()
+	root := beadscommands.NewModule(tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker, runtime, runtime, nil, nil, nil, nil).Command()
 	child, _, err := root.Find([]string{name})
 	if err != nil || child == nil {
 		panic("missing test beads command " + name)
