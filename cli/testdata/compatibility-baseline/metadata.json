@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "execution_base": "a681d7e7c00a876a17a51efbf239f843806ff9c0",
+  "normalized_fields": [
+    "tool_version",
+    "platform.os",
+    "platform.arch"
+  ],
+  "profiles": {
+    "default": {
+      "tags": [],
+      "sha256": "0a619de72566c772b20c89c0d28589d87e9a015dd91ef6fba57f85bf87842a29"
+    },
+    "flywheel": {
+      "tags": [
+        "flywheel"
+      ],
+      "sha256": "d77d6f67e431197e6c94755e579e043dd03592e7413ad7677475b09c36d27a7f"
+    },
+    "legacy": {
+      "tags": [
+        "legacy"
+      ],
+      "sha256": "5d141cc12abb55779f5be5a73989672e23db840a6d75c6969fdbea0d2d1f9e3b"
+    },
+    "combined": {
+      "tags": [
+        "flywheel",
+        "legacy"
+      ],
+      "sha256": "529732581f0734d6ef990be5c85d684b5e18982b185fc6dd215bd87cfda34c28"
+    }
+  }
+}
