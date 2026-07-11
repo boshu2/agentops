@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -167,6 +169,43 @@ func TestClaimCheckCommandRegistered(t *testing.T) {
 	}
 	if !strings.Contains(out, "--changed") || !strings.Contains(out, "--base") {
 		t.Fatalf("help missing expected flags:\n%s", out)
+	}
+}
+
+func TestClaimCheckAcceptsNoPositionals(t *testing.T) {
+	if claimCheckCmd.Args == nil {
+		t.Fatal("claim check must declare an explicit positional-argument policy")
+	}
+	if err := claimCheckCmd.Args(claimCheckCmd, nil); err != nil {
+		t.Fatalf("claim check rejected zero positional arguments: %v", err)
+	}
+	if err := claimCheckCmd.Args(claimCheckCmd, []string{"unexpected"}); err == nil {
+		t.Fatal("claim check accepted an unexpected positional argument")
+	}
+}
+
+func TestClaimBindingsPathUsesRepositoryRoot(t *testing.T) {
+	repo := t.TempDir()
+	initMinimalGitRepo(t, repo)
+	subdir := filepath.Join(repo, "nested")
+	if err := os.Mkdir(subdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := testProjectDir
+	testProjectDir = subdir
+	t.Cleanup(func() { testProjectDir = old })
+
+	path, err := claimBindingsPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := resolveRepoRoot(subdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(root, ".agents", "findings", "evidence-bindings.jsonl")
+	if path != want {
+		t.Fatalf("claimBindingsPath() = %q, want repo-rooted %q", path, want)
 	}
 }
 

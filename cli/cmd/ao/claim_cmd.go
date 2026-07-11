@@ -58,6 +58,7 @@ var claimListCmd = &cobra.Command{
 var claimCheckCmd = &cobra.Command{
 	Use:   "check --changed [--base <ref>]",
 	Short: "Report proof cards for changed public claims",
+	Args:  cobra.NoArgs,
 	Long: `Report read-only proof cards for changed public claim markers.
 
 The checker compares the current branch/worktree to a base ref, finds changed
@@ -278,7 +279,7 @@ func validateEvidenceLevelString(s string) error {
 }
 
 func claimBindingsPath() (string, error) {
-	cwd, err := resolveProjectDir()
+	cwd, err := repoRootOrCwd()
 	if err != nil {
 		return "", err
 	}
