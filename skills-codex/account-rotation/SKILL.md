@@ -12,6 +12,18 @@ description: Switch coding-agent accounts on a usage/rate
 > — because the credential *layer* differs by OS+agent. This skill routes; the
 > tools do the swap.
 
+## Critical Constraints
+
+- **Route from both host and agent family. Why:** macOS Claude credentials live
+  in Keychain, while the other supported routes use file-backed credentials;
+  choosing from the agent name alone can report success without changing the
+  credential the next process reads.
+- **Verify account identity, not token bytes. Why:** OAuth can issue distinct
+  tokens for the same account, so token hashes cannot prove that quota moved to
+  a different subscription.
+- **Treat rotation as next-process state. Why:** a running agent keeps its token
+  in memory; the new credential takes effect only after that CLI is relaunched.
+
 ## Quick Start — route first
 
 ```
@@ -88,6 +100,25 @@ caam use codex acct-a   && <spawn lane A>;  caam next codex      && <spawn lane 
 ```
 A dispatcher's limit-hit hook calls `claude-acct use` on Mac / `caam next` on
 Linux, then re-dispatches the lane's work.
+
+## Output Specification
+
+- **Artifact directory:** stdout only; this skill writes no repository artifact
+  and leaves credential storage to `claude-acct` or `caam`.
+- **Filename convention:** none. Report one rotation receipt in the response
+  with the selected route, command, target account/profile, and relaunch action.
+- **Serialization/schema format:** UTF-8 text with the fields `route`, `command`,
+  `target`, `verification`, and `relaunch_required`.
+- **Validator command:** run `claude-acct current` for macOS Claude, otherwise
+  `caam status <tool>`, and include the observed identity/status in the receipt.
+- **Downstream handoff:** relaunch the affected CLI or re-dispatch the lane from
+  its worktree and bead after the validator confirms the intended account.
+
+## Quality Rubric
+
+- [ ] The chosen route names both the host and the agent family.
+- [ ] The receipt includes identity/status observed from the matching validator.
+- [ ] The handoff explicitly says whether a relaunch or lane re-dispatch remains.
 
 ## Navi-rotate (the cross-model helper rotates a peer — trilateral)
 
