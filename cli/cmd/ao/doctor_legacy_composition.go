@@ -12,3 +12,4 @@ func newLegacyDoctorService() doctorapp.LegacyService {
 
 var doctorReadService = doctorapp.NewReadService(version, doctoradapter.ReadRuntime{ToolVersion: version}, doctoradapter.ReadGateway{})
 var doctorMutationService = doctorapp.NewMutationService(doctoradapter.MutationRuntime{ToolVersion: version}, doctoradapter.MutationGateway{})
+var doctorMaintenanceService = doctorapp.NewMaintenanceService(doctoradapter.MaintenanceRuntime{}, doctoradapter.MaintenanceGateway{})

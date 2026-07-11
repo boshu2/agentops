@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -231,11 +229,9 @@ func newDoctorUndoCmd() *cobra.Command {
 		Short: "Restore from .doctor/runs/<run-id>/backups/ (run-id may be 'latest')",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-			}
-			res, uerr := doctor.Undo(cwd, args[0], doctorUndoStrict, doctorDryRun)
+			res, uerr := doctorMaintenanceService.Undo(cmd.Context(), doctor.UndoRequest{
+				RunID: args[0], Strict: doctorUndoStrict, DryRun: doctorDryRun,
+			})
 			if uerr != nil {
 				if doctorWantsJSON() {
 					_ = printDoctorJSON(cmd, map[string]any{
@@ -319,23 +315,24 @@ func newDoctorGcCmd() *cobra.Command {
 		Use:   "gc",
 		Short: "Prune old runs (requires --yes and --before <date>)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-			}
-			var cutoff time.Time
-			if doctorGCBefore != "" {
-				parsed, perr := time.Parse("2006-01-02", doctorGCBefore)
-				if perr != nil {
-					return &doctorExitError{code: doctor.ExitUsage, msg: "invalid --before date (want YYYY-MM-DD)"}
-				}
-				cutoff = parsed
-			}
-			pruned, gerr := doctor.GC(cwd, cutoff, doctorGCYes)
+			result, gerr := doctorMaintenanceService.GC(cmd.Context(), doctor.GCRequest{
+				Before: doctorGCBefore, Yes: doctorGCYes, DryRun: doctorDryRun,
+			})
 			if gerr != nil {
-				return &doctorExitError{code: doctor.ExitUsage, msg: gerr.Error()}
+				var usageFailure *doctor.UsageError
+				if errors.As(gerr, &usageFailure) {
+					return &doctorExitError{code: doctor.ExitUsage, msg: gerr.Error()}
+				}
+				return &doctorExitError{code: doctor.ExitIOError, msg: gerr.Error()}
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "pruned %d run(s)\n", pruned)
+			if doctorWantsJSON() {
+				return printDoctorJSON(cmd, result)
+			}
+			if result.DryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "would prune %d run(s)\n", result.Matched)
+				return nil
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "pruned %d run(s)\n", result.Pruned)
 			return nil
 		},
 	}
