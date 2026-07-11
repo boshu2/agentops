@@ -2103,6 +2103,24 @@ ao provenance position [flags]
       --json   Emit machine-readable JSON (stdout-as-data)
 ```
 
+#### `ao provenance reconcile`
+
+Scan the pawl-verdicts dir (.agents/pawl-verdicts/*.json) and, for every
+
+```
+ao provenance reconcile [flags]
+```
+
+**Flags:**
+
+```
+      --dir string   Verdicts dir (default: <repo>/.agents/pawl-verdicts)
+      --emit         Re-emit missing ledger edges for unbound verdicts
+      --force        Run even with an uncommitted ledger worktree
+  -h, --help         help for reconcile
+      --json         Emit the reconcile result as JSON
+```
+
 #### `ao provenance show`
 
 Render the human story of one change from the committed provenance

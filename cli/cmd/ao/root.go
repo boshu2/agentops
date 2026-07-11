@@ -143,6 +143,12 @@ func Execute() {
 			// verdict + defects; propagate the code with no extra cobra noise.
 			os.Exit(pawlReviewErr.ExitCode())
 		}
+		var reconcileErr *reconcileExitError
+		if errors.As(err, &reconcileErr) {
+			// ao provenance reconcile: 0 clean · 1 unbound/emit-failed · 2 usage. The
+			// command already printed its report/reason; propagate the code cleanly.
+			os.Exit(reconcileErr.ExitCode())
+		}
 		var verifyPrePushErr *verifyPrePushExitError
 		if errors.As(err, &verifyPrePushErr) {
 			// The exit code IS the decision in `ao verify pre-push` (0 allow · 1
