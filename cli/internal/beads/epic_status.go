@@ -9,6 +9,10 @@ import (
 	"github.com/boshu2/agentops/cli/internal/epicstatus"
 )
 
+type LedgerReader interface {
+	ReadFile(string) ([]byte, error)
+}
+
 // LedgerBead is the subset of an issues.jsonl record needed to derive epic
 // membership.
 type LedgerBead struct {

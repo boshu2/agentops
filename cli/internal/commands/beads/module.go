@@ -8,11 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
+	"github.com/boshu2/agentops/cli/internal/epicstatus"
 )
 
 type Operation string
@@ -69,10 +73,26 @@ type Module struct {
 	resolver  beadsapp.TrackerResolver
 	inspector beadsapp.LedgerInspector
 	executor  beadsapp.TrackerExecutor
+	stale     beadsapp.StaleSource
+	claims    beadsapp.ClaimStore
+	runtime   beadsapp.ResumeRuntime
+	reader    beadsapp.LedgerReader
 }
 
-func NewModule(runner Runner, resolver beadsapp.TrackerResolver, inspector beadsapp.LedgerInspector, executor beadsapp.TrackerExecutor) Module {
-	return Module{runner: runner, resolver: resolver, inspector: inspector, executor: executor}
+func NewModule(
+	runner Runner,
+	resolver beadsapp.TrackerResolver,
+	inspector beadsapp.LedgerInspector,
+	executor beadsapp.TrackerExecutor,
+	stale beadsapp.StaleSource,
+	claims beadsapp.ClaimStore,
+	runtime beadsapp.ResumeRuntime,
+	reader beadsapp.LedgerReader,
+) Module {
+	return Module{
+		runner: runner, resolver: resolver, inspector: inspector, executor: executor,
+		stale: stale, claims: claims, runtime: runtime, reader: reader,
+	}
 }
 
 func (Module) Contract() clicontract.CommandContract {
@@ -294,7 +314,7 @@ func (module Module) resumeCommand() *cobra.Command {
 	command.Flags().StringVar(&options.Ledger, "ledger", "docs/provenance/ledger.jsonl", "Path to the provenance ledger (relative to repo root).")
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit the claim_transferred event to stdout (always written to ledger).")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationResume, args, options)
+		return module.runResume(command, args, options)
 	}
 	return command
 }
@@ -325,7 +345,7 @@ func (module Module) staleCommand() *cobra.Command {
 	command.Flags().Float64Var(&options.ThresholdHours, "threshold", 4, "Staleness threshold in hours (claim updated more than N hours ago).")
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationStaleClaims, args, options)
+		return module.runStale(command, options)
 	}
 	return command
 }
@@ -336,9 +356,140 @@ func (module Module) epicStatusCommand() *cobra.Command {
 	command.Flags().BoolVar(&options.Terminal, "terminal", false, "Map the verdict to the process exit code (0 terminal / 2 not-terminal / 3 skipped).")
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit the verdict as a JSON object instead of a human-readable line.")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationEpicStatus, args, options)
+		return module.runEpicStatus(command, args, options)
 	}
 	return command
+}
+
+func (module Module) runStale(command *cobra.Command, options Options) error {
+	if module.stale == nil || module.runtime == nil {
+		return fmt.Errorf("beads stale-claims ports are not configured")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	events, err := beadsapp.DetectStale(ctx, module.stale, module.runtime.Now(), options.ThresholdHours)
+	if err != nil {
+		return fmt.Errorf("br list: %w", err)
+	}
+	if options.JSON {
+		encoded, err := json.Marshal(events)
+		if err != nil {
+			return fmt.Errorf("marshal events: %w", err)
+		}
+		_, err = fmt.Fprintln(command.OutOrStdout(), string(encoded))
+		return err
+	}
+	if len(events) == 0 {
+		_, err := fmt.Fprintf(command.OutOrStdout(), "ao beads stale-claims: none — all in_progress beads touched within %.1fh\n", options.ThresholdHours)
+		return err
+	}
+	fmt.Fprintf(command.OutOrStdout(), "ao beads stale-claims: %d in_progress bead(s) stale (threshold %.1fh)\n", len(events), options.ThresholdHours)
+	for _, event := range events {
+		fmt.Fprintf(command.OutOrStdout(), "  %-22s claim_age=%.1fh last_touch=%s claimant=%s\n", event.BeadID, event.Evidence.ClaimAgeHours, event.Evidence.LastTouchTS, event.OriginalClaimant.ID)
+	}
+	return nil
+}
+
+func (module Module) runResume(command *cobra.Command, args []string, options Options) error {
+	if module.claims == nil || module.runtime == nil {
+		return fmt.Errorf("beads resume ports are not configured")
+	}
+	beadID := args[0]
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	prior, err := module.claims.Show(ctx, beadID)
+	if err != nil {
+		return fmt.Errorf("fetch prior state: %w", err)
+	}
+	if prior.Status != "in_progress" {
+		return fmt.Errorf("bead %s is %q, not in_progress — resume only handles in_progress claims", beadID, prior.Status)
+	}
+	now := module.runtime.Now().UTC()
+	agent := options.Agent
+	if agent == "" {
+		agent = module.runtime.Actor()
+	}
+	if agent == "" {
+		agent = "ao-beads-resume"
+	}
+	if err := module.claims.Claim(ctx, beadID, agent); err != nil {
+		return fmt.Errorf("claim transfer: %w", err)
+	}
+	posterior, err := module.claims.Show(ctx, beadID)
+	if err != nil {
+		posterior = beadsapp.StaleBeadRecord{ID: beadID, Status: "in_progress", Assignee: agent, UpdatedAt: now.Format(time.RFC3339)}
+	}
+	event := beadsapp.BuildTransferredEvent(beadID, agent, prior, posterior, now)
+	ledger, err := module.runtime.ResolveRepoPath(options.Ledger)
+	if err != nil {
+		return err
+	}
+	if err := module.runtime.AppendEvent(ledger, event); err != nil {
+		return fmt.Errorf("append ledger (claim already transferred): %w", err)
+	}
+	if options.JSON {
+		encoded, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("marshal transferred claim: %w", err)
+		}
+		_, err = fmt.Fprintln(command.OutOrStdout(), string(encoded))
+		return err
+	}
+	priorAgent := prior.Assignee
+	if priorAgent == "" {
+		priorAgent = "unknown"
+	}
+	_, err = fmt.Fprintf(command.OutOrStdout(), "ao beads resume: %s transferred from %q to %q (prior_rev=%s, new_rev=%s)\n", beadID, priorAgent, agent, event.Transfer.PriorRevision, event.Transfer.NewRevision)
+	return err
+}
+
+func (module Module) runEpicStatus(command *cobra.Command, args []string, options Options) error {
+	if module.resolver == nil || module.reader == nil {
+		return fmt.Errorf("beads epic-status ports are not configured")
+	}
+	epic := strings.TrimSpace(args[0])
+	ledger, err := module.resolver.BRLedger()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(ledger.Path, "issues.jsonl")
+	raw, err := module.reader.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read ledger %s: %w", path, err)
+	}
+	records, err := beadsapp.ParseLedger(raw)
+	if err != nil {
+		return fmt.Errorf("parse ledger: %w", err)
+	}
+	members, present := beadsapp.BuildMembers(epic, records)
+	if !present {
+		return fmt.Errorf("epic %s not found in ledger %s", epic, ledger.Path)
+	}
+	result := epicstatus.Evaluate(epic, members)
+	if options.JSON {
+		encoder := json.NewEncoder(command.OutOrStdout())
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(result); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(command.OutOrStdout(), "%s: %s [%s]\n", result.Group, strings.ToUpper(string(result.Verdict)), result.Code)
+		fmt.Fprintf(command.OutOrStdout(), "  %s\n", result.Reason)
+		for _, blocker := range result.Blockers {
+			fmt.Fprintf(command.OutOrStdout(), "  - blocker %s (%s): %s\n", blocker.ID, blocker.Status, blocker.Class)
+		}
+	}
+	if options.Terminal {
+		switch result.Verdict {
+		case epicstatus.NotTerminal:
+			command.SilenceUsage, command.SilenceErrors = true, true
+			return &beadsapp.ExitError{Code: 2}
+		case epicstatus.Skipped:
+			command.SilenceUsage, command.SilenceErrors = true, true
+			return &beadsapp.ExitError{Code: 3}
+		}
+	}
+	return nil
 }
 
 func (module Module) acceptanceCommand() *cobra.Command {

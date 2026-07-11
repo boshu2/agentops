@@ -33,21 +33,12 @@ func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.In
 	case beadscommands.OperationCluster:
 		beadsClusterJSON, beadsClusterApply = options.JSON, options.Apply
 		return executeBeadsCluster(command, invocation.Args)
-	case beadscommands.OperationResume:
-		beadsResumeAgentID, beadsResumeLedgerPath, beadsResumeJSON = options.Agent, options.Ledger, options.JSON
-		return executeBeadsResume(command, invocation.Args)
 	case beadscommands.OperationScenariosExtract:
 		beadsScenariosJSON, beadsScenariosForce, beadsScenariosWrite = options.JSON, options.Force, options.Write
 		return executeBeadsScenariosExtract(command, invocation.Args)
 	case beadscommands.OperationScenariosCheck:
 		beadsScenariosValidateJSON = options.JSON
 		return executeBeadsScenariosValidate(command, invocation.Args)
-	case beadscommands.OperationStaleClaims:
-		beadsStaleThresholdHours, beadsStaleJSON = options.ThresholdHours, options.JSON
-		return executeBeadsStale(command, invocation.Args)
-	case beadscommands.OperationEpicStatus:
-		beadsEpicStatusTerminal, beadsEpicStatusJSON = options.Terminal, options.JSON
-		return executeBeadsEpicStatus(command, invocation.Args)
 	case beadscommands.OperationAcceptance:
 		return executeBeadsVerifyAcceptance(command, invocation.Args, options.Strict, options.JSON)
 	default:
@@ -57,7 +48,11 @@ func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.In
 
 func init() {
 	tracker := currentBeadsTracker()
-	module := beadscommands.NewModule(beadsModuleRunner{}, tracker, tracker, beadsadapter.NewExecutor(tracker))
+	runtime := beadsadapter.NewRuntime()
+	module := beadscommands.NewModule(
+		beadsModuleRunner{}, tracker, tracker, beadsadapter.NewExecutor(tracker),
+		tracker, tracker, runtime, runtime,
+	)
 	command := module.Command()
 	command.GroupID = "knowledge"
 	if err := clicontract.Attach(command, module.Contract()); err != nil {
