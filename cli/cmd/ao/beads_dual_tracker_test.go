@@ -201,6 +201,7 @@ func TestRunBeadsTrackerCmdJSON(t *testing.T) {
 	t.Setenv("AGENTOPS_TRACKER", "")
 	t.Setenv("BEADS_DIR", "")
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("P3_TRACKER_SECRET", "must-not-serialize")
 	t.Chdir(root)
 
 	var out strings.Builder
@@ -225,6 +226,21 @@ func TestRunBeadsTrackerCmdJSON(t *testing.T) {
 	}
 	if res.Binary != "/fake/bin/br" {
 		t.Errorf("binary = %q, want /fake/bin/br", res.Binary)
+	}
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(out.String()), &payload); err != nil {
+		t.Fatalf("json object: %v: %s", err, out.String())
+	}
+	if len(payload) != 4 {
+		t.Fatalf("JSON keys = %v, want exactly tracker, binary, ledger_dir, source", payload)
+	}
+	for _, key := range []string{"tracker", "binary", "ledger_dir", "source"} {
+		if _, ok := payload[key]; !ok {
+			t.Errorf("JSON missing public key %q: %v", key, payload)
+		}
+	}
+	if strings.Contains(out.String(), "P3_TRACKER_SECRET") || strings.Contains(out.String(), "must-not-serialize") {
+		t.Fatalf("JSON leaked ambient child environment: %s", out.String())
 	}
 }
 

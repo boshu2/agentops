@@ -1,11 +1,13 @@
 package tracker_bd
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 func TestNew_Mode(t *testing.T) {
@@ -15,6 +17,26 @@ func TestNew_Mode(t *testing.T) {
 	}
 	if got := a.Mode(); got != "beads" {
 		t.Errorf("Mode() = %q, want %q", got, "beads")
+	}
+}
+
+func TestTrackerBDResolvedContextUsesCanonicalChildEnvironment(t *testing.T) {
+	resolution := trackerresolve.Resolution{
+		Tracker:  trackerresolve.BD,
+		Binary:   "/fake/bd",
+		WorkDir:  "/repo",
+		ChildEnv: []string{"HOME=/home/test"},
+	}
+	adapter, err := NewResolved(resolution)
+	if err != nil {
+		t.Fatal(err)
+	}
+	command := adapter.commandContext(context.Background(), "ready", "--json")
+	if command.Path != "/fake/bd" || command.Dir != "/repo" {
+		t.Fatalf("command path/dir = %q/%q", command.Path, command.Dir)
+	}
+	if !reflect.DeepEqual(command.Env, resolution.ChildEnv) {
+		t.Fatalf("command env = %v, want %v", command.Env, resolution.ChildEnv)
 	}
 }
 

@@ -24,11 +24,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // Adapter satisfies ports.IssueTracker using the `bd` binary. WorkDir, when set,
@@ -37,13 +39,27 @@ import (
 type Adapter struct {
 	// WorkDir is the directory bd commands run in. Empty means the current
 	// process working directory.
-	WorkDir string
+	WorkDir    string
+	resolution trackerresolve.Resolution
 }
 
 // New returns an Adapter rooted at workDir. Pass "" to run bd against the
 // process working directory.
 func New(workDir string) *Adapter {
-	return &Adapter{WorkDir: workDir}
+	env := append(append([]string(nil), os.Environ()...), "AGENTOPS_TRACKER=bd")
+	resolution, _ := trackerresolve.Resolve(workDir, env)
+	adapter, _ := NewResolved(resolution)
+	return adapter
+}
+
+func NewResolved(resolution trackerresolve.Resolution) (*Adapter, error) {
+	if resolution.Tracker != trackerresolve.BD {
+		return nil, fmt.Errorf("tracker_bd: resolution backend is %q, want %q", resolution.Tracker, trackerresolve.BD)
+	}
+	if resolution.Binary == "" || resolution.WorkDir == "" {
+		return nil, errors.New("tracker_bd: incomplete resolution")
+	}
+	return &Adapter{WorkDir: resolution.WorkDir, resolution: resolution}, nil
 }
 
 // Compile-time interface check.
@@ -273,10 +289,7 @@ func (a *Adapter) CreateIssue(ctx context.Context, epicID, title, body string) (
 // run invokes bd with args, returning stdout. The working directory is
 // a.WorkDir when set. On failure it surfaces bd's stderr in the wrapped error.
 func (a *Adapter) run(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "bd", args...)
-	if a.WorkDir != "" {
-		cmd.Dir = a.WorkDir
-	}
+	cmd := a.commandContext(ctx, args...)
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -286,4 +299,13 @@ func (a *Adapter) run(ctx context.Context, args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("tracker_bd: bd %s: %w", strings.Join(args, " "), err)
 	}
 	return out, nil
+}
+
+func (a *Adapter) commandContext(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, a.resolution.Binary, args...) // #nosec G204 -- binary is constrained by trackerresolve to bd.
+	if a.WorkDir != "" {
+		cmd.Dir = a.WorkDir
+	}
+	cmd.Env = append([]string(nil), a.resolution.ChildEnv...)
+	return cmd
 }
