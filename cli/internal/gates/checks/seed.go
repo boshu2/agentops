@@ -89,6 +89,8 @@ var (
 		"scripts/check-doc-skill-refs.sh",
 		"scripts/.docs-skill-refs-baseline",
 		"scripts/lib/docs-scope.sh",
+		// shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.8, FM3)
+		"scripts/lib/ratchet.sh",
 		"tests/scripts/check-doc-skill-refs.bats",
 		"tests/scripts/check-doc-skill-refs-all-docs.bats",
 	}

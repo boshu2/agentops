@@ -51,6 +51,13 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Shared shrink-only ratchet mechanics — used ONLY by the --all-docs path
+# (age-ratchet-lib-extraction-bv7d.8); the DEFAULT mode stays byte-identical
+# and never touches the baseline. Parse mode trailing-comment = the original
+# strip-#-then-trim on all real baseline shapes.
+# shellcheck source=scripts/lib/ratchet.sh
+. "$SCRIPT_DIR/lib/ratchet.sh"
+
 STRICT=0
 ALL_DOCS=0
 SKILLS_ROOT="$ROOT/skills"
@@ -262,15 +269,11 @@ done < <(DOCS_ROOT="$DOCS_ROOT" docs_scope_live_files)
 # stale ones.
 declare -A BASELINED=()
 declare -A BASELINE_HIT=()
-if [[ -f "$BASELINE" ]]; then
-    while IFS= read -r bl; do
-        bl="${bl%%#*}"                       # strip trailing comment
-        bl="${bl#"${bl%%[![:space:]]*}"}"    # ltrim
-        bl="${bl%"${bl##*[![:space:]]}"}"    # rtrim
-        [[ -z "$bl" ]] && continue
-        BASELINED["$bl"]=1
-    done < "$BASELINE"
-fi
+baseline_data="$(ratchet_load_pinned "$BASELINE" trailing-comment)" \
+    || { echo "ERROR: cannot read baseline $BASELINE" >&2; exit 2; }
+while IFS= read -r bl; do
+    [[ -n "$bl" ]] && BASELINED["$bl"]=1
+done <<< "$baseline_data"
 
 NEW_OFFENDERS=0
 for doc in "${SCAN[@]}"; do
@@ -293,14 +296,15 @@ done
 
 # Stale-baseline (prune) check: any baselined file that either no longer offends
 # or no longer exists in scope must be pruned from the baseline.
+# ratchet_stale_entries = baselined − still-offending (emitted LC_ALL=C
+# sorted — deterministic; pre-migration order was unspecified hash order).
 STALE_BASELINE=0
 STALE_LIST=()
-for bl in "${!BASELINED[@]}"; do
-    if [[ -z "${BASELINE_HIT[$bl]:-}" ]]; then
-        STALE_BASELINE=$((STALE_BASELINE + 1))
-        STALE_LIST+=("$bl")
-    fi
-done
+while IFS= read -r bl; do
+    [[ -n "$bl" ]] || continue
+    STALE_BASELINE=$((STALE_BASELINE + 1))
+    STALE_LIST+=("$bl")
+done < <(printf '%s\n' "${!BASELINE_HIT[@]}" | ratchet_stale_entries "$BASELINE" trailing-comment)
 
 echo "check-doc-skill-refs --all-docs: ${DOCS_SCANNED} doc(s) scanned, ${FINDINGS} unresolved skill reference(s) across ${#BASELINED[@]} baselined file(s)"
 if [[ "$NEW_OFFENDERS" -gt 0 ]]; then
