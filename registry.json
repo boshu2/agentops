@@ -482,7 +482,7 @@
         "path": "skills/bootstrap/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "handoff",
@@ -1220,7 +1220,7 @@
         "ao session bootstrap"
       ],
       "path": "skills/bootstrap/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:cass",
