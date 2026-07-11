@@ -4,6 +4,7 @@ package doctor
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,8 +112,8 @@ func BinaryFreshnessCheck(dir, running string) quality.Check {
 
 func FindAgentopsRepoRoot(dir string) (string, bool) {
 	for range 12 {
-		data, err := os.ReadFile(filepath.Join(dir, "cli", "go.mod"))
-		if err == nil && len(data) <= 1<<16 && strings.Contains(string(data), agentopsModuleLine) {
+		data, ok := readRegularFileCapped(filepath.Join(dir, "cli", "go.mod"), 1<<16)
+		if ok && strings.Contains(string(data), agentopsModuleLine) {
 			return dir, true
 		}
 		parent := filepath.Dir(dir)
@@ -125,12 +126,26 @@ func FindAgentopsRepoRoot(dir string) (string, bool) {
 }
 
 func RepoDeclaredVersion(root string) (string, bool) {
-	data, err := os.ReadFile(filepath.Join(root, "cli", "cmd", "ao", "main.go"))
-	if err != nil || len(data) > 1<<16 {
+	data, ok := readRegularFileCapped(filepath.Join(root, "cli", "cmd", "ao", "main.go"), 1<<16)
+	if !ok {
 		return "", false
 	}
 	match := repoVersionPattern.FindSubmatch(data)
 	return stringMatch(match)
+}
+
+func readRegularFileCapped(path string, maxBytes int64) ([]byte, bool) {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, false
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, false
+	}
+	defer func() { _ = file.Close() }()
+	data, err := io.ReadAll(io.LimitReader(file, maxBytes))
+	return data, err == nil
 }
 
 func stringMatch(match [][]byte) (string, bool) {
