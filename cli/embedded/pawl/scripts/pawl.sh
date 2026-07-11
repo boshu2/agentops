@@ -265,7 +265,21 @@ probe_families() {
 # Strict-benched families (A7 ruling; ebec.7): excluded from the DEFAULT route probe — a
 # benched family reviews only via an explicit pin (--tri/--models). NOT a rigor change:
 # quorum/tier math is untouched. Override: PAWL_BENCHED_FAMILIES (space-sep; empty = none).
-PAWL_BENCHED_FAMILIES="${PAWL_BENCHED_FAMILIES-agy}"
+# F7-followup (age-pawl-intent-zhndq.18): benching is a persisted, visible state, not an ambient
+# env footgun. Precedence: PAWL_BENCHED_FAMILIES env (set, even empty) wins as a one-shot override;
+# else the persisted .agents/pawl/config.json `.benched_families`; else the "agy" default.
+# _BENCH_SOURCE records which, for `ao pawl doctor`.
+_pawl_config_file() { printf '%s' "$ROOT/$STATE_DIR/config.json"; }
+_resolve_benched_families() {
+  if [ -n "${PAWL_BENCHED_FAMILIES+x}" ]; then _BENCH_SOURCE="env"; return 0; fi
+  local cfg; cfg="$(_pawl_config_file)"
+  if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1 && jq -e 'has("benched_families")' "$cfg" >/dev/null 2>&1; then
+    PAWL_BENCHED_FAMILIES="$(jq -r '.benched_families | if type=="array" then join(" ") else (.//"") end' "$cfg" 2>/dev/null)"
+    _BENCH_SOURCE="config"; return 0
+  fi
+  PAWL_BENCHED_FAMILIES="agy"; _BENCH_SOURCE="default"
+}
+_resolve_benched_families
 
 # Default-route set: the install probe minus benched families. If benching would empty the
 # set (only benched CLIs installed) fall back to the raw probe — degraded beats none, and
@@ -1356,6 +1370,9 @@ cmd_doctor() {
   else
     _doctor_add families false "no enabled families in session state"
   fi
+  # F7-followup (age-pawl-intent-zhndq.18): the effective benched set + its source
+  # (default|config|env) — benching is now a visible state, not an invisible ${VAR-default} footgun.
+  _doctor_add bench true "benched=[${PAWL_BENCHED_FAMILIES}] (source: ${_BENCH_SOURCE:-default})"
 
   if session_exists; then
     local expected_real cur cur_real txt block state model_txt f pane label expected
@@ -1840,6 +1857,37 @@ cmd_route() {
 
 # SLO surface over the recorded routes — p50/p95 round-trip latency + agreement rate (all-enabled
 # CONFIRMED vs disagreement). Reads the append-only metrics.jsonl cmd_route writes.
+# F7-followup (age-pawl-intent-zhndq.18): persist which families are benched from the default panel.
+# `bench <fam>` adds, `unbench <fam>` removes, bare `bench` lists the effective set + source. The
+# env PAWL_BENCHED_FAMILIES still wins at resolution time (one-shot override); this writes the
+# durable default. Symlink-guarded, atomic, jq-backed.
+_pawl_write_bench() {
+  local op="$1" fam="$2"
+  case "$fam" in cc|cod|agy) : ;; *) die "unknown family '$fam' — one of: cc cod agy" ;; esac
+  command -v jq >/dev/null 2>&1 || die "jq is required to persist the bench config"
+  _pawl_require_safe_state_dir
+  local cfg; cfg="$(_pawl_config_file)"; mkdir -p "$(dirname "$cfg")"
+  local cur; cur="$([ -f "$cfg" ] && cat "$cfg" || printf '{}')"
+  local filter
+  if [ "$op" = "add" ]; then filter='.benched_families = ((.benched_families // []) + [$f] | unique)'
+  else filter='.benched_families = ((.benched_families // []) - [$f])'; fi
+  printf '%s' "$cur" | jq -c --arg f "$fam" "$filter" > "$cfg.tmp.$$" \
+    && mv -f "$cfg.tmp.$$" "$cfg" || { rm -f "$cfg.tmp.$$" 2>/dev/null; die "failed to write $cfg"; }
+  log "$( [ "$op" = "add" ] && echo BENCH || echo UNBENCH ): $fam ($cfg)"
+}
+cmd_bench() {
+  if [ -z "${1:-}" ]; then
+    printf 'pawl bench: effective benched families = [%s] (source: %s)\n' \
+      "$PAWL_BENCHED_FAMILIES" "${_BENCH_SOURCE:-default}" >&2
+    return 0
+  fi
+  _pawl_write_bench add "$1"
+}
+cmd_unbench() {
+  [ -n "${1:-}" ] || { echo "usage: ao pawl unbench <cc|cod|agy>" >&2; exit 2; }
+  _pawl_write_bench remove "$1"
+}
+
 cmd_metrics() {
   local mf="$ROOT/$STATE_DIR/metrics.jsonl" json=0
   [ "${1:-}" = "--json" ] && json=1
@@ -1922,6 +1970,8 @@ case "${1:-}" in
   smoke)  shift; cmd_smoke "$@" ;;
   route)  shift; cmd_route "$@" ;;
   metrics) shift; cmd_metrics "$@" ;;
+  bench)   shift; cmd_bench "$@" ;;
+  unbench) shift; cmd_unbench "$@" ;;
   *) cat >&2 <<'H'
 Usage: pawl.sh <up|down|reap|health|doctor|smoke|route|metrics>
   up [--dual|--tri|--models a,b,c]  spawn + readiness-gate the standing pawl session (idempotent).
