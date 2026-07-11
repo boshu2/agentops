@@ -114,14 +114,58 @@ times — exactly the profile of a tick that should already exist.
 
 ## Output Specification
 
-**Format:** markdown report — ranked candidate table (cluster, frequency,
-pain, justification, suggested next step) plus a sources-consulted line and
-the discarded-echo note; the same data may be mirrored as JSON when a caller
-asks for machine output.
-**Filename:** written to `.agents/toil-mining/YYYY-MM-DD-candidates.md`
-(compounding mode appends a dated section to the same directory's ledger).
-**Next action:** hand the top candidates to `$automation-shape-routing`; track
-keepers as bead candidates.
+- **Artifact directory:** `$REPO/.agents/toil-mining/` in the mined repo.
+- **Filename convention:** `YYYY-MM-DD-candidates.md`; machine output, when
+  requested, is the same basename with `.json`. Compounding also updates its
+  ledger but still emits this run report.
+- **Serialization/schema format:** Markdown contains exactly one sources line,
+  discarded-echo note, six-column ranked table with at least one valid row,
+  and terminal handoff line. JSON is an array of ranked candidate objects.
+- **Validator command:** with `$REPO`, `$date`, and `$json_output` (`0|1`) set:
+
+  ```bash
+  set -euo pipefail
+  [[ "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+  python3 -c 'import datetime, sys; datetime.date.fromisoformat(sys.argv[1])' "$date"
+  physical_repo="$(cd "$REPO" && pwd -P)"
+  report_dir="$physical_repo/.agents/toil-mining"
+  test "$(cd "$report_dir" && pwd -P)" = "$report_dir"
+  report="$report_dir/$date-candidates.md"
+  test -f "$report"
+  test ! -L "$report"
+  test -s "$report"
+  test "$(grep -Ec '^Sources consulted: .+$' "$report")" -eq 1
+  test "$(grep -Ec '^Discarded echoes: .+$' "$report")" -eq 1
+  test "$(grep -Fxc '| Rank | Cluster | Freq | Pain | Why it ranks here | Suggested next step |' "$report")" -eq 1
+  test "$(grep -Fxc '|---|---|---|---|---|---|' "$report")" -eq 1
+  rows="$(grep -Ec '^\| [0-9]+ \|' "$report")"
+  valid="$(grep -Ec '^\| [0-9]+ \| [^|]+ \| [1-9][0-9]* \| [^|]+ \| [^|]+ \| [^|]+ \|$' "$report")"
+  test "$rows" -gt 0
+  test "$valid" -eq "$rows"
+  handoff='^Handoff: automation-shape-routing; bead candidates: .+$'
+  test "$(grep -Ec "$handoff" "$report")" -eq 1
+  last_nonempty="$(awk 'NF { line = $0 } END { print line }' "$report")"
+  printf '%s\n' "$last_nonempty" | grep -Eq "$handoff"
+  if [[ "$json_output" == 1 ]]; then
+    json="${report%.md}.json"
+    test -f "$json"
+    test ! -L "$json"
+    test -s "$json"
+    jq -e 'type == "array" and length > 0 and all(.[];
+      (.rank | type) == "number" and .rank > 0 and
+      (.cluster | type) == "string" and (.cluster | length) > 0 and
+      (.frequency | type) == "number" and .frequency > 0 and
+      (.pain | type) == "string" and (.pain | length) > 0 and
+      (.justification | type) == "string" and (.justification | length) > 0 and
+      (.suggested_next_step | type) == "string" and
+      (.suggested_next_step | length) > 0)' "$json" >/dev/null
+  else
+    [[ "$json_output" == 0 ]]
+  fi
+  ```
+- **Downstream handoff:** pass the validated report to
+  `$automation-shape-routing`; only operator-accepted keepers become bead
+  candidates via `$beads-br`.
 
 ## Quality Rubric
 
