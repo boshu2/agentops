@@ -81,6 +81,10 @@
 # shellcheck disable=SC1007
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 cd "$REPO_ROOT" || exit 2
+# Shared shrink-only ratchet mechanics (this gate's hand-rolled grandfather
+# machinery was the extraction template) — age-ratchet-lib-extraction-bv7d.3.
+# Parse mode `raw` preserves the original entry parsing byte-for-byte.
+. "$REPO_ROOT/scripts/lib/ratchet.sh"
 
 GRANDFATHER_FILE="scripts/.jsonl-scanner-grandfather"
 SCOPE="head"
@@ -149,99 +153,56 @@ compute_grandfather_set() {
   done < <(grep -rl 'bufio\.NewScanner(' cli --include='*.go' 2>/dev/null || true) | LC_ALL=C sort
 }
 
+grandfather_header() {
+  echo "# scripts/.jsonl-scanner-grandfather — FILENAME-pinned grandfather list."
+  echo "#"
+  echo "# Every cli/**/*.go file (outside cli/internal/storage/) that currently has"
+  echo "# BOTH a bufio.NewScanner( invocation AND a .jsonl mention. These predate the ratchet"
+  echo "# (age-storage-hardening-roxg.3) and are exempt. The list only SHRINKS: a"
+  echo "# grandfathered file that no longer trips the heuristic must be pruned."
+  echo "#"
+  echo "# Blessed replacement for a raw scanner over JSONL: storage.ScanJSONL /"
+  echo "# storage.ScanJSONLFile (loud storage.ErrLineTooLong policy)."
+  echo "#"
+  echo "# Regenerate with:  bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
+  echo "# (regenerate at LAND time, after the final rebase — sibling adoptions may"
+  echo "#  have cleaned sites.)"
+}
+
 if [[ "$MODE" == "regenerate" ]]; then
-  {
-    echo "# scripts/.jsonl-scanner-grandfather — FILENAME-pinned grandfather list."
-    echo "#"
-    echo "# Every cli/**/*.go file (outside cli/internal/storage/) that currently has"
-    echo "# BOTH a bufio.NewScanner( invocation AND a .jsonl mention. These predate the ratchet"
-    echo "# (age-storage-hardening-roxg.3) and are exempt. The list only SHRINKS: a"
-    echo "# grandfathered file that no longer trips the heuristic must be pruned."
-    echo "#"
-    echo "# Blessed replacement for a raw scanner over JSONL: storage.ScanJSONL /"
-    echo "# storage.ScanJSONLFile (loud storage.ErrLineTooLong policy)."
-    echo "#"
-    echo "# Regenerate with:  bash scripts/check-jsonl-scanner-ratchet.sh --regenerate"
-    echo "# (regenerate at LAND time, after the final rebase — sibling adoptions may"
-    echo "#  have cleaned sites.)"
-    compute_grandfather_set
-  } > "$GRANDFATHER_FILE"
+  # ratchet_regenerate is atomic (tmp+mv) and fail-closed on generation errors.
+  ratchet_regenerate "$GRANDFATHER_FILE" grandfather_header compute_grandfather_set || exit 2
   echo "regenerated $GRANDFATHER_FILE ($(grep -cv '^#' "$GRANDFATHER_FILE" 2>/dev/null || echo 0) files)"
   exit 0
 fi
 
-# Load the grandfather set (filename per non-comment line).
+# Load the grandfather set (filename per non-comment line) via the shared lib
+# (raw mode = this gate's original parse). Unreadable grandfather is loud.
+grandfather_data="$(ratchet_load_pinned "$GRANDFATHER_FILE" raw)" \
+  || { echo "check-jsonl-scanner-ratchet: cannot read $GRANDFATHER_FILE" >&2; exit 2; }
 declare -a GRANDFATHER=()
-if [[ -f "$GRANDFATHER_FILE" ]]; then
-  while IFS= read -r line; do
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    GRANDFATHER+=("$line")
-  done < "$GRANDFATHER_FILE"
-fi
+while IFS= read -r line; do
+  [[ -n "$line" ]] && GRANDFATHER+=("$line")
+done <<< "$grandfather_data"
 
-# grandfather_base_ref: the git ref holding the PRE-change grandfather snapshot
-# for the active scope — the baseline the shrink-only rule is enforced against.
-# Mirrors collect_changed_files' scope semantics (pattern ported from
-# scripts/check-new-scripts-use-preamble.sh).
-grandfather_base_ref() {
-  case "$SCOPE" in
-    head) echo "HEAD^" ;;
-    staged|worktree) echo "HEAD" ;;
-    auto)
-      if [[ -n "$(git diff --cached --name-only 2>/dev/null || true)" || -n "$(git diff --name-only 2>/dev/null || true)" ]]; then
-        echo "HEAD"
-      else
-        echo "HEAD^"
-      fi
-      ;;
-  esac
-}
-
-# Grandfather AUTHORITY: an entry grants protection only if it is present in
-# BOTH the working snapshot AND the base-ref snapshot (intersection). The
-# working file alone is attacker-controlled — a commit could add a new tripping
-# file AND append its path to the grandfather, self-granting protection (the
-# bypass check_grandfather_shrink_only also rejects; the intersection makes the
-# exemption independently fail-closed). If the base ref has no snapshot at all
-# (the initial-snapshot commit, or a root commit), the working file is the
-# cutoff and stands alone.
-BASE_GF_EXISTS=0
-BASE_GF_LINES=""
-load_base_grandfather() {
-  local base_ref
-  base_ref="$(grandfather_base_ref)"
-  if BASE_GF_LINES="$(git show "$base_ref:$GRANDFATHER_FILE" 2>/dev/null)"; then
-    BASE_GF_EXISTS=1
-  fi
-}
-load_base_grandfather
+# Grandfather base-ref snapshot + intersection authority + shrink-only guard
+# come from scripts/lib/ratchet.sh (this gate's hand-rolled versions were the
+# extraction template; the lib keeps the same scope->base-ref map, intersection
+# rule, and initial-snapshot accommodation).
+ratchet_load_base "$GRANDFATHER_FILE" "$(ratchet_base_ref "$SCOPE")" || exit 2
 
 is_grandfathered() {
-  local p="$1" g found=1
-  for g in "${GRANDFATHER[@]}"; do
-    [[ "$g" == "$p" ]] && { found=0; break; }
-  done
-  [[ "$found" -eq 0 ]] || return 1
-  if [[ "$BASE_GF_EXISTS" -eq 1 ]]; then
-    printf '%s\n' "$BASE_GF_LINES" | grep -qxF -- "$p" || return 1
-  fi
-  return 0
+  ratchet_is_pinned "$1" "$GRANDFATHER_FILE" raw
 }
 
 # check_grandfather_shrink_only -> fail if any DATA line was ADDED to the
-# grandfather snapshot relative to the base ref. This closes the bypass where a
-# change ships a new raw-scanner site AND appends its path to the grandfather in
-# the same diff — the list may only SHRINK. The one legal addition is the
-# INITIAL snapshot: if the file does not exist at the base ref, there is nothing
-# to ratchet against yet and the whole snapshot is the cutoff.
+# grandfather snapshot relative to the base ref (same-diff self-allowlist).
+# The lib emits the added entries; this wrapper keeps the gate's message shape.
 check_grandfather_shrink_only() {
-  local added
-  [[ -f "$GRANDFATHER_FILE" ]] || return 0
-  [[ "$BASE_GF_EXISTS" -eq 1 ]] || return 0
-  added="$(comm -13 \
-    <(printf '%s\n' "$BASE_GF_LINES" | grep -vE '^#|^[[:space:]]*$' | LC_ALL=C sort -u) \
-    <(grep -vE '^#|^[[:space:]]*$' "$GRANDFATHER_FILE" | LC_ALL=C sort -u))"
-  if [[ -n "$added" ]]; then
+  local added rc_=0
+  added="$(ratchet_assert_shrink_only "$GRANDFATHER_FILE" raw)" || rc_=$?
+  [[ "$rc_" -eq 2 ]] && exit 2
+  if [[ "$rc_" -ne 0 ]]; then
     echo "FAIL: $GRANDFATHER_FILE gained new entries — the grandfather list only SHRINKS." >&2
     echo "      A new site cannot be allowlisted; use storage.ScanJSONL / storage.ScanJSONLFile" >&2
     echo "      (loud storage.ErrLineTooLong policy) instead. Added entries:" >&2
@@ -253,64 +214,16 @@ check_grandfather_shrink_only() {
   return 0
 }
 
-# --- collect changed files for the requested scope -------------------------
+# --- collect changed files for the requested scope (shared lib) -------------
 collect_changed_files() {
-  case "$SCOPE" in
-    head)     git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true ;;
-    staged)   git diff --cached --name-only 2>/dev/null || true ;;
-    worktree) git diff --name-only 2>/dev/null || true
-              git ls-files --others --exclude-standard 2>/dev/null || true ;;
-    auto)
-      if [[ -n "$(git diff --cached --name-only 2>/dev/null || true)" ]]; then
-        git diff --cached --name-only 2>/dev/null || true
-      elif [[ -n "$(git diff --name-only 2>/dev/null || true)" ]]; then
-        git diff --name-only 2>/dev/null || true
-        git ls-files --others --exclude-standard 2>/dev/null || true
-      else
-        git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true
-      fi
-      ;;
-  esac
+  ratchet_changed_files "$SCOPE"
 }
 
 # added_hunk_has_scanner PATH -> 0 if the ADDED content for PATH in this scope
-# introduces a bufio.NewScanner. Untracked files (worktree scope) have no diff,
-# so treat the whole file as "added". This is the changed-content guard: editing
-# an already-grandfathered file without adding a scanner does not re-flag it.
+# introduces a bufio.NewScanner (shared lib changed-content guard; untracked /
+# diff-less paths are treated as entirely added).
 added_hunk_has_scanner() {
-  local p="$1" diffcmd
-  case "$SCOPE" in
-    head)     diffcmd=(git diff --no-color HEAD~1 HEAD -- "$p") ;;
-    staged)   diffcmd=(git diff --no-color --cached -- "$p") ;;
-    worktree) diffcmd=(git diff --no-color -- "$p") ;;
-    auto)
-      if ! git diff --cached --name-only 2>/dev/null | grep -qxF "$p"; then
-        if git diff --name-only 2>/dev/null | grep -qxF "$p"; then
-          diffcmd=(git diff --no-color -- "$p")
-        else
-          diffcmd=(git diff --no-color HEAD~1 HEAD -- "$p")
-        fi
-      else
-        diffcmd=(git diff --no-color --cached -- "$p")
-      fi
-      ;;
-  esac
-  local diff_out
-  diff_out="$("${diffcmd[@]}" 2>/dev/null || true)"
-  if [[ -z "$diff_out" ]]; then
-    # No diff (e.g. untracked file in worktree scope, or HEAD~1 missing) —
-    # treat the whole file as added.
-    grep -q 'bufio\.NewScanner(' "$p" 2>/dev/null && return 0
-    return 1
-  fi
-  # True iff an ADDED diff line (starts with a single '+', i.e. NOT the '+++'
-  # file header) introduces a bufio.NewScanner( invocation. awk avoids the ERE
-  # '+'-quantifier portability trap that a `grep '^\+\+\+'` form hits on BSD grep.
-  printf '%s\n' "$diff_out" | awk '
-    /^\+\+\+/ { next }                        # skip the +++ file header
-    /^\+/ && /bufio\.NewScanner\(/ { found=1 } # an added line invoking the scanner
-    END { exit found ? 0 : 1 }
-  '
+  ratchet_added_hunk_matches "$SCOPE" "$1" 'bufio\.NewScanner\('
 }
 
 rc=0
