@@ -6,5 +6,6 @@
   "fixture_sha256": "9788d6c4206e5d01e7609724bb7dec88946ebcd67302e53fca1962b7f0db5303",
   "ownership_sha256": "7d9491418c90a931611d81e5e5308920db6f8a1fc3a90c4d684e5f961a85cf6f",
   "scope_sha256": "62cd117cf63f443d513a84761f4c99dffcede9034ef5204b48a3c39c21e8a4e1",
-  "migration_state": "migrating"
+  "migration_state": "migrated",
+  "accepted_sha": "bd171a4776a303a8c7ad867047f70967cdee8b0e"
 }
