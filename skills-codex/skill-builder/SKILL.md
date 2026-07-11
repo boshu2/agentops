@@ -30,7 +30,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 |------|--------|-------------|
 | `from-scratch` | stable | Interactive scaffold from canonical template. Produces full skill skeleton + scripts/validate.sh + codex parity. |
 | `from-template` | stable | `--like <existing-skill>` copies structure from a sibling skill, swaps domain-specific sections. |
-| `absorb-external` | stable | Reads external SKILL.md (e.g., from `~/dev/financial-services/<some-dir>/<skill>/SKILL.md`), wraps in AgentOps frontmatter, invokes `$converter` for codex parity. |
+| `absorb-external` | stable | Observes external package shape, synthesizes a clean-room AgentOps skill, and invokes `$converter` for Codex parity. |
 | `from-pattern` | **alpha (passthrough)** | Delegates to `ao flywheel close-loop`. Outputs land at `.agents/knowledge/promoted/` per flywheel rules — they are NOT yet shaped as SKILL.md drafts. v2 will add skill-specific synthesis. Use `from-scratch` or `absorb-external` for SKILL.md output today. |
 
 ## Workflow
@@ -52,7 +52,9 @@ build.sh from-pattern                            # → ao flywheel close-loop
 
 `scripts/init.sh` reads `references/skill-template.md` (the canonical template section) and renders a SKILL.md skeleton with frontmatter pre-filled. For `from-template`, structure is copied from the source skill; section bodies are blanked and replaced with template stubs.
 
-For `absorb-external`, the external SKILL.md's content (Constraints / Workflow / Output / Quality sections) is preserved verbatim where possible; AgentOps' structured frontmatter is added on top; the external description is reformatted to satisfy `description-has-triggers`.
+For `absorb-external`, inspect only metadata and package shape, then synthesize
+new AgentOps-owned content. Never copy external prose, prompts, scripts,
+examples, names, or sentinel text into either generated runtime treatment.
 
 **Checkpoint:** `heal-skill --check --strict skills/<new-name>` exits 0.
 
@@ -94,7 +96,11 @@ relevant target gates by exit code. If ownership overlaps, stop and rescope.
 
 ## Output Specification
 
-**Format:** JSON conforming to `schemas/build-report.json` written to stdout; markdown audit report written to `.agents/audits/<skill>-build.md`.
+**Artifact directory:** `.agents/audits/`.
+**Filename convention:** `<skill>-build.json`.
+**Serialization/schema format:** JSON matching `skills/skill-builder/schemas/build-report.json`.
+**Validator command:** `jq -e . .agents/audits/<skill>-build.json`.
+**Downstream handoff:** consumed by heal-skill and the validation wave.
 
 **Files created (from-scratch mode):**
 
@@ -103,7 +109,7 @@ skills/<name>/
 ├── SKILL.md                         (≤250 lines, full template spine)
 ├── scripts/
 │   └── validate.sh                  (self-validation per AgentOps convention)
-└── references/                      (only if expected to exceed 400 lines)
+└── references/                      (externalize before the source profile's 250-line kernel limit)
 skills-codex/<name>/
 ├── SKILL.md                         (slim frontmatter — no skill_api_version)
 └── prompt.md                        (~10-20 line Execution Profile)
@@ -143,7 +149,7 @@ $skill-builder from-template my-new-skill --like council
 ```bash
 $skill-builder absorb-external dcf-helper \
   --from ~/dev/financial-services/plugins/vertical-plugins/financial-analysis/skills/dcf-model/SKILL.md
-# → preserves Constraints/Workflow/Output content, wraps in AgentOps frontmatter
+# → observes package shape and emits only clean-room AgentOps-owned content
 ```
 
 ## Troubleshooting
@@ -179,6 +185,8 @@ for the full authoring doctrine and the best-practice-to-enforcement crosswalk.
 - [curate](../post-mortem/SKILL.md) — `--mode=forge` mines transcripts into learnings (different layer)
 
 ## References
+
+- The authoritative `repo-runtime` contract is `skills/skill-builder/references/skill-conformance-profiles.yaml`; Codex carries no second profile ledger.
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules

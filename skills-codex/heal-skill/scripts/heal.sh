@@ -332,17 +332,23 @@ for skill_dir in "${TARGETS[@]}"; do
 
   # Check 6: Dead references (SKILL.md mentions references/ files that don't exist)
   # Strip fenced code blocks before scanning to avoid false positives from examples
-  # Supports local (references/foo.md), shared (../shared/references/foo.md), and
-  # cross-skill (../<skill>/references/foo.md) paths
+  # Supports local, cross-skill, and repo-root-relative canonical paths.
   while IFS= read -r ref_path; do
     [[ -z "$ref_path" ]] && continue
-    if [[ ! -f "$skill_dir/$ref_path" ]]; then
+    if [[ "$ref_path" == skills/* ]]; then
+      resolved_ref="$REPO_ROOT/$ref_path"
+    else
+      resolved_ref="$skill_dir/$ref_path"
+    fi
+    if [[ ! -f "$resolved_ref" ]]; then
       report "DEAD_REF" "$skill_dir" "SKILL.md references non-existent $ref_path"
       if [[ "$MODE" == "fix" ]]; then
         echo "  [WARN] Cannot auto-fix DEAD_REF -- manually remove or create $ref_path"
       fi
     fi
-  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | grep -oE '(\.\./[A-Za-z0-9_.-]+/)?references/[A-Za-z0-9_.-]+\.md' 2>/dev/null | sort -u || true)
+  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" \
+    | grep -oE '(skills/[A-Za-z0-9_.-]+/references|\.\./[A-Za-z0-9_.-]+/references|references)/[A-Za-z0-9_.-]+\.md' \
+    2>/dev/null | sort -u || true)
 
   # Check 7: Script reference integrity
   # Strip fenced code blocks and URLs before scanning to avoid false positives from examples
@@ -402,7 +408,7 @@ for skill_dir in "${TARGETS[@]}"; do
       if ! echo "$ao_cmds" | grep -qx "$subcmd"; then
         report "INVALID_AO_CMD" "$skill_dir" "references 'ao $subcmd' which is not a valid subcommand"
       fi
-    done < <(grep -oE '`ao [a-z][-a-z]*`' "$skill_md" 2>/dev/null | sed 's/`//g; s/^ao //' | sort -u || true)
+    done < <(grep -oE "\`ao [a-z][-a-z]*\`" "$skill_md" 2>/dev/null | sed 's/`//g; s/^ao //' | sort -u || true)
   fi
 
   # Check 9: Cross-reference validation (skill invocation references)
@@ -421,7 +427,7 @@ for skill_dir in "${TARGETS[@]}"; do
     if [[ ! -d "$SKILLS_ROOT/$ref" ]]; then
       report "DEAD_XREF" "$skill_dir" "references /$ref but skill directory not found"
     fi
-  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | grep -oE '`/[a-z][-a-z]*`' 2>/dev/null | sed 's/`//g; s|^/||' | sort -u || true)
+  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | grep -oE "\`/[a-z][-a-z]*\`" 2>/dev/null | sed 's/`//g; s|^/||' | sort -u || true)
 
 done
 

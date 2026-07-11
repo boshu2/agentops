@@ -16,6 +16,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${SKILL_BUILDER_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 INIT_SH="$SCRIPT_DIR/init.sh"
 AUDITOR_SH="$REPO_ROOT/skills/heal-skill/scripts/audit.sh"
+PROFILE_TOOL="$REPO_ROOT/skills/skill-builder/scripts/conformance_profile.py"
+EXTERNAL_SOURCE=""
+
+profile_args=(--repo-root "$REPO_ROOT")
+if [[ -n "${SKILL_CONFORMANCE_PROFILE_ID:-}" ]]; then
+  profile_args+=(--profile-id "$SKILL_CONFORMANCE_PROFILE_ID")
+fi
+if [[ ! -f "$PROFILE_TOOL" ]] || ! PROFILE_ID="$(python3 "$PROFILE_TOOL" "${profile_args[@]}")"; then
+  echo "[skill-builder] ERROR: profile configuration is unavailable or invalid" >&2
+  exit 2
+fi
+export SKILL_CONFORMANCE_PROFILE_ID="$PROFILE_ID"
 
 usage() {
   cat <<EOF
@@ -64,6 +76,9 @@ case "$MODE" in
   absorb-external)
     [[ $# -lt 1 ]] && { echo "Error: absorb-external requires <skill-name>" >&2; usage; }
     SKILL_NAME="$1"; shift
+    if [[ "${1:-}" == "--from" ]]; then
+      EXTERNAL_SOURCE="${2:-}"
+    fi
     bash "$INIT_SH" --absorb "$SKILL_NAME" "$@"
     ;;
 
@@ -122,6 +137,32 @@ PY
   fi
   return 0
 }
+
+# Codex uses the authoritative source profile; no duplicate profile is shipped.
+if ! PROFILE_EVAL="$(python3 "$PROFILE_TOOL" --repo-root "$REPO_ROOT" \
+  --profile-id "$PROFILE_ID" --audit-tsv "$NEW_SKILL_DIR/SKILL.md")"; then
+  patch_audit_pass false
+  exit 1
+fi
+KERNEL_LIMIT="$(printf '%s\n' "$PROFILE_EVAL" | awk -F '\t' '$1 == "kernel_max_lines" {print $2}')"
+KERNEL_LINES="$(printf '%s\n' "$PROFILE_EVAL" | awk -F '\t' '$1 == "line_count" {print $2}')"
+if [[ -z "$KERNEL_LIMIT" || -z "$KERNEL_LINES" ]] || (( KERNEL_LINES > KERNEL_LIMIT )); then
+  patch_audit_pass false
+  echo "[skill-builder] ERROR: generated SKILL.md has ${KERNEL_LINES:-unknown} lines; profile $PROFILE_ID allows $KERNEL_LIMIT" >&2
+  exit 1
+fi
+
+if [[ -n "$EXTERNAL_SOURCE" ]]; then
+  if ! python3 "$PROFILE_TOOL" --repo-root "$REPO_ROOT" \
+    --profile-id "$PROFILE_ID" --verify-clean-room "$EXTERNAL_SOURCE" \
+    --generated-dir "$NEW_SKILL_DIR" \
+    --generated-dir "$REPO_ROOT/skills-codex/$SKILL_NAME"
+  then
+    patch_audit_pass false
+    echo "[skill-builder] ERROR: clean-room verification failed" >&2
+    exit 1
+  fi
+fi
 
 if [[ -x "$AUDITOR_SH" ]]; then
   echo ""

@@ -6,6 +6,10 @@ description: Provide repo coding standards.
 
 Language-specific coding standards loaded on-demand by other skills.
 
+Skill conformance resolves the authoritative `repo-runtime` profile at
+`skills/skill-builder/references/skill-conformance-profiles.yaml`; this Codex
+treatment does not introduce another standards ledger.
+
 ## Purpose
 
 This is a **library skill** - it doesn't run standalone but provides standards

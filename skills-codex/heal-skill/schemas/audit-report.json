@@ -3,11 +3,15 @@
   "title": "Skill Audit Report",
   "description": "Output contract for skill-auditor. Three passes: Pass 1 wraps heal-skill structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal-skill; Pass 3 folds the 10-category Skill Quality Rubric (docs/reference/skill-quality-rubric.md) in as an advisory 0-30 productization score.",
   "type": "object",
-  "required": ["target", "verdict", "pass1", "pass2"],
+  "required": ["target", "profile_id", "verdict", "pass1", "pass2"],
   "properties": {
     "target": {
       "type": "string",
       "description": "skills/<name> path being audited"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "Selected authoritative source skill-conformance profile ID."
     },
     "verdict": {
       "type": "string",
@@ -65,7 +69,7 @@
           "maxItems": 8,
           "items": {
             "type": "object",
-            "required": ["id", "status"],
+            "required": ["id", "severity", "status"],
             "properties": {
               "id": {
                 "type": "string",
@@ -84,7 +88,18 @@
               "status": {
                 "type": "string",
                 "enum": ["pass", "warn", "fail", "n/a"],
-                "description": "n/a applies when the check is conditionally inapplicable (e.g., references-modularization on a <400-line skill)."
+                "description": "Status derived from the selected profile severity."
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["WARN", "FAIL"]
+              },
+              "forms": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["inline-marker", "block-marker", "metadata-list"]
+                }
               },
               "evidence": {
                 "type": "string",

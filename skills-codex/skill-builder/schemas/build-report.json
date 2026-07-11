@@ -3,7 +3,7 @@
   "title": "Skill Build Report",
   "description": "Output contract for skill-builder. Reports what mode ran, which files were created, and whether the post-build self-audit passed.",
   "type": "object",
-  "required": ["mode", "skill_name", "files_created", "audit_pass"],
+  "required": ["mode", "skill_name", "profile_id", "files_created", "audit_pass"],
   "properties": {
     "mode": {
       "type": "string",
@@ -14,6 +14,10 @@
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*$",
       "description": "Lowercase-hyphen slug for the new skill (matches directory name)."
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "Selected authoritative source skill-conformance profile ID."
     },
     "files_created": {
       "type": "array",

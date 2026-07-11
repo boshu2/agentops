@@ -24,9 +24,9 @@ network — and asserts the skill that DECLARES the phrase in its
 `trigger_probes:` frontmatter list ranks #1. Output is byte-stable across runs.
 
 Exit codes:
-    0  every description carries a trigger (or --strict not set);
+    0  every emitted profile check passes (or --strict not set);
        in --probe mode: the declaring skill ranks #1 for the phrase
-    1  one or more descriptions lack a trigger AND --strict is set;
+    1  one or more emitted profile checks is WARN/FAIL AND --strict is set;
        in --probe mode: the declaring skill does NOT rank #1
     2  usage error (skills dir not found, or no skill declares the phrase)
 """
@@ -35,20 +35,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Phrases that count as an explicit trigger marker, mirroring the regex in
-# heal-skill/scripts/audit.sh (Form b). Keep these in sync with the auditor.
-TRIGGER_MARKERS = (
-    "**Use when:",
-    "**Triggers:",
-    "**Perfect for:",
-    "Use when:",
-    "Triggers:",
-)
+try:
+    from conformance_profile import ProfileError, load_profile, trigger_forms
+except ModuleNotFoundError as exc:
+    ProfileError = ValueError  # type: ignore[misc,assignment]
+    load_profile = None  # type: ignore[assignment]
+    trigger_forms = None  # type: ignore[assignment]
+    _PROFILE_IMPORT_ERROR = exc
+else:
+    _PROFILE_IMPORT_ERROR = None
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # Stop-words stripped when deriving a suggested trigger stub from the name.
 _STOPWORDS = frozenset({"the", "a", "an", "for", "and", "to", "of", "with"})
@@ -65,6 +68,8 @@ class SkillScan:
     forms: list[str] = field(default_factory=list)
     score: int = 0
     suggestion: str = ""
+    profile_id: str = ""
+    checks: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Return a JSON-serializable view for --json / robot mode."""
@@ -75,6 +80,8 @@ class SkillScan:
             "forms": self.forms,
             "score": self.score,
             "suggestion": self.suggestion,
+            "profile_id": self.profile_id,
+            "checks": self.checks,
         }
 
 
@@ -256,7 +263,9 @@ class ProbeResult:
         }
 
 
-def probe_corpus(skills_dir: Path, phrase: str) -> list[ProbeResult]:
+def probe_corpus(
+    skills_dir: Path, phrase: str, profile: dict | None = None
+) -> list[ProbeResult]:
     """Rank every skill against `phrase` using the deterministic lexical ranker.
 
     Sorted by descending score, then ascending name — a total, byte-stable
@@ -265,7 +274,20 @@ def probe_corpus(skills_dir: Path, phrase: str) -> list[ProbeResult]:
     """
     ranked: list[ProbeResult] = []
     for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
-        scan = scan_skill(skill_md)
+        if profile is None:
+            try:
+                text = skill_md.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            frontmatter, _ = split_frontmatter(text)
+            scan = SkillScan(
+                name=parse_field(frontmatter, "name") or skill_md.parent.name,
+                path=skill_md,
+                description=description_block(frontmatter),
+                has_trigger=False,
+            )
+        else:
+            scan = scan_skill(skill_md, profile)
         if scan is None:
             continue
         frontmatter, _ = split_frontmatter(skill_md.read_text(encoding="utf-8"))
@@ -303,23 +325,11 @@ def render_probe(phrase: str, ranked: list[ProbeResult]) -> str:
     return "\n".join(lines)
 
 
-def detect_trigger(text: str, frontmatter: str) -> list[str]:
-    """Return the trigger forms present, matching audit.sh's three forms.
-
-    Form a: `description: |` literal block scalar.
-    Form b: an explicit marker (`Use when:` / `Triggers:` / `Perfect for:`)
-            anywhere in the file, mirroring audit.sh's whole-file grep.
-    Form c: a `triggers:` YAML list with three or more items.
-    """
-    forms: list[str] = []
-    desc_value = parse_field(frontmatter, "description")
-    if desc_value.startswith("|"):
-        forms.append("block-scalar")
-    if any(marker in text for marker in TRIGGER_MARKERS):
-        forms.append("explicit-marker")
-    if count_trigger_list(frontmatter) >= 3:
-        forms.append("triggers-list")
-    return forms
+def detect_trigger(text: str, profile: dict) -> list[str]:
+    """Return canonical trigger form IDs from the selected profile semantics."""
+    if trigger_forms is None:
+        raise ProfileError(f"profile configuration loader missing: {_PROFILE_IMPORT_ERROR}")
+    return trigger_forms(text, profile)
 
 
 def score_trigger(description: str) -> int:
@@ -351,17 +361,34 @@ def suggest_triggers(name: str, description: str) -> str:
     return f"Triggers: {quoted}"
 
 
-def scan_skill(skill_md: Path) -> SkillScan | None:
+def scan_skill(skill_md: Path, profile: dict | None = None) -> SkillScan | None:
     """Scan one SKILL.md. Returns None if the file is unreadable/empty."""
     try:
         text = skill_md.read_text(encoding="utf-8")
     except OSError:
         return None
+    if profile is None:
+        if load_profile is None:
+            raise ProfileError(f"profile configuration loader missing: {_PROFILE_IMPORT_ERROR}")
+        profile = load_profile(REPO_ROOT, os.environ.get("SKILL_CONFORMANCE_PROFILE_ID"))
     frontmatter, _body = split_frontmatter(text)
     name = parse_field(frontmatter, "name") or skill_md.parent.name
     description = description_block(frontmatter)
-    forms = detect_trigger(text, frontmatter)
+    forms = detect_trigger(text, profile)
     has_trigger = bool(forms)
+    rules = profile["rules"]
+    checks = []
+    for rule_id in ("description-has-triggers", "trigger-clarity"):
+        accepted = rules[rule_id].get("accepted_forms", profile["trigger_forms"]["accepted"])
+        passed = any(form in accepted for form in forms)
+        severity = rules[rule_id]["severity"]
+        checks.append(
+            {
+                "id": rule_id,
+                "severity": severity,
+                "status": "pass" if passed else severity.lower(),
+            }
+        )
     scan = SkillScan(
         name=name,
         path=skill_md,
@@ -369,20 +396,34 @@ def scan_skill(skill_md: Path) -> SkillScan | None:
         has_trigger=has_trigger,
         forms=forms,
         score=score_trigger(description),
+        profile_id=profile["id"],
+        checks=checks,
     )
     if not has_trigger:
         scan.suggestion = suggest_triggers(name, parse_field(frontmatter, "description"))
     return scan
 
 
-def scan_corpus(skills_dir: Path) -> list[SkillScan]:
+def scan_corpus(skills_dir: Path, profile: dict | None = None) -> list[SkillScan]:
     """Scan every `<skill>/SKILL.md` under skills_dir, sorted by name."""
     results: list[SkillScan] = []
     for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
-        scan = scan_skill(skill_md)
+        scan = scan_skill(skill_md, profile)
         if scan is not None:
             results.append(scan)
     return results
+
+
+def aggregate_verdict(results: list[SkillScan]) -> str:
+    """Derive the scanner verdict solely from emitted profile check statuses."""
+    statuses = {
+        check["status"] for result in results for check in result.checks
+    }
+    if "fail" in statuses:
+        return "FAIL"
+    if any(status != "pass" for status in statuses):
+        return "WARN"
+    return "PASS"
 
 
 def list_probe_pairs(skills_dir: Path) -> list[tuple[str, str]]:
@@ -407,13 +448,17 @@ def list_probe_pairs(skills_dir: Path) -> list[tuple[str, str]]:
     return sorted(set(pairs))
 
 
-def render_markdown(results: list[SkillScan]) -> str:
+def render_markdown(results: list[SkillScan], profile_id: str = "") -> str:
     """Render a human-readable remediation report."""
     total = len(results)
     missing = [r for r in results if not r.has_trigger]
+    selected_profile = profile_id or (results[0].profile_id if results else "unknown")
+    verdict = aggregate_verdict(results)
     lines = [
         "# Skill description trigger scan",
         "",
+        f"- Profile: **{selected_profile}**",
+        f"- Verdict: **{verdict}**",
         f"- Skills scanned: **{total}**",
         f"- With trigger marker: **{total - len(missing)}**",
         f"- Missing trigger marker: **{len(missing)}** "
@@ -434,13 +479,20 @@ def render_markdown(results: list[SkillScan]) -> str:
     return "\n".join(lines)
 
 
-def _run_probe(skills_dir: Path, phrase: str, *, json_mode: bool, quiet: bool) -> int:
+def _run_probe(
+    skills_dir: Path,
+    phrase: str,
+    *,
+    profile: dict | None,
+    json_mode: bool,
+    quiet: bool,
+) -> int:
     """Drive --probe: rank the corpus and assert the declaring skill wins.
 
     Returns 2 if no skill declares the phrase (a usage error — nothing to
     assert), 0 if the declaring skill ranks #1, 1 otherwise.
     """
-    ranked = probe_corpus(skills_dir, phrase)
+    ranked = probe_corpus(skills_dir, phrase, profile)
     declaring = [r for r in ranked if r.declares_phrase]
     top = ranked[0] if ranked else None
     declarer_is_top = bool(top and top.declares_phrase)
@@ -476,7 +528,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--json", action="store_true", help="Emit JSON (robot mode)")
     parser.add_argument(
-        "--strict", action="store_true", help="Exit 1 if any description lacks a trigger"
+        "--strict", action="store_true", help="Exit 1 if any emitted profile check is non-pass"
     )
     parser.add_argument("--quiet", action="store_true", help="Suppress the human report")
     parser.add_argument(
@@ -505,22 +557,40 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.probe is not None:
-        return _run_probe(skills_dir, args.probe, json_mode=args.json, quiet=args.quiet)
+        return _run_probe(
+            skills_dir,
+            args.probe,
+            profile=None,
+            json_mode=args.json,
+            quiet=args.quiet,
+        )
 
-    results = scan_corpus(skills_dir)
+    if load_profile is None:
+        print(f"profile configuration loader missing: {_PROFILE_IMPORT_ERROR}", file=sys.stderr)
+        return 2
+    try:
+        profile = load_profile(REPO_ROOT, os.environ.get("SKILL_CONFORMANCE_PROFILE_ID"))
+    except ProfileError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    results = scan_corpus(skills_dir, profile)
     missing = [r for r in results if not r.has_trigger]
+    verdict = aggregate_verdict(results)
 
     if args.json:
         payload = {
+            "profile_id": profile["id"],
+            "verdict": verdict,
             "scanned": len(results),
             "missing": len(missing),
             "skills": [r.to_dict() for r in results],
         }
         print(json.dumps(payload, indent=2))
     elif not args.quiet:
-        print(render_markdown(results))
+        print(render_markdown(results, profile["id"]))
 
-    return 1 if (args.strict and missing) else 0
+    return 1 if (args.strict and verdict != "PASS") else 0
 
 
 if __name__ == "__main__":

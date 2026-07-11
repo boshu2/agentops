@@ -1,7 +1,8 @@
 # Unified SKILL.md Template + Auditor Checklist
 
-> **Source:** `anthropics/financial-services` @ commit `bb4a2b3e53cf27f8900b33ed6a2d95ed32e57f1d` (cloned 2026-05-06). Re-extract diff if upstream restructures.
-> **Methodology:** Combines content discipline from financial-services (front-loaded constraints, verification checkpoints, output spec, quality rubric) with AgentOps' structured frontmatter (skill_api_version, context, metadata, output_contract).
+> **Authority:** Executable values come from the source
+> `skills/skill-builder/references/skill-conformance-profiles.yaml`; Codex does
+> not maintain another profile ledger.
 
 This is the canonical template `skill-builder` materializes and the heal-skill deep audit validates against. Two artifacts in one document because both skills need identical truth.
 
@@ -67,11 +68,13 @@ output_contract: <path-to-schema-or-description>
 
 ## Output Specification
 
-<Format + filename + structure — explicit>
+<Complete executable handoff>
 
-**Format:** <markdown | json | excel | etc.>
-**Filename:** <naming convention>
-**Structure:** <key sections / fields>
+**Artifact directory:** <directory or path>
+**Filename convention:** <naming convention>
+**Serialization/schema format:** <format and schema>
+**Validator command:** <exact validator invocation>
+**Downstream handoff:** <consumer or next workflow>
 
 ## Quality Rubric
 
@@ -110,7 +113,7 @@ Audits run in **two passes**. Pass 1 runs `heal-skill --check --strict` for stru
 | All `references/*.md` linked from SKILL.md | UNLINKED_REF | WARN |
 | References point at existing files | DEAD_REF | WARN |
 | Scripts referenced exist | SCRIPT_REF_MISSING | WARN |
-| User-invocable in catalog | CATALOG_MISSING | WARN |
+| User-invocable in dispositions ledger | MISSING_DISPOSITION | FAIL in strict mode |
 
 ### Pass 2 — 8 NEW checks beyond heal-skill
 
@@ -118,14 +121,14 @@ Audits run in **two passes**. Pass 1 runs `heal-skill --check --strict` for stru
 
 | # | Check id | What passes | Severity |
 |---|----------|-------------|----------|
-| 1 | `description-has-triggers` | ANY of: (a) YAML `\|` block scalar in `description`, (b) body of `description` contains `Triggers:` / `Use when:` / `Perfect for:` markers, (c) `metadata.triggers` array with 3+ items | FAIL |
-| 2 | `constraints-frontloaded` | First H2 within 80 lines after closing frontmatter `---` contains `Constraints` or `⚠️` | WARN |
-| 3 | `rationale-present` | Each constraint bullet contains `why`, `because`, `this matters`, or similar rationale token | WARN |
-| 4 | `verification-checkpoints` | If skill has multi-phase Workflow/Methodology, body contains `Checkpoint`, `confirm`, or `Wait for` markers between phases | WARN |
-| 5 | `output-spec-explicit` | Has `## Output` / `## Deliverables` / `## Returns` H2 mentioning format AND filename/path convention | FAIL |
-| 6 | `quality-rubric` | Has `## Quality` / `## Checklist` / `## Rubric` / `## Best Practices` H2 with 3+ bullet items | WARN |
-| 7 | `references-modularization` | If SKILL.md > 400 lines, `references/` subdirectory exists | WARN |
-| 8 | `trigger-clarity` | Frontmatter `description` contains explicit `Use when:` or `Triggers:` markers an LLM can match | FAIL |
+| 1 | `description-has-triggers` | A profile-accepted marker inside the description value, or a metadata list meeting the profile minimum | Profile |
+| 2 | `constraints-frontloaded` | First H2 within 80 lines after closing frontmatter `---` contains `Constraints` or `⚠️` | Profile |
+| 3 | `rationale-present` | Each constraint bullet contains `why`, `because`, `this matters`, or similar rationale token | Profile |
+| 4 | `verification-checkpoints` | If skill has multi-phase Workflow/Methodology, body contains `Checkpoint`, `confirm`, or `Wait for` markers between phases | Profile |
+| 5 | `output-spec-explicit` | One output section supplies every profile-required executable-handoff component | Profile |
+| 6 | `quality-rubric` | Has `## Quality` / `## Checklist` / `## Rubric` / `## Best Practices` H2 with 3+ bullet items | Profile |
+| 7 | `references-modularization` | SKILL.md is at or below the profile's 250-line kernel limit | Profile |
+| 8 | `trigger-clarity` | Frontmatter `description` contains a profile-accepted marker an LLM can match | Profile |
 
 ### Verdict rule
 
@@ -161,7 +164,7 @@ H1 title
 └── Overview / When to Use
 └── ⚠️ Critical Constraints      ← MUST appear within first 80 lines after frontmatter
 └── Workflow / Methodology       ← MUST contain checkpoints between phases when multi-phase
-└── Output Specification         ← MUST include format + filename
+└── Output Specification         ← MUST include the complete executable handoff
 └── Quality Rubric               ← MUST contain 3+ bullets
 └── Examples
 └── Troubleshooting

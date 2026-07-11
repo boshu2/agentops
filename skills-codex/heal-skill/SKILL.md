@@ -94,6 +94,12 @@ Show the output. If `--fix` was used, summarize what changed. If `DEAD_REF` find
 
 ## Output Format
 
+**Artifact directory:** stdout for human findings; `.agents/audits/` for JSON reports.
+**Filename convention:** `<skill>-audit.json`.
+**Serialization/schema format:** JSON matching `skills/heal-skill/schemas/audit-report.json`.
+**Validator command:** `jq -e . .agents/audits/<skill>-audit.json`.
+**Downstream handoff:** consumed by the validation wave before repair.
+
 One line per finding:
 
 ```
@@ -138,8 +144,8 @@ Two passes, then an aggregate verdict:
   not a ship blocker. The density block
   ([references/context-density-checks.md](references/context-density-checks.md)) is
   advisory too.
-- **Three accepted trigger forms:** `description-has-triggers` accepts a YAML `|` block
-  scalar, `Triggers:`/`Use when:` markers, OR a `metadata.triggers` array with 3+ items
+- **Accepted trigger forms:** `description-has-triggers` accepts only the forms
+  declared by the authoritative `repo-runtime` profile
   (finding `f-2026-05-06-auditor-checks-must-fit-host-conventions` — audit checks must fit
   the host's existing valid conventions).
 
@@ -199,6 +205,8 @@ Executable spec: [references/skill-auditor.feature](references/skill-auditor.fea
 - [red-team](../validate/SKILL.md) — complementary; probes USABILITY (does the workflow actually work) vs the audit (is the structure correct)
 
 ## References
+
+- `skills/skill-builder/references/skill-conformance-profiles.yaml` — authoritative source rules, severities, and boundary
 
 - [references/skill-stocktake.md](references/skill-stocktake.md)
 - [references/codex-parity.md](references/codex-parity.md)

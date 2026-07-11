@@ -31,6 +31,10 @@ output_contract: 'stdout: standards reference (loaded JIT)'
 
 Language-specific coding standards loaded on-demand by other skills.
 
+Skill conformance resolves the authoritative `repo-runtime` profile at
+`skills/skill-builder/references/skill-conformance-profiles.yaml`; this library
+does not redefine its rule IDs, severities, limits, or clean-room policy.
+
 ## Purpose
 
 This is a **library skill** - it doesn't run standalone but provides standards

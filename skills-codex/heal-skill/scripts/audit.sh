@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 HEAL_SH="$SCRIPT_DIR/heal.sh"
 SCORE_PY="$SCRIPT_DIR/score_agentops_skill.py"
+PROFILE_TOOL="$REPO_ROOT/skills/skill-builder/scripts/conformance_profile.py"
 
 STRICT=0
 JSON_OUT=""
@@ -42,6 +43,58 @@ done
 
 SKILL_MD="$TARGET/SKILL.md"
 [[ -f "$SKILL_MD" ]] || { echo "audit.sh: no SKILL.md at $SKILL_MD" >&2; exit 2; }
+
+# Codex resolves semantics through the authoritative source profile; there is
+# intentionally no second profile ledger under skills-codex/.
+TARGET_ABS="$(cd "$TARGET" && pwd)"
+CANONICAL_TARGET=0
+case "$TARGET_ABS" in
+  "$REPO_ROOT"/skills/*|"$REPO_ROOT"/skills-codex/*) CANONICAL_TARGET=1 ;;
+esac
+SELECTED_PROFILE="${SKILL_CONFORMANCE_PROFILE_ID:-}"
+if [[ -z "$SELECTED_PROFILE" && "$CANONICAL_TARGET" -eq 0 ]] \
+  && ! grep -q '^skill_api_version:' "$SKILL_MD"; then
+  SELECTED_PROFILE="external-observation"
+fi
+profile_args=(--repo-root "$REPO_ROOT" --audit-tsv "$SKILL_MD")
+if [[ -n "$SELECTED_PROFILE" ]]; then
+  profile_args+=(--profile-id "$SELECTED_PROFILE")
+fi
+if [[ ! -f "$PROFILE_TOOL" ]]; then
+  echo "profile configuration missing: $PROFILE_TOOL" >&2
+  exit 2
+fi
+if ! PROFILE_DATA="$(python3 "$PROFILE_TOOL" "${profile_args[@]}")"; then
+  exit 2
+fi
+
+PROFILE_ID=""
+KERNEL_MAX_LINES=""
+PROFILE_LINE_COUNT=""
+TRIGGER_FORMS=""
+OUTPUT_COMPLETE="false"
+RULE_IDS=()
+declare -A CHECK_SEVERITY=()
+declare -A PROFILE_RULE_FORMS=()
+while IFS=$'\t' read -r kind value extra forms; do
+  case "$kind" in
+    profile_id) PROFILE_ID="$value" ;;
+    kernel_max_lines) KERNEL_MAX_LINES="$value" ;;
+    line_count) PROFILE_LINE_COUNT="$value" ;;
+    trigger_forms) TRIGGER_FORMS="$value" ;;
+    output_complete) OUTPUT_COMPLETE="$value" ;;
+    rule)
+      RULE_IDS+=("$value")
+      CHECK_SEVERITY[$value]="$extra"
+      PROFILE_RULE_FORMS[$value]="$forms"
+      ;;
+  esac
+done <<<"$PROFILE_DATA"
+
+if [[ -z "$PROFILE_ID" || -z "$KERNEL_MAX_LINES" || ${#RULE_IDS[@]} -eq 0 ]]; then
+  echo "profile configuration error: incomplete evaluated profile data" >&2
+  exit 2
+fi
 
 # --- Pass 1: heal-skill structural ---------------------------------------
 PASS1_OUT=""
@@ -97,28 +150,18 @@ PY
 
 # --- Pass 2: 8 NEW checks ------------------------------------------------
 
-# Check 1: description-has-triggers (FAIL on miss)
+# Check 1: description-has-triggers (WARN on miss; run_check registers severity)
 check_description_has_triggers() {
-  local skill_md="$1"
-  # Form (a): YAML | block scalar in description
-  if awk 'BEGIN{n=0; found=0} /^---$/{n++; next} n==1 && /^description: \|/{found=1; exit} n==2{exit} END{exit (found ? 0 : 1)}' "$skill_md" 2>/dev/null; then
-    return 0
-  fi
-  # Form (b): explicit markers in body or in description block
-  if grep -qE '(\*\*Use when:|\*\*Triggers:|\*\*Perfect for:|^Triggers:|^Use when:)' "$skill_md"; then
-    return 0
-  fi
-  # Form (c): metadata.triggers array with 3+ items
-  if awk '
-    BEGIN{n=0; in_arr=0; count=0}
-    /^---$/{n++; next}
-    n==1 && /^[ ]+triggers:/{in_arr=1; next}
-    n==1 && in_arr && /^[ ]+- /{count++; next}
-    n==1 && in_arr && /^[a-z_-]+:/{exit}
-    END{exit (count >= 3 ? 0 : 1)}
-  ' "$skill_md" 2>/dev/null; then
-    return 0
-  fi
+  profile_rule_has_form description-has-triggers
+}
+
+profile_rule_has_form() {
+  local rule_id="$1" accepted form
+  accepted=",${PROFILE_RULE_FORMS[$rule_id]},"
+  IFS=',' read -r -a found_forms <<<"$TRIGGER_FORMS"
+  for form in "${found_forms[@]}"; do
+    [[ -n "$form" && "$accepted" == *",$form,"* ]] && return 0
+  done
   return 1
 }
 
@@ -169,17 +212,7 @@ check_verification_checkpoints() {
 
 # Check 5: output-spec-explicit (FAIL on miss)
 check_output_spec_explicit() {
-  local skill_md="$1"
-  awk '
-    BEGIN{in_out=0; has_format=0; has_path=0}
-    /^## (Output|Deliverables|Returns|Output Specification|Output Format)/{in_out=1; next}
-    in_out && /^## /{exit}
-    in_out {
-      if (/markdown|json|yaml|excel|stdout|file|director|\.md|\.json|\.yaml/) has_format=1
-      if (/Filename:|Path:|naming|file path|written to|written at|\/.*\.(md|json|yaml|sh)|\.agents\//) has_path=1
-    }
-    END{exit (has_format && has_path ? 0 : 1)}
-  ' "$skill_md"
+  [[ "$OUTPUT_COMPLETE" == "true" ]]
 }
 
 # Check 6: quality-rubric (WARN on miss)
@@ -196,29 +229,12 @@ check_quality_rubric() {
 
 # Check 7: references-modularization (WARN on miss, conditional)
 check_references_modularization() {
-  local skill_md="$1"
-  local skill_dir
-  skill_dir="$(dirname "$skill_md")"
-  local lines
-  lines=$(wc -l < "$skill_md")
-  if (( lines <= 400 )); then return 0; fi
-  [[ -d "$skill_dir/references" ]] || return 1
-  local count
-  count=$(find "$skill_dir/references" -maxdepth 1 -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
-  (( count > 0 ))
+  (( PROFILE_LINE_COUNT <= KERNEL_MAX_LINES ))
 }
 
-# Check 8: trigger-clarity (FAIL on miss)
+# Check 8: trigger-clarity (WARN on miss; run_check registers severity)
 check_trigger_clarity() {
-  local skill_md="$1"
-  awk '
-    BEGIN{n=0; in_desc=0; out=""}
-    /^---$/{n++; if (n==2) exit; next}
-    n==1 && /^description:/{in_desc=1; out=out $0 "\n"; next}
-    n==1 && in_desc && /^[a-z_-]+:/{in_desc=0}
-    n==1 && in_desc {out=out $0 "\n"}
-    END{print out}
-  ' "$skill_md" | grep -qE '(Use when:|Triggers:|Perfect for:)'
+  profile_rule_has_form trigger-clarity
 }
 
 # --- Run all 8 checks ----------------------------------------------------
@@ -227,25 +243,25 @@ declare -A CHECK_EVIDENCE=()
 
 run_check() {
   local id="$1"
-  local sev="$2"
-  local fn="$3"
+  local fn="$2"
+  local severity="${CHECK_SEVERITY[$id]}"
   if "$fn" "$SKILL_MD"; then
     CHECK_STATUS[$id]="pass"
     CHECK_EVIDENCE[$id]="check passed"
   else
-    CHECK_STATUS[$id]="$sev"
+    CHECK_STATUS[$id]="${severity,,}"
     CHECK_EVIDENCE[$id]="check failed"
   fi
 }
 
-run_check description-has-triggers   warn check_description_has_triggers
-run_check constraints-frontloaded    warn check_constraints_frontloaded
-run_check rationale-present          warn check_rationale_present
-run_check verification-checkpoints   warn check_verification_checkpoints
-run_check output-spec-explicit       fail check_output_spec_explicit
-run_check quality-rubric             warn check_quality_rubric
-run_check references-modularization  warn check_references_modularization
-run_check trigger-clarity            warn check_trigger_clarity
+run_check description-has-triggers   check_description_has_triggers
+run_check constraints-frontloaded    check_constraints_frontloaded
+run_check rationale-present          check_rationale_present
+run_check verification-checkpoints   check_verification_checkpoints
+run_check output-spec-explicit       check_output_spec_explicit
+run_check quality-rubric             check_quality_rubric
+run_check references-modularization  check_references_modularization
+run_check trigger-clarity            check_trigger_clarity
 
 # --- Advisory density report ---------------------------------------------
 # This is deliberately not part of the PASS/WARN/FAIL verdict. Packet-boundary
@@ -309,14 +325,14 @@ fi
 # --- Aggregate verdict ---------------------------------------------------
 fails=0
 warns=0
-for id in description-has-triggers constraints-frontloaded rationale-present verification-checkpoints output-spec-explicit quality-rubric references-modularization trigger-clarity; do
+for id in "${RULE_IDS[@]}"; do
   case "${CHECK_STATUS[$id]}" in
     fail) fails=$((fails+1)) ;;
     warn) warns=$((warns+1)) ;;
   esac
 done
 
-if [[ "$PASS1_STATUS" == "fail" ]]; then
+if [[ "$PASS1_STATUS" == "fail" && "$CANONICAL_TARGET" -eq 1 ]]; then
   VERDICT="FAIL"
 elif (( fails > 0 )); then
   VERDICT="FAIL"
@@ -330,6 +346,7 @@ fi
 emit_json() {
   printf '{\n'
   printf '  "target": "%s",\n' "$TARGET"
+  printf '  "profile_id": "%s",\n' "$PROFILE_ID"
   printf '  "verdict": "%s",\n' "$VERDICT"
   printf '  "pass1": {\n'
   printf '    "status": "%s",\n' "$PASS1_STATUS"
@@ -341,10 +358,22 @@ emit_json() {
   printf '  "pass2": {\n'
   printf '    "checks": [\n'
   local first=1
-  for id in description-has-triggers constraints-frontloaded rationale-present verification-checkpoints output-spec-explicit quality-rubric references-modularization trigger-clarity; do
+  for id in "${RULE_IDS[@]}"; do
     if (( ! first )); then printf ',\n'; fi
     first=0
-  printf '      {"id":"%s","status":"%s","evidence":"%s"}' "$id" "${CHECK_STATUS[$id]}" "${CHECK_EVIDENCE[$id]}"
+  printf '      {"id":"%s","status":"%s","severity":"%s","evidence":"%s"' \
+    "$id" "${CHECK_STATUS[$id]}" "${CHECK_SEVERITY[$id]}" "${CHECK_EVIDENCE[$id]}"
+  if [[ "$id" == "description-has-triggers" || "$id" == "trigger-clarity" ]]; then
+    forms_json="$(python3 - "$TRIGGER_FORMS" <<'PY'
+import json
+import sys
+
+print(json.dumps([item for item in sys.argv[1].split(",") if item]))
+PY
+)"
+    printf ',"forms":%s' "$forms_json"
+  fi
+  printf '}'
   done
   printf '\n    ]\n'
   printf '  },\n'
@@ -374,9 +403,10 @@ fi
 # Always print human-readable summary to stderr
 {
   echo "=== Skill Audit: $TARGET ==="
+  echo "Profile: $PROFILE_ID"
   echo "Pass 1 (heal-skill --strict): $PASS1_STATUS (exit $PASS1_EXIT_CODE), $PASS1_FINDING_COUNT findings ($PASS1_AUTOFIXABLE autofixable)"
   echo "Pass 2 (8 NEW checks):"
-  for id in description-has-triggers constraints-frontloaded rationale-present verification-checkpoints output-spec-explicit quality-rubric references-modularization trigger-clarity; do
+  for id in "${RULE_IDS[@]}"; do
     printf "  [%-4s] %s\n" "${CHECK_STATUS[$id]}" "$id"
   done
   echo "Density advisory: $density_present_count/6 fields present ($DENSITY_STATUS)"
