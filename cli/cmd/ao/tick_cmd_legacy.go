@@ -70,14 +70,7 @@ var tickReopenCmd = &cobra.Command{
 	},
 }
 
-var tickCloseCmd = &cobra.Command{
-	Use:   "close <id> <commit-message> <evidence-ref> [paths...]",
-	Short: "Close a bead and persist the explicit ledger/evidence paths",
-	Args:  cobra.MinimumNArgs(3),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickClose(newTickRuntime(cmd), args[0], args[1], args[2], args[3:])
-	},
-}
+var tickCloseCmd = closeModule.LegacyCommand()
 
 var tickVerdictGateCmd = &cobra.Command{
 	Use:   "verdict-gate <file|->",
