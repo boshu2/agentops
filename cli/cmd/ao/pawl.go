@@ -20,11 +20,27 @@ var pawlCmd = &cobra.Command{
 	Use:   "pawl",
 	Short: "Cross-family membrane review and verdict tooling (the in-repo acceptance pawl)",
 	Long: `The pawl is AgentOps's acceptance gate: a change reaches "done" only with an
-INDEPENDENT cross-family verdict (never the author, never the same model). 'ao pawl
-review' runs that review and, on CONFIRMED, writes the commit-bound verdict the
-push-to-main gate enforces.`,
+INDEPENDENT cross-family verdict (never the author, never the same model).
+
+'ao pawl review' is the FRONT DOOR — it works in any git repo with just this binary
+plus one reviewer CLI (codex or agy) on PATH: no NTM, no tmux, no config. On
+CONFIRMED it writes the commit-bound verdict the push-to-main gate enforces.
+
+The remaining verbs (up/down/reap/health/doctor/smoke/route/metrics) operate the
+OPTIONAL standing warm service — operator machinery that requires the NTM swarm
+substrate. You never need them to use the membrane.`,
 	Args: cobra.NoArgs,
 }
+
+// pawl help groups (age-hk5zg.2 / S2): `review` is the user front door; the warm
+// standing-service verbs are operator-only and require NTM. The group split keeps a
+// user from reading `up` as a prerequisite for using the membrane.
+const (
+	pawlUserGroupID        = "pawl-user"
+	pawlUserGroupTitle     = "Use the membrane (the front door — needs no NTM, no setup):"
+	pawlOperatorGroupID    = "pawl-operator"
+	pawlOperatorGroupTitle = "Operate the standing warm service (operator-only; requires the NTM swarm substrate):"
+)
 
 // pawlReviewExitError carries scripts/pawl-review.sh's exit code so it propagates
 // VERBATIM through ao (the exit code IS the verdict, like ao plan-pawl / ao validate):
@@ -70,17 +86,28 @@ turns real strict on. See 'ao verify --help' for the full posture.`,
 
 func init() {
 	rootCmd.AddCommand(pawlCmd)
+	// age-hk5zg.2: group the surface so `review` reads as the front door and the warm
+	// verbs read as operator-only (requires NTM) — grouping/labeling only, every verb
+	// keeps its name and behavior.
+	pawlCmd.AddGroup(&cobra.Group{ID: pawlUserGroupID, Title: pawlUserGroupTitle})
+	pawlCmd.AddGroup(&cobra.Group{ID: pawlOperatorGroupID, Title: pawlOperatorGroupTitle})
+	pawlReviewCmd.GroupID = pawlUserGroupID
 	pawlCmd.AddCommand(pawlReviewCmd)
 	// ml8: surface the standing pawl-service (scripts/pawl.sh) on the ao CLI so the bead
 	// intent ("ao pawl up/route/metrics") is the real command, not "bash scripts/pawl.sh".
-	pawlCmd.AddCommand(pawlServiceCmd("up", "up [--dual|--tri|--models a,b,c]", "Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent"))
-	pawlCmd.AddCommand(pawlServiceCmd("down", "down", "Tear down the standing pawl-service (no orphan panes)"))
-	pawlCmd.AddCommand(pawlServiceCmd("reap", "reap", "Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)"))
-	pawlCmd.AddCommand(pawlServiceCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service + the membrane tier"))
-	pawlCmd.AddCommand(pawlServiceCmd("doctor", "doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Read-only standing pawl preflight: assert atm alias, session, pane cwd/model, trust prompts, readiness, and evidence policy"))
-	pawlCmd.AddCommand(pawlServiceCmd("smoke", "smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Alias for pawl doctor: non-mutating readiness smoke before routing real reviews"))
-	pawlCmd.AddCommand(pawlServiceCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict"))
-	pawlCmd.AddCommand(pawlServiceCmd("metrics", "metrics [--json]", "p50/p95 route latency + agreement-rate SLOs over the recorded routes"))
+	addPawlOperatorCmd := func(sub, use, short string) {
+		c := pawlServiceCmd(sub, use, short)
+		c.GroupID = pawlOperatorGroupID
+		pawlCmd.AddCommand(c)
+	}
+	addPawlOperatorCmd("up", "up [--dual|--tri|--models a,b,c]", "Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent")
+	addPawlOperatorCmd("down", "down", "Tear down the standing pawl-service (no orphan panes)")
+	addPawlOperatorCmd("reap", "reap", "Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)")
+	addPawlOperatorCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service + the membrane tier")
+	addPawlOperatorCmd("doctor", "doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Read-only standing pawl preflight: assert swarm binary (ntm-first), session, pane cwd/model, trust prompts, readiness, and evidence policy")
+	addPawlOperatorCmd("smoke", "smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Alias for pawl doctor: non-mutating readiness smoke before routing real reviews")
+	addPawlOperatorCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict")
+	addPawlOperatorCmd("metrics", "metrics [--json]", "p50/p95 route latency + agreement-rate SLOs over the recorded routes")
 }
 
 // defaultPawlLabel mirrors scripts/pawl.sh's LABEL default.

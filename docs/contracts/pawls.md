@@ -217,6 +217,13 @@ A new pawl earns its place **only** if the action is genuinely irreversible — 
 
 ## Operating the warm pawl-service: idle reaping
 
+> **Operator-only (requires NTM).** Everything in this section is OPTIONAL operator
+> machinery: the warm verbs (`up`/`down`/`reap`/`health`/`doctor`/`smoke`/`route`/`metrics`)
+> drive tmux panes through the NTM swarm substrate and expect the repo under a
+> `projects_base`. **A user never needs any of it** — the front door is plain
+> `ao pawl review`, which runs cold (codex/agy one-shot) from any git repo with zero
+> NTM, zero `projects_base`, zero config. `ao pawl --help` groups the surface the same way.
+
 The cross-family pawl can run as a **standing warm service** (`ao pawl up` — capability-adaptive over the installed families; see [`scripts/pawl.sh`](../../scripts/pawl.sh)) so reviews route to warm panes instead of spinning a cold `codex exec` each time. Warm panes hold a model-account slot, so the service has an idle reaper:
 
 - **`ao pawl reap`** tears the session down **iff** it has been idle longer than `PAWL_IDLE_TTL` (default 1800s); otherwise it is a no-op. The next review's lazy-auto-up brings the service back.
@@ -234,7 +241,7 @@ Every `ao pawl` service verb (`up`/`down`/`reap`/`health`/`doctor`/`smoke`/`rout
 - **Installed binary, any git repo**: the **embedded** `pawl.sh` bundle runs against that repo, with a sanitized environment (trusted PATH, `BASH_ENV`/`ENV`/`GIT_EXTERNAL_DIFF` neutralized, `PAWL_UNTRUSTED_REPO=1`). A repo-planted `scripts/pawl.sh` is **never executed**. The session's family/pane **layout** is a property of the (global) tmux session, so it lives in a **session-scoped shared** file (`${TMPDIR:-/tmp}/pawl-session-<session>.json`) — a second repo routing to one existing `PAWL_SESSION` reads the same layout `up` wrote, not a wrong default. The per-repo `metrics.jsonl` stays under **that repo's** `.agents/pawl/`; a symlink anywhere in the state path (ancestor or leaf) is refused/neutralized so writes never escape the repo.
 - **Outside any git repo**: fail closed before mutation, naming the requirement.
 
-**`ao pawl up` (spawn).** `atm spawn <project>` roots its panes at `projects_base/<project>` — there is no cwd flag — so `up` can only spawn correctly when the repo is a **direct child of the ATM `projects_base`**. The project defaults to the `basename` of the git toplevel (`PAWL_PROJECT` overrides). Before spawning, `up` **verifies** that `projects_base/<project>` resolves back to this repo; if it does not (a nested worktree, or a repo outside `projects_base`), it **fails closed before any mutation** with an actionable message — never spawning into the wrong directory. When the target session already exists, `up` is idempotent (no spawn, no verification). The read-only verbs and `route` are fully cross-repo regardless.
+**`ao pawl up` (spawn).** The scripts resolve the swarm binary through one ntm-first seam (`PAWL_SWARM_BIN` override → the public `ntm` → the operator's `atm` alias; `doctor` reports which resolved as `swarm-bin`). `ntm spawn <project>` roots its panes at `projects_base/<project>` — there is no cwd flag — so `up` can only spawn correctly when the repo is a **direct child of the NTM `projects_base`**. The project defaults to the `basename` of the git toplevel (`PAWL_PROJECT` overrides). Before spawning, `up` **verifies** that `projects_base/<project>` resolves back to this repo; if it does not (a nested worktree, or a repo outside `projects_base`), it **fails closed before any mutation** with an actionable message — never spawning into the wrong directory. When the target session already exists, `up` is idempotent (no spawn, no verification). The read-only verbs and `route` are fully cross-repo regardless.
 
 **Dry-run.** Global `--dry-run` on a mutating verb (`up`/`down`/`reap`/`route`/`review`) — in either `--dry-run` or `--dry-run=true` form — executes **nothing** (no tmux/NTM spawn/kill/send, no state/verdict/metric/lock write) and reports the exact planned action; with `--json` it emits exactly one JSON object (`action`, `dry_run`, `mutated`, `session`, `families`, `tier`, `planned_steps`). The planned `session` is derived exactly as a real run would (`${PROJECT}--${LABEL}`). Read-only verbs (`health`/`doctor`/`smoke`/`metrics`) may inspect real state under `--dry-run` but run with `PAWL_DRY_RUN=1`, which suppresses even prompt-clearing key sends.
 

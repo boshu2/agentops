@@ -141,13 +141,27 @@ def _run_help(ao_bin: str, command: List[str]) -> subprocess.CompletedProcess:
     )
 
 
+# Cobra sections that head NON-command blocks. Any other column-0 line ending with
+# ":" is a command block: either the default "Available/Additional Commands:" or a
+# custom cobra.Group title (e.g. `ao pawl`'s front-door/operator split), whose titles
+# are arbitrary prose and need not contain the word "Commands".
+_NON_COMMAND_SECTIONS = {
+    "Usage:",
+    "Aliases:",
+    "Examples:",
+    "Flags:",
+    "Global Flags:",
+    "Additional help topics:",
+}
+
+
 def _parse_subcommands(help_text: str) -> List[str]:
-    """Parse the ``Available Commands:`` block of cobra help into command names."""
+    """Parse the command blocks of cobra help (default + group-titled) into names."""
     subs: List[str] = []
     in_block = False
     for line in help_text.splitlines():
         stripped = line.rstrip()
-        if re.match(r"^[A-Za-z].*Commands:\s*$", stripped):
+        if re.match(r"^[A-Za-z].*:\s*$", stripped) and stripped not in _NON_COMMAND_SECTIONS:
             in_block = True
             continue
         if in_block:
@@ -157,7 +171,9 @@ def _parse_subcommands(help_text: str) -> List[str]:
             if not line.startswith(("  ", "\t")):
                 in_block = False
                 continue
-            m = re.match(r"^\s+([a-z][a-z0-9-]*)\b", line)
+            # Command rows render as "  <name><2+ spaces><short>"; the >=2-space gap
+            # keeps Examples-style "  ao pawl ..." lines from parsing as commands.
+            m = re.match(r"^\s+([a-z][a-z0-9-]*)(\s{2,}|\s*$)", line)
             if m and m.group(1) not in {"help", "completion"}:
                 subs.append(m.group(1))
     return subs
