@@ -15,12 +15,16 @@
 #   1  at least one child is open/in_progress (each offending child printed)
 #   4  usage / missing-dependency / bad-input error
 #
-# Dependencies: bd, jq (stubbed via PATH in the hermetic bats suite).
+# Dependencies: ao, jq (stubbed via PATH in the hermetic bats suite).
 #
-# Child enumeration uses the canonical bd dependents query:
-#   bd dep list <epic> --direction=up -t parent-child --json
-# We pull the child id from whichever id-bearing field the record carries
-# (id / from_id / issue_id / dependent_id) so the gate survives bd schema drift.
+# Tracker-agnostic (age-5w8fd): all bead reads route through `ao beads exec`,
+# which resolves bd vs br and the ledger automatically. Child enumeration:
+#   ao beads exec children <epic> --json
+# br synthesizes plain child ids one per line (extra flags ignored); bd
+# forwards verbatim to `bd children <epic> --json`, a JSON array of issue
+# objects. Both shapes are handled below. Per-child status uses
+#   ao beads exec show <child> --json
+# whose envelope ao normalizes to the canonical (br) shape for both trackers.
 
 set -uo pipefail
 
@@ -48,24 +52,26 @@ done
 
 [[ -n "$EPIC" ]] || { usage; die "need an epic-id"; }
 
-command -v bd >/dev/null 2>&1 || die "bd CLI not on PATH"
+command -v ao >/dev/null 2>&1 || die "ao CLI not on PATH"
 command -v jq >/dev/null 2>&1 || die "jq not on PATH"
 
-# Enumerate child ids (parent-child dependents of the epic).
-children_json="$(bd dep list "$EPIC" --direction=up -t parent-child --json 2>/dev/null || true)"
+# Enumerate child ids via the tracker-agnostic entry point. A tracker error is
+# a hard stop (exit 4) — a gate that cannot see the children must not pass.
+children_raw="$(ao beads exec children "$EPIC" --json)" \
+  || die "children query failed for $EPIC (ao beads exec children)"
 
-# Guard: if the query errored or returned a non-array, treat as no children
-# only when it's clearly empty; otherwise surface the error.
-if echo "$children_json" | jq -e 'type=="object" and has("error")' >/dev/null 2>&1; then
-  die "bd dep list failed: $(echo "$children_json" | jq -r '.error')"
+# Two shapes reach us: bd emits a JSON array of issue objects; br emits plain
+# child ids one per line. Detect JSON by the first non-space character.
+first_char="$(printf '%s' "$children_raw" | tr -d '[:space:]' | head -c1)"
+if [[ "$first_char" == "[" || "$first_char" == "{" ]]; then
+  child_ids="$(printf '%s' "$children_raw" | jq -r '
+    (if type=="array" then . else (.issues // []) end)
+    | .[]
+    | (.id // empty)
+  ' 2>/dev/null)" || die "could not parse children JSON for $EPIC"
+else
+  child_ids="$(printf '%s\n' "$children_raw" | awk 'NF{print $1}')"
 fi
-
-# Pull the child id from whichever id-bearing field exists.
-child_ids="$(echo "$children_json" | jq -r '
-  (if type=="array" then . else [] end)
-  | .[]
-  | (.id // .from_id // .issue_id // .dependent_id // empty)
-' 2>/dev/null || true)"
 
 if [[ -z "$child_ids" ]]; then
   echo "OK: epic $EPIC has no open children (no children found)" >&2
@@ -75,7 +81,10 @@ fi
 offenders=0
 while IFS= read -r child; do
   [[ -n "$child" ]] || continue
-  status="$(bd show "$child" --json 2>/dev/null | jq -r '.[0].status // .status // empty' 2>/dev/null)"
+  # A per-child status read failure is fail-closed as an offender (exit 1),
+  # not exit 4: one unreadable child must block the epic close, not abort the
+  # report of every other offender. Only the enumeration error above is 4.
+  status="$(ao beads exec show "$child" --json 2>/dev/null | jq -r '.[0].status // .status // empty' 2>/dev/null)"
   case "$status" in
     open|in_progress)
       echo "OPEN-CHILD: $child status=$status" >&2
