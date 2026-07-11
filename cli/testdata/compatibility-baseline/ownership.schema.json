@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/go-cli-family-ownership.v1.json",
+  "type": "object",
+  "required": ["schema_version", "family", "profiles", "legacy_symbols", "live_owner", "allowed_paths"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "family": {"type": "string", "minLength": 1},
+    "profiles": {
+      "type": "object",
+      "required": ["default", "flywheel", "legacy", "combined"],
+      "additionalProperties": {"enum": ["present", "absent"]}
+    },
+    "legacy_symbols": {"type": "array", "items": {"type": "string"}},
+    "live_owner": {"type": "string", "minLength": 1},
+    "allowed_paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}

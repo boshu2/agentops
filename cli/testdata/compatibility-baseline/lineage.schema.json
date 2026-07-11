@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/go-cli-family-lineage.v1.json",
+  "type": "object",
+  "required": ["schema_version", "family", "old_implementation_sha", "freeze_sha", "fixture_sha256", "ownership_sha256"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "family": {"type": "string", "minLength": 1},
+    "old_implementation_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "freeze_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "fixture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "ownership_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
