@@ -23,3 +23,16 @@ func TestClaimModuleRegisteredWithCorrectedCheckArgs(t *testing.T) {
 	}
 	t.Fatal("claim command not registered")
 }
+
+func TestClaimBindCommandDelegatesThroughModule(t *testing.T) {
+	old := testProjectDir
+	testProjectDir = t.TempDir()
+	t.Cleanup(func() { testProjectDir = old })
+	out, err := executeCommand("claim", "bind", "--claim", "AOP-X", "--path", "p.md", "--level", "PG2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, `bound claim="AOP-X" path="p.md" level=PG2`) {
+		t.Fatalf("claim bind output = %q", out)
+	}
+}
