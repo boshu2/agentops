@@ -38,6 +38,11 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 . "$SCRIPT_DIR/lib/docs-scope.sh"
 # shellcheck source=scripts/lib/ao-snippet-resolve.sh
 . "$SCRIPT_DIR/lib/ao-snippet-resolve.sh"
+# Shared shrink-only ratchet mechanics: baseline set arithmetic moved OUT of
+# the python heredoc into bash (age-ratchet-lib-extraction-bv7d.6; python now
+# emits offender findings only). Parse mode `strip` = original line.strip().
+# shellcheck source=scripts/lib/ratchet.sh
+. "$SCRIPT_DIR/lib/ratchet.sh"
 
 # Pin the docs scope root to THIS repo (the DOCS_ROOT env seam is for lib tests).
 DOCS_ROOT="$ROOT"
@@ -52,9 +57,11 @@ if [[ -n "${AO_SNIPPET_TMP_DIR:-}" ]]; then
 fi
 export REPO_ROOT="$ROOT"
 export AO_RESOLVE_MODE=strict
-export DOCS_CLI_BASELINE="$BASELINE"
 
-python3 - <<'PY'
+# python emits one record per finding: rel<US>lineno<US>token<US>suggestion<US>snippet
+# (US = 0x1f; suggestion may be empty). Baseline arithmetic + messages live in
+# bash via the ratchet lib.
+findings_raw="$(python3 - <<'PY'
 import os
 import pathlib
 import re
@@ -67,7 +74,6 @@ from ao_snippet_resolve import iter_snippets, make_resolver_from_env
 
 repo_root = pathlib.Path(os.environ["REPO_ROOT"])
 docs_root = pathlib.Path(os.environ["DOCS_ROOT"])
-baseline_path = pathlib.Path(os.environ["DOCS_CLI_BASELINE"])
 
 resolver = make_resolver_from_env()
 
@@ -163,8 +169,6 @@ def offending_token(snippet):
     return first
 
 # ---- scan ---------------------------------------------------------------------
-findings = {}        # file -> list of (lineno, snippet, token, suggestion)
-triggered = set()    # files with >=1 finding
 for f in live_files():
     if is_exempt(f):
         continue
@@ -181,48 +185,57 @@ for f in live_files():
         src_line = lines[lineno - 1] if 0 <= lineno - 1 < len(lines) else ""
         if _REMOVAL_LANG.search(src_line):
             continue  # describing the removal, not prescribing the dead command
-        findings.setdefault(f, []).append((lineno, snippet, tok, suggest(tok)))
-        triggered.add(f)
-
-# ---- baseline ratchet ---------------------------------------------------------
-baselined = set()
-if baseline_path.exists():
-    for line in baseline_path.read_text(encoding="utf-8").splitlines():
-        s = line.strip()
-        if not s or s.startswith("#"):
-            continue
-        baselined.add(s)
-
-new_offenders = sorted(triggered - baselined)
-stale_baseline = sorted(baselined - triggered)
-
-failed = False
-
-if new_offenders:
-    failed = True
-    print("check-docs-cli-snippets: FAIL — live doc(s) cite a removed/unknown ao command:", file=sys.stderr)
-    for f in new_offenders:
-        for lineno, snippet, tok, sug in findings[f]:
-            hint = f" (did you mean `ao {sug}`?)" if sug else ""
-            print(f"  {f}:{lineno}: unknown ao command `ao {tok}` in `{snippet}`{hint}", file=sys.stderr)
-    print("", file=sys.stderr)
-    print("Fix the dead ao reference (use the live equivalent, or historical wording), "
-          "or — only if the page is a dyr0-lane golden path — add it to "
-          f"{baseline_path.relative_to(repo_root)}.", file=sys.stderr)
-
-if stale_baseline:
-    failed = True
-    print("check-docs-cli-snippets: FAIL — baseline entr(ies) no longer trigger any finding (prune them):", file=sys.stderr)
-    for f in stale_baseline:
-        print(f"  {f}", file=sys.stderr)
-    print("", file=sys.stderr)
-    print(f"The allowlist only shrinks. Remove the above line(s) from "
-          f"{baseline_path.relative_to(repo_root)}.", file=sys.stderr)
-
-if failed:
-    sys.exit(1)
-
-n_baselined = len(baselined & triggered)
-print(f"check-docs-cli-snippets: PASS — no un-baselined live doc cites a removed ao command "
-      f"({len(triggered)} file(s) with findings, all baselined; {n_baselined} baseline entr(ies) still active).")
+        sug = suggest(tok) or ""
+        print(f"{f}\x1f{lineno}\x1f{tok}\x1f{sug}\x1f{snippet}")
 PY
+)" || { echo "check-docs-cli-snippets: python3 offender scan failed — cannot certify (environment error)" >&2; exit 2; }
+
+US=$'\x1f'
+baseline_rel="${BASELINE#"$ROOT"/}"
+
+triggered="$(printf '%s\n' "$findings_raw" | awk -F"$US" 'NF { print $1 }' | LC_ALL=C sort -u | grep -v '^$' || [ $? -eq 1 ])"
+
+# ---- baseline ratchet (two-way) via the shared lib ---------------------------
+new_offenders=""
+if [[ -n "$triggered" ]]; then
+  new_offenders="$(printf '%s\n' "$triggered" | ratchet_new_violations "$BASELINE" strip)" || exit 2
+fi
+stale_baseline="$(printf '%s\n' "$triggered" | ratchet_stale_entries "$BASELINE" strip)" || exit 2
+
+failed=0
+
+if [[ -n "$new_offenders" ]]; then
+  failed=1
+  echo "check-docs-cli-snippets: FAIL — live doc(s) cite a removed/unknown ao command:" >&2
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    while IFS="$US" read -r rel lineno tok sug snippet; do
+      [[ "$rel" == "$f" ]] || continue
+      hint=""
+      [[ -n "$sug" ]] && hint=" (did you mean \`ao $sug\`?)"
+      echo "  $f:$lineno: unknown ao command \`ao $tok\` in \`$snippet\`$hint" >&2
+    done <<< "$findings_raw"
+  done <<< "$new_offenders"
+  echo "" >&2
+  echo "Fix the dead ao reference (use the live equivalent, or historical wording), or — only if the page is a dyr0-lane golden path — add it to $baseline_rel." >&2
+fi
+
+if [[ -n "$stale_baseline" ]]; then
+  failed=1
+  echo "check-docs-cli-snippets: FAIL — baseline entr(ies) no longer trigger any finding (prune them):" >&2
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && echo "  $f" >&2
+  done <<< "$stale_baseline"
+  echo "" >&2
+  echo "The allowlist only shrinks. Remove the above line(s) from $baseline_rel." >&2
+fi
+
+if [[ "$failed" -ne 0 ]]; then
+  exit 1
+fi
+
+n_triggered="$(printf '%s' "$triggered" | grep -c . || true)"
+n_pinned="$(ratchet_load_pinned "$BASELINE" strip | grep -c . || true)"
+n_stale="$(printf '%s' "$stale_baseline" | grep -c . || true)"
+n_baselined=$((n_pinned - n_stale))
+echo "check-docs-cli-snippets: PASS — no un-baselined live doc cites a removed ao command ($n_triggered file(s) with findings, all baselined; $n_baselined baseline entr(ies) still active)."
