@@ -1,7 +1,7 @@
 ---
 name: operationalize
 description: >-
-  Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
+  Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Triggers: when a finished artifact should become skills, gates, or beads.
 practices:
 - wiki-knowledge-surface
 - design-by-contract
