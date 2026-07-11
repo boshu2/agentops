@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -43,20 +45,17 @@ func (a *productionCitationAdapter) Verify(ctx context.Context, req ports.Citati
 			Reason: "empty Raw",
 		}, nil
 	}
-	c := Citation{Kind: string(req.Kind), Raw: req.Raw}
 	switch req.Kind {
-	case ports.CitationKindFile:
-		verifyFileCitation(&c, req.Cwd)
-	case ports.CitationKindFunction:
-		verifyFunctionCitation(&c, req.Cwd)
-	case ports.CitationKindSymbol:
-		verifySymbolCitation(&c, req.Cwd)
+	case ports.CitationKindFile, ports.CitationKindFunction, ports.CitationKindSymbol:
 	default:
 		return ports.CitationVerdict{
 			Status: ports.CitationStatusUnknown,
 			Reason: fmt.Sprintf("unknown citation kind %q (expected file|function|symbol)", req.Kind),
 		}, nil
 	}
+	repository := beadsadapter.NewKnowledgeRepositoryWithWorkingDirectory(func() (string, error) { return req.Cwd, nil })
+	verified := repository.VerifyCitations([]beadsapp.Citation{{Kind: string(req.Kind), Raw: req.Raw}})
+	c := verified[0]
 	return ports.CitationVerdict{
 		Status:   translateCitationStatus(c.Status),
 		Reason:   c.Reason,
@@ -67,11 +66,11 @@ func (a *productionCitationAdapter) Verify(ctx context.Context, req ports.Citati
 // translateCitationStatus maps the existing CitationStatus values to
 // the port's CitationStatusResult. The string values are identical,
 // but the types are distinct — this conversion is the boundary.
-func translateCitationStatus(s CitationStatus) ports.CitationStatusResult {
+func translateCitationStatus(s beadsapp.CitationStatus) ports.CitationStatusResult {
 	switch s {
-	case CitationFresh:
+	case beadsapp.CitationFresh:
 		return ports.CitationStatusFresh
-	case CitationStale:
+	case beadsapp.CitationStale:
 		return ports.CitationStatusStale
 	default:
 		return ports.CitationStatusUnknown

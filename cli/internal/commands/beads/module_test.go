@@ -23,7 +23,7 @@ func (runner *recordingRunner) Run(_ *cobra.Command, invocation Invocation) erro
 
 func TestModuleBuildsFreshCompleteTrees(t *testing.T) {
 	runner := &recordingRunner{}
-	module := NewModule(runner, nil, nil, nil, nil, nil, nil, nil)
+	module := NewModule(runner, nil, nil, nil, nil, nil, nil, nil, nil)
 	first := module.Command()
 	second := module.Command()
 	if first == second {
@@ -44,17 +44,15 @@ func TestModuleBuildsFreshCompleteTrees(t *testing.T) {
 
 func TestModuleParsesTypedInvocation(t *testing.T) {
 	runner := &recordingRunner{}
-	command := NewModule(runner, nil, nil, nil, nil, nil, nil, nil).Command()
-	command.SetArgs([]string{"resume", "age-123", "--agent", "codex", "--json"})
+	command := NewModule(runner, nil, nil, nil, nil, nil, nil, nil, nil).Command()
+	command.SetArgs([]string{"audit", "--strict", "--json"})
 	if err := command.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
 	want := Invocation{
-		Operation: OperationResume,
-		Args:      []string{"age-123"},
+		Operation: OperationAudit,
 		Options: Options{
-			Agent:  "codex",
-			Ledger: "docs/provenance/ledger.jsonl",
+			Strict: true,
 			JSON:   true,
 		},
 	}
@@ -78,6 +76,24 @@ type fakeTrackerPorts struct {
 	actor      string
 	appended   any
 	readOutput []byte
+}
+
+type fakeKnowledge struct {
+	available bool
+	verified  *beadsapp.VerifyReport
+	linted    *beadsapp.LintReport
+	harvested beadsapp.HarvestResult
+}
+
+func (fake fakeKnowledge) Available() bool { return fake.available }
+func (fake fakeKnowledge) Verify(context.Context, string) (*beadsapp.VerifyReport, error) {
+	return fake.verified, nil
+}
+func (fake fakeKnowledge) Lint(context.Context, string) (*beadsapp.LintReport, error) {
+	return fake.linted, nil
+}
+func (fake fakeKnowledge) Harvest(context.Context, string, string, bool) (beadsapp.HarvestResult, error) {
+	return fake.harvested, nil
 }
 
 func (fake *fakeTrackerPorts) Resolve() (beadsapp.TrackerResolution, error) {
@@ -135,7 +151,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("directory JSON", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil).Command()
+		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"dir", "--require", "--json"})
 		if err := root.Execute(); err != nil {
@@ -148,7 +164,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("tracker text", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil).Command()
+		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"tracker"})
 		if err := root.Execute(); err != nil {
@@ -161,7 +177,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("exec help precedes resolution", func(t *testing.T) {
 		ports.executed = false
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil).Command()
+		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"exec", "--help"})
 		if err := root.Execute(); err != nil {
 			t.Fatalf("Execute() error = %v", err)
@@ -174,7 +190,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 	t.Run("exec preserves typed exit", func(t *testing.T) {
 		ports.executed = false
 		ports.execErr = &beadsapp.ExitError{Code: 7}
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil).Command()
+		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"exec", "close", "age-x"})
 		err := root.Execute()
 		var exitError *beadsapp.ExitError
@@ -195,7 +211,7 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 	t.Run("stale claims", func(t *testing.T) {
 		ports.listOutput = []byte(`[{"id":"age-old","status":"in_progress","assignee":"bo","updated_at":"2026-07-11T10:00:00Z"}]`)
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports).Command()
+		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"stale-claims", "--threshold", "4", "--json"})
 		if err := root.Execute(); err != nil {
@@ -212,7 +228,7 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 			{ID: "age-x", Status: "in_progress", Assignee: "old", UpdatedAt: "2026-07-11T10:00:00Z"},
 			{ID: "age-x", Status: "in_progress", Assignee: "codex", UpdatedAt: "2026-07-11T18:00:00Z"},
 		}
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports).Command()
+		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil).Command()
 		root.SetArgs([]string{"resume", "age-x", "--json"})
 		if err := root.Execute(); err != nil {
 			t.Fatalf("Execute() error = %v", err)
@@ -225,12 +241,62 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 
 	t.Run("epic terminal exit", func(t *testing.T) {
 		ports.readOutput = []byte("{\"id\":\"age-e\",\"status\":\"open\",\"issue_type\":\"epic\"}\n{\"id\":\"age-e.1\",\"status\":\"open\",\"issue_type\":\"task\"}\n")
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports).Command()
+		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil).Command()
 		root.SetArgs([]string{"epic-status", "age-e", "--terminal"})
 		err := root.Execute()
 		var exitError *beadsapp.ExitError
 		if !errors.As(err, &exitError) || exitError.ExitCode() != 2 {
 			t.Fatalf("error = %v, want ExitError(2)", err)
+		}
+	})
+}
+
+func TestModuleOwnsKnowledgeHandlers(t *testing.T) {
+	knowledge := fakeKnowledge{
+		available: true,
+		verified: &beadsapp.VerifyReport{
+			BeadID: "age-x", Title: "stale", Status: "OPEN", TotalCount: 1, StaleCount: 1, BDAvailable: true,
+			Citations: []beadsapp.Citation{{Kind: "file", Raw: "gone.go", Status: beadsapp.CitationStale, Reason: "missing"}},
+		},
+		linted:    &beadsapp.LintReport{StatusFilter: "open", TotalBeads: 1, StaleBeads: 1},
+		harvested: beadsapp.HarvestResult{Body: "learning", Target: ".agents/learnings/age-x.md"},
+	}
+
+	t.Run("verify maps stale verdict", func(t *testing.T) {
+		var output bytes.Buffer
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge).Command()
+		root.SetOut(&output)
+		root.SetArgs([]string{"verify", "age-x"})
+		err := root.Execute()
+		var exitError *beadsapp.ExitError
+		if !errors.As(err, &exitError) || exitError.ExitCode() != 1 {
+			t.Fatalf("error = %v, want ExitError(1)", err)
+		}
+		if !bytes.Contains(output.Bytes(), []byte("[STALE] gone.go")) {
+			t.Fatalf("output = %q", output.String())
+		}
+	})
+
+	t.Run("lint maps stale verdict", func(t *testing.T) {
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge).Command()
+		root.SetArgs([]string{"lint"})
+		err := root.Execute()
+		var exitError *beadsapp.ExitError
+		if !errors.As(err, &exitError) || exitError.ExitCode() != 1 {
+			t.Fatalf("error = %v, want ExitError(1)", err)
+		}
+	})
+
+	t.Run("harvest renders result", func(t *testing.T) {
+		var output bytes.Buffer
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge).Command()
+		root.SetOut(&output)
+		root.SetArgs([]string{"harvest", "age-x"})
+		if err := root.Execute(); err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+		if got := output.String(); got != "harvested bead age-x → .agents/learnings/age-x.md\n" {
+			t.Fatalf("output = %q", got)
 		}
 	})
 }
