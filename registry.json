@@ -1958,7 +1958,12 @@
         "agent-worker-transcript"
       ],
       "drives_commands": [
-        "ao beads exec"
+        "ao beads exec",
+        "ao pawl doctor",
+        "ao pawl health",
+        "ao pawl reap",
+        "ao pawl review",
+        "ao pawl up"
       ],
       "path": "skills/ntm/",
       "references": 16

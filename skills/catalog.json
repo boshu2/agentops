@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-11T00:32:53Z",
+  "generated_at": "2026-07-11T19:50:08Z",
   "skill_count": 62,
   "skills": [
     {
@@ -355,7 +355,7 @@
           "with": "pawl-review"
         }
       ],
-      "references_count": 0,
+      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -613,7 +613,7 @@
     },
     {
       "name": "evolve",
-      "description": "Run autonomous improvement loops.",
+      "description": "Run autonomous improvement loops. Triggers: \"evolve\", \"improve everything\", \"autonomous improvement\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": true,
@@ -709,7 +709,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 3,
+      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -1169,7 +1169,7 @@
     },
     {
       "name": "push",
-      "description": "Validate, commit, and push.",
+      "description": "Validate, commit, and push. Triggers: \"push\", \"ship it\", \"commit and push\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "graph_root": true,
