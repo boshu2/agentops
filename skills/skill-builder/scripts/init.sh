@@ -136,9 +136,11 @@ output_contract: "TODO: path to schema or output description"
 
 ## Output Specification
 
-**Format:** <markdown | json | excel | etc.>
-**Filename:** <naming convention>
-**Structure:** <key sections / fields>
+**Artifact directory:** \`.agents/out/$SKILL_NAME/\`
+**Filename convention:** \`report.json\`
+**Serialization/schema format:** JSON matching the declared output schema.
+**Validator command:** \`jq -e . .agents/out/$SKILL_NAME/report.json\`
+**Downstream handoff:** consumed by the validation wave.
 
 ## Quality Rubric
 
@@ -164,12 +166,13 @@ EOF
 
 # --- Mode-specific content injection -------------------------------------
 if [[ "$MODE" == "--absorb" ]]; then
-  # Append a "Source" reference section pointing at the absorbed external doc
+  # Observe package shape only; generated files record no external prose or path.
   cat >> "$NEW_SKILL_MD" <<EOF
 
-## References
+## Clean-room provenance
 
-- Source absorbed from: \`$SOURCE_PATH\`
+This skill was synthesized under the repo-runtime clean-room profile from
+AgentOps-owned structure and terminology only.
 EOF
 fi
 
@@ -242,10 +245,16 @@ fi
 # --- Build report --------------------------------------------------------
 BUILD_REPORT="$REPO_ROOT/.agents/audits/${SKILL_NAME}-build.json"
 mkdir -p "$(dirname "$BUILD_REPORT")"
+case "$MODE" in
+  --interactive) REPORT_MODE="from-scratch" ;;
+  --like-flag-mode) REPORT_MODE="from-template" ;;
+  --absorb) REPORT_MODE="absorb-external" ;;
+esac
 cat > "$BUILD_REPORT" <<EOF
 {
-  "mode": "${MODE#--}",
+  "mode": "$REPORT_MODE",
   "skill_name": "$SKILL_NAME",
+  "profile_id": "${SKILL_CONFORMANCE_PROFILE_ID:-repo-runtime}",
   "files_created": [
     "skills/$SKILL_NAME/SKILL.md",
     "skills/$SKILL_NAME/scripts/validate.sh",

@@ -742,7 +742,7 @@
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
       "source_hash": "4e95d50bfaab2b3a47c398d094c6ead6d8a00994daf4ecf8d3e5e2354e667e87",
-      "generated_hash": "bc2da45d83103fd71c42480a066cf5637ed9f5a829eb488b3ad91301d9ee1b89"
+      "generated_hash": "ed4a546fd32aad888772ed10492a7e571cfdcbcdd8d14a4132c04ace06dcca8b"
     },
     {
       "name": "idea-genie",
@@ -892,13 +892,13 @@
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
       "source_hash": "81185f0904aea0397ef2c305d9dcec882b7b2a866434dd6eebf8108cd4e0d701",
-      "generated_hash": "b4a52959403adec99a88dea7405466f5a6c262091584301cf2d9e0df03d715a7"
+      "generated_hash": "7a4f25df0d4587733ce1236b94f94097c6ade132cffa583e3aeae5a779e2098f"
     },
     {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "0524fb2f7671b802939d863bd714d345cc4a78699dbafc1f4d92234788deedf8",
-      "generated_hash": "931119e73069a90ce83eeb5acaded7bf424d977ac46aa3e43ad3ecb1180c645d"
+      "generated_hash": "04fb0fc0e3585966651b4bcdf3500f6c962f3cfbb8d9b009276c6ff3dd3f2312"
     },
     {
       "name": "status",

@@ -8,6 +8,9 @@ and `heal-skill` — read it before authoring or absorbing a skill.
 
 This file contains only AgentOps-owned summaries and rules. It does not copy any
 third-party skill content (see [agentops-skill-factory.md](agentops-skill-factory.md)).
+Executable values come only from the source
+`skills/skill-builder/references/skill-conformance-profiles.yaml`, using the
+`repo-runtime` profile by default.
 
 ## Contents
 
@@ -51,11 +54,12 @@ Write descriptions that are:
 
 The deep audit (`heal-skill/scripts/audit.sh`) accepts a trigger in any of three forms; satisfy at least one:
 
-- **Block scalar** — `description: |` with `**Use when:**` / `**Triggers:**`
-  lines inside the folded value.
-- **Explicit marker** — a `Triggers:` or `Use when:` clause in the
+- **Block marker** — `description: |` or `description: >` whose value contains
+  a profile-accepted `Use when:` / `Triggers:` marker.
+- **Inline marker** — a `Triggers:` or `Use when:` clause in the
   single-line description (the most common AgentOps form).
-- **Triggers list** — a `metadata.triggers:` YAML list with three or more items.
+- **Metadata list** — a `metadata.triggers:` YAML list meeting the profile's
+  declared minimum cardinality.
 
 Audit the whole corpus for this gap at any time:
 
@@ -82,9 +86,8 @@ skills consistent with the existing corpus rather than introducing gerunds.
 - Keep `references/` **one level deep**. No chains
   (`SKILL.md -> a.md -> b.md`); the runtime may partial-read a deep file.
 - Reference files over ~100 lines should open with a short table of contents.
-- A SKILL.md over ~250 lines must externalize the overflow into `references/`.
-  the deep audit warns (`references-modularization`) above 400 lines with no
-  `references/` directory.
+- A repo-runtime SKILL.md may contain at most 250 lines. Line 251 receives the
+  profile-declared `references-modularization` finding even when references exist.
 - Distinguish **execute** from **read** when pointing at a script: "Run
   `python scripts/x.py`" versus "See `scripts/x.py` for the algorithm".
 
@@ -119,10 +122,10 @@ Match instruction specificity to how fragile the task is:
 | Description carries triggers | `description-has-triggers`, `trigger-clarity` | auditor WARN (corpus drift accumulates) |
 | `name` matches directory | `heal.sh` NAME_MISMATCH | CI FAIL (`skills-integrity`) |
 | `name` + `description` present | `heal.sh` MISSING_NAME / MISSING_DESC | CI FAIL |
-| Output spec names format + path | `output-spec-explicit` | auditor FAIL |
+| Output section defines all executable-handoff components from the profile | `output-spec-explicit` | profile severity |
 | Constraints front-loaded with rationale | `constraints-frontloaded`, `rationale-present` | auditor WARN |
 | References one level deep, linked | `heal.sh` UNLINKED_REF / DEAD_REF | CI FAIL / WARN |
-| 250-line ceiling | `skill-builder` build rejects > 250 | build-time only (no CI gate) |
+| 250-line ceiling | `skill-builder` and deep audit reject/flag > 250 | profile-derived |
 | Frontmatter schema valid | `validate-skill-schema.sh`, v2 frontmatter | CI FAIL |
 | Dependencies resolve | dependency-resolution check | CI FAIL |
 | Codex parity (dual-file) | manual `skills-codex/`, parity-drift audit | CI FAIL (semantic), manual mirror |
