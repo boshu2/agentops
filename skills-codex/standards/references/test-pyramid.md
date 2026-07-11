@@ -26,7 +26,7 @@ The Traditional Pyramid          The AI-Native Shape
 
 ## Why This Matters for Agent Workflows
 
-1. **Tests are specs, not verification.** In `--test-first` mode, agents write failing tests first, then implement. L2 describes *behavior* without over-specifying *implementation* — the right abstraction level for agent TDD.
+1. **Tests are specs, not verification.** In `--test-first` mode, agents write failing tests first, then implement. L2 describes *behavior* without over-specifying *implementation* — the right abstraction level for agent TDD. **The value is the test as the slice's *contract*, not its *ordering*:** empirically, test-first ordering alone contributed nothing measurable — refactor-after-every-green is the load-bearing quality move (see "Match thoroughness to task stakes" below and `agentic-workflow-evidence.md`). Keep the failing test as the contract; don't treat writing it first as the quality lever.
 
 2. **Tests are the ratchet between agents.** When swarm workers modify adjacent files, L2 integration tests catch conflicts at handoff boundaries. L1 tests miss these because they mock away the interaction.
 

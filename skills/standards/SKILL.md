@@ -63,7 +63,7 @@ references that other skills load based on file types being processed.
 | SKILL.md Tier-Caps | `references/skill-tier-caps.md` | validate (skill line-cap audits), doc, plan |
 | External-Source Attribution | `references/external-source-attribution.md` | doc (when absorbing external corpora), heal-skill |
 | Migration-Owner Discipline | `references/migration-owner.md` | implement, plan, review, pre-mortem (when writing a breaking migration / retirement / `--fix`) |
-| Agentic-Workflow Evidence | `references/agentic-workflow-evidence.md` | plan, implement, review, pre-mortem (empirical basis — Finster 2026 — for the workflow discipline) |
+| Agentic-Workflow Evidence | [references/agentic-workflow-evidence.md](references/agentic-workflow-evidence.md) | plan, implement, review, pre-mortem (empirical basis — Finster 2026 — for the workflow discipline) |
 
 ## How It Works
 

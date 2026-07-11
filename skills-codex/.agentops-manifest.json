@@ -897,8 +897,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "0524fb2f7671b802939d863bd714d345cc4a78699dbafc1f4d92234788deedf8",
-      "generated_hash": "04fb0fc0e3585966651b4bcdf3500f6c962f3cfbb8d9b009276c6ff3dd3f2312"
+      "source_hash": "16f32bd4b16fd7aa99d9385fffc64e88d67dc0157d755dc6f246044ed561664e",
+      "generated_hash": "b225cb8ddade5308c2a0280fc6061901605f2a878e8a292c8a3b4ca057d1350d"
     },
     {
       "name": "status",

@@ -7,8 +7,8 @@ description: Provide repo coding standards.
 Language-specific coding standards loaded on-demand by other skills.
 
 Skill conformance resolves the authoritative `repo-runtime` profile at
-`skills/skill-builder/references/skill-conformance-profiles.yaml`; this Codex
-treatment does not introduce another standards ledger.
+`skills/skill-builder/references/skill-conformance-profiles.yaml`; this library
+does not redefine its rule IDs, severities, limits, or clean-room policy.
 
 ## Purpose
 
@@ -38,7 +38,7 @@ references that other skills load based on file types being processed.
 | SKILL.md Tier-Caps | `references/skill-tier-caps.md` | validate (skill line-cap audits), doc, plan |
 | External-Source Attribution | `references/external-source-attribution.md` | doc (when absorbing external corpora), heal-skill |
 | Migration-Owner Discipline | `references/migration-owner.md` | implement, plan, review, pre-mortem (when writing a breaking migration / retirement / `--fix`) |
-| Agentic-Workflow Evidence | `references/agentic-workflow-evidence.md` | plan, implement, review, pre-mortem (empirical basis — Finster 2026 — for the workflow discipline) |
+| Agentic-Workflow Evidence | [references/agentic-workflow-evidence.md](references/agentic-workflow-evidence.md) | plan, implement, review, pre-mortem (empirical basis — Finster 2026 — for the workflow discipline) |
 
 ## How It Works
 
