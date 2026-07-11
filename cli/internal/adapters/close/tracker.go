@@ -63,11 +63,11 @@ func (Tracker) Close(ctx context.Context, resolution closeapp.Resolution, id, re
 }
 
 func (Tracker) Sync(ctx context.Context, resolution closeapp.Resolution) error {
-	out, code, err := runTracker(ctx, resolution, "sync", "--flush-only")
+	_, code, err := runTracker(ctx, resolution, "sync", "--flush-only")
 	if err == nil && code == 0 {
 		return nil
 	}
-	out, code, err = runTracker(ctx, resolution, "sync")
+	out, code, err := runTracker(ctx, resolution, "sync")
 	if err != nil || code != 0 {
 		return effectError("tracker sync", code, out, err)
 	}
@@ -85,6 +85,10 @@ func parseRecords(out []byte) []trackerRecord {
 	var records []trackerRecord
 	if json.Unmarshal(out, &records) == nil {
 		return records
+	}
+	var single trackerRecord
+	if json.Unmarshal(out, &single) == nil && single.ID != "" {
+		return []trackerRecord{single}
 	}
 	var wrapped struct {
 		Issues []trackerRecord `json:"issues"`

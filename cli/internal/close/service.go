@@ -172,9 +172,6 @@ func (service *Service) Execute(ctx context.Context, request Request) (Result, e
 }
 
 func (service *Service) closed(ctx context.Context, resolution Resolution, id string) (bool, error) {
-	if resolution.Backend == BackendBR {
-		return service.repository.LedgerStatus(ctx, resolution, id)
-	}
 	return service.tracker.Status(ctx, resolution, id)
 }
 
