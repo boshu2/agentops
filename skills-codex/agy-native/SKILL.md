@@ -109,12 +109,79 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 ## Output Specification
 
-**Format:** a completed loop tick — git commits + beads transitions + brain artifacts.
-**Filename / path:**
-- Evidence + verdict: `~/.gemini/antigravity-cli/brain/<conversation-id>/<name>_verification.md` (+ `.metadata.json`, `userFacing:true`).
-- Code: scoped commit in the target repo (one bead per commit).
-- Beads: `br` transition (claim -> close), JSONL synced to git.
-**Structure of a tick:** `{ bead_id, author_context_id, judge_context_id, verdict (PASS|WARN|FAIL), evidence_path, commit_sha }`.
+- **Artifact directory:** write the machine-readable handoff to
+  `$REPO/.agents/evidence/agy-native/<bead-id>/`; keep the judge's source
+  verdict under `~/.gemini/antigravity-cli/brain/<conversation-id>/`.
+- **Filename convention:** name the repo handoff `run-evidence.json` and the
+  brain verdict `<name>_verification.md` with its adjacent
+  `<name>_verification.md.metadata.json` sidecar.
+- **Serialization/schema format:** `run-evidence.json` is one JSON object with
+  nonempty `bead_id`, distinct `author_context_id` and `judge_context_id`,
+  `verdict` (`PASS|WARN|FAIL`), absolute `evidence_path`, and `commit_sha`.
+- **Validator command:** with `$REPO` and `$bead_id` set, validate the complete
+  handoff and the PASS-to-close invariant:
+
+  ```bash
+  REPO="$REPO" bead_id="$bead_id" bash -euo pipefail <<'VALIDATE'
+  manifest="$REPO/.agents/evidence/agy-native/$bead_id/run-evidence.json"
+  test -s "$manifest"
+  jq -e --arg bead "$bead_id" '
+    type == "object" and
+    ((.bead_id | type) == "string") and .bead_id == $bead and ($bead | length) > 0 and
+    ((.author_context_id | type) == "string") and (.author_context_id | length) > 0 and
+    ((.judge_context_id | type) == "string") and (.judge_context_id | length) > 0 and
+    .author_context_id != .judge_context_id and
+    (.verdict == "PASS" or .verdict == "WARN" or .verdict == "FAIL") and
+    ((.evidence_path | type) == "string") and (.evidence_path | length) > 0 and
+    ((.commit_sha | type) == "string") and (.commit_sha | length) > 0
+  ' "$manifest" >/dev/null
+
+  evidence_path="$(jq -er '.evidence_path' "$manifest")"
+  brain_root="$HOME/.gemini/antigravity-cli/brain/"
+  relative_path="${evidence_path#"$brain_root"}"
+  test "$relative_path" != "$evidence_path"
+  conversation_id="${relative_path%%/*}"
+  verdict_filename="${relative_path#*/}"
+  test -n "$conversation_id" && test "$verdict_filename" != "$relative_path"
+  case "$conversation_id" in .|..) exit 1 ;; esac
+  case "$verdict_filename" in
+    */*|_verification.md) exit 1 ;;
+    *_verification.md) ;;
+    *) exit 1 ;;
+  esac
+
+  test -s "$evidence_path" && test -s "$evidence_path.metadata.json"
+  jq -e '.userFacing == true' "$evidence_path.metadata.json" >/dev/null
+  verdict="$(jq -er '.verdict' "$manifest")"
+  source_verdict="$(awk '
+    /^Verdict: (PASS|WARN|FAIL)$/ {
+      count++
+      value = substr($0, 10)
+    }
+    END {
+      if (count != 1) exit 1
+      print value
+    }
+  ' "$evidence_path")"
+  [[ "$source_verdict" == "$verdict" ]]
+  git -C "$REPO" cat-file -e "$(jq -er '.commit_sha' "$manifest")^{commit}"
+
+  beads_dir="$(ao beads dir)"
+  bead_json="$(BEADS_DIR="$beads_dir" br show "$bead_id" --json)"
+  bead_status="$(jq -er '
+    if length == 1 and ((.[0].status | type) == "string")
+    then .[0].status else error("missing or ambiguous bead") end
+  ' <<<"$bead_json")"
+  case "$bead_status" in open|in_progress|blocked|closed) ;; *) exit 1 ;; esac
+  if [[ "$verdict" == PASS ]]; then
+    [[ "$bead_status" == closed ]]
+  else
+    [[ "$bead_status" != closed ]]
+  fi
+  VALIDATE
+  ```
+- **Downstream handoff:** give `run-evidence.json` to the verification membrane;
+  only a validated PASS/closed pair may release the next scheduled Phase 3 tick.
 
 ## Quality Rubric
 
