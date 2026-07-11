@@ -16,6 +16,9 @@ type fakeTracker struct {
 	closed     bool
 	statusErr  error
 	syncErr    error
+	syncErrs   []error
+	onSync     func()
+	closeCount int
 	events     *[]string
 }
 
@@ -31,12 +34,24 @@ func (tracker *fakeTracker) Status(context.Context, Resolution, string) (bool, e
 
 func (tracker *fakeTracker) Close(context.Context, Resolution, string, string) error {
 	*tracker.events = append(*tracker.events, "close")
+	tracker.closeCount++
 	tracker.closed = true
 	return nil
 }
 
 func (tracker *fakeTracker) Sync(context.Context, Resolution) error {
 	*tracker.events = append(*tracker.events, "sync")
+	if len(tracker.syncErrs) > 0 {
+		err := tracker.syncErrs[0]
+		tracker.syncErrs = tracker.syncErrs[1:]
+		if err == nil && tracker.onSync != nil {
+			tracker.onSync()
+		}
+		return err
+	}
+	if tracker.syncErr == nil && tracker.onSync != nil {
+		tracker.onSync()
+	}
 	return tracker.syncErr
 }
 
@@ -77,13 +92,13 @@ func (repository *fakeRepository) CommitPublic(context.Context, Snapshot, Resolu
 func TestServiceBRCloseOrdersMonotonicDurabilityPhases(t *testing.T) {
 	events := []string{}
 	tracker := &fakeTracker{resolution: Resolution{Backend: BackendBR}, events: &events}
-	repository := &fakeRepository{ledgerStatuses: []bool{false, true}, events: &events}
+	repository := &fakeRepository{ledgerStatuses: []bool{true}, events: &events}
 	service := NewService(fakeRuntime{snapshot: Snapshot{WorkDir: "/repo"}}, tracker, repository)
 	result, err := service.Execute(context.Background(), Request{ID: "age-1", Message: "done", Evidence: "proof", Mode: ModeEnsure})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"resolve", "preflight", "ledger-status", "close", "sync", "ledger-status", "commit-ledger", "commit-public"}
+	want := []string{"resolve", "preflight", "tracker-status", "close", "sync", "ledger-status", "commit-ledger", "commit-public"}
 	if !reflect.DeepEqual(events, want) {
 		t.Fatalf("events = %v, want %v", events, want)
 	}
@@ -94,7 +109,7 @@ func TestServiceBRCloseOrdersMonotonicDurabilityPhases(t *testing.T) {
 
 func TestServiceBRAlreadyClosedStillEnsuresPersistence(t *testing.T) {
 	events := []string{}
-	tracker := &fakeTracker{resolution: Resolution{Backend: BackendBR}, events: &events}
+	tracker := &fakeTracker{resolution: Resolution{Backend: BackendBR}, closed: true, events: &events}
 	repository := &fakeRepository{closed: true, events: &events}
 	service := NewService(fakeRuntime{}, tracker, repository)
 	result, err := service.Execute(context.Background(), Request{ID: "age-1", Mode: ModeEnsure})
@@ -109,7 +124,7 @@ func TestServiceBRAlreadyClosedStillEnsuresPersistence(t *testing.T) {
 			t.Fatalf("already-closed ensure repeated tracker close: %v", events)
 		}
 	}
-	want := []string{"resolve", "preflight", "ledger-status", "sync", "ledger-status", "commit-ledger", "commit-public"}
+	want := []string{"resolve", "preflight", "tracker-status", "sync", "ledger-status", "commit-ledger", "commit-public"}
 	if !reflect.DeepEqual(events, want) {
 		t.Fatalf("events = %v, want %v", events, want)
 	}
@@ -117,7 +132,7 @@ func TestServiceBRAlreadyClosedStillEnsuresPersistence(t *testing.T) {
 
 func TestServicePersistenceFailureIsStableAndNeverRollsBack(t *testing.T) {
 	events := []string{}
-	tracker := &fakeTracker{resolution: Resolution{Backend: BackendBR}, events: &events}
+	tracker := &fakeTracker{resolution: Resolution{Backend: BackendBR}, closed: true, events: &events}
 	repository := &fakeRepository{closed: true, commitPublicErr: errors.New("disk full"), events: &events}
 	service := NewService(fakeRuntime{}, tracker, repository)
 	_, err := service.Execute(context.Background(), Request{ID: "age-1", Mode: ModeEnsure})
@@ -146,5 +161,27 @@ func TestServiceBDUnknownStatusFailsClosed(t *testing.T) {
 	}
 	if !reflect.DeepEqual(events, []string{"resolve", "preflight", "tracker-status"}) {
 		t.Fatalf("events = %v; unknown status must not be treated as open", events)
+	}
+}
+
+func TestServiceBRSyncFailureRetryDoesNotCloseTwice(t *testing.T) {
+	events := []string{}
+	repository := &fakeRepository{closed: false, events: &events}
+	tracker := &fakeTracker{
+		resolution: Resolution{Backend: BackendBR}, syncErrs: []error{errors.New("flush failed"), nil},
+		onSync: func() { repository.closed = true }, events: &events,
+	}
+	service := NewService(fakeRuntime{}, tracker, repository)
+	request := Request{ID: "age-1", Mode: ModeEnsure}
+	_, err := service.Execute(context.Background(), request)
+	var failure *Failure
+	if !errors.As(err, &failure) || failure.Code != ExitPersistence {
+		t.Fatalf("first error = %#v, want persistence failure", err)
+	}
+	if _, err := service.Execute(context.Background(), request); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if tracker.closeCount != 1 {
+		t.Fatalf("tracker close count = %d, want 1; events=%v", tracker.closeCount, events)
 	}
 }

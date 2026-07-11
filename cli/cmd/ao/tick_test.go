@@ -154,7 +154,7 @@ func TestTickClosePortAlreadyClosedCompletesPendingPersistence(t *testing.T) {
 	if err := os.MkdirAll(fakebin, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in sync) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
+	fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in show) printf '%s\\n' '{\"id\":\"cp-done\",\"status\":\"closed\"}' ;; sync) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
 	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -389,6 +389,10 @@ func TestTickClosePortRetriesForwardAfterPublicPersistenceFailure(t *testing.T) 
 	fakeBR := `#!/usr/bin/env bash
 printf '%s\n' "$*" >> "${TICK_TEST_BR_LOG:?}"
 case "${1:-}" in
+  show)
+    if grep -q '"status": "closed"' "${TICK_TEST_LEDGER:?}/issues.jsonl"; then status=closed; else status=open; fi
+    printf '{"id":"%s","status":"%s"}\n' "${2:-}" "$status"
+    ;;
   close) sed 's/"status": "open"/"status": "closed"/' "${TICK_TEST_LEDGER:?}/issues.jsonl" > "${TICK_TEST_LEDGER:?}/issues.tmp" && mv "${TICK_TEST_LEDGER:?}/issues.tmp" "${TICK_TEST_LEDGER:?}/issues.jsonl" ;;
   sync) ;;
   *) echo "unexpected br call: $*" >&2; exit 43 ;;
