@@ -16,6 +16,16 @@ description: Use when coordinating agents with Agent Mail
 >
 > **Asymmetry guardrail.** Agent Mail answers the contention axis; persistent NTM panes answer a separate durability axis. They are independently selectable adapters. Removing the single-writer startup tax does not relax collision safety: partition write scopes first, then require reservations for two live writers sharing a path.
 
+## Critical Constraints
+
+- **Use Agent Mail only for live multi-writer coordination. Why:** registering
+  and reserving in a one-writer session adds state without preventing a real
+  collision.
+- **Put durable work truth in BR/beads. Why:** leases and messages expire or can
+  be missed, while the tracker carries dependencies, evidence, and closure.
+- **Treat a conflicting reservation as a stop signal. Why:** writing through a
+  live exclusive lease defeats the collision boundary this adapter provides.
+
 ## Coordination Boundary
 
 | Need | Source of truth |
@@ -117,6 +127,28 @@ Use bead IDs as your threading anchor. The bead tracker remains authoritative; m
 **Bead ID (often bd-###) goes in:** thread_id, subject prefix, reservation reason, commit message
 
 **Do not infer durable state from mail silence.** A missing reply is not proof that a bead is abandoned, blocked, or complete. Check `ao beads exec show <id> --json`, `bv --robot-insights`, git state, and CI evidence before changing work state.
+
+## Output Specification
+
+- **Artifact directory:** no repository directory; Agent Mail persists identity,
+  reservation, and message records in its own project store and returns receipts
+  through MCP results or CLI stdout.
+- **Filename convention:** none. Refer to durable coordination records by
+  project, agent name, bead/thread id, and returned message or reservation id.
+- **Serialization/schema format:** use the MCP tool result objects or the CLI's
+  `--json` output when another agent must consume the receipt mechanically.
+- **Validator command:** confirm identities with
+  `am robot agents --project <abs> --active`, then inspect reservations/inbox
+  with the matching self-described `am file_reservations` or `am mail` command.
+- **Downstream handoff:** record the acknowledged message/reservation id in the
+  BR/bead note when it matters to the work, then release leases after landing.
+
+## Quality Rubric
+
+- [ ] Every active writer is registered under the same absolute project path.
+- [ ] Every hot-path write has a non-conflicting lease tied to its bead id.
+- [ ] Every routed write returns an ACK with a discoverable id or tracker proof.
+- [ ] Durable decisions and completion evidence are present in BR/beads, not mail alone.
 
 ## Quick Troubleshooting
 
