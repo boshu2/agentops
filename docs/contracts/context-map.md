@@ -38,7 +38,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
 - `pawl-review` — Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: "run a pawl reviewer", "fresh-context review lane", "collect independent review evidence".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
-- `push` — Validate, commit, and push.
+- `push` — Validate, commit, and push. Triggers: "push", "ship it", "commit and push".
 - `research` — Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
 - `status` — Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
