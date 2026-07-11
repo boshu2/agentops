@@ -450,7 +450,7 @@
         "path": "skills/goals/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 4
       },
       {
         "name": "product",
@@ -1778,7 +1778,7 @@
         "ao goals validate"
       ],
       "path": "skills/goals/",
-      "references": 3
+      "references": 4
     },
     {
       "sku": "skill:handoff",

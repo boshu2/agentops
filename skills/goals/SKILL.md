@@ -28,422 +28,203 @@ output_contract: GOALS.md
 ---
 # /goals — Fitness Goal Maintenance
 
-> Maintain GOALS.md (canonical, v4) fitness specifications; GOALS.yaml is legacy, surviving only for migration via `ao goals migrate`. Use `ao goals` CLI for all operations.
+Maintain `GOALS.md` (canonical v4) as an executable fitness specification.
+`GOALS.yaml` is legacy and survives only for migration through
+`ao goals migrate`. Execute the selected workflow; do not merely describe it.
 
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
+## Critical Constraints
 
-## Quick Start
+- **Why: preserve fields.** Use the `ao goals` command surface; do not
+  hand-render a whole goals file when a non-lossy command exists.
+- **Why: keep one truth.** When both formats exist, `GOALS.md` wins; never
+  silently treat legacy YAML as active.
+- **Why: prove effect.** Measure before mutating, and preserve stable directive
+  IDs and content unless the selected operation explicitly changes them.
+- **Why: protect declared intent.** `recommend` is read-only. `apply` requires
+  operator confirmation or explicit `--auto --yes` consent and an allowing policy.
+- **Why: avoid false fitness.** Do not invent gates for infrastructure that
+  does not exist; every gate needs an executable check and measurable outcome.
+- **Why: preserve lineage.** Treat scenario, directive, bead, verdict, and
+  learning links as evidence-bearing graph edges; broken references are errors.
+- **Why: prevent false completion.** Report failures and partial mutations
+  exactly; verify the command exit and resulting file before claiming success.
 
-```bash
-/goals                    # Measure fitness (default)
-/goals init               # Bootstrap GOALS.md interactively
-/goals steer              # Manage directives
-/goals add                # Add a new goal
-/goals drift              # Compare snapshots for regressions
-/goals history            # Show measurement history
-/goals export             # Export snapshot as JSON for CI
-/goals meta               # Run meta-goals only
-/goals validate           # Validate structure
-/goals prune              # Remove stale gates
-/goals migrate            # Migrate YAML to Markdown
-/goals trace              # Render/audit the executable-spec chain
-/goals render             # Export directive scenarios as Gherkin
-```
+## Mode Routing
 
-## Format Support
+| Intent | Command |
+|---|---|
+| measure/status (default) | `ao goals measure --json` |
+| initialize | `ao goals init` |
+| manage directives | `ao goals steer` |
+| add a gate | `ao goals add` |
+| compare snapshots | `ao goals drift` |
+| inspect history | `ao goals history` |
+| export snapshot | `ao goals export` |
+| run meta-goals | `ao goals meta --json` |
+| validate structure | `ao goals validate --json` |
+| remove stale gates | `ao goals prune` |
+| migrate formats | `ao goals migrate` |
+| manage scenario links | `ao goals scenarios` |
+| audit lineage | `ao goals trace` |
+| export Gherkin | `ao goals render` |
 
-| Format | File | Version | Features |
-|--------|------|---------|----------|
-| YAML | GOALS.yaml | 1-3 | Goals with checks, weights, pillars |
-| Markdown | GOALS.md | 4 | Goals + mission + north/anti stars + directives |
+Use [operations.md](references/operations.md) for full flags, examples,
+troubleshooting, and mode-specific procedures after routing.
 
-When both files exist, GOALS.md takes precedence.
+## Core Workflow
 
-## Mode Selection
+1. Identify the active goals file and requested mode. If the request is
+   ambiguous, default to measurement.
+2. Run the read-only observation for that mode before any mutation. For steer,
+   init enrichment, add, prune, migrate, or apply, show the relevant current
+   state first.
+3. Execute the exact `ao goals` command. Capture its exit status and structured
+   output where available.
+4. For mutations, inspect the resulting `GOALS.md` diff and run
+   `ao goals validate --json`.
+5. Re-measure or run the mode-specific proof so the result is grounded in the
+   post-change state.
+6. Emit the output specification below, including failures and next action.
 
-Parse the user's input:
+## Measure Mode
 
-| Input | Mode | CLI Command |
-|-------|------|-------------|
-| `/goals`, `/goals measure`, "goal status" | **measure** | `ao goals measure` |
-| `/goals init`, "bootstrap goals" | **init** | `ao goals init` |
-| `/goals steer`, "manage directives" | **steer** | `ao goals steer` |
-| `/goals add`, "add goal" | **add** | `ao goals add` |
-| `/goals drift`, "goal drift" | **drift** | `ao goals drift` |
-| `/goals history`, "goal history" | **history** | `ao goals history` |
-| `/goals export`, "export goals" | **export** | `ao goals export` |
-| `/goals meta`, "meta goals" | **meta** | `ao goals meta` |
-| `/goals validate`, "validate goals" | **validate** | `ao goals validate` |
-| `/goals prune`, "prune goals", "clean goals" | **prune** | `ao goals prune` |
-| `/goals migrate`, "migrate goals" | **migrate** | `ao goals migrate` |
-| `/goals scenarios`, "directive scenarios", "link a scenario" | **scenarios** | `ao goals scenarios` |
-| `/goals trace`, "trace lineage", "orphan audit" | **trace** | `ao goals trace` |
-| `/goals render`, "export gherkin", "feature file" | **render** | `ao goals render` |
-
-`ao goals scenarios` links each directive to behavioral scenarios (the
-`ao eval scenario` family) so GOALS.md is an executable BDD spec: bare lists every
-directive's linked scenarios with link health; `--create "<goal>" --directive N`
-scaffolds and bidirectionally links a scenario; `--lint` checks the link graph.
-See `docs/adr/ADR-0003`.
-
-`ao goals trace` and `ao goals render` render and audit the executable-spec
-chain; `ao goals steer recommend`/`apply` drive the auto re-steer loop. Their
-contracts are documented in `references/executable-spec-chain.md`.
-
-## Measure Mode (default) — Observe
-
-### Step 1: Run Measurement
+Run:
 
 ```bash
 ao goals measure --json
 ```
 
-Parse the JSON output. Extract per-goal pass/fail, overall fitness score.
-
-### Step 2: Directive Gap Assessment (GOALS.md only)
-
-If the goals file is GOALS.md format:
+Extract each gate's status, weight, failure evidence, and overall fitness. For
+`GOALS.md`, also assess directives:
 
 ```bash
 ao goals measure --directives
 ```
 
-For each directive, assess whether recent work has addressed it:
-- Check git log for commits mentioning the directive title
-- Check beads/issues related to the directive topic
-- Rate each directive: addressed / partially-addressed / gap
+Correlate directives with recent commits and the repository's own tracker.
+Classify each as `addressed`, `partially-addressed`, or `gap`; do not infer
+progress from titles alone.
 
-### Step 2b: Scenario Satisfaction (executable-spec fitness)
-
-`ao goals measure` also gates on **scenario satisfaction** — the fraction of a
-directive's linked behavioral scenarios that currently pass. Each directive in
-the `--json` / `--directives` output carries a `scenario_satisfaction` block:
-
-```jsonc
-"scenario_satisfaction": {
-  "linked": 4,            // scenarios linked to this directive
-  "satisfied": 3,         // scenarios whose latest result is PASS
-  "ratio": 0.75,          // satisfied / linked
-  "threshold": 0.8,       // directive's required ratio
-  "status": "RED"         // GREEN | YELLOW | RED — RED when ratio < threshold
-}
-```
-
-A directive below its threshold is `RED` and drags overall fitness down.
-
-Use `--scenarios-only` to evaluate just the executable-spec layer and skip the
-shell gate-command execution — fast feedback while iterating on scenarios:
+Scenario satisfaction is part of fitness. A directive below its configured
+ratio is RED. For a fast executable-spec check:
 
 ```bash
 ao goals measure --scenarios-only -o json
 ```
 
-Scenario results are read from the scenario result artifacts (see
-`ao eval scenario` family); the exact aggregation path and exit-code semantics are
-in `references/executable-spec-chain.md`.
+The aggregation and exit-code contract is in
+[executable-spec-chain.md](references/executable-spec-chain.md).
 
-### Step 3: Report
+## Mutation Rules
 
-Present fitness dashboard:
-```
-Fitness: 5/7 passing (71%)
+### Initialize
 
-Gates:
-  [PASS] build-passing (weight 8)
-  [FAIL] test-passing (weight 7)
-    └─ 3 test failures in pool_test.go
+Run `ao goals init` (or `--non-interactive` when explicitly requested), then
+enrich only from repository evidence:
 
-Directives:
-  1. Expand Test Coverage — gap (no recent test additions)
-  2. Reduce Complexity — partially-addressed (2 refactors this week)
-```
+- add at least one outcome-oriented north star;
+- derive anti-stars from recurring verified failure modes when evidence exists;
+- add product directives with a direction and measurable target;
+- suggest product gates only for live infrastructure.
 
-## Init Mode
+Generation heuristics and examples live in
+[generation-heuristics.md](references/generation-heuristics.md).
 
-```bash
-ao goals init
-```
+## Steer Mode
 
-Or with defaults:
-```bash
-ao goals init --non-interactive
-```
+Measure first. Recommend removing completed directives, repairing chronic
+failure, and covering measurable product gaps. Use non-lossy commands:
 
-Creates a new GOALS.md with mission, north/anti stars, first directive, and auto-detected gates. Error if file already exists.
-
-### Post-Init Enrichment
-
-After `ao goals init` creates the scaffold, enrich it with product-aware content that the CLI cannot auto-detect:
-
-#### Enrich North Stars with Outcomes
-
-Review the generated north stars. If they are all feature-focused (e.g., "skills work across 4 runtimes"), nudge toward outcome-focused stars:
-
-- **Feature-focused (weaker):** "Skills work across 4 runtimes"
-- **Outcome-focused (stronger):** "A new user goes from install to first validated workflow in under 5 minutes"
-
-Ask the user: "Your north stars describe features. What user outcome would tell you the product is actually working?" Add at least one outcome-focused star.
-
-#### Enrich Anti-Stars from Failure Modes
-
-Scan for proven failure patterns:
-1. Check `.agents/retro/` — extract failure themes from retrospectives
-2. Check `.agents/council/` or council index — look for FAIL verdicts and their root causes
-3. Check `.agents/learnings/` — look for learnings tagged as anti-patterns
-
-Convert the top 3 most common failure modes into anti-stars. Examples from real data:
-- "Product promises with no automated verification" (from council FAILs where claims had no gates)
-- "Goals that measure code metrics instead of user outcomes" (from retros where passing gates didn't improve product)
-- "Capture without compounding" (from flywheel analysis where knowledge was stored but never retrieved)
-
-If no `.agents/` data exists, use the defaults from `ao goals init`.
-
-#### Add Product Directives
-
-The CLI generates engineering-flavored directives (test coverage, complexity, lint). After init, also suggest product/growth directives by asking:
-
-1. "What's your biggest product gap right now?" → directive with `steer: decrease`
-2. "What user behavior do you want to increase?" → directive with `steer: increase`
-3. "What metric would tell you the product is working?" → directive with measurable target
-
-Product directives sit alongside engineering ones in the same `## Directives` section. See `references/generation-heuristics.md` for product directive patterns.
-
-#### Add Product Gates
-
-Check what product infrastructure exists and suggest appropriate gates:
-
-| Infrastructure | Suggested Gate |
-|---------------|----------------|
-| `.agents/learnings/` exists | `flywheel-compounding` — knowledge above escape velocity |
-| `skills/status/` exists | `quickstart-under-5min` — onboarding time gate |
-| `docs/comparisons/` exists | `competitive-freshness` — comparison docs updated within 45 days |
-| `PRODUCT.md` exists | `product-gaps-tracked` — Known Gaps section has entries |
-| `ao flywheel status` works | `flywheel-promotion-rate` — learnings promoted above threshold |
-
-Only suggest gates for infrastructure that actually exists. Don't create gates for aspirational features.
-
-## Steer Mode — Orient/Decide
-
-### Step 1: Show Current State
-
-Run measure mode first to show current fitness and directive status.
-
-### Step 2: Propose Adjustments
-
-Based on measurement:
-- If a directive is fully addressed → suggest removing or replacing
-- If fitness is declining → suggest new gates
-- If idle rate is high → suggest new directives
-
-**Product-aware steering:** Also check for product dimension gaps:
-- If all directives are engineering-flavored (test, lint, build, refactor) → suggest at least one product/growth directive
-- If no directive cites a specific metric → flag: "Vague directives are a smell. Can any of these reference a specific number?"
-- If `.agents/retro/` has new failure patterns not represented in anti-stars → suggest adding them
-- If PRODUCT.md has Known Gaps not covered by any directive → suggest a directive to close the gap
-
-### Step 3: Execute Changes
-
-Use CLI commands:
 ```bash
 ao goals steer add "Title" --description="..." --steer=increase
 ao goals steer remove 3
 ao goals steer prioritize 2 1
+ao goals steer recommend
 ```
 
-### Step 4: Auto Re-Steer (F5) — chronic failure mutates the directive
+Apply a recommendation only with the consent constraints above. Re-run measure
+and validate after mutation.
 
-When a directive's scenarios fail chronically, the re-steer engine recommends a
-directive mutation from the verdict ledger:
+## Add and Migrate Modes
 
-```bash
-ao goals steer recommend                 # show recommendations; GOALS.md untouched
-ao goals steer apply                     # apply the top recommendation (human-gated)
-ao goals steer apply --auto --yes        # non-interactive consent for scripts
-ao goals steer apply --policy docs/re-steer-policy.json
-```
-
-`recommend` is read-only — it runs the policy engine over the verdict ledger and
-prints recommended mutations plus skip reasons. `apply` mutates GOALS.md only
-when the policy's `auto_apply` is true **and** the operator confirms (interactive
-prompt, or `--auto`/`--yes` for scripts). Every mutation routes through the
-non-lossy directive-block patcher — never a full re-render. Policy, ledger, and
-human-gate semantics: `references/executable-spec-chain.md` and
-`docs/adr/ADR-0006`.
-
-## Add Mode
-
-Add a single goal to the goals file. Format-aware — writes to GOALS.yaml or GOALS.md depending on which format is detected.
-
-```bash
-ao goals add <id> <check-command> --weight=5 --description="..." --type=health
-```
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--weight` | 5 | Goal weight (1-10) |
-| `--description` | — | Human-readable description |
-| `--type` | — | Goal type (health, architecture, quality, meta) |
-
-Example:
-```bash
-ao goals add go-coverage-floor "bash scripts/check-coverage.sh" --weight=3 --description="Go test coverage above 60%"
-```
-
-## Drift Mode
-
-Compare the latest measurement snapshot against a previous one to detect regressions.
-
-```bash
-ao goals drift                    # Compare latest vs previous snapshot
-```
-
-Reports which goals improved, regressed, or stayed unchanged.
-
-## History Mode
-
-Show measurement history over time for all goals or a specific goal.
-
-```bash
-ao goals history                        # All goals, all time
-ao goals history --goal go-coverage     # Single goal
-ao goals history --since 2026-02-01     # Since a specific date
-ao goals history --goal go-coverage --since 2026-02-01  # Combined
-```
-
-Useful for spotting trends and identifying oscillating goals.
-
-## Export Mode
-
-Export the latest fitness snapshot as JSON for CI consumption or external tooling.
-
-```bash
-ao goals export
-```
-
-Outputs the snapshot to stdout in the fitness snapshot schema (see `references/goals-schema.md`).
-
-## Meta Mode
-
-Run only meta-goals (goals that validate the validation system itself). Useful for checking allowlist hygiene, skip-list freshness, and other self-referential checks.
-
-```bash
-ao goals meta --json
-```
-
-See `references/goals-schema.md` for the meta-goal pattern.
-
-## Validate Mode
-
-```bash
-ao goals validate --json
-```
-
-Reports: goal count, version, format, directive count, any structural errors or warnings.
+- `add`: supply a stable ID, executable check, weight, description, and type.
+- `migrate`: preserve the original as a backup and validate the converted file.
 
 ## Prune Mode
 
-```bash
-ao goals prune --dry-run    # List stale gates
-ao goals prune              # Remove stale gates
+Run `ao goals prune --dry-run` first. Remove only gates whose referenced paths
+are actually stale, then validate and re-measure.
+
+Schema details for formats, weights, snapshots, and meta-goals are in
+[goals-schema.md](references/goals-schema.md).
+
+## Executable-Spec Operations
+
+- `ao goals scenarios` lists and manages directive/scenario links; `--lint`
+  checks the graph.
+- `ao goals trace --from <id>` renders lineage from a stable directive,
+  scenario, or bead ID.
+- `ao goals trace --orphans --strict` fails on warnings as well as broken
+  references.
+- `ao goals render --out spec.feature` exports linked scenarios as Gherkin.
+
+Use stable directive IDs (`d-...`) as anchors, not display numbers. The compact
+behavioral contract is [goals.feature](references/goals.feature).
+
+## Output Specification
+
+Return a concise report with these fields:
+
+- **Path:** structured command output goes to `stdout`; repository mutations
+  land in the active `GOALS.md`, and generated artifacts use the requested path.
+- **Filename:** the filename convention is `GOALS.md` for the canonical spec;
+  exports and renders use the explicit `--out` filename supplied by the user.
+- **Format:** the serialization/schema format is command JSON for structured
+  results, Markdown v4 for goals, and Gherkin for rendered scenarios.
+- **Validation command:** validate mutations with
+  `ao goals validate --json`, plus the relevant measure, trace, or render proof.
+- **Downstream handoff:** `GOALS.md` is consumed by the operating loop and
+  `/evolve`; exported JSON or Gherkin is handed to the requested CI/BDD consumer.
+
+```text
+Mode: <measure|init|steer|add|drift|history|export|meta|validate|prune|migrate|scenarios|trace|render>
+Source: <GOALS.md|GOALS.yaml|none>
+Command: <exact command executed>
+Result: <PASS|WARN|FAIL> — <exit/effect summary>
+Fitness: <passing>/<total> (<percent>) or n/a
+Directives: <addressed/partial/gap counts> or n/a
+Evidence: <specific output, diff, snapshot, or artifact paths>
+Next action: <single concrete action or none>
 ```
 
-Identifies gates whose check commands reference nonexistent paths. Removes them and re-renders the file.
+For measurement, list failed gates and RED directives with their direct
+evidence. For mutation, list the exact changed goal/directive IDs and the
+post-change validation result. JSON/export/render modes may return the artifact
+plus this envelope; do not replace structured output with an unsupported prose
+claim.
 
-## Migrate Mode
+## Quality Rubric
 
-Convert between goal file formats.
+A complete result satisfies all of the following:
 
-```bash
-ao goals migrate --to-md      # Convert GOALS.yaml → GOALS.md
-ao goals migrate               # Migrate GOALS.yaml to latest YAML version
-```
+- **Correct routing:** the command matches the user's intent and active format.
+- **Truthful fitness:** every score and status comes from current command output.
+- **Safe mutation:** current state was observed, the diff is narrow, and consent
+  requirements were honored.
+- **Executable goals:** gates have runnable checks; directives have measurable
+  outcomes and healthy scenario links where applicable.
+- **Verified result:** mutations pass `ao goals validate --json` and a relevant
+  post-change measurement or graph check.
+- **Actionable report:** failures name direct evidence and one concrete next
+  action without hiding partial success.
 
-The `--to-md` flag creates a GOALS.md with mission, north/anti stars sections, and converts existing goals into the Gates table format. The original YAML file is backed up.
+If any required item is missing, report `WARN` or `FAIL`; do not label the work
+complete.
 
-## Trace Mode (F4) — render and audit the executable-spec chain
+## References
 
-`ao goals trace` renders the directive → scenario → bead → verdict → learning
-lineage and audits it for defects:
-
-```bash
-ao goals trace --from d-fitness-gate-bdd        # lineage tree from a directive
-ao goals trace --from s-2026-05-17-001 -o json  # line-delimited JSON graph
-ao goals trace --orphans                         # whole-chain gap audit
-ao goals trace --orphans --strict                # warnings also fail (exit 1)
-```
-
-- `--from <id>` roots the trace at any directive, scenario, or bead ID.
-- `--orphans` audits the whole chain: broken references are **errors** (always
-  non-zero exit), missing yields are **warnings**.
-- `--strict` escalates warning-class defects to a non-zero exit (ADR-0005 §4.2).
-
-Stable directive IDs (`d-...`) are the link anchors — never display numbers.
-The link grammar is `docs/adr/ADR-0005`.
-
-## Render Mode (F4) — export Gherkin feature files
-
-`ao goals render` exports the directive-linked scenarios as a Gherkin feature
-file so the executable spec can be consumed by external BDD tooling:
-
-```bash
-ao goals render                       # print Gherkin to stdout
-ao goals render --out spec.feature     # write Gherkin to a file
-```
-
-## Examples
-
-### Checking fitness and directive gaps
-
-**User says:** `/goals`
-
-**What happens:**
-1. Runs `ao goals measure --json` to get gate results
-2. If GOALS.md format, runs `ao goals measure --directives` to get directive list
-3. Assesses each directive against recent work
-4. Reports combined fitness + directive gap dashboard
-
-**Result:** Dashboard showing gate pass rates and directive progress.
-
-### Bootstrapping goals for a new project
-
-**User says:** `/goals init`
-
-**What happens:**
-1. Runs `ao goals init` which prompts for mission, stars, directives, and auto-detects gates
-2. Creates GOALS.md in the project root
-
-**Result:** New GOALS.md ready for `/evolve` consumption.
-
-### Adding a new goal after a post-mortem
-
-**User says:** `/goals add go-parser-fuzz "cd cli && go test -fuzz=. ./internal/goals/ -fuzztime=10s" --weight=3 --description="Markdown parser survives fuzz testing"`
-
-**What happens:**
-1. Runs `ao goals add` with the provided arguments
-2. Writes the new goal in the correct format (YAML or Markdown)
-
-**Result:** New goal added, measurable on next `/goals` run.
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| "goals file already exists" | Init called on existing project | Use `/goals` to measure, or delete file to re-init |
-| "directives require GOALS.md format" | Tried steer on YAML file | Run `ao goals migrate --to-md` first |
-| No directives in measure output | GOALS.yaml doesn't support directives | Migrate to GOALS.md with `ao goals migrate --to-md` |
-| Gates referencing deleted scripts | Scripts were renamed or removed | Run `/goals prune` to clean up |
-| Drift shows no history | No prior snapshots saved | Run `ao goals measure` at least twice first |
-| Export returns empty | No snapshot file exists | Run `ao goals measure` to create initial snapshot |
-
-## See Also
-
-- `/evolve` — consumes goals for fitness-scored improvement loops
-- `references/goals-schema.md` — schema definition for both formats
-- `references/generation-heuristics.md` — goal quality criteria
-
-## Reference Documents
-
-- [references/goals.feature](references/goals.feature) — Executable spec: measure gates → verdict, directives steering, GOALS.md source-of-truth, measurement-root (soc-qk4b)
-- [references/generation-heuristics.md](references/generation-heuristics.md)
-- [references/goals-schema.md](references/goals-schema.md)
-- [references/executable-spec-chain.md](references/executable-spec-chain.md)
+- [operations.md](references/operations.md) — detailed modes, examples, and troubleshooting
+- [executable-spec-chain.md](references/executable-spec-chain.md) — scenario satisfaction, lineage, and re-steer policy
+- [generation-heuristics.md](references/generation-heuristics.md) — goal and directive design patterns
+- [goals-schema.md](references/goals-schema.md) — v1-v4 schemas and snapshot contract
+- [goals.feature](references/goals.feature) — executable behavior examples
