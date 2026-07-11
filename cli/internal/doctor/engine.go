@@ -913,20 +913,28 @@ func RobotTriage(opts Options) (*RobotTriageResult, *Report, error) {
 	}, rep, nil
 }
 
+// GCResult describes a doctor run garbage-collection operation.
+type GCResult struct {
+	Matched int  `json:"matched"`
+	Pruned  int  `json:"pruned"`
+	DryRun  bool `json:"dry_run"`
+}
+
 // GC prunes run directories whose started_at is before the cutoff. It refuses
-// unless yes is true and cutoff is non-zero (never deletes silently).
-func GC(repoRoot string, cutoff time.Time, yes bool) (int, error) {
+// unless yes is true and cutoff is non-zero (never deletes silently). Dry-run
+// reports matching runs without removing them.
+func GC(repoRoot string, cutoff time.Time, yes, dryRun bool) (GCResult, error) {
+	result := GCResult{DryRun: dryRun}
 	if !yes || cutoff.IsZero() {
-		return 0, fmt.Errorf("doctor: gc requires --yes and --before <date>")
+		return result, fmt.Errorf("doctor: gc requires --yes and --before <date>")
 	}
 	entries, err := os.ReadDir(runsDir(repoRoot))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 0, nil
+			return result, nil
 		}
-		return 0, fmt.Errorf("doctor: read runs dir: %w", err)
+		return result, fmt.Errorf("doctor: read runs dir: %w", err)
 	}
-	pruned := 0
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
@@ -936,12 +944,16 @@ func GC(repoRoot string, cutoff time.Time, yes bool) (int, error) {
 		if started.IsZero() || !started.Before(cutoff) {
 			continue
 		}
-		if err := os.RemoveAll(dir); err != nil {
-			return pruned, fmt.Errorf("doctor: prune %s: %w", e.Name(), err)
+		result.Matched++
+		if dryRun {
+			continue
 		}
-		pruned++
+		if err := os.RemoveAll(dir); err != nil {
+			return result, fmt.Errorf("doctor: prune %s: %w", e.Name(), err)
+		}
+		result.Pruned++
 	}
-	return pruned, nil
+	return result, nil
 }
 
 // runStartedAt reads a run's started_at, falling back to dir mtime.
