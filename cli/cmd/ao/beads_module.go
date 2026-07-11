@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	beadscommands "github.com/boshu2/agentops/cli/internal/commands/beads"
 	"github.com/spf13/cobra"
@@ -17,12 +18,6 @@ type beadsModuleRunner struct{}
 func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.Invocation) error {
 	options := invocation.Options
 	switch invocation.Operation {
-	case beadscommands.OperationDir:
-		beadsDirJSON, beadsDirRequire = options.JSON, options.Require
-		return executeBeadsDir(command, invocation.Args)
-	case beadscommands.OperationTracker:
-		beadsTrackerJSON = options.JSON
-		return executeBeadsTracker(command, invocation.Args)
 	case beadscommands.OperationVerify:
 		beadsVerifyJSON, beadsVerifyVerbose = options.JSON, options.Verbose
 		return executeBeadsVerify(command, invocation.Args)
@@ -38,8 +33,6 @@ func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.In
 	case beadscommands.OperationCluster:
 		beadsClusterJSON, beadsClusterApply = options.JSON, options.Apply
 		return executeBeadsCluster(command, invocation.Args)
-	case beadscommands.OperationExec:
-		return executeBeadsExec(command, invocation.Args)
 	case beadscommands.OperationResume:
 		beadsResumeAgentID, beadsResumeLedgerPath, beadsResumeJSON = options.Agent, options.Ledger, options.JSON
 		return executeBeadsResume(command, invocation.Args)
@@ -63,7 +56,8 @@ func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.In
 }
 
 func init() {
-	module := beadscommands.NewModule(beadsModuleRunner{})
+	tracker := currentBeadsTracker()
+	module := beadscommands.NewModule(beadsModuleRunner{}, tracker, tracker, beadsadapter.NewExecutor(tracker))
 	command := module.Command()
 	command.GroupID = "knowledge"
 	if err := clicontract.Attach(command, module.Contract()); err != nil {

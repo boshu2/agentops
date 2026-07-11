@@ -90,68 +90,6 @@ var (
 	beadsHarvestDryRun bool
 )
 
-func executeBeadsDir(cmd *cobra.Command, _ []string) error {
-	tracker := currentBeadsTracker()
-	// BEADS_DIR is br's explicit ledger override; when it is set we preserve the
-	// historical br resolution verbatim (backward compatibility). Otherwise we
-	// consult the dual-tracker resolver so a bd-tracked repo returns its .beads
-	// directory instead of assuming _beads (age-fvr8).
-	if !tracker.BeadsDirOverride() {
-		if tr, terr := tracker.Resolve(); terr == nil && tr.Tracker == trackerBD {
-			if beadsDirRequire {
-				if reason := beadsapp.LedgerMissing(beadsapp.TrackerBD, tracker.InspectLedger(tr.LedgerDir)); reason != "" {
-					return fmt.Errorf("beads dir --require: %s (resolved %s for tracker bd via %s); refusing to print a path a bd write could silently fall back from", reason, tr.LedgerDir, tr.Source)
-				}
-			}
-			if beadsDirJSON {
-				return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{
-					"beads_dir": tr.LedgerDir,
-					"source":    tr.Source,
-				})
-			}
-			fmt.Fprintln(cmd.OutOrStdout(), tr.LedgerDir)
-			return nil
-		}
-	}
-	// br path — unchanged historical behavior (also the both-present tie-break).
-	resolved, err := tracker.BRLedger()
-	if err != nil {
-		return err
-	}
-	if beadsDirRequire {
-		if reason := beadsapp.LedgerMissing(beadsapp.TrackerBR, tracker.InspectLedger(resolved.Path)); reason != "" {
-			return fmt.Errorf("beads dir --require: %s (resolved %s via %s); refusing to print a path a br write could silently fall back from", reason, resolved.Path, resolved.Source)
-		}
-	}
-	if beadsDirJSON {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]string{
-			"beads_dir": resolved.Path,
-			"source":    resolved.Source,
-		})
-	}
-	fmt.Fprintln(cmd.OutOrStdout(), resolved.Path)
-	return nil
-}
-
-// runBeadsTracker prints the resolved beads tracker for the current
-// environment: which tracker (bd|br), its resolved binary, its ledger
-// directory, and how it was selected (age-fvr8).
-func executeBeadsTracker(cmd *cobra.Command, _ []string) error {
-	res, err := currentBeadsTracker().Resolve()
-	if err != nil {
-		return err
-	}
-	if beadsTrackerJSON {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(res)
-	}
-	w := cmd.OutOrStdout()
-	fmt.Fprintf(w, "tracker     %s\n", res.Tracker)
-	fmt.Fprintf(w, "binary      %s\n", res.Binary)
-	fmt.Fprintf(w, "ledger_dir  %s\n", res.LedgerDir)
-	fmt.Fprintf(w, "source      %s\n", res.Source)
-	return nil
-}
-
 // ------------------------------------------------------------------------
 // verify
 // ------------------------------------------------------------------------

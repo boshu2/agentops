@@ -4,42 +4,10 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"os"
 
-	"github.com/spf13/cobra"
-
-	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
-
-func executeBeadsExec(cmd *cobra.Command, args []string) error {
-	for _, argument := range args {
-		if argument == "--help" || argument == "-h" {
-			return cmd.Help()
-		}
-	}
-	err := currentBeadsExecutor().Execute(context.Background(), args, beadsapp.ExecStreams{
-		Stdin:  cmd.InOrStdin(),
-		Stdout: cmd.OutOrStdout(),
-		Stderr: cmd.ErrOrStderr(),
-	})
-	var adapterExit *beadsapp.ExitError
-	if errors.As(err, &adapterExit) {
-		err = &beadsVerdictError{code: adapterExit.ExitCode()}
-	}
-	var exitErr interface{ ExitCode() int }
-	if errors.As(err, &exitErr) {
-		cmd.SilenceUsage = true
-		cmd.SilenceErrors = true
-	}
-	return err
-}
-
-func currentBeadsExecutor() *beadsadapter.Executor {
-	return beadsadapter.NewExecutor(currentBeadsTracker())
-}
 
 // These pure compatibility delegates remain until the yield family moves its
 // tracker-child formatting onto the shared application policy.
