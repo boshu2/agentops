@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -78,6 +79,7 @@ type Module struct {
 	runtime   beadsapp.ResumeRuntime
 	reader    beadsapp.LedgerReader
 	knowledge beadsapp.KnowledgeUseCases
+	hygiene   beadsapp.HygieneUseCases
 }
 
 func NewModule(
@@ -90,10 +92,11 @@ func NewModule(
 	runtime beadsapp.ResumeRuntime,
 	reader beadsapp.LedgerReader,
 	knowledge beadsapp.KnowledgeUseCases,
+	hygiene beadsapp.HygieneUseCases,
 ) Module {
 	return Module{
 		runner: runner, resolver: resolver, inspector: inspector, executor: executor,
-		stale: stale, claims: claims, runtime: runtime, reader: reader, knowledge: knowledge,
+		stale: stale, claims: claims, runtime: runtime, reader: reader, knowledge: knowledge, hygiene: hygiene,
 	}
 }
 
@@ -208,7 +211,7 @@ func (module Module) auditCommand() *cobra.Command {
 	command.Flags().BoolVar(&options.Strict, "strict", false, "Exit 1 when any likely-fixed, likely-stale, or consolidatable bead is found")
 	command.Flags().BoolVar(&options.AutoClose, "auto-close", false, "Close likely-fixed beads when commit or file-change evidence is found")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationAudit, args, options)
+		return module.runAudit(command, options)
 	}
 	return command
 }
@@ -219,9 +222,136 @@ func (module Module) clusterCommand() *cobra.Command {
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit cluster report as JSON")
 	command.Flags().BoolVar(&options.Apply, "apply", false, "Reparent non-representative beads under the cluster representative")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationCluster, args, options)
+		return module.runCluster(command, options)
 	}
 	return command
+}
+
+func (module Module) runAudit(command *cobra.Command, options Options) error {
+	if module.hygiene == nil {
+		return fmt.Errorf("beads hygiene use cases are not configured")
+	}
+	report, err := module.hygiene.Audit(options.AutoClose)
+	if err != nil {
+		return err
+	}
+	if !report.BDAvailable {
+		if options.JSON {
+			return encodeJSON(command, report)
+		}
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping audit (graceful degradation)")
+		return err
+	}
+	if options.JSON {
+		if err := encodeJSON(command, report); err != nil {
+			return err
+		}
+	} else {
+		emitAudit(command, report)
+	}
+	if options.Strict && report.FlaggedCount() > 0 {
+		command.SilenceErrors = true
+		return &beadsapp.ExitError{Code: 1}
+	}
+	return nil
+}
+
+func emitAudit(command *cobra.Command, report *beadsapp.AuditReport) {
+	output := command.OutOrStdout()
+	fmt.Fprintln(output, "=== ao beads audit results ===")
+	fmt.Fprintf(output, "Total open/in-progress beads: %d\n", report.Summary.Total)
+	fmt.Fprintf(output, "likely-fixed:              %d\n", report.Summary.LikelyFixed)
+	fmt.Fprintf(output, "likely-stale:              %d\n", report.Summary.LikelyStale)
+	fmt.Fprintf(output, "consolidatable:            %d\n", report.Summary.Consolidatable)
+	if len(report.LikelyFixed) > 0 {
+		fmt.Fprintf(output, "\nLikely fixed: %s\n", auditFindingIDs(report.LikelyFixed))
+	}
+	if len(report.LikelyStale) > 0 {
+		fmt.Fprintf(output, "\nLikely stale: %s\n", auditFindingIDs(report.LikelyStale))
+	}
+	if len(report.Consolidatable) > 0 {
+		fmt.Fprintln(output, "\nConsolidatable:")
+		for _, consolidation := range report.Consolidatable {
+			fmt.Fprintf(output, "  %s: %s\n", consolidation.File, strings.Join(consolidation.BeadIDs, " "))
+		}
+	}
+}
+
+func auditFindingIDs(findings []beadsapp.AuditFinding) string {
+	ids := make([]string, 0, len(findings))
+	for _, finding := range findings {
+		ids = append(ids, finding.ID)
+	}
+	sort.Strings(ids)
+	return strings.Join(ids, " ")
+}
+
+func (module Module) runCluster(command *cobra.Command, options Options) error {
+	if module.hygiene == nil {
+		return fmt.Errorf("beads hygiene use cases are not configured")
+	}
+	report, err := module.hygiene.Cluster(options.Apply)
+	if err != nil {
+		return err
+	}
+	if !report.BDAvailable {
+		if options.JSON {
+			return encodeJSON(command, report)
+		}
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping cluster analysis (graceful degradation)")
+		return err
+	}
+	if options.JSON {
+		return encodeJSON(command, report)
+	}
+	emitCluster(command, report)
+	return nil
+}
+
+func emitCluster(command *cobra.Command, report *beadsapp.ClusterReport) {
+	output := command.OutOrStdout()
+	if report.Message != "" {
+		fmt.Fprintln(output, report.Message)
+		return
+	}
+	if len(report.Clusters) == 0 {
+		fmt.Fprintf(output, "No clusters found across %d open bead(s).\n", len(report.Unclustered))
+		return
+	}
+	for index, cluster := range report.Clusters {
+		label := "overlapping beads"
+		if len(cluster.SharedKeywords) > 0 {
+			label = strings.Join(cluster.SharedKeywords[:min(3, len(cluster.SharedKeywords))], " ")
+		}
+		fmt.Fprintf(output, "Cluster %d: %q (%d beads)\n", index+1, label, len(cluster.Beads))
+		for _, bead := range cluster.Beads {
+			marker := ""
+			if bead.IsEpic {
+				marker = " [epic]"
+			}
+			fmt.Fprintf(output, "  %s%s: %s\n", bead.ID, marker, bead.Title)
+		}
+		if len(cluster.SharedKeywords) == 0 {
+			fmt.Fprintln(output, "  Shared keywords: none")
+		} else {
+			fmt.Fprintf(output, "  Shared keywords: %s\n", strings.Join(cluster.SharedKeywords, " "))
+		}
+		fmt.Fprintf(output, "  Suggestion: Consolidate under %s", cluster.Representative)
+		for _, bead := range cluster.Beads {
+			if bead.ID == cluster.Representative && bead.IsEpic {
+				fmt.Fprint(output, " (existing epic)")
+			}
+		}
+		fmt.Fprintln(output)
+		fmt.Fprintln(output)
+	}
+	fmt.Fprintf(output, "No clusters found for %d remaining bead(s).\n", len(report.Unclustered))
+	if report.Applied > 0 || len(report.ApplyErrors) > 0 {
+		fmt.Fprintf(output, "Applied %d reparenting operation(s).\n", report.Applied)
+		for _, applyError := range report.ApplyErrors {
+			fmt.Fprintf(output, "WARN: %s\n", applyError)
+		}
+	}
 }
 
 func (module Module) execCommand() *cobra.Command {

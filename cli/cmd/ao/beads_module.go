@@ -19,12 +19,6 @@ type beadsModuleRunner struct{}
 func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.Invocation) error {
 	options := invocation.Options
 	switch invocation.Operation {
-	case beadscommands.OperationAudit:
-		beadsAuditJSON, beadsAuditStrict, beadsAuditAutoClose = options.JSON, options.Strict, options.AutoClose
-		return executeBeadsAudit(command, invocation.Args)
-	case beadscommands.OperationCluster:
-		beadsClusterJSON, beadsClusterApply = options.JSON, options.Apply
-		return executeBeadsCluster(command, invocation.Args)
 	case beadscommands.OperationScenariosExtract:
 		beadsScenariosJSON, beadsScenariosForce, beadsScenariosWrite = options.JSON, options.Force, options.Write
 		return executeBeadsScenariosExtract(command, invocation.Args)
@@ -43,9 +37,10 @@ func init() {
 	runtime := beadsadapter.NewRuntime()
 	repository := beadsadapter.NewKnowledgeRepository()
 	knowledge := beadsapp.KnowledgeService{Tracker: tracker, Repository: repository, Clock: runtime}
+	hygiene := beadsapp.HygieneService{Repository: beadsadapter.NewHygieneRepository(tracker)}
 	module := beadscommands.NewModule(
 		beadsModuleRunner{}, tracker, tracker, beadsadapter.NewExecutor(tracker),
-		tracker, tracker, runtime, runtime, knowledge,
+		tracker, tracker, runtime, runtime, knowledge, hygiene,
 	)
 	command := module.Command()
 	command.GroupID = "knowledge"
