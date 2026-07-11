@@ -2237,7 +2237,7 @@
       "hex_role": "driving-adapter",
       "tier": "execution",
       "capability_class": "delivery",
-      "purpose": "Validate, commit, and push.",
+      "purpose": "Validate, commit, and push. Triggers: \"push\", \"ship it\", \"commit and push\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [

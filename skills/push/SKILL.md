@@ -1,6 +1,6 @@
 ---
 name: push
-description: Validate, commit, and push.
+description: 'Validate, commit, and push. Triggers: "push", "ship it", "commit and push".'
 practices:
 - continuous-delivery
 - gitops
