@@ -1,234 +1,94 @@
 ---
 name: swarm
-description: "Dispatch parallel agent lanes."
+description: 'Execute authorized parallel Codex lanes. Triggers: "$swarm", "parallel wave", "dispatch workers".'
 ---
-# $swarm
+# $swarm — Conflict-Safe Wave Execution
 
-Spawn isolated agents to execute tasks in parallel with Codex session agents. Fresh context per agent.
+Execute an explicitly authorized parallel wave. Default to sequential work
+unless at least two independent lanes and disjoint ownership are proven.
 
-**Integration modes:**
-- **Via `$crank`** - crank creates waves from beads and invokes `$swarm` for each wave
-- **Standalone** - direct invocation for ad-hoc parallel work
+## Critical Constraints
 
-> **Requires a multi-agent runtime.** Prefer runtime-native Codex session agents. If spawning is unavailable, fall back to sequential execution in the current session.
+- **Why: avoid orchestration tax.** Runtime capability does not authorize fan-out.
+- **Why: prevent collisions.** Assign issue id, files, output, validation, base,
+  owner, worktree, and discard path before spawn.
+- **Why: derived surfaces collide.** Manifests, registries, schemas, migrations,
+  CLI surfaces, fixtures, and generated files count as writes.
+- **Why: keep evidence durable.** Workers write results to disk with RED,
+  commit, test tail, changed files, and conflicts.
+- **Why: bound failure.** Cap a wave at 4-6 workers and retry each task at most twice.
+- **Why: preserve operator choice.** NTM, Agent Mail, managed agents, and GC are
+  used only when the operator explicitly selected that substrate.
 
-Worker FINAL REPORT must include `red_evidence` (the acceptance test failing BEFORE impl — the slice's ATDD contract, S3) alongside `commit_sha`/`test_tail`; a report missing it is unverified. Worker self-report is not the membrane — each slice needs an independent verdict (crank's Land Loop pawl) before a wave closes (S5). Harvest `.agents/swarm/scope-escapes.jsonl` + wave by-products back into the next wave/loop (S6).
+## Local Mode and Workflow
 
-## Architecture
+1. Confirm explicit parallel authorization and at least two valuable lanes.
+2. Build task packets with `metadata.issue_type`, exact file manifests,
+   dependencies, validation, result path, base SHA, and cleanup plan.
+3. Run pre-spawn friction gates and reject all ownership overlap, including
+   generated companions. Display the ownership matrix.
+4. Select the authorized backend. If spawning is unavailable or invalid, run
+   sequentially with the same contracts.
+5. Assign explicit ownership per worker before spawning: issue id, file set, and expected output.
+6. Give each worker one isolated task/worktree; out-of-scope discoveries become
+   `.agents/swarm/scope-escapes.jsonl`, not edits.
+7. Use file-backed result handoff under `.agents/swarm/` for consolidation and deterministic merge order.
+8. Validate RED→green evidence, commit persistence, changed paths, tests,
+   conflicts, project gates, and independent PAWL before closure.
+9. Close workers and reap worktrees only after feature ancestry on trunk.
 
-```text
-Lead (this session)
-  |
-  +-> Identify the wave: tasks with no blockers
-  +-> Build explicit file manifests
-  +-> Pre-spawn conflict check (file ownership)
-  +-> Spawn one worker per task
-  +-> Wait for completion
-  +-> Validate changes and close or retry tasks
-  +-> Repeat if more work remains
+## Codex Execution Profile
+
+- Use Codex session agents only after explicit authorization and wave admission.
+- Do not give two workers overlapping write ownership in the same wave unless the merge plan is explicit.
+- Keep messages short; detailed findings and proof belong in result files.
+- Use sequential fallback when file manifests, base state, or backend health are uncertain.
+
+## Guardrails
+
+- Do not spawn because `spawn_agent` happens to be available.
+- Do not auto-start NTM, Agent Mail, GC, or another runtime.
+- Do not let workers race-claim tasks or negotiate file ownership.
+- Do not accept prose summaries without commit, RED, test, and path evidence.
+- Do not force-remove an unlanded worktree.
+
+## Worker Result Contract
+
+```json
+{"issue_id":"age-x.1","status":"done","files_changed":["path/file"],"commit_sha":"<sha>","red_evidence":"<before failure>","test_tail":"<final output>","conflicts_surfaced":[],"worktree_path":"<absolute>"}
 ```
 
-**Runtime preference:**
-1. If `spawn_agent` is available, use Codex session agents.
-2. If your runtime exposes `agent_type` roles, use `worker` for execution and `explorer` for file discovery.
-3. If spawning is unavailable, execute sequentially and keep the same file-manifest contract.
+## Output Specification
 
-## Execution
+- **Artifact directory:** `.agents/swarm/results/`; scope escapes use JSONL.
+- **Filename convention:** one `<issue-id>.json` per lane.
+- **Serialization/schema format:** JSON result contract with exact evidence.
+- **Validator command:** run `bash skills-codex/swarm/scripts/validate.sh`,
+  swarm-evidence validation, project tests, and wave/landing gates.
+- **Downstream handoff:** consumed by `$crank`, `$validate`, PAWL, and closeout.
 
-Given `$swarm`:
+## Quality Rubric
 
-## Local Mode
+- Parallelism was authorized, useful, and ownership-disjoint.
+- Every worker stayed isolated and inside its manifest.
+- Results contain reproducible RED, commit, test, path, and conflict evidence.
+- Integration and validation order are deterministic.
+- Retry and cleanup boundaries are honored.
 
-In local mode, keep the same file-manifest contract and execute workers sequentially when the runtime cannot spawn agents.
+## Troubleshooting
 
-### Step 0: Detect Multi-Agent Capability
+| Problem | Response |
+|---|---|
+| overlap found | serialize or merge tasks before spawn |
+| backend unavailable | execute sequentially |
+| scope escape | reject the edit and record follow-up |
+| stalled worker | bounded correction, then close/re-plan |
 
-Check whether the runtime can spawn agents. If not:
+## References
 
-```text
-WARN: Multi-agent not available. Executing tasks sequentially in this session.
-```
-
-Fall back to serial execution within the current session.
-
-### Step 1: Ensure Tasks Exist
-
-Tasks come from one of:
-- `br ready` output
-- An explicit task list from `$crank`
-- A user-provided description that you decompose first
-
-Each task needs:
-- `id` - unique identifier
-- `subject` - what to do
-- `description` - detailed instructions
-- `files` - file manifest for worker ownership
-- `validation` - how to verify completion
-- `metadata.issue_type` - the canonical task type used by the lead when tracking work
-
-### Step 1.5: Populate File Manifests
-
-If any task is missing a file manifest, spawn explorer agents to identify files. Use the explorer role if your runtime exposes roles:
-
-```text
-spawn_agent(message="You are explorer-1.
-
-Task: Given this task, identify all files that will need to be created or modified.
-Return a JSON array of file paths only.
-Task subject: <subject>
-Task description: <description>")
-```
-
-Inject the discovered file list back into the task manifest before spawning workers.
-
-### Step 1.6: Advisory Bead Clustering
-
-When tasks come from bd and `scripts/bd-cluster.sh` exists, run `scripts/bd-cluster.sh --json 2>/dev/null || true` before Step 2. Summarize any clusters as consolidation hints only; never run `--apply` here, and keep Step 2's file-manifest and dependency gates authoritative.
-
-### Step 2: Pre-Spawn Conflict Check
-
-**Pre-Spawn Friction Gates:** Before spawning workers, execute all 5 friction gates (base sync, file manifest, dependency graph, misalignment breaker, wave cap). See `references/pre-spawn-friction-gates.md`. The wave-validity rows themselves are owned by `$crank` (its wave-start hard gate + `../crank/references/parallel-wave-isolation.md`) — swarm cites them, never restates.
-
-```text
-wave_tasks = [tasks with status=pending and no blockers]
-all_files = {}
-for task in wave_tasks:
-    for f in task.files:
-        if f in all_files:
-            CONFLICT: f claimed by both all_files[f] and task.id
-        all_files[f] = task.id
-```
-
-On conflict:
-- Serialize conflicting workers into separate sub-waves
-- Do not spawn overlapping file manifests into the same shared-worktree wave
-
-Display an ownership table before spawning:
-
-```text
-File Ownership Map (Wave N):
-┌─────────────────────────────┬──────────┬──────────┐
-│ File                        │ Owner    │ Conflict │
-├─────────────────────────────┼──────────┼──────────┤
-│ src/auth/middleware.go      │ task-1   │          │
-│ src/api/routes.go           │ task-2   │          │
-└─────────────────────────────┴──────────┴──────────┘
-Conflicts: 0
-```
-
-### Step 3: Spawn Workers
-
-Build one worker prompt per task. Each worker gets a single assignment and a single file manifest.
-
-```text
-spawn_agent(message="You are worker-<task-id>.
-
-Assignment: <subject>
-
-<description>
-
-FILE MANIFEST (files you are permitted to modify):
-<list of files>
-
-Rules:
-1. Stay within your assigned files
-2. Run validation: <validation_cmd>
-3. Write your result to .agents/swarm/results/<task-id>.json
-4. Keep any message back to the lead short
-
-Result file format:
-On success:
-{\"type\":\"completion\",\"issue_id\":\"<task-id>\",\"status\":\"done\",\"detail\":\"<one-line summary>\",\"artifacts\":[\"path/to/file1\"],\"worktreePath\":\"<absolute-worktree-path-or-empty>\"}
-
-If blocked:
-{\"type\":\"blocked\",\"issue_id\":\"<task-id>\",\"status\":\"blocked\",\"detail\":\"<reason>\",\"worktreePath\":\"<absolute-worktree-path-or-empty>\"}
-
-Knowledge artifacts are in .agents/. See .agents/AGENTS.md for navigation.")
-```
-
-If your runtime supports `agent_type`, mark these as `worker` agents and keep any file-discovery agents as `explorer`.
-
-### Step 4: Wait and Collect Results
-
-```text
-wait_agent(targets=["agent-id-1", "agent-id-2"])
-```
-
-Collect worker result files from `.agents/swarm/results/`.
-
-If a worker needs a short correction, use:
-
-```text
-send_input(target="agent-id-1", message="Validation failed. Fix the test failure and retry.")
-```
-
-If a worker stalls, use:
-
-```text
-close_agent(target="agent-id-1")
-```
-
-### Step 5: Validate Wave
-
-For each worker result:
-
-1. `PASS` - accept changes
-2. `FAIL` - log failure, mark for retry, max 2 retries per task
-3. `BLOCKED` - escalate to the lead
-
-After collecting results, run project-level tests appropriate to the wave.
-
-If tests fail, identify which worker's changes caused the break and requeue only that work.
-
-### Step 6: Report Results
-
-Output a wave summary with task status, files changed, and any retries.
-
-### Test File Naming Validation
-
-When workers create test files, validate naming:
-- Go: `<source>_test.go` or `<source>_extra_test.go`
-- Python: `test_<module>.py` or `<module>_test.py`
-
-### Output Schema Size Guard
-
-When 5+ workers share the same output schema, cache it to `.agents/swarm/output-schema.json` and reference it by path instead of inlining it everywhere.
-
-## Serial Fallback
-
-If spawning is unavailable, execute tasks sequentially:
-
-```text
-for task in wave_tasks:
-    1. Read task details
-    2. Implement changes
-    3. Run validation
-    4. Record result
-```
-
-This is slower but functionally identical.
-
-## Worktree Reaping (teardown)
-
-THIS repo lands by direct push to `main`, so reap a worker's worktree on the bead's **commit landing on trunk**, not on PR state. After a worker's slice is confirmed landed — its feat commit is an ancestor of `origin/main` (`git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main`) — the ancestor check is MANDATORY; a CLOSED bead alone is tracker state, never proof of landing — reap it: `git worktree remove <path> --force` then `git worktree prune`. Leave un-landed worktrees intact; target zero orphans, bounding the live count to in-flight beads. *(External-repo variant: where the land is a PR, gate reaping on `gh pr view --json state` = `MERGED` instead.)*
-
-## Related skills
-
-- `$agent-native` + `$ntm` — portable out-of-session roles and NTM pane mechanics when persistence and live steering are justified.
-
-## Reference Documents
-
-- [references/conflict-recovery.md](references/conflict-recovery.md)
-- [references/cold-start-contexts.md](references/cold-start-contexts.md)
-- [references/backend-background-tasks.md](references/backend-background-tasks.md)
-- [references/backend-codex-subagents.md](references/backend-codex-subagents.md)
-- [references/backend-inline.md](references/backend-inline.md)
-- [references/local-mode.md](references/local-mode.md)
-- [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
-- [references/validation-contract.md](references/validation-contract.md)
-- [references/worker-pitfalls.md](references/worker-pitfalls.md)
-- [references/pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
-- [references/scope-escape-template.md](references/scope-escape-template.md)
-- [references/worker-pre-task-checks.md](references/worker-pre-task-checks.md)
-- [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md)
-- [references/worktree-isolation.md](references/worktree-isolation.md)
+- [validation-contract.md](references/validation-contract.md) · [pre-spawn-friction-gates.md](references/pre-spawn-friction-gates.md)
+- [shared-checkout-discipline.md](references/shared-checkout-discipline.md) · [worktree-isolation.md](references/worktree-isolation.md)
+- [worker-pre-task-checks.md](references/worker-pre-task-checks.md) · [worker-pitfalls.md](references/worker-pitfalls.md)
+- [conflict-recovery.md](references/conflict-recovery.md) · [scope-escape-template.md](references/scope-escape-template.md) · [cold-start-contexts.md](references/cold-start-contexts.md)
+- [backend-codex-subagents.md](references/backend-codex-subagents.md) · [backend-background-tasks.md](references/backend-background-tasks.md) · [backend-inline.md](references/backend-inline.md)
+- [local-mode.md](references/local-mode.md) · [ralph-loop-contract.md](references/ralph-loop-contract.md)
