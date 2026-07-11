@@ -104,6 +104,9 @@ var (
 		"scripts/lib/ao-snippet-resolve.sh",
 		"scripts/lib/ao_snippet_resolve.py",
 		"tests/scripts/check-docs-cli-snippets.bats",
+		// shared ratchet mechanics: a lib edit must re-run every consumer
+		// (age-ratchet-lib-extraction-bv7d.6, FM3)
+		"scripts/lib/ratchet.sh",
 	}
 	// scripts.ao-invocations resolves every LITERAL first-token `ao <sub>`
 	// invocation in an executable script/test against the cobra tree; a

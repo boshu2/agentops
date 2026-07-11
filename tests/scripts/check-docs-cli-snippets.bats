@@ -31,6 +31,8 @@ setup() {
     cp "$REPO_ROOT/scripts/lib/docs-scope.sh" "$FIX/scripts/lib/"
     cp "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" "$FIX/scripts/lib/"
     cp "$REPO_ROOT/scripts/lib/ao_snippet_resolve.py" "$FIX/scripts/lib/"
+    # shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.6)
+    cp "$REPO_ROOT/scripts/lib/ratchet.sh" "$FIX/scripts/lib/"
     chmod +x "$FIX/scripts/check-docs-cli-snippets.sh"
     export FIX
     BASELINE="$FIX/scripts/.docs-cli-snippets-baseline"
