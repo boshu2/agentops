@@ -1,6 +1,6 @@
 // Package beads owns the Cobra presentation for the beads command family.
-// Behavior is delegated through Runner so tracker, filesystem, process, clock,
-// and environment effects remain behind driven adapters.
+// Handlers parse and render while typed application use cases own orchestration;
+// tracker, filesystem, process, clock, and environment effects stay in adapters.
 package beads
 
 import (
@@ -9,10 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -42,12 +40,9 @@ type Options struct {
 
 type Module struct {
 	resolver   beadsapp.TrackerResolver
-	inspector  beadsapp.LedgerInspector
 	executor   beadsapp.TrackerExecutor
-	stale      beadsapp.StaleSource
-	claims     beadsapp.ClaimStore
-	runtime    beadsapp.ResumeRuntime
-	reader     beadsapp.LedgerReader
+	directory  beadsapp.DirectoryUseCases
+	recovery   beadsapp.RecoveryUseCases
 	knowledge  beadsapp.KnowledgeUseCases
 	hygiene    beadsapp.HygieneUseCases
 	scenario   beadsapp.ScenarioUseCases
@@ -56,20 +51,17 @@ type Module struct {
 
 func NewModule(
 	resolver beadsapp.TrackerResolver,
-	inspector beadsapp.LedgerInspector,
 	executor beadsapp.TrackerExecutor,
-	stale beadsapp.StaleSource,
-	claims beadsapp.ClaimStore,
-	runtime beadsapp.ResumeRuntime,
-	reader beadsapp.LedgerReader,
+	directory beadsapp.DirectoryUseCases,
+	recovery beadsapp.RecoveryUseCases,
 	knowledge beadsapp.KnowledgeUseCases,
 	hygiene beadsapp.HygieneUseCases,
 	scenario beadsapp.ScenarioUseCases,
 	acceptance beadsapp.AcceptanceUseCases,
 ) Module {
 	return Module{
-		resolver: resolver, inspector: inspector, executor: executor,
-		stale: stale, claims: claims, runtime: runtime, reader: reader, knowledge: knowledge, hygiene: hygiene,
+		resolver: resolver, executor: executor, directory: directory, recovery: recovery,
+		knowledge: knowledge, hygiene: hygiene,
 		scenario: scenario, acceptance: acceptance,
 	}
 }
@@ -334,27 +326,12 @@ func (module Module) execCommand() *cobra.Command {
 }
 
 func (module Module) runDir(command *cobra.Command, options Options) error {
-	if module.resolver == nil || module.inspector == nil {
-		return fmt.Errorf("beads directory ports are not configured")
+	if module.directory == nil {
+		return fmt.Errorf("beads directory use cases are not configured")
 	}
-	if !module.resolver.BeadsDirOverride() {
-		if resolved, err := module.resolver.Resolve(); err == nil && resolved.Tracker == beadsapp.TrackerBD {
-			if options.Require {
-				if reason := beadsapp.LedgerMissing(beadsapp.TrackerBD, module.inspector.InspectLedger(resolved.LedgerDir)); reason != "" {
-					return fmt.Errorf("beads dir --require: %s (resolved %s for tracker bd via %s); refusing to print a path a bd write could silently fall back from", reason, resolved.LedgerDir, resolved.Source)
-				}
-			}
-			return writeDirectory(command, options.JSON, resolved.LedgerDir, resolved.Source)
-		}
-	}
-	resolved, err := module.resolver.BRLedger()
+	resolved, err := module.directory.ResolveDirectory(options.Require)
 	if err != nil {
 		return err
-	}
-	if options.Require {
-		if reason := beadsapp.LedgerMissing(beadsapp.TrackerBR, module.inspector.InspectLedger(resolved.Path)); reason != "" {
-			return fmt.Errorf("beads dir --require: %s (resolved %s via %s); refusing to print a path a br write could silently fall back from", reason, resolved.Path, resolved.Source)
-		}
 	}
 	return writeDirectory(command, options.JSON, resolved.Path, resolved.Source)
 }
@@ -643,14 +620,12 @@ func (module Module) epicStatusCommand() *cobra.Command {
 }
 
 func (module Module) runStale(command *cobra.Command, options Options) error {
-	if module.stale == nil || module.runtime == nil {
-		return fmt.Errorf("beads stale-claims ports are not configured")
+	if module.recovery == nil {
+		return fmt.Errorf("beads recovery use cases are not configured")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	events, err := beadsapp.DetectStale(ctx, module.stale, module.runtime.Now(), options.ThresholdHours)
+	events, err := module.recovery.StaleClaims(context.Background(), options.ThresholdHours)
 	if err != nil {
-		return fmt.Errorf("br list: %w", err)
+		return err
 	}
 	if options.JSON {
 		encoded, err := json.Marshal(events)
@@ -672,81 +647,33 @@ func (module Module) runStale(command *cobra.Command, options Options) error {
 }
 
 func (module Module) runResume(command *cobra.Command, args []string, options Options) error {
-	if module.claims == nil || module.runtime == nil {
-		return fmt.Errorf("beads resume ports are not configured")
+	if module.recovery == nil {
+		return fmt.Errorf("beads recovery use cases are not configured")
 	}
-	beadID := args[0]
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	prior, err := module.claims.Show(ctx, beadID)
-	if err != nil {
-		return fmt.Errorf("fetch prior state: %w", err)
-	}
-	if prior.Status != "in_progress" {
-		return fmt.Errorf("bead %s is %q, not in_progress — resume only handles in_progress claims", beadID, prior.Status)
-	}
-	now := module.runtime.Now().UTC()
-	agent := options.Agent
-	if agent == "" {
-		agent = module.runtime.Actor()
-	}
-	if agent == "" {
-		agent = "ao-beads-resume"
-	}
-	if err := module.claims.Claim(ctx, beadID, agent); err != nil {
-		return fmt.Errorf("claim transfer: %w", err)
-	}
-	posterior, err := module.claims.Show(ctx, beadID)
-	if err != nil {
-		posterior = beadsapp.StaleBeadRecord{ID: beadID, Status: "in_progress", Assignee: agent, UpdatedAt: now.Format(time.RFC3339)}
-	}
-	event := beadsapp.BuildTransferredEvent(beadID, agent, prior, posterior, now)
-	ledger, err := module.runtime.ResolveRepoPath(options.Ledger)
+	result, err := module.recovery.Resume(context.Background(), args[0], beadsapp.ResumeOptions{Agent: options.Agent, Ledger: options.Ledger})
 	if err != nil {
 		return err
 	}
-	if err := module.runtime.AppendEvent(ledger, event); err != nil {
-		return fmt.Errorf("append ledger (claim already transferred): %w", err)
-	}
 	if options.JSON {
-		encoded, err := json.Marshal(event)
+		encoded, err := json.Marshal(result.Event)
 		if err != nil {
 			return fmt.Errorf("marshal transferred claim: %w", err)
 		}
 		_, err = fmt.Fprintln(command.OutOrStdout(), string(encoded))
 		return err
 	}
-	priorAgent := prior.Assignee
-	if priorAgent == "" {
-		priorAgent = "unknown"
-	}
-	_, err = fmt.Fprintf(command.OutOrStdout(), "ao beads resume: %s transferred from %q to %q (prior_rev=%s, new_rev=%s)\n", beadID, priorAgent, agent, event.Transfer.PriorRevision, event.Transfer.NewRevision)
+	_, err = fmt.Fprintf(command.OutOrStdout(), "ao beads resume: %s transferred from %q to %q (prior_rev=%s, new_rev=%s)\n", args[0], result.PriorAgent, result.Event.NewClaimant.ID, result.Event.Transfer.PriorRevision, result.Event.Transfer.NewRevision)
 	return err
 }
 
 func (module Module) runEpicStatus(command *cobra.Command, args []string, options Options) error {
-	if module.resolver == nil || module.reader == nil {
-		return fmt.Errorf("beads epic-status ports are not configured")
+	if module.recovery == nil {
+		return fmt.Errorf("beads recovery use cases are not configured")
 	}
-	epic := strings.TrimSpace(args[0])
-	ledger, err := module.resolver.BRLedger()
+	result, err := module.recovery.EpicStatus(strings.TrimSpace(args[0]))
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(ledger.Path, "issues.jsonl")
-	raw, err := module.reader.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("read ledger %s: %w", path, err)
-	}
-	records, err := beadsapp.ParseLedger(raw)
-	if err != nil {
-		return fmt.Errorf("parse ledger: %w", err)
-	}
-	members, present := beadsapp.BuildMembers(epic, records)
-	if !present {
-		return fmt.Errorf("epic %s not found in ledger %s", epic, ledger.Path)
-	}
-	result := epicstatus.Evaluate(epic, members)
 	if options.JSON {
 		encoder := json.NewEncoder(command.OutOrStdout())
 		encoder.SetEscapeHTML(false)

@@ -15,9 +15,11 @@ func init() {
 	hygiene := beadsapp.HygieneService{Repository: beadsadapter.NewHygieneRepository(tracker)}
 	scenario := beadsapp.ScenarioService{Repository: beadsadapter.NewScenarioRepository(tracker)}
 	acceptance := beadsapp.AcceptanceService{Repository: beadsadapter.NewAcceptanceRepository(tracker)}
+	directory := beadsapp.DirectoryService{Resolver: tracker, Inspector: tracker}
+	recovery := beadsapp.RecoveryService{StaleSource: tracker, Claims: tracker, Runtime: runtime, Resolver: tracker, Reader: runtime}
 	module := beadscommands.NewModule(
-		tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker,
-		runtime, runtime, knowledge, hygiene, scenario, acceptance,
+		tracker, beadsadapter.NewExecutor(tracker), directory, recovery,
+		knowledge, hygiene, scenario, acceptance,
 	)
 	command := module.Command()
 	command.GroupID = "knowledge"

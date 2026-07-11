@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,23 @@ import (
 	beadscommands "github.com/boshu2/agentops/cli/internal/commands/beads"
 	"github.com/spf13/cobra"
 )
+
+type beadsVerdictError struct{ code int }
+
+func (err *beadsVerdictError) Error() string { return "" }
+func (err *beadsVerdictError) ExitCode() int { return err.code }
+
+var beadsTrackerOutput = func(args ...string) ([]byte, error) {
+	return currentBeadsTracker().Output(context.Background(), args...)
+}
+var beadsTrackerAvailable = func() bool { return currentBeadsTracker().Available() }
+
+func beadMinInt(left, right int) int {
+	if left < right {
+		return left
+	}
+	return right
+}
 
 type acceptBead = beadsapp.AcceptanceBead
 type acceptanceVerdict = beadsapp.AcceptanceVerdict
@@ -147,7 +165,9 @@ func executeBeadsExec(command *cobra.Command, args []string) error {
 func newTestBeadsCommand(name string) *cobra.Command {
 	tracker := currentBeadsTracker()
 	runtime := beadsadapter.NewRuntime()
-	root := beadscommands.NewModule(tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker, runtime, runtime, nil, nil, nil, nil).Command()
+	directory := beadsapp.DirectoryService{Resolver: tracker, Inspector: tracker}
+	recovery := beadsapp.RecoveryService{StaleSource: tracker, Claims: tracker, Runtime: runtime, Resolver: tracker, Reader: runtime}
+	root := beadscommands.NewModule(tracker, beadsadapter.NewExecutor(tracker), directory, recovery, nil, nil, nil, nil).Command()
 	child, _, err := root.Find([]string{name})
 	if err != nil || child == nil {
 		panic("missing test beads command " + name)
