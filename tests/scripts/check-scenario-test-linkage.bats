@@ -17,6 +17,9 @@ setup() {
              "$FAKE_REPO/skills/bar/references" \
              "$FAKE_REPO/tests/e2e"
     /bin/cp "$SCRIPT" "$FAKE_REPO/scripts/check-scenario-test-linkage.sh"
+    # shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.7)
+    mkdir -p "$FAKE_REPO/scripts/lib"
+    /bin/cp "$REPO_ROOT/scripts/lib/ratchet.sh" "$FAKE_REPO/scripts/lib/ratchet.sh"
     chmod +x "$FAKE_REPO/scripts/check-scenario-test-linkage.sh"
     FAKE_SCRIPT="$FAKE_REPO/scripts/check-scenario-test-linkage.sh"
 

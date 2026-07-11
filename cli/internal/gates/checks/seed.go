@@ -23,6 +23,17 @@ var (
 		"tests/scripts/check-go-lint.bats",
 	}
 	skillPaths = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	// skill.scenario-test-linkage routes on the scenario corpus PLUS its own
+	// surfaces — the script, allowlist, bats twin, and shared ratchet lib were
+	// previously un-routed (self-routing repair, pre-mortem FM3,
+	// age-ratchet-lib-extraction-bv7d.7).
+	scenarioLinkagePaths = []string{
+		"skills/**", "skills-codex/**", "tests/skills/**",
+		"scripts/check-scenario-test-linkage.sh",
+		"scripts/.scenario-linkage-allow",
+		"tests/scripts/check-scenario-test-linkage.bats",
+		"scripts/lib/ratchet.sh",
+	}
 	// skill.probe-coverage (advisory): routes when any skill changes (a new
 	// product/judgment skill needs a probe), when the MEASURED probe ledger
 	// changes, when a probe scenario changes, plus self-reference so editing the
@@ -334,7 +345,7 @@ func init() {
 		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
 		{ID: "skill.flow", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-flow.sh"},
 		{ID: "skill.domain-map-golden", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "generate-skill-domain-map.sh", Args: []string{"--check"}},
-		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
+		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: scenarioLinkagePaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
 
 		// governance front-door admission (M5): a newly-ADDED skill/workflow/loop
 		// cannot merge without bounded-context + role + a runnable acceptance.

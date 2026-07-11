@@ -20,9 +20,7 @@
 # an entry is stripped.
 skills/behavior-first-planning/references/behavior-first-planning.feature
 skills/bootstrap/references/bootstrap.feature
-skills/compile/references/compile.feature
 skills/crank/references/crank.feature
-skills/curate/references/curate.feature
 skills/discovery/references/brainstorm.feature
 skills/discovery/references/discovery.feature
 skills/doc/references/doc.feature
@@ -35,7 +33,6 @@ skills/handoff/references/handoff.feature
 skills/heal-skill/references/heal-skill.feature
 skills/implement/references/implement.feature
 skills/operationalize/references/knowledge-activation.feature
-skills/perf/references/perf.feature
 skills/plan/references/plan.feature
 skills/post-mortem/references/post-mortem.feature
 skills/post-mortem/references/pr-retro.feature
@@ -43,12 +40,10 @@ skills/pr-prep/references/pr-prep.feature
 skills/pre-mortem/references/pre-mortem.feature
 skills/product/references/product.feature
 skills/push/references/push.feature
-skills/recover/references/recover.feature
 skills/refactor/references/refactor.feature
 skills/release/references/release.feature
 skills/research/references/research.feature
 skills/reverse-engineer/references/reverse-engineer.feature
-skills/review/references/review.feature
 skills/scaffold/references/scaffold.feature
 skills/scope/references/scope.feature
 skills/security/references/security-suite.feature
