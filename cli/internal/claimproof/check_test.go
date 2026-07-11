@@ -30,12 +30,12 @@ claims:
 		RepoRoot:    root,
 		Base:        "origin/main",
 		ChangedOnly: true,
-		RunGit: fakeGit(map[string]fakeGitResult{
+		Workspace: testWorkspace{run: fakeGit(map[string]fakeGitResult{
 			"diff --name-only origin/main...HEAD":                {out: "PRODUCT.md\n"},
 			"diff --name-only HEAD":                              {},
 			"ls-files --others --exclude-standard":               {},
 			"ls-files --error-unmatch -- docs/evidence/value.md": {out: "docs/evidence/value.md\n"},
-		}),
+		})},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -81,11 +81,11 @@ claims:
 	report, err := Check(context.Background(), Options{
 		RepoRoot:    root,
 		ChangedOnly: true,
-		RunGit: fakeGit(map[string]fakeGitResult{
+		Workspace: testWorkspace{run: fakeGit(map[string]fakeGitResult{
 			"diff --name-only origin/main...HEAD":  {out: "README.md\n"},
 			"diff --name-only HEAD":                {},
 			"ls-files --others --exclude-standard": {},
-		}),
+		})},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -126,12 +126,12 @@ claims:
 		RepoRoot:    root,
 		Base:        "origin/main",
 		ChangedOnly: true,
-		RunGit: fakeGit(map[string]fakeGitResult{
+		Workspace: testWorkspace{run: fakeGit(map[string]fakeGitResult{
 			"diff --name-only origin/main...HEAD":                {out: "PRODUCT.md\n"},
 			"diff --name-only HEAD":                              {},
 			"ls-files --others --exclude-standard":               {},
 			"ls-files --error-unmatch -- docs/evidence/value.md": {out: "docs/evidence/value.md\n"},
-		}),
+		})},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -155,11 +155,11 @@ claims: {}
 	report, err := Check(context.Background(), Options{
 		RepoRoot:    root,
 		ChangedOnly: true,
-		RunGit: fakeGit(map[string]fakeGitResult{
+		Workspace: testWorkspace{run: fakeGit(map[string]fakeGitResult{
 			"diff --name-only origin/main...HEAD":  {out: "cli/cmd/ao/foo.go\n"},
 			"diff --name-only HEAD":                {},
 			"ls-files --others --exclude-standard": {},
-		}),
+		})},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -177,7 +177,22 @@ type fakeGitResult struct {
 	err error
 }
 
-func fakeGit(results map[string]fakeGitResult) GitRunner {
+type testGitRunner func(context.Context, string, ...string) (string, error)
+
+type testWorkspace struct{ run testGitRunner }
+
+func (testWorkspace) WorkingDirectory() (string, error)    { return os.Getwd() }
+func (testWorkspace) ReadFile(path string) ([]byte, error) { return os.ReadFile(path) }
+func (testWorkspace) Stat(path string) error {
+	_, err := os.Stat(path)
+	return err
+}
+func (testWorkspace) IsNotExist(err error) bool { return os.IsNotExist(err) }
+func (workspace testWorkspace) Git(ctx context.Context, root string, args ...string) (string, error) {
+	return workspace.run(ctx, root, args...)
+}
+
+func fakeGit(results map[string]fakeGitResult) testGitRunner {
 	return func(_ context.Context, _ string, args ...string) (string, error) {
 		key := strings.Join(args, " ")
 		if result, ok := results[key]; ok {
