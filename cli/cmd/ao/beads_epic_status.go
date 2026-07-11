@@ -26,9 +26,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/epicstatus"
 	"github.com/spf13/cobra"
 )
@@ -72,21 +72,11 @@ func init() {
 }
 
 // ledgerBead is the subset of an issues.jsonl record the predicate needs.
-type ledgerBead struct {
-	ID           string      `json:"id"`
-	Status       string      `json:"status"`
-	IssueType    string      `json:"issue_type"`
-	Labels       []string    `json:"labels"`
-	Dependencies []ledgerDep `json:"dependencies"`
-}
+type ledgerBead = beadsapp.LedgerBead
 
 // ledgerDep is one dependency edge on a bead. A parent-child edge points from a
 // child UP to its parent/epic (depends_on_id == epic).
-type ledgerDep struct {
-	IssueID     string `json:"issue_id"`
-	DependsOnID string `json:"depends_on_id"`
-	Type        string `json:"type"`
-}
+type ledgerDep = beadsapp.LedgerDep
 
 // beadsEpicStatusReadLedger is the seam for tests: it returns the raw
 // newline-delimited issues.jsonl bytes for the resolved ledger dir. Tests
@@ -136,19 +126,7 @@ func runBeadsEpicStatus(cmd *cobra.Command, args []string) error {
 // Blank lines are skipped; a malformed line is a hard error (fail closed —
 // "unreachable is not absent").
 func parseLedger(raw []byte) ([]ledgerBead, error) {
-	var beads []ledgerBead
-	for i, line := range strings.Split(string(raw), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-		var b ledgerBead
-		if err := json.Unmarshal([]byte(trimmed), &b); err != nil {
-			return nil, fmt.Errorf("line %d: %w", i+1, err)
-		}
-		beads = append(beads, b)
-	}
-	return beads, nil
+	return beadsapp.ParseLedger(raw)
 }
 
 // buildMembers computes an epic's member set from a ledger snapshot and reports
@@ -159,77 +137,7 @@ func parseLedger(raw []byte) ([]ledgerBead, error) {
 // referenced by a dependency edge but absent from the ledger is a dangling
 // reference → an unresolved (Present=false) member, so guard 1 fires.
 func buildMembers(epic string, beads []ledgerBead) (members []epicstatus.Member, epicPresent bool) {
-	prefix := epic + "."
-	byID := make(map[string]ledgerBead, len(beads))
-	for _, b := range beads {
-		byID[b.ID] = b
-		if b.ID == epic {
-			epicPresent = true
-		}
-	}
-	if !epicPresent {
-		return nil, false
-	}
-
-	memberIDs := map[string]bool{}
-	for _, b := range beads {
-		if b.ID == epic {
-			continue
-		}
-		if strings.HasPrefix(b.ID, prefix) || hasParentChildEdgeTo(b, epic) {
-			memberIDs[b.ID] = true
-		}
-	}
-
-	// Dangling family references: a "<epic>.*" id named by any in-family edge
-	// that has no ledger record. Scan the epic and every resolved member.
-	missing := map[string]bool{}
-	scan := func(b ledgerBead) {
-		for _, d := range b.Dependencies {
-			for _, ref := range []string{d.DependsOnID, d.IssueID} {
-				if ref == "" || ref == epic || memberIDs[ref] {
-					continue
-				}
-				if strings.HasPrefix(ref, prefix) {
-					if _, ok := byID[ref]; !ok {
-						missing[ref] = true
-					}
-				}
-			}
-		}
-	}
-	scan(byID[epic])
-	for id := range memberIDs {
-		scan(byID[id])
-	}
-
-	for id := range memberIDs {
-		b := byID[id]
-		members = append(members, epicstatus.Member{
-			ID:        b.ID,
-			Present:   true,
-			Status:    b.Status,
-			IssueType: b.IssueType,
-			Labels:    b.Labels,
-		})
-	}
-	for id := range missing {
-		members = append(members, epicstatus.Member{ID: id, Present: false})
-	}
-	// Deterministic order (Evaluate re-sorts too, but keep the seam stable).
-	sort.SliceStable(members, func(i, j int) bool { return members[i].ID < members[j].ID })
-	return members, true
-}
-
-// hasParentChildEdgeTo reports whether bead b has a parent-child dependency
-// edge pointing at parentID (the child→parent/epic direction).
-func hasParentChildEdgeTo(b ledgerBead, parentID string) bool {
-	for _, d := range b.Dependencies {
-		if d.Type == "parent-child" && d.DependsOnID == parentID {
-			return true
-		}
-	}
-	return false
+	return beadsapp.BuildMembers(epic, beads)
 }
 
 func emitEpicStatus(cmd *cobra.Command, r epicstatus.Result) {
