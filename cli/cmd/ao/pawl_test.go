@@ -801,3 +801,26 @@ func TestPawlHelpPresentsReviewAsFrontDoor(t *testing.T) {
 		t.Fatalf("review must be listed before the operator group; review@%d operator@%d\n%s", reviewIdx, opIdx, help)
 	}
 }
+
+// TestPawlDryRunPlan_SpawnStepIsSeamNeutral (age-pawl-intent-zhndq.16): the `up` planned step must
+// NOT hardcode "atm spawn" — the swarm binary is resolved ntm-first by the shell seam
+// (PAWL_SWARM_BIN -> ntm -> atm) and `ao pawl doctor` reports which won, so a hardcoded "atm"
+// contradicted the tool's own output. The step must be seam-neutral and point at doctor.
+func TestPawlDryRunPlan_SpawnStepIsSeamNeutral(t *testing.T) {
+	doc := pawlDryRunPlan("up", nil)
+	var spawnStep string
+	for _, s := range doc.PlannedSteps {
+		if strings.Contains(s, "spawn session") {
+			spawnStep = s
+		}
+	}
+	if spawnStep == "" {
+		t.Fatalf("no spawn step in planned steps: %v", doc.PlannedSteps)
+	}
+	if strings.Contains(spawnStep, "atm spawn") {
+		t.Fatalf("spawn step hardcodes the atm binary (contradicts the ntm-first seam + doctor): %q", spawnStep)
+	}
+	if !strings.Contains(spawnStep, "swarm spawn") {
+		t.Fatalf("spawn step should name the neutral swarm seam; got %q", spawnStep)
+	}
+}

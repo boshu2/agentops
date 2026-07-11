@@ -227,7 +227,11 @@ func pawlDryRunPlan(sub string, args []string) pawlDryRunDoc {
 		doc.Families, doc.Tier = pawlPinnedFamilies(args)
 		doc.PlannedSteps = []string{
 			"probe installed families (claude/codex/agy)",
-			"atm spawn session " + session + " with the enabled panes",
+			// The swarm binary is resolved by the ntm-first seam in scripts/pawl.sh
+			// (PAWL_SWARM_BIN -> ntm -> atm; `ao pawl doctor` reports which won), so the
+			// planned step must NOT hardcode "atm" — that contradicted doctor's own output
+			// (age-pawl-intent-zhndq.16).
+			"swarm spawn session " + session + " with the enabled panes (ntm-first seam; see `ao pawl doctor` swarm-bin)",
 			"gate readiness per pane (idempotent if the session already exists)",
 			"write session.json (atomic)",
 		}
