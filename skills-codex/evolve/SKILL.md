@@ -158,8 +158,10 @@ Push to the shared trunk is the **mutate-shared-trunk pawl** ([docs/contracts/pa
 git worktree add wt-<bead> -b <type>/<bead>-<slug>   # per-cycle worktree; never edit the shared checkout
 # ...implement + Step 5 regression gate...
 ao gate check --fast --scope head                    # smart Go cockpit gate — fail fast locally
-scripts/pawl-review.sh <bead>                         # cross-family codex refuter vs the commit; on
-                                                       # CONFIRMED it writes the commit-bound verdict the pre-push gate requires
+scripts/pawl-review.sh <bead> --scope head --author-family <claude|codex|gemini>   # cross-family refuter vs the commit; on
+                                                       # CONFIRMED it writes the commit-bound verdict the pre-push gate requires.
+                                                       # PASS --author-family: the default is claude, so a Codex/Gemini-runtime author
+                                                       # that omits it gets a same-family verdict the cross-family guard then REFUSES.
 scripts/pawl-land.sh <bead>                           # fetch+rebase, restamp the verdict onto the feat, single-shot push
 ```
 
