@@ -10,6 +10,12 @@ description: Behavior-first planning discipline — intent
 
 > **Contract ownership (single owner, age-skills-audit-fable-l6ic.8).** This skill **owns** the intent → Gherkin → EXECUTED-red → acceptance-gated bead-DAG contract. [`$discovery`](../discovery/SKILL.md), [`$plan`](../plan/SKILL.md) (its Gherkin Scenarios Contract), and the `bdd-foundry` workflow **cite** this skill rather than restating the discipline.
 
+## Constraints
+
+- Do not create tracker beads before the manifest passes coverage, cycle, runnable-test, and independent-review gates because an unvalidated DAG pollutes the shared work surface.
+- Do not accept prose-only or harness-error "tests" as red; each acceptance command must resolve to one real unignored test and fail for the intended missing behavior.
+- Keep one frozen scenario per slice because combining behaviors hides partial completion and defeats the vertical acceptance boundary.
+
 ## Why this exists — the 3/10 problem
 
 Spec-first planning ships beads with no done-criteria: a title, a paragraph of "why", and nothing a machine can run to decide it is finished. The implementer then invents the bar, and "done" becomes a self-grade. **Behavior-first planning inverts the order:** define the behavior as an executable test *before* the design, so every bead is born with a runnable contract. The rule is absolute — **no runnable acceptance test, no bead.**
@@ -69,6 +75,8 @@ Then apply the **mechanical gate** (compute it, do not self-report):
 
 A bead failing any check is **rejected**, not written. Only the gate-passed set advances.
 
+**Batch size — one behavior per slice (mechanical).** A slice bead delivers **exactly one** behavior = **one** Gherkin scenario; a slice carrying two or more is a batch, not a slice, and must be split. Enforce it mechanically, don't eyeball it: `bash scripts/check-slice-batch-size.sh <bead-id>` reads the bead body and FAILs on >1 scenario (naming the count and the scenarios to split), PASSes on exactly one, and WARNs on zero (advisory — a scenario-less task bead is not hard-blocked while this discipline is new). Run it at plan time before a slice becomes a bead, and again at **crank** time on any slice that *grew* — surfaced extra behavior becomes a follow-up bead, never absorbed into the current slice.
+
 ## The closing gate — validate BEFORE the tracker write
 
 Behavior-first planning is **not done when the beads are drafted — it is done when an independent reviewer confirms them.** Before writing anything to the tracker:
@@ -90,3 +98,17 @@ The skill dogfoods its own rule: its behavior is pinned by an executable spec, [
 - Duplicate the *lighter* single-BDD-intent shape phase of the `operating-loop` — this is the **full** Gherkin → executed-red → acceptance-gated-DAG discipline, used when beads must be genuinely crank-ready.
 - Write a bead whose acceptance is prose, "see spec", or an unrun test.
 - Grade your own plan — the closing gate requires an independent reviewer.
+
+## Output Specification
+
+- **Path:** write `behaviors.md`, `acceptance-tests/`, `acceptance-tests.md`, and `spec.md` in the planning workspace; tracker mutations happen only after the closing gate.
+- **Filename:** the proposed bead-set manifest is `bead-manifest.json`; acceptance test files follow the target repository's native test filename convention.
+- **Format:** `behaviors.md` is frozen Gherkin, `acceptance-tests.md` maps scenario IDs to commands and paths, and `bead-manifest.json` is JSON with bead IDs, `scenario_ref`, `acceptance_test`, and dependency arrays.
+- **Exit code:** validate with the project test collector/list command, `bash scripts/check-slice-batch-size.sh <bead-id>`, a cycle check, and the independent closing verdict; any nonzero check blocks tracker writes.
+- **Downstream handoff:** consumed by `$plan`, `$implement`, or `$crank` only after the manifest is coverage-complete, cycle-free, independently cleared, and its executed-red evidence is attached.
+
+## Quality Checklist
+
+- Every frozen scenario has happy, edge, and applicable failure-path coverage and maps to at least one bead.
+- Every bead maps to exactly one scenario and carries an invocable acceptance test that was observed red for the intended reason.
+- The proposed DAG is cycle-free, overlap-checked, and independently reviewed before any tracker mutation.
