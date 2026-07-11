@@ -110,12 +110,43 @@ user was promised in #2 or #3.
 
 ## Output Specification
 
-**Format:** markdown gap report (drift verdict + gap table + routing line), as
-in the worked example above.
-**Filename:** written to `.agents/reality-check/YYYY-MM-DD-<epic-slug>.md`;
-also summarize the drift verdict and top uncovered gaps inline to the operator.
-**Next action:** named explicitly at the end of the report — a `$discovery`
-invocation over the uncovered gaps, or an operator-accepted drift note.
+- **Artifact directory:** `$REPO/.agents/reality-check/` in the audited repo.
+- **Filename convention:** `YYYY-MM-DD-<epic-slug>.md`, where the slug is
+  lowercase alphanumeric words separated by single hyphens.
+- **Serialization/schema format:** Markdown with one `# Reality check` title,
+  one `Drift verdict:` line, the exact six-column promise table from the worked
+  example with at least one numbered row, and one terminal `Route:` line;
+  `UNCOVERED` is the emphasized spelling of `uncovered`.
+- **Validator command:** with `$REPO`, `$date`, and `$epic_slug` set:
+
+  ```bash
+  set -euo pipefail
+  [[ "$date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+  python3 -c 'import datetime, sys; datetime.date.fromisoformat(sys.argv[1])' "$date"
+  [[ "$epic_slug" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]
+  physical_repo="$(cd "$REPO" && pwd -P)"
+  report_dir="$physical_repo/.agents/reality-check"
+  physical_report_dir="$(cd "$report_dir" && pwd -P)"
+  test "$physical_report_dir" = "$report_dir"
+  report="$report_dir/$date-$epic_slug.md"
+  test -f "$report"
+  test ! -L "$report"
+  test -s "$report"
+  test "$(grep -Ec '^# Reality check( — .+)?$' "$report")" -eq 1
+  test "$(grep -Ec '^Drift verdict: .+$' "$report")" -eq 1
+  test "$(grep -Fxc '| # | Promise (source) | Status | Evidence | Bead coverage | Severity |' "$report")" -eq 1
+  test "$(grep -Fxc '|---|---|---|---|---|---|' "$report")" -eq 1
+  numbered_rows="$(grep -Ec '^\| [0-9]+ \|' "$report")"
+  valid_rows="$(grep -Ec '^\| [0-9]+ \| [^|]+ \| (working|partial|stub|absent) \| [^|]+ \| (covered|uncovered|UNCOVERED)( \([^|]+\)| — [^|]+)? \| [^|]+ \|$' "$report")"
+  test "$numbered_rows" -gt 0
+  test "$valid_rows" -eq "$numbered_rows"
+  test "$(grep -Ec '^Route: (\$discovery .+ → \$beads-br.+|operator-accepted drift — .+)$' "$report")" -eq 1
+  last_nonempty="$(awk 'NF { line = $0 } END { print line }' "$report")"
+  printf '%s\n' "$last_nonempty" | grep -Eq '^Route: (\$discovery .+ → \$beads-br.+|operator-accepted drift — .+)$'
+  ```
+- **Downstream handoff:** summarize the validated verdict and top uncovered
+  gaps inline, then give the report path to `$discovery`; only an explicit
+  operator-accepted drift route may bypass `$beads-br` planning.
 
 ## Quality Rubric
 
