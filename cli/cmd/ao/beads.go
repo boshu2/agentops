@@ -37,6 +37,7 @@ import (
 	"github.com/spf13/cobra"
 
 	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
 // beadsExitError carries a verdict exit code out through cobra's RunE so
@@ -238,18 +239,15 @@ func init() {
 }
 
 func runBeadsDir(cmd *cobra.Command, _ []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+	tracker := currentBeadsTracker()
 	// BEADS_DIR is br's explicit ledger override; when it is set we preserve the
 	// historical br resolution verbatim (backward compatibility). Otherwise we
 	// consult the dual-tracker resolver so a bd-tracked repo returns its .beads
 	// directory instead of assuming _beads (age-fvr8).
-	if _, override := beadsEnvValue(os.Environ()); !override {
-		if tr, terr := resolveTracker(cwd, os.Environ()); terr == nil && tr.Tracker == trackerBD {
+	if !tracker.BeadsDirOverride() {
+		if tr, terr := tracker.Resolve(); terr == nil && tr.Tracker == trackerBD {
 			if beadsDirRequire {
-				if reason := bdLedgerMissing(tr.LedgerDir); reason != "" {
+				if reason := beadsapp.LedgerMissing(beadsapp.TrackerBD, tracker.InspectLedger(tr.LedgerDir)); reason != "" {
 					return fmt.Errorf("beads dir --require: %s (resolved %s for tracker bd via %s); refusing to print a path a bd write could silently fall back from", reason, tr.LedgerDir, tr.Source)
 				}
 			}
@@ -264,9 +262,12 @@ func runBeadsDir(cmd *cobra.Command, _ []string) error {
 		}
 	}
 	// br path — unchanged historical behavior (also the both-present tie-break).
-	resolved := resolveBeadsDir(cwd, os.Environ())
+	resolved, err := tracker.BRLedger()
+	if err != nil {
+		return err
+	}
 	if beadsDirRequire {
-		if reason := beadsDirLedgerMissing(resolved.Path); reason != "" {
+		if reason := beadsapp.LedgerMissing(beadsapp.TrackerBR, tracker.InspectLedger(resolved.Path)); reason != "" {
 			return fmt.Errorf("beads dir --require: %s (resolved %s via %s); refusing to print a path a br write could silently fall back from", reason, resolved.Path, resolved.Source)
 		}
 	}
@@ -297,51 +298,6 @@ func runBeadsTrackerCmd(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintf(w, "ledger_dir  %s\n", res.LedgerDir)
 	fmt.Fprintf(w, "source      %s\n", res.Source)
 	return nil
-}
-
-// beadsDirLedgerMissing reports why path does not hold a usable br ledger
-// (empty string = it does). A ledger dir must exist and contain at least one
-// of the artifacts br itself maintains.
-func beadsDirLedgerMissing(path string) string {
-	info, err := os.Stat(path)
-	if err != nil {
-		return "resolved path does not exist"
-	}
-	if !info.IsDir() {
-		return "resolved path is not a directory"
-	}
-	for _, artifact := range []string{"issues.jsonl", "beads.db"} {
-		if _, err := os.Stat(filepath.Join(path, artifact)); err == nil {
-			return ""
-		}
-	}
-	return "no ledger artifact (issues.jsonl or beads.db) in resolved directory"
-}
-
-// bdLedgerMissing reports why path does not hold a usable bd ledger (empty
-// string = it does). bd maintains a SQLite db, a jsonl mirror, and a config
-// file in its .beads directory; any one of those is enough to treat the dir as
-// a real bd ledger rather than an empty stub.
-func bdLedgerMissing(path string) string {
-	info, err := os.Stat(path)
-	if err != nil {
-		return "resolved path does not exist"
-	}
-	if !info.IsDir() {
-		return "resolved path is not a directory"
-	}
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		return "resolved directory is unreadable"
-	}
-	for _, e := range entries {
-		name := e.Name()
-		if strings.HasSuffix(name, ".db") || strings.HasSuffix(name, ".jsonl") ||
-			name == "config.yaml" || name == "config.json" || name == "beads.json" {
-			return ""
-		}
-	}
-	return "no ledger artifact (*.db, *.jsonl, or config) in resolved directory"
 }
 
 // ------------------------------------------------------------------------

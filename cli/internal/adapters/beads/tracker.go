@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
@@ -58,6 +59,27 @@ func (tracker *Tracker) BeadsDirOverride() bool {
 	return ok
 }
 
+func (tracker *Tracker) InspectLedger(path string) beadsapp.LedgerSnapshot {
+	info, err := os.Stat(path)
+	if err != nil {
+		return beadsapp.LedgerSnapshot{}
+	}
+	snapshot := beadsapp.LedgerSnapshot{Exists: true, Directory: info.IsDir()}
+	if !info.IsDir() {
+		return snapshot
+	}
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return snapshot
+	}
+	snapshot.Readable = true
+	for _, entry := range entries {
+		snapshot.Entries = append(snapshot.Entries, entry.Name())
+	}
+	sort.Strings(snapshot.Entries)
+	return snapshot
+}
+
 func (tracker *Tracker) Available() bool {
 	_, err := tracker.Resolve()
 	return err == nil
@@ -87,3 +109,4 @@ func (tracker *Tracker) context() (string, []string, error) {
 
 var _ beadsapp.TrackerResolver = (*Tracker)(nil)
 var _ beadsapp.TrackerClient = (*Tracker)(nil)
+var _ beadsapp.LedgerInspector = (*Tracker)(nil)
