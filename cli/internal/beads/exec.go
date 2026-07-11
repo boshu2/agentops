@@ -2,11 +2,30 @@ package beads
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 )
+
+type ExecStreams struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+}
+
+type TrackerExecutor interface {
+	Execute(context.Context, []string, ExecStreams) error
+}
+
+type ExitError struct {
+	Code int
+}
+
+func (err *ExitError) Error() string { return "" }
+func (err *ExitError) ExitCode() int { return err.Code }
 
 func ChildEnvironment(base []string, resolution TrackerResolution) []string {
 	child := make([]string, 0, len(base)+1)

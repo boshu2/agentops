@@ -1,41 +1,16 @@
-// `ao beads exec [args...]` — the ONE tracker-agnostic CRUD passthrough
-// (age-3mdu, dual-support increment 2, building on age-fvr8's resolveTracker).
-//
-// AgentOps is a product. Most end users track their beads with bd (beads, Go);
-// this repo tracks with br (beads_rust). Skills and callers should not hardcode
-// `br` or `bd` — they call `ao beads exec <verb> ...` and this command resolves
-// the right tracker, sets its ledger correctly, forwards the args verbatim, and
-// propagates the child's exit code unchanged. So `ao beads exec ready`,
-// `ao beads exec close <id> -r "..."`, `ao beads exec update <id> --status
-// in_progress`, `ao beads exec create ...`, and `ao beads exec list --json` all
-// work against EITHER tracker.
-//
-// Ledger wiring per tracker:
-//   - br: export BEADS_DIR=<resolution.LedgerDir> for the child (br's explicit
-//     ledger override; worktree-aware via resolveTracker/resolveBeadsDir).
-//   - bd: set the child's working directory to the repo root so its .beads/
-//     auto-discovery resolves; no BEADS_DIR (any inherited value is stripped so
-//     it cannot mislead bd).
-//
-// Hard divergence handled here: `bd children <epic>` exists; br has NO children
-// subcommand. `ao beads exec children <epic>` works for BOTH — bd's native
-// `children` is forwarded verbatim, and for br the child-id list is synthesized
-// from `br show <epic> --json` (its dependents[] with a parent-child edge).
-//
-// practices: [tdd]
-
+// `ao beads exec [args...]` is the one tracker-agnostic CRUD passthrough.
+// Most users track with bd; this repository tracks with br. The adapter keeps
+// their intentional ledger, child-enumeration, and JSON-shape differences.
 package main
 
 import (
-	"bytes"
+	"context"
 	"errors"
-	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
@@ -69,12 +44,6 @@ Children (hard divergence — bd has 'children', br does not):
 
 All flags are forwarded to the tracker verbatim (flag parsing is disabled), so
 tracker flags never collide with ao's. Only -h/--help is intercepted here.`,
-	// DisableFlagParsing so every flag reaches the tracker unchanged. The trap:
-	// cobra then forwards -h/--help into RunE, and if we resolved the tracker (or
-	// exec'd) before intercepting it, the command-surface doc generator would bake
-	// a path-dependent runtime string into cli/docs/COMMANDS.md and fail
-	// derived.changed-scope non-deterministically. Intercept it FIRST. (Mirrors
-	// membrane.go runMembraneCalibrate.)
 	DisableFlagParsing: true,
 	RunE:               runBeadsExec,
 }
@@ -84,193 +53,44 @@ func init() {
 }
 
 func runBeadsExec(cmd *cobra.Command, args []string) error {
-	// --help/-h is for THIS command, intercepted BEFORE resolving the tracker or
-	// exec-ing so help stays a static, path-independent string (see the command
-	// doc comment above).
-	for _, a := range args {
-		if a == "--help" || a == "-h" {
+	for _, argument := range args {
+		if argument == "--help" || argument == "-h" {
 			return cmd.Help()
 		}
 	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
+	err := currentBeadsExecutor().Execute(context.Background(), args, beadsapp.ExecStreams{
+		Stdin:  cmd.InOrStdin(),
+		Stdout: cmd.OutOrStdout(),
+		Stderr: cmd.ErrOrStderr(),
+	})
+	var adapterExit *beadsapp.ExitError
+	if errors.As(err, &adapterExit) {
+		err = &beadsExitError{code: adapterExit.ExitCode()}
 	}
-	res, err := resolveTracker(cwd, os.Environ())
-	if err != nil {
-		return err
+	var exitErr interface{ ExitCode() int }
+	if errors.As(err, &exitErr) {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
 	}
-
-	// Hard divergence: br has no `children` subcommand. Synthesize it from
-	// `br show <epic> --json`. bd's `children` is native — fall through to the
-	// verbatim passthrough, which forwards `children <epic>` to bd unchanged.
-	if res.Tracker == trackerBR && len(args) >= 1 && args[0] == "children" {
-		return runBeadsExecChildrenBR(cmd, res, cwd, args[1:])
-	}
-
-	// Shape divergence (age-f07z — closes the dual-support epic age-zcvn): bd and
-	// br emit DIFFERENT `--json` shapes for the READ verbs (list/ready/show), so
-	// shape-parsing skills could not safely pipe
-	// `ao beads exec <verb> --json | jq '<selector>'` across trackers. CANONICAL
-	// shape = br's (this repo is br; skills already parse it). br's output IS
-	// canonical — stream it verbatim, unchanged (no reorder/mutation). bd's is
-	// reshaped to canonical here. ONLY the read+`--json` case is special-cased;
-	// every other verb (and read verbs WITHOUT --json) streams verbatim.
-	if res.Tracker == trackerBD && len(args) >= 1 && isBeadsReadVerb(args[0]) && argsHaveJSONFlag(args) {
-		return execTrackerBDReadJSON(cmd, res, cwd, args)
-	}
-
-	return execTracker(cmd, res, cwd, args)
+	return err
 }
 
-// execTracker forwards args verbatim to the resolved tracker binary, streaming
-// stdin/stdout/stderr, and maps a non-zero child exit to a beadsExitError so
-// Execute() propagates the code unchanged (no verdict = not done).
-func execTracker(cmd *cobra.Command, res trackerResolution, cwd string, args []string) error {
-	c := exec.Command(res.Binary, args...) // #nosec G204 -- res.Binary is resolved by resolveTracker (bd|br); args are operator-supplied bead CRUD flags forwarded verbatim.
-	c.Env = beadsExecChildEnv(res, cwd)
-	c.Dir = beadsExecChildDir(res, cwd)
-	c.Stdin = cmd.InOrStdin()
-	c.Stdout = cmd.OutOrStdout()
-	c.Stderr = cmd.ErrOrStderr()
-	runErr := c.Run()
-	if runErr == nil {
-		return nil
-	}
-	cmd.SilenceUsage = true
-	cmd.SilenceErrors = true
-	var exitErr *exec.ExitError
-	if errors.As(runErr, &exitErr) {
-		return &beadsExitError{code: exitErr.ExitCode()}
-	}
-	return runErr
+func currentBeadsExecutor() *beadsadapter.Executor {
+	return beadsadapter.NewExecutor(currentBeadsTracker())
 }
 
-// beadsExecChildEnv builds the child environment. For br, BEADS_DIR is the
-// explicit ledger override (set to the resolved ledger dir), replacing any
-// inherited value. For bd, no BEADS_DIR is set — bd auto-discovers .beads/ from
-// its working directory — and any inherited BEADS_DIR is stripped so it cannot
-// mislead bd.
+// These pure compatibility delegates remain until the yield family moves its
+// tracker-child formatting onto the shared application policy.
 func beadsExecChildEnv(res trackerResolution, _ string) []string {
 	return beadsapp.ChildEnvironment(os.Environ(), beadsapp.TrackerResolution{Tracker: res.Tracker, LedgerDir: res.LedgerDir})
 }
 
-// beadsExecChildDir returns the child's working directory. bd resolves its
-// .beads/ ledger relative to cwd, so it runs from the repo root (the parent of
-// the resolved .beads dir, worktree-aware). br takes its ledger from BEADS_DIR,
-// so it runs from the caller's cwd unchanged.
 func beadsExecChildDir(res trackerResolution, cwd string) string {
 	return beadsapp.ChildDirectory(beadsapp.TrackerResolution{Tracker: res.Tracker, LedgerDir: res.LedgerDir}, cwd)
 }
 
-// runBeadsExecChildrenBR synthesizes `children` for br from
-// `br show <epic> --json`: it emits the id of every dependent with a
-// parent-child edge, one per line, preserving br's order. bd's native
-// `bd children` (the bd branch of runBeadsExec) prints bd's own list format;
-// the READ-verb (list/ready/show) `--json` shapes are normalized to one
-// machine-readable form by execTrackerBDReadJSON (age-f07z).
-func runBeadsExecChildrenBR(cmd *cobra.Command, res trackerResolution, cwd string, rest []string) error {
-	if len(rest) < 1 || strings.TrimSpace(rest[0]) == "" {
-		return fmt.Errorf("ao beads exec children: an epic id is required")
-	}
-	epic := rest[0]
-	c := exec.Command(res.Binary, "show", epic, "--json") // #nosec G204 -- res.Binary is the resolved br binary; fixed subcommand + operator-supplied epic id.
-	c.Env = beadsExecChildEnv(res, cwd)
-	c.Dir = cwd
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		// Surface br's own stderr for diagnostics, then propagate its exit code
-		// UNCHANGED — matching the exec passthrough's contract (line ~131) rather than
-		// collapsing every br failure into the generic ao error path (age-3mdu refute-fix).
-		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			fmt.Fprintln(cmd.ErrOrStderr(), msg)
-		}
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return &beadsExitError{code: exitErr.ExitCode()}
-		}
-		return fmt.Errorf("br show %s --json: %w", epic, err)
-	}
-	children, err := beadsapp.BRChildren(stdout.Bytes())
-	if err != nil {
-		return fmt.Errorf("parse br show %s --json: %w", epic, err)
-	}
-	out := cmd.OutOrStdout()
-	for _, child := range children {
-		fmt.Fprintln(out, child)
-	}
-	return nil
-}
-
-// isBeadsReadVerb reports whether verb is a bead READ command whose `--json`
-// output shape ao normalizes to the canonical (br) shape. Write verbs and read
-// verbs without --json are streamed verbatim (age-f07z).
-func isBeadsReadVerb(verb string) bool {
-	return beadsapp.IsReadVerb(verb)
-}
-
-// argsHaveJSONFlag reports whether the forwarded args request JSON output.
-func argsHaveJSONFlag(args []string) bool {
-	return beadsapp.ArgsHaveJSONFlag(args)
-}
-
-// execTrackerBDReadJSON runs a bd READ command with --json, CAPTURES its stdout
-// (rather than streaming), reshapes bd's shape into the canonical br shape, and
-// emits the canonical JSON — so shape-parsing skills can pipe
-// `ao beads exec <verb> --json | jq '<selector>'` identically for bd and br.
-// stderr and the child's exit code propagate EXACTLY as the streaming
-// passthrough (execTracker) does — no verdict = not done (age-f07z).
-func execTrackerBDReadJSON(cmd *cobra.Command, res trackerResolution, cwd string, args []string) error {
-	c := exec.Command(res.Binary, args...) // #nosec G204 -- res.Binary is the resolved bd binary; args are operator-supplied read flags forwarded verbatim.
-	c.Env = beadsExecChildEnv(res, cwd)
-	c.Dir = beadsExecChildDir(res, cwd)
-	c.Stdin = cmd.InOrStdin()
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	runErr := c.Run()
-	// Surface bd's stderr for diagnostics regardless of exit status (matches the
-	// children path), then propagate a non-zero exit code UNCHANGED.
-	if msg := strings.TrimSpace(stderr.String()); msg != "" {
-		fmt.Fprintln(cmd.ErrOrStderr(), msg)
-	}
-	if runErr != nil {
-		cmd.SilenceUsage = true
-		cmd.SilenceErrors = true
-		var exitErr *exec.ExitError
-		if errors.As(runErr, &exitErr) {
-			return &beadsExitError{code: exitErr.ExitCode()}
-		}
-		return runErr
-	}
-	canonical, err := canonicalizeBDReadJSON(args[0], stdout.Bytes())
-	if err != nil {
-		// Unexpected bd output shape — never make a working passthrough worse:
-		// emit bd's raw stdout UNCHANGED (pre-normalization behavior).
-		_, _ = cmd.OutOrStdout().Write(stdout.Bytes())
-		return nil
-	}
-	fmt.Fprintln(cmd.OutOrStdout(), string(canonical))
-	return nil
-}
-
-// canonicalizeBDReadJSON reshapes bd's `<verb> --json` stdout into the canonical
-// br shape:
-//
-//	list  -> {"issues":[ <issue>, ... ]}  (bd emits a bare array -> wrap)
-//	ready -> [ <issue>, ... ]             (bd already emits a bare array)
-//	show  -> [ <issue>, ... ]             (bd already emits a bare array)
-//
-// It is field-PRESERVING: it NEVER drops bd's extra fields (issue_type,
-// close_reason, dependencies, comment_count, ...); it only normalizes the
-// ENVELOPE and guarantees the canonical keys exist. Fields bd omits are emitted
-// as null (scalars) or [] (dependents) so consumer jq selectors never break.
-// bd's default `show` carries no dependents[] array (only a dependent_count), so
-// on bd the reshape guarantees an EMPTY dependents[]; bd child enumeration
-// should use `ao beads exec children` (bd-native).
+// Kept as a package-main test seam until the legacy white-box tests move with
+// their final owner.
 func canonicalizeBDReadJSON(verb string, raw []byte) ([]byte, error) {
 	return beadsapp.CanonicalizeBDReadJSON(verb, raw)
 }
