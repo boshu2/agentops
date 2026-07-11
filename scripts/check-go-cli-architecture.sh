@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# shellcheck source=scripts/lib/preamble.sh
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
+
+args=(--root "$REPO_ROOT")
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --self-test)
+      args+=(--self-test)
+      shift
+      ;;
+    --family)
+      [[ $# -ge 2 ]] || { echo "--family requires a value" >&2; exit 2; }
+      args+=(--family "$2")
+      shift 2
+      ;;
+    --all-migrated|--inventory)
+      args+=("$1")
+      shift
+      ;;
+    --out|--verify-scope)
+      [[ $# -ge 2 ]] || { echo "$1 requires a value" >&2; exit 2; }
+      args+=("$1" "$2")
+      shift 2
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+cd "$REPO_ROOT/cli" || exit 1
+exec go run ./internal/archcheck/cmd "${args[@]}"
