@@ -8,7 +8,7 @@ description: Local-first issue tracker (beads_rust) for
 
 > **Non-invasive:** br NEVER runs git commands. Sync and commit are YOUR responsibility.
 
-## Critical Rules for Agents
+## ⚠️ Critical Constraints for Agents
 
 | Rule | Why |
 |------|-----|
@@ -140,34 +140,48 @@ plan into beads" route **here**.
 > can mechanically unleash a swarm of agents to implement them, and it will
 > come out just about perfectly.
 
-### THE EXACT PROMPT — plan to beads conversion
+### Conversion prompt and bead anatomy
 
-```
-OK so now read ALL of [YOUR_PLAN_FILE].md; please take ALL of that and elaborate on it and use it to create a comprehensive and granular set of beads for all this with tasks, subtasks, and dependency structure overlaid, with detailed comments so that the whole thing is totally self-contained and self-documenting (including relevant background, reasoning/justification, considerations, etc.-- anything we'd want our "future self" to know about the goals and intentions and thought process and how it serves the over-arching goals of the project.). The beads should be so detailed that we never need to consult back to the original markdown plan document. Remember to ONLY use the `br` tool to create and modify the beads and add the dependencies. Use ultrathink.
-```
-
-**What this creates:** tasks and subtasks with clear scope, dependency links
-(what blocks what), detailed descriptions with background/reasoning/
-considerations — self-contained, so the original plan is never needed again.
-
-All other exact prompts — the short conversion variant, the polish prompts,
-and the fresh-session re-establish-context sequence — live in
-[PROMPTS.md](references/PROMPTS.md). What a well-formed bead looks like
-(required elements, description guidelines, anti-patterns) is
-[BEAD-ANATOMY.md](references/BEAD-ANATOMY.md).
+Use the exact prompt for a comprehensive and granular set of beads, then the
+polishing prompts in [PROMPTS.md](references/PROMPTS.md). Every resulting issue must satisfy
+[BEAD-ANATOMY.md](references/BEAD-ANATOMY.md): self-contained intent, explicit
+scope and dependencies, testable acceptance, and enough rationale that the
+original plan is not needed during execution.
 
 ### Polishing Protocol
 
-Operating in "plan space" is far cheaper than correcting in implementation
-space — that is the rationale for the whole loop:
+Run the standard prompt from [PROMPTS.md](references/PROMPTS.md), review, and
+repeat until steady-state without losing features or test scope. If review
+flatlines, restart from fresh context and finish with a cross-model pass.
 
-1. Run the polish prompt ([PROMPTS.md](references/PROMPTS.md) — Polish (Standard)). Its non-negotiables: do not oversimplify, do not lose features, and ensure each bead includes comprehensive unit + e2e test scope.
-2. Review changes.
-3. Repeat until steady-state (typically 6-9 rounds).
-4. If it flatlines, start a fresh CC session: re-establish context (read AGENTS.md/README, investigate the code), then review the beads with `br`/`bv`, then resume polishing. Exact prompts in [PROMPTS.md](references/PROMPTS.md).
-5. Optionally have an alternative model (Codex/GPT) do a final cross-review round.
+## Output Specification
 
-### Quality Checklist
+- **Artifact directory:** the private ledger returned by `ao beads dir
+  --require`; never the host repo or a worktree-local fallback.
+- **Filename convention:** `br` allocates `<configured-prefix><opaque-id>`;
+  `issues.jsonl` is an export name, not the primary read surface.
+- **Serialization/schema format:** `br show --json` returns a one-element issue
+  array with nonempty identity, intent, type, priority, and legal status.
+- **Validator command:** with the changed `$bead_id` set:
+
+  ```bash
+  set -euo pipefail
+  BEADS_DIR="$(ao beads dir --require)"
+  export BEADS_DIR
+  issue="$(br show "$bead_id" --json)"
+  jq -e --arg id "$bead_id" 'length == 1 and .[0].id == $id and
+    ((.[0].title | type) == "string") and (.[0].title | length) > 0 and
+    ((.[0].description | type) == "string") and (.[0].description | length) > 0 and
+    ((.[0].issue_type | type) == "string") and (.[0].issue_type | length) > 0 and
+    ((.[0].priority | type) == "number") and
+    (.[0].status == "open" or .[0].status == "in_progress" or
+     .[0].status == "blocked" or .[0].status == "closed")' <<<"$issue" >/dev/null
+  br dep cycles --json | jq -e 'type == "object" and (.cycles | type) == "array" and (.cycles | length) == 0 and .count == 0 and .active_count == 0' >/dev/null
+  ```
+- **Downstream handoff:** pass the validated bead ID to its owning loop; after
+  writes, explicitly export and commit/push the private ledger.
+
+## Quality Rubric
 
 Before implementation, verify each bead:
 
@@ -180,133 +194,39 @@ Before implementation, verify each bead:
 - [ ] **Not oversimplified** — Complexity preserved where needed
 - [ ] **No cycles** — `br dep cycles` returns empty
 
-### When Beads Are Ready
+Beads are implementation-ready only after steady-state, cross-model review,
+test coverage, clean dependencies, and a zero-cycle graph.
 
-Your beads are ready for implementation when:
+### bd → br migration (docs)
 
-1. **Steady-state reached** — Multiple polish rounds yield minimal changes
-2. **Cross-model reviewed** — At least one alternative model reviewed
-3. **No cycles** — `br dep cycles` returns empty
-4. **Tests included** — Each feature has associated test beads
-5. **Dependencies clean** — Graph makes logical sense
-
-```bash
-BEADS_DIR="$(ao beads dir)" br dep cycles  # must be empty
-bv --robot-insights | jq '.bottlenecks'    # wave shaping: what gates the most work
-BEADS_DIR="$(ao beads dir)" br list --json | jq '.issues[]? | select(.description == "")'  # no empty descriptions
-```
-
-### bd → br Migration (Docs)
-
-`bd` itself is retired as THIS repo's tracker — never run it here (see the
-persist_intent invariants above; gc city dirs are the blessed exception — bd
-is gc's native store). Use this checklist only when scrubbing legacy `bd`
-references from AGENTS.md or other docs:
-
-**Behavioral difference (only one):** `br sync` never runs git commands. After `BEADS_DIR="$(ao beads dir)" br sync --flush-only`, you must commit and push the private ledger with `git -C "$(ao beads dir)" add -A`, `git -C "$(ao beads dir)" commit`, and `git -C "$(ao beads dir)" push`.
-
-**Transform checklist (order matters):**
-1. `bd` commands → `br` commands
-2. `bd sync` → `BEADS_DIR="$(ao beads dir)" br sync --flush-only` + `git -C "$(ao beads dir)" add -A` + `git -C "$(ao beads dir)" commit`
-3. Do NOT assume issue IDs must change `bd-*` → `br-*` — the prefix is configurable (often remains `bd-*`).
-4. Remove daemon/auto-commit references
-
-**Verify:**
-```bash
-grep -c '`bd ' file.md        # must be 0
-grep -c 'bd sync' file.md     # must be 0
-grep -c 'br sync --flush-only' file.md  # must be > 0
-```
+Replace legacy tracker commands with `br`; preserve prefixes and explicit
+private-ledger sync. Gas City remains the documented `bd`/Dolt exception.
 
 ## Issue-Lifecycle Discipline
 
-Folded from the retired `beads` umbrella and `beads-workflow` lifecycle cards
-(ag-ez7y6) — operating doctrine, not the command surface above. These keep the
-tracker graph honest across sessions:
+Keep the graph honest across sessions:
 
-- **Live reads are authoritative.** Treat live `BEADS_DIR="$(ao beads dir)" br show` / `ready` / `list`
-  output as the source of truth for current tracker state. Do NOT treat the
-  exported `issues.jsonl` as the primary decision source when live `br` data is
-  available — the JSONL is a git-friendly export artifact, refreshed on
-  `BEADS_DIR="$(ao beads dir)" br sync --flush-only`.
-- **Scoped closure proof on every close.** `br close <id> --reason` must name the
-  touched files (or explicit no-file evidence artifact), the validation
-  command(s) run, and the parent-reconciliation outcome. Never close a child
-  bead with a generic reason like "done" or "implemented".
-- **Reconcile the parent in the same session.** After closing or materially
-  updating a child bead, reconcile the open parent: update stale "remaining gap"
-  notes immediately, and close the parent when the child resolved its last real
-  gap.
-- **Narrow the umbrella issue before implementing.** If `BEADS_DIR="$(ao beads dir)" br ready --json` surfaces a
-  broad umbrella bead, do not implement against vague parent wording — first
-  narrow the remaining gap into an execution-ready child bead, land the child,
-  then reconcile the parent.
-- **Normalize stale queue items instead of skipping them.** Rewrite broad or
-  partially-absorbed beads to the actual remaining gap rather than silently
-  passing over them.
-- **Claim-verify before dispatch (cp-hhtu).** Before claiming a bead for
-  dispatch, confirm no other actor already holds it (`br show <id>` — check
-  assignee/status). A race-claim on an already-claimed bead creates two workers
-  on the same task — one of them will silently lose work. The ledger is the
-  lock: if the bead is claimed, coordinate via Agent Mail (use the bead ID as
-  the thread ID and reservation reason); do not dispatch a second worker.
-- **Merged-before-close (cp-4gj6; gate cp-hxp6 enforces).** A bead is durable
-  only when its branch is **merged to trunk and the commit visible on the
-  canonical store**. `br close` without a merge is a protection-off state —
-  the work **will** recur as an incident (it did, 2026-06-09). For
-  assurance-close contexts the gate cp-hxp6 enforces this; for other contexts,
-  apply it as a practice: confirm `git log --oneline origin/main` includes the
-  commit SHA before closing.
-- **Close with residual routed (ag-67yy).** When a close leaves a residual
-  (un-merged work, deferred scope, a known gap), **route the residual to a
-  successor bead in the same turn** — never accept-silently, never hold the
-  parent open as a zombie. The pressure lives in the successor's priority, not
-  in the open parent. Use `br close <id> --reason "Residual → <new-id>"`.
-  Close-with-residual is honest; a zombie parent that never closes is the
-  failure mode.
-- **Append notes, never replace (cp-7fxr).** `br update <id> --notes` is an
-  **append** operation — it adds to the notes, it does NOT replace existing
-  notes. When adding a progress note, pass only the new content; the flag
-  accumulates. A `--notes` call that silently replaces prior notes erases
-  audit history — the same silent-destruction class as the close-eater
-  (cp-8720) and the split-brain (cp-4gkz).
-- **Fuzzy intent → bead in the same turn (cp-honb).** When a correction, idea,
-  or complaint arrives mid-session, file the bead **in the same turn** with the
-  verbatim words. Corrections that live only in chat evaporate. The feed IS
-  the product.
+- Live `br show`/`ready`/`list` reads are authoritative; JSONL is an export.
+- Run claim-verify before dispatch; coordinate instead of racing.
+- Narrow vague umbrella work into an execution-ready child before implementation.
+- Close only after scoped closure proof: the feature is merged to trunk and visible on `origin/main`, with touched
+  files and validation commands; reconcile the parent in the reason.
+- Route every residual to a successor in the same turn; never leave zombie parents.
+- Append progress notes, normalize stale queue items, and capture fuzzy intent
+  as a bead in the same turn. See [INTEGRATION.md](references/INTEGRATION.md)
+  for multi-actor lifecycle detail.
 
 ## Anti-Patterns
 
-- Running `br sync` without `--flush-only` or `--import-only`
-- Forgetting sync before git commit
-- Creating circular dependencies
-- Running bare `bv`
-- Assuming auto-commit behavior
-
-## Storage
-
-```
-_beads/
-├── beads.db        # SQLite (primary)
-├── issues.jsonl    # Git-friendly export
-└── config.yaml     # Optional config
-```
+- Never run ambiguous sync, bare `bv`, or assume auto-commit.
+- Never close with cycles, unsynced state, or an unlanded feature commit.
+- Never stage a private ledger into its public host repository.
 
 ## Troubleshooting
 
-```bash
-BEADS_DIR="$(ao beads dir)" br doctor       # Full diagnostics
-BEADS_DIR="$(ao beads dir)" br dep cycles   # Must be empty
-BEADS_DIR="$(ao beads dir)" br config --list
-```
-
-**Worktree error** (`'main' is already checked out`):
-```bash
-git branch beads-sync main
-br config set sync.branch beads-sync
-```
-
----
+Run `br doctor`, `br dep cycles --json`, and `br config --list` against the
+resolved ledger. See [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for
+worktree and sync recovery; storage layout is in [CONFIG.md](references/CONFIG.md).
 
 ## References
 
