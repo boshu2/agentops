@@ -243,6 +243,7 @@ interactive, and loop examples.
 
 ## Reference Documents
 
+- [references/agile-replan-loop.md](references/agile-replan-loop.md)
 - [references/autonomous-execution.md](references/autonomous-execution.md)
 - [references/complexity-scaling.md](references/complexity-scaling.md)
 - [references/context-windowing.md](references/context-windowing.md)
@@ -255,4 +256,5 @@ interactive, and loop examples.
 - [references/phase-budgets.md](references/phase-budgets.md)
 - [references/phase-data-contracts.md](references/phase-data-contracts.md)
 - [references/report-template.md](references/report-template.md)
+- [references/rpi.feature](references/rpi.feature)
 - [references/troubleshooting.md](references/troubleshooting.md)

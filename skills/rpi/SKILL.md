@@ -247,4 +247,4 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 - [references/phase-budgets.md](references/phase-budgets.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
 
-> Also referenced inline above: [agile-replan-loop](references/agile-replan-loop.md), [rpi.feature](references/rpi.feature), [autonomous-execution](references/autonomous-execution.md), [codex-executor](references/codex-executor.md), [examples](references/examples.md), [phase-data-contracts](references/phase-data-contracts.md), [report-template](references/report-template.md).
+> Also referenced inline above: [autonomous-execution](references/autonomous-execution.md), [codex-executor](references/codex-executor.md), [examples](references/examples.md), [phase-data-contracts](references/phase-data-contracts.md), [report-template](references/report-template.md).
