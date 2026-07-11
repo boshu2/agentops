@@ -1,6 +1,6 @@
 ---
 name: evolve
-description: Run autonomous improvement loops.
+description: 'Run autonomous improvement loops. Triggers: "evolve", "improve everything", "autonomous improvement".'
 practices:
 - lean-startup
 - dora-metrics

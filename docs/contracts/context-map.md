@@ -15,7 +15,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
 - `domain` — Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
 - `dueling-idea-genies` — Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".
-- `evolve` — Run autonomous improvement loops.
+- `evolve` — Run autonomous improvement loops. Triggers: "evolve", "improve everything", "autonomous improvement".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `idea-genie` — Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".
 - `operationalize` — >-

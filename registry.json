@@ -1638,7 +1638,7 @@
       "hex_role": "domain",
       "tier": "experimental",
       "capability_class": "orchestration",
-      "purpose": "Run autonomous improvement loops.",
+      "purpose": "Run autonomous improvement loops. Triggers: \"evolve\", \"improve everything\", \"autonomous improvement\".",
       "status": "active",
       "disposition": "refactor",
       "runtime_targets": [
