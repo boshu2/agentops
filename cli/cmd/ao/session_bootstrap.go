@@ -41,6 +41,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/promptsafe"
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
 
@@ -180,9 +181,9 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 	status.BeadsDir = beadsDir.Path
 	status.BeadsDirSource = beadsDir.Source
 
-	status.AgentsMDRead = fileExists(filepath.Join(cwd, "AGENTS.md"))
+	status.AgentsMDRead = quality.FileExists(filepath.Join(cwd, "AGENTS.md"))
 	for _, sib := range agentsMDSiblings {
-		if fileExists(filepath.Join(cwd, sib)) {
+		if quality.FileExists(filepath.Join(cwd, sib)) {
 			status.AgentsSiblingsRead = append(status.AgentsSiblingsRead, sib)
 		}
 	}

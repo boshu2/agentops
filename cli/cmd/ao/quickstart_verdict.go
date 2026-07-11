@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ func prepareFirstVerdict() *firstVerdictInfo {
 	if err := os.MkdirAll(filepath.Dir(ledgerPath), 0o755); err == nil {
 		info.LedgerReady = true
 	}
-	_, live := reviewerReachabilityChecks(wedgeReviewerTimeout)
+	_, live := reviewerHealthService.Check(context.Background(), reviewerProbeTimeout)
 	info.ReviewerLive = live
 	if len(live) > 0 {
 		info.NextCommand = firstVerdictCommand
@@ -51,8 +52,8 @@ func prepareFirstVerdict() *firstVerdictInfo {
 	// No reviewer reachable: teach the exact doctor corrective install
 	// one-liners (wedgeReviewers.installCmd is the shared source of truth),
 	// never a pointer into diffuse docs.
-	for _, r := range wedgeReviewers {
-		info.ReviewerInstall = append(info.ReviewerInstall, r.name+": "+r.installCmd)
+	for _, reviewer := range reviewerHealthService.Catalog() {
+		info.ReviewerInstall = append(info.ReviewerInstall, reviewer.Name+": "+reviewer.InstallCommand)
 	}
 	return info
 }
