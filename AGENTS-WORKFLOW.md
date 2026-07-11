@@ -48,6 +48,10 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 - **Hex (structure):** `skills/*/SKILL.md` frontmatter (`hexagonal_role`, `consumes`, `produces`, `context_rel`) → generated to `docs/contracts/context-map.md`. CI gate: `validate-context-map-drift`.
 - **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `scenario-hash-stability`.
 
+### Helper extractions ship a ratchet
+
+Every helper/library extraction ships a shrink-only OBSERVATIONAL ratchet gate in the same arc — `scripts/lib/ratchet.sh` makes that a detector function + a pinned grandfather file (worked example: `scripts/check-atomic-write-ratchet.sh`, age-ratchet-lib-extraction-bv7d.9). The ratchet claims observation, not enforcement: consolidation without a guard accretes new hand-rolled copies (the 07-01 `writeJSONAtomic` escape re-rolled a helper fsync-less a week after it landed), and a ratchet graduates to blocking only via a separately-earned precision detector, never by default.
+
 ### CI tiers (no "advisory")
 
 - **T0 (≤30s)** required gates · **T1 (≤5min)** verification · **T2 (≤15min)** quality — **all required**.
