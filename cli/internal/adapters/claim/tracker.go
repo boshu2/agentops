@@ -4,39 +4,60 @@ package claim
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"strings"
 
-	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	claimapp "github.com/boshu2/agentops/cli/internal/claim"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 type ExitErrorFactory func(code int, message string) error
 
-type Resolver interface {
-	Resolve() (beadsapp.TrackerResolution, error)
-}
-
 type Tracker struct {
-	resolver  Resolver
-	exitError ExitErrorFactory
+	workingDirectory func() (string, error)
+	environment      func() []string
+	lookPath         trackerresolve.LookPath
+	exitError        ExitErrorFactory
 }
 
-func NewTracker(resolver Resolver, exitError ExitErrorFactory) Tracker {
-	return Tracker{resolver: resolver, exitError: exitError}
+func NewTracker(exitError ExitErrorFactory) Tracker {
+	return NewTrackerWith(os.Getwd, os.Environ, exec.LookPath, exitError)
+}
+
+func NewTrackerWith(
+	workingDirectory func() (string, error),
+	environment func() []string,
+	lookPath trackerresolve.LookPath,
+	exitError ExitErrorFactory,
+) Tracker {
+	return Tracker{
+		workingDirectory: workingDirectory, environment: environment,
+		lookPath: lookPath, exitError: exitError,
+	}
 }
 
 func (tracker Tracker) Claim(ctx context.Context, id string, streams claimapp.Streams) error {
-	if tracker.resolver == nil || tracker.exitError == nil {
+	if tracker.workingDirectory == nil || tracker.environment == nil || tracker.lookPath == nil || tracker.exitError == nil {
 		return errors.New("claim tracker adapter is not configured")
 	}
-	resolution, err := tracker.resolver.Resolve()
+	cwd, err := tracker.workingDirectory()
 	if err != nil {
-		return err
+		return tracker.exitError(127, strings.TrimSpace(err.Error()))
+	}
+	environment := append([]string(nil), tracker.environment()...)
+	resolution, err := trackerresolve.ResolveWithLookPath(cwd, environment, tracker.lookPath)
+	if err != nil {
+		return tracker.exitError(127, strings.TrimSpace(err.Error()))
 	}
 	command := exec.CommandContext(ctx, resolution.Binary, "update", id, "--claim") // #nosec G204 -- tracker resolver constrains the binary to br|bd.
-	command.Dir = resolution.WorkDir
-	command.Env = append([]string(nil), resolution.ChildEnv...)
+	command.Dir = cwd
+	if resolution.Tracker == trackerresolve.BR {
+		if _, present := trackerresolve.BeadsDirValue(environment); !present {
+			environment = append(environment, "BEADS_DIR="+resolution.LedgerDir)
+		}
+	}
+	command.Env = environment
 	output, runErr := command.CombinedOutput()
 	if len(output) > 0 && streams.Stdout != nil {
 		_, _ = streams.Stdout.Write(output)

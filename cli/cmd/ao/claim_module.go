@@ -9,9 +9,8 @@ import (
 )
 
 func init() {
-	tracker := currentBeadsTracker()
 	service := claimapp.NewService(
-		claimadapter.NewTracker(tracker, func(code int, message string) error {
+		claimadapter.NewTracker(func(code int, message string) error {
 			return &tickExitError{code: code, msg: message}
 		}),
 		claimadapter.NewEvidenceStore(repoRootOrCwd),
