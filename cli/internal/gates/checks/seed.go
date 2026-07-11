@@ -304,6 +304,7 @@ func init() {
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
 
 		// routed by change class
+		gates.GoCLIArchitectureCheck(),
 		{ID: "go.command-test-pair", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-command-test-pair.sh"},
 		// go.lint: enforce the documented lint budgets (.claude/rules/go.md —
 		// gocyclo fail at 25, errcheck, staticcheck, copyloopvar) via the
