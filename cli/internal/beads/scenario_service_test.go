@@ -1,6 +1,7 @@
 package beads
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -20,7 +21,7 @@ func (fake *fakeScenarioRepository) UpdateDescription(_ string, description stri
 
 func TestScenarioServicePreservesDescriptionOnApply(t *testing.T) {
 	repository := &fakeScenarioRepository{bead: FetchedBead{
-		Acceptance:  "Given a state\nWhen an action\nThen a result",
+		Acceptance:  "Given a state when an action then a result",
 		Description: "original context",
 	}}
 	service := ScenarioService{Repository: repository}
@@ -31,7 +32,7 @@ func TestScenarioServicePreservesDescriptionOnApply(t *testing.T) {
 	if err := service.ApplyScenarios(extraction); err != nil {
 		t.Fatal(err)
 	}
-	if repository.description[:16] != "original context" || len(repository.description) <= len("original context") {
+	if !strings.HasPrefix(repository.description, "original context") || len(repository.description) <= len("original context") {
 		t.Fatalf("description = %q", repository.description)
 	}
 }

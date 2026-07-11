@@ -415,10 +415,11 @@ func TestLegacyProductionOwnersAreAbsent(t *testing.T) {
 		t.Fatal(err)
 	}
 	allowed := map[string]bool{
-		"beads_composition.go": true,
-		"beads_exec.go":        true, // yield-family compatibility delegates
-		"beads_json_compat.go": true, // lookup compatibility helper
-		"beads_module.go":      true,
+		"beads_composition.go":     true,
+		"beads_citation_compat.go": true, // frozen citation-family adapter bridge
+		"beads_exec.go":            true, // yield-family compatibility delegates
+		"beads_json_compat.go":     true, // lookup compatibility helper
+		"beads_module.go":          true,
 	}
 	for _, entry := range entries {
 		name := entry.Name()
