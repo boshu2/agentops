@@ -58,9 +58,59 @@ If adopting a steal is a **one-way door** (an architecture fork, a new bounded c
 
 Required: `product_name`. Common flags: `--mode=repo|binary|both`, `--upstream-repo`, `--upstream-ref` (pins the clone, records the resolved SHA in `clone-metadata.json`), `--output-dir` (default `.agents/research/<product>/`), `--security-audit`, `--authorized` (mandatory for binary mode — refuses without it). Full list: `python3 skills/reverse-engineer/scripts/reverse_engineer.py --help`.
 
-## Outputs (MUST be generated)
+## Output Specification
 
-Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.yaml`, `feature-catalog.md`, `spec-architecture.md`, `spec-code-map.md`, `spec-cli-surface.md`, `spec-clone-vs-use.md`, `spec-clone-mvp.md`, `clone-metadata.json` (pinned-ref provenance). Security mode adds `output_dir/security/`: `threat-model.md`, `attack-surface.md`, `dataflow.md`, `crypto-review.md`, `authn-authz.md`, `findings.md`, `reproducibility.md`, `validate-security-audit.sh`. Phase-2: `steal-map.md`.
+Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.yaml`, `feature-catalog.md`, `spec-architecture.md`, `spec-code-map.md`, `spec-clone-vs-use.md`, `spec-clone-mvp.md`, plus `spec-cli-surface.md` only when a CLI is detected and `clone-metadata.json` only when `--upstream-ref` is supplied. Security mode adds `output_dir/security/`: `threat-model.md`, `attack-surface.md`, `dataflow.md`, `crypto-review.md`, `authn-authz.md`, `findings.md`, `reproducibility.md`, `validate-security-audit.sh`. Phase-2: `steal-map.md`.
+
+- **Artifact directory:** the exact `--output-dir`, defaulting to
+  `$REPO/.agents/research/<product>/`.
+- **Filename convention:** the fixed phase-1 and phase-2 names above; security
+  files live only in the `security/` child directory.
+- **Serialization/schema format:** registry is YAML, clone metadata is one JSON
+  object, and inventories/specs/steal-map are nonempty Markdown files.
+- **Validator command:** with `$output_dir`, `$security_audit`, `$sbom`, and
+  `$upstream_ref_set` (each flag `0|1`) set:
+
+  ```bash
+  set -euo pipefail
+  required=(feature-inventory.md feature-registry.yaml feature-catalog.md spec-architecture.md spec-code-map.md spec-clone-vs-use.md spec-clone-mvp.md analysis-root-path.txt validate-feature-registry.py steal-map.md)
+  for name in "${required[@]}"; do
+    test -f "$output_dir/$name"
+    test ! -L "$output_dir/$name"
+    test -s "$output_dir/$name"
+  done
+  test -f "$output_dir/docs-features.txt"
+  test ! -L "$output_dir/docs-features.txt"
+  test ! -L "$output_dir/spec-cli-surface.md"
+  if [[ -e "$output_dir/spec-cli-surface.md" ]]; then
+    test -f "$output_dir/spec-cli-surface.md"
+    test -s "$output_dir/spec-cli-surface.md"
+  fi
+  python3 "$output_dir/validate-feature-registry.py"
+  if [[ "$upstream_ref_set" == 1 ]]; then
+    test -f "$output_dir/clone-metadata.json"
+    test ! -L "$output_dir/clone-metadata.json"
+    jq -e 'type == "object"' "$output_dir/clone-metadata.json" >/dev/null
+  else
+    [[ "$upstream_ref_set" == 0 ]]
+  fi
+  grep -Fqx '| Their capability | Our surface today | Verdict |' "$output_dir/steal-map.md"
+  if [[ "$security_audit" == 1 ]]; then
+    test -x "$output_dir/security/validate-security-audit.sh"
+    if [[ "$sbom" == 1 ]]; then
+      "$output_dir/security/validate-security-audit.sh" "$output_dir" --sbom
+    else
+      [[ "$sbom" == 0 ]]
+      "$output_dir/security/validate-security-audit.sh" "$output_dir" --no-sbom
+    fi
+  else
+    [[ "$security_audit" == 0 ]]
+    [[ "$sbom" == 0 ]]
+  fi
+  ```
+- **Downstream handoff:** give the validated `steal-map.md` to `$discovery` or
+  `$council` only for one-way-door candidates; ordinary `have`, `park`, and
+  `reject` decisions remain evidence-backed terminal rows.
 
 ## Reproducibility + fixtures
 
