@@ -173,6 +173,51 @@ func TestScriptRunner_NameGuardSuppressesInjectionUnderGoTest(t *testing.T) {
 	}
 }
 
+// TestAoBinInjection pins the F6 taxonomy (age-pawl-intent-zhndq.6): inject for ANY real
+// production binary regardless of basename (renamed / wrapped / symlinked), and skip ONLY the
+// go-test binary (a *.test basename). The old basename=="ao" guard wrongly skipped a renamed
+// binary, dropping the pre-push sub-checks back to a possibly-stale cli/bin/ao (the age-jmfl
+// false-fail source).
+func TestAoBinInjection(t *testing.T) {
+	cases := []struct {
+		name    string
+		exe     string
+		wantBin string
+		wantOK  bool
+	}{
+		{"production ao injects", "/usr/local/bin/ao", "/usr/local/bin/ao", true},
+		{"renamed binary injects (F6 fix)", "/tmp/ao-wrapper", "/tmp/ao-wrapper", true},
+		{"arbitrary name injects", "/opt/tools/aolauncher", "/opt/tools/aolauncher", true},
+		{"go-test binary is skipped", "/path/gates.test", "", false},
+		{"ao's own test binary is skipped", "/path/ao.test", "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			gotBin, gotOK := aoBinInjection(c.exe)
+			if gotBin != c.wantBin || gotOK != c.wantOK {
+				t.Fatalf("aoBinInjection(%q) = (%q,%v), want (%q,%v)", c.exe, gotBin, gotOK, c.wantBin, c.wantOK)
+			}
+		})
+	}
+}
+
+// TestScriptRunner_InjectsRenamedBinary (F6): a production gate binary whose basename is NOT
+// "ao" (renamed, wrapped, or symlinked) must STILL self-inject AO_BIN — end-to-end through a
+// spawned sub-check — overriding a stale ambient value, exactly as the "ao"-named binary does.
+func TestScriptRunner_InjectsRenamedBinary(t *testing.T) {
+	t.Setenv("AO_BIN", "/stale/cli/bin/ao")
+	renamed := filepath.Join(t.TempDir(), "ao-wrapper") // real binary, non-.test basename
+	setGateSelfBinary(t, func() (string, error) { return renamed, nil })
+
+	v, got := childAOBin(t, t.TempDir())
+	if v.Status != ports.GateStatusPass {
+		t.Fatalf("status = %s, want PASS; log: %q", v.Status, v.LogTail)
+	}
+	if got != renamed {
+		t.Fatalf("renamed gate binary did not self-inject: child AO_BIN = %q, want %q", got, renamed)
+	}
+}
+
 // TestBuildCheckEnv composes exactly one AO_BIN per the age-jmfl precedence.
 func TestBuildCheckEnv(t *testing.T) {
 	countAOBin := func(env []string) (int, string) {
