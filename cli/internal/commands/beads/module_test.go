@@ -5,25 +5,16 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
-	"github.com/spf13/cobra"
+	"github.com/boshu2/agentops/cli/internal/scenarios"
 )
 
-type recordingRunner struct {
-	invocations []Invocation
-}
-
-func (runner *recordingRunner) Run(_ *cobra.Command, invocation Invocation) error {
-	runner.invocations = append(runner.invocations, invocation)
-	return nil
-}
-
 func TestModuleBuildsFreshCompleteTrees(t *testing.T) {
-	runner := &recordingRunner{}
-	module := NewModule(runner, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	module := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	first := module.Command()
 	second := module.Command()
 	if first == second {
@@ -39,25 +30,6 @@ func TestModuleBuildsFreshCompleteTrees(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("commands = %v, want %v", got, want)
-	}
-}
-
-func TestModuleParsesTypedInvocation(t *testing.T) {
-	runner := &recordingRunner{}
-	command := NewModule(runner, nil, nil, nil, nil, nil, nil, nil, nil, nil).Command()
-	command.SetArgs([]string{"audit", "--strict", "--json"})
-	if err := command.Execute(); err != nil {
-		t.Fatalf("Execute() error = %v", err)
-	}
-	want := Invocation{
-		Operation: OperationAudit,
-		Options: Options{
-			Strict: true,
-			JSON:   true,
-		},
-	}
-	if len(runner.invocations) != 1 || !reflect.DeepEqual(runner.invocations[0], want) {
-		t.Fatalf("invocations = %#v, want %#v", runner.invocations, want)
 	}
 }
 
@@ -88,6 +60,33 @@ type fakeKnowledge struct {
 type fakeHygiene struct {
 	audit   *beadsapp.AuditReport
 	cluster *beadsapp.ClusterReport
+}
+
+type fakeScenario struct {
+	extraction beadsapp.ScenarioExtraction
+	validation beadsapp.ScenarioValidation
+	applied    int
+}
+
+func (fake *fakeScenario) Available() bool { return true }
+func (fake *fakeScenario) PrepareScenarios(string, bool) (beadsapp.ScenarioExtraction, error) {
+	return fake.extraction, nil
+}
+func (fake *fakeScenario) ApplyScenarios(beadsapp.ScenarioExtraction) error {
+	fake.applied++
+	return nil
+}
+func (fake *fakeScenario) ValidateScenarios(string) (beadsapp.ScenarioValidation, error) {
+	return fake.validation, nil
+}
+
+type fakeAcceptance struct {
+	results []beadsapp.AcceptanceResult
+	nonPass bool
+}
+
+func (fake fakeAcceptance) VerifyAcceptance([]string) ([]beadsapp.AcceptanceResult, bool, error) {
+	return fake.results, fake.nonPass, nil
 }
 
 func (fake fakeHygiene) Audit(bool) (*beadsapp.AuditReport, error)     { return fake.audit, nil }
@@ -159,7 +158,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("directory JSON", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil, nil).Command()
+		root := NewModule(ports, ports, ports, nil, nil, nil, nil, nil, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"dir", "--require", "--json"})
 		if err := root.Execute(); err != nil {
@@ -172,7 +171,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("tracker text", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil, nil).Command()
+		root := NewModule(ports, ports, ports, nil, nil, nil, nil, nil, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"tracker"})
 		if err := root.Execute(); err != nil {
@@ -185,7 +184,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 
 	t.Run("exec help precedes resolution", func(t *testing.T) {
 		ports.executed = false
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil, nil).Command()
+		root := NewModule(ports, ports, ports, nil, nil, nil, nil, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"exec", "--help"})
 		if err := root.Execute(); err != nil {
 			t.Fatalf("Execute() error = %v", err)
@@ -198,7 +197,7 @@ func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
 	t.Run("exec preserves typed exit", func(t *testing.T) {
 		ports.executed = false
 		ports.execErr = &beadsapp.ExitError{Code: 7}
-		root := NewModule(nil, ports, ports, ports, nil, nil, nil, nil, nil, nil).Command()
+		root := NewModule(ports, ports, ports, nil, nil, nil, nil, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"exec", "close", "age-x"})
 		err := root.Execute()
 		var exitError *beadsapp.ExitError
@@ -219,7 +218,7 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 	t.Run("stale claims", func(t *testing.T) {
 		ports.listOutput = []byte(`[{"id":"age-old","status":"in_progress","assignee":"bo","updated_at":"2026-07-11T10:00:00Z"}]`)
 		var output bytes.Buffer
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil, nil).Command()
+		root := NewModule(ports, ports, ports, ports, ports, ports, ports, nil, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"stale-claims", "--threshold", "4", "--json"})
 		if err := root.Execute(); err != nil {
@@ -236,7 +235,7 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 			{ID: "age-x", Status: "in_progress", Assignee: "old", UpdatedAt: "2026-07-11T10:00:00Z"},
 			{ID: "age-x", Status: "in_progress", Assignee: "codex", UpdatedAt: "2026-07-11T18:00:00Z"},
 		}
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil, nil).Command()
+		root := NewModule(ports, ports, ports, ports, ports, ports, ports, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"resume", "age-x", "--json"})
 		if err := root.Execute(); err != nil {
 			t.Fatalf("Execute() error = %v", err)
@@ -249,7 +248,7 @@ func TestModuleOwnsRecoveryHandlers(t *testing.T) {
 
 	t.Run("epic terminal exit", func(t *testing.T) {
 		ports.readOutput = []byte("{\"id\":\"age-e\",\"status\":\"open\",\"issue_type\":\"epic\"}\n{\"id\":\"age-e.1\",\"status\":\"open\",\"issue_type\":\"task\"}\n")
-		root := NewModule(nil, ports, ports, ports, ports, ports, ports, ports, nil, nil).Command()
+		root := NewModule(ports, ports, ports, ports, ports, ports, ports, nil, nil, nil, nil).Command()
 		root.SetArgs([]string{"epic-status", "age-e", "--terminal"})
 		err := root.Execute()
 		var exitError *beadsapp.ExitError
@@ -272,7 +271,7 @@ func TestModuleOwnsKnowledgeHandlers(t *testing.T) {
 
 	t.Run("verify maps stale verdict", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge, nil).Command()
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, knowledge, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"verify", "age-x"})
 		err := root.Execute()
@@ -286,7 +285,7 @@ func TestModuleOwnsKnowledgeHandlers(t *testing.T) {
 	})
 
 	t.Run("lint maps stale verdict", func(t *testing.T) {
-		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge, nil).Command()
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, knowledge, nil, nil, nil).Command()
 		root.SetArgs([]string{"lint"})
 		err := root.Execute()
 		var exitError *beadsapp.ExitError
@@ -297,7 +296,7 @@ func TestModuleOwnsKnowledgeHandlers(t *testing.T) {
 
 	t.Run("harvest renders result", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, knowledge, nil).Command()
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, knowledge, nil, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"harvest", "age-x"})
 		if err := root.Execute(); err != nil {
@@ -328,7 +327,7 @@ func TestModuleOwnsHygieneHandlers(t *testing.T) {
 
 	t.Run("strict audit maps findings", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, hygiene).Command()
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, hygiene, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"audit", "--strict"})
 		err := root.Execute()
@@ -343,7 +342,7 @@ func TestModuleOwnsHygieneHandlers(t *testing.T) {
 
 	t.Run("cluster renders representative", func(t *testing.T) {
 		var output bytes.Buffer
-		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, hygiene).Command()
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, hygiene, nil, nil).Command()
 		root.SetOut(&output)
 		root.SetArgs([]string{"cluster"})
 		if err := root.Execute(); err != nil {
@@ -351,6 +350,58 @@ func TestModuleOwnsHygieneHandlers(t *testing.T) {
 		}
 		if !bytes.Contains(output.Bytes(), []byte("Consolidate under age-e (existing epic)")) {
 			t.Fatalf("output = %q", output.String())
+		}
+	})
+}
+
+func TestModuleOwnsScenarioAndAcceptanceHandlers(t *testing.T) {
+	scenarioUseCases := &fakeScenario{
+		extraction: beadsapp.ScenarioExtraction{
+			BeadID:    "age-x",
+			Scenarios: []scenarios.Scenario{{Name: "works", Given: "state", When: "action", Then: "result"}},
+		},
+		validation: beadsapp.ScenarioValidation{BeadID: "age-x", Valid: true, Scenarios: []scenarios.Scenario{{Name: "works"}}},
+	}
+
+	t.Run("write prompts before update and decline is safe", func(t *testing.T) {
+		scenarioUseCases.applied = 0
+		var prompt bytes.Buffer
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, scenarioUseCases, nil).Command()
+		root.SetErr(&prompt)
+		root.SetIn(strings.NewReader("n\n"))
+		root.SetArgs([]string{"scenarios", "extract", "age-x", "--write"})
+		if err := root.Execute(); err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+		if scenarioUseCases.applied != 0 || !bytes.Contains(prompt.Bytes(), []byte("Proceed? [y/N]")) {
+			t.Fatalf("applied=%d prompt=%q", scenarioUseCases.applied, prompt.String())
+		}
+	})
+
+	t.Run("write confirms update", func(t *testing.T) {
+		scenarioUseCases.applied = 0
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, scenarioUseCases, nil).Command()
+		root.SetIn(strings.NewReader("yes\n"))
+		root.SetArgs([]string{"scenarios", "extract", "age-x", "--write"})
+		if err := root.Execute(); err != nil {
+			t.Fatalf("Execute() error = %v", err)
+		}
+		if scenarioUseCases.applied != 1 {
+			t.Fatalf("applied = %d, want 1", scenarioUseCases.applied)
+		}
+	})
+
+	t.Run("strict acceptance maps non-pass", func(t *testing.T) {
+		acceptance := fakeAcceptance{
+			results: []beadsapp.AcceptanceResult{{BeadID: "age-x", IssueType: "feature", Verdict: beadsapp.AcceptanceFail, Missing: []string{"TDD signal"}}},
+			nonPass: true,
+		}
+		root := NewModule(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, acceptance).Command()
+		root.SetArgs([]string{"verify-acceptance", "age-x", "--strict"})
+		err := root.Execute()
+		var exitError *beadsapp.ExitError
+		if !errors.As(err, &exitError) || exitError.ExitCode() != 1 {
+			t.Fatalf("error = %v, want ExitError(1)", err)
 		}
 	})
 }

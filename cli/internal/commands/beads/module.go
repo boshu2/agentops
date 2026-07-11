@@ -4,6 +4,7 @@
 package beads
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -18,32 +19,8 @@ import (
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	"github.com/boshu2/agentops/cli/internal/epicstatus"
+	"github.com/boshu2/agentops/cli/internal/scenarios"
 )
-
-type Operation string
-
-const (
-	OperationDir              Operation = "dir"
-	OperationTracker          Operation = "tracker"
-	OperationVerify           Operation = "verify"
-	OperationLint             Operation = "lint"
-	OperationHarvest          Operation = "harvest"
-	OperationAudit            Operation = "audit"
-	OperationCluster          Operation = "cluster"
-	OperationExec             Operation = "exec"
-	OperationResume           Operation = "resume"
-	OperationScenariosExtract Operation = "scenarios.extract"
-	OperationScenariosCheck   Operation = "scenarios.validate"
-	OperationStaleClaims      Operation = "stale-claims"
-	OperationEpicStatus       Operation = "epic-status"
-	OperationAcceptance       Operation = "verify-acceptance"
-)
-
-type Invocation struct {
-	Operation Operation
-	Args      []string
-	Options   Options
-}
 
 type Options struct {
 	JSON            bool
@@ -63,27 +40,21 @@ type Options struct {
 	Terminal        bool
 }
 
-// Runner is the command family's inbound application port. The command module
-// owns parsing; the implementation owns use-case orchestration and effects.
-type Runner interface {
-	Run(*cobra.Command, Invocation) error
-}
-
 type Module struct {
-	runner    Runner
-	resolver  beadsapp.TrackerResolver
-	inspector beadsapp.LedgerInspector
-	executor  beadsapp.TrackerExecutor
-	stale     beadsapp.StaleSource
-	claims    beadsapp.ClaimStore
-	runtime   beadsapp.ResumeRuntime
-	reader    beadsapp.LedgerReader
-	knowledge beadsapp.KnowledgeUseCases
-	hygiene   beadsapp.HygieneUseCases
+	resolver   beadsapp.TrackerResolver
+	inspector  beadsapp.LedgerInspector
+	executor   beadsapp.TrackerExecutor
+	stale      beadsapp.StaleSource
+	claims     beadsapp.ClaimStore
+	runtime    beadsapp.ResumeRuntime
+	reader     beadsapp.LedgerReader
+	knowledge  beadsapp.KnowledgeUseCases
+	hygiene    beadsapp.HygieneUseCases
+	scenario   beadsapp.ScenarioUseCases
+	acceptance beadsapp.AcceptanceUseCases
 }
 
 func NewModule(
-	runner Runner,
 	resolver beadsapp.TrackerResolver,
 	inspector beadsapp.LedgerInspector,
 	executor beadsapp.TrackerExecutor,
@@ -93,10 +64,13 @@ func NewModule(
 	reader beadsapp.LedgerReader,
 	knowledge beadsapp.KnowledgeUseCases,
 	hygiene beadsapp.HygieneUseCases,
+	scenario beadsapp.ScenarioUseCases,
+	acceptance beadsapp.AcceptanceUseCases,
 ) Module {
 	return Module{
-		runner: runner, resolver: resolver, inspector: inspector, executor: executor,
+		resolver: resolver, inspector: inspector, executor: executor,
 		stale: stale, claims: claims, runtime: runtime, reader: reader, knowledge: knowledge, hygiene: hygiene,
+		scenario: scenario, acceptance: acceptance,
 	}
 }
 
@@ -141,13 +115,6 @@ None of these commands replace bd itself — they complement it.`,
 		module.acceptanceCommand(),
 	)
 	return root
-}
-
-func (module Module) invoke(command *cobra.Command, operation Operation, args []string, options Options) error {
-	if module.runner == nil {
-		return fmt.Errorf("beads command runner is not configured")
-	}
-	return module.runner.Run(command, Invocation{Operation: operation, Args: append([]string(nil), args...), Options: options})
 }
 
 func (module Module) dirCommand() *cobra.Command {
@@ -577,16 +544,80 @@ func (module Module) scenariosCommand() *cobra.Command {
 	extractCommand.Flags().BoolVar(&extract.Force, "force", false, "Extract even when the bead already has a '## Scenarios' block")
 	extractCommand.Flags().BoolVar(&extract.Write, "write", false, "After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'")
 	extractCommand.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationScenariosExtract, args, extract)
+		return module.runScenarioExtract(command, args, extract)
 	}
 	var check Options
 	checkCommand := &cobra.Command{Use: "validate <bead-id>", Short: "Check that a bead's authored '## Scenarios' block is well-formed Gherkin", Args: cobra.ExactArgs(1)}
 	checkCommand.Flags().BoolVar(&check.JSON, "json", false, "Emit a structured validation verdict as JSON on stdout")
 	checkCommand.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationScenariosCheck, args, check)
+		return module.runScenarioValidation(command, args, check)
 	}
 	root.AddCommand(extractCommand, checkCommand)
 	return root
+}
+
+func (module Module) runScenarioExtract(command *cobra.Command, args []string, options Options) error {
+	if module.scenario == nil {
+		return fmt.Errorf("beads scenario use cases are not configured")
+	}
+	if !module.scenario.Available() {
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
+		return err
+	}
+	extraction, err := module.scenario.PrepareScenarios(args[0], options.Force)
+	if err != nil {
+		return err
+	}
+	if extraction.AlreadyShaped {
+		_, err := fmt.Fprintf(command.ErrOrStderr(), "bead %s already has a '## Scenarios' block; nothing to extract. Re-run with --force to extract anyway.\n", args[0])
+		return err
+	}
+	if options.Write {
+		rendered := scenarios.Render(extraction.Scenarios)
+		fmt.Fprintf(command.ErrOrStderr(), "About to append this block to %s's description:\n\n%s\nProceed? [y/N]: ", args[0], rendered)
+		line, _ := bufio.NewReader(command.InOrStdin()).ReadString('\n')
+		switch strings.ToLower(strings.TrimSpace(line)) {
+		case "y", "yes":
+		default:
+			_, err := fmt.Fprintf(command.ErrOrStderr(), "aborted; %s left unchanged\n", args[0])
+			return err
+		}
+		if err := module.scenario.ApplyScenarios(extraction); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintf(command.OutOrStdout(), "%s updated with %d scenario(s)\n", args[0], len(extraction.Scenarios))
+		return err
+	}
+	if options.JSON {
+		return encodeJSON(command, struct {
+			BeadID    string               `json:"bead_id"`
+			Scenarios []scenarios.Scenario `json:"scenarios"`
+		}{BeadID: args[0], Scenarios: extraction.Scenarios})
+	}
+	_, err = fmt.Fprint(command.OutOrStdout(), scenarios.Render(extraction.Scenarios))
+	return err
+}
+
+func (module Module) runScenarioValidation(command *cobra.Command, args []string, options Options) error {
+	if module.scenario == nil {
+		return fmt.Errorf("beads scenario use cases are not configured")
+	}
+	if !module.scenario.Available() {
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
+		return err
+	}
+	result, err := module.scenario.ValidateScenarios(args[0])
+	if err != nil {
+		if options.JSON {
+			_ = encodeJSON(command, result)
+		}
+		return err
+	}
+	if options.JSON {
+		return encodeJSON(command, result)
+	}
+	_, err = fmt.Fprintf(command.OutOrStdout(), "%s: %d scenario(s) well-formed\n", args[0], len(result.Scenarios))
+	return err
 }
 
 func (module Module) staleCommand() *cobra.Command {
@@ -748,7 +779,33 @@ func (module Module) acceptanceCommand() *cobra.Command {
 	command.Flags().BoolVar(&options.Strict, "strict", false, "Exit non-zero on any FAIL or UNDEFINED verdict")
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit verdicts as JSON")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationAcceptance, args, options)
+		return module.runAcceptance(command, args, options)
 	}
 	return command
+}
+
+func (module Module) runAcceptance(command *cobra.Command, ids []string, options Options) error {
+	if module.acceptance == nil {
+		return fmt.Errorf("beads acceptance use cases are not configured")
+	}
+	results, nonPass, err := module.acceptance.VerifyAcceptance(ids)
+	if err != nil {
+		return err
+	}
+	if options.JSON {
+		if err := encodeJSON(command, results); err != nil {
+			return err
+		}
+	} else {
+		for _, result := range results {
+			fmt.Fprintf(command.OutOrStdout(), "%s [%s] %s\n", result.Verdict, result.IssueType, result.BeadID)
+			for _, missing := range result.Missing {
+				fmt.Fprintf(command.OutOrStdout(), "    missing: %s\n", missing)
+			}
+		}
+	}
+	if options.Strict && nonPass {
+		return &beadsapp.ExitError{Code: 1}
+	}
+	return nil
 }
