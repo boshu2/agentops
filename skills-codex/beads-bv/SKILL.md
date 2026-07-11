@@ -8,6 +8,12 @@ description: Graph-aware task triage with bv and br —
 
 > **Core Insight:** Your backlog is a directed graph. PageRank finds what everything depends on. Betweenness finds bottlenecks. The math knows your priorities better than your gut.
 
+## Constraints
+
+- Run only `bv --robot-*` commands because bare `bv` launches an interactive TUI and blocks an agent lane.
+- Treat graph recommendations as triage evidence, not permission to mutate or close work; the owning workflow still applies its acceptance gate.
+- Resolve the live tracker store before every `br` command because linked worktrees may not contain the canonical ledger.
+
 ## CRITICAL: Robot Mode Only
 
 ```bash
@@ -154,6 +160,20 @@ bv --robot-triage >/dev/null && BEADS_DIR="$(ao beads dir)" br list >/dev/null &
 bv --robot-insights | jq '{cycles: .Cycles, density: .density}'
 # cycles must be [], density < 0.3 is healthy
 ```
+
+## Output Specification
+
+- **Path:** stdout; this skill creates no durable artifact directory or file.
+- **Filename:** none. Preserve the selected `bv --robot-*` JSON on stdout instead of inventing a report file.
+- **Format:** the command's JSON schema, narrowed with `jq` only when the downstream consumer requests a smaller object.
+- **Exit code:** validate with `bv --robot-triage >/dev/null` and a resolved-store `br list >/dev/null`; any nonzero exit is a failed handoff.
+- **Downstream handoff:** consumed by the planning or execution skill that requested triage; report the selected bead IDs, graph reason, and exact command used.
+
+## Quality Checklist
+
+- The command is a robot-mode command and its JSON parses successfully.
+- Recommendations cite graph evidence such as PageRank, betweenness, blockers, or cycles instead of intuition alone.
+- No tracker mutation is presented as completed unless its own command and acceptance gate succeeded.
 
 ---
 
