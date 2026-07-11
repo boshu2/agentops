@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
 var (
@@ -71,23 +73,7 @@ var beadsResumeShowFunc = func(ctx context.Context, beadID string) (staleBeadRec
 		}
 		return staleBeadRecord{}, err
 	}
-	// br show <id> --json may emit either an object or a 1-element array.
-	trimmed := bytes_trim_leading_ws(out)
-	if len(trimmed) > 0 && trimmed[0] == '[' {
-		var arr []staleBeadRecord
-		if err := json.Unmarshal(out, &arr); err != nil {
-			return staleBeadRecord{}, fmt.Errorf("parse br show array: %w", err)
-		}
-		if len(arr) == 0 {
-			return staleBeadRecord{}, fmt.Errorf("br show %s returned empty array", beadID)
-		}
-		return arr[0], nil
-	}
-	var rec staleBeadRecord
-	if err := json.Unmarshal(out, &rec); err != nil {
-		return staleBeadRecord{}, fmt.Errorf("parse br show object: %w", err)
-	}
-	return rec, nil
+	return beadsapp.ParseShownBead(out, beadID)
 }
 
 // beadsResumeClaimFunc is the test seam for performing the atomic update.
@@ -180,33 +166,7 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	if priorAgent == "" {
 		priorAgent = "unknown"
 	}
-	event := staleEvent{
-		SchemaVersion:    1,
-		EventType:        "claim_transferred",
-		BeadID:           beadID,
-		DetectedAt:       now.Format(time.RFC3339),
-		OriginalClaimant: staleAgent{ID: priorAgent},
-		Evidence: staleEvidence{
-			LastTouchTS:       prior.UpdatedAt,
-			LastEvidenceEvent: "br update --claim",
-		},
-	}
-	// Extra fields for the transferred variant are emitted via a wrapper —
-	// stale_detected and claim_transferred share the same Go type plus
-	// these post-fields.
-	transferred := struct {
-		staleEvent
-		NewClaimant staleAgent   `json:"new_claimant"`
-		Transfer    transferInfo `json:"transfer"`
-	}{
-		staleEvent:  event,
-		NewClaimant: staleAgent{ID: agent},
-		Transfer: transferInfo{
-			PriorRevision: fingerprint(prior),
-			NewRevision:   fingerprint(posterior),
-			NotesAppended: false,
-		},
-	}
+	transferred := beadsapp.BuildTransferredEvent(beadID, agent, prior, posterior, now)
 
 	// 7. Resolve ledger path relative to repo root.
 	cwd, err := os.Getwd()
@@ -244,53 +204,11 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 }
 
 // transferInfo mirrors the `transfer` sub-object in stale-claim-event.v1.
-type transferInfo struct {
-	PriorRevision string `json:"prior_revision"`
-	NewRevision   string `json:"new_revision"`
-	NotesAppended bool   `json:"notes_appended"`
-}
+type transferInfo = beadsapp.TransferInfo
 
 // fingerprint produces a compact, stable revision token from (assignee,
 // updated_at). br itself does not expose an etag; (assignee, updated_at)
 // changes on every claim/update so it serves as the audit fingerprint.
 func fingerprint(r staleBeadRecord) string {
-	if r.Assignee == "" && r.UpdatedAt == "" {
-		return "unset"
-	}
-	a := r.Assignee
-	if a == "" {
-		a = "_"
-	}
-	u := r.UpdatedAt
-	if u == "" {
-		u = "_"
-	}
-	return a + "@" + u
-}
-
-// bytes_trim_leading_ws / trailing_ws — tiny local helpers to avoid pulling
-// extra packages. Whitespace-trim only (no full unicode).
-func bytes_trim_leading_ws(b []byte) []byte {
-	i := 0
-	for i < len(b) {
-		c := b[i]
-		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-			i++
-			continue
-		}
-		break
-	}
-	return b[i:]
-}
-func bytes_trim_trailing_ws(b []byte) []byte {
-	j := len(b)
-	for j > 0 {
-		c := b[j-1]
-		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-			j--
-			continue
-		}
-		break
-	}
-	return b[:j]
+	return beadsapp.Fingerprint(r)
 }
