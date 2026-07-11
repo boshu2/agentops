@@ -72,10 +72,10 @@ func TestRunBeadsDirJSON(t *testing.T) {
 	t.Chdir(lane)
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	if err := runBeadsDir(cmd, nil); err != nil {
+	if err := executeBeadsDir(cmd, nil); err != nil {
 		t.Fatal(err)
 	}
 	var payload map[string]string
@@ -109,12 +109,12 @@ func TestRunBeadsDirRequireFailsClosedWhenNoLedger(t *testing.T) {
 	setBeadsDirRequire(t, true)
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	err := runBeadsDir(cmd, nil)
+	err := executeBeadsDir(cmd, nil)
 	if err == nil {
-		t.Fatalf("runBeadsDir(--require) = nil error for ledgerless dir; want fail-closed error")
+		t.Fatalf("executeBeadsDir(--require) = nil error for ledgerless dir; want fail-closed error")
 	}
 	if !strings.Contains(err.Error(), "no ledger artifact") {
 		t.Fatalf("error = %q, want the no-ledger-artifact reason", err)
@@ -130,12 +130,12 @@ func TestRunBeadsDirRequireFailsClosedWhenPathMissing(t *testing.T) {
 	setBeadsDirRequire(t, true)
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	err := runBeadsDir(cmd, nil)
+	err := executeBeadsDir(cmd, nil)
 	if err == nil || !strings.Contains(err.Error(), "does not exist") {
-		t.Fatalf("runBeadsDir(--require) err = %v, want does-not-exist refusal", err)
+		t.Fatalf("executeBeadsDir(--require) err = %v, want does-not-exist refusal", err)
 	}
 	if out.String() != "" {
 		t.Fatalf("stdout = %q, want empty on refusal", out.String())
@@ -155,11 +155,11 @@ func TestRunBeadsDirRequirePassesWithLedgerArtifact(t *testing.T) {
 	setBeadsDirRequire(t, true)
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	if err := runBeadsDir(cmd, nil); err != nil {
-		t.Fatalf("runBeadsDir(--require) = %v for a dir with issues.jsonl; want success", err)
+	if err := executeBeadsDir(cmd, nil); err != nil {
+		t.Fatalf("executeBeadsDir(--require) = %v for a dir with issues.jsonl; want success", err)
 	}
 	if got := strings.TrimSpace(out.String()); got != ledger {
 		t.Fatalf("stdout = %q, want resolved ledger path %q", got, ledger)

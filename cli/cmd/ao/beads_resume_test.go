@@ -1,6 +1,6 @@
 // Tests for ao beads resume (soc-vuu6.27 slice 3).
 //
-// Exercise the runBeadsResume flow via the three seams (show / claim /
+// Exercise the executeBeadsResume flow via the three seams (show / claim /
 // append-ledger) so tests never depend on a real bd binary or the live
 // provenance ledger.
 
@@ -74,11 +74,11 @@ func TestRunBeadsResume_HappyPath_WritesClaimTransferredEvent(t *testing.T) {
 	beadsResumeJSON = true
 
 	buf := &bytes.Buffer{}
-	beadsResumeCmd.SetOut(buf)
-	defer beadsResumeCmd.SetOut(nil)
+	legacyBeadsResumeCommand.SetOut(buf)
+	defer legacyBeadsResumeCommand.SetOut(nil)
 
-	if err := runBeadsResume(beadsResumeCmd, []string{"x"}); err != nil {
-		t.Fatalf("runBeadsResume: %v", err)
+	if err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"}); err != nil {
+		t.Fatalf("executeBeadsResume: %v", err)
 	}
 	if len(*appends) != 1 {
 		t.Fatalf("expected 1 ledger append; got %d", len(*appends))
@@ -126,7 +126,7 @@ func TestRunBeadsResume_RefusesNonInProgress(t *testing.T) {
 	defer teardown()
 
 	beadsResumeAgentID = "bob"
-	err := runBeadsResume(beadsResumeCmd, []string{"x"})
+	err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"})
 	if err == nil {
 		t.Fatalf("expected error on non-in-progress bead")
 	}
@@ -144,7 +144,7 @@ func TestRunBeadsResume_ClaimErrorBubblesUp(t *testing.T) {
 	defer teardown()
 
 	beadsResumeAgentID = "bob"
-	err := runBeadsResume(beadsResumeCmd, []string{"x"})
+	err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"})
 	if err == nil {
 		t.Fatalf("expected error when bd claim fails")
 	}
@@ -165,8 +165,8 @@ func TestRunBeadsResume_AgentResolution_FlagWinsOverEnv(t *testing.T) {
 	t.Setenv("BEADS_ACTOR", "from-env")
 	beadsResumeAgentID = "from-flag"
 
-	if err := runBeadsResume(beadsResumeCmd, []string{"x"}); err != nil {
-		t.Fatalf("runBeadsResume: %v", err)
+	if err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"}); err != nil {
+		t.Fatalf("executeBeadsResume: %v", err)
 	}
 	raw, _ := json.Marshal((*appends)[0].event)
 	var got map[string]any
@@ -186,8 +186,8 @@ func TestRunBeadsResume_AgentResolution_EnvWhenNoFlag(t *testing.T) {
 	t.Setenv("BEADS_ACTOR", "from-env")
 	beadsResumeAgentID = ""
 
-	if err := runBeadsResume(beadsResumeCmd, []string{"x"}); err != nil {
-		t.Fatalf("runBeadsResume: %v", err)
+	if err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"}); err != nil {
+		t.Fatalf("executeBeadsResume: %v", err)
 	}
 	raw, _ := json.Marshal((*appends)[0].event)
 	var got map[string]any
@@ -207,8 +207,8 @@ func TestRunBeadsResume_AgentResolution_DefaultWhenNothingSet(t *testing.T) {
 	t.Setenv("BEADS_ACTOR", "")
 	beadsResumeAgentID = ""
 
-	if err := runBeadsResume(beadsResumeCmd, []string{"x"}); err != nil {
-		t.Fatalf("runBeadsResume: %v", err)
+	if err := executeBeadsResume(legacyBeadsResumeCommand, []string{"x"}); err != nil {
+		t.Fatalf("executeBeadsResume: %v", err)
 	}
 	raw, _ := json.Marshal((*appends)[0].event)
 	var got map[string]any

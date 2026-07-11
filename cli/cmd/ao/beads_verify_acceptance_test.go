@@ -191,7 +191,7 @@ func TestRunBeadsVerifyAcceptance_AdvisoryExitsZero(t *testing.T) {
 		return []byte(`[{"id":"age-x","issue_type":"feature","description":"prose only"}]`), nil
 	})
 	var out bytes.Buffer
-	cmd := newBeadsVerifyAcceptanceCmd()
+	cmd := newLegacyBeadsVerifyAcceptanceCommand()
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"age-x"})
 	if err := cmd.Execute(); err != nil {
@@ -207,16 +207,16 @@ func TestRunBeadsVerifyAcceptance_StrictExitsNonZero(t *testing.T) {
 		return []byte(`[{"id":"age-x","issue_type":"feature","description":"prose only"}]`), nil
 	})
 	var out bytes.Buffer
-	cmd := newBeadsVerifyAcceptanceCmd()
+	cmd := newLegacyBeadsVerifyAcceptanceCommand()
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--strict", "age-x"})
 	err := cmd.Execute()
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if err == nil {
-		t.Fatal("strict mode with a FAIL should return a non-zero beadsExitError")
+		t.Fatal("strict mode with a FAIL should return a non-zero beadsVerdictError")
 	}
 	if !asBeadsExit(err, &exitErr) || exitErr.ExitCode() != 1 {
-		t.Fatalf("want beadsExitError code 1, got: %v", err)
+		t.Fatalf("want beadsVerdictError code 1, got: %v", err)
 	}
 }
 
@@ -225,7 +225,7 @@ func TestRunBeadsVerifyAcceptance_StrictUndefinedIsNonZero(t *testing.T) {
 		return []byte(`[{"id":"age-b","issue_type":"bug","description":"x"}]`), nil
 	})
 	var out bytes.Buffer
-	cmd := newBeadsVerifyAcceptanceCmd()
+	cmd := newLegacyBeadsVerifyAcceptanceCommand()
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--strict", "age-b"})
 	if err := cmd.Execute(); err == nil {
@@ -241,7 +241,7 @@ func TestRunBeadsVerifyAcceptance_PartialResponseErrors(t *testing.T) {
 		// Requested two ids; br returns only one (the hypothetical partial array).
 		return []byte(`[{"id":"age-x","issue_type":"task","description":"## Acceptance Criteria\n- done"}]`), nil
 	})
-	cmd := newBeadsVerifyAcceptanceCmd()
+	cmd := newLegacyBeadsVerifyAcceptanceCommand()
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetArgs([]string{"age-x", "age-missing"})
 	err := cmd.Execute()
@@ -258,7 +258,7 @@ func TestRunBeadsVerifyAcceptance_PassExitsZeroStrict(t *testing.T) {
 		// A task that carries a measurable acceptance signal passes even in strict mode.
 		return []byte(`[{"id":"age-t","issue_type":"task","description":"do X\n\n## Acceptance Criteria\nacceptance_criteria:\n  - id: ac-t.1\n    description: X is verified by the test\n    check_type: test_pass\n    check_command: go test"}]`), nil
 	})
-	cmd := newBeadsVerifyAcceptanceCmd()
+	cmd := newLegacyBeadsVerifyAcceptanceCommand()
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetArgs([]string{"--strict", "age-t"})
 	if err := cmd.Execute(); err != nil {

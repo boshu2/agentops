@@ -14,45 +14,7 @@ import (
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
-var beadsExecCmd = &cobra.Command{
-	Use:   "exec [args...]",
-	Short: "Run a bead CRUD command against whichever tracker (bd or br) this environment uses",
-	Long: `Forward a bead command verbatim to the resolved beads tracker (bd or br),
-setting that tracker's ledger correctly and propagating its exit code unchanged.
-
-This is the ONE tracker-agnostic entry point: skills and callers use
-'ao beads exec <verb> ...' instead of hardcoding 'br' or 'bd'. The tracker is
-resolved exactly as 'ao beads tracker' reports it (AGENTOPS_TRACKER > config >
-ledger > binary). Examples (all work against either tracker):
-
-  ao beads exec ready
-  ao beads exec close <id> -r "Done"
-  ao beads exec update <id> --status in_progress
-  ao beads exec create "title" --type task
-  ao beads exec list --json
-
-Ledger wiring:
-  br — BEADS_DIR is set to the resolved ledger dir (worktree-aware).
-  bd — the child runs from the repo root so .beads/ auto-discovery resolves;
-       no BEADS_DIR is set.
-
-Children (hard divergence — bd has 'children', br does not):
-  ao beads exec children <epic>
-       bd: forwarded to 'bd children <epic>' (bd's native list output).
-       br: synthesized from 'br show <epic> --json' — the id of every dependent
-           with a parent-child edge, one per line.
-
-All flags are forwarded to the tracker verbatim (flag parsing is disabled), so
-tracker flags never collide with ao's. Only -h/--help is intercepted here.`,
-	DisableFlagParsing: true,
-	RunE:               runBeadsExec,
-}
-
-func init() {
-	beadsCmd.AddCommand(beadsExecCmd)
-}
-
-func runBeadsExec(cmd *cobra.Command, args []string) error {
+func executeBeadsExec(cmd *cobra.Command, args []string) error {
 	for _, argument := range args {
 		if argument == "--help" || argument == "-h" {
 			return cmd.Help()
@@ -65,7 +27,7 @@ func runBeadsExec(cmd *cobra.Command, args []string) error {
 	})
 	var adapterExit *beadsapp.ExitError
 	if errors.As(err, &adapterExit) {
-		err = &beadsExitError{code: adapterExit.ExitCode()}
+		err = &beadsVerdictError{code: adapterExit.ExitCode()}
 	}
 	var exitErr interface{ ExitCode() int }
 	if errors.As(err, &exitErr) {

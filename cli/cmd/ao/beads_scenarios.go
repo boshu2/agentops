@@ -48,84 +48,17 @@ type fetchedBead struct {
 // beadsScenariosFetch fetches a bead's acceptance and description text. It is a
 // package var so tests can inject a fake without shelling out to bd.
 var beadsScenariosFetch = func(id string) (fetchedBead, error) {
-	out, err := execBD("show", id, "--json")
+	out, err := beadsTrackerOutput("show", id, "--json")
 	if err != nil {
 		return fetchedBead{}, fmt.Errorf("bd show %s --json: %w", id, err)
 	}
 	return parseBeadFromBDJSON(out)
 }
 
-var beadsScenariosCmd = &cobra.Command{
-	Use:   "scenarios",
-	Short: "[DEPRECATED — use 'ao beads verify-acceptance'] Convert bead acceptance criteria into Gherkin scenarios",
-	Args:  cobra.NoArgs,
-	Long: `Turn a bead's free-text acceptance criteria into structured Gherkin
-Given/When/Then scenarios.
-
-DEPRECATED: this surface shells the retired 'bd' binary and applies a single
-Gherkin contract to every bead. Prefer 'ao beads verify-acceptance', which is
-br-native and applies the right acceptance contract per issue_type.
-
-The 'extract' subcommand is a dry-run: it prints a candidate '## Scenarios'
-block to stdout for review and never modifies the bead. The 'validate'
-subcommand checks that an authored '## Scenarios' block is well-formed Gherkin
-and exits non-zero (naming the parse error) when it is not.`,
-}
-
-var beadsScenariosExtractCmd = &cobra.Command{
-	Use:   "extract <bead-id>",
-	Short: "Print a candidate Gherkin '## Scenarios' block from a bead's acceptance (dry-run)",
-	Args:  cobra.ExactArgs(1),
-	Long: `Read a bead's acceptance criteria via 'bd show <id> --json', convert the
-free-text bullets into Given/When/Then scenarios using deterministic rules,
-and print a candidate '## Scenarios' block to stdout.
-
-By default this is a dry-run — the bead is never modified. Review the output
-and author it into the bead manually. With --json the scenarios are emitted as
-structured data on stdout instead of a Gherkin block. With --write the block is
-appended to the bead's description via 'bd update', but only after you confirm
-the printed block at a y/N prompt; declining leaves the bead unchanged.
-
-If the bead already carries a '## Scenarios' block, extract refuses (nothing to
-do) unless --force is passed, to avoid generating noise over already-shaped
-acceptance.`,
-	RunE: runBeadsScenariosExtract,
-}
-
-var beadsScenariosValidateCmd = &cobra.Command{
-	Use:   "validate <bead-id>",
-	Short: "Check that a bead's authored '## Scenarios' block is well-formed Gherkin",
-	Args:  cobra.ExactArgs(1),
-	Long: `Read a bead via 'bd show <id> --json' and validate its authored
-'## Scenarios' block. Each scenario must declare a name and a Given/When/Then
-step (in that order) with a non-empty body; And/But lines are accepted as
-continuations.
-
-Exits 0 when the block is well-formed. Exits non-zero, naming the parse error,
-when the block is missing or malformed. With --json a verdict object is emitted
-on stdout ({"bead_id","valid","scenarios"} on success, or
-{"bead_id","valid":false,"error"} on failure) while diagnostics go to stderr.`,
-	RunE: runBeadsScenariosValidate,
-}
-
-func init() {
-	beadsCmd.AddCommand(beadsScenariosCmd)
-	beadsScenariosCmd.AddCommand(beadsScenariosExtractCmd)
-	beadsScenariosCmd.AddCommand(beadsScenariosValidateCmd)
-	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosJSON, "json", false,
-		"Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block")
-	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosForce, "force", false,
-		"Extract even when the bead already has a '## Scenarios' block")
-	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosWrite, "write", false,
-		"After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'")
-	beadsScenariosValidateCmd.Flags().BoolVar(&beadsScenariosValidateJSON, "json", false,
-		"Emit a structured validation verdict as JSON on stdout")
-}
-
-func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
+func executeBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 	id := args[0]
 
-	if !bdAvailable() {
+	if !beadsTrackerAvailable() {
 		fmt.Fprintln(cmd.ErrOrStderr(),
 			"warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
 		return nil
@@ -183,7 +116,7 @@ func writeExtractedScenarios(cmd *cobra.Command, id string, bead fetchedBead, ex
 	}
 
 	newDesc := composeDescriptionWithScenarios(bead.Description, rendered)
-	if _, err := execBD("update", id, "--description", newDesc); err != nil {
+	if _, err := beadsTrackerOutput("update", id, "--description", newDesc); err != nil {
 		return fmt.Errorf("write '## Scenarios' into %s: %w (inspect with 'bd show %s')", id, err, id)
 	}
 
@@ -216,10 +149,10 @@ func composeDescriptionWithScenarios(desc, rendered string) string {
 	return base + "\n\n" + block + "\n"
 }
 
-func runBeadsScenariosValidate(cmd *cobra.Command, args []string) error {
+func executeBeadsScenariosValidate(cmd *cobra.Command, args []string) error {
 	id := args[0]
 
-	if !bdAvailable() {
+	if !beadsTrackerAvailable() {
 		fmt.Fprintln(cmd.ErrOrStderr(),
 			"warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
 		return nil

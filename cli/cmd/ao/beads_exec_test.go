@@ -32,8 +32,8 @@ func writeTrackerShim(t *testing.T, name, body string) {
 }
 
 // newBeadsExecCmd returns a throwaway cobra command wired to buffers so a test
-// can drive runBeadsExec and read what the child wrote, without mutating the
-// shared beadsExecCmd global.
+// can drive executeBeadsExec and read what the child wrote, without mutating the
+// shared legacyBeadsExecCommand global.
 func newBeadsExecCmd(out, errbuf *strings.Builder) *cobra.Command {
 	c := &cobra.Command{Use: "exec"}
 	c.SetOut(out)
@@ -60,8 +60,8 @@ echo "CWD=$(/bin/pwd)"
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"ready"}); err != nil {
-		t.Fatalf("runBeadsExec: %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"ready"}); err != nil {
+		t.Fatalf("executeBeadsExec: %v (stderr=%s)", err, errbuf.String())
 	}
 	got := out.String()
 	if !strings.Contains(got, "ARGS=ready") {
@@ -94,8 +94,8 @@ echo "CWD=$(/bin/pwd)"
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"ready"}); err != nil {
-		t.Fatalf("runBeadsExec: %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"ready"}); err != nil {
+		t.Fatalf("executeBeadsExec: %v (stderr=%s)", err, errbuf.String())
 	}
 	got := out.String()
 	if !strings.Contains(got, "ARGS=ready") {
@@ -125,12 +125,12 @@ func TestRunBeadsExec_HelpIsStatic(t *testing.T) {
 	for _, flag := range []string{"--help", "-h"} {
 		t.Run(flag, func(t *testing.T) {
 			var out, errbuf strings.Builder
-			cmd := beadsExecCmd
+			cmd := legacyBeadsExecCommand
 			cmd.SetOut(&out)
 			cmd.SetErr(&errbuf)
 			t.Cleanup(func() { cmd.SetOut(nil); cmd.SetErr(nil) })
-			if err := runBeadsExec(cmd, []string{flag}); err != nil {
-				t.Fatalf("runBeadsExec %s = %v, want nil (static help)", flag, err)
+			if err := executeBeadsExec(cmd, []string{flag}); err != nil {
+				t.Fatalf("executeBeadsExec %s = %v, want nil (static help)", flag, err)
 			}
 			help := out.String() + errbuf.String()
 			if !strings.Contains(help, "Usage:") {
@@ -171,8 +171,8 @@ exit 9
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"children", "age-x"}); err != nil {
-		t.Fatalf("runBeadsExec children: %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"children", "age-x"}); err != nil {
+		t.Fatalf("executeBeadsExec children: %v (stderr=%s)", err, errbuf.String())
 	}
 	lines := splitNonEmptyLines(out.String())
 	want := []string{"age-x.1", "age-x.2"} // the related dependent is excluded
@@ -198,8 +198,8 @@ func TestRunBeadsExec_ChildrenBD(t *testing.T) {
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"children", "age-x"}); err != nil {
-		t.Fatalf("runBeadsExec children (bd): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"children", "age-x"}); err != nil {
+		t.Fatalf("executeBeadsExec children (bd): %v (stderr=%s)", err, errbuf.String())
 	}
 	got := strings.TrimSpace(out.String())
 	if got != "ARGS=children age-x" {
@@ -208,7 +208,7 @@ func TestRunBeadsExec_ChildrenBD(t *testing.T) {
 }
 
 // TestRunBeadsExec_PropagatesExitCode: a non-zero tracker exit surfaces as a
-// beadsExitError carrying the same code (Execute maps it to os.Exit).
+// beadsVerdictError carrying the same code (Execute maps it to os.Exit).
 func TestRunBeadsExec_PropagatesExitCode(t *testing.T) {
 	root := makeGitRepoForTracker(t)
 	if err := os.Mkdir(filepath.Join(root, "_beads"), 0o755); err != nil {
@@ -224,13 +224,13 @@ exit 7
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	err := runBeadsExec(cmd, []string{"close", "age-x", "-r", "nope"})
+	err := executeBeadsExec(cmd, []string{"close", "age-x", "-r", "nope"})
 	if err == nil {
-		t.Fatal("runBeadsExec with failing tracker = nil, want beadsExitError")
+		t.Fatal("executeBeadsExec with failing tracker = nil, want beadsVerdictError")
 	}
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if !errors.As(err, &exitErr) {
-		t.Fatalf("error type = %T, want *beadsExitError", err)
+		t.Fatalf("error type = %T, want *beadsVerdictError", err)
 	}
 	if exitErr.ExitCode() != 7 {
 		t.Errorf("exit code = %d, want 7 (propagated unchanged)", exitErr.ExitCode())
@@ -256,13 +256,13 @@ echo "unexpected verb: $*"
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	err := runBeadsExec(cmd, []string{"children", "age-epic"})
+	err := executeBeadsExec(cmd, []string{"children", "age-epic"})
 	if err == nil {
-		t.Fatal("children on a failing br show = nil, want beadsExitError")
+		t.Fatal("children on a failing br show = nil, want beadsVerdictError")
 	}
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if !errors.As(err, &exitErr) {
-		t.Fatalf("error type = %T, want *beadsExitError", err)
+		t.Fatalf("error type = %T, want *beadsVerdictError", err)
 	}
 	if exitErr.ExitCode() != 7 {
 		t.Errorf("exit code = %d, want 7 (br show status propagated unchanged)", exitErr.ExitCode())
@@ -296,8 +296,8 @@ echo "UNEXPECTED $*" >&2; exit 9
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"list", "--json"}); err != nil {
-		t.Fatalf("runBeadsExec list --json (br): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"list", "--json"}); err != nil {
+		t.Fatalf("executeBeadsExec list --json (br): %v (stderr=%s)", err, errbuf.String())
 	}
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(out.String()), &obj); err != nil {
@@ -334,8 +334,8 @@ echo "UNEXPECTED $*" >&2; exit 9
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"list", "--json"}); err != nil {
-		t.Fatalf("runBeadsExec list --json (bd): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"list", "--json"}); err != nil {
+		t.Fatalf("executeBeadsExec list --json (bd): %v (stderr=%s)", err, errbuf.String())
 	}
 	var obj struct {
 		Issues []map[string]json.RawMessage `json:"issues"`
@@ -381,8 +381,8 @@ echo "UNEXPECTED $*" >&2; exit 9
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"show", "bd-ep", "--json"}); err != nil {
-		t.Fatalf("runBeadsExec show --json (bd): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"show", "bd-ep", "--json"}); err != nil {
+		t.Fatalf("executeBeadsExec show --json (bd): %v (stderr=%s)", err, errbuf.String())
 	}
 	var arr []map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(out.String()), &arr); err != nil {
@@ -426,8 +426,8 @@ echo "UNEXPECTED $*" >&2; exit 9
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"ready", "--json"}); err != nil {
-		t.Fatalf("runBeadsExec ready --json (bd): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"ready", "--json"}); err != nil {
+		t.Fatalf("executeBeadsExec ready --json (bd): %v (stderr=%s)", err, errbuf.String())
 	}
 	var arr []map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(out.String()), &arr); err != nil {
@@ -450,8 +450,8 @@ func TestRunBeadsExec_BDReadWithoutJSONStreamsVerbatim(t *testing.T) {
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"list"}); err != nil {
-		t.Fatalf("runBeadsExec list (bd, no --json): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"list"}); err != nil {
+		t.Fatalf("executeBeadsExec list (bd, no --json): %v (stderr=%s)", err, errbuf.String())
 	}
 	if got := strings.TrimSpace(out.String()); got != "HUMAN: list" {
 		t.Errorf("bd read without --json must stream verbatim; got %q", got)
@@ -470,8 +470,8 @@ func TestRunBeadsExec_BDWriteVerbWithJSONStreamsVerbatim(t *testing.T) {
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	if err := runBeadsExec(cmd, []string{"create", "title", "--json"}); err != nil {
-		t.Fatalf("runBeadsExec create --json (bd): %v (stderr=%s)", err, errbuf.String())
+	if err := executeBeadsExec(cmd, []string{"create", "title", "--json"}); err != nil {
+		t.Fatalf("executeBeadsExec create --json (bd): %v (stderr=%s)", err, errbuf.String())
 	}
 	if got := strings.TrimSpace(out.String()); got != "RAW: create title --json" {
 		t.Errorf("bd write verb must stream verbatim (no reshape); got %q", got)
@@ -493,13 +493,13 @@ exit 7
 
 	var out, errbuf strings.Builder
 	cmd := newBeadsExecCmd(&out, &errbuf)
-	err := runBeadsExec(cmd, []string{"list", "--json"})
+	err := executeBeadsExec(cmd, []string{"list", "--json"})
 	if err == nil {
-		t.Fatal("bd read+--json with a failing tracker = nil, want beadsExitError")
+		t.Fatal("bd read+--json with a failing tracker = nil, want beadsVerdictError")
 	}
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if !errors.As(err, &exitErr) {
-		t.Fatalf("error type = %T, want *beadsExitError", err)
+		t.Fatalf("error type = %T, want *beadsVerdictError", err)
 	}
 	if exitErr.ExitCode() != 7 {
 		t.Errorf("exit code = %d, want 7 (propagated unchanged)", exitErr.ExitCode())

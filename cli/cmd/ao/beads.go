@@ -38,7 +38,7 @@ import (
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
-// beadsExitError carries a verdict exit code out through cobra's RunE so
+// beadsVerdictError carries a verdict exit code out through cobra's RunE so
 // Execute() can map it to os.Exit() WITHOUT calling os.Exit() mid-command —
 // which would skip deferred cleanup (temp files, lock release) and kill the
 // test binary, making these paths untestable.
@@ -50,25 +50,25 @@ import (
 // cmd.SilenceErrors so cobra emits no spurious "Error:" line, while genuine
 // errors returned elsewhere in those commands still print normally. Mirrors
 // gateExitError (validate.go) and doctorExitError (doctor_surface.go).
-type beadsExitError struct {
+type beadsVerdictError struct {
 	code int
 }
 
-func (e *beadsExitError) Error() string { return "" }
+func (e *beadsVerdictError) Error() string { return "" }
 
 // ExitCode returns the process exit code this verdict maps to.
-func (e *beadsExitError) ExitCode() int { return e.code }
+func (e *beadsVerdictError) ExitCode() int { return e.code }
 
-// execBD is the single entry point for shelling out to bd. Tests override
+// beadsTrackerOutput is the single entry point for shelling out to bd. Tests override
 // this to avoid a hard dependency on the real binary. Production code calls
 // `bd` via PATH; if absent, the caller emits a graceful warning and returns.
-var execBD = func(args ...string) ([]byte, error) {
+var beadsTrackerOutput = func(args ...string) ([]byte, error) {
 	return currentBeadsTracker().Output(context.Background(), args...)
 }
 
-// bdAvailable reports whether the bd binary is reachable via PATH. Tests
+// beadsTrackerAvailable reports whether the bd binary is reachable via PATH. Tests
 // override this for deterministic behaviour.
-var bdAvailable = func() bool {
+var beadsTrackerAvailable = func() bool {
 	return currentBeadsTracker().Available()
 }
 
@@ -78,165 +78,19 @@ func currentBeadsTracker() *beadsadapter.Tracker {
 	})
 }
 
-// ------------------------------------------------------------------------
-// Command wiring
-// ------------------------------------------------------------------------
-
-var beadsCmd = &cobra.Command{
-	Use:   "beads",
-	Short: "Complementary tooling for the bd (beads) issue tracker",
-	Args:  cobra.NoArgs,
-	Long: `Commands that help maintain the bd issue tracker alongside the main
-bd CLI. These tools focus on catching stale descriptions before a new
-session acts on them and harvesting closure reasons into durable learnings.
-
-None of these commands replace bd itself — they complement it.`,
-}
-
 var (
-	beadsDirJSON     bool
-	beadsDirRequire  bool
-	beadsTrackerJSON bool
-)
-
-var beadsDirCmd = &cobra.Command{
-	Use:   "dir",
-	Short: "Print the resolved live br ledger directory",
-	Long: `Print the BEADS_DIR path AgentOps will use for br subprocesses.
-
-In linked git worktrees, this resolves through git's common directory back to
-the canonical private _beads ledger instead of assuming $PWD/_beads exists.
-
-With --require, the resolved path must be an existing directory that contains
-a ledger artifact (issues.jsonl or beads.db); otherwise nothing is printed to
-stdout and the command exits non-zero. Use this before br WRITE commands so a
-failed resolution cannot silently fall back to the wrong tracker (age-gstf):
-
-  BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR && br close <id> -r "Done"`,
-	Args: cobra.NoArgs,
-	RunE: runBeadsDir,
-}
-
-var beadsTrackerCmd = &cobra.Command{
-	Use:   "tracker",
-	Short: "Print the resolved beads tracker (bd or br) for this environment",
-	Long: `Detect which beads tracker AgentOps will drive here and how it was
-selected. AgentOps skills and the ao CLI are tracker-agnostic: most end users
-track with bd (beads, Go); this repo tracks with br (beads_rust).
-
-Resolution precedence (first match wins):
-  1. AGENTOPS_TRACKER=bd|br                       env override (over config)
-  2. tracker: <bd|br> in .agentops/config.yaml    project config over home
-  3. Ledger present (worktree-aware): _beads => br, .beads => bd; both => br
-  4. Available binary: br first, then bd
-  5. Otherwise a non-zero error naming both install paths
-
-Prints tracker, binary, ledger_dir, and source (table by default, or --json).`,
-	Args: cobra.NoArgs,
-	RunE: runBeadsTrackerCmd,
-}
-
-var (
+	beadsDirJSON       bool
+	beadsDirRequire    bool
+	beadsTrackerJSON   bool
 	beadsVerifyJSON    bool
 	beadsVerifyVerbose bool
-)
-
-var beadsVerifyCmd = &cobra.Command{
-	Use:   "verify <bead-id>",
-	Short: "Detect stale citations in a bead description (files, functions, symbols)",
-	Long: `Reads a bead description via 'bd show <id>' and checks every file
-path, function reference, and backticked symbol against HEAD. Reports each
-citation as FRESH, STALE, or UNKNOWN with a per-citation reason.
-
-Intended use: before acting on a deferred bead or handoff reference, run
-'ao beads verify <id>' to catch drift. See the planning rule at
-skills/plan/references/stale-scope-validation.md for when this applies.
-
-Exit codes:
-  0 — all citations fresh (or bd unavailable; graceful degradation)
-  1 — at least one stale citation detected
-  2 — error invoking bd or parsing output`,
-	Args: cobra.ExactArgs(1),
-	RunE: runBeadsVerify,
-}
-
-var (
-	beadsLintStatus string
-	beadsLintJSON   bool
-)
-
-var beadsLintCmd = &cobra.Command{
-	Use:   "lint",
-	Short: "Batch-verify every open bead (or filtered set) against HEAD",
-	Long: `Runs 'ao beads verify' on every bead matching a status filter and
-aggregates the results. Useful as a weekly audit or pre-release gate.
-
-Exit codes:
-  0 — all beads have fresh citations (or bd unavailable)
-  1 — at least one bead has stale citations
-  2 — error invoking bd`,
-	RunE: runBeadsLint,
-}
-
-var (
+	beadsLintStatus    string
+	beadsLintJSON      bool
 	beadsHarvestOutDir string
 	beadsHarvestDryRun bool
 )
 
-var beadsHarvestCmd = &cobra.Command{
-	Use:   "harvest <bead-id>",
-	Short: "Materialize a closed bead's reason as a structured learning file",
-	Long: `Reads a closed bead via 'bd show <id>' and writes its closure reason
-to .agents/learnings/YYYY-MM-DD-<bead-id>-<slug>.md with frontmatter so the
-learning can be picked up by the knowledge flywheel.
-
-Only works on beads in CLOSED state. Use after 'bd close <id> --reason "..."'
-to promote the reason into the learnings pool.
-
-Exit codes:
-  0 — learning written (or already exists, or bd unavailable)
-  2 — bead is not closed / error`,
-	Args: cobra.ExactArgs(1),
-	RunE: runBeadsHarvest,
-}
-
-func init() {
-	beadsCmd.GroupID = "knowledge"
-	rootCmd.AddCommand(beadsCmd)
-	beadsCmd.AddCommand(beadsDirCmd)
-	beadsCmd.AddCommand(beadsTrackerCmd) // age-fvr8 dual-tracker detection
-	beadsCmd.AddCommand(beadsVerifyCmd)
-	beadsCmd.AddCommand(beadsLintCmd)
-	beadsCmd.AddCommand(beadsHarvestCmd)
-	beadsCmd.AddCommand(beadsStaleCmd)      // soc-vuu6.27 slice 2
-	beadsCmd.AddCommand(beadsResumeCmd)     // soc-vuu6.27 slice 3
-	beadsCmd.AddCommand(beadsEpicStatusCmd) // age-gascity-port-slate-irye.4
-
-	beadsDirCmd.Flags().BoolVar(&beadsDirJSON, "json", false,
-		"Emit {beads_dir, source} as JSON")
-	beadsDirCmd.Flags().BoolVar(&beadsDirRequire, "require", false,
-		"Fail closed: exit non-zero (printing nothing to stdout) unless the resolved directory holds a br ledger")
-
-	beadsTrackerCmd.Flags().BoolVar(&beadsTrackerJSON, "json", false,
-		"Emit {tracker, binary, ledger_dir, source} as JSON")
-
-	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyJSON, "json", false,
-		"Emit verification report as JSON instead of human-readable text")
-	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyVerbose, "verbose", false,
-		"Include FRESH citations in the output (default: stale only)")
-
-	beadsLintCmd.Flags().StringVar(&beadsLintStatus, "status", "open",
-		"bd status filter (open, closed, all)")
-	beadsLintCmd.Flags().BoolVar(&beadsLintJSON, "json", false,
-		"Emit lint report as JSON")
-
-	beadsHarvestCmd.Flags().StringVar(&beadsHarvestOutDir, "out-dir", ".agents/learnings",
-		"Directory to write the learning file into")
-	beadsHarvestCmd.Flags().BoolVar(&beadsHarvestDryRun, "dry-run", false,
-		"Print the learning content to stdout without writing a file")
-}
-
-func runBeadsDir(cmd *cobra.Command, _ []string) error {
+func executeBeadsDir(cmd *cobra.Command, _ []string) error {
 	tracker := currentBeadsTracker()
 	// BEADS_DIR is br's explicit ledger override; when it is set we preserve the
 	// historical br resolution verbatim (backward compatibility). Otherwise we
@@ -282,7 +136,7 @@ func runBeadsDir(cmd *cobra.Command, _ []string) error {
 // runBeadsTracker prints the resolved beads tracker for the current
 // environment: which tracker (bd|br), its resolved binary, its ledger
 // directory, and how it was selected (age-fvr8).
-func runBeadsTrackerCmd(cmd *cobra.Command, _ []string) error {
+func executeBeadsTracker(cmd *cobra.Command, _ []string) error {
 	res, err := currentBeadsTracker().Resolve()
 	if err != nil {
 		return err
@@ -318,7 +172,7 @@ type Citation = beadsapp.Citation
 // VerifyReport is the structured result of `ao beads verify`.
 type VerifyReport = beadsapp.VerifyReport
 
-func runBeadsVerify(cmd *cobra.Command, args []string) error {
+func executeBeadsVerify(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
 	report, err := verifyBead(beadID)
 	if err != nil {
@@ -336,7 +190,7 @@ func runBeadsVerify(cmd *cobra.Command, args []string) error {
 		if cmd != nil {
 			cmd.SilenceErrors = true
 		}
-		return &beadsExitError{code: 1}
+		return &beadsVerdictError{code: 1}
 	}
 	return nil
 }
@@ -345,10 +199,10 @@ func runBeadsVerify(cmd *cobra.Command, args []string) error {
 // and verifies each against HEAD. Returns a report regardless of verdict;
 // callers decide what to do with StaleCount.
 func verifyBead(beadID string) (*VerifyReport, error) {
-	if !bdAvailable() {
+	if !beadsTrackerAvailable() {
 		return &VerifyReport{BeadID: beadID, BDAvailable: false}, nil
 	}
-	raw, err := execBD("show", beadID)
+	raw, err := beadsTrackerOutput("show", beadID)
 	if err != nil {
 		return nil, fmt.Errorf("bd show %s: %w", beadID, err)
 	}
@@ -620,8 +474,8 @@ func emitVerifyHuman(w *os.File, r *VerifyReport, verbose bool) {
 // LintReport is the aggregate result of `ao beads lint`.
 type LintReport = beadsapp.LintReport
 
-func runBeadsLint(cmd *cobra.Command, args []string) error {
-	if !bdAvailable() {
+func executeBeadsLint(cmd *cobra.Command, args []string) error {
+	if !beadsTrackerAvailable() {
 		fmt.Fprintln(os.Stderr, "WARN: bd not on PATH — skipping lint (graceful degradation)")
 		return nil
 	}
@@ -654,7 +508,7 @@ func runBeadsLint(cmd *cobra.Command, args []string) error {
 		if cmd != nil {
 			cmd.SilenceErrors = true
 		}
-		return &beadsExitError{code: 1}
+		return &beadsVerdictError{code: 1}
 	}
 	return nil
 }
@@ -673,7 +527,7 @@ func runBeadsLint(cmd *cobra.Command, args []string) error {
 // on the line after optional tree chars + bullet — this is robust to
 // future bd output tweaks.
 func listBeadIDs(status string) ([]string, error) {
-	raw, err := execBD("list", "--status", status)
+	raw, err := beadsTrackerOutput("list", "--status", status)
 	if err != nil {
 		return nil, fmt.Errorf("bd list: %w", err)
 	}
@@ -706,13 +560,13 @@ func emitLintHuman(w *os.File, r *LintReport) {
 // reducers handle enrichment.
 type LearningFrontmatter = beadsapp.LearningFrontmatter
 
-func runBeadsHarvest(cmd *cobra.Command, args []string) error {
+func executeBeadsHarvest(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
-	if !bdAvailable() {
+	if !beadsTrackerAvailable() {
 		fmt.Fprintln(os.Stderr, "WARN: bd not on PATH — skipping harvest (graceful degradation)")
 		return nil
 	}
-	raw, err := execBD("show", beadID)
+	raw, err := beadsTrackerOutput("show", beadID)
 	if err != nil {
 		return fmt.Errorf("bd show %s: %w", beadID, err)
 	}

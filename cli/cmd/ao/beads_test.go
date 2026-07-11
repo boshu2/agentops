@@ -1,6 +1,6 @@
 // Tests for `ao beads` subcommands — focused on pure-function logic
 // (parsing, extraction, verification wiring) rather than end-to-end bd
-// invocations. Tests that need bd override execBD/bdAvailable with fakes.
+// invocations. Tests that need bd override beadsTrackerOutput/beadsTrackerAvailable with fakes.
 
 // practices: [dora-metrics, lean-startup]
 package main
@@ -260,10 +260,10 @@ func TestIsClosedStatus_RecognisesCommonSpellings(t *testing.T) {
 }
 
 func TestListBeadIDs_ParsesFlatAndTreeOutput(t *testing.T) {
-	origBD, origAvail := execBD, bdAvailable
-	defer func() { execBD, bdAvailable = origBD, origAvail }()
-	bdAvailable = func() bool { return true }
-	execBD = func(args ...string) ([]byte, error) {
+	origBD, origAvail := beadsTrackerOutput, beadsTrackerAvailable
+	defer func() { beadsTrackerOutput, beadsTrackerAvailable = origBD, origAvail }()
+	beadsTrackerAvailable = func() bool { return true }
+	beadsTrackerOutput = func(args ...string) ([]byte, error) {
 		return []byte(`✓ na-0g5 ● P1 task Integrate behavioral discipline
 ✓ na-348 ● P1 epic Flywheel provenance-first live corpus control loop
 ├── ✓ na-348.1 ● P1 task Retro quick-capture provenance defaults
@@ -287,12 +287,12 @@ not a bead line — should be skipped
 	}
 }
 
-// ---------- bdAvailable degradation ----------
+// ---------- beadsTrackerAvailable degradation ----------
 
 func TestVerifyBead_DegradesWhenBDAbsent(t *testing.T) {
-	origAvail := bdAvailable
-	defer func() { bdAvailable = origAvail }()
-	bdAvailable = func() bool { return false }
+	origAvail := beadsTrackerAvailable
+	defer func() { beadsTrackerAvailable = origAvail }()
+	beadsTrackerAvailable = func() bool { return false }
 
 	report, err := verifyBead("na-nothing")
 	if err != nil {
@@ -307,9 +307,9 @@ func TestVerifyBead_DegradesWhenBDAbsent(t *testing.T) {
 }
 
 func TestAuditBeads_DegradesWhenBDAbsent(t *testing.T) {
-	origAvail := bdAvailable
-	defer func() { bdAvailable = origAvail }()
-	bdAvailable = func() bool { return false }
+	origAvail := beadsTrackerAvailable
+	defer func() { beadsTrackerAvailable = origAvail }()
+	beadsTrackerAvailable = func() bool { return false }
 
 	report, err := auditBeads(false)
 	if err != nil {
@@ -324,15 +324,15 @@ func TestAuditBeads_DegradesWhenBDAbsent(t *testing.T) {
 }
 
 func TestAuditBeads_ClassifiesStaleAndConsolidatable(t *testing.T) {
-	origBD, origAvail := execBD, bdAvailable
+	origBD, origAvail := beadsTrackerOutput, beadsTrackerAvailable
 	origGit, origPattern := execGitLog, repoPatternExists
 	defer func() {
-		execBD, bdAvailable = origBD, origAvail
+		beadsTrackerOutput, beadsTrackerAvailable = origBD, origAvail
 		execGitLog, repoPatternExists = origGit, origPattern
 	}()
 
-	bdAvailable = func() bool { return true }
-	execBD = func(args ...string) ([]byte, error) {
+	beadsTrackerAvailable = func() bool { return true }
+	beadsTrackerOutput = func(args ...string) ([]byte, error) {
 		if len(args) >= 4 && args[0] == "list" && args[3] == "--json" {
 			switch args[2] {
 			case "open":
@@ -442,9 +442,9 @@ func TestPatternExistsInRepoSearchesScopedRoots(t *testing.T) {
 }
 
 func TestClusterBeads_DegradesWhenBDAbsent(t *testing.T) {
-	origAvail := bdAvailable
-	defer func() { bdAvailable = origAvail }()
-	bdAvailable = func() bool { return false }
+	origAvail := beadsTrackerAvailable
+	defer func() { beadsTrackerAvailable = origAvail }()
+	beadsTrackerAvailable = func() bool { return false }
 
 	report, err := clusterBeads(false)
 	if err != nil {
@@ -497,14 +497,14 @@ func TestClusterBeadRecords_GroupsSharedPathAndPrefersEpic(t *testing.T) {
 	}
 }
 
-// ---------- verifyBead with execBD fake (end-to-end smoke) ----------
+// ---------- verifyBead with beadsTrackerOutput fake (end-to-end smoke) ----------
 
 func TestVerifyBead_ParsesAndClassifiesCitations(t *testing.T) {
-	origBD, origAvail := execBD, bdAvailable
-	defer func() { execBD, bdAvailable = origBD, origAvail }()
+	origBD, origAvail := beadsTrackerOutput, beadsTrackerAvailable
+	defer func() { beadsTrackerOutput, beadsTrackerAvailable = origBD, origAvail }()
 
-	bdAvailable = func() bool { return true }
-	execBD = func(args ...string) ([]byte, error) {
+	beadsTrackerAvailable = func() bool { return true }
+	beadsTrackerOutput = func(args ...string) ([]byte, error) {
 		return []byte(`○ na-fake · Fake bead for testing   [● P2 · OPEN]
 Owner: Test · Type: task
 
@@ -823,34 +823,34 @@ func TestEmitLintHuman_AllCleanProducesHeaderOnly(t *testing.T) {
 	}
 }
 
-// ---------- runBeadsVerify / runBeadsLint graceful-degradation paths ----------
+// ---------- executeBeadsVerify / executeBeadsLint graceful-degradation paths ----------
 // Cycle 77 / soc-wxh5.1.1 — fourth climb-back. Both functions are cobra
 // Run handlers. Their graceful-degradation path (bd not on PATH) is
-// testable by stubbing the bdAvailable var. Sibling pattern:
+// testable by stubbing the beadsTrackerAvailable var. Sibling pattern:
 // TestVerifyBead_DegradesWhenBDAbsent (this file, line 292).
 
 func TestRunBeadsVerify_DegradesGracefullyWhenBDAbsent(t *testing.T) {
-	origAvail := bdAvailable
-	defer func() { bdAvailable = origAvail }()
-	bdAvailable = func() bool { return false }
+	origAvail := beadsTrackerAvailable
+	defer func() { beadsTrackerAvailable = origAvail }()
+	beadsTrackerAvailable = func() bool { return false }
 
-	// runBeadsVerify reads args[0] for the beadID; cmd is unused on
+	// executeBeadsVerify reads args[0] for the beadID; cmd is unused on
 	// the degradation path.
-	err := runBeadsVerify(nil, []string{"soc-graceful-test"})
+	err := executeBeadsVerify(nil, []string{"soc-graceful-test"})
 	if err != nil {
-		t.Fatalf("runBeadsVerify should return nil on graceful degradation, got %v", err)
+		t.Fatalf("executeBeadsVerify should return nil on graceful degradation, got %v", err)
 	}
 }
 
 func TestRunBeadsLint_DegradesGracefullyWhenBDAbsent(t *testing.T) {
-	origAvail := bdAvailable
-	defer func() { bdAvailable = origAvail }()
-	bdAvailable = func() bool { return false }
+	origAvail := beadsTrackerAvailable
+	defer func() { beadsTrackerAvailable = origAvail }()
+	beadsTrackerAvailable = func() bool { return false }
 
-	// runBeadsLint takes no positional args; cmd is unused on the
+	// executeBeadsLint takes no positional args; cmd is unused on the
 	// degradation path.
-	err := runBeadsLint(nil, []string{})
+	err := executeBeadsLint(nil, []string{})
 	if err != nil {
-		t.Fatalf("runBeadsLint should return nil on graceful degradation, got %v", err)
+		t.Fatalf("executeBeadsLint should return nil on graceful degradation, got %v", err)
 	}
 }

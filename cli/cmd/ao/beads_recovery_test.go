@@ -108,10 +108,10 @@ esac
 	beadsStaleNowOverride = "2026-05-20T12:00:00Z"
 
 	staleBuf := &bytes.Buffer{}
-	beadsStaleCmd.SetOut(staleBuf)
-	defer beadsStaleCmd.SetOut(nil)
-	if err := runBeadsStale(beadsStaleCmd, nil); err != nil {
-		t.Fatalf("runBeadsStale: %v", err)
+	legacyBeadsStaleCommand.SetOut(staleBuf)
+	defer legacyBeadsStaleCommand.SetOut(nil)
+	if err := executeBeadsStale(legacyBeadsStaleCommand, nil); err != nil {
+		t.Fatalf("executeBeadsStale: %v", err)
 	}
 	var staleEvents []staleEvent
 	if err := json.Unmarshal(staleBuf.Bytes(), &staleEvents); err != nil {
@@ -130,10 +130,10 @@ esac
 	beadsResumeNowOverride = "2026-05-20T12:30:00Z"
 
 	resumeBuf := &bytes.Buffer{}
-	beadsResumeCmd.SetOut(resumeBuf)
-	defer beadsResumeCmd.SetOut(nil)
-	if err := runBeadsResume(beadsResumeCmd, []string{"ag-recover"}); err != nil {
-		t.Fatalf("runBeadsResume: %v", err)
+	legacyBeadsResumeCommand.SetOut(resumeBuf)
+	defer legacyBeadsResumeCommand.SetOut(nil)
+	if err := executeBeadsResume(legacyBeadsResumeCommand, []string{"ag-recover"}); err != nil {
+		t.Fatalf("executeBeadsResume: %v", err)
 	}
 	assignee, err := os.ReadFile(statePath)
 	if err != nil {
