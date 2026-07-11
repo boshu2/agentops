@@ -195,7 +195,7 @@ func summarize(findings []Finding) ReportSummary {
 // the report with the correct exit code (0 healthy / 1 findings / 4 refused /
 // 6 online-required).
 func Diagnose(opts Options) (*Report, error) {
-	return diagnose(opts, true)
+	return diagnose(opts, strings.TrimSpace(opts.Since) == "")
 }
 
 func diagnose(opts Options, persist bool) (*Report, error) {
