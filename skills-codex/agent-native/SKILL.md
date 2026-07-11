@@ -9,6 +9,15 @@ tool, or city engine the product boundary. The Go `AgentWorker`/`AgentSession`
 contract owns start, attach, nudge, cancel, stream, transcript, artifacts, and
 terminal state. NTM, native processes, and Gas City are replaceable adapters.
 
+## Critical Constraints
+
+- **Bind every worker to one bead and write scope. Why:** role labels do not
+  prevent two persistent workers from colliding on the same production files.
+- **Prove readiness and engagement from observable state. Why:** a successful
+  spawn or prompt delivery can precede boot failure or a silently dropped task.
+- **Keep acceptance outside the worker. Why:** self-reported completion is not
+  independent evidence and cannot authorize the membrane close door.
+
 ## Route before starting a factory
 
 Use persistent workers only when attachability, role continuity, or work that
@@ -64,3 +73,25 @@ other, and GC's membrane remains its close door.
 Read [the lifecycle contract](references/agent-lifecycle.md) before implementing
 another adapter. For the reference factory route, use the
 [NTM + Agent Mail runtime](references/ntm-agent-mail-runtime.md).
+
+## Output Specification
+
+- **Artifact directory:** use the slice's declared evidence path; crank-native
+  worker receipts live under `.agents/swarm/results/`.
+- **Filename convention:** `<bead-id>.json` for the worker result, with any
+  separate handoff named from the same bead id in the declared evidence path.
+- **Serialization/schema format:** JSON worker receipts use
+  `schemas/swarm-evidence.schema.json`; completion receipts include their
+  artifacts plus `evidence.required_checks` and matching PASS check records.
+- **Validator command:** run `bash scripts/validate-swarm-evidence.sh` when the
+  slice uses swarm evidence, followed by the slice's deterministic acceptance.
+- **Downstream handoff:** pass the immutable result, transcript/artifact paths,
+  and acceptance output to the fresh verifier or `pawl-review`; never pass only
+  the worker's terminal status.
+
+## Quality Rubric
+
+- [ ] The receipt carries an allowed `status` and a task, issue, or worker identifier.
+- [ ] A completion receipt lists artifact paths and a non-empty evidence block.
+- [ ] Every `evidence.required_checks` entry exists and has a PASS verdict.
+- [ ] The slice's separate acceptance proves lifecycle state or handoff details not encoded by the permissive receipt schema.
