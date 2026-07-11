@@ -22,6 +22,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,6 +35,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 )
 
 // beadsExitError carries a verdict exit code out through cobra's RunE so
@@ -61,21 +64,19 @@ func (e *beadsExitError) ExitCode() int { return e.code }
 // this to avoid a hard dependency on the real binary. Production code calls
 // `bd` via PATH; if absent, the caller emits a graceful warning and returns.
 var execBD = func(args ...string) ([]byte, error) {
-	cwd, _ := os.Getwd()
-	resolution, err := resolveTracker(cwd, os.Environ())
-	if err != nil {
-		return nil, err
-	}
-	cmd := exec.Command(resolution.Binary, args...) // #nosec G204 -- selected br|bd binary.
-	return cmd.Output()
+	return currentBeadsTracker().Output(context.Background(), args...)
 }
 
 // bdAvailable reports whether the bd binary is reachable via PATH. Tests
 // override this for deterministic behaviour.
 var bdAvailable = func() bool {
-	cwd, _ := os.Getwd()
-	_, err := resolveTracker(cwd, os.Environ())
-	return err == nil
+	return currentBeadsTracker().Available()
+}
+
+func currentBeadsTracker() *beadsadapter.Tracker {
+	return beadsadapter.NewTrackerWith(os.Getwd, os.Environ, func(name string) (string, error) {
+		return trackerLookPath(name)
+	})
 }
 
 // ------------------------------------------------------------------------
