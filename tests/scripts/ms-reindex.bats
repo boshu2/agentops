@@ -16,6 +16,15 @@ setup() {
     # ~/Library/Application Support/ms during tests. `env` inherits this export.
     export MS_DATA_DIR="$TMP_DIR/data"
     mkdir -p "$MS_DATA_DIR/index"
+    export MS_REINDEX_SKILLS_ROOT="$TMP_DIR/skills"
+    mkdir -p "$MS_REINDEX_SKILLS_ROOT/example"
+    cat >"$MS_REINDEX_SKILLS_ROOT/example/SKILL.md" <<'EOF'
+---
+name: example
+description: 'Current source. Triggers: "example now".'
+---
+# Example
+EOF
 }
 
 teardown() {
@@ -38,6 +47,9 @@ case "\$1" in
       printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"ms","version":"0.1.4"}}}'
       printf '%s\n' '${serve_l2}'
     fi
+    ;;
+  load)
+    printf '%s' '{"data":{"frontmatter":{"name":"example","description":"Current source."}}}'
     ;;
 esac
 EOF
@@ -127,4 +139,52 @@ EOF
     # kill -0 must now fail: the process is gone
     run kill -0 "$dummy"
     [ "$status" -ne 0 ]
+}
+
+@test "--check-source fails when an ms load is stale against AgentOps frontmatter" {
+    local skills_root="$TMP_DIR/stale-skills"
+    mkdir -p "$skills_root/example"
+    cat >"$skills_root/example/SKILL.md" <<'EOF'
+---
+name: example
+description: 'Current source. Triggers: "example now".'
+---
+# Example
+EOF
+    cat >"$MOCK" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "load" ]; then
+  printf '%s' '{"data":{"frontmatter":{"name":"example","description":"Stale indexed source. Triggers: \"old example\"."}}}'
+fi
+EOF
+    chmod +x "$MOCK"
+
+    run env MS_BIN="$MOCK" MS_REINDEX_SKILLS_ROOT="$skills_root" bash "$SCRIPT" --check-source
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"stale ms load for example"* ]]
+    [[ "$output" == *"scripts/ms-reindex.sh"* ]]
+}
+
+@test "--check-source passes normalized local name and description equivalence" {
+    local skills_root="$TMP_DIR/current-skills"
+    mkdir -p "$skills_root/example"
+    cat >"$skills_root/example/SKILL.md" <<'EOF'
+---
+name: example
+description: >-
+  Current source. Triggers: "example now".
+---
+# Example
+EOF
+    cat >"$MOCK" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "load" ]; then
+  printf '%s' '{"data":{"frontmatter":{"name":"example","description":"Current source. Triggers: \"example now\"."}}}'
+fi
+EOF
+    chmod +x "$MOCK"
+
+    run env MS_BIN="$MOCK" MS_REINDEX_SKILLS_ROOT="$skills_root" bash "$SCRIPT" --check-source
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"source equivalence OK — 1 AgentOps skills"* ]]
 }
