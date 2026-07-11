@@ -42,6 +42,11 @@
 
 cd "$REPO_ROOT" || exit 1
 
+# Shared shrink-only ratchet mechanics (this gate's grandfather machinery was
+# the ORIGINAL the jsonl gate ported; both now delegate to one lib) —
+# age-ratchet-lib-extraction-bv7d.4. Parse mode raw = original entry parsing.
+. "$REPO_ROOT/scripts/lib/ratchet.sh"
+
 GRANDFATHER="scripts/.preamble-grandfather"
 SCOPE="auto"
 
@@ -64,90 +69,22 @@ case "$SCOPE" in
   *) echo "Invalid --scope: $SCOPE (want head|staged|worktree|upstream|auto)" >&2; exit 2 ;;
 esac
 
-# collect_changed_files: emit "<STATUS>\t<path>" lines for the requested scope,
-# mirroring scripts/regen-changed-scope.sh's derivation so this gate sees the
-# same changed set every other changed-scope check does. STATUS is git's
+# collect_changed_files: emit "<STATUS>\t<path>" lines for the requested scope
+# (shared lib; same derivation regen-changed-scope.sh uses). STATUS is git's
 # name-status letter (A/M/R/...); we treat A and M (and R's new path) as "in
 # scope" — a deletion (D) is never governed (the file is gone).
 collect_changed_files() {
-  case "$SCOPE" in
-    head)
-      git diff-tree --no-commit-id --name-status -r HEAD
-      ;;
-    staged)
-      git diff --cached --name-status
-      ;;
-    worktree)
-      git diff --name-status
-      # untracked files are brand-new additions — mark them A explicitly
-      git ls-files --others --exclude-standard | sed 's/^/A\t/'
-      ;;
-    upstream)
-      local upstream_ref base
-      upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
-      if [[ -n "$upstream_ref" ]]; then
-        base="$(git merge-base HEAD "$upstream_ref")"
-        git diff --name-status "$base"...HEAD
-      else
-        git diff-tree --no-commit-id --name-status -r HEAD
-      fi
-      ;;
-    auto)
-      if [[ -n "$(git diff --cached --name-only)" ]]; then
-        git diff --cached --name-status
-      elif [[ -n "$(git diff --name-only)" ]]; then
-        git diff --name-status
-        git ls-files --others --exclude-standard | sed 's/^/A\t/'
-      else
-        git diff-tree --no-commit-id --name-status -r HEAD
-      fi
-      ;;
-  esac
+  ratchet_changed_files_status "$SCOPE"
 }
 
-# grandfather_base_ref: the git ref holding the PRE-change grandfather snapshot
-# for the active scope — the baseline the shrink-only rule is enforced against.
-# Mirrors collect_changed_files' scope semantics exactly.
-grandfather_base_ref() {
-  case "$SCOPE" in
-    head) echo "HEAD^" ;;
-    staged|worktree) echo "HEAD" ;;
-    upstream)
-      local upstream_ref
-      upstream_ref="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
-      if [[ -n "$upstream_ref" ]]; then
-        git merge-base HEAD "$upstream_ref"
-      else
-        echo "HEAD^"
-      fi
-      ;;
-    auto)
-      if [[ -n "$(git diff --cached --name-only)" || -n "$(git diff --name-only)" ]]; then
-        echo "HEAD"
-      else
-        echo "HEAD^"
-      fi
-      ;;
-  esac
-}
-
-# check_grandfather_shrink_only → fail if any DATA line was ADDED to the
-# grandfather snapshot relative to the base ref. This closes the bypass where a
-# change ships a new hand-rolled script AND appends its path to the allowlist in
-# the same diff — the list may only shrink. The one legal addition is the
-# INITIAL snapshot: if the file does not exist at the base ref, there is nothing
-# to ratchet against yet and the whole snapshot is the cutoff.
+# Base-ref snapshot, intersection authority, and the shrink-only guard come
+# from scripts/lib/ratchet.sh (this gate's hand-rolled versions were the
+# original the lib preserves). The wrapper keeps this gate's message shape.
 check_grandfather_shrink_only() {
-  local added
-  [[ -f "$GRANDFATHER" ]] || return 0
-  if [[ "$BASE_GF_EXISTS" -ne 1 ]]; then
-    # Initial snapshot (or root commit): nothing to compare against.
-    return 0
-  fi
-  added="$(comm -13 \
-    <(printf '%s\n' "$BASE_GF_LINES" | grep -vE '^#|^[[:space:]]*$' | LC_ALL=C sort -u) \
-    <(grep -vE '^#|^[[:space:]]*$' "$GRANDFATHER" | LC_ALL=C sort -u))"
-  if [[ -n "$added" ]]; then
+  local added rc_=0
+  added="$(ratchet_assert_shrink_only "$GRANDFATHER" raw)" || rc_=$?
+  [[ "$rc_" -eq 2 ]] && exit 2
+  if [[ "$rc_" -ne 0 ]]; then
     echo "FAIL: $GRANDFATHER gained new entries — the grandfather list only SHRINKS." >&2
     echo "      A new script cannot be allowlisted; it must source scripts/lib/preamble.sh" >&2
     echo "      or carry a '# preamble-exempt: <reason>' line. Added entries:" >&2
@@ -159,35 +96,8 @@ check_grandfather_shrink_only() {
   return 0
 }
 
-# Grandfather AUTHORITY: an entry grants protection only if it is present in
-# BOTH the working snapshot AND the base-ref snapshot (intersection). The
-# working file alone is attacker-controlled — a diff could append a new script's
-# path and self-grant protection (the bypass check_grandfather_shrink_only also
-# rejects; this makes governance independently fail-closed). The base alone
-# would make PRUNING impossible (a pruned entry must stop protecting so the
-# adopt-then-prune flow converges). If the base ref has no snapshot at all (the
-# initial-snapshot commit), the working file is the cutoff and stands alone.
-BASE_GF_EXISTS=0
-BASE_GF_LINES=""
-load_base_grandfather() {
-  local base_ref
-  base_ref="$(grandfather_base_ref)"
-  if BASE_GF_LINES="$(git show "$base_ref:$GRANDFATHER" 2>/dev/null)"; then
-    BASE_GF_EXISTS=1
-  fi
-}
-
-# is_grandfathered PATH → 0 if PATH is on the grandfather snapshot (exact,
-# filename-pinned data-line match) in the working file AND — when a base-ref
-# snapshot exists — in the base-ref version too.
 is_grandfathered() {
-  local path="$1"
-  [[ -f "$GRANDFATHER" ]] || return 1
-  grep -qxF -- "$path" "$GRANDFATHER" || return 1
-  if [[ "$BASE_GF_EXISTS" -eq 1 ]]; then
-    printf '%s\n' "$BASE_GF_LINES" | grep -qxF -- "$path" || return 1
-  fi
-  return 0
+  ratchet_is_pinned "$1" "$GRANDFATHER" raw
 }
 
 # sources_preamble PATH → 0 if the script sources scripts/lib/preamble.sh in any
@@ -230,7 +140,7 @@ missing=0        # governed scripts that neither source nor are exempt
 shrink=0         # grandfathered scripts that now source preamble (must prune)
 grow=0           # grandfather snapshot gained entries (allowlist only shrinks)
 
-load_base_grandfather
+ratchet_load_base "$GRANDFATHER" "$(ratchet_base_ref "$SCOPE")" || exit 2
 if ! check_grandfather_shrink_only; then
   grow=1
 fi
