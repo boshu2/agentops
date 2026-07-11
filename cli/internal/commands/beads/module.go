@@ -194,6 +194,9 @@ func (module Module) runAudit(command *cobra.Command, options Options) error {
 	if err != nil {
 		return err
 	}
+	for _, warning := range report.Warnings {
+		fmt.Fprintf(command.ErrOrStderr(), "WARN: %s\n", warning)
+	}
 	if !report.BDAvailable {
 		if options.JSON {
 			return encodeJSON(command, report)

@@ -92,6 +92,7 @@ type AuditReport struct {
 	Summary        AuditSummary         `json:"summary"`
 	BDAvailable    bool                 `json:"bd_available"`
 	Error          string               `json:"error,omitempty"`
+	Warnings       []string             `json:"-"`
 }
 
 func (report *AuditReport) FlaggedCount() int {
@@ -156,7 +157,9 @@ func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
 		if evidence := GrepCommitsForID(commits, record.ID); evidence != "" {
 			report.LikelyFixed = append(report.LikelyFixed, AuditFinding{ID: record.ID, Title: record.DisplayTitle(), Reason: "commit_match", Evidence: evidence})
 			if autoClose {
-				_ = service.Repository.Close(record.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence)
+				if closeErr := service.Repository.Close(record.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence); closeErr != nil {
+					report.Warnings = append(report.Warnings, closeErr.Error())
+				}
 			}
 			continue
 		}
@@ -165,7 +168,9 @@ func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
 			if evidence := FileChangesSinceCommits(commits, record.CreatedAt, paths); evidence != "" {
 				report.LikelyFixed = append(report.LikelyFixed, AuditFinding{ID: record.ID, Title: record.DisplayTitle(), Reason: "file_modified_since_creation", Evidence: evidence})
 				if autoClose {
-					_ = service.Repository.Close(record.ID, "Auto-closed by ao beads audit: mentioned files modified since creation.")
+					if closeErr := service.Repository.Close(record.ID, "Auto-closed by ao beads audit: mentioned files modified since creation."); closeErr != nil {
+						report.Warnings = append(report.Warnings, closeErr.Error())
+					}
 				}
 				continue
 			}
