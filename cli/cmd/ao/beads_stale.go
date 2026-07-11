@@ -15,9 +15,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os/exec"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -67,15 +65,6 @@ func runBeadsStale(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	raw, err := beadsStaleFetchCmd(ctx)
-	if err != nil {
-		return fmt.Errorf("br list: %w", err)
-	}
-	var beads []staleBeadRecord
-	if err := json.Unmarshal(raw, &beads); err != nil {
-		return fmt.Errorf("parse br list: %w", err)
-	}
-
 	now := time.Now().UTC()
 	if beadsStaleNowOverride != "" {
 		parsed, err := time.Parse(time.RFC3339, beadsStaleNowOverride)
@@ -85,7 +74,10 @@ func runBeadsStale(cmd *cobra.Command, args []string) error {
 		now = parsed.UTC()
 	}
 
-	events := computeStaleEvents(beads, now, beadsStaleThresholdHours)
+	events, err := beadsapp.DetectStale(ctx, beadsapp.StaleSourceFunc(beadsStaleFetchCmd), now, beadsStaleThresholdHours)
+	if err != nil {
+		return fmt.Errorf("br list: %w", err)
+	}
 
 	if beadsStaleJSON {
 		out, err := json.Marshal(events)
@@ -117,16 +109,7 @@ func runBeadsStale(cmd *cobra.Command, args []string) error {
 // beadsStaleFetchCmd is the seam for tests. Tests overwrite it to inject
 // canned `br list` output without touching a real br binary.
 var beadsStaleFetchCmd = func(ctx context.Context) ([]byte, error) {
-	cmd := beadsTrackerCommandContext(ctx, "list", "--status", "in_progress", "--json", "--limit", "500")
-	out, err := cmd.Output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("br list exited %d: %s", exitErr.ExitCode(), string(exitErr.Stderr))
-		}
-		return nil, err
-	}
-	return out, nil
+	return currentBeadsTracker().ListInProgress(ctx)
 }
 
 // computeStaleEvents derives the stale_detected event set for a slice of
