@@ -18,10 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"sort"
 	"time"
 
 	"github.com/spf13/cobra"
+
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
 
 var (
@@ -54,34 +55,13 @@ func init() {
 }
 
 // staleBeadRecord is the subset of `br list --json` output we care about.
-type staleBeadRecord struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	Assignee  string `json:"assignee"`
-	UpdatedAt string `json:"updated_at"`
-}
+type staleBeadRecord = beadsapp.StaleBeadRecord
 
 // staleEvent mirrors schemas/stale-claim-event.v1.schema.json for
 // event_type="stale_detected". JSON tags lowercase + snake_case to match.
-type staleEvent struct {
-	SchemaVersion    int           `json:"schema_version"`
-	EventType        string        `json:"event_type"`
-	BeadID           string        `json:"bead_id"`
-	DetectedAt       string        `json:"detected_at"`
-	OriginalClaimant staleAgent    `json:"original_claimant"`
-	Evidence         staleEvidence `json:"evidence"`
-}
-
-type staleAgent struct {
-	ID string `json:"id"`
-}
-
-type staleEvidence struct {
-	LastTouchTS       string  `json:"last_touch_ts,omitempty"`
-	ClaimAgeHours     float64 `json:"claim_age_hours,omitempty"`
-	ThresholdHours    float64 `json:"threshold_hours,omitempty"`
-	LastEvidenceEvent string  `json:"last_evidence_event,omitempty"`
-}
+type staleEvent = beadsapp.StaleEvent
+type staleAgent = beadsapp.StaleAgent
+type staleEvidence = beadsapp.StaleEvidence
 
 func runBeadsStale(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -153,50 +133,5 @@ var beadsStaleFetchCmd = func(ctx context.Context) ([]byte, error) {
 // in_progress beads. Pure function — no exec, no clock, no FS — so it's
 // trivially table-testable.
 func computeStaleEvents(beads []staleBeadRecord, now time.Time, thresholdHours float64) []staleEvent {
-	var events []staleEvent
-	for _, b := range beads {
-		if b.Status != "in_progress" {
-			continue
-		}
-		if b.UpdatedAt == "" {
-			continue
-		}
-		updated, err := time.Parse(time.RFC3339, b.UpdatedAt)
-		if err != nil {
-			continue
-		}
-		ageHours := now.Sub(updated).Hours()
-		if ageHours < thresholdHours {
-			continue
-		}
-		claimant := b.Assignee
-		if claimant == "" {
-			claimant = "unknown"
-		}
-		events = append(events, staleEvent{
-			SchemaVersion:    1,
-			EventType:        "stale_detected",
-			BeadID:           b.ID,
-			DetectedAt:       now.UTC().Format(time.RFC3339),
-			OriginalClaimant: staleAgent{ID: claimant},
-			Evidence: staleEvidence{
-				LastTouchTS:    b.UpdatedAt,
-				ClaimAgeHours:  roundFloat(ageHours, 1),
-				ThresholdHours: thresholdHours,
-			},
-		})
-	}
-	// Stable order by descending age — oldest claims first.
-	sort.SliceStable(events, func(i, j int) bool {
-		return events[i].Evidence.ClaimAgeHours > events[j].Evidence.ClaimAgeHours
-	})
-	return events
-}
-
-func roundFloat(v float64, decimals int) float64 {
-	factor := 1.0
-	for i := 0; i < decimals; i++ {
-		factor *= 10
-	}
-	return float64(int(v*factor+0.5)) / factor
+	return beadsapp.ComputeStaleEvents(beads, now, thresholdHours)
 }
