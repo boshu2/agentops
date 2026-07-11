@@ -478,10 +478,16 @@ cod_dead() {
   # is the real foreground command: the codex binary (codex-*) when the TUI is up, a shell
   # (zsh/bash/…) when it has dropped. Immune to scrollback and path/output contents.
   local cmd
-  cmd="$(tmux display-message -p -t "${SESSION}.${COD_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  # F13-followup (age-pawl-intent-zhndq.17): a VANISHED pane makes this read FAIL (non-zero), and
+  # the old `|| return 1` short-circuited to ALIVE — so the very case we want to catch never
+  # reached the re-probe (cross-family refute, codex). Route BOTH a failed read and an EMPTY read
+  # into the bounded _pane_gone re-probe.
+  cmd="$(tmux display-message -p -t "${SESSION}.${COD_PANE}" '#{pane_current_command}' 2>/dev/null)" \
+    || { _pane_gone "$COD_PANE"; return $?; }
   case "$cmd" in
     zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # foreground is a shell => DEAD
-    *) return 1 ;;  # codex binary (or empty/unknown read) => treat as alive (conservative)
+    "") _pane_gone "$COD_PANE"; return $? ;;   # EMPTY read -> bounded re-probe
+    *) return 1 ;;  # codex binary (a real foreground command) => alive (conservative)
   esac
 }
 
@@ -558,11 +564,35 @@ cod_send() {
 # live agy pane runs the `agy` binary as the foreground command.
 agy_dead() {
   local cmd
-  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  # F13-followup: a FAILED read (vanished pane) must reach the re-probe too — see cod_dead.
+  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" \
+    || { _pane_gone "$AGY_PANE"; return $?; }
   case "$cmd" in
     zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # shell => DEAD
-    *) return 1 ;;  # agy binary (or empty/unknown read) => treat as alive (conservative)
+    "") _pane_gone "$AGY_PANE"; return $? ;;   # EMPTY read -> bounded re-probe (below)
+    *) return 1 ;;  # agy binary (a real foreground command) => alive (conservative)
   esac
+}
+
+# _pane_gone <pane> — F13-followup (age-pawl-intent-zhndq.17): the bounded re-probe for the
+# UNREADABLE case. cod_dead/agy_dead treated an unreadable (empty OR failed) `pane_current_command`
+# as ALIVE, so a pane that was actually GONE was only caught minutes later by the engage deadline.
+# An unreadable command is genuinely ambiguous (transient tmux hiccup vs vanished pane), so
+# re-probe ONCE after a short pause and require BOTH: (a) the second read is ALSO unreadable, and
+# (b) the pane produced NO scrollback change across the probe (a producing pane is alive whatever
+# the read says). Only then is it dead. Keeps the conservative bias (uncertain-but-active stays
+# alive) while catching an actually-gone pane in seconds. Returns 0 = DEAD.
+_pane_gone() {
+  local pane="$1" a1 a2 cmd2 rc2=0
+  a1="$(_pane_activity "$pane")"
+  sleep "${PAWL_PANE_REPROBE_SLEEP:-2}"
+  # A vanished pane makes this read FAIL (non-zero), not return empty — treat a failed read the
+  # same as an empty one (both are "no foreground command observable").
+  cmd2="$(tmux display-message -p -t "${SESSION}.${pane}" '#{pane_current_command}' 2>/dev/null)" || rc2=$?
+  [ "$rc2" -eq 0 ] && [ -n "$cmd2" ] && return 1   # a real foreground command on the re-probe => alive
+  a2="$(_pane_activity "$pane")"
+  [ "$a1" != "$a2" ] && return 1    # still producing output => alive despite the unreadable command
+  return 0                          # two unreadable reads AND no activity => the pane is gone
 }
 
 # --- age-djfo: detect + dismiss the known CLI interruption prompts that BLOCK a warm pane ---
