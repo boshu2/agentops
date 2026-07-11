@@ -1856,9 +1856,17 @@ ao pawl [command]
 
 **Subcommands:**
 
+#### `ao pawl review`
+
+Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
+
+```
+ao pawl review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
+```
+
 #### `ao pawl doctor`
 
-Read-only standing pawl preflight: assert atm alias, session, pane cwd/model, trust prompts, readiness, and evidence policy
+Read-only standing pawl preflight: assert swarm binary (ntm-first), session, pane cwd/model, trust prompts, readiness, and evidence policy
 
 ```
 ao pawl doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL] [flags]
@@ -1894,14 +1902,6 @@ Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron sch
 
 ```
 ao pawl reap [flags]
-```
-
-#### `ao pawl review`
-
-Wrap scripts/pawl-review.sh and surface it on the ao CLI. Dispatches the codex
-
-```
-ao pawl review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>] [flags]
 ```
 
 #### `ao pawl route`

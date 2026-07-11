@@ -748,3 +748,56 @@ func TestPawlService_ReadOnlyCmdsInspectUnderDryRun(t *testing.T) {
 		})
 	}
 }
+
+// TestPawlHelpPresentsReviewAsFrontDoor (age-hk5zg.2 / S2 of the pawl-user-front-door
+// packet): `ao pawl --help` must present `review` as the primary USER path and group the
+// warm standing-service verbs (up/down/reap/health/doctor/smoke/route/metrics) as
+// operator-only with a note that they require NTM — so a user is never led to believe
+// they must run `ao pawl up` to use the membrane. Locks group membership, render order
+// (user group before operator group), and the NTM note in the operator title.
+func TestPawlHelpPresentsReviewAsFrontDoor(t *testing.T) {
+	if pawlReviewCmd.GroupID != pawlUserGroupID {
+		t.Fatalf("pawl review must sit in the user (front door) group; got GroupID=%q", pawlReviewCmd.GroupID)
+	}
+	warm := map[string]bool{"up": true, "down": true, "reap": true, "health": true,
+		"doctor": true, "smoke": true, "route": true, "metrics": true}
+	seen := 0
+	for _, c := range pawlCmd.Commands() {
+		if !warm[c.Name()] {
+			continue
+		}
+		seen++
+		if c.GroupID != pawlOperatorGroupID {
+			t.Errorf("warm verb %q must sit in the operator group; got GroupID=%q", c.Name(), c.GroupID)
+		}
+	}
+	if seen != len(warm) {
+		t.Fatalf("expected all %d warm verbs registered on pawl; saw %d", len(warm), seen)
+	}
+
+	var buf strings.Builder
+	pawlCmd.SetOut(&buf)
+	t.Cleanup(func() { pawlCmd.SetOut(nil) })
+	if err := pawlCmd.Help(); err != nil {
+		t.Fatalf("rendering pawl help: %v", err)
+	}
+	help := buf.String()
+	userIdx := strings.Index(help, pawlUserGroupTitle)
+	opIdx := strings.Index(help, pawlOperatorGroupTitle)
+	if userIdx < 0 {
+		t.Fatalf("help must render the user group title %q; got:\n%s", pawlUserGroupTitle, help)
+	}
+	if opIdx < 0 {
+		t.Fatalf("help must render the operator group title %q; got:\n%s", pawlOperatorGroupTitle, help)
+	}
+	if userIdx > opIdx {
+		t.Fatalf("the user (front door) group must render BEFORE the operator group (review-first); user@%d operator@%d", userIdx, opIdx)
+	}
+	if !strings.Contains(pawlOperatorGroupTitle, "NTM") {
+		t.Fatalf("the operator group title must name the NTM requirement; got %q", pawlOperatorGroupTitle)
+	}
+	reviewIdx := strings.Index(help, "\n  review ")
+	if reviewIdx < 0 || reviewIdx > opIdx {
+		t.Fatalf("review must be listed before the operator group; review@%d operator@%d\n%s", reviewIdx, opIdx, help)
+	}
+}

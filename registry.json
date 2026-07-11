@@ -699,12 +699,7 @@
         "purpose": "Fitness goal measurement and validation",
         "bounded_context": "BC3",
         "driven_by_skills": [
-          "evolve",
-          "goals",
-          "post-mortem",
-          "release",
-          "scaffold",
-          "validate"
+          "goals"
         ]
       },
       {
@@ -1666,7 +1661,7 @@
       "drives_commands": [
         "ao beads exec",
         "ao gate check",
-        "ao goals",
+        "ao goals measure",
         "ao pawl",
         "ao skills edit digest",
         "ao skills edit seal"
@@ -1761,7 +1756,26 @@
       ],
       "drives_commands": [
         "ao eval scenario",
-        "ao goals"
+        "ao goals",
+        "ao goals add",
+        "ao goals drift",
+        "ao goals export",
+        "ao goals history",
+        "ao goals init",
+        "ao goals measure",
+        "ao goals meta",
+        "ao goals migrate",
+        "ao goals prune",
+        "ao goals render",
+        "ao goals scenarios",
+        "ao goals steer",
+        "ao goals steer add",
+        "ao goals steer apply",
+        "ao goals steer prioritize",
+        "ao goals steer recommend",
+        "ao goals steer remove",
+        "ao goals trace",
+        "ao goals validate"
       ],
       "path": "skills/goals/",
       "references": 3
@@ -2112,7 +2126,9 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao goals",
+        "ao goals history",
+        "ao goals measure",
+        "ao goals steer apply",
         "ao membrane digest",
         "ao membrane triage",
         "ao session close"
@@ -2358,7 +2374,7 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao goals"
+        "ao goals init"
       ],
       "path": "skills/release/",
       "references": 8
@@ -2511,7 +2527,7 @@
         "converted-skill"
       ],
       "drives_commands": [
-        "ao goals"
+        "ao goals scenarios"
       ],
       "path": "skills/scaffold/",
       "references": 3
@@ -2841,7 +2857,7 @@
       "drives_commands": [
         "ao beads exec",
         "ao doctor",
-        "ao goals",
+        "ao goals measure",
         "ao pawl"
       ],
       "path": "skills/validate/",
@@ -3079,12 +3095,7 @@
       "purpose": "Fitness goal measurement and validation",
       "status": "active",
       "driven_by_skills": [
-        "evolve",
-        "goals",
-        "post-mortem",
-        "release",
-        "scaffold",
-        "validate"
+        "goals"
       ],
       "flags": [
         "--config",
