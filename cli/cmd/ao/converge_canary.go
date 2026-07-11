@@ -8,7 +8,11 @@ package main
 // planted positive (or that rejects everything) fails the canary and aborts the
 // run. Precedent: chaos-test / tickSmoke plant fixtures and assert reject codes.
 
-import "fmt"
+import (
+	"fmt"
+
+	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
+)
 
 // convergeCanaryRejectCode is the sentinel reject code a gate returns for a
 // planted positive (distinct, non-zero; aligned with the tickExitCouncil family).
@@ -25,7 +29,7 @@ type convergeCanaryGate func(verdictBody string) (rejected bool, code int)
 // a missing context_id. An independent-context verdict with a complete identity
 // is accepted.
 var convergeProductionCanaryGate convergeCanaryGate = func(verdictBody string) (bool, int) {
-	_, gaps := tickVerdictIdentity(verdictBody)
+	_, gaps := verdictparse.Identity(verdictBody)
 	if len(gaps) > 0 {
 		return true, convergeCanaryRejectCode
 	}

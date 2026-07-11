@@ -28,6 +28,7 @@ import (
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
+	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
 )
 
 var (
@@ -1397,12 +1398,12 @@ func codexFinalMessageVerdict(text string) codexReceiptVerdict {
 	if status == "ERROR" {
 		return verdict
 	}
-	if !tickVerdictHasCommandsRun(text) {
+	if !verdictparse.HasCommandsRun(text) {
 		verdict.Status = "ERROR"
 		verdict.Summary = "Final verdict missing non-empty COMMANDS RUN body."
 		return verdict
 	}
-	identity, gaps := tickVerdictIdentity(text)
+	identity, gaps := verdictparse.Identity(text)
 	if len(gaps) > 0 {
 		verdict.Status = "ERROR"
 		verdict.Summary = "Final verdict identity unproven: " + strings.Join(gaps, "; ")
@@ -1470,7 +1471,7 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 		gaps = append(gaps, "successful Codex run did not produce a verifiable verdict")
 	}
 	if status == "PASS" || status == "WARN" || status == "FAIL" {
-		identity := tickVerdictIdentityInfo{
+		identity := verdictparse.IdentityInfo{
 			Author:           receipt.Verdict.AuthorID,
 			JudgeName:        receipt.Verdict.JudgeName,
 			JudgeProgram:     receipt.Verdict.JudgeProgram,
@@ -1485,7 +1486,7 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 		if strings.TrimSpace(identity.JudgeProgram) == "" {
 			gaps = append(gaps, "missing judge_program")
 		}
-		if strings.TrimSpace(identity.JudgeModelFamily) == "" || tickUnknownModelFamily(identity.JudgeModelFamily) {
+		if strings.TrimSpace(identity.JudgeModelFamily) == "" || verdictparse.UnknownModelFamily(identity.JudgeModelFamily) {
 			gaps = append(gaps, "missing or unknown judge_model_family")
 		}
 		if strings.TrimSpace(identity.Author) != "" && strings.TrimSpace(identity.Author) == strings.TrimSpace(identity.JudgeName) {
