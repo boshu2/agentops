@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 // productionGateRunner satisfies ports.GateRunnerPort by invoking
@@ -51,7 +52,7 @@ func (g *productionGateRunner) Run(ctx context.Context, req ports.GateRunRequest
 		return ports.GateVerdict{}, fmt.Errorf("productionGateRunner: repoRoot required")
 	}
 	scriptPath := filepath.Join(g.repoRoot, "scripts", "check-"+string(req.Name)+".sh")
-	if !fileExists(scriptPath) {
+	if !quality.FileExists(scriptPath) {
 		return ports.GateVerdict{
 			Status: ports.GateStatusUnknown,
 			Reason: fmt.Sprintf("no script for gate %q at %s", req.Name, scriptPath),
