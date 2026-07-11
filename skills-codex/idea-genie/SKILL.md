@@ -8,6 +8,15 @@ Turn an open-ended question into a small, evidenced opportunity portfolio. This
 skill explores; it does not select work, create beads, or write Discovery's BDD
 intent packet.
 
+## Constraints
+
+- Keep this lane exploratory because `discovery` owns selection, BDD shaping,
+  and tracker persistence.
+- Cite repository or executable evidence for observations to prevent assumptions
+  from masquerading as facts.
+- Stop on novelty saturation because fixed idea quotas manufacture unsupported
+  work.
+
 ## Workflow
 
 1. State the question, constraints, non-goals, and evidence sources. Use
@@ -28,7 +37,14 @@ If every candidate overlaps existing work or lacks support, emit
 `status: no-new-work`, an empty candidate list, and observations showing why.
 An honest empty portfolio is a successful result.
 
-## Artifact contract
+## Output Specification
+
+- **Artifact directory:** `.agents/ideas/<run-id>/`
+- **Filename convention:** `idea-portfolio.json`
+- **Format:** `idea-portfolio.v1` JSON with the schema fields below.
+- **Validation command:** `skills/idea-genie/scripts/validate-output.sh <portfolio.json>`
+- **Downstream handoff:** pass the validated artifact path to `discovery`; only discovery
+  shapes and persists executable BDD intent.
 
 Required fields are `schema_version`, `status`, `observations`, `assumptions`,
 `candidates`, and `termination`. Candidate portfolios require cited evidence,
@@ -43,9 +59,10 @@ skills/idea-genie/scripts/validate-output.sh <portfolio.json>
 
 Executable behavior: [references/idea-genie.feature](references/idea-genie.feature).
 
-## Do not
+## Quality
 
-- Pad the result to a requested or customary idea count.
-- Create tracker rows, rank a winner, decompose implementation, or claim a
-  selection verdict.
-- Treat assumptions or attractive mechanisms as observed facts.
+- Every observation has a nonempty evidence pointer and assumptions remain
+  explicitly separate.
+- Every candidate carries overlap results and a complete Given/When/Then
+  scenario, or the artifact honestly reports `no-new-work`.
+- The named validator passes before the artifact path is handed to `discovery`.
