@@ -132,8 +132,8 @@ run_write() {
   run run_write AO_STUB_EXIT=3 AO_STUB_ERR="emit-verdict: ledger open failed"
   echo "# status=$status" >&3
   echo "# output=$output" >&3
-  [ "$status" -eq 0 ]                              # primary exit semantics unchanged
-  [ -f "$VDIR/age-autobind-test.json" ]            # the verdict stands
+  [ "$status" -eq 7 ]                              # F2 (age-pawl-intent-zhndq.2): fail-CLOSED EDGE-UNBOUND (was fail-open 0)
+  [ -f "$VDIR/age-autobind-test.json" ]            # the verdict stands (the recovery input)
   [[ "$output" == *"WARNING — provenance verdict-edge emit FAILED"* ]]
   [[ "$output" == *"exited 3"* ]]
   [[ "$output" == *"ledger open failed"* ]]        # captured stderr surfaced
@@ -240,7 +240,7 @@ run_write() {
   run run_write PAWL_UNTRUSTED_REPO=1
   echo "# status=$status" >&3
   echo "# output=$output" >&3
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 7 ]                              # F2: fail-CLOSED EDGE-UNBOUND (was fail-open 0)
   [ -f "$VDIR/age-autobind-test.json" ]
   [[ "$output" == *"no trusted ao binary found"* ]]
   [[ "$output" == *"ao provenance emit-verdict --file $VDIR/age-autobind-test.json"* ]]
