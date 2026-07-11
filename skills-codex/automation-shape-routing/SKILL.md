@@ -7,6 +7,16 @@ description: 'Front door for agent automation: choose'
 Choose the smallest execution shape that preserves the required evidence and
 control. This skill routes; it does not build or start a substrate.
 
+## Critical Constraints
+
+- **Route only; do not start a substrate. Why:** choosing an execution shape is
+  a judgment step, while launching NTM, Agent Mail, or Gas City changes runtime
+  state and requires separate operator authority.
+- **Prefer the smallest shape that preserves evidence. Why:** persistence and
+  coordination add recovery and ownership costs that one-shot work cannot repay.
+- **Partition write scopes before choosing concurrency. Why:** a larger worker
+  topology cannot make overlapping production writes safe.
+
 ## Route in order
 
 1. **One deliverable?** Do it inline. Use a small in-session fresh-context
@@ -51,3 +61,39 @@ Return exactly one of:
 
 Name the deciding axis and invoke the owner. Do not copy the delegated workflow
 into this router.
+
+## Output Specification
+
+- **Artifact directory:** stdout only; this routing decision creates no file.
+- **Filename convention:** none. Emit exactly one routing-verdict line.
+- **Serialization/schema format:** `shape=<allowed-shape>; axis=<deciding-axis>;
+  owner=<owning-skill>` using one of the shapes listed under Handoff.
+- **Owner mapping:** `inline` and `bounded-fanout` use `current-agent`;
+  `skill-builder`, `workflow-builder`, `agent-native`, and `using-gc` use the
+  same value for owner; `operationalize:gate` uses `operationalize`.
+- **Validator command:** validate a captured `$verdict` as exactly one line
+  with the declared shape/owner mapping:
+
+  ```bash
+  printf '%s\n' "$verdict" | awk '
+    NR > 1 { extra = 1 }
+    {
+      valid = ($0 ~ /^shape=(inline|bounded-fanout); axis=[^;]+; owner=current-agent$/ ||
+               $0 ~ /^shape=skill-builder; axis=[^;]+; owner=skill-builder$/ ||
+               $0 ~ /^shape=workflow-builder; axis=[^;]+; owner=workflow-builder$/ ||
+               $0 ~ /^shape=agent-native; axis=[^;]+; owner=agent-native$/ ||
+               $0 ~ /^shape=using-gc; axis=[^;]+; owner=using-gc$/ ||
+               $0 ~ /^shape=operationalize:gate; axis=[^;]+; owner=operationalize$/)
+    }
+    END { exit !(NR == 1 && !extra && valid) }
+  '
+  ```
+- **Downstream handoff:** invoke the named owner only after returning the verdict;
+  `inline` remains in the current agent and `bounded-fanout` remains in-session.
+
+## Quality Rubric
+
+- [ ] The verdict names exactly one allowed shape and one deciding axis.
+- [ ] Persistent or city-shaped routes cite the operator's explicit selection.
+- [ ] Concurrent routes state that production write scopes do not overlap.
+- [ ] The router delegates to the owner without copying or starting its workflow.
