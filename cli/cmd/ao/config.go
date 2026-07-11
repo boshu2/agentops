@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -44,8 +45,9 @@ Configure in .agentops/config.yaml:
       crank: budget
 
 Or via environment variables:
-  AGENTOPS_MODEL_TIER=budget
-  AGENTOPS_COUNCIL_MODEL_TIER=quality`,
+	  AGENTOPS_MODEL_TIER=budget
+	  AGENTOPS_COUNCIL_MODEL_TIER=quality`,
+	Args: cobra.NoArgs,
 	RunE: runConfigModels,
 }
 
@@ -83,6 +85,7 @@ Environment variables:
 Examples:
   ao config --show           # Show resolved configuration
   ao config --show --json   # Output as JSON`,
+	Args: cobra.NoArgs,
 	RunE: runConfig,
 }
 
@@ -238,7 +241,13 @@ func runConfigModels(_ *cobra.Command, _ []string) error {
 	fmt.Println()
 	if len(cfg.Models.SkillOverrides) > 0 {
 		fmt.Println("  Skill overrides:")
-		for skill, tier := range cfg.Models.SkillOverrides {
+		skills := make([]string, 0, len(cfg.Models.SkillOverrides))
+		for skill := range cfg.Models.SkillOverrides {
+			skills = append(skills, skill)
+		}
+		sort.Strings(skills)
+		for _, skill := range skills {
+			tier := cfg.Models.SkillOverrides[skill]
 			resolved := cfg.ResolveTier(skill)
 			if tier == resolved {
 				fmt.Printf("    %-12s → %s\n", skill, tier)
