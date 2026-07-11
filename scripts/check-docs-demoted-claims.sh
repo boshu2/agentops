@@ -53,6 +53,10 @@ cd "$ROOT"
 # ${BASH_SOURCE[0]} (e.g. `cd scripts && ./check-...`) would resolve wrongly
 # after the cd (a prior pawl REFUTED that on the sibling's first land attempt).
 . "$ROOT/scripts/lib/docs-scope.sh"
+# Shared shrink-only ratchet mechanics (baseline parse + stale set-diff) —
+# age-ratchet-lib-extraction-bv7d.2. Parse mode cr-strip preserves this gate's
+# original entry parsing (CR strip + comment/blank skip) byte-for-byte.
+. "$ROOT/scripts/lib/ratchet.sh"
 # Pin the scope root: this gate always scans ITS repo's docs/, never a tree an
 # inherited DOCS_ROOT env var points at (the injection seam is for tests).
 # shellcheck disable=SC2034 # DOCS_ROOT is read by the sourced docs-scope.sh lib.
@@ -114,14 +118,14 @@ find_offenders() {
 }
 
 # ---- load baseline (FILENAME-pinned; one live-doc path per non-comment line) --
+# ratchet_load_pinned owns the parse (cr-strip = this gate's original shape);
+# an unreadable baseline is loud (rc 2) instead of a strict-mode abort.
+baseline_data="$(ratchet_load_pinned "$BASELINE" cr-strip)" \
+  || { echo "check-docs-demoted-claims: cannot read baseline $BASELINE" >&2; exit 2; }
 declare -A BASELINED=()
-if [ -f "$BASELINE" ]; then
-  while IFS= read -r bl; do
-    bl="${bl%%$'\r'}"
-    case "$bl" in ''|'#'*) continue ;; esac
-    BASELINED["$bl"]=1
-  done < "$BASELINE"
-fi
+while IFS= read -r bl; do
+  [ -n "$bl" ] && BASELINED["$bl"]=1
+done <<< "$baseline_data"
 
 mapfile -t DOCS < <(docs_scope_live_files)
 
@@ -144,12 +148,12 @@ for f in "${DOCS[@]}"; do
 done
 
 # ---- shrink ratchet: a baselined file with ZERO findings must be pruned ------
+# ratchet_stale_entries = baselined − currently-offending (emitted LC_ALL=C
+# sorted — deterministic; the pre-migration order was unspecified hash order).
 stale_baseline=()
-for bl in "${!BASELINED[@]}"; do
-  if [ -z "${OFFENDING[$bl]:-}" ]; then
-    stale_baseline+=("$bl")
-  fi
-done
+while IFS= read -r bl; do
+  [ -n "$bl" ] && stale_baseline+=("$bl")
+done < <(printf '%s\n' "${!OFFENDING[@]}" | ratchet_stale_entries "$BASELINE" cr-strip)
 
 echo "check-docs-demoted-claims: scanned $scanned live docs ($exempt exempt), baseline pins ${#BASELINED[@]} file(s)"
 

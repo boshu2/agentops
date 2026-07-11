@@ -23,6 +23,9 @@ setup() {
     mkdir -p "$FIX/scripts/lib" "$FIX/docs" "$FIX/docs/adr" "$FIX/docs/evals"
     cp "$SCRIPT" "$FIX/scripts/"
     cp "$LIB" "$FIX/scripts/lib/"
+    # The gate sources the shared ratchet mechanics from its own scripts/lib
+    # (age-ratchet-lib-extraction-bv7d.2) — the fixture repo needs the lib too.
+    cp "$REPO_ROOT/scripts/lib/ratchet.sh" "$FIX/scripts/lib/"
     chmod +x "$FIX/scripts/check-docs-demoted-claims.sh"
     RUN="$FIX/scripts/check-docs-demoted-claims.sh"
 }
@@ -173,4 +176,29 @@ seed_baseline() {
     run bash "$REPO_ROOT/scripts/check-docs-demoted-claims.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
+}
+
+# ---- ratchet-lib migration contracts (age-ratchet-lib-extraction-bv7d.2) -----
+
+@test "multiple stale baseline entries are reported deterministically (LC_ALL=C sorted)" {
+    printf '# Clean\n\nAll proven by the gate.\n' > "$FIX/docs/zeta.md"
+    printf '# Clean\n\nAll proven by the gate.\n' > "$FIX/docs/alpha.md"
+    seed_baseline "docs/zeta.md" "docs/alpha.md"
+    run bash "$RUN"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"PRUNE"* ]]
+    # sorted order: alpha listed before zeta regardless of baseline order
+    alpha_pos="${output%%docs/alpha.md*}"
+    zeta_pos="${output%%docs/zeta.md*}"
+    [ "${#alpha_pos}" -lt "${#zeta_pos}" ]
+}
+
+@test "an unreadable baseline is a loud environment error (rc 2), never a silent empty baseline" {
+    printf '# Doc\n\nThe corpus is the moat.\n' > "$FIX/docs/x.md"
+    seed_baseline "docs/x.md"
+    chmod 000 "$FIX/scripts/.docs-demoted-claims-baseline"
+    run bash "$RUN"
+    chmod 644 "$FIX/scripts/.docs-demoted-claims-baseline"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"cannot read baseline"* ]]
 }
