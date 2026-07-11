@@ -22,8 +22,6 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -34,49 +32,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 )
-
-// beadsVerdictError carries a verdict exit code out through cobra's RunE so
-// Execute() can map it to os.Exit() WITHOUT calling os.Exit() mid-command —
-// which would skip deferred cleanup (temp files, lock release) and kill the
-// test binary, making these paths untestable.
-//
-// The `ao beads verify|lint|audit` commands use exit-code-as-verdict: exit 1
-// means "stale citations / flagged beads found", a normal diagnostic outcome,
-// not an internal failure. The verdict text already went to stdout, so the
-// error carries no message (Error() == ""); the returning RunE sets
-// cmd.SilenceErrors so cobra emits no spurious "Error:" line, while genuine
-// errors returned elsewhere in those commands still print normally. Mirrors
-// gateExitError (validate.go) and doctorExitError (doctor_surface.go).
-type beadsVerdictError struct {
-	code int
-}
-
-func (e *beadsVerdictError) Error() string { return "" }
-
-// ExitCode returns the process exit code this verdict maps to.
-func (e *beadsVerdictError) ExitCode() int { return e.code }
-
-// beadsTrackerOutput is the single entry point for shelling out to bd. Tests override
-// this to avoid a hard dependency on the real binary. Production code calls
-// `bd` via PATH; if absent, the caller emits a graceful warning and returns.
-var beadsTrackerOutput = func(args ...string) ([]byte, error) {
-	return currentBeadsTracker().Output(context.Background(), args...)
-}
-
-// beadsTrackerAvailable reports whether the bd binary is reachable via PATH. Tests
-// override this for deterministic behaviour.
-var beadsTrackerAvailable = func() bool {
-	return currentBeadsTracker().Available()
-}
-
-func currentBeadsTracker() *beadsadapter.Tracker {
-	return beadsadapter.NewTrackerWith(os.Getwd, os.Environ, func(name string) (string, error) {
-		return trackerLookPath(name)
-	})
-}
 
 var (
 	beadsDirJSON       bool
@@ -317,13 +274,6 @@ func findFilesByBasename(cwd, name string) []string {
 		}
 	}
 	return matches
-}
-
-func beadMinInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func verifyFunctionCitation(c *Citation, cwd string) {
@@ -574,12 +524,6 @@ func beadSlugify(title string, maxLen int) string {
 // ------------------------------------------------------------------------
 // shared helpers
 // ------------------------------------------------------------------------
-
-func emitJSON(w *os.File, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(v)
-}
 
 func beadTruncate(s string, n int) string {
 	return beadsapp.Truncate(s, n)

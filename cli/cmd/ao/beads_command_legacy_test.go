@@ -94,7 +94,7 @@ func executeBeadsExec(command *cobra.Command, args []string) error {
 func newTestBeadsCommand(name string) *cobra.Command {
 	tracker := currentBeadsTracker()
 	runtime := beadsadapter.NewRuntime()
-	root := beadscommands.NewModule(nil, tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker, runtime, runtime).Command()
+	root := beadscommands.NewModule(nil, tracker, tracker, beadsadapter.NewExecutor(tracker), tracker, tracker, runtime, runtime, nil).Command()
 	child, _, err := root.Find([]string{name})
 	if err != nil || child == nil {
 		panic("missing test beads command " + name)

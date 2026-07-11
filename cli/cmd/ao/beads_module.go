@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	beadscommands "github.com/boshu2/agentops/cli/internal/commands/beads"
 	"github.com/spf13/cobra"
@@ -18,15 +19,6 @@ type beadsModuleRunner struct{}
 func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.Invocation) error {
 	options := invocation.Options
 	switch invocation.Operation {
-	case beadscommands.OperationVerify:
-		beadsVerifyJSON, beadsVerifyVerbose = options.JSON, options.Verbose
-		return executeBeadsVerify(command, invocation.Args)
-	case beadscommands.OperationLint:
-		beadsLintStatus, beadsLintJSON = options.Status, options.JSON
-		return executeBeadsLint(command, invocation.Args)
-	case beadscommands.OperationHarvest:
-		beadsHarvestOutDir, beadsHarvestDryRun = options.OutputDirectory, options.DryRun
-		return executeBeadsHarvest(command, invocation.Args)
 	case beadscommands.OperationAudit:
 		beadsAuditJSON, beadsAuditStrict, beadsAuditAutoClose = options.JSON, options.Strict, options.AutoClose
 		return executeBeadsAudit(command, invocation.Args)
@@ -49,9 +41,11 @@ func (beadsModuleRunner) Run(command *cobra.Command, invocation beadscommands.In
 func init() {
 	tracker := currentBeadsTracker()
 	runtime := beadsadapter.NewRuntime()
+	repository := beadsadapter.NewKnowledgeRepository()
+	knowledge := beadsapp.KnowledgeService{Tracker: tracker, Repository: repository, Clock: runtime}
 	module := beadscommands.NewModule(
 		beadsModuleRunner{}, tracker, tracker, beadsadapter.NewExecutor(tracker),
-		tracker, tracker, runtime, runtime,
+		tracker, tracker, runtime, runtime, knowledge,
 	)
 	command := module.Command()
 	command.GroupID = "knowledge"

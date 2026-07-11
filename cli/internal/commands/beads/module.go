@@ -77,6 +77,7 @@ type Module struct {
 	claims    beadsapp.ClaimStore
 	runtime   beadsapp.ResumeRuntime
 	reader    beadsapp.LedgerReader
+	knowledge beadsapp.KnowledgeUseCases
 }
 
 func NewModule(
@@ -88,10 +89,11 @@ func NewModule(
 	claims beadsapp.ClaimStore,
 	runtime beadsapp.ResumeRuntime,
 	reader beadsapp.LedgerReader,
+	knowledge beadsapp.KnowledgeUseCases,
 ) Module {
 	return Module{
 		runner: runner, resolver: resolver, inspector: inspector, executor: executor,
-		stale: stale, claims: claims, runtime: runtime, reader: reader,
+		stale: stale, claims: claims, runtime: runtime, reader: reader, knowledge: knowledge,
 	}
 }
 
@@ -172,7 +174,7 @@ func (module Module) verifyCommand() *cobra.Command {
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit verification report as JSON instead of human-readable text")
 	command.Flags().BoolVar(&options.Verbose, "verbose", false, "Include FRESH citations in the output (default: stale only)")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationVerify, args, options)
+		return module.runVerify(command, args, options)
 	}
 	return command
 }
@@ -183,7 +185,7 @@ func (module Module) lintCommand() *cobra.Command {
 	command.Flags().StringVar(&options.Status, "status", "open", "bd status filter (open, closed, all)")
 	command.Flags().BoolVar(&options.JSON, "json", false, "Emit lint report as JSON")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationLint, args, options)
+		return module.runLint(command, options)
 	}
 	return command
 }
@@ -194,7 +196,7 @@ func (module Module) harvestCommand() *cobra.Command {
 	command.Flags().StringVar(&options.OutputDirectory, "out-dir", ".agents/learnings", "Directory to write the learning file into")
 	command.Flags().BoolVar(&options.DryRun, "dry-run", false, "Print the learning content to stdout without writing a file")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		return module.invoke(command, OperationHarvest, args, options)
+		return module.runHarvest(command, args, options)
 	}
 	return command
 }
@@ -305,6 +307,124 @@ func (module Module) runExec(command *cobra.Command, args []string) error {
 		command.SilenceErrors = true
 	}
 	return err
+}
+
+func (module Module) runVerify(command *cobra.Command, args []string, options Options) error {
+	if module.knowledge == nil {
+		return fmt.Errorf("beads knowledge use cases are not configured")
+	}
+	report, err := module.knowledge.Verify(context.Background(), args[0])
+	if err != nil {
+		return err
+	}
+	if !report.BDAvailable {
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping verify (graceful degradation)")
+		return err
+	}
+	if options.JSON {
+		return encodeJSON(command, report)
+	}
+	emitVerify(command, report, options.Verbose)
+	if report.StaleCount > 0 {
+		command.SilenceErrors = true
+		return &beadsapp.ExitError{Code: 1}
+	}
+	return nil
+}
+
+func emitVerify(command *cobra.Command, report *beadsapp.VerifyReport, verbose bool) {
+	fmt.Fprintf(command.OutOrStdout(), "bead %s: %s  [%s]\n", report.BeadID, report.Title, report.Status)
+	fmt.Fprintf(command.OutOrStdout(), "  citations: %d total, %d fresh, %d stale\n", report.TotalCount, report.FreshCount, report.StaleCount)
+	for _, citation := range report.Citations {
+		if citation.Status == beadsapp.CitationFresh && !verbose {
+			continue
+		}
+		marker := "  "
+		switch citation.Status {
+		case beadsapp.CitationStale:
+			marker = "[STALE]"
+		case beadsapp.CitationFresh:
+			marker = "[FRESH]"
+		case beadsapp.CitationUnknown:
+			marker = "[?????]"
+		}
+		fmt.Fprintf(command.OutOrStdout(), "  %s %s — %s\n", marker, citation.Raw, citation.Reason)
+		if citation.Resolved != "" {
+			fmt.Fprintf(command.OutOrStdout(), "          → %s\n", citation.Resolved)
+		}
+	}
+}
+
+func (module Module) runLint(command *cobra.Command, options Options) error {
+	if module.knowledge == nil {
+		return fmt.Errorf("beads knowledge use cases are not configured")
+	}
+	if !module.knowledge.Available() {
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping lint (graceful degradation)")
+		return err
+	}
+	report, err := module.knowledge.Lint(context.Background(), options.Status)
+	if err != nil {
+		return err
+	}
+	if options.JSON {
+		if err := encodeJSON(command, report); err != nil {
+			return err
+		}
+	} else {
+		emitLint(command, report)
+	}
+	if report.StaleBeads > 0 {
+		command.SilenceErrors = true
+		return &beadsapp.ExitError{Code: 1}
+	}
+	return nil
+}
+
+func emitLint(command *cobra.Command, report *beadsapp.LintReport) {
+	fmt.Fprintf(command.OutOrStdout(), "ao beads lint (status=%s): %d beads\n", report.StatusFilter, report.TotalBeads)
+	fmt.Fprintf(command.OutOrStdout(), "  %d clean, %d stale, %d errors\n", report.CleanBeads, report.StaleBeads, report.ErrorBeads)
+	for _, verified := range report.PerBead {
+		if verified.StaleCount == 0 {
+			continue
+		}
+		fmt.Fprintf(command.OutOrStdout(), "\n  [STALE] %s: %s\n", verified.BeadID, verified.Title)
+		for _, citation := range verified.Citations {
+			if citation.Status == beadsapp.CitationStale {
+				fmt.Fprintf(command.OutOrStdout(), "    - %s: %s\n", citation.Raw, citation.Reason)
+			}
+		}
+	}
+}
+
+func (module Module) runHarvest(command *cobra.Command, args []string, options Options) error {
+	if module.knowledge == nil {
+		return fmt.Errorf("beads knowledge use cases are not configured")
+	}
+	if !module.knowledge.Available() {
+		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping harvest (graceful degradation)")
+		return err
+	}
+	result, err := module.knowledge.Harvest(context.Background(), args[0], options.OutputDirectory, options.DryRun)
+	if err != nil {
+		return err
+	}
+	if options.DryRun {
+		_, err := fmt.Fprintln(command.OutOrStdout(), result.Body)
+		return err
+	}
+	if result.AlreadyExists {
+		_, err := fmt.Fprintf(command.ErrOrStderr(), "learning already exists at %s — not overwriting\n", result.Target)
+		return err
+	}
+	_, err = fmt.Fprintf(command.OutOrStdout(), "harvested bead %s → %s\n", args[0], result.Target)
+	return err
+}
+
+func encodeJSON(command *cobra.Command, value any) error {
+	encoder := json.NewEncoder(command.OutOrStdout())
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(value)
 }
 
 func (module Module) resumeCommand() *cobra.Command {
