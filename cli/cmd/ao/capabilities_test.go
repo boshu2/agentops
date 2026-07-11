@@ -6,22 +6,17 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	capabilitiesapp "github.com/boshu2/agentops/cli/internal/capabilities"
 )
 
 func TestCapabilities_EmitsValidJSON(t *testing.T) {
-	out, err := executeCommand("capabilities")
-	if err != nil {
-		t.Fatalf("ao capabilities returned error: %v", err)
-	}
-	var doc capabilitiesDoc
-	if jerr := json.Unmarshal([]byte(out), &doc); jerr != nil {
-		t.Fatalf("ao capabilities output is not valid JSON: %v\noutput: %s", jerr, out)
-	}
+	doc := readCapabilitiesDocument(t)
 	if doc.Tool != "ao" {
 		t.Errorf("tool = %q, want %q", doc.Tool, "ao")
 	}
-	if doc.ContractVersion != capabilitiesContractVersion {
-		t.Errorf("contract_version = %q, want %q", doc.ContractVersion, capabilitiesContractVersion)
+	if doc.ContractVersion != capabilitiesapp.ContractVersion {
+		t.Errorf("contract_version = %q, want %q", doc.ContractVersion, capabilitiesapp.ContractVersion)
 	}
 	if len(doc.CommandGroups) == 0 {
 		t.Error("command_groups is empty; expected the live command tree")
@@ -39,7 +34,7 @@ func TestCapabilities_EmitsValidJSON(t *testing.T) {
 // interpret (pawl/plan-pawl/governor emit 3/4), and does NOT leak legacy or
 // flywheel commands absent from the shipping binary.
 func TestCapabilities_CommandExitCodesPublished(t *testing.T) {
-	doc := buildCapabilitiesDoc()
+	doc := readCapabilitiesDocument(t)
 	if len(doc.CommandExitCodes) == 0 {
 		t.Fatal("command_exit_codes is empty; an agent cannot interpret codes 3-4")
 	}
@@ -59,7 +54,8 @@ func TestCapabilities_CommandExitCodesPublished(t *testing.T) {
 // codes in lockstep with the code's own exit-code constants, so a constant change
 // cannot silently drift the contract (the exact drift class audit A7 closes).
 func TestCapabilitiesCommandExitCodesMatchConstants(t *testing.T) {
-	planPawl := capabilitiesCommandExitCodes["plan-pawl decide"]
+	doc := readCapabilitiesDocument(t)
+	planPawl := doc.CommandExitCodes["plan-pawl decide"]
 	for code, name := range map[int]string{
 		planPawlExitPass:    "PASS",
 		planPawlExitUsage:   "usage",
@@ -70,11 +66,11 @@ func TestCapabilitiesCommandExitCodesMatchConstants(t *testing.T) {
 			t.Errorf("plan-pawl decide: exit %d (%s) is a defined const but missing from capabilities", code, name)
 		}
 	}
-	if _, ok := capabilitiesCommandExitCodes["governor budget"][strconv.Itoa(hardenExitCode)]; !ok {
+	if _, ok := doc.CommandExitCodes["governor budget"][strconv.Itoa(hardenExitCode)]; !ok {
 		t.Errorf("governor budget: hardenExitCode=%d missing from capabilities", hardenExitCode)
 	}
 	// pawl review codes come from scripts/pawl-review.sh (the pawl.go:29 contract): 0/1/2/3/4.
-	pawl := capabilitiesCommandExitCodes["pawl review"]
+	pawl := doc.CommandExitCodes["pawl review"]
 	for _, code := range []string{"0", "1", "2", "3", "4"} {
 		if pawl[code] == "" {
 			t.Errorf("pawl review: documented contract code %s missing from capabilities", code)
@@ -83,7 +79,7 @@ func TestCapabilitiesCommandExitCodesMatchConstants(t *testing.T) {
 }
 
 func TestCapabilities_ListsRegisteredCommands(t *testing.T) {
-	doc := buildCapabilitiesDoc()
+	doc := readCapabilitiesDocument(t)
 	seen := map[string]bool{}
 	for _, g := range doc.CommandGroups {
 		for _, c := range g.Commands {
@@ -99,7 +95,7 @@ func TestCapabilities_ListsRegisteredCommands(t *testing.T) {
 }
 
 func TestCapabilities_GlobalFlagsIncludeJSON(t *testing.T) {
-	doc := buildCapabilitiesDoc()
+	doc := readCapabilitiesDocument(t)
 	found := false
 	for _, f := range doc.GlobalFlags {
 		if f.Name == "json" {
@@ -112,15 +108,28 @@ func TestCapabilities_GlobalFlagsIncludeJSON(t *testing.T) {
 }
 
 func TestCapabilities_RegisteredOnRoot(t *testing.T) {
-	if capabilitiesCmd.GroupID != "core" {
-		t.Errorf("capabilitiesCmd.GroupID = %q, want core", capabilitiesCmd.GroupID)
-	}
 	for _, c := range rootCmd.Commands() {
 		if c.Name() == "capabilities" {
+			if c.GroupID != "core" {
+				t.Errorf("capabilities GroupID = %q, want core", c.GroupID)
+			}
 			return
 		}
 	}
 	t.Error("capabilities command not registered on rootCmd")
+}
+
+func readCapabilitiesDocument(t *testing.T) capabilitiesapp.Document {
+	t.Helper()
+	out, err := executeCommand("capabilities")
+	if err != nil {
+		t.Fatalf("ao capabilities returned error: %v", err)
+	}
+	var document capabilitiesapp.Document
+	if err := json.Unmarshal([]byte(out), &document); err != nil {
+		t.Fatalf("ao capabilities output is not valid JSON: %v\noutput: %s", err, out)
+	}
+	return document
 }
 
 func TestRobotDocs_ContainsContractSections(t *testing.T) {
