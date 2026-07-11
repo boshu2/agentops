@@ -31,6 +31,8 @@ setup() {
     cp "$REPO_ROOT/scripts/check-scripts-ao-invocations.sh" "$FIX/scripts/"
     cp "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" "$FIX/scripts/lib/"
     cp "$REPO_ROOT/scripts/lib/ao_snippet_resolve.py" "$FIX/scripts/lib/"
+    # shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.5)
+    cp "$REPO_ROOT/scripts/lib/ratchet.sh" "$FIX/scripts/lib/"
     chmod +x "$FIX/scripts/check-scripts-ao-invocations.sh"
     export FIX
     BASELINE="$FIX/scripts/.scripts-ao-invocations-baseline"
@@ -128,4 +130,19 @@ run_check() {
     run env AGENTOPS_AO_BIN="$BATS_FILE_TMPDIR/ao" bash "$REPO_ROOT/scripts/check-scripts-ao-invocations.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
+}
+
+# ---- ratchet-lib migration contract (age-ratchet-lib-extraction-bv7d.5) ------
+
+@test "missing python3 is a loud environment error (rc 2), not a silent pass (fail-closed deps)" {
+    SHIM="$BATS_TEST_TMPDIR/noPy"
+    mkdir -p "$SHIM"
+    printf '#!/usr/bin/env bash\nexit 127\n' > "$SHIM/python3"
+    chmod +x "$SHIM/python3"
+    printf '#!/usr/bin/env bash\nao version\n' > "$FIX/scripts/anything.sh"
+    : > "$BASELINE"
+    run env PATH="$SHIM:$PATH" bash "$FIX/scripts/check-scripts-ao-invocations.sh"
+    [ "$status" -eq 2 ]
+    [[ -n "$output" ]]
+    [[ "$output" == *"cannot certify"* ]]
 }
