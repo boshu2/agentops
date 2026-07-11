@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Decompose intent into slices."
+description: 'Decompose intent into slices. Triggers: "$plan", "plan work", "decompose intent".'
 ---
 
 # $plan - Issue-Ready Decomposition
@@ -11,6 +11,15 @@ optional br issues, dependency waves, file ownership, and validation checks.
 **Execute this workflow. Do not only describe it.** Keep planning separate from
 implementation. A finished plan should let `$crank`, `$implement`, or a future
 Codex session execute without chat-only context.
+
+## Critical Constraints
+
+- **Why: avoid stale scope.** Verify inherited bead citations and goal-design packets before decomposition.
+- **Why: preserve behavior.** Each slice delivers one Given/When/Then behavior; separate refactors.
+- **Why: prevent collisions.** Same-wave writers need disjoint ownership, including generated companions.
+- **Why: keep acceptance executable.** Put Gherkin above fenced YAML criteria with runnable checks.
+- **Why: prevent rediscovery.** Cite and verify real paths, symbols, tests, counts, and reuse points.
+- **Why: preserve intent.** Keep WHAT and HOW separated; planning does not implement.
 
 ## Inputs And Flags
 
@@ -39,15 +48,6 @@ vocabulary for the boundary from Discovery into Plan:
 | Driven adapters | br, bv, `rg`, `.agents/findings`, `.agents/plans`, execution-packet writer |
 | Context packet | slice plan, file dependency matrix, acceptance criteria, test levels |
 | Guard adapter | stale-scope verification, symbol verification, wave-validity check |
-
-```gherkin
-Feature: Plan converts dense intent into executable slices
-  Scenario: Plan consumes Discovery output
-    Given Discovery provides density fields and artifact links
-    When Plan receives the `plan_slices` port request
-    Then each slice has acceptance criteria, write scope, test levels, and ownership
-    And no slice depends on raw Discovery chat context
-```
 
 ## Goal-Design Packet Input
 
@@ -162,7 +162,13 @@ Every non-trivial plan must include:
 Read [references/plan-document-template.md](references/plan-document-template.md)
 for the canonical shape.
 
-## Codex Guardrails
+## Codex Execution Profile
+
+- Produce beads-ready issues, dependencies, and acceptance criteria.
+- Persist enough file-backed detail that future Codex sessions can pick them up without chat-only context.
+- Keep WHAT and HOW separated throughout the handoff.
+
+## Guardrails
 
 - Keep WHAT and HOW distinct; do not implement while planning.
 - Prefer concrete file paths, symbol names, and validation commands over long
@@ -173,6 +179,23 @@ for the canonical shape.
   before consumers in an earlier wave.
 - If an acceptance criterion cannot be checked mechanically, mark it
   underspecified before handing it to execution.
+
+## Output Specification
+
+- **Path:** `.agents/plans/YYYY-MM-DD-<goal-slug>.md`; optional issues use the resolved br ledger.
+- **Filename:** the filename convention is ISO date plus stable goal slug.
+- **Format:** Markdown with Gherkin, fenced YAML criteria, issue IDs, dependencies, and file matrices.
+- **Validation command:** run `bash skills/plan/scripts/validate.sh` plus admission and symbol checks.
+- **Downstream handoff:** consumed by `$pre-mortem`, `$crank`, `$implement`, and future Codex sessions.
+
+## Quality Rubric
+
+- Self-contained for a fresh implementer.
+- Behavior-sized and mapped to observable scenarios.
+- Grounded in verified paths, symbols, counts, and reuse points.
+- Conflict-safe with explicit ownership and wave dependencies.
+- Executable through named checks and evidence surfaces.
+- Honest about stale scope, missing research, and incomplete justifications.
 
 ## Examples
 
