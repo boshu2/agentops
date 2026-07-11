@@ -41,6 +41,49 @@ func TestDiffDoesNotCreateDoctorArtifactsOrEditGitignore(t *testing.T) {
 	}
 }
 
+func TestFixDryRunDoesNotCreateDoctorArtifactsOrEditGitignore(t *testing.T) {
+	root := t.TempDir()
+	gitignore := filepath.Join(root, ".gitignore")
+	if err := os.WriteFile(gitignore, []byte("existing\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	configDir := filepath.Join(root, ".agentops")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(configDir, "config.yaml")
+	brokenConfig := []byte("broken: [\n")
+	if err := os.WriteFile(configPath, brokenConfig, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := Fix(Options{
+		RepoRoot: root, CWD: root, HomeDir: root, ToolVersion: "test",
+		Only: []string{fmInvalidConfigYAML}, DryRun: true,
+		Now: time.Unix(1_700_000_000, 0),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.ExitCode != ExitHealthy || report.Summary.TotalFindings != 1 {
+		t.Fatalf("dry-run report = %+v", report)
+	}
+	if report.RunID != "" || report.RunDir != "" || report.ActionsPath != "" || report.BackupsDir != "" || report.UndoCommand != "" {
+		t.Fatalf("dry-run report advertises persisted artifacts: %+v", report)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".doctor")); !os.IsNotExist(err) {
+		t.Fatalf("fix --dry-run created .doctor: %v", err)
+	}
+	body, err := os.ReadFile(gitignore)
+	if err != nil || string(body) != "existing\n" {
+		t.Fatalf("gitignore body=%q err=%v", body, err)
+	}
+	body, err = os.ReadFile(configPath)
+	if err != nil || string(body) != string(brokenConfig) {
+		t.Fatalf("config body=%q err=%v", body, err)
+	}
+}
+
 func TestFindingsSinceReturnsOnlyNewFindingIDs(t *testing.T) {
 	current := []Finding{{ID: "same"}, {ID: "new"}}
 	prior := []Finding{{ID: "same"}, {ID: "gone"}}

@@ -367,9 +367,15 @@ func Fix(opts Options) (*Report, error) {
 		now = time.Now()
 	}
 	sha := targetSHA(opts.RepoRoot)
-	ra, err := NewRunArtifact(opts.RepoRoot, sha, now)
-	if err != nil {
-		return nil, fmt.Errorf("doctor: %w", err)
+	var ra *RunArtifact
+	var err error
+	if opts.DryRun {
+		ra = transientRunArtifact(opts.RepoRoot, sha, now)
+	} else {
+		ra, err = NewRunArtifact(opts.RepoRoot, sha, now)
+		if err != nil {
+			return nil, fmt.Errorf("doctor: %w", err)
+		}
 	}
 	env := &DetectEnv{
 		RepoRoot: opts.RepoRoot, CWD: opts.CWD, HomeDir: opts.HomeDir,
@@ -388,14 +394,20 @@ func Fix(opts Options) (*Report, error) {
 		rep.OK = true
 		rep.NextSteps = append([]string{"No findings. Nothing to fix."},
 			onlineCoverageNote(onlineSkipped, opts.Online)...)
+		if opts.DryRun {
+			return rep, nil
+		}
 		return rep, persistRun(ra, opts, rep, 0)
 	}
 
-	actionsFile, err := ra.OpenActionsFile()
-	if err != nil {
-		return rep, err
+	var actionsFile *os.File
+	if !opts.DryRun {
+		actionsFile, err = ra.OpenActionsFile()
+		if err != nil {
+			return rep, err
+		}
+		defer func() { _ = actionsFile.Close() }()
 	}
-	defer func() { _ = actionsFile.Close() }()
 
 	caps := NewCapabilities(opts.ToolVersion)
 	locks := NewLockManager(filepath.Join(opts.RepoRoot, ".doctor", "locks"))
@@ -404,9 +416,11 @@ func Fix(opts Options) (*Report, error) {
 	totalActions, fixedCount, failed, skipped := applyFixers(opts.RepoRoot, mctx, env, findings)
 
 	rep.ActionsTaken = totalActions
-	rep.ActionsPath = filepath.Join(rep.RunDir, "actions.jsonl")
-	rep.BackupsDir = filepath.Join(rep.RunDir, "backups")
-	rep.UndoCommand = fmt.Sprintf("ao doctor undo %s", filepath.Base(ra.RunDir))
+	if !opts.DryRun {
+		rep.ActionsPath = filepath.Join(rep.RunDir, "actions.jsonl")
+		rep.BackupsDir = filepath.Join(rep.RunDir, "backups")
+		rep.UndoCommand = fmt.Sprintf("ao doctor undo %s", filepath.Base(ra.RunDir))
+	}
 	rep.ExitCode = fixExitCode(len(findings), fixedCount, failed)
 	if opts.DryRun {
 		// A dry-run executes nothing; per the doctor CLI contract
@@ -424,6 +438,9 @@ func Fix(opts Options) (*Report, error) {
 		rep.NextSteps = append(rep.NextSteps, "refused (ambiguous, resolve by hand): "+s)
 	}
 	rep.OK = rep.ExitCode == ExitHealthy
+	if opts.DryRun {
+		return rep, nil
+	}
 	return rep, persistRun(ra, opts, rep, totalActions)
 }
 
