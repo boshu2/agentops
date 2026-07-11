@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "family": "claim",
+  "old_implementation_sha": "d63c679bd50945eb0eac3bae322b22adc0553c95",
+  "freeze_sha": "c6aa8b5b4c7bff71fac4512dbcb3acda44b63e66",
+  "fixture_sha256": "834134b9e48db67016306dc26cc33c096c38478b57b601da052bbcd576847271",
+  "ownership_sha256": "7b75df0636c4f3af37babf3abcefa82ea030be9437369bd4b164883e270f243a",
+  "scope_sha256": "abf4f818b3e99612470df5e2b3dd61ad4220dcba9bf3b234bfd3468d16e197ca",
+  "migration_state": "migrating"
+}
