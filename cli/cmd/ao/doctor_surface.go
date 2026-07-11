@@ -90,36 +90,17 @@ func registerDoctorSurface() {
 	})
 }
 
-// doctorEngineOptions builds doctor.Options from the current process context.
-func doctorEngineOptions() (doctor.Options, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return doctor.Options{}, &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = ""
-	}
-	return doctor.Options{
-		RepoRoot:    cwd,
-		CWD:         cwd,
-		HomeDir:     home,
-		ToolVersion: version,
-		Only:        doctorOnly,
-		Skip:        doctorSkip,
-		Quick:       doctorQuick,
-		Online:      doctorOnline,
-		Severity:    doctorSeverity,
-		DryRun:      doctorDryRun,
-		JSON:        doctorWantsJSON(),
-		Since:       doctorSince,
-		Now:         time.Now(),
-	}, nil
-}
-
 // doctorWantsJSON reports whether the caller asked for JSON output.
 func doctorWantsJSON() bool {
 	return doctorJSON || doctorRobot || jsonFlag
+}
+
+func doctorMutationRequest() doctor.MutationRequest {
+	return doctor.MutationRequest{
+		Only: append([]string(nil), doctorOnly...), Skip: append([]string(nil), doctorSkip...),
+		Quick: doctorQuick, Online: doctorOnline, Severity: doctorSeverity,
+		DryRun: doctorDryRun, JSON: doctorWantsJSON(),
+	}
 }
 
 func doctorReadRequest() doctor.ReadRequest {
@@ -165,11 +146,7 @@ func runDoctorEngineDefault(cmd *cobra.Command) error {
 		return exitErr(rep.ExitCode, "doctor findings present")
 	}
 	if doctorFix {
-		opts, err := doctorEngineOptions()
-		if err != nil {
-			return err
-		}
-		return runDoctorFix(cmd, opts)
+		return runDoctorFix(cmd, doctorMutationRequest())
 	}
 	rep, derr := doctorReadService.Diagnose(cmd.Context(), doctorReadRequest())
 	if derr != nil {
@@ -199,8 +176,8 @@ func renderEngineFindings(cmd *cobra.Command, rep *doctor.Report) {
 }
 
 // runDoctorFix runs the fix engine and renders/exits accordingly.
-func runDoctorFix(cmd *cobra.Command, opts doctor.Options) error {
-	rep, err := doctor.Fix(opts)
+func runDoctorFix(cmd *cobra.Command, request doctor.MutationRequest) error {
+	rep, err := doctorMutationService.Fix(cmd.Context(), request)
 	if err != nil {
 		return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
 	}
@@ -243,11 +220,7 @@ func newDoctorFixCmd() *cobra.Command {
 		Use:   "fix",
 		Short: "Run detectors, then apply fixers (backs up before every mutation)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			opts, err := doctorEngineOptions()
-			if err != nil {
-				return err
-			}
-			return runDoctorFix(cmd, opts)
+			return runDoctorFix(cmd, doctorMutationRequest())
 		},
 	}
 }
