@@ -42,7 +42,17 @@ func TestCapabilitiesOracleRecursivelyMatchesPublicTree(t *testing.T) {
 }
 
 func TestCapabilitiesExitOracleIncludesDefinedCodeFive(t *testing.T) {
-	if got := capabilitiesCommandExitCodes["plan-pawl decide"]["5"]; got == "" {
+	out, err := executeCommand("capabilities")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire struct {
+		CommandExitCodes map[string]map[string]string `json:"command_exit_codes"`
+	}
+	if err := json.Unmarshal([]byte(out), &wire); err != nil {
+		t.Fatal(err)
+	}
+	if got := wire.CommandExitCodes["plan-pawl decide"]["5"]; got == "" {
 		t.Fatal("plan-pawl decide defines exit 5 (DEGRADED) but capabilities omits it")
 	}
 }
