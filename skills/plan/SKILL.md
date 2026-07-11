@@ -36,348 +36,165 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via ao beads exec create)
 ---
 # Plan Skill
 
-> **Quick Ref:** Decompose goal into trackable issues with waves. Output: `.agents/plans/*.md` + br issues.
+Decompose intent into behavior-sized, issue-ready slices with dependency waves,
+file ownership, and executable acceptance. Execute the workflow; do not merely
+describe it. Small local changes under roughly 200 LOC may plan in chat, but a
+non-trivial plan must be durable and self-contained.
 
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
+## Critical Constraints
 
-## Absorbed trigger surface — planning-workflow (folded in, skill-prune phase 2)
+- **Why: avoid stale scope.** Verify inherited or older bead citations against
+  HEAD before decomposition; do not plan from unchecked goal-design packets.
+- **Why: preserve behavior.** Each slice delivers one Given/When/Then behavior;
+  separate refactors from feature slices.
+- **Why: prevent write collisions.** Same-wave writers must have disjoint file
+  ownership, including generated companions, manifests, fixtures, and docs.
+- **Why: keep acceptance executable.** Every bead carries `## Scenarios` above
+  a fenced `acceptance_criteria` YAML block with runnable evidence checks.
+- **Why: prevent rediscovery.** Cite real paths, symbols, signatures, tests, and
+  reuse points; verify inventory claims at plan time and again when consumed.
+- **Why: preserve intent.** Keep WHAT and HOW separated; planning does not
+  implement, and `--auto` skips approval only when explicitly selected.
+- **Why: avoid false novelty.** Search existing skills and the `ao` surface
+  before scoping a new capability; record hits as reuse, not new work.
 
-This skill also covers the retired `planning-workflow` skill: the comprehensive
-markdown planning methodology for software projects. Use `plan` when starting a
-new project, creating implementation plans, or refining architecture before
-coding — planning tokens are far fewer and cheaper than implementation tokens,
-so front-load the thinking. The absorbed methodology's bar for a *delivered*
-plan: self-contained (a fresh agent can implement without asking the human),
-dependency-aware (decomposes cleanly into a beads graph), justified (every
-non-obvious choice has a *why*), reviewed to steady-state by a strong reasoning
-model, and converted to beads with the dependency edges intact. Ground every
-load-bearing architectural claim (library choices, existing-codebase structure,
-performance/cost numbers) in a verifiable source before it survives a review
-round. For small local changes (< ~200 LOC), plan in chat instead — the
-planning overhead would exceed the implementation cost.
+## Inputs and Boundary
 
-## Loop position
+`/plan <goal> [--auto|--fast-path|--deep|--skip-symbol-check|--skip-audit-gate]`
+consumes BDD intent, a bead, research, or a goal-design packet through the
+`plan_slices` inbound port. It produces a slice plan, issue graph, file matrix,
+and validation packet through `persist_issue`, `verify_symbols`,
+`retrieve_context`, and `seed_execution_packet`.
 
-Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [BDD intent issue](../../docs/templates/intent-issue.md); produces a [slice validation plan](../../docs/templates/slice-validation.md) — one slice per Given/When/Then row with a first-failing-test target, write-scope, bounded context, and ownership. Slices group into a wave only when every row of the wave-validity check passes (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice) — the same rows [`/crank`](../crank/SKILL.md) re-checks as its wave-start hard gate, whose coupled-chain / derived-surface isolation detail crank owns ([../crank/references/parallel-wave-isolation.md](../crank/references/parallel-wave-isolation.md)); plan cites it rather than restating. Default to sequential when in doubt — parallel waves are an optimization, not a default.
+When input contains `intent.md` and `driver.md`, run
+`scripts/check-goal-design-packet.sh <packet-dir>`. Preserve candidate behavior
+and scenario IDs; map `first_failing_proof`, `write_scope`, and `close_signal`
+into acceptance; carry non-goals, rollback, and hard rules into boundaries.
 
-**CLI dependencies:** br (issue creation) and bv (graph triage). If br is unavailable, write the plan to `.agents/plans/` as markdown with issue descriptions, and use TaskList for tracking instead. The plan document is always created regardless of br availability.
+## Workflow
 
-## Discovery Boundary
+1. **Stale-scope pre-flight.** For inherited, full-complexity, reopened, or
+   older-than-seven-day beads, run `ao beads verify <id>` first. Stop on stale
+   citations until scope is revalidated.
+2. **Load context.** Read prior research and run `ao search`/`ao lookup`. Load
+   `.agents/planning-rules/*.md` first, then active findings from
+   `.agents/findings/registry.jsonl`. Every plan includes `Applied findings:`
+   with IDs or `none` and explains how retrieved rules changed the plan.
+3. **Choose strategic review.** For multi-session work with a contested
+   operator default, recommend `dueling-idea-genies` and an `idea-challenge.v1`
+   packet to `ao plan-pawl decide`; keep this advisory.
+4. **Explore only as needed.** Inspect the codebase or use a bounded Explore
+   agent for file inventory, exact symbols/signatures, reuse points with
+   `file:line`, tests, imports, and conventions.
+5. **Baseline mechanically.** Record commands and counts for files, LOC,
+   sections, tests, fixtures, schemas, and size limits. Search `ms search`
+   when available, otherwise `skills/**/SKILL.md`, `docs/SKILLS.md`, and `ao`.
+6. **Scale detail.** Minimal for 1-2 simple issues, Standard for 3-6, Deep for
+   7+, broad refactors, full complexity, or `--deep`.
+7. **Decompose by behavior.** Give each issue a title, scenario, owned files,
+   dependencies, test levels proportional to risk, and mechanical conformance
+   checks. Custom rubrics name their `agent_judge`.
+8. **Compute waves.** Topologically group independent issues. Serialize shared
+   writes and read/write conflicts. Include tests, docs, schemas, fixtures,
+   runtime copies, Codex companions, parity manifests, and hash markers.
+9. **Build matrices.** Produce the file dependency matrix, file-conflict
+   matrix, cross-wave shared-file registry, owner and discard path per slice.
+   Default to sequential when wave validity is uncertain.
+10. **Write the plan.** Use the canonical template and baseline gate in
+    [plan-document-template.md](references/plan-document-template.md). Mark the
+    result INCOMPLETE when a Planning Rules Compliance justification is empty.
+11. **Create tracking.** Prefer br issues with scenarios, validation blocks,
+    and `blocks` edges. Run the scenario admission and post-creation validation
+    gates from [task-creation.md](references/task-creation.md). If br is absent,
+    keep the markdown plan as the durable handoff.
+12. **Approve and report.** Unless `--auto`, request approval before declaring
+    completion. Report plan path, issue count/IDs, waves, and next route through
+    `/pre-mortem` then `/crank`. Record `ao ratchet record plan` when available.
 
-Use the [Skill Ports and Adapters](../../docs/contracts/skill-ports-and-adapters.md)
-vocabulary and the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md)
-for the boundary from Discovery into Plan:
+## Required Plan Sections
 
-| Boundary piece | Plan contract |
-|---|---|
-| Inbound port | `plan_slices` from BDD intent, bead, research artifact, or execution packet |
-| Outbound ports | `persist_issue`, `verify_symbols`, `retrieve_context`, `seed_execution_packet` |
-| Driving adapter | `/plan` skill invocation |
-| Driven adapters | br, bv, `rg`, `.agents/findings`, `.agents/plans`, execution-packet writer |
-| Context packet | slice plan, file dependency matrix, acceptance criteria, test levels |
-| Guard adapter | stale-scope verification, symbol verification, wave-validity check |
+- context, intent issue, and applied findings
+- boundaries, non-goals, rollback, and files to modify
+- baseline audit with commands and results
+- one slice per scenario with first failing proof and owned write scope
+- issue descriptions with scenarios and acceptance criteria
+- dependency waves and file dependency/conflict matrices
+- planning rules compliance and cross-wave shared-file registry
+- verification commands, cleanup, discard paths, and next steps
 
-Executable acceptance: [references/plan.feature](references/plan.feature) — consumes Discovery output, one slice per Given/When/Then row, wave-validity gate, durable slice-validation artifact.
+Detailed decomposition, implementation detail, and matrices live in the
+references below; load only the modules required by the selected complexity.
 
-## Goal-Design Packet Input
+## Output Specification
 
-When the input is `.agents/goal-design/<slug>` or any directory containing
-`intent.md` and `driver.md`, run `scripts/check-goal-design-packet.sh <packet-dir>`
-before decomposition. Checker failure blocks planning.
+- **Path:** `.agents/plans/YYYY-MM-DD-<goal-slug>.md`; optional durable issues
+  go to the repository's resolved br ledger.
+- **Filename:** the filename convention is ISO date plus a stable goal slug;
+  never overwrite an unrelated plan.
+- **Format:** Markdown using the canonical template, embedded Gherkin, fenced
+  YAML `acceptance_criteria`, issue IDs, dependency edges, and file matrices.
+- **Validation command:** run `bash skills/plan/scripts/validate.sh`, relevant
+  scenario/validation admission checks, and verify every cited symbol/path.
+- **Downstream handoff:** consumed by `/pre-mortem`, `/crank`, `/implement`, and
+  future agents without relying on chat-only context.
 
-For a checker-clean packet:
+Report:
 
-- Treat `driver.candidate_beads[]` as slice seeds.
-- Preserve each candidate `behavior` string and scenario ids exactly in the bead
-  `## Scenarios` block.
-- Map `first_failing_proof`, `write_scope`, and `close_signal` into the issue
-  acceptance criteria.
-- Carry `intent.boundaries.non_goals`, `rollback_or_containment`, and
-  `hard_rules` into the plan boundary section.
-- Do not create beads from a stale or unchecked packet.
-
-## Flags
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--auto` | off | Skip human approval gate. Used by `/rpi --auto` for fully autonomous lifecycle. |
-| `--fast-path` | off | Force Minimal detail template (see Step 3.2) |
-| `--skip-symbol-check` | off | Skip symbol verification in Step 3.6 (for greenfield plans) |
-| `--skip-audit-gate` | off | Skip baseline audit gate in Step 6 (for documentation-only plans) |
-
-## Execution Steps
-
-Given `/plan <goal> [--auto]`:
-
-### Step 0: Bead-Input Pre-Flight (Stale-Scope Gate)
-
-When the input to `/plan` is a bead ID (matches pattern `[a-z]{2,6}-[0-9a-z.]+`) AND **any** of the following conditions hold, automatically run `ao beads verify <bead-id>` as the **very first action** before any other planning step:
-
-- complexity is `"full"`
-- the bead is older than 7 days
-- the bead description was filed by a prior session (e.g., handoff-sourced, deferred, or reopened)
-
-```bash
-# Example guard — run before Step 1
-if [[ "$INPUT" =~ ^[a-z]{2,6}-[0-9a-z.]+$ ]]; then
-    ao beads verify "$INPUT" || true
-fi
+```text
+Plan: <path>
+Issues: <count and IDs>
+Waves: <ordered groups or sequential>
+Validation: <PASS|WARN|FAIL with commands>
+Assumptions: <verified facts and unresolved risks>
+Next: </pre-mortem, /crank, or revision>
 ```
 
-If `ao beads verify` reports any STALE citations, present them to the user (or log them to the execution packet in `--auto` mode) and ask for scope re-validation before proceeding to Step 1. Do not decompose against stale evidence.
-
-This implements the shared stale-scope validation rule — re-validate inherited scope estimates against HEAD before acting on deferred beads, handoff docs, or prior-session plans.
-
-### Step 1: Setup
-```bash
-mkdir -p .agents/plans
-```
-
-### Step 2: Check for Prior Research + Knowledge Flywheel
-
-`ls -la .agents/research/` and use Grep to find prior research. If found, read it before planning.
-
-Then run `ao search` / `ao lookup` for prior planning patterns and **apply** (not just retrieve) any relevant learnings as planning constraints. Record citations with `ao metrics cite --type applied|retrieved`.
-
-Read [references/pre-decomposition.md](references/pre-decomposition.md) for full flywheel-search commands, the apply-retrieved-knowledge contract, and section-evidence handling.
-
-### Step 2.1: Load Compiled Prevention First (Mandatory)
-
-Load compiled planning rules from `.agents/planning-rules/*.md` (primary) and fall back to `.agents/findings/registry.jsonl`. Match by finding ID, `applicable_when`, language, literal goal-text overlap, and changed-file overlap. Cap at top 5.
-
-Record applied finding IDs and how they changed the plan. Fail open on missing/malformed files. Read [references/pre-decomposition.md](references/pre-decomposition.md) for the full ranked-packet contract.
-
-Active findings from `.agents/findings/registry.jsonl` are a fallback planning input. Every written plan must include an `Applied findings:` line, even when the value is `none`.
-
-### Step 2.2: Read and Validate Research Content
-
-If research files exist, read the most recent one and verify it contains substantive sections (Summary, Findings, Architecture, Executive Summary, Recommendations) before proceeding. See [references/pre-decomposition.md](references/pre-decomposition.md) for the validation grep and warning behavior.
-
-### Step 2.3: Optional Strategic Duel Gate
-
-When the plan is likely to span more than one execution session AND it contains
-at least one contested operator-default decision, recommend the
-`dueling-idea-genies` route (an `idea-challenge.v1` packet for `ao plan-pawl decide`) on the
-strategic question before decomposition. Treat it as advisory, not a hard
-prerequisite: skip it for single-session plans or plans with no meaningful
-contested default. Evidence from the 2026-05-17 Mt Olympus run: a roughly
-22 minute duel flipped 3/5 operator defaults and surfaced one already-shipped
-adapter bug that ordinary review and passing tests had missed.
-
-### Step 3: Explore the Codebase (if needed)
-
-Dispatch an Explore sub-agent (Task tool) with a prompt that demands symbol-level detail: file inventory, function/method signatures, struct/type definitions, reuse points with `file:line`, test file locations and naming conventions, import paths. Read [references/pre-decomposition.md](references/pre-decomposition.md) for the canonical explore prompt.
-
-#### Pre-Planning Baseline Audit (Mandatory)
-
-Before decomposing, run grep/wc/ls commands to quantify files to change, sections to add/remove, LOC to modify, coverage gaps. Record commands alongside results. File size limits (800-line SKILL.md lint limit) and test fixture counts are mandatory checks. Ground truth with numbers prevents scope creep. Search the skill/CLI corpus for each major capability before scoping it as new: `ms search "<capability>"` (fast path when available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`). Existing-skill or `ao` command hits become **reuse** notes in the plan, not new beads.
-
-Read [references/pre-decomposition.md](references/pre-decomposition.md) for the bad/good examples table and the full audit recipe.
-
-### Step 3.2: Scale Detail by Complexity
-
-Auto-select plan detail level based on issue count and goal complexity:
-
-| Level | Criteria | Template | Description |
-|-------|----------|----------|-------------|
-| **Minimal** | 1-2 issues, fast complexity | Bullet points per issue | Title, 2-line description, acceptance criteria, files list |
-| **Standard** | 3-6 issues, standard complexity | Current plan format | Full implementation specs, tests, verification |
-| **Deep** | 7+ issues, full complexity, or `--deep` | Extended format | Symbol-level specs, data transformation tables, design briefs, cross-wave registry |
-
-Read [references/detail-templates.md](references/detail-templates.md) for the template definitions.
-
-**Override:** `--deep` forces Deep regardless of issue count. `--fast-path` forces Minimal.
-
-### Step 3.5: Generate Implementation Detail (Mandatory)
-
-After exploring the codebase, generate symbol-level implementation detail for EVERY file in the plan. A worker reading the plan should know exactly what to write without rediscovering function names, parameters, or code locations.
-
-Read [references/implementation-detail.md](references/implementation-detail.md) for the full contract: file inventory table, per-section implementation specs (function signatures, reuse points, inline code blocks, struct fields, CLI flag definitions), named test functions with pyramid levels, verification procedures, data transformation mapping tables, and symbol verification.
-
-### Step 3.6: Symbol Verification (Mandatory)
-
-See the **Symbol Verification** section in [references/implementation-detail.md](references/implementation-detail.md). For each symbol cited in the plan, grep the codebase to verify it exists. If >20% of cited symbols are stale, WARN (do not block) and log them under `## Stale Symbol Warnings`. Opt-out: `--skip-symbol-check`.
-
-**Inventory facts are symbols too (2026-07-02, showcase kernel R10).** Any count,
-file list, or "X is empty/absent" claim the plan cites gets the same verification —
-and, because derived state moves faster than plans, consumers **re-verify at the
-moment of use**, not only at plan time (`ls`/`jq`/`grep` cost seconds). Measured:
-three of a duel's nine round-1 findings were plan facts gone stale within the hour
-they were written (wrong paths, a "dir is empty" claim on a non-empty dir, an
-undercounted locus list).
-
-### Step 4: Decompose into Issues
-
-Analyze the goal and break it into discrete, implementable issues. **Decompose by behavior, not by file or feature-bundle (PR-010):** each slice delivers exactly one Given/When/Then behavior (a small batch), and every refactor is its OWN slice — never folded into a feature slice ("refactor then feature" is two slices). Small batches and refactor-after-green are the load-bearing quality moves; test-first *ordering* is not (Finster 2026, `skills/standards/references/agentic-workflow-evidence.md`). For each issue define:
-- **Title**: Clear action verb (e.g., "Add authentication middleware")
-- **Description**: What needs to be done
-- **Dependencies**: Which issues must complete first (if any)
-- **Scenarios**: A Gherkin `## Scenarios` block (Given/When/Then) — **mandatory by default** for every bead (see Scenarios contract below)
-- **Acceptance criteria**: How to verify it's done — emitted as a fenced YAML `acceptance_criteria` block (see contract below)
-- **Test levels**: Which pyramid levels (L0–L3) this issue's tests cover — **throttled to the slice's stakes (PR-011):** small/low-risk fully-specified slices get L2 + L1 regression guards only; reserve full mutation (BF3) and the heavier BF1–BF9 corpus for critical, security, or high-blast-radius slices. Maximal thoroughness on a low-risk slice is the over-testing tax (costs multiples, ossifies the code).
-
-#### Gherkin Scenarios Contract (mandatory, default)
-
-**Every bead this skill creates MUST carry an embedded `## Scenarios` block in Gherkin (Given/When/Then) — by default, without being asked.** Free-text-only acceptance is invalid (AGENTS.md: "Free-text acceptance is invalid — promote it to scenarios before work begins"). The operator never hand-specifies BDD: planning emits behavior-based acceptance as scenarios automatically.
-
-The intent → Gherkin → executed-red → bead-DAG **contract is owned by [`behavior-first-planning`](../behavior-first-planning/SKILL.md)**; this section states only the plan-specific mechanics (the `## Scenarios` block shape, its position relative to the `acceptance_criteria` YAML, and the admission gate), not a restatement of the discipline.
-
-Each bead body (and the parent epic body) carries a `## Scenarios` block of one or more scenarios:
-
-```markdown
-## Scenarios
-Scenario: <behavior named as an observable outcome>
-  Given <precondition / starting state>
-  When <action / event>
-  Then <expected observable result>
-  And <additional assertion>   # optional
-```
-
-Rules:
-- Scenario granularity (one per distinct Given/When/Then behavior; N behaviors → N scenarios) and the observable-behavior-not-implementation rule are owned by [`behavior-first-planning`](../behavior-first-planning/SKILL.md).
-- The `## Scenarios` block sits in the bead description ABOVE the `acceptance_criteria` YAML; the YAML is the machine-checkable layer, Gherkin is the behavior layer (they are complementary, not substitutes).
-- This contract is enforced mechanically by the Step 7b.0 admission gate (`scripts/check-bead-scenario-coverage.sh --admission`, per `references/task-creation.md`): every created bead is piped through the gate post-creation, and a bead that fails admission must be fixed before the plan is reported DONE.
-
-This is the same `## Scenarios` block the bead-embedded acceptance model expects (`scenario-hash-stability` CI gate) and that `/discovery` lifts into the execution packet.
-
-#### Acceptance Criteria Contract (mandatory)
-
-Every issue body MUST contain an `acceptance_criteria` fenced YAML block. The block lives BELOW the issue's `## Scenarios` block and ABOVE any "Reference" or "Notes" trailer. The parent epic body carries its own `acceptance_criteria` block (epic-level criteria); each child bead carries its own. `/discovery` STEP 6 lifts both into the execution packet under `epic_criteria` and `bead_criteria`. Canonical shape: [`schemas/execution-packet.schema.json`](../../schemas/execution-packet.schema.json) (`#/$defs/Criterion`).
-
-The `## Scenarios` Gherkin block above is the behavior layer and is mandatory by
-default for every bead; the `acceptance_criteria` YAML is the machine-checkable
-layer. They are complementary, never substitutes. Every non-trivial plan and
-bead body SHOULD also include the `hexagon:`
-boundary block from `docs/architecture/intent-to-loop-hexagon.md` so the next
-agent knows the inbound port, bounded context, adapters, context packet, and
-done state.
-
-```yaml
-acceptance_criteria:
-  - id: ac-<scope>.<n>
-    description: "<one-line measurable statement>"
-    check_type: test_pass | command_exit_zero | file_exists | grep_match | manual | council_judge | custom_rubric
-    check_command: "<shell command or script path>"
-    evidence_path: "<glob>"
-    evidence_required: true | false
-    weight: 0.0–1.0
-    optional: true | false
-    agent_judge: "<council:name>"  # REQUIRED only when check_type == custom_rubric
-```
-
-`agent_judge` is REQUIRED when `check_type == "custom_rubric"` — `custom_rubric` accepts free-text `check_command`, so the judge field names the council/judge that owns the verdict. The schema enforces this with an `if/then` clause; an issue body that omits it for a `custom_rubric` criterion is a contract violation, not a soft warning.
-
-Read [references/decomposition.md](references/decomposition.md) for: anti-pattern pre-flight, design briefs for rewrites, issue granularity rules, operationalization heuristics, conformance checks, and schema strictness pre-flight.
-
-### Step 5: Compute Waves
-
-Group issues by dependencies for parallel execution:
-- **Wave 1**: Issues with no dependencies (can run in parallel)
-- **Wave 2**: Issues depending only on Wave 1
-- **Wave 3**: Issues depending on Wave 2
-- Continue until all issues assigned
-
-**Planning Rules Compliance (Mandatory Gate):** After computing waves, fill in the Planning Rules Compliance checklist (PR-001 through PR-011) in the plan document — see the table in [references/plan-document-template.md](references/plan-document-template.md). Read [references/planning-rules.md](references/planning-rules.md) for detection questions and evidence. Every rule MUST have an explicit justification or N/A rationale. If any row has an empty Justification column, mark the plan output as **INCOMPLETE** and do not proceed to Step 5.5.
-
-### Step 5.5: File Dependency Matrix (MANDATORY)
-
-Before writing the plan document, produce an explicit file-level dependency matrix mapping each task to every file it reads or writes (columns: Task, File, Access=read/write, Notes). This matrix is the input to the swarm pre-spawn conflict check — without it, handoff to `/swarm` is blocked. Every `write` is an ownership claim: two same-wave tasks claiming `write` on the same file MUST be serialized (`blockedBy`) or merged. `read` conflicts with concurrent `write` but not with other reads. Include tests, docs, schemas, fixtures, generated artifacts, and Codex companion files — not just primary sources. The swarm skill's local-mode Pre-Spawn Conflict Check consumes this matrix.
-
-Read [references/wave-matrices.md](references/wave-matrices.md) for the full file-conflict matrix format, an example table, cross-wave shared file registry, generated-artifact companion scope, and dependency-necessity validation rules.
-
-### Step 6: Write Plan Document
-
-**Write to:** `.agents/plans/YYYY-MM-DD-<goal-slug>.md`
-
-Read [references/plan-document-template.md](references/plan-document-template.md) for the full canonical template (Context, Intent Issue, Files to Modify, Boundaries, Baseline Audit, Implementation, Tests, Slice Validation Plan, Conformance Checks, Verification, Issues, Execution Order, Planning Rules Compliance, Post-Merge Cleanup, Next Steps) and the **Baseline Audit Gate** (BLOCK if missing, WARN if incomplete, `--skip-audit-gate` to opt out). The **Intent Issue** section links the upstream [BDD intent issue](../../docs/templates/intent-issue.md) and carries its acceptance examples; the **Slice Validation Plan** section embeds the [slice-validation surface](../../docs/templates/slice-validation.md) (one slice per Given/When/Then with a first failing test, write scope, bounded context, owner), the wave-validity gate, and a roll-up acceptance table. Conformance Checks remains the machine-checkable layer — Gherkin is the behavior layer, not a replacement.
-
-### Step 7: Create Tasks for In-Session Tracking
-
-Read [references/task-creation.md](references/task-creation.md) for the full TaskCreate + beads creation workflow, including: persistent beads issues for ratchet tracking, embedding conformance checks as fenced `validation` blocks in issue bodies, cross-cutting constraint injection on the epic, wave formation via `blocks` dependencies, and the **Step 7b post-creation validation-block verification** gate.
-
-### Step 8: Request Human Approval (Gate 2)
-
-**Skip this step if `--auto` flag is set.** In auto mode, proceed directly to Step 9.
-
-**USE AskUserQuestion tool:**
-
-```
-Tool: AskUserQuestion
-Parameters:
-  questions:
-    - question: "Plan complete with N tasks in M waves. Approve to proceed?"
-      header: "Gate 2"
-      options:
-        - label: "Approve"
-          description: "Proceed to /pre-mortem or /crank"
-        - label: "Revise"
-          description: "Modify the plan before proceeding"
-        - label: "Back to Research"
-          description: "Need more research before planning"
-      multiSelect: false
-```
-
-**Wait for approval before reporting completion.**
-
-### Step 9: Record Ratchet Progress
-
-```bash
-ao ratchet record plan 2>/dev/null || true
-```
-
-### Step 10: Report to User
-
-Tell the user:
-1. Plan document location
-2. Number of issues identified
-3. Wave structure for parallel execution
-4. Tasks created (beads issue IDs or file-backed task refs)
-5. Next step: `/pre-mortem` for failure simulation, then `/crank` for execution
-
-## Key Rules
-
-- **Read research first** if it exists
-- **Explore codebase** to understand current state
-- **Identify dependencies** between issues
-- **Compute waves** for parallel execution
-- **Always write the plan** to `.agents/plans/`
+## Quality Rubric
+
+- **Self-contained:** a fresh implementer can act without rediscovery or chat.
+- **Behavioral:** slices and acceptance map directly to observable scenarios.
+- **Grounded:** load-bearing claims, symbols, counts, and reuse points are cited.
+- **Conflict-safe:** waves have explicit ownership and no unresolved collisions.
+- **Executable:** every acceptance row names a check and evidence surface.
+- **Right-sized:** detail and test levels match complexity and blast radius.
+- **Honest:** missing research, stale scope, or incomplete justification is
+  reported as WARN/FAIL rather than hidden.
 
 ## Examples
 
-**`/plan "add user authentication"`** — Reads research, decomposes into 5 issues (middleware, session store, token validation, tests, docs), creates epic with 2 waves, writes plan to `.agents/plans/`.
+**User says:** `/plan "add rate limiting"`
 
-**`/plan --auto "refactor payment module"`** — Skips approval gates, creates 3-wave/8-issue epic autonomously, ready for `/crank`.
+Produce a grounded inventory, behavior-sized issues, validation checks, and a
+collision-safe wave order; write the durable plan before reporting done.
 
-**`/plan "remove dead code"`** — Runs quantitative audit (3,003 LOC), creates issues with exact file/LOC targets, includes deletion verification checks.
+**User says:** `/plan --auto .agents/research/auth.md`
 
-**`/plan "add stale run detection to RPI status"`** — Symbol-level detail: names exact functions, struct fields, JSON tags, test names. Implementer executes in a single pass.
-
-See [references/examples.md](references/examples.md) for full walkthroughs.
+Use the research, create the plan and tracker graph when available, skip only
+the approval prompt, and hand off to the next loop move.
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| br create fails | Run `br init --prefix <prefix>` first |
-| Plan too large (>20 issues) | Narrow goal or split into multiple epics |
-| Wave structure incorrect | Review dependencies: does blocked issue modify blocker's files? |
-| Conformance checks missing | Add `files_exist`, `content_check`, `tests`, or `command` checks |
+| Problem | Response |
+|---|---|
+| br is unavailable | Write the markdown plan and report issue creation skipped |
+| Research lacks symbols | Explore until paths, signatures, and tests are verified |
+| Same file has parallel writers | Serialize or merge the affected slices |
+| Baseline evidence is missing | Mark INCOMPLETE unless the documented opt-out applies |
 
-See [references/examples.md](references/examples.md) for more troubleshooting scenarios.
+## References
 
-## Reference Documents
-
-- [references/planning-rules.md](references/planning-rules.md) — seven compiled planning rules (mechanical enforcement, external validation, feedback loops, separation, process gates, cross-layer consistency, phased rollout).
-- Shared stale-scope validation rule — re-validate inherited scope estimates against HEAD before acting on deferred beads, handoff docs, or prior-session plans. Invoked by Step 0 via `ao beads verify`.
-- [references/implementation-detail.md](references/implementation-detail.md) — symbol-level implementation specs, test pyramid classification, verification procedures, data transformation tables, symbol verification.
-- [references/decomposition.md](references/decomposition.md) — anti-pattern pre-flight, design briefs, issue granularity, conformance checks, schema strictness.
-- [references/wave-matrices.md](references/wave-matrices.md) — file-conflict matrix, cross-wave shared file registry, dependency-necessity validation.
-- [references/plan-document-template.md](references/plan-document-template.md) — canonical `.agents/plans/*.md` document template with baseline audit gate.
-- [references/task-creation.md](references/task-creation.md) — TaskCreate/beads creation, validation-block embedding, post-creation verification.
-- [references/plan-mutations.md](references/plan-mutations.md)
-- [references/complexity-estimation.md](references/complexity-estimation.md)
-- [references/detail-templates.md](references/detail-templates.md)
-- [references/examples.md](references/examples.md)
-- [references/plan-to-beads-workflow.md](references/plan-to-beads-workflow.md)
-- [references/sdd-patterns.md](references/sdd-patterns.md)
-- [references/templates.md](references/templates.md)
+- [pre-decomposition.md](references/pre-decomposition.md) — research, prevention, exploration, baseline
+- [decomposition.md](references/decomposition.md) — issue and acceptance contracts
+- [implementation-detail.md](references/implementation-detail.md) — symbol-level plan detail
+- [detail-templates.md](references/detail-templates.md) — Minimal/Standard/Deep shapes
+- [plan-document-template.md](references/plan-document-template.md) — canonical artifact
+- [task-creation.md](references/task-creation.md) — br creation and admission gates
+- [wave-matrices.md](references/wave-matrices.md) — ownership and conflict matrices
+- [planning-rules.md](references/planning-rules.md) — PR-001 through PR-011
+- [plan-mutations.md](references/plan-mutations.md)
+- [complexity-estimation.md](references/complexity-estimation.md)
+- [examples.md](references/examples.md)
+- [plan-to-beads-workflow.md](references/plan-to-beads-workflow.md)
+- [sdd-patterns.md](references/sdd-patterns.md)
+- [templates.md](references/templates.md)
+- [plan.feature](references/plan.feature)
