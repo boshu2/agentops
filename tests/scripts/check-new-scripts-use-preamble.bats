@@ -23,6 +23,8 @@ setup() {
   mkdir -p "$REPO/scripts/lib"
   cp "$SCRIPT_SRC" "$REPO/scripts/check-new-scripts-use-preamble.sh"
   cp "$LIB_SRC" "$REPO/scripts/lib/preamble.sh"
+  # shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.4)
+  cp "$BATS_TEST_DIRNAME/../../scripts/lib/ratchet.sh" "$REPO/scripts/lib/ratchet.sh"
 
   # A minimal grandfather snapshot with ONE pre-existing hand-rolled script that
   # we can later mutate to test the shrink ratchet.
@@ -187,6 +189,9 @@ EOF
   mkdir -p "$INIT/scripts/lib"
   cp "$SCRIPT_SRC" "$INIT/scripts/check-new-scripts-use-preamble.sh"
   cp "$LIB_SRC" "$INIT/scripts/lib/preamble.sh"
+  # shared ratchet mechanics — this SECOND skeleton needs the lib too (the
+  # per-copy-site table from pre-mortem FM5 called out exactly this fixture)
+  cp "$BATS_TEST_DIRNAME/../../scripts/lib/ratchet.sh" "$INIT/scripts/lib/ratchet.sh"
   cat > "$INIT/scripts/old-handrolled.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail

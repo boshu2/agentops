@@ -210,6 +210,9 @@ var (
 		"scripts/**",
 		"tests/scripts/check-new-scripts-use-preamble.bats",
 		"tests/scripts/preamble.bats",
+		// covered by scripts/** already; explicit for the ratchet-lib routing
+		// closure test (age-ratchet-lib-extraction-bv7d.4, FM3)
+		"scripts/lib/ratchet.sh",
 	}
 	// ADR registry integrity: unique NNNN across files, filename number ==
 	// in-file title number, every ADR carries a Status: line. A duplicate
