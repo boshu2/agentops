@@ -8,6 +8,15 @@ Decide whether repeated code demonstrates a reusable rule or only a plausible
 hypothesis. Similar names and syntax are not enough; the abstraction must
 survive examples it was not designed around.
 
+## Constraints
+
+- To prevent lineage copies from faking recurrence, use independently
+  implemented exemplars with repository anchors.
+- Because the candidate must generalize, form it without seeing the holdout and
+  back-apply every holdout-driven refinement.
+- To keep weak evidence from becoming architecture, route hypotheses to
+  `no-action`; only a fully proven promotion may reach `operationalize`.
+
 ## Workflow
 
 1. State the candidate pattern and collect independently implemented
@@ -26,6 +35,24 @@ survive examples it was not designed around.
 6. Otherwise emit `outcome: hypothesis` with `route: no-action`. Keep the
    evidence bounded and name what additional observation would retest it.
 
+## Output Specification
+
+- **Artifact directory:** `.agents/patterns/<run-id>/`
+- **Filename convention:** `pattern-mining.json`
+- **Format:** `pattern-mining.v1` JSON containing the outcome, distinct
+  exemplars, invariants, variations, incidental details, holdout result,
+  back-application result, and route.
+- **Validation command:** `skills/pattern-mining/scripts/validate-output.sh <pattern-mining.json>`
+- **Downstream handoff:** pass a validated `promote` artifact to
+  `operationalize`; retain a validated `hypothesis` artifact as bounded
+  evidence with `route: no-action`.
+
+Promotion requires at least three distinct exemplars, one separate passing
+holdout, successful back-application, and at least one invariant. Any weaker
+packet remains a hypothesis and cannot route to reusable packaging.
+
+The validator is the machine boundary:
+
 ```bash
 skills/pattern-mining/scripts/validate-output.sh <pattern.json>
 ```
@@ -35,6 +62,15 @@ artifact itself and never promotes a failed or untested holdout.
 
 Executable behavior:
 [references/pattern-mining.feature](references/pattern-mining.feature).
+
+## Quality
+
+- Exemplars are independent and repository-anchored; copied implementations do
+  not inflate the evidence floor.
+- Invariants, legitimate variations, and incidental similarities stay distinct
+  through holdout testing and back-application.
+- The named validator passes before a promotion reaches `operationalize` or a
+  hypothesis is retained as `no-action` evidence.
 
 ## Do not
 
