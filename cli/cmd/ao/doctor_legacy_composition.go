@@ -9,3 +9,5 @@ func newLegacyDoctorService() doctorapp.LegacyService {
 	checks := doctoradapter.SystemLegacyChecks(version, IndexDir, IndexFileName, resolveLedgerPath, reviewerHealthService)
 	return doctorapp.NewLegacyService(version, checks)
 }
+
+var doctorReadService = doctorapp.NewReadService(version, doctoradapter.ReadRuntime{ToolVersion: version}, doctoradapter.ReadGateway{})

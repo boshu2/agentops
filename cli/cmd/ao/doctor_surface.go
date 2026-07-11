@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -55,7 +56,7 @@ func registerDoctorSurface() {
 	f.BoolVar(&doctorOnline, "online", false, "Enable network probes (default: offline-only)")
 	f.BoolVar(&doctorQuick, "quick", false, "Run only fast-path detectors (< 200ms)")
 	f.StringVar(&doctorSeverity, "severity", "P3", "Minimum severity to emit (P0|P1|P2|P3)")
-	f.BoolVar(&doctorRobot, "robot", false, "Alias for --json with structured wrapper")
+	f.BoolVar(&doctorRobot, "robot", false, "Alias for stable JSON report output")
 	f.BoolVar(&doctorRobotTriage, "robot-triage", false, "Emit the mega-command triage JSON")
 	f.StringVar(&doctorExplainFlag, "explain", "", "Expand a single finding by id")
 
@@ -111,6 +112,7 @@ func doctorEngineOptions() (doctor.Options, error) {
 		Severity:    doctorSeverity,
 		DryRun:      doctorDryRun,
 		JSON:        doctorWantsJSON(),
+		Since:       doctorSince,
 		Now:         time.Now(),
 	}, nil
 }
@@ -118,6 +120,14 @@ func doctorEngineOptions() (doctor.Options, error) {
 // doctorWantsJSON reports whether the caller asked for JSON output.
 func doctorWantsJSON() bool {
 	return doctorJSON || doctorRobot || jsonFlag
+}
+
+func doctorReadRequest() doctor.ReadRequest {
+	return doctor.ReadRequest{
+		Only: append([]string(nil), doctorOnly...), Skip: append([]string(nil), doctorSkip...),
+		Quick: doctorQuick, Online: doctorOnline, Severity: doctorSeverity,
+		DryRun: doctorDryRun, JSON: doctorWantsJSON(), Since: doctorSince,
+	}
 }
 
 // printDoctorJSON marshals v as indented JSON to stdout.
@@ -144,12 +154,8 @@ func runDoctorEngineDefault(cmd *cobra.Command) error {
 	if doctorExplainFlag != "" {
 		return runDoctorExplain(cmd, doctorExplainFlag)
 	}
-	opts, err := doctorEngineOptions()
-	if err != nil {
-		return err
-	}
 	if doctorRobotTriage {
-		triage, rep, terr := doctor.RobotTriage(opts)
+		triage, rep, terr := doctorReadService.Triage(cmd.Context(), doctorReadRequest())
 		if terr != nil {
 			return &doctorExitError{code: doctor.ExitIOError, msg: terr.Error()}
 		}
@@ -159,9 +165,13 @@ func runDoctorEngineDefault(cmd *cobra.Command) error {
 		return exitErr(rep.ExitCode, "doctor findings present")
 	}
 	if doctorFix {
+		opts, err := doctorEngineOptions()
+		if err != nil {
+			return err
+		}
 		return runDoctorFix(cmd, opts)
 	}
-	rep, derr := doctor.Diagnose(opts)
+	rep, derr := doctorReadService.Diagnose(cmd.Context(), doctorReadRequest())
 	if derr != nil {
 		return &doctorExitError{code: doctor.ExitIOError, msg: derr.Error()}
 	}
@@ -211,12 +221,12 @@ func runDoctorFix(cmd *cobra.Command, opts doctor.Options) error {
 
 // runDoctorExplain expands a single finding.
 func runDoctorExplain(cmd *cobra.Command, findingID string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-	}
-	finding, ferr := doctor.Explain(cwd, findingID)
+	finding, ferr := doctorReadService.Explain(cmd.Context(), findingID)
 	if ferr != nil {
+		var runtimeFailure *doctor.RuntimeError
+		if errors.As(ferr, &runtimeFailure) {
+			return &doctorExitError{code: doctor.ExitIOError, msg: ferr.Error()}
+		}
 		return &doctorExitError{code: doctor.ExitNoInput, msg: ferr.Error()}
 	}
 	if doctorWantsJSON() {
@@ -293,7 +303,7 @@ func newDoctorCapabilitiesCmd() *cobra.Command {
 		Use:   "capabilities",
 		Short: "Print the machine-readable doctor contract (JSON)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			caps := doctor.NewCapabilities(version)
+			caps := doctorReadService.Capabilities(cmd.Context())
 			return printDoctorJSON(cmd, caps)
 		},
 	}
@@ -304,11 +314,7 @@ func newDoctorHealthCmd() *cobra.Command {
 		Use:   "health",
 		Short: "Cheap one-line liveness summary",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-			}
-			line, hr, herr := doctor.Health(cwd, version)
+			line, hr, herr := doctorReadService.Health(cmd.Context())
 			if herr != nil {
 				return &doctorExitError{code: doctor.ExitIOError, msg: herr.Error()}
 			}
@@ -329,7 +335,7 @@ func newDoctorRobotDocsCmd() *cobra.Command {
 		Use:   "robot-docs",
 		Short: "Print the paste-ready agent handbook (Markdown)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprint(cmd.OutOrStdout(), doctor.RobotDocs())
+			fmt.Fprint(cmd.OutOrStdout(), doctorReadService.RobotDocs(cmd.Context()))
 			return nil
 		},
 	}
@@ -370,11 +376,7 @@ func newDoctorLsCmd() *cobra.Command {
 		Use:   "ls",
 		Short: "List runs in .doctor/runs/",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return &doctorExitError{code: doctor.ExitIOError, msg: err.Error()}
-			}
-			runs, lerr := doctor.Ls(cwd)
+			runs, lerr := doctorReadService.List(cmd.Context())
 			if lerr != nil {
 				return &doctorExitError{code: doctor.ExitIOError, msg: lerr.Error()}
 			}
@@ -399,11 +401,7 @@ func newDoctorDiffCmd() *cobra.Command {
 		Use:   "diff",
 		Short: "Show what --fix would change (read-only)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			opts, err := doctorEngineOptions()
-			if err != nil {
-				return err
-			}
-			rep, derr := doctor.Diff(opts)
+			rep, derr := doctorReadService.Diff(cmd.Context(), doctorReadRequest())
 			if derr != nil {
 				return &doctorExitError{code: doctor.ExitIOError, msg: derr.Error()}
 			}
