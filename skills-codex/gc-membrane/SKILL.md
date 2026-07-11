@@ -29,7 +29,7 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
 | `membrane/scaffold-quest.sh` + `quests/_template/` | move-1 intake: default-FAIL `CONTRACT.md`, red `test.sh` |
 | `agents/{planner,builder,verifier,agy-verifier,opus-verifier}` | trinity + third family + claude-family failover lane, RBAC via harness config |
 | `doctor/law0-print-args`, `doctor/membrane-health` | blocking doctor checks |
-| `orders/membrane-canary.toml` | scheduled structural smoke via `scripts/e2e.sh` |
+| `orders/membrane-canary.toml` | scheduled structural smoke via the pack's `e2e.sh` entrypoint |
 | `tests/{finalize,intake}.bats` | pins the rollup parity + scaffold contract (bash+jq only) |
 | `RESIDUAL-GAPS.md` | the two honest zero-nudge gaps + mitigations |
 
@@ -141,7 +141,8 @@ of burning redo attempts).
 - `doctor/law0-print-args` (blocking): every claude/antigravity provider
   carries an explicit empty `print_args` (the builtin defaults are headless
   print sinks — LAW 0).
-- `orders/membrane-canary`: native cooldown order running `scripts/e2e.sh`
+- `orders/membrane-canary`: native cooldown order running the pack's `e2e.sh`
+  entrypoint
   (both doctor checks green + `gc lint`) — structural smoke, surfaced through
   `gc events`/dashboard.
 
