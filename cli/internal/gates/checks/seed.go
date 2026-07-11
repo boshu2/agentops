@@ -121,6 +121,9 @@ var (
 		"scripts/lib/ao_snippet_resolve.py",
 		"scripts/.scripts-ao-invocations-baseline",
 		"tests/scripts/check-scripts-ao-invocations.bats",
+		// covered by scripts/** already; explicit for the ratchet-lib routing
+		// closure test (age-ratchet-lib-extraction-bv7d.5, FM3)
+		"scripts/lib/ratchet.sh",
 	}
 	// Claude workflows must use `br` (bd/Dolt is retired). operating-loop.js —
 	// the most-viewed content artifact on the public repo — shipped a prompt
