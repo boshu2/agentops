@@ -233,6 +233,8 @@ var (
 		"scripts/check-jsonl-scanner-ratchet.sh",
 		"scripts/.jsonl-scanner-grandfather",
 		"tests/scripts/check-jsonl-scanner-ratchet.bats",
+		// shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.3, FM3)
+		"scripts/lib/ratchet.sh",
 	}
 )
 

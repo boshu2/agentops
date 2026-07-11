@@ -25,6 +25,8 @@ setup() {
     mkdir -p "$TMP_DIR/scripts/lib" "$TMP_DIR/cli/cmd/ao" "$TMP_DIR/cli/internal/storage"
     cp "$SCRIPT" "$TMP_DIR/scripts/check-jsonl-scanner-ratchet.sh"
     cp "$REPO_ROOT/scripts/lib/preamble.sh" "$TMP_DIR/scripts/lib/preamble.sh"
+    # shared ratchet mechanics (age-ratchet-lib-extraction-bv7d.3)
+    cp "$REPO_ROOT/scripts/lib/ratchet.sh" "$TMP_DIR/scripts/lib/ratchet.sh"
     chmod +x "$TMP_DIR/scripts/check-jsonl-scanner-ratchet.sh"
     (
         cd "$TMP_DIR"
