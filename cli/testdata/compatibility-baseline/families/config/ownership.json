@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "family": "config",
+  "profiles": {
+    "default": "present",
+    "flywheel": "present",
+    "legacy": "present",
+    "combined": "present"
+  },
+  "legacy_symbols": [
+    "configShow",
+    "modelsSetTier",
+    "modelsSetSkill",
+    "configModelsWriteResult",
+    "configModelsCmd",
+    "configCmd",
+    "runConfig",
+    "runConfigModels",
+    "handleModelsWrite"
+  ],
+  "live_owner": "cli/internal/commands/config",
+  "allowed_paths": [
+    "cli/cmd/ao/config*.go",
+    "cli/internal/adapters/config/**",
+    "cli/internal/commands/config/**",
+    "cli/internal/config/**",
+    "cli/testdata/compatibility-baseline/families/config/lineage.json"
+  ]
+}
