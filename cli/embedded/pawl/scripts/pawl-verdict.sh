@@ -542,8 +542,28 @@ PY
 #       kill-switch + how tests pin behavior clock-independently).
 #   AT FLIP TIME: bump/remove FLOOR_ENFORCE_AFTER AND update any stub-evidence behavior-lock
 #   suites (their thin fixtures deliberately carry no substance and will begin to HOLD).
+#
+# ⚠ MEASURED 2026-07-11 (age-pawl-intent-zhndq.10) — THE ADVISORY WINDOW DID ITS JOB: the
+# false-positive rate on REAL reviews is **76%**. Scanning the 261 local verdicts whose head is a
+# live commit: 26 PASS, **199 FLOOR-fail**, 36 fail for unrelated (stale/missing) reasons. The
+# failures include verdicts from unambiguously SUBSTANTIVE reviews (codex caught 3 real defects in
+# that session; those verdicts still fail the floor).
+#   ROOT CAUSE: the floor demands a `file:line` finding OR a reviewed-scope attestation. But a
+#   CONFIRMED review has, by definition, NO DEFECT TO CITE — a clean review legitimately reads "no
+#   blocking defects". The floor therefore CONFLATES "no defects found" with "no review performed",
+#   so every clean CONFIRM from codex/agy fails it. Right idea, wrong signal.
+#   => The original 2026-07-16 auto-flip would have started HOLDing ~76% of real reviews on a
+#   CALENDAR TRIGGER with nobody watching — breaking the membrane. The date is therefore pushed out
+#   and enforcement is now an EXPLICIT, EVIDENCE-GATED decision, not a silent clock event.
+#   FIXING THE SIGNAL (then re-measuring, then flipping) is tracked on age-pawl-intent-zhndq.10:
+#   a clean CONFIRM must be provable-substantive WITHOUT a defect citation — which means changing
+#   the REVIEWER PROMPT + verdict writer (emit an explicit reviewed-scope attestation every time),
+#   not just this check. PAWL_FLOOR_ENFORCE=1 still forces enforcement for tests/opt-in operators.
 # ---------------------------------------------------------------------------
-FLOOR_ENFORCE_AFTER="${PAWL_FLOOR_ENFORCE_AFTER:-2026-07-16}"
+# 2027-01-01: a deliberately DISTANT date. This is NOT a new deadline — it is a guard so no calendar
+# event can auto-enforce a floor measured at a 76% false-positive rate. Enforcement flips only when
+# .10 fixes the signal, re-measures, and sets it explicitly (or via PAWL_FLOOR_ENFORCE=1).
+FLOOR_ENFORCE_AFTER="${PAWL_FLOOR_ENFORCE_AFTER:-2027-01-01}"
 
 # _floor_enforcing — 0 (true) when the floor should BLOCK on a violation; 1 (false) when
 # it is still advisory (measure + warn only). PAWL_FLOOR_ENFORCE overrides the date both
