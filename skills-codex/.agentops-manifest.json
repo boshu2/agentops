@@ -747,8 +747,8 @@
     {
       "name": "idea-genie",
       "source_skill": "skills/idea-genie",
-      "source_hash": "8194e90c041f861ee6bf91e1a672ba1686264148dcfc5a45c71573e10c63a308",
-      "generated_hash": "61f272666021c8eff0c1c4ed1dc45ec5907d67c019c3a7a10a7460ed3b0c217d"
+      "source_hash": "c05660398043e22ba3aa875e5cdf692fc821b76723684b26f3da7dd4228d342b",
+      "generated_hash": "8c793ba0cdc1a3bc97319ea68b5a22cad48d536e9ddfbfe3e960fdf79c79907a"
     },
     {
       "name": "implement",
