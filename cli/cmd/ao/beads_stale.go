@@ -29,29 +29,6 @@ var (
 	beadsStaleNowOverride    string // used by tests to make detected_at deterministic
 )
 
-var beadsStaleCmd = &cobra.Command{
-	Use:   "stale-claims",
-	Short: "List in_progress beads whose claim looks stale",
-	Long: `Lists in_progress beads whose claim activity is older than --threshold.
-
-A bead is "stale" when its updated_at timestamp is older than the threshold
-(default 4h). Future signals (worktree quietness, session-bootstrap heartbeat
-expiry) will be added when the enabling primitives (soc-vuu6.25) ship.
-
-Output: human-readable table by default, or JSON array (matching
-schemas/stale-claim-event.v1.schema.json shape) with --json. Read-only:
-this command DOES NOT transfer claims. Use 'ao beads resume <id>' for that
-(soc-vuu6.27 slice 3).`,
-	RunE: runBeadsStale,
-}
-
-func init() {
-	beadsStaleCmd.Flags().Float64Var(&beadsStaleThresholdHours, "threshold", 4.0,
-		"Staleness threshold in hours (claim updated more than N hours ago).")
-	beadsStaleCmd.Flags().BoolVar(&beadsStaleJSON, "json", false,
-		"Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).")
-}
-
 // staleBeadRecord is the subset of `br list --json` output we care about.
 type staleBeadRecord = beadsapp.StaleBeadRecord
 
@@ -61,7 +38,7 @@ type staleEvent = beadsapp.StaleEvent
 type staleAgent = beadsapp.StaleAgent
 type staleEvidence = beadsapp.StaleEvidence
 
-func runBeadsStale(cmd *cobra.Command, args []string) error {
+func executeBeadsStale(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

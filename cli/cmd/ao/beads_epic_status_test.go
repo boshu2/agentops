@@ -137,7 +137,7 @@ func runEpicStatus(t *testing.T, epic string) (string, error) {
 	cmd := &cobra.Command{}
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	err := runBeadsEpicStatus(cmd, []string{epic})
+	err := executeBeadsEpicStatus(cmd, []string{epic})
 	return buf.String(), err
 }
 
@@ -171,7 +171,7 @@ func TestRunBeadsEpicStatus_TerminalJSON(t *testing.T) {
 }
 
 // TestRunBeadsEpicStatus_NotTerminalExitCode pins that --terminal maps a
-// not-terminal verdict to exit code 2 via beadsExitError.
+// not-terminal verdict to exit code 2 via beadsVerdictError.
 func TestRunBeadsEpicStatus_NotTerminalExitCode(t *testing.T) {
 	setEpicStatusFlags(t, true, false)
 	stubLedger(t, jsonLedger(t, []ledgerBead{
@@ -182,9 +182,9 @@ func TestRunBeadsEpicStatus_NotTerminalExitCode(t *testing.T) {
 	}), nil)
 
 	out, err := runEpicStatus(t, "age-x")
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if !errors.As(err, &exitErr) {
-		t.Fatalf("err = %v, want *beadsExitError", err)
+		t.Fatalf("err = %v, want *beadsVerdictError", err)
 	}
 	if exitErr.ExitCode() != 2 {
 		t.Errorf("exit code = %d, want 2", exitErr.ExitCode())
@@ -203,9 +203,9 @@ func TestRunBeadsEpicStatus_SkippedExitCode(t *testing.T) {
 	}), nil)
 
 	_, err := runEpicStatus(t, "age-x")
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if !errors.As(err, &exitErr) {
-		t.Fatalf("err = %v, want *beadsExitError", err)
+		t.Fatalf("err = %v, want *beadsVerdictError", err)
 	}
 	if exitErr.ExitCode() != 3 {
 		t.Errorf("exit code = %d, want 3", exitErr.ExitCode())
@@ -222,7 +222,7 @@ func TestRunBeadsEpicStatus_EpicNotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("err = nil, want epic-not-found error")
 	}
-	var exitErr *beadsExitError
+	var exitErr *beadsVerdictError
 	if errors.As(err, &exitErr) {
 		t.Fatalf("epic-not-found mapped to verdict exit %d; want a plain error", exitErr.ExitCode())
 	}

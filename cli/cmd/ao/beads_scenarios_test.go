@@ -8,17 +8,17 @@ import (
 	"testing"
 )
 
-// withStubbedBD swaps execBD/bdAvailable for the duration of a test and
+// withStubbedBD swaps beadsTrackerOutput/beadsTrackerAvailable for the duration of a test and
 // restores them afterward. The stub records every bd argv so tests can assert
 // the dry-run contract (no `bd update`).
 func withStubbedBD(t *testing.T, available bool, handler func(args ...string) ([]byte, error)) *[][]string {
 	t.Helper()
-	origExec, origAvail := execBD, bdAvailable
-	t.Cleanup(func() { execBD, bdAvailable = origExec, origAvail })
+	origExec, origAvail := beadsTrackerOutput, beadsTrackerAvailable
+	t.Cleanup(func() { beadsTrackerOutput, beadsTrackerAvailable = origExec, origAvail })
 
 	var calls [][]string
-	bdAvailable = func() bool { return available }
-	execBD = func(args ...string) ([]byte, error) {
+	beadsTrackerAvailable = func() bool { return available }
+	beadsTrackerOutput = func(args ...string) ([]byte, error) {
 		calls = append(calls, args)
 		return handler(args...)
 	}
@@ -38,7 +38,7 @@ func runScenariosExtract(t *testing.T, jsonOut bool, id string) (stdout, stderr 
 		beadsScenariosExtractCmd.SetErr(nil)
 	})
 
-	err = runBeadsScenariosExtract(beadsScenariosExtractCmd, []string{id})
+	err = executeBeadsScenariosExtract(beadsScenariosExtractCmd, []string{id})
 	return out.String(), errBuf.String(), err
 }
 
@@ -55,7 +55,7 @@ func runScenariosValidate(t *testing.T, jsonOut bool, id string) (stdout, stderr
 		beadsScenariosValidateCmd.SetErr(nil)
 	})
 
-	err = runBeadsScenariosValidate(beadsScenariosValidateCmd, []string{id})
+	err = executeBeadsScenariosValidate(beadsScenariosValidateCmd, []string{id})
 	return out.String(), errBuf.String(), err
 }
 
@@ -76,7 +76,7 @@ func runScenariosExtractWrite(t *testing.T, id, stdin string) (stdout, stderr st
 		beadsScenariosExtractCmd.SetIn(nil)
 	})
 
-	err = runBeadsScenariosExtract(beadsScenariosExtractCmd, []string{id})
+	err = executeBeadsScenariosExtract(beadsScenariosExtractCmd, []string{id})
 	return out.String(), errBuf.String(), err
 }
 
@@ -245,7 +245,7 @@ func TestRunBeadsScenariosValidate_JSONFailureVerdictOnStdout(t *testing.T) {
 
 func TestRunBeadsScenariosValidate_BDUnavailableWarnsAndSucceeds(t *testing.T) {
 	withStubbedBD(t, false, func(args ...string) ([]byte, error) {
-		t.Fatalf("execBD must not be called when bd is unavailable: %v", args)
+		t.Fatalf("beadsTrackerOutput must not be called when bd is unavailable: %v", args)
 		return nil, nil
 	})
 
@@ -337,7 +337,7 @@ func TestRunBeadsScenariosExtract_UnparseableIsError(t *testing.T) {
 
 func TestRunBeadsScenariosExtract_BDUnavailableWarnsAndSucceeds(t *testing.T) {
 	withStubbedBD(t, false, func(args ...string) ([]byte, error) {
-		t.Fatalf("execBD must not be called when bd is unavailable: %v", args)
+		t.Fatalf("beadsTrackerOutput must not be called when bd is unavailable: %v", args)
 		return nil, nil
 	})
 

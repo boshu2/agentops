@@ -169,11 +169,11 @@ func TestRunBeadsStale_JSON_OutputShape(t *testing.T) {
 	beadsStaleJSON = true
 
 	buf := &bytes.Buffer{}
-	beadsStaleCmd.SetOut(buf)
-	defer beadsStaleCmd.SetOut(nil)
+	legacyBeadsStaleCommand.SetOut(buf)
+	defer legacyBeadsStaleCommand.SetOut(nil)
 
-	if err := runBeadsStale(beadsStaleCmd, nil); err != nil {
-		t.Fatalf("runBeadsStale: %v", err)
+	if err := executeBeadsStale(legacyBeadsStaleCommand, nil); err != nil {
+		t.Fatalf("executeBeadsStale: %v", err)
 	}
 
 	var got []staleEvent
@@ -206,11 +206,11 @@ func TestRunBeadsStale_HumanOutput_HasZeroMessage(t *testing.T) {
 	beadsStaleJSON = false
 
 	buf := &bytes.Buffer{}
-	beadsStaleCmd.SetOut(buf)
-	defer beadsStaleCmd.SetOut(nil)
+	legacyBeadsStaleCommand.SetOut(buf)
+	defer legacyBeadsStaleCommand.SetOut(nil)
 
-	if err := runBeadsStale(beadsStaleCmd, nil); err != nil {
-		t.Fatalf("runBeadsStale: %v", err)
+	if err := executeBeadsStale(legacyBeadsStaleCommand, nil); err != nil {
+		t.Fatalf("executeBeadsStale: %v", err)
 	}
 	if !strings.Contains(buf.String(), "none") {
 		t.Errorf("expected zero-state message containing 'none'; got %q", buf.String())
@@ -223,7 +223,7 @@ func TestRunBeadsStale_BdMalformed(t *testing.T) {
 	beadsStaleFetchCmd = func(_ context.Context) ([]byte, error) {
 		return []byte("not json"), nil
 	}
-	err := runBeadsStale(beadsStaleCmd, nil)
+	err := executeBeadsStale(legacyBeadsStaleCommand, nil)
 	if err == nil {
 		t.Fatalf("expected error on malformed br-list JSON; got nil")
 	}

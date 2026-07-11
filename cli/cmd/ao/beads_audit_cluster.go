@@ -27,53 +27,6 @@ var (
 	beadsClusterApply   bool
 )
 
-var beadsAuditCmd = &cobra.Command{
-	Use:   "audit",
-	Short: "Audit open beads for likely-fixed, stale, or consolidatable work",
-	Long: `Audits open and in-progress beads for backlog hygiene issues.
-
-The audit checks for:
-- bead IDs already referenced by git commits
-- bead descriptions whose cited files changed since the bead was created
-- bead descriptions whose referenced patterns no longer appear in the repo
-- multiple beads that mention the same file path
-
-This is the native Go equivalent of scripts/bd-audit.sh. The shell script is
-kept as a compatibility entrypoint for existing hooks and skill guidance.`,
-	RunE: runBeadsAudit,
-}
-
-var beadsClusterCmd = &cobra.Command{
-	Use:   "cluster",
-	Short: "Suggest consolidation clusters for overlapping open beads",
-	Long: `Analyzes open beads for domain overlap and suggests consolidation groups.
-
-The scorer compares title/body keywords, mentioned file paths, and labels. It
-prefers an existing epic as the cluster representative when one exists, falling
-back to the lexicographically smallest bead ID.
-
-This is the native Go equivalent of scripts/bd-cluster.sh. The shell script is
-kept as a compatibility entrypoint for existing hooks and skill guidance.`,
-	RunE: runBeadsCluster,
-}
-
-func init() {
-	beadsCmd.AddCommand(beadsAuditCmd)
-	beadsCmd.AddCommand(beadsClusterCmd)
-
-	beadsAuditCmd.Flags().BoolVar(&beadsAuditJSON, "json", false,
-		"Emit audit report as JSON")
-	beadsAuditCmd.Flags().BoolVar(&beadsAuditStrict, "strict", false,
-		"Exit 1 when any likely-fixed, likely-stale, or consolidatable bead is found")
-	beadsAuditCmd.Flags().BoolVar(&beadsAuditAutoClose, "auto-close", false,
-		"Close likely-fixed beads when commit or file-change evidence is found")
-
-	beadsClusterCmd.Flags().BoolVar(&beadsClusterJSON, "json", false,
-		"Emit cluster report as JSON")
-	beadsClusterCmd.Flags().BoolVar(&beadsClusterApply, "apply", false,
-		"Reparent non-representative beads under the cluster representative")
-}
-
 type beadRecord struct {
 	ID          string   `json:"id"`
 	Title       string   `json:"title"`
@@ -190,7 +143,7 @@ type AuditReport struct {
 	Error          string               `json:"error,omitempty"`
 }
 
-func runBeadsAudit(cmd *cobra.Command, args []string) error {
+func executeBeadsAudit(cmd *cobra.Command, args []string) error {
 	report, err := auditBeads(beadsAuditAutoClose)
 	if err != nil {
 		return err
@@ -213,7 +166,7 @@ func runBeadsAudit(cmd *cobra.Command, args []string) error {
 		if cmd != nil {
 			cmd.SilenceErrors = true
 		}
-		return &beadsExitError{code: 1}
+		return &beadsVerdictError{code: 1}
 	}
 	return nil
 }
@@ -223,7 +176,7 @@ func auditBeads(autoClose bool) (*AuditReport, error) {
 		LikelyFixed:    []AuditFinding{},
 		LikelyStale:    []AuditFinding{},
 		Consolidatable: []AuditConsolidation{},
-		BDAvailable:    bdAvailable(),
+		BDAvailable:    beadsTrackerAvailable(),
 	}
 	if !report.BDAvailable {
 		report.Error = "bd CLI not found"
@@ -366,7 +319,7 @@ func collectAuditBeads() ([]beadRecord, error) {
 }
 
 func listBDRecordsByStatus(status string) ([]beadRecord, error) {
-	raw, err := execBD("list", "--status", status, "--json")
+	raw, err := beadsTrackerOutput("list", "--status", status, "--json")
 	if err != nil {
 		return nil, fmt.Errorf("bd list --status %s --json: %w", status, err)
 	}
@@ -509,7 +462,7 @@ func fileChangesSinceCommits(commits []auditCommit, createdAt string, paths []st
 // returns any error from the bd update so callers can surface a failed state
 // mutation instead of silently dropping it.
 func autoCloseLikelyFixed(id, note string) error {
-	if _, err := execBD("update", id, "--status", "closed", "--append-notes", note); err != nil {
+	if _, err := beadsTrackerOutput("update", id, "--status", "closed", "--append-notes", note); err != nil {
 		return fmt.Errorf("auto-close bead %s: %w", id, err)
 	}
 	return nil
@@ -679,7 +632,7 @@ type ClusterReport struct {
 	Error       string        `json:"error,omitempty"`
 }
 
-func runBeadsCluster(cmd *cobra.Command, args []string) error {
+func executeBeadsCluster(cmd *cobra.Command, args []string) error {
 	report, err := clusterBeads(beadsClusterApply)
 	if err != nil {
 		return err
@@ -702,7 +655,7 @@ func clusterBeads(apply bool) (*ClusterReport, error) {
 	report := &ClusterReport{
 		Clusters:    []BeadCluster{},
 		Unclustered: []ClusterBead{},
-		BDAvailable: bdAvailable(),
+		BDAvailable: beadsTrackerAvailable(),
 	}
 	if !report.BDAvailable {
 		report.Error = "bd CLI not found"
@@ -729,7 +682,7 @@ func clusterBeads(apply bool) (*ClusterReport, error) {
 				if bead.ID == cluster.Representative {
 					continue
 				}
-				if _, err := execBD("update", bead.ID, "--parent", cluster.Representative); err != nil {
+				if _, err := beadsTrackerOutput("update", bead.ID, "--parent", cluster.Representative); err != nil {
 					report.ApplyErrors = append(report.ApplyErrors,
 						fmt.Sprintf("%s -> %s: %v", bead.ID, cluster.Representative, err))
 					continue
@@ -745,7 +698,7 @@ func enrichBeadRecord(record beadRecord) beadRecord {
 	if record.ID == "" {
 		return record
 	}
-	raw, err := execBD("show", record.ID, "--json")
+	raw, err := beadsTrackerOutput("show", record.ID, "--json")
 	if err != nil {
 		return record
 	}

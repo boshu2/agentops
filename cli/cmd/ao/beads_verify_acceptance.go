@@ -38,7 +38,7 @@ import (
 
 // execBR is the single entry point for shelling out to br (beads_rust), the
 // sanctioned tracker. It is a package var so tests inject a fake without a live
-// ledger — the br-native analog of execBD. BEADS_DIR is inherited from the
+// ledger — the br-native analog of beadsTrackerOutput. BEADS_DIR is inherited from the
 // process environment (exec.Command keeps os.Environ by default).
 var execBR = func(args ...string) ([]byte, error) {
 	cwd, _ := os.Getwd()
@@ -513,44 +513,6 @@ func validateAcceptanceCriteriaContent(desc string) []string {
 	return problems
 }
 
-func newBeadsVerifyAcceptanceCmd() *cobra.Command {
-	var strict, asJSON bool
-	cmd := &cobra.Command{
-		Use:   "verify-acceptance <bead-id>...",
-		Short: "Assert each bead carries the acceptance contract for its type (br-native)",
-		Long: `Read beads via br (never the retired bd) and check each bead carries the
-acceptance contract that fits its issue_type:
-
-  feature -> Gherkin '## Scenarios' + a TDD/test signal
-  spike   -> decision-criteria
-  design  -> formal-spec
-  test    -> assertion-inventory
-  cutover -> migration-checklist
-  task/epic -> N/A (structural, no per-item acceptance)
-  other   -> UNDEFINED (no contract defined; reported, never silently skipped)
-
-Advisory by default (prints verdicts, exits 0). With --strict, any FAIL or
-UNDEFINED maps to a non-zero exit — the gate posture for new/changed beads.
-
-Scope: this verifies the contract SHAPE for each type (the right section
-headings / structural tokens) AND its CONTENT QUALITY (age-xmkn): a section or
-criterion that is structurally present but only a placeholder ("TBD") FAILs, and
-a fenced acceptance_criteria block is parsed and each criterion validated against
-the canonical authored contract (skills/plan/SKILL.md) — a measurable
-description, a valid check_type, a check_command for runnable check_types, and
-agent_judge when check_type == custom_rubric. The lifted fields (weight /
-optional / evidence_required) are added by /discovery, not authored, so they are
-not required here.`,
-		Args: cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBeadsVerifyAcceptance(cmd, args, strict, asJSON)
-		},
-	}
-	cmd.Flags().BoolVar(&strict, "strict", false, "Exit non-zero on any FAIL or UNDEFINED verdict")
-	cmd.Flags().BoolVar(&asJSON, "json", false, "Emit verdicts as JSON")
-	return cmd
-}
-
 type acceptanceResult struct {
 	BeadID    string            `json:"bead_id"`
 	IssueType string            `json:"issue_type"`
@@ -558,7 +520,7 @@ type acceptanceResult struct {
 	Missing   []string          `json:"missing,omitempty"`
 }
 
-func runBeadsVerifyAcceptance(cmd *cobra.Command, ids []string, strict, asJSON bool) error {
+func executeBeadsVerifyAcceptance(cmd *cobra.Command, ids []string, strict, asJSON bool) error {
 	out, err := execBR(append([]string{"show", "--format", "json"}, ids...)...)
 	if err != nil {
 		return fmt.Errorf("br show %v: %w", ids, err)
@@ -613,16 +575,12 @@ func runBeadsVerifyAcceptance(cmd *cobra.Command, ids []string, strict, asJSON b
 	}
 
 	if strict && nonPass {
-		return &beadsExitError{code: 1}
+		return &beadsVerdictError{code: 1}
 	}
 	return nil
 }
 
 // asBeadsExit is a thin errors.As wrapper used by tests.
-func asBeadsExit(err error, target **beadsExitError) bool {
+func asBeadsExit(err error, target **beadsVerdictError) bool {
 	return errors.As(err, target)
-}
-
-func init() {
-	beadsCmd.AddCommand(newBeadsVerifyAcceptanceCmd())
 }

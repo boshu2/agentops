@@ -31,33 +31,6 @@ var (
 	beadsResumeNowOverride string // test seam
 )
 
-var beadsResumeCmd = &cobra.Command{
-	Use:   "resume <bead-id>",
-	Short: "Atomically transfer an in_progress claim from a stale agent to this one",
-	Long: `Transfers a stale claim via 'br update <bead-id> --claim', then appends a
-claim_transferred event (matching schemas/stale-claim-event.v1.schema.json)
-to docs/provenance/ledger.jsonl. The bead's prior + new revision (assignee
-and updated_at hash) is captured in the event for audit.
-
-Use 'ao beads stale-claims' (slice 2) to find candidates first.
-
---agent: explicit new claimant id. Defaults to BEADS_ACTOR env var, else "ao-beads-resume".
---ledger: provenance ledger path (default docs/provenance/ledger.jsonl).
---json: emit the event to stdout in addition to the ledger.`,
-	Args: cobra.ExactArgs(1),
-	RunE: runBeadsResume,
-}
-
-func init() {
-	beadsResumeCmd.Flags().StringVar(&beadsResumeAgentID, "agent", "",
-		"New claimant id (defaults to BEADS_ACTOR env var, else ao-beads-resume).")
-	beadsResumeCmd.Flags().StringVar(&beadsResumeLedgerPath, "ledger",
-		"docs/provenance/ledger.jsonl",
-		"Path to the provenance ledger (relative to repo root).")
-	beadsResumeCmd.Flags().BoolVar(&beadsResumeJSON, "json", false,
-		"Emit the claim_transferred event to stdout (always written to ledger).")
-}
-
 // beadsResumeShowFunc is the test seam for fetching a bead's current state
 // (assignee + updated_at) BEFORE the claim transfer, so we can record the
 // prior revision. Production: shells out to `br show <id> --json`.
@@ -82,7 +55,7 @@ var beadsResumeAppendLedger = func(ledgerPath string, event any) error {
 
 func currentBeadsRuntime() beadsadapter.Runtime { return beadsadapter.NewRuntime() }
 
-func runBeadsResume(cmd *cobra.Command, args []string) error {
+func executeBeadsResume(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
 	if beadID == "" {
 		return fmt.Errorf("bead id is required")

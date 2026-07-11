@@ -37,39 +37,6 @@ var (
 	beadsEpicStatusJSON     bool
 )
 
-var beadsEpicStatusCmd = &cobra.Command{
-	Use:   "epic-status <epic-id>",
-	Short: "Deterministic group-terminality verdict for an epic/wave",
-	Long: `Emit a deterministic "is this epic/wave actually done" verdict, replacing
-agent self-report. Members are the epic's id-prefix children (<epic>.N) UNION
-any bead with a parent-child dependency edge to the epic.
-
-Three guards (all must hold for a terminal/done verdict):
-  1. an unresolved/missing member becomes an unknown-status placeholder that
-     NEVER counts as done;
-  2. a group with a deliberately-open descendant (a human-gate / checkpoint
-     bead) is NOT complete;
-  3. a zero-descendant, still-materializing group is skipped, not done.
-
-Output: a human-readable reason by default, or a machine-readable verdict with
---json. With --terminal the verdict also maps to the exit code:
-
-  0 — terminal (done)   2 — not terminal   3 — skipped (materializing)
-  1 — error (epic not found, ledger unreadable)
-
-Reads the live br ledger resolved via 'ao beads dir' (works from linked
-worktrees). Read-only.`,
-	Args: cobra.ExactArgs(1),
-	RunE: runBeadsEpicStatus,
-}
-
-func init() {
-	beadsEpicStatusCmd.Flags().BoolVar(&beadsEpicStatusTerminal, "terminal", false,
-		"Map the verdict to the process exit code (0 terminal / 2 not-terminal / 3 skipped).")
-	beadsEpicStatusCmd.Flags().BoolVar(&beadsEpicStatusJSON, "json", false,
-		"Emit the verdict as a JSON object instead of a human-readable line.")
-}
-
 // ledgerBead is the subset of an issues.jsonl record the predicate needs.
 type ledgerBead = beadsapp.LedgerBead
 
@@ -84,7 +51,7 @@ var beadsEpicStatusReadLedger = func(dir string) ([]byte, error) {
 	return currentBeadsRuntime().ReadFile(filepath.Join(dir, "issues.jsonl"))
 }
 
-func runBeadsEpicStatus(cmd *cobra.Command, args []string) error {
+func executeBeadsEpicStatus(cmd *cobra.Command, args []string) error {
 	epic := strings.TrimSpace(args[0])
 	if epic == "" {
 		return fmt.Errorf("epic id is required")
@@ -116,10 +83,10 @@ func runBeadsEpicStatus(cmd *cobra.Command, args []string) error {
 		switch result.Verdict {
 		case epicstatus.NotTerminal:
 			cmd.SilenceUsage, cmd.SilenceErrors = true, true
-			return &beadsExitError{code: 2}
+			return &beadsVerdictError{code: 2}
 		case epicstatus.Skipped:
 			cmd.SilenceUsage, cmd.SilenceErrors = true, true
-			return &beadsExitError{code: 3}
+			return &beadsVerdictError{code: 3}
 		}
 	}
 	return nil
