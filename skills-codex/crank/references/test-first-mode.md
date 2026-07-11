@@ -61,10 +61,12 @@ If a spec worker writes `BLOCKED` instead of a contract:
    bd comments add <issue-id> "SPEC BLOCKED: <reason>. Retrying with additional context..." 2>/dev/null
    ```
 3. **Retry once** with enriched prompt (include the BLOCKED reason + additional codebase context)
-4. **If still BLOCKED after 2 attempts**, escalate:
+4. **If still BLOCKED after 2 attempts**, take one bounded helper pass (a
+   fresh context or cross-family model gets the reason + what was tried;
+   resume on UNSTUCK); escalate only if the blocker survives it:
    ```bash
    bd update <issue-id> --labels BLOCKER 2>/dev/null
-   bd comments add <issue-id> "ESCALATED: Spec generation failed 2x. Reason: <reason>. Human review required." 2>/dev/null
+   bd comments add <issue-id> "ESCALATED: Spec generation failed 2x. Reason: <reason>. Helper pass: <ESCALATE|skipped>. Human review required." 2>/dev/null
    ```
    Remove the issue from spec-eligible list and continue with remaining issues. Do NOT block the entire wave.
 

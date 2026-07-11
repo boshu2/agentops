@@ -231,7 +231,7 @@ But do NOT read implementation details of the specific feature being specified.
    |---------|--------|
    | **PASS** | Record verdict in epic notes. Advance to next wave. |
    | **WARN** | Create fix beads as children of the epic (`ao beads exec create`). Execute fixes inline (small) or as wave N.5 via swarm. Re-run acceptance check. If PASS on re-check, advance. If still WARN after 2 attempts, treat as FAIL. WARN is only for non-critical review gaps after evidence is complete. |
-   | **FAIL** | Record verdict in epic notes. Output `<promise>BLOCKED</promise>` and exit. Human review required. Includes missing mandatory evidence. |
+   | **FAIL** | Record verdict in epic notes. Take one bounded helper pass (fresh context or cross-family model gets the verdict + evidence; resume on UNSTUCK). If it survives, output `<promise>BLOCKED</promise>` and exit — human review required. Includes missing mandatory evidence. |
 
    ```bash
    # Record verdict in epic notes

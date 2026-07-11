@@ -96,7 +96,7 @@ Never claim completion without one of these markers.
 
 ## Node Repair Operator
 
-When a task fails during wave execution, classify as **RETRY** (transient — re-add with adjustment, max 2), **DECOMPOSE** (too complex — split into sub-issues, terminal), or **PRUNE** (blocked — escalate immediately). Budget: 2 per task. Read `references/failure-recovery.md` for classification signals and recovery commands.
+When a task fails during wave execution, classify as **RETRY** (transient — re-add with adjustment, max 2), **DECOMPOSE** (too complex — split into sub-issues, terminal), or **PRUNE** (blocked — one bounded helper pass, then escalate what survives). Budget: 2 per task. Read `references/failure-recovery.md` for classification signals and recovery commands.
 
 **Mutation logging on failure classification:**
 - **DECOMPOSE:** Log `task_removed` for the original task, then `task_added` for each new sub-task.
@@ -167,7 +167,7 @@ Not a checkbox ([the flywheel](../../docs/architecture/the-flywheel.md)): the cl
 1. **What did completing this bead teach?** (one line — usually "nothing new", and that's fine)
 2. **Does it CONTRADICT an assumption the remaining plan depends on?**
 
-If **no** → proceed to the next bead. If **yes** (a falsified plan assumption) → re-plan the remaining slices NOW, not at the wave boundary: invoke `/discovery` as the re-plan engine over the remaining DAG (split / re-order / add / drop beads) and record the trigger in the close reason (`replan: <falsified assumption>`). **Anti-thrash guard:** the trigger is a falsified plan assumption ONLY — most closes teach nothing; never re-plan on mere surprise, difficulty, or a new idea (park those for `/post-mortem`). **Andon bound:** a re-plan that would rework the same remaining DAG a 3rd time escalates to the human instead of re-planning again.
+If **no** → proceed to the next bead. If **yes** (a falsified plan assumption) → re-plan the remaining slices NOW, not at the wave boundary: invoke `/discovery` as the re-plan engine over the remaining DAG (split / re-order / add / drop beads) and record the trigger in the close reason (`replan: <falsified assumption>`). **Anti-thrash guard:** the trigger is a falsified plan assumption ONLY — most closes teach nothing; never re-plan on mere surprise, difficulty, or a new idea (park those for `/post-mortem`). **Andon bound:** a re-plan that would rework the same remaining DAG a 3rd time stops re-planning and takes one bounded helper pass (fresh context, cross-family model, or `/council` — [pawls.md §Escalation](../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model)); it escalates to the human only if the helper cannot unstick it.
 
 **Multi-lane serialization + by-hand land.** When several lanes land onto a hot `main` at once, or when you land by hand via the `ao pawl review` CLI (which sets `PAWL_UNTRUSTED_REPO=1` and SKIPS auto-bind, so the sealed bind is manual), follow the serialized land-token discipline and the exact `[feat, #trivial-bind]` command sequence in [references/land-protocol.md](references/land-protocol.md) — one land at a time across lanes, `ao provenance emit-verdict` for the sealed bind (never a hand-appended ledger edge), and `git merge-base --is-ancestor` before every `ao beads exec close`.
 

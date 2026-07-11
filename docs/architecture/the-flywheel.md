@@ -59,18 +59,20 @@ one-way-door decision routes by a *policy* to the cheapest tier that can safely 
 | Tier | For | Machinery (built) |
 |---|---|---|
 | **Auto** | routine, deterministically checkable | AUTO-REDO on REFUTED; the gates |
-| **Council** | model-adjudicable one-way doors — architecture forks, scoring, plan shape | [`/council`](../../skills/council/SKILL.md) (multi-judge consensus) + `ao plan-pawl decide` (deterministic PASS/REDO/BLOCKED — the windshield, no model gets the last word) + [`converge`](../../skills/converge/SKILL.md) (fix→re-judge to agreement or hard-BLOCK) |
-| **Human** | genuine human-judgment (the refusal lane: money, legal, hiring, irreversible external) + any breaker trip | `ESCALATE`/`HOLD`; the refusal lane |
+| **Helper** | model-adjudicable one-way doors — architecture forks, scoring, plan shape — **and breaker-tripped stuck states** (N failed rounds, oscillation, scope creep): stuckness is model-adjudicable too; the context that ground to a halt is in a rut a fresh one is not in | [`/council`](../../skills/council/SKILL.md) (multi-judge consensus) + `ao plan-pawl decide` (deterministic PASS/REDO/BLOCKED — the windshield, no model gets the last word) + [`converge`](../../skills/converge/SKILL.md) (fix→re-judge to agreement or hard-BLOCK); for stuck states, one bounded helper pass — a fresh context or cross-family model (`codex exec`) gets the blocker + what was tried, returns UNSTUCK or ESCALATE. An advisor, never a second driver |
+| **Human** | genuine human-judgment (the refusal lane: money, legal, hiring, irreversible external), an explicit judgment flag, an exhausted budget — plus any blocker that survived its one helper pass | `ESCALATE`/`HOLD`; the refusal lane |
 
 "Keep going until it passes" without a breaker grinds forever on an unpassable goal — and a
 Stop-hook that *blocks stopping* is exactly the mechanism that would. So the primary re-do
 loop is bounded (`ao plan-pawl decide` PASS/REDO/**BLOCKED**; `converge` → hard-BLOCK); the
 Stop-hook sits outside as governor; the human is the ultimate breaker.
 
-**The tiers all exist; the missing piece is the *router* — a per-goal policy** mapping a
-one-way-door *class* to a *tier* (`{arch fork → council, external/money/irreversible → me,
-routine → auto}`). The goal-crafting skill carries that policy; it is *not* a flat "escalate
-to me."
+**The tiers all exist; the load-bearing piece is the *router* — a per-goal policy** mapping a
+one-way-door *class* to a *tier* (`{arch fork → helper, stuck → helper, external/money/
+irreversible → me, routine → auto}`). The goal-crafting skill carries that policy; it is
+*not* a flat "escalate to me." The full ladder — breaker trip → one bounded helper pass →
+human only if it survives — is the contract in
+[`pawls.md` §Escalation](../contracts/pawls.md#escalation-the-circuit-breaker-model).
 
 ## Small batches and the flywheel property
 
@@ -115,10 +117,11 @@ autonomous the system must be strict.
 - **In the loop** — gate every iteration. Doesn't scale; kills the long autonomy.
 - **On the loop** — set the setpoint (the goal), then review **asynchronously** the two things
   the loop accumulates: the **yield** (verified increments + what each taught) and the
-  **andon queue** (the handful it refused to guess on: one-way doors, slices that couldn't
-  pass validate in N rounds, scope-creep flags). The andon is what makes long autonomy *safe*
-  — grind the slices you can verify, **stop and ask** on the ones you can't, never hallucinate
-  a road that isn't there.
+  **andon queue** (the handful it refused to guess on: refusal-lane doors, explicit judgment
+  flags, and blockers that survived their helper pass). The andon is what makes long autonomy
+  *safe* — grind the slices you can verify, consult a fresh context on the ones that stall,
+  **stop and ask** only on the ones no model can own, never hallucinate a road that isn't
+  there.
 
 ## Substrate split: gc runs it, agentops disciplines it
 

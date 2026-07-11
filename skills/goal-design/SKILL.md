@@ -124,24 +124,32 @@ Given `/goal-design "<goal>" [--slug <slug>]`:
 
 A long autonomous run is only safe if the goal carries its own escalation
 policy — a per-goal **class → tier** router, never a flat "escalate to me"
-(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon). The
-helper's `new` command scaffolds the canonical router table into the driver
+(doctrine: `docs/architecture/the-flywheel.md`, the three-tier andon;
+contract: `docs/contracts/pawls.md` §Escalation). The
+tool's `new` command scaffolds the canonical router table into the driver
 body — replace its TODO row with the goal-specific one-way-door rows before
 dispatch; do not leave the placeholder. When
 authoring `driver.md`, write the router as a table in the driver **body** and
 mirror its escalation semantics in the schema-validated `route_back_rules`
-frontmatter (auto → `validation_fails`, council →
-`promotion_contradicts_intent`, human → a breaker-trip clause in those rules):
+frontmatter (auto → `validation_fails`, helper →
+`promotion_contradicts_intent` + the helper-pass clause in
+`validation_fails`, human → a breaker-trip clause in those rules):
 
 | One-way-door class | Tier | Machinery (reuse, never rebuild) |
 | --- | --- | --- |
 | Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
-| Architecture fork / plan-shape one-way door | **council** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
-| Money / legal / irreversible-external (the refusal lane) + any breaker trip | **human** | ESCALATE / HOLD — hand back to the operator |
+| Architecture fork / plan-shape one-way door | **helper** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
+| Stuck: N failed validation rounds, oscillation, scope-creep flag | **helper** | one bounded helper pass — a fresh context or cross-family model (`codex exec`, `/council`) gets the blocker, the evidence, and what was tried; returns UNSTUCK (a concrete next action) or ESCALATE |
+| Money / legal / irreversible-external (the refusal lane), explicit judgment flag, exhausted time/cost budget | **human** | ESCALATE / HOLD — hand back to the operator; the helper is skipped |
 
-Every router carries the implicit final row: a slice that cannot pass
-validation in N rounds, an oscillation, or a scope-creep flag trips the
-breaker to **human** — stop and ask, never guess through it.
+Every router carries the implicit final rows: a breaker trip routes to ONE
+bounded helper pass first — a stuck context consults a fresh one before it
+consults the operator. **Human** only when the blocker survives that pass,
+the helper itself returns ESCALATE, or the class is refusal-lane /
+explicit-judgment / budget-exhausted. Never a second helper pass on the same
+blocker class — stop and ask, never guess through it. The helper is an
+advisor, never a second driver: it reasons about the blocker and returns a
+recommendation; it does not take over the work or own the loop.
 
 **Schema limit (do not hack it):** the driver v1 schema is
 `additionalProperties: false` with no dedicated andon field, so the class →
