@@ -43,3 +43,5 @@ func (Runtime) AppendEvent(path string, event any) error {
 	}
 	return nil
 }
+
+func (Runtime) ReadFile(path string) ([]byte, error) { return os.ReadFile(path) }

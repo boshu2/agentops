@@ -24,7 +24,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -82,7 +81,7 @@ type ledgerDep = beadsapp.LedgerDep
 // newline-delimited issues.jsonl bytes for the resolved ledger dir. Tests
 // override it to inject an in-memory ledger without touching a br/ao binary.
 var beadsEpicStatusReadLedger = func(dir string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(dir, "issues.jsonl"))
+	return currentBeadsRuntime().ReadFile(filepath.Join(dir, "issues.jsonl"))
 }
 
 func runBeadsEpicStatus(cmd *cobra.Command, args []string) error {
@@ -91,7 +90,11 @@ func runBeadsEpicStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("epic id is required")
 	}
 
-	dir := resolveBeadsDir("", os.Environ()).Path
+	ledger, err := currentBeadsTracker().BRLedger()
+	if err != nil {
+		return err
+	}
+	dir := ledger.Path
 	raw, err := beadsEpicStatusReadLedger(dir)
 	if err != nil {
 		return fmt.Errorf("read ledger %s: %w", filepath.Join(dir, "issues.jsonl"), err)
