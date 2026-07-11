@@ -106,9 +106,60 @@ codex exec resume --last --json "<follow-up>" > events2.jsonl
 
 ## Output Specification
 
-**Format:** plain text (final agent message) by default; JSONL with `--json`; raw last message to a file with `-o/--output-last-message`.
-**Filename:** caller-chosen via `-o <FILE>` (e.g. `/tmp/codex-verdict.txt`) or redirected JSONL (`events.jsonl`). No fixed convention — the orchestrator names it.
-**Structure:** non-`--json` = the agent's final message to stdout. `--json` = one JSON event per line (item/agent/tool events); parse the terminal agent message item for the result. `--output-schema FILE` forces the final response to conform to a supplied JSON Schema (use for machine-checkable verdicts).
+- **Artifact directory:** for an automated handoff, capture output under
+  `$REPO/.agents/evidence/codex-exec/<run-id>/`; an interactive caller may keep
+  the default final message on stdout.
+- **Filename convention:** use `final-message.txt` with
+  `-o/--output-last-message`, `events.jsonl` with `--json`, or
+  `final-message.json` when `--output-schema` constrains the last message.
+- **Serialization/schema format:** `final-message.txt` is a nonempty regular file;
+  `events.jsonl` is one JSON event object per line and must include a nonempty
+  completed `agent_message`; `final-message.json` must satisfy the exact JSON
+  Schema supplied to `--output-schema`.
+- **Validator command:** after capturing the process status as `$codex_rc` and
+  the selected artifact as `$output_path`, validate the transport before
+  interpreting the agent's result:
+
+  ```bash
+  set -euo pipefail
+  test "$codex_rc" -eq 0
+  test -n "$REPO"
+  test -f "$output_path"
+  test ! -L "$output_path"
+  test -s "$output_path"
+  artifact_root="$REPO/.agents/evidence/codex-exec/"
+  relative_path="${output_path#"$artifact_root"}"
+  test "$relative_path" != "$output_path"
+  run_id="${relative_path%%/*}"
+  artifact_name="${relative_path#*/}"
+  test -n "$run_id"
+  test "$artifact_name" != "$relative_path"
+  case "$run_id" in .|..) exit 1 ;; esac
+  case "$artifact_name" in */*) exit 1 ;; esac
+  physical_repo="$(cd "$REPO" && pwd -P)"
+  physical_root="$(cd "$artifact_root" && pwd -P)"
+  test "$physical_root" = "$physical_repo/.agents/evidence/codex-exec"
+  physical_dir="$(cd "$(dirname "$output_path")" && pwd -P)"
+  test "${physical_dir#"$physical_root"/}" != "$physical_dir"
+  case "$artifact_name" in
+    final-message.txt) test -s "$output_path" ;;
+    events.jsonl)
+      jq -se 'length > 0 and all(.[]; type == "object") and
+              any(.[]; .type == "item.completed" and
+                       .item.type == "agent_message" and
+                       ((.item.text | type) == "string") and
+                       (.item.text | length) > 0)' "$output_path" ;;
+    final-message.json)
+      test -n "${output_schema:-}"
+      command -v check-jsonschema >/dev/null
+      check-jsonschema --schemafile "$output_schema" "$output_path" ;;
+    *) exit 1 ;;
+  esac
+  ```
+- **Downstream handoff:** only after this transport validator succeeds may the
+  owning worker loop or independent judge parse the result-specific contract;
+  a nonzero Codex exit or invalid artifact is infrastructure failure, not a
+  PASS/FAIL verdict.
 
 ## Exit Codes
 
@@ -129,66 +180,10 @@ A loop should branch on the process exit code, not on scraped text.
 - [ ] Long/multi-turn work uses `resume` (not `--ephemeral`) so it can be recovered
 - [ ] Multi-account lanes dispatched via `caam exec codex <profile> --`
 
-## Validator dispatch rules (learned 2026-06-10, cp-4jac/cp-801l; extended cp-hhd7 cards 6–10)
+## Validator and runtime rules
 
-- **Network-touching validators need `-s danger-full-access`.** A codex VALIDATOR that must read a Dolt-mode bd ledger, run `git fetch`, or reach any network MUST be dispatched with `-s danger-full-access`. `-s workspace-write` blocks network (`connect: operation not permitted`) and blocks FETCH_HEAD writes. A fail-closed FAIL caused purely by sandbox denial is an **infrastructure artifact, not a verdict**: fix the dispatch and re-run the judge. NEVER hand-verify the missing item yourself and upgrade the verdict — that breaks judge independence (author ≠ judge).
-- **Set TMPDIR inside the workspace for any run that commits.** The sandbox blocks git temp-object writes to `/var/folders`; export `TMPDIR` to a path inside the workspace (e.g. `TMPDIR="$REPO/.tmp"`) before any codex run that needs `git commit` to succeed.
-- **Verdict file contract.** Bare `VERDICT: PASS|FAIL` as the first line, then a blank line, then a bare `COMMANDS RUN:` line, then the commands + output verbatim. No `##` headings or parentheticals on those lines — the gate parses them anchored. Fail closed on anything unverifiable.
-- **Write-scope clamp — mandatory in every judge brief (2026-07-02, showcase kernel R2).** State it verbatim: "READ-ONLY except writing your single verdict file at `<path>`. Do NOT commit, push, or run tracker/infra ops (git push, br/bd, dolt)." Role-scoped, not model-scoped — workers hold write scopes, judges never do. An unclamped codex judge has pushed a feature branch and attempted `bd dolt push` twice mid-judgment; a judge that mutates while judging can corrupt the artifact under judgment or preempt the pawl. Note the clamp is prompt-level discipline layered ON TOP of the sandbox: a network-touching judge dispatched with `-s danger-full-access` has nothing mechanical stopping a push.
-- **Judge prompt pattern — publish the output contract from the prompt (card 10, cp-b2by).** A stated verdict spec drifts; the output shape must be derived from the prompt the judge reads. Minimal judge prompt:
-
-  ```
-  You are an INDEPENDENT VALIDATOR. Author != judge.
-  READ-ONLY except writing your single verdict file at <path>.
-  Do NOT commit, push, or run tracker/infra ops (git push, br/bd, dolt).
-  BEAD: <id> — <title>
-  ACCEPTANCE: <verbatim acceptance text>
-  Re-run the cited commands on the actual artifacts. Do not read the evidence and agree.
-  Attest identity: include "judge_source: codex-<model>" inside COMMANDS RUN.
-  Return EXACTLY (no ## headings on these lines):
-  VERDICT: PASS
-  (blank line)
-  COMMANDS RUN:
-  judge_source: codex-<model>
-  $ <cmd>
-  <output snippet>
-  REASONS:
-  - bullet citing a COMMANDS RUN line
-  ```
-- **Output-contract validation before acting on a verdict.** Programmatically confirm: `VERDICT:` is on its own line, `COMMANDS RUN:` follows, `judge_source:` is present. A verdict missing any element is **unverified — discard and re-dispatch**. A judge that ran nothing is a reader, not a verifier (the counterfeit-judge shape, card 8). Use `--output-schema FILE` to enforce shape at the harness level when verdict feeds automation.
-
-## Codex runtime work rules (learned 2026-06-12, ag-codex-runtime-enhancement post-review)
-
-Compact rules for any work on the Codex worker/receipt path (dispatch, packets,
-receipts, image-health). Full packet:
-[`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
-
-1. **Make the first acceptance test adversarial.** Before any planner artifact:
-   test packet-injected `OPENAI_API_KEY`, disabled/missing auth guards, command
-   or sandbox mismatch, missing final verdict, missing required command
-   evidence, and path-escape attempts. The 2026-06-12 review found a
-   packet-provided env could re-inject `OPENAI_API_KEY` after the ambient-env
-   guard passed — ceremony missed it; one adversarial test would not have.
-2. **Contracts need executable validators.** If a JSON Schema is the contract,
-   the dispatch path must validate against it (or generated validation from
-   it). Hand-written partial checks + fixture inspection are documentary, not
-   enforcement.
-3. **Receipt means evidence, not presence.** A receipt proving "Codex ran" is
-   not a receipt proving "acceptance commands ran and passed." Run and record
-   `evidence.required_commands` results, or rename the field so it stops
-   implying acceptance evidence.
-4. **Keep the critical path small.** Worker-path MVP = packet validation,
-   dispatch, receipt on success/failure, timeout/stdin/auth tests, one
-   fixture-backed smoke. Image health, gate explainability, skill authoring,
-   and doc migrations are follow-up beads unless explicitly requested.
-5. **Time-box discovery for implementation slices.** ~15 minutes discovery,
-   ~90 minutes vertical slice, then decide. New work becomes follow-up beads,
-   not scope absorbed into the active bead (risk-class routing:
-   [`discovery`](../discovery/SKILL.md)).
-6. **Approval evidence needs a durable proof surface.** If interactive-pane approval
-   gates implementation, mirror the council artifact or a compact proof packet
-   to a tracked durable path before the gating bead/epic closes (the codex-approval
-   Fable-approval bridge and its closeout rule are folded into this skill).
+Before dispatching a judge or changing the Codex receipt path, load
+[validator and runtime rules](references/validator-and-runtime-rules.md).
 
 ## Troubleshooting
 
