@@ -1410,12 +1410,22 @@ cmd_doctor() {
   # because on the embedded/stranger path $ROOT is the UNTRUSTED caller repo (pawl.sh must never
   # touch $ROOT/scripts — security guard TestEmbeddedPawlBundleCarriesVerdictWriterSibling). The
   # trust-aware live-vs-installed STALE comparison belongs in the Go `ao pawl doctor` layer (.19).
-  local _stamp_f="$PAWL_SCRIPT_DIR/../BUNDLE_STAMP"
-  if [ -f "$_stamp_f" ]; then
-    local _stamp; _stamp="$(tr -d '[:space:]' < "$_stamp_f" 2>/dev/null)"
-    _doctor_add bundle true "embedded bundle stamp ${_stamp:0:12} (installed-binary path)"
+  # F4-followup (.19): when the GO layer supplies PAWL_BUNDLE_STATUS it has already done the
+  # TRUST-AWARE comparison (only Go may safely hash a checkout's live scripts), so just DISPLAY its
+  # verdict — and FAIL the row on STALE so doctor goes red when an installed ao runs old pawl scripts.
+  if [ -n "${PAWL_BUNDLE_STATUS:-}" ]; then
+    case "$PAWL_BUNDLE_STATUS" in
+      *STALE*) _doctor_add bundle false "$PAWL_BUNDLE_STATUS" ;;
+      *)       _doctor_add bundle true  "$PAWL_BUNDLE_STATUS" ;;
+    esac
   else
-    _doctor_add bundle true "in-checkout dogfood (live scripts run in place; no embedded stamp)"
+    local _stamp_f="$PAWL_SCRIPT_DIR/../BUNDLE_STAMP"
+    if [ -f "$_stamp_f" ]; then
+      local _stamp; _stamp="$(tr -d '[:space:]' < "$_stamp_f" 2>/dev/null)"
+      _doctor_add bundle true "embedded bundle stamp ${_stamp:0:12} (installed-binary path)"
+    else
+      _doctor_add bundle true "in-checkout dogfood (live scripts run in place; no embedded stamp)"
+    fi
   fi
 
   if session_exists; then
