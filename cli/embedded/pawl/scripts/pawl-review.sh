@@ -1937,12 +1937,22 @@ if [[ "$strict" -eq 1 ]]; then
   _strict_refuter_args=()
   for _sr in "${strict_refuters[@]}"; do _strict_refuter_args+=(--refuter "$_sr"); done
   echo "pawl-review: STRICT two-family cold quorum — ALL required families CONFIRMED [${strict_trail}]; writing ONE multi-model verdict binding both families + both evidence paths." >&2
+  _swrc=0
   "$PAWL" write "$bead" "$PR" \
     --disposition CONFIRMED --head "$head" --mode multi-model \
     --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
     "${_strict_refuter_args[@]}" \
     --wall-seconds "$(( $(date +%s) - ${_REVIEW_T0:-$(date +%s)} ))" \
-    --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: STRICT verdict write failed" >&2; exit 1; }
+    --dir "$VERDICT_DIR" >/dev/null || _swrc=$?
+  # F2: EDGE-UNBOUND (7) — verdict written, ledger edge not bound (see cold path). Same exit-6
+  # contract for the strict two-family write; the verdict file survives as the recovery input.
+  if [[ "$_swrc" -eq 7 ]]; then
+    echo "=== PAWL EDGE-UNBOUND (exit 6) — STRICT verdict WRITTEN, ledger edge NOT bound ===" >&2
+    echo "pawl-review: the STRICT CONFIRMED verdict at $VERDICT_DIR/${bead}.json exists but its ledger edge did not emit. Recover WITHOUT re-reviewing: ao provenance emit-verdict --file $VERDICT_DIR/${bead}.json (or PAWL_EDGE_FAIL_OPEN=1). Binding failure, not a review failure." >&2
+    exit 6
+  elif [[ "$_swrc" -ne 0 ]]; then
+    echo "pawl-review: STRICT verdict write failed" >&2; exit 1
+  fi
   if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
     echo "pawl-review: STRICT CONFIRMED — two-family multi-model verdict written + verified for $bead @ ${head:0:12} (families: ${strict_trail}) — ready to push." >&2
     exit 0
@@ -2044,13 +2054,26 @@ if [[ "$degraded" == true ]]; then
   # now, HOLD once it enforces on/after its flip date) — a degraded verdict is NEVER exempted.
   echo "pawl-review: DEGRADED verdict — fell over to '${reviewer_family}' after ${reviewer_attempts} attempt(s) [${failover_trail}]; stamping degraded=true. The .11 evidence-quality floor still applies below (a thin-evidence degraded fallback is not trustworthy)." >&2
 fi
+_wrc=0
 "$PAWL" write "$bead" "$PR" \
   --disposition CONFIRMED --head "$head" \
   --author-context "author-${author_family}-${bead}" --author-family "$author_family" \
   --refuter "${reviewer_family}:CONFIRMED:${ctx}:${evidence}" \
   ${_degraded_args[@]+"${_degraded_args[@]}"} \
   --wall-seconds "$(( $(date +%s) - ${_REVIEW_T0:-$(date +%s)} ))" \
-  --dir "$VERDICT_DIR" >/dev/null || { echo "pawl-review: verdict write failed" >&2; exit 1; }
+  --dir "$VERDICT_DIR" >/dev/null || _wrc=$?
+# F2 (age-pawl-intent-zhndq.2): a do_write EDGE-UNBOUND (7) means the CONFIRMED verdict FILE was
+# written but its ledger edge did NOT emit — 'ao done' / the push gate read the LEDGER, so they
+# will refuse until it is bound. Surface it at exit 6 (distinct from a hard write failure = exit 1),
+# keep the verdict file (the recovery input), and print the exact re-emit command. NOT a review
+# failure — the review CONFIRMED. PAWL_EDGE_FAIL_OPEN=1 restores warn-and-continue upstream.
+if [[ "${_wrc:-0}" -eq 7 ]]; then
+  echo "=== PAWL EDGE-UNBOUND (exit 6) — verdict WRITTEN, ledger edge NOT bound ===" >&2
+  echo "pawl-review: the CONFIRMED verdict at $VERDICT_DIR/${bead}.json exists, but 'ao provenance emit-verdict' failed so no verdict->commit edge was bound. 'ao done' and the push gate read the LEDGER edge, not the file — they will refuse until it is bound. Recover WITHOUT re-reviewing: ao provenance emit-verdict --file $VERDICT_DIR/${bead}.json  (or set PAWL_EDGE_FAIL_OPEN=1 to restore warn-and-continue). The review CONFIRMED — this is a binding failure, not a review failure." >&2
+  exit 6
+elif [[ "${_wrc:-0}" -ne 0 ]]; then
+  echo "pawl-review: verdict write failed" >&2; exit 1
+fi
 
 _deg_suffix=""; [[ "$degraded" == true ]] && _deg_suffix=" (DEGRADED fallback — see PAWL-FLOOR above)"
 if "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
