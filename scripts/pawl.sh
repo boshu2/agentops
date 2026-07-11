@@ -1558,7 +1558,10 @@ cmd_route() {
   # must be rejected BEFORE any lock or file write. Charset [A-Za-z0-9._-], 1-64 chars,
   # leading alnum (kills "-flag", ".hidden", ".."); no '/' means no path can escape
   # $EVID_DIR / $STATE_DIR.
-  local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
+  # F10 (age-pawl-intent-zhndq.11): a clean usage line, not a raw bash `${N:?}` trace
+  # (`scripts/pawl.sh: line NNNN: 1: route needs <bead>`). Exit 2 = usage/precondition.
+  local bead="${1:-}" packet="${2:-}" pr="${3:-0}"
+  [[ -n "$bead" && -n "$packet" ]] || { echo "usage: ao pawl route <bead> <packet-file> [pr]" >&2; exit 2; }
   _valid_route_id "$bead" || die "invalid bead id '$bead' — allowed: [A-Za-z0-9._-], 1-64 chars, leading alphanumeric (path/flag containment)"
   _pawl_require_safe_state_dir   # refuse a symlinked state-dir chain before writing metrics/state
   _pawl_verdict_dir_safe || die "refusing to write the route verdict: $PAWL_VERDICT_DIR (or its parent) is a symlink — verdicts must stay inside the repo. Remove the symlink, or set PAWL_VERDICT_DIR to a real in-repo path."
