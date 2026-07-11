@@ -53,16 +53,16 @@ var (
 
 // CitationStatus is the three-valued verdict for a single citation extracted
 // from a bead description.
-type CitationStatus = beadsapp.CitationStatus
+type LegacyCitationStatus = beadsapp.CitationStatus
 
 const (
-	CitationFresh   = beadsapp.CitationFresh
-	CitationStale   = beadsapp.CitationStale
-	CitationUnknown = beadsapp.CitationUnknown
+	LegacyCitationFresh   = beadsapp.CitationFresh
+	LegacyCitationStale   = beadsapp.CitationStale
+	LegacyCitationUnknown = beadsapp.CitationUnknown
 )
 
 // Citation is a single verifiable reference pulled from a bead description.
-type Citation = beadsapp.Citation
+type LegacyCitation = beadsapp.Citation
 
 // VerifyReport is the structured result of `ao beads verify`.
 type VerifyReport = beadsapp.VerifyReport
@@ -187,7 +187,7 @@ func verifyCitationInPlace(c *Citation, cwd string) {
 	}
 }
 
-func verifyFileCitation(c *Citation, cwd string) {
+func legacyVerifyFileCitation(c *Citation, cwd string) {
 	// Strip optional :line suffix for the stat check.
 	path := c.Raw
 	if idx := strings.LastIndex(path, ":"); idx >= 0 {
@@ -276,7 +276,7 @@ func findFilesByBasename(cwd, name string) []string {
 	return matches
 }
 
-func verifyFunctionCitation(c *Citation, cwd string) {
+func legacyVerifyFunctionCitation(c *Citation, cwd string) {
 	// c.Raw is "func Name". Grep for it across cli/ and skills/.
 	name := strings.TrimPrefix(c.Raw, "func ")
 	matches := grepSymbol(cwd, name)
@@ -292,7 +292,7 @@ func verifyFunctionCitation(c *Citation, cwd string) {
 	}
 }
 
-func verifySymbolCitation(c *Citation, cwd string) {
+func legacyVerifySymbolCitation(c *Citation, cwd string) {
 	sym := strings.Trim(c.Raw, "`")
 	matches := grepSymbol(cwd, sym)
 	if len(matches) == 0 {
