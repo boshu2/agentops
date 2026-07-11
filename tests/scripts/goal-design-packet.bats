@@ -77,6 +77,11 @@ setup() {
     [[ "$output" == *"$packet/driver.md"* ]]
     [[ "$output" == *"first_failing_proof"* ]]
     [[ "$output" == *"B1"* ]]
+    # The dispatch prompt states the escalation ladder with the helper rung.
+    [[ "$output" == *"auto -> helper -> human"* ]]
+    [[ "$output" == *"helper pass"* ]]
+    # Budget-exhausted skips the helper (no consult on a spent ceiling).
+    [[ "$output" == *"budget-exhausted"* ]]
     [ "${#output}" -lt 4000 ]
 }
 
@@ -201,6 +206,14 @@ setup() {
     grep -q "## Andon Router" "$driver"
     grep -q "ao gate check --fast --scope head" "$driver"
     grep -q "refusal lane" "$driver"
+    # Breaker trips route through one bounded helper pass before the operator.
+    grep -q "helper pass" "$driver"
+    grep -qi "one bounded helper pass" "$driver"
+    grep -q "UNSTUCK" "$driver"
+    # Refusal-lane / explicit-judgment classes skip the helper entirely.
+    grep -qi "helper is skipped" "$driver"
+    # No second helper pass on the same blocker class.
+    grep -qi "never a second helper pass" "$driver"
 }
 
 @test "mark-validated rolls back when the checker rejects the stamped packet" {

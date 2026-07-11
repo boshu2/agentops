@@ -13,7 +13,7 @@ real blocked state exhausts retries. Read
 [references/autonomous-execution.md](references/autonomous-execution.md) when
 you need the full autonomy contract.
 
-**`--auto` means *pivot autonomously*, NOT *execute the initial plan to the letter*.** Autonomy is agility, not waterfall: between waves the orchestrator re-plans the remaining work and changes course on its own — refactoring, inserting, dropping, reordering waves as evidence arrives — without the operator saying so (touched only at the terminal objective or a circuit-breaker trip). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule).
+**`--auto` means *pivot autonomously*, NOT *execute the initial plan to the letter*.** Autonomy is agility, not waterfall: between waves the orchestrator re-plans the remaining work and changes course on its own — refactoring, inserting, dropping, reordering waves as evidence arrives — without the operator saying so (touched only at the terminal objective or a circuit-breaker trip that survives its bounded helper pass). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule).
 
 When an external executor fails but the code surface may still be valid, read
 [references/codex-executor.md](references/codex-executor.md) and recover through
@@ -165,7 +165,7 @@ Enter at the routed phase and run every phase after it.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
-The initial plan is a **hypothesis**; each wave is an experiment whose evidence re-plans the rest. At every wave boundary (and after validation): **reflect** (a bounded `$post-mortem` + `$discovery` re-plan delta over what shipped/broke) → **re-plan the REMAINING waves** (refactor / insert / drop / reorder / re-scope / escalate, persisting the mutated plan so the next wave reads the *current* one) → **proceed**. Under `--auto` this is autonomous, bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-ship post-mortem checkpoint; the operator is touched only at the terminal objective or a breaker trip. `$crank` and `$validate` surface findings UP for re-planning (never a silent local retry); `$discovery` is the re-plan engine. Anti-patterns: **waterfall**, **retry-not-replan**, **permission-seeking**. **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
+The initial plan is a **hypothesis**; each wave is an experiment whose evidence re-plans the rest. At every wave boundary (and after validation): **reflect** (a bounded `$post-mortem` + `$discovery` re-plan delta over what shipped/broke) → **re-plan the REMAINING waves** (refactor / insert / drop / reorder / re-scope / escalate, persisting the mutated plan so the next wave reads the *current* one) → **proceed**. Under `--auto` this is autonomous, bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-ship post-mortem checkpoint; the operator is touched only at the terminal objective or a breaker trip that survives its bounded helper pass. `$crank` and `$validate` surface findings UP for re-planning (never a silent local retry); `$discovery` is the re-plan engine. Anti-patterns: **waterfall**, **retry-not-replan**, **permission-seeking**. **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
 
 ## Phase Data Contract
 

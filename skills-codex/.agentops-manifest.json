@@ -676,7 +676,7 @@
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "8bd18cb2e0053796586cbb824efac7c641e54ba4b3368613c8e7397d43d33c99",
-      "generated_hash": "c05658f8b0da897546f11beb8e6439fd2d32a2867777afb9a0b27f57c5ac1674"
+      "generated_hash": "c8fbb3555591ba713ce5e0095917ad1d636f9820cacad7777d8c0634fe1a31c1"
     },
     {
       "name": "dcg",
@@ -712,7 +712,7 @@
       "name": "evolve",
       "source_skill": "skills/evolve",
       "source_hash": "769ca78b48bbb45ec184ac02f1e81b859b95cbe31949a5be59f295b79b85dbee",
-      "generated_hash": "afbd2597b8eb8105252b4a748711c2691ff2ce353d35f97f325269bbde34ac7d"
+      "generated_hash": "b7bf82d50566c3daae3ddadfdc0df37770814d47cd872d8d8e974eca44f7324c"
     },
     {
       "name": "gc-membrane",
@@ -723,8 +723,8 @@
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "8e9187f82c7e7a4b366f51d183d247ec1960cbedcd8030a510cc25cb274e629c",
-      "generated_hash": "6d808cdfd1f50ebcbe9505cf8c47366babb1a23f3ce161f5742e2d3430ddfdd3"
+      "source_hash": "beec323e548f33bb7b8522e4de60e3933d7aadf23b2b9d715ed6c0a4ade9535b",
+      "generated_hash": "e92f53d9995cb6bd1905a8663be951ab22279e03d59f4ba54f3168ea2e7faeae"
     },
     {
       "name": "goals",
@@ -856,7 +856,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "05691eddcdf1eb9b0e3c6c39ce0e631b039710ee310041a45ab91ab0d98a6b63",
-      "generated_hash": "7c27796cc9ac0799a234b05b6b862e945ca7811231679ce1316db68cb53c7cb0"
+      "generated_hash": "d8c74c8b06790f4df2fa79701eb0de3dd05ab405a847ba1a5ddd024fb8c9f870"
     },
     {
       "name": "sbh",

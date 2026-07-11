@@ -29,7 +29,7 @@ FIRE is the reconciliation loop that extracts progress from chaos. Like a forge 
 | **FIND** | Observe | Read current state, identify ready work |
 | **IGNITE** | **Chaos** | Spark parallel polecats, embrace variance |
 | **REAP** | **Filter + Ratchet** | Harvest results, validate, merge (permanent) |
-| **ESCALATE** | Recovery | Handle failures, retry or escalate to human |
+| **ESCALATE** | Recovery | Handle failures: retry, one bounded helper pass, escalate survivors to human |
 
 **Key insight**: Polecats can fail independently. Each successful merge ratchets forward. The system extracts progress from parallel attempts, filtering failures automatically.
 
@@ -196,7 +196,7 @@ gt polecat gc <rig>  # Clean merged branches
 
 ### ESCALATE Phase
 
-**Purpose**: Handle failures with backoff and human escalation. Failed attempts re-enter the chaos pool or get escalated.
+**Purpose**: Handle failures with backoff, a bounded helper pass, and human escalation for what survives it. Failed attempts re-enter the chaos pool or get escalated.
 
 **Retry policy**:
 
@@ -205,7 +205,7 @@ gt polecat gc <rig>  # Clean merged branches
 | 1 | 30s | Re-ignite fresh polecat |
 | 2 | 60s | Re-ignite with context |
 | 3 | 120s | Re-ignite with explicit hints |
-| 4+ | - | **ESCALATE**: BLOCKER + mail human |
+| 4+ | - | **ESCALATE**: one bounded helper pass; BLOCKER + mail human only for what survives it |
 
 **Backoff calculation**:
 
@@ -223,7 +223,12 @@ bd comments add <issue> "Previous attempt failed: <reason>. Try: <hint>"
 gt sling <issue> <rig>
 ```
 
-**Escalation (exit chaos pool)**:
+**Escalation (exit chaos pool)** — first take one bounded helper pass: hand
+the blocker, the evidence, and the three attempts to a fresh context or
+cross-family model; on UNSTUCK re-ignite with its next action instead of
+escalating. Only what survives the pass (or a refusal-lane /
+explicit-judgment class, which skips it) exits to the human — never a second
+pass on the same blocker class:
 
 ```bash
 # Mark as blocker
@@ -232,6 +237,7 @@ bd update <issue> --labels=BLOCKER
 # Document failure history
 bd comments add <issue> "AUTO-ESCALATED: Failed 3 attempts.
 Reasons: 1) <reason1> 2) <reason2> 3) <reason3>
+Helper pass: <ESCALATE|skipped>.
 Human review required."
 
 # Mail human

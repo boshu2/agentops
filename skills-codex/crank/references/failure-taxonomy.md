@@ -100,7 +100,7 @@ bd comments add <issue> "EXPLICIT: The test_auth_flow test fails because X. Fix 
 gt sling <issue> <rig>
 ```
 
-**Escalation trigger**: 3 validation failures (may need human insight)
+**Escalation trigger**: 3 validation failures (one bounded helper pass first; human insight only for what survives it)
 
 ---
 
@@ -360,6 +360,9 @@ bd comments add <issue> "$(cat <<'EOF'
 - Polecat: <name>
 - Duration: <time>
 - Failure: <reason>
+
+### Helper pass
+<ESCALATE with the helper's reasoning | skipped: refusal-lane / explicit-judgment>
 
 ### Recommendation
 <what human should investigate>

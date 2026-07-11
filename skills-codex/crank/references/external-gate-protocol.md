@@ -41,7 +41,7 @@ Worker completes issue
   → Orchestrator runs gate command (NOT worker self-report)
   → Gate passes? → Mark issue DONE, proceed to next
   → Gate fails? → Increment failure counter
-    → 3+ failures? → BLOCK issue, move to next or escalate
+    → 3+ failures? → BLOCK issue, move to next or escalate (helper pass first — failure-recovery.md)
     → < 3 failures? → Worker retries with error context
 ```
 

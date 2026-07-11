@@ -10,10 +10,13 @@
    bd comments add <issue-id> "Validation failed: <reason>. Retrying..." 2>/dev/null
    ```
 3. Re-add to next wave
-4. After 3 failures, escalate:
+4. After 3 failures, take one bounded helper pass — hand the blocker, the
+   evidence, and what was tried to a fresh context or cross-family model
+   (`codex exec`, `/council`); resume on UNSTUCK. Escalate only what survives
+   it (never a second pass on the same blocker class):
    ```bash
    bd update <issue-id> --labels BLOCKER 2>/dev/null
-   bd comments add <issue-id> "ESCALATED: 3 validation failures. Human review required." 2>/dev/null
+   bd comments add <issue-id> "ESCALATED: 3 validation failures. Helper pass: <ESCALATE|skipped>. Human review required." 2>/dev/null
    ```
 
 ## Wave Limit Enforcement
@@ -120,11 +123,16 @@ bd close <issue-id>
 bd comments add <issue-id> "DECOMPOSED into <new-id-a>, <new-id-b>"
 ```
 
-**PRUNE:** Escalate immediately:
+**PRUNE:** Take one bounded helper pass, then escalate only what survives it.
+Hand the blocker, the evidence, and what was tried to a fresh context or
+cross-family model (`codex exec`, `/council`); on UNSTUCK resume with its next
+action; on ESCALATE (or a refusal-lane / explicit-judgment class, which skips
+the helper) mark for the human:
 ```bash
 bd update <issue-id> --labels BLOCKER
-bd comments add <issue-id> "PRUNED: <reason>. Human review required."
+bd comments add <issue-id> "PRUNED: <reason>. Helper pass: <ESCALATE|skipped>. Human review required."
 ```
+Never a second helper pass on the same blocker class.
 
 ### Step 3: Budget Check
 
@@ -139,6 +147,9 @@ Max budget per task: 2. Exhausted budget → auto-PRUNE.
 ## Escalation
 
 When issues cannot be resolved automatically:
-- Mark with BLOCKER label (beads mode)
+- Take one bounded helper pass per blocker class first (fresh context,
+  cross-family model, or `/council` — [pawls.md §Escalation](../../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model));
+  refusal-lane / explicit-judgment classes skip it
+- Mark what survives with BLOCKER label (beads mode)
 - Output `<promise>BLOCKED</promise>` with reason
 - List remaining issues for human review

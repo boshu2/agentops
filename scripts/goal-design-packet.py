@@ -187,10 +187,10 @@ def driver_data(args: argparse.Namespace, digest: str) -> dict[str, Any]:
             ],
         },
         "route_back_rules": {
-            "validation_fails": "Patch the packet contract or artifacts before filing work.",
+            "validation_fails": "Patch the packet contract or artifacts before filing work. After 3 failed rounds or an oscillation, take ONE bounded helper pass (fresh context, cross-family model, or council) before any human escalation.",
             "bead_closes_with_new_signal": "Use the close verdict to choose or revise the next candidate.",
             "candidate_stale": "Re-read the named inputs, refresh the digest, and revalidate.",
-            "promotion_contradicts_intent": "Revise intent.md, refresh driver.md, and revalidate.",
+            "promotion_contradicts_intent": "Revise intent.md, refresh driver.md, and revalidate. Route the fork to the helper tier (council); escalate to human only if it survives the pass or is refusal-lane.",
         },
         "execution_mode": {
             "default": "single-agent",
@@ -228,13 +228,16 @@ def driver_body(args: argparse.Namespace, digest: str) -> str:
 | One-way-door class | Tier | Machinery (reuse, never rebuild) |
 | --- | --- | --- |
 | Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
-| Architecture fork / plan-shape one-way door | **council** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
-| Money / legal / irreversible-external (the refusal lane) + any breaker trip | **human** | ESCALATE / HOLD - hand back to the operator |
+| Architecture fork / plan-shape one-way door | **helper** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
+| Stuck: 3 failed validation rounds, oscillation, or a scope-creep flag | **helper** | one bounded helper pass - hand the blocker, the evidence, and what was tried to a fresh context or cross-family model (`codex exec`, `/council`); it returns UNSTUCK (a concrete next action) or ESCALATE. An advisor, never a second driver: it does not take over the work |
+| Money / legal / irreversible-external (the refusal lane), an explicit judgment flag, or an exhausted time/cost budget | **human** | ESCALATE / HOLD - hand back to the operator; the helper is skipped |
 | TODO: goal-specific rows (write-scope escapes, domain forks) - edit deliberately before dispatch | - | - |
 
-Implicit final row: a slice that cannot pass validation in 3 rounds, an
-oscillation, or a scope-creep flag trips the breaker to **human** - stop and
-ask, never guess through it.
+Implicit final rows: a breaker trip routes to ONE bounded helper pass first;
+**human** only when the blocker survives that pass, the helper itself returns
+ESCALATE, or the class is refusal-lane / explicit-judgment / budget-exhausted.
+Never a second helper pass on the same blocker class - stop and ask, never
+guess through it.
 """
 
 
@@ -334,8 +337,12 @@ def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[
         "Rules: write ONLY within the candidate's write_scope; respect the intent's non_goals.",
         "Done means the driver's first_failing_proof command exits 0 AND its close_signal",
         "holds - run the proof verbatim; no proof, not done.",
-        "When blocked, follow the driver's andon router (auto -> council -> human);",
-        "stop and hand back rather than guess past a breaker.",
+        "When blocked, follow the driver's andon router (auto -> helper -> human):",
+        "a breaker trip gets ONE bounded helper pass (fresh context, cross-family model,",
+        "or council) before the operator; escalate to human only when the blocker",
+        "survives that pass or the class is refusal-lane / explicit-judgment /",
+        "budget-exhausted (those classes skip the helper - no consult on a spent ceiling).",
+        "Stop and hand back rather than guess past a breaker.",
     ]
     return "\n".join(lines) + "\n"
 

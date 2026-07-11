@@ -75,7 +75,8 @@ const (
 	DecisionPass Decision = "PASS"
 	// DecisionRedo — the default self-correcting path: re-judge (no human).
 	DecisionRedo Decision = "REDO"
-	// DecisionBlocked — a circuit breaker tripped: HOLD and escalate (andon).
+	// DecisionBlocked — a circuit breaker tripped: HOLD, then route per the andon
+	// ladder (one bounded helper pass; human only past it — pawls.md §Escalation).
 	DecisionBlocked Decision = "BLOCKED"
 	// DecisionDegraded — no genuine FAIL / mechanical-WARN / breaker fired, but
 	// transient lane loss dropped distinct-family coverage below the quorum floor.
