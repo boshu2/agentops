@@ -60,7 +60,8 @@ ms outcome <skill> --success   # dogfood loop: record AFTER actually using a ski
 ms outcome <skill> --failure
 
 ms doctor                      # admin: health
-scripts/ms-reindex.sh          # (re)index THE way: rebuild + sweep every ms mcp serve + probe (see Footguns)
+scripts/ms-reindex.sh          # (re)index THE way: rebuild + sweep + probe + source-equivalence check
+scripts/ms-reindex.sh --check-source  # read-only freshness proof against current skills/** source
 ms list -O jsonl --limit 1000  # counting / enumeration
 ms config                      # resolved config + skill_paths
 ```
@@ -71,7 +72,7 @@ ms config                      # resolved config + skill_paths
 
 | Footgun | Truth |
 |---|---|
-| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Reindex via `scripts/ms-reindex.sh` — THE way to reindex** (rebuilds, then TERMs every `ms mcp serve`, then probes a fresh server for orphan ids); never run bare `ms index` and leave servers up. Sessions respawn fresh. This is the one law, now mechanized (age-22g0). |
+| **MCP server survives a DB wipe/reindex** | An `ms mcp serve` NEVER reopens handles — it follows renamed inodes into the backup, giving stale reads AND silent misdirected writes (`recorded:true` into orphaned files). **Reindex via `scripts/ms-reindex.sh` — THE way to reindex** (rebuilds, TERMs every server, probes a fresh server, then compares normalized local loads with current `skills/**` source); never run bare `ms index` and leave servers up. Sessions respawn fresh. |
 | **`ms load --pack N`** | Trap: caps at the gutted `overview` tier for ANY N (`800` == `20000`) — drops the executable steps and returns LESS than the no-flag default. Use `--full` (CLI) or `full: true` (MCP). |
 | **`-O plain`** | Prints name-only on `load`; truncates list output (`[N more lines]`). The content lives in `-O json` → `.data.content`. |
 | **CLI `ms search` "hybrid"** | Effectively BM25-only — ms never stores doc embeddings (`upsert_embedding` is called only from a unit test), so hybrid ≡ BM25 under ANY backend; no config/backend change fixes it (upstream gap, feature-noted; measured 2026-07-02, age-s3jf). Still loses to MCP BM25 in practice; don't prefer it. |
@@ -98,6 +99,11 @@ Scenario: Reindex invalidates every running server
   When I run ms index (or wipe/rebuild the DB)
   Then I kill every ms mcp serve so sessions respawn against fresh data
   And a surviving server would silently read pre-wipe data and mis-land writes
+
+Scenario: A stale local projection fails closed
+  Given AgentOps skills are authoritative and ms is a disposable local index
+  When a full ms load has a different normalized name or description from source
+  Then scripts/ms-reindex.sh exits nonzero and names the stale skill
 ```
 
 ## References

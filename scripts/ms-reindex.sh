@@ -44,6 +44,7 @@ PROBE_QUERY="${MS_REINDEX_PROBE_QUERY:-flaky concurrent test}"
 PROBE_EXPECT_ID="${MS_REINDEX_PROBE_EXPECT_ID:-deadlock-finder-and-fixer}"
 # orphan-class ids that only a stale / pre-wipe server would surface:
 ORPHAN_IDS="${MS_REINDEX_ORPHAN_IDS:-expected-all-pass node-env-is-not-production}"
+SKILLS_ROOT="${MS_REINDEX_SKILLS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/skills}"
 
 log()  { printf '[ms-reindex] %s\n' "$*" >&2; }
 die()  { printf '[ms-reindex] FATAL: %s\n' "$*" >&2; exit 1; }
@@ -175,6 +176,66 @@ step_probe() {
   log "probe OK — '$PROBE_EXPECT_ID' served, no orphan ids ($ORPHAN_IDS)"
 }
 
+# --- Prove the disposable ms index reflects current AgentOps source -----------
+# Compare the normalized identity fields ms exposes for a full load. This is
+# intentionally local-only: it never consults JSM or another network source.
+step_source_equivalence() {
+  python3 - "$MS_BIN" "$SKILLS_ROOT" <<'PY'
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+import yaml
+
+ms_bin, root_raw = sys.argv[1:]
+root = Path(root_raw)
+skills = sorted(root.glob("*/SKILL.md"))
+if not skills:
+    print(f"[ms-reindex] FATAL: no AgentOps skills found under {root}", file=sys.stderr)
+    raise SystemExit(1)
+
+def norm(value):
+    # ms intentionally stores the descriptive sentence separately from the
+    # trigger suffix. Compare the stable source-bearing portion it exposes.
+    value = re.split(r"\bTriggers:\s*", str(value or ""), maxsplit=1)[0]
+    return " ".join(value.split())
+
+stale = []
+for path in skills:
+    parts = path.read_text(encoding="utf-8").split("---", 2)
+    if len(parts) < 3:
+        stale.append(f"{path.parent.name}: invalid source frontmatter")
+        continue
+    source = yaml.safe_load(parts[1]) or {}
+    name = source.get("name")
+    proc = subprocess.run(
+        [ms_bin, "load", str(name), "--full", "-O", "json"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    try:
+        loaded = json.loads(proc.stdout)["data"]["frontmatter"] if proc.returncode == 0 else {}
+    except (json.JSONDecodeError, KeyError, TypeError):
+        loaded = {}
+    if (
+        loaded.get("name") != name
+        or norm(loaded.get("description")) != norm(source.get("description"))
+    ):
+        stale.append(str(name))
+
+if stale:
+    for name in stale:
+        print(f"[ms-reindex] FATAL: stale ms load for {name}", file=sys.stderr)
+    print("[ms-reindex] repair with scripts/ms-reindex.sh", file=sys.stderr)
+    raise SystemExit(1)
+
+print(f"[ms-reindex] source equivalence OK — {len(skills)} AgentOps skills", file=sys.stderr)
+PY
+}
+
 usage() {
   cat >&2 <<'EOF'
 ms-reindex.sh — sweep every ms mcp serve, reindex ms, probe a fresh server.
@@ -183,11 +244,13 @@ Usage:
   ms-reindex.sh                      Full law: sweep -> clear-locks -> index -> sweep -> probe.
   ms-reindex.sh --print-serve-pids   Print discovered 'ms mcp serve' pids, exit.
   ms-reindex.sh --sweep-only         Run only the sweep step (no index/probe).
+  ms-reindex.sh --check-source       Compare local ms loads with current AgentOps source.
   ms-reindex.sh -h | --help
 
 Env overrides: MS_BIN, MS_DATA_DIR, MS_REINDEX_MIN_INDEXED (170),
   MS_REINDEX_MAX_ERRORS (1), MS_REINDEX_SERVE_PATTERN, MS_REINDEX_PROBE_QUERY,
-  MS_REINDEX_PROBE_EXPECT_ID, MS_REINDEX_ORPHAN_IDS, MS_REINDEX_PS_FIXTURE (test hook).
+  MS_REINDEX_PROBE_EXPECT_ID, MS_REINDEX_ORPHAN_IDS, MS_REINDEX_PS_FIXTURE (test hook),
+  MS_REINDEX_SKILLS_ROOT (defaults to this repository's skills/ directory).
 EOF
 }
 
@@ -199,10 +262,12 @@ main() {
       step_index              # (3) clean rebuild + assert it took
       step_sweep              # (4) kill anything that raced in during the rebuild
       step_probe              # (5) fresh server serves real ids, no orphans
-      log "DONE — servers swept, index rebuilt, fresh server verified."
+      step_source_equivalence # (6) loaded AgentOps identity matches current source
+      log "DONE — servers swept, index rebuilt, fresh server and source equivalence verified."
       ;;
     --print-serve-pids) ms_serve_pids ;;
     --sweep-only)       step_sweep ;;
+    --check-source)     step_source_equivalence ;;
     -h|--help)          usage ;;
     *)                  usage; exit 2 ;;
   esac
