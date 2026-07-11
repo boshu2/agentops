@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -676,5 +678,32 @@ func TestPawlServiceColdEnv(t *testing.T) {
 	}
 	if !sawAOBin {
 		t.Fatalf("pawlServiceColdEnv missing a non-empty AO_BIN; got %v", env)
+	}
+}
+
+// TestEmbeddedBundleStampMatchesScripts (F4, age-pawl-intent-zhndq.4): the embedded BUNDLE_STAMP
+// must be the DETERMINISTIC sha256 of the three embedded review scripts, so an installed binary
+// can prove whether its bundle matches a live checkout (the landed!=installed signal). If someone
+// edits an embedded script without re-running `make sync-hooks`, this catches the stale stamp.
+func TestEmbeddedBundleStampMatchesScripts(t *testing.T) {
+	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
+	if err != nil {
+		t.Fatalf("embedded pawl/BUNDLE_STAMP missing (run `cd cli && make sync-hooks`): %v", err)
+	}
+	stamp := strings.TrimSpace(string(stampRaw))
+	if len(stamp) != 64 {
+		t.Fatalf("BUNDLE_STAMP is not a 64-char sha256 hex: %q", stamp)
+	}
+	h := sha256.New()
+	for _, p := range []string{"pawl/scripts/pawl-review.sh", "pawl/scripts/pawl-verdict.sh", "pawl/scripts/pawl.sh"} {
+		b, rerr := embedded.PawlFS.ReadFile(p)
+		if rerr != nil {
+			t.Fatalf("read embedded %s: %v", p, rerr)
+		}
+		h.Write(b)
+	}
+	got := hex.EncodeToString(h.Sum(nil))
+	if got != stamp {
+		t.Fatalf("BUNDLE_STAMP %q != recomputed hash of embedded scripts %q — run `cd cli && make sync-hooks`", stamp, got)
 	}
 }

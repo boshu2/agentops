@@ -1373,6 +1373,20 @@ cmd_doctor() {
   # F7-followup (age-pawl-intent-zhndq.18): the effective benched set + its source
   # (default|config|env) — benching is now a visible state, not an invisible ${VAR-default} footgun.
   _doctor_add bench true "benched=[${PAWL_BENCHED_FAMILIES}] (source: ${_BENCH_SOURCE:-default})"
+  # F4 (age-pawl-intent-zhndq.4): bundle-provenance row. The EMBEDDED (installed-binary) bundle
+  # carries a deterministic BUNDLE_STAMP (sha256 of its review scripts) at
+  # $PAWL_SCRIPT_DIR/../BUNDLE_STAMP; the dogfood path runs live scripts in place (no sibling
+  # stamp). This row SHOWS the stamp — it deliberately does NOT read $ROOT/scripts to compare,
+  # because on the embedded/stranger path $ROOT is the UNTRUSTED caller repo (pawl.sh must never
+  # touch $ROOT/scripts — security guard TestEmbeddedPawlBundleCarriesVerdictWriterSibling). The
+  # trust-aware live-vs-installed STALE comparison belongs in the Go `ao pawl doctor` layer (.19).
+  local _stamp_f="$PAWL_SCRIPT_DIR/../BUNDLE_STAMP"
+  if [ -f "$_stamp_f" ]; then
+    local _stamp; _stamp="$(tr -d '[:space:]' < "$_stamp_f" 2>/dev/null)"
+    _doctor_add bundle true "embedded bundle stamp ${_stamp:0:12} (installed-binary path)"
+  else
+    _doctor_add bundle true "in-checkout dogfood (live scripts run in place; no embedded stamp)"
+  fi
 
   if session_exists; then
     local expected_real cur cur_real txt block state model_txt f pane label expected
