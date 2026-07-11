@@ -35,303 +35,193 @@ output_contract: skills/council/schemas/verdict.json
 ---
 # Post-Mortem Skill
 
-> **Purpose:** Wrap up completed work — validate it shipped correctly, extract learnings, process the knowledge backlog, activate high-value insights, and retire stale knowledge.
->
-> **Runtime note:** Hook-driven closeout is runtime-dependent. Claude/OpenCode can wire Phase 2-5 maintenance through lifecycle hooks. Codex post-mortem closeout uses the default AgentOps session/flywheel commands, not the archived Codex lifecycle shims: finish with `ao session close --auto-extract` and `ao flywheel close-loop --quiet`.
+Close Move 7 of the operating loop: prove what shipped, extract only reusable
+learning, harvest concrete follow-up work, and ratchet the weakest durable
+surface that changes future behavior. Execute the workflow; do not only
+describe it.
 
-## Loop position
+## Critical Constraints
 
-Move **7 (capture evidence + learning, then ratchet)** of the [operating loop](../../docs/architecture/operating-loop.md). Two outputs per loop turn: evidence (test names, snapshot keys, council verdicts, citation events) recorded against the bead and `.agents/flywheel/`; learnings promoted only under the [ratchet rules](../../docs/architecture/operating-loop.md#the-promotion-ratchet) — noticed once stays in the handoff, repeats twice goes to `.agents/learnings/`, changes future behavior updates a SKILL.md or template, must-never-regress becomes a gate, core doctrine promotes into PRODUCT.md/GOALS.md/docs/cdlc.md. Most observations die at handoff. That is correct.
+- **Why: no verdict means not done.** Validate the delivered behavior and all
+  four closure surfaces—code, documentation, examples, and proof—before learning.
+- **Why: avoid phantom closure.** Resolve child evidence in commit → staged →
+  worktree order and record evidence-only closure as a durable proof packet.
+- **Why: preserve causality.** Compare the original intent, delivered scope,
+  prior predictions, and observed outcome; do not invent lessons from hindsight.
+- **Why: avoid knowledge landfill.** Promote only a repeated or behavior-changing
+  lesson; most observations should remain in the report or die at handoff.
+- **Why: prevent rediscovery.** A reusable defect becomes a structured finding,
+  compiled prevention context, or a mechanical gate at the appropriate strength.
+- **Why: keep work actionable.** Harvest schema-valid next work through its
+  available → claimed → consumed lifecycle; never mark an item consumed at pick time.
+- **Why: keep closure honest.** Report partial councils, missing artifacts, empty
+  harvests, and real-data no-effect results explicitly instead of manufacturing PASS.
 
-**Route a promoted learning to the WEAKEST enforcement surface that actually
-changes behavior** — this is the ladder, by strength, not three copies of the
-same note:
+## Modes and Inputs
 
-| Surface | Strength | Promote here when |
-|---|---|---|
-| `AGENTS.md`/`CLAUDE.md` | always-on context | doctrine relevant to *most* turns in this repo |
-| a **SKILL.md** | JIT, model-invoked | contextual judgment that fires on a trigger |
-| `docs/gate/findings-ledger.md` | ratchets `behavior-first-planning`'s Standing Review Dimensions | a gate/adversary CAUGHT a defect a green test missed — feed it back so the NEXT loop's planning red-teams for it (S6 loop-closure) |
-| a **gate/hook** | mechanical, un-skippable | must-never-regress; cannot be left to judgment |
+`/post-mortem [target]` wraps a closed bead, epic, PR outcome, or recent session.
 
-Put it as high as needed and no higher: a hook for what an agent must not be
-*able* to skip; a skill for what it should *choose* well; AGENTS.md for what it
-should always *know*. A lesson that only needs to be known doesn't need a hook;
-a lesson that must never regress is wasted as prose. **If the existing
-hook/gate layer already catches the failure** (it fired, just late), the fix is
-usually one rung weaker — teach a skill/AGENTS.md to run that gate *earlier*, not
-add a redundant hook.
+| Mode | Behavior |
+|---|---|
+| `--quick "insight"` | Capture one provisional learning; no council or backlog processing |
+| `--scope=pr <num>` | Learn from a merged, rejected, or changes-requested PR |
+| `--process-only` | Run backlog processing, activation, retirement, and harvest only |
+| `--skip-activate` | Extract and process without promotion |
+| `--deep`, `--mixed`, `--debate`, `--explorers=N` | Increase review diversity or depth |
+| `--skip-sweep` | Skip Step 2.6 deep-audit sweep |
+| `--compound` | Compare two or more goal-measure iterations |
 
-**Measure the shipped change on real data, not just unit-green.** A learning or
-feature that is unit-correct but has **zero observable effect on the real
-corpus/workload** is a STOP signal (stop investing in it), not a "do more"
-signal. Cite the real-data measurement (counts before/after on the actual
-corpus), not just "tests pass."
+Read [quick-mode.md](references/quick-mode.md),
+[pr-scope.md](references/pr-scope.md), or
+[compound-engineering-retro.md](references/compound-engineering-retro.md) only
+when its mode is selected.
 
-Six phases:
-1. **Council** — Did we implement it correctly?
-2. **Extract** — What did we learn?
-3. **Process Backlog** — Score, deduplicate, and flag stale learnings
-4. **Activate** — Promote high-value learnings to MEMORY.md and constraints
-5. **Retire** — Archive stale and superseded learnings
-6. **Harvest** — Surface next work for the flywheel
+## Workflow
 
----
+1. **Preflight.** Confirm the repository, completed work, target, and closed
+   children. Load checkpoint policy, metadata verification, closure integrity,
+   and four-surface closure. Run `scripts/preflight-refs.sh --strict`; block on a
+   prior FAIL unless the operator explicitly selects the documented skip.
+2. **Reconstruct intent and delivery.** Load the bead/spec, recent commits,
+   implementation summary, and plan. Compare planned issues/files/tests with
+   delivered evidence. Load `.agents/planning-rules/*.md` and
+   `.agents/pre-mortem-checks/*.md` before falling back to
+   `.agents/findings/registry.jsonl`.
+3. **Audit closure.** Follow [closure-integrity-audit.md](references/closure-integrity-audit.md)
+   and [metadata-verification.md](references/metadata-verification.md). For
+   evidence-only closure, run `scripts/write-evidence-only-closure.sh` and keep
+   the tracked packet at `.agents/releases/evidence-only-closures/<target-id>.json`.
+4. **Step 2.6 deep-audit sweep.** Unless `--quick` or `--skip-sweep`, inspect all
+   changed files with the validate deep-audit checklist and place the merged
+   manifest in `.agents/council/sweep-manifest.md` for adjudication.
+5. **Judge the outcome.** Run council with the retrospective preset and three
+   perspectives: plan compliance, technical debt, and learnings. Include intent,
+   scope delta, closure integrity, metadata failures, prevention context, and
+   prediction accuracy. Partial results remain partial; never inflate them.
+6. **Extract and ratchet.** Follow [phase-2-extract.md](references/phase-2-extract.md).
+   Write reusable findings with `dedup_key` and the tracked registry fields,
+   atomically update `.agents/findings/registry.jsonl`, then run
+   `bash hooks/finding-compiler.sh --quiet` when present. Route a lesson to the
+   weakest sufficient surface: report, learning, skill, always-on doctrine, or gate.
+7. **Maintain and harvest.** Process, activate, retire, and harvest via
+   [maintenance-phases.md](references/maintenance-phases.md). Append one schema
+   v1.4 batch to `.agents/rpi/next-work.jsonl`, validate it, and follow the
+   [claim/finalize lifecycle](references/harvest-next-work.md). Update
+   `.agents/ao/last-processed` last. Report the highest-priority next route or
+   `Flywheel stable — no follow-up items identified.`
 
-## Quick Start
+### ACT: Harvest Follow-Up Work
 
-```bash
-/post-mortem                    # wraps up recent work
-/post-mortem epic-123           # wraps up specific epic
-/post-mortem --quick "insight"  # quick-capture single learning (no council)
-/post-mortem --scope=pr <num>   # learn from a merged/rejected PR outcome (absorbed /pr-retro)
-/post-mortem --process-only     # skip council+extraction, run Phase 3-5 on backlog
-/post-mortem --skip-activate    # extract + process but don't write MEMORY.md
-/post-mortem --deep recent      # thorough council review
-/post-mortem --mixed epic-123   # cross-vendor (Claude + Codex)
-/post-mortem --skip-checkpoint-policy epic-123  # skip ratchet chain validation
+#### Step ACT.3: Feed Next-Work
+
+Validate each batch against the tracked
+[`docs/contracts/next-work.schema.md`](../../docs/contracts/next-work.schema.md)
+and the JSON Schemas linked from the harvest reference. Preserve a known proof
+surface in `"proof_ref"`; an empty `items` array is valid when nothing is actionable.
+
+```yaml
+source_epic: <target-or-recent>
+timestamp: <ISO-8601>
+items:
+  - title: <actionable follow-up>
+    type: task
+    severity: medium
+    source: post-mortem-finding
+    description: <work required>
+    evidence: <finding evidence>
+    target_repo: <repo>
+    "proof_ref": {kind: execution_packet, path: <proof-path>}
+    consumed: false
+    claim_status: "available"
+consumed: false
+claim_status: "available"
+claimed_by: null
+claimed_at: null
+consumed_by: null
+consumed_at: null
 ```
 
-### Codex Closeout
+#### Step ACT.4: Update Marker
 
-In Codex, run these after the post-mortem workflow writes learnings and next work:
+After `bash scripts/validate-next-work.sh --strict` and queue append succeed, update
+`.agents/ao/last-processed`. This is the final Phase 4 mutation.
+
+For a normal Codex closeout after artifacts are written, run:
 
 ```bash
 ao session close --auto-extract
 ao flywheel close-loop --quiet
 ```
 
-`ao session close --auto-extract` resolves the current transcript, forges the session, extracts lightweight learnings, and reports flywheel impact. `ao flywheel close-loop --quiet` runs the supported close-loop maintenance. If transcript discovery needs to be explicit, use `ao forge transcript <path-or-glob> --queue` before `ao flywheel close-loop --quiet`.
+Use `ao forge transcript <path-or-glob> --queue` first only when transcript
+discovery must be explicit.
 
----
+## Promotion Ladder
 
-## Flags
+| Surface | Use when |
+|---|---|
+| report/handoff | one-off observation or context for this closure |
+| `.agents/learnings/` | repeated repo-specific learning worth retrieval |
+| `SKILL.md` | contextual judgment should fire on a trigger |
+| `AGENTS.md` | doctrine applies to most turns |
+| gate/check | the behavior must never regress |
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--quick "text"` | off | Quick-capture a single learning directly to `.agents/learnings/` without running a full post-mortem. Formerly handled by `/retro --quick`. |
-| `--scope=pr [num]` | off | Read a merged/rejected PR outcome as the wrap-up signal instead of a closed bead/epic — mine reviewer feedback into a PR learning. Absorbed the former pr-retro skill. See [references/pr-scope.md](references/pr-scope.md). |
-| `--process-only` | off | Skip council and extraction (Phase 1-2). Run Phase 3-5 on the existing backlog only. |
-| `--skip-activate` | off | Extract and process learnings but do not write to MEMORY.md (skip Phase 4 promotions). |
-| `--deep` | off | 3 judges (default for post-mortem) |
-| `--mixed` | off | Cross-vendor (Claude + Codex) judges |
-| `--explorers=N` | off | Each judge spawns N explorers before judging |
-| `--debate` | off | Two-round adversarial review |
-| `--skip-checkpoint-policy` | off | Skip ratchet chain validation |
-| `--skip-sweep` | off | Skip pre-council deep audit sweep |
+When a gate caught a defect that green tests missed, add the review dimension to
+`docs/gate/findings-ledger.md`. If the existing gate already catches it, teach
+the workflow to run that gate earlier instead of duplicating enforcement.
 
----
+## Output Specification
 
-## Quick Mode
+- **Artifact directory:** write the human report to
+  `.agents/council/YYYY-MM-DD-post-mortem-<topic>.md`; machine closure is
+  `result.json`, with optional learning, finding, evidence-only, and next-work artifacts.
+- **Filename convention:** ISO date plus a stable topic slug; evidence-only
+  packets use `<target-id>.json` and next work remains JSONL.
+- **Serialization/schema format:** Markdown report plus schema-valid council
+  verdict/result JSON, evidence-only-closure v1 JSON, and next-work v1.4 JSONL.
+- **Validator command:** run `bash skills/post-mortem/scripts/validate.sh`,
+  `bash scripts/validate-next-work.sh --strict .agents/rpi/next-work.jsonl` when
+  harvested, and the evidence writer's schema validation when applicable.
+- **Downstream handoff:** consumed by the closed bead, `/rpi`/`/plan`, the
+  findings compiler, retrieval, and the next operating-loop turn.
 
-Read [references/quick-mode.md](references/quick-mode.md) when you need the `--quick` flag procedure (slug generation, direct learning write, confirmation).
+## Quality Rubric
 
-## PR-Outcome Scope (`--scope=pr`)
-
-Read [references/pr-scope.md](references/pr-scope.md) when invoked with `--scope=pr`. It swaps the bead/epic wrap-up signal for a PR's merge/reject/changes-requested outcome: discover the PR, analyze the outcome, mine reviewer feedback via `gh`, extract success/failure patterns, and write a dated PR learning to `.agents/learnings/`. After the PR learning lands, the standard maintenance phases (process → activate → retire → harvest) run as usual. The trigger phrases "PR retro", "learn from this PR", and the legacy pr-retro command all route here.
-
----
-
-## Execution Steps
-
-Read [references/execution-steps.md](references/execution-steps.md) when you need the full Phase 1 procedure: pre-flight checks, reference loading (Step 0.4), checkpoint-policy preflight (0.5), plan/spec loading (Steps 1-2.3), closure integrity audit (2.4), metadata verification (2.5), deep audit sweep (2.6), council invocation (Step 3), and prediction accuracy (3.5).
-
-### Step 2.1: Load Compiled Prevention Context
-
-Before council and retro synthesis, load compiled prevention outputs when they exist:
-
-- `.agents/planning-rules/*.md`
-- `.agents/pre-mortem-checks/*.md`
-
-Use these compiled artifacts first, then fall back to `.agents/findings/registry.jsonl` only when compiled outputs are missing or incomplete. Carry matched finding IDs into the retro as `Applied findings` / `Known risks applied` context so post-mortem can judge whether the flywheel actually prevented rediscovery.
-
-## Phase 2: Extract Learnings
-
-Read [references/phase-2-extract.md](references/phase-2-extract.md) when you need the inline learning extraction procedure: gather context (EX.1), classify (EX.2), write learnings (EX.3), test pyramid gap analysis (EX.3.5), scope classification (EX.4), findings registry (EX.5-6).
-
-Before backlog processing, normalize reusable council findings into `.agents/findings/registry.jsonl`.
-
-Use the tracked contract in `docs/contracts/finding-registry.md`:
-
-- persist only reusable findings that should change future planning or review behavior
-- require `dedup_key`, provenance, `pattern`, `detection_question`, `checklist_item`, `applicable_when`, and `confidence`
-- `applicable_when` must use the controlled vocabulary from the contract
-- append or merge by `dedup_key`
-- use the contract's temp-file-plus-rename atomic write rule
-
-After the registry mutation, refresh compiled outputs immediately so the same session can benefit from the updated prevention set.
-If `hooks/finding-compiler.sh` exists, run:
-
-```bash
-bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
-```
-
-#### Step ACT.3: Feed Next-Work
-
-Actionable improvements identified during processing -> append one schema v1.4
-batch entry to `.agents/rpi/next-work.jsonl` using the tracked contract in
-[`../../docs/contracts/next-work.schema.md`](../../docs/contracts/next-work.schema.md)
-and the write procedure in
-[`references/harvest-next-work.md`](references/harvest-next-work.md).
-Follow the claim/finalize lifecycle documented in `references/harvest-next-work.md`.
-
-The machine-checkable typed contract is the committed JSON Schema pair
-[`../../schemas/next-work-batch.v1.schema.json`](../../schemas/next-work-batch.v1.schema.json)
-(one JSONL line = one batch entry) and
-[`../../schemas/next-work-item.v1.schema.json`](../../schemas/next-work-item.v1.schema.json)
-(each `items[]` element). Validate written rows with
-[`../../scripts/validate-next-work.sh`](../../scripts/validate-next-work.sh)
-(`--strict` to reject malformed output naming the offending field; advisory by
-default). The inline bash in `references/harvest-next-work.md` remains a
-dependency-free fallback when the script is unavailable.
-
-```bash
-mkdir -p .agents/rpi
-# Build VALID_ITEMS via the schema-validation flow in references/harvest-next-work.md
-# Then append one entry per post-mortem / epic.
-# If a harvested item already maps to a known proof surface, preserve it on the
-# item as "proof_ref" instead of burying target IDs in free text. Example item:
-# [{"title":"Verify the parity gate after proof propagation lands","type":"task","severity":"medium","source":"council-finding","description":"Re-run the targeted validator after the follow-up lands.","target_repo":"agentops","proof_ref":{"kind":"execution_packet","run_id":"6f36a5640805","path":".agents/rpi/runs/6f36a5640805/execution-packet.json"}}]
-ENTRY_TIMESTAMP="$(date -Iseconds)"
-SOURCE_EPIC="${EPIC_ID:-recent}"
-VALID_ITEMS_JSON="${VALID_ITEMS_JSON:-[]}"
-
-printf '%s\n' "$(jq -cn \
-  --arg source_epic "$SOURCE_EPIC" \
-  --arg timestamp "$ENTRY_TIMESTAMP" \
-  --argjson items "$VALID_ITEMS_JSON" \
-  '{
-    source_epic: $source_epic,
-    timestamp: $timestamp,
-    items: $items,
-    consumed: false,
-    claim_status: "available",
-    claimed_by: null,
-    claimed_at: null,
-    consumed_by: null,
-    consumed_at: null
-  }'
-)" >> .agents/rpi/next-work.jsonl
-
-# Validate the written contract (advisory; add --strict to gate).
-bash scripts/validate-next-work.sh .agents/rpi/next-work.jsonl
-```
-
-#### Step ACT.4: Update Marker
-
-```bash
-date -Iseconds > .agents/ao/last-processed
-```
-
-This must be the LAST action in Phase 4.
-
-**Phases 3-6 (Maintenance):** Read [references/maintenance-phases.md](references/maintenance-phases.md) for backlog processing, activation, retirement, and harvesting phases. Load when `--process-only` flag is set or when running full post-mortem.
-
-## Absorbed mining surface (`/curate`, 2026-07-07)
-
-The retired curate/compile/flywheel skill trio's user surface lives here: post-mortem's
-extract → process → activate steps ARE the mining half (curate declared itself their
-superset; the audit executed the collapse — docs/audits/skills-audit-2026-07-06.md §3.2).
-Fires for their triggers — "curate skills from sessions", "mine transcripts", "compile
-the knowledge wiki", "check flywheel health". The mechanical corpus surfaces stay on the
-CLI, not skills: `ao compile` (wiki build), `ao flywheel status` (health), `ao lookup`
-(retrieval). Deep session-history mining beyond this session's arc → the `cass` skill.
-
-## Close the ms outcome loop (optional)
-
-If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` (helped) or `ms outcome <skill> --failure` (misled/didn't apply) — only real consultations, an honest empty set beats a padded one. Skip silently if `ms` is not present.
-
-## Reporting and Workflow
-
-Read [references/user-reporting.md](references/user-reporting.md) when you need the Step 7 report template, mandatory next-`/rpi` suggestion format, workflow integration diagram, and example invocations.
+- **Evidence-bound:** every verdict and lesson cites delivered proof or measured outcome.
+- **Intent-aware:** planned versus delivered scope and test levels are reconciled.
+- **Four-surface complete:** code, docs, examples, and proof are each resolved.
+- **Selective:** only reusable learning survives; empty harvests are legitimate.
+- **Machine-checkable:** findings, proof packets, and next work validate to schema.
+- **Loop-closing:** the next turn can consume the promoted rule or harvested item.
 
 ## Examples
 
-Read [references/user-reporting.md](references/user-reporting.md) for full example invocations and what happens in each mode.
+**User says:** `/post-mortem age-123`
+
+Audit a completed epic, judge it, ratchet learning,
+  and harvest the next work.
+
+**User says:** `/post-mortem --quick "ledger appends must rebase from the current chain tip"`
+
+Write one provisional learning and stop. For `/post-mortem --scope=pr 42`, mine
+the PR outcome before normal maintenance.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Council times out | Epic too large or too many files changed | Split post-mortem into smaller reviews or increase timeout |
-| No next-work items harvested | Council found no tech debt or improvements | Flywheel stable — write entry with empty items array to next-work.jsonl |
-| Checkpoint-policy preflight blocks | Prior FAIL verdict in ratchet chain without fix | Resolve prior failure (fix + re-vibe) or skip checkpoint-policy via `--skip-checkpoint-policy` |
-| Metadata verification fails | Plan vs actual files mismatch or missing cross-references | Include failures in council packet as `context.metadata_failures` — judges assess severity |
+| Problem | Response |
+|---|---|
+| Council times out | Report partial evidence and split the review scope |
+| Prior checkpoint is FAIL | Repair it or use the explicit skip with rationale |
+| No next work exists | Emit an empty valid batch and report flywheel stable |
+| Plan and delivered files differ | Record the delta in metadata failures and council context |
 
----
+## References
 
-## Compound-Engineering Retro (`--compound`)
-
-A comparative-delta mode for projects that run `ao goals measure` repeatedly
-across iterations of the same domain slice. Use when a slice has ≥2 iterations
-in the verdict ledger and you want to know: what improved, what regressed, and
-what the learning yield was since the last run.
-
-**Trigger:** run this mode after any `ao goals measure` where the slice has a
-prior iteration record in `.agents/goals/verdict-ledger.json`.
-
-```bash
-# Confirm ≥2 iterations exist for a directive in the slice:
-jq '[.records[] | select(.record_type=="iteration" and .directive_id=="d-<id>")] | length' \
-   .agents/goals/verdict-ledger.json
-
-# Run a new iteration (appends one record per directive):
-ao goals measure
-
-# Browse iteration history:
-ao goals history --goal <directive-id>
-```
-
-Then follow the step-by-step procedure in
-[references/compound-engineering-retro.md](references/compound-engineering-retro.md)
-(Steps CE.0–CE.5): extract N and N-1 records from the ledger, compute the
-verdict and satisfaction delta, count learning yield, and write the delta as a
-draft learning to `.agents/learnings/YYYY-MM-DD-<slice>-iter-delta.md`.
-
-The output learning carries `status: draft` and the run IDs of both iterations;
-human or Tier-3 synthesis promotes it to `status: reviewed`.
-
-**Closing the loop with re-steer.** When the delta shows a directive failing
-chronically, the verdict ledger also drives auto re-steer: `ao goals steer
-recommend` prints policy-driven directive mutations from the same ledger, and
-`ao goals steer apply` writes the chosen mutation to GOALS.md — human-gated, via
-the non-lossy patcher (policy `auto_apply` plus explicit confirmation; ADR-0006).
-The compound retro names *what* regressed; re-steer proposes *how* the directive
-should change. See the `/goals` skill.
-
----
-
-## See Also
-
-- `skills/council/SKILL.md` — Multi-model validation council
-- `skills/validate/SKILL.md` — Council validates code (`/validate` after coding)
-- `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
-- [`pawl-review`](../pawl-review/SKILL.md) — its contained lane evidence is landing evidence this post-mortem may consume
-
-
-## Reference Documents
-
-- [references/post-mortem.feature](references/post-mortem.feature) — Executable spec: validate-shipped, ratcheted learning promotion, next-work harvest, result.json (soc-qk4b.2)
-- [references/pr-retro.feature](references/pr-retro.feature) — Executable spec (`--scope=pr`): categorize PR feedback, extract success/failure patterns by outcome, write a dated PR learning (soc-qk4b)
-- [references/pr-scope.md](references/pr-scope.md) — `--scope=pr`: PR discovery, outcome analysis, gh feedback mining, PR learning template (absorbed /pr-retro)
-- [references/harvest-next-work.md](references/harvest-next-work.md)
-- [references/learning-templates.md](references/learning-templates.md)
-- [references/plan-compliance-checklist.md](references/plan-compliance-checklist.md)
-- [references/closure-integrity-audit.md](references/closure-integrity-audit.md)
-- [references/security-patterns.md](references/security-patterns.md)
-- [references/checkpoint-policy.md](references/checkpoint-policy.md)
-- [references/metadata-verification.md](references/metadata-verification.md)
-- [references/context-gathering.md](references/context-gathering.md)
-- [references/output-templates.md](references/output-templates.md)
-- [references/backlog-processing.md](references/backlog-processing.md)
-- [references/activation-policy.md](references/activation-policy.md)
-- [references/prediction-tracking.md](references/prediction-tracking.md)
-- [references/retro-history.md](references/retro-history.md)
-- [references/streak-tracking.md](references/streak-tracking.md)
-- [references/maintenance-phases.md](references/maintenance-phases.md)
-- [references/four-surface-closure.md](references/four-surface-closure.md)
-- [references/quick-mode.md](references/quick-mode.md)
-- [references/execution-steps.md](references/execution-steps.md)
-- [references/phase-2-extract.md](references/phase-2-extract.md)
-- [references/user-reporting.md](references/user-reporting.md)
-- [references/compound-engineering-retro.md](references/compound-engineering-retro.md)
+- [execution-steps.md](references/execution-steps.md) · [context-gathering.md](references/context-gathering.md) · [plan-compliance-checklist.md](references/plan-compliance-checklist.md)
+- [checkpoint-policy.md](references/checkpoint-policy.md) · [closure-integrity-audit.md](references/closure-integrity-audit.md) · [metadata-verification.md](references/metadata-verification.md) · [four-surface-closure.md](references/four-surface-closure.md)
+- [phase-2-extract.md](references/phase-2-extract.md) · [learning-templates.md](references/learning-templates.md) · [prediction-tracking.md](references/prediction-tracking.md)
+- [backlog-processing.md](references/backlog-processing.md) · [activation-policy.md](references/activation-policy.md) · [maintenance-phases.md](references/maintenance-phases.md)
+- [harvest-next-work.md](references/harvest-next-work.md) · [output-templates.md](references/output-templates.md) · [user-reporting.md](references/user-reporting.md)
+- [quick-mode.md](references/quick-mode.md) · [pr-scope.md](references/pr-scope.md) · [compound-engineering-retro.md](references/compound-engineering-retro.md)
+- [security-patterns.md](references/security-patterns.md) · [retro-history.md](references/retro-history.md) · [streak-tracking.md](references/streak-tracking.md)
+- [post-mortem.feature](references/post-mortem.feature) · [pr-retro.feature](references/pr-retro.feature)

@@ -2128,7 +2128,6 @@
         "ao beads exec",
         "ao goals history",
         "ao goals measure",
-        "ao goals steer apply",
         "ao membrane digest",
         "ao membrane triage",
         "ao session close"
