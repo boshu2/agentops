@@ -1,6 +1,7 @@
 package doctor
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,8 +14,23 @@ func TestDiffDoesNotCreateDoctorArtifactsOrEditGitignore(t *testing.T) {
 	if err := os.WriteFile(gitignore, []byte("existing\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Diff(Options{RepoRoot: root, CWD: root, HomeDir: root, ToolVersion: "test", Now: time.Unix(1_700_000_000, 0)}); err != nil {
+	report, err := Diff(Options{RepoRoot: root, CWD: root, HomeDir: root, ToolVersion: "test", Now: time.Unix(1_700_000_000, 0)})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if report.Findings == nil || report.RunID != "" || report.RunDir != "" {
+		t.Fatalf("transient report = %+v", report)
+	}
+	encoded, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var shape map[string]any
+	if err := json.Unmarshal(encoded, &shape); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := shape["findings"].([]any); !ok {
+		t.Fatalf("diff JSON findings = %#v", shape["findings"])
 	}
 	if _, err := os.Stat(filepath.Join(root, ".doctor")); !os.IsNotExist(err) {
 		t.Fatalf("diff created .doctor: %v", err)

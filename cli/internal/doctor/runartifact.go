@@ -43,6 +43,7 @@ type RunArtifact struct {
 	RunID     string // 6-char short id
 	RunDir    string // absolute path to .doctor/runs/<ISO>__<runid>
 	StartedAt time.Time
+	Persisted bool
 }
 
 // NewRunArtifact creates a fresh run directory under <repoRoot>/.doctor/runs/,
@@ -78,6 +79,7 @@ func NewRunArtifact(repoRoot, targetSHA string, now time.Time) (*RunArtifact, er
 		RunID:     runID,
 		RunDir:    runDir,
 		StartedAt: ts,
+		Persisted: true,
 	}
 	if err := ra.updateLatestSymlink(); err != nil {
 		return nil, err

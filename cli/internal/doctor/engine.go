@@ -299,13 +299,20 @@ func findingsSince(current, prior []Finding) []Finding {
 // buildReport assembles a Report shell from a finding set.
 func buildReport(ra *RunArtifact, toolVersion, sha string, now time.Time, findings []Finding) *Report {
 	finished := time.Now()
+	if findings == nil {
+		findings = []Finding{}
+	}
+	runID, runDir := ra.RunID, filepath.Join(".doctor", "runs", filepath.Base(ra.RunDir))
+	if !ra.Persisted {
+		runID, runDir = "", ""
+	}
 	return &Report{
 		SchemaVersion: SchemaVersion,
 		Tool:          ToolName,
 		ToolVersion:   toolVersion,
 		DoctorVersion: DoctorVersion,
-		RunID:         ra.RunID,
-		RunDir:        filepath.Join(".doctor", "runs", filepath.Base(ra.RunDir)),
+		RunID:         runID,
+		RunDir:        runDir,
 		StartedAt:     ra.StartedAt.Format(time.RFC3339),
 		FinishedAt:    finished.UTC().Format(time.RFC3339Nano),
 		DurationMS:    finished.Sub(now).Milliseconds(),
