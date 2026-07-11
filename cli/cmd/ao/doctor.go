@@ -45,7 +45,7 @@ func gatherDoctorChecks() []quality.Check {
 func runDoctor(cmd *cobra.Command, args []string) error {
 	// Engine-flag invocations (--fix, --explain, --robot-triage) route entirely
 	// through the diagnose-and-repair engine.
-	if doctorFix || doctorExplainFlag != "" || doctorRobotTriage {
+	if doctorFix || doctorExplainFlag != "" || doctorRobotTriage || doctorSince != "" {
 		return runDoctorEngineDefault(cmd)
 	}
 
@@ -87,11 +87,7 @@ func appendEngineFindings(cmd *cobra.Command) error {
 	if doctorWantsJSON() {
 		return nil
 	}
-	opts, err := doctorEngineOptions()
-	if err != nil {
-		return nil // never let the engine break the legacy command
-	}
-	rep, derr := doctor.Diagnose(opts)
+	rep, derr := doctorReadService.Diagnose(cmd.Context(), doctorReadRequest())
 	if derr != nil || rep == nil || len(rep.Findings) == 0 {
 		return nil
 	}

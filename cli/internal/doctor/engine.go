@@ -40,6 +40,7 @@ type Options struct {
 	Severity    string // minimum severity: P0|P1|P2|P3
 	DryRun      bool
 	JSON        bool
+	Since       string
 	Now         time.Time
 }
 
@@ -194,12 +195,30 @@ func summarize(findings []Finding) ReportSummary {
 // the report with the correct exit code (0 healthy / 1 findings / 4 refused /
 // 6 online-required).
 func Diagnose(opts Options) (*Report, error) {
+	return diagnose(opts, true)
+}
+
+func diagnose(opts Options, persist bool) (*Report, error) {
 	now := opts.Now
 	if now.IsZero() {
 		now = time.Now()
 	}
 	sha := targetSHA(opts.RepoRoot)
-	ra, err := NewRunArtifact(opts.RepoRoot, sha, now)
+	var prior []Finding
+	if strings.TrimSpace(opts.Since) != "" {
+		var err error
+		prior, err = reportFindings(opts.RepoRoot, opts.Since)
+		if err != nil {
+			return nil, err
+		}
+	}
+	var ra *RunArtifact
+	var err error
+	if persist {
+		ra, err = NewRunArtifact(opts.RepoRoot, sha, now)
+	} else {
+		ra = transientRunArtifact(opts.RepoRoot, sha, now)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("doctor: %w", err)
 	}
@@ -216,6 +235,9 @@ func Diagnose(opts Options) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
+	if prior != nil {
+		findings = findingsSince(findings, prior)
+	}
 
 	rep := buildReport(ra, opts.ToolVersion, sha, now, findings)
 	rep.Summary.OnlineRequired = onlineSkipped
@@ -226,10 +248,52 @@ func Diagnose(opts Options) (*Report, error) {
 	}
 	rep.OK = rep.ExitCode == ExitHealthy
 	rep.NextSteps = append(diagnoseNextSteps(findings), onlineCoverageNote(onlineSkipped, opts.Online)...)
-	if err := persistRun(ra, opts, rep, 0); err != nil {
-		return rep, err
+	if persist {
+		if err := persistRun(ra, opts, rep, 0); err != nil {
+			return rep, err
+		}
 	}
 	return rep, nil
+}
+
+func transientRunArtifact(repoRoot, targetSHA string, now time.Time) *RunArtifact {
+	started := now.UTC().Truncate(time.Second)
+	runID := RunID(targetSHA, started)
+	doctorDir := filepath.Join(repoRoot, ".doctor")
+	return &RunArtifact{
+		RepoRoot: repoRoot, DoctorDir: doctorDir, RunID: runID,
+		RunDir: filepath.Join(doctorDir, "runs", runDirName(started, runID)), StartedAt: started,
+	}
+}
+
+func reportFindings(repoRoot, runID string) ([]Finding, error) {
+	runDir, err := resolveRunDir(repoRoot, runID)
+	if err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: %w", runID, err)
+	}
+	data, err := os.ReadFile(filepath.Join(runDir, "report.json"))
+	if err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: read report: %w", runID, err)
+	}
+	var report Report
+	if err := json.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: parse report: %w", runID, err)
+	}
+	return report.Findings, nil
+}
+
+func findingsSince(current, prior []Finding) []Finding {
+	seen := make(map[string]bool, len(prior))
+	for _, finding := range prior {
+		seen[finding.ID] = true
+	}
+	out := make([]Finding, 0, len(current))
+	for _, finding := range current {
+		if !seen[finding.ID] {
+			out = append(out, finding)
+		}
+	}
+	return out
 }
 
 // buildReport assembles a Report shell from a finding set.
@@ -783,7 +847,7 @@ func Explain(repoRoot, findingID string) (*Finding, error) {
 // empty registry it always reports a clean diff.
 func Diff(opts Options) (*Report, error) {
 	opts.DryRun = true
-	return Diagnose(opts)
+	return diagnose(opts, false)
 }
 
 // RobotTriageResult is the mega-command JSON for --robot-triage.
