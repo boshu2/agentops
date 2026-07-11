@@ -375,9 +375,28 @@ _session_idle() {
 
 # Reset the idle clock (best-effort; never affects the verdict). No-op unless the file is OURS —
 # never rewrite another session's state.
+# _clock_writable: true when the idle clock CAN be bumped by a route (jq — a route-path hard dep —
+# or python3). F13 (age-pawl-intent-zhndq.14): if NEITHER is present, `_touch_route_ts` cannot bump
+# last_route_ts, so it stays frozen at the up-time and `reap` would tear down an ACTIVELY-serving
+# session once PAWL_IDLE_TTL elapses. cmd_reap consults this to fail safe (never reap on a clock it
+# cannot trust).
+_clock_writable() { command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1; }
+
 _touch_route_ts() {
   local sj="$SESSION_JSON"
   _session_json_matches || return 0
+  # F13: prefer jq (portable; jq is already a route-path hard dep) — the python3-only write silently
+  # no-op'd on a host without python3, freezing the idle clock. jq -c emits the SAME compact
+  # "key":value form the grep readers (load_session / _session_idle) parse; atomic tmp+mv.
+  if command -v jq >/dev/null 2>&1; then
+    local now tmp; now="$(_now)"; tmp="$sj.tmp.$$"
+    if jq -c --argjson now "$now" '.last_route_ts=$now' "$sj" > "$tmp" 2>/dev/null; then
+      mv -f "$tmp" "$sj" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+    else
+      rm -f "$tmp" 2>/dev/null
+    fi
+    return 0
+  fi
   command -v python3 >/dev/null 2>&1 || return 0
   # -I (isolated): drop cwd from sys.path so a repo-planted json.py is never imported (RCE guard on
   # the untrusted-repo path) and ignore PYTHONPATH/user-site injection.
@@ -1141,6 +1160,13 @@ cmd_down() {
 # a cadence, and the shared lazy-auto-up re-ups the service on the next review.
 cmd_reap() {
   session_exists || { log "REAP: no session (no-op)"; return 0; }
+  # F13 (age-pawl-intent-zhndq.14): FAIL SAFE on an untrustworthy clock. If the idle clock cannot be
+  # written (no jq/python3), last_route_ts is frozen at the up-time — reaping on it would tear down
+  # an actively-serving session. Never kill on a broken clock: keep warm + warn.
+  if ! _clock_writable; then
+    log "REAP: idle clock not writable (no jq/python3) — last_route_ts may be frozen at up-time; KEEPING warm (never reap on an untrustworthy clock)"
+    return 0
+  fi
   local idle; idle="$(_session_idle)"
   if [ "$idle" -ge 0 ] && [ "$idle" -gt "$PAWL_IDLE_TTL" ]; then
     log "REAP: session idle ${idle}s > TTL ${PAWL_IDLE_TTL}s — tearing down"
