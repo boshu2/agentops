@@ -14,6 +14,10 @@ type StaleSource interface {
 	ListInProgress(context.Context) ([]byte, error)
 }
 
+type Clock interface {
+	Now() time.Time
+}
+
 type StaleSourceFunc func(context.Context) ([]byte, error)
 
 func (function StaleSourceFunc) ListInProgress(ctx context.Context) ([]byte, error) {

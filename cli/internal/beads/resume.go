@@ -2,10 +2,23 @@ package beads
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 )
+
+type ClaimStore interface {
+	Show(context.Context, string) (StaleBeadRecord, error)
+	Claim(context.Context, string, string) error
+}
+
+type ResumeRuntime interface {
+	Clock
+	Actor() string
+	ResolveRepoPath(string) (string, error)
+	AppendEvent(string, any) error
+}
 
 type TransferInfo struct {
 	PriorRevision string `json:"prior_revision"`
