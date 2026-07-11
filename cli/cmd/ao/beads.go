@@ -24,13 +24,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -306,34 +304,19 @@ func runBeadsTrackerCmd(cmd *cobra.Command, _ []string) error {
 
 // CitationStatus is the three-valued verdict for a single citation extracted
 // from a bead description.
-type CitationStatus string
+type CitationStatus = beadsapp.CitationStatus
 
 const (
-	CitationFresh   CitationStatus = "FRESH"
-	CitationStale   CitationStatus = "STALE"
-	CitationUnknown CitationStatus = "UNKNOWN"
+	CitationFresh   = beadsapp.CitationFresh
+	CitationStale   = beadsapp.CitationStale
+	CitationUnknown = beadsapp.CitationUnknown
 )
 
 // Citation is a single verifiable reference pulled from a bead description.
-type Citation struct {
-	Kind     string         `json:"kind"`     // "file", "function", "symbol"
-	Raw      string         `json:"raw"`      // verbatim text from description
-	Status   CitationStatus `json:"status"`   // FRESH / STALE / UNKNOWN
-	Reason   string         `json:"reason"`   // human-readable explanation
-	Resolved string         `json:"resolved"` // HEAD location if resolved differently
-}
+type Citation = beadsapp.Citation
 
 // VerifyReport is the structured result of `ao beads verify`.
-type VerifyReport struct {
-	BeadID      string     `json:"bead_id"`
-	Title       string     `json:"title"`
-	Status      string     `json:"status"`
-	Citations   []Citation `json:"citations"`
-	StaleCount  int        `json:"stale_count"`
-	FreshCount  int        `json:"fresh_count"`
-	TotalCount  int        `json:"total_count"`
-	BDAvailable bool       `json:"bd_available"`
-}
+type VerifyReport = beadsapp.VerifyReport
 
 func runBeadsVerify(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
@@ -405,22 +388,7 @@ func verifyBead(beadID string) (*VerifyReport, error) {
 // typically hides the original description and surfaces the operator's
 // `Close reason:` line instead. `harvest` wants the close reason; `verify`
 // wants whichever is present. The Body accessor returns the first non-empty.
-type bdShowParsed struct {
-	ID          string
-	Title       string
-	Status      string
-	Description string // DESCRIPTION-heading body (open beads, empty on closed)
-	CloseReason string // "Close reason:" line (closed beads only)
-}
-
-// Body returns the non-empty body to use for citation extraction / harvest.
-// Prefers CloseReason (closed beads) and falls back to Description.
-func (p *bdShowParsed) Body() string {
-	if p.CloseReason != "" {
-		return p.CloseReason
-	}
-	return p.Description
-}
+type bdShowParsed = beadsapp.ParsedBead
 
 // parseBDShow parses the human-readable `bd show <id>` output. Observed
 // formats (2026-04-11):
@@ -442,46 +410,7 @@ func (p *bdShowParsed) Body() string {
 // captured into CloseReason. The DESCRIPTION body is captured into
 // Description.
 func parseBDShow(raw string) (*bdShowParsed, error) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return nil, errors.New("empty bd show output")
-	}
-	out := &bdShowParsed{}
-	lines := strings.Split(raw, "\n")
-	headerRe := regexp.MustCompile(`^[○●✓]?\s*(\S+)\s*·\s*(.*?)\s*\[([^\[\]]*)\]\s*$`)
-	for i, line := range lines {
-		if out.ID == "" {
-			if m := headerRe.FindStringSubmatch(line); m != nil {
-				out.ID = strings.TrimSpace(m[1])
-				out.Title = strings.TrimSpace(m[2])
-				out.Status = strings.TrimSpace(m[3])
-				continue
-			}
-		}
-		if strings.HasPrefix(line, "Close reason:") {
-			out.CloseReason = strings.TrimSpace(strings.TrimPrefix(line, "Close reason:"))
-			continue
-		}
-		if strings.HasPrefix(line, "DESCRIPTION") {
-			// Everything until EOF or [rerun: ...] sentinel.
-			tail := strings.Join(lines[i+1:], "\n")
-			if idx := strings.LastIndex(tail, "\n[rerun:"); idx >= 0 {
-				tail = tail[:idx]
-			}
-			// Also strip a leading [rerun:] if the description body is empty
-			// (closed beads often have just this marker).
-			tail = strings.TrimSpace(tail)
-			if strings.HasPrefix(tail, "[rerun:") {
-				tail = ""
-			}
-			out.Description = tail
-			break
-		}
-	}
-	if out.ID == "" && out.Description == "" && out.CloseReason == "" {
-		return nil, fmt.Errorf("could not parse bd show output: %q", beadTruncate(raw, 80))
-	}
-	return out, nil
+	return beadsapp.ParseBDShow(raw)
 }
 
 // extractCitations pulls verifiable references out of a description body.
@@ -490,66 +419,7 @@ func parseBDShow(raw string) (*bdShowParsed, error) {
 //   - Go function references (`func Name(` or `type.Method(`)
 //   - Backticked symbols that look like identifiers
 func extractCitations(desc string) []Citation {
-	var out []Citation
-	seen := make(map[string]bool)
-
-	// File paths. Accept common source/doc extensions. Allow an optional
-	// ":line" suffix. Lead-dot paths (.agents/, .github/) are captured by
-	// requiring the character before the match to be non-ident, then
-	// including the dot in the path prefix.
-	fileRe := regexp.MustCompile(`(?:^|[^\w.])([.\w][\w./-]*\.(?:go|py|sh|md|yaml|yml|json|ts|tsx|js|jsx|rs|toml))(?::(\d+))?`)
-	for _, m := range fileRe.FindAllStringSubmatch(desc, -1) {
-		path := m[1]
-		line := m[2]
-		raw := path
-		if line != "" {
-			raw = path + ":" + line
-		}
-		key := "file:" + raw
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		out = append(out, Citation{Kind: "file", Raw: raw})
-	}
-
-	// Go function citations: `func Name` or `func (r *T) Name`.
-	funcRe := regexp.MustCompile(`\bfunc\s+(?:\([^)]*\)\s*)?([A-Za-z_]\w*)`)
-	for _, m := range funcRe.FindAllStringSubmatch(desc, -1) {
-		raw := "func " + m[1]
-		key := "func:" + m[1]
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		out = append(out, Citation{Kind: "function", Raw: raw})
-	}
-
-	// Backticked symbols that look like identifiers (not arbitrary code blocks).
-	// Require at least one alpha char and only ident-safe chars.
-	backtickRe := regexp.MustCompile("`([A-Za-z_][\\w.]{2,})`")
-	for _, m := range backtickRe.FindAllStringSubmatch(desc, -1) {
-		sym := m[1]
-		// Skip things that look like file paths (already handled) or numbers.
-		if strings.ContainsAny(sym, "/") {
-			continue
-		}
-		key := "sym:" + sym
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		out = append(out, Citation{Kind: "symbol", Raw: "`" + sym + "`"})
-	}
-
-	// Deterministic ordering for test stability.
-	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].Kind != out[j].Kind {
-			return out[i].Kind < out[j].Kind
-		}
-		return out[i].Raw < out[j].Raw
-	})
-	return out
+	return beadsapp.ExtractCitations(desc)
 }
 
 // verifyCitationInPlace checks a single citation against the repo state at
@@ -748,14 +618,7 @@ func emitVerifyHuman(w *os.File, r *VerifyReport, verbose bool) {
 // ------------------------------------------------------------------------
 
 // LintReport is the aggregate result of `ao beads lint`.
-type LintReport struct {
-	StatusFilter string         `json:"status_filter"`
-	TotalBeads   int            `json:"total_beads"`
-	CleanBeads   int            `json:"clean_beads"`
-	StaleBeads   int            `json:"stale_beads"`
-	ErrorBeads   int            `json:"error_beads"`
-	PerBead      []VerifyReport `json:"per_bead"`
-}
+type LintReport = beadsapp.LintReport
 
 func runBeadsLint(cmd *cobra.Command, args []string) error {
 	if !bdAvailable() {
@@ -814,31 +677,7 @@ func listBeadIDs(status string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("bd list: %w", err)
 	}
-	// Bead ID grammar: 2-4 letter rig, dash, then ident chars. Examples:
-	// na-h61, na-348.1, ocpcm2-abc.
-	idRe := regexp.MustCompile(`\b([a-z]{2,6}-[0-9a-z][\w.]*)\b`)
-	seen := make(map[string]bool)
-	var ids []string
-	for _, line := range strings.Split(string(raw), "\n") {
-		// Skip header/footer lines that might match incidentally — we want
-		// only lines that start with a bullet or tree char.
-		trimmed := strings.TrimLeft(line, " \t├─└│")
-		if trimmed == "" {
-			continue
-		}
-		firstRune := []rune(trimmed)[0]
-		if firstRune != '○' && firstRune != '●' && firstRune != '✓' {
-			continue
-		}
-		if m := idRe.FindStringSubmatch(line); m != nil {
-			id := m[1]
-			if !seen[id] {
-				seen[id] = true
-				ids = append(ids, id)
-			}
-		}
-	}
-	return ids, nil
+	return beadsapp.ParseBeadIDs(raw), nil
 }
 
 func emitLintHuman(w *os.File, r *LintReport) {
@@ -865,15 +704,7 @@ func emitLintHuman(w *os.File, r *LintReport) {
 // LearningFrontmatter is the yaml frontmatter block written to the top of
 // each materialised learning file. Intentionally minimal — downstream
 // reducers handle enrichment.
-type LearningFrontmatter struct {
-	Title      string   `json:"title" yaml:"title"`
-	BeadID     string   `json:"bead_id" yaml:"bead_id"`
-	Source     string   `json:"source" yaml:"source"` // "bd-close"
-	Date       string   `json:"date" yaml:"date"`
-	Tags       []string `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Maturity   string   `json:"maturity" yaml:"maturity"` // "provisional" — fresh harvest
-	Provenance string   `json:"provenance" yaml:"provenance"`
-}
+type LearningFrontmatter = beadsapp.LearningFrontmatter
 
 func runBeadsHarvest(cmd *cobra.Command, args []string) error {
 	beadID := args[0]
@@ -932,66 +763,20 @@ func runBeadsHarvest(cmd *cobra.Command, args []string) error {
 // including YAML frontmatter and the closure reason as the primary learning
 // content.
 func renderLearningBody(fm LearningFrontmatter, parsed *bdShowParsed) string {
-	var b strings.Builder
-	b.WriteString("---\n")
-	fmt.Fprintf(&b, "title: %q\n", fm.Title)
-	fmt.Fprintf(&b, "bead_id: %s\n", fm.BeadID)
-	fmt.Fprintf(&b, "source: %s\n", fm.Source)
-	fmt.Fprintf(&b, "date: %s\n", fm.Date)
-	fmt.Fprintf(&b, "maturity: %s\n", fm.Maturity)
-	fmt.Fprintf(&b, "provenance: %q\n", fm.Provenance)
-	b.WriteString("tags:\n")
-	for _, t := range fm.Tags {
-		fmt.Fprintf(&b, "  - %s\n", t)
-	}
-	b.WriteString("---\n\n")
-	fmt.Fprintf(&b, "# %s\n\n", fm.Title)
-	fmt.Fprintf(&b, "Harvested from closed bead [%s] on %s.\n\n", fm.BeadID, fm.Date)
-	b.WriteString("## Closure reason\n\n")
-	b.WriteString(parsed.Body())
-	b.WriteString("\n")
-	return b.String()
+	return beadsapp.RenderLearningBody(fm, parsed)
 }
 
 // isClosedStatus is tolerant of the various ways bd might render a closed
 // state. Uses substring matching because the real status field often
 // includes priority and type tokens (e.g., "● P2 · CLOSED" or "CLOSED P1 task").
 func isClosedStatus(status string) bool {
-	s := strings.ToUpper(strings.TrimSpace(status))
-	for _, tok := range []string{"CLOSED", "DONE", "RESOLVED"} {
-		if strings.Contains(s, tok) {
-			return true
-		}
-	}
-	return false
+	return beadsapp.IsClosedStatus(status)
 }
 
 // beadSlugify converts a free-text title into a filesystem-safe kebab-case slug
 // capped at maxLen characters.
 func beadSlugify(title string, maxLen int) string {
-	s := strings.ToLower(title)
-	var b strings.Builder
-	lastDash := false
-	for _, r := range s {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-			lastDash = false
-		default:
-			if !lastDash && b.Len() > 0 {
-				b.WriteRune('-')
-				lastDash = true
-			}
-		}
-	}
-	out := strings.TrimRight(b.String(), "-")
-	if len(out) > maxLen {
-		out = strings.TrimRight(out[:maxLen], "-")
-	}
-	if out == "" {
-		out = "untitled"
-	}
-	return out
+	return beadsapp.Slugify(title, maxLen)
 }
 
 // ------------------------------------------------------------------------
@@ -1005,8 +790,5 @@ func emitJSON(w *os.File, v any) error {
 }
 
 func beadTruncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n] + "..."
+	return beadsapp.Truncate(s, n)
 }
