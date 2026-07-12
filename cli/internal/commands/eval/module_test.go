@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
+	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 )
 
 type coreUseCasesSpy struct {
@@ -15,6 +16,22 @@ type coreUseCasesSpy struct {
 }
 
 type cleanupUseCasesSpy struct{ request aoeval.CleanupRequest }
+
+type taskUseCasesSpy struct{ runRequest aoeval.TaskRunRequest }
+
+func (*taskUseCasesSpy) Add(context.Context, aoeval.TaskAddRequest) (aoeval.TaskAddResult, error) {
+	return aoeval.TaskAddResult{}, nil
+}
+func (*taskUseCasesSpy) List(context.Context) (aoeval.TaskListResult, error) {
+	return aoeval.TaskListResult{}, nil
+}
+func (*taskUseCasesSpy) Show(context.Context, string) (*evalsubstrate.Task, error) {
+	return &evalsubstrate.Task{}, nil
+}
+func (useCases *taskUseCasesSpy) Run(_ context.Context, request aoeval.TaskRunRequest) (aoeval.TaskRunResult, error) {
+	useCases.runRequest = request
+	return aoeval.TaskRunResult{DryRun: true}, nil
+}
 
 func (useCases *cleanupUseCasesSpy) Execute(_ context.Context, request aoeval.CleanupRequest) (aoeval.CleanupReport, error) {
 	useCases.request = request
@@ -91,6 +108,23 @@ func TestModuleCleanupDelegatesClosureLocalOptions(t *testing.T) {
 		t.Fatalf("request = %#v", cleanup.request)
 	}
 	if !strings.Contains(output.String(), "transitions->aborted: 1") || !strings.Contains(output.String(), "Touched:") {
+		t.Fatalf("output = %q", output.String())
+	}
+}
+
+func TestModuleTaskRunDelegatesClosureLocalFlags(t *testing.T) {
+	task := &taskUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Task: task}, HostOptions{}).Command()
+	command.SetArgs([]string{"task", "run", "task-1", "--suite", "suite-1", "--seeds", "1,2,3", "--rig-id", "rig-1", "--dry-run"})
+	var output strings.Builder
+	command.SetOut(&output)
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if task.runRequest.TaskID != "task-1" || task.runRequest.SuiteRef != "suite-1" || task.runRequest.Seeds != "1,2,3" || !task.runRequest.DryRun {
+		t.Fatalf("request = %#v", task.runRequest)
+	}
+	if !strings.Contains(output.String(), "Dry run: gates passed") {
 		t.Fatalf("output = %q", output.String())
 	}
 }
