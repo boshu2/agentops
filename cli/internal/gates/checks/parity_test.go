@@ -66,9 +66,14 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 
 	t.Run("skill change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"skills/foo/SKILL.md"})
-		assertHas(t, ids, "skill.schema", "skill.isolation", "skill.no-operator-leakage")
+		assertHas(t, ids, "skill.schema", "skill.isolation", "skill.no-operator-leakage", "derived.changed-scope")
 		assertHas(t, ids, alwaysIDs...)
 		assertNot(t, ids, "go.build", "go.command-test-pair", "contract.registry-drift")
+	})
+
+	t.Run("skill conformance selector self-change", func(t *testing.T) {
+		ids := selectedIDs(t, []string{"scripts/regen-changed-scope.sh"})
+		assertHas(t, ids, "derived.changed-scope")
 	})
 
 	// The operator-leakage guard also protects the generated published surfaces

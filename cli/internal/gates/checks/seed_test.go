@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/gates"
@@ -87,6 +88,17 @@ func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 	}
 	if changed.Backing != "regen-changed-scope.sh" {
 		t.Fatalf("derived.changed-scope backing = %q, want regen-changed-scope.sh", changed.Backing)
+	}
+	if !strings.Contains(changed.RepairHint, "skills/heal-skill/scripts/audit.sh --strict") {
+		t.Fatalf("derived.changed-scope repair hint = %q, want canonical deep-audit command", changed.RepairHint)
+	}
+	for _, path := range []string{
+		"scripts/regen-changed-scope.sh",
+		"tests/scripts/skill-standards-convergence.bats",
+	} {
+		if !gates.PathMatchesAny(changed.Match, path) {
+			t.Errorf("derived.changed-scope does not self-route %q", path)
+		}
 	}
 
 	releaseWide, ok := gates.Default.Get("always.regen-all")

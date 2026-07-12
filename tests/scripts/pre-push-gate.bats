@@ -88,6 +88,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
     make_stub "$FAKE_REPO/scripts/docs-build.sh"
     make_stub "$FAKE_REPO/skills/heal-skill/scripts/heal.sh"
+    make_stub "$FAKE_REPO/skills/heal-skill/scripts/audit.sh"
     make_stub "$FAKE_REPO/tests/skills/run-all.sh"
     make_stub "$FAKE_REPO/tests/validate-learning-coherence.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-schema.sh"
