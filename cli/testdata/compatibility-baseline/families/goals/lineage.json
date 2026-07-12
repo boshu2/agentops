@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "family": "goals",
+  "old_implementation_sha": "e82d4461b2e7f8e7aa88ed5a9b4752ac93d706c2",
+  "freeze_sha": "fc8f8238e20681b6059a4a6230cf8996f1156071",
+  "fixture_sha256": "58c8496b84eb32e80c087ca47248cd909ec40b0d752b3f08c153dfa70b5fbc2e",
+  "ownership_sha256": "c1b63530b707876da0111b3657a4fcd64b862f6cfa9a5db383648f6e828aed0a",
+  "scope_sha256": "f2314ecf9fdcd2d9623d38beb3257baaa522a6a607280916e1f37455fdb22699",
+  "migration_state": "migrating"
+}
