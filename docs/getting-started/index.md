@@ -112,26 +112,38 @@ ao --version           # Prints installed ao version
 and non-zero exits on a real problem. If anything looks wrong, see
 [Troubleshooting](../troubleshooting.md) or run `ao doctor --verbose`.
 
+## Product map (read once)
+
+AgentOps is the **operating loop** from intent to validated code. Skills are
+the front door. The membrane only accepts work against a behavior contract
+(Gherkin → ATDD).
+
+- [Intent → Validated Code](../architecture/intent-to-validated-code.md) — full flow
+- [Skills Matrix](../skills-matrix.md) — every skill on the loop
+- [First-value path](../first-value-path.md) — first session via skills
+
 ## Golden Paths
 
-Pick one path. Each path ends with proof in `.agents/` or an explicit
-PASS/WARN/FAIL verdict.
+Pick one path. Each path ends with proof against a **named acceptance behavior**
+(and usually an artifact under `.agents/` or an explicit PASS/WARN/FAIL verdict).
 
 | I want to... | Run | Success signal |
 |--------------|-----|----------------|
-| Set up a repo for the first time | `ao quick-start`, then `/quickstart` | Readiness summary shows the next action |
-| Make the first validated change | `/rpi "a small goal"` | Discovery, implementation, validation, and learning artifacts exist |
-| Review code before shipping | `/council validate this PR` or `/vibe recent` | Verdict is recorded before merge |
-| Continue tracked work | `ao reconcile --json`, then `BEADS_DIR="$(ao beads dir)" br ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Main/release/bead evidence is clean before issue status and validation evidence are updated |
-| Run from the terminal | `ao factory start --goal "goal"`, then drive the seven-move operating loop in-session via the `/rpi` skill (the `ao rpi` engine was removed in 3.0) | Loop artifacts land in `.agents/`; monitor out-of-session runs via the NTM + MCP Agent Mail substrate (AgentOps ships no daemon) |
+| Set up a repo for the first time | `ao quick-start`, then `/bootstrap` if needed | Readiness summary; skills resolve in the agent |
+| Make the first validated change | `/plan` → `/implement` → `/validate` (or `/rpi "a small goal"`) | Gherkin scenario exists; acceptance went RED then green; `/validate` cites that scenario |
+| Stress-test a plan before build | `/pre-mortem` | Plan HOLD/PASS before implement |
+| High-stakes review | `/validate` then `/council` | Independent judges + acceptance mapping |
+| Continue tracked work | `BEADS_DIR="$(ao beads dir)" br ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Bead acceptance examples still map to evidence |
+| Full loop map | Read [Intent → Validated Code](../architecture/intent-to-validated-code.md) | You can name moves 1–7 and their primary skills |
 
 ## Command Reference
 
 ```bash
 ao quick-start     # Canonical repo seed and readiness repair
 ao quickstart      # Stable alias for the same golden path
+ao doctor          # Health check (skills, reviewers, paths)
 ao status          # Where was I?
-# ao rpi phased was removed in 3.0 — drive the operating loop in-session via the /rpi skill
+# Drive the loop in-session via skills: /plan → /implement → /validate (or /rpi)
 ```
 
 ## Learning path

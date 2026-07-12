@@ -1,9 +1,10 @@
 # Skill Router
 
-Use this when you're not sure which skill to run. For the full flow overview run
-`ao session bootstrap`, then `ao lookup` for on-demand context. The same tree is
-embedded in [`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep
-the two in sync when skills are folded or renamed.
+Use this when you're not sure which skill to run. **Product map:**
+[Intent → Validated Code](architecture/intent-to-validated-code.md) ·
+[Skills Matrix](skills-matrix.md). The same tree is embedded in
+[`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep the two in
+sync when skills are folded or renamed.
 
 To search skills by intent instead of reading this tree, use `ms search "<task>"`
 (or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
@@ -11,7 +12,13 @@ To search skills by intent instead of reading this tree, use `ms search "<task>"
 ```text
 What are you trying to do?
 │
-├─ "Prove it's done / validate" (the Membrane — no verdict = not done)
+├─ "Run the full loop / first time"
+│   ├─ See the whole product ─────► docs: Intent → Validated Code + Skills Matrix
+│   ├─ One behavior end-to-end ───► /plan → /implement → /validate
+│   ├─ One tick wrapped ──────────► /rpi "goal"
+│   └─ Repo setup ────────────────► /bootstrap · ao quick-start · ao doctor
+│
+├─ "Prove it's done / validate" (the Membrane — needs acceptance behavior; no verdict = not done)
 │   ├─ Code ready to ship? ───────► /validate
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
 │   ├─ Plan ready to build? ──────► /pre-mortem
@@ -79,5 +86,6 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► ao session bootstrap → /status
+└─ "First time here" ────────────► /plan → /implement → /validate
+                                   (maps: Intent → Validated Code · Skills Matrix)
 ```

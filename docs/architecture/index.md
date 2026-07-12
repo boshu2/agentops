@@ -4,13 +4,14 @@ AgentOps is built from a small set of orthogonal components that compose into th
 
 Read in this order if you're new:
 
-1. **[Codebase Overview](codebase-overview.md)** — start here for a consolidated map (humans and agents).
-2. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
-3. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation).
-4. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
-5. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
-6. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
-7. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — trace one idea through beads, slices, validation, ratchet.
+1. **[Intent → Validated Code](intent-to-validated-code.md)** — what the product is: full flow via skills.
+2. **[Skills Matrix](../skills-matrix.md)** — every skill on the loop.
+3. **[Codebase Overview](codebase-overview.md)** — consolidated repo map (humans and agents).
+4. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation / discipline).
+5. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
+6. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
+7. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
+8. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — ports/adapters for one turn.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 

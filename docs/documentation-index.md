@@ -13,7 +13,9 @@
 - [Roadmap](ROADMAP.md) — Designed-but-not-built features (planned, not committed): CLI roadmap, curation pipeline later stages, hookless default-install
 - [3.0-Readiness Level-Set](3.0-readiness.md) — Honest box-by-box status against the 3.0 acceptance criteria after the 2026-05-23 reconciliation: what's done, fitness snapshot, named remaining work
 - [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md) — Public gist/launch copy for the council-first 3.0 story
-- [AgentOps 3.0 First-Value Path](first-value-path.md) — First-session path from install to domain packet, council verdict, tracked work, and optional out-of-session substrate lane
+- [AgentOps 3.0 First-Value Path](first-value-path.md) — First session via skills: `/plan` (Gherkin) → `/implement` (ATDD) → `/validate` (membrane vs that behavior)
+- [Intent → Validated Code](architecture/intent-to-validated-code.md) — Full product flow from intent to membrane-proven acceptance
+- [Skills Matrix](skills-matrix.md) — Every skill placed on operating-loop moves 1–7
 - [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
 - [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
