@@ -3,11 +3,11 @@ package main
 import "testing"
 
 func TestDoctorReadCommandsRejectJunkArguments(t *testing.T) {
-	if err := doctorCmd.ValidateArgs([]string{"junk"}); err == nil {
+	if err := doctorCommand.ValidateArgs([]string{"junk"}); err == nil {
 		t.Fatal("doctor accepted junk positional argument")
 	}
 	for _, name := range []string{"capabilities", "health", "robot-docs", "ls", "diff"} {
-		child, _, err := doctorCmd.Find([]string{name})
+		child, _, err := doctorCommand.Find([]string{name})
 		if err != nil {
 			t.Fatal(err)
 		}

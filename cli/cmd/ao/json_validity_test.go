@@ -40,9 +40,9 @@ func withGoalsJSON(t *testing.T) {
 // withDoctorJSON temporarily sets the doctor-specific JSON flag.
 func withDoctorJSON(t *testing.T) {
 	t.Helper()
-	prev := doctorJSON
-	doctorJSON = true
-	t.Cleanup(func() { doctorJSON = prev })
+	prevJSON, prevOutput := jsonFlag, output
+	jsonFlag, output = true, "json"
+	t.Cleanup(func() { jsonFlag, output = prevJSON, prevOutput })
 }
 
 // captureJSONStdout moved to testutil_test.go.

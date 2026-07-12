@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/adapters/worktreeconfig"
+	doctorcommands "github.com/boshu2/agentops/cli/internal/commands/doctor"
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
@@ -105,7 +106,7 @@ func Execute() {
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
 		}
-		var docErr *doctorExitError
+		var docErr *doctorcommands.ExitError
 		if errors.As(err, &docErr) {
 			// Exit 1 means findings are present — a normal diagnostic result,
 			// not a failure, so it carries no stderr noise. Higher codes are
