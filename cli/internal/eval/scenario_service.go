@@ -300,9 +300,10 @@ func (service ScenarioService) runChecks(checks []scenario.AcceptanceVector, gat
 			command = resolved
 		}
 		outcome, detail := service.Runtime.Measure(command, timeout)
-		if outcome == "pass" {
+		switch outcome {
+		case "pass":
 			passed++
-		} else if outcome == "skip" {
+		case "skip":
 			skipped++
 		}
 		text := fmt.Sprintf("`%s` -> %s", command, outcome)

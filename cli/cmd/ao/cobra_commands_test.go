@@ -72,7 +72,6 @@ func executeCommand(args ...string) (string, error) {
 	origFindingsPullForce := findingsPullForce
 	origFindingsRetireBy := findingsRetireBy
 	origForgeTier1LegacyLocalLLM := forgeTier1LegacyLocalLLM
-	origScenarioListStatus := scenarioListStatus
 	// Struct-type flag vars (fields persist across Execute calls):
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
@@ -142,7 +141,6 @@ func executeCommand(args ...string) (string, error) {
 		findingsPullForce = origFindingsPullForce
 		findingsRetireBy = origFindingsRetireBy
 		forgeTier1LegacyLocalLLM = origForgeTier1LegacyLocalLLM
-		scenarioListStatus = origScenarioListStatus
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
@@ -209,24 +207,6 @@ func executeCommand(args ...string) (string, error) {
 	findingsPullForce = false
 	findingsRetireBy = ""
 	forgeTier1LegacyLocalLLM = false
-	scenarioListStatus = ""
-	evalRunOutput = ""
-	evalRunID = ""
-	evalRunRuntime = ""
-	evalRunBaseline = ""
-	evalCompareOutput = ""
-	evalCompareMaxAgg = 0
-	evalCompareMaxDim = 0
-	evalScorecardOutput = ""
-	evalScorecardKind = "rpi"
-	evalScorecardMaxCat = 0
-	evalBaselineOutput = ""
-	evalBaselineBy = ""
-	evalBaselineReason = ""
-	evalCoverageRoot = "evals/agentops-core"
-	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed", "security"}
-	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
-	evalCoverageRuntimes = []string{"static", "shell", "mock"}
 	maturityApply = false
 	maturityScan = false
 	maturityCurate = false

@@ -82,7 +82,7 @@ func taskSuccessJudgePrompt(spec scenario.Scenario, output string) string {
 	return prompt.String()
 }
 
-const judgeOutputSchema = `{"type":"object","additionalProperties":false,"properties":{"vectors":{"type":"array","items":{"type":"object","additionalProperties":false,"properties":{"dimension":{"type":"string"},"pass":{"type":"boolean"},"score":{"type":"number"}},"required":["dimension","pass","score"]}},"aggregate_score":{"type":"number"}},"required":["vectors","aggregate_score"]}`
+const JudgeOutputSchema = `{"type":"object","additionalProperties":false,"properties":{"vectors":{"type":"array","items":{"type":"object","additionalProperties":false,"properties":{"dimension":{"type":"string"},"pass":{"type":"boolean"},"score":{"type":"number"}},"required":["dimension","pass","score"]}},"aggregate_score":{"type":"number"}},"required":["vectors","aggregate_score"]}`
 
 func writeJudgeSchema() (string, func(), error) {
 	file, err := os.CreateTemp("", "scenario-ab-judge-schema-*.json")
@@ -91,7 +91,7 @@ func writeJudgeSchema() (string, func(), error) {
 	}
 	name := file.Name()
 	cleanup := func() { _ = os.Remove(name) }
-	if _, err := file.WriteString(judgeOutputSchema); err != nil {
+	if _, err := file.WriteString(JudgeOutputSchema); err != nil {
 		_ = file.Close()
 		cleanup()
 		return "", func() {}, fmt.Errorf("write judge schema: %w", err)
@@ -144,6 +144,12 @@ func runCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string,
 		return strings.TrimSpace(string(message)), tokens, nil
 	}
 	return string(combined), tokens, nil
+}
+
+// RunCodexExec exposes the sandboxed Codex execution adapter to other legacy
+// composition shims while their command families are migrated.
+func RunCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string, int, error) {
+	return runCodexExec(ctx, prompt, outputSchemaPath)
 }
 func codexExecArgs(messagePath, outputSchemaPath, prompt string) []string {
 	args := []string{"exec", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", messagePath}

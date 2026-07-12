@@ -51,7 +51,7 @@ func (score *OutcomesScore) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	*score = OutcomesScore{SourceTaskID: value.SourceTaskID, JudgeContentHash: value.JudgeContentHash, Aggregate: value.Aggregate, Threshold: value.Threshold, CriterionScores: value.CriterionScores, Split: value.Split, SuiteRef: value.SuiteRef, GroundTruthVersion: value.GroundTruthVersion, RunID: value.RunID}
+	*score = OutcomesScore(value)
 	return nil
 }
 
@@ -189,9 +189,10 @@ func buildOutcomeManifest(score OutcomesScore, band, runID string, started time.
 		dimensions[DimensionCorrectness] = clampOutcomeScore(score.Aggregate)
 	}
 	status, verdict := StatusInconclusive, VerdictAdvisory
-	if band == "PASS" {
+	switch band {
+	case "PASS":
 		status, verdict = StatusPass, VerdictPass
-	} else if band == "FAIL" {
+	case "FAIL":
 		status, verdict = StatusFail, VerdictFail
 	}
 	caseID := score.SourceTaskID

@@ -159,7 +159,10 @@ func (service TaskService) Run(_ context.Context, request TaskRunRequest) (TaskR
 	if rigID == "" {
 		rigID = "unknown-rig"
 	}
-	manifest := service.taskManifest(request, task, suite, seeds, rigID, gateInputs, groundTruth)
+	manifest, err := service.taskManifest(request, task, suite, seeds, rigID, gateInputs, groundTruth)
+	if err != nil {
+		return TaskRunResult{}, fmt.Errorf("eval task run: build manifest: %w", err)
+	}
 	runID := service.Runtime.GenerateRunID(rigID)
 	writer, err := service.Runtime.OpenRun(service.Runtime.Root(), runID, manifest)
 	if err != nil {
@@ -228,7 +231,7 @@ func (service TaskService) loadGroundTruth() ([]evalsubstrate.GroundTruthRow, er
 	return rows, nil
 }
 
-func (service TaskService) taskManifest(request TaskRunRequest, task *evalsubstrate.Task, suite *evalsubstrate.Suite, seeds []int, rigID string, gates evalsubstrate.GateInputs, rows []evalsubstrate.GroundTruthRow) evalsubstrate.Manifest {
+func (service TaskService) taskManifest(request TaskRunRequest, task *evalsubstrate.Task, suite *evalsubstrate.Suite, seeds []int, rigID string, gates evalsubstrate.GateInputs, rows []evalsubstrate.GroundTruthRow) (evalsubstrate.Manifest, error) {
 	manifest := evalsubstrate.Manifest{TaskRef: task.ID, SuiteRef: suite.ID, HarnessRef: request.HarnessRef, ModelSpecRef: request.ModelSpecID, GroundTruthRef: request.GroundTruthRef, SampleSplit: pickTaskSplit(suite, request.SampleSplit), NSamples: pickTaskSamples(suite, request.NSamples), Seeds: seeds, RigID: rigID, InspectCommand: request.InspectCommand, InspectVersion: request.InspectVersion, QuickSession: request.QuickSession}
 	if gates.Harness != nil {
 		manifest.HarnessContentHash = gates.Harness.ContentHash
@@ -238,11 +241,15 @@ func (service TaskService) taskManifest(request TaskRunRequest, task *evalsubstr
 			manifest.ModelSpecHash = spec.ContentHash
 		}
 	}
-	manifest.GroundTruthHash = taskGroundTruthHash(rows, request.GroundTruthRef)
+	groundTruthHash, err := taskGroundTruthHash(rows, request.GroundTruthRef)
+	if err != nil {
+		return evalsubstrate.Manifest{}, err
+	}
+	manifest.GroundTruthHash = groundTruthHash
 	if count := len(suite.VariedAxis.Values); count > 2 {
 		manifest.MultiComparisonMethod, manifest.ComparisonFamily, manifest.ReferenceArm, manifest.FamilySizeK = suite.Stats.MultiComparisonMethod, suite.Stats.ComparisonFamily, suite.Stats.ReferenceArm, evalsubstrate.FamilySizeK(suite.Stats.ComparisonFamily, count)
 	}
-	return manifest
+	return manifest, nil
 }
 
 func parseTaskSeeds(value string) ([]int, error) {
@@ -278,14 +285,17 @@ func pickTaskSamples(suite *evalsubstrate.Suite, override int) int {
 	}
 	return 0
 }
-func taskGroundTruthHash(rows []evalsubstrate.GroundTruthRow, ref string) string {
+func taskGroundTruthHash(rows []evalsubstrate.GroundTruthRow, ref string) (string, error) {
 	if ref == "" || len(rows) == 0 {
-		return ""
+		return "", nil
 	}
 	var data []byte
 	for _, row := range rows {
 		if row.ID == ref || row.Supersedes == ref {
-			encoded, _ := json.Marshal(row)
+			encoded, err := json.Marshal(row)
+			if err != nil {
+				return "", fmt.Errorf("marshal ground truth row %q: %w", row.ID, err)
+			}
 			canonical, err := evalsubstrate.CanonicalizeJSON(encoded)
 			if err != nil {
 				canonical = encoded
@@ -294,7 +304,7 @@ func taskGroundTruthHash(rows []evalsubstrate.GroundTruthRow, ref string) string
 		}
 	}
 	if len(data) == 0 {
-		return ""
+		return "", nil
 	}
-	return evalsubstrate.ContentHash(data)
+	return evalsubstrate.ContentHash(data), nil
 }
