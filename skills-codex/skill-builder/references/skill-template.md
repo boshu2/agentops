@@ -1,8 +1,8 @@
 # Unified SKILL.md Template + Auditor Checklist
 
-> **Authority:** Executable values come from the source
-> `skills/skill-builder/references/skill-conformance-profiles.yaml`; Codex does
-> not maintain another profile ledger.
+> **Authority:** Executable rule IDs, severities, trigger forms, output-handoff
+> requirements, clean-room behavior, and the 250-line limit come from
+> [skill-conformance-profiles.yaml](skill-conformance-profiles.yaml).
 
 This is the canonical template `skill-builder` materializes and the heal-skill deep audit validates against. Two artifacts in one document because both skills need identical truth.
 

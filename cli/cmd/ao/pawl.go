@@ -365,7 +365,7 @@ func validPawlRouteID(s string) bool {
 	if len(s) == 0 || len(s) > 64 {
 		return false
 	}
-	if !((s[0] >= 'A' && s[0] <= 'Z') || (s[0] >= 'a' && s[0] <= 'z') || (s[0] >= '0' && s[0] <= '9')) {
+	if (s[0] < 'A' || s[0] > 'Z') && (s[0] < 'a' || s[0] > 'z') && (s[0] < '0' || s[0] > '9') {
 		return false
 	}
 	for i := 0; i < len(s); i++ {

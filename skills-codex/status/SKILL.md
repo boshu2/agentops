@@ -37,7 +37,7 @@ continuation surfaces, in this order:
    beads (`ao beads exec list --status in_progress`).
 
 The old skill's deep-recovery walkthrough survives at
-`references/recovery-playbook.md` (mirrored from the source skill).
+[recovery-playbook.md](references/recovery-playbook.md) (mirrored from the source skill).
 
 ---
 

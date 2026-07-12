@@ -9,7 +9,7 @@
 #   ralph --spec spec.md "Add dark mode"
 #   ralph --dry-run "Add dark mode"
 #   ralph --resume .agents/ralph/<slug>.checkpoint
-#   ralph --max-budget 20 --phase-timeout 900 "Big feature"
+#   ralph --phase-timeout 900 "Big feature"
 
 set -euo pipefail
 
@@ -25,8 +25,8 @@ RESUME_FILE=""
 RESUME_AFTER=""
 SPEC_FILE=""
 SPEC_CONTENT=""
-MAX_BUDGET=10
 PHASE_TIMEOUT=600
+CODEX_BIN="${CODEX_BIN:-codex}"
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -36,7 +36,11 @@ while [[ $# -gt 0 ]]; do
     --dry-run)         DRY_RUN=true; shift ;;
     --resume)          RESUME_FILE="$2"; shift 2 ;;
     --spec)            SPEC_FILE="$2"; shift 2 ;;
-    --max-budget)      MAX_BUDGET="$2"; shift 2 ;;
+    --max-budget)
+      echo "ralph: --max-budget is no longer supported: Codex subscription execution cannot enforce dollar budgets." >&2
+      echo "Use --phase-timeout SECONDS for an enforceable wall-clock bound per phase." >&2
+      exit 2
+      ;;
     --phase-timeout)   PHASE_TIMEOUT="$2"; shift 2 ;;
     --help|-h)
       sed -n '2,13p' "$0"
@@ -163,22 +167,24 @@ run_phase() {
   log "Phase: $phase_name"
 
   if [[ "$DRY_RUN" == "true" ]]; then
-    echo "[dry-run] Would run claude -p with prompt:" | tee -a "$RALPH_LOG"
+    echo "[dry-run] Would run codex exec with prompt:" | tee -a "$RALPH_LOG"
     echo "  $prompt" | tee -a "$RALPH_LOG"
     echo "" | tee -a "$RALPH_LOG"
     save_checkpoint "$phase_name"
     return 0
   fi
 
-  timeout "$PHASE_TIMEOUT" bash -c \
-    'set -o pipefail; claude -p \
-      --max-budget-usd "$1" \
-      --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Skill,Task,WebFetch" \
-      --permission-mode bypassPermissions \
-      "$2" 2>&1 | tee -a "$3"' \
-    _ "$MAX_BUDGET" "$prompt" "$RALPH_LOG"
+  if ! command -v "$CODEX_BIN" >/dev/null 2>&1; then
+    die "Codex runtime not found: $CODEX_BIN"
+  fi
 
+  set +e
+  timeout "$PHASE_TIMEOUT" "$CODEX_BIN" exec \
+    --full-auto \
+    -C "$WORKDIR" \
+    "$prompt" 2>&1 | tee -a "$RALPH_LOG"
   local exit_code=${PIPESTATUS[0]}
+  set -e
   if [[ $exit_code -eq 124 ]]; then
     save_checkpoint "$phase_name"
     die "Phase $phase_name timed out after ${PHASE_TIMEOUT}s (gutter detected). Resume with: ralph --resume $CHECKPOINT_FILE"
@@ -201,7 +207,6 @@ echo "  Skip PM:    $SKIP_PRE_MORTEM" | tee -a "$RALPH_LOG"
 echo "  Dry run:    $DRY_RUN" | tee -a "$RALPH_LOG"
 echo "  Spec:       ${SPEC_FILE:-(none)}" | tee -a "$RALPH_LOG"
 echo "  Timeout:    ${PHASE_TIMEOUT}s" | tee -a "$RALPH_LOG"
-echo "  Budget:     \$${MAX_BUDGET}/phase" | tee -a "$RALPH_LOG"
 echo "  Resume:     ${RESUME_AFTER:-(fresh)}" | tee -a "$RALPH_LOG"
 echo "  Log:        $RALPH_LOG" | tee -a "$RALPH_LOG"
 echo "" | tee -a "$RALPH_LOG"

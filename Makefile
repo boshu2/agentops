@@ -28,7 +28,7 @@ test: ## Run CLI tests
 
 docs-check: ## Run docs and hook safety drift checks
 	./scripts/generate-cli-reference.sh --check
-	./scripts/validate-hook-preflight.sh
+	./scripts/check-doc-hooks-drift.sh
 	./tests/docs/validate-doc-release.sh
 
 regen-all: ## Regenerate every derived artifact after adding a skill/command (one-command finalizer)

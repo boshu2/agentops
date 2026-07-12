@@ -12,10 +12,9 @@ open PR context, optional Nightly RPI brief output, and digest files without
 mutating source or starting agent work.
 
 Options:
-  --execute                 Allow execution of explicitly enabled phases.
-  --run-dream               In execute mode, submit a daemon dream.run job.
-  --run-evolve              In execute mode, run the supervised RPI/evolve wrapper.
-  --skip-dream-subprocess   Do not fall back to legacy ao overnight start if daemon submit fails.
+  --execute                 Preflight enabled phases and record their live disposition.
+  --run-dream               Record that the /dream skill needs substrate dispatch.
+  --run-evolve              Preflight and record that /evolve needs substrate dispatch.
   --skip-brief              Skip scripts/nightly-rpi-brief.sh.
   --emit-systemd            Write systemd user service/timer templates to the run dir.
   --repo-root <path>        Repository root (default: git top-level or cwd).
@@ -25,7 +24,6 @@ Options:
   --runtime-cmd <cmd>       RPI runtime command for evolve (default: claude).
   --runtime-mode <mode>     RPI runtime mode auto|direct|stream|tmux (default: auto).
   --max-cycles <n>          Max evolve cycles when --run-evolve is used (default: 1).
-  --gate-policy <policy>    Evolve gate policy (default: required).
   --landing-policy <policy> Evolve landing policy (default: off).
   --work-order <path>       Work order JSON for --execute --run-evolve preflight.
   --landing-branch <name>   Override the computed nightly branch for evolve landing.
@@ -336,7 +334,6 @@ write_markdown_digest() {
 EXECUTE=false
 RUN_DREAM=false
 RUN_EVOLVE=false
-SKIP_DREAM_SUBPROCESS=false
 SKIP_BRIEF=false
 EMIT_SYSTEMD=false
 REQUIRE_AI_SANE=true
@@ -347,7 +344,6 @@ RUNNERS="claude,codex"
 RUNTIME_CMD="claude"
 RUNTIME_MODE="auto"
 MAX_CYCLES="1"
-GATE_POLICY="required"
 LANDING_POLICY="off"
 WORK_ORDER=""
 LANDING_BRANCH_OVERRIDE=""
@@ -365,10 +361,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --run-evolve)
       RUN_EVOLVE=true
-      shift
-      ;;
-    --skip-dream-subprocess)
-      SKIP_DREAM_SUBPROCESS=true
       shift
       ;;
     --skip-brief)
@@ -405,10 +397,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --max-cycles)
       MAX_CYCLES="${2:-}"
-      shift 2
-      ;;
-    --gate-policy)
-      GATE_POLICY="${2:-}"
       shift 2
       ;;
     --landing-policy)
@@ -453,7 +441,6 @@ cd "$REPO_ROOT"
 
 require_cmd git
 require_cmd jq
-require_cmd ao
 
 WORKTREE_STATUS="$(git status --porcelain -uno 2>/dev/null || true)"
 
@@ -521,9 +508,8 @@ fi
 
 DREAM_SETUP_JSON="$OUTPUT_DIR/dream-setup.json"
 DREAM_SETUP_ERR="$OUTPUT_DIR/dream-setup.stderr"
-if ! run_json_capture "$DREAM_SETUP_JSON" "$DREAM_SETUP_ERR" ao overnight setup --json; then
-  json_empty_object >"$DREAM_SETUP_JSON"
-fi
+jq -n '{status: "substrate-dispatch-required", skill: "dream"}' >"$DREAM_SETUP_JSON"
+: >"$DREAM_SETUP_ERR"
 
 GH_EVIDENCE="unavailable"
 OPEN_PRS_JSON="$OUTPUT_DIR/open-prs.json"
@@ -574,40 +560,8 @@ if [[ "$RUN_DREAM" == true ]]; then
   if [[ "$EXECUTE" != true ]]; then
     DREAM_STATUS="planned"
   else
-    DREAM_PAYLOAD_JSON="$OUTPUT_DIR/dream-run-payload.json"
-    DREAM_SUBMIT_JSON="$OUTPUT_DIR/dream-submit.json"
-    DREAM_SUBMIT_ERR="$OUTPUT_DIR/dream-submit.stderr"
-    jq -n \
-      --arg dream_run_id "${RUN_ID}-dream" \
-      --arg goal "private local nightly Dream before RPI/evolve" \
-      --arg output_dir "$OUTPUT_DIR/dream" '
-      {
-        schema_version: 1,
-        job_type: "dream.run",
-        dream_run_id: $dream_run_id,
-        goal: $goal,
-        mode: "daemon",
-        output_dir: $output_dir,
-        max_iterations: 1
-      }' >"$DREAM_PAYLOAD_JSON"
-    if ao daemon jobs submit --type dream.run --payload "@$DREAM_PAYLOAD_JSON" --json >"$DREAM_SUBMIT_JSON" 2>"$DREAM_SUBMIT_ERR"; then
-      DREAM_STATUS="submitted"
-    elif [[ "$SKIP_DREAM_SUBPROCESS" == true ]]; then
-      DREAM_STATUS="failed"
-      die "Dream daemon submit failed; see $DREAM_SUBMIT_ERR"
-    else
-      dream_args=(overnight start --warn-only --max-iterations 1 --output-dir "$OUTPUT_DIR/dream")
-      dream_args+=(--goal "private local nightly Dream before RPI/evolve")
-      for runner in "${RUNNER_ARRAY[@]}"; do
-        dream_args+=(--runner "$runner")
-      done
-      if ao "${dream_args[@]}" >"$OUTPUT_DIR/dream.log" 2>&1; then
-        DREAM_STATUS="ok"
-      else
-        DREAM_STATUS="failed"
-        die "Dream phase failed; see $OUTPUT_DIR/dream.log"
-      fi
-    fi
+    DREAM_STATUS="substrate-dispatch-required"
+    log "dream phase requires external substrate dispatch of the /dream skill"
   fi
 fi
 
@@ -617,85 +571,8 @@ if [[ "$RUN_EVOLVE" == true ]]; then
     EVOLVE_STATUS="planned"
   else
     preflight_evolve "$WORK_ORDER" "$REPO_ROOT" "$RUNTIME_CMD" "$GH_EVIDENCE" "$MAIN_CI_STATUS" "$WORKTREE_STATUS" "$LANDING_POLICY" "$BRANCH"
-    export AGENTOPS_RPI_RUNTIME_MODE="$RUNTIME_MODE"
-    export AGENTOPS_RPI_RUNTIME_COMMAND="$RUNTIME_CMD"
-
-    # soc-bcrn.3.7: submit to agentopsd via `ao daemon jobs submit` (rpi.run) +
-    # wait for terminal status. RPIRunExecutor (sub-wave 5a,
-    # cli/internal/daemon/rpi_run.go) handles execution in-process; the prior
-    # shell-out wrapper was retired here. Combined output (submit + wait) is
-    # captured to $OUTPUT_DIR/evolve.log.
-    EVOLVE_PAYLOAD_JSON="$OUTPUT_DIR/evolve-rpi-run-payload.json"
-    EVOLVE_SUBMIT_JSON="$OUTPUT_DIR/evolve-submit.json"
-    EVOLVE_WAIT_JSON="$OUTPUT_DIR/evolve-wait.json"
-
-    require_cmd ao
-    : >"$OUTPUT_DIR/evolve.log"
-
-    # Liveness probe: no `ao daemon health` command exists, so a successful
-    # `ao daemon jobs list --json` doubles as a daemon-reachability check.
-    if ! ao daemon jobs list --json >>"$OUTPUT_DIR/evolve.log" 2>&1; then
-      EVOLVE_STATUS="failed"
-      die "Evolve phase failed: agentopsd unreachable (ao daemon jobs list); see $OUTPUT_DIR/evolve.log"
-    fi
-
-    # Build the rpi.run payload. Shape: cli/internal/daemon/rpi_jobs.go
-    # (RPIRunJobSpec). soc-bcrn.3.8 added the supervisor policy fields
-    # (max_cycles, gate_policy, landing_policy, landing_branch) so the
-    # daemon path applies the same gates + landing the legacy
-    # legacy shell wrapper applied via ao rpi loop --supervisor.
-    LANDING_BRANCH_PAYLOAD="${BRANCH:-}"
-    jq -n \
-      --arg run_id "${RUN_ID}-evolve" \
-      --arg goal "private local nightly RPI/evolve cycle" \
-      --argjson max_cycles "$MAX_CYCLES" \
-      --arg gate_policy "$GATE_POLICY" \
-      --arg landing_policy "$LANDING_POLICY" \
-      --arg landing_branch "$LANDING_BRANCH_PAYLOAD" '
-      {
-        schema_version: 1,
-        job_type: "rpi.run",
-        run_id: $run_id,
-        goal: $goal,
-        start_phase: 1,
-        max_phase: 3,
-        test_first: true,
-        backend: "gascity-api",
-        max_cycles: $max_cycles,
-        gate_policy: $gate_policy,
-        landing_policy: $landing_policy
-      }
-      + (if $landing_branch == "" then {} else {landing_branch: $landing_branch} end)' >"$EVOLVE_PAYLOAD_JSON"
-
-    if ! ao daemon jobs submit --type rpi.run --payload "@$EVOLVE_PAYLOAD_JSON" --json \
-        >"$EVOLVE_SUBMIT_JSON" 2>>"$OUTPUT_DIR/evolve.log"; then
-      cat "$EVOLVE_SUBMIT_JSON" >>"$OUTPUT_DIR/evolve.log" 2>/dev/null || true
-      EVOLVE_STATUS="failed"
-      die "Evolve phase failed: ao daemon jobs submit (rpi.run); see $OUTPUT_DIR/evolve.log"
-    fi
-    cat "$EVOLVE_SUBMIT_JSON" >>"$OUTPUT_DIR/evolve.log"
-
-    EVOLVE_JOB_ID="$(jq -r '.job_id // empty' "$EVOLVE_SUBMIT_JSON")"
-    if [[ -z "$EVOLVE_JOB_ID" ]]; then
-      EVOLVE_STATUS="failed"
-      die "Evolve phase failed: no job_id in submit response; see $OUTPUT_DIR/evolve.log"
-    fi
-
-    if ! ao --output json daemon jobs wait "$EVOLVE_JOB_ID" \
-        >"$EVOLVE_WAIT_JSON" 2>>"$OUTPUT_DIR/evolve.log"; then
-      cat "$EVOLVE_WAIT_JSON" >>"$OUTPUT_DIR/evolve.log" 2>/dev/null || true
-      EVOLVE_STATUS="failed"
-      die "Evolve phase failed: ao daemon jobs wait $EVOLVE_JOB_ID; see $OUTPUT_DIR/evolve.log"
-    fi
-    cat "$EVOLVE_WAIT_JSON" >>"$OUTPUT_DIR/evolve.log"
-
-    EVOLVE_TERMINAL_STATUS="$(jq -r '.status // empty' "$EVOLVE_WAIT_JSON")"
-    if [[ "$EVOLVE_TERMINAL_STATUS" == "completed" ]]; then
-      EVOLVE_STATUS="ok"
-    else
-      EVOLVE_STATUS="failed"
-      die "Evolve phase failed: rpi.run job $EVOLVE_JOB_ID terminal status '$EVOLVE_TERMINAL_STATUS'; see $OUTPUT_DIR/evolve.log"
-    fi
+    EVOLVE_STATUS="substrate-dispatch-required"
+    log "evolve phase requires external substrate dispatch of the /evolve skill"
   fi
 fi
 
@@ -787,3 +664,7 @@ if [[ -x "$PR_DIGEST_SCRIPT" ]]; then
 fi
 
 log "done"
+
+if [[ "$DREAM_STATUS" == "substrate-dispatch-required" || "$EVOLVE_STATUS" == "substrate-dispatch-required" ]]; then
+  die "requested agent phases were not executed; dispatch the named skills through an external substrate"
+fi

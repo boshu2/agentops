@@ -249,15 +249,14 @@ if command -v brew >/dev/null 2>&1; then
         fi
     fi
 
-    # Step 3: Optional hooks
+    # Step 3: Runtime-specific setup
     if command -v ao >/dev/null 2>&1; then
         echo "Note: To create repo-local .agents/ scaffolding, run 'ao init' from your repo root."
         if [[ "$WITH_HOOKS" == "1" ]]; then
-            echo "Step 3/3: Registering hooks..."
-            ao hooks install --force
+            echo "Step 3/3: Runtime-specific hook setup is delegated to each runtime installer."
         else
             echo "Step 3/3: Hooks skipped (hookless default)."
-            echo "Optional: rerun with --with-hooks, or run 'ao hooks install --force' later."
+            echo "Optional: rerun with --with-hooks for runtimes that expose native hooks."
         fi
 
         # Optional health check
@@ -267,7 +266,7 @@ else
     echo "Step 2/3: Skipping CLI (Homebrew not found). Install manually:"
     echo "  brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops"
     echo "  brew install agentops"
-    echo "Step 3/3: Skipped (CLI needed for optional hooks)"
+    echo "Step 3/3: Runtime-specific setup complete."
 fi
 
 echo ""

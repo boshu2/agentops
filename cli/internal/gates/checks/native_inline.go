@@ -3,6 +3,7 @@ package checks
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,8 +59,11 @@ func runChangelogSync(_ context.Context, rc gates.RunContext) (ports.GateVerdict
 	docs := filepath.Join(rc.RepoRoot, "docs", "CHANGELOG.md")
 	rb, rerr := os.ReadFile(root)
 	db, derr := os.ReadFile(docs)
-	if rerr != nil || derr != nil {
-		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "CHANGELOG.md or docs/CHANGELOG.md missing"}, nil
+	if rerr != nil {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("read CHANGELOG.md: %v", rerr)}, nil
+	}
+	if derr != nil {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("read docs/CHANGELOG.md: %v", derr)}, nil
 	}
 	if !bytes.Equal(rb, db) {
 		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "CHANGELOG.md != docs/CHANGELOG.md (run: cp CHANGELOG.md docs/CHANGELOG.md)"}, nil
