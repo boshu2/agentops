@@ -16,6 +16,7 @@ At a high level:
 See also:
 
 - [Codebase Overview](architecture/codebase-overview.md) — consolidated map for humans and agents (start here for repo archaeology)
+- [Understanding the AgentOps Go CLI](architecture/go-cli-architecture-guide.md) — learn the executable architecture and practice tracing commands through services, ports, and adapters
 - [README](https://github.com/boshu2/agentops/blob/main/README.md)
 - [AgentOps 3.0 — the north star](3.0.md)
 - [Operating Loop](architecture/operating-loop.md) — how work flows (primary navigation)
