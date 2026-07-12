@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 
 	doctoradapter "github.com/boshu2/agentops/cli/internal/adapters/doctor"
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	doctorcommands "github.com/boshu2/agentops/cli/internal/commands/doctor"
 	doctorapp "github.com/boshu2/agentops/cli/internal/doctor"
 )
@@ -36,5 +37,8 @@ var doctorCommand = doctorModule.Command()
 
 func init() {
 	doctorCommand.GroupID = "core"
+	if err := clicontract.Attach(doctorCommand, doctorModule.Contract()); err != nil {
+		panic(err)
+	}
 	rootCmd.AddCommand(doctorCommand)
 }

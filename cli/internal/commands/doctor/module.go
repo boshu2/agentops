@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/clicontract"
 	doctorapp "github.com/boshu2/agentops/cli/internal/doctor"
 	"github.com/boshu2/agentops/cli/internal/quality"
 )
@@ -59,6 +60,21 @@ type Module struct {
 
 func NewModule(useCases UseCases, host HostOptions) Module {
 	return Module{useCases: useCases, host: host}
+}
+
+func (Module) Contract() clicontract.CommandContract {
+	return clicontract.CommandContract{
+		ID: "ao.doctor",
+		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
+			clicontract.ProfileLegacy | clicontract.ProfileCombined,
+		Args:    clicontract.ArgsPolicy{Name: "range", Validate: cobra.ArbitraryArgs},
+		Output:  clicontract.OutputNone,
+		Effects: clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectNetwork | clicontract.EffectEnvironment | clicontract.EffectClock,
+		ExitClasses: map[int]clicontract.ExitClass{
+			0: clicontract.ExitSuccess,
+			1: clicontract.ExitFailure,
+		},
+	}
 }
 
 type rootOptions struct {
