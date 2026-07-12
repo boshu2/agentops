@@ -33,6 +33,21 @@ JSON
 
 teardown() { rm -rf "$TMP"; }
 
+_make_source_skill() {
+  local name="$1"
+  mkdir -p "$TMP/skills/$name"
+  printf '%s\n' "---" "name: $name" "description: fixture" "---" "source for $name" \
+    >"$TMP/skills/$name/SKILL.md"
+}
+
+_set_treatment() {
+  local name="$1" treatment="$2"
+  mkdir -p "$TMP/skills-codex-overrides"
+  cat >"$TMP/skills-codex-overrides/catalog.json" <<JSON
+{"skills":[{"name":"$name","treatment":"$treatment"}]}
+JSON
+}
+
 # _make_skill <name> — a codex skill dir with content + a stale marker.
 _make_skill() {
   local name="$1"
@@ -108,6 +123,40 @@ PY
   run bash "$SCRIPT" --only
   [ "$status" -eq 2 ]
   [[ "$output" == *"requires a skill list"* ]]
+}
+
+@test "bespoke twin refreshes source provenance when its maintained source changes" {
+  _make_source_skill foo
+  _set_treatment foo bespoke
+
+  run bash "$SCRIPT" --only foo
+  [ "$status" -eq 0 ]
+
+  local first
+  first="$(python3 -c 'import json,os; d=json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json"))); print(next(e["source_hash"] for e in d["skills"] if e["name"]=="foo"))')"
+  [ -n "$first" ]
+  [ "$first" != "STALE_foo" ]
+  [ "$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["SKILLS_ROOT"], "foo", ".agentops-generated.json")))["source_hash"])')" = "$first" ]
+
+  printf '\nchanged source\n' >>"$TMP/skills/foo/SKILL.md"
+  run bash "$SCRIPT" --check --only foo
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"foo"* ]]
+
+  bash "$SCRIPT" --only foo
+  local second
+  second="$(python3 -c 'import json,os; d=json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json"))); print(next(e["source_hash"] for e in d["skills"] if e["name"]=="foo"))')"
+  [ "$second" != "$first" ]
+}
+
+@test "ambient parity twin keeps its source provenance frozen" {
+  _make_source_skill foo
+  _set_treatment foo parity_only
+
+  run bash "$SCRIPT" --only foo
+  [ "$status" -eq 0 ]
+  [ "$(_manifest_hash foo)" != "STALE_foo" ]
+  [ "$(python3 -c 'import json,os; d=json.load(open(os.path.join(os.environ["SKILLS_ROOT"], ".agentops-manifest.json"))); print(next(e["source_hash"] for e in d["skills"] if e["name"]=="foo"))')" = "" ]
 }
 
 # --- Manifest dedupe (one row per skill name) --------------------------------

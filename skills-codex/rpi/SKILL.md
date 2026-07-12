@@ -19,6 +19,13 @@ When an external executor fails but the code surface may still be valid, read
 [references/codex-executor.md](references/codex-executor.md) and recover through
 Codex direct checks before declaring a source-level regression.
 
+## Critical Constraints
+
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, feed its findings into re-plan, and retry the same lifecycle objective. **Why:** a negative verdict is evidence for the loop, not an andon by itself.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. A breaker is a capability, permission, safety, or irreducible ambiguity stop—not an ordinary failed check. **Why:** one bounded helper can restore progress without hiding a true stop condition.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** human attention is reserved for decisions or terminal recovery lanes the loop cannot own.
+- Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
+
 ## Codex Lifecycle Guard
 
 When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
@@ -130,13 +137,15 @@ Enter at the routed phase and run every phase after it.
 1. **Discovery:** invoke `$discovery <goal> [--interactive] --complexity=<level>`
    directly or through phase-isolated skill transport.
    On DONE, read `.agents/rpi/execution-packet.json` or the run archive and
-   preserve its objective spine. On BLOCKED, stop with the discovery verdict.
+   preserve its objective spine. On BLOCKED, classify it through the pawl
+   recovery state machine; never stop on the label alone.
 2. **Implementation:** invoke `$crank <epic-id>` when the packet has `epic_id`;
    otherwise invoke `$crank .agents/rpi/execution-packet.json`, directly or
    through phase-isolated skill transport. Pass `--test-first` or
    `--no-test-first` through. On DONE, record `ao ratchet record implement
-   2>/dev/null || true` and continue. On PARTIAL or BLOCKED, retry the same
-   objective up to 3 total attempts. **Before counting a slice/wave as accepted,
+   2>/dev/null || true` and continue. On PARTIAL, auto-redo the same objective;
+   on BLOCKED, classify it through pawl recovery. Use 3 total attempts before
+   `EXHAUSTED-BUDGET`. **Before counting a slice/wave as accepted,
    the orchestrator reads the actual diff itself** (scope + claim match) — not
    only the `<promise>DONE</promise>` and evidence JSON. This is the orchestrator's
    own diff-read, distinct from the delegated sub-judges; `$crank` enforces it as
@@ -163,6 +172,10 @@ Enter at the routed phase and run every phase after it.
    Density Rule: every line should carry intent, boundary, evidence, decision,
    constraint, or next action.
 
+## Pawl Recovery State Machine
+
+Treat validation WARN, FAIL, and REFUTED as `AUTO-REDO`: persist findings, re-plan remaining work, then re-enter the owning phase. Raise `BREAKER` only when execution cannot safely or meaningfully proceed; hold the objective and dispatch exactly one bounded helper. Helper recovery returns to auto-redo. Helper escalation, an explicit refusal/judgment lane, or exhausted budget is the only human andon path. Record every transition in the execution packet and final report.
+
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
 The initial plan is a **hypothesis**; each wave is an experiment whose evidence re-plans the rest. At every wave boundary (and after validation): **reflect** (a bounded `$post-mortem` + `$discovery` re-plan delta over what shipped/broke) → **re-plan the REMAINING waves** (refactor / insert / drop / reorder / re-scope / escalate, persisting the mutated plan so the next wave reads the *current* one) → **proceed**. Under `--auto` this is autonomous, bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-ship post-mortem checkpoint; the operator is touched only at the terminal objective or a breaker trip that survives its bounded helper pass. `$crank` and `$validate` surface findings UP for re-planning (never a silent local retry); `$discovery` is the re-plan engine. Anti-patterns: **waterfall**, **retry-not-replan**, **permission-seeking**. **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
@@ -177,20 +190,7 @@ schemas and archive paths.
 
 ## Complexity-Scaled Gates
 
-### Pre-mortem
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
-
-### Final Vibe
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
-
-### Post-mortem (STEP 2)
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
+`fast`/`standard` use a 2-judge minimum panel; `full` uses a full council; all cap at 3 attempts. Pre-mortem is a chaos-side stress test, not a pawl. Final validation and post-mortem sit at bead acceptance. Read [references/complexity-scaling.md](references/complexity-scaling.md) for the complete matrix.
 
 ## Flags
 
@@ -201,8 +201,7 @@ schemas and archive paths.
 | `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
 | `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
 | `--spawn-next` | off | Surface follow-up work after reporting |
-| `--test-first` | on | Pass strict-quality preference to `$crank` |
-| `--no-test-first` | off | Explicitly opt out of strict-quality |
+| `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
 | `--quality` | off | Make validation strict surfaces blocking |
 | `--dry-run` / `--no-budget` | off | Report only, or disable phase time budgets |
@@ -223,19 +222,27 @@ interactive, and loop examples.
 
 ## Output Specification
 
-**Format:** a markdown report to stdout ([report-template](references/report-template.md)) — phase verdicts, re-plan deltas, and epic status.
-**Files:** reads/updates `.agents/rpi/execution-packet.json` (+ `runs/<id>/`) and `.agents/rpi/next-work.jsonl` (with `--spawn-next`); records `ao ratchet record` per phase.
+**Artifact directory:** `.agents/rpi/`.
+**Filename convention:** mutable `execution-packet.json`, immutable `runs/<run-id>/execution-packet.json`, `phase-<n>-summary.md`, and optional `next-work.jsonl`.
+**Serialization/schema format:** packet JSON matches `schemas/execution-packet.schema.json` plus the `skills_loaded`/`phase_receipts` extension in [phase-data-contracts](references/phase-data-contracts.md); summaries follow the markdown [report template](references/report-template.md).
+**Validator command:** `python3 skills-codex/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
+**Downstream handoff:** discovery creates the packet, crank updates evidence and receipts, validate appends the acceptance verdict, and Report emits the human-readable roll-up.
 **Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `$crank` means retry Phase 2 on the same objective.
+
+## Quality Checklist
+
+- [ ] The same objective and acceptance examples survive every phase and retry.
+- [ ] Each phase has a disk-backed receipt, evidence path, and explicit verdict.
+- [ ] Ordinary negative verdicts re-plan through the pawl; only terminal lanes raise the andon.
+- [ ] The execution packet passes its validator before Report or downstream handoff.
 
 ## Troubleshooting
 
 | Problem | Response |
 |---------|----------|
-| Discovery BLOCKED | Stop and report discovery's manual-intervention reason |
-| `$crank` returns PARTIAL | Retry `$crank` on the same objective; do not narrow to a child slice |
-| Validation FAIL | Re-crank with findings, then re-validate, up to 3 total attempts |
-| Packet shape unclear | Read [references/phase-data-contracts.md](references/phase-data-contracts.md) |
-| External executor fails | Read [references/codex-executor.md](references/codex-executor.md), run direct Codex validation, and only create follow-up work for reproducible source failures |
+| Phase returns BLOCKED | Classify it through pawl recovery; stop only on a terminal transition |
+| Packet validation fails | Repair the packet or receipts, then rerun the validator before handoff |
+| External executor fails | Use direct Codex checks; raise a breaker only for a reproducible capability stop |
 
 ## Related skills
 
