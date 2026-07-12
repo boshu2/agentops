@@ -18,7 +18,15 @@ This directory contains shared reference documents used by multiple skills:
 
 These are **not directly invocable skills**. They are loaded by other skills (council, crank, swarm, research, implement) when needed.
 
----
+## Critical Constraints
+
+- Treat these files as contracts loaded just in time, not as permission to start a runtime, substrate, tracker, or external CLI. **Why:** a shared reference explains a capability; the consuming skill and operator still own authorization.
+- Default to the current agent and local shell. Use runtime-native subagents only for an explicitly multi-agent workflow, and start NTM, Agent Mail, managed agents, or Gas City only when the operator explicitly selects that substrate. **Why:** capability detection must not silently broaden execution shape.
+- Resolve repository truth in source precedence order and report stale shared prose instead of routing around executable or declared behavior. **Why:** this library is lower authority than live commands and skill contracts.
+- Keep backend-specific call shapes in references and preserve the backend-neutral contract in this file. **Why:** shared policy should remain portable across Codex, Claude, OpenCode, and future harnesses.
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, repair the reference, selection, or fallback mismatch, then rerun the same validator. **Why:** an ordinary contract mismatch is recovery evidence, not a human andon.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold dispatch and use one bounded local-shell helper to inspect the missing capability or contradictory contract. **Why:** one recovery pass can distinguish stale documentation from a genuine unavailable boundary.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** runtime selection, authority expansion, unresolved refusal, or exhausted recovery belongs to the operator.
 
 ## CLI Availability Pattern
 
@@ -82,15 +90,15 @@ Every runtime maps these capabilities to its own API. Skills describe WHAT to do
 
 Use capability detection at runtime, not hardcoded tool names. The same skill must work across any agent harness that provides multi-agent primitives. If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
 
-**Selection policy (NTM > runtime-native > beads floor):**
+**Selection policy (operator choice > runtime-native > inline floor):**
 
-Global opt-out first: if `AGENTOPS_ORCHESTRATION=off` is set, skip all spawn backends and degrade to the **beads floor** (single-agent inline / `--quick`; workers' work is tracked through `br`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1` convention. Otherwise, select in this order:
+Global opt-out first: if `AGENTOPS_ORCHESTRATION=off` is set, skip all spawn backends and degrade to the **inline floor** (single-agent inline / `--quick`; persistent work may still be tracked through `br`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1` convention. Otherwise, select in this order:
 
-1. **NTM (top tier).** If `ntm` is on PATH, capability-probe it with `ntm --robot-capabilities`. When the probe confirms multi-agent primitives, use **NTM** as the primary backend.
-2. **Runtime-native.** If NTM is unavailable: in a Claude session with `TeamCreate`/`SendMessage`, use **Claude Native Teams**; in a Codex session with `spawn_agent`, use **Codex sub-agents**. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution. Only use background tasks when neither native backend is available.
-3. **Beads floor.** If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
+1. **Explicit substrate choice.** When the operator explicitly requests NTM, capability-probe it with `ntm --robot-capabilities` and use it only when the probe confirms the required primitives. Agent Mail and managed agents are likewise opt-in components of that substrate.
+2. **Runtime-native.** For an explicitly multi-agent workflow with no external substrate selected, use the current runtime's native agents: Claude Native Teams in Claude, Codex sub-agents in Codex, or OpenCode subagents in OpenCode. Do not choose a cross-vendor runtime merely because it is installed.
+3. **Inline floor.** If multi-agent execution was not requested or the required capability is unavailable, degrade to single-agent inline mode (`--quick`) and report the missing capability.
 
-> **`gc` is NOT a selectable tier.** AgentOps no longer references Gas City; out-of-session orchestration is delegated to a swappable substrate (NTM + MCP + managed-agents — see [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md)). Any residual `gc`-based dispatch prose in older swarm/crank reference files is historical only and is never selected.
+> **Gas City is a separate, coexisting substrate.** Generic backend detection never auto-selects it. When the operator explicitly chooses city-shaped work, enter through [`using-gc`](../using-gc/SKILL.md); its membrane and bd/Dolt substrate contracts remain separate from this runtime-native backend table.
 
 **Output-contract parity is unchanged across all tiers:** workers write results to `.agents/swarm/results/*.json`, and the lead verifies-then-trusts those artifacts. This invariant holds whether the backend is NTM, a runtime-native team, or the beads floor.
 
@@ -164,6 +172,28 @@ Skills that chain to other skills (e.g., `$rpi` calls `$research`, `$validate` c
 2. **Always inform** — tell the user what was skipped and how to enable it
 3. **Preserve core function** — the skill's primary purpose must still work without optional CLIs
 4. **Progressive enhancement** — CLIs add capabilities, their absence removes them cleanly
+
+## Output Specification
+
+**Artifact directory:** no runtime artifact is created by `shared`; canonical reference outputs live under `skills/shared/`, with backend-specific documents under `skills/shared/references/`.
+
+**Filename convention:** `SKILL.md` owns backend-neutral policy, `validation-contract.md` owns spawned-work acceptance, and `references/<topic>.md` owns one bounded backend or cross-skill contract.
+
+**Serialization/schema format:** Markdown contracts with repository-relative links; command examples must match the named runtime and preserve the backend-neutral capability semantics in this file.
+
+**Validator command:** run `bash skills/shared/scripts/validate.sh`, then `bash scripts/audit-codex-parity.sh --skill shared` after source or Codex projection changes.
+
+**Downstream handoff:** pass the exact reference path loaded, detected capabilities, operator-selected execution shape, chosen fallback, skipped capabilities, and validator results to the consuming skill.
+
+## Quality Checklist
+
+- [ ] The consumer loaded only the bounded references needed for its current backend and task.
+- [ ] The current agent/local-shell default remained intact unless the operator explicitly selected multi-agent or substrate execution.
+- [ ] Capability detection chose runtime-native or inline behavior without silently starting NTM, Agent Mail, managed agents, or Gas City.
+- [ ] Every missing optional CLI has an explicit fallback and user-visible coverage note.
+- [ ] Backend examples preserve the same output and verification contract across runtimes.
+- [ ] Source and Codex projections pass the shared validator and parity audit.
+- [ ] WARN/FAIL/REFUTED consulted the pawl before any human andon.
 
 ## Reference Documents
 
