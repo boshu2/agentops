@@ -474,7 +474,7 @@
         "path": "skills/security/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "bootstrap",
@@ -2593,7 +2593,7 @@
       ],
       "drives_commands": [],
       "path": "skills/security/",
-      "references": 1
+      "references": 2
     },
     {
       "sku": "skill:shared",
