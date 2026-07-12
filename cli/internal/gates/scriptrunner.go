@@ -46,17 +46,23 @@ var gateSelfBinary = os.Executable
 // origin-identical ledger line. Propagating AO_BIN=<the running gate binary>
 // makes the gate's own fresh binary authoritative for its sub-scripts.
 //
-// The guard is deliberately on the basename, NOT a stat/regular-file test:
-// under `go test`, os.Executable() is the package test binary (`<pkg>.test`, a
-// real regular file), so a stat guard would inject the test binary and make a
-// sub-script run `"$AO_BIN" provenance verify` against a non-ao executable and
-// fail spuriously. The gate binary is named "ao" only in production
-// (`go build -o .../ao ./cmd/ao`).
+// The guard is on the basename SUFFIX, NOT a stat/regular-file test and NOT an
+// exact basename=="ao" match (age-pawl-intent-zhndq.6): under `go test`,
+// os.Executable() is the package test binary (`<pkg>.test`, a real regular file),
+// so a stat guard would inject the test binary and make a sub-script run
+// `"$AO_BIN" provenance verify` against a non-ao executable and fail spuriously.
+// The OLD exact `== "ao"` guard over-narrowed: a renamed / wrapped / symlinked
+// production binary (basename not literally "ao") then LOST self-injection and
+// dropped back to a possibly-stale `$ROOT/cli/bin/ao` — the exact age-jmfl
+// false-fail. Injecting the running gate binary is always MORE correct than
+// letting a sub-script resolve an arbitrary one, so inject for ANY basename
+// EXCEPT the go-test binary (`*.test`), which is the sole case that must be
+// suppressed (production binaries never end in ".test").
 func aoBinInjection(exe string) (string, bool) {
-	if filepath.Base(exe) == "ao" {
-		return exe, true
+	if strings.HasSuffix(filepath.Base(exe), ".test") {
+		return "", false
 	}
-	return "", false
+	return exe, true
 }
 
 // buildCheckEnv composes the environment for a spawned sub-check. Precedence for

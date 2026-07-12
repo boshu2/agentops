@@ -10,6 +10,12 @@ description: Drive a fix -> re-run-judge-panel loop to
 
 **YOU MUST EXECUTE THE Go COMMAND. Do not describe or re-author the loop.**
 
+## Constraints
+
+- Invoke the compiled `ao converge` command because its two-sided canary and quorum checks are the executable trust boundary.
+- Keep every judge leg non-mutating because a verdict must not silently rewrite the artifact it is judging.
+- Stop at the command's bounded terminal state because bypassing `BLOCK`, extending rounds implicitly, or substituting model agreement would defeat the acceptance boundary.
+
 ## What it does
 
 `ao converge` runs a bounded **fix → re-run-judge-panel** loop until the judges
@@ -62,6 +68,20 @@ leg has **no Go transport** by design — it routes to an interactive pane.
 
 `ao converge` emits a **CLAIM + evidence**. It never writes a binding verdict —
 MTO remains the sole writer of binding verdicts. No component here decides a merge.
+
+## Output Specification
+
+- **Path:** command output on stdout plus any next-loop finding at `.agents/findings/registry.jsonl` for `BLOCK` or `NOT-CONVERGED`.
+- **Filename:** the command owns runtime evidence names; this skill does not invent or rewrite them.
+- **Format:** a converge claim containing the terminal status, completed rounds, distinct judge contexts, verdicts, and acceptance-test evidence.
+- **Exit code:** `ao converge` must pass its entry canary; treat command failure, malformed evidence, or an unmet quorum as non-converged rather than success.
+- **Downstream handoff:** pass the claim and evidence to the verification membrane; only its binding verdict may authorize landing.
+
+## Quality Checklist
+
+- The terminal status follows the configured round bound and three-consecutive-failure rule.
+- Every counted PASS comes from a distinct non-author context and cites the slice's executed acceptance test.
+- The handoff preserves failing reasons on `BLOCK` or `NOT-CONVERGED` and never presents the claim as a merge decision.
 
 ## See also
 

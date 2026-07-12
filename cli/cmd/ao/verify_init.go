@@ -89,6 +89,10 @@ func runVerifyInit(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("ao verify init must run inside a git repository: %w", err)
 	}
+	cfg := verifycfg.LoadDir(repo)
+	if cfgErr := cfg.ValidationError(); cfgErr != nil {
+		return fmt.Errorf("ao verify init: HOLD: %w", cfgErr)
+	}
 	hooksDir, err := resolveHooksDir(repo)
 	if err != nil {
 		return err

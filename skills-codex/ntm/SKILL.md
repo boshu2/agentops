@@ -2,7 +2,7 @@
 name: ntm
 description: Orchestrate NTM tmux agent swarms and robot
 ---
-<!-- TOC: One Rule | Outcome | Cold Start | Mandatory Loop | NTM Action Card | Surface Selection | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Output | Operating Notes | Reference Index | Related Skills -->
+<!-- TOC: One Rule | Constraints | Outcome | Cold Start | Software Factory Mesh | Mandatory Loop | NTM Action Card | Surface Selection | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Output | Quality | Operating Notes | Reference Index | Related Skills -->
 
 > **Scope:** this skill is AgentOps operating doctrine for the external NTM binary. The binary is self-describing — query its live robot help, capability, schema, and snapshot surfaces before state changes. Never trust remembered syntax over the executable contract. `agent-native` owns the portable worker lifecycle; this skill owns NTM-specific pane mechanics only.
 
@@ -11,6 +11,14 @@ description: Orchestrate NTM tmux agent swarms and robot
 > **The One Rule:** Discover the live NTM contract first, then use the least interactive surface that can prove and execute the action. No `--robot-capabilities` / `--robot-snapshot` evidence -> no automation assumption.
 
 The most common NTM mistake is treating it like a tmux macro runner. NTM is a control plane: robot API, attention feed, work graph, locks/mail, pipelines, safety, approvals, serve API, and durability all have explicit contracts. Use the contract.
+
+## Constraints
+
+- Keep NTM opt-in because the operator chooses the orchestration substrate; never start, register, or probe it merely because it is available.
+- Keep `agent-native` as lifecycle owner and NTM as pane-mechanics adapter because portable factory policy must not depend on tmux.
+- Give every writing pane a disjoint worktree or reserved write scope because shared-path collisions are the primary multi-agent failure mode.
+- Keep producer, tester, fresh-context refuter, and integrator roles distinct because a producing pane cannot independently certify its own candidate.
+- Route admission through `ao pawl review`, not pane consensus, because NTM transports work while the AgentOps membrane owns verdicts.
 
 ## Outcome — When an NTM Action Has Delivered
 
@@ -51,6 +59,18 @@ For any state-changing action, verify the live contract with `ntm --robot-capabi
 ## Tending doctrine (single owner)
 
 **`agent-native` owns lifecycle policy; `ntm` owns NTM mechanics.** Apply the suspect → bounded nudge → replace policy from `agent-native`; use the recovery commands, liveness truth stack, boot-race warnings, and executable robot contract documented here to enact it.
+
+## Software Factory Mesh
+
+**Operator-choice invariant:** NTM is an optional substrate selected explicitly by the operator; a cold `ao pawl review` and ordinary in-session work do not require an NTM session.
+
+**Pane-role contract:** Producer panes own disjoint worktrees and write scopes; tester panes run deterministic checks; fresh-context refuter panes judge without mutation; integrator panes act only after an `ao pawl review` `CONFIRMED` verdict. Never collapse producer and refuter for one candidate.
+
+**Agent Mail handoff:** Before two or more writers run, reserve disjoint paths. Handoff on one Agent Mail thread with bead, pane role, worktree, reserved paths, exact HEAD, evidence paths, and next action; require recipient acknowledgement and release reservations at completion.
+
+**Pawl authority:** NTM may host or tend warm reviewer panes, but `ao pawl review` owns independent verdict and admission. Do not inject keys into an in-flight pawl pane, and do not treat pane agreement as confirmation.
+
+**Failure routing:** A plain `REFUTED` verdict returns to the producer for automatic repair and revalidation. Only a tripped circuit breaker enters `HOLD` and receives exactly one bounded helper consultation before the candidate re-earns an independent verdict.
 
 ## The Loop (Mandatory)
 
@@ -138,13 +158,20 @@ Escalate only with the action card filled; each tier raises the proof bar:
 - [ ] For destructive/risky actions: safety/policy/approval surfaces checked.
 - [ ] Post-action verifier named before execution.
 
-## Output
+## Output Specification
 
-NTM actions produce no skill-owned files. The deliverable is verified state plus evidence:
+- **Path:** structured robot state is emitted on `stdout`; durable evidence belongs under the bead-named `.agents/` path, never inside this skill or the NTM index.
+- **Filename:** NTM creates no default report; when the surrounding arc requires one, use its declared filename or `<bead>-ntm-handoff.md`.
+- **Format:** robot evidence is JSON or TOON; durable handoff is Markdown containing the action card, exact HEAD, snapshot/attention proof, reservations, and Agent Mail thread id.
+- **Validation command:** run `skills/ntm/scripts/validate.sh` for this mesh contract; for a live action, verify `ntm --robot-snapshot` plus attention/mail/git/bead state.
+- **Downstream handoff:** send the verified state and evidence on the existing Agent Mail thread to the named next role; acknowledgement and released/transferred reservations are the completion marker.
 
-- Structured robot output (JSON or TOON) on stdout from `--robot-*` commands, cited in your report.
-- The post-action proof named in the action card: snapshot/attention movement, bead/git/mail change, pipeline status.
-- When the surrounding arc requires durable evidence, write it to the repo's evidence path (e.g. an `Evidence:` file under `.agents/` or the path the bead names) — not into this skill.
+## Quality Checklist
+
+- Operator choice is explicit: no NTM session or pawl service is started merely because the substrate exists.
+- Pane roles remain separated, write scopes are disjoint, and every multi-writer handoff is acknowledged through Agent Mail.
+- Deterministic evidence and a fresh-context `ao pawl review` verdict—not producer or pane consensus—control admission.
+- Plain `REFUTED` work auto-repairs; only a tripped breaker gets one helper, and every lock or reservation is released or transferred.
 
 ## Operating Notes (doctrine-critical facts)
 
@@ -152,6 +179,7 @@ NTM actions produce no skill-owned files. The deliverable is verified state plus
 - **Coordination default:** Agent Mail reservations are the primary primitive; `--worktrees` isolation is allowed when repo policy permits. If mail/reservations are degraded, record it and use bead assignee/status as the soft lock — no retry loops.
 - **Cross-machine continuity** is checkpoint export/import or handoff bundles — never shipped cursors.
 - **Safety surfaces are first-class:** use `ntm safety` / `ntm policy` / `ntm approve` (approve takes a *token*, not a bead id) instead of ad hoc shell habits; obey repo rules that route builds through `rch` or similar.
+- **The standing pawl-service is NTM's largest persistent-pane consumer — tend it, don't nudge it.** `ao pawl up` spawns a session named `<repo>--pawl-service` (e.g. `agentops--pawl-service`), one warm reviewer pane per model family: `cc`=claude/opus (pane 1), `cod`=codex (pane 2), `agy`=Gemini (pane 3); it obeys the same `projects_base`-basename rule above. **Do NOT send keys to a pawl-service pane while a route is in flight** — the route loop deliberately never injects keys into a reviewing pane (a stray nudge breaks the verdict). Tend it read-only with `ao pawl doctor` / `ao pawl health`; bring it up with `ao pawl up` (`--dual` cc+cod is the default panel; `--tri` adds agy) and reap the idle account slot with `ao pawl reap`. Full contract: [`docs/contracts/pawls.md` §Operating the warm pawl-service](../../docs/contracts/pawls.md). The pawl panes are operator machinery — a plain `ao pawl review` needs no NTM at all (it runs cold from any git repo).
 - The full distilled trip-wire list (CASS dedup blocking sends, `--` label separator, send-vs-spawn flag parsers, attention flag namespacing, PATH precedence for safety wrappers, and more) lives in [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md).
 
 ## Reference Index
@@ -189,6 +217,7 @@ Drop-in examples live under `assets/`:
 
 - **`agent-native`** — portable factory roles, worker lifecycle, bounded recovery, evidence, and retirement.
 - `agent-mail` for inboxes, contact handshakes, and file reservations
+- [`scripts/validate.sh`](scripts/validate.sh) for the operator-choice, factory-role, Agent Mail, and pawl mesh contract
 - `br` for bead state changes and syncing
 - `bv` for graph-aware task prioritization
 - `cass` for prior-session retrieval

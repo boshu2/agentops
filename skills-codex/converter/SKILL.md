@@ -6,6 +6,12 @@ description: Convert AgentOps skill formats.
 
 Parse AgentOps skills into a universal SkillBundle format, then convert to target agent platforms.
 
+## Constraints
+
+- Treat the canonical source skill as read-only because conversion must not mutate the contract it is translating.
+- Clean-write only the explicit target directory to prevent stale resources from surviving a conversion or unrelated paths from being deleted.
+- Fail when copied-resource parity or target-format validation fails because a partial bundle is not a usable conversion.
+
 ## Quick Start
 
 ```bash
@@ -120,6 +126,20 @@ To add a new target platform:
 | `--all` skips a skill directory | The directory has no `SKILL.md` file | Ensure each skill directory contains a valid `SKILL.md`. Run `$heal-skill` to detect empty directories |
 | Codex `prompt.md` description is truncated | The skill description exceeds 1024 characters | This is by design. The converter truncates at a word boundary to fit Codex limits. Shorten the description in SKILL.md frontmatter if the truncation point is awkward |
 | Conversion fails with passthrough parity check | A resource entry from source skill wasn't copied to output | Ensure source entries are readable and copyable (including nested files). Re-run conversion; failure is intentional to prevent drift between `skills/` and converted output |
+
+## Output Specification
+
+- **Path:** `.agents/converter/<target>/<skill-name>/` by default, or the exact caller-supplied output directory.
+- **Filename:** Codex emits `SKILL.md`, `prompt.md`, and copied resources; Cursor emits `<skill-name>.mdc` and optional `mcp.json`; `test` emits the raw bundle representation.
+- **Format:** target-valid UTF-8 text with required frontmatter, rewritten runtime references, and byte-present passthrough resources; Cursor output remains within 100KB.
+- **Exit code:** run `bash skills/converter/scripts/convert.sh <skill-dir> <target> <output-dir>` and require zero; treat parse, budget, write, or passthrough-parity failure as nonzero and incomplete.
+- **Downstream handoff:** report the source skill, target, output directory, layout, omitted Cursor references if any, and validation result to the installer or projection gate.
+
+## Quality Checklist
+
+- The source tree is unchanged and the output tree contains no files left over from an earlier conversion.
+- Every required target file parses with its target frontmatter/schema and every eligible source resource is present.
+- Runtime-specific rewrites preserve the source meaning without reintroducing deprecated command forms or foreign-runtime paths.
 
 ## References
 

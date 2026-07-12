@@ -53,6 +53,12 @@ output_contract: code changes, GOALS.md fitness deltas
 
 **Operator cadence:** post-mortem finished work → measure repo state → select the next highest-value item → let `rpi` run research → plan → pre-mortem → implement → validate → harvest follow-ups → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
 
+## Constraints
+
+- Run one complete `rpi --auto` cycle per selected item and re-read the work ladder afterward, because partial phases and fixed backlogs break the feedback loop.
+- Never push without a commit-current CONFIRMED pawl verdict, because a green producer gate is necessary but not sufficient proof.
+- Treat breaker trips with one bounded helper pass before escalation; only judgment, refusal, spent budgets, or a failed helper reach a human, because ordinary blockers belong to the pawl recovery path.
+
 ## Work selection ladder
 
 Selection is a ladder re-read from the TOP after every productive cycle — never a one-shot check. Full per-rung procedure (`ao loop next-work` recommendation, scope filter, generator code, `--quality` cascade, dormancy hard-gate): [references/work-selection-ladder.md](references/work-selection-ladder.md).
@@ -73,15 +79,6 @@ Selection is a ladder re-read from the TOP after every productive cycle — neve
 - `Skill(skill="perf", args="profile --quick")` → hot-path perf findings
 
 **Live skill-edit immune system:** if a cycle edits `skills/<slug>/SKILL.md`, run `ao skills edit seal --skill <slug> --actor "${AGENT_NAME:-agent}"` before handoff — the seal creates the rollback commit and records the `Skill-Edit` trailers for the daily digest. Critical skills in `docs/contracts/critical-skills.txt` reject unattended edits; `--allow-critical` only under supervision.
-
-```bash
-/evolve                      # Run until kill switch, max-cycles, or real dormancy
-/evolve --max-cycles=5       # Cap at 5 cycles
-/evolve --dry-run            # Show what would be worked on, don't execute
-/evolve --quality            # Quality-first: prioritize post-mortem findings
-/evolve --compile            # ao compile knowledge warmup before cycle 1
-# Flags compose (e.g. --quality --max-cycles=10); full table below.
-```
 
 ## Flags
 
@@ -121,7 +118,7 @@ Recover cycle state from disk (survives compaction): `CYCLE`, `IDLE_STREAK`, `GE
 
 ### Step 0.2 / 0.5: Warmup + baseline
 
-`--compile` only (skip on `--dry-run`): `ao compile` knowledge warmup before cycle 1 — mine + signal notes per `references/knowledge-loop-integration.md`. First run only (skip on `--skip-baseline` / `--beads-only` / existing baseline): capture the fitness baseline per `references/fitness-scoring.md`.
+**Checkpoint:** `--compile` only (skip on `--dry-run`): run `ao compile` before cycle 1 per `references/knowledge-loop-integration.md`. On the first eligible run, capture the fitness baseline per `references/fitness-scoring.md`.
 
 ### Step 1: Kill-switch check (TOP of every cycle)
 
@@ -169,15 +166,11 @@ If Step 3 created durable work instead of executing it, re-enter Step 3 and let 
 
 ### Step 4.5: Source-surface sync (pre-gate)
 
-Sync downstream artifacts when the staged diff touches binary or embedded surfaces, or the gate fails on stale-binary / drift errors that look like real regressions (`references/gate-hygiene.md`):
-- `cli/**/*.go` changed → `cd cli && make build && go install ./cmd/ao`
-- `skills-codex/**` changed → `bash scripts/regen-codex-hashes.sh`
-
-A skill touches **six derived surfaces** (registry.json, skill-domain-map, context-map, counts + the `SKILL-TIERS.md` row, codex twin, narrative counts) — regenerate in one shot via `scripts/regen-all.sh` + the codex/count steps, never piecemeal. Most-missed: `registry.json` (stale → `contracts-sync` + `correctness` fail together). Full procedure: [references/new-skill-landing.md](references/new-skill-landing.md).
+Sync binaries and generated surfaces before the gate: Go CLI changes require build/install; Codex skill changes require hash regeneration; skill inventory changes require the full one-shot regeneration. Use [gate hygiene](references/gate-hygiene.md) and [new-skill landing](references/new-skill-landing.md), never piecemeal regen.
 
 ### Step 5: Regression gate
 
-After execution, run the project build+test bundle plus any repo-profile / PROGRAM.md `validation_commands` (de-duplicated, declared order, after the repo bootstrap checks), and `bash scripts/check-wiring-closure.sh` if present. A PROGRAM.md `decision_policy` is the cycle's first keep/revert rule set (breached immutable scope ⇒ regressed; failed program validation ⇒ regressed; a fired revert rule ⇒ revert before consuming claimed work). Treat `stop_conditions` as per-cycle done criteria — main tests green alone never marks a cycle successful. If not `--beads-only`, re-measure fitness → `fitness-latest-post.json` and revert on regression (`references/fitness-scoring.md`). Trust the structural marker `^.*Pass [0-9]+: (FAILED|BLOCKED)` over the trailing status line (`references/gate-hygiene.md`). Claim work first, keep `consumed: false` until the `/rpi` cycle succeeds, then re-read `.agents/rpi/next-work.jsonl` (`references/knowledge-loop-integration.md`).
+**Checkpoint:** run the project tests plus ordered repo-profile / PROGRAM.md `validation_commands` and wiring closure. Apply `decision_policy`, immutable scope, and `stop_conditions`; re-measure to `fitness-latest-post.json` and revert regressions. Keep claimed work `consumed: false` until the cycle succeeds, then re-read `.agents/rpi/next-work.jsonl`. Details: [fitness scoring](references/fitness-scoring.md), [gate hygiene](references/gate-hygiene.md), [knowledge integration](references/knowledge-loop-integration.md).
 
 ### Step 6: Log cycle + commit
 
@@ -185,27 +178,11 @@ After execution, run the project build+test bundle plus any repo-profile / PROGR
 
 ### Step 7: Land — worktree → gate → pawl → push
 
-Push to the shared trunk is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): accumulation + a green local gate are necessary but **NOT sufficient** — a CONFIRMED, commit-current pawl verdict must exist first. Per productive bead, run the live land path from a per-cycle worktree:
-
-```bash
-git worktree add wt-<bead> -b <type>/<bead>-<slug>   # per-cycle worktree; never edit the shared checkout
-# ...implement + Step 5 regression gate...
-ao gate check --fast --scope head                    # smart Go cockpit gate — fail fast locally
-scripts/pawl-review.sh <bead>                         # cross-family codex refuter vs the commit; on
-                                                       # CONFIRMED it writes the commit-bound verdict the pre-push gate requires
-scripts/pawl-land.sh <bead>                           # fetch+rebase, restamp the verdict onto the feat, single-shot push
-```
-
-`pawl-review.sh` REFUSES a same-family author (review codex-authored work with a different family). **Push is refused without a CONFIRMED verdict** (`scripts/check-pawl-pre-push.sh`; a `#trivial` provenance-only commit is the only waiver). **REFUTED → AUTO-REDO** — the loop re-gates with no human; it prints the defects to fix, then re-runs. A Step-0 circuit-breaker trip (max-attempts, time, cost/quota, oscillation) first takes one bounded helper pass ([pawls.md §Escalation](../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model)); a human is pulled in only past the helper or on the skip classes, and the disposition is then `ESCALATE`/`HOLD` with the push held. The operator stays *on* the loop (intent + STOP marker), not *in* it ([ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md)). Never `claude -p` to redo (LAW 0).
+Push is the **mutate-shared-trunk pawl**: work from a per-cycle worktree, run `ao gate check --fast --scope head`, obtain a cross-family commit-current verdict with `scripts/pawl-review.sh`, then use `scripts/pawl-land.sh`. Same-family review and pushes without CONFIRMED are refused. REFUTED auto-redoes; breaker trips get one bounded helper pass before the documented human-only skip classes. See [pawls](../../docs/contracts/pawls.md) and the [land protocol](../crank/references/land-protocol.md). Never `claude -p` (LAW 0).
 
 ### Step 7 loop / stop
 
-```bash
-while true; do
-  # Step 1 .. Step 7
-  CYCLE=$((CYCLE + 1))
-done
-```
+After landing, increment `CYCLE` and return to Step 1.
 
 **Stop ONLY on** (all require a genuine reason — never just context size): (1) **KILL/STOP marker** — operator override; (2) **`--max-cycles` cap**; (3) **genuine stagnation** — `ao beads exec ready=0 AND harvested=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK ≥ 2 AND IDLE_STREAK ≥ 2` → writes DORMANT, which auto-clears the moment `ao beads exec create` adds a ready bead; (4) **regression breaker after a revert**. **Context exhaustion is NOT a stop** — write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"`, exit the turn; the next fire clears HANDOFF in Step 1 and resumes (`references/context-budget.md`).
 
@@ -215,29 +192,21 @@ done
 
 Commit any staged `cycle-history.jsonl`, run `/post-mortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), push only if unpushed commits exist, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
 
-**Release-shaped branches** (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`): the teardown MUST NOT recommend `/release`. Per-cycle `--fast` is a smoke test, not release readiness — the operator runs the **full** Go gate and confirms green before tagging:
+Release-shaped branches must follow [the release teardown contract](references/teardown.md#release-shaped-teardown): never recommend `/release` from per-cycle `--fast`, carry the unchecked checklist into the handoff, and require the full release gate before tagging.
 
-```
-## Pre-release checklist — REQUIRED before /release
+## Output Specification
 
-[ ] 1. Regenerate derived surfaces if any cobra command/flag changed:
-       bash scripts/regen-all.sh          # COMMANDS.md, registry.json, maps
-       # Adding an `ao` command also needs cobra_commands_test.go expectedCmds (x2)
-       # + the CLI-command-surface counts — references/ao-command-landing.md
-       git diff cli/docs/COMMANDS.md registry.json   # commit if non-empty
-[ ] 2. Full release gate (every check, routing ignored):
-       ao gate check --full --workflow-coverage --require-workflow-parity
-[ ] 3. Smoke /evolve with new typed read paths if BC port wire-ups changed:
-       /evolve --dry-run --max-cycles=1
+- **Path:** emit the cycle summary to stdout; append `.agents/evolve/cycle-history.jsonl`; write `.agents/evolve/{fitness-latest.json,session-state.json}` and control files `{STOP,DORMANT,HANDOFF}`.
+- **Filename:** cycle history is `cycle-history.jsonl`; current fitness and resumable state use the fixed filenames above.
+- **Format:** stdout is Markdown; state and fitness use JSON; cycle history uses JSONL following `references/cycle-history.md`.
+- **Validation command:** run repo/profile tests, `bash scripts/check-wiring-closure.sh`, and `ao gate check --fast --scope head`; require a commit-current pawl verdict before land.
+- **Downstream handoff:** return cycle counts, fitness delta, result, stop reason, changed paths, and the verdict; the next cycle consumes persisted state and unconsumed work.
 
-Only after [1]–[2] pass: /release <version>
-```
+## Quality Checklist
 
-The handoff artifact (e.g. `.agents/runs/<release>/READY-TO-TAG.md`) MUST contain this checklist verbatim, unchecked. "Ready to tag" means the boxes are checked, not that the loop ran cleanly. (Rationale: a v2.41-evolve-run shipped green code for three cycles but never ran the full gate; a removed CLI flag's reference regen was load-bearing.)
-
-## Output
-
-Per-cycle markdown summary to stdout (goals fixed, fitness delta, result); appends `.agents/evolve/cycle-history.jsonl`; writes `fitness-latest.json` + `session-state.json`; honors control files `.agents/evolve/{STOP,DORMANT,HANDOFF}`. Resume a paused cycle via `/evolve --resume`.
+- Selected work follows the ladder and remains inside declared mutable scope.
+- A productive cycle has deterministic validation plus a commit-current independent verdict.
+- Regressions revert, queue items stay unconsumed until land, and breaker handling follows helper-before-human policy.
 
 ## Troubleshooting
 
@@ -247,8 +216,6 @@ Per-cycle markdown summary to stdout (goals fixed, fitness delta, result); appen
 | Stagnation after repeated empty passes | Queue + producer layers empty across multiple passes — dormancy is the fallback outcome |
 | `ao goals measure` hangs | Use `--timeout 30 --total-timeout 75`, or `--beads-only` to skip |
 | Regression gate reverts | Review reverted changes, narrow scope, re-run; release claimed work back to available |
-
-See `references/cycle-history.md` for advanced troubleshooting.
 
 ## References
 
@@ -270,20 +237,11 @@ own validator greps them, and they are the loop's load-bearing behavior:
 - **Immediate queue reread:** after each /rpi turn, immediately re-read `.agents/rpi/next-work.jsonl` — the turn may have harvested new work.
 - **Repo execution profile:** honor `docs/contracts/repo-execution-profile.md` (`startup_reads`, `validation_commands`) when present.
 
-## Examples
-
-```bash
-/evolve                          # one gated improvement cycle against GOALS.md
-/evolve --max-cycles=3           # bounded ladder run
-/evolve --dry-run                # report the selected goal + plan, change nothing
-```
-
-Full walkthroughs: [references/examples.md](references/examples.md).
-
 - **Specs + schemas** — [evolve.feature](references/evolve.feature) (gated cycles, ladder, never-self-halt), [goals-schema.md](references/goals-schema.md), [loop-mode.md](references/loop-mode.md), [examples.md](references/examples.md), [autodev.feature](references/autodev.feature) + [autodev-cli.feature](references/autodev-cli.feature) (legacy autodev lane, `-tags legacy`)
 
-## See Also
+## Examples
 
+`/evolve` runs until a genuine stop; `/evolve --max-cycles=3` bounds it; `/evolve --dry-run` reports selection without mutation. Full walkthroughs: [references/examples.md](references/examples.md).
 - `skills/rpi/SKILL.md` — full lifecycle orchestrator (called per cycle)
 - `skills/crank/SKILL.md` — epic execution (called for beads epics)
 - `skills/post-mortem/SKILL.md` — learning extraction + mining surface; absorbed the retired `/curate`, `/compile`, and `/flywheel` skills (mechanical surfaces are the `ao compile` and `ao flywheel status` CLI, not skills)

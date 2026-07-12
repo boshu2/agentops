@@ -474,7 +474,7 @@
         "path": "skills/security/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "bootstrap",
@@ -482,7 +482,7 @@
         "path": "skills/bootstrap/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "handoff",
@@ -498,7 +498,7 @@
         "path": "skills/status/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "codex-exec",
@@ -1220,7 +1220,7 @@
         "ao session bootstrap"
       ],
       "path": "skills/bootstrap/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:cass",
@@ -1457,6 +1457,7 @@
         "git-changes"
       ],
       "drives_commands": [
+        "ao beads dir",
         "ao beads exec",
         "ao done",
         "ao gate check",
@@ -1958,7 +1959,12 @@
         "agent-worker-transcript"
       ],
       "drives_commands": [
-        "ao beads exec"
+        "ao beads exec",
+        "ao pawl doctor",
+        "ao pawl health",
+        "ao pawl reap",
+        "ao pawl review",
+        "ao pawl up"
       ],
       "path": "skills/ntm/",
       "references": 16
@@ -2128,7 +2134,6 @@
         "ao beads exec",
         "ao goals history",
         "ao goals measure",
-        "ao goals steer apply",
         "ao membrane digest",
         "ao membrane triage",
         "ao session close"
@@ -2588,7 +2593,7 @@
       ],
       "drives_commands": [],
       "path": "skills/security/",
-      "references": 1
+      "references": 2
     },
     {
       "sku": "skill:shared",
@@ -2708,7 +2713,7 @@
         "ao session bootstrap"
       ],
       "path": "skills/status/",
-      "references": 1
+      "references": 2
     },
     {
       "sku": "skill:swarm",

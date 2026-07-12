@@ -147,11 +147,25 @@ type Resolved struct {
 	// FileFound reports whether a config file was present and read.
 	FileFound bool
 	// Warnings holds non-fatal notices (unknown keys, unparseable values, a
-	// malformed file). Config problems never fail resolution; they warn.
+	// malformed file). Consumers must also inspect ValidationError before using
+	// values from a committed file.
 	Warnings []string
+	// InvalidReason is non-empty when a present committed policy could not be
+	// read or parsed. Such a policy must HOLD verification rather than silently
+	// inherit permissive defaults.
+	InvalidReason string
 
 	// sources maps each yaml key to where its value came from.
 	sources map[string]Source
+}
+
+// ValidationError reports whether a present committed policy is unusable.
+// An absent file is valid and preserves the zero-config defaults.
+func (r *Resolved) ValidationError() error {
+	if r == nil || r.InvalidReason == "" {
+		return nil
+	}
+	return fmt.Errorf("invalid committed verify policy: %s", r.InvalidReason)
 }
 
 // Entry is one resolved setting rendered for display (--show-config).
@@ -250,8 +264,8 @@ func (r *Resolved) exportValue(yamlKey string, kd kind) string {
 }
 
 // Load resolves the effective config using the current working directory as the
-// start point. It never returns an error: config-content problems become
-// Warnings and fall back through the precedence chain.
+// start point. Callers that authorize verification effects must check
+// ValidationError before using the resolved values.
 func Load() *Resolved {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -261,8 +275,9 @@ func Load() *Resolved {
 }
 
 // LoadDir resolves the effective config relative to the repo root discovered by
-// walking up from startDir (see package doc, "Root resolution"). It never
-// returns an error.
+// walking up from startDir (see package doc, "Root resolution"). An absent file
+// is valid; a present unreadable, malformed, or incorrectly typed file is
+// recorded for fail-closed consumers through ValidationError.
 func LoadDir(startDir string) *Resolved {
 	root := findRoot(startDir)
 	path := filepath.Join(root, ConfigFileName)
@@ -289,6 +304,12 @@ func LoadDir(startDir string) *Resolved {
 	applyString(r, "smoke", "PAWL_SMOKE_CMD", file.smoke, &r.Smoke)
 	applyBool(r, "autobind", "PAWL_AUTOBIND", file.autobind, &r.Autobind)
 	applyString(r, "author_family", "PAWL_AUTHOR_FAMILY", file.authorFamily, &r.AuthorFamily)
+	if r.InvalidReason != "" {
+		// Defense in depth for consumers that display the resolved values before
+		// checking ValidationError: an invalid policy never looks permissive.
+		r.Strict = true
+		r.Autobind = false
+	}
 
 	return r
 }
@@ -305,9 +326,10 @@ type fileValues struct {
 }
 
 // loadFile reads and decodes the config file at path, recording ConfigPath,
-// FileFound, and any warnings on r. Missing file is not an error. Per-field
-// decode errors and unknown keys warn but never fail; a malformed file (not a
-// YAML mapping) warns and yields no file values.
+// FileFound, warnings, and committed-policy validity on r. Missing file is not
+// an error. Unknown keys remain advisory for forward compatibility. An
+// unreadable, malformed, or incorrectly typed committed field is invalid and
+// yields a fail-closed ValidationError.
 func loadFile(r *Resolved, path string) fileValues {
 	var fv fileValues
 
@@ -315,6 +337,7 @@ func loadFile(r *Resolved, path string) fileValues {
 	if err != nil {
 		if !os.IsNotExist(err) {
 			r.warn("cannot read %s: %v (using env/defaults)", path, err)
+			r.InvalidReason = fmt.Sprintf("cannot read %s: %v", path, err)
 		}
 		return fv
 	}
@@ -324,6 +347,7 @@ func loadFile(r *Resolved, path string) fileValues {
 	var root map[string]yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil {
 		r.warn("cannot parse %s: %v (using env/defaults)", path, err)
+		r.InvalidReason = fmt.Sprintf("cannot parse %s: %v", path, err)
 		return fv
 	}
 
@@ -357,6 +381,7 @@ func decodeString(r *Resolved, root map[string]yaml.Node, path, key string) *str
 	var v string
 	if err := node.Decode(&v); err != nil {
 		r.warn("%s: ignoring %s: %v", path, key, err)
+		invalidateCommittedField(r, path, key, err)
 		return nil
 	}
 	return &v
@@ -370,6 +395,7 @@ func decodeInt(r *Resolved, root map[string]yaml.Node, path, key string) *int {
 	var v int
 	if err := node.Decode(&v); err != nil {
 		r.warn("%s: ignoring %s: %v", path, key, err)
+		invalidateCommittedField(r, path, key, err)
 		return nil
 	}
 	return &v
@@ -383,9 +409,16 @@ func decodeBool(r *Resolved, root map[string]yaml.Node, path, key string) *bool 
 	var v bool
 	if err := node.Decode(&v); err != nil {
 		r.warn("%s: ignoring %s: %v", path, key, err)
+		invalidateCommittedField(r, path, key, err)
 		return nil
 	}
 	return &v
+}
+
+func invalidateCommittedField(r *Resolved, path, key string, err error) {
+	if r.InvalidReason == "" {
+		r.InvalidReason = fmt.Sprintf("cannot decode %s field %s: %v", path, key, err)
+	}
 }
 
 // applyString sets *dst and the key's source from env (highest) then file.

@@ -3,6 +3,9 @@
 > Applies to all top-level orchestrator skills: `/rpi`, `/discovery`, `/validate`.
 > Strict sub-skill delegation is the **default**, not opt-in.
 
+This source reference is canonical. Runtime twins must be generated from it;
+receipt semantics never originate in a projection-only copy.
+
 ## The Contract
 
 Top-level orchestrator skills delegate to their declared sub-skills via `Skill(skill="<name>", ...)` — **as separate tool invocations**, one per phase/step. Each sub-skill owns its artifact, its gate, and its retry policy. Inlining the work breaks that ownership chain.

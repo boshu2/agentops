@@ -18,6 +18,12 @@ Feature: OSS-docs audits and scaffolds open-source documentation
     Then it creates the missing standard files
     And it does not overwrite docs that already exist
 
+  Scenario: refresh requires an explicit existing-doc write decision
+    Given /doc --mode=oss refresh identifies updates for existing documentation
+    When the proposed target writes are ready
+    Then it asks for explicit user confirmation before updating or overwriting any existing doc
+    And without that confirmation it leaves every existing doc unchanged
+
   Scenario: generated content is tailored to the project type
     When /doc --mode=oss generates a doc
     Then the content is tailored to the detected project type, not a generic stub

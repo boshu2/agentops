@@ -13,7 +13,7 @@ For product doctrine read [AgentOps 3.0 — the north star](../3.0.md). For *how
 | Fact | Value |
 |------|-------|
 | Product | In-session autonomous code validation for coding agents |
-| Active waist | `ao session bootstrap` → `ao inject` → operating loop → `ao gate check --fast` → push to `main` |
+| Active waist | `ao session bootstrap` → operating loop → `ao gate check --fast` → push to `main` |
 | Issue tracker | **br** (beads_rust) in `_beads/` — `BEADS_DIR="$(ao beads dir)" br <cmd>` until legacy `.beads/` retires |
 | Skills SSOT | `skills/<slug>/SKILL.md` — never edit `~/.claude/skills/` |
 | Release gate | Local cockpit: `ao gate check --fast --scope head` (Go registry in `cli/internal/gates/`) |
@@ -40,7 +40,7 @@ Four product layers (public framing):
 | Layer | Problem | Key surfaces |
 |-------|---------|--------------|
 | **Bookkeeping** | work vanishes between sessions | `.agents/`, RPI packets, council verdicts |
-| **Context compiler** | agents start cold | `ao inject`, skills, execution packets |
+| **Context compiler** | agents start cold | `ao session bootstrap`, skills, execution packets |
 | **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/pre-mortem`, `ao gate` |
 | **Knowledge flywheel** | lessons don't compound | `/post-mortem`, `/pattern-mining`, `/operationalize`, promotion ratchet, `ao lookup` |
 
@@ -48,18 +48,19 @@ Four product layers (public framing):
 
 ---
 
-## Scale (approximate)
+## Scale (measured)
 
 | Dimension | Size |
 |-----------|------|
-| Go source files | ~1,300+ |
-| Active skills | 73 (`skills/`, excl. fixtures) |
-| CLI top-level commands | ~88 |
-| Gate checks (Go registry) | ~77 |
-| Shell validation scripts | ~280 |
-| Bats test files | ~139 |
-| Claude workflows | 4 (`.claude/workflows/*.js`) |
-| Registry capabilities | 172 (skills + commands + gate jobs) |
+| Go source files | 1521 (`git ls-files '*.go'`) |
+| Active skills | 62 (`git ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
+| Codex skill twins | 61 (`git ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
+| CLI top-level commands | 32 default / 89 with `flywheel legacy` (`go run [-tags profile] ./cmd/ao --help`) |
+| Gate checks | 103 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
+| Shell scripts | 371 (`git ls-files scripts | awk '/\.sh$/'`) |
+| Bats test files | 293 (`git ls-files tests | awk '/\.bats$/'`) |
+| Claude workflows | 4 (`git ls-files .claude/workflows | awk '/\.js$/'`) |
+| Registry capabilities | 105 (`jq '.capabilities | length' registry.json`) |
 
 ---
 
@@ -91,10 +92,10 @@ BC6 Orchestration ──▶ dispatches whole skills (never decomposes RPI intern
 | Path | Owns |
 |------|------|
 | `skills/` | **Skill SSOT** — `SKILL.md`, references, Gherkin `.feature` acceptance |
-| `skills-codex/` | Checked-in Codex runtime twins (73); maintained with refresh scripts |
+| `skills-codex/` | Checked-in Codex runtime twins (61); maintained with refresh scripts |
 | `skills-codex-overrides/` | Durable Codex tailoring when runtime must diverge |
 | `cli/` | Go control plane — `cmd/ao/`, `internal/`, gates, corpus, RPI legacy |
-| `scripts/` | Validation, regen, release (~280 shell tools) |
+| `scripts/` | Validation, regen, release (371 shell scripts) |
 | `tests/` | Bats gate tests, integration, e2e, docs validation |
 | `schemas/` | JSON schemas for config, provenance, packets |
 | `docs/` | Narrative architecture, ADRs, contracts, MkDocs site |
@@ -124,8 +125,6 @@ Report mismatches; do not silently follow stale docs.
 ```text
 ao session bootstrap          # explicit orientation (replaces hook injection)
         ↓
-ao inject / ao corpus inject  # decay-ranked prior context
-        ↓
 Operating loop                # BDD → br bead → slice → TDD → validate
         ↓
 ao gate check --fast --scope head   # local cockpit gate (BC2)
@@ -140,12 +139,8 @@ validate.yml (optional)       # CI backstop on tags, PRs, manual dispatch
 | Command | Role |
 |---------|------|
 | `ao session bootstrap` | Universal init prompt for any agent runtime |
-| `ao inject` | Knowledge injection from `.agents/` corpus |
-| `ao corpus inject` | Typed BC1 corpus reader path |
 | `ao gate check --fast` | Pre-push release authority |
 | `ao gate check --full` | CI-parity local proof |
-| `ao codex *` | Non-interactive Codex execution lane |
-| `ao mcp serve` | Managed Agents JSON-RPC (curated tool surface) |
 | `ao goals measure` | Fitness against `GOALS.md` |
 | `ao doctor` | Self-healing cockpit |
 | `ao capabilities` / `ao robot-docs` | Machine-readable CLI contract |
@@ -156,6 +151,9 @@ Full surface: generated [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md).
 
 | Surface | Status |
 |---------|--------|
+| `ao codex *` | `legacy`-tagged archive; absent from the default spine |
+| `ao inject`, `ao lookup`, `ao corpus *` | Tagged archives; `ao session bootstrap` is the default-spine orientation path |
+| `ao mcp serve`, `ao agent` | `legacy`-tagged optional substrate surfaces; absent from the default spine |
 | `ao rpi phased/loop/serve/stream` | **Removed in 3.0** (f61c5f0e7) — engine gone; use the operating loop in-session, NTM + Agent Mail out-of-session |
 | `scripts/pre-push-gate.sh` | Bash escape hatch — `AGENTOPS_GATE_BASH=1` only |
 | Gas City (`runtime=gc`) | **Removed** — bridge deleted. gc itself lives beside as a blessed coexisting substrate (owned fork; drive via `skills/using-gc` + `packs/agentops-membrane`) |
@@ -218,7 +216,7 @@ The Go gate (`cli/internal/gates/`) is the **routine release authority** (ag-qid
 
 ```text
 Check { ID, Tiers (Fast|Full), Match[] globs, Blocking, Backing | Run }
-  → Registry (~77 checks in checks/seed.go)
+  → Registry (103 checks in checks/seed.go)
   → Orchestrator (serial; changed-file routing in Fast mode)
   → Report (PASS / WARN / FAIL / SKIP)
 ```

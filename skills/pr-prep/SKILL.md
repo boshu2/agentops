@@ -34,251 +34,141 @@ output_contract: PR body (markdown), git branch
 ---
 # PR Preparation Skill
 
-Systematic PR preparation that validates tests and generates high-quality PR bodies.
+Prepare an external contribution by matching the target repository's actual
+conventions, proving the branch, and drafting a reviewable PR body. Execute the
+workflow; do not submit anything until the user explicitly approves the exact
+title, body, base, and remote.
 
-## Overview
+## Critical Constraints
 
-Prepares contributions by analyzing the target repo's conventions, git history,
-test coverage, and generating properly-formatted PR bodies.
+- **Why: prevent duplicate work.** Check open and merged issues/PRs plus the
+  current default branch before packaging a contribution.
+- **Why: respect the target.** Read the target repository's `AGENTS.md`,
+  `CONTRIBUTING.md`, PR template, release notes, and recent accepted PRs; local
+  AgentOps conventions never override upstream contribution rules.
+- **Why: preserve atomic scope.** Stop when the branch mixes unrelated themes,
+  already-merged changes, generated noise, or secrets.
+- **Why: keep evidence truthful.** Run the repository-prescribed build, lint,
+  and test commands; never mark a check complete when it did not pass.
+- **Why: avoid destructive history edits.** Commit splitting is suggestion-only
+  unless the user separately authorizes a rewrite.
+- **Why: external publication changes state.** Draft first, show the exact
+  artifact, and require explicit approval before `gh pr create` or any push.
 
-**When to Use**:
-- Preparing a PR for an external repository
-- Contributing bug fixes or features
+## Boundary and Modes
 
-**When NOT to Use**:
-- Internal commits (use normal git workflow)
-- PRs to your own repositories
+Use for external repositories and open-source contribution preparation. Do not
+use for routine internal commits or the AgentOps direct-to-main release path.
 
-### Folded trigger (ag-s43tg wave 1): `pr-research` routes here
+The folded `pr-research` trigger enters upstream-research mode: perform prior
+work discovery, contribution-guideline analysis, merged-PR archaeology, and
+maintainer-pattern research before prep. Persist that research at
+`.agents/research/YYYY-MM-DD-upstream-<slug>.md`.
 
-- **`pr-research` → upstream research mode.** Use when you need to **Research an upstream repo**
-  before contributing — systematic exploration of an external codebase as the FIRST step before
-  planning or implementing an open source contribution: prior-work check (existing issues/PRs),
-  mandatory CONTRIBUTING.md discovery, guidelines/templates analysis, PR archaeology on merged
-  PRs and commit patterns, maintainer response-pattern research, and issue discovery for
-  contribution opportunities. That research lane now lives at the front of this skill's
-  workflow — Phase -1 (Prior Work Check) and Phase 1 (Context Discovery) absorb it; write the
-  findings to `.agents/research/YYYY-MM-DD-upstream-*.md` before moving to commit/body prep.
-
----
+Inputs are a target repository, current contribution branch, optional issue,
+and optional requested base/remote. Preparation may write local artifacts; it
+does not grant authority to publish, rewrite history, or message maintainers.
 
 ## Workflow
 
-```
--1. Prior Work Check     -> BLOCKING: Final check for competing PRs
-0.  Isolation Check      -> BLOCK if PR mixes unrelated changes
-1.  Context Discovery    -> Understand target repo conventions
-2.  Git Archaeology      -> Analyze commit patterns, PR history
-3.  Pre-Flight Checks    -> Run tests, linting, build
-4.  Change Analysis      -> Summarize what changed and why
-4.5 Commit Split Advisor -> Suggest logical commit groups (manual)
-5.  PR Body Generation   -> Create structured PR description
-6.  USER REVIEW GATE     -> STOP. User must approve before submission.
-7.  Submission           -> Only after explicit user approval
-```
+1. **Check prior work.** Resolve the upstream default branch and remote. Search
+   open/closed issues and PRs for the behavior, symbols, and issue ID. Stop on a
+   competing contribution until the user chooses how to proceed.
+2. **Discover conventions.** Read repository instructions, contribution docs,
+   PR templates, CI config, changelog policy, recent merged PRs, and commit
+   subjects. Record the exact title/body/test conventions used by maintainers.
+3. **Prove isolation.** Compare the merge-base range, list changed files and
+   commits, and group by behavior. Remove or report unrelated files, secrets,
+   generated artifacts, debug output, and changes already on the base branch.
+4. **Validate the branch.** Run the target repo's documented formatter, lint,
+   build, tests, and any contribution-specific check. Capture command, exit
+   status, and relevant result. A red check remains red in the draft.
+5. **Analyze commits.** Recommend a single commit for a diff under 50 lines and
+   four files; otherwise follow
+   [commit-split-advisor.md](references/commit-split-advisor.md). Suggestions
+   name ordered file groups and keep every commit buildable. Do not rewrite.
+6. **Draft the PR.** Write `.agents/pr-prep/YYYY-MM-DD-<slug>.md` with proposed
+   title, upstream/base, linked issue, concise why/what summary, change list,
+   test plan containing only executed evidence, compatibility/rollback notes,
+   and reviewer-relevant risks. Follow the upstream template exactly.
+7. **Checkpoint — mandatory user review.** Show the title, body, base, remote,
+   branch, validation results, and any red/untested checks. Ask for approval or
+   revision and wait. Silence, a request to "prepare", or prior push authority
+   is not approval to create this PR.
+8. **Submit only after approval.** Recheck the diff and validation if HEAD moved,
+   then run `gh pr create --title <approved-title> --body-file <approved-file>
+   --base <approved-base>`. Report the resulting URL and do not mutate the PR
+   further unless asked.
 
----
-
-## Phase 0: Isolation Check (BLOCKING)
-
-**CRITICAL**: Run this FIRST. Do not proceed if PR mixes unrelated changes.
-
-### Commit Type Analysis
-
-```bash
-# Extract commit type prefixes from branch
-git log --oneline main..HEAD | sed 's/^[^ ]* //' | grep -oE '^[a-z]+(\([^)]+\))?:' | sort -u
-```
-
-**Rule**: If more than one commit type prefix exists, the PR is mixing concerns.
-
-### File Theme Analysis
-
-```bash
-# List all files changed vs main
-git diff --name-only main..HEAD
-
-# Group by directory
-git diff --name-only main..HEAD | cut -d'/' -f1-2 | sort -u
-```
-
-### Isolation Checklist
-
-| Check | Pass Criteria |
-|-------|---------------|
-| **Single commit type** | All commits share same prefix |
-| **Thematic files** | All changed files relate to PR scope |
-| **No main overlap** | Changes not already merged |
-| **Atomic scope** | Can explain in one sentence |
-
-**DO NOT PROCEED IF ISOLATION CHECK FAILS.**
-
----
-
-## CRITICAL: User Review Gate
-
-**NEVER submit a PR without explicit user approval.**
-
-After generating the PR body (Phase 5), ALWAYS:
-
-1. Write the PR body to a file for review
-2. Show the user what will be submitted
-3. **STOP and ask**: "Ready to submit? Review the PR body above."
-4. Wait for explicit approval before running `gh pr create`
-
-```bash
-# Write PR body to file
-cat > /tmp/pr-body.md << 'EOF'
-<generated PR body>
-EOF
-
-# Show user
-cat /tmp/pr-body.md
-
-# ASK - do not proceed without answer
-echo "Review complete. Submit this PR? [y/N]"
-```
-
----
-
-## Phase 3: Pre-Flight Checks
-
-```bash
-# Go projects
-go build ./...
-go vet ./...
-go test ./... -v -count=1
-
-# Node projects
-npm run build
-npm test
-
-# Python projects
-pytest -v
-```
-
-### Pre-Flight Checklist
-
-- [ ] Code compiles without errors
-- [ ] All tests pass
-- [ ] No new linting warnings
-- [ ] No secrets or credentials in code
-
----
-
-## Phase 4.5: Commit Split Analysis (Suggestion-Only)
-
-Analyze the branch diff and suggest logical commit groupings.
-
-```bash
-# Review the scope of changes
-git diff --stat main..HEAD
-```
-
-**Output a numbered list** of suggested commits with file groups:
-
-```
-Commit 1: [description] -- files: path/a.go, path/a_test.go
-Commit 2: [description] -- files: path/b.go, path/c.go
-```
-
-**Ordering**: Infrastructure/migrations > Models/services > Controllers/views > Tests > VERSION/CHANGELOG.
-Each commit must be independently valid (no broken imports).
-If diff is < 50 lines across < 4 files, recommend a single commit.
-
-See [references/commit-split-advisor.md](references/commit-split-advisor.md) for full rules.
-
-> **These are suggestions only. User reads and implements manually.**
-
----
-
-## Phase 5: PR Body Generation
-
-### Standard Format
+## PR Body Shape
 
 ```markdown
 ## Summary
-
-Brief description of WHAT changed and WHY. 1-3 sentences.
-Start with action verb (Add, Fix, Update, Refactor).
+<what changed and why; 1-3 sentences>
 
 ## Changes
-
-Technical details of what was modified.
+- <reviewable behavior or implementation point>
 
 ## Test plan
+- [x] `<command>` — <result>
+- [ ] <not run> — <reason>
 
-- [x] `go build ./...` passes
-- [x] `go test ./...` passes
-- [x] Manual: <specific scenario tested>
-
-Fixes #NNN
+Fixes #<issue>
 ```
 
-**Key conventions:**
-- Test plan items are **checked** `[x]` (you ran them before PR)
-- `Fixes #NNN` goes at the end
+Use checked boxes only for executed PASS evidence. Keep failed or skipped checks
+visible. Put closing keywords at the end when upstream policy permits them.
 
----
+## Output Specification
 
-## Phase 7: Submission (After Approval Only)
+- **Artifact directory:** `.agents/pr-prep/` for the local review draft and
+  `.agents/research/` for optional upstream research; the current git branch is
+  the code artifact.
+- **Filename convention:** `YYYY-MM-DD-<contribution-slug>.md`; never overwrite
+  an unrelated draft.
+- **Serialization/schema format:** Markdown following the upstream PR template,
+  with title, remote/base, summary, changes, test plan, risks, and issue linkage.
+- **Validator command:** run `bash skills/pr-prep/scripts/validate.sh`, the
+  target repository's documented checks, `git diff --check`, and a secret scan
+  appropriate to the repo before requesting approval.
+- **Downstream handoff:** consumed first by the user's review and, only after
+  explicit approval, by `gh pr create --body-file` and the upstream maintainer.
 
-```bash
-# Create PR with reviewed body
-gh pr create --title "type(scope): brief description" \
-  --body "$(cat /tmp/pr-body.md)" \
-  --base main
-```
+## Quality Rubric
 
-**Remember**: This command should ONLY run after user explicitly approves.
-
----
-
-## Anti-Patterns
-
-| DON'T | DO INSTEAD |
-|-------|------------|
-| **Submit without approval** | **ALWAYS stop for user review** |
-| **Skip isolation check** | **Run Phase 0 FIRST** |
-| Bundle lint fixes into feature PRs | Lint fixes get their own PR |
-| Giant PRs | Split into logical chunks |
-| Vague PR body | Detailed summary with context |
-| Skip pre-flight | Always run tests locally |
+- **Convention-matched:** title, template, commit shape, and checks follow upstream.
+- **Isolated:** every changed file serves one contribution story.
+- **Evidence-bound:** the test plan distinguishes passed, failed, and unrun checks.
+- **Reviewable:** rationale, behavior, risks, and compatibility are concise and clear.
+- **Safe:** no secrets, unrelated changes, destructive rewrite, or implicit submit.
+- **Reproducible:** the exact branch range, commands, base, remote, and draft path are named.
 
 ## Examples
 
-### Prepare External PR Body
+**User says:** "Prepare this branch for an upstream PR."
 
-**User says:** "Prepare this branch for PR submission."
+Inspect upstream rules and prior work, validate the branch, write the local PR
+draft, and stop at the review checkpoint.
 
-**What happens:**
-1. Run isolation and pre-flight validation.
-2. Build structured PR body with summary and test plan.
-3. Pause for mandatory user review before submit.
+**User says:** "Submit the PR using the draft I just approved."
 
-### Evidence-First PR Packaging
-
-**User says:** "Generate a high-quality PR description with clear verification steps."
-
-**What happens:**
-1. Gather git archaeology and test evidence.
-2. Synthesize concise rationale and change list.
-3. Produce submit-ready body pending approval.
+Verify the draft and HEAD still match the approved state, then create exactly
+that PR and report its URL.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| PR body is weak | Missing context from commits/tests | Re-run evidence collection and expand summary |
-| Submission blocked | Mandatory review gate not passed | Get explicit user approval before `gh pr create` |
-| Test plan incomplete | Commands/results not captured | Add executed checks and outcomes explicitly |
-| Title/body mismatch | Scope drift during edits | Regenerate from latest branch diff and constraints |
+| Problem | Response |
+|---|---|
+| Competing PR exists | Show overlap and stop for user direction |
+| Branch mixes themes | Suggest split groups; do not rewrite without authorization |
+| Required check fails | Keep it red in the draft and do not imply readiness |
+| Upstream template is absent | Infer from recent merged PRs and label the assumption |
+| HEAD changed after approval | Regenerate evidence and request approval again |
 
-## Reference Documents
+## References
 
-- [references/pr-prep.feature](references/pr-prep.feature) — Executable spec: analyze repo conventions/history, validate tests first, generate PR body + branch (soc-qk4b)
-
-- [references/case-study-historical-context.md](references/case-study-historical-context.md)
-- [references/lessons-learned.md](references/lessons-learned.md)
-- [references/package-extraction.md](references/package-extraction.md)
-- [references/commit-split-advisor.md](references/commit-split-advisor.md)
+- [pr-prep.feature](references/pr-prep.feature) — executable behavior contract
+- [commit-split-advisor.md](references/commit-split-advisor.md) — buildable commit grouping
+- [case-study-historical-context.md](references/case-study-historical-context.md) — historical contribution context
+- [lessons-learned.md](references/lessons-learned.md) — reusable preparation lessons
+- [package-extraction.md](references/package-extraction.md) — package extraction guidance

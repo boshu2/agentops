@@ -18,8 +18,8 @@ func TestCodexTaskPacketSmokeFixtureWritesSchemaValidReceipt(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 
 	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
-		Sandbox:     "read-only",
-		ArgvSandbox: "read-only",
+		Sandbox:     "workspace-write",
+		ArgvSandbox: "workspace-write",
 	})
 	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
 	if err != nil {
@@ -37,8 +37,8 @@ func TestCodexTaskPacketSmokeFixtureWritesSchemaValidReceipt(t *testing.T) {
 	if receipt.PacketID != printed.PacketID {
 		t.Fatalf("receipt packet_id = %q, printed packet_id = %q", receipt.PacketID, printed.PacketID)
 	}
-	if receipt.Sandbox != "read-only" {
-		t.Fatalf("sandbox = %q, want read-only", receipt.Sandbox)
+	if receipt.Sandbox != "workspace-write" {
+		t.Fatalf("sandbox = %q, want workspace-write for executable required_commands", receipt.Sandbox)
 	}
 	if receipt.AuthMode != "chatgpt-subscription" || !strings.Contains(receipt.AuthStatus, "ChatGPT") {
 		t.Fatalf("auth receipt = mode %q status %q, want ChatGPT subscription", receipt.AuthMode, receipt.AuthStatus)

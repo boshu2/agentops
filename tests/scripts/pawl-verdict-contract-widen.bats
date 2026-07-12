@@ -19,7 +19,7 @@ setup() {
   SCHEMA="$REPO_ROOT/schemas/pawl-verdict.v1.schema.json"
   TMP="$(mktemp -d)"
   ORIG_PATH="$PATH"
-  mkdir -p "$TMP/bin" "$TMP/verdicts"
+  mkdir -p "$TMP/bin" "$TMP/ao-bin" "$TMP/verdicts"
   SHA="cafef00dbabe1234cafef00dbabe1234cafef00d"
   printf 'fresh-context review evidence\n' > "$TMP/evidence.txt"
   # A python3 shim that makes `import jsonschema` fail, to force schema_validate's
@@ -36,6 +36,12 @@ exec "$REAL_PYTHON" "\$@"
 EOF
     chmod +x "$TMP/bin/python3"
   fi
+  cat > "$TMP/ao-bin/ao" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "$TMP/ao-bin/ao"
+  export PATH="$TMP/ao-bin:$PATH"
 }
 
 teardown() {
@@ -123,11 +129,53 @@ EOF
   [[ "$output" != *"merge authorized"* ]]
 }
 
-@test "REBOUND is ADMITTED to the contract but does NOT authorize a merge (only CONFIRMED does)" {
+@test "invalid REBOUND is admitted to the contract but does not authorize without lineage" {
   emit_verdict reb-lock REBOUND ',"rebound_from_sha":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef","patch_id_proof":"patch-abc123"'
   run bash "$SCRIPT" check reb-lock 0 --dir "$TMP/verdicts" --head "$SHA"
   [ "$status" -ne 0 ]
   [[ "$output" != *"merge authorized"* ]]
+}
+
+@test "schema and authorizer agree that validated REBOUND authorizes" {
+  grep -q "CONFIRMED or validated REBOUND authorizes" "$SCHEMA"
+
+  local repo="$TMP/rebound-repo"
+  mkdir -p "$repo"
+  git -C "$repo" init -q
+  git -C "$repo" config user.email test@example.invalid
+  git -C "$repo" config user.name test
+  printf 'base\n' > "$repo/f.txt"
+  git -C "$repo" add f.txt
+  git -C "$repo" commit -qm base
+  printf 'change\n' >> "$repo/f.txt"
+  git -C "$repo" add f.txt
+  git -C "$repo" commit -qm original
+  local reviewed
+  reviewed="$(git -C "$repo" rev-parse HEAD)"
+  printf 'substantive independent review evidence\nfiles reviewed: 1\n' > "$TMP/rebound-evidence.txt"
+  AGENTOPS_REPO_ROOT="$repo" PAWL_AUTOBIND=0 bash "$SCRIPT" write valid-rebound 0 \
+    --disposition CONFIRMED --head "$reviewed" --author-context author-ctx \
+    --refuter claude:CONFIRMED:fresh-ctx:"$TMP/rebound-evidence.txt" \
+    --dir "$TMP/verdicts" >/dev/null
+
+  git -C "$repo" reset -q --hard HEAD~1
+  printf 'change\n' >> "$repo/f.txt"
+  git -C "$repo" add f.txt
+  git -C "$repo" commit -qm rebased --date='2021-06-06T12:00:00'
+  local current
+  current="$(git -C "$repo" rev-parse HEAD)"
+  [ "$current" != "$reviewed" ]
+
+  run env AGENTOPS_REPO_ROOT="$repo" PAWL_AUTOBIND=0 PAWL_REBIND_GATE_CMD=true \
+    bash "$SCRIPT" rebind-verified valid-rebound 0 --head "$current" \
+    --dir "$TMP/verdicts" --repo-root "$repo"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .disposition "$TMP/verdicts/valid-rebound.json")" = "REBOUND" ]
+
+  run env AGENTOPS_REPO_ROOT="$repo" bash "$SCRIPT" check valid-rebound 0 \
+    --dir "$TMP/verdicts" --head "$current"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"merge authorized"* ]]
 }
 
 # --- (3) unknown top-level key still rejected (allowlist stays strict) --------

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -677,4 +679,96 @@ func TestPawlServiceColdEnv(t *testing.T) {
 	if !sawAOBin {
 		t.Fatalf("pawlServiceColdEnv missing a non-empty AO_BIN; got %v", env)
 	}
+}
+
+// TestEmbeddedBundleStampMatchesScripts (F4, age-pawl-intent-zhndq.4): the embedded BUNDLE_STAMP
+// must be the DETERMINISTIC sha256 of the three embedded review scripts, so an installed binary
+// can prove whether its bundle matches a live checkout (the landed!=installed signal). If someone
+// edits an embedded script without re-running `make sync-hooks`, this catches the stale stamp.
+func TestEmbeddedBundleStampMatchesScripts(t *testing.T) {
+	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
+	if err != nil {
+		t.Fatalf("embedded pawl/BUNDLE_STAMP missing (run `cd cli && make sync-hooks`): %v", err)
+	}
+	stamp := strings.TrimSpace(string(stampRaw))
+	if len(stamp) != 64 {
+		t.Fatalf("BUNDLE_STAMP is not a 64-char sha256 hex: %q", stamp)
+	}
+	h := sha256.New()
+	for _, p := range []string{"pawl/scripts/pawl-review.sh", "pawl/scripts/pawl-verdict.sh", "pawl/scripts/pawl.sh"} {
+		b, rerr := embedded.PawlFS.ReadFile(p)
+		if rerr != nil {
+			t.Fatalf("read embedded %s: %v", p, rerr)
+		}
+		h.Write(b)
+	}
+	got := hex.EncodeToString(h.Sum(nil))
+	if got != stamp {
+		t.Fatalf("BUNDLE_STAMP %q != recomputed hash of embedded scripts %q — run `cd cli && make sync-hooks`", stamp, got)
+	}
+}
+
+// TestPawlBundleStaleness (F4-followup, age-pawl-intent-zhndq.19): the TRUST-HONEST bundle verdict.
+//
+// TWO cross-family codex refutes drove this contract: file presence is NOT identity, so no marker
+// list can make it safe to assert a STALE *failure* against an untrusted repo (any marker is
+// attacker-controlled and spoofable). The verdict therefore compares nothing on the untrusted path
+// — it surfaces the stamp informationally and NEVER says STALE — while the trusted dogfood path has
+// nothing to compare anyway (the live scripts run in place).
+func TestPawlBundleStaleness(t *testing.T) {
+	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
+	if err != nil {
+		t.Fatalf("embedded BUNDLE_STAMP missing: %v", err)
+	}
+	stamp := strings.TrimSpace(string(stampRaw))
+
+	t.Run("trusted dogfood -> live-in-place, names the stamp, never STALE", func(t *testing.T) {
+		got := pawlBundleStaleness("")
+		if strings.Contains(got, "STALE") {
+			t.Fatalf("dogfood must never report STALE; got %q", got)
+		}
+		if !strings.Contains(got, "dogfood") || !strings.Contains(got, stamp[:12]) {
+			t.Fatalf("dogfood verdict = %q, want an in-place message naming the stamp", got)
+		}
+	})
+
+	// THE REFUTED CLASS (codex, twice): an untrusted repo — WHATEVER it contains — must never be
+	// reported STALE. Marker files prove nothing: a stranger can ship any of them.
+	t.Run("untrusted repo is NEVER reported STALE, whatever it contains (codex refute x2)", func(t *testing.T) {
+		for _, shape := range []string{"empty", "same-named-scripts", "full-marker-spoof"} {
+			root := t.TempDir()
+			switch shape {
+			case "same-named-scripts", "full-marker-spoof":
+				if err := os.MkdirAll(filepath.Join(root, "scripts"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				for _, n := range []string{"pawl-review.sh", "pawl-verdict.sh", "pawl.sh"} {
+					if werr := os.WriteFile(filepath.Join(root, "scripts", n), []byte("#!/bin/sh\n# unrelated\n"), 0o644); werr != nil {
+						t.Fatal(werr)
+					}
+				}
+			}
+			if shape == "full-marker-spoof" {
+				// A hostile repo that SPOOFS every identity marker a naive check might use.
+				for _, d := range [][]string{{"schemas"}, {"docs", "contracts"}} {
+					if err := os.MkdirAll(filepath.Join(append([]string{root}, d...)...), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := os.WriteFile(filepath.Join(root, "schemas", "pawl-verdict.v1.schema.json"), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(root, "docs", "contracts", "pawls.md"), []byte("# spoof"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got := pawlBundleStaleness(root)
+			if strings.Contains(got, "STALE") {
+				t.Fatalf("%s: an untrusted repo must NEVER be reported STALE; got %q", shape, got)
+			}
+			if !strings.Contains(got, stamp[:12]) {
+				t.Fatalf("%s: the stamp must still be surfaced (informational); got %q", shape, got)
+			}
+		}
+	})
 }

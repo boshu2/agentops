@@ -48,7 +48,7 @@ func writeConfig(t *testing.T, root, content string) {
 	}
 }
 
-func TestLoadDir_Absent_AllDefaults(t *testing.T) {
+func TestLoadDir_AbsentFileUsesDefaults(t *testing.T) {
 	isolate(t)
 	root := mkRepo(t, "")
 	got := LoadDir(root)
@@ -248,7 +248,7 @@ func TestLoadDir_NoRepoUsesStartDir(t *testing.T) {
 	}
 }
 
-func TestLoadDir_MalformedYaml_WarnsUsesDefaults(t *testing.T) {
+func TestLoadDir_MalformedYamlHoldsVerification(t *testing.T) {
 	isolate(t)
 	root := mkRepo(t, "- not\n- a\n- mapping\n")
 	got := LoadDir(root)
@@ -256,8 +256,11 @@ func TestLoadDir_MalformedYaml_WarnsUsesDefaults(t *testing.T) {
 	if !got.FileFound {
 		t.Errorf("FileFound = false, want true (file exists though malformed)")
 	}
-	if got.ReviewTimeout != 300 {
-		t.Errorf("ReviewTimeout = %d, want 300 (default after parse failure)", got.ReviewTimeout)
+	if !got.Strict {
+		t.Errorf("Strict = false, want safe HOLD posture after parse failure")
+	}
+	if got.Autobind {
+		t.Errorf("Autobind = true, want disabled after parse failure")
 	}
 	if len(got.Warnings) != 1 {
 		t.Fatalf("Warnings = %v, want exactly 1", got.Warnings)
@@ -267,20 +270,34 @@ func TestLoadDir_MalformedYaml_WarnsUsesDefaults(t *testing.T) {
 	}
 }
 
-func TestLoadDir_BadTypedField_WarnsIgnoresField(t *testing.T) {
-	isolate(t)
-	root := mkRepo(t, "review_timeout: not_an_int\nauthor_family: ok\n")
-	got := LoadDir(root)
+func TestLoadDir_BadTypedCommittedFieldHoldsVerification(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		content string
+		field   string
+	}{
+		{name: "strict", content: "strict: definitely-not-a-bool\n", field: "strict"},
+		{name: "autobind", content: "autobind: definitely-not-a-bool\n", field: "autobind"},
+		{name: "review timeout", content: "review_timeout: not_an_int\n", field: "review_timeout"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			isolate(t)
+			root := mkRepo(t, tt.content)
+			got := LoadDir(root)
 
-	// Bad field ignored -> default; sibling field still applied.
-	if got.ReviewTimeout != 300 || got.Source("review_timeout") != SourceDefault {
-		t.Errorf("review_timeout = %d (%s), want 300 (default)", got.ReviewTimeout, got.Source("review_timeout"))
-	}
-	if got.AuthorFamily != "ok" || got.Source("author_family") != SourceFile {
-		t.Errorf("author_family = %q (%s), want ok (file)", got.AuthorFamily, got.Source("author_family"))
-	}
-	if len(got.Warnings) != 1 || !strings.Contains(got.Warnings[0], "ignoring review_timeout") {
-		t.Errorf("Warnings = %v, want one 'ignoring review_timeout'", got.Warnings)
+			if err := got.ValidationError(); err == nil || !strings.Contains(err.Error(), tt.field) {
+				t.Fatalf("ValidationError() = %v, want invalid committed %s policy", err, tt.field)
+			}
+			if !got.Strict {
+				t.Error("Strict = false, want safe HOLD posture for invalid committed typed field")
+			}
+			if got.Autobind {
+				t.Error("Autobind = true, want disabled for invalid committed typed field")
+			}
+			if len(got.Warnings) != 1 || !strings.Contains(got.Warnings[0], tt.field) {
+				t.Errorf("Warnings = %v, want one warning naming %s", got.Warnings, tt.field)
+			}
+		})
 	}
 }
 

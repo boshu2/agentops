@@ -372,10 +372,26 @@ _assert_review_head_unmoved() {
   return 1
 }
 
+# _edge_unbound_rc: F2 (age-pawl-intent-zhndq.2). The return code for a GENUINE edge-emit
+# failure (no trusted ao, or `ao provenance emit-verdict` exited non-zero) — a state where the
+# verdict FILE exists but no verdict->commit ledger edge was bound. Since "no verdict = not done"
+# is enforced on the EDGE (ao done / verify_prepush read the ledger, not the file), this is a real
+# desync the caller MUST be able to surface. Returns 7 (EDGE-UNBOUND) fail-CLOSED by default;
+# PAWL_EDGE_FAIL_OPEN=1 restores the historical warn-and-continue (0). It NEVER fires for a
+# successful emit whose autobind merely PARKED in a prepush context — that path returns 0 below
+# (the emit succeeded; only the commit was deferred).
+_edge_unbound_rc() {
+  case "${PAWL_EDGE_FAIL_OPEN:-0}" in 1|true|yes|on) return 0 ;; esac
+  return 7
+}
+
 # emit_verdict_edge_checked <verdict-file> <bead> <disposition>: the CHECKED
 # replacement for both former best-effort `… || true` emit sites (write +
-# rebind). Always returns 0 — the sensor must never change the caller's primary
-# exit semantics; failures are loud (see _warn_emit_failed), never silent.
+# rebind). Returns 0 on a successful emit (incl. a prepush-parked bind); on a
+# GENUINE emit failure it returns 7 (EDGE-UNBOUND) fail-closed so `do_write` can
+# propagate it (PAWL_EDGE_FAIL_OPEN=1 restores 0). Failures are always loud (see
+# _warn_emit_failed). The rebind callers deliberately keep this fail-open with an
+# explicit `|| true` — F2 governs the review/write path, not the restamp path.
 emit_verdict_edge_checked() {
   local vfile="$1" bead="$2" disposition="$3"
   local vfile_abs
@@ -385,7 +401,7 @@ emit_verdict_edge_checked() {
   _ao="$(_ao_bin)" || _ao=""
   if [[ -z "$_ao" ]]; then
     _warn_emit_failed "no trusted ao binary found (PATH / AO_BIN)" "$vfile_abs"
-    return 0
+    _edge_unbound_rc; return $?
   fi
 
   # Snapshot the ledger size so the auto-bind fires ONLY when THIS emit actually
@@ -408,7 +424,7 @@ emit_verdict_edge_checked() {
   emit_out="$("$_ao" provenance emit-verdict --file "$vfile_abs" 2>&1)" || emit_rc=$?
   if [[ "$emit_rc" -ne 0 ]]; then
     _warn_emit_failed "ao provenance emit-verdict exited $emit_rc" "$vfile_abs" "$emit_out"
-    return 0
+    _edge_unbound_rc; return $?
   fi
   echo "pawl-verdict: provenance verdict edge emitted for $bead ($disposition)" >&2
 
@@ -526,8 +542,28 @@ PY
 #       kill-switch + how tests pin behavior clock-independently).
 #   AT FLIP TIME: bump/remove FLOOR_ENFORCE_AFTER AND update any stub-evidence behavior-lock
 #   suites (their thin fixtures deliberately carry no substance and will begin to HOLD).
+#
+# ⚠ MEASURED 2026-07-11 (age-pawl-intent-zhndq.10) — THE ADVISORY WINDOW DID ITS JOB: the
+# false-positive rate on REAL reviews is **76%**. Scanning the 261 local verdicts whose head is a
+# live commit: 26 PASS, **199 FLOOR-fail**, 36 fail for unrelated (stale/missing) reasons. The
+# failures include verdicts from unambiguously SUBSTANTIVE reviews (codex caught 3 real defects in
+# that session; those verdicts still fail the floor).
+#   ROOT CAUSE: the floor demands a `file:line` finding OR a reviewed-scope attestation. But a
+#   CONFIRMED review has, by definition, NO DEFECT TO CITE — a clean review legitimately reads "no
+#   blocking defects". The floor therefore CONFLATES "no defects found" with "no review performed",
+#   so every clean CONFIRM from codex/agy fails it. Right idea, wrong signal.
+#   => The original 2026-07-16 auto-flip would have started HOLDing ~76% of real reviews on a
+#   CALENDAR TRIGGER with nobody watching — breaking the membrane. The date is therefore pushed out
+#   and enforcement is now an EXPLICIT, EVIDENCE-GATED decision, not a silent clock event.
+#   FIXING THE SIGNAL (then re-measuring, then flipping) is tracked on age-pawl-intent-zhndq.10:
+#   a clean CONFIRM must be provable-substantive WITHOUT a defect citation — which means changing
+#   the REVIEWER PROMPT + verdict writer (emit an explicit reviewed-scope attestation every time),
+#   not just this check. PAWL_FLOOR_ENFORCE=1 still forces enforcement for tests/opt-in operators.
 # ---------------------------------------------------------------------------
-FLOOR_ENFORCE_AFTER="${PAWL_FLOOR_ENFORCE_AFTER:-2026-07-16}"
+# 2027-01-01: a deliberately DISTANT date. This is NOT a new deadline — it is a guard so no calendar
+# event can auto-enforce a floor measured at a 76% false-positive rate. Enforcement flips only when
+# .10 fixes the signal, re-measures, and sets it explicitly (or via PAWL_FLOOR_ENFORCE=1).
+FLOOR_ENFORCE_AFTER="${PAWL_FLOOR_ENFORCE_AFTER:-2027-01-01}"
 
 # _floor_enforcing — 0 (true) when the floor should BLOCK on a violation; 1 (false) when
 # it is still advisory (measure + warn only). PAWL_FLOOR_ENFORCE overrides the date both
@@ -1257,9 +1293,14 @@ do_write() {
   fi
 
   # Emit verdict→commit provenance edge (ag-cm8nd sensor) — CHECKED, and on a
-  # real append auto-bind the ledger edge (age-wedge-all-in-dyr0.3). Fail-open
-  # for the verdict (never blocks), loud on failure, never commits mid-push.
-  emit_verdict_edge_checked "$out" "$bead" "$disposition"
+  # real append auto-bind the ledger edge (age-wedge-all-in-dyr0.3). F2
+  # (age-pawl-intent-zhndq.2): a GENUINE emit failure is fail-CLOSED — capture the
+  # EDGE-UNBOUND rc and propagate it as do_write's return so the caller (pawl-review)
+  # can exit EDGE-UNBOUND instead of falsely reporting "ready to push". The verdict
+  # FILE is already written (rename above) and SURVIVES — it is the recovery input.
+  # PAWL_EDGE_FAIL_OPEN=1 restores the historical warn-and-continue.
+  local _edge_rc=0
+  emit_verdict_edge_checked "$out" "$bead" "$disposition" || _edge_rc=$?
 
   # Emit a yield-ledger gate-verdict (age-uxva): the membrane event log of every
   # PANEL/refuter catch, not just merge-path ones. Best-effort, non-blocking,
@@ -1280,6 +1321,11 @@ do_write() {
   # run-id resolution as the gate-verdict emit above; best-effort, fail-open.
   emit_yield_usage_review "$bead" "${AGENTOPS_RUN_ID:-${AO_YIELD_RUN_ID:-$bead}}" \
     "${wall_seconds:-0}" "$meter_tokens" "$meter_source" "$out" "$attempt"
+
+  # F2: propagate an EDGE-UNBOUND (7) from the CHECKED edge emit above. The yield
+  # emits are best-effort (fail-open) and must NOT mask an edge-unbound; return the
+  # captured edge rc as do_write's authoritative outcome (0 on success/parking).
+  return "$_edge_rc"
 }
 
 # emit_yield_gate_verdict appends one gate-verdict event to the yield ledger for
@@ -1448,7 +1494,9 @@ do_rebind() {
   echo "pawl-verdict: rebound $out -> head ${newhead:0:12}" >&2
   # Re-fire the verdict sensor for the new head — CHECKED + auto-bind, same as
   # write (rebind only ever restamps a CONFIRMED verdict; refused above else).
-  emit_verdict_edge_checked "$out" "$bead" "CONFIRMED"
+  # F2: rebind stays FAIL-OPEN (|| true) — it restamps an already-reviewed verdict for the
+  # landed head; the review/write path (do_write) owns the fail-closed edge contract.
+  emit_verdict_edge_checked "$out" "$bead" "CONFIRMED" || true
 }
 
 # ---------------------------------------------------------------------------
@@ -1811,7 +1859,8 @@ do_rebind_verified() {
   # and the keep-ref is a reachability aid whose target is re-checked against the ledger's
   # R (a forged keep-ref cannot launder authorization).
   # Re-fire the verdict sensor for the REBOUND edge (CHECKED + auto-bind, same as write).
-  emit_verdict_edge_checked "$out" "$bead" "REBOUND"
+  # F2: rebind-verified stays FAIL-OPEN (|| true) — same rationale as do_rebind.
+  emit_verdict_edge_checked "$out" "$bead" "REBOUND" || true
 }
 
 case "$cmd" in

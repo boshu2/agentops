@@ -55,7 +55,10 @@ test_command() {
 test_command "rm -r""f /" "block"
 test_command "rm -rf ./build" "block"
 test_command "git reset --hard HEAD" "block"
-test_command "DROP DATABASE production" "block"
+
+# Optional packs (database, Kubernetes, cloud, and others) are validated only
+# when the project enables them; the installation validator must stay valid for
+# the default core pack set.
 
 # Commands that SHOULD be allowed
 test_command "git status" "allow"

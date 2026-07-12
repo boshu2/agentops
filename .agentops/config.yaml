@@ -1,0 +1,5 @@
+# AgentOps project config for the agentops repo.
+# Explicit tracker pin (defense-in-depth over the ledger-presence tie-break):
+# this repo tracks with br (beads_rust); pin it so `ao` resolves tracker=br from
+# config (source=config), never mis-resolving under an unusual ledger layout.
+tracker: br

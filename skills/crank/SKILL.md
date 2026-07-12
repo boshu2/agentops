@@ -49,6 +49,12 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Constraints
+
+- Execute only tracker-ready vertical slices because crank consumes an accepted plan; it does not silently redefine intent.
+- Parallelize only disjoint write scopes and serialize shared derived surfaces to prevent workers from invalidating one another's base.
+- Consult the pawl and take one bounded helper pass for ordinary blockers before escalating because human interruption is the terminal recovery path, not the first retry.
+
 ## Loop position
 
 Move **5 (wave execution)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces wave-by-wave slice completion via `/swarm` + `/implement`. Each slice runs the canonical [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this): its acceptance test authored RED before code is the slice contract, and **refactor-under-green is its own wave, never optional** (`references/wave-patterns.md`) — a refactor wave must change no test. Hard gate at wave start: every row of the wave-validity check must pass (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Any failed row → run those slices sequential, not parallel. **Coupled-chain rule:** two slices that both regenerate a shared *derived* surface (`cli-command-surface` / `registry.json` / `context-map` / codex manifest) collide even with disjoint source files — run them as a sequential chain, each link branched off the freshly-MERGED prior link. Parallelism is explicit ownership, not swarm chaos.
@@ -107,6 +113,8 @@ When a task fails during wave execution, classify as **RETRY** (transient — re
 
 Given `/crank [epic-id | .agents/rpi/execution-packet.json | plan-file.md | "description"]`:
 
+**Checkpoint:** verify before dispatch that the slice is ready, its acceptance command is executable, and its write scope does not collide with another lane.
+
 ### Preflight (Recovery hooks → Step 3a.3)
 
 Read [references/execution-preflight.md](references/execution-preflight.md) when you need recovery-hook setup, effort/tier mapping, knowledge-context loading (Step 0), tracking-mode detection (0.5), gc-pool detection (0.6), epic identification (Step 1), branch isolation (1.5), wave-counter / mutation-trail / shared-task-notes initialization (1a–1a.2), test-first classification (1b), epic details (Step 2), ready-issue listing (Step 3), and the four pre-flight checks (3a, 3a.1 pre-mortem, 3a.2 bd-audit, 3a.3 changed-string grep).
@@ -125,30 +133,7 @@ Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github
 
 ### Step 9: Report Completion
 
-Tell the user:
-1. Epic ID and title
-2. Number of issues completed
-3. Total iterations used (of 50 max)
-4. Final validation (/validate --mode=post-impl, absorbs vibe) results
-5. Flywheel status (if ao available)
-6. Suggest running `/validate` to complete closeout and promote learnings
-
-**Output completion marker:**
-```
-<promise>DONE</promise>
-Epic: <epic-id>
-Issues completed: N
-Iterations: M/50
-Flywheel: <status from ao metrics flywheel status>
-```
-
-If stopped early:
-```
-<promise>BLOCKED</promise>
-Reason: <global limit reached | unresolvable blockers>
-Issues remaining: N
-Iterations: M/50
-```
+Report the epic ID/title, issues completed, iterations used of 50, final validation, and flywheel status. End with exactly one completion marker: `DONE` only when all slices are accepted, `PARTIAL` while work remains, or `BLOCKED` with the surviving reason and issue count. The structured fields are defined below in Output Specification.
 
 ## Land Loop (per-bead, direct-main)
 
@@ -211,9 +196,17 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 
 ## Output Specification
 
-**Format:** committed code plus a markdown progress/closeout summary to stdout; per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
-**Files:** reads `.agents/rpi/execution-packet.json`; writes wave/slice results under `.agents/swarm/results/`; closes beads via `ao beads exec close` in the resolved bead ledger.
-**Exit signal:** `<promise>DONE</promise>` (all slices accepted) · `<promise>PARTIAL</promise>` (retry the same objective) · `<promise>BLOCKED</promise>` (manual intervention).
+- **Path:** committed slice changes plus wave evidence under `.agents/swarm/results/` and tracker state in the ledger resolved by `ao beads dir`.
+- **Filename:** preserve each worker's declared result filename; the final response is emitted to stdout and does not invent a second evidence file.
+- **Format:** markdown progress/closeout summary with epic ID/title, issue count, iterations, validation result, flywheel status, and per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
+- **Exit code:** run `bash skills/crank/scripts/validate.sh` and require zero; the semantic exit signal is `<promise>DONE</promise>` only when all slices are accepted, `PARTIAL` while work remains, or `BLOCKED` after bounded recovery.
+- **Downstream handoff:** pass committed slices and their evidence to `validate`, then the pawl; close a bead only after its feature commit is an ancestor of `origin/main`.
+
+## Quality Checklist
+
+- Every completed slice has an executable acceptance result, owned files, and tracker state consistent with its landed commit.
+- Parallel waves contain no shared write or generated-surface collision, and sequential dependencies use the freshly landed prior base.
+- The final marker matches reality: no `DONE` while issues, failed checks, unlanded commits, or unresolved pawl findings remain.
 
 ## Troubleshooting
 
@@ -237,33 +230,14 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 
 ## Reference Documents
 
-- [references/crank.feature](references/crank.feature) — Executable spec: wave-validity hard gate, FIRE loop, mandatory completion marker, 50-wave cap (soc-qk4b.2)
-- [references/de-sloppify.md](references/de-sloppify.md)
-- [references/execution-preflight.md](references/execution-preflight.md)
-- [references/parallel-wave-isolation.md](references/parallel-wave-isolation.md)
-- [references/plan-mutations.md](references/plan-mutations.md)
-- [references/shared-task-notes.md](references/shared-task-notes.md)
-- [references/claude-code-latest-features.md](references/claude-code-latest-features.md)
-- [references/commit-strategies.md](references/commit-strategies.md)
-- [references/worktree-per-worker.md](references/worktree-per-worker.md)
-- [references/contract-template.md](references/contract-template.md)
-- [references/failure-recovery.md](references/failure-recovery.md)
-- [references/land-protocol.md](references/land-protocol.md) — serialized multi-lane land protocol: land-token, the `[feat, #trivial-bind]` sequence, stale-bind drop, failure playbook (age-e508.3)
-- [references/failure-taxonomy.md](references/failure-taxonomy.md)
-- [references/fire.md](references/fire.md)
-- [references/gc-pool-dispatch.md](references/gc-pool-dispatch.md)
-- [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
-- [references/taskcreate-examples.md](references/taskcreate-examples.md)
-- [references/team-coordination.md](references/team-coordination.md)
-- [references/test-first-mode.md](references/test-first-mode.md)
-- [references/troubleshooting.md](references/troubleshooting.md)
-- [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
-- [references/uat-integration-wave.md](references/uat-integration-wave.md)
-- [references/wave-completion.md](references/wave-completion.md)
-- [references/wave-dispatch.md](references/wave-dispatch.md)
-- [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md)
-- [references/wave-patterns.md](references/wave-patterns.md)
-- [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)
-- [references/external-gate-protocol.md](references/external-gate-protocol.md)
-
-- [references/ship-loop-anti-patterns.md](references/ship-loop-anti-patterns.md) — absorbed ship-loop anti-pattern catalog (ag-s43tg)
+- [references/crank.feature](references/crank.feature) — executable wave and completion contract
+- [references/execution-preflight.md](references/execution-preflight.md) and [references/wave-dispatch.md](references/wave-dispatch.md) — readiness and worker dispatch
+- [references/wave-completion.md](references/wave-completion.md) and [references/wave-patterns.md](references/wave-patterns.md) — acceptance, synchronization, and FIRE
+- [references/failure-recovery.md](references/failure-recovery.md) — bounded retry/decompose/prune operator
+- [references/land-protocol.md](references/land-protocol.md) — serialized pawl bind/land and stale-head recovery
+- [references/isolation-contract.md](references/isolation-contract.md) and [references/worker-specs.md](references/worker-specs.md) — context and ownership boundaries
+- [references/test-first-mode.md](references/test-first-mode.md) and [references/troubleshooting.md](references/troubleshooting.md) — TDD waves and recovery lookup
+- Supporting setup: [commit strategies](references/commit-strategies.md), [worktree isolation](references/worktree-per-worker.md), [parallel isolation](references/parallel-wave-isolation.md), [contract template](references/contract-template.md), and [runtime features](references/claude-code-latest-features.md).
+- Wave evidence: [shared notes](references/shared-task-notes.md), [plan mutations](references/plan-mutations.md), [phase data](references/phase-data-contracts.md), [UAT integration](references/uat-integration-wave.md), and [spec consistency](references/wave1-spec-consistency-checklist.md).
+- Recovery and gates: [failure taxonomy](references/failure-taxonomy.md), [external gate protocol](references/external-gate-protocol.md), [de-sloppify](references/de-sloppify.md), and [FIRE detail](references/fire.md).
+- Specialized dispatch: [GC pool](references/gc-pool-dispatch.md), [task examples](references/taskcreate-examples.md), and [ship-loop anti-patterns](references/ship-loop-anti-patterns.md).

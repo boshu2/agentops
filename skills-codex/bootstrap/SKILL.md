@@ -8,6 +8,12 @@ description: Initialize AgentOps project files.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Constraints
+
+- Preserve existing artifacts unless `--force` is explicit because bootstrap must be safe and idempotent in partially initialized repositories.
+- Never install `br`, author runtime hooks, or invent a PROGRAM.md fallback on the user's behalf because those are operator-owned choices.
+- Stop on a failed prerequisite and report the repair command; do not claim a downstream artifact was created when its producing step failed.
+
 ## Quick Start
 
 ```
@@ -39,6 +45,8 @@ That is it. One command. Every step below is idempotent — existing artifacts a
 | `--force` | Recreate artifacts even if they already exist |
 
 ## Execution Steps
+
+**Checkpoint:** after repo-state detection, verify the planned create/skip set before invoking any mutating step; after Step 5, verify every reported status against the filesystem.
 
 ### Step 0: Detect Repo State
 
@@ -112,48 +120,7 @@ If PRODUCT.md does not exist (Step 2 was skipped or failed): skip. Report "READM
 
 ### Step 4: Core Seed and .agents/ Structure
 
-If `HAS_AGENTS` is false (or `--force` is set):
-
-Prefer the CLI golden path:
-
-```bash
-ao quick-start --no-beads
-```
-
-If `ao` is unavailable, create the minimal directory structure and report the exact command to repair later:
-
-```bash
-mkdir -p .agents/learnings .agents/council .agents/research .agents/plans .agents/rpi .agents/patterns .agents/retro .agents/handoff
-```
-
-Create `.agents/AGENTS.md` if it does not exist:
-
-```markdown
-# Agent Knowledge Store
-
-This directory contains accumulated knowledge from agent sessions.
-
-## Structure
-
-| Directory | Purpose |
-|-----------|---------|
-| `learnings/` | Extracted lessons and patterns |
-| `council/` | Council validation artifacts |
-| `research/` | Research phase outputs |
-| `plans/` | Implementation plans |
-| `rpi/` | RPI execution packets and phase logs |
-
-## Usage
-
-Knowledge is automatically managed by the AgentOps flywheel:
-- `ao lookup` surfaces relevant prior knowledge on demand
-- `$post-mortem` extracts and processes new learnings
-- `/compile` runs maintenance (mine, grow, defrag)
-```
-
-If `HAS_AGENTS` is true and `--force` is not set: skip. Report ".agents/ exists -- skipped."
-
-If `ao` is unavailable after fallback creation: report "Core seed repair command: `ao quick-start --dry-run` after installing ao."
+Apply the idempotent core-seed procedure in [references/core-seed.md](references/core-seed.md): prefer `ao quick-start --no-beads`, use the documented minimal fallback only when `ao` is unavailable, and truthfully report create/skip/repair status.
 
 ### Step 5: PROGRAM.md / AUTODEV.md
 
@@ -207,25 +174,23 @@ Bootstrap complete.
 Repo is now AgentOps-ready. Next: run the operating loop — $rpi "your first goal"
 ```
 
+## Output Specification
+
+- **Path:** repository-root `GOALS.md`, `PRODUCT.md`, `README.md`, `PROGRAM.md`/`AUTODEV.md`, and `.agents/`; existing paths remain untouched unless `--force` is explicit.
+- **Filename:** use those canonical filenames and `.agents/AGENTS.md`; do not create alternate or placeholder filenames.
+- **Format:** Markdown for root documents and `.agents/AGENTS.md`; Step 7 emits the documented status table on stdout.
+- **Exit code:** validate with filesystem existence checks plus `ao quick-start --dry-run`; any failed producer or validation command marks that row `failed` and prevents an AgentOps-ready claim.
+- **Downstream handoff:** consumed by the operating loop after every required row is `created` or `skipped` and any optional/recommended row is labeled truthfully.
+
+## Quality Checklist
+
+- Every Step 7 status matches the filesystem and the command result that produced it.
+- Existing artifacts were preserved unless the operator explicitly requested `--force`.
+- Missing optional tools yield recommendations or repair commands, never silent installation or fabricated artifacts.
+
 ## Examples
 
-### Bare Repo
-
-**User says:** `$bootstrap`
-
-**What happens:** Agent detects no AgentOps artifacts. Runs $goals init, $product, $doc --mode=readme, creates .agents/ structure, leaves hooks optional. Reports all five core artifacts created.
-
-### Partial Repo (has GOALS.md and .agents/)
-
-**User says:** `$bootstrap`
-
-**What happens:** Agent detects existing artifacts. Skips GOALS.md and .agents/. Runs $product, $doc --mode=readme. Leaves hooks optional unless explicitly requested. Reports two created, three skipped.
-
-### Dry Run
-
-**User says:** `$bootstrap --dry-run`
-
-**What happens:** Agent detects repo state and reports what would be created. No files are written.
+See [references/examples.md](references/examples.md) for bare, partial, and dry-run cases.
 
 ## Troubleshooting
 
@@ -244,6 +209,8 @@ Repo is now AgentOps-ready. Next: run the operating loop — $rpi "your first go
 - [product](../product/SKILL.md) -- Product definition generation
 - [doc](../doc/SKILL.md) -- README generation (`--mode=readme`) + repo docs
 - [status](../status/SKILL.md) -- New user onboarding (lighter than bootstrap)
+- [core seed procedure](references/core-seed.md) -- idempotent `.agents/` creation and fallback
+- [examples](references/examples.md) -- bare, partial, and dry-run behavior
 - [related operator runbooks](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
 
 ## Reference Documents

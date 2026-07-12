@@ -2,8 +2,9 @@
 
 > The 8 checks Pass-2 runs beyond `heal-skill`. Each row defines: detection logic, accepted forms, severity, and the PRODUCT.md anchor that motivates it.
 > Auditor must validate against AgentOps' existing valid skills BEFORE shipping a check (per finding `f-2026-05-06-auditor-checks-must-fit-host-conventions`).
-> Executable values resolve to the authoritative source `repo-runtime` profile
-> in `skills/skill-builder/references/skill-conformance-profiles.yaml`.
+> Executable values are loaded from the authoritative `repo-runtime` profile in
+> `skills/skill-builder/references/skill-conformance-profiles.yaml`; examples
+> here are explanatory, not a second ledger.
 
 ## Severity ladder
 
@@ -40,7 +41,8 @@
      triggers: ["audit skill", "skill quality review", "is this skill ready"]
    ```
 
-**Detection:** consume validated form IDs from the source profile loader.
+**Detection:** `audit.sh` consumes the validated form IDs emitted by
+`conformance_profile.py`; markers found only in the Markdown body do not count.
 
 ```bash
 python3 skills/skill-builder/scripts/conformance_profile.py \
@@ -115,8 +117,9 @@ check_verification_checkpoints() {
 
 **Why:** Pillar #4 (Kubernetes control loops) — declared state must be machine-readable.
 
-**Detection:** One declared output section supplies artifact path, filename
-convention, serialization/schema format, validator command, and handoff.
+**Detection:** One declared output section must supply every profile-required
+component: artifact path, filename convention, serialization/schema format,
+validator command, and downstream handoff.
 
 ```bash
 check_output_spec_explicit() { [[ "$OUTPUT_COMPLETE" == "true" ]]; }

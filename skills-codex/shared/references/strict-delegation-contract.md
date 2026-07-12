@@ -3,6 +3,9 @@
 > Applies to all top-level orchestrator skills: `/rpi`, `/discovery`, `/validate`.
 > Strict sub-skill delegation is the **default**, not opt-in.
 
+This source reference is canonical. Runtime twins must be generated from it;
+receipt semantics never originate in a projection-only copy.
+
 ## The Contract
 
 Top-level orchestrator skills delegate to their declared sub-skills via `Skill(skill="<name>", ...)` — **as separate tool invocations**, one per phase/step. Each sub-skill owns its artifact, its gate, and its retry policy. Inlining the work breaks that ownership chain.
@@ -130,6 +133,12 @@ runner instead of raw inline skill execution. The acceptance rule is still the
 same: the delegated phase contract must run, emit its completion marker, and
 write the expected phase summary file.
 
+The phase artifact should also carry a `## Skill Receipts` section, and the
+execution packet should carry cumulative `skills_loaded` / `phase_receipts`
+entries. These receipts are not a substitute for delegated invocation evidence;
+they are the disk-backed audit index that lets later validation detect a missing
+phase after chat or runtime traces are unavailable.
+
 ## Detection for Reviewers
 
 When auditing a session that claims to have run `/rpi`, check the transcript for:
@@ -138,14 +147,25 @@ When auditing a session that claims to have run `/rpi`, check the transcript for
    or a phase runner whose sole job is to execute the named skill contract).
 2. **Three `<promise>DONE</promise>` markers**, each from the delegated sub-skill.
 3. **Three phase summary files** in `.agents/rpi/phase-{1,2,3}-summary-*.md`.
+4. **Phase artifact receipts** in the execution packet or phase summaries:
+   `skills_loaded` names the orchestrator and phase skill, and
+   `phase_receipts` names phase, skill, status/verdict, and artifact path.
 
-Missing any of the three = compression.
+Missing any of items 1-3 = compression. Missing item 4 = an unauditable handoff
+gap; treat it as non-compliant until the artifact is corrected or runtime trace
+evidence is attached.
 
 ## Enforcement Layers (defense in depth)
 
 1. **This contract document** — read before / during orchestrator invocation.
 2. **Loud text in each orchestrator's SKILL.md** — anti-pattern section with explicit examples.
 3. **Durable learning** at `docs/learnings/orchestrator-compression-anti-pattern.md` — surfaced through the orchestrator skill contracts.
-4. **Optional future**: runtime hook that inspects the skill invocation trace and blocks downstream work when phases were skipped. Not implemented; deferred to a follow-up initiative.
+4. **Phase artifact receipts** — file-backed `skills_loaded` / `phase_receipts`
+   records that validation and review can inspect without relying on memory.
+5. **Optional future**: runtime hook that inspects the skill invocation trace,
+   cross-checks it against phase receipts, and blocks downstream work when
+   phases were skipped. Not implemented; deferred to a follow-up initiative.
 
-Contract strength alone is not enforcement. Layer 1 (this doc) + Layer 2 (SKILL.md sections) + Layer 3 (flywheel injection) together give durable coverage.
+Contract strength alone is not enforcement. Layer 1 (this doc) + Layer 2
+(SKILL.md sections) + Layer 3 (flywheel injection) + Layer 4 (artifact receipts)
+together give durable coverage.

@@ -65,6 +65,16 @@ if command -v br >/dev/null 2>&1; then TRACKING_MODE=beads; BEADS_CLI=br
 elif command -v bd >/dev/null 2>&1; then TRACKING_MODE=beads; BEADS_CLI=bd
 else TRACKING_MODE=tasklist; BEADS_CLI=; fi
 if command -v ao >/dev/null 2>&1; then AO_AVAILABLE=true; else AO_AVAILABLE=false; fi
+
+# Existing RPI state contract: verdicts and attempts are maps read on resume.
+# A managed caller may point at its per-run state; standalone discovery uses the flat fallback.
+STATE_PATH="${RPI_STATE_PATH:-.agents/rpi/phased-state.json}"
+if [ ! -s "$STATE_PATH" ]; then
+  mkdir -p "$(dirname "$STATE_PATH")"
+  tmp="${STATE_PATH}.tmp.$$"
+  jq -n --arg goal "${GOAL:-unknown-goal}" '{goal:$goal,phase:1,cycle:1,start_phase:1,verdicts:{},attempts:{}}' > "$tmp" \
+    && mv "$tmp" "$STATE_PATH"
+fi
 ```
 
 Classify complexity from explicit flag first, then goal shape:
@@ -302,7 +312,49 @@ Skill(skill="pre-mortem", args="<plan_path> --quick")
 ```
 
 PASS/WARN continues. FAIL triggers re-plan with the pre-mortem findings, up to 3
-total attempts. After 3 FAIL verdicts, write BLOCKED and stop.
+total attempts. The third FAIL trips the ordinary MVP breaker, but it does **not**
+page the human yet. Consult the plan pawl through exactly one bounded helper pass:
+
+1. **Pre-dispatch resume guard (mechanical):** read
+   `.attempts.discovery_mvp_helper // 0` from `$STATE_PATH`. If it is already 1,
+   set `.verdicts.discovery_mvp_helper="ESCALATE"`, write BLOCKED, and stop; do
+   not dispatch another helper.
+2. Before dispatch, atomically set `.attempts.discovery_mvp_helper=1` in
+   `$STATE_PATH`. Freeze the current plan and three verdicts into the deterministic
+   helper directory `.agents/duel/<run-id-or-goal-slug>/mvp-helper/`.
+
+```bash
+if ! bash skills/discovery/scripts/mvp-helper-state.sh claim "$STATE_PATH"; then
+  echo "<promise>BLOCKED</promise> MVP helper claim failed or was already consumed; ESCALATE"
+  exit 1
+fi
+```
+
+The helper script holds a bounded atomic `mkdir` lock across read-and-update.
+Contention, owner-write failure, stale/foreign locks, and release failure all
+fail closed; it never auto-breaks a lock it does not own.
+
+3. Run one STEP 3.5-style cross-family plan-pawl round with
+   `ao plan-pawl decide --dir <helper-verdict-dir> --round 1 --max-rounds 1`.
+4. Map exit 0 `PASS` to `UNSTUCK` and continue. Map exit 3 `REDO` to `UNSTUCK`,
+   apply its concrete correction once, then run one final quick pre-mortem. Do
+   not dispatch another helper round.
+5. Map exit 4 `BLOCKED`, an explicit judgment/refusal, or failure of that final
+   quick pre-mortem to `ESCALATE`; only then write BLOCKED and ask the human.
+
+```bash
+# Set transition from the mapping above before continuing or stopping.
+if ! bash skills/discovery/scripts/mvp-helper-state.sh transition "$STATE_PATH" "$HELPER_TRANSITION"; then
+  echo "<promise>BLOCKED</promise> MVP helper transition could not persist; ESCALATE"
+  exit 1
+fi
+```
+
+Atomically persist the `UNSTUCK|ESCALATE` transition in the existing
+`phased-state.json` `.verdicts.discovery_mvp_helper` field. When STEP 6 compiles
+the packet, add the helper directory to existing `discovery_artifacts` and the
+decision artifact to existing `evaluator_artifacts.discovery_mvp_helper`; do not
+invent packet fields. Resume always reads `$STATE_PATH` before helper dispatch.
 
 Before STEP 6, propagate required hardening — from the STEP 3.5 duel verdict
 (fanout) or this pre-mortem (MVP-slice) — into the plan issues or file-backed task

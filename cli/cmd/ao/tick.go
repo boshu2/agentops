@@ -425,10 +425,15 @@ func tickSmoke(rt tickRuntime) error {
 		fails++
 	}
 
-	if err := tickGuardStatus(tickRuntime{workDir: rt.workDir, stdout: io.Discard, stderr: io.Discard}); err == nil {
+	hooksOut, hooksCode, hooksErr := rt.run("git", "config", "--get", "core.hooksPath")
+	hooksPath := strings.TrimSpace(string(hooksOut))
+	switch {
+	case hooksPath != ".githooks" && (hooksErr == nil || hooksCode == 1):
+		passLine("1 hookless default")
+	case hooksErr == nil && hooksCode == 0 && tickExitCode(tickGuardStatus(tickRuntime{workDir: rt.workDir, stdout: io.Discard, stderr: io.Discard})) == 0:
 		passLine("1 guard-status active")
-	} else {
-		failLine("1 guard-status NOT active")
+	default:
+		failLine("1 guard posture invalid")
 	}
 
 	if !verdictparse.HasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
@@ -448,9 +453,9 @@ func tickSmoke(rt tickRuntime) error {
 		_ = os.WriteFile(path, []byte(body), 0o644)
 		return path
 	}
-	pass1 := write("pass1.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
-	pass2 := write("pass2.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
-	fail1 := write("fail1.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass1 := write("pass1.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\ncontext_id: chaos-athena\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass2 := write("pass2.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\ncontext_id: chaos-windyelm\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
+	fail1 := write("fail1.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\ncontext_id: chaos-windyelm-fail\nVERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	unver := write("unver.md", "VERDICT: PASS\nthis verdict cites no commands\n")
 	contra := write("contra.md", "VERDICT: FAIL\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	quietRT := rt

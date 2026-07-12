@@ -1,15 +1,14 @@
 #!/usr/bin/env bats
 #
 # Tests for scripts/check-scripts-ao-invocations.sh — the scripts.ao-invocations
-# gate that resolves every LITERAL first-token `ao <sub>` invocation in an
-# executable script/test against the live cobra tree and fails on a
-# removed/renamed subcommand, with a FILENAME-pinned shrink-only baseline
-# (age-owcs).
+# gate that resolves every literal `ao <command...>` invocation in a supported
+# script/test against the live cobra tree, fails on removed/renamed commands,
+# and rejects all retired-command waivers (age-owcs, age-ghk3i.5).
 #
 # Pattern (mirrors check-docs-cli-snippets.bats): build a fixture "repo" in
 # BATS_TEST_TMPDIR that carries its own copy of the check script + shared libs
 # (so the script's ROOT resolves to the fixture), seed a scripts/ tree + a
-# baseline, and assert the two-way ratchet. The archive-tagged `ao` binary is
+# baseline tombstone, and assert fail-closed behavior. The archive-tagged `ao` binary is
 # built once and injected via AGENTOPS_AO_BIN (the script's documented fast path).
 
 setup_file() {
@@ -48,19 +47,19 @@ run_check() {
 
 # ---- dead-command detection --------------------------------------------------
 
-@test "a fabricated script invoking a removed ao command FAILS, naming file + command" {
-    printf '#!/usr/bin/env bash\nao rpi status\n' > "$FIX/scripts/bad.sh"
+@test "an induced retired call fails closed and names its file" {
+    printf '#!/usr/bin/env bash\nrun_json_capture out err ao --output json daemon jobs wait 123\n' > "$FIX/scripts/bad.sh"
     run_check ""
     [ "$status" -eq 1 ]
     [[ "$output" == *"scripts/bad.sh"* ]]
-    [[ "$output" == *"ao rpi"* ]]
+    [[ "$output" == *"ao daemon"* ]]
 }
 
-@test "the same dead invocation under the suppress pragma PASSES" {
+@test "an inline suppress pragma cannot waive a retired call" {
     printf '#!/usr/bin/env bash\nao rpi status  # ao-resolve: ignore\n' > "$FIX/scripts/bad.sh"
     run_check ""
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"PASS"* ]]
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/bad.sh"* ]]
 }
 
 @test "a live ao invocation PASSES" {
@@ -90,13 +89,13 @@ run_check() {
     [ "$status" -eq 0 ]
 }
 
-# ---- baseline ratchet (two-way) ----------------------------------------------
+# ---- retired-command waivers are forbidden -----------------------------------
 
-@test "a baselined offender PASSES (allowlisted)" {
+@test "a baseline entry cannot waive a retired call" {
     printf '#!/usr/bin/env bash\nao rpi status\n' > "$FIX/scripts/bad.sh"
     run_check $'scripts/bad.sh\n'
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"PASS"* ]]
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"scripts/bad.sh"* ]]
 }
 
 @test "a NON-baselined offender FAILS even when another file IS baselined" {
@@ -108,11 +107,11 @@ run_check() {
     [[ "$output" == *"ao daemon"* ]]
 }
 
-@test "a STALE baseline entry (no longer triggers any finding) FAILS demanding prune" {
+@test "a baseline entry for a clean file fails as a retired-command waiver" {
     printf '#!/usr/bin/env bash\nao gate check --fast\n' > "$FIX/scripts/clean.sh"
     run_check $'scripts/clean.sh\n'   # clean.sh has no dead command, but is baselined
     [ "$status" -eq 1 ]
-    [[ "$output" == *"no longer trigger"* ]]
+    [[ "$output" == *"waiver"* ]]
     [[ "$output" == *"scripts/clean.sh"* ]]
 }
 
@@ -124,12 +123,23 @@ run_check() {
     [[ "$output" == *"scripts/gone.sh"* ]]
 }
 
-# ---- the REAL repo passes with its seeded baseline ---------------------------
+# ---- the real repo carries no retired-command waivers ------------------------
 
-@test "the real repo passes with its committed baseline (gate lands green)" {
-    run env AGENTOPS_AO_BIN="$BATS_FILE_TMPDIR/ao" bash "$REPO_ROOT/scripts/check-scripts-ao-invocations.sh"
+@test "current supported scripts have zero retired command waivers" {
+    EMPTY_BASELINE="$BATS_TEST_TMPDIR/empty-baseline"
+    : > "$EMPTY_BASELINE"
+    run env AGENTOPS_AO_BIN="$BATS_FILE_TMPDIR/ao" \
+        SCRIPTS_AO_INVOCATIONS_BASELINE="$EMPTY_BASELINE" \
+        bash "$REPO_ROOT/scripts/check-scripts-ao-invocations.sh"
+    if [ "$status" -ne 0 ]; then
+        printf '%s\n' "$output" >&3
+    fi
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
+    [[ "$output" == *"zero retired command waivers"* ]]
+
+    run awk 'NF && $1 !~ /^#/' "$REPO_ROOT/scripts/.scripts-ao-invocations-baseline"
+    [ -z "$output" ]
 }
 
 # ---- ratchet-lib migration contract (age-ratchet-lib-extraction-bv7d.5) ------

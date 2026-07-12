@@ -141,90 +141,116 @@ func CheckSource(path string, source []byte) ([]Violation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	aliases := map[string]string{}
-	var violations []Violation
-	add := func(rule Rule, node ast.Node, message string) {
-		line := 0
-		if node != nil {
-			line = fset.Position(node.Pos()).Line
-		}
-		violations = append(violations, Violation{Rule: rule, Path: path, Line: line, Message: message})
+	checker := sourceChecker{
+		path:    path,
+		fset:    fset,
+		aliases: map[string]string{},
 	}
 
 	for _, spec := range file.Imports {
-		importPath, err := strconv.Unquote(spec.Path.Value)
-		if err != nil {
-			continue
-		}
-		name := filepath.Base(importPath)
-		if spec.Name != nil && spec.Name.Name != "_" && spec.Name.Name != "." {
-			name = spec.Name.Name
-		}
-		aliases[name] = importPath
-		if spec.Name != nil && spec.Name.Name == "." {
-			switch importPath {
-			case "os", "os/exec", "syscall":
-				add(RuleProcess, spec, "dot import can hide direct process/environment/filesystem effects")
-			case "path/filepath", "io/ioutil":
-				add(RuleFilesystem, spec, "dot import can hide direct filesystem effects")
-			case "time":
-				add(RuleClock, spec, "dot import can hide direct clock effects")
-			}
-		}
-		switch {
-		case strings.Contains(importPath, "/internal/composition") || strings.Contains(importPath, "/internal/cliapp"):
-			add(RuleCompositionImport, spec, "command modules cannot import root/composition packages")
-		case strings.Contains(importPath, "/internal/adapters/"):
-			add(RuleConcreteAdapter, spec, "command modules depend on ports, not concrete adapters")
-		case strings.Contains(importPath, "/internal/trackerresolve"):
-			add(RuleTracker, spec, "tracker resolution is an adapter boundary")
-		case importPath == "os/exec" || importPath == "syscall":
-			add(RuleProcess, spec, "process execution belongs in an adapter")
-		case importPath == "io/ioutil":
-			add(RuleFilesystem, spec, "filesystem access belongs in an adapter")
-		case importPath == "net" || strings.HasPrefix(importPath, "net/http") || strings.HasPrefix(importPath, "net/rpc"):
-			add(RuleNetwork, spec, "network access belongs in an adapter")
-		}
+		checker.checkImport(spec)
 	}
 
-	ast.Inspect(file, func(node ast.Node) bool {
-		switch item := node.(type) {
-		case *ast.TypeSpec:
-			if isServiceBagName(item.Name.Name) || containsServiceBagType(item.Type) {
-				add(RuleServiceBag, item, "shared dependency/service bags are forbidden")
-			}
-		case *ast.Field:
-			if containsServiceBagType(item.Type) {
-				add(RuleServiceBag, item, "shared dependency/service bags are forbidden")
-			}
-		case *ast.SelectorExpr:
-			ident, ok := item.X.(*ast.Ident)
-			if !ok {
-				return true
-			}
-			importPath := aliases[ident.Name]
-			switch importPath {
-			case "os":
-				rule := osRule(item.Sel.Name)
-				if rule != "" {
-					add(rule, item, fmt.Sprintf("os.%s is a direct effect", item.Sel.Name))
-				}
-			case "time":
-				if isClockSelector(item.Sel.Name) {
-					add(RuleClock, item, fmt.Sprintf("time.%s requires an injected clock", item.Sel.Name))
-				}
-			case "path/filepath":
-				if isFilesystemSelector(item.Sel.Name) {
-					add(RuleFilesystem, item, fmt.Sprintf("filepath.%s reads the filesystem", item.Sel.Name))
-				}
-			}
-		}
-		return true
-	})
+	ast.Inspect(file, checker.inspectNode)
 
-	violations = dedupe(violations)
-	sortViolations(violations)
-	return violations, nil
+	checker.violations = dedupe(checker.violations)
+	sortViolations(checker.violations)
+	return checker.violations, nil
+}
+
+type sourceChecker struct {
+	path       string
+	fset       *token.FileSet
+	aliases    map[string]string
+	violations []Violation
+}
+
+func (c *sourceChecker) add(rule Rule, node ast.Node, message string) {
+	line := 0
+	if node != nil {
+		line = c.fset.Position(node.Pos()).Line
+	}
+	c.violations = append(c.violations, Violation{Rule: rule, Path: c.path, Line: line, Message: message})
+}
+
+func (c *sourceChecker) checkImport(spec *ast.ImportSpec) {
+	importPath, err := strconv.Unquote(spec.Path.Value)
+	if err != nil {
+		return
+	}
+	name := filepath.Base(importPath)
+	if spec.Name != nil && spec.Name.Name != "_" && spec.Name.Name != "." {
+		name = spec.Name.Name
+	}
+	c.aliases[name] = importPath
+	c.checkDotImport(spec, importPath)
+
+	switch {
+	case strings.Contains(importPath, "/internal/composition") || strings.Contains(importPath, "/internal/cliapp"):
+		c.add(RuleCompositionImport, spec, "command modules cannot import root/composition packages")
+	case strings.Contains(importPath, "/internal/adapters/"):
+		c.add(RuleConcreteAdapter, spec, "command modules depend on ports, not concrete adapters")
+	case strings.Contains(importPath, "/internal/trackerresolve"):
+		c.add(RuleTracker, spec, "tracker resolution is an adapter boundary")
+	case importPath == "os/exec" || importPath == "syscall":
+		c.add(RuleProcess, spec, "process execution belongs in an adapter")
+	case importPath == "io/ioutil":
+		c.add(RuleFilesystem, spec, "filesystem access belongs in an adapter")
+	case importPath == "net" || strings.HasPrefix(importPath, "net/http") || strings.HasPrefix(importPath, "net/rpc"):
+		c.add(RuleNetwork, spec, "network access belongs in an adapter")
+	}
+}
+
+func (c *sourceChecker) checkDotImport(spec *ast.ImportSpec, importPath string) {
+	if spec.Name == nil || spec.Name.Name != "." {
+		return
+	}
+	switch importPath {
+	case "os", "os/exec", "syscall":
+		c.add(RuleProcess, spec, "dot import can hide direct process/environment/filesystem effects")
+	case "path/filepath", "io/ioutil":
+		c.add(RuleFilesystem, spec, "dot import can hide direct filesystem effects")
+	case "time":
+		c.add(RuleClock, spec, "dot import can hide direct clock effects")
+	}
+}
+
+func (c *sourceChecker) inspectNode(node ast.Node) bool {
+	switch item := node.(type) {
+	case *ast.TypeSpec:
+		if isServiceBagName(item.Name.Name) || containsServiceBagType(item.Type) {
+			c.add(RuleServiceBag, item, "shared dependency/service bags are forbidden")
+		}
+	case *ast.Field:
+		if containsServiceBagType(item.Type) {
+			c.add(RuleServiceBag, item, "shared dependency/service bags are forbidden")
+		}
+	case *ast.SelectorExpr:
+		c.checkSelector(item)
+	}
+	return true
+}
+
+func (c *sourceChecker) checkSelector(item *ast.SelectorExpr) {
+	ident, ok := item.X.(*ast.Ident)
+	if !ok {
+		return
+	}
+	switch c.aliases[ident.Name] {
+	case "os":
+		rule := osRule(item.Sel.Name)
+		if rule != "" {
+			c.add(rule, item, fmt.Sprintf("os.%s is a direct effect", item.Sel.Name))
+		}
+	case "time":
+		if isClockSelector(item.Sel.Name) {
+			c.add(RuleClock, item, fmt.Sprintf("time.%s requires an injected clock", item.Sel.Name))
+		}
+	case "path/filepath":
+		if isFilesystemSelector(item.Sel.Name) {
+			c.add(RuleFilesystem, item, fmt.Sprintf("filepath.%s reads the filesystem", item.Sel.Name))
+		}
+	}
 }
 
 func containsServiceBagType(expression ast.Expr) bool {

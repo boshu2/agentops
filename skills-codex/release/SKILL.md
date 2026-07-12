@@ -8,6 +8,22 @@ description: "Run release readiness validation."
 
 Pre-flight validation, changelog from git history, version bumps across package files, release commit, annotated tag, curated release notes, and post-push exact-SHA CI verification. Local preparation is reversible. Publishing (including the GitHub Release page) is CI's job.
 
+## Constraints
+
+- **Keep preparation reversible and publication operator-owned.** This skill may create local release artifacts, a commit, and an annotated tag, but it never pushes, publishes, or triggers CI because those actions cross the reversible local boundary.
+- **Require deterministic pre-flight.** Run the full release gate for the confirmed version and treat `--skip-checks` as an explicit degraded operator choice because an untested tag cannot become a trustworthy release boundary.
+- **Bind completion to the tagged commit.** Record the tag SHA, exact-SHA CI run, and reconciliation result because a green branch run or an unverified tag does not prove the released artifact.
+- **Keep release claims evidence-backed.** Derive changelog, notes, version choice, and audit only from the selected git range and generated artifacts because invented or copied-forward claims corrupt both audiences.
+- **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED release evidence repairs and reruns automatically because ordinary rejection identifies incomplete preparation; only a real publication breaker may enter HOLD or consume the helper lane.
+
+## Breaker State Machine
+
+- **Ordinary rejection — `WARN|FAIL|REFUTED -> AUTO-REDO`:** repair the owned release artifact or route the defect back to its producing bead, then rerun pre-flight and pawl; plain rejection never enters HOLD and never consumes the helper lane.
+- **Breaker — `BREAKER -> HOLD -> ONE-HELPER`:** freeze tag or publication guidance when an irreversible remote action, ambiguous artifact identity, or unavailable release authority prevents safe progress, then route exactly one bounded helper consultation with the audit packet.
+- **Recovered — `HELPER-UNSTUCK -> AUTO-REDO`:** leave HOLD, apply the bounded recovery, and re-earn local validation, exact-SHA evidence, reconciliation, and the pawl verdict.
+- **Helper escalation — `HELPER-ESCALATE -> HUMAN`:** stop automation and send the helper-provided release evidence to the operator.
+- **Direct human lane — `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`:** skip the helper and route directly to the operator; these are the only direct-human states.
+
 ---
 
 ## Quick Start
@@ -61,9 +77,11 @@ $release                       # suggest version from commit analysis
 12. **Release commit** — `git commit -m "Release v<version>"` with all release artifacts staged.
 13. **Tag** — annotated `git tag -a v<version> -m "Release v<version>"`.
 14. **GitHub Release (CI handles this)** — do NOT `gh release create` locally; GoReleaser is sole creator.
-15. **Post-push exact-SHA CI verification** — after the operator pushes, run `scripts/verify-release-ci.sh v<version>` and do not declare the release complete until it prints `GO release-ci`.
+15. **Post-push exact-SHA CI and reconciliation verification** — after the operator pushes, require both `scripts/verify-release-ci.sh v<version>` to print `GO release-ci` and `ao reconcile --json | bash skills/release/scripts/validate-reconcile.sh "v<version>"` to pass for that exact expected tag; exact-SHA CI alone never authorizes closeout.
 16. **Post-release guidance** — show push commands and the verification command; do NOT push.
 17. **Audit trail format** — see workflow-detail for the markdown template.
+
+**Checkpoint:** before writing, confirm the operator approved the displayed changelog and version diff; before handoff, prove the release commit, annotated tag, audit, and notes agree on the version; after push, require exact-SHA CI plus reconciliation before declaring complete.
 
 ---
 
@@ -108,6 +126,23 @@ Everything this skill does is local and reversible:
 - **Local only** — never push, publish, or trigger remote actions
 - **Not done at tag** — after the user pushes, verify a green `validate.yml` run for the exact tagged SHA and record the run id plus conclusion in the handoff or release audit notes.
 - **Two audiences** — CHANGELOG.md is for contributors (file paths, issue IDs, implementation detail). Release notes are for feed readers (plain English, user-visible impact, no insider jargon). Never copy-paste the changelog into the release notes.
+
+---
+
+## Output Specification
+
+- **Path:** `docs/releases/YYYY-MM-DD-v<version>-audit.md`, paired with `docs/releases/YYYY-MM-DD-v<version>-notes.md` and annotated ref `refs/tags/v<version>`.
+- **Filename convention:** `YYYY-MM-DD-v<version>-audit.md` and `YYYY-MM-DD-v<version>-notes.md`, where `<version>` is the confirmed SemVer without a duplicate `v` prefix.
+- **Serialization/schema format:** Markdown audit with release heading, date, previous tag, commit count, local-CI artifact path, version bumps, pre-flight results, and remote CI verdict; the annotated Git tag targets the release commit, and the verdict records exact SHA, run id, status, and conclusion.
+- **Validator command:** set `VERSION="<version>"`, then run `bash scripts/validate-release-audit-artifacts.sh --mode target --target-release "$VERSION" && bash scripts/verify-release-ci.sh "v$VERSION" && ao reconcile --json | bash skills/release/scripts/validate-reconcile.sh "v$VERSION"`; command success alone is insufficient because the reconciliation JSON must name that exact expected tag, be semantically green, and contain no medium/high release finding.
+- **Downstream handoff:** before push, send the operator the release commit SHA, annotated tag SHA, audit/notes paths, rollback commands, and exact push/verification commands; after push, append the exact-SHA CI and reconciliation evidence before closeout.
+
+## Quality Checklist
+
+- Changelog and notes contain only changes supported by the selected git range, use the repository style, and serve their distinct contributor and feed-reader audiences.
+- Version files, release commit, annotated tag, audit, and notes all name the same confirmed SemVer and resolve to one release boundary.
+- Full local release validation and artifact checks pass before handoff; exact-tag CI and reconciliation pass after the operator pushes.
+- Ordinary rejection remains in AUTO-REDO; HOLD has exactly one helper, and operator escalation is limited to the declared human states.
 
 ---
 

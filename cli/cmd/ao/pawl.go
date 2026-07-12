@@ -227,7 +227,11 @@ func pawlDryRunPlan(sub string, args []string) pawlDryRunDoc {
 		doc.Families, doc.Tier = pawlPinnedFamilies(args)
 		doc.PlannedSteps = []string{
 			"probe installed families (claude/codex/agy)",
-			"atm spawn session " + session + " with the enabled panes",
+			// The swarm binary is resolved by the ntm-first seam in scripts/pawl.sh
+			// (PAWL_SWARM_BIN -> ntm -> atm; `ao pawl doctor` reports which won), so the
+			// planned step must NOT hardcode "atm" — that contradicted doctor's own output
+			// (age-pawl-intent-zhndq.16).
+			"swarm spawn session " + session + " with the enabled panes (ntm-first seam; see `ao pawl doctor` swarm-bin)",
 			"gate readiness per pane (idempotent if the session already exists)",
 			"write session.json (atomic)",
 		}
@@ -361,7 +365,7 @@ func validPawlRouteID(s string) bool {
 	if len(s) == 0 || len(s) > 64 {
 		return false
 	}
-	if !((s[0] >= 'A' && s[0] <= 'Z') || (s[0] >= 'a' && s[0] <= 'z') || (s[0] >= '0' && s[0] <= '9')) {
+	if (s[0] < 'A' || s[0] > 'Z') && (s[0] < 'a' || s[0] > 'z') && (s[0] < '0' || s[0] > '9') {
 		return false
 	}
 	for i := 0; i < len(s); i++ {
@@ -483,6 +487,17 @@ func pawlServiceCmd(sub, use, short string) *cobra.Command {
 			}
 			if jsonOut && pawlServiceReadOnly[sub] {
 				rest = append(rest, "--json")
+			}
+			// F4-followup (age-pawl-intent-zhndq.19): the TRUST-AWARE bundle-staleness verdict.
+			// Only Go can compute this safely: the shell doctor row must NOT read $ROOT/scripts (on
+			// the embedded/stranger path $ROOT is the UNTRUSTED caller repo — pawl.sh is forbidden
+			// from touching it). Go owns the trust decision, so it may compare the embedded
+			// BUNDLE_STAMP against the live scripts of a repo it has ALREADY established is a
+			// trusted agentops checkout, and hand the shell a ready-made verdict to display.
+			if sub == "doctor" {
+				if v := pawlBundleStaleness(untrustedRoot); v != "" {
+					extraEnv = append(extraEnv, "PAWL_BUNDLE_STATUS="+v)
+				}
 			}
 			return runForwardedPawlScript(cmd, script, dir, untrustedRoot, append([]string{sub}, rest...), extraEnv)
 		},
@@ -780,4 +795,44 @@ func resolvePawlVerdictScript() (script, dir string, extraEnv []string, cleanup 
 	}
 	script = filepath.Join(cacheDir, "scripts", filepath.Base(defaultPawlVerdictScript))
 	return script, userRoot, pawlReviewColdEnv(userRoot), bcleanup, nil
+}
+
+// pawlBundleStaleness returns a human-readable bundle-provenance verdict for `ao pawl doctor`, or
+// "" when there is nothing to say (F4-followup, age-pawl-intent-zhndq.19).
+//
+// THE TRUST RULE (two cross-family codex refutes taught this): a STALE *failure* must NEVER be
+// asserted against a repo we do not trust. File presence is not identity — ANY marker set
+// (scripts/pawl-*.sh, a schema, a contract doc) is attacker-controlled and can be spoofed, so a
+// stranger repo could be hashed and falsely reported STALE, failing doctor against a tree we know
+// nothing about. There is no marker list that fixes this, only a trust boundary.
+//
+// So the comparison runs ONLY where trust is already established — the untrustedRoot seam is EMPTY
+// exactly when the running ao binary physically lives inside the resolved checkout (aoBinaryInside),
+// which is the ONE trust decision the whole pawl surface is built on. In that case there is nothing
+// to warn about anyway (the LIVE scripts run in place). On the embedded/installed path we therefore
+// report the stamp for the operator's own comparison and NEVER a STALE failure.
+//
+// This is not a weaker feature — it is the honest one: the stamp is still surfaced (so
+// landed!=installed is diagnosable), while doctor cannot be weaponized into failing on a repo whose
+// contents we cannot trust.
+func pawlBundleStaleness(untrustedRoot string) string {
+	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
+	if err != nil {
+		return "" // no stamp embedded (old binary) — say nothing rather than guess
+	}
+	stamp := strings.TrimSpace(string(stampRaw))
+	if len(stamp) != 64 {
+		return ""
+	}
+	if untrustedRoot == "" {
+		// TRUSTED dogfood path: the LIVE scripts run in place, so the embedded copy is not in play
+		// and cannot be stale-relative-to-anything. Nothing to compare, nothing to warn.
+		return "in-checkout dogfood (live scripts run in place; embedded stamp " + stamp[:12] + " unused)"
+	}
+	// UNTRUSTED/installed path: surface the stamp so the operator can diagnose landed!=installed
+	// themselves (compare against `git -C <agentops> log` / a rebuild), but assert NO verdict about
+	// a repo we do not trust. Informational only — never a doctor failure.
+	return "installed-binary path: embedded pawl bundle stamp " + stamp[:12] +
+		" (informational only — no staleness verdict is asserted against a repo this binary does not " +
+		"trust; if this ao predates your agentops checkout, rebuild: cd cli && make build)"
 }

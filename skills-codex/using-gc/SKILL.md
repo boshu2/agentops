@@ -16,20 +16,25 @@ door stock gc lacks (see [`gc-membrane`](../gc-membrane/SKILL.md)).
 Use gc's orchestration wholesale (store, DAG, worktrees, pools, orders,
 dashboard, doctor). Never rebuild it. The membrane is the one add-on.
 
-**Boundaries (hard constraints):**
+## Critical Constraints
+
 - gc coexists BESIDE NTM/`ao` — it is NOT a swap for NTM and there is no
   `runtime=gc` in AgentOps (severed, soc-2rtm0). No gc subcommand lives under
   the `ao` CLI, ever. This skill routes to **gc's own native surface**
   (`gc status --json`, `gc events`, `gc doctor --json`, `gc session …`) and
-never wraps it.
+  never wraps it. **Why:** operator-selected substrates remain replaceable instead of leaking into the product CLI.
 - **LAW 0 applies inside a city**: gc's builtin claude provider defaults to
   `print_args = ["-p"]` (headless title-gen + `gc prompt` sinks). Every city
   MUST set `[providers.claude] print_args = []` (and the same on
-  `antigravity`), guarded by the `law0-print-args` doctor check.
+  `antigravity`), guarded by the `law0-print-args` doctor check. **Why:** print mode burns metered API quota and is forbidden on this host.
 - **The membrane never merges.** CONFIRMED closes the quest bead; a human
-  merges the branch. No convenience crosses that line.
+  merges the branch. No convenience crosses that line. **Why:** verification authority and integration authority remain separate.
+- Use the current agent and local shell unless the operator explicitly selects a city or one of its portable lanes. **Why:** reading this entrypoint does not auto-start GC, NTM, Agent Mail, or managed agents.
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, preserve the verdict/findings, and let the bounded city redo route run. **Why:** a negative quest verdict is loop evidence, not a human andon or permission to hand-close.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold the quest and use one bounded local-shell helper to inspect city/store/lane health. **Why:** one recovery pass can separate substrate failure from a real acceptance stop.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** exhausted attempts, risk acceptance, merge authority, or unresolved refusal belongs to the operator.
 
-### Optional portable lanes
+## Optional portable lanes
 
 Inside an explicitly selected city, a bounded quest role may delegate through
 the same AgentOps ports used elsewhere:
@@ -43,8 +48,7 @@ the same AgentOps ports used elsewhere:
 
 The owners remain [`agent-native`](../agent-native/SKILL.md) and
 [`pawl-review`](../pawl-review/SKILL.md); NTM is one possible worker adapter.
-These are optional partnership edges, never hard dependencies or automatic
-fallbacks. GC still owns the quest store/supervision and its membrane still
+These are optional partnership edges, never hard dependencies or automatic fallbacks. GC still owns the quest store/supervision and its membrane still
 owns the close door. GC and NTM each operate when the other is absent.
 
 ## When to use / when to skip
@@ -53,8 +57,7 @@ owns the close door. GC and NTM each operate when the other is absent.
 wedged, or draining; reading verdicts; city admin (doctor, orders, backup,
 binary rebuild); deciding whether a city is healthy.
 
-**Skip:** in-session parallel fan-out (→ `swarm`); unattended bead-queue work
-on portable NTM worker panes (→ `agent-native` + `ntm`); choosing an automation shape at
+**Skip:** in-session parallel fan-out (→ `swarm`); unattended bead-queue work on portable NTM worker panes (→ `agent-native` + `ntm`); choosing an automation shape at
 all (→ `automation-shape-routing`). City-shaped multi-quest work is an
 **operator choice**, not an auto-route.
 
@@ -169,6 +172,29 @@ matter most are non-obvious:
   pre-trust via a city-scoped `CODEX_HOME` seed (codex) or one interactive
   provider run (agy). Until cleared the lane DEGRADES (correctly — never a
   false REFUTE).
+
+## Output Specification
+
+**Artifact directory:** `<city>/membrane/<quest>/` for quest-local membrane evidence.
+
+**Filename convention:** terminal output uses `pawl-verdict-round-<N>.json` plus latest `pawl-verdict.json`; lane inputs use `lane-<family>-round-<N>.json`; degradation uses `review-attempt-round-<N>.json`.
+
+**Serialization/schema format:** terminal verdicts are closed `pawl-verdict.v1` JSON; transient transport evidence is `gc-review-attempt.v1` and never substitutes for a terminal verdict.
+
+**Validator command:** with `VERDICT=<city>/membrane/<quest>/pawl-verdict.json`, run `python3 -m jsonschema -i "$VERDICT" schemas/pawl-verdict.v1.schema.json`, then require two distinct `refuters[].family` values for CONFIRMED.
+
+**Downstream handoff:** pass city/quest ids, native-store and doctor status, verdict path/round/disposition/nonce, distinct reviewer families, findings, attempt budget, branch, and the explicit human merge action.
+
+## Quality Checklist
+
+- [ ] The operator explicitly selected GC and the commands target the intended `GC_HOME`.
+- [ ] NativeDoltStore, `law0-print-args`, and membrane health are green before slinging work.
+- [ ] The quest contract is default-FAIL and uses one consistent path frame.
+- [ ] Terminal verdict JSON passes the closed schema; degradation is never treated as judgment.
+- [ ] CONFIRMED has the required distinct reviewer-family evidence and engine fingerprint.
+- [ ] REFUTED/DEGRADED follows bounded automatic retry; no quest or ralph bead is hand-closed.
+- [ ] The membrane closes only the quest; branch merge remains an explicit human action.
+- [ ] WARN/FAIL/REFUTED consulted the pawl before any human andon.
 
 ## Non-goals
 

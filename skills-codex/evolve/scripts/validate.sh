@@ -39,6 +39,16 @@ check "SKILL.md mentions repo execution profile" "grep -qi 'repo execution profi
 check "SKILL.md mentions startup_reads" "grep -q 'startup_reads' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions validation_commands" "grep -q 'validation_commands' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions definition_of_done" "grep -q 'definition_of_done' '$SKILL_DIR/SKILL.md'"
+check "kernel stays within 250 lines" "[ \$(wc -l < '$SKILL_DIR/SKILL.md') -le 250 ]"
+check "constraints encode helper-before-human" "grep -q '^## Constraints' '$SKILL_DIR/SKILL.md' && grep -qi 'bounded helper pass before escalation' '$SKILL_DIR/SKILL.md'"
+check "execution has multiple checkpoints" "[ \$(grep -c '\*\*Checkpoint:\*\*' '$SKILL_DIR/SKILL.md') -ge 2 ]"
+check "output specification is complete" "grep -q '^## Output Specification' '$SKILL_DIR/SKILL.md' && grep -q '\*\*Filename:\*\*' '$SKILL_DIR/SKILL.md' && grep -qi 'validation command' '$SKILL_DIR/SKILL.md' && grep -qi 'downstream handoff' '$SKILL_DIR/SKILL.md'"
+check "quality checklist has three rules" "awk '/^## Quality Checklist/{f=1;next} f&&/^## /{exit} f&&/^- /{n++} END{exit !(n>=3)}' '$SKILL_DIR/SKILL.md'"
+check "release teardown contract is linked" "grep -q '^## Release-shaped teardown' '$SKILL_DIR/references/teardown.md' && grep -q 'references/teardown.md#release-shaped-teardown' '$SKILL_DIR/SKILL.md'"
+check "release checklist preserves Cobra command updates" "grep -q 'cobra_commands_test.go' '$SKILL_DIR/references/teardown.md' && grep -q 'expectedCmds' '$SKILL_DIR/references/teardown.md'"
+check "release checklist preserves CLI surface counts" "grep -q 'CLI-command-surface count updates' '$SKILL_DIR/references/teardown.md' && grep -q 'references/ao-command-landing.md' '$SKILL_DIR/references/teardown.md'"
+check "release checklist regenerates and commits projections" "grep -q 'regen-all.sh' '$SKILL_DIR/references/teardown.md' && grep -q 'cli/docs/COMMANDS.md registry.json' '$SKILL_DIR/references/teardown.md' && grep -q 'commit if non-empty' '$SKILL_DIR/references/teardown.md'"
+check "handoff reproduces full checklist verbatim" "grep -q 'reproduce this full checklist verbatim and unchecked' '$SKILL_DIR/references/teardown.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

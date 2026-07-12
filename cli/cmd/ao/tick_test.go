@@ -7,9 +7,97 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestEvalChaosFixturesCarryIndependentContextIDs(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve tick_test.go path")
+	}
+	body, err := os.ReadFile(filepath.Join(filepath.Dir(file), "tick.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(body)
+	for _, fixture := range []struct {
+		name      string
+		contextID string
+	}{
+		{name: "pass1", contextID: "context_id: chaos-athena"},
+		{name: "pass2", contextID: "context_id: chaos-windyelm"},
+		{name: "fail1", contextID: "context_id: chaos-windyelm-fail"},
+	} {
+		start := strings.Index(source, fixture.name+" := write(")
+		if start < 0 {
+			t.Fatalf("production chaos fixture %s not found", fixture.name)
+		}
+		end := strings.Index(source[start:], ")\n")
+		if end < 0 {
+			t.Fatalf("production chaos fixture %s is malformed", fixture.name)
+		}
+		if !strings.Contains(source[start:start+end], fixture.contextID) {
+			t.Fatalf("production chaos fixture %s missing independent %q", fixture.name, fixture.contextID)
+		}
+	}
+}
+
+func TestTickSmokeHooklessDefaultDoesNotRequireLegacyGuards(t *testing.T) {
+	repo := t.TempDir()
+	fakebin := filepath.Join(repo, "fakebin")
+	if err := os.MkdirAll(fakebin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "_beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fakeBR := `#!/usr/bin/env bash
+case "${1:-}" in
+  ready|list) printf '[]\n' ;;
+  *) echo "unexpected br call: $*" >&2; exit 43 ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repo
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.invalid",
+			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.invalid")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	runGit("init", "-q")
+	if err := os.WriteFile(filepath.Join(repo, "README.md"), []byte("hookless\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-qm", "seed")
+
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{
+		workDir: repo,
+		stdout:  &stdout,
+		stderr:  &stderr,
+		env: []string{
+			"PATH=" + fakebin + string(os.PathListSeparator) + os.Getenv("PATH"),
+			"AGENTOPS_TRACKER=br",
+			"BEADS_DIR=" + filepath.Join(repo, "_beads"),
+		},
+	}
+	if err := tickSmoke(rt); err != nil {
+		t.Fatalf("hookless default smoke failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "hookless default") {
+		t.Fatalf("smoke did not report hookless posture:\n%s", stdout.String())
+	}
+}
 
 func TestTickCommandSurfaceCovered(t *testing.T) {
 	// These literals are intentionally full leaf-command names: the command

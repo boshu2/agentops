@@ -4,443 +4,115 @@ description: Execute safe refactors.
 ---
 # Refactor Skill
 
-> **Quick Ref:** Safe, incremental refactoring with test verification at every step. One transformation, one test run, one commit. Never batch.
+Safe, incremental refactoring with verification at every step: one transformation, one focused test run, one commit. This skill changes structure without changing observable behavior.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Constraints
+
+- **Preserve behavior, not implementation.** Establish the observable contract and a green baseline before editing because a refactor that changes output, ordering, persistence, timing, or errors is feature work.
+- **Keep transformations atomic.** Make one structural change, run its focused tests, and commit it alone because batched edits hide which transformation broke the contract.
+- **Require an acceptance surface.** Add a characterization test before touching uncovered code and measure hot paths before refactoring them because untested or unmeasured preservation claims are guesses.
+- **Respect ownership and public surfaces.** Coordinate around active code and sweep cross-language callsites before removing symbols because compile-local success misses scripts, workflows, docs, and external consumers.
+- **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED results repair and rerun automatically because ordinary rejection is evidence about the transformation; only a breaker may enter HOLD or consume the helper lane.
+
+## Breaker State Machine
+
+- **Ordinary rejection — `WARN|FAIL|REFUTED -> AUTO-REDO`:** revert or narrow the transformation, repair the named defect, and rerun the focused plus full checks; plain rejection never enters HOLD and never consumes the helper lane.
+- **Breaker — `BREAKER -> HOLD -> ONE-HELPER`:** freeze edits when behavior cannot be proved or the safe boundary is ambiguous, then route exactly one bounded helper consultation with the baseline, diff, and failing evidence.
+- **Recovered — `HELPER-UNSTUCK -> AUTO-REDO`:** leave HOLD, apply the bounded recovery, and re-earn focused tests, full tests, and the pawl verdict.
+- **Helper escalation — `HELPER-ESCALATE -> HUMAN`:** stop automation and send the helper-provided evidence packet to the operator.
+- **Direct human lane — `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`:** skip the helper and route directly to the operator; these are the only direct-human states.
+
 ## Modes
 
-### 1. Target Mode (default)
+- **Target (default):** `$refactor <file-or-function>` improves a named unit.
+- **Sweep:** `$refactor --sweep <scope>` ranks hotspots, then handles the worst safe target first. Scope may be a path, package, or `all` with explicit caution.
+- **Extract:** `$refactor --extract method:<name>|module:<file>|class:<name>` moves one cohesive responsibility behind a clear interface.
+- **Simplify:** load [behavior-preserving-simplification.md](references/behavior-preserving-simplification.md) for de-slop, indirection removal, or readability work.
 
-```
-$refactor <file-or-function>
-```
+Sweep analysis uses `radon cc <path> -a -s` and `radon mi <path> -s` for Python or `gocyclo -over 10 <path>` for Go. With no scope, inspect recent Python/Go changes. Treat CC 1–5 as simple, 6–10 manageable, 11–20 a candidate, 21–30 urgent, and 31+ critical. Detailed transformation patterns and safety notes live in [behavior-preserving-simplification.md](references/behavior-preserving-simplification.md).
 
-Refactor a specific file, function, or class. You identify what needs improving, plan the steps, and execute them one at a time with test verification.
+## Core Loop
 
-### 2. Sweep Mode
-
-```
-$refactor --sweep <scope>
-```
-
-Find and fix complexity hotspots across a directory, package, or entire project. Runs `complexity` first to identify targets, then works through them in priority order (highest complexity first).
-
-`<scope>` can be:
-- A directory path (`cli/internal/`)
-- A package name (`goals`)
-- `all` (entire project -- use with caution)
-
-#### Folded trigger (ag-s43tg wave 1): `complexity` routes here
-
-**`complexity` → sweep mode's analysis half.** Use when you need to find
-focused refactor hotspots — analyzing code complexity to identify refactoring
-targets is built into sweep mode, no separate skill required:
-
-- **Python:** `radon cc <path> -a -s` (cyclomatic complexity) and `radon mi <path> -s`
-  (maintainability index). Install: `pip install radon`.
-- **Go:** `gocyclo -over 10 <path>`. Install:
-  `go install github.com/fzipp/gocyclo/cmd/gocyclo@latest`.
-- **No path given?** Scope to recent changes:
-  `git diff --name-only HEAD~5 | grep -E '\.(py|go)$'`.
-
-Interpret cyclomatic complexity (CC) grades: 1-5 simple (A), 6-10 manageable (B),
-11-20 should refactor (C), 21-30 must refactor (D), 31+ critical — refactor now (F).
-Produce a focused hotspot list ranked by CC descending, optionally written to
-`.agents/complexity/YYYY-MM-DD-<target>.md`, then work the worst offenders first
-(Step 1, Sweep mode below).
-
-### 3. Extract Mode
-
-```
-$refactor --extract <pattern>
+```text
+Baseline -> one transformation -> focused test
+                               |-> PASS: commit -> next
+                               `-> FAIL: revert -> narrow -> retry
+All transformations -> full suite -> metrics -> summary
 ```
 
-Extract method, class, or module from a target. The `<pattern>` describes what to extract:
+Never debug on top of a broken refactor. Revert the structural change first, reread the violated contract, and retry with a smaller transformation. A newly discovered behavior bug becomes a separate bug-fix task.
 
-- `method:<function-name>` -- extract a section of a long function into a named helper
-- `module:<file>` -- split a god file into focused modules
-- `class:<class-name>` -- extract a class into its own file
+## Execution Workflow
 
-## Core Principle
+### Step 0: Establish a green baseline
 
-**Every refactoring step must be verified by running tests before proceeding to the next step.**
+Run the full suite for the target scope before editing, for example `cd cli && go test ./...` or `pytest`. Record command, pass/fail/skip counts, duration, and the base SHA.
 
-For simplification, de-slop cleanup, over-abstraction removal, or readability-focused refactors, load [references/behavior-preserving-simplification.md](references/behavior-preserving-simplification.md) before planning transformations.
+If an ambient test is red, reproduce it on the untouched base and exclude the failing area explicitly; otherwise stop this refactor. Never claim a pre-existing failure as caused or fixed by the structural change.
 
-No batching. No "I'll run tests after all changes." Each transformation is atomic:
+### Step 1: Analyze the target
 
-```
-Transform -> Test -> Pass? -> Commit -> Next
-                       |
-                       No -> Revert -> Re-analyze
-```
+Record:
 
-## Execution Steps
+- observable inputs, outputs, errors, ordering, persistence, and timing;
+- complexity, function length, parameters, nesting, duplication, and naming;
+- focused tests covering the target and any missing characterization tests;
+- callers across source, shell, workflows, docs, skills, and tests;
+- risk (`low|medium|high`) and active-owner collision risk.
 
-### Step 0: Pre-flight -- Establish Green Baseline
+For a CLI command, flag, exported symbol, or cross-language surface removal, run `scripts/check-removed-symbol-refs.sh -- <symbol>` and justify every deliberate exclusion.
 
-Run the full test suite for the target scope BEFORE making any changes.
+### Step 2: Plan atomic transformations
 
-**Go projects:**
-```bash
-cd cli && go test ./...
-```
+Write an ordered list. Each item names exactly one structural change, its focused test, expected metric delta, risk, and dependency. If a step cannot be reviewed or reverted alone, split it again. Write characterization tests before the first uncovered transformation.
 
-**Python projects:**
-```bash
-pytest
-```
+### Step 3: Execute one transformation
 
-**If tests fail: STOP.** Do not refactor code with a broken test suite. Fix the failing tests first, or scope your refactoring to exclude the broken area.
+For each plan item:
 
-Record the baseline:
-- Number of passing tests
-- Test execution time
-- Any skipped tests
+1. Apply only that change.
+2. Run the named focused tests immediately.
+3. On red, revert the transformation and enter AUTO-REDO with a smaller approach.
+4. On green, inspect the diff for behavioral changes and commit `refactor(<scope>): <description>`.
 
-### Step 1: Analyze Target
+**Checkpoint:** after each transformation, compare the focused-test result with the recorded baseline before committing; after the final transformation, require the full suite and before/after metrics before writing the summary.
 
-**Target mode:** Read the target code. Identify:
-- Cyclomatic complexity (count branches, loops, conditions)
-- Function length (lines)
-- Parameter count
-- Nesting depth
-- Code duplication
-- Naming clarity
+### Step 4: Verify the complete refactor
 
-**Sweep mode:** Run `complexity` on the scope to get a ranked list of targets:
-```
-complexity <scope>
-```
-Sort by complexity score descending. Work the worst offenders first.
+Run the full suite, the relevant static analysis, and complexity analysis on changed files. Compare baseline and final pass/fail/skip counts. Measure complexity, lines, functions, nesting, and any performance-sensitive benchmark. Tests added as characterization must pass against both old and new implementations.
 
-**Extract mode:** Read the target and identify the extraction boundary:
-- What code moves out?
-- What interface connects the pieces?
-- What are the inputs and outputs of the extracted unit?
+### Step 5: Write and validate the summary
 
-### Step 2: Plan Refactoring
+Write `.agents/refactor/YYYY-MM-DD-refactor-<scope>.md`. Record targets, before/after metrics, each transformation with its commit SHA, baseline/final tests, and learnings. Then run the validator from the Output Specification.
 
-For each target, produce a numbered list of specific transformations:
+## Output Specification
 
-```
-1. Extract lines 45-78 of processConfig() into validateConfig()
-2. Replace nested if/else at line 92 with guard clause + early return
-3. Rename `cfg` to `clusterConfig` for clarity
-4. Inline single-use helper `tmpName()` at line 120
-```
+- **Path:** `.agents/refactor/YYYY-MM-DD-refactor-<scope>.md` in the active repository.
+- **Filename convention:** `YYYY-MM-DD-refactor-<scope>.md`, where `<scope>` contains only letters, digits, dots, underscores, or hyphens.
+- **Serialization/schema format:** Markdown with one `# Refactor:` title and exact `## Targets`, `## Metrics`, `## Transformations Applied`, `## Tests`, and `## Learnings` sections; mode, file count, metric rows, and commit-bound transformations are required, and the unique baseline/final lines each use `<N> passing, <N> failing, <N> skipped`.
+- **Validator command:** run `bash skills/refactor/scripts/validate-summary.sh ".agents/refactor/YYYY-MM-DD-refactor-<scope>.md"`.
+- **Downstream handoff:** send the validated summary path, transformation commit SHAs, focused/full test commands, and before/after metric deltas to review or closeout; a breaker packet stays in HOLD and follows the state machine above.
 
-For each transformation, identify:
-- **Which tests cover it** -- grep for test functions that exercise the target
-- **Risk level** -- low (rename, formatting), medium (extract, inline), high (interface change, moved code)
-- **Order dependency** -- does this step depend on a prior step?
+## Quality Checklist
 
-If no tests cover the target: write tests FIRST. Do not refactor untested code.
-
-### Step 3: Execute Step-by-Step
-
-For EACH transformation in the plan:
-
-#### 3a. Make ONE transformation
-
-Apply a single, focused change. Do not combine multiple transformations. Keep the diff minimal and reviewable.
-
-#### 3b. Run tests immediately
-
-```bash
-# Go
-cd cli && go test ./...
-
-# Python
-pytest
-
-# Or the project-specific test command
-```
-
-#### 3c. Evaluate result
-
-**Tests pass:**
-- Commit with conventional commit format:
-  ```
-  refactor(<scope>): <description>
-  ```
-  Examples:
-  - `refactor(goals): extract validateConfig from processConfig`
-  - `refactor(hooks): simplify conditional logic in pre-push gate`
-  - `refactor(cli): reduce parameter count in NewCommand`
-
-**Tests fail:**
-- **Revert the change immediately.** Do not debug on top of a broken refactor.
-- Re-read the failing test to understand what contract was violated.
-- Re-analyze the transformation -- was the approach wrong, or was the scope too large?
-- Retry with a smaller, safer transformation.
-
-#### 3d. Proceed to next transformation
-
-Repeat 3a-3c for each planned step. After completing all steps for a target, move to Step 4.
-
-### Step 4: Post-Refactor Verification
-
-After all transformations are complete:
-
-1. **Run full test suite** -- not just the targeted tests, the entire suite:
-   ```bash
-   cd cli && go test ./...
-   ```
-
-2. **Run complexity analysis** on changed files:
-   ```
-   complexity <changed-files>
-   ```
-
-3. **Compare before/after metrics:**
-
-   | Metric | Before | After | Delta |
-   |--------|--------|-------|-------|
-   | Cyclomatic complexity | ? | ? | ? |
-   | Lines of code | ? | ? | ? |
-   | Function count | ? | ? | ? |
-   | Max nesting depth | ? | ? | ? |
-   | Test count | ? | ? | ? |
-
-4. **Verify no behavioral change** -- the refactored code must do exactly what the old code did. If tests were added, they must pass against BOTH the old and new code.
-
-### Step 5: Output Summary
-
-Write a refactoring summary to `.agents/refactor/`:
-
-```bash
-mkdir -p .agents/refactor
-```
-
-File: `.agents/refactor/YYYY-MM-DD-refactor-<scope>.md`
-
-Content:
-```markdown
-# Refactor: <scope>
-
-**Date:** YYYY-MM-DD
-**Mode:** target | sweep | extract
-**Files changed:** <count>
-
-## Targets
-
-- <file:function> -- <what was done>
-
-## Metrics
-
-| Metric | Before | After | Delta |
-|--------|--------|-------|-------|
-| Cyclomatic complexity | X | Y | -Z |
-| Lines of code | X | Y | -Z |
-| Max nesting depth | X | Y | -Z |
-
-## Transformations Applied
-
-1. <description> -- <commit hash>
-2. <description> -- <commit hash>
-
-## Tests
-
-- Baseline: X passing, Y skipped
-- Final: X passing, Y skipped
-- New tests added: Z
-
-## Learnings
-
-- <anything worth noting for future refactors>
-```
-
-## Refactoring Catalog
-
-### Extract Method
-
-**When:** Function exceeds 30 lines, or a block of code has a clear single purpose.
-
-**Pattern:**
-```
-Before: longFunction() { ... block A ... block B ... block C ... }
-After:  longFunction() { doA(); doB(); doC(); }
-        doA() { ... block A ... }
-        doB() { ... block B ... }
-        doC() { ... block C ... }
-```
-
-**Safety:** Low risk if inputs/outputs are clear. Watch for:
-- Shared local variables -- pass as parameters or return as values
-- Error handling -- propagate errors from extracted functions
-- Side effects -- document any mutations
-
-### Extract Module
-
-**When:** A file exceeds 500 lines, or contains multiple unrelated concerns.
-
-**Pattern:**
-```
-Before: god_file.go (800 lines, 5 concerns)
-After:  config.go (validation, loading)
-        metrics.go (collection, reporting)
-        handlers.go (request handling)
-```
-
-**Safety:** Medium risk. Watch for:
-- Circular imports between new modules
-- Package-level variables shared across concerns
-- Init functions with ordering dependencies
-
-### Rename
-
-**When:** A name is ambiguous, misleading, or uses abbreviations that obscure meaning.
-
-**Pattern:**
-```
-Before: func proc(cfg *C) error
-After:  func processClusterConfig(config *ClusterConfig) error
-```
-
-**Safety:** Low risk with tooling. Always:
-- Search for ALL references (including string literals, comments, docs)
-- Update test assertions that reference the old name
-- Check exported symbols -- renaming public APIs is a breaking change
-
-### Inline
-
-**When:** A function or variable adds indirection without adding clarity. Single-use helpers that obscure the flow.
-
-**Pattern:**
-```
-Before: x := getName(item)    // func getName(i Item) string { return i.Name }
-After:  x := item.Name
-```
-
-**Safety:** Low risk. Verify the inlined code does not have side effects you are hiding.
-
-### Simplify Conditional
-
-**When:** Nested if/else chains exceed 3 levels, or boolean expressions are complex.
-
-**Patterns:**
-- **Guard clauses:** Move error/edge cases to top with early return
-- **Early return:** Eliminate else branches by returning early
-- **Table-driven logic:** Replace long switch/case with map lookup
-- **Polymorphism:** Replace type-based switching with interface dispatch
-
-```
-Before:
-  if err != nil {
-      if isRetryable(err) {
-          if attempts < max {
-              retry()
-          } else {
-              fail()
-          }
-      } else {
-          fail()
-      }
-  } else {
-      succeed()
-  }
-
-After:
-  if err == nil {
-      succeed()
-      return
-  }
-  if !isRetryable(err) || attempts >= max {
-      fail()
-      return
-  }
-  retry()
-```
-
-### Reduce Parameters
-
-**When:** A function takes more than 4 parameters.
-
-**Pattern:**
-```
-Before: func deploy(name, ns, image string, replicas int, labels map[string]string, timeout time.Duration) error
-After:  func deploy(opts DeployOptions) error
-
-type DeployOptions struct {
-    Name     string
-    NS       string
-    Image    string
-    Replicas int
-    Labels   map[string]string
-    Timeout  time.Duration
-}
-```
-
-**Safety:** Medium risk -- all callers must be updated. Use the struct field convention from `go.md`: grep all call sites and update each one.
-
-### Remove Dead Code
-
-**When:** Functions, variables, constants, or types are defined but never referenced.
-
-**How to identify:**
-```bash
-# Go: unused exports
-go vet ./...
-# Or use staticcheck, deadcode, or unparam tools
-
-# Python: vulture or pylint unused-import
-vulture <directory>
-```
-
-**Safety:** Low risk for truly dead code. But verify:
-- Not called via reflection or string-based dispatch
-- Not part of an interface implementation
-- Not used in build tags or conditional compilation
-- Not referenced in external packages (if this is a library)
-
-**CLI command, flag, or cross-language surface removal:** source-language
-callers are not enough. Before considering the removal complete, grep every
-tracked callsite surface that agents commonly forget:
-
-```bash
-scripts/check-removed-symbol-refs.sh -- <removed-command-or-flag>
-```
-
-The check searches tracked repo files across source, shell scripts, GitHub
-workflow YAML, docs, skills, Codex skills, and tests while excluding historical
-changelogs and release notes. Any remaining hit is a blocker unless it is
-explicitly excluded with `--exclude` and justified in the closeout.
+- Each committed transformation is behavior-preserving, independently reviewable, and protected by a focused test that passed before the commit.
+- The final full suite is at least as green as the recorded baseline, with any ambient failures reproduced on the untouched base and explicitly excluded from the claim.
+- Before/after metrics show the intended structural improvement without moving complexity into an unmeasured helper or abstraction.
+- Ordinary rejection remains in AUTO-REDO; HOLD has exactly one helper, and operator escalation is limited to the declared human states.
 
 ## Guardrails
 
-### What NOT to Refactor
+- Do not refactor code you do not understand, uncovered code without first adding tests, active code without coordination, or hot paths without benchmarks.
+- Stop at diminishing returns, test instability, behavior change, scope creep, or the declared timebox.
+- A growing diff, broad test rewrites, preference-only renames, or changed external output means the transformation is too large or not a refactor.
+- For renames, search all references including strings and docs; exported API renames are breaking changes unless explicitly migrated.
+- For extractions, make inputs, outputs, errors, state, and side effects explicit; avoid circular imports and hidden initialization-order changes.
+- For dead code, rule out reflection, interfaces, build tags, generated callers, and external consumers before deletion.
 
-- **Code you don't understand.** Read it, test it, understand it -- THEN refactor.
-- **Code without tests.** Write tests first. Refactoring untested code is gambling.
-- **Code under active development.** If someone else is working on it, coordinate first.
-- **Performance-critical hot paths** without benchmarks. Measure before and after.
+## References
 
-### When to Stop
-
-- **Diminishing returns.** If complexity dropped from 45 to 12, don't chase 8.
-- **Test instability.** If tests start flaking, stop and stabilize.
-- **Scope creep.** Refactoring should not change behavior. If you find a bug, file an issue -- don't fix it mid-refactor.
-- **Time budget exceeded.** Set a timebox. Refactoring expands to fill available time.
-
-### Red Flags During Refactoring
-
-- Tests pass but you changed behavior (test gap -- add a test)
-- You need to refactor the tests to make them pass (you broke the contract)
-- The diff is growing beyond what you can review in one sitting (split into smaller PRs)
-- You are renaming things to match your preference, not for clarity (stop)
-
-## See Also
-
-- `complexity` -- analyze code complexity metrics
-- `$standards` -- language-specific conventions
-- `$validate` -- validate code quality post-refactor
-- `/review` -- if refactoring uncovers bugs
-- `$implement` -- if refactoring requires new code
-
-## Reference Documents
-
-- [references/refactor.feature](references/refactor.feature) — Executable spec: one transformation/one test/one commit, target + hotspot (complexity-first) modes, revert on test fail (soc-qk4b)
-
-- [references/behavior-preserving-simplification.md](references/behavior-preserving-simplification.md)
+- [references/behavior-preserving-simplification.md](references/behavior-preserving-simplification.md) — simplification contract plus extract, rename, inline, conditional, parameter, and dead-code patterns with safety checks.
+- [references/refactor.feature](references/refactor.feature) — executable scenarios for atomic transformations, revert-on-red, target, and sweep behavior.
+- `$standards` — language conventions; `$validate` — post-refactor quality; `$implement` — switch here when behavior must change.

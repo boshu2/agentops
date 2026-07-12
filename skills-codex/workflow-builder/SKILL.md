@@ -11,6 +11,28 @@ description: Scaffold a new Claude Workflow script —
 > returns + headless). If the shape is NTM or plain skill, you're in the wrong
 > builder — go back to `automation-shape-routing`.
 
+## Critical Constraints
+
+- Confirm the automation shape before writing files. **Why:** a Workflow is the
+  Claude-only deterministic-DAG adapter, not the universal orchestration
+  substrate; stop if a plain skill, NTM, or explicitly selected Gas City fits.
+- Start from `.codex/workflows/operating-loop.js`. **Why:** preserving its
+  schema-first, delegated-gate shape avoids free-form self-grading and an
+  open-loop DAG that cannot provide a grounded promotion verdict.
+- Keep the script orchestration-only. **Why:** the author of work cannot be its
+  independent judge, so route, bound, and gate agents without putting design
+  judgment or implementation work in the orchestrator.
+- Give parallel writers disjoint scopes or isolated worktrees. **Why:**
+  deterministic control flow does not prevent filesystem collisions; when an
+  explicitly multi-writer workflow shares paths, reserve them through
+  `agent-mail` first.
+- Never add or retune a gate during a run. **Why:** adapting the controller while
+  it is converging causes oscillation; route an escape to the slow loop and
+  leave the current map fixed.
+- Do not launch a runtime merely because this skill can describe one. **Why:**
+  authoring a capability is not authorization to start a Workflow, NTM, Agent
+  Mail, or Gas City; execution requires the operator to select that runtime.
+
 ## Confirm the shape first
 
 Do NOT scaffold a workflow for: an attach-and-steer run (→ `agent-native` +
@@ -88,3 +110,34 @@ A workflow is a **composite capability**; the portable contract for it (a
 `budget`, an `OrchestrationPort` interface) is net-new `agentops-core-sdk` work.
 Author the script here; the SDK is where the *contract* for workflow-capabilities
 lives. See `operating-loop-workflow` for installing/running a finished workflow.
+
+## Output Specification
+
+- **Artifact directory:** `.codex/workflows/` for the runnable script, plus the
+  matching `workflows:` row in `docs/contracts/skill-dispositions.yaml`.
+- **Filename convention:** `.codex/workflows/<kebab-case-name>.js`; `meta.name`
+  and the disposition-ledger key must equal `<kebab-case-name>`.
+- **Serialization/schema format:** JavaScript with a literal exported `meta`
+  object and JSON Schemas on every `agent()` result used by a promotion gate.
+- **Validator command:** run `node --check .codex/workflows/<name>.js`,
+  `scripts/check-workflow-governance.sh`, and `make regen-check`; a dry run on a
+  tiny input must also return the declared schemas before handoff.
+- **Downstream handoff:** provide the script path, workflow identity, phase and
+  schema summary, write-scope ownership, conformance-rule status, exact commands
+  with exit codes, and any PENDING rule or residual risk. The finished workflow
+  is consumed through `operating-loop-workflow`, not by this builder.
+
+## Quality Checklist
+
+- [ ] The request was routed as `workflow`, not a plain skill, NTM session, or
+  explicitly selected Gas City.
+- [ ] Every promoted result is schema-bound and grounded in a delegated
+  deterministic verdict; no agent self-grade controls promotion.
+- [ ] Loops terminate on the verdict, carry the prior failure, and use counters
+  or wall-clock limits only as backstops.
+- [ ] Parallel writers have disjoint scopes, isolated worktrees, or explicit
+  Agent Mail reservations.
+- [ ] All five §6 conformance rules are marked honestly; PENDING is not reported
+  as compliant.
+- [ ] Script parsing, governance, regeneration drift, and the tiny dry run are
+  green with captured exit codes.

@@ -79,6 +79,37 @@ func TestVerifyInit_RefusesRepoInternalAoBake(t *testing.T) {
 	}
 }
 
+func TestVerifyInitRejectsInvalidCommittedPolicyBeforeWritingHook(t *testing.T) {
+	for _, policy := range []string{
+		"- not\n- a\n- mapping\n",
+		"strict: definitely-not-a-bool\n",
+		"autobind: definitely-not-a-bool\n",
+	} {
+		t.Run(strings.ReplaceAll(strings.TrimSpace(policy), "\n", "_"), func(t *testing.T) {
+			repo := gitInitRepoT(t)
+			if err := os.WriteFile(filepath.Join(repo, ".aoverify.yaml"), []byte(policy), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(repo)
+			setInitRemove(t, false)
+			var buf bytes.Buffer
+			c := &cobra.Command{}
+			c.SetOut(&buf)
+			c.SetErr(&buf)
+			err := runVerifyInit(c, nil)
+			if err == nil {
+				t.Fatal("invalid committed policy must reject verify init")
+			}
+			if !strings.Contains(err.Error(), ".aoverify.yaml") {
+				t.Fatalf("error must name invalid committed policy: %v", err)
+			}
+			if _, statErr := os.Stat(hookPathT(repo)); !os.IsNotExist(statErr) {
+				t.Fatalf("invalid policy must be rejected before hook write; stat=%v", statErr)
+			}
+		})
+	}
+}
+
 func hookPathT(repo string) string { return filepath.Join(repo, ".git", "hooks", "pre-push") }
 func origPathT(repo string) string { return filepath.Join(repo, ".git", "hooks", origHookName) }
 
