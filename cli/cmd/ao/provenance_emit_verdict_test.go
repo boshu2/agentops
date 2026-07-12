@@ -213,6 +213,54 @@ func TestBuildVerdictCommitEdge_V11Enrichment(t *testing.T) {
 	}
 }
 
+// TestBuildVerdictCommitEdge_RelativizesEvidencePath prevents machine-specific
+// absolute paths from entering new provenance ledger rows. Evidence outside the
+// repo remains absolute: dropping it would lose the forensic link when its
+// location cannot be represented relative to this repository.
+func TestBuildVerdictCommitEdge_RelativizesEvidencePath(t *testing.T) {
+	root, err := repoRootOrCwd()
+	if err != nil {
+		t.Fatalf("repoRootOrCwd: %v", err)
+	}
+	inside := filepath.Join(root, "cli", "cmd", "ao", "provenance_emit_verdict.go")
+	outside := filepath.Join(t.TempDir(), "refuter-output.md")
+
+	cases := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "absolute path under repo root becomes repo-relative",
+			path: inside,
+			want: "cli/cmd/ao/provenance_emit_verdict.go",
+		},
+		{
+			name: "already-relative path remains unchanged",
+			path: ".agents/pawl/refuter.md",
+			want: ".agents/pawl/refuter.md",
+		},
+		{
+			name: "absolute path outside repo remains unchanged",
+			path: outside,
+			want: outside,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			edge := buildVerdictCommitEdge(pawlVerdict{
+				BeadID:      "age-a-plus-report-card-ieyp2.4",
+				HeadSHA:     "0123456789abcdef",
+				Disposition: "CONFIRMED",
+				Refuters:    []pawlRefuter{{Evidence: tc.path}},
+			})
+			if edge.EvidencePath != tc.want {
+				t.Errorf("EvidencePath = %q, want %q", edge.EvidencePath, tc.want)
+			}
+		})
+	}
+}
+
 // TestBuildVerdictCommitEdge_CostMeter proves the verification-economics meter
 // (age-verification-economics-ebec.1): a verdict carrying attempt/degraded and
 // the cost object projects into the edge's rounds/degraded/duration_s/tokens_est
