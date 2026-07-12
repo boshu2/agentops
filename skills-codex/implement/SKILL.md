@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Implement one scoped slice."
+description: 'Implement one tracked issue. Triggers: "implement", "implement one tracked issue", "implement skill".'
 ---
 # Implement Skill
 
@@ -8,7 +8,15 @@ description: "Implement one scoped slice."
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Constraints
+
+- Freeze the claimed issue's acceptance criteria, non-goals, and write scope before editing, because every changed line must trace to the single vertical slice; route unrelated work to a follow-up.
+- For behavior changes, capture a right-reason failing test before implementation and keep GREEN-mode tests immutable, because the failing proof is the slice contract rather than ceremony.
+- Route a plain `REFUTED` validation result back through automatic repair and revalidation; only a circuit-breaker trip enters `HOLD` and one bounded helper pass, while helper `ESCALATE` or refusal/judgment/exhausted-budget classes reach a human.
+
 Execute a single issue from start to finish.
+
+**Triggers:** "implement", "implement one tracked issue", or "implement skill".
 
 ## Codex Lifecycle Guard
 
@@ -184,13 +192,30 @@ Reference: the test pyramid standard in `$standards` for full tooling matrix.
 
 Or use `$test <feature>` to auto-generate test candidates, then hand-refine.
 
-**Skip conditions (any of these bypasses Step 3.5):**
-- GREEN mode is active (invoked by `$crank --test-first` — tests already exist)
-- Issue type is `chore`, `docs`, or `ci`
-- `--no-tdd` flag is set
-- No test framework detected in the project
+**Captured RED is mandatory for every behavior change.** GREEN input already
+contains the failing contract and records it as captured RED. With no test
+framework, write a minimal executable shell/contract harness. Behavior-changing
+CI is behavior. `--no-tdd` cannot authorize closure.
 
-**Note:** Tests written here are MUTABLE — unlike GREEN mode's immutable tests, you may adjust these tests during implementation if you discover the initial test design was wrong. The goal is to think about behavior before code, not to be rigid.
+Only a mechanically derived `docs-only` diff or independently reviewed `pure-refactor`
+slice may use `red.kind=waived`; pure refactor must bind and rerun the same green
+baseline before and after. An issue label alone never waives behavior RED.
+
+Persist the exact RED command, nonzero exit, full output, and SHA-256 of every
+contract test file under
+`.agents/evidence/implement/<issue-id>/attempts/red-<n>.log`.
+The RED command must be byte-for-byte one of the bead's canonical executable
+acceptance commands—the same exact command set rerun for GREEN. The captured
+output evidence is a nonempty JSON envelope containing that exact command, exit,
+and SHA-256 of the combined replay output bytes; the envelope itself is digest-bound.
+Exit 2 (shell/syntax), 126/127
+(not executable/not found), and signal exits are invalid RED evidence.
+
+**Test-contract rule:** after the first RED receipt, changing a test contract requires a new slice and a new RED receipt; GREEN-mode contracts are always immutable.
+
+Before the first RED receipt, correct a malformed provisional test. Once that
+receipt exists, never silently revise it: preserve the superseded evidence,
+define a new slice, and earn a new RED receipt before implementation resumes.
 
 ### Step 3.6a: Auto-Generate Tests via $test (lifecycle integration)
 
@@ -200,7 +225,7 @@ If skip conditions above are NOT met AND `--no-lifecycle` is NOT set:
 $test generate <feature-scope> --quick
 ```
 
-The generated test request must preserve the selected `test_levels` and BF expectations from Step 3.6. Review the generated tests. Adjust as needed (tests are MUTABLE in this context). If `$test` fails to produce useful output or is unavailable, fall back to manual test writing in Step 3.6 above.
+The generated test request must preserve the selected `test_levels` and BF expectations from Step 3.6. Review generated tests before the first RED receipt. Any later contract change starts a new slice and RED receipt. If `$test` fails to produce useful output or is unavailable, fall back to manual test writing in Step 3.6 above.
 
 **Skip if:** `--no-lifecycle` flag, GREEN mode active, issue type is chore/docs/ci, or `$test` is unavailable.
 
@@ -293,6 +318,10 @@ ls *test* tests/ test/ __tests__/ 2>/dev/null | head -5
 ```
 
 **If tests exist:** All tests must pass. Any failure = verification failed.
+
+Persist each final proving command, zero exit, and full output under
+`.agents/evidence/implement/<issue-id>/attempts/green-<n>.log`; Step 7 binds
+these paths to the committed SHA.
 
 **If no tests exist:** Manual verification required:
 - [ ] Syntax check passes (file compiles/parses)
@@ -426,9 +455,12 @@ Before committing, run a fix-verify loop on all files modified in this session (
 
 If no modified files or sweep finds zero issues on first pass, proceed directly to Step 5c.
 
-### Step 5c: Generate Behavioral Spec (Optional)
+### Step 5c: Generate Behavioral Spec
 
 **Skip if:** `--no-spec` flag, or issue type is `docs`/`chore`/`ci`.
+
+Behavior work may not skip: it must store the spec as contained digest-bound
+evidence. `skipped_reason` is valid only for a non-behavior waiver lane.
 
 After verification passes, produce a behavioral spec documenting what the implementation
 does. This feeds Stage 4 behavioral validation (STEP 1.8 in `$validate`).
@@ -479,84 +511,93 @@ git commit -m "<descriptive message>
 Implements: <issue-id>"
 ```
 
-### Step 7: Close the Issue with Evidence
+### Step 7: Persist the Implementation Receipt
 
-Close with scoped evidence so the closure-integrity audit can resolve
-without parser_miss/timing_miss. The close reason must cite the commit
-and changed files from Step 6.
+Bind the exact RED/GREEN evidence and changed files to the full committed SHA.
 
-```bash
-COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | head -10 | tr '\n' ' ' | sed 's/ $//')
-br close <issue-id> --reason "commit:${COMMIT_SHA} files:[${CHANGED_FILES}]" 2>/dev/null
-```
+**Receipt path:** `.agents/evidence/implement/<issue-id>/<full-sha>/<issue-id>-<full-sha>-receipt.json`
+**Receipt schema:** `schemas/implementation-receipt.schema.json`
 
-If `ao beads exec close` is unavailable, fall back to `ao beads exec update <issue-id> --status closed`.
+The receipt contains `base_sha` and `head_sha`, `work_class`, acceptance ids,
+and the exact `base_sha..head_sha` changed-file set. Every evidence item is a
+contained `{path,sha256}` object. Behavior uses `red.kind=captured` with the RED
+commit, reproducible nonzero command, and immutable test-file digests. Only
+`docs-only` or `pure-refactor` may waive RED; pure refactor binds
+before/after green baselines. Every command evidence file uses the same
+`{command,exit_code,output_sha256}` envelope and is checked against fresh replay.
 
-### Step 7a: Record Implementation in Ratchet Chain
-
-**After successful issue closure, record in ratchet:**
-
-```bash
-# Check if ao CLI is available
-if command -v ao &>/dev/null; then
-  # Reuse commit evidence from Step 7
-  COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
-  CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | tr '\n' ',' | sed 's/,$//')
-
-  if [ -n "$COMMIT_HASH" ]; then
-    # Record successful implementation
-    ao ratchet record implement \
-      --output "$COMMIT_HASH" \
-      --files "$CHANGED_FILES" \
-      --issue "<issue-id>" \
-      2>&1 | tee -a .agents/flywheel.log
-
-    if [ $? -eq 0 ]; then
-      echo "Ratchet: Implementation recorded (commit: ${COMMIT_HASH:0:8})"
-    else
-      echo "Ratchet: Failed to record - chain.jsonl may need repair"
-    fi
-  else
-    echo "Ratchet: No commit found - skipping record"
-  fi
-else
-  echo "Ratchet: ao CLI not available - implementation NOT recorded"
-  echo "  Run manually: ao ratchet record implement --output <commit>"
-fi
-```
-
-**On failure/blocker:** Record the blocker in ratchet:
+RED/GREEN may first be captured under `<issue-id>/attempts/` before the final
+commit exists. Step 7 copies each envelope byte-for-byte into
+`<issue-id>/<head_sha>/evidence/`, hashes the archived bytes, and makes the
+receipt reference only those contained head-root paths.
 
 ```bash
-if command -v ao &>/dev/null; then
-  ao ratchet record implement \
-    --status blocked \
-    --reason "<blocker description>" \
-    2>/dev/null
-fi
+HEAD_SHA=$(git rev-parse HEAD)
+RECEIPT=.agents/evidence/implement/<issue-id>/$HEAD_SHA/<issue-id>-$HEAD_SHA-receipt.json
+mkdir -p "$(dirname "$RECEIPT")"
+python3 -m jsonschema -i "$RECEIPT" skills-codex/implement/schemas/implementation-receipt.schema.json
 ```
 
-**Fallback:** If ao is not available, the issue is still closed via br but won't be tracked in the ratchet chain. The skill continues normally.
+Do not rewrite an earlier RED record in place. A corrected contract is a new
+slice/attempt with a new receipt; preserve the superseded evidence.
 
-### Step 7b: Post-Implementation Ratchet Record
+### Step 8: Independent Validation and Pawl Routing
 
-After implementation is complete:
+Run `$validate` in a fresh context against the exact `head_sha`, receipt,
+acceptance ids, changed files, and commands. Write its evidence path and
+disposition back to the receipt. Do not close the issue before this route
+returns `CONFIRMED`.
+
+Leave `independent_validation` pending here. The Step 9 close wrapper first runs
+the pinned repository pawl against the canonical verdict and canonical evidence,
+then snapshots those exact bytes into the receipt tree and records their hashes.
+
+**Canonical-first invariant:** run the pinned pawl on canonical verdict/evidence before any archive copy or receipt rewrite.
+**Head-root archive invariant:** receipt evidence paths resolve only beneath `.agents/evidence/implement/<issue-id>/<head_sha>/`.
+
+| From | To | Required action |
+| --- | --- | --- |
+| `CONFIRMED` | `CLOSE` | Independent evidence authorizes Step 9. |
+| `REFUTED` | `AUTO-REDO` | Repair from findings, write new GREEN evidence, update the receipt, and rerun Step 8; do not close or consult a helper. |
+| `CIRCUIT-BREAKER-TRIP` | `HOLD` | Freeze mutation and preserve the receipt plus blocker evidence. |
+| `HOLD` | `HELPER` | Run exactly one bounded helper consultation for this blocker class. |
+| `HELPER-UNSTUCK` | `AUTO-REDO` | Apply the concrete next action, reset the breaker for the new approach, and re-earn `CONFIRMED`. |
+| `HELPER-ESCALATE` | `HUMAN` | Hand back the receipt, blocker evidence, and helper verdict. |
+| `REFUSAL-LANE / EXPLICIT-JUDGMENT / BUDGET-EXHAUSTED` | `HUMAN` | Skip the helper and ask the operator. |
+
+`UNSTUCK` resumes work; it never authorizes closure. A changed implementation
+requires fresh GREEN evidence on the new SHA and another independent verdict.
+
+### Step 9: Close the Issue with Confirmed Evidence
+
+Fail closed unless the executable verifier proves the bead, canonical path,
+base ancestry, exact Git change set, evidence bytes, reproducible RED/GREEN,
+immutable tests, and real `CONFIRMED` pawl verdict:
+
+**Closure verifier:** `scripts/verify-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"`
+**Close wrapper:** `scripts/close-with-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"`
 
 ```bash
-if command -v ao &>/dev/null; then
-  ao ratchet record implement --output "<issue-id>" 2>/dev/null || true
-fi
+scripts/close-with-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"
 ```
 
-Tell user: "Implementation complete. Run $validate for closeout before pushing."
+### Step 10: Record Implementation in Ratchet Chain
 
-### Step 8: Report to User
+After confirmed closure, record the same SHA and files:
+
+```bash
+ao ratchet record implement --input "$RECEIPT" --output "$HEAD_SHA" 2>/dev/null || true
+```
+
+If ratchet recording fails, report that bookkeeping defect; do not falsify the
+independent verdict or reopen the implementation contract.
+
+### Step 11: Report to User
 
 Tell the user:
 1. What was changed (files modified)
 2. How it was verified (with actual command output)
-3. Issue status (closed)
+3. Receipt path, independent `CONFIRMED` evidence, and issue status
 4. Any follow-up needed
 5. **Ratchet status** (implementation recorded or skipped)
 
@@ -578,7 +619,7 @@ Remaining: <what's left>
 
 ## Key Rules
 
-- **TDD by default** - write failing tests before implementing (skip with `--no-tdd`). Test-first ordering is not what drives quality (Finster 2026, standards agentic-workflow-evidence reference); code-first/test-after is a defensible cost-efficient variant on fully-specified small tasks if the refactor invariants below hold.
+- **Captured RED for behavior** - every behavior change closes only with a reproducible failing contract at a pre-implementation commit; GREEN input counts as captured RED, and no-framework work uses a minimal executable harness. `--no-tdd` cannot authorize behavior closure. Only mechanically derived docs-only and independently reviewed pure-refactor lanes may waive RED; pure refactor proves canonical acceptance green before and after with unchanged test drivers.
 - **Refactor after every green — the load-bearing move.** Refactor under green as its own commit after each behavior, never deferred to one final pass. **Never let a refactor step change a test** (a test change during refactor = a new slice, not a refactor).
 - **One behavior per cycle (small batch)** - implement one behavior, keep green, refactor, move on.
 - **Explore first** - understand before changing
@@ -596,7 +637,20 @@ If br CLI not available:
 3. Still commit with descriptive message
 4. Report completion to user
 
----
+## Output Specification
+
+- **Path:** modify only issue-approved product/test paths; store evidence under `.agents/evidence/implement/<issue-id>/` and the final receipt under its `<full-sha>/` directory.
+- **Filename:** product/tests use repository-native names; the receipt is exactly `<issue-id>-<full-sha>-receipt.json`.
+- **Format:** product files use native formats; the receipt is JSON conforming to `schemas/implementation-receipt.schema.json` and binds immutable RED plus fresh GREEN evidence to the full SHA.
+- **Validation command:** run issue acceptance and relevant gates, `scripts/validate-workflow-contract.sh codex`, then `scripts/verify-implementation-receipt.sh --issue <issue-id> --receipt <canonical-path>`; closure requires the verifier and canonical pawl check to pass.
+- **Downstream handoff:** pass the receipt and exact SHA to `$validate`; `REFUTED` auto-repairs, breaker `HOLD` consults one helper, and only `CONFIRMED` authorizes closure.
+
+## Quality Checklist
+
+- Acceptance fidelity: every changed line maps to one acceptance example or necessary cleanup, with non-goals unchanged.
+- Test fidelity: the first failing proof fails for missing behavior, final tests pass fresh, and refactor commits do not modify the behavioral contract.
+- Scope fidelity: changed paths remain inside the issue write scope; unrelated findings become follow-ups instead of hitchhiking.
+- Evidence fidelity: commit, tracker closure, changed files, and validation commands identify the same final implementation SHA.
 
 ## Examples
 
@@ -610,7 +664,7 @@ If br CLI not available:
 3. Agent edits `middleware/auth.go` to add token validation
 4. Runs `go test ./middleware/...` — all tests pass
 5. Commits with message "Add JWT token validation middleware\n\nImplements: ag-5k2"
-6. Closes issue via `ao beads exec close ag-5k2 --reason "commit:<sha> files:[middleware/auth.go]"`
+6. Closes only via `scripts/close-with-implementation-receipt.sh --issue ag-5k2 --receipt <canonical-receipt>`
 
 **Result:** Issue implemented, verified, committed, and closed. Ratchet recorded.
 
@@ -622,7 +676,7 @@ If br CLI not available:
 1. Agent runs `ao beads exec ready` — finds `ag-3b7` (first unblocked issue)
 2. Claims issue via `ao beads exec update ag-3b7 --claim`
 3. Implements and verifies
-4. Closes issue
+4. Closes through the receipt wrapper after canonical pawl confirmation
 
 **Result:** Autonomous work pickup and completion from ready queue.
 
@@ -671,5 +725,15 @@ If br CLI not available:
 ### scripts/
 
 - `scripts/validate.sh`
+- `scripts/validate-workflow-contract.sh`
+- `scripts/verify-implementation-receipt.sh`
+- `scripts/verify-implementation-receipt.bash`
+- `scripts/test-implementation-receipt.sh`
+- `scripts/close-with-implementation-receipt.sh`
+- `scripts/close-with-implementation-receipt.bash`
+
+### schemas/
+
+- `schemas/implementation-receipt.schema.json`
 
 <!-- Lifecycle integration wired: 2026-03-28. See skills/implement/SKILL.md for canonical -->
