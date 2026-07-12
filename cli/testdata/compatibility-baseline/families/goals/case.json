@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "family": "goals",
+  "checks": [
+    {
+      "id": "goals-command-surface",
+      "command": "tmp=$(mktemp -d /tmp/ao-goals-surface.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" goals --help >\"$tmp/help\"; for child in add drift export history init measure meta migrate prune render scenarios steer trace validate; do grep -Eq \"^[[:space:]]+$child([[:space:]]|$)\" \"$tmp/help\"; done; grep -Fq -- '--file string' \"$tmp/help\"; grep -Fq -- '--timeout int' \"$tmp/help\"; grep -Fq '(default 240)' \"$tmp/help\"; for alias in a d e h m mg p v; do \"$tmp/ao\" goals \"$alias\" --help >/dev/null; done; \"$tmp/ao\" goals measure --help >\"$tmp/measure-help\"; for flag in directives exclude-tag goal scenarios-only total-timeout; do grep -Fq -- \"--$flag\" \"$tmp/measure-help\"; done; \"$tmp/ao\" goals scenarios --help >\"$tmp/scenarios-help\"; for flag in create directive directive-id lint source status strict threshold; do grep -Fq -- \"--$flag\" \"$tmp/scenarios-help\"; done; \"$tmp/ao\" goals steer --help >\"$tmp/steer-help\"; for child in add apply prioritize recommend remove; do grep -Eq \"^[[:space:]]+$child([[:space:]]|$)\" \"$tmp/steer-help\"; done; \"$tmp/ao\" goals steer apply --help >\"$tmp/apply-help\"; for flag in auto policy yes; do grep -Fq -- \"--$flag\" \"$tmp/apply-help\"; done; test \"$(\"$tmp/ao\" goals unexpected | sed -n '1p')\" = 'Track, measure, and validate project fitness goals.'; set +e; \"$tmp/ao\" goals trace >\"$tmp/trace-out\" 2>\"$tmp/trace-err\"; code=$?; set -e; test \"$code\" -eq 1; grep -Fq 'requires either --from <id> or --orphans' \"$tmp/trace-err\""
+    },
+    {
+      "id": "goals-lifecycle-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-goals-life.XXXXXX); proj=\"$tmp/project\"; mkdir -p \"$proj/.git\" \"$proj/.agents/ao/sessions\" \"$proj/.agents/ao/goals/baselines\"; (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); (cd \"$proj\" && \"$tmp/ao\" goals init --non-interactive) >\"$tmp/init\"; grep -Fq 'Created GOALS.md' \"$tmp/init\"; \"$tmp/ao\" goals add smoke-goal true --file \"$proj/GOALS.md\" --description smoke >\"$tmp/add\"; grep -Fq 'Added goal \"smoke-goal\"' \"$tmp/add\"; \"$tmp/ao\" goals validate --file \"$proj/GOALS.md\" -o json >\"$tmp/validate\"; grep -Fq '\"valid\": true' \"$tmp/validate\"; (cd \"$proj\" && \"$tmp/ao\" goals measure --file GOALS.md) >\"$tmp/measure\"; grep -Fq 'Score: 100.0%' \"$tmp/measure\"; (cd \"$proj\" && \"$tmp/ao\" goals drift --file GOALS.md -o json) >\"$tmp/drift\"; grep -Fq '\"goal_id\": \"smoke-goal\"' \"$tmp/drift\"; (cd \"$proj\" && \"$tmp/ao\" goals export --file GOALS.md) >\"$tmp/export\"; grep -Fq '\"goal_id\": \"smoke-goal\"' \"$tmp/export\"; (cd \"$proj\" && \"$tmp/ao\" goals history --file GOALS.md -o json) >\"$tmp/history\"; grep -Eq 'No history entries found|\"goal_id\"' \"$tmp/history\"; (cd \"$proj\" && \"$tmp/ao\" goals meta --file GOALS.md -o json) >\"$tmp/meta\"; grep -Eq 'No meta-goals found|\"summary\"' \"$tmp/meta\"; (cd \"$proj\" && \"$tmp/ao\" goals scenarios --file GOALS.md -o json) >\"$tmp/scenarios\"; grep -Fq '\"directives\"' \"$tmp/scenarios\"; (cd \"$proj\" && \"$tmp/ao\" goals render --file GOALS.md) >\"$tmp/render\"; grep -Fq 'Feature:' \"$tmp/render\"; (cd \"$proj\" && \"$tmp/ao\" goals prune --file GOALS.md --dry-run -o json) >\"$tmp/prune\"; grep -Fq '\"dry_run\": true' \"$tmp/prune\"; printf '%s\\n' 'version: 1' 'goals:' '  - id: legacy' '    check: \"true\"' '    weight: 5' >\"$tmp/v1.yaml\"; \"$tmp/ao\" goals migrate --file \"$tmp/v1.yaml\" >\"$tmp/migrate\" 2>\"$tmp/migrate-err\"; grep -Fq 'Migrated' \"$tmp/migrate\"; grep -Fq 'version: 2' \"$tmp/v1.yaml\"; test -f \"$tmp/v1.yaml.v1.bak\""
+    },
+    {
+      "id": "goals-tracker-selection",
+      "command": "tmp=$(mktemp -d /tmp/ao-goals-tracker.XXXXXX); proj=\"$tmp/project\"; mkdir -p \"$proj/.git\" \"$proj/.agents/ao/sessions\" \"$proj/.agents/ao/goals/baselines\" \"$tmp/bin\"; (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); (cd \"$proj\" && \"$tmp/ao\" goals init --non-interactive >/dev/null); for tracker in br bd; do printf '%s\\n' '#!/bin/sh' 'printf \"%s\\n\" \"$*\" >>\"$TRACE_LOG\"' 'printf \"[]\\n\"' >\"$tmp/bin/$tracker\"; chmod +x \"$tmp/bin/$tracker\"; : >\"$tmp/$tracker.log\"; (cd \"$proj\" && PATH=\"$tmp/bin:$PATH\" AGENTOPS_TRACKER=\"$tracker\" TRACE_LOG=\"$tmp/$tracker.log\" \"$tmp/ao\" goals trace --orphans >/dev/null); grep -Fxq 'list --json --all' \"$tmp/$tracker.log\"; done"
+    },
+    {
+      "id": "goals-go-behavior",
+      "command": "cd cli && go test ./cmd/ao -run 'Test(Goals|Steer|BuildInteractive|DetectGates|DirectivesFromPillars|FindMissingPath|LoadMDGoals|RecordVerdict|ResolveGoalsFile|ValidateResult|WriteMDGoals|Seed_AutoDetect_Go|EvalCompositionResolves)' -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["goals-command-surface", "goals-lifecycle-black-box", "goals-go-behavior"]},
+    "aliases": {"status": "evidence", "evidence": ["goals-command-surface", "goals-go-behavior"]},
+    "accepted_args": {"status": "evidence", "evidence": ["goals-command-surface", "goals-lifecycle-black-box", "goals-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["goals-command-surface", "goals-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["goals-command-surface", "goals-lifecycle-black-box", "goals-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["goals-command-surface", "goals-lifecycle-black-box", "goals-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["goals-command-surface", "goals-lifecycle-black-box", "goals-tracker-selection", "goals-go-behavior"]},
+    "tracker_selection": {"status": "evidence", "evidence": ["goals-tracker-selection"]},
+    "ordered_effects": {"status": "evidence", "evidence": ["goals-lifecycle-black-box", "goals-tracker-selection", "goals-go-behavior"]}
+  }
+}
