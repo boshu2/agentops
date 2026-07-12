@@ -28,9 +28,86 @@ type managementUseCasesSpy struct {
 	prune   goalapp.PruneOptions
 }
 
+type manualSteerUseCasesSpy struct {
+	called     string
+	add        goalapp.SteerAddOptions
+	remove     goalapp.SteerRemoveOptions
+	prioritize goalapp.SteerPrioritizeOptions
+}
+
+func (spy *manualSteerUseCasesSpy) Add(_ context.Context, options goalapp.SteerAddOptions) error {
+	spy.called, spy.add = "add", options
+	return nil
+}
+
+func (spy *manualSteerUseCasesSpy) Remove(_ context.Context, options goalapp.SteerRemoveOptions) error {
+	spy.called, spy.remove = "remove", options
+	return nil
+}
+
+func (spy *manualSteerUseCasesSpy) Prioritize(_ context.Context, options goalapp.SteerPrioritizeOptions) error {
+	spy.called, spy.prioritize = "prioritize", options
+	return nil
+}
+
 func (spy *managementUseCasesSpy) Add(_ context.Context, options goalapp.AddOptions) error {
 	spy.called, spy.add = "add", options
 	return nil
+}
+
+func TestManualSteerCommandsDelegateResolvedRequests(t *testing.T) {
+	spy := &manualSteerUseCasesSpy{}
+	module := NewModule(UseCases{ManualSteer: spy}, HostOptions{
+		OutputMode:       func() string { return "json" },
+		DryRun:           func() bool { return true },
+		ResolveGoalsPath: func(path string) string { return "resolved:" + path },
+	})
+	tests := []struct {
+		args   []string
+		called string
+		check  func(*testing.T, *manualSteerUseCasesSpy)
+	}{
+		{[]string{"--file", "custom.md", "steer", "add", "New directive", "--description", "desc", "--steer", "explore"}, "add", func(t *testing.T, spy *manualSteerUseCasesSpy) {
+			if spy.add.Title != "New directive" || spy.add.Description != "desc" || spy.add.Steer != "explore" || spy.add.GoalsFile != "resolved:custom.md" || !spy.add.JSON || !spy.add.DryRun || spy.add.Stdout == nil {
+				t.Fatalf("steer add options = %+v", spy.add)
+			}
+		}},
+		{[]string{"--file", "custom.md", "steer", "remove", "3"}, "remove", func(t *testing.T, spy *manualSteerUseCasesSpy) {
+			if spy.remove.Number != 3 || spy.remove.GoalsFile != "resolved:custom.md" || !spy.remove.JSON || !spy.remove.DryRun || spy.remove.Stdout == nil {
+				t.Fatalf("steer remove options = %+v", spy.remove)
+			}
+		}},
+		{[]string{"--file", "custom.md", "steer", "prioritize", "3", "1"}, "prioritize", func(t *testing.T, spy *manualSteerUseCasesSpy) {
+			if spy.prioritize.Number != 3 || spy.prioritize.NewPosition != 1 || spy.prioritize.GoalsFile != "resolved:custom.md" || !spy.prioritize.JSON || !spy.prioritize.DryRun || spy.prioritize.Stdout == nil {
+				t.Fatalf("steer prioritize options = %+v", spy.prioritize)
+			}
+		}},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.args, " "), func(t *testing.T) {
+			command := module.Command()
+			command.SetArgs(test.args)
+			if err := command.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			if spy.called != test.called {
+				t.Fatalf("called %q, want %q", spy.called, test.called)
+			}
+			test.check(t, spy)
+		})
+	}
+}
+
+func TestManualSteerRejectsNonIntegerPositionsBeforeDelegation(t *testing.T) {
+	spy := &manualSteerUseCasesSpy{}
+	command := NewModule(UseCases{ManualSteer: spy}, HostOptions{}).Command()
+	command.SetArgs([]string{"steer", "prioritize", "not-a-number", "1"})
+	if err := command.Execute(); err == nil || !strings.Contains(err.Error(), "directive number must be an integer") {
+		t.Fatalf("error = %v", err)
+	}
+	if spy.called != "" {
+		t.Fatalf("use case called on rejected args: %s", spy.called)
+	}
 }
 
 func (spy *managementUseCasesSpy) Init(_ context.Context, options goalapp.InitOptions) error {

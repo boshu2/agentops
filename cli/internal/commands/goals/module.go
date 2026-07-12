@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -30,9 +31,16 @@ type ManagementUseCases interface {
 	Prune(context.Context, goalapp.PruneOptions) error
 }
 
+type ManualSteerUseCases interface {
+	Add(context.Context, goalapp.SteerAddOptions) error
+	Remove(context.Context, goalapp.SteerRemoveOptions) error
+	Prioritize(context.Context, goalapp.SteerPrioritizeOptions) error
+}
+
 type UseCases struct {
-	Simple     SimpleUseCases
-	Management ManagementUseCases
+	Simple      SimpleUseCases
+	Management  ManagementUseCases
+	ManualSteer ManualSteerUseCases
 }
 
 type HostOptions struct {
@@ -122,7 +130,7 @@ Management:
 		module.pruneCommand(options),
 		module.renderCommand(),
 		module.scenariosCommand(),
-		module.steerCommand(),
+		module.steerCommand(options),
 		module.traceCommand(),
 	)
 	return command
@@ -340,16 +348,61 @@ func (module Module) scenariosCommand() *cobra.Command {
 	return command
 }
 
-func (module Module) steerCommand() *cobra.Command {
+func (module Module) steerCommand(root *rootOptions) *cobra.Command {
 	command := &cobra.Command{Use: "steer", Short: "Manage directives", GroupID: "management"}
 	var description, steer string
-	add := futureCommand("add <title>", "Add a new directive", "", nil, cobra.ExactArgs(1))
+	add := &cobra.Command{
+		Use: "add <title>", Short: "Add a new directive", Args: cobra.ExactArgs(1),
+		RunE: func(command *cobra.Command, args []string) error {
+			if module.useCases.ManualSteer == nil {
+				return missingUseCase("steer add")
+			}
+			return module.useCases.ManualSteer.Add(command.Context(), goalapp.SteerAddOptions{
+				Title: args[0], Description: description, Steer: steer, GoalsFile: module.resolveGoalsPath(root.file),
+				JSON: module.jsonOutput(), DryRun: module.dryRun(), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
 	add.Flags().StringVar(&description, "description", "", "Directive description (required)")
 	_ = add.MarkFlagRequired("description")
 	add.Flags().StringVar(&steer, "steer", "increase", "Steer direction (increase, decrease, hold, explore)")
 	_ = add.RegisterFlagCompletionFunc("steer", staticCompletion("increase", "decrease", "hold", "explore"))
-	remove := futureCommand("remove <number>", "Remove a directive by number", "", nil, cobra.ExactArgs(1))
-	prioritize := futureCommand("prioritize <number> <position>", "Move a directive to a new position", "", nil, cobra.ExactArgs(2))
+	remove := &cobra.Command{
+		Use: "remove <number>", Short: "Remove a directive by number", Args: cobra.ExactArgs(1),
+		RunE: func(command *cobra.Command, args []string) error {
+			number, err := strconv.Atoi(args[0])
+			if err != nil {
+				return fmt.Errorf("directive number must be an integer: %w", err)
+			}
+			if module.useCases.ManualSteer == nil {
+				return missingUseCase("steer remove")
+			}
+			return module.useCases.ManualSteer.Remove(command.Context(), goalapp.SteerRemoveOptions{
+				Number: number, GoalsFile: module.resolveGoalsPath(root.file), JSON: module.jsonOutput(),
+				DryRun: module.dryRun(), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
+	prioritize := &cobra.Command{
+		Use: "prioritize <number> <new-position>", Short: "Move a directive to a new position", Args: cobra.ExactArgs(2),
+		RunE: func(command *cobra.Command, args []string) error {
+			number, err := strconv.Atoi(args[0])
+			if err != nil {
+				return fmt.Errorf("directive number must be an integer: %w", err)
+			}
+			position, err := strconv.Atoi(args[1])
+			if err != nil {
+				return fmt.Errorf("new position must be an integer: %w", err)
+			}
+			if module.useCases.ManualSteer == nil {
+				return missingUseCase("steer prioritize")
+			}
+			return module.useCases.ManualSteer.Prioritize(command.Context(), goalapp.SteerPrioritizeOptions{
+				Number: number, NewPosition: position, GoalsFile: module.resolveGoalsPath(root.file),
+				JSON: module.jsonOutput(), DryRun: module.dryRun(), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
 	var policy string
 	recommend := futureCommand("recommend", "Show re-steer recommendations without modifying GOALS.md", "", nil, cobra.NoArgs)
 	recommend.Flags().StringVar(&policy, "policy", "", "Re-steer policy path (default: docs/re-steer-policy.json)")
