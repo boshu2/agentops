@@ -131,3 +131,37 @@ func TestProvenanceOnlyChangedFilesIsExactAndFailClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestLookupVerdictsBindsExactBeadAndSHA(t *testing.T) {
+	edges := []Edge{
+		verdictEdge("age-owner", testSHA, "REFUTED"),
+		verdictEdge("age-owner", testSHA, DispositionConfirmed),
+		verdictEdge("age-foreign", testSHA, DispositionConfirmed),
+	}
+	lookup := LookupVerdicts(edges, "age-owner", testSHA[:7])
+	if !lookup.Confirmed || lookup.VerdictID != "age-owner@1a1a1a1" || len(lookup.Dispositions) != 2 {
+		t.Fatalf("lookup = %+v", lookup)
+	}
+	foreign := LookupVerdicts(edges, "age-other", testSHA)
+	if foreign.Confirmed || len(foreign.Dispositions) != 0 || len(foreign.ForeignBeads) != 3 {
+		t.Fatalf("foreign lookup = %+v", foreign)
+	}
+}
+
+func TestSHABindsCommitUsesSevenHexCharacterFloor(t *testing.T) {
+	for _, test := range []struct {
+		query, commit string
+		want          bool
+	}{
+		{testSHA, testSHA, true},
+		{testSHA[:7], testSHA, true},
+		{strings.ToUpper(testSHA[:8]), testSHA, true},
+		{testSHA[:6], testSHA, false},
+		{"age-one", testSHA, false},
+		{"2b2b2b2", testSHA, false},
+	} {
+		if got := SHABindsCommit(test.query, test.commit); got != test.want {
+			t.Errorf("SHABindsCommit(%q, %q) = %v, want %v", test.query, test.commit, got, test.want)
+		}
+	}
+}
