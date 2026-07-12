@@ -6,7 +6,19 @@ description: Stamp project/component/CI scaffolds — but
 
 > **Quick Ref:** Domain-slice manifests (the repo binding) + generic project/component/CI scaffolds. `$scaffold domain <name>` for a scoped operating-loop slice; `$scaffold <language> <name>`, `$scaffold component <type> <name>`, `$scaffold ci <platform>` for the generic modes.
 
+Stamp real project, component, or CI boilerplate plus its executable verification surface.
+
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.** Generate real files, run real commands, verify real output.
+
+## Critical Constraints
+
+- Snapshot `git status`, resolve the target root, and declare the exact write scope before generation. **Why:** scaffold must not absorb unrelated user changes or write outside the requested boundary.
+- Require explicit authorization before `--force`, overwriting, deleting, or replacing any existing path; stop on overlap with pre-existing edits. **Why:** generated convenience never outranks user-owned work.
+- Use the current agent and local shell; do not start alternate runtimes or orchestration substrates unless the user explicitly requested them. **Why:** scaffolding is a bounded write operation, not automatic permission to fan out.
+- Run the target's build, behavioral test, and lint contract; commit only generated paths after they pass. Never push. **Why:** a tree is not a usable scaffold until its executable acceptance surface is green and reviewable.
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, repair generated output, and rerun the failed validator on the same requested scaffold. **Why:** validator findings are loop evidence, not an andon by themselves.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold writes and use one bounded local-shell helper to inspect path conflicts, permissions, or missing toolchains. **Why:** one recovery pass can restore progress without masking a true boundary stop.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** only an unresolved overwrite decision, unavailable authority, explicit judgment, or exhausted recovery earns the human andon.
 
 ## Modes
 
@@ -64,6 +76,22 @@ When invoked as `$scaffold domain <name>`, scaffold a **domain-slice manifest** 
 After writing the manifest, lint executable-spec links with `ao goals scenarios --lint`, preview the scoped operating-loop plan, then execute with the manifest as the scope contract. Run them in that order.
 
 Error-recovery and output-summary conventions (shared with the generic modes) live in [references/generic-templates.md](references/generic-templates.md).
+
+## Output Specification
+
+**Artifact directory:** generated files stay under the declared target root; write the durable handoff to `.agents/evidence/scaffold/<run-id>/` at the invocation root.
+**Filename convention:** required `receipt.json`; Domain-Slice mode additionally produces `docs/domains/<name>/manifest.yaml`; other filenames follow the selected scaffold mode.
+**Serialization/schema format:** `receipt.json` is JSON with `schema_version: 1`, `mode` (`domain|project|component|ci`), nonempty `target_root`, string arrays `files_created`/`files_modified`, a `validation` array of `{kind,command,exit_code}` covering `build`, `test`, and `lint`, optional string/null `commit`, verdict `PASS|WARN|FAIL`, and nonempty `next_action`.
+**Validator command:** with `OUT=.agents/evidence/scaffold/<run-id>`, run `jq -e '. as $r | .schema_version==1 and (["domain","project","component","ci"]|index($r.mode))!=null and ($r.target_root|type=="string" and length>0) and ($r.files_created|type=="array" and all(.[]; type=="string")) and ($r.files_modified|type=="array" and all(.[]; type=="string")) and (($r.files_created|length)+($r.files_modified|length)>0) and ($r.validation|type=="array" and length>0 and all(.[]; (.kind as $kind | (["build","test","lint"]|index($kind))!=null) and (.command|type=="string" and length>0) and (.exit_code|type=="number"))) and ((["build","test","lint"]-[$r.validation[].kind])|length==0) and (($r.commit==null) or ($r.commit|type=="string")) and (["PASS","WARN","FAIL"]|index($r.verdict))!=null and ($r.verdict != "PASS" or all($r.validation[]; .exit_code == 0)) and ($r.next_action|type=="string" and length>0)' "$OUT/receipt.json"`.
+**Downstream handoff:** pass the receipt path, declared target root, generated file list, validation evidence, commit (if any), verdict, and next action to the consuming operating-loop skill; a FAIL re-enters scaffold through the pawl.
+
+## Quality Checklist
+
+- [ ] The generated paths equal the declared write scope and preserve pre-existing changes.
+- [ ] Files contain real behavior and at least one behavioral test—no placeholder-only green.
+- [ ] Build, tests, and lint are recorded with actual exit codes in `receipt.json`.
+- [ ] Domain manifests validate against `schemas/domain-slice-manifest.v1.schema.json` and retain their read fence.
+- [ ] Negative verdicts consult the pawl before any human andon; commits exclude unrelated paths and are never pushed.
 
 ## References
 
