@@ -19,6 +19,16 @@ type cleanupUseCasesSpy struct{ request aoeval.CleanupRequest }
 
 type taskUseCasesSpy struct{ runRequest aoeval.TaskRunRequest }
 
+type suiteUseCasesSpy struct{ verdictRequest aoeval.SuiteVerdictRequest }
+
+func (useCases *suiteUseCasesSpy) Verdict(_ context.Context, request aoeval.SuiteVerdictRequest) (aoeval.SuiteVerdictResult, error) {
+	useCases.verdictRequest = request
+	return aoeval.SuiteVerdictResult{Values: map[string]any{"verdict": "improved"}}, nil
+}
+func (*suiteUseCasesSpy) NRequired(context.Context, aoeval.SuiteNRequiredRequest) (aoeval.SuiteNRequiredResult, error) {
+	return aoeval.SuiteNRequiredResult{NRequired: 42}, nil
+}
+
 func (*taskUseCasesSpy) Add(context.Context, aoeval.TaskAddRequest) (aoeval.TaskAddResult, error) {
 	return aoeval.TaskAddResult{}, nil
 }
@@ -126,6 +136,18 @@ func TestModuleTaskRunDelegatesClosureLocalFlags(t *testing.T) {
 	}
 	if !strings.Contains(output.String(), "Dry run: gates passed") {
 		t.Fatalf("output = %q", output.String())
+	}
+}
+
+func TestModuleSuiteVerdictDelegatesFlags(t *testing.T) {
+	suite := &suiteUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Suite: suite}, HostOptions{}).Command()
+	command.SetArgs([]string{"suite", "verdict", "suite-1", "--arms", "a,b", "--inputs", "in.json", "--B", "99"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if suite.verdictRequest.SuiteID != "suite-1" || suite.verdictRequest.Arms != "a,b" || suite.verdictRequest.BootstrapSamples != 99 {
+		t.Fatalf("request = %#v", suite.verdictRequest)
 	}
 }
 

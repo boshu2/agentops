@@ -35,10 +35,16 @@ type TaskUseCases interface {
 	Run(context.Context, aoeval.TaskRunRequest) (aoeval.TaskRunResult, error)
 }
 
+type SuiteUseCases interface {
+	Verdict(context.Context, aoeval.SuiteVerdictRequest) (aoeval.SuiteVerdictResult, error)
+	NRequired(context.Context, aoeval.SuiteNRequiredRequest) (aoeval.SuiteNRequiredResult, error)
+}
+
 type UseCases struct {
 	Core    CoreUseCases
 	Cleanup CleanupUseCases
 	Task    TaskUseCases
+	Suite   SuiteUseCases
 }
 
 type HostOptions struct {
@@ -101,6 +107,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.Task != nil {
 		command.AddCommand(module.taskCommand())
+	}
+	if module.useCases.Suite != nil {
+		command.AddCommand(module.suiteCommand())
 	}
 	return command
 }
@@ -429,6 +438,60 @@ func (module Module) taskRunCommand() *cobra.Command {
 		}
 		manifest := result.Manifest
 		fmt.Fprintf(command.OutOrStdout(), "Run opened: %s\n  status:    %s\n  manifest:  %s\n  rig_id:    %s\n  task_ref:  %s\n  suite_ref: %s\n", manifest.ID, manifest.Status, result.Path, manifest.RigID, manifest.TaskRef, manifest.SuiteRef)
+		return nil
+	}
+	return command
+}
+
+func (module Module) suiteCommand() *cobra.Command {
+	command := &cobra.Command{Use: "suite", Short: "Suite-level operations (verdict, n-required)", Long: "Suite-level operations against the §6.5 statistical contract."}
+	command.AddCommand(module.suiteVerdictCommand(), module.suiteNRequiredCommand())
+	return command
+}
+
+func (module Module) suiteVerdictCommand() *cobra.Command {
+	options := aoeval.SuiteVerdictRequest{BootstrapSamples: 10000}
+	command := &cobra.Command{Use: "verdict <suite-id> --arms a,b --inputs <bootstrap-inputs.json>", Short: "Compute the §6.5 paired cluster-bootstrap verdict", Args: cobra.ExactArgs(1)}
+	command.Flags().StringVar(&options.Arms, "arms", "", "Comma-separated arm ids (default: from suite varied_axis)")
+	command.Flags().StringVar(&options.InputsPath, "inputs", "", "Path to canonical bootstrap-inputs JSON (REQUIRED)")
+	command.Flags().Float64Var(&options.MDE, "mde", 0, "Minimum detectable effect (used for inconclusive_high_variance)")
+	command.Flags().IntVar(&options.BootstrapSamples, "B", 10000, "Bootstrap resamples")
+	command.Flags().IntVar(&options.NRequired, "n-required", 0, "Override n_required (default: derived from suite power block)")
+	command.RunE = func(command *cobra.Command, args []string) error {
+		options.SuiteID = args[0]
+		result, err := module.useCases.Suite.Verdict(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
+			return err
+		}
+		value := result.Values
+		fmt.Fprintf(command.OutOrStdout(), "Suite verdict: %v\n  delta_point: %v\n  ci: [%v, %v]\n  n_clusters: %v\n  n_required: %v\n  bootstrap_seed: %v\n  bootstrap_inputs_hash: %v\n", value["verdict"], value["delta_point"], value["ci_low"], value["ci_high"], value["n_clusters"], value["n_required"], value["bootstrap_seed"], value["bootstrap_inputs_hash"])
+		return nil
+	}
+	return command
+}
+
+func (module Module) suiteNRequiredCommand() *cobra.Command {
+	options := aoeval.SuiteNRequiredRequest{BaselineRate: .5, MDE: .05, Alpha: .05, Power: .80, Paired: true}
+	command := &cobra.Command{Use: "n-required", Short: "Compute power-derived n_required (gate #6 input on Day 3+)"}
+	command.Flags().Float64Var(&options.BaselineRate, "baseline-rate", .5, "Baseline rate (binomial worst-case fallback)")
+	command.Flags().Float64Var(&options.MDE, "mde", .05, "Minimum detectable effect")
+	command.Flags().Float64Var(&options.Alpha, "alpha", .05, "Type-I error rate")
+	command.Flags().Float64Var(&options.Power, "power", .80, "Statistical power (1-beta)")
+	command.Flags().BoolVar(&options.Paired, "paired", true, "Paired comparison")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.Suite.NRequired(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			_, err = command.OutOrStdout().Write(append(append([]byte(nil), result.Raw...), '\n'))
+			return err
+		}
+		fmt.Fprintf(command.OutOrStdout(), "n_required: %d  (baseline_rate=%g MDE=%g alpha=%g power=%g paired=%v)\n", result.NRequired, options.BaselineRate, options.MDE, options.Alpha, options.Power, options.Paired)
 		return nil
 	}
 	return command

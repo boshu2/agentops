@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -146,4 +147,38 @@ func (Runtime) LoadModelSpec(root, id string) (*evalsubstrate.ModelSpec, error) 
 func (Runtime) GenerateRunID(rigID string) string { return evalsubstrate.GenerateRunID(rigID) }
 func (Runtime) OpenRun(root, id string, manifest evalsubstrate.Manifest) (aoeval.TaskRunWriter, error) {
 	return evalsubstrate.NewRunWriter(root, id, manifest)
+}
+
+func (runtime Runtime) RunStats(args []string) ([]byte, error) {
+	python := runtime.pythonBinary()
+	if python == "" {
+		return nil, fmt.Errorf("eval suite: substrate venv not found; provision via `python3 -m venv ~/.agents/evals/.venv && pip install numpy scipy`")
+	}
+	command := exec.Command(python, args...)
+	command.Env = append(os.Environ(), "PYTHONPATH="+runtime.Root())
+	output, err := command.Output()
+	if err != nil {
+		stderr := ""
+		if exit, ok := err.(*exec.ExitError); ok {
+			stderr = string(exit.Stderr)
+		}
+		return nil, fmt.Errorf("eval suite: stats CLI failed: %w (stderr: %s)", err, stderr)
+	}
+	return output, nil
+}
+
+func (runtime Runtime) pythonBinary() string {
+	if override := strings.TrimSpace(os.Getenv("AGENTOPS_EVALS_VENV")); override != "" {
+		return override
+	}
+	candidates := []string{filepath.Join(runtime.Root(), ".venv", "bin", "python"), filepath.Join(runtime.Root(), ".venv", "bin", "python3")}
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(home, ".agents", "evals", ".venv", "bin", "python"), filepath.Join(home, ".agents", "evals", ".venv", "bin", "python3"))
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
 }
