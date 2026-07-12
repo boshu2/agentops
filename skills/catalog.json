@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-12T08:20:52Z",
+  "generated_at": "2026-07-12T15:47:05Z",
   "skill_count": 62,
   "skills": [
     {
@@ -1567,7 +1567,7 @@
         "sre"
       ],
       "context_rel": [],
-      "references_count": 1,
+      "references_count": 2,
       "codex_override_present": true
     },
     {

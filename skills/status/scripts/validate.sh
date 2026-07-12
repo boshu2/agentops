@@ -46,9 +46,19 @@ validate_priority_order() {
   [[ -n "$negative_line" && -n "$resume_line" && "$negative_line" -lt "$resume_line" ]]
 }
 
+validate_feature() {
+  local feature="$SKILL_DIR/references/status.feature"
+  [[ -s "$feature" ]] &&
+    grep -Fq 'Feature: Status renders resumable AgentOps truth' "$feature" &&
+    grep -Fq 'unavailable is distinct from an empty result' "$feature" &&
+    grep -Fq 'a negative verdict outranks ordinary continuation' "$feature" &&
+    grep -Fq 'collection remains observational' "$feature"
+}
+
 record "SKILL.md exists" test -f "$SKILL_MD"
 record "status contract is complete" validate_contract "$SKILL_MD"
 record "dashboard contract reference exists" test -s "$SKILL_DIR/references/dashboard-contract.md"
+record "status feature is current and packaged" validate_feature
 record "status remains read-only" grep -Fq 'Keep collection read-only' "$SKILL_MD"
 record "unavailable is not empty" grep -Fq 'never render a missing source as healthy or empty' "$SKILL_MD"
 record "negative verdict outranks ordinary resume" validate_priority_order
