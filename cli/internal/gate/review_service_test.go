@@ -41,9 +41,9 @@ func (port *reviewPortSpy) Reviewer() string { return port.reviewer }
 
 func TestReviewServicePendingComputesUrgency(t *testing.T) {
 	port := &reviewPortSpy{entries: []ReviewEntry{
-		{ID: "high", ApproachingAutoPromote: true},
-		{ID: "medium", Age: 13 * time.Hour},
-		{ID: "low", Age: time.Hour},
+		{ApproachingAutoPromote: true},
+		{Age: 13 * time.Hour},
+		{Age: time.Hour},
 	}}
 	result, err := (ReviewService{Port: port}).Pending(context.Background(), PendingRequest{})
 	if err != nil {

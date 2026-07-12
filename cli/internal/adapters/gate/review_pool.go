@@ -24,14 +24,16 @@ func (adapter *ReviewPool) ListPending(ctx context.Context) ([]gateapp.ReviewEnt
 	if err != nil {
 		return nil, err
 	}
-	result := make([]gateapp.ReviewEntry, 0, len(entries))
+	var result []gateapp.ReviewEntry
+	if entries != nil {
+		result = make([]gateapp.ReviewEntry, 0, len(entries))
+	}
 	for _, entry := range entries {
 		result = append(result, gateapp.ReviewEntry{
-			ID:                     entry.Candidate.ID,
-			Tier:                   string(entry.Candidate.Tier),
+			PoolEntry:              entry.PoolEntry,
+			FilePath:               entry.FilePath,
 			Age:                    entry.Age,
 			AgeString:              entry.AgeString,
-			Utility:                entry.Candidate.Utility,
 			ApproachingAutoPromote: entry.ApproachingAutoPromote,
 		})
 	}

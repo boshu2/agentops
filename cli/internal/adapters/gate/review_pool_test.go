@@ -22,8 +22,18 @@ func TestReviewPoolListsAndMapsPendingEntries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListPending: %v", err)
 	}
-	if len(entries) != 1 || entries[0].ID != "cand-1" || entries[0].Tier != string(types.TierBronze) || entries[0].Utility != 0.61 {
+	if len(entries) != 1 || entries[0].Candidate.ID != "cand-1" || entries[0].Candidate.Tier != types.TierBronze || entries[0].Candidate.Utility != 0.61 {
 		t.Fatalf("entries = %+v", entries)
+	}
+}
+
+func TestReviewPoolPreservesNilPendingSlice(t *testing.T) {
+	entries, err := NewReviewPool(t.TempDir(), nil).ListPending(context.Background())
+	if err != nil {
+		t.Fatalf("ListPending: %v", err)
+	}
+	if entries != nil {
+		t.Fatalf("entries = %#v, want nil to preserve legacy JSON null", entries)
 	}
 }
 

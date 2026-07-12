@@ -254,7 +254,7 @@ ao gate [command]
 
 #### `ao gate approve`
 
-Approve a bronze-tier candidate for promotion.
+Approve candidate for promotion
 
 ```
 ao gate approve <candidate-id> [flags]
@@ -269,7 +269,7 @@ ao gate approve <candidate-id> [flags]
 
 #### `ao gate bulk-approve`
 
-Approve all silver-tier candidates older than a threshold.
+Bulk approve silver candidates
 
 ```
 ao gate bulk-approve [flags]
@@ -285,7 +285,7 @@ ao gate bulk-approve [flags]
 
 #### `ao gate check`
 
-Run the declarative gate registry.
+Run the gate registry (fast cockpit subset or full suite)
 
 ```
 ao gate check [flags]
@@ -308,7 +308,7 @@ ao gate check [flags]
 
 #### `ao gate pending`
 
-List bronze-tier candidates awaiting human review.
+List candidates pending review
 
 ```
 ao gate pending [flags]
@@ -316,7 +316,7 @@ ao gate pending [flags]
 
 #### `ao gate reject`
 
-Reject a candidate with a required reason.
+Reject candidate
 
 ```
 ao gate reject <candidate-id> [flags]
@@ -331,7 +331,7 @@ ao gate reject <candidate-id> [flags]
 
 #### `ao gate run`
 
-Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
+Run a check-*.sh gate via BC2 GateRunnerPort and emit verdict
 
 ```
 ao gate run <name> [flags]
