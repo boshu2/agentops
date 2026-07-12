@@ -307,7 +307,7 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| First-value path is still too diffuse | The current product surface can ask users to understand the whole factory before they feel the first benefit. This most affects the 3.0 PMF wedge: maintainers who need context continuity and trust quickly. | in-progress |
+| First-value path is still too diffuse | The current product surface can ask users to understand the whole factory before they feel the first benefit. This most affects the 3.0 PMF wedge: maintainers who need context continuity and trust quickly. | **addressed** — canonical maps: [Intent → Validated Code](docs/architecture/intent-to-validated-code.md), [Skills Matrix](docs/skills-matrix.md), skill-front-door [first-value path](docs/first-value-path.md); substrate/council demoted after first membrane verdict |
 | 3.0 PMF scenario evidence is pending | The release thesis is clear, but the exact scenario with repo/task/control/measures has not yet produced exported proof. Public PMF/productivity claims stay gated on `soc-m6v5.8`. | open |
 | Canonical `/validate` and `/curate` consolidation is not release-ready | Additive skills exist in this worktree, but skill-count, registry, and Codex artifact gates are expected to fail until the release train resolves ship/defer and artifact sync. | in-progress |
 | Public launch claims need exported proof | Local `.agents/` artifacts are useful operating evidence but are not enough for public claims. 3.0 needs tracked evidence under `docs/releases/` or `evals/workbench/results/` when launch copy cites PMF proof. | planned |

@@ -4,9 +4,9 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### Autonomous code validation for coding agents
+### Operating loop for coding agents — intent → validated code
 
-Coding agents declare "done" on code that is still wrong. AgentOps catches that. Before a change counts as done, something that didn't write it has to check it: a different model, or a test that actually runs. **No verdict = not done.** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode).
+Coding agents declare "done" on code that is still wrong. AgentOps is the **operating loop** that turns declared intent into validated code with proof: shape behavior (Gherkin), implement against a failing acceptance test, then bind an independent membrane verdict to **that** contract. **No verdict = not done.** Skills are the front door; it sits on the agent you already use (Claude Code, Codex, Cursor, OpenCode).
 
 </div>
 
@@ -60,24 +60,24 @@ Installs hookless. The only hard requirement is an agent runtime and `git`; ever
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
-- **A validation membrane.** Tests, gates, `/pre-mortem`, `/validate`, and `/council` prove or reject the work before you trust it. No verdict, not done.
-- **A bookkeeper that outlives the session.** Work is tracked as beads, and every verdict is bound into a hash-chained provenance ledger: tamper-evident, grep-able, and portable across sessions and models. The record is the proof a change was actually checked — not a memory of one.
-- **An evidence trail that's yours.** Every run, decision, and verdict lands in `.agents/` in your repo: grep-able, diff-able, portable to whatever model wins next quarter. AgentOps adds no hosted control plane and no telemetry; the corpus lives in your repo, not on our servers. Apache-2.0.
-- **It runs on the agent you already pay for.** Claude Code, Codex, Cursor, OpenCode. Same skills, same corpus.
+- **An operating loop.** Skills run intent → Gherkin → ATDD → implement → membrane → ratchet. Full map: [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md).
+- **A validation membrane.** `/validate`, `/council`, `/pre-mortem`, and `/pawl-review` prove or reject work against the slice's acceptance behavior. No verdict = not done. Without a behavior contract, there is nothing honest to accept.
+- **A bookkeeper that outlives the session.** Beads track work; verdicts bind into a hash-chained provenance ledger — tamper-evident, portable across sessions and models.
+- **An evidence trail that's yours.** Runs, decisions, and verdicts land in `.agents/` in your repo. No hosted control plane; Apache-2.0.
+- **It runs on the agent you already use.** Claude Code, Codex, Cursor, OpenCode. Same skills, same corpus.
 
 ```text
-> /validate --mixed   # the agent reported this PR done
+> /plan "rate-limit /login"     # freeze Given/When/Then + acceptance
+> /implement <bead>             # RED acceptance → green → refactor
+> /validate                     # membrane vs those scenarios
 
-[membrane] evidence sealed → fresh-context judges, Claude Code + Codex CLI
-[claude/judge-1] REFUTE  /login has no rate limit — claimed "covered", isn't
-[codex/judge-1]  REFUTE  token-bucket refill lacks jitter under burst
-[claude/judge-2] PASS    redis integration follows the repo pattern
-Verdict: HOLD — not done. Fix /login limit + refill jitter, then re-verify.
-Recorded as a proof artifact — no verdict, not done.
+[membrane] acceptance mapped → scenarios S1, S2
+[judge] REFUTE  S2 burst refill lacks jitter — claimed covered, isn't
+Verdict: HOLD — not done. Fix S2, then re-validate.
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
-Already installed? Try it in three steps: make a small change and commit it, run `ao verify my-first-change`, then read the verdict. A model that had no part in writing the change reviews your commit, prints CONFIRMED or REFUTED, and records the result as a line in `docs/provenance/ledger.jsonl` inside your repo.
+Already installed? First value is one loop tick via **skills**: `/plan` a small behavior (Gherkin), `/implement` it against a failing acceptance test, `/validate` so the verdict cites that scenario. Or run `/rpi "a small goal"` for the same tick in one flow. Step-by-step: [first-value path](docs/first-value-path.md).
 
 ---
 
@@ -85,30 +85,33 @@ The rest is below the fold for anyone who wants the detail.
 
 ## Skills
 
-Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · [Skill Router](docs/SKILL-ROUTER.md).
+Skills are the front door. Every skill is one move (or a wrapper) in the operating loop; flows compose them.
 
-| Skill | Use it when |
+**Maps:** [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md) · [Router](docs/SKILLS.md) · [SKILL-ROUTER](docs/SKILL-ROUTER.md)
+
+| Skill | Loop role |
 |---|---|
-| `/research` | you need codebase context and prior learnings before changing code |
-| `/pre-mortem` | you want to pressure-test a plan before building |
-| `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
-| `/council` | you want independent judges (optionally Claude and Codex) to return one verdict |
-| `/validate` | you want a code-quality and risk review before shipping |
-| `/evolve` | a goal-driven improvement loop that runs without mutating source |
+| `/plan` | Shape intent as BDD; slice + acceptance-gated beads |
+| `/implement` | One bead: RED acceptance → green → refactor |
+| `/validate` | Membrane — prove acceptance; no verdict = not done |
+| `/rpi` | One full tick (research → plan → implement → validate) |
+| `/pre-mortem` | Stress-test the plan before build |
+| `/council` | Multi-judge consensus when stakes are high |
+| `/post-mortem` | Capture evidence; ratchet learnings into the next loop |
 
 ## The `ao` CLI
 
-Repo-native control plane behind the skills. Full reference: [CLI commands](cli/docs/COMMANDS.md).
+Supporting control plane behind the skills (bookkeeping, retrieval, release gate) — not the front door. Full reference: [CLI commands](cli/docs/COMMANDS.md).
 
 <!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
 
 ```bash
-ao verify                 # independent verdict on your latest change
-ao gate check --fast      # the release gate before you push
-ao provenance show <sha>  # the recorded verdict trail for any commit
-ao done <bead-id>         # close tracked work with its verdict attached
 ao quick-start            # set up AgentOps in a repo
-ao doctor                 # check reviewers, binary, and ledger health
+ao doctor                 # check skills, reviewers, ledger health
+ao gate check --fast      # the release gate before you push
+ao verify                 # commit/pre-push ratchet (supporting; skills own the loop)
+ao provenance show <sha>  # recorded verdict trail
+ao done <bead-id>         # close tracked work with its verdict attached
 
 # Experimental (still measuring whether these pay off; see the honest version below):
 ao search "query"         # search history and local knowledge
@@ -117,11 +120,11 @@ ao compile                # rebuild the corpus
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
-The whole loop runs in a plain session. No daemon, no scheduler, no cloud. For always-on work, it can hand each task to a background runner instead. Details: [docs/3.0.md](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md).
+The whole loop runs in a plain session via skills. No daemon, no scheduler, no cloud. For always-on work, a substrate can dispatch whole `/rpi` ticks. Details: [docs/3.0.md](docs/3.0.md) · [operating loop](docs/architecture/operating-loop.md) · [Intent → Validated Code](docs/architecture/intent-to-validated-code.md).
 
 ## The honest version
 
-**Proven:** independent verification that records a verdict, and a durable, tamper-evident record of it. A change isn't done until something that didn't write it checks it, and that verdict is bound into the provenance ledger. No verdict, not done.
+**Proven:** independent verification that records a verdict, and a durable, tamper-evident record of it. A change isn't done until something that didn't write it checks it against the declared acceptance behavior, and that verdict is bound into the provenance ledger. No verdict, not done.
 
 The receipts are public: [membrane receipts](docs/evidence/membrane-receipts.md) — every number derived straight from the verdict ledger, none hand-written.
 
@@ -133,6 +136,6 @@ When the labs ship their own version of this, your `.agents/` folder comes with 
 
 ---
 
-[What 3.0 is](docs/3.0.md) · [vs hosted code review](docs/comparisons/vs-hosted-code-review.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · [upgrading / removed commands](docs/MIGRATION.md) · built on the [12-factor doctrine](https://12factoragentops.com).
+[What 3.0 is](docs/3.0.md) · [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md) · [vs hosted code review](docs/comparisons/vs-hosted-code-review.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · [upgrading / removed commands](docs/MIGRATION.md) · built on the [12-factor doctrine](https://12factoragentops.com).
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `br`). License: Apache-2.0.
