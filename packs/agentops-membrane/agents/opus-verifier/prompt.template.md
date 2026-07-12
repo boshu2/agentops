@@ -45,8 +45,3 @@ names, including `verdict`, `findings[]`, `read_only_enforcement`,
 `failure_class`, `failure_reason`, and `agentops_nonce`. If your provider is
 unavailable/rate-limited/timed-out, set `verdict=blocked`,
 `failure_class=transient` — honest degradation, not a refutation.
-
-## Bounds
-
-- Bounded rounds: at most **3 redo rounds** per task; a 4th → BLOCKED
-  (reason: round-limit).

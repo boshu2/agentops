@@ -2,6 +2,17 @@
 
 Detailed retry behavior for each gated phase. All gates use a max-3-attempts pattern (1 initial + 2 retries).
 
+## Retry-limit helper transition (mandatory)
+
+Three failed attempts are a stuckness signal, not a spent hard budget:
+`CIRCUIT-BREAKER-TRIP -> HOLD -> ONE-HELPER`. Give the blocker, all findings,
+and attempted approaches to exactly one fresh-context or available cross-family
+advisor. `HELPER-UNSTUCK -> AUTO-REDO`: apply its concrete new approach, reset
+the counter for that approach, and re-earn validation. `HELPER-ESCALATE -> HUMAN`
+only when the helper confirms operator authority/judgment is required. Skip the
+helper only for refusal-lane or explicit-judgment work, or an actually spent hard
+time/cost/quota ceiling. Never run a second helper for the same blocker class.
+
 ## Pre-mortem Gate (Phase 3)
 
 Extract verdict from council report:
@@ -31,8 +42,9 @@ Gate logic:
      $plan <goal> --auto --context 'Pre-mortem FAIL: <key concerns>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z\nFINDING: A | FIX: B | REF: C'
      ```
   4. Re-invoke `$pre-mortem` on the new plan
-  5. If still FAIL after 3 total attempts, stop with message:
-     "Pre-mortem failed 3 times. Last report: <path>. Manual intervention needed."
+  5. If still FAIL after 3 total attempts, enter HOLD and run the mandatory
+     retry-limit helper transition above with the last report; do not ask the
+     operator unless that helper returns ESCALATE.
 
 Store verdict in `rpi_state.verdicts.pre_mortem`.
 
@@ -45,14 +57,14 @@ Check completion status from crank's output. Look for `<promise>` tags:
   1. Read crank output to extract block reason
   2. Log: "Crank: BLOCKED (attempt N/3) -- retrying with context"
   3. Re-invoke `$crank` with epic-id and block context (include `--test-first` by default; omit only when `--no-test-first` is set)
-  4. If still BLOCKED after 3 total attempts, stop with message:
-     "Crank blocked 3 times. Reason: <reason>. Manual intervention needed."
+  4. If still BLOCKED after 3 total attempts, enter HOLD and run the mandatory
+     retry-limit helper transition above with the reason and attempted fixes.
 - **`<promise>PARTIAL</promise>`:** Retry remaining (max 2 retries):
   1. Read crank output to identify remaining items
   2. Log: "Crank: PARTIAL (attempt N/3) -- retrying remaining items"
   3. Re-invoke `$crank` with epic-id (it picks up unclosed issues; include `--test-first` by default; omit only when `--no-test-first` is set)
-  4. If still PARTIAL after 3 total attempts, stop with message:
-     "Crank partial after 3 attempts. Remaining: <items>. Manual intervention needed."
+  4. If still PARTIAL after 3 total attempts, enter HOLD and run the mandatory
+     retry-limit helper transition above with the remaining items and attempts.
 
 ## Validation Gate (Phase 3)
 
@@ -84,7 +96,8 @@ Gate logic:
      $crank <epic-id> --context 'Vibe FAIL: <key issues>\nStructured findings:\nFINDING: X | FIX: Y | REF: Z'                 # only when --no-test-first opted out
      ```
   4. Re-invoke `$validate` on the new changes
-  5. If still FAIL after 3 total attempts, stop with message:
-     "Vibe failed 3 times. Last report: <path>. Manual intervention needed."
+  5. If still FAIL after 3 total attempts, enter HOLD and run the mandatory
+     retry-limit helper transition above with the last report; do not ask the
+     operator unless that helper returns ESCALATE.
 
 Store verdict in `rpi_state.verdicts.vibe`.

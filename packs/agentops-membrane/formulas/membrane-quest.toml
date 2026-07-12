@@ -8,14 +8,20 @@ the ONE thing it structurally lacks is a deterministic, verdict-bound close door
 supplies exactly that and nothing else.
 
 The build/redo/retry all use NATIVE primitives: the builder works in its own git
-worktree, and `[steps.check].max_attempts` is gc's own bounded auto-redo. Only
+worktree, and `[steps.check].max_attempts` is gc's own bounded auto-redo. The
+first five attempts are the normal transport/refute budget; attempt six exists
+only to prove a concrete HELPER-UNSTUCK approach. Only
 the CLOSE is ours — the `[steps.check]` runs membrane/close-gate.sh under the
 core control-dispatcher (never an agent), which routes the diff + acceptance
 contract to >=2 cross-family fresh-context reviewers and fail-closes on anything
 but a deterministic CONFIRMED. On CONFIRMED the step passes and gc's
-workflow-finalize closes the workflow root + source quest bead; on exhaustion
-the step hard-fails and the quest bead STAYS OPEN for a human. Nothing here
-merges or pushes — a human merges the quest branch.
+workflow-finalize closes the workflow root + source quest bead. When attempt
+five fails, close-gate.sh itself enters HOLD and routes exactly ONE-HELPER
+consultation with the cumulative evidence. UNSTUCK supplies the attempt-six
+approach and must re-earn the normal independent verdict; ESCALATE makes attempt
+six terminate without dispatching another review, so the quest stays open for
+the operator. Nothing
+here merges or pushes — a human merges the quest branch.
 
 Invoke (targeted — the quest bead is the source bead the door closes):
   gc sling agentops-membrane.builder <quest-bead-id> --on membrane-quest \\
@@ -27,7 +33,7 @@ formula = "membrane-quest"
 formula_compiler = ">=2.0.0"
 
 [vars.quest]
-description = "Quest slug; repo at <city>/quests/<quest>, branch quest/<quest>, exchange <city>/membrane/<quest>/"
+description = "Quest slug; repo at <city>/quests/<quest>, branch quest/<quest>, exchange <city>/membrane/<quest>/runs/<workflow-root>/"
 required = true
 pattern = "^[a-z0-9][a-z0-9-]*$"
 
@@ -71,11 +77,21 @@ the workflow finalized pass on a DEGRADED verdict).
 **2. Read prior membrane findings (redo semantics):**
 ```bash
 CITY="${GC_CITY_PATH:-$(pwd)}"
-ls "$CITY"/membrane/{{quest}}/pawl-verdict-round-*.json 2>/dev/null && cat "$CITY"/membrane/{{quest}}/pawl-verdict-round-*.json
+RUN_ID="$(bd show "$BEAD_ID" --json 2>/dev/null | jq -r 'if type=="array" then .[0] else . end | .metadata["gc.root_bead_id"] // empty')"
+case "$RUN_ID" in ""|*[!A-Za-z0-9._-]*) echo "missing unsafe workflow root" >&2; exit 1;; esac
+RUN_EX="$CITY/membrane/{{quest}}/runs/$RUN_ID"
+ls "$RUN_EX"/pawl-verdict-round-*.json 2>/dev/null && cat "$RUN_EX"/pawl-verdict-round-*.json
 ```
 If any verdict is REFUTED, its findings are corrections from the independent
 cross-family reviewers. **Findings OVERRIDE anything conflicting in the task
 text below** — fix exactly what they name.
+
+Also read `"$RUN_EX/breaker-helper.json"` when present. It is
+the single circuit-breaker consultation. `outcome=UNSTUCK` means its nonempty
+`new_approach` is the mandatory materially-new approach for this recovery
+attempt. `outcome=ESCALATE` means do not mutate: close this iteration bead with
+`gc.outcome=fail`, note `helper_escalate`, and stop; the check will fail closed
+without dispatching another reviewer.
 
 **3. Set up your worktree** (reuse if it exists from a prior round):
 ```bash
@@ -117,13 +133,16 @@ membrane judges next; only its deterministic CONFIRMED closes the quest.)
 """
 
 [steps.check]
-# 5, not 3: on native graph.v2 EVERY failed check consumes an attempt — gc's
+# 6, not 3: on native graph.v2 EVERY failed check consumes an attempt — gc's
 # dispatcher never reads gc.failure_class on the ralph path, so a transient
 # reviewer-transport flake (DEGRADED) burns an attempt exactly like a REFUTED.
-# Budget: ~2 transport flakes + 3 real refute rounds. (2026-07-06 RCA.)
-max_attempts = 5
+# Budget: ~2 transport flakes + 3 real refute rounds, then exactly one recovery
+# proof attempt after close-gate.sh dispatches ONE-HELPER. (2026-07-12 breaker RCA.)
+max_attempts = 6
 
 [steps.check.check]
 mode = "exec"
 path = "membrane/close-gate.sh"
+# close-gate defaults reserve 300s for reviewers + 120s for the breaker helper
+# + 30s safety, and clamp operator overrides inside this 480s lease.
 timeout = "8m"

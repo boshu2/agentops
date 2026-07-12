@@ -29,11 +29,11 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
 
 | Piece | Purpose |
 |---|---|
-| `formulas/membrane-quest.toml` | v2 workflow: worktree build with `[steps.check]` → `close-gate.sh`, `max_attempts = 5`, check `gc.work_dir` pinned to the city root, ralph-gate-bead protection in the recovery snippet |
+| `formulas/membrane-quest.toml` | v2 workflow: worktree build with `[steps.check]` → `close-gate.sh`, five ordinary attempts plus one helper-guided recovery proof (`max_attempts = 6`), check `gc.work_dir` pinned to the city root, ralph-gate-bead protection in the recovery snippet |
 | `membrane/close-gate.sh` | the close door (run by the dispatcher, never an agent) |
 | `membrane/finalize.jq` + `finalize.sh` | deterministic decision: canonical `pawl-verdict.v1` only for terminal semantics; `gc-review-attempt.v1` for transport degradation |
 | `membrane/scaffold-quest.sh` + `quests/_template/` | move-1 intake: default-FAIL `CONTRACT.md`, red `test.sh` |
-| `agents/{planner,builder,verifier,agy-verifier,opus-verifier}` | trinity + third family + claude-family failover lane, RBAC via harness config |
+| `agents/{planner,builder,verifier,agy-verifier,opus-verifier,breaker-helper}` | work/review roles plus a plan-only one-shot breaker advisor, RBAC via harness config |
 | `doctor/law0-print-args`, `doctor/membrane-health` | blocking doctor checks |
 | `orders/membrane-canary.toml` | scheduled structural smoke via the pack's `e2e.sh` entrypoint |
 | `tests/{finalize,intake}.bats` | pins the rollup parity + scaffold contract (bash+jq only) |
@@ -64,7 +64,7 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
      timeout) ⇒ DEGRADED — never converted into a false REFUTE. **Honest
      attempt contract (corrected 2026-07-06):** on native graph.v2, gc's
      ralph dispatcher never reads `gc.failure_class` — every nonzero check
-     exit consumes one of `max_attempts` (5), DEGRADED included; the class
+     exit consumes one of `max_attempts` (6), DEGRADED included; the class
      stamp is evidence, not budget control.
    - **Artifact separation:** CONFIRMED/REFUTED write a closed-schema canonical
      verdict whose refuter evidence is copied to contained nonempty files.
@@ -73,8 +73,10 @@ evidence-bound verdict computed by scripts the *control dispatcher* runs.
 5. **Outcome:** exit 0 CONFIRMED → the dispatcher closes the ralph gate
    bead with the ENGINE fingerprint (final `gc.attempt_log` entry
    `outcome=pass`) and the workflow finalizes pass; any nonzero exit →
-   builder respawned with findings, one of `max_attempts` (5) consumed.
-   Exhausted attempts leave the quest bead **OPEN** — never a spurious close.
+   builder respawned with findings, one of the five ordinary attempts consumed.
+   A fifth failure creates one disposable session and dispatches ONE-HELPER to its unique ID.
+   UNSTUCK gets attempt six and must re-earn CONFIRMED; ESCALATE terminates before a sixth
+   review. Exhaustion leaves the quest bead **OPEN** — never a spurious close.
    **The membrane never merges or pushes; a human merges the branch.**
 
 **Two structural protections (added after the 2026-07-06 canary catches):**
@@ -118,7 +120,7 @@ after config). Restore the agy lane when its auth heals.
 
 ## pawl-verdict.v1 — reading a verdict
 
-Artifacts land at `<city>/membrane/<quest>/`:
+Artifacts land at `<city>/membrane/<quest>/runs/<workflow-root>/`:
 `pawl-verdict-round-N.json` (+ latest copied to `pawl-verdict.json`),
 `lane-<family>-round-N.json`, `nonce-round-N.txt`.
 
@@ -136,8 +138,8 @@ Terminal artifact example (actual required shape emitted by `finalize.sh`):
   "author_context_id": "builder-session",
   "attempt": 3,
   "refuters": [
-    {"family": "gpt", "reviewer": "lane-1", "context_id": "lane-1", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/evidence-round-3/lane-1.json"},
-    {"family": "gemini", "reviewer": "lane-2", "context_id": "lane-2", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/evidence-round-3/lane-2.json"}
+    {"family": "gpt", "reviewer": "lane-1", "context_id": "lane-1", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/runs/<workflow-root>/evidence-round-3/lane-1.json"},
+    {"family": "gemini", "reviewer": "lane-2", "context_id": "lane-2", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/runs/<workflow-root>/evidence-round-3/lane-2.json"}
   ]
 }
 ```
@@ -152,7 +154,7 @@ of burning redo attempts).
 
 ## Output Specification
 
-- **Path:** write quest evidence to the artifact directory `<city>/membrane/<quest>/`; source changes belong only under `packs/agentops-membrane/`.
+- **Path:** write evidence to `<city>/membrane/<quest>/runs/<workflow-root>/`; source changes belong only under `packs/agentops-membrane/`.
 - **Filename:** terminal output uses `pawl-verdict-round-<N>.json` plus `pawl-verdict.json`; raw inputs use `lane-<family>-round-<N>.json` and `nonce-round-<N>.txt`; terminal refuter evidence is copied to `evidence-round-<N>/lane-<index>.json`; degradation writes `review-attempt-round-<N>.json`.
 - **Format:** terminal verdicts follow the closed `pawl-verdict.v1` JSON schema; degradation writes nonsemantic `gc-review-attempt.v1` JSON and cannot replace the latest terminal verdict.
 - **Validation command:** run `bats packs/agentops-membrane/tests/{finalize,intake,close-gate}.bats`; for an installed city also run `bash skills/gc-membrane/scripts/e2e.sh --city <city>`.
@@ -162,7 +164,7 @@ of burning redo attempts).
 
 - Every CONFIRMED round was derived from lane `agentops_nonce` values matching the exact round nonce and has at least two distinct reviewer families.
 - REFUTED findings remain in contained lane artifacts, while DEGRADED remains transport evidence rather than semantic judgment.
-- Failed or exhausted review leaves the quest bead open, and the membrane never merges or pushes.
+- Failed review auto-redoes; the fifth failure creates, uses, and closes exactly one fresh-context helper session before the sixth recovery proof or terminal escalation. The membrane never merges or pushes.
 
 ## Self-verification
 
@@ -202,23 +204,23 @@ Scenario: Fail-closed verdict on a hard finding
   Given a quest round where one reviewer lane returns a hard finding with a valid nonce echo
   When finalize.sh computes the verdict
   Then the disposition is REFUTED with exit 2 and the quest bead stays open
-
 Scenario: Transient lane loss never false-refutes
   Given a quest round where one reviewer lane is provider_unavailable
   When finalize.sh computes the verdict
   Then the disposition is DEGRADED with exit 3 and the quest is not falsely REFUTED
-
 Scenario: DEGRADED still consumes a redo attempt (budget pinned to the formula)
-  Given membrane-quest.toml sets max_attempts = 5 and the ralph dispatcher never reads gc.failure_class
+  Given membrane-quest.toml sets max_attempts = 6 and the ralph dispatcher never reads gc.failure_class
   When a check exits nonzero as DEGRADED (exit 3), exactly as for a REFUTED (exit 2)
   Then one of max_attempts is consumed — a transient-loss flake burns budget like a real refute
-
+Scenario: Retry exhaustion executes the helper rung
+  Given five ordinary attempts have failed
+  When close-gate.sh handles the fifth non-CONFIRMED result
+  Then it creates and closes one disposable helper; UNSTUCK gets one recovery proof while ESCALATE dispatches no review
 Scenario: One family can never confirm
   Given a quest round where all lane verdicts come from a single provider family
   When finalize.sh computes the verdict
   Then the result is fewer_than_two_families and the disposition is not CONFIRMED
 ```
-
 ## Proof it works — updated (live evidence, 2026-07-05 + 2026-07-07)
 
 **2026-07-07 (native graph.v2, canary city, zero nudges):** hello3 ran the

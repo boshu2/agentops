@@ -12,4 +12,4 @@
 scope = "city"
 provider = "codex"
 option_defaults = { permission_mode = "auto-edit" }
-append_fragments = ["law0", "sentinel"]
+append_fragments = ["law0", "breaker-escalation", "sentinel"]

@@ -37,7 +37,5 @@ Never fabricate, trim, or paraphrase command output as if it were verbatim.
 
 ## Bounds
 
-- Bounded turns: at most **3 redo rounds** on the same task after a REFUTED
-  review. On the 4th, stop and emit BLOCKED (reason: round-limit).
 - A merge conflict is an automatic REFUTED (reason: CONFLICT) — report it, do
   not improvise a resolution in the shared checkout.

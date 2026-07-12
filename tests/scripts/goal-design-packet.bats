@@ -216,6 +216,47 @@ setup() {
     grep -qi "never a second helper pass" "$driver"
 }
 
+@test "checker rejects a packet that routes retry exhaustion directly to human" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new stale-escalation \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Reject stale escalation policy" \
+        --scenario-name "Reject stale escalation policy" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/check-goal-design-packet.sh" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/stale-escalation"
+    printf '%s\n' '| 3 failed validation rounds | **human** | escalate directly to human; ONE bounded helper pass may inspect in a fresh context later and return UNSTUCK or ESCALATE |' >> "$packet/driver.md"
+
+    run "$CHECKER" "$packet"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"escalation ladder"* ]]
+}
+
+@test "checker rejects a validation rule that names helper only after human" {
+    if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
+    "$TOOL" new stale-rule-order \
+        --output-root "$BATS_TEST_TMPDIR/.agents/goal-design" \
+        --objective "Reject human-first escalation rule" \
+        --scenario-name "Reject human-first escalation rule" \
+        --first-failing-proof "bats tests/scripts/goal-design-packet.bats" \
+        --write-scope "scripts/check-goal-design-packet.sh" >/dev/null
+    packet="$BATS_TEST_TMPDIR/.agents/goal-design/stale-rule-order"
+    python3 - "$packet/driver.md" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+text = path.read_text()
+start = text.index("  validation_fails:")
+end = text.index("\n  bead_closes_with_new_signal:", start)
+replacement = "  validation_fails: After 3 failed rounds, escalate directly to human; a helper may inspect in a fresh context later and return UNSTUCK or ESCALATE."
+path.write_text(text[:start] + replacement + text[end:])
+PY
+
+    run "$CHECKER" "$packet"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"routes human before"* ]]
+}
+
 @test "mark-validated rolls back when the checker rejects the stamped packet" {
     if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
     "$TOOL" new rollback-packet \

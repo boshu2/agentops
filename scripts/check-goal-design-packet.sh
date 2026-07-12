@@ -138,6 +138,68 @@ def detect_self_grading(intent_data, driver_data, intent_text: str, driver_text:
             fail(f"self-grading language: matched {pattern}")
 
 
+def check_escalation_ladder(driver_data, driver_text: str) -> None:
+    validation_rule = str(
+        driver_data.get("route_back_rules", {}).get("validation_fails", "")
+    ).casefold()
+    required_rule_terms = ("helper", "human")
+    missing_rule_terms = [term for term in required_rule_terms if term not in validation_rule]
+    has_fresh_advisor = any(
+        term in validation_rule for term in ("fresh context", "cross-family", "council")
+    )
+    if missing_rule_terms or not has_fresh_advisor:
+        fail(
+            "escalation ladder: route_back_rules.validation_fails must send a retry-limit "
+            "breaker through one fresh-context/cross-family/council helper before human"
+        )
+    helper_at = validation_rule.find("helper")
+    human_at = validation_rule.find("human")
+    if human_at < helper_at:
+        fail(
+            "escalation ladder: route_back_rules.validation_fails routes human "
+            "before the required fresh-context helper"
+        )
+
+    normalized_body = " ".join(driver_text.casefold().split())
+    required_body_terms = ("one bounded helper pass", "unstuck", "escalate")
+    missing_body_terms = [term for term in required_body_terms if term not in normalized_body]
+    if missing_body_terms:
+        fail(
+            "escalation ladder: driver body is missing helper transition terms: "
+            + ", ".join(missing_body_terms)
+        )
+
+    breaker_terms = re.compile(
+        r"(?:3|three) failed(?: validation)? rounds|oscillation|no forward progress|breaker trip"
+    )
+    for line in driver_text.splitlines():
+        normalized_line = " ".join(line.casefold().split())
+        if not breaker_terms.search(normalized_line):
+            continue
+        helper_at = normalized_line.find("helper")
+        human_at = normalized_line.find("human")
+        is_router_row = normalized_line.startswith("|")
+        if (is_router_row and helper_at < 0) or (
+            human_at >= 0 and (helper_at < 0 or human_at < helper_at)
+        ):
+            fail(
+                "escalation ladder: retry-limit/ordinary breaker row routes human "
+                "before the required helper"
+            )
+
+    direct_human_patterns = (
+        r"three failed rounds[^.\n]{0,120}(?:breaker|trip)[^.\n]{0,80}human",
+        r"any breaker trip[^|\n]{0,80}\|\s*\*\*human\*\*",
+        r"manual intervention needed",
+    )
+    for pattern in direct_human_patterns:
+        if re.search(pattern, normalized_body):
+            fail(
+                "escalation ladder: retry-limit/ordinary breaker routes directly to human "
+                f"instead of HOLD -> one helper (matched {pattern})"
+            )
+
+
 def check_cross_file_identity(intent_data, driver_data) -> None:
     intent_slug = str(intent_data["slug"])
     driver_slug = str(driver_data["slug"])
@@ -206,6 +268,7 @@ if expected_sha != actual_sha:
 check_cross_file_identity(intent_data, driver_data)
 check_candidate_scenario_mapping(intent_data, driver_data)
 detect_self_grading(intent_data, driver_data, intent_text, driver_text)
+check_escalation_ladder(driver_data, driver_text)
 
 print(f"goal-design packet valid: {packet_dir}")
 PY

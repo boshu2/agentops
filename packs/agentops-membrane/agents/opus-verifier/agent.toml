@@ -11,4 +11,4 @@
 scope = "city"
 provider = "claude"
 option_defaults = { permission_mode = "plan" }
-append_fragments = ["law0", "sentinel"]
+append_fragments = ["law0", "breaker-escalation", "sentinel"]

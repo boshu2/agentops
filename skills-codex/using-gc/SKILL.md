@@ -121,11 +121,11 @@ finalizer rules:
 | REFUTED (hard) | builder respawned with the findings — bounded self-redo |
 | DEGRADED (transient) | lane retried; never converted into a false REFUTE |
 
-**Attempt semantics (native graph.v2, corrected 2026-07-06):** gc's dispatcher
-never reads `gc.failure_class` on this path — **EVERY failed check consumes one
-of `max_attempts` (now 5)**, transient DEGRADED included. Budget = ~2 transport
-flakes + 3 real refute rounds. The `failure_class` stamp is evidence for
-humans, not retry-budget control.
+**Attempt semantics (native graph.v2, corrected 2026-07-06):** gc's dispatcher never reads `gc.failure_class` on this path — **EVERY failed check consumes one
+of `max_attempts` (now 6)**, transient DEGRADED included. Attempts 1–5 are the
+ordinary transport/refute budget; after attempt 5 fails, the gate creates one disposable
+helper session, submits by its unique ID, and closes it. Attempt 6 exists only to prove
+an UNSTUCK approach; ESCALATE terminates it before review. The `failure_class` stamp is evidence for humans, not retry-budget control.
 
 **Never touch a bead with `gc.kind=ralph`** — that is the engine-owned gate
 bead (it shares the build step's title). An agent closing it bypasses the
@@ -133,7 +133,7 @@ membrane entirely; the fork finalizer rejects such closes (engine attempt_log
 fingerprint required), and the formula's recovery snippet filters it, but the
 rule stands for humans too.
 
-**5. Read the verdict** at `<city>/membrane/<quest>/pawl-verdict.json`
+**5. Read the verdict** at `<city>/membrane/<quest>/runs/<workflow-root>/pawl-verdict.json`
 (schema `pawl-verdict.v1`; per-round history at `pawl-verdict-round-N.json` +
 `lane-<family>-round-N.json`): check `disposition`, `refuters[].family` (must
 be ≥2 distinct families for CONFIRMED), `nonce` (anti-replay), findings.
@@ -175,13 +175,13 @@ matter most are non-obvious:
 
 ## Output Specification
 
-**Artifact directory:** `<city>/membrane/<quest>/` for quest-local membrane evidence.
+**Artifact directory:** `<city>/membrane/<quest>/runs/<workflow-root>/`; run scoping prevents cross-sling replay.
 
 **Filename convention:** terminal output uses `pawl-verdict-round-<N>.json` plus latest `pawl-verdict.json`; lane inputs use `lane-<family>-round-<N>.json`; degradation uses `review-attempt-round-<N>.json`.
 
 **Serialization/schema format:** terminal verdicts are closed `pawl-verdict.v1` JSON; transient transport evidence is `gc-review-attempt.v1` and never substitutes for a terminal verdict.
 
-**Validator command:** with `VERDICT=<city>/membrane/<quest>/pawl-verdict.json`, run `python3 -m jsonschema -i "$VERDICT" schemas/pawl-verdict.v1.schema.json`, then require two distinct `refuters[].family` values for CONFIRMED.
+**Validator command:** with `VERDICT=<city>/membrane/<quest>/runs/<workflow-root>/pawl-verdict.json`, run `python3 -m jsonschema -i "$VERDICT" schemas/pawl-verdict.v1.schema.json`, then require two distinct `refuters[].family` values for CONFIRMED.
 
 **Downstream handoff:** pass city/quest ids, native-store and doctor status, verdict path/round/disposition/nonce, distinct reviewer families, findings, attempt budget, branch, and the explicit human merge action.
 

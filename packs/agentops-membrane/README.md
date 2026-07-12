@@ -34,11 +34,11 @@ gc formula list       # membrane-quest slingable
 | Piece | Doctrine it encodes |
 |---|---|
 | `membrane/finalize.{sh,jq}` | **No verdict = not done.** The deterministic close-door verdict — a faithful port of `reviewquorum.Finalize`'s rollup (`hard > transient > findings > pass`), plus a per-round **nonce** (anti-stale), a **cross-family precondition** (≥2 distinct families), and **degradation-awareness** (transient lane loss ⇒ DEGRADED, never a false REFUTE). Pure, side-effect-free, `bash`+`jq` only — so correctness is unit-proven cheaply (`tests/finalize.bats`). |
-| `membrane/close-gate.sh` | The fail-closed door itself. Deterministic pre-gates (branch exists, non-empty diff, contract present) → route **only** the diff + acceptance contract to ≥2 **cross-family, fresh-context** reviewers (LAW 0: never `claude -p`) → deterministic `finalize` → CONFIRMED closes, hard finding REFUTES, transient loss DEGRADES without fabricating judgment. Native graph.v2 consumes every failed check attempt, including degradation. **Never merges or pushes — a human merges.** Writes canonical `pawl-verdict.v1` only for terminal semantic results; degradation writes `gc-review-attempt.v1`. |
-| `formulas/membrane-quest.toml` | The build/redo/retry are **native** (worktree isolation + `[steps.check].max_attempts` bounded auto-redo, run by the core control-dispatcher); only the CLOSE is ours. |
+| `membrane/close-gate.sh` | The fail-closed door itself. Deterministic pre-gates (branch exists, non-empty diff, contract present) → route **only** the diff + acceptance contract to ≥2 **cross-family, fresh-context** reviewers (LAW 0: never `claude -p`) → deterministic `finalize` → CONFIRMED closes, hard finding REFUTES, transient loss DEGRADES without fabricating judgment. On the fifth failure it creates one disposable breaker-helper session, submits by its unique ID, nonce-validates the outcome, and closes the session; UNSTUCK gets one recovery proof, ESCALATE terminates without another review. **Never merges or pushes — a human merges.** |
+| `formulas/membrane-quest.toml` | The build/redo/retry are **native** (worktree isolation + `[steps.check].max_attempts` bounded auto-redo, run by the core control-dispatcher); only the CLOSE is ours. Five ordinary attempts are followed by one helper-guided recovery-proof attempt (`max_attempts = 6`). |
 | `doctor/law0-print-args/` | **LAW 0 as structure**, not prose: fails (exit 2, blocking) if any claude- or agy-backed provider carries a live `print_args` (the headless `claude -p` / `--print` billing sink). |
-| `agents/{planner,builder,verifier,agy-verifier}/` | The trinity with **harness-level RBAC** (`option_defaults.permission_mode = "plan"` makes planner/verifier read-only a machine fact; builder keeps write, only in its worktree) and the `VERDICT:` sentinel. Author ≠ judge; judges are a **different family**. |
-| `template-fragments/{law0,sentinel}.template.md` | DRY: the two verbatim-identical blocks (LAW 0, the sentinel contract) are single-sourced and pulled in via each agent's `append_fragments`, so a downstream city can extend them without forking prompts. |
+| `agents/{planner,builder,verifier,agy-verifier,breaker-helper}/` | Work/review roles plus the plan-only one-shot breaker advisor, with **harness-level RBAC** and the `VERDICT:` sentinel. Author ≠ judge; judges are a **different family**. |
+| `template-fragments/{law0,breaker-escalation,sentinel}.template.md` | DRY: LAW 0, the HOLD → one-helper escalation contract, and the sentinel contract are single-sourced and pulled in via every agent's `append_fragments`, so a downstream city can extend them without forking prompts. |
 
 ## Deploy (city.toml — the "how", not the "what")
 
@@ -65,8 +65,11 @@ mode = "always"
 ```
 
 The gate's lane targets/families default to `agentops-membrane.verifier` (gpt) and
-`agentops-membrane.agy-verifier` (gemini); override via `MEMBRANE_LANE1_TARGET` /
-`MEMBRANE_LANE1_FAMILY` / `MEMBRANE_LANE2_*` if your binding differs.
+`agentops-membrane.agy-verifier` (gemini). The breaker helper is not named or
+always-on: the gate creates and closes a fresh session for each breaker nonce.
+Override via
+`MEMBRANE_LANE1_TARGET` / `MEMBRANE_LANE1_FAMILY` / `MEMBRANE_LANE2_*` or
+`MEMBRANE_HELPER_TARGET` if your binding differs.
 
 ## Run
 
@@ -76,8 +79,14 @@ gc sling agentops-membrane.builder <quest-bead-id> --on membrane-quest \
 ```
 
 The quest repo lives at `<city>/quests/<slug>` with a protected `main` carrying
-`CONTRACT.md` (the reviewers' ruler) and a `test.sh`. On CONFIRMED the source
-bead closes with an evidence-bound work record; on exhaustion it **stays open**.
+`CONTRACT.md` (the reviewers' ruler) and a `test.sh`; evidence is isolated under
+`<city>/membrane/<slug>/runs/<workflow-root>/`. On CONFIRMED the source
+bead closes with an evidence-bound work record. A fifth failed round enters
+HOLD; `close-gate.sh` creates one disposable helper session and submits exactly
+ONE-HELPER consultation with the cumulative evidence to its unique ID. UNSTUCK supplies
+the sixth and final recovery approach, which must re-earn CONFIRMED. ESCALATE
+makes that final attempt terminate before reviewer dispatch, leaving the bead
+open for the operator.
 
 <!-- BEGIN planner-intake (age-gc-mvp-w2-nuiw.7) -->
 ## Planner intake — one-line ask → shaped quest (operating-loop move 1)

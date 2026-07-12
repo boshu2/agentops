@@ -227,7 +227,7 @@ on disk.
 
 ```
 <promise>DONE</promise>      # Discovery complete AND the plan PERSISTED in the active tracker (br/bd, else tasklist): `br show <epic_id>` (the packet's epic_id is a STRING — it must resolve) lists the epic + Gherkin-bearing slice children. A plan packet + passing pre-mortem with NO persisted beads is NOT DONE — operationalize (dag STEP 4 / /plan), verify, then signal.
-<promise>BLOCKED</promise>   # Pre-mortem failed 3x, manual intervention needed
+<promise>BLOCKED</promise>   # After 3 failures, one bounded fresh-context/cross-family helper runs: HELPER-UNSTUCK resumes; only HELPER-ESCALATE (or refusal/explicit judgment/a spent hard ceiling) blocks
 ```
 
 ## Troubleshooting

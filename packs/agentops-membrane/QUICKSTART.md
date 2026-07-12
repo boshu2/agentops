@@ -97,21 +97,27 @@ and routes only the diff + contract to the two reviewer lanes. Outcomes:
 | Disposition | What happens |
 |---|---|
 | CONFIRMED | quest bead closes with an evidence-bound record; **you merge the branch** |
-| REFUTED | a reviewer found a hard defect — builder respawned automatically (bounded attempts, max_attempts=5) |
-| DEGRADED | a lane was transiently lost — retried automatically; never a false refute. Note: on native graph.v2 every failed check consumes one of the bounded attempts (transient included), which is why the budget is 5 |
+| REFUTED | a reviewer found a hard defect — builder respawned automatically (five ordinary attempts plus one helper-guided recovery proof) |
+| DEGRADED | a lane was transiently lost — retried automatically; never a false refute. Native graph.v2 still consumes an attempt for every failed check. |
 
 A REFUTED→redo→CONFIRMED arc is normal. Never hand-close the quest bead; the
-redo path is automatic, and exhausted attempts leave the bead open by design.
+redo path is automatic. A fifth failed round enters HOLD and `close-gate.sh`
+creates one disposable helper session, submits exactly ONE-HELPER consultation to its
+unique ID, and closes it after the nonce-bound outcome. UNSTUCK gets the sixth recovery attempt
+and must re-earn CONFIRMED; HELPER-ESCALATE terminates that attempt without
+another review and leaves the bead open for the operator.
 
 ## 5. Read the verdict
 
 ```bash
-jq . ~/my-city/membrane/hello/pawl-verdict.json
+find ~/my-city/membrane/hello/runs -name pawl-verdict.json -print
+jq . ~/my-city/membrane/hello/runs/<workflow-root>/pawl-verdict.json
 ```
 
 Check three things: `disposition` is `CONFIRMED`; `refuters[]` shows **two
 distinct families** (e.g. `gpt` and `gemini`); every `nonce_echo` matches the
-round's nonce file next to it (anti-replay). The full schema and per-round
+round's nonce file next to it (anti-replay). Each sling has its own workflow-root
+directory, so re-slinging a quest cannot reuse a prior verdict. The schema and per-round
 artifacts (`pawl-verdict-round-N.json`, `lane-<family>-round-N.json`) are
 documented in `skills/gc-membrane/SKILL.md`.
 

@@ -66,10 +66,9 @@ func hashHex(b []byte) string {
 	return hex.EncodeToString(h[:])
 }
 
-// codexNativeRoot returns the Codex native plugin cache root under home.
+// codexNativeRoot returns the live Codex native plugin cache root under home.
 func codexNativeRoot(home string) string {
-	return filepath.Join(home, ".codex", "plugins", "cache",
-		"agentops-marketplace", "agentops", "local")
+	return quality.CodexNativePluginRootPath(home)
 }
 
 // skillInstallDirs returns the four candidate skill install roots, in priority
@@ -506,6 +505,7 @@ func (f skillsStaleCodexSyncFixer) stampInstallMeta(env *DetectEnv) ([]byte, err
 	}
 	return jsonSetFields(metaRaw, map[string]any{
 		"manifest_hash": hashHex(manifestRaw),
+		"plugin_root":   codexNativeRoot(env.HomeDir),
 		"version":       env.TargetSHA,
 	})
 }
@@ -1160,7 +1160,10 @@ func (d skillsDuplicateInstallDetector) Detect(env *DetectEnv) ([]Finding, error
 		return nil, nil
 	}
 	rawCodexOverlap := intersectNames(named[0], named[1])
-	legacyOverlap := intersectNames(named[primaryIdx], named[3])
+	var legacyOverlap []string
+	if primaryIdx != 3 {
+		legacyOverlap = intersectNames(named[primaryIdx], named[3])
+	}
 	if len(rawCodexOverlap) == 0 && len(legacyOverlap) == 0 {
 		return nil, nil
 	}

@@ -18,7 +18,7 @@
 name = "agentops-membrane"
 schema = 2
 version = "0.1.0"
-description = "AgentOps verification membrane: fail-closed, cross-family, verdict-bound close door as a composable gc pack (LAW-0 doctor check, planner/builder/verifier trinity with harness RBAC, membrane-quest formula, deterministic close-gate)."
+description = "AgentOps verification membrane: fail-closed, cross-family, verdict-bound close door as a composable gc pack (LAW-0 doctor check, planner/builder/verifier roles plus a one-shot breaker helper, membrane-quest formula, deterministic close-gate)."
 
 # Each trinity agent sets scope="city" in its own agents/<name>/agent.toml
 # (agent_defaults.scope is not honored in this pack schema wave).

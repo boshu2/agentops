@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -34,7 +35,7 @@ type CodexInstallMeta struct {
 	SkillCount   int    `json:"skill_count"`
 }
 
-func CodexNativePluginRootPath(home string) string {
+func codexNativePluginCacheBase(home string) string {
 	return filepath.Join(
 		home,
 		".codex",
@@ -42,8 +43,77 @@ func CodexNativePluginRootPath(home string) string {
 		"cache",
 		CodexAgentOpsMarketplaceName,
 		CodexAgentOpsPluginName,
-		"local",
 	)
+}
+
+func hasCodexSkills(root string) bool {
+	info, err := os.Stat(filepath.Join(root, "skills-codex"))
+	return err == nil && info.IsDir()
+}
+
+// pluginCacheNameLess orders dotted numeric cache versions naturally and
+// falls back to lexical ordering for non-version labels.
+func pluginCacheNameLess(a, b string) bool {
+	parse := func(s string) ([]int, bool) {
+		parts := strings.Split(s, ".")
+		out := make([]int, len(parts))
+		for i, part := range parts {
+			n, err := strconv.Atoi(part)
+			if err != nil {
+				return nil, false
+			}
+			out[i] = n
+		}
+		return out, true
+	}
+	av, aok := parse(a)
+	bv, bok := parse(b)
+	if aok && bok {
+		for i := 0; i < len(av) || i < len(bv); i++ {
+			var ai, bi int
+			if i < len(av) {
+				ai = av[i]
+			}
+			if i < len(bv) {
+				bi = bv[i]
+			}
+			if ai != bi {
+				return ai < bi
+			}
+		}
+	}
+	return a < b
+}
+
+// CodexNativePluginRootPath resolves the live AgentOps plugin cache. Codex
+// installs released plugins under a version directory; older local installs
+// used "local". Prefer a live metadata target, then a live local tree, then the
+// highest live version. Return the historical local target only for a fresh
+// install where no cache exists yet.
+func CodexNativePluginRootPath(home string) string {
+	base := codexNativePluginCacheBase(home)
+	local := filepath.Join(base, "local")
+	if meta, err := ReadCodexInstallMeta(home); err == nil && meta.PluginRoot != "" && hasCodexSkills(meta.PluginRoot) {
+		return filepath.Clean(meta.PluginRoot)
+	}
+	if hasCodexSkills(local) {
+		return local
+	}
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return local
+	}
+	var candidates []string
+	for _, entry := range entries {
+		if entry.IsDir() && entry.Name() != "local" && hasCodexSkills(filepath.Join(base, entry.Name())) {
+			candidates = append(candidates, entry.Name())
+		}
+	}
+	if len(candidates) == 0 {
+		return local
+	}
+	sort.Slice(candidates, func(i, j int) bool { return pluginCacheNameLess(candidates[i], candidates[j]) })
+	return filepath.Join(base, candidates[len(candidates)-1])
 }
 
 func CodexNativePluginSkillsPath(home string) string {
@@ -123,7 +193,7 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		}
 	}
 
-	expectedRoot := filepath.Join(home, ".codex", "plugins", "cache", CodexAgentOpsMarketplaceName, CodexAgentOpsPluginName, "local")
+	expectedRoot := CodexNativePluginRootPath(home)
 	if meta.InstallMode != "native-plugin" {
 		return &Check{
 			Name:   "Plugin",
@@ -183,11 +253,13 @@ type SkillInstall struct {
 
 // SkillInstallDirs returns the ordered list of candidate skill install locations.
 func SkillInstallDirs(home string) []SkillInstall {
+	nativeSkills := CodexNativePluginSkillsPath(home)
+	nativeDisplay := strings.Replace(filepath.ToSlash(nativeSkills), filepath.ToSlash(home), "~", 1)
 	return []SkillInstall{
 		{
-			Path:        CodexNativePluginSkillsPath(home),
+			Path:        nativeSkills,
 			Label:       "Codex Native Plugin",
-			DisplayPath: "~/.codex/plugins/cache/agentops-marketplace/agentops/local/skills-codex",
+			DisplayPath: nativeDisplay,
 		},
 		{
 			Path:        filepath.Join(home, ".codex", "skills"),
@@ -283,6 +355,7 @@ func CheckSkills() Check {
 	}
 
 	installs := SkillInstallDirs(home)
+	nativeDisplay := installs[0].DisplayPath
 	installedNames := make(map[string]map[string]struct{}, len(installs))
 	primary := ""
 	primaryCount := 0
@@ -307,7 +380,7 @@ func CheckSkills() Check {
 		return Check{Name: "Plugin", Status: "warn", Detail: "no skills found — " + pluginInstallHint(), Required: false}
 	}
 
-	nativeNames := installedNames["~/.codex/plugins/cache/agentops-marketplace/agentops/local/skills-codex"]
+	nativeNames := installedNames[nativeDisplay]
 	rawCodexNames := installedNames["~/.codex/skills"]
 
 	if len(nativeNames) > 0 && len(rawCodexNames) > 0 {
@@ -334,7 +407,7 @@ func CheckSkills() Check {
 		}
 	}
 
-	if primary == "~/.codex/plugins/cache/agentops-marketplace/agentops/local/skills-codex" {
+	if primary == nativeDisplay {
 		return *CheckCodexNativePluginManifest(home, primary, primaryCount)
 	}
 
