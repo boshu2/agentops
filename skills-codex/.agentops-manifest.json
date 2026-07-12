@@ -723,8 +723,8 @@
     {
       "name": "goal-design",
       "source_skill": "skills/goal-design",
-      "source_hash": "beec323e548f33bb7b8522e4de60e3933d7aadf23b2b9d715ed6c0a4ade9535b",
-      "generated_hash": "e92f53d9995cb6bd1905a8663be951ab22279e03d59f4ba54f3168ea2e7faeae"
+      "source_hash": "923a75e28c9ec4f0d308734130a4b15c9316ab1b0498e4deb9d69d0bc5af093e",
+      "generated_hash": "72fee885387849c680c3324f01e820578d36538dee7281189f569255118a75eb"
     },
     {
       "name": "goals",
