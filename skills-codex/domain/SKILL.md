@@ -7,6 +7,12 @@ description: Ubiquitous language for human-AI software
 This is a **library skill**. It doesn't run standalone — it holds the shared
 vocabulary that you, the agent, and other skills cite when describing work.
 
+## Constraints
+
+- Load only `references/INDEX.md` and the entries needed for the current term, because preloading the corpus defeats its JIT context boundary.
+- Cite the exact entry slug when applying vocabulary and do not improvise a competing definition, because this skill is the canonical language register.
+- Add missing concepts as `draft` entries and update `references/INDEX.md` in the same change; never self-promote an entry to `canonical`, because promotion requires operator approval.
+
 ## Why this exists
 
 AgentOps's existing skills (research, plan, crank, validate, ...) are verbs.
@@ -37,6 +43,21 @@ structural primitives without operator consent.
 4. When you find a concept missing or misnamed, add a draft entry under
    `references/` and update `INDEX.md`. Promotion from `draft` to `canonical`
    requires operator approval.
+
+## Output Specification
+
+- **Path:** a lookup returns its domain-language reference on stdout; every vocabulary mutation writes the canonical `skills/domain/references/<slug>.md` and updates `skills/domain/references/INDEX.md`, regardless of the consuming runtime.
+- **Filename:** new entries use the filename convention `<kebab-case-slug>.md`; the catalog remains `INDEX.md`.
+- **Format:** stdout is concise Markdown naming the cited slug; entry files follow the frontmatter schema and section shape in `references/entry.md`.
+- **Codex projection:** `skills-codex/domain/` is a generated, read-only consumption projection. Never edit it; after source changes, regenerate with `scripts/codex-sync.sh --force --only domain` and prove convergence with `scripts/codex-sync.sh --check --only domain`.
+- **Validation command:** after a canonical mutation, run `bash skills/domain/scripts/validate.sh`, regenerate and check the Codex projection, then inspect the changed entry and index row before claiming completion.
+- **Downstream handoff:** return the cited or created slug, its status, and the paths consulted or changed; this is consumed by the requesting skill, plan, issue, or commit message.
+
+## Quality Checklist
+
+- The returned definition matches the cited entry rather than a memory-based paraphrase that changes its meaning.
+- The lookup loads the smallest sufficient entry set and names any non-canonical status.
+- A new entry is single-concept, indexed, starts as `draft`, and follows the `references/entry.md` shape.
 
 ## Entries (tracer-bullet set)
 
