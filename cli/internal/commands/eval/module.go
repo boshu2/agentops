@@ -22,16 +22,28 @@ type CoreUseCases interface {
 	Coverage(context.Context, aoeval.CoreCoverageRequest) (*aoeval.CoverageReport, error)
 }
 
+type CleanupUseCases interface {
+	Execute(context.Context, aoeval.CleanupRequest) (aoeval.CleanupReport, error)
+}
+
+type UseCases struct {
+	Core    CoreUseCases
+	Cleanup CleanupUseCases
+}
+
 type HostOptions struct {
 	OutputMode func(*cobra.Command) string
+	Verbose    func(*cobra.Command) bool
 }
 
 type Module struct {
-	core CoreUseCases
-	host HostOptions
+	useCases UseCases
+	host     HostOptions
 }
 
-func NewModule(core CoreUseCases, host HostOptions) Module { return Module{core: core, host: host} }
+func NewModule(useCases UseCases, host HostOptions) Module {
+	return Module{useCases: useCases, host: host}
+}
 
 func (Module) Contract() clicontract.CommandContract {
 	return clicontract.CommandContract{
@@ -74,6 +86,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	command.GroupID = "workflow"
 	command.AddCommand(module.runCommand(), module.compareCommand(), module.baselineCommand(), module.baselineAuditCommand(), module.scorecardCommand(), module.coverageCommand())
+	if module.useCases.Cleanup != nil {
+		command.AddCommand(module.cleanupCommand())
+	}
 	return command
 }
 
@@ -101,7 +116,7 @@ func (module Module) runCommand() *cobra.Command {
 	_ = command.RegisterFlagCompletionFunc("baseline-mode", staticCompletion(aoeval.AllBaselineModes()...))
 	_ = command.RegisterFlagCompletionFunc("context-mode", staticCompletion(aoeval.AllContextModes()...))
 	command.RunE = func(command *cobra.Command, args []string) error {
-		result, err := module.core.Run(command.Context(), aoeval.CoreRunRequest{SuitePath: args[0], RunID: options.runID, Runtime: options.runtime, OutputPath: options.output, BaselinePath: options.baseline, BaselineMode: options.baselineMode, ContextMode: options.contextMode, ContextOffDir: options.contextOffDir, ContextOnDir: options.contextOnDir, DeltaOut: options.deltaOut})
+		result, err := module.useCases.Core.Run(command.Context(), aoeval.CoreRunRequest{SuitePath: args[0], RunID: options.runID, Runtime: options.runtime, OutputPath: options.output, BaselinePath: options.baseline, BaselineMode: options.baselineMode, ContextMode: options.contextMode, ContextOffDir: options.contextOffDir, ContextOnDir: options.contextOnDir, DeltaOut: options.deltaOut})
 		if err != nil {
 			return err
 		}
@@ -117,7 +132,7 @@ func (module Module) compareCommand() *cobra.Command {
 	command.Flags().Float64Var(&options.maxAggregate, "max-aggregate-regression", 0, "allowed aggregate regression before verdict becomes regression")
 	command.Flags().Float64Var(&options.maxDimension, "max-dimension-regression", 0, "allowed per-dimension regression before verdict becomes regression")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		result, err := module.core.Compare(command.Context(), aoeval.CoreCompareRequest{CandidatePath: args[0], BaselinePath: args[1], OutputPath: options.output, MaxAggregateRegression: options.maxAggregate, MaxDimensionRegression: options.maxDimension})
+		result, err := module.useCases.Core.Compare(command.Context(), aoeval.CoreCompareRequest{CandidatePath: args[0], BaselinePath: args[1], OutputPath: options.output, MaxAggregateRegression: options.maxAggregate, MaxDimensionRegression: options.maxDimension})
 		if err != nil {
 			return err
 		}
@@ -144,7 +159,7 @@ func (module Module) baselineCommand() *cobra.Command {
 	command.Flags().StringVar(&options.promotedBy, "promoted-by", "", "identity promoting the baseline")
 	command.Flags().StringVar(&options.rationale, "rationale", "", "rationale for promoting the baseline")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		result, err := module.core.PromoteBaseline(command.Context(), aoeval.CoreBaselineRequest{RunPath: args[0], OutputPath: options.output, PromotedBy: options.promotedBy, Rationale: options.rationale})
+		result, err := module.useCases.Core.PromoteBaseline(command.Context(), aoeval.CoreBaselineRequest{RunPath: args[0], OutputPath: options.output, PromotedBy: options.promotedBy, Rationale: options.rationale})
 		if err != nil {
 			return err
 		}
@@ -167,7 +182,7 @@ func (module Module) baselineAuditCommand() *cobra.Command {
 	command.Flags().StringVar(&options.root, "root", options.root, "suite root to scan when no suite paths are provided")
 	command.Flags().StringVar(&options.baselineDir, "baseline-dir", options.baselineDir, "promoted baseline directory")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		report, err := module.core.AuditBaseline(command.Context(), aoeval.CoreBaselineAuditRequest{SuitePaths: args, Root: options.root, BaselineDir: options.baselineDir})
+		report, err := module.useCases.Core.AuditBaseline(command.Context(), aoeval.CoreBaselineAuditRequest{SuitePaths: args, Root: options.root, BaselineDir: options.baselineDir})
 		if err != nil {
 			return err
 		}
@@ -204,7 +219,7 @@ func (module Module) scorecardCommand() *cobra.Command {
 		if len(args) == 2 {
 			baselinePath = args[1]
 		}
-		card, err := module.core.Scorecard(command.Context(), aoeval.CoreScorecardRequest{CandidatePath: args[0], BaselinePath: baselinePath, OutputPath: options.output, Kind: options.kind, MaxCategoryRegression: options.maxCategory})
+		card, err := module.useCases.Core.Scorecard(command.Context(), aoeval.CoreScorecardRequest{CandidatePath: args[0], BaselinePath: baselinePath, OutputPath: options.output, Kind: options.kind, MaxCategoryRegression: options.maxCategory})
 		if err != nil {
 			return err
 		}
@@ -229,7 +244,7 @@ func (module Module) coverageCommand() *cobra.Command {
 	command.Flags().StringArrayVar(&options.dimensions, "require-dimension", options.dimensions, "required score dimension for missing-dimension reporting")
 	command.Flags().StringArrayVar(&options.runtimes, "require-runtime", options.runtimes, "required deterministic runtime for missing-runtime reporting")
 	command.RunE = func(command *cobra.Command, args []string) error {
-		report, err := module.core.Coverage(command.Context(), aoeval.CoreCoverageRequest{SuitePaths: args, Root: options.root, RequiredDomains: options.domains, RequiredEvidenceKinds: options.evidenceKinds, RequiredDimensions: options.dimensions, RequiredRuntimes: options.runtimes})
+		report, err := module.useCases.Core.Coverage(command.Context(), aoeval.CoreCoverageRequest{SuitePaths: args, Root: options.root, RequiredDomains: options.domains, RequiredEvidenceKinds: options.evidenceKinds, RequiredDimensions: options.dimensions, RequiredRuntimes: options.runtimes})
 		if err != nil {
 			return err
 		}
@@ -241,6 +256,51 @@ func (module Module) coverageCommand() *cobra.Command {
 		renderCoverage(command, "evidence kinds", report.MissingRequiredEvidenceKinds, report.RequiredEvidenceKinds)
 		renderCoverage(command, "dimensions", report.MissingRequiredDimensions, report.RequiredDimensions)
 		renderCoverage(command, "runtimes", report.MissingRequiredRuntimes, report.RequiredRuntimes)
+		return nil
+	}
+	return command
+}
+
+func (module Module) cleanupCommand() *cobra.Command {
+	options := aoeval.CleanupRequest{TmpAgeSeconds: 60}
+	command := &cobra.Command{
+		Use: "cleanup", Short: "Recover stale Runs (state transitions, --delete, --tmp-files)",
+		Long: `Per SCHEMA.md §4 cleanup state-transition rule (rc2):
+
+  Stale pending  (no running transition within 60s)
+                                       -> aborted (retraction_reason=never_started)
+  Stale running  (no heartbeat within 5min OR Inspect process not alive)
+                                       -> failed   (retraction_reason=orphaned_process)
+
+After transitions:
+  --delete       Remove Run dirs whose status is failed OR aborted (NEVER retracted).
+  --tmp-files    Sweep orphan manifest.json.tmp left from rename-step crashes.
+  --dry-run      Print what would be done; no mutations.
+
+The cleanup procedure honors the §4 atomic-write contract on every state
+transition (temp + fsync + rename + fsync-parent-dir). Retracted Runs are
+never auto-removed — retraction is an audit trail.`,
+	}
+	command.Flags().BoolVar(&options.Delete, "delete", false, "Remove Run directories whose status is failed or aborted (never retracted)")
+	command.Flags().BoolVar(&options.TmpFiles, "tmp-files", false, "Sweep orphan *.tmp files older than --tmp-age")
+	command.Flags().Int64Var(&options.TmpAgeSeconds, "tmp-age", 60, "Minimum tmp-file age in seconds before sweep (0 = sweep all)")
+	command.Flags().BoolVar(&options.DryRun, "dry-run", false, "Preview without mutations")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		report, err := module.useCases.Cleanup.Execute(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, report)
+		}
+		fmt.Fprintf(command.OutOrStdout(), "Eval cleanup:\n  transitions->aborted: %d\n  transitions->failed:  %d\n  runs deleted:         %d\n  tmp files swept:      %d\n", report.TransitionsAborted, report.TransitionsFailed, report.RunsDeleted, report.TmpFilesSwept)
+		verbose := module.host.Verbose != nil && module.host.Verbose(command)
+		if len(report.Touched) > 0 && verbose {
+			fmt.Fprintln(command.OutOrStdout(), "Touched:")
+			for _, touched := range report.Touched {
+				fmt.Fprintf(command.OutOrStdout(), "  %s\n", touched)
+			}
+		}
 		return nil
 	}
 	return command
