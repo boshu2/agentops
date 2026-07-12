@@ -30,6 +30,13 @@ type scenarioABUseCasesSpy struct{ request aoeval.ScenarioABRequest }
 
 type aliasUseCasesSpy struct{ request aoeval.SessionOutcomeRequest }
 
+type benchUseCasesSpy struct{ request aoeval.BenchRequest }
+
+func (useCases *benchUseCasesSpy) Bench(_ context.Context, request aoeval.BenchRequest) (aoeval.AliasOutput, error) {
+	useCases.request = request
+	return aoeval.AliasOutput{Stdout: "bench\n"}, nil
+}
+
 func (useCases *aliasUseCasesSpy) SessionOutcome(_ context.Context, request aoeval.SessionOutcomeRequest) (aoeval.SessionOutcomeResult, error) {
 	useCases.request = request
 	return aoeval.SessionOutcomeResult{SessionID: "s", Reward: .5, Signals: []aoeval.SessionSignal{}}, nil
@@ -257,6 +264,18 @@ func TestModuleChaosRendersAdapterStreams(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "PASS smoke") {
 		t.Fatalf("stdout=%q", stdout.String())
+	}
+}
+
+func TestModuleBenchDelegatesClosureLocalFlags(t *testing.T) {
+	useCases := &benchUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Bench: useCases}, HostOptions{}).Command()
+	command.SetArgs([]string{"bench", "--corpus", "fixture", "--k", "7", "--json"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if useCases.request.Corpus != "fixture" || useCases.request.K != 7 || !useCases.request.JSON || !useCases.request.KChanged {
+		t.Fatalf("request=%#v", useCases.request)
 	}
 }
 
