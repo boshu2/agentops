@@ -77,7 +77,6 @@ func executeCommand(args ...string) (string, error) {
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
 	origContextPacketStatusFlags := contextPacketStatusFlags
-	origDoctorJSON := doctorJSON
 	origMaturityApply := maturityApply
 	origMaturityScan := maturityScan
 	origMaturityCurate := maturityCurate
@@ -147,7 +146,6 @@ func executeCommand(args ...string) (string, error) {
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
-		doctorJSON = origDoctorJSON
 		maturityApply = origMaturityApply
 		maturityScan = origMaturityScan
 		maturityCurate = origMaturityCurate
@@ -229,7 +227,6 @@ func executeCommand(args ...string) (string, error) {
 	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed", "security"}
 	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
 	evalCoverageRuntimes = []string{"static", "shell", "mock"}
-	doctorJSON = false
 	maturityApply = false
 	maturityScan = false
 	maturityCurate = false
