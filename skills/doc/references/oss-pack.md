@@ -18,7 +18,7 @@ This mode helps prepare repositories for open source release by:
 | `audit` | Check which OSS docs exist/missing |
 | `scaffold` | Create all missing standard files |
 | `scaffold [file]` | Create specific file |
-| `refresh` | Refresh existing docs with latest patterns |
+| `refresh` | Propose latest-pattern updates; write existing docs only after explicit user confirmation |
 | `validate` | Check docs follow best practices |
 
 ---
@@ -168,7 +168,7 @@ Beads-tracker AGENTS.md patterns: [oss-beads-patterns.md](oss-beads-patterns.md)
 - Validate documentation quality
 
 **DON'T:**
-- Overwrite existing content without confirmation
+- Update or overwrite existing content without explicit user confirmation, including through `refresh`
 - Generate code documentation (use `/doc gen` — the default doc mode)
 - Generate the README hero/landing page (use `/doc --mode=readme`)
 - Create CI/CD files (out of scope — configure CI/CD separately)
