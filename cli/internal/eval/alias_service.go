@@ -29,3 +29,15 @@ type AliasUseCases interface {
 	SessionOutcome(context.Context, SessionOutcomeRequest) (SessionOutcomeResult, error)
 	Chaos(context.Context) (AliasOutput, error)
 }
+
+type BenchRequest struct {
+	Corpus                                                 string
+	JSON                                                   bool
+	K                                                      int
+	Live, Global                                           bool
+	SearchEval, SearchRoot, SearchBackend, CompareBackends string
+	KChanged                                               bool
+}
+type BenchUseCases interface {
+	Bench(context.Context, BenchRequest) (AliasOutput, error)
+}

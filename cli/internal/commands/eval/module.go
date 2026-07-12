@@ -66,6 +66,7 @@ type UseCases struct {
 	Scenario   ScenarioUseCases
 	ScenarioAB ScenarioABUseCases
 	Aliases    aoeval.AliasUseCases
+	Bench      aoeval.BenchUseCases
 }
 
 type HostOptions struct {
@@ -146,6 +147,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.Aliases != nil {
 		command.AddCommand(module.sessionOutcomeCommand(), module.chaosCommand())
+	}
+	if module.useCases.Bench != nil {
+		command.AddCommand(module.benchCommand())
 	}
 	return command
 }
@@ -825,6 +829,32 @@ func (module Module) chaosCommand() *cobra.Command {
 	command := &cobra.Command{Use: "chaos", Short: "Run a read-only smoke test of the tick membrane", Args: cobra.NoArgs}
 	command.RunE = func(command *cobra.Command, _ []string) error {
 		output, err := module.useCases.Aliases.Chaos(command.Context())
+		if output.Stdout != "" {
+			fmt.Fprint(command.OutOrStdout(), output.Stdout)
+		}
+		if output.Stderr != "" {
+			fmt.Fprint(command.ErrOrStderr(), output.Stderr)
+		}
+		return err
+	}
+	return command
+}
+
+func (module Module) benchCommand() *cobra.Command {
+	options := aoeval.BenchRequest{K: 3, SearchBackend: "local-lexical"}
+	command := &cobra.Command{Use: "bench", Short: "Run retrieval quality benchmarks"}
+	command.Flags().StringVar(&options.Corpus, "corpus", "", "Path to benchmark corpus directory")
+	command.Flags().BoolVar(&options.JSON, "json", false, "JSON output")
+	command.Flags().IntVar(&options.K, "k", 3, "K for Precision@K")
+	command.Flags().BoolVar(&options.Live, "live", false, "Benchmark against real .agents/learnings/ instead of synthetic corpus")
+	command.Flags().BoolVar(&options.Global, "global", false, "Include ~/.agents/learnings/ (cross-rig aggregated store, requires --live)")
+	command.Flags().StringVar(&options.SearchEval, "search-eval", "", "Path to an ao-search eval manifest with queries and ground_truth paths")
+	command.Flags().StringVar(&options.SearchRoot, "search-root", "", "Repo root to search for --search-eval (defaults to current directory)")
+	command.Flags().StringVar(&options.SearchBackend, "search-backend", "local-lexical", "Search backend for --search-eval")
+	command.Flags().StringVar(&options.CompareBackends, "search-compare-backends", "", "Comma-separated search backends to compare for --search-eval")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		options.KChanged = command.Flags().Changed("k")
+		output, err := module.useCases.Bench.Bench(command.Context(), options)
 		if output.Stdout != "" {
 			fmt.Fprint(command.OutOrStdout(), output.Stdout)
 		}
