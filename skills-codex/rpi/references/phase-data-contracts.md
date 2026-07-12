@@ -35,6 +35,7 @@ Phase receipt rule:
 - every phase boundary artifact records `skills_loaded`
 - `.agents/rpi/execution-packet.json` carries the cumulative `phase_receipts` array for discovery, implementation, validation, and any re-plan pass
 - `phase_receipts[].status` must match the delegated skill's completion marker or verdict (`DONE`, `PARTIAL`, `BLOCKED`, `FAIL`, or `PASS/WARN/FAIL` as emitted)
+- before Report or downstream handoff, the final receipt for each required phase must be successful: discovery `DONE`, implementation `DONE`, and validation `PASS`; intermediate negative receipts may remain in the cumulative audit history only when a later receipt for that phase records the successful redo
 - receipts are an audit index, not proof by themselves; transcript or runtime invocation trace remains the stronger evidence when available
 
 Validation lane selection rule:

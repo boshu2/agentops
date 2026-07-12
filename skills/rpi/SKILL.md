@@ -59,6 +59,13 @@ you need the full autonomy contract.
 
 **`--auto` means *pivot autonomously*, NOT *execute the initial plan to the letter*.** Autonomy is agility, not waterfall: between waves the orchestrator re-plans the remaining work and changes course on its own — refactoring, adding, dropping, reordering waves as evidence arrives — without the operator saying so (touched only at the terminal objective or a circuit-breaker trip that survives its bounded helper pass). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule).
 
+## Critical Constraints
+
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, feed its findings into re-plan, and retry the same lifecycle objective. **Why:** a negative verdict is evidence for the loop, not an andon by itself.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. A breaker is a capability, permission, safety, or irreducible ambiguity stop—not an ordinary failed check. **Why:** one bounded helper can restore progress without hiding a true stop condition.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** human attention is reserved for decisions or terminal recovery lanes the loop cannot own.
+- Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
+
 ## Loop position
 
 `/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → bead acceptance → evidence + learning mined back into the next loop. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/curate --mode=forge`/`/post-mortem`), and enforces these loop-level invariants:
@@ -84,10 +91,7 @@ replace phase skills with direct agent spawns, or skip validation. Read
 [../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
 for the full anti-compression contract.
 See [references/isolation-contract.md](references/isolation-contract.md) for
-the four-lever model, phase-isolated skill transport, and the compression
-patterns `scripts/check-skill-isolation.sh` flags. See
-[references/best-practices.md](references/best-practices.md) for the principle
-and anti-pattern citation table.
+phase-isolated transport and [references/best-practices.md](references/best-practices.md) for its anti-patterns.
 
 When the runtime supports phase isolation, keep `/rpi` visible in the main
 session and run each phase contract through isolated transport: phase skill name in, bounded handoff artifact in, phase artifact/verdict/next action out.
@@ -131,11 +135,6 @@ discovered), `phase` (discovery|implementation|validation), `complexity`
 (fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle`
 (from 1), and `verdicts` ({}).
 
-Complex-operation keywords include `refactor`, `migrate`, `rewrite`,
-`redesign`, `rearchitect`, `overhaul`, `decouple`, `deprecate`, `split`,
-`extract module`, and `port`. Scope keywords include `all`, `entire`, `across`,
-`everywhere`, `every file`, `system-wide`, `global`, and `codebase`.
-
 ## Phase DAG
 
 Enter at the routed phase and run every phase after it.
@@ -143,13 +142,15 @@ Enter at the routed phase and run every phase after it.
 1. **Discovery:** invoke `/discovery <goal> [--interactive] --complexity=<level>`
    directly or through phase-isolated skill transport.
    On DONE, read `.agents/rpi/execution-packet.json` or the run archive and
-   preserve its objective spine. On BLOCKED, stop with the discovery verdict.
+   preserve its objective spine. On BLOCKED, classify it through the pawl
+   recovery state machine; never stop on the label alone.
 2. **Implementation:** invoke `/crank <epic-id>` when the packet has `epic_id`;
    otherwise invoke `/crank .agents/rpi/execution-packet.json`, directly or
    through phase-isolated skill transport. Pass `--test-first` or
    `--no-test-first` through. On DONE, record `ao ratchet record implement
-   2>/dev/null || true` and continue. On PARTIAL or BLOCKED, retry the same
-   objective up to 3 total attempts. **Before accepting a slice/wave the orchestrator reads the actual diff itself** (scope + claim match) — not just the `<promise>DONE</promise>` and evidence JSON, but its own diff-read, distinct from the delegated sub-judges.
+   2>/dev/null || true` and continue. On PARTIAL, auto-redo the same objective;
+   on BLOCKED, classify it through pawl recovery. Use 3 total attempts before
+   `EXHAUSTED-BUDGET`. **Before accepting a slice/wave the orchestrator reads the actual diff itself** (scope + claim match) — not just the `<promise>DONE</promise>` and evidence JSON, but its own diff-read, distinct from the delegated sub-judges.
    `/crank` enforces this as the anti-green-washing Step 3.5 of its Wave Acceptance ([crank wave-patterns.md §Wave Acceptance Check](../crank/references/wave-patterns.md)).
 3. **Validation:** invoke `/validate <epic-id> --complexity=<level>` when an
    epic exists; otherwise invoke `/validate --complexity=<level>`, directly
@@ -165,6 +166,10 @@ Enter at the routed phase and run every phase after it.
    command without invoking it. Before emitting the report, apply the Context
    Density Rule: every line should carry intent, boundary, evidence, decision,
    constraint, or next action.
+
+## Pawl Recovery State Machine
+
+Treat validation WARN, FAIL, and REFUTED as `AUTO-REDO`: persist findings, re-plan remaining work, then re-enter the owning phase. Raise `BREAKER` only when execution cannot safely or meaningfully proceed; hold the objective and dispatch exactly one bounded helper. Helper recovery returns to auto-redo. Helper escalation, an explicit refusal/judgment lane, or exhausted budget is the only human andon path. Record every transition in the execution packet and final report.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
@@ -182,27 +187,21 @@ schemas and archive paths.
 
 > The pawl gates ([pawls.md](../../docs/contracts/pawls.md)) fire at the irreversible doors — bead-acceptance and merge-to-main — never per slice/wave; chaos between pawls. The merge-to-main pawl fires **regardless of complexity** (see Phase 3); complexity below only scales the DEPTH of the gate, never whether it runs.
 
-Complexity scales the gate's depth: `low`/`fast` and `medium`/`standard` → 2-judge minimum panel (inline / `--quick`); `high`/`full` → full council; max 3 total attempts. The gate still fires at the door at every complexity.
-
-- **Pre-mortem** (planning-time, chaos-side — NOT a pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts. Pre-mortem stress-tests the plan before work; it is not an irreversible door and carries no heavy gate of its own outside this optional `full`-arc depth.
-- **Final Vibe** (at the bead-acceptance pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts.
-- **Post-mortem** (STEP 2, at the bead-acceptance pawl): `high`/`full` → full council; same scale as above.
+`fast`/`standard` use a 2-judge minimum panel; `full` uses a full council; all cap at 3 attempts. Pre-mortem is a chaos-side stress test, not a pawl. Final validation and post-mortem sit at bead acceptance. Read [references/complexity-scaling.md](references/complexity-scaling.md) for the complete matrix.
 
 ## Flags
 
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
-| `--discovery-artifact=<path>` | unset | With implementation start, convert an existing artifact into the handoff packet |
 | `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
 | `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
 | `--spawn-next` | off | Surface follow-up work after reporting |
-| `--test-first` | on | Pass strict-quality preference to `/crank` |
-| `--no-test-first` | off | Explicitly opt out of strict-quality |
+| `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
 | `--quality` | off | Make validation strict surfaces blocking |
-| `--dry-run` / `--no-budget` | off | Report only, or disable phase time budgets |
+| `--dry-run` / `--no-budget` | off | Report only, or disable phase budgets |
 
 ## Examples
 
@@ -214,19 +213,27 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 
 ## Output Specification
 
-**Format:** a markdown report to stdout ([report-template](references/report-template.md)) — phase verdicts, re-plan deltas, and epic status.
-**Files:** reads/updates `.agents/rpi/execution-packet.json` (+ `runs/<id>/`) and `.agents/rpi/next-work.jsonl` (with `--spawn-next`); records `ao ratchet record` per phase.
+**Artifact directory:** `.agents/rpi/`.
+**Filename convention:** mutable `execution-packet.json`, immutable `runs/<run-id>/execution-packet.json`, `phase-<n>-summary.md`, and optional `next-work.jsonl`.
+**Serialization/schema format:** packet JSON matches `schemas/execution-packet.schema.json` plus the `skills_loaded`/`phase_receipts` extension in [phase-data-contracts](references/phase-data-contracts.md); summaries follow the markdown [report template](references/report-template.md).
+**Validator command:** `python3 skills/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
+**Downstream handoff:** discovery creates the packet, crank updates evidence and receipts, validate appends the acceptance verdict, and Report emits the human-readable roll-up.
 **Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
+
+## Quality Checklist
+
+- [ ] The same objective and acceptance examples survive every phase and retry.
+- [ ] Each phase has a disk-backed receipt, evidence path, and explicit verdict.
+- [ ] Ordinary negative verdicts re-plan through the pawl; only terminal lanes raise the andon.
+- [ ] The execution packet passes its validator before Report or downstream handoff.
 
 ## Troubleshooting
 
 | Problem | Response |
 |---------|----------|
-| Discovery BLOCKED | Stop and report discovery's manual-intervention reason |
-| `/crank` returns PARTIAL | Retry `/crank` on the same objective; do not narrow to a child slice |
-| Validation FAIL | Re-crank with findings, then re-validate, up to 3 total attempts |
-| Packet shape unclear | Read [references/phase-data-contracts.md](references/phase-data-contracts.md) |
-| External executor fails | Read [references/codex-executor.md](references/codex-executor.md), run direct Codex validation, and only create follow-up work for reproducible source failures |
+| Phase returns BLOCKED | Classify it through pawl recovery; stop only on a terminal transition |
+| Packet validation fails | Repair the packet or receipts, then rerun the validator before handoff |
+| External executor fails | Use direct local checks; raise a breaker only for a reproducible capability stop |
 
 ## Related skills
 
@@ -234,17 +241,7 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 
 ## Reference Documents
 
-- [references/agile-replan-loop.md](references/agile-replan-loop.md) — the anti-waterfall rule: inter-wave re-plan, `--auto`-pivot bounds, anti-patterns
-- [references/rpi.feature](references/rpi.feature) — Executable spec: strict ordered phases, validation-never-skipped, context-density across handoffs (soc-qk4b.2)
-- [references/orchestrator-compression-anti-pattern.md](references/orchestrator-compression-anti-pattern.md) — Phase-skipping failure mode; rationalizations to reject
-- [references/installed-plugin-version-not-repo-head.md](references/installed-plugin-version-not-repo-head.md) — `/rpi` loads from `~/.claude/plugins/cache/`, not the repo working tree; verify which version is active before measuring
-- [references/complexity-scaling.md](references/complexity-scaling.md)
-- [references/context-windowing.md](references/context-windowing.md) — OPT-IN large-repo mode (`--large-repo`); NOT part of the default RPI path. Default discovery/research does not generate `.agents/rpi/context-shards/latest.json`.
-- [references/discovery-artifact-mode.md](references/discovery-artifact-mode.md)
-- [references/error-handling.md](references/error-handling.md)
-- [references/gate-retry-logic.md](references/gate-retry-logic.md)
-- [references/gate4-loop-and-spawn.md](references/gate4-loop-and-spawn.md)
-- [references/phase-budgets.md](references/phase-budgets.md)
-- [references/troubleshooting.md](references/troubleshooting.md)
-
-> Also referenced inline above: [autonomous-execution](references/autonomous-execution.md), [codex-executor](references/codex-executor.md), [examples](references/examples.md), [phase-data-contracts](references/phase-data-contracts.md), [report-template](references/report-template.md).
+- Core loop: [agile re-plan](references/agile-replan-loop.md), [executable feature](references/rpi.feature), [compression anti-pattern](references/orchestrator-compression-anti-pattern.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md).
+- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [phase budgets](references/phase-budgets.md), [examples](references/examples.md).
+- Recovery: [error handling](references/error-handling.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [troubleshooting](references/troubleshooting.md), [Codex executor](references/codex-executor.md).
+- Contracts: [autonomous execution](references/autonomous-execution.md), [phase data](references/phase-data-contracts.md), [report template](references/report-template.md).
