@@ -52,14 +52,19 @@ type ScenarioUseCases interface {
 	Validate(context.Context) (aoeval.ScenarioValidationResult, error)
 	Evaluate(context.Context, aoeval.ScenarioEvaluateRequest) (*aoeval.ScenarioEvaluateReport, error)
 }
+type ScenarioABUseCases interface {
+	Run(context.Context, aoeval.ScenarioABRequest) (aoeval.ScenarioABResult, error)
+	Moat(context.Context, aoeval.ScenarioMoatRequest) (aoeval.MoatClaimResult, error)
+}
 
 type UseCases struct {
-	Core     CoreUseCases
-	Cleanup  CleanupUseCases
-	Task     TaskUseCases
-	Suite    SuiteUseCases
-	Outcomes OutcomesUseCases
-	Scenario ScenarioUseCases
+	Core       CoreUseCases
+	Cleanup    CleanupUseCases
+	Task       TaskUseCases
+	Suite      SuiteUseCases
+	Outcomes   OutcomesUseCases
+	Scenario   ScenarioUseCases
+	ScenarioAB ScenarioABUseCases
 }
 
 type HostOptions struct {
@@ -133,6 +138,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.Scenario != nil {
 		command.AddCommand(module.scenarioCommand())
+	}
+	if module.useCases.ScenarioAB != nil {
+		command.AddCommand(module.scenarioABCommand(), module.scenarioMoatCommand())
 	}
 	return command
 }
@@ -697,6 +705,79 @@ func renderScenarioEvaluate(command *cobra.Command, report *aoeval.ScenarioEvalu
 	}
 	fmt.Fprintf(command.OutOrStdout(), "Wrote %d result(s) to %s (run %s, iteration %d)\n", report.Written, report.Artifact, report.RunID, report.Iteration)
 	return nil
+}
+
+func (module Module) scenarioABCommand() *cobra.Command {
+	var options aoeval.ScenarioABRequest
+	command := &cobra.Command{Use: "scenario-ab", Short: "Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)", Args: cobra.NoArgs, SilenceUsage: true}
+	command.Flags().StringVar(&options.ScenarioPath, "scenario", "", "Path to the scenario.v1 JSON file (required)")
+	command.Flags().StringVar(&options.OutputPath, "output", "", "Write the ScenarioDeltaScorecard JSON to this path")
+	command.Flags().IntVar(&options.TokenBudget, "token-budget", 0, "Fail the gate if summed arm token cost exceeds this (0 = default 200000)")
+	command.Flags().DurationVar(&options.Timeout, "timeout", 0, "Per-arm timeout (0 = default 5m)")
+	command.Flags().BoolVar(&options.ControlOnly, "control-only", false, "Run only the without-gold control arm and fail on ceiling/no-headroom")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.ScenarioAB.Run(command.Context(), options)
+		if result.Card.ScenarioID != "" {
+			renderScenarioAB(command, result.Card)
+		}
+		if err != nil {
+			var gate *aoeval.ScenarioABGateError
+			if errors.As(err, &gate) {
+				for _, reason := range gate.Reasons {
+					fmt.Fprintf(command.ErrOrStderr(), "  FAIL: %s\n", reason)
+				}
+			}
+		}
+		return err
+	}
+	return command
+}
+func renderScenarioAB(command *cobra.Command, card aoeval.ScenarioDeltaScorecard) {
+	if card.CeilingViolation {
+		fmt.Fprintf(command.OutOrStdout(), "scenario-ab %s [%s]: CEILING VIOLATION (without=%.4f >= threshold=%.4f) — invalid scenario, no delta emitted\n", card.ScenarioID, card.VerdictClass, card.Without.Score, card.SatisfactionThreshold)
+	} else if card.ControlOnly {
+		fmt.Fprintf(command.OutOrStdout(), "scenario-ab %s [%s]: control-only headroom=PASS (without=%.4f < threshold=%.4f) tokens=%d gate=%s\n", card.ScenarioID, card.VerdictClass, card.Without.Score, card.SatisfactionThreshold, card.Without.TokenCost, passLabel(card.Gate.Pass))
+	} else {
+		fmt.Fprintf(command.OutOrStdout(), "scenario-ab %s [%s]: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s %s\n", card.ScenarioID, card.VerdictClass, card.AggregateDelta, card.With.Score, card.Without.Score, card.With.TokenCost+card.Without.TokenCost, passLabel(card.Gate.Pass), moatLabel(card.MoatEligible))
+	}
+}
+func passLabel(pass bool) string {
+	if pass {
+		return "PASS"
+	}
+	return "FAIL"
+}
+func moatLabel(eligible bool) string {
+	if eligible {
+		return "moat-eligible"
+	}
+	return "NOT-moat-evidence(plumbing)"
+}
+
+func (module Module) scenarioMoatCommand() *cobra.Command {
+	var options aoeval.ScenarioMoatRequest
+	command := &cobra.Command{Use: "scenario-moat", Short: "Aggregate moat-eligible scenario A/B scorecards into a publication verdict", Args: cobra.NoArgs, SilenceUsage: true}
+	command.Flags().StringArrayVar(&options.ScorecardPaths, "scorecard", nil, "Path to a ScenarioDeltaScorecard JSON (repeatable)")
+	command.Flags().StringVar(&options.OutputPath, "output", "", "Write the MoatClaimResult JSON to this path")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.ScenarioAB.Moat(command.Context(), options)
+		if err != nil {
+			var ineligible aoeval.ErrMoatIneligibleScorecard
+			if errors.As(err, &ineligible) {
+				fmt.Fprintf(command.ErrOrStderr(), "REJECTED: %s\n", err)
+			}
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, result)
+		}
+		fmt.Fprintf(command.OutOrStdout(), "scenario-moat: verdict=%s scenarios=%d mean_delta=%.4f\n  %s\n", result.Verdict, result.ScenarioCount, result.MeanAggregateDelta, result.Reason)
+		if options.OutputPath != "" {
+			fmt.Fprintf(command.OutOrStdout(), "Moat claim result: %s\n", options.OutputPath)
+		}
+		return nil
+	}
+	return command
 }
 
 func (module Module) renderRun(command *cobra.Command, result aoeval.CoreRunResult) error {
