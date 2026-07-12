@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -550,11 +551,12 @@ func TestDoctorStaleReplacementsExist(t *testing.T) {
 			// The replacement is not registered in this build. In the spine
 			// (default) build some replacements point to commands archived
 			// behind a build tag (e.g. "ao curate" → //go:build flywheel,
-			// age-nzwo). Tolerate those here; the flywheel/legacy run of this
-			// test — where every archived command is compiled back in — is the
+			// age-nzwo). Tolerate those here; only the combined flywheel+legacy
+			// run compiles every archived command back in and can be the
 			// strict check that still catches a genuinely dead replacement.
-			if len(archiveBuildTags) == 0 {
-				t.Logf("deprecatedCommands[%q] = %q — replacement absent from spine build (archived behind a build tag); checked by the archive-tag run", old, newCmd)
+			combinedArchive := slices.Contains(archiveBuildTags, "flywheel") && slices.Contains(archiveBuildTags, "legacy")
+			if !combinedArchive {
+				t.Logf("deprecatedCommands[%q] = %q — replacement absent from %v build; checked by the combined flywheel+legacy run", old, newCmd, archiveBuildTags)
 				continue
 			}
 			t.Errorf("deprecatedCommands[%q] = %q — command not found (err=%v)", old, newCmd, err)

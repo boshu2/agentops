@@ -31,6 +31,23 @@ func TestPawlReviewUseDocumentsUpstreamScope(t *testing.T) {
 	}
 }
 
+func TestValidPawlRouteID(t *testing.T) {
+	for _, tc := range []struct {
+		id   string
+		want bool
+	}{
+		{id: "age-ghk3i.12", want: true},
+		{id: "A_route-9", want: true},
+		{id: "_leading-separator", want: false},
+		{id: "contains/slash", want: false},
+		{id: strings.Repeat("a", 65), want: false},
+	} {
+		if got := validPawlRouteID(tc.id); got != tc.want {
+			t.Errorf("validPawlRouteID(%q) = %v, want %v", tc.id, got, tc.want)
+		}
+	}
+}
+
 // writePawlTestRepo builds a minimal repo root resolveAgentsRepoRoot() accepts
 // (docs/contracts/agents-write-surfaces.md + skills/) plus a stub scripts/pawl-review.sh
 // that exits with the given code, and points testProjectDir at it. Restores all shared

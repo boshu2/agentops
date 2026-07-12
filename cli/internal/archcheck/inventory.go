@@ -47,6 +47,12 @@ func BuildInventory(root, family string) (Inventory, error) {
 	symbolSet := map[string]bool{}
 	effectSet := map[Rule]bool{}
 	candidateSet := map[string]bool{}
+	sets := inventorySets{
+		owners:     ownerSet,
+		symbols:    symbolSet,
+		effects:    effectSet,
+		candidates: candidateSet,
+	}
 
 	entries, err := os.ReadDir(cmdRoot)
 	if err != nil {
@@ -65,46 +71,8 @@ func BuildInventory(root, family string) (Inventory, error) {
 		if !strings.Contains(strings.ToLower(name), needle) && !strings.Contains(strings.ToLower(string(data)), needle) {
 			continue
 		}
-		rel := relative(root, path)
-		ownerSet[rel] = true
-		file, err := parser.ParseFile(token.NewFileSet(), path, data, 0)
-		if err != nil {
+		if err := scanInventoryOwner(root, needle, path, name, data, sets); err != nil {
 			return Inventory{}, err
-		}
-		for _, declaration := range file.Decls {
-			switch item := declaration.(type) {
-			case *ast.FuncDecl:
-				symbolSet[item.Name.Name] = true
-			case *ast.GenDecl:
-				for _, spec := range item.Specs {
-					switch value := spec.(type) {
-					case *ast.TypeSpec:
-						symbolSet[value.Name.Name] = true
-					case *ast.ValueSpec:
-						for _, ident := range value.Names {
-							symbolSet[ident.Name] = true
-						}
-					}
-				}
-			}
-		}
-		for _, spec := range file.Imports {
-			importPath := strings.Trim(spec.Path.Value, `"`)
-			const prefix = "github.com/boshu2/agentops/cli/internal/"
-			if strings.HasPrefix(importPath, prefix) {
-				owner := "cli/internal/" + strings.TrimPrefix(importPath, prefix) + "/**"
-				candidateSet[owner] = true
-			}
-		}
-		inducedPath := "cli/internal/commands/" + needle + "/" + name
-		found, err := CheckSource(inducedPath, data)
-		if err != nil {
-			return Inventory{}, err
-		}
-		for _, violation := range found {
-			if strings.HasPrefix(string(violation.Rule), "effect.") {
-				effectSet[violation.Rule] = true
-			}
 		}
 	}
 
@@ -131,6 +99,66 @@ func BuildInventory(root, family string) (Inventory, error) {
 		OwnerCandidates: ownerCandidates,
 		AllowedPaths:    allowed,
 	}, nil
+}
+
+type inventorySets struct {
+	owners     map[string]bool
+	symbols    map[string]bool
+	effects    map[Rule]bool
+	candidates map[string]bool
+}
+
+func scanInventoryOwner(root, needle, path, name string, data []byte, sets inventorySets) error {
+	sets.owners[relative(root, path)] = true
+	file, err := parser.ParseFile(token.NewFileSet(), path, data, 0)
+	if err != nil {
+		return err
+	}
+	collectLegacySymbols(file, sets.symbols)
+	collectOwnerCandidates(file, sets.candidates)
+
+	inducedPath := "cli/internal/commands/" + needle + "/" + name
+	found, err := CheckSource(inducedPath, data)
+	if err != nil {
+		return err
+	}
+	for _, violation := range found {
+		if strings.HasPrefix(string(violation.Rule), "effect.") {
+			sets.effects[violation.Rule] = true
+		}
+	}
+	return nil
+}
+
+func collectLegacySymbols(file *ast.File, symbols map[string]bool) {
+	for _, declaration := range file.Decls {
+		switch item := declaration.(type) {
+		case *ast.FuncDecl:
+			symbols[item.Name.Name] = true
+		case *ast.GenDecl:
+			for _, spec := range item.Specs {
+				switch value := spec.(type) {
+				case *ast.TypeSpec:
+					symbols[value.Name.Name] = true
+				case *ast.ValueSpec:
+					for _, ident := range value.Names {
+						symbols[ident.Name] = true
+					}
+				}
+			}
+		}
+	}
+}
+
+func collectOwnerCandidates(file *ast.File, candidates map[string]bool) {
+	for _, spec := range file.Imports {
+		importPath := strings.Trim(spec.Path.Value, `"`)
+		const prefix = "github.com/boshu2/agentops/cli/internal/"
+		if strings.HasPrefix(importPath, prefix) {
+			owner := "cli/internal/" + strings.TrimPrefix(importPath, prefix) + "/**"
+			candidates[owner] = true
+		}
+	}
 }
 
 func verifyScopeEvidence(root, family, scopePath string) ([]Violation, error) {

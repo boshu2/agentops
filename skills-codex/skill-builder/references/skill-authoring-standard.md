@@ -8,8 +8,8 @@ and `heal-skill` — read it before authoring or absorbing a skill.
 
 This file contains only AgentOps-owned summaries and rules. It does not copy any
 third-party skill content (see [agentops-skill-factory.md](agentops-skill-factory.md)).
-Executable values come only from the source
-`skills/skill-builder/references/skill-conformance-profiles.yaml`, using the
+Executable values come only from
+[skill-conformance-profiles.yaml](skill-conformance-profiles.yaml), using the
 `repo-runtime` profile by default.
 
 ## Contents

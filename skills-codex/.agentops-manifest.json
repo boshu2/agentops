@@ -856,7 +856,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "05691eddcdf1eb9b0e3c6c39ce0e631b039710ee310041a45ab91ab0d98a6b63",
-      "generated_hash": "d8c74c8b06790f4df2fa79701eb0de3dd05ab405a847ba1a5ddd024fb8c9f870"
+      "generated_hash": "7f17e5ad0ee0f87c34ecb2e185b00209a041537b2358b0203ad0e5a22db97fa5"
     },
     {
       "name": "sbh",
@@ -891,8 +891,8 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "81185f0904aea0397ef2c305d9dcec882b7b2a866434dd6eebf8108cd4e0d701",
-      "generated_hash": "7a4f25df0d4587733ce1236b94f94097c6ade132cffa583e3aeae5a779e2098f"
+      "source_hash": "290420c11dedee2e1813879c7771bf35d8bde17db8470a7affed24228a8653b5",
+      "generated_hash": "bb01abdea50880d948fcfd74ae1baec1d3fc17675ec48dd3cfce4a0f75af7ae7"
     },
     {
       "name": "standards",
@@ -904,7 +904,7 @@
       "name": "status",
       "source_skill": "skills/status",
       "source_hash": "78d83f3d9f4f344af7322661e92bc0f3fbdd966e6a21a39f42614b2e405eb902",
-      "generated_hash": "3cdf27e1b1d862910a9d1f7a550d8c0c19e9ef697caf1e333da3dc8e4017d616"
+      "generated_hash": "1a074298f489dd99a84a4af06786ff240b3ceed121e093a5254edaa51a9dd9df"
     },
     {
       "name": "swarm",

@@ -359,71 +359,12 @@ func tickCloseResolved(rt tickRuntime, resolution trackerResolution, id, msg, ev
 		return &tickExitError{code: tickExitCloseFail}
 	}
 
-	closedRef := "none"
-	if resolution.Tracker == trackerBR {
-		before := tickGitRevParseInDir(rt, ledgerDir)
-		if before == "" {
-			before = "none"
-		}
-		if _, code, syncErr := rt.run(resolution.Binary, "sync", "--flush-only"); syncErr != nil || code != 0 {
-			_, _, _ = rt.run(resolution.Binary, "sync")
-		}
-		issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
-		metadataPath := filepath.Join(ledgerDir, "metadata.json")
-		if !tickLedgerShowsClosed(issuesPath, id) {
-			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-			_, _, _ = rt.run(resolution.Binary, "sync", "--flush-only")
-			fmt.Fprintf(rt.stderr, "FAILED close %s: %s ledger does not show a closed bead after close; bead reopened\n", id, resolution.Tracker)
-			return &tickExitError{code: tickExitCloseFail}
-		}
-
-		ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
-		if tickPathExists(rt.workDir, metadataPath) {
-			ledgerStage = append(ledgerStage, "metadata.json")
-		}
-		if _, code, addErr := rt.run("git", ledgerStage...); addErr != nil || code != 0 {
-			return &tickExitError{code: code, msg: "ledger git add failed"}
-		}
-		ledgerCommitOut, code, commitErr := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
-		ledgerCommitNoop := false
-		if commitErr != nil || code != 0 {
-			if tickGitCommitNothingToCommit(ledgerCommitOut) {
-				ledgerCommitNoop = true
-			} else {
-				return &tickExitError{code: code, msg: "ledger git commit failed"}
-			}
-		}
-		after := tickGitRevParseInDir(rt, ledgerDir)
-		if after == "" {
-			after = "none"
-		}
-		if before == after && !ledgerCommitNoop {
-			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-			fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
-			return &tickExitError{code: tickExitNoCommit}
-		}
-		closedRef = after
-	} else {
-		// bd persists into its Dolt-backed store itself. Never inspect, stage, or
-		// commit the unrelated BR JSONL ledger; verify through the selected bd
-		// backend instead.
-		if !tickTrackerShowsClosed(rt, resolution, id) {
-			_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-			fmt.Fprintf(rt.stderr, "FAILED close %s: %s does not report the issue closed; issue reopened\n", id, resolution.Tracker)
-			return &tickExitError{code: tickExitCloseFail}
-		}
+	closedRef, err := tickPersistClosedTracker(rt, resolution, id, msg)
+	if err != nil {
+		return err
 	}
-
-	stage := tickPublicStagePaths(rt, ledgerDir, evFirst, paths)
-	if len(stage) > 0 {
-		args := append([]string{"add", "--"}, stage...)
-		if _, code, err := rt.run("git", args...); err != nil || code != 0 {
-			return &tickExitError{code: code, msg: "git add failed"}
-		}
-		out, code, err := rt.run("git", "commit", "-q", "-m", msg)
-		if (err != nil || code != 0) && !tickGitCommitNothingToCommit(out) {
-			return &tickExitError{code: code, msg: "git commit failed"}
-		}
+	if err := tickCommitPublicClose(rt, ledgerDir, evFirst, msg, paths); err != nil {
+		return err
 	}
 	if resolution.Tracker == trackerBD {
 		closedRef = tickGitRevParse(rt)
@@ -432,6 +373,82 @@ func tickCloseResolved(rt tickRuntime, resolution trackerResolution, id, msg, ev
 		}
 	}
 	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(closedRef))
+	return nil
+}
+
+func tickPersistClosedTracker(rt tickRuntime, resolution trackerResolution, id, msg string) (string, error) {
+	if resolution.Tracker == trackerBR {
+		return tickCommitBRClose(rt, resolution, id, msg)
+	}
+
+	// bd persists into its Dolt-backed store itself. Never inspect, stage, or
+	// commit the unrelated BR JSONL ledger; verify through the selected bd
+	// backend instead.
+	if tickTrackerShowsClosed(rt, resolution, id) {
+		return "none", nil
+	}
+	_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+	fmt.Fprintf(rt.stderr, "FAILED close %s: %s does not report the issue closed; issue reopened\n", id, resolution.Tracker)
+	return "", &tickExitError{code: tickExitCloseFail}
+}
+
+func tickCommitBRClose(rt tickRuntime, resolution trackerResolution, id, msg string) (string, error) {
+	ledgerDir := resolution.LedgerDir
+	before := tickGitRevParseInDir(rt, ledgerDir)
+	if before == "" {
+		before = "none"
+	}
+	if _, code, syncErr := rt.run(resolution.Binary, "sync", "--flush-only"); syncErr != nil || code != 0 {
+		_, _, _ = rt.run(resolution.Binary, "sync")
+	}
+	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
+	if !tickLedgerShowsClosed(issuesPath, id) {
+		_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+		_, _, _ = rt.run(resolution.Binary, "sync", "--flush-only")
+		fmt.Fprintf(rt.stderr, "FAILED close %s: %s ledger does not show a closed bead after close; bead reopened\n", id, resolution.Tracker)
+		return "", &tickExitError{code: tickExitCloseFail}
+	}
+
+	ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
+	if tickPathExists(rt.workDir, filepath.Join(ledgerDir, "metadata.json")) {
+		ledgerStage = append(ledgerStage, "metadata.json")
+	}
+	if _, code, addErr := rt.run("git", ledgerStage...); addErr != nil || code != 0 {
+		return "", &tickExitError{code: code, msg: "ledger git add failed"}
+	}
+	ledgerCommitOut, code, commitErr := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
+	ledgerCommitNoop := false
+	if commitErr != nil || code != 0 {
+		if !tickGitCommitNothingToCommit(ledgerCommitOut) {
+			return "", &tickExitError{code: code, msg: "ledger git commit failed"}
+		}
+		ledgerCommitNoop = true
+	}
+	after := tickGitRevParseInDir(rt, ledgerDir)
+	if after == "" {
+		after = "none"
+	}
+	if before == after && !ledgerCommitNoop {
+		_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
+		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
+		return "", &tickExitError{code: tickExitNoCommit}
+	}
+	return after, nil
+}
+
+func tickCommitPublicClose(rt tickRuntime, ledgerDir, evidence, msg string, paths []string) error {
+	stage := tickPublicStagePaths(rt, ledgerDir, evidence, paths)
+	if len(stage) == 0 {
+		return nil
+	}
+	args := append([]string{"add", "--"}, stage...)
+	if _, code, err := rt.run("git", args...); err != nil || code != 0 {
+		return &tickExitError{code: code, msg: "git add failed"}
+	}
+	out, code, err := rt.run("git", "commit", "-q", "-m", msg)
+	if (err != nil || code != 0) && !tickGitCommitNothingToCommit(out) {
+		return &tickExitError{code: code, msg: "git commit failed"}
+	}
 	return nil
 }
 
@@ -1115,10 +1132,15 @@ func tickSmoke(rt tickRuntime) error {
 		fails++
 	}
 
-	if err := tickGuardStatus(tickRuntime{workDir: rt.workDir, stdout: io.Discard, stderr: io.Discard}); err == nil {
+	hooksOut, hooksCode, hooksErr := rt.run("git", "config", "--get", "core.hooksPath")
+	hooksPath := strings.TrimSpace(string(hooksOut))
+	switch {
+	case hooksPath != ".githooks" && (hooksErr == nil || hooksCode == 1):
+		passLine("1 hookless default")
+	case hooksErr == nil && hooksCode == 0 && tickExitCode(tickGuardStatus(tickRuntime{workDir: rt.workDir, stdout: io.Discard, stderr: io.Discard})) == 0:
 		passLine("1 guard-status active")
-	} else {
-		failLine("1 guard-status NOT active")
+	default:
+		failLine("1 guard posture invalid")
 	}
 
 	if !tickVerdictHasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
@@ -1138,9 +1160,9 @@ func tickSmoke(rt tickRuntime) error {
 		_ = os.WriteFile(path, []byte(body), 0o644)
 		return path
 	}
-	pass1 := write("pass1.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
-	pass2 := write("pass2.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
-	fail1 := write("fail1.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass1 := write("pass1.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\ncontext_id: chaos-athena\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass2 := write("pass2.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\ncontext_id: chaos-windyelm\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
+	fail1 := write("fail1.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\ncontext_id: chaos-windyelm-fail\nVERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	unver := write("unver.md", "VERDICT: PASS\nthis verdict cites no commands\n")
 	contra := write("contra.md", "VERDICT: FAIL\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	quietRT := rt

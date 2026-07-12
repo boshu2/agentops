@@ -151,6 +151,11 @@ func headShortSHA() string {
 // pointer. Verdict exit codes (*pawlReviewExitError) propagate verbatim:
 // the exit code IS the verdict.
 func runVerify(cmd *cobra.Command, args []string) error {
+	cfg := verifycfg.Load()
+	if cfgErr := cfg.ValidationError(); cfgErr != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "ao verify: HOLD: %v\n", cfgErr)
+		return &pawlReviewExitError{code: 5}
+	}
 	// Config-inspection flags short-circuit BEFORE the review engine: they read
 	// the per-repo policy and print, never forwarding to runPawlReview. Flag
 	// parsing is disabled on this command, so scan the raw args.
@@ -260,10 +265,11 @@ func trustedHeadSHA(repo, spec string) string {
 // CONFIRMED and its patch_id_proof matches the new tip.
 //
 // Usage: ao verify <change-id> --rebind [--head SHA] [--from-verdict PATH] [--dir DIR]
-//   change-id  the bead/verdict id (defaults to change-<HEAD-short> like bare `ao verify`)
-//   --head     the new tip to re-bind onto (defaults to the repo's current full HEAD sha)
-//   --from-verdict  the prior CONFIRMED verdict to descend from (defaults to <dir>/<id>.json)
-//   --dir      the verdicts dir (forwarded verbatim; defaults to .agents/pawl-verdicts)
+//
+//	change-id  the bead/verdict id (defaults to change-<HEAD-short> like bare `ao verify`)
+//	--head     the new tip to re-bind onto (defaults to the repo's current full HEAD sha)
+//	--from-verdict  the prior CONFIRMED verdict to descend from (defaults to <dir>/<id>.json)
+//	--dir      the verdicts dir (forwarded verbatim; defaults to .agents/pawl-verdicts)
 //
 // CAVEAT (load-bearing): a matching patch-id proves the change is rebase-stable but is
 // WHITESPACE-INSENSITIVE, so it does NOT prove the diff bytes are unchanged, and even byte-

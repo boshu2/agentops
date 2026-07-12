@@ -98,7 +98,7 @@ relevant target gates by exit code. If ownership overlaps, stop and rescope.
 
 **Artifact directory:** `.agents/audits/`.
 **Filename convention:** `<skill>-build.json`.
-**Serialization/schema format:** JSON matching `skills/skill-builder/schemas/build-report.json`.
+**Serialization/schema format:** JSON matching `schemas/build-report.json`.
 **Validator command:** `jq -e . .agents/audits/<skill>-build.json`.
 **Downstream handoff:** consumed by heal-skill and the validation wave.
 
@@ -109,7 +109,7 @@ skills/<name>/
 ├── SKILL.md                         (≤250 lines, full template spine)
 ├── scripts/
 │   └── validate.sh                  (self-validation per AgentOps convention)
-└── references/                      (externalize before the source profile's 250-line kernel limit)
+└── references/                      (externalize before the profile's 250-line kernel limit)
 skills-codex/<name>/
 ├── SKILL.md                         (slim frontmatter — no skill_api_version)
 └── prompt.md                        (~10-20 line Execution Profile)
@@ -186,7 +186,7 @@ for the full authoring doctrine and the best-practice-to-enforcement crosswalk.
 
 ## References
 
-- The authoritative `repo-runtime` contract is `skills/skill-builder/references/skill-conformance-profiles.yaml`; Codex carries no second profile ledger.
+- [skill-conformance-profiles.yaml](references/skill-conformance-profiles.yaml) — authoritative `repo-runtime` semantics and severities
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules

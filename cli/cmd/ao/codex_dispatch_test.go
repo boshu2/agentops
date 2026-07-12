@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCodexDispatchRefusesAPIKeyAuthBeforeWorkerExecution(t *testing.T) {
@@ -231,6 +233,14 @@ func TestCodexDispatchAllowsDeclaredAllowedPathRoot(t *testing.T) {
 func TestResolveCodexDispatchPathBounds(t *testing.T) {
 	cwd := t.TempDir()
 	allowedAbs := t.TempDir()
+	canonicalCwd, err := filepath.EvalSymlinks(cwd)
+	if err != nil {
+		t.Fatalf("resolve cwd fixture: %v", err)
+	}
+	canonicalAllowedAbs, err := filepath.EvalSymlinks(allowedAbs)
+	if err != nil {
+		t.Fatalf("resolve allowed fixture: %v", err)
+	}
 	tests := []struct {
 		name    string
 		allowed []string
@@ -238,11 +248,11 @@ func TestResolveCodexDispatchPathBounds(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "relative inside cwd", path: "runs/receipt.json", want: filepath.Join(cwd, "runs", "receipt.json")},
-		{name: "absolute inside cwd", path: filepath.Join(cwd, "runs", "receipt.json"), want: filepath.Join(cwd, "runs", "receipt.json")},
+		{name: "relative inside cwd", path: "runs/receipt.json", want: filepath.Join(canonicalCwd, "runs", "receipt.json")},
+		{name: "absolute inside cwd", path: filepath.Join(cwd, "runs", "receipt.json"), want: filepath.Join(canonicalCwd, "runs", "receipt.json")},
 		{name: "dot-dot escape rejected", path: filepath.Join("..", "receipt.json"), wantErr: true},
 		{name: "absolute escape rejected", path: filepath.Join(allowedAbs, "receipt.json"), wantErr: true},
-		{name: "absolute allowed root accepted", allowed: []string{allowedAbs}, path: filepath.Join(allowedAbs, "receipt.json"), want: filepath.Join(allowedAbs, "receipt.json")},
+		{name: "absolute allowed root accepted", allowed: []string{allowedAbs}, path: filepath.Join(allowedAbs, "receipt.json"), want: filepath.Join(canonicalAllowedAbs, "receipt.json")},
 		{name: "relative allowed root cannot escape on its own", allowed: []string{"subdir"}, path: filepath.Join("..", "receipt.json"), wantErr: true},
 		{name: "sibling prefix is not containment", allowed: []string{allowedAbs}, path: allowedAbs + "-sibling/receipt.json", wantErr: true},
 	}
@@ -263,6 +273,77 @@ func TestResolveCodexDispatchPathBounds(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResolveCodexDispatchPathRejectsSymlinkEscape(t *testing.T) {
+	cwd := t.TempDir()
+	outside := t.TempDir()
+	canonicalOutside, err := filepath.EvalSymlinks(outside)
+	if err != nil {
+		t.Fatalf("resolve outside fixture: %v", err)
+	}
+	escapeLink := filepath.Join(cwd, "escape")
+	if err := os.Symlink(outside, escapeLink); err != nil {
+		t.Fatalf("create escape symlink: %v", err)
+	}
+
+	t.Run("existing leaf through symlink is rejected", func(t *testing.T) {
+		outsideFile := filepath.Join(outside, "existing.json")
+		if err := os.WriteFile(outsideFile, []byte("{}\n"), 0o600); err != nil {
+			t.Fatalf("write outside fixture: %v", err)
+		}
+		if got, err := resolveCodexDispatchPath(cwd, nil, filepath.Join(escapeLink, "existing.json")); err == nil {
+			t.Fatalf("resolveCodexDispatchPath() = %q, want symlink escape rejection", got)
+		}
+	})
+
+	t.Run("missing leaf under escaped existing ancestor is rejected", func(t *testing.T) {
+		path := filepath.Join(escapeLink, "missing", "receipt.json")
+		if got, err := resolveCodexDispatchPath(cwd, nil, path); err == nil {
+			t.Fatalf("resolveCodexDispatchPath() = %q, want missing-leaf symlink escape rejection", got)
+		}
+	})
+
+	t.Run("symlinked allowed root is compared by filesystem reality", func(t *testing.T) {
+		path := filepath.Join(escapeLink, "allowed", "receipt.json")
+		got, err := resolveCodexDispatchPath(cwd, []string{escapeLink}, path)
+		if err != nil {
+			t.Fatalf("resolveCodexDispatchPath() error: %v", err)
+		}
+		want := filepath.Join(canonicalOutside, "allowed", "receipt.json")
+		if got != want {
+			t.Fatalf("resolveCodexDispatchPath() = %q, want canonical path %q", got, want)
+		}
+	})
+
+	t.Run("packet rejection precedes auth execution and receipt", func(t *testing.T) {
+		repo := newCodexDispatchRepo(t)
+		outsideRun := t.TempDir()
+		packetEscape := filepath.Join(repo, "escape")
+		if err := os.Symlink(outsideRun, packetEscape); err != nil {
+			t.Fatalf("create packet escape symlink: %v", err)
+		}
+		marker := filepath.Join(repo, "worker-ran")
+		writeFakeCodexBinary(t)
+		t.Setenv("FAKE_CODEX_MARKER", marker)
+		t.Setenv("OPENAI_API_KEY", "sk-test")
+
+		packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+			ReceiptPath: filepath.Join("escape", "missing", "receipt.json"),
+		})
+		_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+		if err == nil {
+			t.Fatal("codex dispatch succeeded, want symlink escape refusal")
+		}
+		if !strings.Contains(err.Error(), "output.receipt_path") || !strings.Contains(err.Error(), "escapes cwd") {
+			t.Fatalf("dispatch error = %q, want path refusal before auth", err.Error())
+		}
+		if strings.Contains(err.Error(), "OPENAI_API_KEY") {
+			t.Fatalf("dispatch reached auth before path rejection: %v", err)
+		}
+		assertPathAbsent(t, marker)
+		assertPathAbsent(t, filepath.Join(outsideRun, "missing", "receipt.json"))
+	})
 }
 
 func TestCodexDispatchRequiresChatGPTStatus(t *testing.T) {
@@ -370,14 +451,188 @@ func TestCodexDispatchTimeoutWritesReceipt(t *testing.T) {
 	}
 }
 
+func TestCodexDispatchBoundsOutputAndKillsProcessGroup(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "worker-output-limit",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+				t.Setenv("FAKE_CODEX_OUTPUT_BYTES", strconv.Itoa(codexDispatchOutputLimit+1))
+				t.Setenv("FAKE_CODEX_SLEEP_SECONDS", "3")
+
+				packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{})
+				started := time.Now()
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if elapsed := time.Since(started); elapsed > 2500*time.Millisecond {
+					t.Fatalf("worker output limit took %s, want streaming termination before child sleep", elapsed)
+				}
+				if err == nil || !strings.Contains(err.Error(), "output limit") {
+					t.Fatalf("dispatch error = %v, want worker output limit rejection", err)
+				}
+				receipt := readCodexDispatchReceipt(t, receiptPath)
+				if got := len(receipt.CommandsRun[0].OutputExcerpt); got > codexDispatchDiagnosticLimit {
+					t.Fatalf("worker diagnostic length = %d, want <= %d", got, codexDispatchDiagnosticLimit)
+				}
+				info, statErr := os.Stat(filepath.Join(repo, receipt.Outputs.JSONLPath))
+				if statErr != nil {
+					t.Fatalf("stat bounded worker output: %v", statErr)
+				}
+				if info.Size() > codexDispatchOutputLimit {
+					t.Fatalf("retained worker output = %d bytes, want <= %d", info.Size(), codexDispatchOutputLimit)
+				}
+			},
+		},
+		{
+			name: "worker-descendant-cancel",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				marker := filepath.Join(repo, "worker-descendant-survived")
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+				t.Setenv("FAKE_CODEX_OUTPUT_BYTES", strconv.Itoa(codexDispatchOutputLimit+1))
+				t.Setenv("FAKE_CODEX_DESCENDANT_MARKER", marker)
+
+				packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{})
+				started := time.Now()
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if elapsed := time.Since(started); elapsed > 2500*time.Millisecond {
+					t.Fatalf("worker descendant cancellation took %s, want prompt process-group termination", elapsed)
+				}
+				if err == nil {
+					t.Fatalf("codex dispatch succeeded, want worker output cancellation")
+				}
+				assertCodexLifecycleMarkerNeverAppears(t, marker, started.Add(3200*time.Millisecond))
+			},
+		},
+		{
+			name: "required-command-output-limit",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+
+				packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+					RequiredCommands: []string{"./repo-test loud-slow"},
+				})
+				started := time.Now()
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if elapsed := time.Since(started); elapsed > 2500*time.Millisecond {
+					t.Fatalf("required-command output limit took %s, want streaming termination before child sleep", elapsed)
+				}
+				if err == nil || !strings.Contains(err.Error(), "output") {
+					t.Fatalf("dispatch error = %v, want required-command output limit rejection", err)
+				}
+				receipt := readCodexDispatchReceipt(t, receiptPath)
+				if got := len(receipt.CommandsRun[1].OutputExcerpt); got > codexRequiredCommandOutputLimit {
+					t.Fatalf("required-command diagnostic length = %d, want <= %d", got, codexRequiredCommandOutputLimit)
+				}
+			},
+		},
+		{
+			name: "required-command-descendant-cancel",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				marker := filepath.Join(repo, "required-descendant-survived")
+				writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+
+				packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+					RequiredCommands: []string{"./repo-test descendant-loud " + marker},
+				})
+				started := time.Now()
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if elapsed := time.Since(started); elapsed > 2500*time.Millisecond {
+					t.Fatalf("required-command descendant cancellation took %s, want prompt process-group termination", elapsed)
+				}
+				if err == nil {
+					t.Fatalf("codex dispatch succeeded, want required-command output cancellation")
+				}
+				assertCodexLifecycleMarkerNeverAppears(t, marker, started.Add(3200*time.Millisecond))
+			},
+		},
+		{
+			name: "deadline",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				marker := filepath.Join(repo, "deadline-descendant-survived")
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_DESCENDANT_MARKER", marker)
+
+				packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{TimeoutSeconds: 1})
+				started := time.Now()
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if elapsed := time.Since(started); elapsed > 2500*time.Millisecond {
+					t.Fatalf("deadline cleanup took %s, want process-group termination at the one-second deadline", elapsed)
+				}
+				if err == nil || !strings.Contains(err.Error(), "timed out") {
+					t.Fatalf("dispatch error = %v, want deadline rejection", err)
+				}
+				assertCodexLifecycleMarkerNeverAppears(t, marker, started.Add(3200*time.Millisecond))
+			},
+		},
+		{
+			name: "ordinary-bounded-output",
+			run: func(t *testing.T) {
+				repo := newCodexDispatchRepo(t)
+				writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+				writeFakeCodexBinary(t)
+				t.Setenv("OPENAI_API_KEY", "")
+				t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+				t.Setenv("FAKE_CODEX_STDOUT", "ordinary-worker-output")
+
+				packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+					RequiredCommands: []string{"./repo-test pass ordinary-required-output"},
+				})
+				_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+				if err != nil {
+					t.Fatalf("codex dispatch returned error: %v", err)
+				}
+				receipt := readCodexDispatchReceipt(t, receiptPath)
+				if !strings.Contains(receipt.CommandsRun[0].OutputExcerpt, "ordinary-worker-output") {
+					t.Fatalf("worker diagnostic = %q, want ordinary output", receipt.CommandsRun[0].OutputExcerpt)
+				}
+				if !strings.Contains(receipt.CommandsRun[1].OutputExcerpt, "ordinary-required-output") {
+					t.Fatalf("required-command diagnostic = %q, want ordinary output", receipt.CommandsRun[1].OutputExcerpt)
+				}
+				assertFileContains(t, filepath.Join(repo, receipt.Outputs.JSONLPath), "ordinary-worker-output")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
+}
+
+func assertCodexLifecycleMarkerNeverAppears(t *testing.T, marker string, deadline time.Time) {
+	t.Helper()
+	if delay := time.Until(deadline); delay > 0 {
+		time.Sleep(delay)
+	}
+	assertPathAbsent(t, marker)
+}
+
 func TestCodexDispatchExecutesRequiredCommandsIntoReceipt(t *testing.T) {
 	repo := newCodexDispatchRepo(t)
+	writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
 	writeFakeCodexBinary(t)
 	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
 	t.Setenv("OPENAI_API_KEY", "")
 
 	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
-		RequiredCommands: []string{"echo acceptance-evidence-ok", "test -d ."},
+		RequiredCommands: []string{"./repo-test pass acceptance-evidence-ok", "./repo-test pass second-check-ok"},
 	})
 	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
 	if err != nil {
@@ -388,8 +643,8 @@ func TestCodexDispatchExecutesRequiredCommandsIntoReceipt(t *testing.T) {
 		t.Fatalf("commands_run length = %d, want 3 (codex invocation + 2 required commands): %+v", len(receipt.CommandsRun), receipt.CommandsRun)
 	}
 	echoResult := receipt.CommandsRun[1]
-	if echoResult.Command != "echo acceptance-evidence-ok" {
-		t.Fatalf("commands_run[1].command = %q, want echo acceptance-evidence-ok", echoResult.Command)
+	if echoResult.Command != "./repo-test pass acceptance-evidence-ok" {
+		t.Fatalf("commands_run[1].command = %q, want repository test command", echoResult.Command)
 	}
 	if echoResult.ExitCode != 0 {
 		t.Fatalf("commands_run[1].exit_code = %d, want 0", echoResult.ExitCode)
@@ -398,33 +653,194 @@ func TestCodexDispatchExecutesRequiredCommandsIntoReceipt(t *testing.T) {
 		t.Fatalf("commands_run[1].output_excerpt = %q, want acceptance command output", echoResult.OutputExcerpt)
 	}
 	testResult := receipt.CommandsRun[2]
-	if testResult.Command != "test -d ." {
-		t.Fatalf("commands_run[2].command = %q, want test -d .", testResult.Command)
+	if testResult.Command != "./repo-test pass second-check-ok" {
+		t.Fatalf("commands_run[2].command = %q, want second repository test command", testResult.Command)
 	}
 	if testResult.ExitCode != 0 {
 		t.Fatalf("commands_run[2].exit_code = %d, want 0", testResult.ExitCode)
 	}
 }
 
+func TestCodexDispatchReadOnlyRejectsRequiredCommandsBeforeExecution(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	outsideMarker := filepath.Join(t.TempDir(), "required-command-outside-marker")
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		Sandbox:          "read-only",
+		RequiredCommands: []string{"./repo-test mark " + outsideMarker},
+	})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("read-only dispatch succeeded with executable required_commands, want fail-closed rejection\noutput:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "read-only") || !strings.Contains(err.Error(), "required_commands") {
+		t.Fatalf("dispatch error = %v, want explicit read-only required_commands policy rejection", err)
+	}
+	assertPathAbsent(t, outsideMarker)
+	assertPathAbsent(t, receiptPath)
+}
+
+func TestCodexDispatchRequiredCommandPolicy(t *testing.T) {
+	tests := []struct {
+		name       string
+		command    func(t *testing.T, repo, executable string) string
+		wantErr    bool
+		wantOutput string
+	}{
+		{
+			name:       "repository test with literal arguments",
+			command:    func(_ *testing.T, _, executable string) string { return executable + " pass literal-argument" },
+			wantOutput: "required-command-ok literal-argument",
+		},
+		{
+			name: "shell metacharacters",
+			command: func(_ *testing.T, _, executable string) string {
+				return executable + " pass ignored ; " + executable + " mark required-command-pwned"
+			},
+			wantErr: true,
+		},
+		{
+			name:    "undeclared PATH executable",
+			command: func(_ *testing.T, _, _ string) string { return "echo out-of-policy" },
+			wantErr: true,
+		},
+		{
+			name: "repository path escape",
+			command: func(t *testing.T, repo, _ string) string {
+				outside := filepath.Join(filepath.Dir(repo), filepath.Base(repo)+"-outside-test")
+				writeCodexRequiredCommandTestExecutable(t, filepath.Dir(outside), filepath.Base(outside))
+				t.Cleanup(func() { _ = os.Remove(outside) })
+				return "." + string(os.PathSeparator) + filepath.Join("..", filepath.Base(outside)) + " pass escaped"
+			},
+			wantErr: true,
+		},
+		{
+			name:    "nonzero exit",
+			command: func(_ *testing.T, _, executable string) string { return executable + " fail" },
+			wantErr: true,
+		},
+		{
+			name:    "output exceeds policy bound",
+			command: func(_ *testing.T, _, executable string) string { return executable + " loud" },
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newCodexDispatchRepo(t)
+			executable := writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+			relExecutable := "." + string(os.PathSeparator) + filepath.Base(executable)
+			writeFakeCodexBinary(t)
+			t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+			t.Setenv("OPENAI_API_KEY", "")
+
+			packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+				RequiredCommands: []string{tt.command(t, repo, relExecutable)},
+			})
+			out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("codex dispatch succeeded, want required-command policy rejection\noutput:\n%s", out)
+				}
+				assertPathAbsent(t, filepath.Join(repo, "required-command-pwned"))
+				return
+			}
+			if err != nil {
+				t.Fatalf("codex dispatch returned error: %v\noutput:\n%s", err, out)
+			}
+			receipt := readCodexDispatchReceipt(t, receiptPath)
+			if len(receipt.CommandsRun) != 2 {
+				t.Fatalf("commands_run length = %d, want 2: %+v", len(receipt.CommandsRun), receipt.CommandsRun)
+			}
+			if !strings.Contains(receipt.CommandsRun[1].OutputExcerpt, tt.wantOutput) {
+				t.Fatalf("required command output = %q, want to contain %q", receipt.CommandsRun[1].OutputExcerpt, tt.wantOutput)
+			}
+		})
+	}
+}
+
+func writeCodexRequiredCommandTestExecutable(t *testing.T, dir, name string) string {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatalf("create required-command test directory: %v", err)
+	}
+	path := filepath.Join(dir, name)
+	script := `#!/bin/sh
+case "${1:-}" in
+  pass)
+    printf 'required-command-ok %s\n' "${2:-}"
+    ;;
+  fail)
+    printf 'required-command-failed\n' >&2
+    exit 7
+    ;;
+  loud)
+    i=0
+    while [ "$i" -lt 600 ]; do
+      printf x
+      i=$((i + 1))
+    done
+    printf '\n'
+    ;;
+  loud-slow)
+    i=0
+    while [ "$i" -lt 600 ]; do
+      printf x
+      i=$((i + 1))
+    done
+    printf '\n'
+    sleep 3
+    ;;
+  descendant-loud)
+    (sleep 3; printf 'survived\n' > "${2:?marker path required}") &
+    child=$!
+    i=0
+    while [ "$i" -lt 600 ]; do
+      printf x
+      i=$((i + 1))
+    done
+    printf '\n'
+    wait "$child"
+    ;;
+  mark)
+    printf 'pwned\n' > "${2:?marker path required}"
+    ;;
+  *)
+    exit 64
+    ;;
+esac
+`
+	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+		t.Fatalf("write required-command test executable: %v", err)
+	}
+	return path
+}
+
 func TestCodexDispatchRecordsFailingRequiredCommandExitCode(t *testing.T) {
 	repo := newCodexDispatchRepo(t)
+	writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
 	writeFakeCodexBinary(t)
 	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
 	t.Setenv("OPENAI_API_KEY", "")
 
 	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
-		RequiredCommands: []string{"exit 7"},
+		RequiredCommands: []string{"./repo-test fail"},
 	})
 	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
-	if err != nil {
-		t.Fatalf("codex dispatch returned error: %v\noutput:\n%s", err, out)
+	if err == nil {
+		t.Fatalf("codex dispatch succeeded, want failed required command rejection\noutput:\n%s", out)
 	}
 	receipt := readCodexDispatchReceipt(t, receiptPath)
 	if len(receipt.CommandsRun) != 2 {
 		t.Fatalf("commands_run length = %d, want 2: %+v", len(receipt.CommandsRun), receipt.CommandsRun)
 	}
-	if receipt.CommandsRun[1].Command != "exit 7" {
-		t.Fatalf("commands_run[1].command = %q, want exit 7", receipt.CommandsRun[1].Command)
+	if receipt.CommandsRun[1].Command != "./repo-test fail" {
+		t.Fatalf("commands_run[1].command = %q, want ./repo-test fail", receipt.CommandsRun[1].Command)
 	}
 	if receipt.CommandsRun[1].ExitCode != 7 {
 		t.Fatalf("commands_run[1].exit_code = %d, want 7 (recorded honestly)", receipt.CommandsRun[1].ExitCode)
@@ -639,7 +1055,8 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 	}
 	requiredCommands := opts.RequiredCommands
 	if len(requiredCommands) == 0 {
-		requiredCommands = []string{"echo dispatch-acceptance-ok"}
+		writeCodexRequiredCommandTestExecutable(t, repo, "repo-test")
+		requiredCommands = []string{"./repo-test pass dispatch-acceptance-ok"}
 	}
 	packet := codexTaskPacket{
 		SchemaVersion: 1,
@@ -775,16 +1192,29 @@ if [[ "${1:-}" == "exec" ]]; then
     printf '%s' "$prompt" > "$FAKE_CODEX_PROMPT_CAPTURE"
   fi
 
-  if [[ -n "${FAKE_CODEX_SLEEP_SECONDS:-}" ]]; then
-    sleep "$FAKE_CODEX_SLEEP_SECONDS"
-  fi
-
   if [[ -n "$final" ]]; then
     mkdir -p "$(dirname "$final")"
     printf '%s\n' "${FAKE_CODEX_FINAL_MESSAGE:-VERDICT: PASS}" > "$final"
   fi
 
-  printf '%s\n' "${FAKE_CODEX_STDOUT:-{\"event\":\"ok\"}}"
+  if [[ -n "${FAKE_CODEX_DESCENDANT_MARKER:-}" ]]; then
+    (sleep 3; printf 'survived\n' > "$FAKE_CODEX_DESCENDANT_MARKER") &
+    descendant=$!
+  fi
+
+  if [[ -n "${FAKE_CODEX_OUTPUT_BYTES:-}" ]]; then
+	 dd if=/dev/zero bs="$FAKE_CODEX_OUTPUT_BYTES" count=1 2>/dev/null | tr '\000' x
+	 printf '\n'
+  else
+    printf '%s\n' "${FAKE_CODEX_STDOUT:-{\"event\":\"ok\"}}"
+  fi
+
+  if [[ -n "${FAKE_CODEX_SLEEP_SECONDS:-}" ]]; then
+    sleep "$FAKE_CODEX_SLEEP_SECONDS"
+  fi
+  if [[ -n "${descendant:-}" ]]; then
+    wait "$descendant"
+  fi
   exit "${FAKE_CODEX_EXIT_CODE:-0}"
 fi
 

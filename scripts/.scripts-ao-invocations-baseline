@@ -1,17 +1,5 @@
 # scripts/.scripts-ao-invocations-baseline
-# FILENAME-pinned allowlist for check-scripts-ao-invocations.sh (age-owcs).
+# Retired-command waiver tombstone for check-scripts-ao-invocations.sh.
 #
-# Each line is an EXECUTABLE script/test that currently invokes a removed/renamed
-# ao subcommand at a command position (the stale-retired-surface class). The gate
-# fails if a NON-baselined script invokes a dead command, AND fails if a baselined
-# file no longer triggers ANY finding (prune it — the allowlist only shrinks).
-# Burn a file down (use the live subcommand, delete the dead call, or add the
-# `# ao-resolve: ignore` pragma to a deliberate bad-command line), then delete its
-# line here.
-#
-# Seeded 2026-07-04 from the current tree; every entry below is a REAL current
-# offender being grandfathered (not a false positive):
-#   scripts/install.sh           — `ao hooks install --force` (3.0 is hookless)
-#   scripts/nightly-evolution.sh — `ao daemon jobs ...` (no in-repo daemon, ADR-0009)
-scripts/install.sh
-scripts/nightly-evolution.sh
+# Active entries are forbidden: every supported script invocation must resolve
+# against the compiled current ao command tree. Keep this file comment-only.

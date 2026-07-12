@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -24,6 +26,33 @@ func nativeCheckReason(id string, status ports.GateStatus, reason string) gates.
 		Run: func(context.Context, gates.RunContext) (ports.GateVerdict, error) {
 			return ports.GateVerdict{Status: status, Reason: reason}, nil
 		},
+	}
+}
+
+func TestGateCheckChangelogSyncApplicableEvidenceErrorsFail(t *testing.T) {
+	root := t.TempDir()
+	if err := exec.Command("git", "init", "-q", root).Run(); err != nil {
+		t.Fatalf("git init: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte("current\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(root)
+
+	check, ok := gates.Default.Get("changelog.sync")
+	if !ok {
+		t.Fatal("changelog.sync is not registered")
+	}
+	reg := gates.NewRegistry()
+	if err := reg.Add(check); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runGateCheckWith(t, reg, true, false)
+	if err == nil {
+		t.Fatalf("applicable missing changelog evidence should fail routed gate; output:\n%s", out)
+	}
+	if !strings.Contains(out, "FAIL  changelog.sync") {
+		t.Fatalf("routed output = %q, want changelog.sync FAIL", out)
 	}
 }
 

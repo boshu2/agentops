@@ -111,7 +111,7 @@ func TestUATSmoke_DefragDedup(t *testing.T) {
 	// the spine binary. This UAT exercises the command end-to-end, so it only runs
 	// when the flywheel tag compiles defrag back in. The DefragReport type it
 	// unmarshals stays spine-resident (defrag_types.go), so this file still builds.
-	if len(archiveBuildTags) == 0 {
+	if !slices.Contains(archiveBuildTags, "flywheel") {
 		t.Skip("ao defrag archived behind the flywheel build tag (age-nzwo)")
 	}
 	tmp := chdirTemp(t)
