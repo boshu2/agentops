@@ -37,6 +37,12 @@ output_contract: 'packet: .agents/goal-design/<slug> validated by checker plus i
 
 **Execute this workflow. Do not only describe it.**
 
+## Constraints
+
+- Keep `intent.md` and `driver.md` as the contract of record and the dispatch prompt as a pointer only, because chat or prompt paraphrases drift from validated intent.
+- Run the deterministic checker before independent validation and use `mark-validated` for status transitions, because hand-edited status or stale digests can falsely claim readiness.
+- Route every plain `REFUTED` verdict directly through repeated `AUTO-REDO`; do not consult a helper or raise an andon unless the circuit breaker trips. A breaker trip enters `HOLD` and gets exactly one bounded helper consultation: `UNSTUCK` resumes the automatic loop, while `ESCALATE` reaches a human. Refusal-lane work, explicit judgment, and exhausted budgets go directly to a human because routine blockers are not andons.
+
 ## Purpose
 
 Use `/goal-design` when the goal is important enough to leave chat but not yet
@@ -139,15 +145,24 @@ frontmatter (auto → `validation_fails`, helper →
 | --- | --- | --- |
 | Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
 | Architecture fork / plan-shape one-way door | **helper** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
-| Stuck: N failed validation rounds, oscillation, scope-creep flag | **helper** | one bounded helper pass — a fresh context or cross-family model (`codex exec`, `/council`) gets the blocker, the evidence, and what was tried; returns UNSTUCK (a concrete next action) or ESCALATE |
+| Circuit-breaker trip: N failed validation rounds, oscillation, scope-creep flag | **helper** | HOLD, then exactly one bounded helper pass — a fresh context or cross-family model (`codex exec`, `/council`) gets the blocker, the evidence, and what was tried; returns UNSTUCK (a concrete next action) or ESCALATE |
 | Money / legal / irreversible-external (the refusal lane), explicit judgment flag, exhausted time/cost budget | **human** | ESCALATE / HOLD — hand back to the operator; the helper is skipped |
 
-Every router carries the implicit final rows: a breaker trip routes to ONE
-bounded helper pass first — a stuck context consults a fresh one before it
-consults the operator. **Human** only when the blocker survives that pass,
-the helper itself returns ESCALATE, or the class is refusal-lane /
-explicit-judgment / budget-exhausted. Never a second helper pass on the same
-blocker class — stop and ask, never guess through it. The helper is an
+The validation/blocker escalation state machine is exact; copy these rows into
+the goal-specific router without merging transitions:
+
+| From | To | Required action |
+| --- | --- | --- |
+| `REFUTED` | `AUTO-REDO` | Repair from the evidence and rerun validation; do not consult a helper or human. |
+| `AUTO-REDO` | `REFUTED` | Repeat the automatic repair loop while the circuit breaker remains closed. |
+| `CIRCUIT-BREAKER-TRIP` | `HOLD` | Freeze mutation and preserve the blocker evidence. |
+| `HOLD` | `HELPER` | Run exactly one bounded helper consultation for this blocker class. |
+| `HELPER-UNSTUCK` | `AUTO-REDO` | Apply the concrete next action and resume the automatic repair loop. |
+| `HELPER-ESCALATE` | `HUMAN` | Hand back the preserved evidence and helper verdict. |
+| `REFUSAL-LANE / EXPLICIT-JUDGMENT / BUDGET-EXHAUSTED` | `HUMAN` | Skip the helper and ask the operator. |
+
+A plain `REFUTED` verdict never enters `HOLD` and never invokes a helper. Never
+run a second helper consultation for the same blocker class. The helper is an
 advisor, never a second driver: it reasons about the blocker and returns a
 recommendation; it does not take over the work or own the loop.
 
@@ -157,14 +172,19 @@ tier table lives in the driver body while `route_back_rules` carries the
 machine-checkable semantics. A driver v2 `andon_router` field is a candidate
 follow-up — do not modify the landed schemas, templates, or checker to add it.
 
-## Output
+## Output Specification
 
-- `.agents/goal-design/<slug>/intent.md`
-- `.agents/goal-design/<slug>/driver.md`
-- Checker output from `scripts/check-goal-design-packet.sh`
-- Independent validation verdict path or summary
-- Copyable dispatch prompt (`scripts/goal-design-packet.py prompt <packet>`)
-  when a goal API executes the packet out-of-session
+- **Path:** write the packet to the artifact directory `.agents/goal-design/<slug>/` and emit the optional dispatch prompt to stdout.
+- **Filename:** every packet contains exactly `intent.md` and `driver.md`; validation evidence keeps the path or summary returned by the independent validator.
+- **Format:** both files are Markdown with the schema-governed frontmatter produced by `goal-design-packet.py`; the dispatch prompt is plain text under 4000 characters.
+- **Validation command:** run `bats tests/scripts/{goal-design-packet,check-goal-design-packet}.bats`, then `scripts/check-goal-design-packet.sh .agents/goal-design/<slug>` and the independent validator.
+- **Downstream handoff:** pass the validated packet path and preserved scenario ids to `/discovery` or `/plan`, or paste the helper-emitted prompt verbatim into the selected goal API.
+
+## Quality Checklist
+
+- The driver digest matches current intent and both packet identities agree with the directory slug.
+- Every candidate behavior maps to a stable scenario id, a failing proof, and an explicit write scope.
+- The TODO router row is replaced, the exact breaker/HOLD/helper transitions are present, and an independent PASS/WARN verdict names the next action.
 
 ## Done
 
