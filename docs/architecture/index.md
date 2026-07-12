@@ -5,12 +5,13 @@ AgentOps is built from a small set of orthogonal components that compose into th
 Read in this order if you're new:
 
 1. **[Codebase Overview](codebase-overview.md)** — start here for a consolidated map (humans and agents).
-2. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
-3. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation).
-4. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
-5. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
-6. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
-7. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — trace one idea through beads, slices, validation, ratchet.
+2. **[Understanding the AgentOps Go CLI](go-cli-architecture-guide.md)** — trace the executable from Cobra through services, ports, adapters, output, and tests.
+3. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
+4. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation).
+5. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
+6. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
+7. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
+8. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — trace one idea through beads, slices, validation, ratchet.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 
@@ -22,6 +23,13 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     Consolidated repo map: BCs, directories, active waist, registries,
     gates, footguns, reading order.
+
+-   :material-language-go: **[Understanding the AgentOps Go CLI](go-cli-architecture-guide.md)**
+
+    ---
+
+    Live bootstrap, clean command interiors, Go idioms, migration debt,
+    verification layers, exercises, and capstone.
 
 -   :material-cogs: **[How It Works](../how-it-works.md)**
 
