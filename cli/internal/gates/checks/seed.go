@@ -162,6 +162,17 @@ var (
 		// (age-ratchet-lib-extraction-bv7d.2, pre-mortem FM3)
 		"scripts/lib/ratchet.sh",
 	}
+	// Entry-doc golden-path drift (age-a-plus-report-card-ieyp2.3): after PR #902
+	// converged first-value onto the skill loop, these four surfaces must not
+	// reintroduce retired golden paths. Advisory one clean cycle, then Blocking.
+	goldenPathDriftPaths = []string{
+		"README.md",
+		"docs/index.md",
+		"docs/getting-started/index.md",
+		"docs/first-value-path.md",
+		"scripts/check-golden-path-drift.sh",
+		"tests/scripts/check-golden-path-drift.bats",
+	}
 	// docs.duplicates shasums every live doc and fails on a byte-identical pair
 	// over the line threshold — an anti-regrowth guard after a docs-lifecycle
 	// sweep deleted a wholesale byte-dup (age-gate-the-ungated-egwt.12). Runs on
@@ -423,6 +434,7 @@ func init() {
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
 		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
+		{ID: "docs.golden-path-drift", Tiers: gates.Fast | gates.Full, Match: goldenPathDriftPaths, Blocking: false, Backing: "check-golden-path-drift.sh", RepairHint: "restore skill-loop first-value (/plan → /implement → /validate) or use past-tense framing; advisory one clean cycle then flips Blocking (age-a-plus-report-card-ieyp2.3)"},
 		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
 		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
