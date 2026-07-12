@@ -30,6 +30,7 @@ func TestCorpusRoot_WalksUpFromSubdir(t *testing.T) {
 // TestCorpusDenyPaths_RepoAndGlobal: the deny set covers the repo corpus (both
 // .agents and .ao under the resolved root) AND the global ~/.agents.
 func TestCorpusDenyPaths_RepoAndGlobal(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, ".agents"), 0o755); err != nil {
 		t.Fatal(err)

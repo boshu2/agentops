@@ -414,7 +414,7 @@ ao eval baseline-audit [suite.json ...] [flags]
 
 #### `ao eval bench`
 
-Measure Precision@K and MRR against a curated corpus of learning artifacts.
+Run retrieval quality benchmarks
 
 ```
 ao eval bench [flags]
@@ -499,7 +499,7 @@ ao eval coverage [suite.json ...] [flags]
 
 #### `ao eval outcomes`
 
-Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority. Subcommands compile holdout-safe rubric payloads and ingest returned scores into the one verdict format.
+Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority.
 
 ```
 ao eval outcomes [command]
@@ -556,7 +556,7 @@ ao eval run <suite.json> [flags]
 
 #### `ao eval scenario`
 
-Create, list, and validate holdout scenarios stored in .agents/holdout/.
+Create, list, validate, and evaluate holdout scenarios stored in .agents/holdout/.
 
 ```
 ao eval scenario [command]
@@ -564,7 +564,7 @@ ao eval scenario [command]
 
 ##### `ao eval scenario add`
 
-Author a schema-compliant holdout scenario in .agents/holdout/.
+Author a holdout scenario from a goal description
 
 ```
 ao eval scenario add <goal> [flags]
@@ -583,7 +583,7 @@ ao eval scenario add <goal> [flags]
 
 ##### `ao eval scenario evaluate`
 
-Evaluate the executable-spec scenarios linked to GOALS.md directives and
+Evaluate directive-linked scenarios and record satisfaction results
 
 ```
 ao eval scenario evaluate [flags]
@@ -633,7 +633,7 @@ ao eval scenario validate [flags]
 
 #### `ao eval scenario-ab`
 
-Run one holdout scenario (scenario.v1) twice — a control arm WITHOUT the gold
+Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)
 
 ```
 ao eval scenario-ab [flags]
@@ -652,7 +652,7 @@ ao eval scenario-ab [flags]
 
 #### `ao eval scenario-moat`
 
-Render a moat positive/null/inconclusive verdict over one or more
+Aggregate moat-eligible scenario A/B scorecards into a publication verdict
 
 ```
 ao eval scenario-moat [flags]
@@ -685,7 +685,7 @@ ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
 
 #### `ao eval session-outcome`
 
-Parse a Claude Code session transcript and derive a composite reward signal.
+Analyze session transcript to derive reward signal
 
 ```
 ao eval session-outcome [transcript-path] [flags]
@@ -771,7 +771,7 @@ ao eval task list [flags]
 
 ##### `ao eval task run`
 
-Opens a new Run under $AGENTOPS_EVALS_ROOT/runs/<run-id>/manifest.json
+Open a new Run manifest for <task-id>; refuses on gate failure
 
 ```
 ao eval task run <task-id> [flags]
