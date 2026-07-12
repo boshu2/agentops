@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "family": "done",
+  "old_implementation_sha": "a0d6bf1bae888df5c5a63c3bd8a11fb05a380db2",
+  "freeze_sha": "24b4171b452d485c4bbdf5ee35d4bb80cd353c9d",
+  "fixture_sha256": "87d7b5a9e3aa9a253644ae334920532b5ca0aae4058f53984612e9bd8440194f",
+  "ownership_sha256": "fecf63c7ba54c784cfa33c6b82f4821bf9cd98b8d64f1f66da7ff370f9a0ce7f",
+  "scope_sha256": "d7c6731e492e229369af90cf48eaf0c429e5074faa9323139de01ab49a1f9eab",
+  "migration_state": "migrating"
+}
