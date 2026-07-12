@@ -25,7 +25,26 @@ done
 # it from the script location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${HEAL_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+REPO_ROOT="$(cd "$REPO_ROOT" && pwd -P)"
 SKILLS_ROOT="$REPO_ROOT/skills"
+CODEX_SKILLS_ROOT="$REPO_ROOT/skills-codex"
+
+reject_target() {
+  echo "heal.sh: unsafe target '$1': $2" >&2
+  exit 2
+}
+
+has_symlink_component() {
+  local path="$1" current="/" component
+  local -a components=()
+  IFS='/' read -r -a components <<<"${path#/}"
+  for component in "${components[@]}"; do
+    [[ -z "$component" || "$component" == "." ]] && continue
+    current="${current%/}/$component"
+    [[ -L "$current" ]] && return 0
+  done
+  return 1
+}
 
 # Retired-skill slugs from the dispositions ledger's historical: section.
 # A slug with a terminal (merged-into/cut) row is a DOCUMENTED retirement, and
@@ -73,14 +92,32 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     [[ -d "$d" ]] && TARGETS+=("${d%/}")
   done
 else
-  # Normalize targets to absolute paths
+  # Canonicalize every explicit spelling before processing any target. A target
+  # must exist, contain no traversal or symlink component, and resolve to an
+  # immediate child of the canonical source or Codex skill root.
   normalized=()
   for t in "${TARGETS[@]}"; do
+    case "/$t/" in
+      */../*) reject_target "$t" "parent traversal is not allowed" ;;
+    esac
     if [[ "$t" = /* ]]; then
-      normalized+=("$t")
+      candidate="$t"
     else
-      normalized+=("$REPO_ROOT/$t")
+      candidate="$REPO_ROOT/$t"
     fi
+    [[ -d "$candidate" ]] || reject_target "$t" "target directory does not exist"
+    if has_symlink_component "$candidate"; then
+      reject_target "$t" "symlink spellings are not allowed"
+    fi
+    resolved="$(cd "$candidate" && pwd -P)"
+    parent="$(dirname "$resolved")"
+    slug="$(basename "$resolved")"
+    [[ "$slug" =~ ^[a-z][a-z0-9-]*$ ]] || reject_target "$t" "skill slug is invalid"
+    case "$parent" in
+      "$SKILLS_ROOT"|"$CODEX_SKILLS_ROOT") ;;
+      *) reject_target "$t" "resolved path is not a direct child of an allowed skill root" ;;
+    esac
+    normalized+=("$resolved")
   done
   TARGETS=("${normalized[@]}")
 fi
@@ -480,11 +517,17 @@ done
 # the check was permanently dead. Catalog completeness is gated by Check 12
 # (MISSING_DISPOSITION) against docs/contracts/skill-dispositions.yaml.
 
-# Check 11: skill_api_version presence (global, not per-skill)
-for skill_check in "$SKILLS_ROOT"/*/SKILL.md; do
+# Check 11: skill_api_version presence. This follows the same target set as the
+# per-skill checks above: an explicit --fix target must never mutate a sibling.
+# With no explicit target TARGETS already contains every source + Codex skill;
+# filter to canonical source skills because skill_api_version is source-only.
+for check_dir in "${TARGETS[@]}"; do
+  case "$check_dir" in
+    "$SKILLS_ROOT"/*) ;;
+    *) continue ;;
+  esac
+  skill_check="$check_dir/SKILL.md"
   [[ -f "$skill_check" ]] || continue
-  check_dir="$(dirname "$skill_check")"
-  check_name="$(basename "$check_dir")"
   if ! get_frontmatter "$skill_check" "skill_api_version" >/dev/null 2>&1; then
     report "MISSING_API_VERSION" "$check_dir" "No skill_api_version field in frontmatter"
     if [[ "$MODE" == "fix" ]]; then

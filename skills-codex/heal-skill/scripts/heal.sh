@@ -25,7 +25,63 @@ done
 # it from the script location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${HEAL_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+REPO_ROOT="$(cd "$REPO_ROOT" && pwd -P)"
 SKILLS_ROOT="$REPO_ROOT/skills"
+CODEX_SKILLS_ROOT="$REPO_ROOT/skills-codex"
+
+reject_target() {
+  echo "heal.sh: unsafe target '$1': $2" >&2
+  exit 2
+}
+
+has_symlink_component() {
+  local path="$1" current="/" component
+  local -a components=()
+  IFS='/' read -r -a components <<<"${path#/}"
+  for component in "${components[@]}"; do
+    [[ -z "$component" || "$component" == "." ]] && continue
+    current="${current%/}/$component"
+    [[ -L "$current" ]] && return 0
+  done
+  return 1
+}
+
+# Retired-skill slugs from the dispositions ledger's historical: section.
+# A slug with a terminal (merged-into/cut) row is a DOCUMENTED retirement, and
+# "absorbed from /<slug>" trigger notes in the merge target are the repo's own
+# fold convention — Check 9 (DEAD_XREF) must not flag them. Parsed once; the
+# historical: mapping ends at the next top-level key (workflows:/dispositions:).
+RETIRED_SLUGS=""
+DISPOSITIONS_YAML="$REPO_ROOT/docs/contracts/skill-dispositions.yaml"
+if [[ -f "$DISPOSITIONS_YAML" ]]; then
+  RETIRED_SLUGS="$(awk '
+    /^historical:/ { in_hist=1; next }
+    in_hist && /^[a-z]/ { in_hist=0 }
+    in_hist && /^  [a-z][a-z0-9-]*:[[:space:]]*$/ {
+      slug=$1; sub(/:$/, "", slug); print slug
+    }
+  ' "$DISPOSITIONS_YAML" | sort -u)"
+fi
+
+# Full `ao` command surface for Check 8 (INVALID_AO_CMD), resolved ONCE at
+# startup — Check 8 runs per skill and must not rebuild per call. COMMANDS.md
+# and the default cli/bin/ao document only the spine build; skills citing
+# archived commands (`ao harvest`, `ao defrag` — //go:build flywheel|legacy,
+# ADR-0012) false-fail against them (the cli-snippets / body-refs escape class,
+# third instance). The shared snippet resolver builds with the archive tags.
+# Empty when the lib or Go toolchain is unavailable (fixture repos, standalone
+# installs); Check 8 then falls back to the legacy COMMANDS.md/binary chain.
+HEAL_FULL_AO_CMDS=""
+if [[ -f "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" ]]; then
+  _heal_full_bin="$(
+    # shellcheck source=/dev/null
+    . "$REPO_ROOT/scripts/lib/ao-snippet-resolve.sh" 2>/dev/null \
+      && ao_snippet_resolve_bin "$REPO_ROOT" 2>/dev/null
+  )" || _heal_full_bin=""
+  if [[ -n "$_heal_full_bin" && -x "$_heal_full_bin" ]]; then
+    HEAL_FULL_AO_CMDS="$("$_heal_full_bin" help 2>&1 | grep -oE '^[[:space:]]+[a-z][-a-z]*' | tr -d ' ' | sort -u || true)"
+  fi
+fi
 
 # If no targets, scan all skill dirs (skills/ and skills-codex/)
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
@@ -36,14 +92,32 @@ if [[ ${#TARGETS[@]} -eq 0 ]]; then
     [[ -d "$d" ]] && TARGETS+=("${d%/}")
   done
 else
-  # Normalize targets to absolute paths
+  # Canonicalize every explicit spelling before processing any target. A target
+  # must exist, contain no traversal or symlink component, and resolve to an
+  # immediate child of the canonical source or Codex skill root.
   normalized=()
   for t in "${TARGETS[@]}"; do
+    case "/$t/" in
+      */../*) reject_target "$t" "parent traversal is not allowed" ;;
+    esac
     if [[ "$t" = /* ]]; then
-      normalized+=("$t")
+      candidate="$t"
     else
-      normalized+=("$REPO_ROOT/$t")
+      candidate="$REPO_ROOT/$t"
     fi
+    [[ -d "$candidate" ]] || reject_target "$t" "target directory does not exist"
+    if has_symlink_component "$candidate"; then
+      reject_target "$t" "symlink spellings are not allowed"
+    fi
+    resolved="$(cd "$candidate" && pwd -P)"
+    parent="$(dirname "$resolved")"
+    slug="$(basename "$resolved")"
+    [[ "$slug" =~ ^[a-z][a-z0-9-]*$ ]] || reject_target "$t" "skill slug is invalid"
+    case "$parent" in
+      "$SKILLS_ROOT"|"$CODEX_SKILLS_ROOT") ;;
+      *) reject_target "$t" "resolved path is not a direct child of an allowed skill root" ;;
+    esac
+    normalized+=("$resolved")
   done
   TARGETS=("${normalized[@]}")
 fi
@@ -360,11 +434,13 @@ for skill_dir in "${TARGETS[@]}"; do
     fi
   done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | sed -E 's|https?://[^[:space:]`"]*||g' | grep -oE '\bscripts/[a-zA-Z0-9_-]+\.[a-z]+' 2>/dev/null | sort -u || true)
 
-  # Check 8: CLI command validation (prefer repo binary over PATH)
+  # Check 8: CLI command validation. Prefer the full command surface resolved
+  # once at startup (archive tags — see HEAL_FULL_AO_CMDS above); fall back to
+  # the legacy COMMANDS.md / repo-binary / PATH chain when it is unavailable.
   ao_bin=""
-  ao_cmds=""
+  ao_cmds="$HEAL_FULL_AO_CMDS"
   commands_md="$REPO_ROOT/cli/docs/COMMANDS.md"
-  if [[ -f "$commands_md" ]]; then
+  if [[ -z "$ao_cmds" && -f "$commands_md" ]]; then
     ao_cmds="$(
       awk '
         /^### `ao [^`]+`/ {
@@ -424,6 +500,11 @@ for skill_dir in "${TARGETS[@]}"; do
       # (the generic Skill tool). Referencing them is correct, not a dead xref.
       clear|goal|skill|help|compact) continue ;;
     esac
+    # Retired slugs with a historical ledger row are documented folds
+    # ("absorbed from /<slug>" notes), not dead references.
+    if [[ -n "$RETIRED_SLUGS" ]] && grep -qx "$ref" <<<"$RETIRED_SLUGS"; then
+      continue
+    fi
     if [[ ! -d "$SKILLS_ROOT/$ref" ]]; then
       report "DEAD_XREF" "$skill_dir" "references /$ref but skill directory not found"
     fi
@@ -436,11 +517,17 @@ done
 # the check was permanently dead. Catalog completeness is gated by Check 12
 # (MISSING_DISPOSITION) against docs/contracts/skill-dispositions.yaml.
 
-# Check 11: skill_api_version presence (global, not per-skill)
-for skill_check in "$SKILLS_ROOT"/*/SKILL.md; do
+# Check 11: skill_api_version presence. This follows the same target set as the
+# per-skill checks above: an explicit --fix target must never mutate a sibling.
+# With no explicit target TARGETS already contains every source + Codex skill;
+# filter to canonical source skills because skill_api_version is source-only.
+for check_dir in "${TARGETS[@]}"; do
+  case "$check_dir" in
+    "$SKILLS_ROOT"/*) ;;
+    *) continue ;;
+  esac
+  skill_check="$check_dir/SKILL.md"
   [[ -f "$skill_check" ]] || continue
-  check_dir="$(dirname "$skill_check")"
-  check_name="$(basename "$check_dir")"
   if ! get_frontmatter "$skill_check" "skill_api_version" >/dev/null 2>&1; then
     report "MISSING_API_VERSION" "$check_dir" "No skill_api_version field in frontmatter"
     if [[ "$MODE" == "fix" ]]; then
