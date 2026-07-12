@@ -107,3 +107,25 @@ Post-mortem: <verdict> (see <report-path>)
 
 Run `$evolve` again to continue improving.
 ```
+
+## Release-shaped teardown
+
+Release-shaped branches (`release/*`, `v*-prep`, `v*-evolve-run`, `v\d+\.\d+*`) must not recommend `$release` from a per-cycle `--fast` smoke test. The operator runs the full gate and confirms green before tagging.
+
+```text
+## Pre-release checklist — REQUIRED before $release
+
+[ ] 1. Regenerate derived surfaces if any Cobra command or flag changed:
+       bash scripts/regen-all.sh          # regenerates COMMANDS.md, registry.json, and maps
+       # Adding an `ao` command also requires both cobra_commands_test.go
+       # expectedCmds lists and the CLI-command-surface count updates documented in
+       # references/ao-command-landing.md.
+       git diff cli/docs/COMMANDS.md registry.json   # commit if non-empty
+[ ] 2. Full release gate:
+       ao gate check --full --workflow-coverage --require-workflow-parity
+[ ] 3. Smoke $evolve --dry-run --max-cycles=1 if BC port wire-ups changed.
+
+Only after [1]–[2] pass: $release <version>
+```
+
+The handoff artifact must reproduce this full checklist verbatim and unchecked. “Ready to tag” means the boxes are checked, not merely that an evolve cycle ran cleanly.
