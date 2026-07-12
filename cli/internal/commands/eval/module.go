@@ -4,6 +4,7 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
+	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 )
 
 type CoreUseCases interface {
@@ -26,9 +28,17 @@ type CleanupUseCases interface {
 	Execute(context.Context, aoeval.CleanupRequest) (aoeval.CleanupReport, error)
 }
 
+type TaskUseCases interface {
+	Add(context.Context, aoeval.TaskAddRequest) (aoeval.TaskAddResult, error)
+	List(context.Context) (aoeval.TaskListResult, error)
+	Show(context.Context, string) (*evalsubstrate.Task, error)
+	Run(context.Context, aoeval.TaskRunRequest) (aoeval.TaskRunResult, error)
+}
+
 type UseCases struct {
 	Core    CoreUseCases
 	Cleanup CleanupUseCases
+	Task    TaskUseCases
 }
 
 type HostOptions struct {
@@ -88,6 +98,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	command.AddCommand(module.runCommand(), module.compareCommand(), module.baselineCommand(), module.baselineAuditCommand(), module.scorecardCommand(), module.coverageCommand())
 	if module.useCases.Cleanup != nil {
 		command.AddCommand(module.cleanupCommand())
+	}
+	if module.useCases.Task != nil {
+		command.AddCommand(module.taskCommand())
 	}
 	return command
 }
@@ -301,6 +314,121 @@ never auto-removed — retraction is an audit trail.`,
 				fmt.Fprintf(command.OutOrStdout(), "  %s\n", touched)
 			}
 		}
+		return nil
+	}
+	return command
+}
+
+func (module Module) taskCommand() *cobra.Command {
+	command := &cobra.Command{Use: "task", Short: "Manage evaluation Tasks (add, list, show, run)", Long: `Operate on the §3 Task primitive of the eval substrate.
+
+Tasks live under $AGENTOPS_EVALS_ROOT/tasks/<id>/task.yaml and define the
+input/output contract a Run will be evaluated against.`}
+	command.AddCommand(module.taskAddCommand(), module.taskListCommand(), module.taskShowCommand(), module.taskRunCommand())
+	return command
+}
+
+func (module Module) taskAddCommand() *cobra.Command {
+	command := &cobra.Command{Use: "add <task.yaml>", Short: "Register a Task by copying its yaml + samples into the substrate", Args: cobra.ExactArgs(1)}
+	command.RunE = func(command *cobra.Command, args []string) error {
+		result, err := module.useCases.Task.Add(command.Context(), aoeval.TaskAddRequest{SourcePath: args[0]})
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(command.OutOrStdout(), "Task registered: %s\n  path:        %s\n  min_n_samples: %d\n", result.Task.ID, result.Destination, result.Task.Stats.MinNSamples)
+		return nil
+	}
+	return command
+}
+
+func (module Module) taskListCommand() *cobra.Command {
+	command := &cobra.Command{Use: "list", Short: "List registered Task ids", Args: cobra.NoArgs}
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.Task.List(command.Context())
+		if err != nil {
+			return err
+		}
+		ids := make([]string, 0, len(result.Tasks))
+		for _, summary := range result.Tasks {
+			ids = append(ids, summary.ID)
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, map[string]any{"tasks": ids, "root": result.Root})
+		}
+		if len(result.Tasks) == 0 {
+			fmt.Fprintln(command.OutOrStdout(), "No tasks registered")
+			return nil
+		}
+		fmt.Fprintf(command.OutOrStdout(), "Tasks under %s:\n", result.Root)
+		for _, summary := range result.Tasks {
+			if summary.Error != "" {
+				fmt.Fprintf(command.OutOrStdout(), "  %s\t<unreadable: %s>\n", summary.ID, summary.Error)
+				continue
+			}
+			task := summary.Task
+			fmt.Fprintf(command.OutOrStdout(), "  %s\tschema_version=%d min_n_samples=%d metric=%s\n", task.ID, task.SchemaVersion, task.Stats.MinNSamples, task.Stats.Metric)
+		}
+		return nil
+	}
+	return command
+}
+
+func (module Module) taskShowCommand() *cobra.Command {
+	command := &cobra.Command{Use: "show <task-id>", Short: "Print a registered Task summary", Args: cobra.ExactArgs(1)}
+	command.RunE = func(command *cobra.Command, args []string) error {
+		task, err := module.useCases.Task.Show(command.Context(), args[0])
+		if err != nil {
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, task)
+		}
+		fmt.Fprintf(command.OutOrStdout(), "Task: %s\n", task.ID)
+		fmt.Fprintf(command.OutOrStdout(), "  schema_version: %d\n  domain:         %s\n  description:    %s\n  harness_ref:    %s\n", task.SchemaVersion, task.Domain, task.Description, task.HarnessRef)
+		fmt.Fprintf(command.OutOrStdout(), "  stats.metric:        %s\n  stats.paired:        %v\n  stats.min_n_samples: %d\n  stats.decision_rule: kind=%s confidence=%.2f\n", task.Stats.Metric, task.Stats.Paired, task.Stats.MinNSamples, task.Stats.DecisionRule.Kind, task.Stats.DecisionRule.Confidence)
+		return nil
+	}
+	return command
+}
+
+func (module Module) taskRunCommand() *cobra.Command {
+	options := aoeval.TaskRunRequest{InspectVersion: "0.3.216"}
+	command := &cobra.Command{Use: "run <task-id>", Short: "Open a new Run manifest for <task-id>; refuses on gate failure", Args: cobra.ExactArgs(1)}
+	flags := command.Flags()
+	flags.StringVar(&options.SuiteRef, "suite", "", "Suite id or path to suite.yaml (required)")
+	flags.StringVar(&options.RigID, "rig-id", "", "Rig identifier stamped into the Run manifest")
+	flags.StringVar(&options.Seeds, "seeds", "", "Comma-separated seeds (>=3, per §4)")
+	flags.StringVar(&options.HarnessRef, "harness", "", "Harness id (recorded into manifest)")
+	flags.StringVar(&options.HarnessDir, "harness-dir", "", "Path to harness source dir for snapshot + gate #8")
+	flags.StringVar(&options.ModelSpecID, "model-spec", "", "ModelSpec id (already captured via ao eval models capture)")
+	flags.StringVar(&options.GroundTruthRef, "ground-truth", "", "Ground-truth row id (head of supersession chain)")
+	flags.StringVar(&options.SampleSplit, "sample-split", "", "Sample split (dev|holdout); default from suite")
+	flags.IntVar(&options.NSamples, "n-samples", 0, "Override Suite.n_samples")
+	flags.StringVar(&options.InspectVersion, "inspect-version", options.InspectVersion, "Inspect AI version stamped into manifest")
+	flags.StringVar(&options.InspectCommand, "inspect-command", "", "Inspect command recorded into the Run manifest (not executed yet)")
+	flags.BoolVar(&options.CrossSpec, "cross-spec", false, "Allow ModelSpec drift (gate #4)")
+	flags.BoolVar(&options.AllowWeak, "allow-weak-labels", false, "Allow runs against confidence=weak ground-truth rows (gate #7)")
+	flags.BoolVar(&options.QuickSession, "quick", false, "Mark Run as quick_session=true (excluded from --vs auto-baseline pool)")
+	flags.BoolVar(&options.DryRun, "dry-run", false, "Run gates and exit without writing a Run manifest")
+	command.RunE = func(command *cobra.Command, args []string) error {
+		options.TaskID = args[0]
+		result, err := module.useCases.Task.Run(command.Context(), options)
+		if err != nil {
+			var gateFailure *aoeval.TaskGateError
+			if errors.As(err, &gateFailure) {
+				fmt.Fprintln(command.ErrOrStderr(), gateFailure.Message)
+			}
+			return err
+		}
+		if result.DryRun {
+			fmt.Fprintln(command.OutOrStdout(), "Dry run: gates passed; no Run manifest written.")
+			return nil
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, result.Manifest)
+		}
+		manifest := result.Manifest
+		fmt.Fprintf(command.OutOrStdout(), "Run opened: %s\n  status:    %s\n  manifest:  %s\n  rig_id:    %s\n  task_ref:  %s\n  suite_ref: %s\n", manifest.ID, manifest.Status, result.Path, manifest.RigID, manifest.TaskRef, manifest.SuiteRef)
 		return nil
 	}
 	return command

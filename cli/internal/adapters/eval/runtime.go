@@ -114,3 +114,36 @@ func (Runtime) SweepTempFiles(root string, age int64) ([]string, error) {
 	return evalsubstrate.SweepTempFiles(root, age)
 }
 func (Runtime) Now() time.Time { return time.Now().UTC() }
+
+func (Runtime) ReadFile(path string) ([]byte, error) { return os.ReadFile(path) }
+func (Runtime) WriteAtomic(path string, data []byte) error {
+	return evalsubstrate.WriteAtomic(path, data)
+}
+func (Runtime) ListDirectories(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var names []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			names = append(names, entry.Name())
+		}
+	}
+	sort.Strings(names)
+	return names, nil
+}
+func (Runtime) UserHome() (string, error) { return os.UserHomeDir() }
+func (Runtime) SnapshotHarness(dir, ref, source string) (*evalsubstrate.Harness, *evalsubstrate.HarnessLock, error) {
+	return evalsubstrate.SnapshotHarness(dir, ref, source)
+}
+func (Runtime) LoadModelSpec(root, id string) (*evalsubstrate.ModelSpec, error) {
+	return evalsubstrate.LoadModelSpec(root, id)
+}
+func (Runtime) GenerateRunID(rigID string) string { return evalsubstrate.GenerateRunID(rigID) }
+func (Runtime) OpenRun(root, id string, manifest evalsubstrate.Manifest) (aoeval.TaskRunWriter, error) {
+	return evalsubstrate.NewRunWriter(root, id, manifest)
+}
