@@ -20,6 +20,7 @@
 - [Driving Agents Reliably](driving-agents.md) — Operator's field guide: three laws, a copy-paste prompt pack, and the failure→mechanism table (companion to Behavioral Discipline)
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [Codebase Overview](architecture/codebase-overview.md) — Consolidated map of subsystems, active waist, registries, gates, footguns, and reading order (humans + agents)
+- [Understanding the AgentOps Go CLI](architecture/go-cli-architecture-guide.md) — Contributor-oriented guide to the live Cobra bootstrap, command modules, services, ports/adapters, Go idioms, migration debt, tests, and code-reading exercises
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
@@ -50,6 +51,8 @@ Bridge / framing docs:
 ## Architecture
 
 - [Codebase Overview](architecture/codebase-overview.md) — Consolidated repo map: bounded contexts, directory ownership, active CLI waist, registries, gates, knowledge flywheel, footguns, reading order
+- [Understanding the AgentOps Go CLI](architecture/go-cli-architecture-guide.md) — Source-pinned architecture and code-reading guide for the transitional Go CLI, including pure/effectful command traces, tracker/config policy, testing, known debt, and a worked capstone
+- [Go CLI Production-Readiness Audit](audits/2026-07-12-go-cli-production-readiness.md) — Evidence-backed audit of the strangler program, proof gaps, tracker/context semantics, recursive contracts, CLI output conformance, integration risk, and goal-design inputs
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments

@@ -181,6 +181,8 @@ nav:
   - Architecture:
       - architecture/index.md
       - Codebase Overview: architecture/codebase-overview.md
+      - Understanding the Go CLI: architecture/go-cli-architecture-guide.md
+      - Go CLI Production-Readiness Audit: audits/2026-07-12-go-cli-production-readiness.md
       - Operating Loop: architecture/operating-loop.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
