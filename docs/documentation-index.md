@@ -55,6 +55,7 @@ Bridge / framing docs:
 - [Codebase Overview](architecture/codebase-overview.md) — Consolidated repo map: bounded contexts, directory ownership, active CLI waist, registries, gates, knowledge flywheel, footguns, reading order
 - [Understanding the AgentOps Go CLI](architecture/go-cli-architecture-guide.md) — Source-pinned architecture and code-reading guide for the transitional Go CLI, including pure/effectful command traces, tracker/config policy, testing, known debt, and a worked capstone
 - [Go CLI Production-Readiness Audit](audits/2026-07-12-go-cli-production-readiness.md) — Evidence-backed audit of the strangler program, proof gaps, tracker/context semantics, recursive contracts, CLI output conformance, integration risk, and goal-design inputs
+- [Post-mortem: Go CLI Goal Stall and Tracker-Layer Confusion](learnings/2026-07-12-go-cli-goal-stall-tracker-layer-confusion.md) — Why the run stopped before helper adjudication, why durable `br` decomposition mattered, and the exact boundary between this repo's beads_rust ledger and Gas City's `bd`/Dolt substrate store
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
