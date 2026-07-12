@@ -4,13 +4,28 @@ description: Create or refine PRODUCT.md.
 ---
 # $product — Interactive PRODUCT.md Generation
 
-> **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability.
+> **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability into testable behaviors (the S2 handoff into the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this)).
 
 > **Purpose:** Guide the user through creating a `PRODUCT.md` that unlocks product-aware reviews in `$pre-mortem` and `$validate`, including the default quick-mode inline paths.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 **CLI dependencies:** None required.
+
+## Constraints
+
+- **Preserve user authority over the product claim.** Never overwrite an existing `PRODUCT.md` without the user's explicit choice, because product intent cannot be inferred safely from repository text alone.
+- **Separate evidence from aspiration.** Label unmeasured claims and pre-traction assumptions honestly, because this file governs downstream scope and review judgment.
+- **Keep gaps and alternatives honest.** Record where competitors win and what remains broken, because marketing-only framing makes `$discovery`, `$pre-mortem`, and `$validate` optimize against fiction.
+- **Consult the pawl before raising the andon.** A plain WARN, FAIL, or REFUTED result repairs and reruns automatically; only a breaker may enter HOLD or consume the one-helper lane.
+
+## Breaker State Machine
+
+- **Ordinary rejection — `WARN|FAIL|REFUTED -> AUTO-REDO`:** repair the product artifact and rerun the pawl; plain rejection never enters HOLD and never consumes the helper lane.
+- **Breaker — `BREAKER -> HOLD -> ONE-HELPER`:** pause automation in HOLD and route exactly one bounded helper consultation.
+- **Recovered — `HELPER-UNSTUCK -> AUTO-REDO`:** leave HOLD, resume automatic repair, and re-earn an independent verdict before proceeding.
+- **Helper escalation — `HELPER-ESCALATE -> HUMAN`:** stop automation and surface the helper's escalation to the human operator.
+- **Direct human lane — `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`:** stop automation and route directly to the human operator with the helper skipped.
 
 ## Execution Steps
 
@@ -130,153 +145,19 @@ If the user says "nothing", gently challenge: "Every product has gaps. What woul
 
 Ask: "What would give your target audience a 10-star experience?"
 
-Use this as a mandatory product judgment pass. Do not name-drop frameworks in the final document unless useful; translate them into concrete product decisions.
-
-Pass the draft through the nine product-sense lenses — Chesky 10/11-star, Rahul Vohra / Superhuman PMF, April Dunford positioning, Teresa Torres discovery, Marty Cagan outcomes, Gibson Biddle DHM, Elena Verna PLG, Melissa Perri build-trap, and Shreyas Doshi product sense. The per-lens question and the PRODUCT.md section each should shape live in [references/product-frameworks.md](references/product-frameworks.md); translate each into a concrete decision (do not name-drop the frameworks in the output).
-
-Capture:
-- **PMF wedge:** the narrow segment to optimize for now
-- **Anti-personas:** who the product should not optimize for yet
-- **10-star first experience:** the user's first 30-60 minutes, step by step
-- **Retention loop:** what makes the next session or next use better
-- **Moat:** what becomes harder to copy over time
-- **Friction:** the setup or comprehension costs that would kill adoption
+Use the nine lenses in [references/product-frameworks.md](references/product-frameworks.md#product-sense-lenses-framework-reference) as a mandatory judgment pass, but translate them into decisions rather than name-dropping frameworks. Capture the PMF wedge, anti-personas, first 30–60 minute 10-star experience, retention loop, moat, and adoption-killing friction.
 
 #### 3h: Validated Principles (Auto-discovered)
 
-**Do not ask the user.** Scan the project for extracted principles:
-
-1. Check `.agents/planning-rules/` — compiled planning principles
-2. Check `.agents/patterns/` — battle-tested patterns from usage
-3. Check `.agents/learnings/` — accumulated learnings
-
-If any exist, count them and note their source (e.g., "7 planning rules extracted from 544K agent messages"). These will be included in the output as "Validated Principles" — principles proven through usage, not just design assumptions.
-
-If none exist, skip this section in the output.
+**Do not ask the user.** Scan `.agents/planning-rules/`, `.agents/patterns/`, and `.agents/learnings/`. Include discovered principles with counts and source links; if none exist, omit the validated-principles block.
 
 ### Step 4: Generate PRODUCT.md
 
 Write `PRODUCT.md` to the target directory with this structure:
 
-```markdown
----
-last_reviewed: YYYY-MM-DD
----
+Use the canonical [PRODUCT.md template](references/product-frameworks.md#canonical-productmd-template). Set `last_reviewed` to today's date (YYYY-MM-DD), preserve every required section, and omit only the explicitly optional validated-principles block.
 
-# PRODUCT.md
-
-## Mission
-
-{mission from 3a}
-
-## Vision
-
-{one-sentence aspirational framing — what the world looks like if the product succeeds}
-
-## Target Personas
-
-### Persona 1: {role}
-- **Goal:** {goal}
-- **Pain point:** {pain point}
-- **Gap exposure:** {which product gaps this persona feels most}
-
-{repeat for each persona}
-
-## PMF Wedge
-
-{The narrow segment to optimize for now, who would be very disappointed without the product, and who is intentionally out of scope.}
-
-## 10-Star Experience
-
-{A concrete first-use or core-use journey that would feel unexpectedly great. Describe the first 30-60 minutes, the evidence of value, and what makes the next use better.}
-
-## What the Product Actually Is
-
-{Describe the product's concrete layers/components. Not marketing copy — what it literally does.
- Organize by architectural layer, not by feature list. For each layer, explain what gap it closes.}
-
-## Core Value Propositions
-
-{bullet list from 3c — each value prop should map to a specific gap or outcome it closes}
-
-## Product Strategy
-
-{Summarize the product choices through these lenses:
-- Delight: what creates user love
-- Hard to copy: what compounds or differentiates
-- Sustainable: what can keep improving without unsustainable service/manual work
-- Outcome: what target condition matters more than feature count
-- Retention loop: why the product gets more valuable on repeat use}
-
-## Design Principles
-
-{If validated principles were discovered in 3g, include them here:}
-
-**Validated Principles (from {source count} {source description}):**
-
-1. **{Principle name}** — {one-line description with link to source}
-
-{If no validated principles exist, include design principles from the interview.}
-
-**Operational principles:**
-
-{List the principles that govern how the product works, not just what it does.}
-
-## Competitive Positioning
-
-| Alternative | Where They Win | Where We Win |
-|-------------|---------------|--------------|
-{rows from 3d — honest about both sides}
-
-## Product Sense Review
-
-| Lens | Decision |
-|------|----------|
-| 10-star experience | {first-use delight decision} |
-| PMF wedge | {narrow segment decision} |
-| Positioning | {alternative/category/context decision} |
-| Continuous discovery | {how evidence will stay fresh} |
-| Outcome over output | {target condition} |
-| PLG friction | {self-serve/onboarding decision} |
-| Build-trap guardrail | {what not to build or claim yet} |
-
-## Strategic Bet
-
-{From 3d — the contrarian thesis. What market trend is this product betting on?}
-
-## Evidence
-
-{From 3e — real numbers, not claims}
-
-**Traction:**
-- {metric}: {value} ({time period})
-
-**Measured Impact:**
-- {outcome}: {evidence}
-
-{If pre-traction: "Pre-traction — tracking: {list of metrics to watch}"}
-
-## Known Product Gaps
-
-{From 3f — honest about what's broken}
-
-| Gap | Impact | Status |
-|-----|--------|--------|
-| {gap description} | {who it affects and how} | {open / in-progress / planned} |
-
-## Usage
-
-This file enables product-aware reviews:
-
-- **`$pre-mortem`** — Automatically loads product context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `product` perspective alongside plan-review judges.
-- **`$validate`** — Automatically loads developer-experience context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `developer-experience` perspective alongside code-review judges.
-- **`$council --preset=product`** — Run product review on demand.
-- **`$council --preset=developer-experience`** — Run DX review on demand.
-
-Explicit `--preset` overrides from the user skip auto-include (user intent takes precedence).
-```
-
-Set `last_reviewed` to today's date (YYYY-MM-DD format).
+**Checkpoint:** before writing, confirm the user-approved mission/personas, evidence-vs-aspiration labels, honest gaps/alternatives, PMF wedge, 10-star journey, and rollback choice for an existing file. After writing, validate the resolved `<target-dir>/PRODUCT.md` path from the Output Specification.
 
 ### Step 5: Report
 
@@ -289,42 +170,26 @@ Tell the user:
    - `$council --preset=product` and `$council --preset=developer-experience` are available on demand
 3. **Next steps:** Suggest running `$pre-mortem` on their next plan to see product perspectives in action
 
+## Output Specification
+
+- **Path:** `<target-dir>/PRODUCT.md` in the user-selected target directory.
+- **Filename convention:** `PRODUCT.md`.
+- **Serialization/schema format:** Markdown with a closed leading YAML frontmatter block containing exactly one valid `last_reviewed`, followed by the canonical body section order in [references/product-frameworks.md](references/product-frameworks.md#canonical-productmd-template).
+- **Validator command:** resolve the target once, then run `bash skills/product/scripts/validate.sh --artifact "<target-dir>/PRODUCT.md"`; never fall back to `./PRODUCT.md`.
+- **Downstream handoff:** after validation, hand the same resolved `<target-dir>/PRODUCT.md` to `$discovery`, `$pre-mortem`, and `$validate`. Plain rejection returns here for AUTO-REDO; only the breaker state machine may enter HOLD or HUMAN.
+
+## Quality Checklist
+
+- Mission, personas, value propositions, PMF wedge, and 10-star journey agree rather than targeting different users.
+- Evidence is dated and attributable; aspirations and pre-traction hypotheses are labeled instead of presented as measured fact.
+- Competitive positioning says where alternatives win, and Known Product Gaps names at least two concrete adoption or product risks.
+- The generated file preserves user-approved intent, passes the validator, and hands a testable scope boundary to `$discovery`.
+
 ## Examples
 
-### Creating Product Doc for New Project
-
 **User says:** `$product`
 
-**What happens:**
-1. Agent checks for existing PRODUCT.md, finds none
-2. Agent reads README.md and package.json to extract project context
-3. Agent asks user about mission, suggesting "CLI tool for automated dependency updates"
-4. Agent interviews for 2 personas: DevOps Engineer and Backend Developer
-5. Agent asks about value props, user provides: "Zero-config automation, Safe updates, Time savings"
-6. Agent asks about competitors, gathers honest where-they-win and where-we-win for each
-7. Agent asks for strategic bet: "We bet that dependency security will become a compliance requirement, not a best practice"
-8. Agent auto-pulls GitHub stats (142 stars, 2.3K clones/14d) and asks about measured impact
-9. Agent pushes for known gaps: user admits "onboarding is confusing" and "no Windows support"
-10. Agent runs the product-sense pass: defines the 10-star first experience, PMF wedge, anti-personas, retention loop, moat, and adoption friction
-11. Agent scans .agents/ — finds 12 planning rules and 45 learnings, includes as validated principles
-12. Agent writes PRODUCT.md with PMF Wedge, 10-Star Experience, Product Strategy, Evidence, Competitive Positioning, Known Gaps, and Strategic Bet sections
-
-**Result:** PRODUCT.md created with evidence-backed content, unlocking product-aware council perspectives in future validations.
-
-### Updating Existing Product Doc
-
-**User says:** `$product`
-
-**What happens:**
-1. Agent finds existing PRODUCT.md from 3 months ago
-2. Agent prompts: "PRODUCT.md exists. What would you like to do?"
-3. User selects "Update — keep existing content as defaults"
-4. Agent reads current file, extracts mission and personas as suggestions
-5. Agent asks about mission, user keeps existing one
-6. Agent asks about personas, user adds new "Security Engineer" persona
-7. Agent updates PRODUCT.md with new persona, updates `last_reviewed` date
-
-**Result:** PRODUCT.md refreshed with additional persona, ready for next validation cycle.
+The agent confirms create/update intent, interviews for the required decisions, labels evidence honestly, runs the checkpoint, and writes the canonical template. Updating follows the same path with existing content as defaults; cancellation leaves the file unchanged.
 
 ## Troubleshooting
 

@@ -1,6 +1,6 @@
 ---
 name: pre-mortem
-description: "Stress-test plans before work."
+description: "Stress-test plans before work. Use when: a drafted plan needs independent failure-mode judgment before implementation."
 ---
 # Pre-Mortem Skill
 
@@ -11,6 +11,21 @@ description: "Stress-test plans before work."
 Run `$council validate` on a plan or spec to get multi-model judgment before committing to implementation.
 
 Narrow-waist slice checks (FAIL the plan if any fails): one behavior per slice (S1 — reject multi-behavior slices, send back to `$plan`); each slice names a runnable acceptance test authored to fail RED before code (S3 — no failing test = no contract = FAIL); refactor is separated from feature and never changes a test (S4).
+
+## Constraints
+
+- **Judge the plan, never the implementation.** This keeps the plan-pawl separate from acceptance tests and finished-diff review, because one verdict cannot prove all three artifacts.
+- **Use an independent judge.** The author must not grade their own plan, because shared assumptions make self-review autocorrelated; one-way doors additionally require a different model family.
+- **Pre-register kill conditions for irreversible work.** A strategy, experiment, or one-way-door plan must say what evidence changes the decision before deliberation, because an unfalsifiable review is ceremony.
+- **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED is repair evidence: revise the plan and rerun automatically. Raise the andon and route one helper only for a true breaker such as missing authority, unavailable required trust domain after retry, or an impossible invariant.
+
+### Breaker State Machine
+
+- **Ordinary rejection — `WARN|FAIL|REFUTED -> AUTO-REDO`:** repair the plan and rerun the pawl; plain rejection never enters HOLD and never consumes the helper lane.
+- **Breaker — `BREAKER -> HOLD -> ONE-HELPER`:** pause automation in HOLD and route exactly one bounded helper consultation.
+- **Recovered — `HELPER-UNSTUCK -> AUTO-REDO`:** leave HOLD, resume the automatic repair path, and re-earn an independent verdict before proceeding.
+- **Helper escalation — `HELPER-ESCALATE -> HUMAN`:** stop automation and surface the helper's escalation to the human operator.
+- **Direct human lane — `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`:** stop automation and route directly to the human operator with the helper skipped.
 
 ---
 
@@ -190,6 +205,8 @@ Read `skills/pre-mortem/references/council-fail-patterns.md` for the top 8 counc
 These patterns are derived from 124 analyzed FAIL verdicts across 946 council sessions. They apply to both `--quick` and `--deep` modes.
 
 ### Step 2: Run Council Validation
+
+**Checkpoint:** before deliberation, confirm the packet records `scope_mode`, blast radius/reversibility, `author_id`, a distinct `judge_id`, and any required pre-registered `decision_rule`. Do not emit PASS while an invariant is missing.
 
 **Default (inline, no spawning):**
 ```
@@ -388,14 +405,22 @@ For fanout class the duel **satisfies no-self-grading by construction**: the two
 | Council Verdict | Pre-Mortem Result | Action |
 |-----------------|-------------------|--------|
 | PASS | Ready to implement | Proceed |
-| WARN | Review concerns | Address warnings or accept risk |
-| FAIL | Not ready | Fix issues before implementing |
+| WARN | Review concerns | Repair the plan and rerun automatically, or explicitly accept a documented risk |
+| FAIL | Not ready | Repair the plan and rerun automatically; do not raise the andon |
 
 ### Step 4: Write Pre-Mortem Report
 
 **Write to:** `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md`
 
 The generated report must preserve the exact Council Verdict heading because downstream validators and ledger readers extract verdicts with a regex anchored to it.
+
+## Output Specification
+
+- **Artifact path:** `.agents/council/`.
+- **Filename convention:** `YYYY-MM-DD-pre-mortem-<topic>.md`.
+- **Serialization/schema format:** Markdown report with verdict data conforming to `skills/council/schemas/verdict.json`.
+- **Validator command:** `bash skills/pre-mortem/scripts/validate.sh && grep -Eq '^## Council Verdict: (PASS|WARN|FAIL)$' .agents/council/YYYY-MM-DD-pre-mortem-<topic>.md`.
+- **Downstream handoff:** PASS proceeds to `$implement`; WARN or FAIL returns the plan to its author for repair and automatic re-review. Only a breaker raises the andon or routes one helper.
 
 ```markdown
 ---
@@ -520,6 +545,13 @@ $pre-mortem                    ← You are here
     ├── WARN → Review, then $implement or fix
     └── FAIL → Fix plan, re-run $pre-mortem
 ```
+
+## Quality Checklist
+
+- Every verdict cites concrete plan text and names the failure mode or proof that resolved it.
+- Every wave-validity row has non-overlapping write scope, one owner, and a discard path before parallel execution.
+- Every irreversible decision has an independent cross-family judge and a decision rule recorded before deliberation.
+- WARN, FAIL, and REFUTED routes repair and rerun; only a breaker routes the andon/helper path.
 
 ---
 

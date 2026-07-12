@@ -254,7 +254,7 @@ ao gate [command]
 
 #### `ao gate approve`
 
-Approve candidate for promotion
+Approve a bronze-tier candidate for promotion.
 
 ```
 ao gate approve <candidate-id> [flags]
@@ -269,7 +269,7 @@ ao gate approve <candidate-id> [flags]
 
 #### `ao gate bulk-approve`
 
-Bulk approve silver candidates
+Approve all silver-tier candidates older than a threshold.
 
 ```
 ao gate bulk-approve [flags]
@@ -285,7 +285,7 @@ ao gate bulk-approve [flags]
 
 #### `ao gate check`
 
-Run the gate registry (fast cockpit subset or full suite)
+Run the declarative gate registry.
 
 ```
 ao gate check [flags]
@@ -308,7 +308,7 @@ ao gate check [flags]
 
 #### `ao gate pending`
 
-List candidates pending review
+List bronze-tier candidates awaiting human review.
 
 ```
 ao gate pending [flags]
@@ -316,7 +316,7 @@ ao gate pending [flags]
 
 #### `ao gate reject`
 
-Reject candidate
+Reject a candidate with a required reason.
 
 ```
 ao gate reject <candidate-id> [flags]
@@ -331,7 +331,7 @@ ao gate reject <candidate-id> [flags]
 
 #### `ao gate run`
 
-Run a check-*.sh gate via BC2 GateRunnerPort and emit verdict
+Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
 
 ```
 ao gate run <name> [flags]
@@ -2101,6 +2101,24 @@ ao provenance position [flags]
 ```
   -h, --help   help for position
       --json   Emit machine-readable JSON (stdout-as-data)
+```
+
+#### `ao provenance reconcile`
+
+Scan the pawl-verdicts dir (.agents/pawl-verdicts/*.json) and, for every
+
+```
+ao provenance reconcile [flags]
+```
+
+**Flags:**
+
+```
+      --dir string   Verdicts dir (default: <repo>/.agents/pawl-verdicts)
+      --emit         Re-emit missing ledger edges for unbound verdicts
+      --force        Run even with an uncommitted ledger worktree
+  -h, --help         help for reconcile
+      --json         Emit the reconcile result as JSON
 ```
 
 #### `ao provenance show`

@@ -2,11 +2,19 @@
 name: ms
 description: meta_skill (ms) — the skill-search/load
 ---
-<!-- TOC: Core Insight | Quick Start | Consume (MCP) | Write/Admin (CLI) | Footguns | Concurrency | References -->
+<!-- TOC: Core Insight | Constraints | Quick Start | Consume (MCP) | Write/Admin (CLI) | Output | Production Skill Handoff | Footguns | Concurrency | Scenarios | Quality | References -->
 
 # ms — meta_skill search/load engine
 
 > **Core Insight:** `ms` is the skill-search engine over both corpora (agentops + jsm, ~175 skills). **Consume via MCP, write/admin via CLI.** One law: after ANY reindex/wipe, every running `ms mcp serve` MUST be killed (sessions respawn fresh). A surviving server silently reads pre-wipe data and returns `recorded:true` on writes that land in orphaned files.
+
+## Constraints
+
+- Load with `full: true` or `--full` when the intent is to execute a skill, because metadata cards and packed overviews omit runnable guidance.
+- Keep the consume/write boundary explicit: use MCP for search and load, but use the CLI for feedback and outcomes because only CLI writes are verified to land in the live database.
+- Reindex only through `scripts/ms-reindex.sh`, because it sweeps stale servers and proves source equivalence after rebuilding the index.
+- Treat the local index as disposable state, not a source of truth; the non-goal is editing indexed content instead of `skills/**`.
+- Keep `ms` retrieval-only for production skill work, because authoring, healing, promotion, validation, and verdicts belong to the skill factory and membrane.
 
 ## Quick Start
 
@@ -56,7 +64,7 @@ The MCP feedback tool exists, but **only the CLI write path is verified to land*
 ms feedback add <skill> --positive --comment "..."   # feedback on a skill
 ms feedback add <skill> --negative --comment "..."
 
-ms outcome <skill> --success   # dogfood loop: record AFTER actually using a skill's guidance
+ms outcome <skill> --success   # record only AFTER downstream factory use + validation
 ms outcome <skill> --failure
 
 ms doctor                      # admin: health
@@ -65,6 +73,26 @@ scripts/ms-reindex.sh --check-source  # read-only freshness proof against curren
 ms list -O jsonl --limit 1000  # counting / enumeration
 ms config                      # resolved config + skill_paths
 ```
+
+## Output Specification
+
+- **Path:** search, load, and admin results are returned on `stdout`; durable index state remains under `~/Library/Application Support/ms/`.
+- **Filename:** no result filename is created by this skill; callers capture CLI output explicitly when they need a durable artifact.
+- **Format:** MCP returns structured tool data; CLI automation uses JSON or JSONL, with full skill text at `.data.content` for `ms load --full -O json`.
+- **Validation command:** run `skills/ms/scripts/validate.sh` for the production lifecycle contract and `scripts/ms-reindex.sh --check-source` for normalized source equivalence.
+- **Downstream handoff:** the invoking agent consumes full loaded guidance, routes production skill intent to the canonical factory, and records `ms outcome` only after downstream use and validation—not after retrieval alone.
+
+## Production Skill Handoff
+
+**Production-intent handoff:** When the query or intended use is to create, edit, heal, or promote a skill, `ms` only retrieves full guidance and then routes execution to `agentops-skill-factory`, `skill-builder`, `heal-skill`, and the factory-selected validation primitives.
+
+**Authority boundary:** `skills/**` is canonical source; the generator owns the `ms` Codex twin and other projections. Never edit the index, loaded copies, or generated projections as source.
+
+**Promotion gate:** Promotion requires deterministic checks plus a fresh-context pawl or independent verdict; the producing agent never self-certifies completion.
+
+**Failure routing:** A plain `REFUTED` verdict auto-repairs and revalidates. Only a tripped circuit breaker enters `HOLD` and receives exactly one bounded helper consultation before re-earning an independent verdict.
+
+**Outcome timing:** Record `ms outcome` only after the downstream factory use and validation complete, never after retrieval alone.
 
 ---
 
@@ -106,7 +134,17 @@ Scenario: A stale local projection fails closed
   Then scripts/ms-reindex.sh exits nonzero and names the stale skill
 ```
 
+## Quality Checklist
+
+- Full loads preserve the complete runnable guidance rather than a metadata card or packed overview.
+- Search/load reads use the verified MCP path, while feedback and outcome writes use the verified CLI boundary.
+- Any rebuild finishes with stale servers swept, source equivalence validated, and the caller given a concrete next action.
+- Production skill intent leaves `ms` after retrieval and enters the canonical factory against `skills/**`; generated twins and loaded/indexed copies are never hand-edited as source.
+- Promotion carries deterministic evidence and a fresh-context independent verdict; no producer self-certification is accepted.
+- `REFUTED` stays in automatic repair, while exactly one helper is reserved for a tripped breaker and `ms outcome` waits for downstream validation.
+
 ## References
 
 - Upstream: Jeffrey Emanuel's `meta_skill` (source at `~/dev/meta_skill`, branch `local/frontmatter-id`).
 - Related consume-tool skill in this repo: [`cass`](../cass/SKILL.md) (session archaeology). The jsm `cass-memory` (cm) procedural-memory tool is the write-side complement (installed separately, not in this repo).
+- Lifecycle contract validator: [`scripts/validate.sh`](scripts/validate.sh).

@@ -146,6 +146,15 @@ def source_is_spine(source_dir: pathlib.Path) -> bool:
 
 repo_root = skills_root.parent
 source_root = repo_root / "skills"
+overrides_path = repo_root / "skills-codex-overrides" / "catalog.json"
+override_treatments = {}
+if overrides_path.is_file():
+    overrides = json.loads(overrides_path.read_text(encoding="utf-8"))
+    override_treatments = {
+        entry.get("name"): entry.get("treatment")
+        for entry in overrides.get("skills", [])
+        if entry.get("name")
+    }
 
 updated = []
 for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
@@ -162,12 +171,14 @@ for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
     source_dir = source_root / name
     new_source_hash = hash_tree(source_dir) if source_dir.is_dir() and (source_dir / "SKILL.md").exists() else ""
 
-    # Freeze ambient (non-spine) source_hash: do NOT recompute it from a
-    # (possibly edited) source. The stored source_hash stays authoritative so an
-    # ambient skill edit never restains its twin's hash record. generated_hash is
-    # still recomputed from the twin below, so a real twin-content change is still
-    # caught (age-focus-membrane-bookkeeper-m1wg.18).
-    if new_source_hash and not source_is_spine(source_dir):
+    # Freeze only ambient parity twins. A bespoke twin is hand-maintained, so a
+    # deliberate source+twin edit must advance its source provenance even when
+    # the source is not part of the membrane spine. Leaving the old hash in that
+    # case falsely certifies an historical source tree after both maintained
+    # artifacts changed. Parity-only ambient twins retain the original freeze:
+    # a source-only edit must not imply that the frozen twin was regenerated.
+    tracks_source = source_is_spine(source_dir) or override_treatments.get(name) == "bespoke"
+    if new_source_hash and not tracks_source:
         new_source_hash = ""
 
     changed = False

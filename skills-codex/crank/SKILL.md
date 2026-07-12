@@ -1,589 +1,130 @@
 ---
 name: crank
-description: "Execute implementation waves."
+description: 'Execute implementation waves. Triggers: "crank an epic", "execute implementation waves", "drive the bead wave plan".'
 ---
-# $crank - Autonomous Epic Execution (Codex Native)
+# $crank — Autonomous Epic Execution (Codex Native)
 
-> **Quick Ref:** Execute every open issue in an epic via wave-based workers using `spawn_agent`, `wait_agent`, `send_input`, and `close_agent`. Output: closed issues + final validation.
+> **Quick Ref:** Execute every tracker-ready slice through bounded Codex worker waves, independent verification, pawl admission, and landed-only closeout.
 
 **You must execute this workflow. Do not just describe it.**
 
-Each slice runs the canonical narrow-waist micro-cycle: its acceptance test authored RED before code is the slice contract, and refactor-under-green is its own wave, never optional (see references/wave-patterns.md) — a refactor wave must change no test (test-first ordering alone is not the quality lever; refactor-after-green is).
+## Constraints
 
-## Architecture
+- Execute only tracker-ready vertical slices because crank consumes an accepted plan; it does not silently redefine intent.
+- Parallelize only disjoint write scopes and serialize shared derived surfaces to prevent workers from invalidating one another's base.
+- Keep workers out of the acceptance and landing authority because producer claims require a lead-owned gate and an independent pawl verdict.
+- Consult the pawl and take one bounded helper pass for ordinary blockers before escalating because human interruption is the terminal recovery path.
 
-```text
-Crank (lead agent)
-    |
-    +-> ao beads exec ready (current wave)
-    |
-    +-> Build a wave task packet
-    |
-    +-> spawn_agent per issue (worker or explorer role)
-    |
-    +-> wait_agent for all worker ids
-    |
-    +-> Validate results + ao beads exec update
-    |
-    +-> Loop until epic DONE
-```
+## Architecture and Backend
 
-## Backend Rules
+Crank owns epic lifecycle, wave packets, acceptance, tracker synchronization, and closeout. Workers own only their assigned implementation scope. Prefer Codex session agents: `spawn_agent` for a fresh worker or explorer, `wait_agent` for completion, `send_input` for a short correction, and `close_agent` for a stalled or unnecessary lane. Do not fall back to legacy CSV fan-out or host-task polling.
 
-1. Prefer Codex session agents when `spawn_agent` is available.
-2. Use `agent_type=worker` for implementation agents and `agent_type=explorer` for discovery agents when the runtime exposes roles.
-3. Use `send_input` only for short steering or retry prompts.
-4. Use `close_agent` for stalled or unnecessary agents.
-5. Never depend on legacy CSV fan-out or host-task result polling. Use `spawn_agent`, `wait_agent`, `send_input`, and `close_agent` instead.
-
-## Codex Lifecycle Guard
-
-When this skill runs in Codex hookless mode (`CODEX_THREAD_ID` is set or
-`CODEX_INTERNAL_ORIGINATOR_OVERRIDE` is `Codex Desktop`), ensure startup context
-before the first wave:
+In hookless Codex sessions, initialize startup context once before the first wave:
 
 ```bash
 ao codex ensure-start 2>/dev/null || true
 ```
 
-`ao codex ensure-start` is the single startup guard for Codex skills. It records
-startup once per thread and skips duplicate startup automatically. Leave
-`ao codex ensure-stop` to closeout skills after the implementation wave ends.
+Use `$agent-native` plus `$ntm` only for explicitly requested durable, pane-shaped work. Ordinary crank waves stay on the native Codex agent surface.
 
-## Flags
+## Global Limits and Completion
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--test-first` | off | SPEC -> TEST -> IMPL wave sequence. Workers classify tests by pyramid level (L0-L3) per the test pyramid standard (`test-pyramid.md` in the standards skill). When `$plan` includes `test_levels` metadata, carry it into `metadata.validation.test_levels`. |
+- `MAX_EPIC_WAVES=50`; reaching the cap returns `BLOCKED`.
+- Each task gets at most two adjusted retries across all waves.
+- End every run with exactly one marker: `<promise>DONE</promise>`, `<promise>PARTIAL</promise>`, or `<promise>BLOCKED</promise>`.
+- `DONE` requires every slice accepted, landed, and closed; a worker's completion message is never sufficient.
 
-## Global Limits
-
-**MAX_EPIC_WAVES = 50** (hard limit). Typical epics use 5-10 waves.
-
-## Completion Enforcement (Sisyphus Rule)
-
-After each wave, output one of:
-- `<promise>DONE</promise>` - epic complete, all issues closed
-- `<promise>BLOCKED</promise>` - cannot proceed, with reason
-- `<promise>PARTIAL</promise>` - incomplete, with remaining items
-
-Never claim completion without the marker.
-
-**Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `$rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave (a `PARTIAL`/`BLOCKED` marker) is *re-plan input*, not just a retry target: per the [`$rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
-
-## Node Repair Operator
-
-When a task fails during wave execution, classify as **RETRY** (transient — re-add with adjustment, max 2), **DECOMPOSE** (too complex — split into sub-issues, terminal), or **PRUNE** (blocked — one bounded helper pass, then escalate what survives). Budget: 2 per task.
-
-**Mutation logging on failure:** DECOMPOSE logs `task_removed` + `task_added` per sub-task. PRUNE logs `task_removed`. RETRY logs nothing (task identity unchanged).
-
-## Execution Steps
+## Execution Workflow
 
 Given `$crank [epic-id | .agents/rpi/execution-packet.json | plan-file.md | "description"]`:
 
-### Step 0: Load Knowledge Context
+### 1. Preflight and target
 
-```bash
-if command -v ao &>/dev/null; then
-    ao lookup --query "<epic-title>" --limit 5 2>/dev/null || true
-    ao ratchet status 2>/dev/null || true
-fi
-```
+1. Load applicable context with `ao lookup --query "<epic-title>" --limit 5` when `ao` is available.
+2. Resolve beads mode through `ao beads exec` and operate the resolved beads_rust tracker as `BEADS_DIR="$(ao beads dir)" br ...`; otherwise preserve the plan or execution-packet objective without inventing an epic.
+3. Refuse to implement on `main`/`master`; follow [branch isolation](references/branch-isolation.md).
+4. Initialize `.agents/crank/SHARED_TASK_NOTES.md` and append-only `.agents/rpi/plan-mutations.jsonl` using their reference schemas.
+5. Read ready work and reject an empty set unless the epic is already complete.
 
-**Apply retrieved knowledge:** If learnings are returned, check each for applicability to this epic. For applicable learnings, treat as implementation constraints and cite by filename. Record citations with the correct type: `ao metrics cite "<path>" --type applied` when the learning influenced a decision, or `--type retrieved` when loaded but not referenced.
+**Execution-packet/file mode:** read `objective`, `epic_id`, `tracker_mode`, `done_criteria`, and `validation_commands` from `.agents/rpi/execution-packet.json`. Preserve the packet objective across retries; when `epic_id` is absent, continue file-backed instead of inventing tracker identity.
 
-**Section evidence:** When lookup results include `section_heading`, `matched_snippet`, or `match_confidence` fields, prefer the matched section over the whole file — it pinpoints the relevant portion. Higher `match_confidence` (>0.7) means the section is a strong match; lower values (<0.4) are weaker signals. Use the `matched_snippet` as the primary context rather than reading the full file.
+**Checkpoint:** verify before dispatch that each slice has an executable acceptance command, `metadata.issue_type`, an explicit file manifest, and no collision with another lane.
 
-### Step 0.5: Detect Tracking Mode
+### 2. Assemble the wave
 
-```bash
-if ao beads exec ready --json >/dev/null 2>&1 && ao beads exec list --type epic --status open --json >/dev/null 2>&1; then
-    TRACKING_MODE="beads"
-else
-    TRACKING_MODE="tasklist"
-fi
-```
+Apply FIRE (Find → Ignite → Reap → Escalate) for each wave. Build `.agents/crank/wave-<N>-tasks.json`; each task records issue ID, subject, acceptance criteria, allowed files, validation command, test level, and `metadata.issue_type`. Display the ownership table before spawning.
 
-### Step 0.6: Initialize Shared Task Notes
+Two slices collide when they write the same path or regenerate the same derived surface, including registries, context maps, CLI projections, and Codex manifests. Split collisions into sequential sub-waves based on the freshly landed prior commit. For two or more disjoint writers, follow [parallel-wave isolation](references/parallel-wave-isolation.md).
 
-Create the shared notes file for cross-wave context persistence. See `references/shared-task-notes.md` for the full pattern.
+Use `--test-first` to order SPEC → TEST → RED checkpoint → GREEN implementation. A refactor-under-green wave changes no test.
 
-```bash
-mkdir -p .agents/crank
-cat > .agents/crank/SHARED_TASK_NOTES.md <<EOF
-# Shared Task Notes — Epic ${EPIC_ID:-unknown}
+### 3. Dispatch Codex workers
 
-> Cross-wave context for workers. Read before starting. Report discoveries in task output.
-> Maintained by the crank orchestrator — workers do NOT write to this file directly.
+Spawn one `worker` per implementation slice. Spawn a short-lived `explorer` first when the file manifest is unknown. Every worker prompt includes:
 
-EOF
-```
+- the exact issue and acceptance contract;
+- the allowed-file manifest and validation command;
+- relevant shared notes and language standards;
+- a prohibition on landing, closing, or editing outside its scope;
+- a request for concise durable results plus a `Discoveries` section.
 
-### Step 0.7: Initialize Plan Mutation Audit Trail
+Use the current runtime's legal native primitives only. Read [worker specs](references/worker-specs.md), [team coordination](references/team-coordination.md), and the [Ralph loop contract](references/ralph-loop-contract.md) when assembling prompts.
 
-Create the JSONL file that tracks every plan mutation during execution. See `references/plan-mutations.md` for the full schema and mutation budget.
+### 4. Verify and checkpoint
 
-```bash
-mkdir -p .agents/rpi
-: > .agents/rpi/plan-mutations.jsonl
+After `wait_agent`, the lead—not the worker—must:
 
-# Budget counters
-MUTATION_TASK_ADDED=0
-MUTATION_TASK_ADDED_LIMIT=5
-MUTATION_TASK_REORDERED=0
-MUTATION_TASK_REORDERED_LIMIT=3
-```
+1. Read the actual diff and compare it with the slice claim and file manifest.
+2. Run the slice acceptance command and any wave-level integration checks.
+3. Run CI-policy parity when `.github/workflows/*.yml` changed.
+4. Record PASS, FAIL, or BLOCKED in the tracker without closing unlanded work.
+5. Write `.agents/crank/wave-<N>-checkpoint.json` and validate it with `bash skills-codex/crank/scripts/validate-wave-checkpoint.sh <checkpoint>`.
+6. Harvest durable discoveries and append every plan mutation with its before/after reason.
+7. Make the lead-only commit after all owned results pass.
 
-**Helper function:**
+**Checkpoint:** do not consume or hand off a wave checkpoint until its schema, live `git_sha`, timestamp, file list, and acceptance verdict validate.
 
-```bash
-log_plan_mutation() {
-    local mutation_type="$1" task_id="$2" before="$3" after="$4"
-    local ts
-    ts=$(date -Iseconds)
+### 5. Recover through the pawl
 
-    if [[ "$mutation_type" == "task_added" ]]; then
-        MUTATION_TASK_ADDED=$((MUTATION_TASK_ADDED + 1))
-        if [[ $MUTATION_TASK_ADDED -gt $MUTATION_TASK_ADDED_LIMIT ]]; then
-            echo "WARN: task_added budget exceeded ($MUTATION_TASK_ADDED/$MUTATION_TASK_ADDED_LIMIT). Consider re-running $plan."
-        fi
-    elif [[ "$mutation_type" == "task_reordered" ]]; then
-        MUTATION_TASK_REORDERED=$((MUTATION_TASK_REORDERED + 1))
-        if [[ $MUTATION_TASK_REORDERED -gt $MUTATION_TASK_REORDERED_LIMIT ]]; then
-            echo "WARN: task_reordered budget exceeded ($MUTATION_TASK_REORDERED/$MUTATION_TASK_REORDERED_LIMIT)."
-        fi
-    fi
+Classify a failed task as `RETRY` (transient, adjusted, max two), `DECOMPOSE` (replace it with smaller tracked slices), or `PRUNE` (remove it with the surviving block reason). Log `task_removed`/`task_added` mutations for decomposition and `task_removed` for pruning.
 
-    echo "{\"timestamp\":\"$ts\",\"wave\":$wave,\"task_id\":\"$task_id\",\"mutation_type\":\"$mutation_type\",\"before\":$before,\"after\":$after}" \
-        >> .agents/rpi/plan-mutations.jsonl
-}
-```
+On an ordinary blocker, consult the pawl and take one bounded fresh-context helper pass for that blocker class. Resume on `UNSTUCK`; escalate only on `ESCALATE`, explicit judgment/refusal, exhausted budget, or a surviving block after the helper. Read [failure recovery](references/failure-recovery.md) and [failure taxonomy](references/failure-taxonomy.md).
 
-**Mutation types:** `task_added`, `task_removed`, `task_reordered`, `scope_changed`, `dependency_changed`.
+### 6. Gate, land, and close
 
-### Step 1: Identify the Execution Target
+For each bead, in its own worktree and serialized against hot `main`:
 
-**Beads mode:**
-- If epic ID provided: use it directly
-- If no epic ID: `ao beads exec list --type epic --status open 2>/dev/null | head -5`
+1. Run `ao gate check --fast --scope head`.
+2. Obtain independent `$pawl-review` evidence and a live-head `CONFIRMED` verdict from `ao pawl`; `REFUTED` returns to implementation.
+3. Run `bash scripts/pawl-land.sh <bead>`; stale heads rebase feature-only, prove identity, rerun the gate, and receive exact-new-SHA confirmation.
+4. Close only after `git merge-base --is-ancestor <feature-sha> origin/main` succeeds.
+5. Close an epic only after every child is landed and closed.
 
-**Execution-packet/file mode:**
-- If the input is `.agents/rpi/execution-packet.json`, read `objective`, `epic_id`, `tracker_mode`, `done_criteria`, and `validation_commands`
-- If `epic_id` exists inside the execution packet, keep that epic as the execution spine
-- If `epic_id` is absent, keep the packet `objective` as the execution spine and continue in file-backed mode instead of inventing an epic ID
-- For other plan files, read the plan file and extract tasks
+Use [land protocol](references/land-protocol.md) for multi-lane serialization and the external-PR variant. A closed bead is a sensor: record the learning, and re-plan only when it falsifies an assumption used by the remaining DAG.
 
-### Step 1.5: Branch Isolation Gate
+### 7. Loop and finish
 
-Before wave-1 commit, refuse to crank on `main`/`master`. Cut `crank/<epic-id>` to prevent parallel-session reset clobbers. See [references/branch-isolation.md](references/branch-isolation.md) for the gate script and override flag.
-
-### Step 2: Load Execution Details
-
-**Beads mode:**
-
-```bash
-br show <epic-id> 2>/dev/null
-```
-
-**Execution-packet/file mode:**
-- Read the packet or plan file into local state for the current objective
-- Preserve the same objective across retries; do not narrow to one slice from `ao beads exec ready`
-
-### Step 3: List Ready Work for the Current Wave
-
-**Beads mode:**
-
-```bash
-br ready 2>/dev/null
-```
-
-`ao beads exec ready` returns all unblocked issues - these can run in parallel.
-
-**Execution-packet/file mode:**
-- Read remaining tasks from `.agents/rpi/execution-packet.json` or the plan file
-- Execute against the packet objective until the plan-backed work is done, blocked, or the retry budget is exhausted
-
-### Step 3a: Pre-flight Checks
-
-1. Verify there are ready issues. Empty list is an error unless the epic is already complete.
-2. If 3+ issues are ready, check `.agents/council/` for pre-mortem evidence.
-3. If tracking mode is `beads` and the legacy-named `scripts/bd-audit.sh` exists, run the backlog audit before spawning workers.
-4. If the backlog audit flags hygiene issues, stop and clean them up before continuing. Use `--skip-audit` only when you intentionally want to bypass that gate.
-5. For every string being modified, grep the codebase for stale cross-references.
-
-### Step 3b: Language Standards Injection
-
-Detect project language (`go.mod` -> Go, `pyproject.toml` -> Python, etc.) and read applicable standards from `$standards`. Include a Testing section in worker prompts.
-
-### Step 4: Execute the Wave with Codex Session Agents
-
-Crank follows the FIRE loop for each wave:
-- **FIND:** locate the next ready set
-- **IGNITE:** spawn workers
-- **REAP:** wait, validate, and merge results
-- **ESCALATE:** retry or block when needed
-
-#### 4a: Load Shared Task Notes
-
-Read cross-wave context to include in worker prompts:
-
-```bash
-SHARED_NOTES=""
-if [ -f .agents/crank/SHARED_TASK_NOTES.md ]; then
-    SHARED_NOTES=$(cat .agents/crank/SHARED_TASK_NOTES.md)
-fi
-```
-
-If `SHARED_NOTES` exceeds ~50 lines, summarize older waves (keep last 3 in full detail, preserve `[CRITICAL]` entries).
-
-#### 4b: Build a Wave Task Packet
-
-Create one packet per ready issue. Do not use CSV fan-out.
-
-```bash
-mkdir -p .agents/crank
-cat > ".agents/crank/wave-${wave}-tasks.json" << EOF
-{
-  "wave": $wave,
-  "epic_id": "$EPIC_ID",
-  "tasks": [
-    {
-      "issue_id": "bd-123",
-      "subject": "Short issue summary",
-      "description": "Issue details and acceptance criteria",
-      "files": ["path/to/file.go"],
-      "validation_cmd": "go test ./...",
-      "metadata": {
-        "issue_type": "feature"
-      }
-    }
-  ]
-}
-EOF
-```
-
-Each task packet must include `metadata.issue_type`.
-
-#### 4c: Pre-spawn File Conflict Check
-
-```text
-wave_tasks = [tasks from packet]
-all_files = {}
-for task in wave_tasks:
-    for f in task.files:
-        if f in all_files:
-            CONFLICT -> serialize into sub-waves
-        all_files[f] = task.id
-```
-
-Display an ownership table before spawning workers. If conflicts exist, split into sub-waves and keep file ownership disjoint.
-
-#### 4c.1: Parallel-Wave Isolation (wave size ≥ 2)
-
-For waves with 2+ workers, three tiers prevent sibling-worker clobber without re-introducing worktree sprawl. Read [references/parallel-wave-isolation.md](references/parallel-wave-isolation.md) for the full tier definitions, the worker prompt template, the `preflight-swarm.sh` escalation criterion, and the `check-worktree-disposition.sh` cleanup gate.
-
-Tier 1 (always): inject the branch-isolation prompt rule (worker's first git op = `git checkout -b feat/<epic>-<slug> origin/main`; never `git switch`, `stash pop`, `reset --hard`).
-Tier 2 (escalate on `preflight-swarm.sh` non-zero): ephemeral per-worker worktree.
-Tier 3 (wave-end): `scripts/check-worktree-disposition.sh` flags stragglers.
-
-#### 4d: Spawn Workers
-
-Spawn one agent per issue. Prefer `worker` roles for implementation and `explorer` roles for file discovery when the runtime exposes `agent_type`.
-
-```text
-spawn_agent(
-  agent_type="worker",
-  message="You are worker-<issue-id>.
-
-Assignment: <subject>
-
-<description>
-
----
-Context from prior waves (read before starting):
-<SHARED_NOTES content, or 'First wave — no prior context.' if empty>
-
----
-
-FILE MANIFEST (files you are permitted to modify):
-<list of files>
-
-Rules:
-1. Stay within your assigned files
-2. Run validation: <validation_cmd>
-3. Keep your response short
-4. Write any durable notes to .agents/crank/results/<issue-id>.md or .agents/crank/results/<issue-id>.json
-5. DISCOVERY REPORTING: If you discover codebase quirks, failed approaches,
-   convention requirements, or dependency constraints, include a section in your
-   output titled '## Discoveries' with one bullet per finding.
-
-Use the repo's current Codex primitives only."
-)
-```
-
-If a task is missing its file manifest, spawn a short-lived `explorer` agent first:
-
-```text
-spawn_agent(
-  agent_type="explorer",
-  message="You are explorer-<issue-id>.
-
-Task: identify the files that must be created or modified for this issue.
-Return a JSON array of paths only."
-)
-```
-
-#### 4e: Wait for Workers
-
-```text
-wait_agent(targets=["agent-id-1", "agent-id-2"])
-```
-
-If a worker needs a short correction, use `send_input(target=..., message=...)`.
-
-If a worker stalls or is no longer needed, use `close_agent(target=...)`.
-
-### Step 5: Verify and Sync
-
-**External Gate Enforcement:** After each worker completes, the orchestrator (not the worker) runs the gate command. Workers must not declare their own completion. See `references/external-gate-protocol.md`.
-
-For each completed worker:
-
-1. PASS -> close the issue.
-2. FAIL -> log the failure, keep the issue open, and retry only if the issue is still within the retry budget.
-3. BLOCKED -> mark blocked with the reason and continue the wave.
-
-Update beads with evidence:
-
-```bash
-COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | head -10 | tr '\n' ' ' | sed 's/ $//')
-br close "$issue_id" --reason "commit:${COMMIT_SHA} files:[${CHANGED_FILES}]" 2>/dev/null
-br update "$issue_id" --status blocked 2>/dev/null
-br comments add "$issue_id" "Wave $wave FAIL: $reason" 2>/dev/null
-```
-
-### Step 5.5: Wave Acceptance Check
-
-After all workers complete:
-1. Compute `git diff` for the wave.
-2. Run project-level tests appropriate to the wave.
-3. If tests fail, identify which worker's changes broke things and requeue only that work.
-4. **Orchestrator's own diff-read (mandatory anti-green-washing check).** Before counting a slice/wave as accepted, the orchestrator itself reads the actual wave diff and compares it with each closed slice's declared scope and claim. A green `<promise>DONE</promise>` plus passing evidence JSON is a claim, not proof; an out-of-scope or claim-mismatched diff sets the wave verdict to **FAIL** and surfaces the file list. See [references/wave-patterns.md](references/wave-patterns.md) "Wave Acceptance Check" Step 3.5.
-5. **CI-Policy Parity Gate (conditional).** If the wave diff touches `.github/workflows/*.yml`, run `bash scripts/validate-ci-policy-parity.sh`; on non-zero exit treat the wave verdict as **FAIL** and surface the drift report. Trigger pattern (narrow — workflow YAML only):
-   ```bash
-   if git diff --name-only "$WAVE_START_SHA" HEAD -- | grep -qE '^\.github/workflows/.*\.ya?ml$'; then
-       bash scripts/validate-ci-policy-parity.sh || exit 1
-   fi
-   ```
-   See [references/wave-patterns.md](references/wave-patterns.md) "CI-Policy Parity Gate" for the worked example and the soc-lmww1 / commit `c587b361` motivation.
-
-### Step 5.7: Wave Checkpoint
-
-```bash
-FILES_CHANGED_JSON="${FILES_CHANGED_JSON:-$(git diff --name-only "${WAVE_START_SHA:-HEAD~1}..HEAD" | jq -R -s -c 'split("\n")[:-1]')}"
-GIT_SHA="$(git rev-parse HEAD)"
-
-cat > ".agents/crank/wave-${wave}-checkpoint.json" << EOF
-{
-  "schema_version": 1,
-  "wave": $wave,
-  "epic_id": "$EPIC_ID",
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "tasks_completed": ${TASKS_COMPLETED_JSON:-[]},
-  "tasks_failed": ${TASKS_FAILED_JSON:-[]},
-  "files_changed": $FILES_CHANGED_JSON,
-  "git_sha": "$GIT_SHA",
-  "acceptance_verdict": "${ACCEPTANCE_VERDICT:-WARN}",
-  "commit_strategy": "${COMMIT_STRATEGY:-wave-batch}",
-  "mutations_this_wave": $(grep -c "\"wave\":${wave}" .agents/rpi/plan-mutations.jsonl 2>/dev/null || echo 0),
-  "total_mutations": $(wc -l < .agents/rpi/plan-mutations.jsonl 2>/dev/null | tr -d ' '),
-  "mutation_budget": {
-    "task_added": {"used": ${MUTATION_TASK_ADDED:-0}, "limit": 5},
-    "task_reordered": {"used": ${MUTATION_TASK_REORDERED:-0}, "limit": 3}
-  }
-}
-EOF
-
-bash skills-codex/crank/scripts/validate-wave-checkpoint.sh ".agents/crank/wave-${wave}-checkpoint.json"
-```
-
-Do not copy or consume the checkpoint downstream until validation passes. The validator fails closed when `git_sha` does not resolve in the current repo, `timestamp` is invalid or more than 5 minutes in the future, or required checkpoint fields are missing/malformed.
-
-### Step 5.8: Update Shared Task Notes
-
-Harvest discoveries from completed workers and append to the shared notes file:
-
-```bash
-WAVE_DISCOVERIES=""
-for result_file in .agents/crank/results/*; do
-    if [ -f "$result_file" ]; then
-        DISCOVERIES=$(sed -n '/^## Discoveries/,/^## /{ /^## Discoveries/d; /^## /d; p; }' "$result_file" 2>/dev/null)
-        if [ -n "$DISCOVERIES" ]; then
-            WAVE_DISCOVERIES="${WAVE_DISCOVERIES}${DISCOVERIES}\n"
-        fi
-    fi
-done
-
-if [ -n "$WAVE_DISCOVERIES" ]; then
-    cat >> .agents/crank/SHARED_TASK_NOTES.md <<EOF
-
-## Wave ${wave} ($(date -Iseconds))
-$(echo -e "$WAVE_DISCOVERIES")
-EOF
-fi
-```
-
-**Capture:** Failed approaches, codebase quirks, convention discoveries, dependency notes.
-**Skip:** Full error logs, implementation details, task status.
-
-### Step 5.9: Log Plan Mutations
-
-After processing wave results, log mutations for any plan changes. Call `log_plan_mutation` for each:
-
-- **DECOMPOSE:** `task_removed` for original, `task_added` for each sub-task
-- **PRUNE:** `task_removed` with block reason
-- **Scope change:** `scope_changed` when file manifest updated after exploration
-- **Dependency discovered:** `dependency_changed` when blocked-by list modified
-- **Wave reassignment:** `task_reordered` when task moves between waves
-
-```bash
-# Example: task decomposed into sub-tasks
-log_plan_mutation "task_removed" "$decomposed_id" \
-    "{\"subject\":\"$ORIGINAL_SUBJECT\",\"status\":\"decomposed\"}" "null"
-log_plan_mutation "task_added" "$sub_id" "null" \
-    "{\"subject\":\"$SUB_SUBJECT\",\"reason\":\"Split from $decomposed_id\"}"
-
-# Example: scope change after exploration
-log_plan_mutation "scope_changed" "$task_id" \
-    "{\"files\":$ORIGINAL_FILES}" \
-    "{\"files\":$UPDATED_FILES,\"reason\":\"$REASON\"}"
-```
-
-Mutations are append-only to `.agents/rpi/plan-mutations.jsonl`. Read by `$post-mortem` for drift analysis.
-
-### Step 6: Commit Wave Results
-
-**Lead-only commit** - workers write files, lead validates and commits once per wave:
-
-```bash
-for f in $WORKER_FILES_CHANGED; do
-    git add -- "$f"
-done
-git commit -m "feat(<scope>): wave $wave - $COMPLETED_COUNT issues completed"
-```
-
-### Step 6.5: Land to main (direct-main + pawl)
-
-THIS repo lands by **direct push to main** — PR-per-bead is retired (external-repo variant below). Land each bead from its own worktree:
-
-1. **Gate:** `ao gate check --fast --scope head` — the local cockpit gate (also the pre-push hook; run it manually to fail fast).
-2. **Review:** `$pawl-review` runs immutable fresh reviewer lanes and hands their contained evidence to `ao pawl`. `ao pawl` alone owns diversity, commit binding, and admission. **No CONFIRMED verdict means the bead does not land.** REFUTED routes back to re-work; breaker exhaustion HOLDs.
-3. **Land:** `bash scripts/pawl-land.sh <bead>` — fetch + rebase onto `origin/main`, restamp the verdict onto the post-rebase feat, single-shot push.
-4. **Close on landed-only:** `ao beads exec close` a child bead ONLY after its commit is an ancestor of `origin/main` (`git fetch origin main && git merge-base --is-ancestor <feat-sha> origin/main`), never on a log line or batch `br --json` query. Never close a parent epic before EVERY child is landed (`scripts/check-epic-children-closed.sh <epic>`).
-
-**Close checkpoint — a closed bead is a sensor reading, not a checkbox (age-cysr).** The close is the loop's highest-signal, membrane-verified evidence ([the flywheel](../../docs/architecture/the-flywheel.md)). On EVERY close answer two questions before moving on: (1) what did completing this bead teach? (one line — usually "nothing new", and that's fine); (2) does it CONTRADICT an assumption the remaining plan depends on? If **no** → proceed to the next bead. If **yes** (a falsified plan assumption) → re-plan the remaining slices NOW, not at the wave boundary: invoke `$discovery` as the re-plan engine over the remaining DAG (split / re-order / add / drop beads) and record the trigger in the close reason (`replan: <falsified assumption>`). **Anti-thrash guard:** the trigger is a falsified plan assumption ONLY — most closes teach nothing; never re-plan on mere surprise, difficulty, or a new idea (park those for `$post-mortem`). **Andon bound:** a re-plan that would rework the same remaining DAG a 3rd time stops re-planning and takes one bounded helper pass (fresh context, cross-family model, or $council — [pawls.md §Escalation](../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model)); it escalates to the human only if the helper cannot unstick it.
-
-**Multi-lane serialization + by-hand land.** When several lanes land onto a hot `main` at once, or when you land by hand via the `ao pawl review` CLI (which sets `PAWL_UNTRUSTED_REPO=1` and SKIPS auto-bind, so the sealed bind is manual), follow the serialized land-token discipline + the exact `[feat, #trivial-bind]` command sequence in [references/land-protocol.md](references/land-protocol.md) — one land at a time across lanes, `ao provenance emit-verdict` for the sealed bind (never a hand-appended ledger edge), and `git merge-base --is-ancestor` before every `ao beads exec close`.
-
-**External-repo variant (PR flow).** When targeting an external repo where you cannot push `main`, the land half becomes a PR: prepare it with `$pr-prep`, then reconcile with `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (verifies the CONFIRMED pawl verdict via `scripts/pawl-verdict.sh check`, merges `gh pr merge --squash --admin`, closes on confirmed `MERGED`). External targets only — never for landing AgentOps' own beads.
-
-### Step 7: Loop or Complete
-
-```bash
-wave=$((wave + 1))
-
-if [[ $wave -ge 50 ]]; then
-    echo "<promise>BLOCKED</promise>"
-    echo "Global wave limit (50) reached."
-    exit 1
-fi
-
-REMAINING=$(ao beads exec ready 2>/dev/null | wc -l)
-if [[ $REMAINING -eq 0 ]]; then
-    OPEN_TOTAL=$(ao beads exec list --status open 2>/dev/null | wc -l || echo 0)
-    IN_PROGRESS_TOTAL=$(ao beads exec list --status in_progress 2>/dev/null | wc -l || echo 0)
-
-    if [[ $((OPEN_TOTAL + IN_PROGRESS_TOTAL)) -eq 0 ]]; then
-        echo "<promise>DONE</promise>"
-    else
-        echo "<promise>BLOCKED</promise>"
-        echo "No ready issues but $((OPEN_TOTAL + IN_PROGRESS_TOTAL)) issues remain open or in progress."
-    fi
-else
-    # Continue to next wave - return to Step 3
-fi
-```
-
-### Step 8: Final Validation
-
-When the epic is DONE:
-
-```bash
-$validate validate the completed epic
-```
-
-### Step 8.5: Archive Shared Task Notes
-
-Move the shared notes to an archive after epic completion:
-
-```bash
-if [ -f .agents/crank/SHARED_TASK_NOTES.md ]; then
-    mkdir -p .agents/crank/archives
-    mv .agents/crank/SHARED_TASK_NOTES.md \
-       ".agents/crank/archives/SHARED_TASK_NOTES-${EPIC_ID:-unknown}-$(date +%Y%m%d-%H%M%S).md"
-fi
-```
-
-## Retry Policy
-
-- Max 2 retries per issue across all waves
-- On third failure: mark BLOCKED and continue with remaining issues
-- Track retries with `br comments add "$issue_id" "retry $N: $reason"`
-
-## Failure Recovery
-
-| Scenario | Action |
-|----------|--------|
-| Worker timeout | Mark BLOCKED, log reason, continue wave |
-| Test failure | Identify breaking change, retry once |
-| All workers fail | `<promise>BLOCKED</promise>` with diagnostics |
-| File conflict detected | Split into sub-waves, re-run |
+Return to ready work until none remains or the wave/retry budget stops progress. Run `$validate` over the completed epic, archive shared notes, report issue count and iterations, then emit the truthful completion marker. Feed surprising wave evidence up to `$rpi` so it can re-plan the remaining route instead of blindly retrying it.
 
 ## Output Specification
 
-**Format:** committed code plus a markdown progress/closeout summary to stdout; per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
-**Files:** reads `.agents/rpi/execution-packet.json`; writes wave/slice results under `.agents/swarm/results/`; closes beads via `ao beads exec close` in the resolved bead ledger.
-**Exit signal:** `<promise>DONE</promise>` (all slices accepted) · `<promise>PARTIAL</promise>` (retry the same objective) · `<promise>BLOCKED</promise>` (manual intervention).
+- **Path:** committed slice changes, wave packets/checkpoints under `.agents/crank/`, worker evidence under `.agents/crank/results/`, and tracker state in the resolved ledger.
+- **Filename:** `wave-<N>-tasks.json`, `wave-<N>-checkpoint.json`, `SHARED_TASK_NOTES.md`, and `plan-mutations.jsonl`; preserve worker result filenames declared in their packets.
+- **Format:** schema-valid JSON/JSONL evidence plus a markdown closeout containing epic ID/title, completed count, iterations, validation result, and one promise marker.
+- **Exit code:** run `bash skills-codex/crank/scripts/validate.sh` and require zero; validate every checkpoint with `validate-wave-checkpoint.sh`; any failed acceptance or malformed evidence prevents `DONE`.
+- **Downstream handoff:** pass committed slices and validated evidence to `$validate`, then the pawl; only landed ancestry permits tracker close.
 
-## Related skills
+## Quality Checklist
 
-- `$agent-native` + `$ntm` — portable persistent-worker lifecycle and NTM mechanics for long-running `$crank` waves.
+- Every completed slice has RED/GREEN acceptance evidence, owned files, and tracker state consistent with its landed commit.
+- Parallel waves contain no shared write or generated-surface collision, and sequential dependencies use the freshly landed prior base.
+- Recovery consults the pawl before the human and preserves the one-helper-pass budget per blocker class.
+- The final marker matches reality: no `DONE` while issues, failed checks, unlanded commits, or unresolved pawl findings remain.
 
 ## Reference Documents
 
-- [references/de-sloppify.md](references/de-sloppify.md) - cleanup pass after implementation waves
-- [references/parallel-wave-isolation.md](references/parallel-wave-isolation.md) - branch-isolation rule + conditional ephemeral worktrees + cleanup gate for parallel waves
-- [references/plan-mutations.md](references/plan-mutations.md) - plan mutation audit trail for drift analysis
-- [references/shared-task-notes.md](references/shared-task-notes.md) - cross-wave context persistence
-- [references/commit-strategies.md](references/commit-strategies.md) - per-task vs wave-batch commits
-- [references/contract-template.md](references/contract-template.md) - contract template for worker specs
-- [references/failure-recovery.md](references/failure-recovery.md) - escalation and retry logic
-- [references/land-protocol.md](references/land-protocol.md) - serialized multi-lane land protocol: land-token, the [feat, #trivial-bind] sequence, stale-bind drop, failure playbook
-- [references/failure-taxonomy.md](references/failure-taxonomy.md) - failure classification
-- [references/fire.md](references/fire.md) - FIRE loop specification
-- [references/ralph-loop-contract.md](references/ralph-loop-contract.md) - Ralph Wiggum loop contract
-- [references/taskcreate-examples.md](references/taskcreate-examples.md) - task creation examples
-- [references/team-coordination.md](references/team-coordination.md) - worker coordination details
-- [references/worker-specs.md](references/worker-specs.md) - per-worker model/tool/prompt specs
-- [references/external-gate-protocol.md](references/external-gate-protocol.md) - external gate protocol for wave validation
-- [references/test-first-mode.md](references/test-first-mode.md) - test-first wave sequence
-- [references/troubleshooting.md](references/troubleshooting.md) - common issues and fixes
-- [references/uat-integration-wave.md](references/uat-integration-wave.md) - UAT integration wave patterns
-- [references/wave-patterns.md](references/wave-patterns.md) - acceptance checks and checkpoints
-- [references/gc-pool-dispatch.md](references/gc-pool-dispatch.md) - gc pool worker dispatch
-- [references/wave1-spec-consistency-checklist.md](references/wave1-spec-consistency-checklist.md) - Wave 1 spec consistency checklist
-- [references/worktree-per-worker.md](references/worktree-per-worker.md) - worktree isolation pattern
-- [references/ship-loop-anti-patterns.md](references/ship-loop-anti-patterns.md) - absorbed ship-loop anti-pattern catalog (ag-s43tg)
-
-<!-- Lifecycle integration wired: 2026-03-28. See skills/crank/SKILL.md for canonical -->
+- Core flow: [fire](references/fire.md), [wave patterns](references/wave-patterns.md), [test-first mode](references/test-first-mode.md), [UAT integration](references/uat-integration-wave.md), and [wave-1 consistency](references/wave1-spec-consistency-checklist.md).
+- Isolation and dispatch: [branch isolation](references/branch-isolation.md), [parallel isolation](references/parallel-wave-isolation.md), [worktree per worker](references/worktree-per-worker.md), [GC pool dispatch](references/gc-pool-dispatch.md), and [task examples](references/taskcreate-examples.md).
+- Contracts and coordination: [contract template](references/contract-template.md), [worker specs](references/worker-specs.md), [team coordination](references/team-coordination.md), [Ralph loop](references/ralph-loop-contract.md), and [shared notes](references/shared-task-notes.md).
+- Evidence and landing: [external gate](references/external-gate-protocol.md), [plan mutations](references/plan-mutations.md), [commit strategies](references/commit-strategies.md), and [land protocol](references/land-protocol.md).
+- Recovery: [failure recovery](references/failure-recovery.md), [failure taxonomy](references/failure-taxonomy.md), [de-sloppify](references/de-sloppify.md), [troubleshooting](references/troubleshooting.md), and [ship-loop anti-patterns](references/ship-loop-anti-patterns.md).

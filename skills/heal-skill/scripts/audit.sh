@@ -129,8 +129,8 @@ for line in os.environ.get("PASS1_OUT", "").splitlines():
 print(json.dumps(findings))
 PY
 )
-  # Count autofixable codes (per heal.sh: MISSING_NAME, MISSING_DESC, NAME_MISMATCH, UNLINKED_REF, EMPTY_DIR)
-  PASS1_AUTOFIXABLE=$(echo "$PASS1_OUT" | grep -cE '^\[(MISSING_NAME|MISSING_DESC|NAME_MISMATCH|UNLINKED_REF|EMPTY_DIR)\]' || true)
+  # Count the complete heal.sh auto-fix allowlist.
+  PASS1_AUTOFIXABLE=$(echo "$PASS1_OUT" | grep -cE '^\[(MISSING_NAME|MISSING_DESC|NAME_MISMATCH|UNLINKED_REF|EMPTY_DIR|MISSING_API_VERSION)\]' || true)
 else
   PASS1_STATUS="fail"
   PASS1_EXIT_CODE=2

@@ -162,15 +162,32 @@ Reference: the test pyramid standard in `/standards` for full tooling matrix.
 After writing tests, run the test suite and verify ALL new tests FAIL:
 - If exit code == 0 (all tests PASS before implementation): **BLOCK** with "Tests pass before implementation -- either feature already exists or tests don't test new behavior. Investigate."
 - If exit code != 0 (tests fail as expected): proceed to Step 4
-- **Skip if:** `--no-tdd` flag is set, GREEN mode is active, or issue type is `chore`, `docs`, or `ci`
+- **Captured RED is mandatory for every behavior change.** GREEN input already
+  carries a failing test and records that failure as captured RED. A repository
+  without a framework must use a minimal executable shell/contract harness.
+  Behavior-changing CI is behavior. `--no-tdd` cannot authorize closure.
 
-**Skip conditions (any of these bypasses Step 3.5):**
-- GREEN mode is active (invoked by `/crank --test-first` — tests already exist)
-- Issue type is `chore`, `docs`, or `ci`
-- `--no-tdd` flag is set
-- No test framework detected in the project
+Persist the exact command, nonzero exit, output, and SHA-256 of every contract
+test file under `.agents/evidence/implement/<issue-id>/attempts/red-<n>.log`.
+The RED command must be byte-for-byte one of the bead's canonical executable
+acceptance commands—the same exact command set rerun for GREEN. The captured
+output evidence is a nonempty JSON envelope containing that exact command, exit,
+and SHA-256 of the combined replay output bytes; the envelope itself is digest-bound.
+Exit 2 (shell/syntax), 126/127
+(not executable/not found), and signal exits are invalid RED evidence.
 
-**Note:** Tests written here are MUTABLE — unlike GREEN mode's immutable tests, you may adjust these tests during implementation if you discover the initial test design was wrong. The goal is to think about behavior before code, not to be rigid.
+**Test-contract rule:** after the first RED receipt, changing a test contract requires a new slice and a new RED receipt; GREEN-mode contracts are always immutable.
+
+**RED waiver:** only a mechanically derived `docs-only` diff or independently
+reviewed `pure-refactor` slice may use `red.kind=waived`. The waiver records a contained,
+digest-bound classification artifact. `pure-refactor` also records and reruns
+the same green baseline at `base_sha` and `head_sha`. An issue label alone does
+not waive RED; behavior-changing docs tooling, chores, or CI remain behavior.
+
+**Contract correction:** before the first RED receipt, fix a malformed provisional
+test. After that receipt exists, do not silently edit the contract: stop the
+slice, preserve the superseded receipt, define a new slice, and earn a new RED
+receipt before implementation resumes. GREEN-mode tests are never edited.
 
 ## Step 3.6a: Auto-Generate Tests via /test (lifecycle integration)
 
@@ -180,7 +197,7 @@ If skip conditions above are NOT met AND `--no-lifecycle` is NOT set:
 Skill(skill="test", args="generate <feature-scope> --quick")
 ```
 
-The generated test request must preserve the selected `test_levels` and BF expectations from Step 3.6. Review the generated tests. Adjust as needed (tests are MUTABLE in this context). If `/test` fails to produce useful output or is unavailable, fall back to manual test writing in Step 3.6 above.
+The generated test request must preserve the selected `test_levels` and BF expectations from Step 3.6. Review generated tests before the first RED receipt. Any later contract change starts a new slice and RED receipt. If `/test` is unavailable, fall back to manual test writing in Step 3.6 above.
 
 **Skip if:** `--no-lifecycle` flag, GREEN mode active, issue type is chore/docs/ci, or `/test` is unavailable.
 
@@ -274,6 +291,10 @@ ls *test* tests/ test/ __tests__/ 2>/dev/null | head -5
 
 **If tests exist:** All tests must pass. Any failure = verification failed.
 
+Persist each final proving command, zero exit, and full output under
+`.agents/evidence/implement/<issue-id>/attempts/green-<n>.log`; Step 7 binds
+these paths to the committed SHA.
+
 **If no tests exist:** Manual verification required:
 - [ ] Syntax check passes (file compiles/parses)
 - [ ] Imports resolve correctly
@@ -359,9 +380,9 @@ bd update <issue-id> --append-notes "CHECKPOINT: Step 5a verification passed at 
 
 **For the full pre-commit fix-verify loop spec, read `skills/implement/references/quality-loop.md`.**
 
-## Step 5c: Generate Behavioral Spec (Optional)
+## Step 5c: Generate Behavioral Spec
 
-**For the behavioral spec format and guidelines, read `skills/implement/references/behavioral-spec.md`.**
+**For the behavioral spec format and guidelines, read `skills/implement/references/behavioral-spec.md`.** A behavior slice must store a contained, digest-bound spec; `skipped_reason` is accepted only for a non-behavior waiver lane.
 
 ## Step 6: Commit the Change
 
@@ -373,92 +394,93 @@ git commit -m "<descriptive message>
 Implements: <issue-id>"
 ```
 
-## Step 7: Close the Issue with Evidence
+## Step 7: Persist the Implementation Receipt
 
-Close with scoped evidence so the closure-integrity audit can resolve
-without parser_miss/timing_miss. The close reason must cite the commit
-and changed files from Step 6.
+Bind the exact RED/GREEN evidence and changed files to the full committed SHA.
 
-```bash
-COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | head -10 | tr '\n' ' ' | sed 's/ $//')
-bd close <issue-id> --reason "commit:${COMMIT_SHA} files:[${CHANGED_FILES}]" 2>/dev/null
-```
+**Receipt path:** `.agents/evidence/implement/<issue-id>/<full-sha>/<issue-id>-<full-sha>-receipt.json`
+**Receipt schema:** `schemas/implementation-receipt.schema.json`
 
-If `bd close` is unavailable, fall back to `bd update <issue-id> --status closed`.
+The receipt contains `base_sha` and `head_sha`, `work_class`, acceptance ids,
+and the exact `base_sha..head_sha` changed-file set. Every evidence item is a
+contained `{path,sha256}` object. Behavior uses `red.kind=captured` with the RED
+commit, reproducible nonzero command, and immutable test-file digests. Only
+`docs-only` or `pure-refactor` may waive RED; pure refactor binds
+before/after green baselines. Every command evidence file uses the same
+`{command,exit_code,output_sha256}` envelope and is checked against fresh replay.
 
-## Step 7a: Record Implementation in Ratchet Chain
-
-**After successful issue closure, record in ratchet:**
-
-```bash
-# Check if ao CLI is available
-if command -v ao &>/dev/null; then
-  # Reuse commit evidence from Step 7
-  COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
-  CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | tr '\n' ',' | sed 's/,$//')
-
-  if [ -n "$COMMIT_HASH" ]; then
-    # Record successful implementation
-    # Determine TDD mode for ratchet tracking
-    # Values: red (wrote failing tests), green (GREEN mode from crank),
-    #         skipped (skip conditions met), no-tdd (explicitly disabled)
-    TDD_MODE="red"  # default when TDD was followed
-    # Override based on context:
-    # GREEN mode → "green", skip conditions → "skipped", --no-tdd → "no-tdd"
-
-    ao ratchet record implement \
-      --tdd-mode "$TDD_MODE" \
-      --output "$COMMIT_HASH" \
-      --files "$CHANGED_FILES" \
-      --issue "<issue-id>" \
-      2>&1 | tee -a .agents/flywheel.log
-
-    if [ $? -eq 0 ]; then
-      echo "Ratchet: Implementation recorded (commit: ${COMMIT_HASH:0:8})"
-    else
-      echo "Ratchet: Failed to record - chain.jsonl may need repair"
-    fi
-  else
-    echo "Ratchet: No commit found - skipping record"
-  fi
-else
-  echo "Ratchet: ao CLI not available - implementation NOT recorded"
-  echo "  Run manually: ao ratchet record implement --output <commit>"
-fi
-```
-
-**On failure/blocker:** Record the blocker in ratchet:
+RED/GREEN may first be captured under `<issue-id>/attempts/` before the final
+commit exists. Step 7 copies each envelope byte-for-byte into
+`<issue-id>/<head_sha>/evidence/`, hashes the archived bytes, and makes the
+receipt reference only those contained head-root paths.
 
 ```bash
-if command -v ao &>/dev/null; then
-  ao ratchet record implement \
-    --status blocked \
-    --reason "<blocker description>" \
-    2>/dev/null
-fi
+HEAD_SHA=$(git rev-parse HEAD)
+RECEIPT=.agents/evidence/implement/<issue-id>/$HEAD_SHA/<issue-id>-$HEAD_SHA-receipt.json
+mkdir -p "$(dirname "$RECEIPT")"
+python3 -m jsonschema -i "$RECEIPT" skills/implement/schemas/implementation-receipt.schema.json
 ```
 
-**Fallback:** If ao is not available, the issue is still closed via bd but won't be tracked in the ratchet chain. The skill continues normally.
+Do not rewrite an earlier RED record in place. A corrected contract is a new
+slice/attempt with a new receipt; preserve the superseded evidence.
 
-## Step 7b: Post-Implementation Ratchet Record
+## Step 8: Independent Validation and Pawl Routing
 
-After implementation is complete:
+Run `/validate` in a fresh context against the exact `head_sha`, receipt,
+acceptance ids, changed files, and commands. Write its evidence path and
+disposition back to the receipt. Do not close the issue before this route
+returns `CONFIRMED`.
+
+Leave `independent_validation` pending here. The Step 9 close wrapper first runs
+the pinned repository pawl against the canonical verdict and canonical evidence,
+then snapshots those exact bytes into the receipt tree and records their hashes.
+
+**Canonical-first invariant:** run the pinned pawl on canonical verdict/evidence before any archive copy or receipt rewrite.
+**Head-root archive invariant:** receipt evidence paths resolve only beneath `.agents/evidence/implement/<issue-id>/<head_sha>/`.
+
+| From | To | Required action |
+| --- | --- | --- |
+| `CONFIRMED` | `CLOSE` | Independent evidence authorizes Step 9. |
+| `REFUTED` | `AUTO-REDO` | Repair from findings, write new GREEN evidence, update the receipt, and rerun Step 8; do not close or consult a helper. |
+| `CIRCUIT-BREAKER-TRIP` | `HOLD` | Freeze mutation and preserve the receipt plus blocker evidence. |
+| `HOLD` | `HELPER` | Run exactly one bounded helper consultation for this blocker class. |
+| `HELPER-UNSTUCK` | `AUTO-REDO` | Apply the concrete next action, reset the breaker for the new approach, and re-earn `CONFIRMED`. |
+| `HELPER-ESCALATE` | `HUMAN` | Hand back the receipt, blocker evidence, and helper verdict. |
+| `REFUSAL-LANE / EXPLICIT-JUDGMENT / BUDGET-EXHAUSTED` | `HUMAN` | Skip the helper and ask the operator. |
+
+`UNSTUCK` resumes work; it never authorizes closure. A changed implementation
+requires fresh GREEN evidence on the new SHA and another independent verdict.
+
+## Step 9: Close the Issue with Confirmed Evidence
+
+Fail closed unless the executable verifier proves the bead, canonical path,
+base ancestry, exact Git change set, evidence bytes, reproducible RED/GREEN,
+immutable tests, and real `CONFIRMED` pawl verdict:
+
+**Closure verifier:** `scripts/verify-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"`
+**Close wrapper:** `scripts/close-with-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"`
 
 ```bash
-if command -v ao &>/dev/null; then
-  ao ratchet record implement --output "<issue-id>" 2>/dev/null || true
-fi
+scripts/close-with-implementation-receipt.sh --issue <issue-id> --receipt "$RECEIPT"
 ```
 
-Tell user: "Implementation complete. Run /validate to validate before pushing."
+## Step 10: Record Implementation in Ratchet Chain
 
-## Step 8: Report to User
+After confirmed closure, record the same SHA and files:
+
+```bash
+ao ratchet record implement --input "$RECEIPT" --output "$HEAD_SHA" 2>/dev/null || true
+```
+
+If ratchet recording fails, report that bookkeeping defect; do not falsify the
+independent verdict or reopen the implementation contract.
+
+## Step 11: Report to User
 
 Tell the user:
 1. What was changed (files modified)
 2. How it was verified (with actual command output)
-3. Issue status (closed)
+3. Receipt path, independent `CONFIRMED` evidence, and issue status
 4. Any follow-up needed
 5. **Ratchet status** (implementation recorded or skipped)
 

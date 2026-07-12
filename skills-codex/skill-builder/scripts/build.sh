@@ -138,7 +138,8 @@ PY
   return 0
 }
 
-# Codex uses the authoritative source profile; no duplicate profile is shipped.
+# The generated kernel and any external adoption must satisfy the selected
+# profile before the auditor can declare the build successful.
 if ! PROFILE_EVAL="$(python3 "$PROFILE_TOOL" --repo-root "$REPO_ROOT" \
   --profile-id "$PROFILE_ID" --audit-tsv "$NEW_SKILL_DIR/SKILL.md")"; then
   patch_audit_pass false

@@ -31,6 +31,23 @@ func TestPawlReviewUseDocumentsUpstreamScope(t *testing.T) {
 	}
 }
 
+func TestValidPawlRouteID(t *testing.T) {
+	for _, tc := range []struct {
+		id   string
+		want bool
+	}{
+		{id: "age-ghk3i.12", want: true},
+		{id: "A_route-9", want: true},
+		{id: "_leading-separator", want: false},
+		{id: "contains/slash", want: false},
+		{id: strings.Repeat("a", 65), want: false},
+	} {
+		if got := validPawlRouteID(tc.id); got != tc.want {
+			t.Errorf("validPawlRouteID(%q) = %v, want %v", tc.id, got, tc.want)
+		}
+	}
+}
+
 // writePawlTestRepo builds a minimal repo root resolveAgentsRepoRoot() accepts
 // (docs/contracts/agents-write-surfaces.md + skills/) plus a stub scripts/pawl-review.sh
 // that exits with the given code, and points testProjectDir at it. Restores all shared
@@ -799,5 +816,28 @@ func TestPawlHelpPresentsReviewAsFrontDoor(t *testing.T) {
 	reviewIdx := strings.Index(help, "\n  review ")
 	if reviewIdx < 0 || reviewIdx > opIdx {
 		t.Fatalf("review must be listed before the operator group; review@%d operator@%d\n%s", reviewIdx, opIdx, help)
+	}
+}
+
+// TestPawlDryRunPlan_SpawnStepIsSeamNeutral (age-pawl-intent-zhndq.16): the `up` planned step must
+// NOT hardcode "atm spawn" — the swarm binary is resolved ntm-first by the shell seam
+// (PAWL_SWARM_BIN -> ntm -> atm) and `ao pawl doctor` reports which won, so a hardcoded "atm"
+// contradicted the tool's own output. The step must be seam-neutral and point at doctor.
+func TestPawlDryRunPlan_SpawnStepIsSeamNeutral(t *testing.T) {
+	doc := pawlDryRunPlan("up", nil)
+	var spawnStep string
+	for _, s := range doc.PlannedSteps {
+		if strings.Contains(s, "spawn session") {
+			spawnStep = s
+		}
+	}
+	if spawnStep == "" {
+		t.Fatalf("no spawn step in planned steps: %v", doc.PlannedSteps)
+	}
+	if strings.Contains(spawnStep, "atm spawn") {
+		t.Fatalf("spawn step hardcodes the atm binary (contradicts the ntm-first seam + doctor): %q", spawnStep)
+	}
+	if !strings.Contains(spawnStep, "swarm spawn") {
+		t.Fatalf("spawn step should name the neutral swarm seam; got %q", spawnStep)
 	}
 }

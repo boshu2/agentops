@@ -1,23 +1,33 @@
-# Executable spec for the /status skill — work-status dashboard (driving-adapter).
-# /status reports current AgentOps work state — its primary source is the bd tracker
-# (ready/in-progress/epics) augmented with ratchet, flywheel, and git state — as a human
-# dashboard or machine-readable JSON, degrading gracefully when a tool is missing. Hexagon:
-# driving-adapter; consumes bd; produces stdout. (soc-qk4b)
+# Executable behavior for the /status driving adapter.
+# The adapter consumes live br, git, gate, and artifact state and produces stdout.
 
-Feature: Status shows the AgentOps work dashboard
-  As an agent or operator orienting in a repo
-  I want current work state surfaced from the tracker in one view
-  So that I can see ready/in-progress work and project health at a glance
+Feature: Status renders resumable AgentOps truth
+  As an agent or operator resuming repository work
+  I want one evidence-backed dashboard
+  So that the next action follows live state rather than conversational memory
 
-  Scenario: the dashboard reports work state from bd
+  Scenario: live sources produce the three-block dashboard
+    Given br, git, reconciliation, and verdict sources are available
     When /status runs
-    Then it reports work state from bd (ready, in-progress, open epics)
-    And it augments that with ratchet, flywheel, and git state
+    Then it renders Current Work, Latest Gates, and Next Action in that order
+    And every displayed value cites a live command or file source
 
-  Scenario: --json gives machine-readable output
+  Scenario: JSON output preserves the same normalized facts
     When /status --json runs
-    Then it emits the same status as structured JSON
+    Then stdout is one dashboard-contract JSON object without explanatory prose
+    And coverage names every attempted source as available, unavailable, or malformed
 
-  Scenario: missing tools degrade gracefully
-    When a data source (ratchet/flywheel) is unavailable
-    Then /status marks that section unavailable and still renders the rest, without crashing
+  Scenario: unavailable is distinct from an empty result
+    Given an optional or required source cannot be read
+    When /status renders the remaining facts
+    Then the missing source is marked unavailable in coverage
+    And it is not reported as healthy, empty, or none
+
+  Scenario: a negative verdict outranks ordinary continuation
+    Given a recent WARN, FAIL, or REFUTED verdict and an in-progress bead both exist
+    When /status selects the next action
+    Then it selects repair and rerun at priority 1 before resume at priority 2
+
+  Scenario: collection remains observational
+    When /status gathers dashboard state
+    Then it does not close work, clean files, start a substrate, or mutate repository state

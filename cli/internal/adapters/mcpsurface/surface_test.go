@@ -2,6 +2,11 @@ package mcpsurface
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -90,5 +95,108 @@ func TestRun_LiveTransportWired(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"tools"`) {
 		t.Errorf("live transport did not answer tools/list: %s", out.String())
+	}
+}
+
+func TestRealExecutorUsesTrustedBinary(t *testing.T) {
+	hostileDir := t.TempDir()
+	hostileAO := filepath.Join(hostileDir, "ao")
+	if err := os.WriteFile(hostileAO, []byte("#!/bin/sh\necho hostile-path\n"), 0o755); err != nil {
+		t.Fatalf("write hostile ao: %v", err)
+	}
+	t.Setenv("PATH", hostileDir)
+
+	const trustedAO = "/trusted/current/ao"
+	var gotExecutable string
+	var gotArgv []string
+	out, err := realExecutorWithDependencies(
+		"inject",
+		map[string]string{"query": "release gates"},
+		func() (string, error) { return trustedAO, nil },
+		func(executable string, argv ...string) ([]byte, error) {
+			gotExecutable = executable
+			gotArgv = append([]string(nil), argv...)
+			return []byte(`{"source":"trusted"}`), nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("real executor: %v", err)
+	}
+	if gotExecutable != trustedAO {
+		t.Fatalf("executable = %q, want trusted %q (hostile PATH candidate %q)", gotExecutable, trustedAO, hostileAO)
+	}
+	wantArgv := []string{"inject", "--query", "release gates"}
+	if !reflect.DeepEqual(gotArgv, wantArgv) {
+		t.Fatalf("argv = %#v, want %#v", gotArgv, wantArgv)
+	}
+	if out != `{"source":"trusted"}` {
+		t.Fatalf("output = %q, want trusted child output", out)
+	}
+}
+
+func TestRealExecutorResolverFailureDoesNotUsePATH(t *testing.T) {
+	hostileDir := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "hostile-ran")
+	hostileAO := filepath.Join(hostileDir, "ao")
+	script := fmt.Sprintf("#!/bin/sh\ntouch %q\n", marker)
+	if err := os.WriteFile(hostileAO, []byte(script), 0o755); err != nil {
+		t.Fatalf("write hostile ao: %v", err)
+	}
+	t.Setenv("PATH", hostileDir)
+
+	runnerCalled := false
+	out, err := realExecutorWithDependencies(
+		"session_bootstrap",
+		nil,
+		func() (string, error) { return "", errors.New("executable unavailable") },
+		func(string, ...string) ([]byte, error) {
+			runnerCalled = true
+			return nil, nil
+		},
+	)
+	if err == nil || !strings.Contains(err.Error(), "resolve trusted ao") {
+		t.Fatalf("error = %v, want contextual resolver failure", err)
+	}
+	if out != "" {
+		t.Fatalf("output = %q, want empty output on resolver failure", out)
+	}
+	if runnerCalled {
+		t.Fatal("runner called after trusted executable resolution failed")
+	}
+	if _, statErr := os.Stat(marker); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("hostile PATH ao ran; marker stat error = %v", statErr)
+	}
+}
+
+func TestResolveTrustedExecutableRejectsNonRegularCandidate(t *testing.T) {
+	_, err := resolveTrustedExecutable(func() (string, error) {
+		return t.TempDir(), nil
+	})
+	if err == nil || !strings.Contains(err.Error(), "regular file") {
+		t.Fatalf("error = %v, want non-regular candidate rejection", err)
+	}
+}
+
+func TestRealExecutorPropagatesChildOutputAndError(t *testing.T) {
+	childErr := errors.New("child exit 17")
+	out, err := realExecutorWithDependencies(
+		"goals_measure",
+		nil,
+		func() (string, error) { return "/trusted/current/ao", nil },
+		func(executable string, argv ...string) ([]byte, error) {
+			if executable != "/trusted/current/ao" {
+				t.Fatalf("executable = %q", executable)
+			}
+			if !reflect.DeepEqual(argv, []string{"goals", "measure"}) {
+				t.Fatalf("argv = %#v", argv)
+			}
+			return []byte("child stderr\n"), childErr
+		},
+	)
+	if out != "child stderr\n" {
+		t.Fatalf("output = %q, want exact child output", out)
+	}
+	if !errors.Is(err, childErr) {
+		t.Fatalf("error = %v, want wrapped child error", err)
 	}
 }

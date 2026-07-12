@@ -21,8 +21,14 @@ brainstorm (goal-vs-implementation clarification) + design (product-fit pressure
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-> **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3
-> (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
+## Constraints
+
+- Delegate research and plan separately; delegate pre-mortem only for MVP-slice mode because the fanout duel is already its pre-mortem verdict.
+- Prove a capability is absent before scoping new construction to prevent duplicate machinery and false net-new estimates.
+- Route only fanout/one-way-door decisions through the duel; keep routine MVP slices inside the bounded quick path.
+- After three MVP pre-mortem failures, run exactly one bounded plan-pawl helper round; resume on `UNSTUCK` and ask the human only on `ESCALATE`.
+
+> **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3 (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
 > packet for `$crank` and `$validate`. It is also the **re-plan engine** for `$rpi`'s
 > [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
@@ -52,7 +58,6 @@ Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and 
 
 **Re-baseline before you scope** (mandatory for "improve X" / "build the missing Y"): `$research` MUST confirm a capability doesn't already exist before scoping *new construction*. The `--auto` trap is author-as-researcher scoping "what's unbuilt" from memory without grepping — existing machinery gets re-estimated as net-new. Every "X is missing" claim carries the search that proved it; no search → `$pre-mortem`'s re-baseline check (2.4–2.8) WARN/FAILs it. Run that existence search as `ms search "<capability phrase>"` first (fast path when `ms` is available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`) and cite the hits in the packet's overlap/prior-art section.
 
-See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
 See [`references/isolation-contract.md`](references/isolation-contract.md) for the mechanical four-lever model and the compression patterns flagged by `scripts/check-skill-isolation.sh`. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
 ## Narrow Waist
@@ -184,25 +189,23 @@ $discovery --complexity=full "migrate to v2 API"   # force full council ceremony
 
 ## Output Specification
 
-**Format:** compact markdown phase summary to stdout plus JSON execution packet
-on disk.
+- **Path:** child artifacts under `.agents/research/`, `.agents/plans/`, and `.agents/council/`; dense packets and summaries under `.agents/rpi/`; load-bearing slices in the resolved tracker.
+- **Filename:** `execution-packet.json` for latest/per-run packets and `phase-1-summary-YYYY-MM-DD-<goal-slug>.md` for the compact summary; preserve child artifact names returned by their skills.
+- **Format:** compact markdown summary to stdout plus schema-valid JSON packet containing density fields, artifact links, acceptance examples, constraints, optional epic ID, tracker mode, and next action.
+- **Exit code:** run `bash skills/discovery/scripts/validate.sh` and require zero; for beads require `ao beads exec show <epic_id>` to resolve Gherkin slices, while tasklist mode requires `.agents/rpi/tasklist.md` with epic, slice, and Given/When/Then markers.
+- **Downstream handoff:** pass the dense packet and mode-appropriate tracker evidence to `$crank` and `$validate`; raw child output remains linked in its own artifact.
 
-**Files written** (the shaping; the LOAD-BEARING output is the persisted tracker beads — see Completion Markers):
+## Quality Checklist
 
-- `.agents/research/<topic-slug>.md` - research artifact path only
-- `.agents/plans/YYYY-MM-DD-<goal-slug>.md` - plan document path only
-- `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` - pre-mortem verdict path only
-- `.agents/rpi/execution-packet.json` - latest dense packet
-- `.agents/rpi/runs/<run-id>/execution-packet.json` - per-run archive when `run_id` is set
-- `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md` - compact discovery summary
-
-**Exit signal:** completion marker (`<promise>DONE</promise>` or `<promise>BLOCKED</promise>`) — see Completion Markers below.
+- Every capability-gap claim cites the search that distinguishes missing work from existing machinery.
+- The packet preserves testable Given/When/Then behavior, non-goals, evidence, constraints, and one exact next action without embedding raw child transcripts.
+- Risk classification matches the gate used, and `DONE` is impossible until the planned slices exist in the active tracker.
 
 ## Completion Markers
 
 ```
-<promise>DONE</promise>      # Discovery complete AND the plan PERSISTED in the active tracker (br/bd, else tasklist): `ao beads exec show <epic_id>` (the packet's epic_id is a STRING — it must resolve) lists the epic + Gherkin-bearing slice children. A plan packet + passing pre-mortem with NO persisted beads is NOT DONE — operationalize (dag STEP 4 / $plan), verify, then signal.
-<promise>BLOCKED</promise>   # Pre-mortem failed 3x, manual intervention needed
+<promise>DONE</promise>      # Discovery complete AND persisted: beads mode requires a resolvable epic_id plus Gherkin-bearing child slices; tasklist mode requires .agents/rpi/tasklist.md with epic, slice, and Given/When/Then markers.
+<promise>BLOCKED</promise>   # Report the actual class: fanout/hard gates may block directly; an ordinary MVP breaker blocks only after its bounded helper returns ESCALATE.
 ```
 
 ## Troubleshooting

@@ -14,13 +14,13 @@
             {
               "label": "source-of-truth precedence",
               "patterns": [
-                "Use source-of-truth precedence when docs disagree"
+                "When files disagree, trust in this order"
               ]
             },
             {
               "label": "runtime-first evidence",
               "patterns": [
-                "Executable code and generated artifacts"
+                "Executable \\+ generated"
               ]
             }
           ]

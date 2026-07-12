@@ -265,7 +265,21 @@ probe_families() {
 # Strict-benched families (A7 ruling; ebec.7): excluded from the DEFAULT route probe — a
 # benched family reviews only via an explicit pin (--tri/--models). NOT a rigor change:
 # quorum/tier math is untouched. Override: PAWL_BENCHED_FAMILIES (space-sep; empty = none).
-PAWL_BENCHED_FAMILIES="${PAWL_BENCHED_FAMILIES-agy}"
+# F7-followup (age-pawl-intent-zhndq.18): benching is a persisted, visible state, not an ambient
+# env footgun. Precedence: PAWL_BENCHED_FAMILIES env (set, even empty) wins as a one-shot override;
+# else the persisted .agents/pawl/config.json `.benched_families`; else the "agy" default.
+# _BENCH_SOURCE records which, for `ao pawl doctor`.
+_pawl_config_file() { printf '%s' "$ROOT/$STATE_DIR/config.json"; }
+_resolve_benched_families() {
+  if [ -n "${PAWL_BENCHED_FAMILIES+x}" ]; then _BENCH_SOURCE="env"; return 0; fi
+  local cfg; cfg="$(_pawl_config_file)"
+  if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1 && jq -e 'has("benched_families")' "$cfg" >/dev/null 2>&1; then
+    PAWL_BENCHED_FAMILIES="$(jq -r '.benched_families | if type=="array" then join(" ") else (.//"") end' "$cfg" 2>/dev/null)"
+    _BENCH_SOURCE="config"; return 0
+  fi
+  PAWL_BENCHED_FAMILIES="agy"; _BENCH_SOURCE="default"
+}
+_resolve_benched_families
 
 # Default-route set: the install probe minus benched families. If benching would empty the
 # set (only benched CLIs installed) fall back to the raw probe — degraded beats none, and
@@ -375,9 +389,28 @@ _session_idle() {
 
 # Reset the idle clock (best-effort; never affects the verdict). No-op unless the file is OURS —
 # never rewrite another session's state.
+# _clock_writable: true when the idle clock CAN be bumped by a route (jq — a route-path hard dep —
+# or python3). F13 (age-pawl-intent-zhndq.14): if NEITHER is present, `_touch_route_ts` cannot bump
+# last_route_ts, so it stays frozen at the up-time and `reap` would tear down an ACTIVELY-serving
+# session once PAWL_IDLE_TTL elapses. cmd_reap consults this to fail safe (never reap on a clock it
+# cannot trust).
+_clock_writable() { command -v jq >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1; }
+
 _touch_route_ts() {
   local sj="$SESSION_JSON"
   _session_json_matches || return 0
+  # F13: prefer jq (portable; jq is already a route-path hard dep) — the python3-only write silently
+  # no-op'd on a host without python3, freezing the idle clock. jq -c emits the SAME compact
+  # "key":value form the grep readers (load_session / _session_idle) parse; atomic tmp+mv.
+  if command -v jq >/dev/null 2>&1; then
+    local now tmp; now="$(_now)"; tmp="$sj.tmp.$$"
+    if jq -c --argjson now "$now" '.last_route_ts=$now' "$sj" > "$tmp" 2>/dev/null; then
+      mv -f "$tmp" "$sj" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+    else
+      rm -f "$tmp" 2>/dev/null
+    fi
+    return 0
+  fi
   command -v python3 >/dev/null 2>&1 || return 0
   # -I (isolated): drop cwd from sys.path so a repo-planted json.py is never imported (RCE guard on
   # the untrusted-repo path) and ignore PYTHONPATH/user-site injection.
@@ -445,10 +478,16 @@ cod_dead() {
   # is the real foreground command: the codex binary (codex-*) when the TUI is up, a shell
   # (zsh/bash/…) when it has dropped. Immune to scrollback and path/output contents.
   local cmd
-  cmd="$(tmux display-message -p -t "${SESSION}.${COD_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  # F13-followup (age-pawl-intent-zhndq.17): a VANISHED pane makes this read FAIL (non-zero), and
+  # the old `|| return 1` short-circuited to ALIVE — so the very case we want to catch never
+  # reached the re-probe (cross-family refute, codex). Route BOTH a failed read and an EMPTY read
+  # into the bounded _pane_gone re-probe.
+  cmd="$(tmux display-message -p -t "${SESSION}.${COD_PANE}" '#{pane_current_command}' 2>/dev/null)" \
+    || { _pane_gone "$COD_PANE"; return $?; }
   case "$cmd" in
     zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # foreground is a shell => DEAD
-    *) return 1 ;;  # codex binary (or empty/unknown read) => treat as alive (conservative)
+    "") _pane_gone "$COD_PANE"; return $? ;;   # EMPTY read -> bounded re-probe
+    *) return 1 ;;  # codex binary (a real foreground command) => alive (conservative)
   esac
 }
 
@@ -525,11 +564,35 @@ cod_send() {
 # live agy pane runs the `agy` binary as the foreground command.
 agy_dead() {
   local cmd
-  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" || return 1
+  # F13-followup: a FAILED read (vanished pane) must reach the re-probe too — see cod_dead.
+  cmd="$(tmux display-message -p -t "${SESSION}.${AGY_PANE}" '#{pane_current_command}' 2>/dev/null)" \
+    || { _pane_gone "$AGY_PANE"; return $?; }
   case "$cmd" in
     zsh|-zsh|bash|-bash|sh|-sh|fish|-fish|tcsh|-tcsh|csh|ksh|dash|login) return 0 ;; # shell => DEAD
-    *) return 1 ;;  # agy binary (or empty/unknown read) => treat as alive (conservative)
+    "") _pane_gone "$AGY_PANE"; return $? ;;   # EMPTY read -> bounded re-probe (below)
+    *) return 1 ;;  # agy binary (a real foreground command) => alive (conservative)
   esac
+}
+
+# _pane_gone <pane> — F13-followup (age-pawl-intent-zhndq.17): the bounded re-probe for the
+# UNREADABLE case. cod_dead/agy_dead treated an unreadable (empty OR failed) `pane_current_command`
+# as ALIVE, so a pane that was actually GONE was only caught minutes later by the engage deadline.
+# An unreadable command is genuinely ambiguous (transient tmux hiccup vs vanished pane), so
+# re-probe ONCE after a short pause and require BOTH: (a) the second read is ALSO unreadable, and
+# (b) the pane produced NO scrollback change across the probe (a producing pane is alive whatever
+# the read says). Only then is it dead. Keeps the conservative bias (uncertain-but-active stays
+# alive) while catching an actually-gone pane in seconds. Returns 0 = DEAD.
+_pane_gone() {
+  local pane="$1" a1 a2 cmd2 rc2=0
+  a1="$(_pane_activity "$pane")"
+  sleep "${PAWL_PANE_REPROBE_SLEEP:-2}"
+  # A vanished pane makes this read FAIL (non-zero), not return empty — treat a failed read the
+  # same as an empty one (both are "no foreground command observable").
+  cmd2="$(tmux display-message -p -t "${SESSION}.${pane}" '#{pane_current_command}' 2>/dev/null)" || rc2=$?
+  [ "$rc2" -eq 0 ] && [ -n "$cmd2" ] && return 1   # a real foreground command on the re-probe => alive
+  a2="$(_pane_activity "$pane")"
+  [ "$a1" != "$a2" ] && return 1    # still producing output => alive despite the unreadable command
+  return 0                          # two unreadable reads AND no activity => the pane is gone
 }
 
 # --- age-djfo: detect + dismiss the known CLI interruption prompts that BLOCK a warm pane ---
@@ -1141,6 +1204,13 @@ cmd_down() {
 # a cadence, and the shared lazy-auto-up re-ups the service on the next review.
 cmd_reap() {
   session_exists || { log "REAP: no session (no-op)"; return 0; }
+  # F13 (age-pawl-intent-zhndq.14): FAIL SAFE on an untrustworthy clock. If the idle clock cannot be
+  # written (no jq/python3), last_route_ts is frozen at the up-time — reaping on it would tear down
+  # an actively-serving session. Never kill on a broken clock: keep warm + warn.
+  if ! _clock_writable; then
+    log "REAP: idle clock not writable (no jq/python3) — last_route_ts may be frozen at up-time; KEEPING warm (never reap on an untrustworthy clock)"
+    return 0
+  fi
   local idle; idle="$(_session_idle)"
   if [ "$idle" -ge 0 ] && [ "$idle" -gt "$PAWL_IDLE_TTL" ]; then
     log "REAP: session idle ${idle}s > TTL ${PAWL_IDLE_TTL}s — tearing down"
@@ -1329,6 +1399,33 @@ cmd_doctor() {
     _doctor_add families true "$ENABLED"
   else
     _doctor_add families false "no enabled families in session state"
+  fi
+  # F7-followup (age-pawl-intent-zhndq.18): the effective benched set + its source
+  # (default|config|env) — benching is now a visible state, not an invisible ${VAR-default} footgun.
+  _doctor_add bench true "benched=[${PAWL_BENCHED_FAMILIES}] (source: ${_BENCH_SOURCE:-default})"
+  # F4 (age-pawl-intent-zhndq.4): bundle-provenance row. The EMBEDDED (installed-binary) bundle
+  # carries a deterministic BUNDLE_STAMP (sha256 of its review scripts) at
+  # $PAWL_SCRIPT_DIR/../BUNDLE_STAMP; the dogfood path runs live scripts in place (no sibling
+  # stamp). This row SHOWS the stamp — it deliberately does NOT read $ROOT/scripts to compare,
+  # because on the embedded/stranger path $ROOT is the UNTRUSTED caller repo (pawl.sh must never
+  # touch $ROOT/scripts — security guard TestEmbeddedPawlBundleCarriesVerdictWriterSibling). The
+  # trust-aware live-vs-installed STALE comparison belongs in the Go `ao pawl doctor` layer (.19).
+  # F4-followup (.19): when the GO layer supplies PAWL_BUNDLE_STATUS it has already done the
+  # TRUST-AWARE comparison (only Go may safely hash a checkout's live scripts), so just DISPLAY its
+  # verdict — and FAIL the row on STALE so doctor goes red when an installed ao runs old pawl scripts.
+  if [ -n "${PAWL_BUNDLE_STATUS:-}" ]; then
+    case "$PAWL_BUNDLE_STATUS" in
+      *STALE*) _doctor_add bundle false "$PAWL_BUNDLE_STATUS" ;;
+      *)       _doctor_add bundle true  "$PAWL_BUNDLE_STATUS" ;;
+    esac
+  else
+    local _stamp_f="$PAWL_SCRIPT_DIR/../BUNDLE_STAMP"
+    if [ -f "$_stamp_f" ]; then
+      local _stamp; _stamp="$(tr -d '[:space:]' < "$_stamp_f" 2>/dev/null)"
+      _doctor_add bundle true "embedded bundle stamp ${_stamp:0:12} (installed-binary path)"
+    else
+      _doctor_add bundle true "in-checkout dogfood (live scripts run in place; no embedded stamp)"
+    fi
   fi
 
   if session_exists; then
@@ -1558,7 +1655,10 @@ cmd_route() {
   # must be rejected BEFORE any lock or file write. Charset [A-Za-z0-9._-], 1-64 chars,
   # leading alnum (kills "-flag", ".hidden", ".."); no '/' means no path can escape
   # $EVID_DIR / $STATE_DIR.
-  local bead="${1:?route needs <bead>}" packet="${2:?route needs <packet-file>}" pr="${3:-0}"
+  # F10 (age-pawl-intent-zhndq.11): a clean usage line, not a raw bash `${N:?}` trace
+  # (`scripts/pawl.sh: line NNNN: 1: route needs <bead>`). Exit 2 = usage/precondition.
+  local bead="${1:-}" packet="${2:-}" pr="${3:-0}"
+  [[ -n "$bead" && -n "$packet" ]] || { echo "usage: ao pawl route <bead> <packet-file> [pr]" >&2; exit 2; }
   _valid_route_id "$bead" || die "invalid bead id '$bead' — allowed: [A-Za-z0-9._-], 1-64 chars, leading alphanumeric (path/flag containment)"
   _pawl_require_safe_state_dir   # refuse a symlinked state-dir chain before writing metrics/state
   _pawl_verdict_dir_safe || die "refusing to write the route verdict: $PAWL_VERDICT_DIR (or its parent) is a symlink — verdicts must stay inside the repo. Remove the symlink, or set PAWL_VERDICT_DIR to a real in-repo path."
@@ -1811,6 +1911,37 @@ cmd_route() {
 
 # SLO surface over the recorded routes — p50/p95 round-trip latency + agreement rate (all-enabled
 # CONFIRMED vs disagreement). Reads the append-only metrics.jsonl cmd_route writes.
+# F7-followup (age-pawl-intent-zhndq.18): persist which families are benched from the default panel.
+# `bench <fam>` adds, `unbench <fam>` removes, bare `bench` lists the effective set + source. The
+# env PAWL_BENCHED_FAMILIES still wins at resolution time (one-shot override); this writes the
+# durable default. Symlink-guarded, atomic, jq-backed.
+_pawl_write_bench() {
+  local op="$1" fam="$2"
+  case "$fam" in cc|cod|agy) : ;; *) die "unknown family '$fam' — one of: cc cod agy" ;; esac
+  command -v jq >/dev/null 2>&1 || die "jq is required to persist the bench config"
+  _pawl_require_safe_state_dir
+  local cfg; cfg="$(_pawl_config_file)"; mkdir -p "$(dirname "$cfg")"
+  local cur; cur="$([ -f "$cfg" ] && cat "$cfg" || printf '{}')"
+  local filter
+  if [ "$op" = "add" ]; then filter='.benched_families = ((.benched_families // []) + [$f] | unique)'
+  else filter='.benched_families = ((.benched_families // []) - [$f])'; fi
+  printf '%s' "$cur" | jq -c --arg f "$fam" "$filter" > "$cfg.tmp.$$" \
+    && mv -f "$cfg.tmp.$$" "$cfg" || { rm -f "$cfg.tmp.$$" 2>/dev/null; die "failed to write $cfg"; }
+  log "$( [ "$op" = "add" ] && echo BENCH || echo UNBENCH ): $fam ($cfg)"
+}
+cmd_bench() {
+  if [ -z "${1:-}" ]; then
+    printf 'pawl bench: effective benched families = [%s] (source: %s)\n' \
+      "$PAWL_BENCHED_FAMILIES" "${_BENCH_SOURCE:-default}" >&2
+    return 0
+  fi
+  _pawl_write_bench add "$1"
+}
+cmd_unbench() {
+  [ -n "${1:-}" ] || { echo "usage: ao pawl unbench <cc|cod|agy>" >&2; exit 2; }
+  _pawl_write_bench remove "$1"
+}
+
 cmd_metrics() {
   local mf="$ROOT/$STATE_DIR/metrics.jsonl" json=0
   [ "${1:-}" = "--json" ] && json=1
@@ -1841,15 +1972,40 @@ def pct(p):
     return lat[min(len(lat)-1,int(round((p/100.0)*(len(lat)-1))))]
 agree=sum(1 for r in rows if r.get("agreement")=="agree")
 dis=n-agree
+# F7 (age-pawl-intent-zhndq.7): per-PANEL legibility. Group by the family-set that served each
+# route so the operator SEES which panel config is healthy vs collapsing — the audit found tri
+# (cc cod agy) reached FULL agreement 0/22 times while dual (cc cod) was fine, and nothing
+# surfaced it. A family-set whose full-agreement rate is <30% over a meaningful sample (>=5
+# routes) is flagged AGREEMENT-COLLAPSE so a bad panel is a visible signal, not silent history.
+def _p50(vals):
+    v=sorted(vals)
+    return v[min(len(v)-1,int(round(0.5*(len(v)-1))))] if v else 0
+groups={}
+for r in rows:
+    fam=(r.get("families") or "(unknown)")
+    g=groups.setdefault(fam,{"routes":0,"agree":0,"lat":[]})
+    g["routes"]+=1
+    if r.get("agreement")=="agree": g["agree"]+=1
+    g["lat"].append(int(r.get("latency_s",0)))
+by_fam={}
+for fam,g in groups.items():
+    rate=round(g["agree"]/g["routes"],3) if g["routes"] else 0
+    by_fam[fam]={"routes":g["routes"],"agree":g["agree"],"agreement_rate":rate,
+                 "latency_p50_s":_p50(g["lat"]),
+                 "collapse":bool(g["routes"]>=5 and rate<0.30)}
 out={"routes":n,"latency_p50_s":pct(50),"latency_p95_s":pct(95),
      "agreement_rate":round(agree/n,3) if n else 0,"agree":agree,"disagreements":dis,
-     "skipped_corrupt":skipped}
+     "by_families":by_fam,"skipped_corrupt":skipped}
 if asjson:
     print(json.dumps(out))
 else:
     print(f"pawl metrics: {n} routed beads")
     print(f"  latency p50={out['latency_p50_s']}s p95={out['latency_p95_s']}s")
     print(f"  agreement {agree}/{n} ({out['agreement_rate']}); disagreements={dis}")
+    print("  by panel (family-set -> full-agreement, p50 latency):")
+    for fam,g in sorted(by_fam.items(), key=lambda kv:-kv[1]["routes"]):
+        warn=" ⚠ AGREEMENT-COLLAPSE (consider benching a family: ao pawl reap/up --dual)" if g["collapse"] else ""
+        print(f"    {fam}: {g['agree']}/{g['routes']} agree ({g['agreement_rate']}), p50={g['latency_p50_s']}s{warn}")
     if skipped:
         print(f"  skipped {skipped} corrupt row(s) in {mf}")
 PY
@@ -1868,6 +2024,8 @@ case "${1:-}" in
   smoke)  shift; cmd_smoke "$@" ;;
   route)  shift; cmd_route "$@" ;;
   metrics) shift; cmd_metrics "$@" ;;
+  bench)   shift; cmd_bench "$@" ;;
+  unbench) shift; cmd_unbench "$@" ;;
   *) cat >&2 <<'H'
 Usage: pawl.sh <up|down|reap|health|doctor|smoke|route|metrics>
   up [--dual|--tri|--models a,b,c]  spawn + readiness-gate the standing pawl session (idempotent).

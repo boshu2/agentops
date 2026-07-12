@@ -1,0 +1,321 @@
+{
+  "schema_version": "codebase-recon.v1",
+  "run": {
+    "date": "2026-07-09",
+    "model_family": "GPT-5 / Codex",
+    "model_deployment": "unavailable",
+    "base_sha": "fbba8af5ace635104775ef18f34fef362ba368ce",
+    "bead": "age-fresh-model-codebase-recon-toqd",
+    "prior_run": "docs/audits/codebase-recon-2026-07-02",
+    "orchestration": "Codex-native subagents",
+    "source_reports": [
+      "codebase-archaeology.md",
+      "codebase-audit.md",
+      "codebase-pattern-extraction.md",
+      "codebase-report.md"
+    ]
+  },
+  "summary": {
+    "total": 15,
+    "by_severity": {
+      "high": 3,
+      "medium": 9,
+      "low": 3
+    },
+    "by_status": {
+      "confirmed": 11,
+      "adjusted": 4,
+      "refuted": 0,
+      "unverified": 0
+    },
+    "default_or_governance_high": 3,
+    "legacy_only": 3
+  },
+  "findings": [
+    {
+      "id": "F-01",
+      "source_ids": ["lead"],
+      "severity": "high",
+      "status": "confirmed",
+      "category": "release-authority",
+      "title": "Current origin/main tip lacks a bound verdict",
+      "reachability": "current trunk governance state",
+      "locations": [
+        "docs/provenance/ledger.jsonl",
+        ".github/workflows/verdict-backstop.yml:10-24",
+        ".github/workflows/verdict-backstop.yml:50-64"
+      ],
+      "evidence": [
+        "No full or abbreviated fbba8af5 commit binding exists in the ledger.",
+        "GitHub Actions run 29033274027 warned that fbba8af5ace6 lacked proof and succeeded in report-only mode."
+      ],
+      "impact": "The trunk tip violates the repository's no-verdict-no-done contract while hosted enforcement remains non-blocking.",
+      "recommendation": "Bind an independently verified verdict and ratchet the backstop to enforcement when operationally ready.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-02",
+      "source_ids": ["lead"],
+      "severity": "high",
+      "status": "confirmed",
+      "category": "gate-integrity",
+      "title": "Current trunk fails the canonical skill schema gate",
+      "reachability": "default release path",
+      "locations": ["skills/goal-design/SKILL.md:20-24"],
+      "evidence": [
+        "ao gate check --fast --scope head: 68 checks, 66 PASS, 1 FAIL, 1 SKIP; skill.schema failed.",
+        "validate-skill-schema.sh rejects intent.mode explicit; 58 of 59 skills pass."
+      ],
+      "impact": "The pinned trunk cannot satisfy its own canonical fast gate and creates pressure to bypass release authority.",
+      "recommendation": "Correct the goal-design contract and require a green base before further landing.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-03",
+      "source_ids": ["A-01"],
+      "severity": "high",
+      "status": "confirmed",
+      "category": "verification-correctness",
+      "title": "Oversized council verdict line can hide a trailing FAIL",
+      "reachability": "default build",
+      "locations": [
+        "cli/cmd/ao/tick.go:739-760",
+        "cli/cmd/ao/tick.go:763-829",
+        "cli/cmd/ao/tick.go:884-905",
+        "cli/cmd/ao/tick.go:932-945"
+      ],
+      "evidence": [
+        "Three default bufio.Scanner passes neither increase the token limit nor check scanner.Err().",
+        "Producer reproduction returned COUNCIL PASS and exit 0 with PASS, a 70000-byte line, and a trailing FAIL."
+      ],
+      "impact": "A verbose or crafted judge artifact can turn a contradictory council into successful verification.",
+      "recommendation": "Parse once with an explicit maximum and fail on overflow/read error; add the reproduced regression.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-04",
+      "source_ids": ["A-02"],
+      "severity": "medium",
+      "status": "adjusted",
+      "category": "runtime-policy",
+      "title": "Tracked executable invokes forbidden claude print mode outside detector coverage",
+      "reachability": "manual tracked script; no current caller",
+      "locations": [
+        "bin/ralph:165-179",
+        "scripts/check-door9-no-claude-p.sh:2-32"
+      ],
+      "evidence": [
+        "bin/ralph directly invokes claude -p with bypassPermissions.",
+        "Door 9 scans selected Go paths and passes because tracked shell executables are outside its boundary."
+      ],
+      "impact": "Manual use can violate host LAW 0 and burn the forbidden quota path despite a green dedicated detector.",
+      "recommendation": "Delete or port the script and cover all tracked production executable surfaces.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-05",
+      "source_ids": ["A-03"],
+      "severity": "medium",
+      "status": "adjusted",
+      "category": "path-containment",
+      "title": "Legacy Codex dispatcher uses lexical containment across symlink ancestors",
+      "reachability": "legacy build profile only",
+      "locations": [
+        "cli/cmd/ao/codex.go:1",
+        "cli/cmd/ao/codex.go:1246-1280",
+        "cli/cmd/ao/codex.go:1601-1675"
+      ],
+      "evidence": [
+        "Candidate paths are cleaned and prefix-checked without resolving symlink ancestry.",
+        "The implementation and its tests are guarded by //go:build legacy and absent from the default binary."
+      ],
+      "impact": "When the legacy profile is enabled, dispatcher-managed reads/writes can escape declared roots through planted symlink ancestors.",
+      "recommendation": "Retire the profile or use symlink-aware, directory-relative no-follow path handling with tagged regressions.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-06",
+      "source_ids": ["A-04"],
+      "severity": "medium",
+      "status": "adjusted",
+      "category": "acceptance-enforcement",
+      "title": "Legacy Codex required commands bypass sandbox and ignore non-zero exits",
+      "reachability": "legacy build profile only",
+      "locations": [
+        "cli/cmd/ao/codex.go:1",
+        "cli/cmd/ao/codex.go:1501-1567",
+        "cli/cmd/ao/codex_dispatch_test.go:409-432"
+      ],
+      "evidence": [
+        "Required commands execute as host sh -c and receipt validation checks presence rather than exit success.",
+        "An untagged test command ran zero Codex tests; the behavior is confirmed under go test -tags legacy."
+      ],
+      "impact": "Legacy packets can exceed declared isolation and report successful dispatch after a failed acceptance command.",
+      "recommendation": "Retire the profile or run commands inside the declared sandbox and fail unexpected non-zero exits.",
+      "prior_status": "supersedes prior A12 narrative concern"
+    },
+    {
+      "id": "F-07",
+      "source_ids": ["A-05"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "gate-integrity",
+      "title": "Missing or unreadable changelog clears a blocking fast gate as SKIP",
+      "reachability": "default fast gate",
+      "locations": [
+        "cli/internal/gates/checks/native_inline.go:56-67",
+        "cli/internal/gates/orchestrator.go:191-209",
+        "cli/internal/gates/report.go:26-40"
+      ],
+      "evidence": ["The native evaluator maps every read error to SKIP, and blocking SKIP does not affect the report exit code."],
+      "impact": "Deleting a required changelog can pass its dedicated routine gate.",
+      "recommendation": "Return FAIL for missing/read errors and add deletion/read-error table tests.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-08",
+      "source_ids": ["A-06", "R-01"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "runtime-drift",
+      "title": "Supported scripts call removed CLI commands while a baseline keeps the drift gate green",
+      "reachability": "explicit script paths",
+      "locations": [
+        "scripts/install.sh:252-264",
+        "scripts/nightly-evolution.sh:593-690",
+        "scripts/.scripts-ao-invocations-baseline:1-17"
+      ],
+      "evidence": [
+        "The current CLI rejects hooks install --force and daemon jobs.",
+        "The invocation checker passes because both whole files are grandfathered as current offenders."
+      ],
+      "impact": "Opt-in installation/nightly paths fail after partial work while the targeted drift detector reports PASS.",
+      "recommendation": "Remove or rewrite dead paths and replace whole-file offender baselines with narrow false-positive exemptions.",
+      "prior_status": "fresh residue after prior retired-command cleanup"
+    },
+    {
+      "id": "F-09",
+      "source_ids": ["A-07"],
+      "severity": "low",
+      "status": "adjusted",
+      "category": "resource-control",
+      "title": "Legacy Codex dispatcher lacks bounded output and process-tree termination",
+      "reachability": "legacy build profile only",
+      "locations": [
+        "cli/cmd/ao/codex.go:1",
+        "cli/cmd/ao/codex.go:1095-1113",
+        "cli/cmd/ao/codex.go:1519-1538"
+      ],
+      "evidence": ["Legacy dispatcher uses unbounded bytes.Buffer outputs and direct-process cancellation; hardened process-group helpers exist elsewhere."],
+      "impact": "Legacy runs can grow memory without bound or leave descendant processes after timeout.",
+      "recommendation": "Retire the profile or share a bounded-output, process-group-aware subprocess adapter.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-10",
+      "source_ids": ["A-08"],
+      "severity": "low",
+      "status": "confirmed",
+      "category": "diagnostic-correctness",
+      "title": "Default chaos diagnostic ships stale council fixtures",
+      "reachability": "default ao eval chaos",
+      "locations": ["cli/cmd/ao/tick.go:845-881", "cli/cmd/ao/tick.go:1015-1035"],
+      "evidence": ["Identity validation requires context_id while the built-in pass/fail fixtures omit it, producing a deterministic false council-matrix failure."],
+      "impact": "A permanently false failure obscures real diagnostic regressions and erodes operator trust.",
+      "recommendation": "Construct smoke verdicts through a valid shared fixture builder and test the production matrix.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-11",
+      "source_ids": ["AR-08"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "verification-policy",
+      "title": "Malformed committed verify policy falls back to weaker defaults",
+      "reachability": "default verify path",
+      "locations": [
+        "cli/internal/verifycfg/verifycfg.go:252-266",
+        "cli/internal/verifycfg/verifycfg.go:307-349",
+        "cli/internal/verifycfg/verifycfg_test.go:251-267"
+      ],
+      "evidence": ["Malformed YAML and typed fields warn and retain defaults; strict defaults false and autobind true."],
+      "impact": "A repository intending strict verification can silently run a weaker posture after policy corruption or editing error.",
+      "recommendation": "Fail closed when an existing repository policy cannot be parsed, at least for safety-strengthening keys.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-12",
+      "source_ids": ["AR-11", "AR-12", "R-03"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "machine-contract-drift",
+      "title": "Capabilities and REBOUND contracts disagree with executable behavior",
+      "reachability": "machine-readable discovery and downstream consumers",
+      "locations": [
+        "schemas/pawl-verdict.v1.schema.json:40-43",
+        "scripts/pawl-verdict.sh:714-825",
+        "cli/cmd/ao/capabilities.go:73-106"
+      ],
+      "evidence": [
+        "Schema prose says REBOUND does not authorize while the checker authorizes it after lineage proof.",
+        "Capabilities omit strict HOLD exit 5, a verify entry, and most environment inputs honored by the CLI."
+      ],
+      "impact": "Agents and generated consumers cannot safely branch from the advertised contract alone.",
+      "recommendation": "Generate exit/environment declarations from executable sources and reconcile REBOUND semantics.",
+      "prior_status": "capabilities partially fixed; residual drift persists"
+    },
+    {
+      "id": "F-13",
+      "source_ids": ["AR-10", "AR-13", "AR-14", "R-02"],
+      "severity": "low",
+      "status": "confirmed",
+      "category": "documentation-drift",
+      "title": "Canonical architecture docs describe obsolete scale, invariants, and shipped commands",
+      "reachability": "first-read operator and agent guidance",
+      "locations": [
+        "docs/architecture/codebase-overview.md:51-62",
+        "docs/architecture/codebase-overview.md:122-151",
+        "docs/architecture/ports-and-adapters.md:9-53",
+        "cli/README.md:5-58"
+      ],
+      "evidence": ["Fresh measurements are 59 skills, 72 default commands, 112 checks, 363 scripts, and 145 catalog capabilities; several docs advertise archived ao corpus/codex/RPI surfaces."],
+      "impact": "New operators and agents form an incorrect model before reaching higher-precedence executable surfaces.",
+      "recommendation": "Rewrite the first-read pages from current generated inventories and explicitly label tagged archives.",
+      "prior_status": "persistent and broader than 2026-07-02 A10/A11"
+    },
+    {
+      "id": "F-14",
+      "source_ids": ["R-10"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "binary-freshness",
+      "title": "MCP surface dispatches an ambient PATH ao binary",
+      "reachability": "opt-in MCP server",
+      "locations": ["cli/internal/adapters/mcpsurface/surface.go:114-137"],
+      "evidence": ["MCP tool execution shells the literal command ao instead of the current executable or an injected trusted path."],
+      "impact": "A server started from a fresh checkout can execute a stale installed binary with different command or policy behavior.",
+      "recommendation": "Resolve and pin the trusted running binary, following the ao land freshness pattern.",
+      "prior_status": "new"
+    },
+    {
+      "id": "F-15",
+      "source_ids": ["lead"],
+      "severity": "medium",
+      "status": "confirmed",
+      "category": "build-surface-drift",
+      "title": "Supported docs-check target invokes a deleted validator",
+      "reachability": "current top-level Make target",
+      "locations": [
+        "Makefile:29-32",
+        "scripts/pre-push-gate.sh:1821-1832"
+      ],
+      "evidence": [
+        "make docs-check passes CLI reference generation, then exits 127 because scripts/validate-hook-preflight.sh is absent.",
+        "The legacy pre-push gate explicitly treats the same validator as intentionally removed in the hookless 3.0 design."
+      ],
+      "impact": "The advertised documentation validation entry point cannot complete and never reaches doc-release validation.",
+      "recommendation": "Remove the stale Makefile step or replace it with the current hookless safety check, then add a target smoke test.",
+      "prior_status": "newly promoted; deletion was previously documented but the Make target remained stale"
+    }
+  ]
+}

@@ -98,9 +98,9 @@ func TestVerifyCmd_HelpCarriesWedgeCopy(t *testing.T) {
 func TestVerifyCmd_HelpDocumentsReboundKeepRef(t *testing.T) {
 	long := strings.ToLower(verifyCmd.Long)
 	for _, want := range []string{
-		"refs/agentops/rebound",   // the keep-ref namespace
-		"keep-ref",                // named as the mechanism
-		"fetchable",               // CI honors when reachable OR keep-ref makes it fetchable
+		"refs/agentops/rebound",          // the keep-ref namespace
+		"keep-ref",                       // named as the mechanism
+		"fetchable",                      // CI honors when reachable OR keep-ref makes it fetchable
 		"forged keep-ref cannot launder", // the security invariant
 	} {
 		if !strings.Contains(long, strings.ToLower(want)) {
@@ -177,8 +177,8 @@ func TestVerifyCmd_HelpDocumentsStrict(t *testing.T) {
 		"--strict",
 		"two-family",
 		"refuses to degrade",
-		"strict hold",   // the exit-5 HOLD is named
-		"unavailable",   // the honest current posture
+		"strict hold", // the exit-5 HOLD is named
+		"unavailable", // the honest current posture
 		"opt-in",
 	} {
 		if !strings.Contains(strings.ToLower(verifyCmd.Long), want) {
@@ -263,6 +263,41 @@ func TestRunVerify_EnvironmentFailurePointsAtDoctor(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "ao doctor") {
 		t.Fatalf("environment failure must point at `ao doctor`, got: %v", err)
+	}
+}
+
+func TestVerifyInvalidCommittedPolicyReturnsHold(t *testing.T) {
+	for _, policy := range []string{
+		"- not\n- a\n- mapping\n",
+		"strict: definitely-not-a-bool\n",
+		"autobind: definitely-not-a-bool\n",
+	} {
+		t.Run(strings.ReplaceAll(strings.TrimSpace(policy), "\n", "_"), func(t *testing.T) {
+			marker := writeVerifyTestRepo(t, 0)
+			repo := testProjectDir
+			if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(repo, ".aoverify.yaml"), []byte(policy), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			t.Chdir(repo)
+
+			cmd := &cobra.Command{}
+			var stderr bytes.Buffer
+			cmd.SetErr(&stderr)
+			err := runVerify(cmd, []string{"age-invalid-policy"})
+			code, isVerdict := verdictShape(err)
+			if !isVerdict || code != 5 {
+				t.Fatalf("invalid committed policy = code %d verdict=%v err=%v, want HOLD exit 5", code, isVerdict, err)
+			}
+			if _, statErr := os.Stat(marker); !os.IsNotExist(statErr) {
+				t.Fatalf("review engine must not run under invalid committed policy; marker stat=%v", statErr)
+			}
+			if !strings.Contains(stderr.String(), ".aoverify.yaml") {
+				t.Fatalf("HOLD diagnostic must name committed policy; stderr=%q", stderr.String())
+			}
+		})
 	}
 }
 

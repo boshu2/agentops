@@ -40,6 +40,12 @@ output_contract: behaviors.md (frozen Gherkin), acceptance-tests/ (executed-red)
 
 > **Contract ownership (single owner, age-skills-audit-fable-l6ic.8).** This skill **owns** the intent → Gherkin → EXECUTED-red → acceptance-gated bead-DAG contract. [`/discovery`](../discovery/SKILL.md), [`/plan`](../plan/SKILL.md) (its Gherkin Scenarios Contract), and the `bdd-foundry` workflow **cite** this skill rather than restating the discipline.
 
+## Constraints
+
+- Do not create tracker beads before the manifest passes coverage, cycle, runnable-test, and independent-review gates because an unvalidated DAG pollutes the shared work surface.
+- Do not accept prose-only or harness-error "tests" as red; each acceptance command must resolve to one real unignored test and fail for the intended missing behavior.
+- Keep one frozen scenario per slice because combining behaviors hides partial completion and defeats the vertical acceptance boundary.
+
 ## Why this exists — the 3/10 problem
 
 Spec-first planning ships beads with no done-criteria: a title, a paragraph of "why", and nothing a machine can run to decide it is finished. The implementer then invents the bar, and "done" becomes a self-grade. **Behavior-first planning inverts the order:** define the behavior as an executable test *before* the design, so every bead is born with a runnable contract. The rule is absolute — **no runnable acceptance test, no bead.**
@@ -122,3 +128,17 @@ The skill dogfoods its own rule: its behavior is pinned by an executable spec, [
 - Duplicate the *lighter* single-BDD-intent shape phase of the `operating-loop` — this is the **full** Gherkin → executed-red → acceptance-gated-DAG discipline, used when beads must be genuinely crank-ready.
 - Write a bead whose acceptance is prose, "see spec", or an unrun test.
 - Grade your own plan — the closing gate requires an independent reviewer.
+
+## Output Specification
+
+- **Path:** write `behaviors.md`, `acceptance-tests/`, `acceptance-tests.md`, and `spec.md` in the planning workspace; tracker mutations happen only after the closing gate.
+- **Filename:** the proposed bead-set manifest is `bead-manifest.json`; acceptance test files follow the target repository's native test filename convention.
+- **Format:** `behaviors.md` is frozen Gherkin, `acceptance-tests.md` maps scenario IDs to commands and paths, and `bead-manifest.json` is JSON with bead IDs, `scenario_ref`, `acceptance_test`, and dependency arrays.
+- **Exit code:** validate with the project test collector/list command, `bash scripts/check-slice-batch-size.sh <bead-id>`, a cycle check, and the independent closing verdict; any nonzero check blocks tracker writes.
+- **Downstream handoff:** consumed by `$plan`, `$implement`, or `$crank` only after the manifest is coverage-complete, cycle-free, independently cleared, and its executed-red evidence is attached.
+
+## Quality Checklist
+
+- Every frozen scenario has happy, edge, and applicable failure-path coverage and maps to at least one bead.
+- Every bead maps to exactly one scenario and carries an invocable acceptance test that was observed red for the intended reason.
+- The proposed DAG is cycle-free, overlap-checked, and independently reviewed before any tracker mutation.

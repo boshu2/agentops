@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -58,6 +59,15 @@ const codexImageHealthDefaultCheckTimeout = 30 * time.Second
 // inherits the pipes keeps Run blocked past the per-check budget even though
 // the direct child was killed.
 const codexImageHealthWaitDelay = 2 * time.Second
+
+// Worker stdout and stderr are each bounded independently. A real Codex JSONL
+// stream can be substantial, so retain up to 16 MiB per stream while keeping
+// receipt diagnostics at the existing compact excerpt bound below.
+const codexDispatchOutputLimit = 16 << 20
+
+const codexDispatchDiagnosticLimit = 500
+
+const codexDispatchWaitDelay = 2 * time.Second
 
 var codexImageHealthCheckTimeout = codexImageHealthDefaultCheckTimeout
 
@@ -992,6 +1002,9 @@ func validateCodexTaskPacket(packet codexTaskPacket) error {
 	if err := validateCodexDispatchSandbox(packet); err != nil {
 		return err
 	}
+	if err := validateCodexRequiredCommandSandbox(packet); err != nil {
+		return err
+	}
 	if packet.Dispatch.Mode != "non-mutating" || packet.Dispatch.MutatesRepo {
 		return fmt.Errorf("codex dispatch only accepts non-mutating packets")
 	}
@@ -1006,6 +1019,18 @@ func validateCodexTaskPacket(packet codexTaskPacket) error {
 	}
 	if packet.Execution.Stdin.Mode == "pipe-prompt" && !packet.Execution.Stdin.CloseAfterPrompt {
 		return fmt.Errorf("codex dispatch requires execution.stdin.close_after_prompt for pipe-prompt")
+	}
+	return nil
+}
+
+func validateCodexRequiredCommandSandbox(packet codexTaskPacket) error {
+	if strings.TrimSpace(packet.Sandbox) != "read-only" {
+		return nil
+	}
+	for _, command := range packet.Evidence.RequiredCommands {
+		if strings.TrimSpace(command) != "" {
+			return fmt.Errorf("codex task packet read-only sandbox cannot execute evidence.required_commands without filesystem confinement")
+		}
 	}
 	return nil
 }
@@ -1101,26 +1126,34 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = cwd
 	cmd.Env = codexDispatchEnv(packet)
+	cmd.WaitDelay = codexDispatchWaitDelay
+	configureCodexDispatchProcessGroup(cmd)
 	if packet.Execution.Stdin.Mode == "pipe-prompt" {
 		cmd.Stdin = bytes.NewReader(stdinBytes)
 	}
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	stdout := newCodexBoundedCapture(codexDispatchOutputLimit, func() { _ = killCodexDispatchProcessGroup(cmd) })
+	stderr := newCodexBoundedCapture(codexDispatchOutputLimit, func() { _ = killCodexDispatchProcessGroup(cmd) })
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	runErr := cmd.Run()
 	ended := time.Now().UTC()
 	timedOut := ctx.Err() == context.DeadlineExceeded
+	outputLimited := stdout.Exceeded() || stderr.Exceeded()
 	exitCode := codexDispatchExitCode(runErr, timedOut)
 	failureReason := codexDispatchFailureReason(runErr, timedOut, stderr.String())
+	if outputLimited && !timedOut {
+		failureReason = fmt.Sprintf("codex dispatch output limit exceeded (%d bytes per stream)", codexDispatchOutputLimit)
+	}
 
 	if err := writeCodexDispatchOutputFiles(cwd, packet.AllowedPaths, packet.Output, stdout.Bytes()); err != nil {
 		return codexRunReceipt{}, err
 	}
 
 	var requiredResults []codexCommandResult
+	var requiredCommandsErr error
 	if !timedOut {
-		requiredResults = runCodexRequiredCommands(cwd, packet)
+		requiredResults, requiredCommandsErr = runCodexRequiredCommands(cwd, packet)
 	}
 
 	receipt := codexRunReceipt{
@@ -1158,6 +1191,7 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 		receipt.ResumeFromSession = strings.TrimSpace(packet.Resume.SessionID)
 	}
 	receiptValidationErr := errors.Join(
+		requiredCommandsErr,
 		validateCodexRunReceipt(receipt),
 		validateCodexReceiptRequiredCommands(packet.Evidence.RequiredCommands, receipt),
 		validateCodexRunReceiptSchema(receipt),
@@ -1174,6 +1208,9 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 
 	if timedOut {
 		return receipt, fmt.Errorf("codex dispatch timed out after %ds", packet.Execution.TimeoutSeconds)
+	}
+	if outputLimited {
+		return receipt, errors.New(failureReason)
 	}
 	if runErr != nil {
 		return receipt, fmt.Errorf("codex dispatch failed: %s", failureReason)
@@ -1500,44 +1537,157 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 	return nil
 }
 
-// runCodexRequiredCommands executes the packet's evidence.required_commands
-// acceptance commands in cwd and returns one result per command, so the
-// receipt carries machine-checkable acceptance evidence instead of only
-// proving that Codex itself ran. Each command runs via `sh -c` with the
-// packet execution timeout as its own budget; failures are recorded honestly
-// (non-zero exit codes do not abort the remaining commands).
-func runCodexRequiredCommands(cwd string, packet codexTaskPacket) []codexCommandResult {
+const codexRequiredCommandOutputLimit = codexDispatchDiagnosticLimit
+
+// runCodexRequiredCommands executes repository-local acceptance programs with
+// explicit argv for writable packet sandboxes. Read-only packets are rejected
+// during packet validation because direct child execution cannot truthfully
+// enforce filesystem confinement on every supported platform. The string
+// contract intentionally has no quoting or shell grammar: the first field must
+// name an executable beneath cwd as ./path and every remaining field is passed
+// literally. The first policy or execution failure stops the evidence run and
+// rejects dispatch.
+func runCodexRequiredCommands(cwd string, packet codexTaskPacket) ([]codexCommandResult, error) {
 	var results []codexCommandResult
 	for _, raw := range packet.Evidence.RequiredCommands {
 		command := strings.TrimSpace(raw)
 		if command == "" {
 			continue
 		}
-		results = append(results, runCodexRequiredCommand(cwd, packet, command))
+		result, err := runCodexRequiredCommand(cwd, packet, command)
+		results = append(results, result)
+		if err != nil {
+			return results, err
+		}
 	}
-	return results
+	return results, nil
 }
 
-func runCodexRequiredCommand(cwd string, packet codexTaskPacket, command string) codexCommandResult {
+func runCodexRequiredCommand(cwd string, packet codexTaskPacket, command string) (codexCommandResult, error) {
+	argv, err := codexRequiredCommandArgv(cwd, command)
+	if err != nil {
+		result := codexCommandResult{Command: command, ExitCode: -1, OutputExcerpt: err.Error()}
+		return result, fmt.Errorf("required command %q rejected by policy: %w", command, err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(packet.Execution.TimeoutSeconds)*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = cwd
 	cmd.Env = codexDispatchEnv(packet)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	cmd.WaitDelay = codexDispatchWaitDelay
+	configureCodexDispatchProcessGroup(cmd)
+	stdout := newCodexBoundedCapture(codexRequiredCommandOutputLimit, func() { _ = killCodexDispatchProcessGroup(cmd) })
+	stderr := newCodexBoundedCapture(codexRequiredCommandOutputLimit, func() { _ = killCodexDispatchProcessGroup(cmd) })
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	runErr := cmd.Run()
 	timedOut := ctx.Err() == context.DeadlineExceeded
+	outputLimited := stdout.Exceeded() || stderr.Exceeded()
 	excerpt := codexDispatchOutputExcerpt(stdout.String(), stderr.String())
 	if timedOut {
 		excerpt = strings.TrimSpace("required command timed out\n" + excerpt)
 	}
-	return codexCommandResult{
+	result := codexCommandResult{
 		Command:       command,
 		ExitCode:      codexDispatchExitCode(runErr, timedOut),
 		OutputExcerpt: excerpt,
 	}
+	if timedOut {
+		return result, fmt.Errorf("required command %q timed out", command)
+	}
+	if outputLimited {
+		return result, fmt.Errorf("required command %q output exceeds %d-byte policy bound", command, codexRequiredCommandOutputLimit)
+	}
+	if runErr != nil {
+		return result, fmt.Errorf("required command %q failed with exit code %d", command, result.ExitCode)
+	}
+	return result, nil
+}
+
+type codexBoundedCapture struct {
+	mu       sync.Mutex
+	buffer   bytes.Buffer
+	limit    int
+	exceeded bool
+	onLimit  func()
+	once     sync.Once
+}
+
+func newCodexBoundedCapture(limit int, onLimit func()) *codexBoundedCapture {
+	return &codexBoundedCapture{limit: limit, onLimit: onLimit}
+}
+
+func (capture *codexBoundedCapture) Write(p []byte) (int, error) {
+	capture.mu.Lock()
+	remaining := capture.limit - capture.buffer.Len()
+	if remaining < 0 {
+		remaining = 0
+	}
+	if remaining > len(p) {
+		remaining = len(p)
+	}
+	if remaining > 0 {
+		_, _ = capture.buffer.Write(p[:remaining])
+	}
+	exceeded := len(p) > remaining
+	if exceeded {
+		capture.exceeded = true
+	}
+	capture.mu.Unlock()
+
+	if exceeded {
+		capture.once.Do(func() {
+			if capture.onLimit != nil {
+				capture.onLimit()
+			}
+		})
+	}
+	return len(p), nil
+}
+
+func (capture *codexBoundedCapture) Bytes() []byte {
+	capture.mu.Lock()
+	defer capture.mu.Unlock()
+	return append([]byte(nil), capture.buffer.Bytes()...)
+}
+
+func (capture *codexBoundedCapture) String() string {
+	return string(capture.Bytes())
+}
+
+func (capture *codexBoundedCapture) Exceeded() bool {
+	capture.mu.Lock()
+	defer capture.mu.Unlock()
+	return capture.exceeded
+}
+
+func codexRequiredCommandArgv(cwd, command string) ([]string, error) {
+	if strings.ContainsAny(command, "|&;<>()$`\\\"'*!?[]{}~\r\n\t") {
+		return nil, errors.New("shell syntax and metacharacters are not allowed")
+	}
+	argv := strings.Fields(command)
+	if len(argv) == 0 {
+		return nil, errors.New("command is empty")
+	}
+	executable := argv[0]
+	relPrefix := "." + string(filepath.Separator)
+	if !strings.HasPrefix(executable, relPrefix) || !filepath.IsLocal(executable) {
+		return nil, fmt.Errorf("executable %q must be declared as a repository-relative ./path", executable)
+	}
+	absExecutable, err := resolveCodexDispatchPath(cwd, nil, executable)
+	if err != nil {
+		return nil, fmt.Errorf("resolve executable %q: %w", executable, err)
+	}
+	info, err := os.Stat(absExecutable)
+	if err != nil {
+		return nil, fmt.Errorf("stat executable %q: %w", executable, err)
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+		return nil, fmt.Errorf("executable %q is not an executable regular file", executable)
+	}
+	argv[0] = absExecutable
+	return argv, nil
 }
 
 // validateCodexReceiptRequiredCommands fails when the packet declares
@@ -1616,20 +1766,30 @@ func writeCodexRunReceipt(cwd string, allowedPaths []string, path string, receip
 }
 
 // resolveCodexDispatchPath resolves a packet-declared path against cwd and
-// enforces the dispatch path boundary: the resolved path must stay inside cwd
-// or inside one of the packet's allowed_paths roots (each resolved against cwd
-// when relative). Absolute paths and ".." traversal that escape every permitted
-// root are rejected so receipts, JSONL, prompts, and final messages cannot be
-// written or read outside the declared scope.
+// enforces the dispatch path boundary using filesystem-real paths. Both the
+// candidate and every permitted root are resolved through symlinks, including
+// paths whose leaf does not exist yet, before containment is decided.
 func resolveCodexDispatchPath(cwd string, allowedPaths []string, path string) (string, error) {
-	cleanCwd := filepath.Clean(cwd)
+	cleanCwd, err := filepath.Abs(cwd)
+	if err != nil {
+		return "", fmt.Errorf("resolve codex dispatch cwd: %w", err)
+	}
+	cleanCwd = filepath.Clean(cleanCwd)
+	canonicalCwd, err := canonicalCodexDispatchPath(cleanCwd)
+	if err != nil {
+		return "", fmt.Errorf("resolve codex dispatch cwd %q: %w", cwd, err)
+	}
+
 	candidate := path
 	if !filepath.IsAbs(candidate) {
 		candidate = filepath.Join(cleanCwd, candidate)
 	}
-	candidate = filepath.Clean(candidate)
+	canonicalCandidate, err := canonicalCodexDispatchPath(candidate)
+	if err != nil {
+		return "", fmt.Errorf("resolve codex dispatch path %q: %w", path, err)
+	}
 
-	roots := []string{cleanCwd}
+	roots := []string{canonicalCwd}
 	for _, root := range allowedPaths {
 		root = strings.TrimSpace(root)
 		if root == "" {
@@ -1638,14 +1798,61 @@ func resolveCodexDispatchPath(cwd string, allowedPaths []string, path string) (s
 		if !filepath.IsAbs(root) {
 			root = filepath.Join(cleanCwd, root)
 		}
-		roots = append(roots, filepath.Clean(root))
+		canonicalRoot, err := canonicalCodexDispatchPath(root)
+		if err != nil {
+			return "", fmt.Errorf("resolve codex dispatch allowed_path %q: %w", root, err)
+		}
+		roots = append(roots, canonicalRoot)
 	}
 	for _, root := range roots {
-		if candidate == root || strings.HasPrefix(candidate, root+string(filepath.Separator)) {
-			return candidate, nil
+		if codexDispatchPathWithinRoot(canonicalCandidate, root) {
+			return canonicalCandidate, nil
 		}
 	}
-	return "", fmt.Errorf("codex dispatch path %q escapes cwd %s and the packet allowed_paths", path, cleanCwd)
+	return "", fmt.Errorf("codex dispatch path %q escapes cwd %s and the packet allowed_paths", path, canonicalCwd)
+}
+
+// canonicalCodexDispatchPath resolves every existing component through the
+// filesystem. For an output path that does not exist yet, it resolves the
+// nearest existing ancestor and appends only the genuinely missing suffix.
+func canonicalCodexDispatchPath(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	current := filepath.Clean(abs)
+	missing := []string{}
+
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			parts := append([]string{resolved}, missing...)
+			return filepath.Clean(filepath.Join(parts...)), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		if info, lstatErr := os.Lstat(current); lstatErr == nil && info.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("symlink %s has no resolvable target", current)
+		} else if lstatErr != nil && !os.IsNotExist(lstatErr) {
+			return "", lstatErr
+		}
+
+		parent := filepath.Dir(current)
+		if parent == current {
+			return "", err
+		}
+		missing = append([]string{filepath.Base(current)}, missing...)
+		current = parent
+	}
+}
+
+func codexDispatchPathWithinRoot(path, root string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil || filepath.IsAbs(rel) {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }
 
 // validateCodexDispatchPathBounds rejects a packet up front when any
@@ -1708,8 +1915,8 @@ func codexDispatchOutputExcerpt(stdout, stderr string) string {
 		}
 		text += strings.TrimSpace(stderr)
 	}
-	if len(text) > 500 {
-		return text[:500]
+	if len(text) > codexDispatchDiagnosticLimit {
+		return text[:codexDispatchDiagnosticLimit]
 	}
 	return text
 }

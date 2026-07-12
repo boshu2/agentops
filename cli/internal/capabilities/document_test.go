@@ -41,6 +41,14 @@ func TestServiceBuildsCompleteContractFromPorts(t *testing.T) {
 	if surface.exits["plan-pawl decide"]["5"] == "" || document.CommandExitCodes["pawl review"]["3"] == "" {
 		t.Fatal("typed command exit codes did not cross the surface port")
 	}
+	if document.CommandExitCodes["pawl review"]["5"] == "" || document.CommandExitCodes["verify"]["5"] == "" {
+		t.Fatal("strict HOLD exit codes did not cross the surface port")
+	}
+	for _, name := range []string{"AGENTOPS_ORCHESTRATION", "AO_DOCTOR_LOG_LEVEL", "PAWL_STRICT", "NO_COLOR"} {
+		if document.EnvVars[name] == "" {
+			t.Fatalf("environment input %s is undocumented", name)
+		}
+	}
 	if len(document.OutputFormats) != 3 || document.ExitCodes["0"] != "success" {
 		t.Fatal("stable output and exit dictionaries are incomplete")
 	}

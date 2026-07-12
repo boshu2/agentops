@@ -251,15 +251,24 @@ check_one_push() {
       if [[ -z "$nts" ]]; then
         return 0   # pure-#trivial range: byte-identical fast path (load-bearing for throughput)
       fi
+      # F10 (age-pawl-intent-zhndq.11): progress breadcrumbs. A mixed push runs a full
+      # ~40s cockpit gate PER non-trivial commit in a detached worktree — a multi-minute,
+      # otherwise-silent hang. Print "gating commit K of N: <sha> <subject>" before each and
+      # a per-commit elapsed after, so the operator sees a legible progress log, not a stall.
+      local _nt_total; _nt_total="$(printf '%s\n' "$nts" | grep -c .)"
       while IFS= read -r nt; do
         [[ -n "$nt" ]] || continue
         gated=$((gated + 1))
-        echo "pawl-pre-push: #trivial tip ${local_sha:0:12} hides non-trivial commit ${nt:0:12} in the push range — re-targeting the cockpit gate at it (age-8ais; adds latency, by design)" >&2
+        local _nt_subj _nt_t0 _nt_elapsed
+        _nt_subj="$(git -C "$GIT_REPO" log -1 --format=%s "$nt" 2>/dev/null)"
+        _nt_t0="$(date +%s)"
+        echo "pawl-pre-push: gating commit ${gated} of ${_nt_total}: ${nt:0:12} ${_nt_subj} — re-targeting the cockpit gate (age-8ais; ~40s each, by design)" >&2
         if ! gate_nontrivial_commit "$nt"; then
           echo "PAWL-HOLD: cockpit gate FAILED for non-trivial commit ${nt:0:12} hidden behind #trivial tip ${local_sha:0:12} — push refused (age-8ais)" >&2
           return 1
         fi
-        echo "pawl-pre-push: cockpit gate PASSED for non-trivial commit ${nt:0:12} behind #trivial tip ${local_sha:0:12} (age-8ais)" >&2
+        _nt_elapsed=$(( $(date +%s) - _nt_t0 ))
+        echo "pawl-pre-push: cockpit gate PASSED for non-trivial commit ${nt:0:12} (commit ${gated} of ${_nt_total}, ${_nt_elapsed}s) (age-8ais)" >&2
       done <<<"$nts"
       echo "pawl-pre-push: cockpit gate PASSED for all ${gated} non-trivial commit(s) behind #trivial tip ${local_sha:0:12} — push authorized (age-8ais)" >&2
       return 0

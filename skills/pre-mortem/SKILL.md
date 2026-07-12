@@ -37,13 +37,18 @@ output_contract: skills/council/schemas/verdict.json
 
 > **Mandatory doctrine for 3+ issue epics.** Run pre-mortem before `/crank` on epics with 3+ child issues — operating doctrine, not a hook (AgentOps 3.0 is hookless). 6/6 consecutive positive ROI. Bypass: `--skip-pre-mortem` flag or `AGENTOPS_SKIP_PRE_MORTEM_GATE=1`.
 
+## Constraints
+
+- **Judge the plan, never the implementation.** This keeps the plan-pawl separate from the acceptance-test and finished-diff pawls, because one verdict cannot prove all three artifacts.
+- **Use an independent judge.** The author must not grade their own plan, because shared assumptions make self-review autocorrelated; one-way doors additionally require a different model family.
+- **Pre-register kill conditions for irreversible work.** A strategy, experiment, or one-way-door plan must say what evidence changes the decision before deliberation, because an unfalsifiable review is ceremony.
+- **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED is repair evidence: revise the plan and rerun automatically. Raise the andon and route one helper only for a true breaker such as missing authority, unavailable required trust domain after retry, or an impossible invariant.
+
 ## Loop position
 
 Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if pre-mortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing.
 
 Run `/council validate` on a plan or spec to get multi-model judgment before committing to implementation.
-
----
 
 ## Quick Start
 
@@ -56,8 +61,6 @@ Run `/council validate` on a plan or spec to get multi-model judgment before com
 /pre-mortem --explorers=3 path/to/SPEC.md           # deep investigation of plan
 /pre-mortem --debate path/to/PLAN.md                # two-round adversarial review
 ```
-
----
 
 ## Execution Steps
 
@@ -120,49 +123,9 @@ Read [references/council-fail-patterns.md](references/council-fail-patterns.md) 
 
 ### Step 2: Run Council Validation
 
-**Default (inline, no spawning):**
-```
-/council --quick validate <plan-path>
-```
-Single-agent structured review. Catches real implementation issues at ~10% of full council cost. Sufficient for most plans (proven across 6+ epics).
+Run `/council --quick validate <plan-path>` for reversible work. Use `/council --deep --preset=plan-review validate <plan-path>` for high-stakes work, `/council --mixed --preset=plan-review validate <plan-path>` when cross-family judgment is required, `--explorers=3` for codebase investigation, and `/pre-mortem --debate` for adversarial comparison. An explicit `/pre-mortem --preset=architecture` overrides automatic plan-review routing. Mode composition and judge roles are in [references/mandatory-checks.md](references/mandatory-checks.md#steps-2911-independent-adjudication-and-plan-pawl).
 
-Default (2 judges with plan-review perspectives) applies when you intentionally run non-quick council mode.
-
-**With --deep (4 judges with plan-review perspectives):**
-```
-/council --deep --preset=plan-review validate <plan-path>
-```
-Spawns 4 judges:
-- `missing-requirements`: What's not in the spec that should be? What questions haven't been asked?
-- `feasibility`: What's technically hard or impossible here? What will take 3x longer than estimated?
-- `scope`: What's unnecessary? What's missing? Where will scope creep?
-- `spec-completeness`: Are boundaries defined? Do conformance checks cover all acceptance criteria? Is the plan mechanically verifiable?
-
-Use `--deep` for high-stakes plans (migrations, security, multi-service, 7+ issues).
-
-**With --mixed (cross-vendor):**
-```
-/council --mixed --preset=plan-review validate <plan-path>
-```
-3 Claude + 3 Codex agents for cross-vendor plan validation with plan-review perspectives.
-
-**With explicit preset override:**
-```
-/pre-mortem --preset=architecture path/to/PLAN.md
-```
-Explicit `--preset` overrides the automatic plan-review preset. Uses architecture-focused personas instead.
-
-**With explorers:**
-```
-/council --deep --preset=plan-review --explorers=3 validate <plan-path>
-```
-Each judge spawns 3 explorers to investigate aspects of the plan's feasibility against the codebase. Useful for complex migration or refactoring plans.
-
-**With debate mode:**
-```
-/pre-mortem --debate
-```
-Enables adversarial two-round review for plan validation. Use for high-stakes plans where multiple valid approaches exist. See `/council` docs for full --debate details.
+**Checkpoint:** before deliberation, confirm the packet records `scope_mode`, blast radius/reversibility, `author_id`, a distinct `judge_id`, and any required pre-registered `decision_rule`. Do not emit PASS while an invariant is missing.
 
 ### Steps 2.4–2.8: Mandatory Council Checks
 
@@ -186,47 +149,9 @@ each 'build/add/missing' claim, was the absence verified by a search, or
 assumed? Name the search." Treat an unverified "it's missing" as a WARN at
 minimum; FAIL if the plan's effort/sequencing depends on it.
 
-### Step 2.9: No-self-grading invariant (author ≠ validator)
+### Steps 2.9–2.11: Independent adjudication and plan-pawl
 
-The pre-mortem verdict must NOT be graded by the plan's own author. A verdict produced by the authoring context is autocorrelated — the same assumptions that shaped the plan pass it. This is the no-self-grading invariant (`ag-lmdx.4`): the independent-trust-domain check on the plan-acceptance verdict.
-
-**Rule:** the judge context MUST be distinct from the author context. Validation MAY run inside the authoring session, but the judge MUST be a **blind sub-agent** — a fresh, context-isolated agent acting as if it has no authoring context. Record `judge_id` (the isolated sub-agent context) distinct from `author_id` (the planning context). The `--deep`/`--mixed` council judges satisfy this when they are context-isolated sub-agents; an inline self-review by the planning agent does NOT.
-
-**Refuse** to emit a PASS verdict when the judge context equals the author context (`judge_id == author_id`) — re-run the verdict through a blind sub-agent judge instead.
-
-**Escape:** `--allow-self` (default OFF) waives the invariant for the inline fallback only (e.g. no sub-agent runtime available). Using it stamps the verdict as self-graded; downstream `ao turn verify` reports it as waived, not independently validated.
-
-**Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed.
-
-**Cross-family requirement for one-way-door plans:** when the plan is a strategy, experiment, or one-way-door decision, the judge MUST be from a **different model family** than the author (e.g. author=Claude → judge=Codex, or vice versa). Same-family judges share training-data-correlated blind spots — the dominant failure mode for high-stakes plan review. Use `--mixed` or `codex exec` to satisfy this. Record `judge_family` in the verdict alongside `judge_id`.
-
-### Step 2.10: Pre-Registered Decision Rule (strategy / experiment / one-way-door plans)
-
-When the plan under review is a **strategy**, **experiment-driven** plan, or a **one-way-door** decision (irreversible: schema migration, public API change, architecture fork, security posture change, data deletion), the pre-mortem MUST require and record a **pre-registered decision rule** — defined BEFORE the council judges deliberate.
-
-A pre-registered decision rule answers three questions:
-
-1. **What result changes the decision?** Name the specific finding, metric, or evidence that would cause the plan to be rejected or materially altered. (Not "if judges say FAIL" — that's tautological.)
-2. **What threshold or CI gate kills the claim?** Name a concrete, mechanically verifiable condition: a test that must pass, a metric that must stay within bounds, a property that must hold. If no such gate exists, the plan is unfalsifiable — FAIL.
-3. **What negative result redirects?** Name what happens on a real negative: pivot to alternative X, defer to next cycle, escalate to human. "Try harder" is not a redirect.
-
-Record the decision rule in the council packet frontmatter as `decision_rule:` before judges deliberate. Judges evaluate the plan AGAINST the decision rule — not just "is this plan good" but "does this plan survive its own kill conditions."
-
-**Why:** without a pre-registered decision rule, pre-mortem degenerates into "does this plan seem reasonable" — a question the author already answered yes to. The decision rule makes the pre-mortem falsifiable. Surfaced by a cross-family (Codex) pre-mortem that found real problems an inline review missed because the inline review had no kill conditions to test against.
-
-### Step 2.11: Plan-Pawl Duel Checklist (the cross-family invariant)
-
-Steps 2.9 + 2.10 are **one invariant** — *a plan's acceptance verdict must come from an independent, cross-family adversary, against pre-registered kill conditions.* That invariant has **two delivery forms of the same thing**, not two different gates:
-
-- **`/pre-mortem --mixed`** (this skill) — a cross-vendor council judges the plan artifact.
-- **The discovery plan-pawl duel** ([`discovery`](../discovery/SKILL.md) STEP 3.5 → `ao plan-pawl decide`, the [`plan-pawl` row](../../docs/contracts/pawls.md)) — two distinct-family judge panes duel over the `SynthesisPacket`; that duel verdict **IS** the pre-mortem verdict for fanout-class discovery (do not run a second council).
-
-For fanout class the duel **satisfies no-self-grading by construction**: the two judges are fresh, context-isolated, distinct-family panes, so `author_id ≠ judge_id` and `judge_family ≠ author_family` hold automatically. Before accepting ANY plan acceptance verdict (either form), check:
-
-- [ ] **Independent judge** — `judge_id` ≠ `author_id` (no inline self-review; `--allow-self` waives only for the no-subagent fallback, and stamps the verdict self-graded).
-- [ ] **Cross-family for one-way doors** — strategy / experiment / irreversible plan ⇒ `judge_family` ≠ `author_family` (≥2 distinct roster families; the duel's quorum floor).
-- [ ] **Pre-registered decision rule** — `decision_rule:` recorded BEFORE deliberation; judges evaluate the plan against its own kill conditions.
-- [ ] **Not a behavior substitute** — the plan-pawl gates plan SHAPE; it never replaces the acceptance-test layer (2026-06-12 auth-bypass learning).
+Apply the no-self-grading rule, cross-family rule for one-way doors, pre-registered decision rule, and discovery plan-pawl equivalence exactly as specified in [references/mandatory-checks.md](references/mandatory-checks.md#steps-2911-independent-adjudication-and-plan-pawl). A completed discovery plan-pawl duel is the pre-mortem verdict for fanout-class discovery; do not run a duplicate council.
 
 ### Step 3: Interpret Council Verdict
 
@@ -246,6 +171,14 @@ The generated report must preserve this exact heading because downstream validat
 
 ## Council Verdict: PASS / WARN / FAIL
 
+## Output Specification
+
+- **Artifact path:** `.agents/council/`.
+- **Filename convention:** `YYYY-MM-DD-pre-mortem-<topic>.md`.
+- **Serialization/schema format:** Markdown report using [references/write-pre-mortem-output.md](references/write-pre-mortem-output.md), with council verdict data conforming to `skills/council/schemas/verdict.json`.
+- **Validator command:** `bash skills/pre-mortem/scripts/validate.sh && grep -Eq '^## Council Verdict: (PASS|WARN|FAIL)$' .agents/council/YYYY-MM-DD-pre-mortem-<topic>.md`.
+- **Downstream handoff:** PASS proceeds to `/implement`; WARN or FAIL returns the plan to its author for repair and automatic re-review. Only a breaker raises the andon or routes one helper.
+
 ### Step 5: Record Ratchet Progress
 
 ```bash
@@ -260,8 +193,6 @@ Tell the user:
 3. Recommendation
 4. Location of pre-mortem report
 
----
-
 ## Integration with Workflow
 
 ```
@@ -275,17 +206,20 @@ Tell the user:
     └── FAIL → Fix plan, re-run /pre-mortem
 ```
 
----
+## Quality Checklist
 
-## Examples & Troubleshooting
+- Every verdict cites concrete plan text and names the failure mode or proof that resolved it.
+- Every wave-validity row has non-overlapping write scope, one owner, and a discard path before parallel execution.
+- Every irreversible decision has an independent cross-family judge and a decision rule recorded before deliberation.
+- WARN, FAIL, and REFUTED routes repair and rerun; only a breaker routes the andon/helper path.
+
+## Examples
 
 See [references/examples.md](references/examples.md) for worked examples (default inline, `--mixed` cross-vendor, auto-find recent, `--deep` high-stakes) and the troubleshooting table (timeouts, FAIL on valid plans, missing product perspectives, gate-blocking, spec-completeness warnings, mandatory-for-epics enforcement).
 
 ## Troubleshooting
 
-See [references/examples.md](references/examples.md) for the troubleshooting table.
-
----
+Use the structured troubleshooting table in [references/examples.md](references/examples.md); repair ordinary verdicts in place and reserve escalation for a breaker.
 
 ## See Also
 
