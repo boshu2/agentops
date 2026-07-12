@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -40,5 +42,21 @@ func TestEvalCompositionOwnsCompleteCommandTree(t *testing.T) {
 		if err != nil || child == command || len(remaining) != 0 {
 			t.Fatalf("missing eval command %q: child=%v remaining=%v err=%v", path, child, remaining, err)
 		}
+	}
+}
+
+func TestEvalCompositionResolvesGoalsPathAndProjectRoot(t *testing.T) {
+	dir := chdirTemp(t)
+	resetCommandState(t)
+	if err := os.WriteFile(filepath.Join(dir, "GOALS.yaml"), []byte("version: 3\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	host := newEvalHostOptions()
+	if got := host.ProjectRoot(); got != dir {
+		t.Fatalf("ProjectRoot() = %q, want cwd %q", got, dir)
+	}
+	if got := host.GoalsPath(); got != "GOALS.yaml" {
+		t.Fatalf("GoalsPath() = %q, want GOALS.yaml fallback", got)
 	}
 }
