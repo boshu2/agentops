@@ -2,27 +2,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/provenancegraph"
-)
-
-// Close-reason stamp dispositions. The stamp format is
-// "[verdict:<sha7>:<disposition>]" — appended to the br close reason so the
-// verdict-close-rate gate (scripts/check-verdict-close-rate.sh) can measure
-// how many closes reference ledger proof.
-const (
-	doneStampConfirmed  = "CONFIRMED"
-	doneStampWaived     = "waived-trivial"
-	doneStampUnverified = "UNVERIFIED"
+	doneapp "github.com/boshu2/agentops/cli/internal/done"
 )
 
 var (
@@ -76,295 +63,30 @@ func init() {
 	doneCmd.Flags().BoolVar(&doneJSON, "json", false, "Emit machine-readable JSON (stdout-as-data)")
 }
 
-// doneReport is the structured output of ao done --json.
-type doneReport struct {
-	BeadID      string `json:"bead_id"`
-	CommitSHA   string `json:"commit_sha"`
-	Disposition string `json:"disposition"`
-	Stamp       string `json:"stamp"`
-	CloseReason string `json:"close_reason"`
-	Closed      bool   `json:"closed"`
-}
-
-// doneVerdictLookup summarizes the verdict edges bound to one commit.
-type doneVerdictLookup struct {
-	// VerdictID is the node id of the deciding verdict: the latest CONFIRMED
-	// one when Confirmed, else the latest verdict seen.
-	VerdictID string
-	// Confirmed reports whether any bound verdict carries disposition=CONFIRMED.
-	Confirmed bool
-	// Dispositions lists every bound verdict's disposition in ledger order
-	// (empty string for a verdict record without one).
-	Dispositions []string
-	// ForeignBeads lists verdict node ids bound to this commit but belonging to
-	// OTHER beads — never certifying, surfaced in refusal messages.
-	ForeignBeads []string
-}
-
-// shaBindsCommit reports whether query (>=7 hex chars) and commitID name the
-// same commit: either is a case-insensitive prefix of the other, matching the
-// provenance_show prefix-resolution convention.
-func shaBindsCommit(query, commitID string) bool {
-	q, c := strings.ToLower(query), strings.ToLower(commitID)
-	if len(q) < minShaPrefixLen || len(c) < minShaPrefixLen {
-		return false
-	}
-	if !isHexToken(q) || !isHexToken(c) {
-		return false
-	}
-	return strings.HasPrefix(q, c) || strings.HasPrefix(c, q)
-}
-
-// lookupDoneVerdicts scans the ledger for verdict --wasDerivedFrom--> commit
-// edges bound to sha (the shape ao provenance emit-verdict writes) AND to the
-// bead being closed: verdict node ids are `<bead>@<sha7>`, and a CONFIRMED
-// verdict for a DIFFERENT bead on the same commit must never certify this one
-// (wrong-object certification — pawl catch on this bead's own landing). A
-// foreign-bead verdict is counted in ForeignBeads so the refusal can name it.
-// Pure.
-func lookupDoneVerdicts(edges []provenancegraph.Edge, beadID, sha string) doneVerdictLookup {
-	var l doneVerdictLookup
-	for _, e := range edges {
-		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
-			continue
-		}
-		if !shaBindsCommit(sha, e.ToID) {
-			continue
-		}
-		if vb, _, ok := strings.Cut(e.FromID, "@"); !ok || vb != beadID {
-			l.ForeignBeads = append(l.ForeignBeads, e.FromID)
-			continue
-		}
-		disp := parseDisposition(e.EvidenceRef)
-		l.Dispositions = append(l.Dispositions, disp)
-		if disp == doneStampConfirmed {
-			l.Confirmed = true
-			l.VerdictID = e.FromID
-		} else if !l.Confirmed {
-			l.VerdictID = e.FromID
-		}
-	}
-	return l
-}
-
-// doneOriginRef is the remote-tracking ref the origin-ledger fallback consults.
-// The repo lands directly on main, so origin/main is the shared audit line.
-const doneOriginRef = "origin/main"
-
-// lookupDoneVerdictsFromOrigin consults the already-fetched origin/main ledger
-// blob for a verdict binding the commit — the stale-checkout fallback. `ao done`
-// runs wherever the operator happens to be, and a verdict pushed elsewhere lands
-// on origin/main before the local working tree catches up, so a local checkout
-// that lags origin would otherwise refuse a genuinely-verified close.
-//
-// It reads `git show origin/main:docs/provenance/ledger.jsonl` — a blob read
-// with NO working-tree change and NO `git fetch` (a stale origin ref simply
-// misses, and the caller refuses as before, advising a fetch). Any failure (no
-// origin/main ref, absent blob, unreadable/corrupt ledger) fails SOFT to
-// (zero, false): the fallback can only ever HELP find a verdict, never block a
-// close the local ledger would otherwise satisfy. The bool reports whether the
-// origin ledger was read and decoded at all.
-func lookupDoneVerdictsFromOrigin(cwd, beadID, sha string) (doneVerdictLookup, bool) {
-	out, err := exec.Command("git", "-C", cwd, "show",
-		doneOriginRef+":"+provenancegraph.LedgerRelativePath).Output()
-	if err != nil {
-		return doneVerdictLookup{}, false
-	}
-	edges, err := provenancegraph.DecodeEdges(bytes.NewReader(out))
-	if err != nil {
-		return doneVerdictLookup{}, false
-	}
-	return lookupDoneVerdicts(edges, beadID, sha), true
-}
-
-// doneStamp formats the close-reason stamp: "[verdict:<sha7>:<disposition>]".
-func doneStamp(sha, disposition string) string {
-	return "[verdict:" + shortHash7(sha) + ":" + disposition + "]"
-}
-
-// doneResolveHead returns the full HEAD sha of the git repository at cwd.
-func doneResolveHead(cwd string) (string, error) {
-	out, err := exec.Command("git", "-C", cwd, "rev-parse", "HEAD").Output()
-	if err != nil {
-		return "", fmt.Errorf("resolve HEAD at %s (pass --sha to name the landed commit explicitly): %w", cwd, err)
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-// provenanceOnlyChangedFiles is the SINGLE allowlist-discipline both the `ao
-// done` waiver (doneCommitProvenanceOnly) and the pre-push #trivial waiver
-// (trivialWaiver) route through, so the two can never disagree about what is
-// waivable. `out` is the NUL-separated changed-file list from `git diff-tree
-// --no-commit-id --no-renames --name-only -z -r <sha>`. It reports whether that
-// list is non-empty AND every path is under docs/provenance/.
-//
-// -z is load-bearing (parsing sweep): NUL-separated output emits each path's RAW
-// bytes with NO C-quoting, so the comparison is against the exact path — a path
-// literally named " docs/provenance/x" (LEADING SPACE) or one with any other
-// surprising byte is matched exactly, never trimmed or dequoted into the
-// allowlist (the newline+CR-strip form depended on git's quoting to fail-close;
-// -z removes that dependency and the ambiguity of splitting on a byte a path
-// could contain). The docs/provenance/ prefix keeps its TRAILING SLASH so it is
-// an exact directory boundary — "docs/provenance-evil/x" is NOT under it.
-// Fail-closed on an empty list: it cannot prove triviality.
-func provenanceOnlyChangedFiles(out string) bool {
-	var files []string
-	for _, f := range strings.Split(out, "\x00") {
-		if f != "" {
-			files = append(files, f)
-		}
-	}
-	if len(files) == 0 {
-		return false
-	}
-	for _, f := range files {
-		if !strings.HasPrefix(f, "docs/provenance/") {
-			return false
-		}
-	}
-	return true
-}
-
-// doneCommitProvenanceOnly reports whether every changed file of the commit is
-// under docs/provenance/ — the sole waiver class, mirroring the #trivial
-// semantics of scripts/check-pawl-pre-push.sh. Fail-closed: a failed diff-tree
-// or an empty changed-file list cannot prove triviality, so it does NOT waive.
-// --no-renames forces a rename INTO docs/provenance/ to expose its
-// non-allowlisted source path; -z emits raw (unquoted) NUL-separated paths for
-// exact comparison. Path discipline is the shared provenanceOnlyChangedFiles
-// (parity with the pre-push waiver).
-func doneCommitProvenanceOnly(cwd, sha string) bool {
-	out, err := exec.Command("git", "-C", cwd,
-		"diff-tree", "--no-commit-id", "--no-renames", "--name-only", "-z", "-r", sha).Output() // #nosec G204 -- cwd is the repo; sha is a resolved commit id.
-	if err != nil {
-		return false
-	}
-	return provenanceOnlyChangedFiles(string(out))
-}
-
-// doneRefusalError builds the corrective refusal: no proof, no close.
-func doneRefusalError(beadID, sha string, l doneVerdictLookup) error {
-	var found string
-	if len(l.Dispositions) > 0 {
-		found = fmt.Sprintf("verdict(s) recorded for commit %s but none CONFIRMED (found: %s)",
-			shortHash7(sha), strings.Join(l.Dispositions, ", "))
-	} else if len(l.ForeignBeads) > 0 {
-		found = fmt.Sprintf("no verdict for %s on commit %s — the verdict(s) there belong to OTHER bead(s): %s (a verdict certifies its own bead only)",
-			beadID, shortHash7(sha), strings.Join(l.ForeignBeads, ", "))
-	} else {
-		found = fmt.Sprintf("no verdict recorded for commit %s", shortHash7(sha))
-	}
-	return fmt.Errorf(`%s — no verdict = not done; refusing to close %s
-  produce one:  ao verify %s            (front door — writes the commit-bound verdict on CONFIRMED)
-  advanced:     ao pawl review %s --scope head
-  waiver:       only a commit whose changed files are all under docs/provenance/ closes as waived-trivial
-  stale local?  git fetch origin && git merge --ff-only origin/main   (a verdict pushed elsewhere lands on origin/main first; ao done checks it, but your local ledger may still lag it)
-  escape hatch: ao done %s --force-no-verdict   (closes with an explicit UNVERIFIED stamp)`,
-		found, beadID, beadID, beadID, beadID)
-}
-
-func runDone(cmd *cobra.Command, args []string) error {
-	cmd.SilenceUsage = true
-	beadID := args[0]
-	out := cmd.OutOrStdout()
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("resolve cwd: %w", err)
-	}
-
-	sha := strings.TrimSpace(doneSHA)
-	if sha == "" {
-		sha, err = doneResolveHead(cwd)
-		if err != nil {
-			return err
-		}
-	}
-	if len(sha) < minShaPrefixLen || !isHexToken(sha) {
-		return fmt.Errorf("--sha %q is not a commit sha (need at least %d hex chars)", sha, minShaPrefixLen)
-	}
-
-	store := provenancegraph.NewStore(resolveLedgerPath())
-	edges, err := store.Read()
-	if err != nil {
-		return fmt.Errorf("read provenance ledger: %w", err)
-	}
-
-	lookup := lookupDoneVerdicts(edges, beadID, sha)
-	var disposition string
-	switch {
-	case lookup.Confirmed:
-		disposition = doneStampConfirmed
-	case len(lookup.Dispositions) == 0 && doneCommitProvenanceOnly(cwd, sha):
-		disposition = doneStampWaived
-	default:
-		// The local ledger neither certifies this commit nor makes it
-		// waiver-eligible. Before refusing, consult the already-fetched
-		// origin/main ledger: a stale local checkout may simply lag a verdict
-		// pushed elsewhere. Adopt a CONFIRMED verdict found there and close
-		// exactly as if it were local; otherwise surface origin's findings in
-		// the refusal. Fail-closed posture unchanged — nothing here can turn a
-		// would-refuse into anything weaker than the local ledger allows.
-		if originLookup, ok := lookupDoneVerdictsFromOrigin(cwd, beadID, sha); ok {
-			if originLookup.Confirmed {
-				lookup.Confirmed = true
-				lookup.VerdictID = originLookup.VerdictID
-			} else if len(lookup.Dispositions) == 0 && len(lookup.ForeignBeads) == 0 {
-				// Local ledger is silent on this commit; carry origin/main's
-				// findings into the refusal so the message is accurate.
-				lookup.Dispositions = originLookup.Dispositions
-				lookup.ForeignBeads = originLookup.ForeignBeads
-				lookup.VerdictID = originLookup.VerdictID
-			}
-		}
-		switch {
-		case lookup.Confirmed:
-			disposition = doneStampConfirmed
-		case doneForceNoVerdct:
-			disposition = doneStampUnverified
-		default:
-			return doneRefusalError(beadID, sha, lookup)
-		}
-	}
-
-	stamp := doneStamp(sha, disposition)
-	reason := strings.TrimSpace(doneReason)
-	if reason == "" {
-		reason = "Done"
-	}
-	closeReason := reason + " " + stamp
-
-	// Shell out to the br CLI on PATH with the environment as-is (BEADS_DIR is
-	// respected when exported; otherwise resolved the same way `ao beads dir`
-	// resolves it — via git's common directory, never a hardcoded path).
-	ctx := cmd.Context()
+func runDone(command *cobra.Command, args []string) error {
+	command.SilenceUsage = true
+	ctx := command.Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	brCmd := beadsTrackerCommandContext(ctx, "close", beadID, "-r", closeReason)
-	brOut, err := brCmd.CombinedOutput()
+	result, err := newDoneService().Execute(ctx, doneapp.Request{
+		BeadID: args[0], SHA: doneSHA, Reason: doneReason, ForceNoVerdict: doneForceNoVerdct,
+	})
 	if err != nil {
-		return fmt.Errorf("br close %s: %w\n%s", beadID, err, strings.TrimSpace(string(brOut)))
+		return err
 	}
-
+	out := command.OutOrStdout()
 	if doneJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(doneReport{
-			BeadID:      beadID,
-			CommitSHA:   sha,
-			Disposition: disposition,
-			Stamp:       stamp,
-			CloseReason: closeReason,
-			Closed:      true,
-		})
+		encoder := json.NewEncoder(out)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(result)
 	}
-	if msg := strings.TrimSpace(string(brOut)); msg != "" {
-		fmt.Fprintln(out, msg)
+	if output := strings.TrimSpace(result.TrackerOutput); output != "" {
+		fmt.Fprintln(out, output)
 	}
-	fmt.Fprintf(out, "closed %s at %s %s\n", beadID, shortHash7(sha), stamp)
-	if disposition == doneStampUnverified {
-		fmt.Fprintf(out, "note: UNVERIFIED close — run 'ao verify %s' next time so done carries proof\n", beadID)
+	fmt.Fprintf(out, "closed %s at %s %s\n", result.BeadID, result.CommitSHA[:doneapp.MinimumSHAPrefix], result.Stamp)
+	if result.Disposition == doneapp.DispositionUnverified {
+		fmt.Fprintf(out, "note: UNVERIFIED close — run 'ao verify %s' next time so done carries proof\n", result.BeadID)
 	}
 	return nil
 }

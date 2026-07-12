@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
@@ -787,8 +788,8 @@ func TestProvenanceOnlyChangedFiles_ExactAndFailClosed(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := provenanceOnlyChangedFiles(tc.out); got != tc.want {
-				t.Fatalf("provenanceOnlyChangedFiles(%q)=%v, want %v", tc.out, got, tc.want)
+			if got := doneapp.ProvenanceOnlyChangedFiles(tc.out); got != tc.want {
+				t.Fatalf("doneapp.ProvenanceOnlyChangedFiles(%q)=%v, want %v", tc.out, got, tc.want)
 			}
 		})
 	}
@@ -1237,7 +1238,7 @@ func appendConfirmedEdgeRawToID(t *testing.T, repo, bead, rawToID string) {
 // REBOUND on an unreviewed commit C. The pre-fix REBOUND path fed the lineage
 // to_id straight to `git show`, which happily resolves "HEAD~1" and — because its
 // diff patch-id/content-sig matches the tip's — certified C fail-open. The direct
-// CONFIRMED path always rejected the non-hex to_id (shaBindsCommit); the REBOUND
+// CONFIRMED path always rejected the non-hex to_id (doneapp.SHABindsCommit); the REBOUND
 // path must apply the IDENTICAL hex-commit-id + object-resolution discipline.
 // RED-first: proven to authorize (exit 0) against the pre-fix code; REFUSES after.
 func TestPrePush_REBOUND_NonHexLineageRefAlias_Refused(t *testing.T) {
@@ -1361,7 +1362,7 @@ func TestReboundEdgeBoundTo_ExactDispositionToken(t *testing.T) {
 		t.Fatal("disposition=REBOUNDLY must NOT match the exact REBOUND token")
 	}
 	// FIRST-token contract (the CI-parity anchor, age-rk3r.18): a double-disposition
-	// edge whose FIRST token is REFUTED is NOT a REBOUND (parseDisposition returns
+	// edge whose FIRST token is REFUTED is NOT a REBOUND (doneapp.ParseDisposition returns
 	// the first token). The CI backstop's jq dispvalue must mirror this exactly.
 	doubleReb := rebound
 	doubleReb.EvidenceRef = "pawl-verdict age-r disposition=REFUTED disposition=REBOUND"
