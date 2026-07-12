@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # practices: [first-value-path, install-ux]
-# PG1: 5-minute journey measurement (install → first /rpi → validated artifact).
+# PG1: 5-minute journey measurement (install → skill-loop first value).
 #
 # This is a *structural* journey test. It does not execute a live LLM session
 # (that requires runtime auth and budget). Instead it validates that each
@@ -8,15 +8,15 @@
 #
 #   t<60s    Step 1: install bundle resolves (install.sh syntax OK)
 #   t<90s    Step 2: ao binary builds and `ao --version` works
-#   t<120s   Step 3: skill surface present (rpi + quickstart SKILL.md)
-#   t<180s   Step 4: ao quickstart subcommand exists and runs --help
-#   t<240s   Step 5: skill-installed dir surface (~/.claude or fallback) reachable
-#   t<300s   Step 6: artifact slot for /rpi run output exists (.agents/rpi)
+#   t<120s   Step 3: skill-loop front door present (plan/implement/validate)
+#   t<180s   Step 4: docs/SKILLS.md router names the skill-loop path
+#   t<240s   Step 5: skill install surface reachable (+ /rpi as one-tick executor)
+#   t<300s   Step 6: artifact slot for loop runs exists (.agents/rpi)
 #
 # Hard floor: total wall-clock < 300 seconds (5 minutes). If any step blows
 # the floor or fails, the gate exits non-zero with the slowest step named.
 #
-# Companion bead: soc-dec2.1 (PG1).
+# Companion beads: soc-dec2.1 (PG1); age-a-plus-report-card-ieyp2.1 (skill-loop retarget).
 
 set -uo pipefail
 
@@ -78,22 +78,25 @@ fi
 step "Step 2: ao version" \
     "$AO version"
 
-# Step 3: rpi + quickstart skills present (the user-visible surface)
-step "Step 3: rpi skill present" \
-    "test -f skills/rpi/SKILL.md && echo OK"
-step "Step 3: status skill present (absorbs quickstart, ag-s43tg)" \
-    "test -f skills/status/SKILL.md && echo OK"
+# Step 3: skill-loop front door (plan → implement → validate)
+step "Step 3: plan skill present" \
+    "test -f skills/plan/SKILL.md && echo OK"
+step "Step 3: implement skill present" \
+    "test -f skills/implement/SKILL.md && echo OK"
+step "Step 3: validate skill present" \
+    "test -f skills/validate/SKILL.md && echo OK"
 
-# Step 4: ao quickstart subcommand wired
-step "Step 4: ao quickstart --help" \
-    "$AO quickstart --help"
+# Step 4: SKILLS router names the skill-loop first-value path (not /rpi-as-front-door)
+step "Step 4: SKILLS router names skill-loop path" \
+    "grep -E '/plan.*→.*/implement.*→.*/validate|/plan → /implement → /validate' docs/SKILLS.md >/dev/null && echo OK"
 
-# Step 5: skill install dir reachable (~/.claude/skills/ OR repo-local skills/)
-# The fallback to repo-local satisfies first-checkout operators.
+# Step 5: install surface + /rpi remains valid as one-tick executor (not first-value)
 step "Step 5: skill install surface reachable" \
     "test -d \$HOME/.claude/skills || test -d skills"
+step "Step 5: rpi skill present (one-tick executor)" \
+    "test -f skills/rpi/SKILL.md && echo OK"
 
-# Step 6: artifact slot for /rpi runs
+# Step 6: artifact slot for loop /rpi runs
 step "Step 6: .agents/rpi artifact slot" \
     "test -d .agents/rpi || mkdir -p .agents/rpi 2>/dev/null && echo OK"
 
