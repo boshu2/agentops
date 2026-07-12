@@ -1,216 +1,156 @@
-# AgentOps 3.0 First-Value Path
+# AgentOps First-Value Path
 
-This is the path a viewer should be able to follow after a video, gist, or
-README skim. It proves the product without asking them to understand the whole
-factory first.
+This is the path after a README skim or install. It proves the **product** —
+the operating loop from intent to validated code — without requiring the full
+factory, a substrate, or a council demo.
 
-The first value is a council verdict over a visible engineering domain:
+**Front door: skills.** The CLI bookkeeps and gates; it is not the product entry.
 
-1. Install AgentOps beside an existing coding-agent runtime.
-2. Create or reuse a domain/practice packet.
-3. Assemble bounded context for one decision.
-4. Run council across Claude and Codex, with a same-packet fallback.
-5. Inspect the verdict artifact and turn it into tracked work.
-6. Only then point at the optional out-of-session compounding lane, which runs the same loop on an orchestration substrate (the reference is NTM + MCP + managed-agents) — AgentOps itself ships no daemon or scheduler.
+Canonical map: [Intent → Validated Code](architecture/intent-to-validated-code.md) ·
+[Skills Matrix](skills-matrix.md).
 
-## Target Viewer
+## First value
 
-This path is for an engineer or technical founder who already uses Claude Code,
-Codex CLI, Cursor, or OpenCode and wants their agent work to preserve context,
-judgment, and follow-up discipline across sessions.
+One behavior through the loop:
 
-The viewer does not need to adopt the full software factory on day one. They
-need to see one agent decision become an inspectable engineering artifact.
+1. Install AgentOps skills on your coding-agent runtime.
+2. Shape a small intent as **Given / When / Then** (`/plan` or `/discovery` → `/plan`).
+3. Implement against a **failing acceptance test** (`/implement`).
+4. Prove that behavior with the membrane (`/validate`) — verdict cites the scenario.
+5. Only then optionally track follow-ups (`/beads-br`) or run a full tick (`/rpi`).
 
-## Time Budget
+Without a behavior contract, `/validate` has nothing rigorous to accept against.
+That is intentional: **no runnable acceptance, no honest "done."**
+
+## Target viewer
+
+An engineer who already uses Claude Code, Codex CLI, Cursor, or OpenCode and
+wants agent work to end in **validated code**, not a chat claim.
+
+They do not need NTM, Gas City, evolve autonomy, or multi-judge council on day one.
+
+## Time budget
 
 | Step | Budget | Success signal |
-|---|---:|---|
-| Install or update | 2-5 min | `ao version` prints a version. |
-| Repo setup | 1 min | `ao quick-start` completes and `.agents/` exists. |
-| Packet setup | 2 min | `.agents/packets/<name>.md` exists and is readable. |
-| Context assembly | 1 min | `.agents/rpi/briefing-current.md` exists. |
-| Council run | 5-10 min | `.agents/council/<run-id>/verdict.md` exists. |
-| Verdict to work | 2 min | `BEADS_DIR="$(ao beads dir)" br show <issue-id>` cites the verdict path. |
-| Optional out-of-session lane | 5 min | A substrate (NTM / managed-agents) dispatch is registered to run the loop unattended. |
+|------|-------:|----------------|
+| Install skills (+ optional `ao`) | 2–5 min | Agent lists `/plan`, `/implement`, `/validate` (or `/rpi`) |
+| Shape one behavior | 3–8 min | One Gherkin scenario (happy + edge) written on a bead or plan |
+| Implement | 5–15 min | Acceptance test went RED for the right reason, then green |
+| Membrane | 3–10 min | `/validate` PASS/HOLD that **names the scenario / acceptance evidence** |
+| Optional bookkeeping | 2 min | Follow-up bead or `/post-mortem --quick` |
 
-## Commands And Expected Outputs
+## Commands and expected outcomes
 
 ### 1. Install
 
-Codex path:
+Use the matching installer from the [README](../README.md). Then open your agent
+and confirm skills resolve (exact UX varies by runtime):
+
+```text
+/plan
+/implement
+/validate
+```
+
+Optional CLI:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-ao version
+ao doctor
+ao --version
 ```
 
-Codex installs hookless by default. Native hooks are an advanced opt-in:
+### 2. Shape intent as BDD
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks
-```
-
-Expected:
+In the agent:
 
 ```text
-ao version <version>
+/plan "<one small capability>"
 ```
 
-Use the matching install command from the README for Claude Code, OpenCode,
-Cursor, macOS Homebrew, or Windows PowerShell.
-
-### 2. Set Up The Repo
-
-```bash
-ao quick-start
-```
-
-Expected:
+Or, if the idea is fuzzy:
 
 ```text
-━━━ SETUP COMPLETE ━━━
-AgentOps repo readiness
+/discovery --ideate
 ```
 
-The setup creates the local operating workspace, including `.agents/packets/`,
-`.agents/rpi/`, and `.agents/council/`.
+then `/plan` on the resulting packet.
 
-### 3. Create The First Domain/Practice Artifact
+**Required output (minimum):**
 
-```bash
-cp docs/examples/agentops-3-domain-practice-packet.md \
-  .agents/packets/agentops-3-launch.md
-sed -n '1,100p' .agents/packets/agentops-3-launch.md
-```
+- Feature / capability name
+- One happy-path Given/When/Then
+- At least one edge or failure path
+- Non-goals
+- What evidence will prove done (test name or command)
 
-Expected:
+Template: [docs/templates/intent-issue.md](templates/intent-issue.md).
+Discipline: [behavior-first-planning](../skills/behavior-first-planning/SKILL.md).
+
+### 3. Implement one slice
 
 ```text
-# AgentOps 3.0 Domain/Practice Packet
+/implement <issue-id>    # or the slice just planned
 ```
 
-This is the first artifact the viewer should understand. It names the product
-identity, target user, decision, domain sources, practice sources, evidence
-rules, and non-goals. In this repo, `PRACTICE-REGISTRY.md` is the practice registry:
-it provides the lineage and stable slugs behind the packet's engineering
-citations.
+**Success:** first acceptance test fails for **missing behavior** (not syntax),
+then passes after the smallest change; refactor does not edit the test contract.
 
-### 4. Assemble Runtime Context
-
-```bash
-ao context packet --goal "AgentOps 3.0 council-first launch demo"
-ao context assemble \
-  --phase planning \
-  --task "Evaluate the AgentOps 3.0 launch demo against the domain/practice packet" \
-  --output-file .agents/rpi/briefing-current.md
-```
-
-Expected:
+### 4. Validate against that behavior
 
 ```text
-Briefing written to <repo>/.agents/rpi/briefing-current.md (<chars> chars)
+/validate
 ```
 
-If the exact stdout changes, the artifact path is the contract.
+**Success:** verdict is PASS/WARN/FAIL (or CONFIRMED/HOLD) and explicitly maps
+to the scenario / acceptance commands. If there is no scenario and no runnable
+acceptance, treat HOLD as correct — do not celebrate a vibe review.
 
-### 5. Run The Council
-
-Primary path:
+Optional upgrades after first value (not required):
 
 ```text
-/council --mixed validate "Given .agents/packets/agentops-3-launch.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment?"
+/council validate …
+/pre-mortem          # next time, before implement
 ```
 
-Fallback when only one runtime is available:
+### 5. Optional: one-tick wrapper next time
 
 ```text
-/council --quick validate "Given .agents/packets/agentops-3-launch.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment?"
+/rpi "<small goal>"
 ```
 
-Expected:
+Same loop (research → plan → implement → validate) as one orchestrated tick.
+See [operating loop](architecture/operating-loop.md).
 
-```text
-Recorded: .agents/council/<run-id>/verdict.md
-```
+### 6. Optional out-of-session lane (later)
 
-The public demo should say whether the verdict was mixed Claude/Codex or the
-single-runtime fallback. The artifact must show the same packet was used.
+Only after a human has seen a membrane verdict on a real behavior. Substrate
+(NTM / MCP / managed-agents / Gas City) dispatches whole `/rpi` ticks — it does
+not replace the loop. Details: [docs/3.0.md](3.0.md).
 
-### 6. Turn The Verdict Into Work
-
-```bash
-BEADS_DIR="$(ao beads dir)" br create "Apply council verdict to launch demo" \
-  --body "From .agents/council/<run-id>/verdict.md" \
-  --json
-```
-
-Expected:
-
-```json
-{
-  "id": "ag-...",
-  "status": "open",
-  "title": "Apply council verdict to launch demo"
-}
-```
-
-The important behavior is not the issue id. The important behavior is that the
-decision leaves chat and becomes tracked engineering work.
-
-### 7. Optional Out-of-Session Lane
-
-Only point at this after the first verdict has landed.
-
-The first six steps all run **in session** — that is the AgentOps product and
-the zero-dependency sovereignty floor. Running the same loop **out of session**
-(always-on, scheduled, unattended) is a separate concern. AgentOps 3.0 ships no
-daemon, scheduler, or overnight runner of its own — those surfaces were deleted
-(see [AgentOps 3.0 north star](3.0.md)). Out-of-session orchestration is
-delegated to a substrate. The reference is the trio AgentOps actually runs on —
-**NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents**
-(`ao agent`) — none of it AgentOps-owned.
-
-On the reference substrate, an NTM swarm (or a lead agent) runs `BEADS_DIR="$(ao beads dir)" br ready` and
-dispatches the next bead to a worker that runs the operating loop over it (the
-in-session `/rpi` skill — the `ao rpi` command was removed in 3.0); scheduled
-maintenance (`ao compile`, `ao maturity --scan`) runs via a managed-agent driver
-or cron. The agents inherit the AgentOps skills via an overlay and run the same
-loop you just ran by hand. See the [AgentOps 3.0 north star](3.0.md) for the
-in-session / out-of-session split and the reference substrate.
-
-## First Artifacts To Inspect
+## First artifacts to inspect
 
 | Artifact | Why it matters |
-|---|---|
-| `.agents/packets/agentops-3-launch.md` | The shared domain and engineering practices the agents judge against. |
-| `.agents/rpi/briefing-current.md` | The bounded task context assembled for the run. |
-| `.agents/council/<run-id>/verdict.md` | The engineering verdict from the council. |
-| `_beads/issues.jsonl` | The tracked work created from the verdict (the br ledger). |
-| Substrate config (an NTM swarm · `ao mcp serve` · `ao agent`) | The reference out-of-session substrate (NTM + MCP + managed-agents) for the optional lane, only after first trust exists. |
+|----------|----------------|
+| Plan / bead with `## Scenarios` (Gherkin) | The contract "done" will be checked against |
+| Failing-then-passing acceptance test | ATDD proof the behavior exists |
+| `/validate` verdict (e.g. under `.agents/`) | Membrane bound to that contract |
+| `_beads/issues.jsonl` (if tracked) | Intent left chat and became engineering work |
 
-## Friction List
+## Friction list
 
 | Friction | Handling |
-|---|---|
-| Mixed council requires both Claude Code and Codex CLI to be installed and authenticated. | Use `/council --quick` for first local proof and record that the demo used fallback mode. |
-| Activation profiles are docs-backed, not executable config. | Use `docs/activation-profiles.md`; follow-up `soc-uyp6` evaluates `ao activate product-council` after PMF evidence. |
-| `.agents/` is local runtime state and should not be committed. | Copy public examples into `docs/examples/`; export or summarize private verdicts before sharing. |
-| The out-of-session substrate can distract from first value. | Present it as second-stage automation after a human has inspected the verdict; the in-session loop is the product, the substrate is optional. |
-| Public claims can outrun evidence. | Use the claim-safe language in the domain/practice packet and storyboard. |
+|----------|----------|
+| Agent wants to "just code" | Stop at `/plan` until Gherkin exists — no bead without acceptance |
+| `/validate` without scenarios | HOLD; write scenarios; re-run — do not lower the bar |
+| Mixed `/council` needs two runtimes | Skip council on first value; single-runtime `/validate` is enough |
+| Substrate docs distract | Ignore until after first membrane verdict on a behavior |
+| Want CLI-only path | `ao verify` is a commit/pre-push ratchet, not the product front door |
 
-## Product Gaps Found
+## Related docs
 
-| Gap | Disposition |
-|---|---|
-| `ao quick-start` did not create `.agents/packets/`, while the demo path needed it. | Fixed in the 3.0 first-value path slice. |
-| `ao activate product-council` would reduce setup steps but might hide what context enters agents. | Tracked as `soc-uyp6`; do not ship until PMF runs prove the profile is stable. |
-
-## Related Docs
-
-- [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md)
-- [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md)
-- [Domain and Practice Packets](domain-practice-packets.md)
-- [Activation Profiles](activation-profiles.md)
-- [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-demo-storyboard.md)
-- [AgentOps 3.0 Council Verdict Example](examples/agentops-3-council-verdict-example.md)
+- [Intent → Validated Code](architecture/intent-to-validated-code.md)
+- [Skills Matrix](skills-matrix.md)
+- [SKILLS.md](SKILLS.md) (router)
+- [Getting Started](getting-started/index.md)
+- [Operating Loop](architecture/operating-loop.md)
+- [3.0 north star](3.0.md)

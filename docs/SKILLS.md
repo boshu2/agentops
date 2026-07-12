@@ -4,23 +4,39 @@ Narrative reference for checked-in AgentOps skills. The current inventory is
 generated from `skills/**/SKILL.md` into `registry.json` and the generated
 domain maps; do not hard-code skill counts here.
 
-Skills are the primitive layer of AgentOps. Higher-level entry points like
-`/implement`, `/validate`, `/rpi`, and `/evolve` compose those primitives
-into repeatable flows.
+**Skills are the product front door.** AgentOps is the operating loop from
+intent → Gherkin → ATDD → implement → membrane → ratchet. Each skill is one
+move (or a wrapper) in that loop. The membrane (move 6) validates against the
+slice's acceptance behavior — without Gherkin/ATDD it has nothing honest to
+accept.
+
+| Map | Purpose |
+|-----|---------|
+| [Intent → Validated Code](architecture/intent-to-validated-code.md) | Full flow, artifacts, done signals |
+| [Skills Matrix](skills-matrix.md) | Every skill placed on moves 1–7 |
+| [Operating Loop](architecture/operating-loop.md) | Discipline (waves, windshield, ratchet) |
+| [First-value path](first-value-path.md) | First session via `/plan` → `/implement` → `/validate` |
 
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
 
 ## Skill Router (Start Here)
 
-Use this when you're not sure which skill to run. For a full flow overview, run
-`ao session bootstrap`, then `ao lookup --query "<topic>"` when you need on-demand context loading.
-To search skills by intent instead of reading this tree, use `ms search "<task>"`
-(or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
+Use this when you're not sure which skill to run. Prefer the [Skills Matrix](skills-matrix.md)
+when you need the full catalog on the loop. For session context, run
+`ao session bootstrap`, then `ao lookup --query "<topic>"`.
+To search skills by intent, use `ms search "<task>"`
+(or `mcp__ms__search`) — ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
 
 ```text
 What are you trying to do?
 │
-├─ "Prove it's done / validate" (the Membrane — no verdict = not done)
+├─ "Run the full loop / first time"
+│   ├─ See the whole product ─────► docs: Intent → Validated Code + Skills Matrix
+│   ├─ One behavior end-to-end ───► /plan → /implement → /validate
+│   ├─ One tick wrapped ──────────► /rpi "goal"
+│   └─ Repo setup ────────────────► /bootstrap · ao quick-start · ao doctor
+│
+├─ "Prove it's done / validate" (the Membrane — needs acceptance behavior)
 │   ├─ Code ready to ship? ───────► /validate
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
 │   ├─ Plan ready to build? ──────► /pre-mortem
@@ -83,7 +99,8 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /status --recover
 │
-└─ "First time here" ────────────► ao session bootstrap → /status
+└─ "First time here" ────────────► /plan → /implement → /validate
+                                   (maps: Intent → Validated Code · Skills Matrix)
 ```
 
 <!-- BEGIN:spine -->

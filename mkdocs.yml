@@ -155,6 +155,9 @@ nav:
   - Getting Started:
       - getting-started/index.md
       - "AgentOps 3.0 (North Star)": 3.0.md
+      - "Intent → Validated Code": architecture/intent-to-validated-code.md
+      - "Skills Matrix": skills-matrix.md
+      - "First-Value Path": first-value-path.md
       - Roadmap: ROADMAP.md
       - Newcomer Guide: newcomer-guide.md
       - Create Your First Skill: create-your-first-skill.md
@@ -171,6 +174,7 @@ nav:
   - Skills:
       - skills/index.md
       - Skills Reference: SKILLS.md
+      - Skills Matrix: skills-matrix.md
       - Decision Tree: skills-decision-tree.md
       - Skill API: SKILL-API.md
       - Skill Router: SKILL-ROUTER.md
@@ -181,6 +185,7 @@ nav:
   - Architecture:
       - architecture/index.md
       - Codebase Overview: architecture/codebase-overview.md
+      - Intent → Validated Code: architecture/intent-to-validated-code.md
       - Operating Loop: architecture/operating-loop.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
