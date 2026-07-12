@@ -4,14 +4,16 @@ AgentOps is built from a small set of orthogonal components that compose into th
 
 Read in this order if you're new:
 
-1. **[Codebase Overview](codebase-overview.md)** — start here for a consolidated map (humans and agents).
-2. **[Understanding the AgentOps Go CLI](go-cli-architecture-guide.md)** — trace the executable from Cobra through services, ports, adapters, output, and tests.
-3. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
-4. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation).
-5. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
-6. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
-7. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
-8. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — trace one idea through beads, slices, validation, ratchet.
+1. **[Intent → Validated Code](intent-to-validated-code.md)** — what the product is: full flow via skills.
+2. **[Skills Matrix](../skills-matrix.md)** — every skill on the loop.
+3. **[Codebase Overview](codebase-overview.md)** — consolidated repo map (humans and agents).
+4. **[Understanding the AgentOps Go CLI](go-cli-architecture-guide.md)** — trace the executable from Cobra through services, ports, adapters, output, and tests.
+5. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation / discipline).
+6. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
+7. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
+8. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
+9. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
+10. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — ports/adapters for one turn.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 

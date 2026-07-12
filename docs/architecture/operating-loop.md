@@ -183,18 +183,22 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 
 ## Skill → loop-move map
 
+Expanded tables (every skill, P/S/O by move): [Skills Matrix](../skills-matrix.md).
+Narrative full flow: [Intent → Validated Code](intent-to-validated-code.md).
+
 | Loop move | Primary skills | Produces |
 |-----------|----------------|----------|
 | Shape intent | `discovery`, `product`, `plan` | BDD intent issue with acceptance examples |
 | Track as bead | `beads-br` | Bead with slice list + acceptance contract |
-| Slice + wave plan | `plan` | Slice list + wave grouping + ownership map |
+| Slice + wave plan | `plan`, `behavior-first-planning` | Slice list + wave grouping + ownership map |
 | Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
 | Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
 | Slice validation | `validate`, `council`, `pawl-review` | Acceptance proof plus independent lane evidence |
 | Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
-| Capture | `post-mortem`, `forge` | Evidence + promoted learnings |
+| Capture | `post-mortem` | Evidence + promoted learnings |
 | Compound | `pattern-mining`, `operationalize` | Earned patterns → rules → weakest durable mechanism |
+| One full tick | `rpi` | Research → plan → implement → validate over one bead |
 
 ## How the loop composes with the architectural seams
 
