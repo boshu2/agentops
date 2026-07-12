@@ -4,6 +4,7 @@ package goals
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -22,14 +23,24 @@ type SimpleUseCases interface {
 	Meta(context.Context, goalapp.MetaOptions) error
 }
 
+type ManagementUseCases interface {
+	Add(context.Context, goalapp.AddOptions) error
+	Init(context.Context, goalapp.InitOptions) error
+	Migrate(context.Context, goalapp.MigrateOptions) error
+	Prune(context.Context, goalapp.PruneOptions) error
+}
+
 type UseCases struct {
-	Simple SimpleUseCases
+	Simple     SimpleUseCases
+	Management ManagementUseCases
 }
 
 type HostOptions struct {
 	OutputMode       func() string
+	DryRun           func() bool
 	ResolveGoalsPath func(string) string
 	TemplateValues   func() []string
+	TemplatesFS      fs.ReadFileFS
 }
 
 type Module struct {
@@ -104,11 +115,11 @@ Management:
 		module.exportCommand(options),
 		module.driftCommand(options),
 		module.metaCommand(options),
-		module.addCommand(),
-		module.initCommand(),
+		module.addCommand(options),
+		module.initCommand(options),
 		module.measureCommand(),
-		module.migrateCommand(),
-		module.pruneCommand(),
+		module.migrateCommand(options),
+		module.pruneCommand(options),
 		module.renderCommand(),
 		module.scenariosCommand(),
 		module.steerCommand(),
@@ -129,6 +140,10 @@ func (module Module) resolveGoalsPath(explicit string) string {
 
 func (module Module) jsonOutput() bool {
 	return module.host.OutputMode != nil && module.host.OutputMode() == "json"
+}
+
+func (module Module) dryRun() bool {
+	return module.host.DryRun != nil && module.host.DryRun()
 }
 
 func (module Module) validateCommand(root *rootOptions) *cobra.Command {
@@ -208,10 +223,22 @@ func (module Module) metaCommand(root *rootOptions) *cobra.Command {
 	}
 }
 
-func (module Module) addCommand() *cobra.Command {
+func (module Module) addCommand(root *rootOptions) *cobra.Command {
 	var weight int
 	var goalType, description string
-	command := futureCommand("add <id> <check-command>", "Add a new goal", "management", []string{"a"}, cobra.ExactArgs(2))
+	command := &cobra.Command{
+		Use: "add <id> <check-command>", Aliases: []string{"a"}, Short: "Add a new goal", GroupID: "management", Args: cobra.ExactArgs(2),
+		RunE: func(command *cobra.Command, args []string) error {
+			if module.useCases.Management == nil {
+				return missingUseCase("add")
+			}
+			return module.useCases.Management.Add(command.Context(), goalapp.AddOptions{
+				ID: args[0], Check: args[1], Weight: weight, Type: goalType, Description: description,
+				GoalsFile: module.resolveGoalsPath(root.file), Timeout: time.Duration(root.timeout) * time.Second,
+				DryRun: module.dryRun(), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
 	command.Flags().IntVar(&weight, "weight", 5, "Goal weight (1-10)")
 	command.Flags().StringVar(&goalType, "type", "", "Goal type (health, architecture, quality, meta)")
 	command.Flags().StringVar(&description, "description", "", "Goal description")
@@ -219,10 +246,22 @@ func (module Module) addCommand() *cobra.Command {
 	return command
 }
 
-func (module Module) initCommand() *cobra.Command {
+func (module Module) initCommand(root *rootOptions) *cobra.Command {
 	var nonInteractive bool
 	var template string
-	command := futureCommand("init", "Bootstrap a new GOALS.md file", "management", nil, nil)
+	command := &cobra.Command{
+		Use: "init", Short: "Bootstrap a new GOALS.md file", GroupID: "management",
+		RunE: func(command *cobra.Command, _ []string) error {
+			if module.useCases.Management == nil {
+				return missingUseCase("init")
+			}
+			return module.useCases.Management.Init(command.Context(), goalapp.InitOptions{
+				NonInteractive: nonInteractive, Template: template, GoalsFile: module.resolveGoalsPath(root.file),
+				JSON: module.jsonOutput(), DryRun: module.dryRun(), Stdin: command.InOrStdin(),
+				Stdout: command.OutOrStdout(), TemplatesFS: module.host.TemplatesFS,
+			})
+		},
+	}
 	command.Flags().BoolVar(&nonInteractive, "non-interactive", false, "Use defaults without prompting")
 	command.Flags().StringVar(&template, "template", "", "Goal template (go-cli, python-lib, web-app, rust-cli, generic)")
 	if module.host.TemplateValues != nil {
@@ -244,15 +283,35 @@ func (module Module) measureCommand() *cobra.Command {
 	return command
 }
 
-func (module Module) migrateCommand() *cobra.Command {
+func (module Module) migrateCommand(root *rootOptions) *cobra.Command {
 	var toMD bool
-	command := futureCommand("migrate", "Migrate goals to latest format", "management", []string{"mg"}, nil)
+	command := &cobra.Command{
+		Use: "migrate", Short: "Migrate goals to latest format", GroupID: "management", Aliases: []string{"mg"},
+		RunE: func(command *cobra.Command, _ []string) error {
+			if module.useCases.Management == nil {
+				return missingUseCase("migrate")
+			}
+			return module.useCases.Management.Migrate(command.Context(), goalapp.MigrateOptions{
+				ToMD: toMD, GoalsFile: module.resolveGoalsPath(root.file), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
 	command.Flags().BoolVar(&toMD, "to-md", false, "Convert GOALS.yaml to GOALS.md format")
 	return command
 }
 
-func (module Module) pruneCommand() *cobra.Command {
-	return futureCommand("prune", "Remove goals referencing nonexistent files", "management", []string{"p"}, nil)
+func (module Module) pruneCommand(root *rootOptions) *cobra.Command {
+	return &cobra.Command{
+		Use: "prune", Short: "Remove goals referencing nonexistent files", GroupID: "management", Aliases: []string{"p"},
+		RunE: func(command *cobra.Command, _ []string) error {
+			if module.useCases.Management == nil {
+				return missingUseCase("prune")
+			}
+			return module.useCases.Management.Prune(command.Context(), goalapp.PruneOptions{
+				GoalsFile: module.resolveGoalsPath(root.file), DryRun: module.dryRun(), JSON: module.jsonOutput(), Stdout: command.OutOrStdout(),
+			})
+		},
+	}
 }
 
 func (module Module) renderCommand() *cobra.Command {

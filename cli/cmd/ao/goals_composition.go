@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/embedded"
 	goalsadapter "github.com/boshu2/agentops/cli/internal/adapters/goals"
 	goalscommand "github.com/boshu2/agentops/cli/internal/commands/goals"
 	"github.com/boshu2/agentops/cli/internal/goalsapp"
@@ -14,10 +15,13 @@ import (
 func newGoalsCommand() *cobra.Command {
 	resolver := goalsadapter.PathResolver{}
 	return goalscommand.NewModule(goalscommand.UseCases{
-		Simple: goalsapp.SimpleService{},
+		Simple:     goalsapp.SimpleService{},
+		Management: goalsapp.ManagementService{},
 	}, goalscommand.HostOptions{
 		OutputMode:       GetOutput,
+		DryRun:           GetDryRun,
 		ResolveGoalsPath: resolver.Resolve,
 		TemplateValues:   templateCompletionValues,
+		TemplatesFS:      embedded.TemplatesFS,
 	}).Command()
 }

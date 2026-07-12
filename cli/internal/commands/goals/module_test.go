@@ -20,9 +20,85 @@ type simpleUseCasesSpy struct {
 	meta     goalapp.MetaOptions
 }
 
+type managementUseCasesSpy struct {
+	called  string
+	add     goalapp.AddOptions
+	init    goalapp.InitOptions
+	migrate goalapp.MigrateOptions
+	prune   goalapp.PruneOptions
+}
+
+func (spy *managementUseCasesSpy) Add(_ context.Context, options goalapp.AddOptions) error {
+	spy.called, spy.add = "add", options
+	return nil
+}
+
+func (spy *managementUseCasesSpy) Init(_ context.Context, options goalapp.InitOptions) error {
+	spy.called, spy.init = "init", options
+	return nil
+}
+
+func (spy *managementUseCasesSpy) Migrate(_ context.Context, options goalapp.MigrateOptions) error {
+	spy.called, spy.migrate = "migrate", options
+	return nil
+}
+
+func (spy *managementUseCasesSpy) Prune(_ context.Context, options goalapp.PruneOptions) error {
+	spy.called, spy.prune = "prune", options
+	return nil
+}
+
 func (spy *simpleUseCasesSpy) Validate(_ context.Context, options goalapp.ValidateOptions) error {
 	spy.called, spy.validate = "validate", options
 	return nil
+}
+
+func TestManagementCommandsDelegateResolvedRequests(t *testing.T) {
+	spy := &managementUseCasesSpy{}
+	module := NewModule(UseCases{Management: spy}, HostOptions{
+		OutputMode:       func() string { return "json" },
+		DryRun:           func() bool { return true },
+		ResolveGoalsPath: func(path string) string { return "resolved:" + path },
+	})
+	tests := []struct {
+		args   []string
+		called string
+		check  func(*testing.T, *managementUseCasesSpy)
+	}{
+		{[]string{"--file", "custom.md", "--timeout", "11", "add", "goal-id", "true", "--weight", "7", "--type", "quality", "--description", "hi"}, "add", func(t *testing.T, spy *managementUseCasesSpy) {
+			if spy.add.ID != "goal-id" || spy.add.Check != "true" || spy.add.Weight != 7 || spy.add.Type != "quality" || spy.add.Description != "hi" || spy.add.GoalsFile != "resolved:custom.md" || spy.add.Timeout != 11*time.Second || !spy.add.DryRun || spy.add.Stdout == nil {
+				t.Fatalf("add options = %+v", spy.add)
+			}
+		}},
+		{[]string{"--file", "custom.md", "init", "--non-interactive", "--template", "go-cli"}, "init", func(t *testing.T, spy *managementUseCasesSpy) {
+			if !spy.init.NonInteractive || spy.init.Template != "go-cli" || spy.init.GoalsFile != "resolved:custom.md" || !spy.init.JSON || !spy.init.DryRun || spy.init.Stdin == nil || spy.init.Stdout == nil {
+				t.Fatalf("init options = %+v", spy.init)
+			}
+		}},
+		{[]string{"--file", "custom.yaml", "migrate", "--to-md"}, "migrate", func(t *testing.T, spy *managementUseCasesSpy) {
+			if !spy.migrate.ToMD || spy.migrate.GoalsFile != "resolved:custom.yaml" || spy.migrate.Stdout == nil {
+				t.Fatalf("migrate options = %+v", spy.migrate)
+			}
+		}},
+		{[]string{"--file", "custom.md", "prune"}, "prune", func(t *testing.T, spy *managementUseCasesSpy) {
+			if spy.prune.GoalsFile != "resolved:custom.md" || !spy.prune.JSON || !spy.prune.DryRun || spy.prune.Stdout == nil {
+				t.Fatalf("prune options = %+v", spy.prune)
+			}
+		}},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.args, " "), func(t *testing.T) {
+			command := module.Command()
+			command.SetArgs(test.args)
+			if err := command.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			if spy.called != test.called {
+				t.Fatalf("called %q, want %q", spy.called, test.called)
+			}
+			test.check(t, spy)
+		})
+	}
 }
 
 func (spy *simpleUseCasesSpy) History(_ context.Context, options goalapp.HistoryOptions) error {
