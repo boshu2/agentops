@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	doneadapter "github.com/boshu2/agentops/cli/internal/adapters/done"
+	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
@@ -18,6 +21,15 @@ const (
 	doneSHARefuted   = "2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"
 	doneSHANoVerdict = "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c"
 )
+
+func toDoneEdges(edges []provenancegraph.Edge) []doneapp.Edge {
+	result := make([]doneapp.Edge, 0, len(edges))
+	for _, edge := range edges {
+		result = append(result, doneapp.Edge{FromID: edge.FromID, FromType: edge.FromType, ToID: edge.ToID,
+			ToType: edge.ToType, Relation: edge.Relation, EvidenceRef: edge.EvidenceRef})
+	}
+	return result
+}
 
 // resetDoneFlags snapshots and restores the package-global done cobra flags
 // (test-isolation rule: package-global flag vars must not leak across tests).
@@ -308,7 +320,7 @@ func TestDone_NonProvenanceCommitNotWaived(t *testing.T) {
 	}
 }
 
-// TestDone_JSONShape: --json emits the exact doneReport contract.
+// TestDone_JSONShape: --json emits the exact done result contract.
 func TestDone_JSONShape(t *testing.T) {
 	chdirRepoFixture(t)
 	seedDoneLedger(t)
@@ -321,11 +333,11 @@ func TestDone_JSONShape(t *testing.T) {
 	if err := runDone(c, []string{"ag-done.1"}); err != nil {
 		t.Fatalf("ao done --json: %v", err)
 	}
-	var r doneReport
+	var r doneapp.Result
 	if err := json.Unmarshal(out.Bytes(), &r); err != nil {
-		t.Fatalf("--json output not a doneReport: %v\n%s", err, out.String())
+		t.Fatalf("--json output not a done result: %v\n%s", err, out.String())
 	}
-	want := doneReport{
+	want := doneapp.Result{
 		BeadID:      "ag-done.1",
 		CommitSHA:   doneSHAConfirmed,
 		Disposition: "CONFIRMED",
@@ -334,7 +346,7 @@ func TestDone_JSONShape(t *testing.T) {
 		Closed:      true,
 	}
 	if r != want {
-		t.Fatalf("doneReport = %+v, want %+v", r, want)
+		t.Fatalf("done result = %+v, want %+v", r, want)
 	}
 }
 
@@ -398,7 +410,7 @@ func TestDoneProvenanceOnly_LeadingSpacePathNotWaived(t *testing.T) {
 		t.Fatalf("rev-parse: %v", err)
 	}
 	sha := strings.TrimSpace(string(revOut))
-	if doneCommitProvenanceOnly(repo, sha) {
+	if doneadapter.SystemRepository().CommitProvenanceOnly(context.Background(), repo, sha) {
 		t.Fatal("a leading-space path (' docs/provenance/...') must NOT be waived as provenance-only")
 	}
 }
@@ -407,7 +419,7 @@ func TestLookupDoneVerdicts_ForeignBeadNeverCertifies(t *testing.T) {
 	edges := []provenancegraph.Edge{
 		buildVerdictCommitEdge(pawlVerdict{BeadID: "ag-done-1", HeadSHA: doneSHAConfirmed, Disposition: "CONFIRMED"}),
 	}
-	got := lookupDoneVerdicts(edges, "ag-other", doneSHAConfirmed)
+	got := doneapp.LookupVerdicts(toDoneEdges(edges), "ag-other", doneSHAConfirmed)
 	if got.Confirmed {
 		t.Fatal("a CONFIRMED verdict for ag-done-1 must not certify ag-other")
 	}
@@ -418,7 +430,7 @@ func TestLookupDoneVerdicts_ForeignBeadNeverCertifies(t *testing.T) {
 		t.Fatalf("ForeignBeads = %v, want the ag-done-1 verdict surfaced", got.ForeignBeads)
 	}
 	// Same commit, RIGHT bead still certifies.
-	right := lookupDoneVerdicts(edges, "ag-done-1", doneSHAConfirmed)
+	right := doneapp.LookupVerdicts(toDoneEdges(edges), "ag-done-1", doneSHAConfirmed)
 	if !right.Confirmed {
 		t.Fatal("the owning bead must still certify")
 	}
@@ -432,7 +444,7 @@ func TestLookupDoneVerdicts(t *testing.T) {
 		buildVerdictCommitEdge(pawlVerdict{BeadID: "ag-y", HeadSHA: doneSHARefuted, Disposition: "REFUTED"}),
 	}
 
-	got := lookupDoneVerdicts(edges, "ag-x", doneSHAConfirmed)
+	got := doneapp.LookupVerdicts(toDoneEdges(edges), "ag-x", doneSHAConfirmed)
 	if !got.Confirmed {
 		t.Fatal("sha with a CONFIRMED verdict must report Confirmed")
 	}
@@ -443,7 +455,7 @@ func TestLookupDoneVerdicts(t *testing.T) {
 		t.Fatalf("Dispositions = %v, want [REFUTED CONFIRMED]", got.Dispositions)
 	}
 
-	refuted := lookupDoneVerdicts(edges, "ag-y", doneSHARefuted)
+	refuted := doneapp.LookupVerdicts(toDoneEdges(edges), "ag-y", doneSHARefuted)
 	if refuted.Confirmed {
 		t.Fatal("REFUTED-only sha must not report Confirmed")
 	}
@@ -451,7 +463,7 @@ func TestLookupDoneVerdicts(t *testing.T) {
 		t.Fatalf("Dispositions = %v, want [REFUTED]", refuted.Dispositions)
 	}
 
-	none := lookupDoneVerdicts(edges, "ag-x", doneSHANoVerdict)
+	none := doneapp.LookupVerdicts(toDoneEdges(edges), "ag-x", doneSHANoVerdict)
 	if none.Confirmed || len(none.Dispositions) != 0 {
 		t.Fatalf("unbound sha lookup = %+v, want empty", none)
 	}
@@ -472,8 +484,8 @@ func TestShaBindsCommit(t *testing.T) {
 		{"ag-done.1", doneSHAConfirmed, false},
 	}
 	for _, tc := range cases {
-		if got := shaBindsCommit(tc.query, tc.commit); got != tc.want {
-			t.Errorf("shaBindsCommit(%q, %q) = %v, want %v", tc.query, tc.commit, got, tc.want)
+		if got := doneapp.SHABindsCommit(tc.query, tc.commit); got != tc.want {
+			t.Errorf("doneapp.SHABindsCommit(%q, %q) = %v, want %v", tc.query, tc.commit, got, tc.want)
 		}
 	}
 }
