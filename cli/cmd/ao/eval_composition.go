@@ -20,13 +20,17 @@ func newEvalCommand() *cobra.Command {
 		ScenarioAB: aoeval.ScenarioABService{Runtime: runtime},
 		Aliases:    evalAliasAdapter{},
 		Bench:      evalBenchAdapter{},
-	}, evalcommand.HostOptions{
+	}, newEvalHostOptions()).Command()
+}
+
+func newEvalHostOptions() evalcommand.HostOptions {
+	return evalcommand.HostOptions{
 		OutputMode:  func(*cobra.Command) string { return GetOutput() },
 		Verbose:     func(*cobra.Command) bool { return GetVerbose() },
 		ProjectRoot: measureProjectRoot,
 		GoalsPath:   resolveGoalsFile,
 		DryRun:      func(*cobra.Command) bool { return GetDryRun() },
-	}).Command()
+	}
 }
 
 func init() { rootCmd.AddCommand(newEvalCommand()) }
