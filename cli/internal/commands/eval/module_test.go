@@ -14,6 +14,13 @@ type coreUseCasesSpy struct {
 	runRequest aoeval.CoreRunRequest
 }
 
+type cleanupUseCasesSpy struct{ request aoeval.CleanupRequest }
+
+func (useCases *cleanupUseCasesSpy) Execute(_ context.Context, request aoeval.CleanupRequest) (aoeval.CleanupReport, error) {
+	useCases.request = request
+	return aoeval.CleanupReport{TransitionsAborted: 1, Touched: []string{"run-1:pending->aborted"}}, nil
+}
+
 func (useCases *coreUseCasesSpy) Run(_ context.Context, request aoeval.CoreRunRequest) (aoeval.CoreRunResult, error) {
 	useCases.runRequest = request
 	return aoeval.CoreRunResult{Mode: aoeval.CoreRunSingle, Run: &aoeval.RunRecord{RunID: "run-1", Status: aoeval.StatusPass}}, nil
@@ -36,7 +43,7 @@ func (*coreUseCasesSpy) Coverage(context.Context, aoeval.CoreCoverageRequest) (*
 
 func TestModuleRunParsesClosureLocalFlagsAndDelegates(t *testing.T) {
 	useCases := &coreUseCasesSpy{}
-	command := NewModule(useCases, HostOptions{}).Command()
+	command := NewModule(UseCases{Core: useCases}, HostOptions{}).Command()
 	command.SetArgs([]string{"run", "suite.json", "--run-id", "run-1", "--runtime", "static", "--baseline-mode", "skill-on"})
 	var output strings.Builder
 	command.SetOut(&output)
@@ -53,8 +60,8 @@ func TestModuleRunParsesClosureLocalFlagsAndDelegates(t *testing.T) {
 }
 
 func TestModuleCommandsDoNotShareFlagState(t *testing.T) {
-	first := NewModule(&coreUseCasesSpy{}, HostOptions{}).Command()
-	second := NewModule(&coreUseCasesSpy{}, HostOptions{}).Command()
+	first := NewModule(UseCases{Core: &coreUseCasesSpy{}}, HostOptions{}).Command()
+	second := NewModule(UseCases{Core: &coreUseCasesSpy{}}, HostOptions{}).Command()
 	firstRun, _, err := first.Find([]string{"run"})
 	if err != nil {
 		t.Fatal(err)
@@ -68,6 +75,23 @@ func TestModuleCommandsDoNotShareFlagState(t *testing.T) {
 	}
 	if got := secondRun.Flag("run-id").Value.String(); got != "" {
 		t.Fatalf("second run-id = %q, want empty", got)
+	}
+}
+
+func TestModuleCleanupDelegatesClosureLocalOptions(t *testing.T) {
+	cleanup := &cleanupUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Cleanup: cleanup}, HostOptions{Verbose: func(*cobra.Command) bool { return true }}).Command()
+	command.SetArgs([]string{"cleanup", "--delete", "--tmp-files", "--tmp-age", "7", "--dry-run"})
+	var output strings.Builder
+	command.SetOut(&output)
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if !cleanup.request.Delete || !cleanup.request.TmpFiles || !cleanup.request.DryRun || cleanup.request.TmpAgeSeconds != 7 {
+		t.Fatalf("request = %#v", cleanup.request)
+	}
+	if !strings.Contains(output.String(), "transitions->aborted: 1") || !strings.Contains(output.String(), "Touched:") {
+		t.Fatalf("output = %q", output.String())
 	}
 }
 

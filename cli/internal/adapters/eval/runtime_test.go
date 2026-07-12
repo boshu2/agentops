@@ -9,6 +9,7 @@ import (
 
 func TestRuntimeSatisfiesCorePortAndResolvesHostPaths(t *testing.T) {
 	var port aoeval.CoreRuntime = Runtime{}
+	var _ aoeval.CleanupRuntime = Runtime{}
 	workDir, err := port.WorkDir()
 	if err != nil {
 		t.Fatalf("WorkDir: %v", err)
