@@ -28,6 +28,16 @@ type scenarioUseCasesSpy struct{ addRequest aoeval.ScenarioAddRequest }
 
 type scenarioABUseCasesSpy struct{ request aoeval.ScenarioABRequest }
 
+type aliasUseCasesSpy struct{ request aoeval.SessionOutcomeRequest }
+
+func (useCases *aliasUseCasesSpy) SessionOutcome(_ context.Context, request aoeval.SessionOutcomeRequest) (aoeval.SessionOutcomeResult, error) {
+	useCases.request = request
+	return aoeval.SessionOutcomeResult{SessionID: "s", Reward: .5, Signals: []aoeval.SessionSignal{}}, nil
+}
+func (*aliasUseCasesSpy) Chaos(context.Context) (aoeval.AliasOutput, error) {
+	return aoeval.AliasOutput{Stdout: "PASS smoke\n"}, nil
+}
+
 func (useCases *scenarioABUseCasesSpy) Run(_ context.Context, request aoeval.ScenarioABRequest) (aoeval.ScenarioABResult, error) {
 	useCases.request = request
 	return aoeval.ScenarioABResult{Card: aoeval.ScenarioDeltaScorecard{ScenarioID: "s-1", Gate: aoeval.ScenarioGate{Pass: true}}}, nil
@@ -222,6 +232,31 @@ func TestModuleScenarioABDelegatesFlags(t *testing.T) {
 	}
 	if useCases.request.ScenarioPath != "s.json" || useCases.request.TokenBudget != 9 || !useCases.request.ControlOnly {
 		t.Fatalf("request=%#v", useCases.request)
+	}
+}
+
+func TestModuleSessionOutcomeDelegatesFlags(t *testing.T) {
+	useCases := &aliasUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: useCases}, HostOptions{}).Command()
+	command.SetArgs([]string{"session-outcome", "transcript.jsonl", "--session", "s-1"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if useCases.request.TranscriptPath != "transcript.jsonl" || useCases.request.SessionID != "s-1" {
+		t.Fatalf("request=%#v", useCases.request)
+	}
+}
+
+func TestModuleChaosRendersAdapterStreams(t *testing.T) {
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Aliases: &aliasUseCasesSpy{}}, HostOptions{}).Command()
+	command.SetArgs([]string{"chaos"})
+	var stdout strings.Builder
+	command.SetOut(&stdout)
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "PASS smoke") {
+		t.Fatalf("stdout=%q", stdout.String())
 	}
 }
 

@@ -65,6 +65,7 @@ type UseCases struct {
 	Outcomes   OutcomesUseCases
 	Scenario   ScenarioUseCases
 	ScenarioAB ScenarioABUseCases
+	Aliases    aoeval.AliasUseCases
 }
 
 type HostOptions struct {
@@ -72,6 +73,7 @@ type HostOptions struct {
 	Verbose     func(*cobra.Command) bool
 	ProjectRoot func() string
 	GoalsPath   func() string
+	DryRun      func(*cobra.Command) bool
 }
 
 type Module struct {
@@ -141,6 +143,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.ScenarioAB != nil {
 		command.AddCommand(module.scenarioABCommand(), module.scenarioMoatCommand())
+	}
+	if module.useCases.Aliases != nil {
+		command.AddCommand(module.sessionOutcomeCommand(), module.chaosCommand())
 	}
 	return command
 }
@@ -776,6 +781,57 @@ func (module Module) scenarioMoatCommand() *cobra.Command {
 			fmt.Fprintf(command.OutOrStdout(), "Moat claim result: %s\n", options.OutputPath)
 		}
 		return nil
+	}
+	return command
+}
+
+func (module Module) sessionOutcomeCommand() *cobra.Command {
+	var sessionID, format string
+	command := &cobra.Command{Use: "session-outcome [transcript-path]", Short: "Analyze session transcript to derive reward signal", Args: cobra.MaximumNArgs(1)}
+	command.Flags().StringVar(&sessionID, "session", "", "Session ID (extracted from transcript if not provided)")
+	command.Flags().StringVar(&format, "output", "text", "Output format: text, json")
+	command.RunE = func(command *cobra.Command, args []string) error {
+		path := ""
+		if len(args) > 0 {
+			path = args[0]
+		}
+		dryRun := module.host.DryRun != nil && module.host.DryRun(command)
+		result, err := module.useCases.Aliases.SessionOutcome(command.Context(), aoeval.SessionOutcomeRequest{TranscriptPath: path, SessionID: sessionID, DryRun: dryRun})
+		if err != nil {
+			return err
+		}
+		if result.DryRun {
+			fmt.Fprintf(command.OutOrStdout(), "[dry-run] Would analyze transcript: %s\n", result.Transcript)
+			return nil
+		}
+		if format == "json" || module.outputMode(command) == "json" {
+			return writeJSON(command, result)
+		}
+		fmt.Fprintln(command.OutOrStdout(), "Session Outcome Analysis\n========================")
+		fmt.Fprintf(command.OutOrStdout(), "Session ID:  %s\nReward:      %.2f\nLines:       %d\n\nSignals detected:\n", result.SessionID, result.Reward, result.TotalLines)
+		for _, signal := range result.Signals {
+			status := "✗"
+			if signal.Value {
+				status = "✓"
+			}
+			fmt.Fprintf(command.OutOrStdout(), "  %s %-20s (weight: %+.2f)\n", status, signal.Name, signal.Weight)
+		}
+		return nil
+	}
+	return command
+}
+
+func (module Module) chaosCommand() *cobra.Command {
+	command := &cobra.Command{Use: "chaos", Short: "Run a read-only smoke test of the tick membrane", Args: cobra.NoArgs}
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		output, err := module.useCases.Aliases.Chaos(command.Context())
+		if output.Stdout != "" {
+			fmt.Fprint(command.OutOrStdout(), output.Stdout)
+		}
+		if output.Stderr != "" {
+			fmt.Fprint(command.ErrOrStderr(), output.Stderr)
+		}
+		return err
 	}
 	return command
 }
