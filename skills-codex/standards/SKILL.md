@@ -10,6 +10,17 @@ Skill conformance resolves the authoritative `repo-runtime` profile at
 `skills/skill-builder/references/skill-conformance-profiles.yaml`; this library
 does not redefine its rule IDs, severities, limits, or clean-room policy.
 
+## Critical Constraints
+
+- Resolve the authoritative profile before applying a standard, and never restate profile rule IDs, severities, limits, or clean-room policy here. **Why:** duplicated policy drifts while the executable profile remains the source of truth.
+- Load only the language and risk references triggered by the changed surface; do not flood an implementation with the entire standards corpus. **Why:** just-in-time context keeps the relevant constraints visible and testable.
+- Prefer executable formatters, compilers, linters, and repository gates over prose interpretation when they disagree. **Why:** deterministic behavior outranks a narrative example.
+- Treat checklists as review criteria, not authorization to widen scope, rewrite unrelated code, or change an accepted baseline. **Why:** standards constrain work; they do not expand the objective.
+- Use the current agent and local shell to resolve and validate standards; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** loading reference material is not permission to fan out.
+- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, repair the standard selection, cited violation, or implementation, then rerun the same check. **Why:** ordinary conformance failures are loop evidence, not a human andon.
+- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold the affected change and use one bounded local-shell helper to resolve a contradictory or unavailable authoritative standard. **Why:** one recovery pass distinguishes stale prose from a genuine standards conflict.
+- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** changing policy, accepting a violation, resolving refusal, or exhausting recovery requires accountable judgment.
+
 ## Purpose
 
 This is a **library skill** - it doesn't run standalone but provides standards
@@ -94,8 +105,30 @@ Skills that use standards:
 - `$implement` - Loads for files being modified
 - `/review` - Loads for change-quality and blast-radius checks
 - `$doc` - Loads markdown standards
-- `/review` - Loads for root cause analysis
+- `$post-mortem` - Loads for root cause analysis
 - `$refactor` - Loads for refactoring recommendations
+
+## Output Specification
+
+**Artifact directory:** no runtime artifact is created by `standards`; canonical library content lives under `skills/standards/`, with bounded standards under `skills/standards/references/`.
+
+**Filename convention:** language rules use `references/<language>.md`; cross-language or risk checklists use a descriptive kebab-case filename such as `race-condition-checklist.md`.
+
+**Serialization/schema format:** Markdown reference contracts linked from this skill and indexed by `references/standards-index.md`; the executable skill-conformance profile remains YAML at `skills/skill-builder/references/skill-conformance-profiles.yaml`.
+
+**Validator command:** run `bash skills/standards/scripts/validate.sh`, then `bash scripts/audit-codex-parity.sh --skill standards` after source or Codex projection changes.
+
+**Downstream handoff:** pass the exact standard paths loaded, trigger evidence, concrete findings with file/line, deterministic commands and exit codes, unresolved conflicts, and the next action to the consuming skill.
+
+## Quality Checklist
+
+- [ ] The selected references match the changed languages and detected high-risk patterns.
+- [ ] Every finding cites a concrete standard and file/line evidence rather than generic preference.
+- [ ] Executable tools and the authoritative profile were consulted before narrative guidance.
+- [ ] No standard was used to widen scope or modify an unrelated baseline.
+- [ ] Missing or conflicting standards are reported explicitly with owner and next action.
+- [ ] Source and Codex projections pass the standards validator and parity audit.
+- [ ] WARN/FAIL/REFUTED consulted the pawl before any human andon.
 
 ## Examples
 
