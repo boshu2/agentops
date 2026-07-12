@@ -310,6 +310,15 @@ scope is narrower than the program currently implies.
 - **Current-program coverage:** Final acceptance requires landing on
   `origin/main`, but no intermediate divergence gate exists.
 
+**H8 execution checkpoint (2026-07-12).** The integration contract and its
+single Bats admission fixture are recorded at
+`2d5fa51196817ba1713f67c8ae14cceaf8aac243`. The filtered fixture is RED only
+because the freshly resolved `origin/main` is not an ancestor of the branch;
+the checker and fixture both pass shell syntax checks. This is deliberately a
+pre-integration checkpoint, not a completion claim. The derived rescue ref,
+non-rewriting merge, overlap/conflict dispositions, ten descendant family
+receipts, and landed-SHA proof remain required before H8 can close.
+
 ## Medium Findings
 
 ### M1. The strangler remains the dominant production architecture
