@@ -244,7 +244,7 @@ func seedCreateGoals(root string, template string, result *seedResult) error {
 	gf := buildSeedGoalFile(root, template)
 
 	// Detect gates from project structure
-	detectedGoals := detectGates(root)
+	detectedGoals := goals.DetectGates(root)
 	gf.Goals = append(gf.Goals, detectedGoals...)
 
 	content := goals.RenderGoalsMD(gf)
