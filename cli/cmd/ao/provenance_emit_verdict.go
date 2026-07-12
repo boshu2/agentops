@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -86,15 +87,36 @@ func deriveReviewerFamily(refuters []pawlRefuter) string {
 
 // deriveEvidencePath maps the verdict artifact to the edge's evidence_path: the
 // first refuter with a non-empty evidence path (the reviewer's real run output),
-// falling back to the top-level council_artifact. Returns "" when the verdict
-// carries no evidence path, so the omitempty field stays absent.
+// falling back to the top-level council_artifact. Absolute paths inside the
+// repository are recorded repo-relative so new ledger rows are portable;
+// already-relative paths and absolute paths outside the repository are retained
+// unchanged, preserving evidence that cannot safely be represented in-repo.
+// Returns "" when the verdict carries no evidence path, so the omitempty field
+// stays absent.
 func deriveEvidencePath(v pawlVerdict) string {
+	var evidencePath string
 	for _, r := range v.Refuters {
 		if p := strings.TrimSpace(r.Evidence); p != "" {
-			return p
+			evidencePath = p
+			break
 		}
 	}
-	return strings.TrimSpace(v.CouncilArtifact)
+	if evidencePath == "" {
+		evidencePath = strings.TrimSpace(v.CouncilArtifact)
+	}
+	if !filepath.IsAbs(evidencePath) {
+		return evidencePath
+	}
+
+	root, err := repoRootOrCwd()
+	if err != nil {
+		return evidencePath
+	}
+	rel, err := filepath.Rel(root, evidencePath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return evidencePath
+	}
+	return filepath.ToSlash(rel)
 }
 
 // extractVerdict reads a pawl-verdict JSON file and returns the provenance-
