@@ -184,7 +184,7 @@ func childIndex(g goalstrace.Graph) map[string][]goalstrace.Edge {
 
 // printChildren recursively prints the child edges of fromID. visited guards
 // against cycles so a malformed graph cannot loop forever.
-func printChildren(w writer, fromID string, children map[string][]goalstrace.Edge,
+func printChildren(w goalsTraceWriter, fromID string, children map[string][]goalstrace.Edge,
 	nodeByID map[string]goalstrace.Node, visited map[string]bool, indent string) {
 	edges := children[fromID]
 	for i, e := range edges {
@@ -198,8 +198,8 @@ func printChildren(w writer, fromID string, children map[string][]goalstrace.Edg
 	}
 }
 
-// writer is the minimal interface renderTree helpers need.
-type writer interface{ Write([]byte) (int, error) }
+// goalsTraceWriter is the minimal interface renderTree helpers need.
+type goalsTraceWriter interface{ Write([]byte) (int, error) }
 
 // treeGlyph returns the branch prefix for a tree row and the indent to use for
 // that row's own children.
