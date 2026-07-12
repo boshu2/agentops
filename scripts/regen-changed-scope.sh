@@ -124,6 +124,7 @@ NEED_CLI_REFERENCE=false
 NEED_COMMAND_SURFACES=false
 NEED_CONTRACT_COMPAT=false
 CODEX_SKILLS=()
+SOURCE_SKILLS=()
 STEPS=()
 
 add_unique_codex_skill() {
@@ -134,6 +135,16 @@ add_unique_codex_skill() {
     [[ "$existing" == "$skill" ]] && return 0
   done
   CODEX_SKILLS+=("$skill")
+}
+
+add_unique_source_skill() {
+  local skill="$1"
+  local existing
+  [[ -n "$skill" ]] || return 0
+  for existing in "${SOURCE_SKILLS[@]}"; do
+    [[ "$existing" == "$skill" ]] && return 0
+  done
+  SOURCE_SKILLS+=("$skill")
 }
 
 skill_from_path() {
@@ -159,7 +170,9 @@ for file in "${FILES[@]}"; do
   case "$file" in
     skills/*)
       NEED_CODEX=true
-      add_unique_codex_skill "$(skill_from_path "$file")"
+      source_skill="$(skill_from_path "$file")"
+      add_unique_codex_skill "$source_skill"
+      [[ -f "skills/$source_skill/SKILL.md" ]] && add_unique_source_skill "$source_skill"
       NEED_SKILL_DOMAIN=true
       NEED_REGISTRY=true
       [[ "$file" == skills/*/SKILL.md ]] && NEED_CONTEXT_MAP=true
@@ -220,6 +233,18 @@ join_codex_skills() {
 add_step() {
   STEPS+=("$1")
 }
+
+if [[ "${#SOURCE_SKILLS[@]}" -gt 0 ]]; then
+  audit_cmd=""
+  for source_skill in "${SOURCE_SKILLS[@]}"; do
+    printf -v source_target '%q' "skills/$source_skill"
+    if [[ -n "$audit_cmd" ]]; then
+      audit_cmd+=" && "
+    fi
+    audit_cmd+="bash skills/heal-skill/scripts/audit.sh --strict $source_target"
+  done
+  add_step "changed skill deep conformance|$audit_cmd|$audit_cmd"
+fi
 
 if $NEED_CONTEXT_MAP; then
   if [[ "$MODE" == "check" ]]; then

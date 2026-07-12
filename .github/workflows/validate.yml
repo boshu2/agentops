@@ -316,6 +316,14 @@ jobs:
           chmod +x skills/heal-skill/scripts/heal.sh
           bash skills/heal-skill/scripts/heal.sh --strict
 
+      - name: Run canonical deep skill conformance (audit --strict)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          while IFS= read -r skill_md; do
+            skill_dir="${skill_md%/SKILL.md}"
+            bash skills/heal-skill/scripts/audit.sh --strict "$skill_dir"
+          done < <(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
+
       - name: Validate SKILL.md frontmatter against schema
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
         run: |

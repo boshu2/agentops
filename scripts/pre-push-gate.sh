@@ -396,6 +396,36 @@ collect_all_changed() {
     esac
 }
 
+run_skill_deep_conformance() {
+    local file rest skill_dir
+    local failed=0
+    local skill_dirs=()
+
+    if [[ "$FAST_MODE" == "true" ]]; then
+        while IFS= read -r file; do
+            case "$file" in
+                skills/*/*)
+                    rest="${file#skills/}"
+                    skill_dir="skills/${rest%%/*}"
+                    [[ -f "$skill_dir/SKILL.md" ]] && skill_dirs+=("$skill_dir")
+                    ;;
+            esac
+        done < <(collect_all_changed | sort -u)
+    else
+        while IFS= read -r file; do
+            skill_dirs+=("${file%/SKILL.md}")
+        done < <(find skills -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
+    fi
+
+    [[ "${#skill_dirs[@]}" -gt 0 ]] || return 0
+    while IFS= read -r skill_dir; do
+        if ! bash skills/heal-skill/scripts/audit.sh --strict "$skill_dir"; then
+            failed=1
+        fi
+    done < <(printf '%s\n' "${skill_dirs[@]}" | sort -u)
+    return "$failed"
+}
+
 select_fast_eval_suites() {
     local changed="$1"
     local path
@@ -957,6 +987,18 @@ if needs_check skill; then
     fi
 else
     skip "skill integrity"
+fi
+
+# --- 12b. Canonical deep skill conformance ---
+if needs_check skill; then
+    if skill_deep_output="$(run_skill_deep_conformance 2>&1)"; then
+        pass "skill deep conformance (audit --strict)"
+    else
+        fail "skill deep conformance (audit --strict)"
+        indent_output "$skill_deep_output"
+    fi
+else
+    skip "skill deep conformance (audit --strict)"
 fi
 
 # --- 13. Skill lint suite ---

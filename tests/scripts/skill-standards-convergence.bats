@@ -336,6 +336,10 @@ write_external_description_fixture() {
   local report
 
   prepare_builder_root "$scratch"
+  # macOS exposes BATS_TEST_TMPDIR through /var -> /private/var. The healer
+  # deliberately rejects symlink spellings, so exercise the builder with the
+  # physical path that production containment checks accept.
+  scratch="$(cd -P "$scratch" && pwd)"
   {
     printf '%s\n' \
       '---' \
@@ -425,7 +429,8 @@ PY
     done
   done
 
-  [[ ! -e "$REPO_ROOT/skills-codex/skill-builder/references/skill-conformance-profiles.yaml" ]]
+  cmp -s "$REPO_ROOT/skills/skill-builder/references/skill-conformance-profiles.yaml" \
+    "$REPO_ROOT/skills-codex/skill-builder/references/skill-conformance-profiles.yaml"
   rg -qi 'clean-room' "$REPO_ROOT/skills/skill-builder" "$REPO_ROOT/skills-codex/skill-builder"
   if rg -qi 'verbatim (preservation|copy)|preserve (the )?(external|source).*(verbatim|body)' \
       "$REPO_ROOT/skills/skill-builder" "$REPO_ROOT/skills-codex/skill-builder"; then
@@ -863,4 +868,50 @@ PY
     --verify-clean-room "$external" --generated-dir "$codex_dir"
   [[ "$status" -eq 0 ]]
   [[ "$output" == *'repo-runtime'* ]]
+}
+
+@test "L2: changed-scope rejects shallow-green evidence when deep audit is non-PASS" {
+  local scratch="$BATS_TEST_TMPDIR/release-waist-root"
+  local scan_root="$BATS_TEST_TMPDIR/release-waist-scan"
+  local shallow_bats="$BATS_TEST_TMPDIR/shallow-count.bats"
+  local stub
+
+  prepare_builder_root "$scratch"
+  write_conforming_skill "$scratch/skills/shallow-green" shallow-green \
+    "'Shallow checks pass. Triggers: \"shallow green\".'" incomplete
+  mkdir -p "$scan_root"
+  cp -R "$scratch/skills/shallow-green" "$scan_root/shallow-green"
+
+  cat >"$shallow_bats" <<'BATS'
+#!/usr/bin/env bats
+@test "shallow count is green" { true; }
+BATS
+  run bats "$shallow_bats"
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *'shallow count is green'* ]]
+
+  run python3 "$scratch/skills/skill-builder/scripts/scan_descriptions.py" \
+    "$scan_root" --json --strict
+  [[ "$status" -eq 0 ]]
+
+  for stub in generate-context-map.sh generate-skill-domain-map.sh \
+    generate-registry.sh codex-sync.sh regen-codex-hashes.sh \
+    validate-codex-generated-artifacts.sh audit-codex-parity.sh; do
+    printf '#!/usr/bin/env bash\nexit 0\n' >"$scratch/scripts/$stub"
+    chmod +x "$scratch/scripts/$stub"
+  done
+
+  run bash "$scratch/scripts/regen-changed-scope.sh" --check \
+    --file skills/shallow-green/SKILL.md
+  [[ "$status" -ne 0 ]]
+  [[ "$output" == *'changed skill deep conformance'* ]]
+  [[ "$output" == *'output-spec-explicit'* ]]
+  [[ "$output" == *'bash skills/heal-skill/scripts/audit.sh --strict skills/shallow-green'* ]]
+}
+
+@test "L0: local and CI release waists invoke the canonical deep audit" {
+  grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
+    "$REPO_ROOT/scripts/pre-push-gate.sh"
+  grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
+    "$REPO_ROOT/.github/workflows/validate.yml"
 }

@@ -219,6 +219,8 @@ var (
 		"docs/cli-surface.md",
 		"evals/agentops-core/cli-command-surface-matrix.json",
 		"evals/agentops-core/fixtures/cli-command-surface-smoke.sh",
+		"scripts/regen-changed-scope.sh",
+		"tests/scripts/skill-standards-convergence.bats",
 	}
 	// Preamble-adoption ratchet: run whenever any script changes (a new/modified
 	// scripts/*.sh is what the ratchet governs) plus the gate's own self-refs so
@@ -413,7 +415,7 @@ func init() {
 		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
-			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head"},
+			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/heal-skill/scripts/audit.sh --strict skills/<skill>"},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
 		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
