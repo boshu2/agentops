@@ -18,7 +18,7 @@
 #                        repo's packs/agentops-membrane). Local-path imports
 #                        are read-in-place per standup.md §2 (no packs.lock
 #                        entry; pin by sha once published).
-#   --skip-sessions      Do not create/verify the trinity + AGY sessions.
+#   --skip-sessions      Do not create/verify the persistent work/review sessions.
 #   --dry-run            Run read-only preflight (incl. the version contract),
 #                        print the plan, write NOTHING.
 #
@@ -539,13 +539,16 @@ for d in "$PACK_SOURCE"/agents/*/; do
   [ -d "$d" ] || continue
   b="$(basename "$d")"
   [ "$b" = "_template" ] && continue
+  # The breaker helper is deliberately disposable: close-gate creates one
+  # fresh session per breaker nonce and closes it after the consultation.
+  [ "$b" = "breaker-helper" ] && continue
   REQUIRED_TEMPLATES="$REQUIRED_TEMPLATES ${PACK_NAME}.${b}"
 done
 
 if [ "$SKIP_SESSIONS" -eq 1 ]; then
   step "9. Sessions — SKIPPED (--skip-sessions)"
 else
-  step "9. Sessions (trinity + AGY): create + verify"
+  step "9. Sessions (persistent work + review): create + verify"
 
   session_templates() {
     run_gc session list --json 2>/dev/null | jq -r '.sessions[].template' 2>/dev/null | sort -u

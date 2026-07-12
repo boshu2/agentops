@@ -155,7 +155,8 @@ failed or timed out".
 supervisor. Note a long-lived agy PANE may still deliver verdicts even when
 the CLI auth is dead — check before switching. Restore agy when re-authed.
 **Attempt budget warning:** every failed round consumes an attempt
-(max_attempts=5) — don't let a dead lane burn the budget before switching.
+(five ordinary attempts before the helper-guided recovery proof) — don't let a
+dead lane burn the budget before switching.
 
 ## Escalation order when nothing above matches
 

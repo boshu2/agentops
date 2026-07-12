@@ -124,10 +124,12 @@ Valid completions get pushed to `main` (the pre-push cockpit gate is the wall; r
 Not everything succeeds. Failed attempts have two paths:
 
 1. **Retry** - Re-ignite with a fresh worker (back to chaos pool)
-2. **Escalate** - After 3 failures, mark as BLOCKER and mail the human
+2. **Escalate** - After 3 failures, enter HOLD and give one fresh-context or
+   cross-family helper the evidence and prior attempts. Resume on
+   HELPER-UNSTUCK; mark as BLOCKER and mail the human only on HELPER-ESCALATE.
 
 ```bash
-# Escalate
+# Escalate only after the bounded helper returns HELPER-ESCALATE
 BEADS_DIR="$(ao beads dir)" br update <issue> --labels=BLOCKER
 # notify the human via Agent Mail (am) or the swarm inbox
 ```

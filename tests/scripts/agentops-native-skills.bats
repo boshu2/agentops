@@ -125,6 +125,8 @@ assert_rejects() {
   [ "$status" -eq 0 ]
   run bats packs/agentops-membrane/tests/close-gate.bats
   [ "$status" -eq 0 ]
+  run bats packs/agentops-membrane/tests/breaker-escalation.bats
+  [ "$status" -eq 0 ]
 }
 
 # B7.3

@@ -375,7 +375,7 @@ measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
 
 **Format:** a PASS/WARN/FAIL validation verdict plus a markdown council summary to stdout; machine-readable `result.json`.
 **Files:** writes `.agents/council/YYYY-MM-DD-validate-<slug>.md` and `result.json`; appends reusable findings to `.agents/findings/registry.jsonl`; may refresh `.agents/planning-rules/` and `.agents/pre-mortem-checks/`.
-**Exit signal:** FAIL re-cranks on the same objective (up to 3 attempts); DONE on a fully-green acceptance roll-up.
+**Exit signal:** FAIL re-cranks on the same objective (up to 3 attempts). Exhaustion enters HOLD and permits exactly one bounded fresh-context or cross-family helper pass; HELPER-UNSTUCK resumes with the new approach, while only HELPER-ESCALATE (or a refusal/explicit-judgment or spent hard-ceiling class) routes to the human. DONE requires a fully-green acceptance roll-up.
 
 ## See Also
 

@@ -73,7 +73,5 @@ Every handoff you produce must contain:
 
 ## Bounds
 
-- Bounded rounds: at most **3 redo rounds** per task. If a task comes back a 4th
-  time, stop and emit BLOCKED (reason: round-limit).
 - A merge conflict anywhere in the flow is an automatic REFUTED (reason:
   CONFLICT) — do not attempt resolution; reshape or escalate.

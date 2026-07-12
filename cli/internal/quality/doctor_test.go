@@ -16,6 +16,30 @@ func TestComputeResult_Healthy(t *testing.T) {
 	}
 }
 
+func TestCodexNativePluginRootPathFindsVersionedCacheWhenLocalIsAbsent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	versioned := filepath.Join(home, ".codex", "plugins", "cache",
+		CodexAgentOpsMarketplaceName, CodexAgentOpsPluginName, "3.2.0")
+	if err := os.MkdirAll(filepath.Join(versioned, "skills-codex"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Stale metadata from the former local-cache layout must not hide the live
+	// versioned plugin.
+	if err := os.MkdirAll(filepath.Dir(CodexInstallMetaPath(home)), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(CodexInstallMetaPath(home), []byte(`{"plugin_root":"`+
+		filepath.Join(home, ".codex", "plugins", "cache", CodexAgentOpsMarketplaceName,
+			CodexAgentOpsPluginName, "local")+`"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := CodexNativePluginRootPath(home); got != versioned {
+		t.Fatalf("CodexNativePluginRootPath() = %q, want live versioned root %q", got, versioned)
+	}
+}
+
 func TestHealStrictTimeout_DefaultsTo120s(t *testing.T) {
 	t.Setenv("AO_DOCTOR_HEAL_TIMEOUT", "")
 	got := healStrictTimeout()

@@ -84,7 +84,8 @@ exit 0'
   mkdir -p "$PACK/membrane" "$PACK/formulas" "$PACK/scripts" \
     "$PACK/doctor/law0-print-args" "$PACK/template-fragments" \
     "$PACK/agents/planner" "$PACK/agents/builder" \
-    "$PACK/agents/verifier" "$PACK/agents/agy-verifier"
+    "$PACK/agents/verifier" "$PACK/agents/agy-verifier" \
+    "$PACK/agents/breaker-helper"
   printf '[pack]\nname = "agentops-membrane"\nschema = 2\n' > "$PACK/pack.toml"
   printf '#!/usr/bin/env bash\necho close-gate-fixture\n' > "$PACK/membrane/close-gate.sh"
   printf '#!/usr/bin/env bash\necho finalize-fixture\n' > "$PACK/membrane/finalize.sh"
@@ -116,7 +117,7 @@ EOF
 [usage]
 provider = "local"
 EOF
-  for a in planner builder verifier agy-verifier; do
+  for a in planner builder verifier agy-verifier breaker-helper; do
     printf 'scope = "city"\n' > "$PACK/agents/$a/agent.toml"
   done
 }
@@ -222,6 +223,7 @@ install() {
   # lanes always-on
   grep -q 'template = "agentops-membrane.verifier"' "$CITY/city.toml"
   grep -q 'template = "agentops-membrane.agy-verifier"' "$CITY/city.toml"
+  ! grep -q 'template = "agentops-membrane.breaker-helper"' "$CITY/city.toml"
   # pack imported by local path
   grep -q '\[imports.agentops-membrane\]' "$CITY/pack.toml"
   # isolation: env.sh + dedicated GC_HOME + explicit supervisor port

@@ -655,6 +655,33 @@ func TestSkillsDuplicateInstallDetectOnly(t *testing.T) {
 	}
 }
 
+func TestSkillsDuplicateInstallDetectsVersionedNativeCache(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	versionedRoot := filepath.Join(home, ".codex", "plugins", "cache",
+		"agentops-marketplace", "agentops", "3.2.0", "skills-codex")
+	legacyRoot := filepath.Join(home, ".agents", "skills")
+	writeSkillsFile(t, filepath.Join(versionedRoot, "rpi", "SKILL.md"), "native\n")
+	writeSkillsFile(t, filepath.Join(legacyRoot, "rpi", "SKILL.md"), "stale raw\n")
+	// Reproduce the live failure: metadata still names the old local cache.
+	writeSkillsFile(t, filepath.Join(home, ".codex", ".agentops-codex-install.json"),
+		`{"plugin_root":"`+filepath.Join(home, ".codex", "plugins", "cache",
+			"agentops-marketplace", "agentops", "local")+`"}`)
+
+	findings, err := skillsDuplicateInstallDetector{}.Detect(&DetectEnv{
+		RepoRoot: repo, CWD: repo, HomeDir: home,
+	})
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	if len(findings) != 1 || !strings.Contains(findings[0].Evidence.Query, "rpi") {
+		t.Fatalf("versioned native/raw overlap was not detected: %+v", findings)
+	}
+	if !strings.Contains(findings[0].Evidence.File, "3.2.0") {
+		t.Fatalf("detector did not select the live versioned plugin as primary: %+v", findings[0].Evidence)
+	}
+}
+
 // TestSkillsDuplicateInstallNoOverlap verifies the detector is silent when
 // install roots do not overlap.
 func TestSkillsDuplicateInstallNoOverlap(t *testing.T) {

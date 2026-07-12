@@ -717,8 +717,8 @@
     {
       "name": "gc-membrane",
       "source_skill": "skills/gc-membrane",
-      "source_hash": "e0cda425519a3b43349242cfe5cc9b2d6b756eb6b7235f71e9da98197fef2df3",
-      "generated_hash": "30ebb4fe97740d061e20b022b568e48173d1b36bc55bf579e06437f9337a45d2"
+      "source_hash": "64f5b2147e6f1899ff8d052edb6df011d4a4a353b87ead68806bcb2c6d39c038",
+      "generated_hash": "c9e994b10088e17fe1e98d531ac99342bd327d6c2422472b2bf452d676f3686d"
     },
     {
       "name": "goal-design",
@@ -855,8 +855,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "e2cff8e8a889122dc826cd2c8c23073f0a361970a209eb09e5b8ea8d7bbda3aa",
-      "generated_hash": "eb5f358cc34978d66464b45c2c9024ae69f709ecca39000179b742b649332df1"
+      "source_hash": "609e3c4910b91afdd72417e64584d4e49ebfa8ae8f0bf79142f75c7a6bd83ebf",
+      "generated_hash": "eecccf27aa8f6f324e917d226f671f62dddf9dfcec717c4225c70a792b06bbb5"
     },
     {
       "name": "sbh",
@@ -927,14 +927,14 @@
     {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
-      "source_hash": "9128f180a8928c2d92182373e1093acf1cbca7b64bb1857ecfbc2c79a14c0e63",
-      "generated_hash": "12b2b5e2a5a8f26b6f78df09ba22631e4787ab98cc4121a9a12744a3b253193d"
+      "source_hash": "0f58b05f4192bd06270f932dc257d73d3a7ef20af3aafbd53f05bdd43ce7b9cf",
+      "generated_hash": "d5e18fda1b3c2cd4daa53a321c8967e27be18828c76f890b1a12e4d84b592387"
     },
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "3f641fea543ae5ff7056cfa8610b9e1457d180dc5d379a2dedfb5665553212f2",
-      "generated_hash": "793082c9bc78c18a14f485f32555fa9ae1ad9c52a2432efd85d035a4e64b74b0"
+      "source_hash": "80f8ce29d25e19886b727cc3ee8039fa9766d4366b4633c2b9b4644e51f3f8d6",
+      "generated_hash": "faa16ceda4eeaa7c85ab39e4a572e562e697fce4d1a8c39f68a797584a4adf38"
     },
     {
       "name": "workflow-builder",
