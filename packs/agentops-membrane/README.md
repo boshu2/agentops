@@ -85,8 +85,8 @@ bead closes with an evidence-bound work record. A fifth failed round enters
 HOLD; `close-gate.sh` creates one disposable helper session and submits exactly
 ONE-HELPER consultation with the cumulative evidence to its unique ID. UNSTUCK supplies
 the sixth and final recovery approach, which must re-earn CONFIRMED. ESCALATE
-makes that final attempt terminate before reviewer dispatch, leaving the bead
-open for the operator.
+returns the opt-in terminal HOLD exit before reviewer dispatch, so gc creates no
+later attempt and leaves the bead open for the operator.
 
 <!-- BEGIN planner-intake (age-gc-mvp-w2-nuiw.7) -->
 ## Planner intake — one-line ask → shaped quest (operating-loop move 1)

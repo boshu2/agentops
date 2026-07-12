@@ -27,13 +27,28 @@ module gcstub
 
 require github.com/steveyegge/beads v1.1.0
 EOF
+  mkdir -p "$GC_SRC/internal/beadmeta"
+  printf 'const CheckHoldExitCodeMetadataKey = "gc.check_hold_exit_code"\n' \
+    > "$GC_SRC/internal/beadmeta/keys.go"
+  mkdir -p "$GC_SRC/internal/dispatch"
+  cat > "$GC_SRC/internal/dispatch/ralph.go" <<'EOF'
+package dispatch
+
+// Capability fixture: the exact binary commit must carry all three semantic
+// anchors, not merely the metadata vocabulary key.
+var holdExitCode = beadmeta.CheckHoldExitCodeMetadataKey
+var holdMetadata = map[string]string{
+    beadmeta.FinalDispositionMetadataKey: beadmeta.DispositionHold,
+}
+var holdResult = ControlResult{Processed: true, Action: "hold"}
+EOF
   cat > "$GC_SRC/bin/gc" <<EOF
 #!/usr/bin/env bash
 STATE="$STATE"
 cmd="\${1:-}"; shift || true
 case "\$cmd" in
   version)
-    echo '{"commit":"stubsha","version":"1.1.1","ok":true}' ;;
+    printf '{"commit":"%s","version":"1.1.1","ok":true}\n' "\${STUB_GC_COMMIT:-HEAD}" ;;
   init)
     city=""
     for a in "\$@"; do city="\$a"; done
@@ -67,6 +82,11 @@ esac
 exit 0
 EOF
   chmod +x "$GC_SRC/bin/gc"
+  git -C "$GC_SRC" init -q
+  git -C "$GC_SRC" config user.name test
+  git -C "$GC_SRC" config user.email test@example.com
+  git -C "$GC_SRC" add .
+  git -C "$GC_SRC" commit -qm fixture
 
   # --- tool stubs on PATH ------------------------------------------------------
   bats_stub_bin "$BIN" bd '
@@ -159,6 +179,37 @@ install() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"cannot resolve the beads version"* ]]
   [[ "$output" == *"REMEDY:"* ]]
+}
+
+@test "gc binary without terminal HOLD capability fails hard with remedy" {
+  rm "$GC_SRC/internal/beadmeta/keys.go"
+  git -C "$GC_SRC" add -u
+  git -C "$GC_SRC" commit -qm no-hold-capability
+  install
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"lacks the checked-step terminal HOLD capability"* ]]
+  [[ "$output" == *"REMEDY:"* ]]
+  [ ! -e "$CITY/city.toml" ]
+}
+
+@test "dirty gc binary fails before a clean-parent capability can be trusted" {
+  export STUB_GC_COMMIT=HEAD-dirty
+  install
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"terminal HOLD capability cannot be tied to exact source"* ]]
+  [[ "$output" == *"REMEDY:"* ]]
+  [ ! -e "$CITY/city.toml" ]
+}
+
+@test "metadata key without terminal HOLD dispatch behavior fails hard" {
+  rm "$GC_SRC/internal/dispatch/ralph.go"
+  git -C "$GC_SRC" add -u
+  git -C "$GC_SRC" commit -qm key-only-capability
+  install
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"lacks the checked-step terminal HOLD capability"* ]]
+  [[ "$output" == *"REMEDY:"* ]]
+  [ ! -e "$CITY/city.toml" ]
 }
 
 # --- (2) dolt_mode=server enforced (F1) -------------------------------------------

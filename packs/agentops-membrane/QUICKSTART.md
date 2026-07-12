@@ -104,8 +104,8 @@ A REFUTED→redo→CONFIRMED arc is normal. Never hand-close the quest bead; the
 redo path is automatic. A fifth failed round enters HOLD and `close-gate.sh`
 creates one disposable helper session, submits exactly ONE-HELPER consultation to its
 unique ID, and closes it after the nonce-bound outcome. UNSTUCK gets the sixth recovery attempt
-and must re-earn CONFIRMED; HELPER-ESCALATE terminates that attempt without
-another review and leaves the bead open for the operator.
+and must re-earn CONFIRMED; HELPER-ESCALATE enters terminal HOLD without
+another review or retry and leaves the bead open for the operator.
 
 ## 5. Read the verdict
 

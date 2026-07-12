@@ -202,17 +202,43 @@ info "gc $GC_VERSION (commit ${GC_COMMIT:-unknown})"
 # source tree: --gc-binary at <fork>/bin/gc puts go.mod one level up; else the
 # documented fork checkout; GC_SRC overrides.
 BEADS_PIN=""
+GC_SRC_DIR=""
 GC_BIN_DIR="$(dirname "$GC_BIN")"
 for cand in "${GC_SRC:-}" "$GC_BIN_DIR/.." "$GC_BIN_DIR" "$HOME/dev/gascity"; do
   [ -n "$cand" ] && [ -f "$cand/go.mod" ] || continue
   BEADS_PIN="$(grep -E 'steveyegge/beads[[:space:]]+v[0-9]+\.[0-9]+\.[0-9]+' "$cand/go.mod" | head -1 | extract_semver || true)"
-  [ -n "$BEADS_PIN" ] && { info "beads pin v$BEADS_PIN (from $cand/go.mod)"; break; }
+  [ -n "$BEADS_PIN" ] && { GC_SRC_DIR="$(cd "$cand" && pwd -P)"; info "beads pin v$BEADS_PIN (from $cand/go.mod)"; break; }
 done
 if [ -z "$BEADS_PIN" ]; then
   # gc version heuristics carry no beads pin — fail closed rather than guess.
   die "cannot resolve the beads version gc pins (no go.mod with steveyegge/beads near $GC_BIN)" \
       "pass --gc-binary <gascity-fork>/bin/gc (go.mod lives next to bin/) or set GC_SRC=<gascity-fork>"
 fi
+
+# The membrane's HELPER-ESCALATE path relies on the checked-step terminal HOLD
+# control port. Prove the exact source commit embedded in the selected binary
+# contains that key; checking only the nearby worktree would let a stale binary
+# pass against newer source and silently turn HOLD back into AUTO-REDO.
+case "$GC_COMMIT" in
+  *-dirty)
+    die "gc binary commit $GC_COMMIT is dirty, so its terminal HOLD capability cannot be tied to exact source" \
+        "build and install gc from a clean owned-fork worktree, then re-run" ;;
+esac
+GC_COMMIT_CLEAN="${GC_COMMIT%-dirty}"
+if [ -z "$GC_COMMIT_CLEAN" ] || \
+   ! git -C "$GC_SRC_DIR" cat-file -e "$GC_COMMIT_CLEAN:internal/beadmeta/keys.go" 2>/dev/null || \
+   ! git -C "$GC_SRC_DIR" show "$GC_COMMIT_CLEAN:internal/beadmeta/keys.go" 2>/dev/null \
+      | grep -q 'CheckHoldExitCodeMetadataKey' || \
+   ! git -C "$GC_SRC_DIR" show "$GC_COMMIT_CLEAN:internal/dispatch/ralph.go" 2>/dev/null \
+      | grep -q 'CheckHoldExitCodeMetadataKey' || \
+   ! git -C "$GC_SRC_DIR" show "$GC_COMMIT_CLEAN:internal/dispatch/ralph.go" 2>/dev/null \
+      | grep -q 'FinalDispositionMetadataKey: beadmeta.DispositionHold' || \
+   ! git -C "$GC_SRC_DIR" show "$GC_COMMIT_CLEAN:internal/dispatch/ralph.go" 2>/dev/null \
+      | grep -q 'Action: "hold"'; then
+  die "gc binary commit ${GC_COMMIT:-unknown} lacks the checked-step terminal HOLD capability" \
+      "rebuild and install the owned Gas City fork at or after commit 1a40bf6da (cd ~/dev/gascity && make install)"
+fi
+info "gc checked-step terminal HOLD capability: present"
 
 BD_VERSION="$(bd version 2>/dev/null | extract_semver || true)"
 [ -n "$BD_VERSION" ] || die "could not parse 'bd version' output" \

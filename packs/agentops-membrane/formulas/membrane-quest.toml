@@ -18,9 +18,9 @@ but a deterministic CONFIRMED. On CONFIRMED the step passes and gc's
 workflow-finalize closes the workflow root + source quest bead. When attempt
 five fails, close-gate.sh itself enters HOLD and routes exactly ONE-HELPER
 consultation with the cumulative evidence. UNSTUCK supplies the attempt-six
-approach and must re-earn the normal independent verdict; ESCALATE makes attempt
-six terminate without dispatching another review, so the quest stays open for
-the operator. Nothing
+approach and must re-earn the normal independent verdict; ESCALATE returns
+the opt-in terminal HOLD exit, so gc closes the logical step failed without
+minting another attempt and the quest stays open for the operator. Nothing
 here merges or pushes — a human merges the quest branch.
 
 Invoke (targeted — the quest bead is the source bead the door closes):
@@ -52,7 +52,7 @@ type = "task"
 # chdir fails on the dangling path and the check NEVER RUNS (hello2 canary
 # 2026-07-06: attempt_log action=error "chdir .../ca-utu"). close-gate.sh
 # resolves everything from GC_CITY_PATH and needs no other cwd.
-metadata = { "gc.run_target" = "agentops-membrane.builder", "quest" = "{{quest}}", "gc.work_dir" = "." }
+metadata = { "gc.run_target" = "agentops-membrane.builder", "quest" = "{{quest}}", "gc.work_dir" = ".", "gc.check_hold_exit_code" = "5" }
 description = """
 You are builder (see your role card). Quest: **{{quest}}**.
 
@@ -90,8 +90,8 @@ Also read `"$RUN_EX/breaker-helper.json"` when present. It is
 the single circuit-breaker consultation. `outcome=UNSTUCK` means its nonempty
 `new_approach` is the mandatory materially-new approach for this recovery
 attempt. `outcome=ESCALATE` means do not mutate: close this iteration bead with
-`gc.outcome=fail`, note `helper_escalate`, and stop; the check will fail closed
-without dispatching another reviewer.
+`gc.outcome=fail`, note `helper_escalate`, and stop; the check will enter
+terminal HOLD without dispatching another reviewer or minting another attempt.
 
 **3. Set up your worktree** (reuse if it exists from a prior round):
 ```bash
