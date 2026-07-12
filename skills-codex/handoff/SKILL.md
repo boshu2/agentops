@@ -1,378 +1,220 @@
 ---
 name: handoff
-description: "Write compact continuation handoffs."
+description: 'Write compact continuation handoffs. Triggers: "handoff", "capture this session for continuation", "prepare a continuation prompt".'
 ---
-# Handoff Skill
+# Handoff — Durable Codex Session Continuation
 
-> **Quick Ref:** Create structured handoff for session continuation. Output: `.agents/handoff/YYYY-MM-DD-<topic>.md` + continuation prompt.
+> **Loop position:** write-side adapter for `handoff → clear → rehydrate`.
+> It captures the live lane as two checked Markdown artifacts before context is
+> cleared or ownership changes.
 
-**YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
+**Execute this workflow. Do not only describe it.**
 
-Create a handoff document that enables seamless session continuation.
+## Constraints
 
-## Handoff is the write-side of the self-healing context loop
+- Write both artifacts before clearing context, ending the thread, or transferring ownership, because a partial handoff makes the next agent rediscover state.
+- Ground every accomplishment, blocker, issue state, and next action in durable evidence such as paths, commit SHAs, verdicts, and tracker ids; do not promote conversational memory into fact because it drifts.
+- Preserve pawl disposition separately from helper outcome. The disposition is one of `CONFIRMED`, `REFUTED`, `HOLD`, `ESCALATE`, or `REBOUND`; the helper outcome is only `UNSTUCK`, `ESCALATE`, or `not-run`. Plain `REFUTED` continues auto-redo; only a breaker enters `HOLD` and one helper pass. `CONFIRMED` alone authorizes the door; helper `UNSTUCK` resumes work but must re-earn `CONFIRMED`. Helper `ESCALATE` reaches a human; refusal-lane work, explicit judgment, and exhausted time/cost/quota budgets skip the helper and go directly to a human.
+- Keep the continuation prompt as a pointer to the handoff document, not a second source of truth, because duplicated narrative diverges.
 
-Handoff is the **write-side of the `handoff → clear → rehydrate` loop** that keeps
-a long-running agent (or peer orchestrator) healthy against context bloat. The
-natural pre-`/clear` step is to hand off: capture the working state to durable
-state *first*, then clear, then rehydrate from the artifact. **Handoff before
-clear, always** — clearing without a current handoff loses the thread. The handoff
-must be complete enough to rehydrate the lane to exactly where it was (goal,
-claimed bead(s), held reservations, peer/comms topology, working-thread pointer).
-The structured artifact is `ao session handoff` → `.agents/handoff/` (`--no-kill` writes
-without the tmux restart).
+## Purpose and boundaries
 
-## Every handoff is a compounding artifact
+Use `$handoff` when a productive Codex thread is pausing, changing agents,
+nearing compaction/reset, or explicitly needs a continuation packet. The
+handoff must let a fresh thread resume without reconstructing the lane from
+conversation.
 
-A handoff is a first-class node in the compounding artifact graph — it feeds the
-llm-wiki / knowledge corpus, gets mined and measured (`consumed`/`consumed_by`
-hooks), and each cycle should make the next handoff better. Context, code, and
-markdown are all artifacts to be fed back. Write handoffs dense and honest.
+Do not use it as a post-mortem: handoff records **current state**;
+`$post-mortem` records reusable learning. When there is no durable activity,
+report `EMPTY` with the reason and do not fabricate accomplishments.
 
-## Execution Steps
+## Inputs
 
 Given `$handoff [topic]`:
 
-### Step 1: Create Output Directory
+- An explicit topic wins.
+- Otherwise derive a 2–4 word lowercase hyphenated slug from the current issue,
+  most recent commit, or ratchet state.
+- If none is descriptive, use `session-$(date +%H%M)`.
+
+## Execution workflow
+
+### 1. Gather durable session evidence
+
+Use `ao beads exec` for tracker reads; in AgentOps it resolves the canonical
+`br` / beads_rust store. Do not substitute another tracker.
 
 ```bash
 mkdir -p .agents/handoff
-```
-
-### Step 2: Identify Session Context
-
-**If topic provided:** Use it as the handoff identifier.
-
-**If no topic:** Derive from recent activity:
-```bash
-# Recent commits
-git log --oneline -5 --format="%s" | head -1
-
-# Check current issue (ao beads exec resolves the br/beads_rust tracker)
-ao beads exec list --status in_progress 2>/dev/null | head -1
-
-# Check ratchet state
-ao ratchet status 2>/dev/null | head -3
-```
-
-Use the most descriptive source as the topic slug.
-
-**Topic slug format:** 2-4 words, lowercase, hyphen-separated (e.g., `auth-refactor`, `api-validation`).
-**Fallback:** If no good topic found, use `session-$(date +%H%M)` (e.g., `session-1430`).
-
-### Step 3: Gather Session Accomplishments
-
-**Review what was done this session:**
-
-```bash
-# Recent commits this session (last 2 hours)
+git status --short
 git log --oneline --since="2 hours ago" 2>/dev/null
-
-# Recent file changes
 git diff --stat HEAD~5 2>/dev/null | head -20
-
-# Research produced
-ls -lt .agents/research/*.md 2>/dev/null | head -3
-
-# Plans created
-ls -lt .agents/plans/*.md 2>/dev/null | head -3
-
-# Issues closed
-ao beads exec list --status closed --since "2 hours ago" 2>/dev/null | head -5
-```
-
-### Step 4: Identify Pause Point
-
-Determine where we stopped:
-
-1. **What was the last thing done?**
-2. **What was about to happen next?**
-3. **Were we mid-task or between tasks?**
-4. **Any blockers or decisions pending?**
-
-Check for in-progress work:
-```bash
 ao beads exec list --status in_progress 2>/dev/null | head -5
+ao beads exec list --status closed 2>/dev/null | head -5
+find .agents/research .agents/plans -type f -name '*.md' -print 2>/dev/null | tail -5
 ```
 
-### Step 5: Identify Key Files to Read
+If an explicit multi-writer workflow is active, record held reservations,
+peer/comms topology, and the working-thread pointer. Otherwise state that none
+is active; do not infer orchestration from detected concurrency.
 
-List files the next session should read first:
-- Recently modified files (core changes)
-- Research/plan artifacts (context)
-- Any files mentioned in pending issues
+### 2. Pin the pause point
+
+Record all four fields, even when their value is `none`:
+
+1. Last completed action and its evidence.
+2. Exact next action, preferably a command or file to inspect.
+3. Open blocker, pawl disposition, helper outcome, and their evidence. Never
+   store `UNSTUCK` as a disposition or treat it as authorization.
+4. Dirty files, claimed issues, reservations, and external state inherited by
+   the next thread.
+
+**Checkpoint:** confirm the tracker id/status and current `git rev-parse HEAD`
+against live commands before writing them.
+
+### 3. Write both artifacts
+
+Fill the authoritative handoff and short continuation pointer in the **Artifact
+Templates** section below. Cite paths and SHAs, distinguish observation from
+inference, and keep open questions separate from blockers.
+
+The next action must be executable without rereading the prior conversation.
+List priority files in read order and explain why each matters.
+
+### 4. Validate before reporting
 
 ```bash
-# Recently modified
-git diff --name-only HEAD~5 2>/dev/null | head -10
-
-# Key artifacts
-ls .agents/research/*.md .agents/plans/*.md 2>/dev/null | tail -5
+doc=.agents/handoff/YYYY-MM-DD-<topic>.md
+prompt=.agents/handoff/YYYY-MM-DD-<topic>-prompt.md
+test -s "$doc" && test -s "$prompt"
+for heading in '## Objective' '## Verified state' '## Where we paused' '## Next action' '## Files to read' '## Validation evidence'; do
+  rg -Fqx "$heading" "$doc"
+done
+for marker in 'Read first:' 'First action:'; do rg -Fq "$marker" "$prompt"; done
+rg -q '^\*\*Captured:\*\* [0-9]{4}-[0-9]{2}-[0-9]{2}T[^ ]+$' "$doc"
+rg -q '^\*\*Repository:\*\* .+$' "$doc"
+rg -q '^\*\*HEAD:\*\* [0-9a-f]{40}$' "$doc"
+rg -q '^\*\*Tracker:\*\* .+$' "$doc"
+rg -q '^\*\*Pawl disposition:\*\* (CONFIRMED|REFUTED|HOLD|ESCALATE|REBOUND|none)$' "$doc"
+rg -q '^\*\*Helper outcome:\*\* (UNSTUCK|ESCALATE|not-run)$' "$doc"
 ```
 
-### Step 6: Write Handoff Document
+**Checkpoint:** verify before thread close that the handoff names current HEAD,
+capture time, repository, HEAD, tracker state, dirty-worktree state, validation
+evidence, pawl disposition, helper outcome, and a concrete next action. Repair
+missing fields and rerun the commands.
 
-**Write to:** `.agents/handoff/YYYY-MM-DD-<topic-slug>.md` (use `date +%Y-%m-%d`)
+### 5. Optional learning
+
+When the thread produced a major decision or at least three meaningful commits,
+suggest `$post-mortem --quick`; do not run it in place of handoff. If `ms` is
+installed, grade only skills genuinely consulted with
+`ms outcome <skill> --success|--failure`.
+
+## Examples
+
+**User says:** `$handoff validation-membrane` after a plain refutation.
+
+**Result:** both artifacts record disposition `REFUTED`, helper outcome
+`not-run`, the failing evidence, and the next auto-redo command.
+
+## Troubleshooting
+
+| Problem | Recovery |
+| --- | --- |
+| The handoff says `HOLD` after one failed check | Restore `REFUTED` and continue auto-redo; reserve `HOLD` for the configured breaker. |
+
+## Artifact Templates
+
+Authoritative handoff:
 
 ```markdown
 # Handoff: <Topic>
+**Captured:** <ISO-8601 timestamp>
+**Repository:** <path>
+**HEAD:** <full 40-character SHA>
+**Tracker:** <issue id and live status, or none>
+**Pawl disposition:** <CONFIRMED | REFUTED | HOLD | ESCALATE | REBOUND | none>
+**Helper outcome:** <UNSTUCK | ESCALATE | not-run>
 
-**Date:** YYYY-MM-DDTHH:MM:SSZ
-**Session:** <brief session description>
-**Status:** <Paused mid-task | Between tasks | Blocked on X>
+## Objective
+<Current objective and acceptance boundary.>
 
----
+## Verified state
+- <Completed action> — evidence: <path, command result, SHA, or verdict>
+- Worktree / external state: <exact inherited state or none>
 
-## What We Accomplished This Session
+## Where we paused
+**Last action:** <verified action>
+**Blocker / questions:** <evidence-bound blocker, disposition, helper outcome, or none>
 
-### 1. <Accomplishment 1>
+## Next action
+<One command or file inspection and its expected result.>
 
-<Brief description with file:line citations>
+## Files to read
+1. `<priority path>` — <why first>
 
-**Files changed:**
-- `path/to/file.py` - Description
-
-### 2. <Accomplishment 2>
-
-...
-
----
-
-## Where We Paused
-
-<Clear description of pause point>
-
-**Last action:** <what was just done>
-**Next action:** <what should happen next>
-**Blockers (if any):** <anything blocking progress>
-
----
-
-## Context to Gather for Next Session
-
-1. <Context item 1> - <why needed>
-2. <Context item 2> - <why needed>
-
----
-
-## Questions to Answer
-
-1. <Open question needing decision>
-2. <Clarification needed>
-
----
-
-## Files to Read
-
-```
-# Priority files (read first)
-path/to/critical-file.py
-.agents/research/YYYY-MM-DD-topic.md
-
-# Secondary files (for context)
-path/to/related-file.py
+## Validation evidence
+- `<command>` → <exit/result>
 ```
 
-### Step 7: Write Continuation Prompt
-
-**Write to:** `.agents/handoff/YYYY-MM-DD-<topic-slug>-prompt.md` (use `date +%Y-%m-%d`)
+Continuation prompt:
 
 ```markdown
-# Continuation Prompt for New Session
-
-Copy/paste this to start the next session:
-
----
-
-## Context
-
-<2-3 sentences describing the work and where we paused>
-
-## Read First
-
-1. The handoff doc: `.agents/handoff/YYYY-MM-DD-<topic-slug>.md`
-2. <Other critical files>
-
-## What I Need Help With
-
-<Clear statement of what the next session should accomplish>
-
-## Key Files
-
-```
-<list of paths to read>
+# Continuation: <Topic>
+Read first: `.agents/handoff/YYYY-MM-DD-<topic>.md` (authoritative state).
+Objective and pause point: <short evidence-bound summary>.
+First action: `<command or file to inspect>`
+Verify HEAD/tracker, then preserve pawl disposition and helper outcome separately.
 ```
 
-## Open Questions
+## Output Specification
 
-1. <Question 1>
-2. <Question 2>
+- **Path:** write both artifacts under `.agents/handoff/` in the current repository.
+- **Filename:** use `YYYY-MM-DD-<topic>.md` for the authoritative handoff and `YYYY-MM-DD-<topic>-prompt.md` for its continuation pointer.
+- **Format:** serialize both as UTF-8 Markdown; the handoff uses the exact required headings in the template and the prompt names its referenced handoff path.
+- **Validation command:** run the `test -s` and `rg -q` checkpoint commands above; every command must exit zero before reporting `DONE`.
+- **Downstream handoff:** the next Codex thread reads the handoff first, verifies recorded HEAD/tracker state, then executes the named first action; later tooling may consume the artifact.
 
----
+## Quality Checklist
 
-<Suggested skill to invoke, e.g., "Use $implement to continue">
-```
+- Evidence quality: accomplishments and state cite durable paths, issue ids, SHAs, or verdict artifacts rather than memory-only claims.
+- Resume quality: the next action is executable, priority files are ordered, and inherited dirty/external state is explicit.
+- Pawl quality: disposition includes `CONFIRMED`; helper outcome is separate; `REFUTED` auto-redoes, `UNSTUCK` re-enters work, and neither `HOLD` nor helper `ESCALATE` is collapsed into a pass.
+- Artifact quality: both filenames match the same topic/date; capture/repository/HEAD/tracker and validation evidence are present; the continuation prompt points to the authoritative handoff.
 
-### Step 8: Extract Learnings (Optional)
+## Codex Execution Profile
 
-If significant learnings occurred this session, also run post-mortem:
+1. Capture the current objective, completed work, unresolved blockers, and the next command or file to inspect.
+2. Prefer durable paths, issue ids, and validation evidence over conversational summaries.
+3. Finish handoff-driven session closeout by running `ao codex ensure-stop --auto-extract`; the CLI already skips duplicate closeout for the same Codex thread.
 
-```bash
-# Check if post-mortem skill should be invoked
-# (if >3 commits or major decisions made)
-git log --oneline --since="2 hours ago" 2>/dev/null | wc -l
-```
+Run closeout only after both Markdown artifacts pass validation. The command is
+idempotent for the same thread; it does not make an incomplete handoff valid.
 
-**If ≥3 commits:** Suggest running `$post-mortem --quick` to extract learnings.
-**If <3 commits:** Handoff alone is sufficient; learnings are likely minimal.
+## Guardrails
 
-### Step 8.5: Grade Skills Used (ms outcome, optional)
+1. Do not leave the next session guessing what to do first.
+2. Do not start an orchestration substrate merely because one is installed.
+3. Do not call the thread closed until artifact validation and Codex closeout
+   have both completed or the closeout failure is recorded in the handoff.
 
-If `ms` is installed (`command -v ms`), grade each skill whose guidance this session **actually used** (genuinely consulted, not merely trigger-matched): `ms outcome <skill> --success` or `ms outcome <skill> --failure`, so ranking is fed by real usage. Honest only — the skills you truly leaned on, not every match. Skip if `ms` is not present.
+## Report
 
-### Step 9: Report to User
+Report both paths, the verified pause point, and the first action. End with:
 
-Tell the user:
-1. Handoff document location
-2. Continuation prompt location
-3. Summary of what was captured
-4. Suggestion: Copy the continuation prompt for next session
-5. If learnings detected, suggest `$post-mortem --quick`
-
-### Step 10: Ensure Codex Closeout
-
-If this handoff is ending a Codex hookless thread, run:
-
-```bash
-ao codex ensure-stop --auto-extract 2>/dev/null || true
-```
-
-`ao codex ensure-stop` is idempotent for the same Codex thread, so duplicate handoff
-invocations are safe. Use `ao codex status` only when you need to confirm
-lifecycle health.
-
-**Output completion marker:**
-```
+```text
 <promise>DONE</promise>
 ```
 
-If no context to capture (no commits, no changes):
-```
+For an idle thread:
+
+```text
 <promise>EMPTY</promise>
 Reason: No session activity found to hand off
 ```
 
-## Example Output
-
-```
-Handoff created:
-  .agents/handoff/20260131T143000Z-auth-refactor.md
-  .agents/handoff/20260131T143000Z-auth-refactor-prompt.md
-
-Session captured:
-- 5 commits, 12 files changed
-- Paused: mid-implementation of OAuth flow
-- Next: Complete token refresh logic
-
-To continue: Copy the prompt from auth-refactor-prompt.md
-
-<promise>DONE</promise>
-```
-
-## Key Rules
-
-- **Capture state, not just summary** - next session needs to pick up exactly where we left off
-- **Identify blockers clearly** - don't leave the next session guessing
-- **List files explicitly** - paths, not descriptions
-- **Write the continuation prompt** - make resumption effortless
-- **Cite everything** - file:line for all references
-
-## Integration with $post-mortem
-
-Handoff captures *state* for continuation.
-Post-mortem captures *learnings* for the flywheel (full knowledge lifecycle).
-
-For a clean session end:
-```bash
-$handoff              # Capture state for continuation
-$post-mortem --quick  # Extract learnings for future
-```
-
-Both should be run when ending a productive session.
-
-## Without ao CLI
-
-If ao CLI not available:
-1. Skip the `ao ratchet status` check in Step 2
-2. Step 8 retro suggestion still works (uses git commit count)
-3. All handoff documents are still written to `.agents/handoff/`
-4. Knowledge is captured for future sessions via handoff, just not indexed
-
----
-
-## Examples
-
-### Paused Mid-Implementation
-
-**User says:** `$handoff` (after working on OAuth flow for 2 hours, need to stop)
-
-**What happens:**
-1. Agent detects recent commits (5 commits in last 2 hours, auth-related)
-2. Agent checks in-progress work with `ao beads exec list` (issue #42 still open)
-3. Agent identifies pause point: "Completed token generation, about to start refresh logic"
-4. Agent lists key files: auth.go, token.go, research doc, plan doc
-5. Agent writes handoff document with accomplishments and pause state
-6. Agent writes continuation prompt with clear next action
-7. Agent checks commits (5) and suggests running `$post-mortem --quick` to extract learnings
-
-**Result:** Handoff captures state, continuation prompt ready, post-mortem suggested.
-
-### Between Tasks, Clean State
-
-**User says:** `$handoff` (just closed issue #40, about to start #41 next session)
-
-**What happens:**
-1. Agent detects 1 commit (closed issue #40), no pending changes
-2. Agent identifies pause point: "Between tasks. Last: closed #40 (fixed rate limiting). Next: start #41 (add JWT refresh)"
-3. Agent lists files from #40 (middleware.go, config.go)
-4. Agent writes handoff with accomplishment summary and next-task preview
-5. Agent writes continuation prompt with `$implement #41` suggestion
-6. Agent skips post-mortem suggestion (<3 commits)
-
-**Result:** Handoff captures clean boundary, continuation is simple.
-
-### Auto-Derived Topic
-
-**User says:** `$handoff` (no topic provided, agent derives from commits)
-
-**What happens:**
-1. Agent reads recent commits: "feat: add rate limiting", "fix: token expiry"
-2. Agent derives topic slug: "rate-limiting" (from most recent commit)
-3. Agent creates handoff files with derived topic in filename
-4. Agent reports: "Handoff created: .agents/handoff/20260213T143000Z-rate-limiting.md"
-
-**Result:** Topic auto-derived from git history, no user input needed.
-
----
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| "No session activity found to hand off" | No commits, no file changes detected | Expected for idle sessions. Nothing to hand off. Start new work or skip handoff. |
-| Handoff files not written | `.agents/handoff/` directory does not exist or not writable | Run `mkdir -p .agents/handoff` or check directory permissions |
-| Topic slug is generic "session-1430" | No descriptive commits or issues to derive topic from | Provide explicit topic: `$handoff auth-refactor` for better naming |
-| Continuation prompt missing key context | Recent files or artifacts not listed in handoff | Manually add missing files to handoff document or re-run with explicit topic |
-| Post-mortem suggested but no learnings | Agent sees ≥3 commits and auto-suggests `$post-mortem --quick` | Run `$post-mortem --quick` or skip if commits are trivial (agent can't judge learning quality, only commit count) |
-
----
-
 ## See Also
 
-- `../post-mortem/SKILL.md` — Full validation + knowledge lifecycle (council + extraction + activation + retirement); `--quick` quick-captures a single learning (folded the retired `$retro`)
-
-## Local Resources
-
-### scripts/
-
-- `scripts/validate.sh`
+- `$post-mortem` — extract reusable learning after state is safe.
+- `$bootstrap` — rehydrate a fresh thread before resuming.
