@@ -1457,6 +1457,7 @@
         "git-changes"
       ],
       "drives_commands": [
+        "ao beads dir",
         "ao beads exec",
         "ao done",
         "ao gate check",
