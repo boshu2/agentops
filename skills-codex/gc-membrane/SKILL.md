@@ -8,6 +8,12 @@ Canonical pack source: **`packs/agentops-membrane/`** in the AgentOps repo (git-
 path while iterating). Operator loop that drives it:
 [`using-gc`](../using-gc/SKILL.md).
 
+## Constraints
+
+- Treat `packs/agentops-membrane/` as the canonical source and installed city copies as projections, because parallel edits create an untraceable close-door fork.
+- Fail closed: no canonical, nonce-bound, cross-family terminal verdict means the quest stays open, because agent-written synthesis is not proof.
+- Never auto-merge or auto-push and never let a reviewer mutate the builder worktree, because author/judge separation and human merge authority are load-bearing boundaries.
+
 ## Why it exists (the one structural gap)
 
 Stock gc orchestrates superbly but has **no fail-closed close**: its
@@ -116,23 +122,47 @@ Artifacts land at `<city>/membrane/<quest>/`:
 `pawl-verdict-round-N.json` (+ latest copied to `pawl-verdict.json`),
 `lane-<family>-round-N.json`, `nonce-round-N.txt`.
 
+Terminal artifact example (actual required shape emitted by `finalize.sh`):
+
 ```json
 {
   "schema_version": "pawl-verdict.v1",
-  "disposition": "CONFIRMED | REFUTED | DEGRADED",
-  "failure_class": "hard | transient | null",
+  "bead_id": "quest-bead",
+  "pr": 0,
+  "head_sha": "<reviewed-sha>",
+  "disposition": "CONFIRMED",
+  "generated_at": "2026-07-11T00:00:00Z",
+  "mode": "multi-model",
+  "author_context_id": "builder-session",
+  "attempt": 3,
   "refuters": [
-    {"family": "gpt",    "verdict": "pass|fail", "nonce_echo": "…", "findings_count": 0},
-    {"family": "gemini", "verdict": "pass|fail", "nonce_echo": "…", "findings_count": 0}
+    {"family": "gpt", "reviewer": "lane-1", "context_id": "lane-1", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/evidence-round-3/lane-1.json"},
+    {"family": "gemini", "reviewer": "lane-2", "context_id": "lane-2", "verdict": "CONFIRMED", "evidence": "<city>/membrane/<quest>/evidence-round-3/lane-2.json"}
   ]
 }
 ```
 
-Checks when reading: `disposition`; ≥2 distinct `refuters[].family` on any
-CONFIRMED; every `nonce_echo` matches the round nonce file; on REFUTED read
-the lane JSON's findings (a placement/path finding may be a **diff-frame
+Checks when reading: required terminal fields; `disposition`; ≥2 distinct
+`refuters[].family` on any CONFIRMED. Nonce anti-replay happens before terminal
+emission: `finalize.sh` compares each input lane's `agentops_nonce` with the
+round nonce. Terminal refuters do not invent a `nonce_echo` field. On REFUTED
+read the copied `evidence-round-<N>/lane-<index>.json` findings (a placement/path finding may be a **diff-frame
 mismatch** — a contract bug, not a build bug; fix the contract frame instead
 of burning redo attempts).
+
+## Output Specification
+
+- **Path:** write quest evidence to the artifact directory `<city>/membrane/<quest>/`; source changes belong only under `packs/agentops-membrane/`.
+- **Filename:** terminal output uses `pawl-verdict-round-<N>.json` plus `pawl-verdict.json`; raw inputs use `lane-<family>-round-<N>.json` and `nonce-round-<N>.txt`; terminal refuter evidence is copied to `evidence-round-<N>/lane-<index>.json`; degradation writes `review-attempt-round-<N>.json`.
+- **Format:** terminal verdicts follow the closed `pawl-verdict.v1` JSON schema; degradation writes nonsemantic `gc-review-attempt.v1` JSON and cannot replace the latest terminal verdict.
+- **Validation command:** run `bats packs/agentops-membrane/tests/{finalize,intake,close-gate}.bats`; for an installed city also run `bash skills/gc-membrane/scripts/e2e.sh --city <city>`.
+- **Downstream handoff:** the gc dispatcher consumes disposition and exit code to close or retry the ralph gate; a human consumes the confirmed branch and evidence before merge.
+
+## Quality Checklist
+
+- Every CONFIRMED round was derived from lane `agentops_nonce` values matching the exact round nonce and has at least two distinct reviewer families.
+- REFUTED findings remain in contained lane artifacts, while DEGRADED remains transport evidence rather than semantic judgment.
+- Failed or exhausted review leaves the quest bead open, and the membrane never merges or pushes.
 
 ## Self-verification
 
