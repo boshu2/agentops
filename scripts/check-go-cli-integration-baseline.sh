@@ -4,9 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EVIDENCE="$ROOT/.agents/rpi/evidence/go-cli-integration-baseline.json"
 RECEIPT_DIR="$ROOT/.agents/evidence/go-cli-production-hardening"
-RESCUE_REF="refs/heads/rescue/age-nw28h.7.8-pre-integration-20260712"
-PRE_INTEGRATION_SHA="e68866553583125c0a08727dad40417e14450b75"
-FAMILIES=(beads capabilities claim close config council-gate doctor done eval gate)
+FAMILIES=(beads capabilities claim close config council-gate doctor "done" eval gate)
 SEAL_FILES=(case.json ownership.json lineage.json)
 
 fail() {
@@ -27,14 +25,18 @@ git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "not a Gi
 
 head_sha="$(git -C "$ROOT" rev-parse --verify HEAD)" || fail "cannot resolve HEAD"
 origin_main_sha="$(git -C "$ROOT" rev-parse --verify refs/remotes/origin/main)" || fail "cannot resolve origin/main"
-rescue_sha="$(git -C "$ROOT" rev-parse --verify "$RESCUE_REF")" || fail "cannot resolve rescue ref: $RESCUE_REF"
-
-test "$rescue_sha" = "$PRE_INTEGRATION_SHA" || fail "rescue ref mismatch: expected $PRE_INTEGRATION_SHA, got $rescue_sha"
-git -C "$ROOT" merge-base --is-ancestor "$RESCUE_REF" HEAD || fail "rescue ref is not an ancestor of HEAD"
 git -C "$ROOT" merge-base --is-ancestor refs/remotes/origin/main HEAD || fail "origin/main is not an ancestor of HEAD"
 
-test -f "$EVIDENCE" || fail "missing integration evidence: ${EVIDENCE#$ROOT/}"
+test -f "$EVIDENCE" || fail "missing integration evidence: ${EVIDENCE#"$ROOT"/}"
 jq -e -s 'length == 1 and (.[0] | type == "object")' "$EVIDENCE" >/dev/null || fail "integration evidence is not one clean JSON object"
+
+PRE_INTEGRATION_SHA="$(jq -er '.pre_integration_sha | select(type == "string" and test("^[0-9a-f]{40}$"))' "$EVIDENCE")" || fail "invalid pre-integration SHA"
+RESCUE_REF="$(jq -er '.rescue_ref | select(type == "string" and startswith("refs/heads/rescue/age-nw28h-7-8-pre-integration-"))' "$EVIDENCE")" || fail "invalid rescue ref"
+expected_rescue_ref="refs/heads/rescue/age-nw28h-7-8-pre-integration-${PRE_INTEGRATION_SHA:0:12}"
+test "$RESCUE_REF" = "$expected_rescue_ref" || fail "rescue ref is not derived from pre-integration SHA"
+rescue_sha="$(git -C "$ROOT" rev-parse --verify "$RESCUE_REF")" || fail "cannot resolve rescue ref: $RESCUE_REF"
+test "$rescue_sha" = "$PRE_INTEGRATION_SHA" || fail "rescue ref mismatch: expected $PRE_INTEGRATION_SHA, got $rescue_sha"
+git -C "$ROOT" merge-base --is-ancestor "$RESCUE_REF" HEAD || fail "rescue ref is not an ancestor of HEAD"
 
 merge_base="$(git -C "$ROOT" merge-base "$PRE_INTEGRATION_SHA" "$origin_main_sha")" || fail "cannot compute live merge base"
 read -r ahead behind < <(git -C "$ROOT" rev-list --left-right --count "$PRE_INTEGRATION_SHA...$origin_main_sha")
