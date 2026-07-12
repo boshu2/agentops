@@ -182,3 +182,47 @@ func (runtime Runtime) pythonBinary() string {
 	}
 	return ""
 }
+
+func (Runtime) LoadBurnLedger(path string) (evalsubstrate.HoldoutBurnLedger, error) {
+	var ledger evalsubstrate.HoldoutBurnLedger
+	raw, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return ledger, nil
+	}
+	if err != nil {
+		return ledger, fmt.Errorf("read burn ledger %s: %w", path, err)
+	}
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		return ledger, fmt.Errorf("parse burn ledger %s: %w", path, err)
+	}
+	return ledger, nil
+}
+func (Runtime) SaveBurnLedger(path string, ledger evalsubstrate.HoldoutBurnLedger) error {
+	data, err := json.MarshalIndent(ledger, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode burn ledger: %w", err)
+	}
+	temporary := path + ".tmp"
+	if err := os.WriteFile(temporary, data, 0o644); err != nil {
+		return fmt.Errorf("write burn ledger temp: %w", err)
+	}
+	if err := os.Rename(temporary, path); err != nil {
+		return fmt.Errorf("commit burn ledger: %w", err)
+	}
+	return nil
+}
+func (Runtime) WriteOutcomesManifest(dir, runID string, record aoeval.RunRecord) (string, error) {
+	runDir := filepath.Join(dir, runID)
+	if err := os.MkdirAll(runDir, 0o750); err != nil {
+		return "", fmt.Errorf("create manifest dir %s: %w", runDir, err)
+	}
+	data, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("encode eval-run manifest: %w", err)
+	}
+	path := filepath.Join(runDir, "manifest.json")
+	if err := os.WriteFile(path, append(data, '\n'), 0o600); err != nil {
+		return "", fmt.Errorf("write eval-run manifest %s: %w", path, err)
+	}
+	return path, nil
+}

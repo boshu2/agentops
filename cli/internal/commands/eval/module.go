@@ -39,12 +39,17 @@ type SuiteUseCases interface {
 	Verdict(context.Context, aoeval.SuiteVerdictRequest) (aoeval.SuiteVerdictResult, error)
 	NRequired(context.Context, aoeval.SuiteNRequiredRequest) (aoeval.SuiteNRequiredResult, error)
 }
+type OutcomesUseCases interface {
+	Compile(context.Context, string) (evalsubstrate.Rubric, error)
+	Ingest(context.Context, aoeval.OutcomesIngestRequest) (aoeval.OutcomesIngestResult, error)
+}
 
 type UseCases struct {
-	Core    CoreUseCases
-	Cleanup CleanupUseCases
-	Task    TaskUseCases
-	Suite   SuiteUseCases
+	Core     CoreUseCases
+	Cleanup  CleanupUseCases
+	Task     TaskUseCases
+	Suite    SuiteUseCases
+	Outcomes OutcomesUseCases
 }
 
 type HostOptions struct {
@@ -110,6 +115,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.Suite != nil {
 		command.AddCommand(module.suiteCommand())
+	}
+	if module.useCases.Outcomes != nil {
+		command.AddCommand(module.outcomesCommand())
 	}
 	return command
 }
@@ -492,6 +500,51 @@ func (module Module) suiteNRequiredCommand() *cobra.Command {
 			return err
 		}
 		fmt.Fprintf(command.OutOrStdout(), "n_required: %d  (baseline_rate=%g MDE=%g alpha=%g power=%g paired=%v)\n", result.NRequired, options.BaselineRate, options.MDE, options.Alpha, options.Power, options.Paired)
+		return nil
+	}
+	return command
+}
+
+func (module Module) outcomesCommand() *cobra.Command {
+	command := &cobra.Command{Use: "outcomes", Short: "Project the locked eval substrate into Outcomes grading payloads (holdout-safe)", Long: "Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority."}
+	command.AddCommand(module.outcomesCompileCommand(), module.outcomesIngestCommand())
+	return command
+}
+
+func (module Module) outcomesCompileCommand() *cobra.Command {
+	command := &cobra.Command{Use: "compile <input.json>", Short: "Compile a holdout-safe Outcomes rubric payload from a locked Task + criteria", Args: cobra.ExactArgs(1)}
+	command.RunE = func(command *cobra.Command, args []string) error {
+		rubric, err := module.useCases.Outcomes.Compile(command.Context(), args[0])
+		if err != nil {
+			return err
+		}
+		return writeJSON(command, rubric)
+	}
+	return command
+}
+
+func (module Module) outcomesIngestCommand() *cobra.Command {
+	var options aoeval.OutcomesIngestRequest
+	command := &cobra.Command{Use: "ingest <score.json>", Short: "Ingest an Outcomes score payload into the one council verdict record", Args: cobra.ExactArgs(1)}
+	command.Flags().StringVar(&options.ExpectedJudgeHash, "expect-judge-hash", "", "refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)")
+	command.Flags().StringVar(&options.BurnLedgerPath, "burn-ledger", "", "path to a JSON HoldoutBurnLedger; enforce and persist holdout burn quota")
+	command.Flags().StringVar(&options.ManifestDir, "manifest-out", "", "also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json")
+	command.Flags().StringVar(&options.RunID, "run-id", "", "run id for the --manifest-out manifest")
+	command.RunE = func(command *cobra.Command, args []string) error {
+		options.ScorePath = args[0]
+		result, err := module.useCases.Outcomes.Ingest(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if result.Warning != "" {
+			fmt.Fprintln(command.ErrOrStderr(), result.Warning)
+		}
+		if err := writeJSON(command, result.Verdict); err != nil {
+			return err
+		}
+		if result.ManifestPath != "" {
+			fmt.Fprintf(command.ErrOrStderr(), "wrote eval-run manifest: %s\n", result.ManifestPath)
+		}
 		return nil
 	}
 	return command
