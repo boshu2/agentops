@@ -21,6 +21,16 @@ type taskUseCasesSpy struct{ runRequest aoeval.TaskRunRequest }
 
 type suiteUseCasesSpy struct{ verdictRequest aoeval.SuiteVerdictRequest }
 
+type outcomesUseCasesSpy struct{ request aoeval.OutcomesIngestRequest }
+
+func (*outcomesUseCasesSpy) Compile(context.Context, string) (evalsubstrate.Rubric, error) {
+	return evalsubstrate.Rubric{}, nil
+}
+func (useCases *outcomesUseCasesSpy) Ingest(_ context.Context, request aoeval.OutcomesIngestRequest) (aoeval.OutcomesIngestResult, error) {
+	useCases.request = request
+	return aoeval.OutcomesIngestResult{Verdict: aoeval.OutcomesVerdict{Verdict: "PASS"}}, nil
+}
+
 func (useCases *suiteUseCasesSpy) Verdict(_ context.Context, request aoeval.SuiteVerdictRequest) (aoeval.SuiteVerdictResult, error) {
 	useCases.verdictRequest = request
 	return aoeval.SuiteVerdictResult{Values: map[string]any{"verdict": "improved"}}, nil
@@ -148,6 +158,18 @@ func TestModuleSuiteVerdictDelegatesFlags(t *testing.T) {
 	}
 	if suite.verdictRequest.SuiteID != "suite-1" || suite.verdictRequest.Arms != "a,b" || suite.verdictRequest.BootstrapSamples != 99 {
 		t.Fatalf("request = %#v", suite.verdictRequest)
+	}
+}
+
+func TestModuleOutcomesIngestDelegatesSafetyFlags(t *testing.T) {
+	outcomes := &outcomesUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Outcomes: outcomes}, HostOptions{}).Command()
+	command.SetArgs([]string{"outcomes", "ingest", "score.json", "--expect-judge-hash", "hash", "--burn-ledger", "burn.json", "--manifest-out", "runs"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if outcomes.request.ScorePath != "score.json" || outcomes.request.ExpectedJudgeHash != "hash" || outcomes.request.BurnLedgerPath != "burn.json" || outcomes.request.ManifestDir != "runs" {
+		t.Fatalf("request = %#v", outcomes.request)
 	}
 }
 
