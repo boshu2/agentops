@@ -12,6 +12,9 @@ import (
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
+	"github.com/boshu2/agentops/cli/internal/goals"
+	"github.com/boshu2/agentops/cli/internal/scenario"
+	"github.com/boshu2/agentops/cli/internal/scenarioresults"
 )
 
 type Runtime struct{}
@@ -225,4 +228,68 @@ func (Runtime) WriteOutcomesManifest(dir, runID string, record aoeval.RunRecord)
 		return "", fmt.Errorf("write eval-run manifest %s: %w", path, err)
 	}
 	return path, nil
+}
+
+func (Runtime) Create(options scenario.CreateOptions) (*scenario.CreateResult, error) {
+	return scenario.Create(options)
+}
+func (Runtime) MkdirAll(path string, mode uint32) error { return os.MkdirAll(path, os.FileMode(mode)) }
+func (Runtime) Exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return err == nil, err
+}
+func (Runtime) ReadDir(path string) ([]aoeval.ScenarioFileEntry, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]aoeval.ScenarioFileEntry, 0, len(entries))
+	for _, entry := range entries {
+		result = append(result, aoeval.ScenarioFileEntry{Name: entry.Name(), IsDir: entry.IsDir()})
+	}
+	return result, nil
+}
+func (Runtime) WriteFile(path string, data []byte, mode uint32) error {
+	return os.WriteFile(path, data, os.FileMode(mode))
+}
+func (Runtime) LoadDirectives(path, id string) ([]goals.ParsedDirective, error) {
+	patcher, _, err := goals.LoadGoalsPatcher(path)
+	if err != nil {
+		return nil, err
+	}
+	return goals.FilterDirectives(patcher.Directives(), 0, id), nil
+}
+func (Runtime) LoadGates(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := goals.ParseMarkdownGoals(data)
+	if err != nil {
+		return nil, err
+	}
+	gates := make(map[string]string, len(file.Goals))
+	for _, goal := range file.Goals {
+		gates[goal.ID] = goal.Check
+	}
+	return gates, nil
+}
+func (Runtime) ScenarioDirs() []string { return goals.DefaultScenarioDirs() }
+func (Runtime) Measure(command string, timeout time.Duration) (string, string) {
+	measurement := goals.MeasureOne(goals.Goal{ID: "scenario-check", Check: command}, timeout)
+	return measurement.Result, measurement.Output
+}
+func (Runtime) CurrentIteration(root string) int {
+	loaded, err := scenarioresults.Load(root, false)
+	if err == nil && loaded.Artifact != nil {
+		return loaded.Artifact.Iteration + 1
+	}
+	return 1
+}
+func (Runtime) AppendResults(root, runID string, iteration int, results []scenarioresults.ScenarioResult, now time.Time) error {
+	_, err := (scenarioresults.Writer{Now: func() time.Time { return now }}).Append(root, runID, iteration, results)
+	return err
 }

@@ -9,6 +9,7 @@ import (
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
+	scenarioapp "github.com/boshu2/agentops/cli/internal/scenario"
 )
 
 type coreUseCasesSpy struct {
@@ -22,6 +23,23 @@ type taskUseCasesSpy struct{ runRequest aoeval.TaskRunRequest }
 type suiteUseCasesSpy struct{ verdictRequest aoeval.SuiteVerdictRequest }
 
 type outcomesUseCasesSpy struct{ request aoeval.OutcomesIngestRequest }
+
+type scenarioUseCasesSpy struct{ addRequest aoeval.ScenarioAddRequest }
+
+func (useCases *scenarioUseCasesSpy) Add(_ context.Context, request aoeval.ScenarioAddRequest) (*scenarioapp.CreateResult, error) {
+	useCases.addRequest = request
+	return &scenarioapp.CreateResult{Scenario: scenarioapp.Scenario{ID: "s-2026-01-01-001"}, Path: "path"}, nil
+}
+func (*scenarioUseCasesSpy) Init(context.Context) (string, error) { return ".agents/holdout", nil }
+func (*scenarioUseCasesSpy) List(context.Context, string) (aoeval.ScenarioListResult, error) {
+	return aoeval.ScenarioListResult{}, nil
+}
+func (*scenarioUseCasesSpy) Validate(context.Context) (aoeval.ScenarioValidationResult, error) {
+	return aoeval.ScenarioValidationResult{}, nil
+}
+func (*scenarioUseCasesSpy) Evaluate(context.Context, aoeval.ScenarioEvaluateRequest) (*aoeval.ScenarioEvaluateReport, error) {
+	return &aoeval.ScenarioEvaluateReport{}, nil
+}
 
 func (*outcomesUseCasesSpy) Compile(context.Context, string) (evalsubstrate.Rubric, error) {
 	return evalsubstrate.Rubric{}, nil
@@ -170,6 +188,18 @@ func TestModuleOutcomesIngestDelegatesSafetyFlags(t *testing.T) {
 	}
 	if outcomes.request.ScorePath != "score.json" || outcomes.request.ExpectedJudgeHash != "hash" || outcomes.request.BurnLedgerPath != "burn.json" || outcomes.request.ManifestDir != "runs" {
 		t.Fatalf("request = %#v", outcomes.request)
+	}
+}
+
+func TestModuleScenarioAddDelegatesClosureLocalFlags(t *testing.T) {
+	useCases := &scenarioUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, Scenario: useCases}, HostOptions{}).Command()
+	command.SetArgs([]string{"scenario", "add", "goal", "--threshold", "0.7", "--status", "active"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if useCases.addRequest.Goal != "goal" || useCases.addRequest.Threshold != .7 || useCases.addRequest.Status != "active" {
+		t.Fatalf("request=%#v", useCases.addRequest)
 	}
 }
 
