@@ -9,6 +9,12 @@ check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"
 check "Codex parity reference exists" "[ -f '$SKILL_DIR/references/codex-parity.md' ]"
 check "SKILL.md links Codex parity reference" "grep -q 'references/codex-parity.md' '$SKILL_DIR/SKILL.md'"
+check "constraints are front-loaded" "awk 'BEGIN{n=0;i=0;found=0} /^---$/{n++;next} n==2{i++; if (/^## Constraints$/){found=1;exit} if (i>80) exit} END{exit !found}' '$SKILL_DIR/SKILL.md'"
+check "constraints bind repair scope" "grep -Fq 'real direct child of' '$SKILL_DIR/SKILL.md' && grep -Fq 'read-only before any repair' '$SKILL_DIR/SKILL.md' && grep -Fq 'documented auto-fixable structural codes' '$SKILL_DIR/SKILL.md' && grep -Fq 'plain refutation is not an andon' '$SKILL_DIR/SKILL.md'"
+check "MISSING_API_VERSION autofix is documented" "grep -Fq 'MISSING_API_VERSION' '$SKILL_DIR/SKILL.md' && grep -Fq 'selected target(s) only' '$SKILL_DIR/SKILL.md'"
+check "verification checkpoints are explicit" "test \$(grep -c '^\*\*Checkpoint:\*\*' '$SKILL_DIR/SKILL.md') -ge 2"
+check "quality checklist has three rules" "awk '/^## Quality Checklist$/{f=1;next} f&&/^## /{exit} f&&/^- /{n++} END{exit !(n>=3)}' '$SKILL_DIR/SKILL.md'"
+check "kernel stays within 250 lines" "test \$(wc -l < '$SKILL_DIR/SKILL.md') -le 250"
 
 # --- Deep audit mode (absorbed from /skill-auditor) ---
 for f in scripts/audit.sh scripts/score_agentops_skill.py references/audit-checks.md references/context-density-checks.md schemas/audit-report.json; do
@@ -30,6 +36,11 @@ done
 check "audit.sh delegates via --check --strict" "grep -q -- '--check --strict' '$SKILL_DIR/scripts/audit.sh'"
 check "audit.sh gates Pass 1 on exit code" "grep -q 'PASS1_EXIT_CODE' '$SKILL_DIR/scripts/audit.sh'"
 check "audit report includes Pass-1 exit_code" "grep -q '\"exit_code\": %s' '$SKILL_DIR/scripts/audit.sh'"
+check "API-version fix follows explicit targets" "grep -Fq 'an explicit --fix target must never mutate a sibling' '$SKILL_DIR/scripts/heal.sh' && grep -Fq 'for check_dir in' '$SKILL_DIR/scripts/heal.sh'"
+check "explicit targets canonicalize fail-closed" "grep -Fq 'symlink spellings are not allowed' '$SKILL_DIR/scripts/heal.sh' && grep -Fq 'parent traversal is not allowed' '$SKILL_DIR/scripts/heal.sh' && grep -Fq 'not a direct child of an allowed skill root' '$SKILL_DIR/scripts/heal.sh'"
+check "audit counts complete autofix allowlist" "grep -Fq 'EMPTY_DIR|MISSING_API_VERSION' '$SKILL_DIR/scripts/audit.sh'"
+check "mutation-boundary fixture exists" "[ -x '$SKILL_DIR/scripts/test-mutation-boundaries.sh' ]"
+check "mutation-boundary fixture passes" "bash '$SKILL_DIR/scripts/test-mutation-boundaries.sh'"
 
 # Stale check name must be gone (pre-mortem F1)
 check "audit.sh has no stale check_description_multiline" "! grep -q 'check_description_multiline' '$SKILL_DIR/scripts/audit.sh'"

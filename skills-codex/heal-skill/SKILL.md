@@ -8,7 +8,12 @@ description: Repair skill hygiene and deep-audit SKILL.md
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
----
+## Constraints
+
+- Resolve every explicit target to a real direct child of `skills/` or `skills-codex/` before processing; reject traversal, missing/outside paths, and every symlink spelling because aliases make mutation ownership ambiguous.
+- Run `--check` and deep audit read-only before any repair, because their exact finding codes and target path define the permitted mutation.
+- Use `--fix` only for the documented auto-fixable structural codes, then rerun strict validation; never hand-edit generated Codex artifacts because parity projections have owned regeneration paths.
+- Treat WARN/FAIL as ordinary repair evidence: redo and re-audit automatically while the breaker remains closed; only a breaker enters HOLD/helper routing, because a plain refutation is not an andon.
 
 ## Quick Start
 
@@ -22,11 +27,9 @@ $heal-skill --fix skills/validate  # Fix a specific skill
 bash skills/heal-skill/scripts/audit.sh skills/council   # Deep audit (read-only; see "Deep audit mode" below)
 ```
 
----
-
 ## What It Detects
 
-Nine checks, run in order:
+Auto-fix allowlist and principal diagnostics:
 
 | Code | Issue | Auto-fixable? |
 |------|-------|---------------|
@@ -35,14 +38,13 @@ Nine checks, run in order:
 | `NAME_MISMATCH` | Frontmatter `name` differs from directory name | Yes -- updates to match directory |
 | `UNLINKED_REF` | File in references/ not linked in SKILL.md | Yes -- converts bare backtick refs to markdown links |
 | `EMPTY_DIR` | Skill directory exists but has no SKILL.md | Yes -- removes empty directory |
+| `MISSING_API_VERSION` | Selected source skill has no `skill_api_version` | Yes -- inserts version 1 in selected target(s) only |
 | `DEAD_REF` | SKILL.md references a non-existent references/ file | No -- warn only |
 | `SCRIPT_REF_MISSING` | SKILL.md references a scripts/ file that does not exist | No -- warn only |
 | `INVALID_AO_CMD` | SKILL.md references an `ao` subcommand that does not exist (only runs if `ao` is on PATH) | No -- warn only |
 | `DEAD_XREF` | SKILL.md references a `$skill-name` that has no matching skill directory | No -- warn only |
 
 > `CATALOG_MISSING` was removed: it only ran when `skills/using-agentops/SKILL.md` existed, and that skill is gone. Catalog completeness is gated by `MISSING_DISPOSITION` against `docs/contracts/skill-dispositions.yaml`.
-
----
 
 ## Execution Steps
 
@@ -59,6 +61,8 @@ bash skills/heal-skill/scripts/heal.sh --fix
 bash skills/heal-skill/scripts/heal.sh --check skills/council
 bash skills/heal-skill/scripts/heal.sh --fix skills/council
 ```
+
+**Checkpoint:** before accepting any mutation, confirm the target path and finding code are present in the read-only report and the code is documented as auto-fixable.
 
 ### Step 1A: Audit Codex Parity Drift When The Codex Bundle Looks Wrong
 
@@ -81,6 +85,8 @@ bash scripts/validate-codex-override-coverage.sh
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 ```
 
+**Checkpoint:** after a Codex repair, require parity, override coverage, and generated-artifact validation to exit zero before reporting the runtime bundle healthy.
+
 ### Step 2: Interpret results
 
 - **Exit 0:** All clean, no findings. Also exit 0 for `--check` mode with findings (report-only).
@@ -90,13 +96,11 @@ bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 
 Show the output. If `--fix` was used, summarize what changed. If `DEAD_REF` findings remain, advise the user to remove or update the broken references manually.
 
----
-
 ## Output Format
 
 **Artifact directory:** stdout for human findings; `.agents/audits/` for JSON reports.
 **Filename convention:** `<skill>-audit.json`.
-**Serialization/schema format:** JSON matching `skills/heal-skill/schemas/audit-report.json`.
+**Serialization/schema format:** JSON matching `schemas/audit-report.json`.
 **Validator command:** `jq -e . .agents/audits/<skill>-audit.json`.
 **Downstream handoff:** consumed by the validation wave before repair.
 
@@ -113,8 +117,6 @@ One line per finding:
 [INVALID_AO_CMD] skills/foo: references 'ao badcmd' which is not a valid subcommand
 [DEAD_XREF] skills/foo: references /nonexistent but skill directory not found
 ```
-
----
 
 ## Deep audit mode (absorbed from $skill-auditor)
 
@@ -149,20 +151,25 @@ Two passes, then an aggregate verdict:
   (finding `f-2026-05-06-auditor-checks-must-fit-host-conventions` — audit checks must fit
   the host's existing valid conventions).
 
-Report JSON conforms to [schemas/audit-report.json](schemas/audit-report.json); the
-canonical SKILL.md template is [../skill-builder/references/skill-template.md](../skill-builder/references/skill-template.md).
+Report JSON conforms to [schemas/audit-report.json](schemas/audit-report.json);
+`skill-builder` owns the canonical SKILL.md template.
 Executable spec: [references/skill-auditor.feature](references/skill-auditor.feature).
-
----
 
 ## Notes
 
 - The script is **idempotent** -- running `--fix` twice produces the same result.
+- Explicit targets contain mutation: `--fix skills/foo` may change `foo` only; source siblings remain byte-identical.
 - `DEAD_REF`, `SCRIPT_REF_MISSING`, `INVALID_AO_CMD`, and `DEAD_XREF` are warn-only because the correct resolution requires human judgment.
 - `INVALID_AO_CMD` only runs if the `ao` CLI is available on PATH. Skipped silently otherwise.
 - When run without a path argument, scans all directories under `skills/`.
 - Use `--strict` for CI gates: exits 1 on any finding. Without `--strict`, check mode exits 0 even with findings.
 - For Codex parity drift, use the audit script plus override-layer repair workflow in [references/codex-parity.md](references/codex-parity.md). The shell fixer is intentionally not allowed to rewrite generated Codex bodies directly.
+
+## Quality Checklist
+
+- Scope fidelity: every changed path is the audited target or its owned parity projection, and every repair maps to a reported finding code.
+- Verification quality: strict heal/deep-audit and applicable Codex parity commands rerun after mutation with zero unresolved findings.
+- Idempotence: a second identical repair run produces no additional diff, while non-auto-fixable findings remain explicit rather than guessed through.
 
 ## Examples
 
@@ -206,7 +213,7 @@ Executable spec: [references/skill-auditor.feature](references/skill-auditor.fea
 
 ## References
 
-- `skills/skill-builder/references/skill-conformance-profiles.yaml` — authoritative source rules, severities, and boundary
+- [`skill-conformance-profiles.yaml`](../skill-builder/references/skill-conformance-profiles.yaml) — authoritative rules, severities, and boundary
 
 - [references/skill-stocktake.md](references/skill-stocktake.md)
 - [references/codex-parity.md](references/codex-parity.md)

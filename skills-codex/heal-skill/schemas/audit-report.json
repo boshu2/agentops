@@ -11,7 +11,7 @@
     },
     "profile_id": {
       "type": "string",
-      "description": "Selected authoritative source skill-conformance profile ID."
+      "description": "Selected authoritative skill-conformance profile ID."
     },
     "verdict": {
       "type": "string",
