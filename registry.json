@@ -346,7 +346,7 @@
         "path": "skills/validate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 23
+        "reference_count": 24
       },
       {
         "name": "domain",
@@ -666,9 +666,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Check AgentOps health",
         "bounded_context": "BC4",
-        "driven_by_skills": [
-          "validate"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao done",
@@ -2861,12 +2859,10 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao doctor",
-        "ao goals measure",
         "ao pawl"
       ],
       "path": "skills/validate/",
-      "references": 23
+      "references": 24
     },
     {
       "sku": "skill:workflow-builder",
@@ -3009,9 +3005,7 @@
       "bounded_context": "BC4",
       "purpose": "Check AgentOps health",
       "status": "active",
-      "driven_by_skills": [
-        "validate"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--before",
         "--config",

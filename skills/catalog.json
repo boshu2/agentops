@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-12T19:00:13Z",
+  "generated_at": "2026-07-12T20:26:54Z",
   "skill_count": 62,
   "skills": [
     {
@@ -1702,7 +1702,7 @@
         "llm-eval-harness"
       ],
       "context_rel": [],
-      "references_count": 23,
+      "references_count": 24,
       "codex_override_present": true
     },
     {
