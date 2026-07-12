@@ -298,6 +298,18 @@ PY
   [ ! -s "$GC_LOG" ]
 }
 
+@test "close gate rejects max_attempts below two before breaker helper round" {
+  guard_line="$(grep -n 'max_attempts must be >= 2' "$GATE" | head -1 | cut -d: -f1)"
+  helper_line="$(grep -n 'HELPER_ROUND=\$((MAXR - 1))' "$GATE" | head -1 | cut -d: -f1)"
+  [ -n "$guard_line" ] && [ -n "$helper_line" ] && [ "$guard_line" -lt "$helper_line" ]
+
+  run_gate confirmed 1 1 UNSTUCK
+  [ "$status" -ne 0 ]
+  echo "$output" | grep -q 'FAIL-CLOSED: max_attempts must be >= 2'
+  grep -q 'gc.failure_reason=gate_invalid_max_attempts' "$BD_LOG"
+  [ ! -s "$GC_LOG" ]
+}
+
 @test "reviewer plus helper wait budget fits inside the formula check timeout" {
   reviewer="$(sed -n 's/^WAIT_SECS="${MEMBRANE_WAIT_SECS:-\([0-9][0-9]*\)}"$/\1/p' "$GATE")"
   helper="$(sed -n 's/^HELPER_WAIT_SECS="${MEMBRANE_HELPER_WAIT_SECS:-\([0-9][0-9]*\)}"$/\1/p' "$GATE")"

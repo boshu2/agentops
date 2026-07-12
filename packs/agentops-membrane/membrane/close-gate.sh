@@ -145,6 +145,10 @@ if [ -z "$MAXR" ]; then
   log "FAIL-CLOSED: no authoritative positive max-attempts budget"
   retry_exit hard gate_no_attempt_budget
 fi
+if [ "$MAXR" -lt 2 ]; then
+  log "FAIL-CLOSED: max_attempts must be >= 2 (got $MAXR)"
+  retry_exit hard gate_invalid_max_attempts
+fi
 HELPER_ROUND=$((MAXR - 1))
 REPO="$QUEST_ROOT/$QUEST"
 BRANCH="quest/$QUEST"
