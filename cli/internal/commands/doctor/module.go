@@ -112,7 +112,7 @@ Examples:
 	flags.BoolVar(&options.online, "online", false, "Enable network probes (default: offline-only)")
 	flags.BoolVar(&options.quick, "quick", false, "Run only fast-path detectors (< 200ms)")
 	flags.StringVar(&options.severity, "severity", "P3", "Minimum severity to emit (P0|P1|P2|P3)")
-	flags.BoolVar(&options.robot, "robot", false, "Alias for stable JSON report output")
+	flags.BoolVar(&options.robot, "robot", false, "Alias for --json with structured wrapper")
 	flags.BoolVar(&options.robotTriage, "robot-triage", false, "Emit the mega-command triage JSON")
 	flags.StringVar(&options.explain, "explain", "", "Expand a single finding by id")
 	command.RunE = func(command *cobra.Command, _ []string) error { return module.runRoot(command, options) }
