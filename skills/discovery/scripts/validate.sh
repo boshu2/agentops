@@ -14,6 +14,9 @@ check "SKILL.md mentions plan phase" "grep -qi 'plan' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions pre-mortem gate" "grep -qi 'pre-mortem' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions fanout approval packet" "grep -q 'PerspectivePlan' '$SKILL_DIR/SKILL.md' && grep -q 'SynthesisPacket' '$SKILL_DIR/SKILL.md' && grep -q 'ApprovalEdge' '$SKILL_DIR/SKILL.md'"
 check "DAG gates judgment WARN explicitly" "grep -q 'judgment WARN is surfaced' '$SKILL_DIR/references/dag.md'"
+check "MVP helper contract fixtures pass" "bash '$SKILL_DIR/scripts/validate-contract-fixtures.sh'"
+check "DAG uses fail-closed helper shell path" "grep -Fq 'if ! bash skills/discovery/scripts/mvp-helper-state.sh claim' '$SKILL_DIR/references/dag.md' && grep -Fq 'if ! bash skills/discovery/scripts/mvp-helper-state.sh transition' '$SKILL_DIR/references/dag.md'"
+check "BLOCKED marker distinguishes failure classes" "grep -q 'fanout/hard gates' '$SKILL_DIR/SKILL.md' && grep -q 'ordinary MVP breaker' '$SKILL_DIR/SKILL.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1
