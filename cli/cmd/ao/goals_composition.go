@@ -15,8 +15,9 @@ import (
 func newGoalsCommand() *cobra.Command {
 	resolver := goalsadapter.PathResolver{}
 	return goalscommand.NewModule(goalscommand.UseCases{
-		Simple:     goalsapp.SimpleService{},
-		Management: goalsapp.ManagementService{},
+		Simple:      goalsapp.SimpleService{},
+		Management:  goalsapp.ManagementService{},
+		ManualSteer: goalsapp.ManualSteerService{},
 	}, goalscommand.HostOptions{
 		OutputMode:       GetOutput,
 		DryRun:           GetDryRun,
