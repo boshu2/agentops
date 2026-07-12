@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestDetectCodexLifecycleProfile_Hookless(t *testing.T) {
@@ -202,10 +204,10 @@ Use ao codex start and ao codex stop when runtime hooks are unavailable.
 	if result.Runtime.Mode != lifecycleModeCodexHookless {
 		t.Fatalf("runtime mode = %q, want %q", result.Runtime.Mode, lifecycleModeCodexHookless)
 	}
-	if result.StartupContextPath == "" || !fileExists(result.StartupContextPath) {
+	if result.StartupContextPath == "" || !quality.FileExists(result.StartupContextPath) {
 		t.Fatalf("startup context path missing or unreadable: %q", result.StartupContextPath)
 	}
-	if result.StatePath == "" || !fileExists(result.StatePath) {
+	if result.StatePath == "" || !quality.FileExists(result.StatePath) {
 		t.Fatalf("state path missing or unreadable: %q", result.StatePath)
 	}
 	citationsPath := filepath.Join(repo, ".agents", "ao", "citations.jsonl")
@@ -615,7 +617,7 @@ func TestCodexStopJSONUsesHistoryFallback(t *testing.T) {
 	if result.Session.SessionID == "" {
 		t.Fatal("expected session close result to include a session ID")
 	}
-	if !fileExists(result.TranscriptPath) {
+	if !quality.FileExists(result.TranscriptPath) {
 		t.Fatalf("synthetic transcript path missing: %s", result.TranscriptPath)
 	}
 }

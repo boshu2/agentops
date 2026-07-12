@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/pool"
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -710,8 +711,8 @@ func TestJSONValidity_Config(t *testing.T) {
 func TestJSONValidity_Doctor(t *testing.T) {
 	withDoctorJSON(t)
 
-	result := doctorOutput{
-		Checks: []doctorCheck{
+	result := quality.DoctorOutput{
+		Checks: []quality.Check{
 			{Name: "ao CLI", Status: "pass", Detail: "v0.0.0-test", Required: true},
 			{Name: "test check", Status: "warn", Detail: "not installed", Required: false},
 		},

@@ -1,7 +1,9 @@
 package doctor
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -73,6 +75,82 @@ func TestInheritedDryRunProtectsFixGCAndUndo(t *testing.T) {
 	}
 	if !mutation.request.DryRun || !maintenance.gc.DryRun || !maintenance.undo.DryRun {
 		t.Fatalf("fix=%+v gc=%+v undo=%+v", mutation.request, maintenance.gc, maintenance.undo)
+	}
+}
+
+func TestDryRunUnionProtectsEveryMutationEntryPoint(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		args    []string
+		globals GlobalOptions
+		assert  func(*testing.T, *fakeMutation, *fakeMaintenance)
+	}{
+		{name: "root doctor fix and doctor-local dry-run", args: []string{"--fix", "--dry-run"}, assert: func(t *testing.T, mutation *fakeMutation, _ *fakeMaintenance) {
+			if !mutation.request.DryRun {
+				t.Fatalf("request = %+v", mutation.request)
+			}
+		}},
+		{name: "fix child and root dry-run", args: []string{"fix"}, globals: GlobalOptions{DryRun: true}, assert: func(t *testing.T, mutation *fakeMutation, _ *fakeMaintenance) {
+			if !mutation.request.DryRun {
+				t.Fatalf("request = %+v", mutation.request)
+			}
+		}},
+		{name: "gc child and root dry-run", args: []string{"gc", "--before", "2026-01-01", "--yes"}, globals: GlobalOptions{DryRun: true}, assert: func(t *testing.T, _ *fakeMutation, maintenance *fakeMaintenance) {
+			if !maintenance.gc.DryRun {
+				t.Fatalf("request = %+v", maintenance.gc)
+			}
+		}},
+		{name: "undo child and undo-local dry-run", args: []string{"undo", "latest", "--dry-run"}, assert: func(t *testing.T, _ *fakeMutation, maintenance *fakeMaintenance) {
+			if !maintenance.undo.DryRun {
+				t.Fatalf("request = %+v", maintenance.undo)
+			}
+		}},
+		{name: "undo child and root dry-run", args: []string{"undo", "latest"}, globals: GlobalOptions{DryRun: true}, assert: func(t *testing.T, _ *fakeMutation, maintenance *fakeMaintenance) {
+			if !maintenance.undo.DryRun {
+				t.Fatalf("request = %+v", maintenance.undo)
+			}
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			mutation, maintenance := &fakeMutation{}, &fakeMaintenance{}
+			command := testModule(mutation, maintenance, test.globals).Command()
+			command.SetArgs(test.args)
+			if err := command.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			test.assert(t, mutation, maintenance)
+		})
+	}
+}
+
+func TestJSONUnionReachesRootAndChildFix(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		args    []string
+		globals GlobalOptions
+	}{
+		{name: "doctor-local json", args: []string{"--fix", "--json"}},
+		{name: "doctor robot alias", args: []string{"--fix", "--robot"}},
+		{name: "root global json", args: []string{"fix"}, globals: GlobalOptions{JSON: true}},
+		{name: "root output json", args: []string{"fix"}, globals: GlobalOptions{Output: "json"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			mutation, maintenance := &fakeMutation{}, &fakeMaintenance{}
+			command := testModule(mutation, maintenance, test.globals).Command()
+			var stdout bytes.Buffer
+			command.SetOut(&stdout)
+			command.SetArgs(test.args)
+			if err := command.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			if !mutation.request.JSON {
+				t.Fatalf("request = %+v", mutation.request)
+			}
+			var report doctorapp.Report
+			if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+				t.Fatalf("structured output invalid: %v\n%s", err, stdout.String())
+			}
+		})
 	}
 }
 
