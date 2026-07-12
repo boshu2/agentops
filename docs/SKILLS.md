@@ -106,10 +106,14 @@ What are you trying to do?
 <!-- BEGIN:spine -->
 ## The Membrane — validation spine (no verdict = not done)
 
-The verification skills, the load-bearing product. Every change reaches *done*
-only with an independent verdict — a fresh-context, cross-family, or
-deterministic check on the completion claim. Reach here first: no verdict, not
-done.
+Move 6 of the operating loop: prove acceptance against the slice's behavior
+contract (Gherkin → ATDD). Every change reaches *done* only with an independent
+verdict — fresh-context, cross-family, or deterministic check on the completion
+claim. **No verdict = not done.** Without scenarios/acceptance tests, HOLD —
+the membrane is not a vibe review.
+
+Reach here **after** `/plan` (and usually `/implement`) has frozen the behavior
+to prove. Full flow: [Intent → Validated Code](architecture/intent-to-validated-code.md).
 
 ### /validate
 

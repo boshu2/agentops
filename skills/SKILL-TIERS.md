@@ -4,10 +4,11 @@ This document defines the internal `tier` field used in skill frontmatter. Publi
 
 ## The Spine (Membrane + Bookkeeper)
 
-Two skill sets lead the operating model. The **Membrane** proves each change is
-actually done — no verdict, not done. The **Bookkeeper** tracks the work between
-your head and *done*. Everything else (research, plan, build, ship) runs *through*
-these two, and the router below leads with them.
+Two skill sets brace the operating model. The **Bookkeeper** carries intent and
+acceptance through beads and sessions. The **Membrane** proves each change is
+actually done against that acceptance — no verdict, not done. Research, plan,
+build, and ship skills run *through* this spine; the [Skills Matrix](../docs/skills-matrix.md)
+places every skill on the loop. Router: [docs/SKILLS.md](../docs/SKILLS.md).
 
 **The Membrane — validation spine (no verdict = not done):**
 
