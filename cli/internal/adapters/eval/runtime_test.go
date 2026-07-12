@@ -17,6 +17,7 @@ func TestRuntimeSatisfiesCorePortAndResolvesHostPaths(t *testing.T) {
 	var _ aoeval.TaskRuntime = Runtime{}
 	var _ aoeval.SuiteRuntime = Runtime{}
 	var _ aoeval.OutcomesRuntime = Runtime{}
+	var _ aoeval.ScenarioRuntime = Runtime{}
 	workDir, err := port.WorkDir()
 	if err != nil {
 		t.Fatalf("WorkDir: %v", err)

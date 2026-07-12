@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
+	scenarioapp "github.com/boshu2/agentops/cli/internal/scenario"
 )
 
 type CoreUseCases interface {
@@ -43,6 +45,13 @@ type OutcomesUseCases interface {
 	Compile(context.Context, string) (evalsubstrate.Rubric, error)
 	Ingest(context.Context, aoeval.OutcomesIngestRequest) (aoeval.OutcomesIngestResult, error)
 }
+type ScenarioUseCases interface {
+	Add(context.Context, aoeval.ScenarioAddRequest) (*scenarioapp.CreateResult, error)
+	Init(context.Context) (string, error)
+	List(context.Context, string) (aoeval.ScenarioListResult, error)
+	Validate(context.Context) (aoeval.ScenarioValidationResult, error)
+	Evaluate(context.Context, aoeval.ScenarioEvaluateRequest) (*aoeval.ScenarioEvaluateReport, error)
+}
 
 type UseCases struct {
 	Core     CoreUseCases
@@ -50,11 +59,14 @@ type UseCases struct {
 	Task     TaskUseCases
 	Suite    SuiteUseCases
 	Outcomes OutcomesUseCases
+	Scenario ScenarioUseCases
 }
 
 type HostOptions struct {
-	OutputMode func(*cobra.Command) string
-	Verbose    func(*cobra.Command) bool
+	OutputMode  func(*cobra.Command) string
+	Verbose     func(*cobra.Command) bool
+	ProjectRoot func() string
+	GoalsPath   func() string
 }
 
 type Module struct {
@@ -118,6 +130,9 @@ release. Live Claude and Codex adapters are evaluated by a later runtime tier.`,
 	}
 	if module.useCases.Outcomes != nil {
 		command.AddCommand(module.outcomesCommand())
+	}
+	if module.useCases.Scenario != nil {
+		command.AddCommand(module.scenarioCommand())
 	}
 	return command
 }
@@ -548,6 +563,140 @@ func (module Module) outcomesIngestCommand() *cobra.Command {
 		return nil
 	}
 	return command
+}
+
+func (module Module) scenarioCommand() *cobra.Command {
+	command := &cobra.Command{Use: "scenario", Short: "Manage holdout scenarios for behavioral validation", Long: "Create, list, validate, and evaluate holdout scenarios stored in .agents/holdout/."}
+	command.AddCommand(module.scenarioInitCommand(), module.scenarioAddCommand(), module.scenarioListCommand(), module.scenarioValidateCommand(), module.scenarioEvaluateCommand())
+	return command
+}
+
+func (module Module) scenarioInitCommand() *cobra.Command {
+	command := &cobra.Command{Use: "init", Short: "Initialize .agents/holdout/ directory for scenario storage"}
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		path, err := module.useCases.Scenario.Init(command.Context())
+		if err == nil {
+			fmt.Fprintf(command.OutOrStdout(), "Initialized holdout directory at %s\n", path)
+		}
+		return err
+	}
+	return command
+}
+
+func (module Module) scenarioAddCommand() *cobra.Command {
+	options := aoeval.ScenarioAddRequest{Threshold: .8, Status: "draft", Source: "human"}
+	command := &cobra.Command{Use: "add <goal>", Short: "Author a holdout scenario from a goal description", Args: cobra.ExactArgs(1)}
+	command.Flags().StringVar(&options.Narrative, "narrative", "", "Narrative description (default: inferred from goal)")
+	command.Flags().StringVar(&options.ExpectedOutcome, "expected-outcome", "", "Expected observable outcome (default: inferred from goal)")
+	command.Flags().Float64Var(&options.Threshold, "threshold", .8, "Satisfaction threshold in [0,1]")
+	command.Flags().StringVar(&options.Status, "status", "draft", "Scenario status (active, draft, retired)")
+	command.Flags().StringVar(&options.Source, "source", "human", "Scenario source (human, agent, prod-telemetry)")
+	_ = command.RegisterFlagCompletionFunc("status", staticCompletion("active", "draft", "retired"))
+	_ = command.RegisterFlagCompletionFunc("source", staticCompletion("human", "agent", "prod-telemetry"))
+	command.RunE = func(command *cobra.Command, args []string) error {
+		options.Goal = args[0]
+		result, err := module.useCases.Scenario.Add(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if module.outputMode(command) == "json" {
+			return writeJSON(command, result.Scenario)
+		}
+		fmt.Fprintf(command.OutOrStdout(), "Created scenario %s at %s\n", result.Scenario.ID, result.Path)
+		return nil
+	}
+	return command
+}
+
+func (module Module) scenarioListCommand() *cobra.Command {
+	var status string
+	command := &cobra.Command{Use: "list", Short: "List holdout scenarios"}
+	command.Flags().StringVar(&status, "status", "", "Filter by status (active, draft, retired)")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.Scenario.List(command.Context(), status)
+		if err != nil {
+			return err
+		}
+		if result.MissingDirectory {
+			fmt.Fprintln(command.OutOrStdout(), "No holdout directory found. Run 'ao scenario init' first.")
+			return nil
+		}
+		if len(result.Scenarios) == 0 {
+			fmt.Fprintln(command.OutOrStdout(), "No scenarios found.")
+			return nil
+		}
+		return writeJSON(command, result.Scenarios)
+	}
+	return command
+}
+
+func (module Module) scenarioValidateCommand() *cobra.Command {
+	command := &cobra.Command{Use: "validate", Short: "Validate holdout scenarios against schema"}
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		result, err := module.useCases.Scenario.Validate(command.Context())
+		if err != nil {
+			return err
+		}
+		if result.MissingDirectory {
+			fmt.Fprintln(command.OutOrStdout(), "No holdout directory found. Run 'ao scenario init' first.")
+			return nil
+		}
+		if len(result.Errors) > 0 {
+			fmt.Fprintf(command.ErrOrStderr(), "Validation errors:\n%s\n", strings.Join(result.Errors, "\n"))
+			return fmt.Errorf("%d validation error(s) found", len(result.Errors))
+		}
+		if result.Validated == 0 {
+			fmt.Fprintln(command.OutOrStdout(), "No scenario files found to validate.")
+		} else {
+			fmt.Fprintf(command.OutOrStdout(), "Validated %d scenario(s): all pass\n", result.Validated)
+		}
+		return nil
+	}
+	return command
+}
+
+func (module Module) scenarioEvaluateCommand() *cobra.Command {
+	options := aoeval.ScenarioEvaluateRequest{Timeout: 2 * time.Minute, RunID: "ao-scenario-evaluate"}
+	var jsonOutput bool
+	command := &cobra.Command{Use: "evaluate", Short: "Evaluate directive-linked scenarios and record satisfaction results", Args: cobra.NoArgs}
+	command.Flags().StringVar(&options.DirectiveID, "directive", "", "Evaluate only the directive with this stable Directive ID")
+	command.Flags().BoolVar(&options.All, "all", false, "Evaluate every directive's linked scenarios")
+	command.Flags().BoolVar(&jsonOutput, "json", false, "Emit the machine-readable evaluation report")
+	command.Flags().DurationVar(&options.Timeout, "timeout", 2*time.Minute, "Per-check execution timeout")
+	command.Flags().StringVar(&options.RunID, "run-id", "ao-scenario-evaluate", "run_id recorded in the results artifact")
+	command.RunE = func(command *cobra.Command, _ []string) error {
+		if module.host.ProjectRoot != nil {
+			options.ProjectRoot = module.host.ProjectRoot()
+		}
+		if module.host.GoalsPath != nil {
+			options.GoalsPath = module.host.GoalsPath()
+		}
+		report, err := module.useCases.Scenario.Evaluate(command.Context(), options)
+		if err != nil {
+			return err
+		}
+		if jsonOutput || module.outputMode(command) == "json" {
+			return writeJSON(command, report)
+		}
+		return renderScenarioEvaluate(command, report)
+	}
+	return command
+}
+
+func renderScenarioEvaluate(command *cobra.Command, report *aoeval.ScenarioEvaluateReport) error {
+	for _, evaluation := range report.Evaluations {
+		if !evaluation.Recorded {
+			fmt.Fprintf(command.OutOrStdout(), "%-20s %-10s not recorded — %s\n", evaluation.ScenarioID, "-", evaluation.Note)
+		} else {
+			fmt.Fprintf(command.OutOrStdout(), "%-20s %-10s shape=%s score=%.2f threshold=%.2f\n", evaluation.ScenarioID, evaluation.Verdict, evaluation.Shape, evaluation.Score, evaluation.Threshold)
+		}
+	}
+	if report.Written == 0 {
+		fmt.Fprintln(command.OutOrStdout(), "No results recorded; artifact untouched.")
+		return nil
+	}
+	fmt.Fprintf(command.OutOrStdout(), "Wrote %d result(s) to %s (run %s, iteration %d)\n", report.Written, report.Artifact, report.RunID, report.Iteration)
+	return nil
 }
 
 func (module Module) renderRun(command *cobra.Command, result aoeval.CoreRunResult) error {
