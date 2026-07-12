@@ -67,7 +67,7 @@ func (Module) Contract() clicontract.CommandContract {
 		ID: "ao.doctor",
 		Profiles: clicontract.ProfileDefault | clicontract.ProfileFlywheel |
 			clicontract.ProfileLegacy | clicontract.ProfileCombined,
-		Args:    clicontract.ArgsPolicy{Name: "range", Validate: cobra.ArbitraryArgs},
+		Args:    clicontract.ArgsPolicy{Name: "range", Validate: cobra.NoArgs},
 		Output:  clicontract.OutputNone,
 		Effects: clicontract.EffectFilesystem | clicontract.EffectProcess | clicontract.EffectNetwork | clicontract.EffectEnvironment | clicontract.EffectClock,
 		ExitClasses: map[int]clicontract.ExitClass{
@@ -108,7 +108,7 @@ func (module Module) globals(command *cobra.Command) GlobalOptions {
 func (module Module) Command() *cobra.Command {
 	var options rootOptions
 	command := &cobra.Command{
-		Use: "doctor", Short: "Check AgentOps health", Args: nil,
+		Use: "doctor", Short: "Check AgentOps health", Args: cobra.NoArgs,
 		Long: `Run health checks on your AgentOps installation.
 
 Validates that all required components are present and configured.
@@ -287,7 +287,7 @@ func (module Module) fixCommand(options *rootOptions) *cobra.Command {
 		jsonOutput := module.wantsJSON(command, options)
 		dryRun := module.effectiveDryRun(command, options, false)
 		return module.runFix(command, mutationRequest(*options, dryRun, jsonOutput), jsonOutput)
-	}}
+	}, Args: cobra.NoArgs}
 }
 
 func (module Module) undoCommand(options *rootOptions) *cobra.Command {
@@ -323,13 +323,13 @@ func (module Module) explainCommand(options *rootOptions) *cobra.Command {
 }
 
 func (module Module) capabilitiesCommand() *cobra.Command {
-	return &cobra.Command{Use: "capabilities", Short: "Print the machine-readable doctor contract (JSON)", RunE: func(command *cobra.Command, _ []string) error {
+	return &cobra.Command{Use: "capabilities", Short: "Print the machine-readable doctor contract (JSON)", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
 		return writeJSON(command, module.useCases.Read.Capabilities(command.Context()))
 	}}
 }
 
 func (module Module) healthCommand(options *rootOptions) *cobra.Command {
-	return &cobra.Command{Use: "health", Short: "Cheap one-line liveness summary", RunE: func(command *cobra.Command, _ []string) error {
+	return &cobra.Command{Use: "health", Short: "Cheap one-line liveness summary", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
 		line, result, err := module.useCases.Read.Health(command.Context())
 		if err != nil {
 			return exit(doctorapp.ExitIOError, err.Error())
@@ -346,7 +346,7 @@ func (module Module) healthCommand(options *rootOptions) *cobra.Command {
 }
 
 func (module Module) robotDocsCommand() *cobra.Command {
-	return &cobra.Command{Use: "robot-docs", Short: "Print the paste-ready agent handbook (Markdown)", RunE: func(command *cobra.Command, _ []string) error {
+	return &cobra.Command{Use: "robot-docs", Short: "Print the paste-ready agent handbook (Markdown)", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
 		_, err := fmt.Fprint(command.OutOrStdout(), module.useCases.Read.RobotDocs(command.Context()))
 		return err
 	}}
@@ -354,7 +354,7 @@ func (module Module) robotDocsCommand() *cobra.Command {
 
 func (module Module) gcCommand(options *rootOptions) *cobra.Command {
 	var local gcOptions
-	command := &cobra.Command{Use: "gc", Short: "Prune old runs (requires --yes and --before <date>)"}
+	command := &cobra.Command{Use: "gc", Short: "Prune old runs (requires --yes and --before <date>)", Args: cobra.NoArgs}
 	command.Flags().StringVar(&local.before, "before", "", "Prune runs started before this date (YYYY-MM-DD)")
 	command.Flags().BoolVar(&local.yes, "yes", false, "Confirm pruning (required)")
 	command.RunE = func(command *cobra.Command, _ []string) error {
@@ -380,7 +380,7 @@ func (module Module) gcCommand(options *rootOptions) *cobra.Command {
 }
 
 func (module Module) listCommand(options *rootOptions) *cobra.Command {
-	return &cobra.Command{Use: "ls", Short: "List runs in .doctor/runs/", RunE: func(command *cobra.Command, _ []string) error {
+	return &cobra.Command{Use: "ls", Short: "List runs in .doctor/runs/", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
 		runs, err := module.useCases.Read.List(command.Context())
 		if err != nil {
 			return exit(doctorapp.ExitIOError, err.Error())
@@ -400,7 +400,7 @@ func (module Module) listCommand(options *rootOptions) *cobra.Command {
 }
 
 func (module Module) diffCommand(options *rootOptions) *cobra.Command {
-	return &cobra.Command{Use: "diff", Short: "Show what --fix would change (read-only)", RunE: func(command *cobra.Command, _ []string) error {
+	return &cobra.Command{Use: "diff", Short: "Show what --fix would change (read-only)", Args: cobra.NoArgs, RunE: func(command *cobra.Command, _ []string) error {
 		jsonOutput := module.wantsJSON(command, options)
 		report, err := module.useCases.Read.Diff(command.Context(), readRequest(*options, true, jsonOutput))
 		if err != nil {
