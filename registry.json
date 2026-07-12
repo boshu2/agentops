@@ -498,7 +498,7 @@
         "path": "skills/status/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "codex-exec",
@@ -2713,7 +2713,7 @@
         "ao session bootstrap"
       ],
       "path": "skills/status/",
-      "references": 1
+      "references": 2
     },
     {
       "sku": "skill:swarm",
