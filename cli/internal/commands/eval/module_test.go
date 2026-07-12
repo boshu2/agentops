@@ -26,6 +26,16 @@ type outcomesUseCasesSpy struct{ request aoeval.OutcomesIngestRequest }
 
 type scenarioUseCasesSpy struct{ addRequest aoeval.ScenarioAddRequest }
 
+type scenarioABUseCasesSpy struct{ request aoeval.ScenarioABRequest }
+
+func (useCases *scenarioABUseCasesSpy) Run(_ context.Context, request aoeval.ScenarioABRequest) (aoeval.ScenarioABResult, error) {
+	useCases.request = request
+	return aoeval.ScenarioABResult{Card: aoeval.ScenarioDeltaScorecard{ScenarioID: "s-1", Gate: aoeval.ScenarioGate{Pass: true}}}, nil
+}
+func (*scenarioABUseCasesSpy) Moat(context.Context, aoeval.ScenarioMoatRequest) (aoeval.MoatClaimResult, error) {
+	return aoeval.MoatClaimResult{}, nil
+}
+
 func (useCases *scenarioUseCasesSpy) Add(_ context.Context, request aoeval.ScenarioAddRequest) (*scenarioapp.CreateResult, error) {
 	useCases.addRequest = request
 	return &scenarioapp.CreateResult{Scenario: scenarioapp.Scenario{ID: "s-2026-01-01-001"}, Path: "path"}, nil
@@ -200,6 +210,18 @@ func TestModuleScenarioAddDelegatesClosureLocalFlags(t *testing.T) {
 	}
 	if useCases.addRequest.Goal != "goal" || useCases.addRequest.Threshold != .7 || useCases.addRequest.Status != "active" {
 		t.Fatalf("request=%#v", useCases.addRequest)
+	}
+}
+
+func TestModuleScenarioABDelegatesFlags(t *testing.T) {
+	useCases := &scenarioABUseCasesSpy{}
+	command := NewModule(UseCases{Core: &coreUseCasesSpy{}, ScenarioAB: useCases}, HostOptions{}).Command()
+	command.SetArgs([]string{"scenario-ab", "--scenario", "s.json", "--token-budget", "9", "--control-only"})
+	if err := command.Execute(); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	if useCases.request.ScenarioPath != "s.json" || useCases.request.TokenBudget != 9 || !useCases.request.ControlOnly {
+		t.Fatalf("request=%#v", useCases.request)
 	}
 }
 
