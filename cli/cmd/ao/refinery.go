@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	gateadapter "github.com/boshu2/agentops/cli/internal/adapters/gate"
 	// Register the seed checks the refinery's full gate runs.
 	_ "github.com/boshu2/agentops/cli/internal/gates/checks"
 	"github.com/boshu2/agentops/cli/internal/refinery"
@@ -54,7 +55,7 @@ func init() {
 }
 
 func runRefineryOnce(cmd *cobra.Command, _ []string) error {
-	root, err := gateRepoRoot()
+	root, err := refineryRepoRoot()
 	if err != nil {
 		return fmt.Errorf("resolve repo root: %w", err)
 	}
@@ -77,10 +78,18 @@ func runRefineryOnce(cmd *cobra.Command, _ []string) error {
 }
 
 func runRefineryRun(cmd *cobra.Command, _ []string) error {
-	root, err := gateRepoRoot()
+	root, err := refineryRepoRoot()
 	if err != nil {
 		return fmt.Errorf("resolve repo root: %w", err)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "refinery: looping every %s (Ctrl-C to stop)\n", refineryInterval)
 	return refinery.NewProduction(root).Loop(cmd.Context(), refineryInterval)
+}
+
+func refineryRepoRoot() (string, error) {
+	start, err := resolveProjectDir()
+	if err != nil {
+		return "", err
+	}
+	return gateadapter.ResolveRepoRoot(start)
 }

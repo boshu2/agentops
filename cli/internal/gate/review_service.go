@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 const defaultBulkApproveThreshold = 24 * time.Hour
 
 type ReviewEntry struct {
-	ID                     string        `json:"id" yaml:"id"`
-	Tier                   string        `json:"tier" yaml:"tier"`
-	Age                    time.Duration `json:"-" yaml:"-"`
-	AgeString              string        `json:"age,omitempty" yaml:"age,omitempty"`
-	Utility                float64       `json:"utility" yaml:"utility"`
-	ApproachingAutoPromote bool          `json:"approaching_auto_promote,omitempty" yaml:"approaching_auto_promote,omitempty"`
-	Urgency                string        `json:"urgency" yaml:"urgency"`
+	types.PoolEntry
+	FilePath               string        `json:"file_path,omitempty"`
+	Age                    time.Duration `json:"-"`
+	AgeString              string        `json:"age,omitempty"`
+	ApproachingAutoPromote bool          `json:"approaching_auto_promote,omitempty"`
+	Urgency                string        `json:"-" yaml:"-"`
 }
 
 type ApproveRequest struct {
