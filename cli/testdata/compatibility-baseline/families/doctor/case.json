@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "doctor",
+  "checks": [
+    {
+      "id": "doctor-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-doctor.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" doctor --help >\"$tmp/help\"; grep -Fq 'ao doctor [flags]' \"$tmp/help\"; for child in capabilities diff explain fix gc health ls robot-docs undo; do grep -Eq \"^[[:space:]]+$child[[:space:]]\" \"$tmp/help\"; done; mkdir -p \"$tmp/repo/.doctor/runs/old\"; printf '{\"started_at\":\"2025-01-01T00:00:00Z\"}\\n' >\"$tmp/repo/.doctor/runs/old/report.json\"; set +e; \"$tmp/ao\" doctor junk >\"$tmp/junk.out\" 2>\"$tmp/junk.err\"; junk=$?; set -e; test \"$junk\" -eq 1; (cd \"$tmp/repo\" && \"$tmp/ao\" doctor gc --before 2026-01-01 --yes >\"$tmp/gc.real\"); grep -qx 'pruned 1 run(s)' \"$tmp/gc.real\"; test ! -e \"$tmp/repo/.doctor/runs/old\""
+    },
+    {
+      "id": "doctor-go-behavior",
+      "command": "cd cli && go test ./internal/doctor ./internal/adapters/doctor ./cmd/ao -run 'Doctor|GC|Maintenance|Mutate_DryRun|DiffDoesNotCreate|DiagnoseSince' -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status":"evidence","evidence":["doctor-black-box"]},
+    "aliases": {"status":"not_applicable","reason":"The doctor family declares no aliases."},
+    "accepted_args": {"status":"evidence","evidence":["doctor-black-box","doctor-go-behavior"]},
+    "rejected_args": {"status":"evidence","evidence":["doctor-black-box"]},
+    "stdout": {"status":"evidence","evidence":["doctor-black-box","doctor-go-behavior"]},
+    "stderr": {"status":"evidence","evidence":["doctor-black-box"]},
+    "exit_classes": {"status":"evidence","evidence":["doctor-black-box","doctor-go-behavior"]},
+    "tracker_selection": {"status":"not_applicable","reason":"Doctor inspects health and repair state but does not select the repository issue tracker."},
+    "ordered_effects": {"status":"evidence","evidence":["doctor-black-box","doctor-go-behavior"]}
+  }
+}
