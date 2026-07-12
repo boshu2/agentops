@@ -1,0 +1,267 @@
+From 1a40bf6da71e7f98f59ee3ac4a2da967abec794b Mon Sep 17 00:00:00 2001
+From: Boden Fuller <boden.fuller@gmail.com>
+Date: Sun, 12 Jul 2026 16:57:06 -0400
+Subject: [PATCH] patch(dispatch): add terminal hold exit for checked steps
+
+---
+ FORK.md                                 |  2 +
+ docs/reference/specs/formula-spec-v2.md |  8 +++
+ internal/beadmeta/keys.go               |  2 +
+ internal/beadmeta/keys_test.go          |  1 +
+ internal/beadmeta/values.go             |  1 +
+ internal/beadmeta/values_test.go        |  1 +
+ internal/convergence/metadata.go        |  6 +++
+ internal/dispatch/ralph.go              | 20 ++++++++
+ internal/dispatch/runtime_test.go       | 68 +++++++++++++++++++++++++
+ internal/formula/ralph_test.go          |  6 ++-
+ 10 files changed, 114 insertions(+), 1 deletion(-)
+
+diff --git a/FORK.md b/FORK.md
+index a34f4d012..8114d451a 100644
+--- a/FORK.md
++++ b/FORK.md
+@@ -26,6 +26,8 @@ Each owned commit is prefixed `patch(<area>):` and ALSO preserved as a `.patch`
+ 2. `patch(tmux)` atomic-snapshot + identity-verified session teardown — fixes the PID-reuse kill-massacre TOCTOU (2026-07-06 session-massacre RCA).
+ 3. `patch(beads)` strip bd `sync.remote` from canonical config — rig-add public-repo dolt-ref leak.
+ 4. `patch(tmux)` pure `killIdentityMatches` seam + PID-reuse skip table test.
++5. `patch(dispatch)` opt-in terminal HOLD exit for checked-step escalation — closes the
++   logical step without spawning another retry while preserving default nonzero semantics.
+ 
+ ## Fork factory (sync discipline)
+ 
+diff --git a/docs/reference/specs/formula-spec-v2.md b/docs/reference/specs/formula-spec-v2.md
+index bcabc2210..fd10d7229 100644
+--- a/docs/reference/specs/formula-spec-v2.md
++++ b/docs/reference/specs/formula-spec-v2.md
+@@ -662,6 +662,7 @@ exhaustion closes the step as failed.
+ | `check.mode` | Checker implementation; only `"exec"` is supported |
+ | `check.path` | Repo-relative or absolute script path to execute |
+ | `check.timeout` | Script execution bound (e.g. `"2m"`); takes precedence over the step's `timeout` |
++| `metadata.gc.check_hold_exit_code` | Optional positive exit code that closes the check as terminal `hold` without spawning another attempt |
+ 
+ ```toml
+ formula = "checked"
+@@ -682,6 +683,13 @@ path = "scripts/verify.sh"
+ timeout = "2m"
+ ```
+ 
++Ordinary nonzero exits consume retry attempts. A step may opt into a terminal,
++fail-closed HOLD by setting `metadata = { "gc.check_hold_exit_code" = "5" }`
++and returning exit 5 from its exec check. The dispatcher closes the check and
++logical step as failed with `gc.final_disposition=hold`; it does not clone the
++next iteration. Without the metadata opt-in, exit 5 remains an ordinary
++retryable failure for backward compatibility.
++
+ Materialization: the compiler emits a spec sidecar (`<step>.spec`, kind
+ `spec`, carrying the serialized step definition), the first iteration
+ (`<step>.iteration.1`) as the agent-visible work, and keeps the original
+diff --git a/internal/beadmeta/keys.go b/internal/beadmeta/keys.go
+index 25158ae7c..39c8406e9 100644
+--- a/internal/beadmeta/keys.go
++++ b/internal/beadmeta/keys.go
+@@ -45,6 +45,7 @@ const (
+ 	BondVarsMetadataKey                  = "gc.bond_vars"
+ 	BrainParentSIDMetadataKey            = "gc.brain_parent_sid"
+ 	CheckModeMetadataKey                 = "gc.check_mode"
++	CheckHoldExitCodeMetadataKey         = "gc.check_hold_exit_code"
+ 	CheckPathMetadataKey                 = "gc.check_path"
+ 	CheckTimeoutMetadataKey              = "gc.check_timeout"
+ 	CityPathMetadataKey                  = "gc.city_path"
+@@ -260,6 +261,7 @@ var KnownMetadataKeys = []string{
+ 	BondVarsMetadataKey,
+ 	BrainParentSIDMetadataKey,
+ 	CheckModeMetadataKey,
++	CheckHoldExitCodeMetadataKey,
+ 	CheckPathMetadataKey,
+ 	CheckTimeoutMetadataKey,
+ 	CityPathMetadataKey,
+diff --git a/internal/beadmeta/keys_test.go b/internal/beadmeta/keys_test.go
+index 4ade9c065..1eb9ea240 100644
+--- a/internal/beadmeta/keys_test.go
++++ b/internal/beadmeta/keys_test.go
+@@ -56,6 +56,7 @@ func TestPinnedValues(t *testing.T) {
+ 		RootBeadIDMetadataKey:        "gc.root_bead_id",
+ 		StepRefMetadataKey:           "gc.step_ref",
+ 		OutcomeMetadataKey:           "gc.outcome",
++		CheckHoldExitCodeMetadataKey: "gc.check_hold_exit_code",
+ 		RoutedToMetadataKey:          "gc.routed_to",
+ 		ScopeRefMetadataKey:          "gc.scope_ref",
+ 		AttemptMetadataKey:           "gc.attempt",
+diff --git a/internal/beadmeta/values.go b/internal/beadmeta/values.go
+index 05876f5d0..1cee84968 100644
+--- a/internal/beadmeta/values.go
++++ b/internal/beadmeta/values.go
+@@ -118,6 +118,7 @@ const (
+ // shares its string with OutcomePass but is a distinct domain.
+ const (
+ 	DispositionPass              = "pass"
++	DispositionHold              = "hold"
+ 	DispositionHardFail          = "hard_fail"
+ 	DispositionSoftFail          = "soft_fail"
+ 	DispositionControllerError   = "controller_error"
+diff --git a/internal/beadmeta/values_test.go b/internal/beadmeta/values_test.go
+index c7c39e719..50ddf1df6 100644
+--- a/internal/beadmeta/values_test.go
++++ b/internal/beadmeta/values_test.go
+@@ -72,6 +72,7 @@ func TestPinnedVocabularyValues(t *testing.T) {
+ 		SpawnStateSpawning:              "spawning",
+ 		SpawnStateSpawned:               "spawned",
+ 		DispositionPass:                 "pass",
++		DispositionHold:                 "hold",
+ 		DispositionHardFail:             "hard_fail",
+ 		DispositionSoftFail:             "soft_fail",
+ 		DispositionControllerError:      "controller_error",
+diff --git a/internal/convergence/metadata.go b/internal/convergence/metadata.go
+index 89fd5fc1b..a0aca6b3b 100644
+--- a/internal/convergence/metadata.go
++++ b/internal/convergence/metadata.go
+@@ -93,6 +93,12 @@ const (
+ 	GateError   = "error"
+ )
+ 
++// GateHoldExitCode is the conventional exec-check exit code for a terminal,
++// fail-closed HOLD. It is active only when the check control explicitly opts
++// in through gc.check_hold_exit_code; otherwise exit 5 remains an ordinary
++// retryable failure for backward compatibility.
++const GateHoldExitCode = 5
++
+ // WaitingReason values for convergence.waiting_reason.
+ const (
+ 	WaitManual            = "manual"
+diff --git a/internal/dispatch/ralph.go b/internal/dispatch/ralph.go
+index 0f1f78eb1..e8f54e0b8 100644
+--- a/internal/dispatch/ralph.go
++++ b/internal/dispatch/ralph.go
+@@ -77,6 +77,26 @@ func processRalphCheck(store beads.Store, bead beads.Bead, opts ProcessOptions)
+ 		return ControlResult{Processed: true, Action: "pass"}, nil
+ 	}
+ 
++	holdExitCode, _ := strconv.Atoi(bead.Metadata[beadmeta.CheckHoldExitCodeMetadataKey])
++	if holdExitCode > 0 && result.ExitCode != nil && *result.ExitCode == holdExitCode {
++		if err := store.SetMetadataBatch(logicalID, map[string]string{
++			beadmeta.OutcomeMetadataKey:          beadmeta.OutcomeFail,
++			beadmeta.FailedAttemptMetadataKey:    strconv.Itoa(attempt),
++			beadmeta.FailureClassMetadataKey:     beadmeta.FailureClassHard,
++			beadmeta.FailureReasonMetadataKey:    "gate_hold",
++			beadmeta.FinalDispositionMetadataKey: beadmeta.DispositionHold,
++		}); err != nil {
++			return ControlResult{}, fmt.Errorf("%s: marking logical hold: %w", logicalID, err)
++		}
++		if err := setOutcomeAndClose(store, bead.ID, beadmeta.OutcomeFail); err != nil {
++			return ControlResult{}, fmt.Errorf("%s: closing held check: %w", bead.ID, err)
++		}
++		if err := setOutcomeAndClose(store, logicalID, beadmeta.OutcomeFail); err != nil {
++			return ControlResult{}, fmt.Errorf("%s: closing held logical bead: %w", logicalID, err)
++		}
++		return ControlResult{Processed: true, Action: "hold"}, nil
++	}
++
+ 	if attempt >= maxAttempts {
+ 		if err := store.SetMetadataBatch(logicalID, map[string]string{
+ 			beadmeta.OutcomeMetadataKey:       beadmeta.OutcomeFail,
+diff --git a/internal/dispatch/runtime_test.go b/internal/dispatch/runtime_test.go
+index fa1a06108..20ad18709 100644
+--- a/internal/dispatch/runtime_test.go
++++ b/internal/dispatch/runtime_test.go
+@@ -4186,6 +4186,74 @@ func TestProcessRalphCheckRetriesThenPasses(t *testing.T) {
+ 	}
+ }
+ 
++func TestProcessRalphCheckHoldExitStopsWithoutRetry(t *testing.T) {
++	t.Parallel()
++
++	cityPath := t.TempDir()
++	checkPath := writeCheckScript(t, cityPath, "hold-check.sh", "#!/bin/bash\nset -euo pipefail\nexit 5\n")
++	store, logical, run1, check1 := newSimpleRalphLoop(t, "implement", checkPath, 10)
++	if err := store.SetMetadata(check1.ID, "gc.check_hold_exit_code", "5"); err != nil {
++		t.Fatalf("configure hold exit: %v", err)
++	}
++	check1 = mustGetBead(t, store, check1.ID)
++
++	if err := store.Close(run1.ID); err != nil {
++		t.Fatalf("close run1: %v", err)
++	}
++	result, err := ProcessControl(store, check1, ProcessOptions{CityPath: cityPath})
++	if err != nil {
++		t.Fatalf("ProcessControl(check1): %v", err)
++	}
++	if !result.Processed || result.Action != "hold" {
++		t.Fatalf("result = %+v, want processed hold", result)
++	}
++
++	checkAfter := mustGetBead(t, store, check1.ID)
++	if checkAfter.Status != "closed" || checkAfter.Metadata["gc.outcome"] != "fail" {
++		t.Fatalf("check = status %q outcome %q, want closed/fail", checkAfter.Status, checkAfter.Metadata["gc.outcome"])
++	}
++	logicalAfter := mustGetBead(t, store, logical.ID)
++	if logicalAfter.Status != "closed" || logicalAfter.Metadata["gc.outcome"] != "fail" {
++		t.Fatalf("logical = status %q outcome %q, want closed/fail", logicalAfter.Status, logicalAfter.Metadata["gc.outcome"])
++	}
++	if got := logicalAfter.Metadata["gc.final_disposition"]; got != "hold" {
++		t.Fatalf("logical final disposition = %q, want hold", got)
++	}
++	if got := logicalAfter.Metadata["gc.failed_attempt"]; got != "1" {
++		t.Fatalf("logical failed attempt = %q, want 1", got)
++	}
++	if got := logicalAfter.Metadata["gc.next_attempt"]; got != "" {
++		t.Fatalf("logical next attempt = %q, want no retry", got)
++	}
++	all, err := store.List(beads.ListQuery{AllowScan: true, IncludeClosed: true, TierMode: beads.TierBoth})
++	if err != nil {
++		t.Fatalf("list after hold: %v", err)
++	}
++	for _, bead := range all {
++		if bead.Metadata["gc.logical_bead_id"] == logical.ID && bead.Metadata["gc.attempt"] == "2" {
++			t.Fatalf("unexpected retry bead created after hold: %s", bead.ID)
++		}
++	}
++}
++
++func TestProcessRalphCheckExitFiveRetriesWithoutHoldOptIn(t *testing.T) {
++	t.Parallel()
++
++	cityPath := t.TempDir()
++	checkPath := writeCheckScript(t, cityPath, "plain-five-check.sh", "#!/bin/bash\nset -euo pipefail\nexit 5\n")
++	store, _, run1, check1 := newSimpleRalphLoop(t, "implement", checkPath, 2)
++	if err := store.Close(run1.ID); err != nil {
++		t.Fatalf("close run1: %v", err)
++	}
++	result, err := ProcessControl(store, check1, ProcessOptions{CityPath: cityPath})
++	if err != nil {
++		t.Fatalf("ProcessControl(check1): %v", err)
++	}
++	if !result.Processed || result.Action != "retry" {
++		t.Fatalf("result = %+v, want ordinary retry without hold opt-in", result)
++	}
++}
++
+ func TestProcessRalphCheckTransientAppendErrorStaysOpenForRetry(t *testing.T) {
+ 	t.Parallel()
+ 
+diff --git a/internal/formula/ralph_test.go b/internal/formula/ralph_test.go
+index c306bee2b..4606695da 100644
+--- a/internal/formula/ralph_test.go
++++ b/internal/formula/ralph_test.go
+@@ -17,7 +17,8 @@ func TestApplyRalph_Basic(t *testing.T) {
+ 			Needs:       []string{"setup"},
+ 			Labels:      []string{"frontend"},
+ 			Metadata: map[string]string{
+-				"custom": "value",
++				"custom":                  "value",
++				"gc.check_hold_exit_code": "5",
+ 			},
+ 			Ralph: &RalphSpec{
+ 				MaxAttempts: 3,
+@@ -64,6 +65,9 @@ func TestApplyRalph_Basic(t *testing.T) {
+ 	if control.Metadata["gc.control_epoch"] != "1" {
+ 		t.Errorf("control gc.control_epoch = %q, want 1", control.Metadata["gc.control_epoch"])
+ 	}
++	if control.Metadata["gc.check_hold_exit_code"] != "5" {
++		t.Errorf("control gc.check_hold_exit_code = %q, want 5", control.Metadata["gc.check_hold_exit_code"])
++	}
+ 	if control.Metadata["gc.source_step_spec"] != "" {
+ 		t.Fatalf("control gc.source_step_spec = %q, want empty", control.Metadata["gc.source_step_spec"])
+ 	}
+-- 
+2.55.0
+

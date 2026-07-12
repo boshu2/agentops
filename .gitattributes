@@ -5,6 +5,11 @@
 # Keep executable scripts runnable when cloned on Windows.
 *.sh text eol=lf
 
+# Mailbox-format patch archives intentionally preserve the source diff's blank
+# context lines and indentation; do not reinterpret those payload bytes as this
+# repository's whitespace errors.
+docs/audits/gc-mvp-2026-07-05/patches/*.patch -whitespace
+
 # Generated/derived artifacts — union-merge to kill textual re-conflicts during
 # multi-PR drains (their canonical content is restored by scripts/regen-all.sh).
 # Council 2026-06-06 (ag-bdg1). NOTE: cli/embedded/** is //go:embed'd and

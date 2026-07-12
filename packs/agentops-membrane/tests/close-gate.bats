@@ -293,7 +293,7 @@ PY
   [ "$(jq -r '.outcome' "$EX/breaker-helper-round-5.json")" = ESCALATE ]
   : > "$GC_LOG"
   run_gate confirmed 6 6 ESCALATE
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 5 ]
   grep -q 'gc.failure_reason=helper_escalate' "$BD_LOG"
   [ ! -s "$GC_LOG" ]
 }

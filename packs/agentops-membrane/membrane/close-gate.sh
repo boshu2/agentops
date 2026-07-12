@@ -93,6 +93,19 @@ retry_exit() {  # $1=class(transient|hard) $2=reason
   exit 1
 }
 
+# A helper escalation is a terminal HOLD, not another auto-redo. Gas City's
+# ralph control recognizes exit 5 only when the formula control explicitly
+# opts in with gc.check_hold_exit_code=5; older runtimes therefore cannot
+# silently turn this back into a retry once the installer capability gate runs.
+hold_exit() {  # $1=reason
+  bdq update "$GC_BEAD_ID" \
+    --set-metadata "gc.outcome=fail" \
+    --set-metadata "gc.failure_class=hard" \
+    --set-metadata "gc.failure_reason=$1" >/dev/null 2>&1 || true
+  log "HOLD: reason=$1 -> terminal helper escalation; no retry"
+  exit 5
+}
+
 # --- resolve quest metadata from the iteration bead (native: via bd) ---------
 ITERATION_JSON="$(bead_json "$GC_BEAD_ID")"
 QUEST="$(printf '%s' "$ITERATION_JSON" | jq -r '.metadata.quest // empty')"
@@ -314,16 +327,16 @@ if [ "$ROUND" -eq "$MAXR" ]; then
   HELPER_NONCE="$(cat "$HELPER_NONCE_FILE" 2>/dev/null || true)"
   if [ -z "$HELPER_NONCE" ] || ! valid_helper_outcome "$HELPER_OUT" "$HELPER_NONCE"; then
     log "HOLD: recovery attempt has no valid helper outcome"
-    retry_exit hard helper_outcome_missing
+    hold_exit helper_outcome_missing
   fi
   case "$(jq -r '.outcome' "$HELPER_OUT")" in
     ESCALATE)
       log "HELPER-ESCALATE -> HUMAN (no recovery review dispatched)"
-      retry_exit hard helper_escalate ;;
+      hold_exit helper_escalate ;;
     UNSTUCK)
       log "HELPER-UNSTUCK -> AUTO-REDO; proving the new approach" ;;
     *)
-      retry_exit hard helper_outcome_invalid ;;
+      hold_exit helper_outcome_invalid ;;
   esac
 fi
 

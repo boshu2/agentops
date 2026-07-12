@@ -73,6 +73,8 @@ setup() {
 @test "Gas City executable path reserves and routes the helper recovery attempt" {
   run grep -F 'max_attempts = 6' "$PACK/formulas/membrane-quest.toml"
   [ "$status" -eq 0 ]
+  run grep -F '"gc.check_hold_exit_code" = "5"' "$PACK/formulas/membrane-quest.toml"
+  [ "$status" -eq 0 ]
   run grep -F 'session new "$HELPER_TARGET"' "$PACK/membrane/close-gate.sh"
   [ "$status" -eq 0 ]
   run grep -F 'session reset "$HELPER_TARGET"' "$PACK/membrane/close-gate.sh"
@@ -82,6 +84,8 @@ setup() {
   run grep -F 'HELPER-UNSTUCK -> AUTO-REDO' "$PACK/membrane/close-gate.sh"
   [ "$status" -eq 0 ]
   run grep -F 'HELPER-ESCALATE -> HUMAN' "$PACK/membrane/close-gate.sh"
+  [ "$status" -eq 0 ]
+  run grep -F 'exit 5' "$PACK/membrane/close-gate.sh"
   [ "$status" -eq 0 ]
   [ -s "$PACK/agents/breaker-helper/agent.toml" ]
   [ -s "$PACK/agents/breaker-helper/prompt.template.md" ]
