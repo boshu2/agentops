@@ -44,6 +44,13 @@ skills, the runtime, and external integrations.
 
     Evaluation suite, run, scorecard, baseline, canary, and holdout contract.
 
+-   :material-text-box-check: **[Entry Documentation Behavior](entry-documentation-behavior.md)**
+
+    ---
+
+    Agent-judged acceptance contract for the actual first-value documentation
+    journey; deterministic tooling verifies facts, not prose meaning.
+
 -   :material-clipboard-text-clock: **[Eval Verdict Pipeline](eval-verdict-pipeline.md)**
 
     ---

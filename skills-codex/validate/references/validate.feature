@@ -19,3 +19,11 @@ Feature: Validate emits immutable proof only
     Given the author and validator identities are equal
     When the verdict would otherwise be PASS
     Then independence is waived and the verdict cannot satisfy independent proof
+
+  Scenario: Prose behavior is judged against the actual artifact
+    Given a documentation behavior contract and a pinned artifact set
+    When Validate checks the artifact against the named scenarios
+    Then isolated judgment evaluates the actual passages rather than keyword proxies
+    And a blocker cites an artifact-present passage, a violated scenario, and a material user decision
+    And hypothetical absent wording is a holdout rather than a semantic regex gate
+
