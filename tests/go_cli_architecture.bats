@@ -41,6 +41,28 @@ GO
   [[ "$output" == *"effect.process"* ]]
 }
 
+@test "semantic seal rejects an uncancellable command module" {
+  fixture="$BATS_TEST_TMPDIR/uncancellable-repo"
+  mkdir -p "$fixture/cli/internal/commands/demo"
+  cat >"$fixture/cli/internal/commands/demo/module.go" <<'GO'
+package demo
+
+import "context"
+
+type Executor interface {
+	Execute(context.Context, []string) error
+}
+
+func Run(executor Executor, args []string) error {
+	return executor.Execute(context.Background(), args)
+}
+GO
+
+  run bash -c "cd '$REPO_ROOT/cli' && go run ./internal/archcheck/cmd --root '$fixture'"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"context"* ]]
+}
+
 @test "architecture checker ignores comments strings tests and adapter effects" {
   fixture="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$fixture/cli/internal/commands/demo" "$fixture/cli/internal/adapters/raw_exec"
