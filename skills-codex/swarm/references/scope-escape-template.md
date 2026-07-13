@@ -50,4 +50,4 @@ status: BLOCKED | NEEDS_OPERATOR | NEEDS_DECOMPOSE
 
 ## Source
 
-`agentops-zm8` post-mortem: workers used ad-hoc scope-escape language; the operator had to read the prose to figure out next steps. The template makes the next step machine-extractable.
+`agentops-zm8` postmortem: workers used ad-hoc scope-escape language; the operator had to read the prose to figure out next steps. The template makes the next step machine-extractable.

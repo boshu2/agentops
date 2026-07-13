@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Autonomous code validation for coding agents. Prove whether agent-written code is right, compile the evidence, and compound the context so each session starts loaded, not cold.
+description: Autonomous code validation for coding agents. Prove whether agent-written code is right and retain the evidence needed to inspect the verdict.
 hide:
   - navigation
   - toc
@@ -11,13 +11,16 @@ hide:
 ### Autonomous code validation for coding agents.
 
 <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
-AgentOps keeps the books, compiles context, gates output, and compounds learning so coding agents can prove their work before you grant them more autonomy. Its substrate is `.agents/`: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to.
+AgentOps keeps the books, compiles relevant context, and gates output so coding
+agents can prove their work before you grant them more autonomy. Runtime corpus
+state lives under the workspace-local, gitignored `.agents/` tree; durable
+product truth stays in tracked contracts, code, and the provenance ledger.
 
 AgentOps uses software-engineering practice people already understand — Agile/XP, BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, provenance, and durable knowledge — then compiles those practices into dense, verifiable context for LLM agents under token scarcity. The internal lifecycle is the CDLC: context gets developed, tested, delivered, observed, and improved like any other software asset.
 
-*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
-
-*AgentOps is the shovel. Start digging.*
+The verification membrane is the proven product: no verdict means not done.
+Whether retrieval and accumulated context measurably improve future work remains
+an experimental hypothesis, not a shipped moat claim.
 
 <p class="hero-actions" markdown>
 [:octicons-rocket-24: Install](#install){ .md-button .md-button--primary }
@@ -37,21 +40,22 @@ Every agent session starts cold. Same mistakes. Same rework. The landmine in `au
 |-------|-------------|
 | **Bookkeeping** | Records what agents tried, changed, validated, and learned so the work leaves evidence |
 | **Context Compiler** | Assembles the right context for the right phase — decay-ranked, token-budgeted, loaded at session start |
-| **Validation Membrane** | `/validate` checks the declared acceptance behavior; `/pre-mortem` and `/council` add independent challenge when warranted |
-| **Knowledge Flywheel** | Extracts learnings, scores them, and resurfaces them so the next session starts smarter |
+| **Validation Membrane** | `/validate` checks the declared acceptance behavior; `/premortem` and `/council` add independent challenge when warranted |
+| **Experimental context reuse** | Retrieves and promotes local learnings; measurable task uplift remains unproven |
 
-Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the corpus kept it.
+The corpus can preserve a useful lesson for a later session, but retrieval value
+must be measured rather than assumed.
 
 ```mermaid
 flowchart LR
     B[Bookkeeping] --> C[Context Compiler]
     C[Context Compiler] --> S[Session work]
     S --> G[Validation Gates]
-    G --> F[Knowledge Flywheel]
+    G --> F[Optional context reuse]
     F --> B
 ```
 
-All AgentOps state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and exclude from source control. No AgentOps-managed telemetry or hosted control plane; model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. For constrained environments, see the [Assurance Profile](assurance-profile.md).
+Workspace-local runtime state lives under gitignored `.agents/`; durable product truth and receipts live in tracked contracts, code, schemas, tests, and the provenance ledger. Both remain operator-owned and auditable. No AgentOps-managed telemetry or hosted control plane; model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. For constrained environments, see the [Assurance Profile](assurance-profile.md).
 
 ---
 
@@ -132,7 +136,7 @@ Verdict: CONFIRMED — evidence recorded
 ```
 
 Use `/rpi "add retry backoff to rate limiter"` when you want the same skill loop
-coordinated as one full tick. Add `/pre-mortem` before implementation or
+coordinated as one full tick. Add `/premortem` before implementation or
 `/council` after acceptance exists when the stakes justify more independent
 judgment.
 
@@ -151,7 +155,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/implement`](skills/implement.md) | You want one scoped task built and validated |
 | [`/validate`](skills/validate.md) | You need an independent verdict against the declared behavior |
 | [`/rpi`](skills/rpi.md) | You want discovery, build, validation, and bookkeeping in one flow |
-| [`/pre-mortem`](skills/pre-mortem.md) | You want to pressure-test a plan before implementation |
+| [`/premortem`](skills/premortem.md) | You want to pressure-test a plan before implementation |
 | [`/council`](skills/council.md) | You want additional independent judges for a high-stakes plan, change, or decision |
 | [`/research`](skills/research.md) | You need codebase context and prior learnings before changing code |
 | [`/evolve`](skills/evolve.md) | You want a goal-driven improvement loop with regression gates |
@@ -162,10 +166,11 @@ Every skill works alone. Compose flows for end-to-end cycles.
 
 ---
 
-## Unsupervised Cycles
+## Optional scheduled work
 
 <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES -->
-**Day: autonomous improvement.** `/evolve` reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, records each cycle.
+The `evolve` skill can read `GOALS.md`, select a fitness gap, run a bounded
+iteration, and record its evidence.
 
 ```text
 > /evolve
@@ -174,23 +179,17 @@ Every skill works alone. Compose flows for end-to-end cycles.
 [cycle-1] Worst gap selected
 [rpi]     Implements the fix
 [gate]    Tests and quality checks pass
-[learn]   Post-mortem feeds the flywheel
+[learn]   Verdict observations + plan impact recorded; promotion remains separate
 ```
 
-**Night: knowledge compounding.** An adopted substrate can run bookkeeping-only compounding over `.agents/`: consolidate learnings, dedupe patterns, defragment the corpus, and report health. Source code stays untouched unless the operator dispatches a foreground `/rpi` loop.
+An operator-selected substrate may schedule whole skill-loop units or
+bookkeeping-only maintenance. AgentOps ships no in-repo daemon, and scheduling
+does not establish that the corpus compounds or improves task success.
 
-```text
-> /curate --mode=forge
-> /compile
-
-[compile] INGEST  harvest new artifacts
-[compile] REDUCE  dedup, defrag, close loops
-[measure] corpus quality recorded
-
-Report: .agents/compile/<run-id>/summary.md
-```
-
-Run compounding on the substrate's schedule, then Evolve in the morning against a fresher corpus. Same model, smarter environment.
+Archived `curate` and `compile` surfaces are not part of the default skill or
+CLI path. Use the current [skill router](SKILLS.md) and generated
+[CLI reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)
+instead of copying historical commands.
 
 ---
 
@@ -230,7 +229,7 @@ Read the lineage at [12factoragentops.com](https://12factoragentops.com) — Dev
 
     ---
 
-    System design: context compiler, validation gates, knowledge flywheel, RPI pipeline.
+    System design: bounded contexts, ports and adapters, operating loop, and validation membrane.
 
 -   :material-compare: **[Comparisons](comparisons/README.md)**
 

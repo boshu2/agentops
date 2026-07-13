@@ -2,10 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/crank",
   "layout": "modular",
-  "source_hash": "3108087604b81cb30b306e732fe402fe6f37726247ae9d17864111da6fccb060",
-  "generated_hash": "d8b3547ea1685be7b5c911d7665da32f2b2b8ca4868ddae2bf6fddbe7a85a517"
-  "source_hash": "0a15e15c21e1d39161858101fa53eabd33ae3c4dd1ba4b310ae0e4cb6b06c9b8",
-  "generated_hash": "032faff85f838916c84cf75604cecd06250bf55e40f0ecc43bdb68ceedfbbc43"
-  "source_hash": "1cc91ed784013b382d29ba5ce014654076daf19a7c7b23b108083893d356414b",
-  "generated_hash": "1ced840ff98a317b56e0e452d9099df5e6e26de5eaf2bc22b9485cd09f783be5"
+  "source_hash": "966bd624de926829bffeb01c91a0c83499394b5c35baa5e0d8206c2a338c3758",
+  "generated_hash": "060d4eb33c2b2bc2fe532f7d7fd6b250acacf146763e5d0f15121112e8592b7a"
 }

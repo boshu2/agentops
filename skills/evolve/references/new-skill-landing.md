@@ -30,17 +30,15 @@ ao skills edit digest --since "24 hours ago"
 The digest is the lightweight immune-system surface for "what did agents teach
 the runtime today?" A live edit seal does not replace the derived-surface work
 below: new skills, renames, metadata changes, and publication-bound edits still
-need the full six-surface regeneration.
+need the full five-surface regeneration.
 
-## The six surfaces
+## The five surfaces
 
 1. **registry.json (SKU catalog)** — `scripts/generate-registry.sh` (verify with `--check`). **The most-missed surface**: a stale `registry.json` trips `contracts-sync` ("registry.json is stale") AND `correctness(ubuntu)` ("SKU_CATALOG: DRIFT") *together*. As of ag-ekyq, `skills/skill-builder/scripts/init.sh` regenerates it automatically during scaffold; regenerate by hand for any out-of-band skill edit.
-2. **skill-domain-map** — `scripts/generate-skill-domain-map.sh` (narrative `N skills` count + per-skill row; verify `--check`).
+2. **skill-domain-map** — `scripts/generate-skill-domain-map.sh` (generated audit count + per-skill row; verify `--check`).
 3. **context-map** — `scripts/generate-context-map.sh` (hex roles from frontmatter; CI gate `validate-context-map-drift`).
 4. **skill counts** — `scripts/sync-skill-counts.sh`. **The `SKILL-TIERS.md` row must be added by hand** — `sync-skill-counts` only syncs the *counts* across PRODUCT/ARCHITECTURE/SKILLS; it never adds the row.
 5. **codex twin** — `scripts/register-new-codex-skill.sh <name> --treatment parity_only|bespoke --reason "…"` (manifest entry + override-catalog + `.agentops-generated.json` marker, atomic + idempotent). Then **hand-author `skills-codex/<name>/prompt.md`** — codex twins are MANUAL; `regen-all.sh` does NOT generate them. Re-run `scripts/regen-codex-hashes.sh` afterward (adding `prompt.md` changes the tree hash). Parity_only minimal `prompt.md` = title + description + an `## Instructions` block ("Load and follow the sibling `SKILL.md`").
-6. **narrative skill counts** — `scripts/check-registry-drift.sh --fix-counts` (the `N skills` lines in `agentops-skill-domain-map.md` + `agentops-domain-evolution-bdd.md`).
-
 ## Embedded sync
 
 If the edit touches `skills/**` content that is embedded (e.g. `using-agentops`), run `cd cli && make sync-hooks` so `cli/embedded/skills/...` stays in sync — else the `codex artifact metadata`/embedded-drift gate fails.

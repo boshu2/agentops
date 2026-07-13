@@ -18,7 +18,7 @@
     { "path": "references/bootstrap.feature", "intent": "read", "description": "Executable spec: bare repo gets golden path, existing repo fills gaps only, idempotent never-overwrite." }
   ],
   "scripts": [
-    { "path": "scripts/install-bd.sh", "intent": "execute", "description": "Optional bd installer the user invokes themselves; bootstrap only recommends it." }
+    { "path": "scripts/validate.sh", "intent": "execute", "description": "Validate the Bootstrap contract and required project-artifact coverage." }
   ],
   "metadata": {
     "tier": "session",

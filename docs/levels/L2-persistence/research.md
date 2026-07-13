@@ -51,5 +51,5 @@ Summary:
 
 ## Next
 
-- `/post-mortem` to extract learnings from your session
+- `/learn` to record verdict-bound observations after validation
 - Future sessions: load research with "read .agents/research/..."

@@ -156,8 +156,8 @@ attempt -> validate -> learn -> constrain
 | Scale | Attempt | Validate | Learn | Constrain |
 |-------|---------|----------|-------|-----------|
 | Single function | Write code | Run tests | Extract pattern | Add test |
-| Single issue | `/implement` | `/vibe` | `/retro` | Close issue |
-| Epic | `/crank` (waves) | Council consensus | `/post-mortem` | Regression gate |
+| Single issue | `/implement` | `/validate` | `/learn` | Close issue |
+| Epic | `/crank` (waves) | `/validate` | `/learn` | Orchestrator decision + regression gate |
 | Repository | `/evolve` (cycles) | Goal measurement | Learning extraction | Constraint compiler |
 
 Each level treats the one below as a black box. Each level produces the same outputs: validated work + extracted knowledge + tighter constraints. The seed does not prescribe which level you operate at. It provides the machinery. The fitness landscape determines the scale.

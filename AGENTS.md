@@ -55,9 +55,12 @@ Report the mismatch. Edit source owners, never generated projections; regenerate
 6. **Prove.** Run the scoped checks, then `ao gate check --fast --scope head` for a
    tracked change. Use `/validate` or the required pawl to obtain an independent,
    evidence-bound verdict. Green checks without the required verdict are not done.
-7. **Land and ratchet.** For bead-backed work, `ao land <bead>` is the canonical
-   landing transition. Preserve only evidence or learning that changes a future
-   plan, skill, test, or gate; otherwise let it expire with the handoff.
+7. **Learn, decide, and land.** Pass the immutable verdict to `/learn`; the
+   orchestrator alone consumes its `plan_impact` and chooses retry, re-plan, stop,
+   or terminal close. Use `/postmortem` only for an explicit retrospective causal
+   question. For terminal bead-backed work, `ao land <bead>` is the canonical
+   landing transition. Preserve only evidence that changes a future plan, skill,
+   test, or gate; otherwise let it expire with the handoff.
 
 Ordinary REFUTED, a failed check, or new evidence returns to the earliest invalidated move; never weaken a test to manufacture green.
 Max-attempts, oscillation, or no-progress enters HOLD and gets exactly one bounded fresh-context helper consultation.

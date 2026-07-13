@@ -481,7 +481,7 @@ dispositions:
     path:             skills/converge/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill"
+    rationale:        "Skill-owned fix, re-run, and independent-judge loop; it uses current validation and council surfaces without relying on an ao converge command"
   - skill:            converter
     domain:           "BC4 Factory"
     hexagonal_role:   driven-adapter
@@ -661,7 +661,7 @@ dispositions:
     path:             skills/postmortem/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Loop closeout; connect to next-work and ratchet evidence"
+    rationale:        "Optional retrospective causal analysis after Validate and Learn; owns no general closeout, bookkeeping, promotion, or delivery authority"
   - skill:            pr-prep
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter
@@ -913,7 +913,7 @@ dispositions:
     path:             skills/validate/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
+    rationale:        "Live canonical post-implementation validator; owns scenario-bound PASS/WARN/FAIL judgment and absorbs retired review and vibe routes"
   - skill:            agent-native
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting

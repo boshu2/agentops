@@ -1,6 +1,6 @@
 ---
 name: swarm
-description: 'Execute authorized parallel Codex lanes. Triggers: "$swarm", "parallel wave", "dispatch workers".'
+description: 'Execute authorized parallel Codex lanes with canonical premortem/postmortem handoffs. Triggers: "$swarm", "parallel wave", "dispatch workers".'
 ---
 # $swarm — Conflict-Safe Wave Execution
 

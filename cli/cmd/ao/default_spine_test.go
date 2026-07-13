@@ -8,7 +8,7 @@ import (
 
 var approvedDefaultSpine = map[string]bool{
 	"beads": true, "capabilities": true, "claim": true, "close": true,
-	"config": true, "council-gate": true, "doctor": true, "done": true,
+	"config": true, "constraint": true, "council-gate": true, "doctor": true, "done": true,
 	"eval": true, "gate": true, "goals": true, "governor": true,
 	"init": true, "land": true, "membrane": true, "pawl": true,
 	"plan-pawl": true, "provenance": true, "quick-start": true, "ready": true,
@@ -53,5 +53,16 @@ func TestDefaultSpineMatchesADR0012Allowlist(t *testing.T) {
 	sort.Strings(missing)
 	if len(unexpected) != 0 || len(missing) != 0 {
 		t.Fatalf("ADR-0012 default membership drift\nunexpected satellites: %s\nmissing spine: %s", strings.Join(unexpected, ", "), strings.Join(missing, ", "))
+	}
+}
+
+func TestDefaultHelpDoesNotRecommendArchiveCommands(t *testing.T) {
+	if len(archiveBuildTags) != 0 {
+		t.Skip("restoration build")
+	}
+	for _, archived := range []string{"ao session bootstrap", "ao lookup", "ao search", "ao compile"} {
+		if strings.Contains(rootCmd.Long, archived) {
+			t.Fatalf("default help recommends archive-only command %q", archived)
+		}
 	}
 }

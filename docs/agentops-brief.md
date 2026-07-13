@@ -1,228 +1,90 @@
 # AgentOps — One-Page Brief
 
-AgentOps is an SDLC control plane for agentic software development. It keeps the books, compiles context, gates output, and compounds learning so coding agents can work in small, verifiable slices instead of cold one-off prompts.
+AgentOps is a local verification and bookkeeping layer for coding agents. The
+agent and its reasoning do the work; AgentOps supplies small contracts, durable
+evidence, independent judgment, and deterministic checks where code can prove
+facts. The proven product is the verification membrane: **no verdict = not
+done**. Claims that the corpus compounds into a moat remain explicitly
+[unproven](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md).
 
-`.agents/` is the substrate: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
-
-*The bet in this uncertain time is that context is the thing that lasts. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the asset least likely to get eaten by the next vendor release. That it compounds into a durable **moat** is an [explicitly unproven hypothesis](adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), not a settled claim; the proven asset is the verification loop. Still — that context is what your company actually is.*
-
-AgentOps is the shovel. Start digging.
-
----
-
-## What It Is
-
-An SDLC control plane backed by a repo-native, version-controlled, mechanically maintained wiki for your agents.
-
-<!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
-AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
-
-The institutional knowledge stops walking out the door because the repo keeps it.
-
----
-
-## Internal Proof Contract
-
-Most coding-agent tooling handles prompt construction and routing well. The failure mode comes after that. Internally, AgentOps proves the product through a three-gap lifecycle contract (see [docs/context-lifecycle.md](context-lifecycle.md)):
-
-| Gap | Problem | AgentOps response |
-|-----|---------|-------------------|
-| **Validation** (internal: judgment validation) | The agent ships without risk context that would challenge its choices | `/pre-mortem` before implementation, `/vibe` before commit, `/council` for multi-judge review |
-| **Bookkeeping** (internal: durable learning) | Solved problems recur because nothing extracts, scores, or retrieves the lesson | `.agents/` ledger, `ao lookup`, finding registry, `/retro` extraction, freshness curation |
-| **Closure** (internal: loop closure) | Completed work does not produce better next work | `/post-mortem` harvests learnings and next-work, finding compiler promotes failures into constraints, `GOALS.md` + `/evolve` turn findings into measurable improvements |
-
-The compound effect below only works because Validation Gates catch the problem,
-the Bookkeeping layer preserves the trace, the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
-the next session loads better context before repeating the mistake.
-
----
-
-## Four Product Layers
-
-### Layer 0: Bookkeeping
-Records the operational memory agents do not keep for themselves: attempts, decisions, citations, verdicts, handoffs, findings, retros, and post-mortems. The work leaves a trace in `.agents/`.
-
-### Layer 1: Context Compiler
-Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills and the `ao` CLI (`ao session bootstrap`, `ao inject`, `ao corpus inject`) collaborate to load, scope, and trim context to the token budget before the agent sees it.
-
-### Layer 2: Validation Gates
-Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. The local pre-push Go gate (`ao gate check`) is the routine release authority — it blocks the push, not just advises. CI (`.github/workflows/validate.yml`) is a tag/PR/manual backstop.
-
-### Layer 3: Knowledge Flywheel
-Extracts learnings from completed work, scores them for quality, promotes durable patterns, and re-injects them at the next session start. `.agents/` carries state on disk; `ao forge`, `ao lookup`, and maturity controls keep the loop closing.
-
----
-
-## How a Session Works
-
-```
-Session starts
-  -> ao session bootstrap + ao inject retrieve lightweight context and continuity hints (hookless)
-  -> Discovery scopes the work and pressure-tests the plan
-
-Implementation runs
-  -> Fresh workers execute in bounded waves
-  -> Validation gates challenge the output before closure
-
-Session ends
-  -> Learnings, findings, and next work are harvested
-  -> Flywheel closure updates what the next session will see
-
-Next session starts with a richer environment than this one did.
-```
-
----
-
-## Key Properties
-
-| Property | Detail |
-|----------|--------|
-| **Local-first** | No AgentOps-managed telemetry or hosted control plane. Model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. |
-| **Open source** | Every line auditable. Apache 2.0 licensed. |
-| **Multi-tool** | Works with Claude Code, Codex, Cursor, OpenCode. Not locked to one vendor. |
-| **Constrained-network fit** | Repo-local evidence and plain files fit mirrored, reviewed, or disconnected operator workflows. |
-| **Auditable trail** | Every learning, decision, and review verdict written to `.agents/` with timestamps. |
-
----
-
-## The Compound Effect
-
-```
-Without AgentOps:  [2 hrs] → [2 hrs] → [2 hrs] → [2 hrs]  =  8 hours total
-With AgentOps:     [2 hrs] → [10 min] → [2 min] → instant  =  ~2.2 hours total
-                    learn     recall     refine    mastered
-```
-
-<!-- agentops:claim:AOP-CLAIM-BRIEF-VALIDATED-PATTERNS -->
-By session 100, the repo already carries prior failures, design choices, planning rules, and validated patterns that new sessions can load before they repeat old mistakes.
-
----
-
-## Development Model
-
-The most accurate current framing is:
+## The operating loop
 
 ```text
-Public category    -> SDLC control plane for coding agents
-Product layers     -> Bookkeeping + Context Compiler + Validation Gates + Knowledge Flywheel
-Internal proof     -> three-gap lifecycle contract
-Runtime mechanics  -> Brownian Ratchet + Stigmergic Spiral + Knowledge Flywheel
+Orient → shape BDD acceptance → track/isolate → slice → build
+       → Validate → Learn → orchestrator decision → land
 ```
 
-The claim is not "better models." The claim is "better repo mechanics around
-the models you already have." Four product layers deliver that: Bookkeeping
-preserves the evidence trail, the Context Compiler loads the right context,
-Validation Gates block bad output, and the Knowledge Flywheel ensures every
-session leaves the repo smarter. The
-three-gap contract remains the internal proof model.
+Discovery shapes an execution packet. Crank executes behavior-sized slices.
+Validate produces an immutable evidence-bound verdict. Learn is the only
+post-verdict handoff: it copies structured observations, reconciles recurrence,
+and emits `plan_impact` without changing proof, the plan, delivery state, or
+constraints. The orchestrator alone retries, re-plans, stops, or closes.
+Postmortem is optional and only tests an explicit retrospective causal question
+after Validate and Learn.
 
----
+## Four product layers
 
-## What if the labs ship this natively?
+<!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
 
-They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the durable value is meant to live in the corpus you build, not the tool (whether the corpus *compounds* into that durable value is the [unproven hypothesis](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md), not a guarantee). AgentOps is bridge infrastructure: your `.agents/` directory is plain markdown in your repo, so if a frontier vendor ships native equivalents in 12 months, your corpus carries forward unchanged.
+| Layer | Purpose | Canonical surfaces |
+|---|---|---|
+| Bookkeeping | Preserve the objective, attempts, evidence, and verdict | beads, RPI receipts, provenance |
+| Local context | Load only the contracts and evidence the current phase needs | skills, execution packets, `.agents/` |
+| Validation membrane | Challenge plans and completion claims independently | `/premortem`, `/validate`, `/council`, pawl, `ao gate` |
+| Learning ratchet | Turn verdict observations into bounded future-facing candidates | `/learn`, `/pattern-mining`, `/operationalize` |
 
----
+`.agents/` is local runtime evidence, not public repository truth. Skills are the
+front door. The `ao` CLI is the supporting control plane for tracking,
+provenance, gates, and landing; it is not a substitute agent runtime.
 
-## See also
+## Architecture
 
-- [docs/wiki-for-agents.md](wiki-for-agents.md) — the wiki framing as a standalone document.
-- [docs/trust-factory.md](trust-factory.md) — AgentOps mapped to the five-step trust factory primitive.
+The system uses six DDD bounded contexts: Corpus, Validation, Loop, Factory,
+Runtime, and Orchestration. Go interfaces in `cli/internal/ports/` define the
+hexagonal seams. Skills are domain or driving-adapter contracts; the CLI and
+external runtimes are adapters. Generated inventories expose the current
+skill, command, and ownership matrix without copying volatile totals into prose.
 
----
+The active in-session waist is:
 
-*AgentOps — github.com/boshu2/agentops*
-
----
-
-## Appendix: System Map
-
-### Scale
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    AgentOps at a Glance                          │
-├───────────────────┬──────────────────────┬───────────────────────┤
-│ 63 shared skills  │   `ao` Control Plane │ local pre-push gate  │
-│ plus runtime      │ repo-native retrieval│    + CI backstop     │
-│    artifacts      │ goals, and automation│ routine release path │
-└───────────────────┴──────────────────────┴───────────────────────┘
-```
-
-### The Pipeline — Primitive Chains in Motion
-
-`/rpi` orchestrates the macro lifecycle. Each phase expands into its own skill chain.
-
-```
-GOALS.md
-  -> /evolve
-      -> /rpi
-          -> Discovery: /brainstorm -> /research -> /plan -> /pre-mortem
-          -> Implementation: /crank -> /swarm -> /implement
-          -> Validation: /validation -> /vibe -> /post-mortem -> /retro -> /curate --mode=forge
+```text
+skills + local agent reasoning
+  → operating loop
+  → immutable Validate verdict
+  → Learn receipt
+  → ao gate / pawl evidence
+  → land
 ```
 
-### Validation Layer — Everything Flows Through Council
+Out-of-session execution is delegated to an operator-selected substrate such as
+NTM, Agent Mail, managed agents, or Gas City. AgentOps ships no daemon and does
+not auto-route work into a substrate.
 
-```
-                   ┌──────────────────────────────┐
-                   │           /council           │
-                   │  (independent reviewers      │
-                   │   debate, verdict gates work)│
-                   └───────────┬──────────────────┘
-                               │ used by
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-   /pre-mortem              /vibe              /post-mortem
-   (validate plans          (validate code     (wrap-up +
-    before building)         before shipping)   learnings)
-```
+## What machines prove and agents judge
 
-### Knowledge Handoff — Skills and CLI Working Together
+Deterministic code owns schemas, generated-file drift, link integrity, command
+existence, exact port ownership, tests, and commit-bound evidence. Agents own
+semantic review: whether the plan addresses the intent, whether evidence proves
+the requested behavior, what risks were missed, and whether a causal claim is
+credible. Scripts do not approximate those judgments with keyword counts.
 
-```
-   SURFACE                 CLI / FILE PRIMITIVE          RESULT
-   ───────                 ────────────────────          ──────
-/research          ->    ao lookup + ao search      Prior repo context loaded
-/plan              ->    findings registry          Reusable risks loaded pre-decomposition
-/post-mortem       ->    ao forge + ao session      Learnings harvested and session closed
-/vibe              ->    ao ratchet record          Validation checkpoint persisted
-/evolve            ->    ao goals measure           Worst fitness gap selected
-/recover           ->    handoff artifacts          Interrupted work resumed from disk
-```
+Mechanical candidates start advisory. Activation requires deterministic replay
+over stored positives, explicit negative controls, and warn-only shadow evidence
+meeting the precision threshold. Learn never activates a constraint.
 
-### Lifecycle — Hookless Enforcement
+## Honest posture
 
-AgentOps 3.0 is hookless: nothing auto-fires at session boundaries. The lifecycle
-runs through explicit skills and `ao` commands, with the installed local cockpit
-pre-push gate as routine authority and CI as tag/PR/manual backstop telemetry.
-(An opt-in `hooks-authoring` skill exists if you want to add your own hooks;
-AgentOps ships none by default.)
+<!-- agentops:claim:AOP-CLAIM-BRIEF-VALIDATED-PATTERNS -->
 
-```
-LIFECYCLE POINT           SKILL / COMMAND             WHAT IT DOES
-───────────────           ───────────────             ────────────
-Session starts         ao session bootstrap        Stage orientation + runtime state
-                       + ao inject                 Pull decay-ranked context
-Session ends           /post-mortem + ao forge     Harvest learnings
-Loop closure           ao flywheel + /retro        Close the learning loop
-Plan review            /pre-mortem                 Require review before risky work
-Code review            /vibe + ao ratchet          Block over-complex / unready edits
-Backstop validation    validate.yml (CI)           Re-run compiled validation gates
-```
+AgentOps can preserve validated patterns and make them available to later work.
+It has not yet proven general live-agent uplift or a compounding corpus moat.
+The repo tracks those hypotheses separately from the verified membrane so
+marketing cannot outrun measurement.
 
-### CLI Command Groups
+## Canonical next reads
 
-```
-RETRIEVAL / CURATION        VALIDATION / RATCHETS    WORKFLOW / FITNESS
-────────────────────        ─────────────────────    ──────────────────
-ao lookup                   ao ratchet status        ao gate check
-ao search                   ao ratchet record        ao session bootstrap
-ao forge                    ao ratchet check         ao goals measure
-ao curate                   ao constraint activate   ao goals steer
-ao maturity                 ao constraint review     ao flywheel status
-ao dedup                    ao session close         ao session bootstrap
-ao contradict               ao temper validate       ao status
-ao notebook                                          ao doctor
-ao extract
-```
+- [Operating loop](architecture/operating-loop.md)
+- [Codebase overview](architecture/codebase-overview.md)
+- [Skills and CLI matrix](skills-matrix.md)
+- [Ports and adapters](architecture/ports-and-adapters.md)
+- [Product claims and goals](../PRODUCT.md) · [fitness measures](../GOALS.md)

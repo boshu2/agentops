@@ -28,11 +28,9 @@ scripts/bd-cluster.sh
 scripts/bootstrap-maturity.sh
 scripts/build-rg.sh
 scripts/capture-repo-metrics.sh
-scripts/check-agentops-domain-evolution-plan.sh
 scripts/check-agents-hash-snapshot.sh
 scripts/check-agents-write-surfaces.sh
 scripts/check-applied-ood-headroom.sh
-scripts/check-architecture-doc-drift.sh
 scripts/check-author-judge-convergence.sh
 scripts/check-bdd-foundry-markers.sh
 scripts/check-bead-scenario-coverage.sh

@@ -1,18 +1,11 @@
 #!/usr/bin/env bash
 # scripts/generate-skill-domain-map.sh
 #
-# Generate the data sections of docs/reference/agentops-skill-domain-map.md
+# Generate docs/reference/agentops-skill-domain-map.md
 # from canonical sources:
 #   - docs/contracts/bounded-contexts.yaml   (BC1-BC6 definitions)
 #   - docs/contracts/skill-dispositions.yaml (per-skill judgment data)
 #   - skills/<name>/SKILL.md                 (hexagonal_role cross-check)
-#
-# The script replaces content between these markers in the .md file:
-#   <!-- BEGIN:audit-summary -->     ... <!-- END:audit-summary -->
-#   <!-- BEGIN:domain-taxonomy -->   ... <!-- END:domain-taxonomy -->
-#   <!-- BEGIN:full-skill-map -->    ... <!-- END:full-skill-map -->
-#
-# Hand-written prose outside these markers is preserved.
 #
 # Modes:
 #   (default)    write the .md file in place
@@ -49,7 +42,7 @@ for arg in "$@"; do
   esac
 done
 
-for f in "${BC_YAML}" "${DISP_YAML}" "${MAP_DOC}"; do
+for f in "${BC_YAML}" "${DISP_YAML}"; do
   if [[ ! -f "$f" ]]; then
     echo "ERROR: required file missing: $f" >&2
     exit 2
@@ -150,34 +143,44 @@ full_map_lines = [
 ]
 for d in disps:
     full_map_lines.append(
-        f"| `{d['skill']}` | {d['domain']} | {d['hexagonal_role']} | {d['disposition']} | {d['rationale']}. |"
+        f"| `{d['skill']}` | {d['domain']} | {d['hexagonal_role']} | {d['disposition']} | {d['rationale'].rstrip('.')} |"
     )
 full_skill_map = "\n".join(full_map_lines)
 
 
-# --- Replace marker blocks in the .md ---
+# --- Render the complete source-owned document ---
 
-text = MAP_DOC.read_text()
+text = f"""# AgentOps Skill Domain Map
 
-def replace_block(name, content):
-    global text
-    pattern = re.compile(
-        rf'(<!-- BEGIN:{name} -->\n).*?(\n<!-- END:{name} -->)',
-        re.DOTALL,
-    )
-    if not pattern.search(text):
-        # Block markers do not exist yet — insert near a known section.
-        # For first-run bootstrap, we expect the doc to already contain
-        # markers (added in this PR). Hard-fail otherwise.
-        print(f"ERROR: marker block <!-- BEGIN:{name} --> not found in {MAP_DOC.name};"
-              " the doc must contain marker pairs for every generated section.",
-              file=sys.stderr)
-        sys.exit(2)
-    text = pattern.sub(rf'\1{content}\2', text)
+Generated classification of checked-in skills across BC1-BC6. This is not a CLI
+capability matrix. Edit `docs/contracts/bounded-contexts.yaml`,
+`docs/contracts/skill-dispositions.yaml`, or skill frontmatter, then regenerate.
 
-replace_block("audit-summary",    audit_summary)
-replace_block("domain-taxonomy",  domain_taxonomy)
-replace_block("full-skill-map",   full_skill_map)
+## Audit summary
+
+<!-- BEGIN:audit-summary -->
+{audit_summary}
+<!-- END:audit-summary -->
+
+## Domain taxonomy
+
+<!-- BEGIN:domain-taxonomy -->
+{domain_taxonomy}
+<!-- END:domain-taxonomy -->
+
+## Dispositions
+
+- `keep`: the skill remains a supported route.
+- `update`: the route remains but its contract needs work.
+- `merge`: another route should absorb the capability.
+- `delete`: remove the route after its consumers are migrated.
+
+## Full skill map
+
+<!-- BEGIN:full-skill-map -->
+{full_skill_map}
+<!-- END:full-skill-map -->
+"""
 
 
 # --- Output ---

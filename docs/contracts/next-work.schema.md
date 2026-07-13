@@ -2,7 +2,9 @@
 
 schema_version: 1.4
 
-Contract for `.agents/rpi/next-work.jsonl` — the carry-forward queue that feeds harvested findings from `/postmortem` into `/evolve`, `/rpi loop`, and related pre-flight checks.
+Compatibility contract for `.agents/rpi/next-work.jsonl`. The active RPI path
+uses the Learn receipt and orchestrator-owned `plan_impact`; retained consumers
+may still read this carry-forward queue during migration.
 
 This document is the human-readable spec. The machine-checkable realization is the committed JSON Schema pair `schemas/next-work-batch.v1.schema.json` (one JSONL line = one batch entry) and `schemas/next-work-item.v1.schema.json` (each `items[]` element). Validate rows with `scripts/validate-next-work.sh` (`--strict` to gate).
 
@@ -22,13 +24,13 @@ The queue is **append-on-write, rewrite-on-lifecycle**:
 
 ## Entry Object
 
-One entry per producer event, usually one `/postmortem` run.
+One entry per producer event, usually one `/post-mortem` run.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `source_epic` | string | yes | ID or slug of the source epic or session |
 | `timestamp` | string (ISO-8601) | yes | When the entry was written |
-| `items` | array of Item | yes | Harvested follow-up work; may be empty when a postmortem finds nothing actionable |
+| `items` | array of Item | yes | Harvested follow-up work; may be empty when a post-mortem finds nothing actionable |
 | `consumed` | boolean | yes | Aggregate entry status; `true` only when every child item is consumed |
 | `claim_status` | enum | yes | Aggregate entry status: `available`, `in_progress`, or `consumed` |
 | `claimed_by` | string or null | yes | Aggregate claimant identifier, usually copied from the currently claimed item |
@@ -130,8 +132,7 @@ Allowed `kind` values:
 - `evolve-generator`
 - `feature-suggestion`
 - `backlog-processing`
-- `postmortem-finding` (canonical writer value)
-- `post-mortem-finding` (legacy read alias)
+- `post-mortem-finding`
 - `manifest-classification`
 - `dream-degraded`
 

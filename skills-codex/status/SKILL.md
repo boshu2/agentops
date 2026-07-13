@@ -30,7 +30,7 @@ Use exact issue ids, branch/worktree state, and file-backed artifacts instead of
 Keep the output resumable after compaction.
 
 Leave `ao codex ensure-stop` to a closeout skill such as `$validate`,
-`$post-mortem`, or `$handoff`.
+`$postmortem`, or `$handoff`.
 
 ## Guardrails
 

@@ -1276,17 +1276,6 @@ else
     fail "missing file: scripts/check-wiring-closure.sh"
 fi
 
-# --- 22f2. AgentOps domain-evolution control artifacts ---
-# Runs when present so the BDD/DDD/Hexagonal/TDD/XP control surface stays wired.
-if [[ -f scripts/check-agentops-domain-evolution-plan.sh ]]; then
-    if domain_evolution_output="$(bash scripts/check-agentops-domain-evolution-plan.sh 2>&1)"; then
-        pass "agentops domain evolution plan"
-    else
-        fail "agentops domain evolution plan"
-        indent_output "$domain_evolution_output"
-    fi
-fi
-
 # --- 22g. Corpus-freshness (GOALS.md gate corpus-freshness, weight 4 — Directive D11) ---
 # Always runs: structural gate; skips cleanly when no snapshot dir exists so
 # greenfield boxes do not block. Real teeth: operator boxes that DO have a

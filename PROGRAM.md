@@ -58,17 +58,15 @@ One bead-backed vertical slice, shaped per the operating loop:
 - Its write scope is reviewable in one pass.
 
 Per slice: claim or create the bead, write the first failing test, make the
-smallest change that flips it green, refactor under green as a separate commit,
-record evidence into the bead, run the relevant local gates, update/close the
-bead, commit, rebase, push, and verify the remote gate when the slice is intended
-to land. A slice that touches `cli/internal/domain/` must preserve the
+smallest change that flips it green, refactor under green, record evidence into
+the bead, run the relevant local gates, obtain the independent verdict, then use
+`ao land <bead>` for the landing transition. A slice that touches
+`cli/internal/domain/` must preserve the
 no-import-from-`internal/*` invariant; a slice that touches a port writes its
 first failing test against the port interface, not an adapter internal.
 
 ## Validation Commands
 
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go run -tags legacy ./cmd/ao autodev validate --file ../PROGRAM.md --json` — the `autodev` command surface is archived behind the `legacy` build tag; the shipped spine binary does not carry it
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go test -tags legacy ./cmd/ao ./internal/autodev`
 - `cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./internal/domain/... ./internal/ports/... ./internal/adapters/...`
 - `env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict`
 - `bash scripts/check-worktree-disposition.sh`
@@ -132,13 +130,17 @@ two or more slices.
 
 ## Stop Conditions
 
-- `ao autodev validate --json` reports `valid: true` for this contract.
+- The controller contract validates against the current execution profile; the
+  archived `autodev` build is not a shipped-runtime completion dependency.
 - Every Given/When/Then in the active bead maps to a passing test; every non-goal
   is still untouched; every rollback path is reachable. Activity logs do not close
   beads — acceptance evidence does.
 - The active bead is closed or updated with concrete remaining blockers.
 - The relevant validation bundle is green, including the fast pre-push gate for
   landed changes.
+- An independent verdict is recorded against the exact candidate HEAD.
+- Bead-backed work lands through `ao land <bead>`; a local commit alone is not a
+  completed landing transition.
 - The worktree is clean, pushed, and up to date with origin for landed changes.
 - Every foreign worktree is marked merged, preserved, exported, or deleted.
 - Evidence is recorded in the bead and `.agents/ratchet/`; learnings are promoted

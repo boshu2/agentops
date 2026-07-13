@@ -148,8 +148,8 @@ tag/PR/manual backstop, not the gate on every `main` push.
 | Former hook responsibility | Hookless surface | Gap closed |
 |----------------------------|------------------|------------|
 | Startup maintenance / handoff recovery / factory-state staging | `ao knowledge brief`, `ao context assemble`, `ao session handoff` | Runtime continuity |
-| Transcript mining / maturity management / defrag | `/curate --mode=forge`, `ao maturity`, `ao compile` at session close | Durable learning, Loop closure |
-| Flywheel close | `ao flywheel close-loop` / `/retro` | Loop closure |
+| Post-verdict bookkeeping | `/learn` receipt | Durable evidence and explicit loop decision |
+| Retrospective causal analysis | optional `/postmortem` after Validate and Learn | Evidence-tested causal report |
 | Prompt guidance / context pressure | `ao lookup`, factory briefings (pulled, not injected) | Judgment validation |
 | Validation gates / quality / completion | local pre-push Go gate (`ao gate check --fast` via the pre-push hook) + skill-level checks + `cd cli && make test`; CI (`.github/workflows/validate.yml`) as a tag/PR/manual backstop | Judgment validation, Loop closure |
 

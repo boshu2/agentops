@@ -243,7 +243,7 @@ While AgentOps has maturity scoring and decay, Compound Engineer's `/ce:compound
      ↓
 /vibe         -> multi-aspect code validation (council optional)
      ↓
-/post-mortem  -> extract learnings → score → store for next session
+/validate -> /learn  -> verdict-bound observations -> orchestrator decision
 ```
 
 **Key difference:** Compound Engineer starts earlier (ideation, brainstorming) and compounds knowledge through explicit documentation. AgentOps enforces stronger pre-implementation gates and compounds knowledge through automated extraction and scoring.

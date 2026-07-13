@@ -181,7 +181,7 @@ AgentOps `/vibe` asks 8 questions:
      ↓
 /crank        →  Implement → validate → commit
      ↓
-/post-mortem  →  Validate + extract learnings (FOR NEXT TIME)
+/validate → /learn  →  immutable verdict + bounded plan impact
 ```
 
 **Key difference:** AgentOps extracts *learnings* (patterns, decisions, failures), not just specs.
@@ -265,7 +265,7 @@ AgentOps doesn't aim for "spec-as-source" — it captures *learnings*, not just 
 │  AgentOps handles:                                              │
 │    └── Pre-mortem (failure simulation)                          │
 │    └── /vibe (8-aspect validation)                              │
-│    └── /post-mortem (learning extraction)                       │
+│    └── /learn (post-verdict bookkeeping)                        │
 │    └── Cross-session memory                                     │
 │                                                                 │
 │  Combined flow:                                                 │

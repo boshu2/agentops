@@ -13,14 +13,15 @@ For product doctrine read [AgentOps 3.0 — the north star](../3.0.md). For *how
 | Fact | Value |
 |------|-------|
 | Product | In-session autonomous code validation for coding agents |
-| Active waist | `ao session bootstrap` → operating loop → `ao gate check --fast` → push to `main` |
+| Active waist | triggered context → operating loop → `ao land <bead>` |
 | Issue tracker | **br** (beads_rust) in `_beads/` — `BEADS_DIR="$(ao beads dir)" br <cmd>` until legacy `.beads/` retires |
 | Skills SSOT | `skills/<slug>/SKILL.md` — never edit `~/.claude/skills/` |
-| Release gate | Local cockpit: `ao gate check --fast --scope head` (Go registry in `cli/internal/gates/`) |
-| CI | Backstop only — not routine release authority for every `main` push |
+| Deterministic proof | `ao gate check --fast --scope head` (Go registry in `cli/internal/gates/`); necessary evidence, not landing authority |
+| Terminal landing | `ao land <bead>` binds the independent verdict, deterministic proof, and repository-selected delivery |
+| CI | Backstop only — not routine landing authority for every `main` push |
 | Hooks | AgentOps 3.0 ships **zero** hooks; context is pulled explicitly |
 | `.agents/` | Runtime knowledge — **gitignored**; durable public truth goes to `docs/`, `GOALS.md`, or provenance ledger |
-| Worktrees | **Mandatory** for bead work when canonical root is contended — do not edit shared checkout |
+| Worktrees | **Mandatory** for every tracked edit intended to land: claim/create the bead, then use its linked worktree |
 | RPI CLI | `ao rpi` was **removed in 3.0** (commit f61c5f0e7) — the RPI engine is gone; in-session navigation is the operating loop, out-of-session is NTM + Agent Mail |
 | Regen after inventory edits | `make regen-all` then `make regen-check` |
 
@@ -40,27 +41,19 @@ Four product layers (public framing):
 | Layer | Problem | Key surfaces |
 |-------|---------|--------------|
 | **Bookkeeping** | work vanishes between sessions | `.agents/`, RPI packets, council verdicts |
-| **Context compiler** | agents start cold | `ao session bootstrap`, skills, execution packets |
-| **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/premortem`, `ao gate` |
-| **Knowledge flywheel** | lessons don't compound | `/postmortem`, `/pattern-mining`, `/operationalize`, promotion ratchet, `ao lookup` |
+| **Local context** | agents lose relevant evidence | triggered contracts, skills, execution packets |
+| **Validation gates** | plausible ≠ correct | `/council`, `/validate`, `/premortem`, `ao gate` |
+| **Learning ratchet** | lessons don't change future behavior | `/learn`, `/pattern-mining`, `/operationalize`, promotion ratchet |
 
 **Honest fitness posture:** the apparatus to measure corpus delta exists; live-agent uplift is **not yet proven**. See [AgentOps effectiveness evidence](../evals/agentops-effectiveness-evidence.md).
 
 ---
 
-## Scale (measured)
+## Current inventory
 
-| Dimension | Size |
-|-----------|------|
-| Go source files | 1531 (`git ls-files '*.go'`) |
-| Active skills | 62 (`git ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
-| Codex skill twins | 61 (`git ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
-| CLI top-level commands | 32 default / 89 with `flywheel legacy` (`go run [-tags profile] ./cmd/ao --help`) |
-| Gate checks | 102 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
-| Shell scripts | 373 (`git ls-files scripts | awk '/\.sh$/'`) |
-| Bats test files | 296 (`git ls-files tests | awk '/\.bats$/'`) |
-| Claude workflows | 4 (`git ls-files .claude/workflows | awk '/\.js$/'`) |
-| Registry capabilities | 105 (`jq '.capabilities | length' registry.json`) |
+Use generated `registry.json`, `skills/catalog.json`, and
+`cli/docs/COMMANDS.md` for current counts and command surfaces. This narrative
+intentionally does not copy volatile inventory totals.
 
 ---
 
@@ -70,9 +63,9 @@ Product and code route through six DDD bounded contexts. Full routing: [Componen
 
 | BC | Name | Center of gravity |
 |----|------|-------------------|
-| **BC1** | Corpus | `.agents/`, `ao inject`, `/postmortem`, `/pattern-mining`, `/operationalize`, `/harvest` |
-| **BC2** | Validation | `ao gate check`, `/validate`, `/council`, `/vibe` |
-| **BC3** | Loop | operating loop, `/evolve`, `br`, goals, autodev |
+| **BC1** | Corpus | `.agents/`, `/pattern-mining`, `/operationalize` |
+| **BC2** | Validation | `ao gate check`, `/validate`, `/council`, `/premortem` |
+| **BC3** | Loop | operating loop, `/learn`, optional `/postmortem`, `/evolve`, `br`, goals |
 | **BC4** | Factory | skill-builder, registries, standards, dispositions |
 | **BC5** | Runtime | CLI, installers, plugin manifests |
 | **BC6** | Orchestration | NTM, Agent Mail, swarm — **substrate boundary** |
@@ -123,23 +116,19 @@ Report mismatches; do not silently follow stale docs.
 ## The active waist (what actually runs today)
 
 ```text
-ao session bootstrap          # explicit orientation (replaces hook injection)
+Triggered context + operating loop   # BDD → br bead → slice → TDD → Validate → Learn
         ↓
-Operating loop                # BDD → br bead → slice → TDD → validate
+ao land <bead>                      # fresh pawl verdict + deterministic gate + atomic landing
         ↓
-ao gate check --fast --scope head   # local cockpit gate (BC2)
-        ↓
-git push → main               # rebase-on-reject; no routine PR wall
-        ↓
-validate.yml (optional)       # CI backstop on tags, PRs, manual dispatch
+validate.yml (optional)              # CI backstop on tags, PRs, manual dispatch
 ```
 
 ### Primary CLI commands (active)
 
 | Command | Role |
 |---------|------|
-| `ao session bootstrap` | Universal init prompt for any agent runtime |
-| `ao gate check --fast` | Pre-push release authority |
+| `ao session bootstrap` | Explicit orientation output when the task calls for it; never an automatic startup ritual |
+| `ao gate check --fast` | Deterministic pre-land evidence; not a substitute for the pawl verdict |
 | `ao gate check --full` | CI-parity local proof |
 | `ao goals measure` | Fitness against `GOALS.md` |
 | `ao doctor` | Self-healing cockpit |
@@ -152,14 +141,14 @@ Full surface: generated [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md).
 | Surface | Status |
 |---------|--------|
 | `ao codex *` | `legacy`-tagged archive; absent from the default spine |
-| `ao inject`, `ao lookup`, `ao corpus *` | Tagged archives; `ao session bootstrap` is the default-spine orientation path |
+| `ao inject`, `ao lookup`, `ao corpus *` | Tagged archives; `ao session bootstrap` is an explicit orientation command, never an automatic startup ritual |
 | `ao mcp serve`, `ao agent` | `legacy`-tagged optional substrate surfaces; absent from the default spine |
 | `ao rpi phased/loop/serve/stream` | **Removed in 3.0** (f61c5f0e7) — engine gone; use the operating loop in-session, NTM + Agent Mail out-of-session |
 | `scripts/pre-push-gate.sh` | Bash escape hatch — `AGENTOPS_GATE_BASH=1` only |
 | Gas City (`runtime=gc`) | **Removed** — bridge deleted. gc itself lives beside as a blessed coexisting substrate (owned fork; drive via `skills/using-gc` + `packs/agentops-membrane`) |
 | In-repo daemon/scheduler | **Removed** — ADR-0009 |
 
-**Navigation rule:** [Operating Loop](operating-loop.md) is primary navigation for *how work flows*. `/rpi` is one turn's executor skill — not the primary substrate. Live multi-agent orchestration runs on NTM + Agent Mail under `.agents/agent-constitution.md`.
+**Navigation rule:** [Operating Loop](operating-loop.md) is primary navigation for *how work flows*. `/rpi` is one turn's executor skill — not the primary substrate. Explicitly requested multi-agent orchestration uses the tracked [NTM](../../skills/ntm/SKILL.md) and [Agent Mail](../../skills/agent-mail/SKILL.md) adapter contracts; [dependencies](../dependencies.md) owns the optional out-of-session substrate boundary.
 
 ---
 
@@ -212,11 +201,13 @@ Retirement: `ao skills retire <slug> [--into <target>]` — flips ledger to `his
 
 ## Gate architecture
 
-The Go gate (`cli/internal/gates/`) is the **routine release authority** (ag-qidx push-to-main model).
+The Go gate (`cli/internal/gates/`) is the deterministic evidence engine used by
+the landing path. It establishes mechanical facts; it does not replace the
+exact-candidate independent verdict or become landing authority by itself.
 
 ```text
 Check { ID, Tiers (Fast|Full), Match[] globs, Blocking, Backing | Run }
-  → Registry (103 checks in checks/seed.go)
+  → Registry (declared checks in `checks/seed.go`)
   → Orchestrator (serial; changed-file routing in Fast mode)
   → Report (PASS / WARN / FAIL / SKIP)
 ```
@@ -244,14 +235,13 @@ cd cli && go test ./internal/gates/checks -count=1   # registry parity tests
 
 ---
 
-## Knowledge flywheel
+## Post-verdict learning and optional compounding
 
 ```text
-Work → /postmortem → /pattern-mining → /operationalize
-     → .agents/learnings/pending/
-     → pool score → promote (gold/silver/bronze)
-     → ao lookup (decay-ranked, cited) → next session
-     → gates enforce promotion ratchet
+Validate verdict → /learn receipt → orchestrator decision
+                 → optional /postmortem for a causal question
+                 → /pattern-mining → /operationalize when recurrence earns promotion
+                 → optional archive lookup surfaces when deliberately selected
 ```
 
 | Surface | Path | Tracked in git? |
@@ -289,7 +279,9 @@ Read the right layer for your question:
 2. **Scope** — read bead acceptance (`.feature` or embedded `## Scenarios`)
 3. **Implement in worktree** — `git worktree add wt-<bead-id> -b <type>/<bead-id>-<slug>`
 4. **Verify** — `ao gate check --fast --scope head` (+ targeted tests for touched surfaces)
-5. **Land** — push to `main`; cockpit pre-push hook runs gate; rebase-on-reject on conflict
+5. **Land** — `ao land <bead>` obtains the exact-candidate pawl verdict, runs
+   the deterministic gate, rebases, and performs the atomic repository-selected
+   delivery. REFUTED or NO-VERDICT stops the transition.
 
 Branch shape, provenance trailers, and session scope rules: [`agent-workflow-reference.md`](../agent-workflow-reference.md).
 
@@ -306,12 +298,14 @@ These recur in audits and findings registries:
 | Editing canonical root under swarm load | Use a **worktree** per bead |
 | Staging the private ledger from the parent repo | Never — private nested repo; sync with `git -C "$(ao beads dir)" push` |
 | Hand-editing `registry.json` or context-map | Run `make regen-all` from source edits |
-| Assuming CI blocks every `main` push | **Local gate** is routine authority; CI is backstop |
+| Assuming a green local gate authorizes landing | `ao land <bead>` requires both the exact-candidate verdict and deterministic proof; CI remains a backstop |
 | Treating `/rpi` as the live orchestration substrate | NTM + Agent Mail for out-of-session; operating loop for in-session navigation |
 | Running `claude -p` / `claude --print` | **Forbidden** — burns quota; use Codex exec or interactive panes |
 | Trusting narrative over executable behavior | Check `cli/`, generated docs, and gates first |
 
-Some older docs (`ARCHITECTURE.md`, `ports-and-adapters.md`) still mention hooks, bd, or PR-per-change — treat as historical unless reconciled. `cli/AGENTS.md` is a pointer stub to root `AGENTS.md` (Wave A).
+`ports-and-adapters.md` is the canonical hexagonal seam map. Treat conflicting
+historical wording elsewhere as stale and reconcile it against that owner.
+`cli/AGENTS.md` is a pointer stub to root `AGENTS.md` (Wave A).
 
 ---
 
@@ -325,10 +319,17 @@ Some older docs (`ARCHITECTURE.md`, `ports-and-adapters.md`) still mention hooks
 - Honest eval posture — refuses to market ahead of measured uplift
 
 **Open debt**
-- Gate migration: collapse YAML/bash triple orchestration into Go registry (Wave E drained 2 deferred scripts; 11 remain)
+- Gate migration debt is owned by the live Go registry and CI contract; use
+  `cli/internal/gates/checks/seed.go` and `docs/contracts/ci-jobs.yaml` instead
+  of copying a point-in-time script count here.
 - Doc reconciliation: Wave C landed; `docs/3.0-readiness.md` checklist items still open
-- Disposition debt: ~34 skills marked update/refactor — triage checklist at `docs/audits/2026-06-16-skill-disposition-triage.md`
-- Worktree hygiene: 27 merge-eligible worktrees in dry-run — audit at `docs/audits/2026-06-16-worktree-disposition-audit.md`; no `--apply` without human ACK
+- Disposition debt is owned by `docs/contracts/skill-dispositions.yaml`; do not
+  copy its volatile count into narrative docs. Historical triage context lives
+  at `docs/audits/2026-06-16-skill-disposition-triage.md`.
+- Worktree hygiene is measured live with `git worktree list` and
+  `scripts/check-worktree-disposition.sh`; the dated audit at
+  `docs/audits/2026-06-16-worktree-disposition-audit.md` is historical evidence,
+  not a current count. Never use `--apply` without human acknowledgment.
 
 ---
 
@@ -361,6 +362,6 @@ Some older docs (`ARCHITECTURE.md`, `ports-and-adapters.md`) still mention hooks
 - [Operating Loop](operating-loop.md) — seven-move doctrine (primary navigation)
 - [Canonical Loop Model](canonical-loop-model.md) — one loop body, two drivers
 - [Component Map](component-map.md) — where new work goes
-- [Ports and Adapters](ports-and-adapters.md) — hexagonal seams (some tracker wording predates br)
+- [Ports and Adapters](ports-and-adapters.md) — canonical hexagonal seams and current tracker/legacy-adapter boundary
 - [Knowledge Flywheel](../knowledge-flywheel.md) — compounding mechanics
 - [Dependencies](../dependencies.md) — required vs optional tools

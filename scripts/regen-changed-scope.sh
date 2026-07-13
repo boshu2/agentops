@@ -204,7 +204,7 @@ for file in "${FILES[@]}"; do
     docs/contracts/*)
       NEED_CONTRACT_COMPAT=true
       ;;
-    docs/reference/agentops-skill-domain-map.md|docs/reference/agentops-hexagonal-architecture-map.md)
+    docs/reference/agentops-skill-domain-map.md)
       NEED_SKILL_DOMAIN=true
       ;;
     registry.json)

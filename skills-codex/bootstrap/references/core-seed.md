@@ -19,7 +19,8 @@ Create `.agents/AGENTS.md` only when it does not exist, with this content:
 ```markdown
 # Agent Knowledge Store
 
-This directory contains accumulated knowledge from agent sessions.
+This directory contains fallible runtime knowledge from agent sessions. It is
+not a public or repository-authoritative contract.
 
 ## Structure
 
@@ -33,10 +34,11 @@ This directory contains accumulated knowledge from agent sessions.
 
 ## Usage
 
-Knowledge is managed by explicit AgentOps commands:
-- `ao lookup` surfaces relevant prior knowledge on demand.
-- `/post-mortem` extracts and processes new learnings.
-- `/compile` runs maintenance when that skill is installed.
+Knowledge is used through task-triggered routes:
+- Use the host runtime's native session search by default.
+- Use `ao lookup --query "<topic>"` only when the operator explicitly selects the optional archive profile.
+- `/learn` captures evidence that should change future behavior.
+- `/postmortem` is reserved for an explicit retrospective causal question.
 ```
 
 If `.agents/` exists and `--force` is not set, skip and report `.agents/ exists -- skipped.`

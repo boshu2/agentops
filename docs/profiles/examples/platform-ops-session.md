@@ -76,7 +76,7 @@ User: Document this incident
 - Write action items
 - Update runbook
 
-**Output**: Incident postmortem in `.agents/learnings/`
+**Output**: Causal report in `.agents/council/` when using `/postmortem`
 
 ---
 

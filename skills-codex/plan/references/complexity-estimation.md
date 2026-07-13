@@ -15,7 +15,7 @@
 
 ## Evidence
 
-- ag-atu: Plan estimated CC 35 → ~10 with 4 extractions. Pre-mortem caught the error. Actual: 8 extractions needed to reach CC 12.
+- ag-atu: Plan estimated CC 35 → ~10 with 4 extractions. Premortem caught the error. Actual: 8 extractions needed to reach CC 12.
 - General: CC tracks decision points (if, switch, for, &&, ||). Extract-method moves decision points, not removes them.
 
 ## When to Flag

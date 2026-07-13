@@ -24,9 +24,11 @@ That is it. One command. Every step below is idempotent — existing artifacts a
 
 ## Absorbed triggers (routed here from retired skills)
 
-- **`session-bootstrap` / session-start context** — run `ao session bootstrap` for the
-  universal orientation report, then `ao lookup --query "<topic>"` for decay-ranked
-  prior context. (Previously routed via the retired `/inject`.)
+- **`session-bootstrap` / explicit orientation request** — run `ao session bootstrap`
+  only when the operator selects that archive profile. Do not make it a default
+  startup ritual or chain into `ao lookup`; use host-native session search unless
+  the operator separately requests archive-corpus lookup. (Previously routed via
+  the retired `/inject`.)
 - **`using-agentops` / workflow tour** — read
   [docs/architecture/operating-loop.md](../../docs/architecture/operating-loop.md)
   (the primary navigation). There is no update skill — to refresh installed skills, re-run the install one-liner:
@@ -34,7 +36,7 @@ That is it. One command. Every step below is idempotent — existing artifacts a
 
 ## External Tools
 
-- **ao** (optional) — AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
+- **ao** (optional) — AgentOps CLI. Preferred for the core seed and required for `ao autodev init`; documented fallbacks or repair instructions apply when it is missing.
 - **br** (optional, recommended) — beads_rust CLI (local-first issue tracking). Bootstrap probes for `br` in Step 0.5 and, when missing, recommends installing it. Bootstrap never installs `br` on the user's behalf.
 
 ## Flags
@@ -136,21 +138,21 @@ If `ao` is unavailable: do not create a placeholder. Report "PROGRAM.md skipped 
 
 If `HAS_PROGRAM` is true and `--force` is not set: skip. Report "PROGRAM.md/AUTODEV.md exists -- skipped."
 
-### Step 6: Optional Hook Activation
+### Step 6: Hook Boundary
 
 Do not activate runtime agent hooks. AgentOps 3.0 is runtime-hookless:
 `ao quick-start`, execution packets, explicit validation, and knowledge
 compounding deliver first value without Claude/Codex runtime hooks. Routine
-release authority is the local cockpit gate (`ao gate check` plus the installed
-Git pre-push/pawl proof path); GitHub Actions are PR/tag/manual backstop
-telemetry. There is no `ao` command or flag that installs runtime hooks —
-hooks were removed from the CLI.
+deterministic evidence comes from the repository gate; landing authority remains
+the repository's declared path (in AgentOps itself, the terminal landing adapter
+binds the independent verdict and deterministic proof). There is no `ao` command or flag
+that installs runtime hooks — hooks were removed from the CLI.
 
 If the user explicitly requests hooks, they are opt-in and author-it-yourself:
 point them at the `hooks-authoring` skill, which scaffolds project-local hooks
 into `.codex/settings.json`. Bootstrap itself never writes hooks.
 
-If hooks were not explicitly requested: skip. Report "Runtime hooks optional -- skipped. AgentOps 3.0 is runtime-hookless; routine release authority is the local cockpit gate. To author your own, use the `hooks-authoring` skill."
+If hooks were not explicitly requested: skip. Report "Runtime hooks unmanaged -- skipped. AgentOps 3.0 is runtime-hookless; Bootstrap does not author hooks."
 
 If `HAS_HOOKS` is true: report "Hooks already present in .codex/settings.json -- left untouched."
 
@@ -168,7 +170,7 @@ Bootstrap complete.
 | README.md     | created / skipped / failed |
 | PROGRAM.md    | created / skipped / failed |
 | .agents/      | created / skipped / failed |
-| Hooks         | optional / activated / skipped / failed |
+| Hooks         | unmanaged / present (left untouched) |
 | br            | present / recommended (not installed) |
 
 Repo is now AgentOps-ready. Next: run the operating loop — $rpi "your first goal"
@@ -199,7 +201,6 @@ See [references/examples.md](references/examples.md) for bare, partial, and dry-
 | "Not a git repo" | No .git directory | Run `git init` first |
 | Goals skill fails | No project context | Provide a one-line project description when prompted |
 | Product skill fails | No goals defined | Run `$goals init` manually first, then re-run `$bootstrap` |
-| Hooks not activating | ao CLI not installed | Install: `brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops` |
 | br not installed | Recommended but optional | Install beads_rust (`br`) if you want issue tracking; otherwise ignore |
 | Want to start over | Existing artifacts blocking | Use `--force` to recreate all artifacts |
 

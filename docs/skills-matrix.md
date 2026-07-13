@@ -5,7 +5,8 @@
 >
 > **Read first:** [Intent → Validated Code](architecture/intent-to-validated-code.md).
 > **Discipline:** [Operating Loop](architecture/operating-loop.md).
-> **Router ("what do I run?"):** [SKILLS.md](SKILLS.md).
+> **Canonical router ("what do I run?"):** [SKILL-ROUTER.md](SKILL-ROUTER.md).
+> **Explanatory guide:** [SKILLS.md](SKILLS.md).
 > **Tiers (editorial taxonomy):** [SKILL-TIERS.md](../skills/SKILL-TIERS.md).
 >
 > Inventory count comes from `registry.json` (generated from `skills/**/SKILL.md`).
@@ -43,7 +44,7 @@ Membrane skills (**P** on move 6) still require a behavior contract from moves
 | **behavior-first-planning** | S | S | P | S | — | — | — | Gherkin → EXECUTED-red → acceptance-gated DAG |
 | **beads-br** | — | P | S | S | S | S | S | Tracker; acceptance rides on the bead |
 | **beads-bv** | — | S | S | — | S | — | — | Graph triage / bottlenecks |
-| **pre-mortem** | S | — | S | — | — | S | — | Stress-test plan before build (also feeds membrane) |
+| **premortem** | S | — | S | — | — | — | — | Independent plan verdict between slicing and implementation; not finished-diff validation |
 | **implement** | — | — | — | P | S | — | — | One bead: RED → green → refactor |
 | **test** | — | — | S | S | — | S | — | Test/coverage plans alongside implement |
 | **refactor** | — | — | — | S | — | S | — | Safe refactors under green / own slice |
@@ -57,13 +58,13 @@ Membrane skills (**P** on move 6) still require a behavior contract from moves
 | **converge** | — | — | — | S | — | S | — | Fix → re-judge until agreement or BLOCK |
 | **reality-check** | — | — | — | — | S | S | — | Mid-epic drift: code vs plan |
 | **security** | — | — | — | — | — | S | — | Vuln/secrets/release security gate |
-| **post-mortem** | — | — | — | — | — | S | P | Evidence + learning ratchet |
+| **learn** | — | — | — | — | — | S | P | Immutable verdict → bookkeeping receipt + plan impact |
+| **postmortem** | — | — | — | — | — | — | O | Explicit retrospective causal analysis only |
 | **pattern-mining** | — | — | — | — | — | — | S | Recurring shapes → durable patterns |
 | **operationalize** | — | — | — | — | — | — | O | Experimental: corpus → operator surfaces |
 | **handoff** | — | S | — | — | — | — | S | Session continuity packet |
 | **status** | — | S | — | — | S | — | S | Where am I / recover |
 | **bootstrap** | S | S | — | — | — | — | — | First-time repo / AgentOps setup |
-| **push** | — | — | — | — | — | S | — | Validate, commit, push discipline |
 | **release** | — | — | — | — | — | S | S | Changelog / tag / release validation |
 | **pr-prep** | — | — | — | — | — | S | — | PR body/commits when using PR flow |
 | **doc** | S | — | — | — | — | S | S | Docs packs; often paired with product changes |
@@ -92,6 +93,7 @@ These skills matter; they are not the default intent→validated-code path.
 | **shared** / **standards** | Library | Contracts and coding standards loaded JIT |
 | **scaffold** | Tooling | Project/CI scaffolds |
 | **cc-hooks** | Tooling | Claude Code hooks (opt-in; product is hookless) |
+| **push** | Delivery adapter | Repository-selected direct push, PR, or user-owned CI after authorization; deterministic checks only |
 | **dcg** / **sbh** / **rch** / **account-rotation** | Tooling | Safety, browser, remote workers, account rotation |
 | **toil-mining** | Meta | Find repeated toil → automation candidates |
 
@@ -101,9 +103,9 @@ These skills matter; they are not the default intent→validated-code path.
 
 | Work size | Skill sequence | Acceptance spine |
 |-----------|----------------|------------------|
-| **One behavior** | `/plan` → `/implement` → `/validate` | One Gherkin scenario → one RED test → membrane cites it |
+| **One behavior** | `/plan` → `/implement` → `/validate` → `/learn` | One Gherkin scenario → one RED test → verdict → classified plan impact returned to the orchestrator |
 | **One tick (wrapped)** | `/rpi "goal"` | Same loop; orchestrator owns re-plan |
-| **Multi-bead epic** | `/discovery` → `/plan` → `/pre-mortem` → `/crank` → `/validate` → `/post-mortem` | Each bead carries scenarios; epic closes on roll-up |
+| **Multi-bead epic** | `/discovery` → `/crank` → `/validate` → `/learn` → orchestrator | Discovery owns plan + premortem; Crank → Validate → Learn repeats per remaining wave, and the orchestrator alone chooses the next transition |
 | **Parallel wave** | `/plan` (disjoint scopes) → `/swarm` or `/crank` → `/validate` | Wave invalid if write scopes collide |
 | **High-stakes close** | `/validate` + `/council` + `/pawl-review` → land | Independent judges + commit-bound verdict |
 | **Unattended / city** | Substrate dispatches `/rpi` per bead (`/ntm`, `/using-gc`, …) | Loop invariants stay in skills — substrate does not re-encode them |
@@ -132,7 +134,10 @@ If scenarios and acceptance commands are missing, the honest outcome is **HOLD**
 | Track beads | `/beads-br` + `br` via `ao beads dir` | Ad-hoc chat memory |
 | Release gate | `ao gate check --fast --scope head` | Green CI alone as done |
 | Commit ratchet / ledger | `ao verify`, `ao provenance`, `ao land` | Skipping the skill membrane on the slice |
-| Retrieve prior context | `ao lookup`, `ao search` | Pasting whole histories |
+| Retrieve prior context | Host-native session search or the optional archive profile | Pasting whole histories into the active prompt |
+
+`ao lookup` and `ao search` are archive-profile commands, absent from the
+default build. They are not part of the live operating-loop path.
 
 ---
 

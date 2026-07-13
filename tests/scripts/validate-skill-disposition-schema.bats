@@ -133,10 +133,29 @@ YAML
     run bash "$REPO_ROOT/scripts/check-bounded-contexts-drift.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"6 BCs"* ]]
-    # BC6 must appear in BOTH registry docs (the gate fails otherwise, but
+    [[ "$output" == *"exact Go port inventory: 32 interfaces"* ]]
+    # BC6 must appear in BOTH current maps (the gate fails otherwise, but
     # assert the membership directly so the scenario is pinned).
     grep -q "BC6 Orchestration" "$REPO_ROOT/docs/reference/agentops-skill-domain-map.md"
-    grep -q "BC6 Orchestration" "$REPO_ROOT/docs/reference/agentops-hexagonal-architecture-map.md"
+    grep -q "BC6 Orchestration" "$REPO_ROOT/docs/architecture/component-map.md"
+}
+
+@test "an implemented Go port without a bounded-context owner fails closed" {
+    ports="$BATS_TEST_TMPDIR/ports"
+    mkdir -p "$ports"
+    cp "$REPO_ROOT"/cli/internal/ports/*.go "$ports/"
+    cat > "$ports/unowned.go" <<'GO'
+package ports
+
+type UnownedPort interface {
+    Run() error
+}
+GO
+
+    PORTS_DIR="$ports" run bash "$REPO_ROOT/scripts/check-bounded-contexts-drift.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"GO_PORT_MISSING_FROM_CONTRACT"* ]]
+    [[ "$output" == *"UnownedPort"* ]]
 }
 
 @test "BC6 with no same-named cli command does not trip SKU coverage" {
@@ -176,13 +195,14 @@ PY
 }
 
 @test "the additive change leaves renamed-consumer parsers byte-untouched" {
-    # resolve-skill-path.sh, skills_retire.go, heal.sh must match origin/main.
+    # The current change must not touch resolve/retire/heal consumers. Comparing
+    # to HEAD isolates this candidate from earlier commits on the branch.
     for f in \
         scripts/lib/resolve-skill-path.sh \
         cli/cmd/ao/skills_retire.go \
         skills/heal-skill/scripts/heal.sh \
         skills-codex/heal-skill/scripts/heal.sh; do
-        run git -C "$REPO_ROOT" diff --quiet origin/main -- "$f"
+        run git -C "$REPO_ROOT" diff --quiet HEAD -- "$f"
         [ "$status" -eq 0 ]
     done
     # The filename + row key + domain-string format are unchanged.

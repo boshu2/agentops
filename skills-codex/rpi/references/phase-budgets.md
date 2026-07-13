@@ -73,12 +73,12 @@ with available context. This is NOT a retry — attempt counter stays at 0.
 ```
 Phase: pre-mortem (budget: 180s, attempt: 1/3)
 
-[0:00]  /pre-mortem spawns council
+[0:00]  /premortem spawns council
 [2:30]  Council returns verdict: FAIL (3 critical risks)
 [2:30]  Verdict is FAIL → plan author repairs before another Premortem
 
 [2:30]  Re-running /plan with findings context...
-[4:00]  /pre-mortem attempt 2 spawns council
+[4:00]  /premortem attempt 2 spawns council
 [5:00]  BUDGET EXPIRED at 300s (cumulative across retries)
 
 Writing [TIME-BOXED] marker. Auto-transitioning to implementation.

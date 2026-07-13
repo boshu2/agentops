@@ -30,6 +30,10 @@ documents:
     disposition: rewrite
     owner: AGENTS.md
     proof: docs/contracts/agents-operating-contract.md plus fresh-context verdicts
+    references:
+      include_globs: [cli/AGENTS.md]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [cli/AGENTS.md]
 
   - path: CLAUDE.md
     tracked: true
@@ -37,6 +41,10 @@ documents:
     disposition: retain-or-replace-with-import-shim
     owner: AGENTS.md
     proof: factual symlink check plus fresh-context verdicts
+    references:
+      include_globs: [cli/cmd/ao/provenance_add.go]
+      phase_policy: {inventory: zero, pre-cutover: zero, cutover: zero}
+      consumers: []
 
   - path: README.md
     tracked: true
@@ -58,13 +66,21 @@ documents:
     disposition: retain-and-tighten
     owner: GOALS.md
     proof: ao goals validate --json
+    references:
+      include_globs: [cli/cmd/ao/goals.go]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [cli/cmd/ao/goals.go]
 
   - path: CHANGELOG.md
     tracked: true
     class: release-history
     disposition: retain-historical
     owner: CHANGELOG.md
-    proof: tests/docs/validate-doc-release.sh
+    proof: tests/docs/validate-doc-release.sh plus pre-push CHANGELOG byte-sync
+    references:
+      include_globs: [docs/CHANGELOG.md]
+      phase_policy: {inventory: zero, pre-cutover: zero, cutover: zero}
+      consumers: []
 
   - path: PROGRAM.md
     tracked: true
@@ -72,6 +88,10 @@ documents:
     disposition: retain-until-consumers-migrate
     owner: PROGRAM.md
     proof: cli/internal/autodev
+    references:
+      include_globs: [cli/internal/autodev/program.go]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [cli/internal/autodev/program.go]
 
   - path: MEMORY.md
     tracked: true
@@ -79,6 +99,10 @@ documents:
     disposition: retain-until-consumers-migrate
     owner: MEMORY.md
     proof: factual path and consumer audit
+    references:
+      include_globs: [cli/cmd/ao/memory.go]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [cli/cmd/ao/memory.go]
 
   - path: PRACTICE-REGISTRY.md
     tracked: true
@@ -86,6 +110,10 @@ documents:
     disposition: retain-until-structured-owner-exists
     owner: PRACTICE-REGISTRY.md
     proof: scripts/validate-practice-citations.sh
+    references:
+      include_globs: [scripts/validate-practice-citations.sh]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [scripts/validate-practice-citations.sh]
 
   - path: release-notes.md
     tracked: false
@@ -94,3 +122,7 @@ documents:
     disposition: preserve-outside-repository-cleanup
     owner: scripts/extract-release-notes.sh
     proof: tests/docs/validate-doc-release.sh
+    references:
+      include_globs: [scripts/extract-release-notes.sh]
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [scripts/extract-release-notes.sh]

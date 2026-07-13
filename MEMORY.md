@@ -1,34 +1,20 @@
 # Project Memory
 
-## Architecture
+This is a small, fallible projection of lessons that still change current work.
+Executable behavior and declared contracts outrank it.
 
-- **Harness Reuse**: Long-running RPI improvements should extend existing phase/result/handoff artifacts instead of creating a second run ledger (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
-- **Trust-Gated Context**: Startup quality improves when canonical findings and planning rules outrank raw notes and packet families stay experimental until health is proven (source: `.agents/learnings/2026-04-01-session-intelligence-trust-gates.md`)
-- **Sidecar Single Writer**: Parallel read lanes should emit sidecars while one reducer owns durable queue writes (source: `.agents/learnings/2026-04-26-dream-generator-sidecar-single-writer.md`)
-
-## Process
-
-- **Proof Before Close**: Child bead closeout should record scoped files or proof artifacts so closure-integrity stays replayable (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
-- **Remote CI Counts**: Release completion requires the first green remote validate run, not only the local release gate (source: `.agents/learnings/2026-03-22-v2.29.0-full-release.md`)
-
-## Debugging
-
-- **Tracker Skew First**: When tracker probes fail with schema errors, check the tracker binary version and cache state before blaming repo code — for `br`, the SQLite cache can go stale under concurrent ledger writes; the JSONL is the source of truth (originally learned on the retired `bd`; source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
-
-## Patterns
-
-- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves — but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see `docs/contracts/repo-execution-profile.md` (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
-
-## Key Lessons
-
-- **Validation Before Autonomy**: Prove code and agent output before expanding orchestration or autonomy. (source: `.agents/learnings/2026-06-16-validation-before-autonomy.md`)
-- **RPI Run Context Needs Run-ID Scope**: Phase handoff readers should filter by current run ID before injecting summaries, or unrelated prior RPI runs can contaminate implementation and validation prompts (source: `.agents/learnings/2026-05-01-rpi-run-context-needs-run-id-scope.md`)
-- **CI Scanner Syntax Parity** — Contract validators that mirror each other need paired fixtures for every accepted syntax form, not only comments saying the regexes agree (source: `.agents/learnings/2026-04-27-ci-contract-scanners-need-syntax-parity.md`)
-- **Audit Parser Reality**: Mechanical auditors must parse `File:` prose, anchors, and examples correctly or they create noisy false failures (source: `.agents/learnings/2026-03-28-last-week-commits.md`)
-- **Output Mode Orthogonality**: `--json` must preserve normal command side effects and change only serialization (source: `.agents/learnings/2026-04-10-output-modes-must-not-change-command-side-effects.md`)
-- **Pair Command Refactors With Tests**: Production command refactors under `cli/cmd/ao/` should ship with direct test diffs so the command/test-pairing gate is designed for, not rediscovered at push time (source: `.agents/learnings/2026-04-14-command-refactors-need-paired-tests.md`)
-- **Scrub RPI Runtime Env in Raw Go Checks**: Raw validation of `internal/rpi` is not trustworthy on this machine unless `AGENTOPS_RPI_RUNTIME` is explicitly scrubbed first (source: `.agents/learnings/2026-04-14-scrub-rpi-runtime-from-raw-validation.md`)
-- **Corroborate Before Council**: Dream long-haul should spend budget on cheap packet corroboration before paying for council; strong corroboration can make the expensive lane unnecessary (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
-- **Durable Closure Evidence**: Closed beads should cite committed discovery artifacts or explicit proof packets, not ephemeral seed paths, so closure audits can replay mechanically (source: `.agents/learnings/2026-04-14-dream-longhaul-postmortem.md`)
-- **Timeout-Aware Generators**: Pluggable generators need context-aware IO and stall tests before joining Dream fanout (source: `.agents/learnings/2026-04-26-generator-timeout-contract.md`)
-- **Stack PR Queues Base-First**: Drain stacked PR queues by merging foundations first, then rebasing remaining branches onto the updated target with explicit force-with-lease proof (source: `.agents/learnings/2026-04-30-pr-queue-stack-drain.md`)
+- **Earn autonomy with evidence.** Increase unattended scope only after the
+  relevant lane repeatedly satisfies its acceptance and escape-rate threshold.
+  Source: [autonomy ladder](docs/architecture/autonomy-ladder.md).
+- **No verdict means not done.** Deterministic checks prove facts; a fresh-context
+  reviewer binds the semantic verdict to the exact candidate. Source:
+  [pawl contract](docs/contracts/pawls.md).
+- **Default to one writer.** Parallel lanes require independent outputs and
+  disjoint write scopes; shared paths serialize. Source:
+  [agent workflow reference](docs/agent-workflow-reference.md).
+- **Edit source owners, not projections.** Generated skill and runtime artifacts
+  are regenerated through their declared owners. Source:
+  [Codex skill API](docs/contracts/codex-skill-api.md).
+- **Local memory is not authority.** `.agents/` is workspace-local runtime state;
+  promote only learning that changes a tracked plan, skill, test, contract, or
+  gate. Source: [agent write surfaces](docs/contracts/agents-write-surfaces.md).

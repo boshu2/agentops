@@ -65,14 +65,14 @@ you need the full autonomy contract.
 
 ## Critical Constraints
 
-- `Validate -> Learn -> orchestrator` is the only legal post-execution
+- **Why: preserve legal authority.** `Validate -> Learn -> orchestrator` is the only legal post-execution
   transition. Learn is the only post-verdict handoff; Validate never jumps to
   Crank, Discovery, Premortem, retry, or delivery.
-- Only the orchestrator may invoke Premortem, and only after it has accepted a
+- **Why: keep plan control centralized.** Only the orchestrator may invoke Premortem, and only after it has accepted a
   material Learn result, changed the remaining plan, and still has work to do.
-- `no_change` is a valid result. The orchestrator may retry, continue, stop, or
+- **Why: prevent invented learning.** `no_change` is a valid result. The orchestrator may retry, continue, stop, or
   escalate without fabricating a lesson or plan mutation.
-- `terminal` closes the tick. No remaining work means no re-plan and no
+- **Why: stop empty ceremony.** `terminal` closes the tick. No remaining work means no re-plan and no
   Premortem.
 - RPI ends at the four receipts and its report. It does not push Git refs,
   operate a Git queue, close tracker state through delivery, or require another
@@ -81,80 +81,40 @@ you need the full autonomy contract.
 
 ## Loop position
 
-`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → acceptance proof → Learn receipt → orchestrator decision. It delegates each move to the skill that owns it (`/discovery`, `/premortem`, `/crank`, `/validate`, `/learn`) and enforces these loop-level invariants:
-
-- **Agile, not waterfall — the plan is a hypothesis.** Every wave closes with a **re-plan, not just a retry** (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
-- **No move-skipping.** Intermediate slices use cheap deterministic checks;
-  scoped or final Validate produces the independent verdict, then Learn records
-  plan impact before the orchestrator selects another move.
-- **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path. `/crank` runs **refactor-under-green as its own step after green** — the load-bearing quality move — and a refactor must never change a test (S4; test-first *ordering* alone is not the quality lever).
-- **Acceptance examples close the bead, not activity.** Every validation
-  verdict routes through Learn; only the orchestrator may choose to re-crank
-  the same objective. DONE requires the acceptance roll-up in the
-  [slice-validation template](../../docs/templates/slice-validation.md) to be
-  fully green.
-- **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
-- **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
-
-### Folded triggers (ag-s43tg): `operating-loop-skill` + `operating-loop-workflow` route here
-
-- **operating-loop-skill** — driving one bead end-to-end through claim, work, independent validation, closeout, and persistence: `/rpi <bead-id>` runs that exact arc.
-- **operating-loop-workflow** — installing or running the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration: `/rpi` is the in-session orchestrator of the same seven moves.
+`/rpi` delegates the [operating loop](../../docs/architecture/operating-loop.md)
+to `/discovery`, `/premortem`, `/crank`, `/validate`, and `/learn`: BDD intent,
+vertical slices, test RED → green → refactor-under-green, conflict-free waves,
+acceptance proof, Learn receipt, then an orchestrator decision. Preserve the
+[Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md),
+close on green acceptance examples rather than activity, and apply the
+[Context Density Rule](../domain/references/context-density-rule.md) at every
+handoff. Retired `operating-loop-skill` and `operating-loop-workflow` triggers
+route here; `/rpi <bead-id>` drives that bead through the same loop.
 
 ## Core Contract
 
-RPI delegates via `Skill(skill="discovery", ...)`,
-`Skill(skill="crank", ...)`, `Skill(skill="validate", ...)`, and
-`Skill(skill="learn", ...)` as separate tool invocations. Keep strict
-delegation on by default; do not compress phases,
-replace phase skills with direct agent spawns, or skip validation. Read
-[../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
-for the full anti-compression contract.
-See [references/isolation-contract.md](references/isolation-contract.md) for
-phase-isolated transport and [references/best-practices.md](references/best-practices.md) for its anti-patterns.
-
-When the runtime supports phase isolation, keep `/rpi` visible in the main
-session and run each phase contract through isolated transport: phase skill name in, bounded handoff artifact in, phase artifact/verdict/next action out.
-The transport may be a daemon job, process runner, or subagent wrapper, but it must execute the declared phase skill contract rather than doing phase work directly.
-
-RPI owns one lifecycle objective across all phases. Preserve the discovered
-`epic_id` when present; otherwise preserve the original goal and execution
-packet objective. A child bead or one ready slice is context, not a replacement
-objective. `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the
-same objective.
+Invoke `Skill(skill="discovery", ...)`, `Skill(skill="crank", ...)`,
+`Skill(skill="validate", ...)`, and `Skill(skill="learn", ...)` separately.
+Strict delegation is the default: isolated transports execute the named skill
+contract and return bounded artifacts; they do not replace phase work with a
+generic worker. Preserve one objective and `epic_id` across phases and retries;
+a child bead is context, not a substitute objective, and Crank `PARTIAL` retries
+Phase 2. See [strict delegation](../shared/references/strict-delegation-contract.md),
+[isolation](references/isolation-contract.md), and [best practices](references/best-practices.md).
 
 ## Phase Receipt Contract
 
-RPI cannot rely on memory or a final narrative to prove delegated skills ran.
-Every execution packet and phase summary MUST carry compact receipts — JSON
-`skills_loaded` + `phase_receipts` (canonical slugs, no sigils) and a
-`## Skill Receipts` bullet list in each markdown phase summary. Receipts do not
-replace transcript/runtime proof; they make delegation auditable from disk when
-the transcript is unavailable and give downstream proof consumers a
-deterministic surface to reject missing phase execution. Full schema + example
-(the phase-receipt rule + fields): [references/phase-data-contracts.md](references/phase-data-contracts.md).
+Every packet carries canonical `skills_loaded` and `phase_receipts`; every phase summary lists Skill Receipts. See [the schema](references/phase-data-contracts.md).
 
 ## Route And Classify
 
-1. Create `.agents/rpi/`.
-2. Resolve `--from`:
-   - default, `research`, `plan`, `premortem`, `brainstorm` -> discovery
-   - `implementation` or `crank` -> implementation
-   - `validation` or `vibe` -> validation
-   - `learn` or `postmortem` -> learn
-3. If the input is a bead and `--from` is absent, resolve it with `ao beads exec show`:
-   - epic -> implementation with that epic
-   - child with parent -> implementation with the parent epic
-4. Classify complexity:
-   - `fast`: short/simple goal or `--fast-path`
-   - `standard`: medium goal or one scope keyword
-   - `full`: `--deep`, complex-operation keyword, 2+ scope keywords, or >120 chars
-5. Log `RPI mode: rpi-phased (complexity: <level>)`.
-
-Track state compactly as `rpi_state`: `goal` (string), `epic_id` (null until
-discovered), `phase` (discovery|crank|validate|learn), `complexity`
-(fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle`
-(from 1), and `verdicts` ({}).
+Create `.agents/rpi/`. Route default/research/plan/premortem/brainstorm to
+Discovery, implementation/crank to Crank, validation/vibe to Validate, and
+learn/postmortem to Learn. Without `--from`, resolve bead parentage with
+`ao beads exec show`; run an epic or child through its parent epic. Complexity
+is fast (`--fast-path` or simple), full (`--deep` or complex), otherwise
+standard. Log the mode and retain `rpi_state`: goal, epic_id, phase, complexity,
+test_first, cycle, and verdicts.
 
 ## Phase DAG
 
@@ -202,14 +162,6 @@ Enter at the routed phase and run every phase after it.
    Density Rule: every line should carry intent, boundary, evidence, decision,
    constraint, or next action.
 
-## Orchestrator Decision State Machine
-
-The orchestrator, not Validate or Learn, owns retry and re-plan decisions.
-Every verdict first becomes a Learn receipt. A material plan impact with work
-remaining routes to Discovery, then the changed plan through Premortem. A
-`no_change` result makes the next action explicit without manufacturing a
-learning. A `terminal` result closes the tick without Premortem.
-
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
 The initial plan is a **hypothesis**; each wave is an experiment. Its evidence
@@ -254,11 +206,8 @@ belongs to the target repository, outside this lifecycle. Read
 
 ## Examples
 
-- `/rpi "add user authentication"` — discovery → implementation → validation → report.
-- `/rpi --from=implementation ag-23k` — resolve the bead scope, run implementation + validation.
-- `/rpi --deep "refactor payment module"` — full council gates across the lifecycle.
-
-Read [references/examples.md](references/examples.md) for resume, interactive, loop, and artifact-mode examples.
+`/rpi "add user authentication"`; `/rpi --from=implementation ag-23k`;
+`/rpi --deep "refactor payment module"`. More: [examples](references/examples.md).
 
 ## Output Specification
 

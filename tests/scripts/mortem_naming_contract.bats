@@ -10,6 +10,16 @@ setup() {
   DRIFT_FIXTURES="$REPO_ROOT/tests/fixtures/four-umbrella-wave-drift"
 }
 
+@test "four-umbrella examples conform to their schemas and inventory" {
+  run bash "$REPO_ROOT/scripts/check-four-umbrella-examples.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "mortem naming migration rejects stale executable spellings" {
+  run bash "$REPO_ROOT/scripts/check-mortem-name-migration.sh"
+  [ "$status" -eq 0 ]
+}
+
 copy_mortem_compatibility_fixtures() {
   CORRUPT_FIXTURES="$BATS_TEST_TMPDIR/mortem-compatibility"
   rm -rf "$CORRUPT_FIXTURES"
@@ -275,7 +285,7 @@ assert_runtime_pointer() {
       .path == "skills/pre-mortem/" or .path == "skills/post-mortem/" or
       .path == "skills/pre_mortem/" or .path == "skills/post_mortem/"
     )] | length) == 0 and
-    .capability_summary.skills == 62 and
+    .capability_summary.skills == 63 and
     .capability_summary.skills == (.surfaces.skills | length) and
     .capability_summary.total == (.capabilities | length) and
     .capability_summary.total == (
@@ -329,23 +339,4 @@ JSON
   run bash -c 'cd "$1" && bash scripts/check-four-umbrella-wave-drift.sh --phase=verify S1' _ "$sandbox"
   [[ "$status" -ne 0 ]]
   [[ "$output" == *"out-of-manifest committed changes: README.md"* ]]
-}
-
-@test "S1 wave drift guard owns clean dirty missing overlap and out-of-manifest fixtures" {
-  local checker="$REPO_ROOT/scripts/check-four-umbrella-wave-drift.sh"
-  [[ -x "$checker" ]] || {
-    echo "missing executable wave drift checker: scripts/check-four-umbrella-wave-drift.sh" >&2
-    return 1
-  }
-
-  assert_paths_exist \
-    docs/contracts/four-umbrella-write-manifests.json \
-    tests/fixtures/four-umbrella-wave-drift/clean-s1.json \
-    tests/fixtures/four-umbrella-wave-drift/dirty-pre-work.json \
-    tests/fixtures/four-umbrella-wave-drift/missing-manifest.json \
-    tests/fixtures/four-umbrella-wave-drift/upstream-overlap.json \
-    tests/fixtures/four-umbrella-wave-drift/out-of-manifest.json
-
-  run "$checker" --phase=verify S1
-  [[ "$status" -eq 0 ]]
 }

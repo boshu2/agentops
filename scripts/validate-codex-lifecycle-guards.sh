@@ -122,12 +122,6 @@ spine_closeout_files=(
   "skills-codex/handoff/prompt.md"
 )
 
-# Frozen ambient closeout twin (post-mortem): assert-if-present.
-frozen_closeout_files=(
-  "skills-codex/post-mortem/SKILL.md"
-  "skills-codex/post-mortem/prompt.md"
-)
-
 spine_tracker_guidance_files=(
   "skills-codex/status/SKILL.md"
   "skills-codex/implement/SKILL.md"
@@ -139,7 +133,6 @@ spine_tracker_guidance_files=(
 frozen_tracker_guidance_files=(
   "skills-codex/recover/SKILL.md"
   "skills-codex/crank/SKILL.md"
-  "skills-codex/post-mortem/SKILL.md"
   "skills-codex/rpi/prompt.md"
 )
 
@@ -156,14 +149,6 @@ check_closeout() {
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
 }
 
-check_post_mortem_closeout() {
-  local file="$1"
-  require_contains "$file" 'ao session close --auto-extract' "post-mortem closeout must use ao session close --auto-extract"
-  require_contains "$file" 'ao flywheel close-loop --quiet' "post-mortem closeout must run ao flywheel close-loop --quiet"
-  require_not_contains "$file" 'ao codex ensure-stop' "post-mortem closeout must not use the archived Codex ensure-stop shim"
-  require_not_contains "$file" 'ao codex status' "post-mortem closeout must not depend on archived Codex status"
-}
-
 for file in "${spine_entry_files[@]}"; do
   check_entry "$file"
 done
@@ -175,11 +160,6 @@ done
 for file in "${spine_closeout_files[@]}"; do
   check_closeout "$file"
 done
-for file in "${frozen_closeout_files[@]}"; do
-  resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
-  check_post_mortem_closeout "$file"
-done
-
 # quickstart folded into status, using-agentops into inject (ag-s43tg, 2026-06-12);
 # the ensure-start/stop lifecycle assertions live on status (the Codex entry/closeout doc).
 require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-start' "status (absorbs quickstart) should describe ensure-start for Codex entry skills"

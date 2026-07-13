@@ -175,9 +175,9 @@ patch_file "$REPO_ROOT/skills/SKILL-TIERS.md" \
   "s|^### Internal Skills \\([0-9]+\\)|### Internal Skills (${INTERNAL})|" \
   "SKILL-TIERS.md internal header"
 
-# docs/SKILLS.md, docs/ARCHITECTURE.md, PRODUCT.md product-layer prose, and
-# docs/index.md intentionally avoid hard-coded skill counts. The remaining
-# count-bearing surfaces below are the sync-owned projections.
+# docs/SKILLS.md, docs/ARCHITECTURE.md, docs/index.md, and
+# docs/documentation-index.md intentionally avoid hard-coded skill counts.
+# The remaining count-bearing surfaces below are sync-owned projections.
 
 check_file_pattern "$REPO_ROOT/PRODUCT.md" \
   'Runtime hooks are not an AgentOps default' \
@@ -187,12 +187,6 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \
   "s|Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides|Distribution/runtime reach: ${TOTAL} shared skills, ${CODEX_TOTAL} checked-in Codex artifacts, and ${CODEX_OVERRIDES} Codex overrides|" \
   "PRODUCT.md distribution/runtime reach"
-
-# docs/documentation-index.md: skill-domain-map entry "All N checked-in skills".
-patch_file "$REPO_ROOT/docs/documentation-index.md" \
-  'All [0-9]+ checked-in skills mapped' \
-  "s|All [0-9]+ checked-in skills mapped|All ${TOTAL} checked-in skills mapped|" \
-  "docs/documentation-index.md domain-map skill count"
 
 # docs/GLOSSARY.md: "ships N shared skills" (TOTAL — every checked-in skill).
 patch_file "$REPO_ROOT/docs/GLOSSARY.md" \

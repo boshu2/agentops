@@ -15,15 +15,17 @@ accept.
 | [Intent → Validated Code](architecture/intent-to-validated-code.md) | Full flow, artifacts, done signals |
 | [Skills Matrix](skills-matrix.md) | Every skill placed on moves 1–7 |
 | [Operating Loop](architecture/operating-loop.md) | Discipline (waves, windshield, ratchet) |
-| [First-value path](first-value-path.md) | First session via `/plan` → `/implement` → `/validate` |
+| [First-value path](first-value-path.md) | First session via `/plan` → `/implement` → `/validate` → `/learn` |
 
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
 
-## Skill Router (Start Here)
+## First-use summary
 
-Use this when you're not sure which skill to run. Prefer the [Skills Matrix](skills-matrix.md)
-when you need the full catalog on the loop. For session context, run
-`ao session bootstrap`, then `ao lookup --query "<topic>"`.
+The canonical selection tree is the [Skill Router](SKILL-ROUTER.md). Prefer the
+[Skills Matrix](skills-matrix.md) when you need the full catalog on the loop.
+The compact summary below is illustrative, not a second routing authority. Load
+only contracts triggered by the task; `ao session bootstrap` and `ao lookup`
+belong to optional archive profiles, not the default runtime.
 To search skills by intent, use `ms search "<task>"`
 (or `mcp__ms__search`) — ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
 
@@ -32,21 +34,21 @@ What are you trying to do?
 │
 ├─ "Run the full loop / first time"
 │   ├─ See the whole product ─────► docs: Intent → Validated Code + Skills Matrix
-│   ├─ One behavior end-to-end ───► /plan → /implement → /validate
+│   ├─ One behavior end-to-end ───► /plan → /implement → /validate → /learn
 │   ├─ One tick wrapped ──────────► /rpi "goal"
 │   └─ Repo setup ────────────────► /bootstrap · ao quick-start · ao doctor
 │
 ├─ "Prove it's done / validate" (the Membrane — needs acceptance behavior)
 │   ├─ Code ready to ship? ───────► /validate
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
-│   ├─ Plan ready to build? ──────► /pre-mortem
+│   ├─ Plan ready to build? ──────► /premortem
 │   ├─ Independent judges ────────► /council validate recent
 │   ├─ Adversarially probe it ────► /validate --debate
 │   ├─ Need fresh pawl evidence? ──► /pawl-review → ao pawl
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
 │   ├─ Security + release gate ───► /security
-│   └─ Work ready to close? ──────► /validate, then /post-mortem
+│   └─ Work ready to close? ──────► /validate, then /learn
 │
 ├─ "Track it / bookkeep it" (the Bookkeeper)
 │   ├─ Break it into issues ──────► /plan
@@ -78,9 +80,9 @@ What are you trying to do?
 │
 ├─ "Learn from past work"
 │   ├─ Turn the corpus into operator surfaces ─► /operationalize
-│   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
-│   ├─ Save this insight ─────────► /post-mortem --quick "insight"
-│   └─ Full retrospective ────────► /post-mortem
+│   ├─ What do we know about X? ──► host-native session search; optional archive profile for ao lookup/search
+│   ├─ Record verdict-bound observations ► /learn
+│   └─ Test a retrospective causal question ► /postmortem
 │
 ├─ "Parallelize work"
 │   ├─ Multiple independent tasks ► /swarm
@@ -94,12 +96,12 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Compile knowledge ─────────► /post-mortem  or  ao compile
+│   ├─ Compile mature knowledge ──► /operationalize
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /status --recover
 │
-└─ "First time here" ────────────► /plan → /implement → /validate
+└─ "First time here" ────────────► /plan → /implement → /validate → /learn
                                    (maps: Intent → Validated Code · Skills Matrix)
 ```
 
@@ -117,15 +119,15 @@ to prove. Full flow: [Intent → Validated Code](architecture/intent-to-validate
 
 ### /validate
 
-Final validation close-out. Use `/post-mortem` after validation when the work
-should feed the knowledge flywheel.
+Final acceptance verdict. Pass that immutable verdict to `/learn` before the
+orchestrator chooses the next transition.
 
 ```bash
 /validate
 /validate ag-1234
 ```
 
-**Use when:** The work is ready for final review, closeout, and learning capture.
+**Use when:** The work is ready for an independent acceptance verdict.
 
 **Absorbed (retired 2026-07-07, folded here):** `/review` → `/validate --mode=pr` (diff/PR review); `/red-team` → `/validate --debate` (adversarial); `/eval-outcomes` → `/validate --mode=pre-impl --target=scenario` (CLI: `ao eval scenario`).
 
@@ -148,12 +150,12 @@ Multi-model validation — the core primitive used by validate, pre-mortem, and 
 /council --deep recent
 ```
 
-### /pre-mortem
+### /premortem
 
 Simulate failures before implementing. Includes error/rescue mapping (tabular risk/mitigation), scope mode selection (Expand/Hold/Reduce with auto-detection), temporal interrogation (hour 1/2/4/6+ timeline), and prediction tracking with unique IDs (`pm-YYYYMMDD-NNN`) correlated through validate and post-mortem.
 
 ```bash
-/pre-mortem "add caching layer"
+/premortem "add caching layer"
 ```
 
 **Output:** Failure modes, error/rescue maps, predictions with IDs, mitigation strategies, spec improvements
@@ -288,7 +290,7 @@ Deep codebase exploration using Explore agents.
 
 ### /rpi
 
-Full RPI lifecycle orchestrator. Discovery → Implementation → Validation in one command.
+Full RPI lifecycle orchestrator. Discovery → Crank → Validate → Learn in one command.
 
 ```bash
 /rpi "Add user authentication"
@@ -296,11 +298,13 @@ Full RPI lifecycle orchestrator. Discovery → Implementation → Validation in 
 /rpi --from=implementation ag-1234
 ```
 
-**Phases:** Discovery (`/discovery`) → Implementation (`/crank`) → Validation (`/validate`)
+**Phases:** Discovery (`/discovery`) → Crank (`/crank`) → Validate (`/validate`) → Learn (`/learn`)
 
 ### /crank
 
-Autonomous multi-issue execution. Runs until epic is CLOSED.
+Executes one bounded, evidence-producing wave. Crank does not close the epic,
+mutate caller-owned tracker state, or deliver Git refs; the caller consumes the
+wave receipt and chooses the next transition.
 
 ```bash
 /crank <epic-id>
@@ -326,28 +330,26 @@ the active runtime owns that transport.
 /swarm <epic-id>
 ```
 
-### /post-mortem --quick
+### /learn
 
-Quick-capture a learning. For full retrospectives, use `/post-mortem`.
+Consume an immutable Validate verdict, copy only structured observations, and
+emit the fourth RPI receipt plus `plan_impact`. Learn never changes proof, the
+plan, delivery state, or constraint activation.
+
+**Output:** `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+
+### /postmortem
+
+Optional retrospective causal analysis after Validate and Learn. Pin an explicit
+causal question, test competing explanations and counterfactuals, preserve
+unknowns, and return evidence to the caller. It is not a completion gate,
+general learning umbrella, plan owner, or constraint activator.
 
 ```bash
-/post-mortem --quick "debugging memory leak"
+/postmortem "why did the rollout exceed the error budget?"
 ```
 
-**Output:** `.agents/learnings/`
-
-### /post-mortem
-
-Full validation + knowledge lifecycle. Council validates, extracts learnings, activates/retires knowledge, then synthesizes process improvement proposals and suggests the next `/rpi` command. The flywheel exit point. Now includes RPI session streak tracking, prediction accuracy scoring (HIT/MISS/SURPRISE against pre-mortem predictions), and persistent retro history to `.agents/retro/` for cross-epic trend analysis. Supports `--quick`, `--process-only`, and `--skip-activate` flags.
-
-```bash
-/post-mortem <epic-id>
-/post-mortem --quick            # Lightweight post-mortem
-/post-mortem --process-only     # Process improvements only
-/post-mortem --skip-activate    # Skip knowledge activation
-```
-
-**Output:** Council report, learnings, knowledge activation/retirement, process improvement proposals, next-work queue (`.agents/rpi/next-work.jsonl`)
+**Output:** `.agents/council/YYYY-MM-DD-postmortem-<topic>.md`.
 
 ---
 
@@ -355,12 +357,14 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 
 ### Knowledge queries (no slash command)
 
-Query knowledge artifacts across locations via the CLI. There is no standalone
-knowledge skill — use `/operationalize` and `/post-mortem` (with the `ao compile`
-CLI) for corpus promotion, or run the CLI below for ad-hoc lookup.
+There is no default-profile knowledge-query command. Use host-native search over
+the workspace-local `.agents/` tree, then `/operationalize`
+to promote evidence into a future-consumed artifact. The optional archive build
+retains historical lookup commands for operators who deliberately select it:
 
 ```bash
-ao lookup "patterns for rate limiting"
+# Archive build only; absent from the default CLI.
+ao lookup --query "patterns for rate limiting"
 ao search --all "patterns for rate limiting"
 ```
 
@@ -421,8 +425,9 @@ Interactive onboarding — mini RPI cycle for new users.
 Retirement pointer. The in-tree out-of-session compounding engine was removed
 (soc-2rtm0); scheduled, between-session knowledge compounding now runs via an
 adopted substrate, and AgentOps ships no out-of-session runner of its own.
-In-session knowledge primitives stay on-demand: `/post-mortem`, the `ao compile`
-CLI, and `ao lookup`. Daytime code compounding is `/evolve` via `/rpi`.
+In-session knowledge work stays skill-driven through `/learn`,
+`/pattern-mining`, and `/operationalize`. Archive-only compile and lookup
+commands are not dependencies of the default loop.
 
 **Output:** none — this skill no longer drives an in-repo command.
 
@@ -495,13 +500,13 @@ phases, and flags.
 
 | Skill | Purpose |
 |-------|---------|
-| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
+| `/bootstrap` | Idempotent product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`); leaves runtime hooks unmanaged |
 | `/security` (absorbs deps) | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/product` | Maintain `PRODUCT.md` so validation and planning share the same product contract |
-| `/discovery` | Full discovery-phase orchestrator (ideation + search + research + plan + pre-mortem) |
+| `/discovery` | Full discovery-phase orchestrator (ideation + search + research + plan + premortem) |
 | `/goal-design` | Create checked goal-design packets before discovery or planning |
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
-| `/push` | Atomic test-commit-push with conventional-commit message |
+| `/push` | Run the repository-selected delivery adapter (direct push, PR, or user-owned CI); commit only when requested |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
 | `/scaffold` | Project scaffolding, component generation, boilerplate |
 | `/test` | Test generation, coverage analysis, TDD workflow |
@@ -523,41 +528,21 @@ user-facing entry points:
 
 ## Subagents
 
-Subagent behaviors are defined inline within SKILL.md files (not as separate agent files). Skills that use subagents spawn them as Task agents during execution. 20 specialized roles are used across `/validate`, `/pre-mortem`, `/post-mortem`, and `/research`.
-
-| Agent Role | Used By | Focus |
-|------------|---------|-------|
-| Code reviewer | /validate, /council | Quality, patterns, maintainability |
-| Security reviewer | /validate, /council | Vulnerabilities, OWASP |
-| Security expert | /validate, /council | Deep security analysis |
-| Architecture expert | /validate, /council | System design review |
-| Code quality expert | /validate, /council | Complexity and maintainability |
-| UX expert | /validate, /council | Accessibility and UX validation |
-| Plan compliance expert | /post-mortem | Compare implementation to plan |
-| Goal achievement expert | /post-mortem | Did we solve the problem? |
-| Ratchet validator | /post-mortem | Verify gates are locked |
-| Flywheel feeder | /post-mortem | Extract learnings with provenance |
-| Technical learnings expert | /post-mortem | Technical patterns |
-| Process learnings expert | /post-mortem | Process improvements |
-| Integration failure expert | /pre-mortem | Integration risks |
-| Ops failure expert | /pre-mortem | Operational risks |
-| Data failure expert | /pre-mortem | Data integrity risks |
-| Edge case hunter | /pre-mortem | Edge cases and exceptions |
-| Coverage expert | /research | Research completeness |
-| Depth expert | /research | Depth of analysis |
-| Gap identifier | /research | Missing areas |
-| Assumption challenger | /research | Challenge assumptions |
+Judgment skills may delegate independent reviews when their own contract calls
+for them. The live role, evidence, and authority boundaries belong in each
+`skills/<slug>/SKILL.md`; this router does not maintain a duplicate role count.
 
 ---
 
-## ao CLI Integration
+## Default-profile ao CLI integration
 
-Skills integrate with the ao CLI for orchestration:
+The default CLI is the verification and bookkeeping spine. Archive-profile
+commands mentioned in historical skill references are not implied here.
 
 | Skill | ao CLI Command |
 |-------|----------------|
-| `/research` | `ao lookup`, `ao search` (the `/rpi` engine was removed in 3.0 — driven in-session by the operating loop) |
-| `/post-mortem --quick` | `ao forge markdown`, `ao session close` |
-| `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
-| `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
-| `/crank` | `ao ratchet`, `ao flywheel status` (the `/rpi` engine was removed in 3.0; waves now drive via the operating loop + NTM/Agent Mail substrate) |
+| `/plan`, `/premortem` | `ao plan-pawl` when a binding plan verdict is required |
+| `/validate`, `/pawl-review` | `ao gate`, `ao verify`, `ao pawl`, `ao verdict-gate` |
+| `/beads-br`, `/implement` | `ao beads`, `ao claim`, `ao ready`, `ao done` |
+| `/push`, `/release` | `ao gate check --fast --scope head`, then `ao land <bead>` for bead-backed work |
+| `/learn` | `ao provenance` for durable evidence; constraint candidates remain advisory pending replay and shadow evidence |

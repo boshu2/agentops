@@ -86,7 +86,7 @@ PR's changed paths and their dependencies.
   conforming to `skills-codex/research/schemas/findings.json` when required.
 - **Validator command:** run `bash skills-codex/research/scripts/validate.sh`,
   verify every citation, and confirm coverage/depth/gap reporting.
-- **Downstream handoff:** consumed by `$plan`, `$product`, `$pre-mortem`, or the
+- **Downstream handoff:** consumed by `$plan`, `$product`, `$premortem`, or the
   requesting decision; reusable findings feed compiled prevention context.
 
 ## Quality Rubric

@@ -197,7 +197,7 @@ GSD's review command supports cross-AI peer review (Gemini, Claude, Codex), but 
      ↓
 /vibe         →  Multi-aspect code validation (council optional)
      ↓
-/post-mortem  →  Extract learnings → score → store for next session
+/validate → /learn  →  verdict-bound observations → orchestrator decision
 ```
 
 ---
