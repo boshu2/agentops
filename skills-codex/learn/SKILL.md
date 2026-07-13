@@ -1,31 +1,39 @@
 ---
 name: learn
-description: Capture bounded observations after an
+description: Consume an immutable Validate verdict
 ---
 # Learn
 
-> **Purpose:** Turn a completed Validate verdict into a bounded, inspectable
-> learning handoff without reopening proof or taking delivery authority.
+> **Purpose:** Bookkeep what an immutable verdict observed and return a bounded
+> learning receipt to the orchestrator.
 
 ## Critical Constraints
 
-- Consume an existing verdict artifact; never author, edit, or reinterpret its
-  PASS/WARN/FAIL value.
-- Emit observations and one Learn phase receipt only. Do not commit, push,
-  close tracker work, or decide whether delivery proceeds.
-- Keep every observation linked to evidence. An unsupported lesson is omitted,
-  not promoted by confidence or repetition in prose.
-- Return `DONE` only when the receipt and phase summary validate. Missing input
-  produces `BLOCKED`; partial observation coverage produces `PARTIAL`.
+- The input verdict is immutable. Bind it by `input_verdict_ref` and
+  `input_verdict_digest`; never author, edit, reinterpret, or replace its value.
+- Consume only structured observations already present in the verdict. Missing
+  evidence remains missing; Learn does not manufacture a lesson.
+- Classify bookkeeping outcomes such as `record`, `candidate`, or `no_change`,
+  but do not promote a rule or alter the remaining plan in this mode.
+- Postmortem is optional and runs only for retrospective causal analysis. Learn
+  may request that specialization; the caller decides whether to invoke it.
+- Emit observations plus one Learn receipt. Do not operate proof, repository,
+  tracker, delivery, or Premortem authority.
+- `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
+  `BLOCKED`; incomplete bookkeeping is `PARTIAL`.
 
 ## Workflow
 
-1. Resolve the immutable Validate verdict and its artifact digest or commit.
-2. Extract only evidence-backed observations that could change future work.
-3. Write `learn-receipt.json` using [the receipt schema](schemas/learn-receipt.schema.json).
-4. Write `.agents/rpi/phase-4-summary.md` with intent, evidence, observations,
-   constraints, and next action.
-5. Append the ordered RPI receipt:
+1. Resolve the Validate verdict, verify its schema, and compute or confirm its
+   SHA-256 digest.
+2. Copy structured observations into the Learn receipt without changing their
+   `kind`, `summary`, or `evidence_ref`.
+3. Record a bounded disposition for each observation: `record`, `candidate`, or
+   `no_change`. This is bookkeeping, not promotion.
+4. If an explicit retrospective causal question exists, emit a Postmortem
+   request as `next_action`; do not perform the retrospective inline.
+5. Write `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+6. Append the ordered RPI completion receipt:
 
 ```json
 {
@@ -36,21 +44,14 @@ description: Capture bounded observations after an
 }
 ```
 
-The executable scenarios are in [references/learn.feature](references/learn.feature).
-S3 owns the deeper Validate/Learn authority boundary; this slice establishes
-the receipt and handoff shape only.
-
 ## Output Specification
 
-- **Artifact:** `learn-receipt.json` plus `.agents/rpi/phase-4-summary.md`.
-- **Schema:** [schemas/learn-receipt.schema.json](schemas/learn-receipt.schema.json).
+- **Artifacts:** `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+- **Schema:** [learn-receipt.schema.json](schemas/learn-receipt.schema.json).
 - **Validator:** `bash skills/learn/scripts/validate.sh`.
-- **Downstream:** RPI may report or re-plan after recording the Learn receipt;
-  delivery remains outside this skill.
+- **Downstream:** the orchestrator consumes the receipt and alone decides
+  whether to continue, re-plan, stop, or route a causal-analysis request.
 
-## Quality Checklist
-
-- [ ] Input verdict reference is nonempty and unchanged.
-- [ ] Observations cite evidence and do not mutate proof.
-- [ ] Phase, skill, status, and artifact identify the fourth umbrella.
-- [ ] The validator exits zero before RPI reports completion.
+Executable behavior is in [learn.feature](references/learn.feature). The
+post-verdict ownership map is in
+[post-verdict-actions.md](references/post-verdict-actions.md).

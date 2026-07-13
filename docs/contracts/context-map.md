@@ -18,10 +18,10 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `evolve` — Run autonomous improvement loops. Triggers: "evolve", "improve everything", "autonomous improvement".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `idea-genie` — Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".
-- `learn` — Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.
+- `learn` — Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.
 - `operationalize` — >-
 - `plan` — Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".
-- `postmortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
+- `postmortem` — Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.
 - `premortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md. Triggers: "product", "create or refine product.md.", "product skill".
 - `reality-check` — >-
@@ -42,7 +42,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `push` — Validate, commit, and push. Triggers: "push", "ship it", "commit and push".
 - `research` — Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
 - `status` — Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".
-- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
+- `validate` — Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.
 
 ### driven-adapter
 
@@ -235,9 +235,7 @@ graph LR
   plan --> premortem
   plan --> research
   plan --> scope
-  postmortem --> beads_br
   postmortem --> council
-  postmortem --> operationalize
   postmortem --> toil_mining
   premortem --> council
   push --> pawl_review
@@ -266,7 +264,6 @@ graph LR
   test --> standards
   toil_mining --> automation_shape_routing
   using_gc --> gc_membrane
-  validate --> pawl_review
 ```
 
 ## Topology diagnostics
@@ -274,7 +271,7 @@ graph LR
 | Diagnostic | Values |
 |---|---|
 | Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `plan`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
-| User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `push`, `release`, `rpi`, `using-gc`, `validate` |
+| User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `postmortem`, `push`, `release`, `rpi`, `using-gc`, `validate` |
 | Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
 | Dependency cycles | _(none)_ |
@@ -328,7 +325,8 @@ graph LR
   pawl-review -- "supplier-to" --> using-gc
   pawl-review -- "supplier-to" --> validate
   plan -- "shared-kernel" --> standards
-  postmortem -- "shared-kernel" --> standards
+  postmortem -- "customer-of" --> learn
+  postmortem -- "customer-of" --> toil-mining
   pr-prep -- "customer-of" --> domain
   premortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
@@ -441,10 +439,9 @@ graph LR
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |
 | `plan` | produces | execution-packet.json |
-| `postmortem` | consumes | council |
-| `postmortem` | consumes | implement |
-| `postmortem` | consumes | validate |
-| `postmortem` | produces | result.json |
+| `postmortem` | consumes | learn |
+| `postmortem` | consumes | toil-mining |
+| `postmortem` | produces | postmortem-report.md |
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
 | `premortem` | consumes | standards |

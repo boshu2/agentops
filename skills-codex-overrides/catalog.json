@@ -258,23 +258,9 @@
     },
     {
       "name": "postmortem",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Harvested follow-up work and closure semantics need Codex-specific framing.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Treat `skills/postmortem/SKILL.md` as the canonical close-out contract and `skills-codex/postmortem/SKILL.md` as the Codex-facing artifact.",
-          "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
-          "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
-          "Own Codex closeout during the postmortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
-          "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
-        ]
-      }
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Retrospective causal analysis is runtime-portable; the retired Codex-specific closeout/flywheel behavior violated the Validate-to-Learn boundary."
     },
     {
       "name": "pr-prep",

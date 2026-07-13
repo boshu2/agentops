@@ -44,9 +44,9 @@ date: YYYY-MM-DD
 | Error-Paths | ... | ... (with spec — code-review preset) |
 | API-Surface | ... | ... (with spec — code-review preset) |
 | Spec-Compliance | ... | ... (with spec — code-review preset) |
-| Judge 1 | ... | ... (no spec — 2 independent judges) |
-| Judge 2 | ... | ... (no spec — 2 independent judges) |
-| Judge 3 | ... | ... (no spec — 2 independent judges) |
+| Judge 1 | ... | ... (default independent fresh-context judge) |
+| Judge 2 | ... | ... (optional deep, mixed, or council judge) |
+| Judge 3 | ... | ... (optional deep, mixed, or council judge) |
 
 ## Shared Findings
 - ...

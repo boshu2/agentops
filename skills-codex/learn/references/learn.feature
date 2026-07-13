@@ -1,16 +1,22 @@
-Feature: Learn records the fourth lifecycle receipt
-  As an RPI orchestrator
-  I want post-verdict observations isolated in Learn
-  So that validation proof stays immutable while future work receives evidence
+Feature: Learn bookkeeps an immutable verdict
+  As the fourth RPI umbrella
+  I want bounded post-verdict bookkeeping
+  So that observations can feed future work without changing proof or delivery
 
-  Scenario: A completed validation verdict produces a Learn receipt
-    Given an immutable Validate verdict with evidence
-    When Learn captures bounded observations
-    Then it writes a schema-valid learn receipt
-    And RPI records Learn after Discovery, Crank, and Validate
+  Scenario: Structured observations produce a Learn receipt
+    Given a schema-valid Validate verdict and its digest
+    When Learn bookkeeps its structured observations
+    Then it preserves the verdict reference and digest
+    And it emits a schema-valid Learn receipt
 
-  Scenario: Missing validation proof blocks learning
-    Given no readable Validate verdict artifact
-    When Learn is invoked
-    Then it returns BLOCKED
-    And it does not invent observations or change delivery state
+  Scenario: Learn cannot mutate proof
+    Given an immutable PASS, WARN, or FAIL verdict
+    When Learn records an observation disposition
+    Then the original verdict fields remain unchanged
+    And Learn does not operate repository, tracker, delivery, or Premortem state
+
+  Scenario: Causal analysis remains optional
+    Given an explicit retrospective causal question
+    When Learn finishes bookkeeping
+    Then it may return a Postmortem request to the orchestrator
+    And it does not run Postmortem inline

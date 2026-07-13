@@ -347,7 +347,7 @@ git log --oneline --since="7 days ago" --grep="$EPIC" | while read commit; do
 done
 
 # 2. Identify friction from beads
-br list --parent=$EPIC | while read issue; do
+bd list --parent=$EPIC | while read issue; do
     status=$(bd show $issue | grep "Status:")
     comments=$(bd show $issue | grep -c "Comment:")
     retries=$(bd show $issue | grep -c "retry\|Retry")
@@ -355,7 +355,7 @@ br list --parent=$EPIC | while read issue; do
 done
 
 # 3. Create artifacts
-mkdir -p .agents/{learnings,patterns,retros}
+mkdir -p .agents/{learnings,patterns,retro}
 
 # 4. Store memories
 for learning in "${LEARNINGS[@]}"; do

@@ -1,6 +1,6 @@
 # validate
 
-Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: "validate an artifact", "PASS/WARN/FAIL verdict", "readiness / completion audit".
+Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.
 
 ## Instructions
 

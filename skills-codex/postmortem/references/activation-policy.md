@@ -24,7 +24,7 @@ score = confidence + citations + recency
 
 ## 2. MEMORY.md Section Schema
 
-Promoted entries are written into auto-managed sections of the project MEMORY.md at `~/.codex/projects/<project-path>/memory/MEMORY.md`.
+Promoted entries are written into auto-managed sections of the project MEMORY.md at `~/.claude/projects/<project-path>/memory/MEMORY.md`.
 
 | Section | Purpose | Example Entry |
 |---------|---------|---------------|
@@ -40,7 +40,7 @@ Promoted entries are written into auto-managed sections of the project MEMORY.md
 ## 3. Per-Section Cap
 
 - **Maximum 15 entries per section.**
-- **200-line hard limit** on total MEMORY.md content. Codex auto-loads project memory on every session start; content beyond 200 lines is truncated and invisible to the agent.
+- **200-line hard limit** on total MEMORY.md content. Claude Code auto-loads project memory on every session start; content beyond 200 lines is truncated and invisible to the agent.
 - When a section exceeds 15 entries after a proposed insertion: trigger eviction (see Section 5) before writing the new entry.
 - The 200-line limit is a secondary backstop. Even if all sections are under 15 entries, if total line count would exceed 200, evict the globally lowest-scoring entry across all sections.
 

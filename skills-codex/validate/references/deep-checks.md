@@ -196,11 +196,13 @@ fi
 
 When `PRODUCT.md` exists in the project root AND the user did NOT pass an explicit `--preset` override:
 1. Read `PRODUCT.md` content and include in the council packet via `context.files`
-2. Add a single consolidated `developer-experience` perspective to the council invocation:
-   - **With spec:** `/council --preset=code-review --perspectives="developer-experience" validate <target>` (3 judges: 2 code-review + 1 DX)
-   - **Without spec:** `/council --perspectives="developer-experience" validate <target>` (3 judges: 2 independent + 1 DX)
+2. In deep or product-sensitive validation, add a consolidated
+   `developer-experience` perspective to the explicit council invocation:
+   - **With spec:** `/council --preset=code-review --perspectives="developer-experience" validate <target>` (preset judges plus DX)
+   - **Without spec:** `/council --perspectives="developer-experience" validate <target>` (the default independent judge plus optional DX)
    The DX judge covers api-clarity, error-experience, and discoverability in a single review.
-3. With `--deep`: adds 1 more judge per mode (4 judges total).
+3. With `--deep`, the declared mode may add another judge. This is explicit
+   depth, not a change to the one-judge default.
 
 When `PRODUCT.md` exists BUT the user passed an explicit `--preset`: skip DX auto-include (user's explicit preset takes precedence).
 
@@ -232,24 +234,26 @@ If a spec is found, include it in the council packet's `context.spec` field:
 
 Before invoking council, load the default suppression list from `references/vibe-suppressions.md` and any project-level overrides from `.agents/vibe-suppressions.jsonl`. Suppressions are applied post-verdict to classify findings as CRITICAL vs INFORMATIONAL and to filter known false positives. See [references/vibe-suppressions.md](vibe-suppressions.md) for the full pattern list.
 
-### Step 3.6: Load Pre-Mortem Predictions (Correlation)
+### Step 3.6: Load Premortem Predictions (Correlation)
 
-When a pre-mortem report exists for the current epic, load prediction IDs for downstream correlation:
+When a premortem report exists for the current epic, load prediction IDs for downstream correlation:
 
 ```bash
-# Find the most recent pre-mortem report
-PM_REPORT=$(ls -t .agents/council/*pre-mortem*.md 2>/dev/null | head -1)
+# Find the most recent premortem report
+PM_REPORT=$(ls -t .agents/council/*premortem*.md 2>/dev/null | head -1)
 if [ -n "$PM_REPORT" ]; then
   # Extract prediction IDs from frontmatter
   PREDICTION_IDS=$(sed -n '/^prediction_ids:/,/^[^ -]/p' "$PM_REPORT" | grep '^\s*-' | sed 's/^\s*- //')
 fi
 ```
 
-For each vibe finding, check if it matches a pre-mortem prediction:
+For each Validate finding, check if it matches a Premortem prediction:
 - **Match found:** Tag finding with `predicted_by: pm-YYYYMMDD-NNN`
 - **No match:** Tag finding with `predicted_by: none` (surprise issue)
 
-Include the prediction correlation in the vibe report's findings table. This feeds the post-mortem's Prediction Accuracy section. Skip silently if no pre-mortem report exists.
+Include prediction correlation as a structured observation. Learn may preserve
+it, and an explicitly requested Postmortem may use it as causal evidence. Skip
+silently when no Premortem report exists.
 
 ### Model Cost Tiers
 

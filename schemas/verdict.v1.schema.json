@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/verdict.v1.schema.json",
   "title": "Verdict",
-  "description": "Athena validation verdict for a bead",
+  "description": "Immutable AgentOps validation verdict for a bounded artifact",
   "practices": ["llm-eval-harness", "adr"],
   "type": "object",
-  "required": ["verdict_id", "bead_id", "verdict", "confidence", "briefing_learnings", "findings", "not_checked", "validated_at", "validator_session", "schema_version"],
+  "required": ["verdict_id", "bead_id", "verdict", "confidence", "briefing_learnings", "findings", "observations", "not_checked", "validated_at", "validator_session", "schema_version"],
   "properties": {
     "verdict_id": {
       "type": "string",
@@ -44,6 +44,20 @@
           }
         },
         "additionalProperties": false
+      }
+    },
+    "observations": {
+      "type": "array",
+      "description": "Evidence-bound facts or signals passed immutably to Learn",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "summary", "evidence_ref"],
+        "properties": {
+          "kind": {"enum": ["finding", "coverage-gap", "strength", "process-signal"]},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence_ref": {"type": "string", "minLength": 1}
+        }
       }
     },
     "not_checked": {

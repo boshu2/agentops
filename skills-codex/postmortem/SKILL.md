@@ -1,171 +1,47 @@
 ---
 name: postmortem
-description: 'Close completed work and ratchet learning. Triggers: "$postmortem", "review completed work", "harvest learnings".'
+description: Test an explicit retrospective causal
 ---
-# $postmortem — Evidence-Bound Closeout
+# Postmortem
 
-Treat `skills/postmortem/SKILL.md` as the canonical close-out contract and `skills-codex/postmortem/SKILL.md` as the Codex-facing artifact.
-
-Execute the closeout. Prove what shipped, extract only reusable learning, write
-machine-checkable follow-up work, and make the next loop able to consume it.
+> **Purpose:** Answer an explicit retrospective causal question using the
+> already-validated outcome and evidence.
 
 ## Critical Constraints
 
-- **Why: no verdict means not done.** Validate code, documentation, examples,
-  and proof before extracting learning.
-- **Why: avoid phantom closure.** Resolve evidence in commit → staged → worktree
-  order; evidence-only closure needs a durable proof packet.
-- **Why: preserve causality.** Compare original intent, delivered scope, prior
-  predictions, and observed outcomes; do not manufacture hindsight lessons.
-- **Why: avoid a knowledge graveyard.** Promote only repeated or behavior-changing
-  insights and use the weakest durable surface that changes future behavior.
-- **Why: keep the queue truthful.** Harvest valid next work as available, then
-  claim, release, or consume it through the documented lifecycle.
-- **Why: keep review honest.** Partial councils, missing proof, and empty harvests
-  remain explicit WARN/FAIL/stable outcomes.
-
-## Modes
-
-| Invocation | Route |
-|---|---|
-| `$postmortem [target]` | Full retrospective closeout |
-| `$postmortem --quick "insight"` | One provisional learning; then stop |
-| `$postmortem --scope=pr <num>` | PR outcome as the closure signal |
-| `$postmortem --process-only` | Maintenance and harvest only |
-| `$postmortem --skip-sweep` | Omit Step 2.6 deep-audit sweep |
-| `$postmortem --compound` | Compare repeated goal-measure iterations |
-
-`--deep`, `--mixed`, `--debate`, and `--explorers=N` increase review depth.
+- Postmortem is retrospective causal analysis, not the general learning
+  umbrella and not a completion gate.
+- It consumes an immutable Validate verdict plus Learn receipt and does not re-run acceptance validation by default.
+- Treat causal statements as hypotheses. Separate observed sequence,
+  contributing conditions, counterfactuals, and unknowns.
+- A correlation is not promoted to cause without evidence that discriminates
+  plausible alternatives.
+- Do not rewrite proof, operate delivery or tracker state, change the remaining
+  plan, or promote a rule. Return evidence to the caller.
+- Empty or inconclusive analysis is valid; manufacture neither certainty nor a
+  lesson to make the retrospective feel useful.
 
 ## Workflow
 
-1. **Preflight and load policy.** Resolve the repo tracker, use `br` to inspect
-   the target and closed children, then read checkpoint, metadata,
-   closure-integrity, and four-surface modules. Run `scripts/preflight-refs.sh
-   --strict`; a prior FAIL blocks by default.
-2. **Reconstruct the arc.** Load bead/spec, plan, commits, delivered files and
-   tests. Prefer `.agents/planning-rules/*.md` and
-   `.agents/pre-mortem-checks/*.md`, then `.agents/findings/registry.jsonl`.
-3. **Prove closure.** Run closure-integrity and metadata checks. Durable
-   evidence-only proof lives at
-   `.agents/releases/evidence-only-closures/<target-id>.json`.
-4. **Step 2.6 audit sweep.** Unless quick or `--skip-sweep`, inspect changed
-   files and merge findings into `.agents/council/sweep-manifest.md`.
-5. **Judge.** Use the retrospective council perspectives: plan compliance,
-   technical debt, and learnings. Include scope delta, closure evidence,
-   prevention context, metadata failures, and prediction accuracy.
-6. **Extract and ratchet.** Normalize reusable findings with `dedup_key`, update
-   `.agents/findings/registry.jsonl` atomically, and run
-   `bash hooks/finding-compiler.sh --quiet` when present. Route each lesson to
-   report, learning, skill, doctrine, or gate according to enforcement need.
-7. **Maintain and harvest.** Process, activate, retire, and append one valid
-   next-work v1.4 batch. Follow the claim/finalize lifecycle; update
-   `.agents/ao/last-processed` last. Report the best next route or a stable flywheel.
-
-### ACT: Harvest Follow-Up Work
-
-#### Step ACT.3: Feed Next-Work
-
-Validate the batch against
-[`docs/contracts/next-work.schema.md`](../../docs/contracts/next-work.schema.md).
-Keep known proof on the item as `"proof_ref"`; `items` may be empty when the
-postmortem finds nothing actionable.
-
-```yaml
-source_epic: <target-or-recent>
-timestamp: <ISO-8601>
-items:
-  - title: <actionable follow-up>
-    type: task
-    severity: medium
-    source: post-mortem-finding
-    description: <work required>
-    evidence: <finding evidence>
-    target_repo: <repo>
-    "proof_ref": {kind: execution_packet, path: <proof-path>}
-    consumed: false
-    claim_status: "available"
-consumed: false
-claim_status: "available"
-claimed_by: null
-claimed_at: null
-consumed_by: null
-consumed_at: null
-```
-
-#### Step ACT.4: Update Marker
-
-Update `.agents/ao/last-processed` only after
-`bash scripts/validate-next-work.sh --strict` and append succeed.
-
-After artifacts are written:
-
-```bash
-ao session close --auto-extract
-ao flywheel close-loop --quiet
-```
-
-Use `ao forge transcript <path-or-glob> --queue` first only when transcript
-discovery must be explicit.
-
-## Codex Execution Profile
-
-- Keep the council/validation summary concise, then write learnings and harvested work to disk.
-- Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.
-- Own Codex closeout during the postmortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.
-- Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle.
-
-## Guardrails
-
-- Never replace deterministic closure evidence with a confident narrative.
-- Keep report prose concise; persist detailed proof and next work to canonical paths.
-- Do not promote a one-off observation into always-on doctrine or a new gate.
-- Do not mark harvested work consumed before its implementation succeeds.
-- Do not hide missing artifacts, partial reviewers, or real-data no-effect results.
+1. Pin the verdict, Learn receipt, delivered artifact, and explicit causal
+   question.
+2. Reconstruct the evidence-backed timeline without importing hidden author
+   reasoning as fact.
+3. List candidate contributing conditions and at least one plausible
+   alternative explanation.
+4. Test each claim against cited evidence and a counterfactual: what should
+   differ if the claim were false?
+5. Optionally use independent judges to challenge contested causal claims.
+6. Emit a report containing supported claims, rejected claims, unknowns,
+   evidence references, and suggested experiments. Stop.
 
 ## Output Specification
 
-- **Artifact directory:** `.agents/council/` for the dated report and
-  `result.json`; optional learning, finding, proof, and queue artifacts use their
-  canonical `.agents/` directories.
-- **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`; proof packets use
-  `<target-id>.json`; harvested batches stay in `next-work.jsonl`.
-- **Serialization/schema format:** Markdown plus council verdict/result JSON,
-  evidence-only-closure v1 JSON, and next-work v1.4 JSONL.
-- **Validator command:** run `bash skills-codex/postmortem/scripts/validate.sh`
-  and strict next-work/evidence schema validation for artifacts produced.
-- **Downstream handoff:** consumed by the closed bead, `$rpi`/`$plan`, compiled
-  prevention context, retrieval, and the next Codex loop.
+- **Artifact:** `.agents/council/YYYY-MM-DD-postmortem-<topic>.md`.
+- **Required sections:** causal question, pinned inputs, timeline, hypotheses,
+  evidence, counterfactuals, unknowns, and experiments.
+- **Validator:** `bash skills/postmortem/scripts/validate.sh`.
+- **Downstream:** Learn or the orchestrator may consume the analysis; they own
+  any bookkeeping, promotion, planning, or delivery decision.
 
-## Quality Rubric
-
-- Evidence and real measurements support every verdict and promoted lesson.
-- Planned and delivered scope, tests, and four closure surfaces reconcile.
-- Findings, proof packets, and harvested work remain schema-valid.
-- Promotion strength matches recurrence and enforcement need.
-- The next Codex loop can claim and consume the result without chat context.
-
-## Examples
-
-- `$postmortem age-123` — close an epic and harvest its next work.
-- `$postmortem --quick "rebase ledger appends from the current chain tip"` —
-  record one provisional learning.
-- `$postmortem --scope=pr 42` — mine a PR outcome before normal maintenance.
-
-## Troubleshooting
-
-| Problem | Response |
-|---|---|
-| Council times out | Report partial evidence or split the review scope |
-| Prior checkpoint failed | Repair it or document the explicit skip |
-| No follow-up exists | Write an empty valid batch and report flywheel stable |
-| Plan and delivery differ | Put the delta in metadata failures and council context |
-
-## References
-
-- [context-gathering.md](references/context-gathering.md) · [plan-compliance-checklist.md](references/plan-compliance-checklist.md)
-- [checkpoint-policy.md](references/checkpoint-policy.md) · [closure-integrity-audit.md](references/closure-integrity-audit.md) · [metadata-verification.md](references/metadata-verification.md) · [four-surface-closure.md](references/four-surface-closure.md)
-- [learning-templates.md](references/learning-templates.md) · [prediction-tracking.md](references/prediction-tracking.md) · [streak-tracking.md](references/streak-tracking.md)
-- [backlog-processing.md](references/backlog-processing.md) · [activation-policy.md](references/activation-policy.md) · [maintenance-phases.md](references/maintenance-phases.md)
-- [harvest-next-work.md](references/harvest-next-work.md) · [output-templates.md](references/output-templates.md)
-- [security-patterns.md](references/security-patterns.md) · [retro-history.md](references/retro-history.md) · [compound-engineering-retro.md](references/compound-engineering-retro.md)
+Executable behavior is in [postmortem.feature](references/postmortem.feature).
