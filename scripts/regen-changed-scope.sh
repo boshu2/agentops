@@ -139,8 +139,16 @@ add_unique_codex_skill() {
 
 add_unique_source_skill() {
   local skill="$1"
-  local existing
+  local existing skill_md="skills/$1/SKILL.md"
   [[ -n "$skill" ]] || return 0
+  # Redirect-only runtime packages are compatibility aliases, not independent
+  # implementations. They still route Codex/registry/context projections below,
+  # but the deep implementation audit would manufacture false output-contract,
+  # rubric, and trigger failures for their intentionally tiny pointer bodies.
+  if [[ -f "$skill_md" ]] \
+    && grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_md"; then
+    return 0
+  fi
   for existing in "${SOURCE_SKILLS[@]}"; do
     [[ "$existing" == "$skill" ]] && return 0
   done

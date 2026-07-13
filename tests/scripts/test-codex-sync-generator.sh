@@ -32,7 +32,7 @@ cleanup() {
         "$TWIN_DIR/.agentops-generated.json" "$TWIN_DIR/references/deep-dive.md" 2>/dev/null || true
   rmdir "$SRC_DIR/references" "$SRC_DIR" "$TWIN_DIR/references" "$TWIN_DIR" 2>/dev/null || true
   PROBE="$PROBE" ORPHAN="$ORPHAN" python3 - "$MANIFEST" "$OVERRIDES" <<'PY' 2>/dev/null || true
-import hashlib, json, os, sys
+import hashlib, json, os, pathlib, sys
 probe = os.environ["PROBE"]
 orphan = os.environ["ORPHAN"]
 for path in sys.argv[1:]:
@@ -49,6 +49,12 @@ for path in sys.argv[1:]:
             sort_keys=True,
         ).encode("utf-8")
         data["codex_override_catalog_hash"] = hashlib.sha256(blob).hexdigest()
+    if "package_count" in data:
+        root = pathlib.Path(path).parent
+        data["package_count"] = sum(
+            1 for child in root.iterdir()
+            if child.is_dir() and (child / "SKILL.md").is_file()
+        )
     open(path, "w", encoding="utf-8").write(json.dumps(data, indent=2) + "\n")
 PY
 }

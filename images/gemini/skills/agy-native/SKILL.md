@@ -1,7 +1,7 @@
 ---
 name: agy-native
 description: |-
-  Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees.
+  Drive AgentOps in AGY: loop, plugins, memory, evidence, --add-dir scoping.
   Triggers: agy, antigravity, agy plugin, AGY evidence.
 practices:
 - team-topologies
@@ -124,7 +124,7 @@ agy --print --add-dir "$REPO" \
   "Validate bead <id> against its evidence artifact ONLY. You did not author it. \
    Emit PASS/WARN/FAIL to brain as a userFacing verdict. Do not edit code."
 ```
-On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (`br close <id>`) **only** on PASS.
+On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (`ao beads exec close <id>`) **only** on PASS.
 **Checkpoint:** verdict artifact persisted by a *different* context than the author; bead closed only if PASS.
 
 ### Phase 5: Persist + tick the loop
@@ -134,12 +134,79 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 ## Output Specification
 
-**Format:** a completed loop tick — git commits + beads transitions + brain artifacts.
-**Filename / path:**
-- Evidence + verdict: `~/.gemini/antigravity-cli/brain/<conversation-id>/<name>_verification.md` (+ `.metadata.json`, `userFacing:true`).
-- Code: scoped commit in the target repo (one bead per commit).
-- Beads: `br` transition (claim -> close), JSONL synced to git.
-**Structure of a tick:** `{ bead_id, author_context_id, judge_context_id, verdict (PASS|WARN|FAIL), evidence_path, commit_sha }`.
+- **Artifact directory:** write the machine-readable handoff to
+  `$REPO/.agents/evidence/agy-native/<bead-id>/`; keep the judge's source
+  verdict under `~/.gemini/antigravity-cli/brain/<conversation-id>/`.
+- **Filename convention:** name the repo handoff `run-evidence.json` and the
+  brain verdict `<name>_verification.md` with its adjacent
+  `<name>_verification.md.metadata.json` sidecar.
+- **Serialization/schema format:** `run-evidence.json` is one JSON object with
+  nonempty `bead_id`, distinct `author_context_id` and `judge_context_id`,
+  `verdict` (`PASS|WARN|FAIL`), absolute `evidence_path`, and `commit_sha`.
+- **Validator command:** with `$REPO` and `$bead_id` set, validate the complete
+  handoff and the PASS-to-close invariant:
+
+  ```bash
+  REPO="$REPO" bead_id="$bead_id" bash -euo pipefail <<'VALIDATE'
+  manifest="$REPO/.agents/evidence/agy-native/$bead_id/run-evidence.json"
+  test -s "$manifest"
+  jq -e --arg bead "$bead_id" '
+    type == "object" and
+    ((.bead_id | type) == "string") and .bead_id == $bead and ($bead | length) > 0 and
+    ((.author_context_id | type) == "string") and (.author_context_id | length) > 0 and
+    ((.judge_context_id | type) == "string") and (.judge_context_id | length) > 0 and
+    .author_context_id != .judge_context_id and
+    (.verdict == "PASS" or .verdict == "WARN" or .verdict == "FAIL") and
+    ((.evidence_path | type) == "string") and (.evidence_path | length) > 0 and
+    ((.commit_sha | type) == "string") and (.commit_sha | length) > 0
+  ' "$manifest" >/dev/null
+
+  evidence_path="$(jq -er '.evidence_path' "$manifest")"
+  brain_root="$HOME/.gemini/antigravity-cli/brain/"
+  relative_path="${evidence_path#"$brain_root"}"
+  test "$relative_path" != "$evidence_path"
+  conversation_id="${relative_path%%/*}"
+  verdict_filename="${relative_path#*/}"
+  test -n "$conversation_id" && test "$verdict_filename" != "$relative_path"
+  case "$conversation_id" in .|..) exit 1 ;; esac
+  case "$verdict_filename" in
+    */*|_verification.md) exit 1 ;;
+    *_verification.md) ;;
+    *) exit 1 ;;
+  esac
+
+  test -s "$evidence_path" && test -s "$evidence_path.metadata.json"
+  jq -e '.userFacing == true' "$evidence_path.metadata.json" >/dev/null
+  verdict="$(jq -er '.verdict' "$manifest")"
+  source_verdict="$(awk '
+    /^Verdict: (PASS|WARN|FAIL)$/ {
+      count++
+      value = substr($0, 10)
+    }
+    END {
+      if (count != 1) exit 1
+      print value
+    }
+  ' "$evidence_path")"
+  [[ "$source_verdict" == "$verdict" ]]
+  git -C "$REPO" cat-file -e "$(jq -er '.commit_sha' "$manifest")^{commit}"
+
+  beads_dir="$(ao beads dir)"
+  bead_json="$(BEADS_DIR="$beads_dir" br show "$bead_id" --json)"
+  bead_status="$(jq -er '
+    if length == 1 and ((.[0].status | type) == "string")
+    then .[0].status else error("missing or ambiguous bead") end
+  ' <<<"$bead_json")"
+  case "$bead_status" in open|in_progress|blocked|closed) ;; *) exit 1 ;; esac
+  if [[ "$verdict" == PASS ]]; then
+    [[ "$bead_status" == closed ]]
+  else
+    [[ "$bead_status" != closed ]]
+  fi
+  VALIDATE
+  ```
+- **Downstream handoff:** give `run-evidence.json` to the verification membrane;
+  only a validated PASS/closed pair may release the next scheduled Phase 3 tick.
 
 ## Quality Rubric
 
@@ -173,7 +240,7 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 - **[references/distribution-and-run-control.md](references/distribution-and-run-control.md)** — full plugin verb list, install-vs-link discipline, mutation protocol, the permission×output×scope matrix (AGY equivalents for retired gemini flags), and the brain evidence layout.
 - Research input: `~/.agents/research/agy-native-harness-2026-06-06.md` (AGY primitives, official docs index, open questions).
-- [`/using-atm`](../using-atm/SKILL.md) — **in-ATM AGY** (interactive pane-3 TUI via `atm send`; the dual-pane tri-vendor duel is folded in) vs this skill's **headless** `agy --print` / sidecar paths; do not conflate them.
+- [`/agent-native`](../agent-native/SKILL.md) + [`/ntm`](../ntm/SKILL.md) — interactive AGY worker panes vs this skill's headless adapter paths; do not conflate their dispatch mechanics.
 - Sibling AGY skills: `agy-rules-workflows` (goal/schedule loop law), `agy-mcp-plugins` (MCP servers + plugin packaging), `agy-headless-evidence` (agentapi sidecar + JSONL evidence).
 - Sibling images / loop substrate: `ntm` (tmux swarms), `beads-br` (br tracker), `agent-mail` (coordination), `dcg` (destructive-command guard), `caam` (account lanes).
 - Loop doctrine: control-plane LEARNINGS (author!=judge, evidence-gated close); memory `never claude -p for workers`; ACFS invoke-never-rebuild + fork-and-own doctrine.

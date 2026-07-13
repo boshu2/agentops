@@ -77,7 +77,10 @@ func runContextPacketStatus(cmd *cobra.Command, args []string) error {
 
 	query := strings.TrimSpace(contextPacketStatusFlags.task)
 	phase := normalizeAssemblePhase(contextPacketStatusFlags.phase)
-	bundle := collectRankedContextBundle(cwd, query, contextPacketStatusFlags.limit)
+	bundle, err := collectRankedContextBundle(cwd, query, contextPacketStatusFlags.limit)
+	if err != nil {
+		return err
+	}
 	result := buildPacketStatusResult(cwd, query, phase, bundle)
 
 	if GetOutput() == "json" {

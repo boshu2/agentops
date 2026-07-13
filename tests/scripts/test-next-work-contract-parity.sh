@@ -36,9 +36,9 @@ create_fixture() {
   mkdir -p "$fixture"
 
   copy_target "$fixture" "docs/contracts/next-work.schema.md"
-  copy_target "$fixture" "skills/post-mortem/references/harvest-next-work.md"
-  copy_target "$fixture" "skills/post-mortem/SKILL.md"
-  copy_target "$fixture" "skills-codex/post-mortem/SKILL.md"
+  copy_target "$fixture" "skills/postmortem/references/harvest-next-work.md"
+  copy_target "$fixture" "skills/postmortem/SKILL.md"
+  copy_target "$fixture" "skills-codex/postmortem/SKILL.md"
   copy_target "$fixture" "skills/rpi/references/phase-data-contracts.md"
   copy_target "$fixture" "skills/rpi/references/gate4-loop-and-spawn.md"
   copy_target "$fixture" "cli/cmd/ao/rpi_loop.go"
@@ -169,7 +169,7 @@ PY
 test_source_skill_legacy_example_fails() {
   local fixture
   fixture="$(create_fixture "source-legacy-example")"
-  python3 - <<'PY' "$fixture/skills/post-mortem/SKILL.md"
+  python3 - <<'PY' "$fixture/skills/postmortem/SKILL.md"
 from pathlib import Path
 path = Path(__import__("sys").argv[1])
 text = path.read_text()
@@ -197,13 +197,13 @@ PY
   assert_gate_fails_with \
     "source post-mortem skill legacy flat example fails parity gate" \
     "$fixture" \
-    "skills/post-mortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
+    "skills/postmortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
 }
 
 test_codex_skill_legacy_example_fails() {
   local fixture
   fixture="$(create_fixture "codex-legacy-example")"
-  python3 - <<'PY' "$fixture/skills-codex/post-mortem/SKILL.md"
+  python3 - <<'PY' "$fixture/skills-codex/postmortem/SKILL.md"
 from pathlib import Path
 path = Path(__import__("sys").argv[1])
 text = path.read_text()
@@ -231,7 +231,7 @@ PY
   assert_gate_fails_with \
     "generated Codex post-mortem skill legacy flat example fails parity gate" \
     "$fixture" \
-    "skills-codex/post-mortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
+    "skills-codex/postmortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
 }
 
 test_explicit_item_lifecycle_drift_fails() {

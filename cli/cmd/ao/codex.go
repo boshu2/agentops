@@ -501,13 +501,18 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 		return codexStartResult{}, err
 	}
 
+	flywheel, err := loadStatusFlywheelBrief(cwd)
+	if err != nil {
+		return codexStartResult{}, err
+	}
+
 	return codexStartResult{
 		Runtime:            profile,
 		ContextQuery:       query,
 		StartupContextPath: startupContextPath,
 		MemoryPath:         memoryPath,
 		CloseLoop:          closeLoop,
-		Flywheel:           loadFlywheelBrief(cwd),
+		Flywheel:           flywheel,
 		Briefings:          briefings,
 		Learnings:          learnings,
 		Patterns:           patterns,
@@ -701,10 +706,14 @@ func runCodexStatus(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	flywheel, err := loadStatusFlywheelBrief(cwd)
+	if err != nil {
+		return err
+	}
 	result := codexStatusResult{
 		Runtime:   profile,
 		State:     state,
-		Flywheel:  loadFlywheelBrief(cwd),
+		Flywheel:  flywheel,
 		Capture:   collectCodexCaptureHealth(cwd),
 		Retrieval: collectCodexRetrievalHealth(cwd),
 		Promotion: collectCodexPromotionHealth(cwd),
@@ -2142,7 +2151,10 @@ func saveCodexLifecycleState(path string, state *codexLifecycleState) error {
 }
 
 func writeCodexStartupContext(cwd string, profile lifecycleRuntimeProfile, query string, briefings []codexArtifactRef, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef, showNewUserWelcome bool) (string, error) {
-	bundle := buildRankedContextBundle(cwd, query, codexStartLimit, learnings, patterns, findings, recentSessions, nextWork, research)
+	bundle, err := buildRankedContextBundle(cwd, query, codexStartLimit, learnings, patterns, findings, recentSessions, nextWork, research)
+	if err != nil {
+		return "", err
+	}
 	agentsRoot := knowledgeAgentsRoot(cwd)
 	beliefs := codexStartupBeliefs(bundle)
 	playbooks := codexStartupPlaybooks(bundle)

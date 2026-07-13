@@ -51,3 +51,31 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *"MISSING_DISPOSITION"* ]]
 }
+
+@test "heal treats redirect-only packages as aliases, not tiered implementations" {
+  cat >> "$FIX/docs/contracts/skill-dispositions.yaml" <<'EOF'
+  - skill:          foo
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "canonical redirect target"
+EOF
+  mkdir -p "$FIX/skills/old-foo"
+  cat > "$FIX/skills/old-foo/SKILL.md" <<'EOF'
+---
+name: old-foo
+description: Compatibility pointer for foo.
+redirect_to: foo
+implementation: false
+---
+# old-foo
+
+Invoke `/foo` once.
+EOF
+
+  run env HEAL_REPO_ROOT="$FIX" bash "$HEAL" --check --strict skills/old-foo
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"MISSING_TIER"* ]]
+  [[ "$output" != *"MISSING_API_VERSION"* ]]
+  [[ "$output" != *"MISSING_DISPOSITION"* ]]
+}

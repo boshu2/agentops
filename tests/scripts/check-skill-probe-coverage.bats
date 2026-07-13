@@ -40,6 +40,18 @@ metadata:
 EOF
 }
 
+make_redirect() {
+    local name="$1"
+    mkdir -p "$SKILL_PROBE_SKILLS_DIR/$name"
+    cat > "$SKILL_PROBE_SKILLS_DIR/$name/SKILL.md" <<EOF
+---
+name: $name
+implementation: false
+---
+Use the canonical skill instead.
+EOF
+}
+
 # write_ledger <rows...> — write a SKILL-TIERS.md carrying a MEASURED probe
 # ledger. Each arg is a table row body "skill | probe | date | verdict".
 write_ledger() {
@@ -111,6 +123,15 @@ write_ledger() {
     run bash "$GATE" --strict
     [ "$status" -eq 0 ]
     [[ "$output" != *"bar"* ]]
+}
+
+@test "redirect-only skills are exempt and cannot abort the advisory scan" {
+    make_skill foo product
+    make_redirect legacy-foo
+    write_ledger "foo | probe-foo | 2026-07-08 | BEHAVIORAL"
+    run bash "$GATE" --strict
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"legacy-foo"* ]]
 }
 
 @test "a missing ledger file degrades to advisory (product/judgment flagged, exit 0 default)" {

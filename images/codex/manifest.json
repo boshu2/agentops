@@ -34,15 +34,15 @@
       "catalog-parity": "Skills reviewed explicitly and kept on converter parity until a real Codex-only divergence appears."
     },
     "core_wave_distribution": {
-      "backbone": 10,
-      "core-execution": 7,
-      "catalog-parity": 19,
+      "backbone": 9,
+      "core-execution": 6,
+      "catalog-parity": 14,
       "analysis-authoring": 0
     }
   },
-  "core_count": 35,
-  "method_core_count": 24,
-  "tool_op_core_count": 11,
+  "core_count": 29,
+  "method_core_count": 20,
+  "tool_op_core_count": 9,
   "core_skills": [
     {
       "slug": "rpi",
@@ -162,40 +162,27 @@
       "codex_treatment": "bespoke"
     },
     {
-      "slug": "pre-mortem",
+      "slug": "premortem",
       "kind": "method",
-      "twin_path": "skills-codex/pre-mortem/",
-      "source_path": "skills/pre-mortem/",
+      "twin_path": "skills-codex/premortem/",
+      "source_path": "skills/premortem/",
       "twin_files": {
-        "skill": "skills-codex/pre-mortem/SKILL.md",
-        "prompt": "skills-codex/pre-mortem/prompt.md",
-        "drift_marker": "skills-codex/pre-mortem/.agentops-generated.json"
+        "skill": "skills-codex/premortem/SKILL.md",
+        "prompt": "skills-codex/premortem/prompt.md",
+        "drift_marker": "skills-codex/premortem/.agentops-generated.json"
       },
       "codex_wave": "core-execution",
       "codex_treatment": "bespoke"
     },
     {
-      "slug": "red-team",
+      "slug": "postmortem",
       "kind": "method",
-      "twin_path": "skills-codex/red-team/",
-      "source_path": "skills/red-team/",
+      "twin_path": "skills-codex/postmortem/",
+      "source_path": "skills/postmortem/",
       "twin_files": {
-        "skill": "skills-codex/red-team/SKILL.md",
-        "prompt": "skills-codex/red-team/prompt.md",
-        "drift_marker": "skills-codex/red-team/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "post-mortem",
-      "kind": "method",
-      "twin_path": "skills-codex/post-mortem/",
-      "source_path": "skills/post-mortem/",
-      "twin_files": {
-        "skill": "skills-codex/post-mortem/SKILL.md",
-        "prompt": "skills-codex/post-mortem/prompt.md",
-        "drift_marker": "skills-codex/post-mortem/.agentops-generated.json"
+        "skill": "skills-codex/postmortem/SKILL.md",
+        "prompt": "skills-codex/postmortem/prompt.md",
+        "drift_marker": "skills-codex/postmortem/.agentops-generated.json"
       },
       "codex_wave": "backbone",
       "codex_treatment": "bespoke"
@@ -248,19 +235,6 @@
         "skill": "skills-codex/handoff/SKILL.md",
         "prompt": "skills-codex/handoff/prompt.md",
         "drift_marker": "skills-codex/handoff/.agentops-generated.json"
-      },
-      "codex_wave": "core-execution",
-      "codex_treatment": "bespoke"
-    },
-    {
-      "slug": "recover",
-      "kind": "method",
-      "twin_path": "skills-codex/recover/",
-      "source_path": "skills/recover/",
-      "twin_files": {
-        "skill": "skills-codex/recover/SKILL.md",
-        "prompt": "skills-codex/recover/prompt.md",
-        "drift_marker": "skills-codex/recover/.agentops-generated.json"
       },
       "codex_wave": "core-execution",
       "codex_treatment": "bespoke"
@@ -409,19 +383,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "review",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/review/",
-      "source_path": "skills/review/",
-      "twin_files": {
-        "skill": "skills-codex/review/SKILL.md",
-        "prompt": "skills-codex/review/prompt.md",
-        "drift_marker": "skills-codex/review/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "rch",
       "kind": "tool-op",
       "twin_path": "skills-codex/rch/",
@@ -456,19 +417,6 @@
         "skill": "skills-codex/cc-hooks/SKILL.md",
         "prompt": "skills-codex/cc-hooks/prompt.md",
         "drift_marker": "skills-codex/cc-hooks/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "vibing-with-ntm",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/vibing-with-ntm/",
-      "source_path": "skills/vibing-with-ntm/",
-      "twin_files": {
-        "skill": "skills-codex/vibing-with-ntm/SKILL.md",
-        "prompt": "skills-codex/vibing-with-ntm/prompt.md",
-        "drift_marker": "skills-codex/vibing-with-ntm/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"

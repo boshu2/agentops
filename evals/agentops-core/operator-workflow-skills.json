@@ -38,14 +38,14 @@
       "timeout_seconds": 300,
       "inputs": {
         "cwd": "../..",
-        "shell": "set -eu; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops post-mortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops post-mortem; do if [ -f \"skills-codex/$s/scripts/validate.sh\" ]; then echo \"codex: $s\"; bash \"skills-codex/$s/scripts/validate.sh\"; else echo \"codex: $s (no validator)\"; fi; done"
+        "shell": "set -eu; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops postmortem; do echo \"shared: $s\"; bash \"skills/$s/scripts/validate.sh\"; done; for s in bootstrap brainstorm bug-hunt complexity converter council deps design implement perf plan pr-implement pr-prep pr-research red-team refactor reverse-engineer-rpi review scaffold swarm trace using-agentops postmortem; do if [ -f \"skills-codex/$s/scripts/validate.sh\" ]; then echo \"codex: $s\"; bash \"skills-codex/$s/scripts/validate.sh\"; else echo \"codex: $s (no validator)\"; fi; done"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "shared: plan"},
         {"type": "stdout_contains", "value": "codex: plan"},
         {"type": "stdout_contains", "value": "shared: review"},
-        {"type": "stdout_contains", "value": "shared: post-mortem"},
+        {"type": "stdout_contains", "value": "shared: postmortem"},
         {"type": "stdout_contains", "value": "codex: swarm"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
@@ -117,13 +117,13 @@
       "id": "pr-workflow-contracts",
       "title": "open-source PR workflow skills preserve upstream fit and isolation",
       "kind": "artifact_check",
-      "objective": "Protect contribution workflows from scope creep by checking PR research, implementation, preparation, validation, and PR-outcome learning artifacts (planning folds into /plan; PR retros into /post-mortem --scope=pr).",
+      "objective": "Protect contribution workflows from scope creep by checking PR research, implementation, preparation, validation, and PR-outcome learning artifacts (planning folds into /plan; PR retros into /postmortem --scope=pr).",
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/pr-research/SKILL.md", "value": "Maintainer Research -> Response patterns, review expectations"},
         {"type": "artifact_contains", "target": "../../skills/pr-implement/SKILL.md", "value": "DO NOT PROCEED IF PRE-CHECK FAILS"},
         {"type": "artifact_contains", "target": "../../skills/validate/SKILL.md", "value": "scope-creep"},
         {"type": "artifact_contains", "target": "../../skills-codex/validate/prompt.md", "value": "PASS/WARN/FAIL"},
-        {"type": "artifact_contains", "target": "../../skills/post-mortem/references/pr-scope.md", "value": "Success Patterns (If Merged)"}
+        {"type": "artifact_contains", "target": "../../skills/postmortem/references/pr-scope.md", "value": "Success Patterns (If Merged)"}
       ],
       "dimensions": ["process_adherence", "correctness", "artifact_quality"]
     },

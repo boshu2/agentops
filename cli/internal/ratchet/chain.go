@@ -114,6 +114,9 @@ func parseChainLines(scanner *bufio.Scanner, chain *Chain) error {
 		if err := json.Unmarshal(line, &entry); err != nil {
 			continue // Skip malformed lines
 		}
+		if canonical := ParseStep(string(entry.Step)); canonical != "" {
+			entry.Step = canonical
+		}
 		chain.Entries = append(chain.Entries, entry)
 	}
 	return nil

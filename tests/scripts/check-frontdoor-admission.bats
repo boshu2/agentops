@@ -74,6 +74,17 @@ name: bad-skill
 # bad-skill
 EOF
 
+  # redirect-only skill: a loadable compatibility alias, not an independent
+  # implementation entering through the front door.
+  mkdir -p "$SKILLS/legacy-skill"
+  cat > "$SKILLS/legacy-skill/SKILL.md" <<'EOF'
+---
+name: legacy-skill
+implementation: false
+---
+Use `$good-skill` instead.
+EOF
+
   # acceptance-via-scenarios skill: role + BC + a `## Scenarios` block (the
   # alternative acceptance form) but no .feature file.
   mkdir -p "$SKILLS/scenario-skill"
@@ -179,6 +190,13 @@ teardown() { rm -rf "$FIX"; }
   run "$SCRIPT" "${COMMON[@]}" --added scripts/foo.sh --added docs/bar.md
   [ "$status" -eq 0 ]
   [[ "$output" == *'"new_units":0'* ]]
+}
+
+@test "pass: a redirect-only skill is not treated as a new implementation" {
+  run "$SCRIPT" "${COMMON[@]}" --added skills/legacy-skill/SKILL.md
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"new_units":0'* ]]
+  [[ "$output" == *'"blocked":0'* ]]
 }
 
 # --- mixed batch: one good + one bad -> BLOCKED (fail-closed on any) ----------

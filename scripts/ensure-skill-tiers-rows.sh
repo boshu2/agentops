@@ -62,7 +62,8 @@ in_table_names() {
 # --- Disk SSOT: real skill directories (mirror sync/validate exclusions) ---
 disk_names() {
   find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d \
-    -not -name '.*' -not -name '_*' -exec basename {} \;
+    -not -name '.*' -not -name '_*' \
+    -not -name 'pre-mortem' -not -name 'post-mortem' -not -name 'pre_mortem' -not -name 'post_mortem' -exec basename {} \;
 }
 
 # Extract the human-facing description from a skill's frontmatter.

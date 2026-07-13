@@ -254,6 +254,12 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     continue
   fi
 
+  # Runtime compatibility pointers are redirect packages, not independent
+  # implementations. The redirect gate owns their compact schema.
+  if grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_file"; then
+    continue
+  fi
+
   # Verify frontmatter delimiters exist
   if ! head -1 "$skill_file" | grep -q "^---$"; then
     echo -e "  ${RED}FAIL${NC} $skill_name: SKILL.md does not start with ---"

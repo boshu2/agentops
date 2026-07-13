@@ -156,7 +156,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/quickstart`](skills/status.md) | You want the fastest setup check and next action |
 | [`/council`](skills/council.md) | You want independent judges to review a plan, PR, or decision |
 | [`/research`](skills/research.md) | You need codebase context and prior learnings before changing code |
-| [`/pre-mortem`](skills/pre-mortem.md) | You want to pressure-test a plan before implementation |
+| [`/premortem`](skills/premortem.md) | You want to pressure-test a plan before implementation |
 | [`/implement`](skills/implement.md) | You want one scoped task built and validated |
 | [`/rpi`](skills/rpi.md) | You want discovery, build, validation, and bookkeeping in one flow |
 | [`/vibe`](skills/validate.md) | You want a code-quality and risk review before shipping |

@@ -32,6 +32,65 @@ func TestNextWorkExplainReason_RepointedProofReader(t *testing.T) {
 	}
 }
 
+func TestCollectContextExplainHealth_UsesCanonicalReconciledPremortemCount(t *testing.T) {
+	health := collectContextExplainHealth(t.TempDir(), rankedContextBundle{
+		Packet: StigmergicPacket{Scorecard: stigmergicScorecard{PreMortemChecks: 2}},
+	})
+	for _, family := range health {
+		if family.Family == "pre-mortem-checks" {
+			t.Fatalf("health retained legacy family label: %+v", family)
+		}
+		if family.Family == "premortem-checks" {
+			if family.Count != 2 {
+				t.Fatalf("premortem health count = %d, want reconciled scorecard count 2", family.Count)
+			}
+			return
+		}
+	}
+	t.Fatal("health omitted canonical premortem-checks family")
+}
+
+func TestRunContextExplain_RejectsConflictingPremortemDirectories(t *testing.T) {
+	root := prepareScorecardRoot(t)
+	canonical := writeScorecardPremortemCheck(t, root, "premortem-checks", "conflict", "canonical bytes")
+	legacy := writeScorecardPremortemCheck(t, root, "pre-mortem-checks", "conflict", "legacy bytes")
+	t.Chdir(root)
+	contextExplainFlags.task = "conflicting premortem checks"
+	contextExplainFlags.phase = "task"
+	contextExplainFlags.limit = defaultStigmergicPacketLimit
+
+	err := runContextExplain(contextCmd, nil)
+	if err == nil {
+		t.Fatal("context explain silently discarded a canonical/legacy premortem conflict")
+	}
+	for _, path := range []string{canonical, legacy} {
+		if !strings.Contains(err.Error(), path) {
+			t.Errorf("context explain conflict error %q does not name %s", err, path)
+		}
+	}
+}
+
+func TestRunContextAssemble_RejectsConflictingPremortemDirectories(t *testing.T) {
+	root := prepareScorecardRoot(t)
+	canonical := writeScorecardPremortemCheck(t, root, "premortem-checks", "conflict", "canonical bytes")
+	legacy := writeScorecardPremortemCheck(t, root, "pre-mortem-checks", "conflict", "legacy bytes")
+	t.Chdir(root)
+	assembleTask = "conflicting premortem checks"
+	assemblePhase = "task"
+	assembleMaxChars = defaultAssembleMaxChars
+	assembleOutput = filepath.Join(root, "briefing.md")
+
+	err := runContextAssemble(contextCmd, nil)
+	if err == nil {
+		t.Fatal("context assemble silently discarded a canonical/legacy premortem conflict")
+	}
+	for _, path := range []string{canonical, legacy} {
+		if !strings.Contains(err.Error(), path) {
+			t.Errorf("context assemble conflict error %q does not name %s", err, path)
+		}
+	}
+}
+
 func TestContextExplainCmdJSONOutput(t *testing.T) {
 	resetCommandState(t)
 	dir := t.TempDir()
@@ -179,7 +238,10 @@ func TestContextExplainReportsProofBackedNextWorkSuppression(t *testing.T) {
 
 	t.Chdir(dir)
 
-	bundle := collectRankedContextBundle(dir, "proof-backed next work", defaultStigmergicPacketLimit)
+	bundle, err := collectRankedContextBundle(dir, "proof-backed next work", defaultStigmergicPacketLimit)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result := buildContextExplainResult(dir, detectRepoName(dir), "proof-backed next work", "task", bundle)
 
 	if !containsSelectionClassWithReason(result.Selected, "next-work", "Selected from the backlog by repo affinity, severity, and query overlap.") {

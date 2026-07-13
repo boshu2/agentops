@@ -43,7 +43,8 @@ done
 
 skill_count=0
 while IFS= read -r skill_md; do
-  skill="$(basename "$(dirname "$skill_md")")"
+	grep -Eq '^implementation:[[:space:]]+false$' "$skill_md" && continue
+	skill="$(basename "$(dirname "$skill_md")")"
   skill_count=$((skill_count + 1))
   grep -Fq "| \`$skill\` |" "$MAP" || fail "domain map missing skill: $skill"
 done < <(find "$ROOT/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort)

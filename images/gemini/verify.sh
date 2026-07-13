@@ -20,16 +20,16 @@ PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # repo root = images/gemini -> images -> <repo root>
 REPO_ROOT="$(cd "$PLUGIN_DIR/../.." && pwd)"
 
-# The 38 CORE slugs — the original IMAGE-CORE.md §1 list resolved through the
+# The 32 CORE slugs — the original IMAGE-CORE.md §1 list resolved through the
 # skill-consolidation ledger (docs/contracts/skill-dispositions.yaml historical
 # merged-into chains + caam->account-rotation, refreshed 2026-07-04, age-085q).
 # Retired-with-no-successor slugs (ssh, gcloud, gh-cli, gh-actions, ...) dropped.
 # 2026-07-07 retire wave (age-skills-audit-fable-l6ic.12): red-team, curate,
 # compile, flywheel, recover, review dropped — merged into validate /
-# post-mortem / status per docs/audits/skills-audit-2026-07-06.md.
+# postmortem / status per docs/audits/skills-audit-2026-07-06.md.
 core_skills=(
   rpi discovery research plan implement crank swarm validate
-  council pre-mortem post-mortem
+  council premortem postmortem
   goals evolve bootstrap handoff
   operationalize push scope status test
   skill-builder heal-skill

@@ -66,7 +66,7 @@ A long-haul autonomous run that executes while you are away, emitting morning wo
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
 
 ### Extract
-An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/post-mortem/SKILL.md)
+An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/postmortem/SKILL.md)
 
 ## F
 
@@ -80,7 +80,7 @@ The automated loop that extracts learnings from completed work, scores them for 
 A composite measure of whether the knowledge flywheel is actually compounding: retrieval rate, promotion rate, decay rate, and injection hit rate. Surfaced by `ao flywheel` commands and used by `/evolve` to steer improvements.
 
 ### Forge
-Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/post-mortem/SKILL.md)
+Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/postmortem/SKILL.md)
 
 ## G
 
@@ -130,10 +130,10 @@ A cross-cutting rule that applies to all skills and agents. Examples: workers mu
 A knowledge quality tier — pending, tempered, or promoted. Artifacts start in pending, get tempered through repeated validation and use, and can be promoted to the permanent knowledge base. [Full documentation](ARCHITECTURE.md#knowledge-artifacts)
 
 ### Post-mortem
-A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](../skills/post-mortem/SKILL.md)
+A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](../skills/postmortem/SKILL.md)
 
 ### Pre-mortem
-A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate failures against the plan — including spec-completeness checks — and surface problems while they are still cheap to fix. A FAIL verdict sends the plan back for revision. [Full documentation](../skills/pre-mortem/SKILL.md)
+A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate failures against the plan — including spec-completeness checks — and surface problems while they are still cheap to fix. A FAIL verdict sends the plan back for revision. [Full documentation](../skills/premortem/SKILL.md)
 
 ### Profile
 A documentation grouping for domain-specific workflows and standards. Profiles organize coding standards and validation rules by language or domain. [Full documentation](../skills/standards/SKILL.md)
@@ -144,13 +144,13 @@ A documentation grouping for domain-specific workflows and standards. Profiles o
 The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern-fresh-context-every-wave)
 
 ### Ratchet
-A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and the gate / pawl enforces it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/post-mortem/SKILL.md)
+A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and the gate / pawl enforces it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/postmortem/SKILL.md)
 
 ### Research
 The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](../skills/research/SKILL.md)
 
 ### Retro
-Quick-capture of learnings from completed work — decisions made, patterns discovered, and failures encountered — fed into the knowledge flywheel and scored for specificity, actionability, and novelty. Folded into `/post-mortem --quick` (the retired `/retro`, cp-bzj). [Full documentation](../skills/post-mortem/SKILL.md)
+Quick-capture of learnings from completed work — decisions made, patterns discovered, and failures encountered — fed into the knowledge flywheel and scored for specificity, actionability, and novelty. Folded into `/post-mortem --quick` (the retired `/retro`, cp-bzj). [Full documentation](../skills/postmortem/SKILL.md)
 
 ### RPI (Research-Plan-Implement)
 The historical name for AgentOps' full lifecycle workflow. In current runtime terms, `/rpi` orchestrates **Discovery -> Implementation -> Validation** while `ao rpi phased` enforces fresh context windows between those phases. The older acronym persists in product language and command names, but validation and loop closure are now first-class parts of the executable lifecycle. [Full documentation](ARCHITECTURE.md#the-phased-lifecycle)

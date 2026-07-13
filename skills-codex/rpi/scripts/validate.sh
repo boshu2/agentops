@@ -63,6 +63,48 @@ fi
 
 printf '%s\n' "{\"schema_version\":1,\"objective\":\"prove pawl recovery\",\"skills_loaded\":[{\"name\":\"rpi\",\"reason\":\"orchestrator\"},{\"name\":\"discovery\",\"reason\":\"phase-1\"},{\"name\":\"crank\",\"reason\":\"phase-2\"},{\"name\":\"validate\",\"reason\":\"phase-3\"}],\"phase_receipts\":[{\"phase\":\"discovery\",\"skill\":\"discovery\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$discovery_artifact")\"},{\"phase\":\"implementation\",\"skill\":\"crank\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$implementation_artifact")\"},{\"phase\":\"validation\",\"skill\":\"validate\",\"status\":\"PASS\",\"artifact\":\".agents/rpi/$(basename "$validation_artifact")\"}]}" >"$packet_fixture"
 check "execution packet validator accepts complete disk-backed receipts" "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$packet_fixture' >/dev/null"
+jq '.schema_version = 3
+    | .pre_mortem_verdict = "PASS"
+    | .premortem_verdict = "FAIL"' \
+  "$packet_fixture" >"$invalid_packet_fixture"
+if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
+  echo "FAIL: execution packet validator rejects conflicting mortem verdict aliases"
+  FAIL=$((FAIL + 1))
+else
+  echo "PASS: execution packet validator rejects conflicting mortem verdict aliases"
+  PASS=$((PASS + 1))
+fi
+jq '.schema_version = 3
+    | .pre_mortem_verdict = "PASS"
+    | .premortem_verdict = "PASS"
+    | .artifacts = {"pre_mortem_path":"legacy.md","premortem_path":"canonical.md"}' \
+  "$packet_fixture" >"$invalid_packet_fixture"
+if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
+  echo "FAIL: execution packet validator rejects conflicting mortem artifact aliases"
+  FAIL=$((FAIL + 1))
+else
+  echo "PASS: execution packet validator rejects conflicting mortem artifact aliases"
+  PASS=$((PASS + 1))
+fi
+jq '.schema_version = 3
+    | .pre_mortem_verdict = "PASS"
+    | .premortem_verdict = "PASS"
+    | del(.artifacts)' \
+  "$packet_fixture" >"$invalid_packet_fixture"
+check "execution packet validator accepts equal mortem verdict transition aliases" \
+  "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$invalid_packet_fixture' >/dev/null"
+jq '.schema_version = 3
+    | .pre_mortem_verdict = "PASS"
+    | .premortem_verdict = "PASS"
+    | .artifacts = {"pre_mortem_path":"same.md","premortem_path":"same.md"}' \
+  "$packet_fixture" >"$invalid_packet_fixture"
+if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
+  echo "FAIL: execution packet validator rejects dual mortem artifact aliases even when equal"
+  FAIL=$((FAIL + 1))
+else
+  echo "PASS: execution packet validator rejects dual mortem artifact aliases even when equal"
+  PASS=$((PASS + 1))
+fi
 jq '(.phase_receipts[] | select(.phase == "discovery") | .status) = "BLOCKED" | (.phase_receipts[] | select(.phase == "implementation") | .status) = "PARTIAL" | (.phase_receipts[] | select(.phase == "validation") | .status) = "REFUTED"' "$packet_fixture" >"$invalid_packet_fixture"
 if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
   echo "FAIL: execution packet validator rejects unsuccessful final receipts"

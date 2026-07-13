@@ -37,17 +37,20 @@ func contextBundleLimit(budget int) int {
 	return aocontext.ContextBundleLimit(budget)
 }
 
-func collectRankedContextBundle(cwd, query string, limit int) rankedContextBundle {
+func collectRankedContextBundle(cwd, query string, limit int) (rankedContextBundle, error) {
 	if limit <= 0 {
 		limit = defaultStigmergicPacketLimit
 	}
 
 	repo := detectRepoName(cwd)
-	packet, _ := assembleStigmergicPacket(cwd, StigmergicTarget{
+	packet, err := assembleStigmergicPacket(cwd, StigmergicTarget{
 		GoalText: query,
 		Repo:     repo,
 		Limit:    limit,
 	})
+	if err != nil {
+		return rankedContextBundle{}, fmt.Errorf("assemble ranked context packet: %w", err)
+	}
 
 	learnings, _ := collectLearnings(cwd, query, limit, "", 0)
 	patterns, _ := collectPatterns(cwd, query, limit, "", 0)
@@ -69,20 +72,23 @@ func collectRankedContextBundle(cwd, query string, limit int) rankedContextBundl
 		NextWork:       chooseRankedNextWork(packet, nextWork, limit),
 		Research:       limitResearchRefs(collectRecentResearchArtifacts(cwd, query, limit), limit),
 		LegacyIntel:    collectLegacyIntelEntries(cwd, query, limit),
-	}
+	}, nil
 }
 
-func buildRankedContextBundle(cwd, query string, limit int, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef) rankedContextBundle {
+func buildRankedContextBundle(cwd, query string, limit int, learnings []learning, patterns []pattern, findings []knowledgeFinding, recentSessions []session, nextWork []nextWorkItem, research []codexArtifactRef) (rankedContextBundle, error) {
 	if limit <= 0 {
 		limit = defaultStigmergicPacketLimit
 	}
 
 	repo := detectRepoName(cwd)
-	packet, _ := assembleStigmergicPacket(cwd, StigmergicTarget{
+	packet, err := assembleStigmergicPacket(cwd, StigmergicTarget{
 		GoalText: query,
 		Repo:     repo,
 		Limit:    limit,
 	})
+	if err != nil {
+		return rankedContextBundle{}, fmt.Errorf("assemble supplied ranked context packet: %w", err)
+	}
 
 	return rankedContextBundle{
 		CWD:            cwd,
@@ -96,12 +102,15 @@ func buildRankedContextBundle(cwd, query string, limit int, learnings []learning
 		RecentSessions: limitSessions(recentSessions, limit),
 		NextWork:       chooseRankedNextWork(packet, nextWork, limit),
 		Research:       limitResearchRefs(research, limit),
-	}
+	}, nil
 }
 
-func renderRankedIntelSection(cwd, query, phase string, budget int) string {
-	bundle := collectRankedContextBundle(cwd, query, contextBundleLimit(budget))
-	return renderRankedIntelSectionFromBundle(bundle, phase, budget)
+func renderRankedIntelSection(cwd, query, phase string, budget int) (string, error) {
+	bundle, err := collectRankedContextBundle(cwd, query, contextBundleLimit(budget))
+	if err != nil {
+		return "", err
+	}
+	return renderRankedIntelSectionFromBundle(bundle, phase, budget), nil
 }
 
 func renderRankedIntelSectionFromBundle(bundle rankedContextBundle, phase string, budget int) string {

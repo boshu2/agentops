@@ -62,9 +62,32 @@ check_numeric_match() {
 # --- Actual counts from disk ---
 
 # `-not -name '_*'` excludes non-skill scaffolding (e.g. skills/_fixtures/,
-# planted test fixtures) — they are not real skills and must not be counted.
-actual_total=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -not -name '_*' | wc -l | tr -d ' ')
-actual_codex_total=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+# planted test fixtures). The two hyphenated mortem directories are permanent
+# runtime-loadable redirect pointers, not active implementations, so they are
+# deliberately excluded from the source and Codex artifact inventories.
+for pointer in \
+  "$REPO_ROOT/skills/pre-mortem/SKILL.md" \
+  "$REPO_ROOT/skills/post-mortem/SKILL.md" \
+  "$REPO_ROOT/skills/pre_mortem/SKILL.md" \
+  "$REPO_ROOT/skills/post_mortem/SKILL.md" \
+  "$REPO_ROOT/skills-codex/pre-mortem/SKILL.md" \
+  "$REPO_ROOT/skills-codex/post-mortem/SKILL.md" \
+  "$REPO_ROOT/skills-codex/pre_mortem/SKILL.md" \
+  "$REPO_ROOT/skills-codex/post_mortem/SKILL.md"; do
+  if [[ ! -f "$pointer" ]] || ! grep -Eq '^implementation:[[:space:]]+false$' "$pointer"; then
+    echo "MISMATCH: expected redirect-only runtime pointer: ${pointer#"$REPO_ROOT"/}"
+    errors=$((errors + 1))
+  fi
+done
+
+actual_total=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d \
+  -not -name '.*' -not -name '_*' \
+  -not -name 'pre-mortem' -not -name 'post-mortem' \
+  -not -name 'pre_mortem' -not -name 'post_mortem' | wc -l | tr -d ' ')
+actual_codex_total=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d \
+  -not -name '.*' \
+  -not -name 'pre-mortem' -not -name 'post-mortem' \
+  -not -name 'pre_mortem' -not -name 'post_mortem' | wc -l | tr -d ' ')
 actual_codex_overrides=$(find "$REPO_ROOT/skills-codex-overrides" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
 
 # Count skills listed in SKILL-TIERS.md user-facing table.

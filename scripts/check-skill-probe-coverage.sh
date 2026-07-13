@@ -109,8 +109,13 @@ declare -a UNMEASURED=()
 gated_total=0
 for skill_md in "$SKILLS_DIR"/*/SKILL.md; do
     [[ -f "$skill_md" ]] || continue
+    # Runtime compatibility pointers are aliases, not independent skills with
+    # behavioral value to measure. Their redirect contract has its own gate.
+    grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_md" && continue
     # tier lives in the metadata frontmatter as `  tier: <value>` (first hit).
-    tier="$(grep -m1 -E '^[[:space:]]*tier:[[:space:]]*' "$skill_md" 2>/dev/null \
+    # A skill without a tier is outside this advisory gate; do not let grep's
+    # no-match status abort the whole scan under the shared strict preamble.
+    tier="$({ grep -m1 -E '^[[:space:]]*tier:[[:space:]]*' "$skill_md" 2>/dev/null || true; } \
               | sed -E 's/^[[:space:]]*tier:[[:space:]]*//; s/[[:space:]].*$//' | tr -d '"'"'"'`' )"
     case "$tier" in
         product|judgment) ;;

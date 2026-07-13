@@ -182,7 +182,7 @@ for the full authoring doctrine and the best-practice-to-enforcement crosswalk.
 - [heal-skill](../heal-skill/SKILL.md) — structural hygiene (heal.sh) + companion deep-audit gate (audit.sh), invoked by build self-check
 - [converter](../converter/SKILL.md) — produces codex parity artifacts
 - [scaffold](../scaffold/SKILL.md) — scaffolds projects/components/CI (NOT skills)
-- [curate](../post-mortem/SKILL.md) — `--mode=forge` mines transcripts into learnings (different layer)
+- [curate](../postmortem/SKILL.md) — `--mode=forge` mines transcripts into learnings (different layer)
 
 ## References
 

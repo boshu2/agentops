@@ -207,7 +207,9 @@ synthesize_expected_prompt() {
 find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d \
   | while IFS= read -r d; do
       [[ -f "$d/SKILL.md" ]] || continue
-      basename "$d"
+      name="$(basename "$d")"
+      [[ "$name" == "pre-mortem" || "$name" == "post-mortem" || "$name" == "pre_mortem" || "$name" == "post_mortem" ]] && continue
+      printf '%s\n' "$name"
     done \
   | LC_ALL=C sort -u > "$source_skills_file"
 

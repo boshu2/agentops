@@ -2,12 +2,14 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -72,6 +74,85 @@ func compiledSummariesForFindings(cwd, subdir string, findingIDs []string) []str
 		}
 	}
 	return uniqueStringsPreserveOrder(summaries)
+}
+
+// compiledPremortemSummariesForFindings reads canonical checks first while
+// preserving the permanent legacy-directory fallback. Equal same-ID content
+// is emitted once; different same-ID content fails closed and names both paths.
+func compiledPremortemSummariesForFindings(cwd string, findingIDs []string) ([]string, error) {
+	paths, err := reconciledPremortemCheckPaths(cwd, findingIDs)
+	if err != nil {
+		return nil, err
+	}
+	summaries := make([]string, 0, len(findingIDs))
+	for _, path := range paths {
+		if summary := compiledChecklistSummary(path); summary != "" {
+			summaries = append(summaries, summary)
+		}
+	}
+	return uniqueStringsPreserveOrder(summaries), nil
+}
+
+func premortemCheckIDs(cwd string) ([]string, error) {
+	seen := make(map[string]struct{})
+	for _, directory := range []string{"premortem-checks", "pre-mortem-checks"} {
+		root := filepath.Join(cwd, ".agents", directory)
+		entries, err := os.ReadDir(root)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("read premortem check directory %s: %w", root, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
+				continue
+			}
+			seen[strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))] = struct{}{}
+		}
+	}
+	ids := make([]string, 0, len(seen))
+	for id := range seen {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids, nil
+}
+
+const canonicalPremortemReadDirectory = "premortem-checks"
+
+// reconciledPremortemCheckPaths selects canonical content first and fills
+// missing IDs from the legacy directory. Equal dual content is returned once;
+// conflicting dual content fails closed and identifies both paths.
+func reconciledPremortemCheckPaths(cwd string, findingIDs []string) ([]string, error) {
+	paths := make([]string, 0, len(findingIDs))
+	for _, id := range uniqueStringsPreserveOrder(findingIDs) {
+		canonical := filepath.Join(cwd, ".agents", canonicalPremortemReadDirectory, id+".md")
+		legacy := filepath.Join(cwd, ".agents", "pre-mortem-checks", id+".md")
+		canonicalData, canonicalErr := os.ReadFile(canonical)
+		legacyData, legacyErr := os.ReadFile(legacy)
+		canonicalExists := canonicalErr == nil
+		legacyExists := legacyErr == nil
+		if canonicalErr != nil && !os.IsNotExist(canonicalErr) {
+			return nil, fmt.Errorf("read canonical premortem check %s: %w", canonical, canonicalErr)
+		}
+		if legacyErr != nil && !os.IsNotExist(legacyErr) {
+			return nil, fmt.Errorf("read legacy premortem check %s: %w", legacy, legacyErr)
+		}
+		if canonicalExists && legacyExists && !bytes.Equal(canonicalData, legacyData) {
+			return nil, fmt.Errorf("conflicting premortem checks for %s: %s and %s", id, canonical, legacy)
+		}
+		selected := canonical
+		switch {
+		case canonicalExists:
+		case legacyExists:
+			selected = legacy
+		default:
+			continue
+		}
+		paths = append(paths, selected)
+	}
+	return paths, nil
 }
 
 // worktreeTimeout is the timeout for git worktree operations.

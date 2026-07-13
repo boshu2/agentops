@@ -9,7 +9,7 @@ hexagonal_role: domain
 consumes:
 - beads-br
 - implement
-- post-mortem
+- postmortem
 - swarm
 - validate
 produces:
@@ -36,7 +36,7 @@ metadata:
   - validate
   - implement
   - beads-br
-  - post-mortem
+  - postmortem
   - agent-native
   - automation-shape-routing
   - dcg

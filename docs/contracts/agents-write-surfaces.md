@@ -45,6 +45,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `defrag` | rolling | cli, scripts | maintenance-run-state | Defrag run state and dry-run reports |
 | `duel` | rolling | cli, skills | plan-pawl-duel-state | Sealed `idea-challenge.v1` perspectives read by `ao plan-pawl decide`; the decider alone owns PASS/REDO/BLOCKED |
 | `evals` | persistent | cli, scripts | eval-evidence | Eval run outputs, promoted baselines, and suite execution state |
+| `evidence` | rolling | scripts, skills | proof-evidence | Scoped implementation and per-wave proof artifacts, including four-umbrella base receipts and overlap inputs bound to the manifest and slice under review |
 | `findings` | persistent | scripts, skills | promotion-inbox | Mined findings awaiting promotion |
 | `git` | persistent | cli | git-cache | Git-derived state cached for the runtime |
 | `goal-design` | persistent | skills, operators, tests | goal-design-packet | Schema-backed goal-design packets (`intent.md` + `driver.md`) under `.agents/goal-design/<slug>/`; generated packets stay local runtime state and must pass `scripts/check-goal-design-packet.sh` plus independent validation before driving work |
@@ -128,6 +129,7 @@ daemon
 defrag
 duel
 evals
+evidence
 findings
 git
 goal-design

@@ -9,7 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-AUDIT_SCRIPT="$REPO_ROOT/skills/post-mortem/scripts/closure-integrity-audit.sh"
+AUDIT_SCRIPT="$REPO_ROOT/skills/postmortem/scripts/closure-integrity-audit.sh"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/closure-grace-XXXXXX")"
 PASS=0
 FAIL=0

@@ -115,7 +115,10 @@ func runContextAssemble(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build sections.
-	sections := assembleSectionsForPhase(cwd, assembleTask, assemblePhase, assembleMaxChars)
+	sections, err := assembleSectionsForPhase(cwd, assembleTask, assemblePhase, assembleMaxChars)
+	if err != nil {
+		return err
+	}
 
 	// Compose markdown.
 	md := composeBriefingMarkdown(sections)
@@ -153,10 +156,14 @@ func runContextAssemble(cmd *cobra.Command, args []string) error {
 type assembledSection = aocontext.AssembledSection
 
 func assembleSections(cwd, task string, maxChars int) []assembledSection {
-	return assembleSectionsForPhase(cwd, task, "task", maxChars)
+	sections, err := assembleSectionsForPhase(cwd, task, "task", maxChars)
+	if err != nil {
+		panic(err)
+	}
+	return sections
 }
 
-func assembleSectionsForPhase(cwd, task, phase string, maxChars int) []assembledSection {
+func assembleSectionsForPhase(cwd, task, phase string, maxChars int) ([]assembledSection, error) {
 	// Scale budgets proportionally if maxChars differs from default.
 	scale := float64(maxChars) / float64(defaultAssembleMaxChars)
 	bGoals := int(float64(budgetGoals) * scale)
@@ -188,7 +195,10 @@ func assembleSectionsForPhase(cwd, task, phase string, maxChars int) []assembled
 	})
 
 	// 3. INTEL
-	intelContent := gatherIntel(cwd, task, phase, bIntel)
+	intelContent, err := gatherIntel(cwd, task, phase, bIntel)
+	if err != nil {
+		return nil, err
+	}
 	intelContent, intelRedactions := redactContent(intelContent, cwd)
 	sections = append(sections, assembledSection{
 		Name:       sectionIntel,
@@ -217,7 +227,7 @@ func assembleSectionsForPhase(cwd, task, phase string, maxChars int) []assembled
 		Content:    protocolContent,
 	})
 
-	return sections
+	return sections, nil
 }
 
 // --- section gatherers ---
@@ -317,11 +327,15 @@ func formatHistoryEntry(entry map[string]interface{}, index int) string {
 	return aocontext.FormatHistoryEntry(entry, index)
 }
 
-func gatherIntel(cwd, task, phase string, budget int) string {
+func gatherIntel(cwd, task, phase string, budget int) (string, error) {
 	var sb strings.Builder
 	sb.WriteString("## INTEL\n\n")
-	sb.WriteString(renderRankedIntelSection(cwd, task, phase, budget))
-	return truncateToCharBudget(sb.String(), budget)
+	ranked, err := renderRankedIntelSection(cwd, task, phase, budget)
+	if err != nil {
+		return "", err
+	}
+	sb.WriteString(ranked)
+	return truncateToCharBudget(sb.String(), budget), nil
 }
 
 type intelEntry struct {

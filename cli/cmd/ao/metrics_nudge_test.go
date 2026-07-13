@@ -64,13 +64,17 @@ func TestDetermineNextStep(t *testing.T) {
 		want     string
 	}{
 		{"empty start", "", "research"},
-		{"after research", "research", "pre-mortem"},
-		{"after pre-mortem", "pre-mortem", "plan"},
+		{"after research", "research", "premortem"},
+		{"after canonical premortem", "premortem", "plan"},
+		{"after legacy pre-mortem", "pre-mortem", "plan"},
+		{"after legacy pre_mortem", "pre_mortem", "plan"},
 		{"after plan", "plan", "implement"},
 		{"after implement", "implement", "vibe"},
 		{"after crank", "crank", "vibe"},
-		{"after vibe", "vibe", "post-mortem"},
-		{"after post-mortem", "post-mortem", "research"},
+		{"after vibe", "vibe", "postmortem"},
+		{"after canonical postmortem", "postmortem", "research"},
+		{"after legacy post-mortem", "post-mortem", "research"},
+		{"after legacy post_mortem", "post_mortem", "research"},
 		{"unknown step", "unknown", "research"},
 	}
 
@@ -91,12 +95,16 @@ func TestStepToSkill(t *testing.T) {
 		want string
 	}{
 		{"research", "research", "/research"},
-		{"pre-mortem", "pre-mortem", "/pre-mortem"},
+		{"premortem", "premortem", "/premortem"},
+		{"legacy pre-mortem", "pre-mortem", "/premortem"},
+		{"legacy pre_mortem", "pre_mortem", "/premortem"},
 		{"plan", "plan", "/plan"},
 		{"implement", "implement", "/implement"},
 		{"crank", "crank", "/crank"},
 		{"vibe", "vibe", "/vibe"},
-		{"post-mortem", "post-mortem", "/post-mortem"},
+		{"postmortem", "postmortem", "/postmortem"},
+		{"legacy post-mortem", "post-mortem", "/postmortem"},
+		{"legacy post_mortem", "post_mortem", "/postmortem"},
 		{"unknown", "unknown", ""},
 	}
 

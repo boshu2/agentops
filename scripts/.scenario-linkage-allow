@@ -34,10 +34,10 @@ skills/heal-skill/references/heal-skill.feature
 skills/implement/references/implement.feature
 skills/operationalize/references/knowledge-activation.feature
 skills/plan/references/plan.feature
-skills/post-mortem/references/post-mortem.feature
-skills/post-mortem/references/pr-retro.feature
+skills/postmortem/references/postmortem.feature
+skills/postmortem/references/pr-retro.feature
 skills/pr-prep/references/pr-prep.feature
-skills/pre-mortem/references/pre-mortem.feature
+skills/premortem/references/premortem.feature
 skills/product/references/product.feature
 skills/push/references/push.feature
 skills/refactor/references/refactor.feature

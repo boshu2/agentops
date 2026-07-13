@@ -67,8 +67,8 @@ func TestWorkflow_RPIRatchetProgression(t *testing.T) {
 		{
 			step:      ratchet.StepResearch,
 			output:    ".agents/research/2026-02-25-api-design.md",
-			wantNext:  "pre-mortem",
-			wantSkill: "/pre-mortem",
+			wantNext:  "premortem",
+			wantSkill: "/premortem",
 		},
 		{
 			step:      ratchet.StepPreMortem,
@@ -91,8 +91,8 @@ func TestWorkflow_RPIRatchetProgression(t *testing.T) {
 		{
 			step:      ratchet.StepVibe,
 			output:    ".agents/council/2026-02-25-vibe-api-design.md",
-			wantNext:  "post-mortem",
-			wantSkill: "/post-mortem",
+			wantNext:  "postmortem",
+			wantSkill: "/postmortem",
 		},
 		{
 			step:     ratchet.StepPostMortem,

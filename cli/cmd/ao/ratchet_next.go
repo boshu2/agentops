@@ -24,13 +24,13 @@ type NextResult struct {
 
 // stepSkillMap maps ratchet steps to their corresponding skill commands.
 var stepSkillMap = map[string]string{
-	"research":    "/research",
-	"pre-mortem":  "/pre-mortem",
-	"plan":        "/plan",
-	"implement":   "/implement or /crank",
-	"crank":       "/implement or /crank",
-	"vibe":        "/vibe",
-	"post-mortem": "/post-mortem",
+	"research":   "/research",
+	"premortem":  "/premortem",
+	"plan":       "/plan",
+	"implement":  "/implement or /crank",
+	"crank":      "/implement or /crank",
+	"vibe":       "/vibe",
+	"postmortem": "/postmortem",
 }
 
 func init() {

@@ -158,22 +158,23 @@ func buildRPIState(chain *ratchet.Chain) RPIState {
 
 // determineNextStep returns the next logical step in the RPI workflow.
 func determineNextStep(lastStep string) string {
-	switch lastStep {
-	case "":
+	if lastStep == "" {
 		return "research"
-	case "research":
-		return "pre-mortem"
-	case "pre-mortem":
+	}
+	switch ratchet.ParseStep(lastStep) {
+	case ratchet.StepResearch:
+		return "premortem"
+	case ratchet.StepPreMortem:
 		return "plan"
-	case "plan":
+	case ratchet.StepPlan:
 		return "implement"
-	case "implement":
+	case ratchet.StepImplement:
 		return "vibe"
-	case "crank":
+	case ratchet.StepCrank:
 		return "vibe"
-	case "vibe":
-		return "post-mortem"
-	case "post-mortem":
+	case ratchet.StepVibe:
+		return "postmortem"
+	case ratchet.StepPostMortem:
 		return "research" // Loop back
 	default:
 		return "research"
@@ -182,21 +183,21 @@ func determineNextStep(lastStep string) string {
 
 // stepToSkill maps a step name to its corresponding skill.
 func stepToSkill(step string) string {
-	switch step {
-	case "research":
+	switch ratchet.ParseStep(step) {
+	case ratchet.StepResearch:
 		return "/research"
-	case "pre-mortem":
-		return "/pre-mortem"
-	case "plan":
+	case ratchet.StepPreMortem:
+		return "/premortem"
+	case ratchet.StepPlan:
 		return "/plan"
-	case "implement":
+	case ratchet.StepImplement:
 		return "/implement"
-	case "crank":
+	case ratchet.StepCrank:
 		return "/crank"
-	case "vibe":
+	case ratchet.StepVibe:
 		return "/vibe"
-	case "post-mortem":
-		return "/post-mortem"
+	case ratchet.StepPostMortem:
+		return "/postmortem"
 	default:
 		return ""
 	}

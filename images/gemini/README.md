@@ -1,6 +1,6 @@
 # AgentOps CORE — Gemini / Antigravity (AGY) Image
 
-The **39-skill AgentOps image** — the 38-skill CORE plus the `agy-native` operator
+The **33-skill AgentOps image** — the 32-skill CORE plus the `agy-native` operator
 skill — packaged for **Google Antigravity (AGY) / Gemini**. (Refreshed 2026-07-04,
 age-085q: the original 61+4 IMAGE-CORE.md list resolved through the
 skill-consolidation ledger — retired slugs dropped, merged slugs replaced by their
@@ -23,7 +23,7 @@ Modeled on the **proven** AgentOps Antigravity plugin package green at agentops
 commit **`ed8f573e6`** (`.agy-plugin/`, bead `cp-c6k.3.1` / `.3.5`). The wrapper
 shape — `plugin.json` + `skills/` + `agents/` + `rules/` + `hooks/hooks.json` +
 `mcp_config.json`, validated by `agy plugin validate` — is reused directly; only
-the packaged skill set (the 38-slug CORE + the `agy-native` operator skill, vs.
+the packaged skill set (the 32-slug CORE + the `agy-native` operator skill, vs.
 the proven package's 27 tool-op skills) and the manifest `name`/`version` differ.
 
 ## Layout
@@ -36,26 +36,26 @@ images/gemini/
   hooks/hooks.json     # AGY plugin hook payload layout processed by `agy plugin validate` (== hooks.json)
   agents/*.md          # AGY subagent templates (worker, validator)
   rules/*.md           # AGY rules (AgentOps loop law, Door-9 no-API-print)
-  skills/<slug>/SKILL.md   # the 39 portable SKILL.md files (38 CORE + agy-native; verbatim copy of agentops/skills/<slug>/)
+  skills/<slug>/SKILL.md   # the 33 portable SKILL.md files (32 CORE + agy-native; verbatim copy of agentops/skills/<slug>/)
   verify.sh            # self-check: JSON validity + slug presence/identity + (if present) agy plugin validate
   README.md            # this file
 ```
 
-## The 39 slugs packaged (38 CORE + 1 AGY operator)
+## The 33 slugs packaged (32 CORE + 1 AGY operator)
 
-### Method-core (27) — the operating loop
+### Method-core (22) — the operating loop
 
 ```
 rpi  discovery  research  plan  implement  crank  swarm  validate
-council  pre-mortem  red-team  post-mortem  curate  compile  flywheel
-goals  evolve  bootstrap  handoff  recover  operationalize  push  scope
+council  premortem  postmortem
+goals  evolve  bootstrap  handoff  operationalize  push  scope
 status  test  skill-builder  heal-skill
 ```
 
-### Tool-operator-core (11) — operating the substrate
+### Tool-operator-core (10) — operating the substrate
 
 ```
-beads-br  beads-bv  agent-mail  ntm  cass  dcg  review  rch  sbh
+beads-br  beads-bv  agent-mail  ntm  cass  dcg  rch  sbh
 cc-hooks  account-rotation
 ```
 
@@ -79,7 +79,7 @@ copy, zero conversion.
 bash images/gemini/verify.sh
 ```
 
-Confirms all manifest JSON is valid, every one of the 39 slugs (38 CORE + 1 AGY
+Confirms all manifest JSON is valid, every one of the 33 slugs (32 CORE + 1 AGY
 operator) resolves to a bundled `skills/<slug>/SKILL.md` that is byte-identical to
 the canonical source, the
 agents/rules templates are present, and — if the `agy` CLI is installed —

@@ -10,7 +10,7 @@ import (
 )
 
 // TestCouncilVerdictHeadingContract verifies that the wrapper skills used by
-// extractCouncilVerdict (pre-mortem, vibe, post-mortem) each contain the
+// extractCouncilVerdict (premortem, vibe, postmortem) each contain the
 // exact heading "## Council Verdict:" that the CLI regex depends on.
 //
 // The regex in rpi_phased_processing.go is:
@@ -50,9 +50,9 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 	skillsDir := filepath.Join(repoRoot, "skills")
 
 	wrapperSkills := []string{
-		"pre-mortem",
+		"premortem",
 		"vibe",
-		"post-mortem",
+		"postmortem",
 	}
 
 	const requiredHeading = "## Council Verdict:"

@@ -512,7 +512,10 @@ id: "f-startup-001"
 		t.Fatalf("buildKnowledgePlaybooks: %v", err)
 	}
 
-	sections := assembleSectionsForPhase(tmp, "rank startup context before falling back to recency", "startup", defaultAssembleMaxChars)
+	sections, err := assembleSectionsForPhase(tmp, "rank startup context before falling back to recency", "startup", defaultAssembleMaxChars)
+	if err != nil {
+		t.Fatal(err)
+	}
 	intelContent := sections[2].Content
 
 	if !strings.Contains(intelContent, "### Planning Rules") {

@@ -99,30 +99,30 @@ echo ""
 echo "--- Pre-mortem Judge Count ---"
 
 # T5: Pre-mortem default = 2 judges (missing-requirements + feasibility)
-if grep -q 'Default (2 judges' "$REPO_ROOT/skills/pre-mortem/SKILL.md" || \
-   grep -q '2 judges with plan-review' "$REPO_ROOT/skills/pre-mortem/SKILL.md"; then
+if grep -q 'Default (2 judges' "$REPO_ROOT/skills/premortem/SKILL.md" || \
+   grep -q '2 judges with plan-review' "$REPO_ROOT/skills/premortem/SKILL.md"; then
     pass "T5: Pre-mortem default = 2 judges"
 else
     fail "T5: Pre-mortem should default to 2 judges"
 fi
 
 # T6: Pre-mortem --deep = 4 judges
-if grep -q 'deep.*4 judges' "$REPO_ROOT/skills/pre-mortem/SKILL.md"; then
+if grep -q 'deep.*4 judges' "$REPO_ROOT/skills/premortem/SKILL.md"; then
     pass "T6: Pre-mortem --deep = 4 judges"
 else
     fail "T6: Pre-mortem --deep should be 4 judges"
 fi
 
 # T7: Pre-mortem PRODUCT.md adds exactly 1 consolidated judge
-if grep -q '3 judges total (2 plan-review + 1 product)' "$REPO_ROOT/skills/pre-mortem/SKILL.md"; then
+if grep -q '3 judges total (2 plan-review + 1 product)' "$REPO_ROOT/skills/premortem/SKILL.md"; then
     pass "T7: Pre-mortem PRODUCT.md adds 1 consolidated product judge (3 total)"
 else
     fail "T7: Pre-mortem PRODUCT.md should add 1 product judge (3 total)"
 fi
 
 # T8: Pre-mortem --quick fast path skips 1a and 1b
-if grep -q 'Step 1.5: Fast Path' "$REPO_ROOT/skills/pre-mortem/SKILL.md" && \
-   grep -q 'skip Steps 1a and 1b' "$REPO_ROOT/skills/pre-mortem/SKILL.md"; then
+if grep -q 'Step 1.5: Fast Path' "$REPO_ROOT/skills/premortem/SKILL.md" && \
+   grep -q 'skip Steps 1a and 1b' "$REPO_ROOT/skills/premortem/SKILL.md"; then
     pass "T8: Pre-mortem --quick fast path documented (skip 1a, 1b)"
 else
     fail "T8: Pre-mortem should document --quick fast path skipping 1a and 1b"
@@ -348,14 +348,14 @@ else
 fi
 
 # T26: Pre-mortem Step 1a marked "Skip if --quick"
-if grep -A2 "### Step 1a" "$REPO_ROOT/skills/pre-mortem/SKILL.md" | grep -q "Skip if"; then
+if grep -A2 "### Step 1a" "$REPO_ROOT/skills/premortem/SKILL.md" | grep -q "Skip if"; then
     pass "T26: Pre-mortem Step 1a marked 'Skip if --quick'"
 else
     fail "T26: Pre-mortem Step 1a should be marked 'Skip if --quick'"
 fi
 
 # T27: Pre-mortem Step 1b marked "Skip if --quick"
-if grep -A2 "### Step 1b" "$REPO_ROOT/skills/pre-mortem/SKILL.md" | grep -q "Skip if"; then
+if grep -A2 "### Step 1b" "$REPO_ROOT/skills/premortem/SKILL.md" | grep -q "Skip if"; then
     pass "T27: Pre-mortem Step 1b marked 'Skip if --quick'"
 else
     fail "T27: Pre-mortem Step 1b should be marked 'Skip if --quick'"

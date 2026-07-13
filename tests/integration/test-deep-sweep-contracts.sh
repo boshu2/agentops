@@ -114,8 +114,8 @@ echo ""
 # post-mortem skill.
 echo "4. Post-Mortem sweep wiring (references/execution-steps.md) + no-cap reporting"
 
-PM="$REPO_ROOT/skills/post-mortem/SKILL.md"
-PMSTEPS="$REPO_ROOT/skills/post-mortem/references/execution-steps.md"
+PM="$REPO_ROOT/skills/postmortem/SKILL.md"
+PMSTEPS="$REPO_ROOT/skills/postmortem/references/execution-steps.md"
 
 check "Step 2.6 exists in execution steps (Pre-Council Deep Audit Sweep)" \
   "grep -q 'Step 2.6' '$PMSTEPS'"

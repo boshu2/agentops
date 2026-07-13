@@ -224,6 +224,40 @@ func TestWriteCodexStartupContextUsesRankedSectionsAndPolicy(t *testing.T) {
 	assertCodexStartupPolicyContext(t, path)
 }
 
+func TestWriteCodexStartupContextRejectsConflictingPremortemDirectories(t *testing.T) {
+	repo := prepareScorecardRoot(t)
+	canonical := writeScorecardPremortemCheck(t, repo, "premortem-checks", "conflict", "canonical bytes")
+	legacy := writeScorecardPremortemCheck(t, repo, "pre-mortem-checks", "conflict", "legacy bytes")
+	profile := lifecycleRuntimeProfile{Runtime: runtimeKindCodex, Mode: lifecycleModeCodexHookless, ThreadName: "startup"}
+
+	_, err := writeCodexStartupContext(repo, profile, "conflicting premortem checks", nil, nil, nil, nil, nil, nil, nil, false)
+	if err == nil {
+		t.Fatal("Codex startup silently discarded a canonical/legacy premortem conflict")
+	}
+	for _, path := range []string{canonical, legacy} {
+		if !strings.Contains(err.Error(), path) {
+			t.Errorf("Codex startup conflict error %q does not name %s", err, path)
+		}
+	}
+}
+
+func TestRunCodexStatusRejectsConflictingPremortemDirectories(t *testing.T) {
+	repo := prepareScorecardRoot(t)
+	canonical := writeScorecardPremortemCheck(t, repo, "premortem-checks", "conflict", "canonical bytes")
+	legacy := writeScorecardPremortemCheck(t, repo, "pre-mortem-checks", "conflict", "legacy bytes")
+	t.Chdir(repo)
+
+	err := runCodexStatus(codexStatusCmd, nil)
+	if err == nil {
+		t.Fatal("Codex status silently discarded a canonical/legacy premortem conflict")
+	}
+	for _, path := range []string{canonical, legacy} {
+		if !strings.Contains(err.Error(), path) {
+			t.Errorf("Codex status conflict error %q does not name %s", err, path)
+		}
+	}
+}
+
 func setupCodexStartupPolicyRepo(t *testing.T) string {
 	t.Helper()
 

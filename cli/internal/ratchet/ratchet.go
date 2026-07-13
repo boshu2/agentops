@@ -12,12 +12,12 @@ type Step string
 
 const (
 	StepResearch   Step = "research"
-	StepPreMortem  Step = "pre-mortem"
+	StepPreMortem  Step = "premortem"
 	StepPlan       Step = "plan"
 	StepImplement  Step = "implement"
 	StepCrank      Step = "crank"
 	StepVibe       Step = "vibe"
-	StepPostMortem Step = "post-mortem"
+	StepPostMortem Step = "postmortem"
 )
 
 // AllSteps returns all valid steps in workflow order.
@@ -36,17 +36,17 @@ func AllSteps() []Step {
 // stepAliases maps alternative names to canonical step names.
 var stepAliases = map[string]Step{
 	// Canonical names
-	"research":    StepResearch,
-	"pre-mortem":  StepPreMortem,
-	"plan":        StepPlan,
-	"implement":   StepImplement,
-	"crank":       StepCrank,
-	"vibe":        StepVibe,
-	"post-mortem": StepPostMortem,
-
-	// Aliases without hyphen
+	"research":   StepResearch,
 	"premortem":  StepPreMortem,
+	"plan":       StepPlan,
+	"implement":  StepImplement,
+	"crank":      StepCrank,
+	"vibe":       StepVibe,
 	"postmortem": StepPostMortem,
+
+	// Permanent legacy aliases with hyphens
+	"pre-mortem":  StepPreMortem,
+	"post-mortem": StepPostMortem,
 
 	// Aliases with underscore
 	"pre_mortem":  StepPreMortem,

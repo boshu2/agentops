@@ -909,6 +909,20 @@ BATS
   [[ "$output" == *'bash skills/heal-skill/scripts/audit.sh --strict skills/shallow-green'* ]]
 }
 
+@test "L2: changed-scope does not deep-audit redirect-only runtime packages" {
+  local scratch="$BATS_TEST_TMPDIR/redirect-scope-root"
+
+  prepare_builder_root "$scratch"
+
+  run bash "$scratch/scripts/regen-changed-scope.sh" --list \
+    --file skills/pre-mortem/SKILL.md
+  [[ "$status" -eq 0 ]]
+  [[ "$output" != *'changed skill deep conformance'* ]]
+  [[ "$output" != *'audit.sh --strict skills/pre-mortem'* ]]
+  [[ "$output" == *'codex'* ]]
+  [[ "$output" == *'registry'* ]]
+}
+
 @test "L0: local and CI release waists invoke the canonical deep audit" {
   grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
     "$REPO_ROOT/scripts/pre-push-gate.sh"

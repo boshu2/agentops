@@ -32,7 +32,7 @@
       "id": "finding-registry-skill-flow",
       "title": "finding registry skill flow validates",
       "kind": "command",
-      "objective": "Protect planning, pre-mortem, vibe, and post-mortem contracts for compiled prevention loading, registry fallback, dedup keys, fail-open behavior, atomic writes, and compiler refreshes.",
+      "objective": "Protect planning, premortem, vibe, and postmortem contracts for compiled prevention loading, registry fallback, dedup keys, fail-open behavior, atomic writes, and compiler refreshes.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -89,8 +89,8 @@
       "kind": "artifact_check",
       "objective": "Keep docs and runtime skill copies explicit about registry reader behavior, compiled prevention outputs, and mechanical constraint promotion.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
+        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "malformed line -> warn and ignore that line"},
         {"type": "artifact_contains", "target": "../../docs/contracts/finding-registry.md", "value": "Reader failure behavior is fail-open:"},
         {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": ".agents/constraints/index.json"},
         {"type": "artifact_contains", "target": "../../docs/contracts/finding-compiler.md", "value": "retired` or `superseded` findings must not leave active downstream outputs behind"}

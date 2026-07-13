@@ -146,7 +146,8 @@ func ReadCodexInstallMeta(home string) (*CodexInstallMeta, error) {
 
 func ReadCodexManifestSkillCount(path string) (int, error) {
 	var manifest struct {
-		Skills []struct {
+		PackageCount int `json:"package_count"`
+		Skills       []struct {
 			Name string `json:"name"`
 		} `json:"skills"`
 	}
@@ -157,6 +158,14 @@ func ReadCodexManifestSkillCount(path string) (int, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return 0, err
 	}
+	// skills[] inventories canonical implementations. package_count also
+	// includes installable compatibility pointers (implementation: false),
+	// which are real runtime packages but deliberately not implementation rows.
+	if manifest.PackageCount > 0 {
+		return manifest.PackageCount, nil
+	}
+	// Preserve legacy behavior for older manifests; refreshing the bundle adds
+	// package_count when compatibility pointers make the two counts differ.
 	return len(manifest.Skills), nil
 }
 
@@ -173,7 +182,7 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 		}
 	}
 
-	manifestSkillCount, err := ReadCodexManifestSkillCount(manifestPath)
+	manifestPackageCount, err := ReadCodexManifestSkillCount(manifestPath)
 	if err != nil {
 		return &Check{
 			Name:   "Plugin",
@@ -218,20 +227,20 @@ func CheckCodexNativePluginManifest(home, primary string, primaryCount int) *Che
 				primaryCount, primary),
 		}
 	}
-	if meta.SkillCount > 0 && manifestSkillCount > 0 && meta.SkillCount != manifestSkillCount {
+	if meta.SkillCount > 0 && manifestPackageCount > 0 && meta.SkillCount != manifestPackageCount {
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; install metadata says %d skills but manifest says %d — run 'bash scripts/refresh-codex-local.sh'.",
-				primaryCount, primary, meta.SkillCount, manifestSkillCount),
+			Detail: fmt.Sprintf("%d skills found in %s; install metadata says %d packages but manifest says %d — run 'bash scripts/refresh-codex-local.sh'.",
+				primaryCount, primary, meta.SkillCount, manifestPackageCount),
 		}
 	}
-	if manifestSkillCount > 0 && manifestSkillCount != primaryCount {
+	if manifestPackageCount > 0 && manifestPackageCount != primaryCount {
 		return &Check{
 			Name:   "Plugin",
 			Status: "warn",
-			Detail: fmt.Sprintf("%d skills found in %s; active native plugin manifest lists %d skills — run 'bash scripts/refresh-codex-local.sh'.",
-				primaryCount, primary, manifestSkillCount),
+			Detail: fmt.Sprintf("%d skills found in %s; active native plugin manifest lists %d packages — run 'bash scripts/refresh-codex-local.sh'.",
+				primaryCount, primary, manifestPackageCount),
 		}
 	}
 

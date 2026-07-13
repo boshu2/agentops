@@ -3,7 +3,7 @@
 # (age-d16-self-hosting-route-nkr.6).
 #
 # WHAT: a kind-unified ADMISSION GUARD. A newly-ADDED skill / workflow / loop
-# cannot merge unless its front-door evidence shows all three facts:
+# implementation cannot merge unless its front-door evidence shows all three facts:
 #   1. bounded-context FOUND   — the unit is placed in a BC (BC1..BC6)
 #   2. role ASSIGNED           — the unit declares a hexagonal_role
 #   3. acceptance RUN          — the unit carries a runnable acceptance
@@ -104,6 +104,13 @@ for f in "${ADDED[@]:-}"; do
   case "$f" in
     skills/*/SKILL.md)
       name="${f#skills/}"; name="${name%/SKILL.md}"
+      # Compatibility redirects are loadable aliases for an existing skill,
+      # not new implementations entering through the front door. Their compact
+      # contract is enforced by check-skill-redirects.sh.
+      skill_file="$SKILLS_ROOT/$name/SKILL.md"
+      if [ -f "$skill_file" ] && grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_file"; then
+        continue
+      fi
       case "$seen_skill" in (*" $name "*) : ;; (*) SKILL_NAMES+=("$name"); seen_skill="$seen_skill$name " ;; esac
       ;;
     .claude/workflows/*.js)

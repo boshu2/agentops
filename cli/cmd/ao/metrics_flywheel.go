@@ -204,16 +204,18 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("compute metrics: %w", err)
 	}
 	metricNamespace := canonicalMetricNamespace(flywheelStatusNamespace)
-	if scorecard, err := loadStigmergicScorecard(cwd); err == nil {
-		metrics.StigmergicScorecard = &types.StigmergicScorecard{
-			PromotedFindings:       scorecard.PromotedFindings,
-			PlanningRules:          scorecard.PlanningRules,
-			PreMortemChecks:        scorecard.PreMortemChecks,
-			QueueEntries:           scorecard.QueueEntries,
-			UnconsumedBatches:      scorecard.UnconsumedBatches,
-			UnconsumedItems:        scorecard.UnconsumedItems,
-			HighSeverityUnconsumed: scorecard.HighSeverityUnconsumed,
-		}
+	scorecard, err := loadStigmergicScorecard(cwd)
+	if err != nil {
+		return fmt.Errorf("load stigmergic scorecard: %w", err)
+	}
+	metrics.StigmergicScorecard = &types.StigmergicScorecard{
+		PromotedFindings:       scorecard.PromotedFindings,
+		PlanningRules:          scorecard.PlanningRules,
+		PreMortemChecks:        scorecard.PreMortemChecks,
+		QueueEntries:           scorecard.QueueEntries,
+		UnconsumedBatches:      scorecard.UnconsumedBatches,
+		UnconsumedItems:        scorecard.UnconsumedItems,
+		HighSeverityUnconsumed: scorecard.HighSeverityUnconsumed,
 	}
 
 	// Always compute golden signals — they provide the honest health assessment.
@@ -344,7 +346,7 @@ func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics) {
 	if m.StigmergicScorecard != nil {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "  STIGMERGIC SCORECARD:")
-		fmt.Fprintf(w, "    Signals: %d findings, %d planning rules, %d pre-mortem checks\n",
+		fmt.Fprintf(w, "    Signals: %d findings, %d planning rules, Premortem checks: %d\n",
 			m.StigmergicScorecard.PromotedFindings,
 			m.StigmergicScorecard.PlanningRules,
 			m.StigmergicScorecard.PreMortemChecks)

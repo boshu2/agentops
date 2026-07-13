@@ -255,7 +255,7 @@ fi
 info "Checking shared Codex backend references"
 shared_skill="$REPO_ROOT/skills-codex/shared/SKILL.md"
 require_file "$shared_skill"
-rg -q '\| Codex session agents \| `references/backend-codex-subagents\.md` \|' "$shared_skill" \
+rg -q '\| Codex Sub-Agents / CLI \| `references/backend-codex-subagents\.md` \|' "$shared_skill" \
   || fail "Missing Codex session-agent backend mapping in $shared_skill"
 
 echo ""

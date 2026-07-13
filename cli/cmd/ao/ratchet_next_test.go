@@ -31,7 +31,7 @@ func TestComputeNextStep(t *testing.T) {
 			wantDone: false,
 		},
 		{
-			name: "research locked returns pre-mortem",
+			name: "research locked returns premortem",
 			chain: &ratchet.Chain{
 				ID:      "test-2",
 				Started: now,
@@ -44,11 +44,11 @@ func TestComputeNextStep(t *testing.T) {
 					},
 				},
 			},
-			wantNext: "pre-mortem",
+			wantNext: "premortem",
 			wantDone: false,
 		},
 		{
-			name: "pre-mortem locked returns plan",
+			name: "premortem locked returns plan",
 			chain: &ratchet.Chain{
 				ID:      "test-3",
 				Started: now,
@@ -170,7 +170,7 @@ func TestComputeNextStep(t *testing.T) {
 			wantDone: false,
 		},
 		{
-			name: "vibe locked returns post-mortem",
+			name: "vibe locked returns postmortem",
 			chain: &ratchet.Chain{
 				ID:      "test-7",
 				Started: now,
@@ -207,11 +207,11 @@ func TestComputeNextStep(t *testing.T) {
 					},
 				},
 			},
-			wantNext: "post-mortem",
+			wantNext: "postmortem",
 			wantDone: false,
 		},
 		{
-			name: "post-mortem locked returns complete",
+			name: "postmortem locked returns complete",
 			chain: &ratchet.Chain{
 				ID:      "test-8",
 				Started: now,
@@ -277,7 +277,7 @@ func TestComputeNextStep(t *testing.T) {
 					},
 				},
 			},
-			wantNext: "pre-mortem",
+			wantNext: "premortem",
 			wantDone: false,
 		},
 		{

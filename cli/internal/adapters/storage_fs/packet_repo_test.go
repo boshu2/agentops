@@ -2,6 +2,7 @@ package storage_fs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,6 +11,14 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/domain/packet"
 )
+
+func mortemCompatibilityFixtureDir(t *testing.T) string {
+	t.Helper()
+	if root := os.Getenv("MORTEM_COMPAT_FIXTURES_DIR"); root != "" {
+		return root
+	}
+	return filepath.Join("..", "..", "..", "..", "tests", "fixtures", "mortem-compatibility")
+}
 
 func validPacket() packet.ExecutionPacket {
 	return packet.ExecutionPacket{
@@ -57,6 +66,56 @@ func TestRepo_RoundTripPersistsAndLoads(t *testing.T) {
 	}
 	if !reflect.DeepEqual(latest, p) {
 		t.Fatalf("LoadLatest: got %+v, want %+v", latest, p)
+	}
+}
+
+func TestRepo_LoadConsumesLegacyMortemReadbackFixtures(t *testing.T) {
+	for _, fixture := range []string{"v1-old-only.json", "v2-old-only.json"} {
+		t.Run(fixture, func(t *testing.T) {
+			fragment, err := os.ReadFile(filepath.Join(mortemCompatibilityFixtureDir(t), "legacy-readback", fixture))
+			if err != nil {
+				t.Fatalf("read legacy readback fixture: %v", err)
+			}
+			var fixtureFields map[string]json.RawMessage
+			if err := json.Unmarshal(fragment, &fixtureFields); err != nil {
+				t.Fatalf("parse legacy readback fixture: %v", err)
+			}
+
+			base, err := json.Marshal(validPacket())
+			if err != nil {
+				t.Fatal(err)
+			}
+			var persisted map[string]json.RawMessage
+			if err := json.Unmarshal(base, &persisted); err != nil {
+				t.Fatal(err)
+			}
+			for key, value := range fixtureFields {
+				if key != "required" {
+					persisted[key] = value
+				}
+			}
+			data, err := json.Marshal(persisted)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			root := t.TempDir()
+			runID := "legacy-mortem-readback"
+			archive := filepath.Join(root, ".agents", "rpi", "runs", runID, "execution-packet.json")
+			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(archive, data, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := (&Repo{Root: root}).Load(context.Background(), runID)
+			if err != nil {
+				t.Fatalf("production Repo.Load rejected %s bytes: %v", fixture, err)
+			}
+			if loaded.PreMortemVerdict != packet.ExecutionPacketVerdictPass {
+				t.Fatalf("PreMortemVerdict = %q, want PASS from %s", loaded.PreMortemVerdict, fixture)
+			}
+		})
 	}
 }
 

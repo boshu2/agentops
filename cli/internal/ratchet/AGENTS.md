@@ -12,7 +12,7 @@ Brownian Ratchet workflow tracking — a tool-agnostic gating mechanism for the 
 ## Ownership
 
 - **Owner:** agentopsd extraction track (epic `agentops-tqc`).
-- **Step taxonomy:** seven canonical steps in workflow order — `research`, `pre-mortem`, `plan`, `implement`, `crank`, `vibe`, `post-mortem`. Aliases are tolerated (see `stepAliases`) but the seven canonical names are the contract.
+- **Step taxonomy:** seven canonical steps in workflow order — `research`, `premortem`, `plan`, `implement`, `crank`, `vibe`, `postmortem`. Aliases are tolerated (see `stepAliases`) but the seven canonical names are the contract.
 - **Skill surface:** consumed by `skills/ratchet/SKILL.md` (check / record / verify gates). Hooks call into this package for "did the workflow actually advance?" decisions.
 
 ## Interfaces
@@ -31,7 +31,7 @@ Brownian Ratchet workflow tracking — a tool-agnostic gating mechanism for the 
 ## Non-obvious rules
 
 - **The ratchet only moves forward.** Recording a step that isn't a valid successor (per `gate.go`) must fail loudly. No silent success.
-- **Aliases are convenience, not contract.** `stepAliases` accepts `premortem`, `postmortem`, `pre_mortem`, `post_mortem`, plus semantic aliases (`formulate` → `plan`, `autopilot`/`execute` → `crank`, `validate` → `vibe`, `review` → `post-mortem`). New aliases require care — they collapse semantics.
+- **Legacy aliases are permanent read compatibility, not canonical output.** `stepAliases` accepts `pre-mortem`, `post-mortem`, `pre_mortem`, and `post_mortem`, plus semantic aliases (`formulate` → `plan`, `autopilot`/`execute` → `crank`, `validate` → `vibe`, `review` → `postmortem`). Writers emit only the seven canonical names. New aliases require care — they collapse semantics.
 - **File lock is mandatory for writes.** Multiple `ao` invocations can race on the same chain file; the `filelock_*.go` shims must be used for any chain mutation. Don't bypass them in tests either — use `t.TempDir()` for isolation.
 - **Maturity is derived, not stored.** `maturity.go` computes scores from the chain on demand. Don't introduce a cached maturity field without invalidation rules.
 - **Cross-platform parity matters.** Build-tagged files (`filelock_unix.go`, `filelock_windows.go`) must keep behavioral parity. Windows CI catches drift in the `windows-smoke` job.

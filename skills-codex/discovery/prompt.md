@@ -17,6 +17,6 @@ Then read local files in `references/` and `scripts/` when needed.
 
 ## Guardrails
 
-1. Delegate to `$research`, `$plan`, and `$pre-mortem` as separate skill invocations after internal brainstorm/design modes.
+1. Delegate to `$research`, `$plan`, and `$premortem` as separate skill invocations after internal brainstorm/design modes.
 
 <!-- END AGENTOPS OPERATOR CONTRACT -->

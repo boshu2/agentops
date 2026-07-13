@@ -20,8 +20,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `idea-genie` — Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".
 - `operationalize` — >-
 - `plan` — Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".
-- `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
-- `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
+- `postmortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
+- `premortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md. Triggers: "product", "create or refine product.md.", "product skill".
 - `reality-check` — >-
 - `rpi` — Run discovery, crank, validation. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".
@@ -133,9 +133,9 @@ graph LR
   pattern_mining["pattern-mining"]
   pawl_review["pawl-review"]
   plan["plan"]
-  post_mortem["post-mortem"]
+  postmortem["postmortem"]
   pr_prep["pr-prep"]
-  pre_mortem["pre-mortem"]
+  premortem["premortem"]
   product["product"]
   push["push"]
   rch["rch"]
@@ -191,21 +191,21 @@ graph LR
   crank --> dcg
   crank --> implement
   crank --> pawl_review
-  crank --> post_mortem
+  crank --> postmortem
   crank --> swarm
   crank --> validate
   discovery --> behavior_first_planning
   discovery --> dueling_idea_genies
   discovery --> idea_genie
   discovery --> plan
-  discovery --> pre_mortem
+  discovery --> premortem
   discovery --> research
   discovery --> shared
   doc --> council
   doc --> standards
   dueling_idea_genies --> council
   dueling_idea_genies --> idea_genie
-  evolve --> post_mortem
+  evolve --> postmortem
   evolve --> rpi
   goal_design --> discovery
   goal_design --> validate
@@ -229,14 +229,14 @@ graph LR
   plan --> crank
   plan --> dueling_idea_genies
   plan --> implement
-  plan --> pre_mortem
+  plan --> premortem
   plan --> research
   plan --> scope
-  post_mortem --> beads_br
-  post_mortem --> council
-  post_mortem --> operationalize
-  post_mortem --> toil_mining
-  pre_mortem --> council
+  postmortem --> beads_br
+  postmortem --> council
+  postmortem --> operationalize
+  postmortem --> toil_mining
+  premortem --> council
   push --> pawl_review
   push --> pr_prep
   reality_check --> beads_br
@@ -269,7 +269,7 @@ graph LR
 
 | Diagnostic | Values |
 |---|---|
-| Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `plan`, `pre-mortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
+| Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `plan`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
 | User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `pattern-mining`, `pawl-review`, `push`, `release`, `rpi`, `using-gc`, `validate` |
 | Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
@@ -323,9 +323,9 @@ graph LR
   pawl-review -- "supplier-to" --> using-gc
   pawl-review -- "supplier-to" --> validate
   plan -- "shared-kernel" --> standards
-  post-mortem -- "shared-kernel" --> standards
+  postmortem -- "shared-kernel" --> standards
   pr-prep -- "customer-of" --> domain
-  pre-mortem -- "shared-kernel" --> standards
+  premortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
   reality-check -- "supplier-to" --> discovery
   release -- "supplier-to" --> crank
@@ -381,13 +381,13 @@ graph LR
 | `council` | produces | verdict.json |
 | `crank` | consumes | beads-br |
 | `crank` | consumes | implement |
-| `crank` | consumes | post-mortem |
+| `crank` | consumes | postmortem |
 | `crank` | consumes | swarm |
 | `crank` | consumes | validate |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
 | `discovery` | consumes | plan |
-| `discovery` | consumes | pre-mortem |
+| `discovery` | consumes | premortem |
 | `discovery` | consumes | research |
 | `discovery` | consumes | shared |
 | `discovery` | produces | .agents/plans/*.md |
@@ -400,7 +400,7 @@ graph LR
 | `dueling-idea-genies` | consumes | task-question |
 | `dueling-idea-genies` | produces | idea-challenge.v1 |
 | `evolve` | consumes | goals |
-| `evolve` | consumes | post-mortem |
+| `evolve` | consumes | postmortem |
 | `evolve` | consumes | rpi |
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
@@ -432,15 +432,15 @@ graph LR
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |
 | `plan` | produces | execution-packet.json |
-| `post-mortem` | consumes | council |
-| `post-mortem` | consumes | implement |
-| `post-mortem` | consumes | validate |
-| `post-mortem` | produces | result.json |
+| `postmortem` | consumes | council |
+| `postmortem` | consumes | implement |
+| `postmortem` | consumes | validate |
+| `postmortem` | produces | result.json |
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
-| `pre-mortem` | consumes | standards |
-| `pre-mortem` | produces | result.json |
-| `pre-mortem` | produces | verdict.json |
+| `premortem` | consumes | standards |
+| `premortem` | produces | result.json |
+| `premortem` | produces | verdict.json |
 | `product` | produces | result.json |
 | `push` | consumes | git-changes |
 | `push` | produces | git-changes |

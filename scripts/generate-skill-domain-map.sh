@@ -86,6 +86,8 @@ fm_role = {}
 for d in sorted(SKILLS_DIR.iterdir()):
     if not d.is_dir():
         continue
+    if d.name in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}:
+        continue
     skill_md = d / "SKILL.md"
     if not skill_md.is_file():
         continue

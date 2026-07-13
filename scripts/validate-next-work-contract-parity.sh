@@ -29,9 +29,9 @@ if [[ "$ROOT" != /* ]]; then
 fi
 
 SCHEMA="$ROOT/docs/contracts/next-work.schema.md"
-HARVEST_REF="$ROOT/skills/post-mortem/references/harvest-next-work.md"
-POST_MORTEM_SKILL="$ROOT/skills/post-mortem/SKILL.md"
-POST_MORTEM_CODEX_SKILL="$ROOT/skills-codex/post-mortem/SKILL.md"
+HARVEST_REF="$ROOT/skills/postmortem/references/harvest-next-work.md"
+POST_MORTEM_SKILL="$ROOT/skills/postmortem/SKILL.md"
+POST_MORTEM_CODEX_SKILL="$ROOT/skills-codex/postmortem/SKILL.md"
 PHASE_CONTRACT="$ROOT/skills/rpi/references/phase-data-contracts.md"
 GATE4="$ROOT/skills/rpi/references/gate4-loop-and-spawn.md"
 RUNTIME="$(mktemp -t nextwork-runtime.XXXXXX)"

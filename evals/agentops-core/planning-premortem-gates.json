@@ -2,13 +2,13 @@
   "schema_version": 1,
   "id": "agentops-core.planning-premortem-gates",
   "name": "AgentOps Planning Pre-Mortem Gates Canary",
-  "description": "Offline public canary for planning and pre-mortem failure-prevention gates: plan/pre-mortem validators, compiled finding carry-forward, tuning defaults, next-work parity, mandatory review checks, and Codex runtime command parity.",
+  "description": "Offline public canary for planning and premortem failure-prevention gates: plan/premortem validators, compiled finding carry-forward, tuning defaults, next-work parity, mandatory review checks, and Codex runtime command parity.",
   "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "plan", "pre-mortem", "council", "finding-registry", "next-work", "codex"],
+  "tags": ["canary", "offline", "plan", "premortem", "council", "finding-registry", "next-work", "codex"],
   "allowed_runtimes": ["shell", "static"],
   "environment": {
     "offline_required": true,
@@ -31,14 +31,14 @@
   "cases": [
     {
       "id": "plan-premortem-validators",
-      "title": "Plan/pre-mortem validators pass",
+      "title": "Plan/premortem validators pass",
       "kind": "command",
-      "objective": "Keep shared and Codex plan/pre-mortem skill validators healthy.",
+      "objective": "Keep shared and Codex plan/premortem skill validators healthy.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/plan/scripts/validate.sh && bash skills-codex/plan/scripts/validate.sh && bash skills/pre-mortem/scripts/validate.sh && bash skills-codex/pre-mortem/scripts/validate.sh"
+        "shell": "bash skills/plan/scripts/validate.sh && bash skills-codex/plan/scripts/validate.sh && bash skills/premortem/scripts/validate.sh && bash skills-codex/premortem/scripts/validate.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -51,9 +51,9 @@
     },
     {
       "id": "finding-registry-flow-prevention",
-      "title": "Finding registry flow carries prevention into plan and pre-mortem",
+      "title": "Finding registry flow carries prevention into plan and premortem",
       "kind": "command",
-      "objective": "Protect compiled planning rules, pre-mortem checks, known_risks injection, dedup_key writes, and compiler refresh behavior across plan, pre-mortem, vibe, and post-mortem.",
+      "objective": "Protect compiled planning rules, premortem checks, known_risks injection, dedup_key writes, and compiler refresh behavior across plan, premortem, vibe, and postmortem.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -69,7 +69,7 @@
     },
     {
       "id": "planning-tuning-defaults",
-      "title": "Council, pre-mortem, vibe, and RPI tuning defaults stay aligned",
+      "title": "Council, premortem, vibe, and RPI tuning defaults stay aligned",
       "kind": "command",
       "objective": "Keep model choices, judge counts, quick/deep behavior, RPI complexity scaling, retry limits, and output paths aligned for planning and validation gates.",
       "runtime": "shell",
@@ -89,7 +89,7 @@
       "id": "next-work-contract-parity",
       "title": "Next-work contract parity gate protects RPI follow-up queues",
       "kind": "command",
-      "objective": "Ensure the next-work schema, post-mortem examples, RPI runtime ranking, legacy enum handling, and generated Codex artifacts stay in sync.",
+      "objective": "Ensure the next-work schema, postmortem examples, RPI runtime ranking, legacy enum handling, and generated Codex artifacts stay in sync.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -109,31 +109,31 @@
       "kind": "artifact_check",
       "objective": "Lock the review contract that catches bad plans before implementation: stale scope, temporal risks, rescue maps, fail patterns, test pyramid gaps, bounded input validation, verdict headings, and reusable findings.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/SKILL.md", "value": "ao beads verify <bead-id>"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/SKILL.md", "value": "scope_mode: <expansion|hold|reduction>"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/mandatory-checks.md", "value": "TEMPORAL INTERROGATION"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/mandatory-checks.md", "value": "Error & Rescue Map"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/mandatory-checks.md", "value": "COUNCIL FAIL PATTERN CHECK"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/mandatory-checks.md", "value": "TEST PYRAMID CHECK"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/mandatory-checks.md", "value": "bounded set of valid values"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/write-pre-mortem-output.md", "value": "## Council Verdict: PASS / WARN / FAIL"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/write-pre-mortem-output.md", "value": "dedup_key"},
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/references/write-pre-mortem-output.md", "value": "finding-compiler.sh"}
+        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "ao beads verify <bead-id>"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "scope_mode: <expansion|hold|reduction>"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "TEMPORAL INTERROGATION"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "Error & Rescue Map"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "COUNCIL FAIL PATTERN CHECK"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "TEST PYRAMID CHECK"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "bounded set of valid values"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "## Council Verdict: PASS / WARN / FAIL"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "dedup_key"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "finding-compiler.sh"}
       ],
       "dimensions": ["process_adherence", "safety", "artifact_quality"],
       "critical": true
     },
     {
       "id": "plan-premortem-codex-runtime-contracts",
-      "title": "Plan and pre-mortem Codex artifacts preserve runtime-specific command semantics",
+      "title": "Plan and premortem Codex artifacts preserve runtime-specific command semantics",
       "kind": "artifact_check",
-      "objective": "Ensure Codex planning and pre-mortem artifacts use dollar-skill commands, preserve companion-file scope, and validate council delegation without relying on slash-command path coincidences.",
+      "objective": "Ensure Codex planning and premortem artifacts use dollar-skill commands, preserve companion-file scope, and validate council delegation without relying on slash-command path coincidences.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/pre-mortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/SKILL.md", "value": "$council --quick validate <plan-path>"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/SKILL.md", "value": "$pre-mortem --deep .agents/plans/2026-02-05-migration-plan.md"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pre-mortem/prompt.md", "value": "Lead with the verdict"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
+        {"type": "artifact_contains", "target": "../../skills-codex/premortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
+        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "$council --quick validate <plan-path>"},
+        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "$premortem --deep .agents/plans/2026-02-05-migration-plan.md"},
+        {"type": "artifact_contains", "target": "../../skills-codex/premortem/prompt.md", "value": "Lead with the verdict"},
         {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "Generated Artifact Companion Scope"},
         {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "refresh-codex-artifacts.sh --scope worktree"},
         {"type": "artifact_contains", "target": "../../skills/plan/SKILL.md", "value": "Applied findings:"},

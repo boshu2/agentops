@@ -23,7 +23,7 @@ cd "$REPO_ROOT" || exit 2
 
 a=0
 for d in skills/*/; do
-  [ "$(basename "$d")" = "_fixtures" ] && continue
+  case "$(basename "$d")" in _fixtures|pre-mortem|post-mortem|pre_mortem|post_mortem) continue ;; esac
   [ -f "$d/SKILL.md" ] && a=$((a + 1))
 done
 

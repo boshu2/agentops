@@ -39,6 +39,10 @@ for skill_dir in "$SKILLS_DIR"/*/; do
     # Skip if no SKILL.md (other tests catch that)
     [ -f "$skill_md" ] || continue
 
+    # Runtime compatibility pointers intentionally contain only frontmatter and
+    # one canonical invocation. The redirect gate owns their format.
+    grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_md" && continue
+
     CHECKED=$((CHECKED + 1))
     skill_ok=true
 

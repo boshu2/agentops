@@ -1,8 +1,8 @@
 {
-  "next": "pre-mortem",
+  "next": "premortem",
   "reason": "research locked",
   "last_step": "research",
   "last_artifact": "research-findings.md",
-  "skill": "/pre-mortem",
+  "skill": "/premortem",
   "complete": false
 }

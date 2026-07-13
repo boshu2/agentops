@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "7cccea21452419af933d23c54831856210faba3183c8a7df04d0ab9938cf5fab",
+  "codex_override_catalog_hash": "cbdf8db4fa37396bde1619035568c80998fc64807133b8cb9e5c5f07721f1e60",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -147,7 +147,7 @@
           ],
           "required_markers": [
             "In Codex hookless mode, run `ao codex ensure-start`; the CLI records startup once per thread and skips duplicates automatically.",
-            "Delegate to `$research`, `$plan`, and `$pre-mortem` as separate skill invocations after internal brainstorm/design modes."
+            "Delegate to `$research`, `$plan`, and `$premortem` as separate skill invocations after internal brainstorm/design modes."
           ]
         }
       },
@@ -262,7 +262,7 @@
         }
       },
       {
-        "name": "post-mortem",
+        "name": "postmortem",
         "treatment": "bespoke",
         "wave": "backbone",
         "reason": "Harvested follow-up work and closure semantics need Codex-specific framing.",
@@ -273,10 +273,10 @@
             "## Guardrails"
           ],
           "required_markers": [
-            "Treat `skills/post-mortem/SKILL.md` as the canonical close-out contract and `skills-codex/post-mortem/SKILL.md` as the Codex-facing artifact.",
+            "Treat `skills/postmortem/SKILL.md` as the canonical close-out contract and `skills-codex/postmortem/SKILL.md` as the Codex-facing artifact.",
             "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
             "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
-            "Own Codex closeout during the post-mortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
+            "Own Codex closeout during the postmortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
             "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
           ]
         }
@@ -288,7 +288,7 @@
         "reason": "Preparing a PR in Codex needs a tighter artifact checklist and explicit user-review boundary."
       },
       {
-        "name": "pre-mortem",
+        "name": "premortem",
         "treatment": "bespoke",
         "wave": "core-execution",
         "reason": "Go/no-go judgment depends on Codex-specific gate framing and concise blocker reporting."
@@ -675,7 +675,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "4b5ebe6de75908514c38cefbfd8eeaa0eb54867eb9ee27a868a9b6f9a95a630b",
+      "source_hash": "0a15e15c21e1d39161858101fa53eabd33ae3c4dd1ba4b310ae0e4cb6b06c9b8",
       "generated_hash": "032faff85f838916c84cf75604cecd06250bf55e40f0ecc43bdb68ceedfbbc43"
     },
     {
@@ -687,8 +687,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "4dfefb46c8281d169f6fc3bc1cab93091899112543a81621085c0efee25641c3",
-      "generated_hash": "9eb541153604e3065d4aeb113d124cec3438404830d35461ba44a5f6b33d1b63"
+      "source_hash": "df9cdb5da4797e74229fa4f1deb10aa16c1b1625f335ba5b09cbf2552e936151",
+      "generated_hash": "81926655ddcb9d694983a056d08433aa54bea015a8f883dd7d43db5718ffccd5"
     },
     {
       "name": "doc",
@@ -711,7 +711,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "a9e22ce29310e2387bbdab9240d4e4d54504bcb76596a34407ec730b32f04184",
+      "source_hash": "b1218f8521e126f760f56834b9b3c22097bdc23c5d5fa538892d394db8cfa538",
       "generated_hash": "2259fad42ba657a182e1d0efb11f916231dbb47849f7effe53885345a3d00a3a"
     },
     {
@@ -741,8 +741,8 @@
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
-      "source_hash": "cfe3dffc0229cdfe4f5235a3daf542b992c50208bb79c1574fc2f7920cf3a3ea",
-      "generated_hash": "094b070a704d8ebd89193e538b74d2a7be01cf26aa01c37dc2ffc9818047c2ec"
+      "source_hash": "51218d976aa25637cc134921a134a17de799584993332f5eed7d299148911905",
+      "generated_hash": "56971520f4191939bc64d731ef994e3c51b896034d0e92d8e562a9dd99af3d08"
     },
     {
       "name": "idea-genie",
@@ -783,14 +783,14 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "831ca1c20622f05dbdebd9d95e26393ddcffb377cb76b675693b404472bf8835",
+      "source_hash": "f8482b995c1be7f80f89102549fb95935bcde5d8a04aa02e32a3a217b35a06f1",
       "generated_hash": "a00b26374e4fb38e0db9a0c7bcd17a361030ebaabc42d72062902156d3162fe5"
     },
     {
-      "name": "post-mortem",
-      "source_skill": "skills/post-mortem",
-      "source_hash": "9163ceda8c6059d29b600a80fd2d5ee3ef0bedde6bc96c34641c233c5f1c3df7",
-      "generated_hash": "cc6d23e463f0cceeb924567385d65b208f774bf6b27bd10c978a45faf2b40d7b"
+      "name": "postmortem",
+      "source_skill": "skills/postmortem",
+      "source_hash": "4930533938897324cc40e3c7d7801c7158c2adf9f306b10263ea25532a2cf9e0",
+      "generated_hash": "9e7623c9de926908c5e24f76fa90176fbbe588a1a3fc63fbb42dfec88aedd1cb"
     },
     {
       "name": "pr-prep",
@@ -799,10 +799,10 @@
       "generated_hash": "90c33e97c59ca04a78457c2c980b115cbb58842bbaef7f10e90939ede0f026b7"
     },
     {
-      "name": "pre-mortem",
-      "source_skill": "skills/pre-mortem",
-      "source_hash": "f3770df174c7dc8c414991637b1ee9e6a2bf485fc13b103e17b271e44575560e",
-      "generated_hash": "4e655e45b6784a5ab677eefaf54d0d8f1a92b7c30b76345f9382dcc9459c7fd2"
+      "name": "premortem",
+      "source_skill": "skills/premortem",
+      "source_hash": "24c0f8fde9f3ff8161d7670c5373aabf99feaa2c8ecda022fbde4eb670947ac0",
+      "generated_hash": "9ac37ed8acabea83ffe2126d6be3745b61109959ca2d4471ef276ef5624ad4e5"
     },
     {
       "name": "product",
@@ -825,8 +825,8 @@
     {
       "name": "reality-check",
       "source_skill": "skills/reality-check",
-      "source_hash": "ba4904584175768adc5c76badc1b03e61d9a6d236f2af14e701d1072159660b0",
-      "generated_hash": "730f28859c8859d4f06ba4d1e38b718e16e097632b59f9fe45db957c1be0a0bc"
+      "source_hash": "918803ffdc8f8fdd5c25121d4157812fb8f7e5aa40009424a7fa0988c94e9ac2",
+      "generated_hash": "eca7a945e2bbf76d6671a765afc443d385d2ae99313ee25784f7d7ed7eab8f7d"
     },
     {
       "name": "refactor",
@@ -855,8 +855,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "609e3c4910b91afdd72417e64584d4e49ebfa8ae8f0bf79142f75c7a6bd83ebf",
-      "generated_hash": "eecccf27aa8f6f324e917d226f671f62dddf9dfcec717c4225c70a792b06bbb5"
+      "source_hash": "3d2628b93c093b56687e6397aea367da2f546f80cf518ff592f1ef7d4b01055a",
+      "generated_hash": "4b5d5ebc69e372309f1f8b1995396b2c1f2fda2f657a8b69d751e6ab83055d3d"
     },
     {
       "name": "sbh",
@@ -885,14 +885,14 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "aef4f6dff5d256bdfa71dd337b241bcbeb3a7801595fca3a58fa29bd8fafc0a4",
-      "generated_hash": "b8b69a953f49c9373838427085bbec6afee162b72ace3bdc10a55b3e2071403d"
+      "source_hash": "d5b17d472014eb291265ebe8c5936edf7bebf713be26d0ef6fa821ca72a80de1",
+      "generated_hash": "9d6c7a340a0491735177092ec7c7f3f730583a8eb6fdb3940554c210fbdefbbd"
     },
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
       "source_hash": "290420c11dedee2e1813879c7771bf35d8bde17db8470a7affed24228a8653b5",
-      "generated_hash": "bb01abdea50880d948fcfd74ae1baec1d3fc17675ec48dd3cfce4a0f75af7ae7"
+      "generated_hash": "ee3a080943f840e70784c766071dd8e5661e52a84947d65814516de28a0a7bdb"
     },
     {
       "name": "standards",
@@ -942,5 +942,6 @@
       "source_hash": "9ef780c82a771b0990be06d78bef0c40c4cc028ba5da25701b6628db5a167f14",
       "generated_hash": "1a384a412ebc52fa9be22c33647fcf28147ebfbb0c7552f375217b137971a739"
     }
-  ]
+  ],
+  "package_count": 65
 }

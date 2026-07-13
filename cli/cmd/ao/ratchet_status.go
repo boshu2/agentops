@@ -114,13 +114,17 @@ func outputRatchetStatus(w io.Writer, data *ratchetStatusOutput) error {
 		}
 		fmt.Fprintln(w)
 
-		fmt.Fprintf(w, "%-15s %-12s %-40s\n", "STEP", "STATUS", "OUTPUT")
-		fmt.Fprintf(w, "%-15s %-12s %-40s\n", "----", "------", "------")
+		fmt.Fprintf(w, "%-15s %-12s %s\n", "STEP", "STATUS", "OUTPUT")
+		fmt.Fprintf(w, "%-15s %-12s %s\n", "----", "------", "------")
 
 		for _, s := range data.Steps {
 			icon := statusIcon(s.Status)
 			out := truncate(s.Output, 40)
-			fmt.Fprintf(w, "%-15s %s %-10s %-40s\n", s.Step, icon, s.Status, out)
+			if out == "" {
+				fmt.Fprintf(w, "%-15s %s %s\n", s.Step, icon, s.Status)
+				continue
+			}
+			fmt.Fprintf(w, "%-15s %s %-10s %s\n", s.Step, icon, s.Status, out)
 		}
 
 		fmt.Fprintf(w, "\nPath: %s\n", data.Path)
