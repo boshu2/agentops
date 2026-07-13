@@ -105,8 +105,8 @@ defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
   findings, structured observations, and `not_checked`.
 - **Validator command:** `bash skills/validate/scripts/validate.sh`.
 - **Downstream handoff:** callers may pass the immutable verdict and digest to
-  Learn or to their own delivery process. Validate has no authority after the
-  handoff.
+  Learn or to their own delivery process. A repository may consume PASS without
+  another LLM landing verdict. Validate has no authority after the handoff.
 
 ## Quality Checklist
 

@@ -34,6 +34,9 @@ when you need the full autonomy contract.
   escalate without fabricating a lesson or plan mutation.
 - `terminal` closes the tick. No remaining work means no re-plan and no
   Premortem.
+- RPI ends at the four receipts and its report. It does not push Git refs,
+  operate a Git queue, close tracker state through delivery, or require another
+  LLM landing verdict. Repository-selected delivery is a separate adapter.
 - Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
 
 ## Loop position
@@ -73,9 +76,14 @@ RPI owns one lifecycle objective. Preserve the discovered `epic_id` or original 
 
 ## Phase Receipt Contract
 
-RPI cannot rely on memory or final narrative to prove delegation. Every packet and phase summary MUST carry JSON `skills_loaded` + `phase_receipts` (canonical slugs, no sigils)
-and a `## Skill Receipts` list. Receipts do not replace runtime proof; they make delegation auditable from disk and let validation reject missing phase execution.
-Full schema and example: [phase-data-contracts.md](references/phase-data-contracts.md).
+RPI cannot rely on memory or a final narrative to prove delegated skills ran.
+Every execution packet and phase summary MUST carry compact receipts — JSON
+`skills_loaded` + `phase_receipts` (canonical slugs, no sigils) and a
+`## Skill Receipts` bullet list in each markdown phase summary. Receipts do not
+replace transcript/runtime proof; they make delegation auditable from disk when
+the transcript is unavailable and give downstream proof consumers a
+deterministic surface to reject missing phase execution. Full schema + example
+(the phase-receipt rule + fields): [references/phase-data-contracts.md](references/phase-data-contracts.md).
 
 ## Route And Classify
 
@@ -113,7 +121,7 @@ Enter at the routed phase and run every phase after it.
    through phase-isolated skill transport. Pass `--test-first` or
    `--no-test-first` through. On DONE, record `ao ratchet record implement
    2>/dev/null || true` and continue. On PARTIAL, auto-redo the same objective;
-   on BLOCKED, classify it through pawl recovery. Use 3 total attempts before
+   on BLOCKED, classify it through bounded recovery. Use 3 total attempts before
    `EXHAUSTED-BUDGET`. **Before accepting a slice/wave the orchestrator reads the actual diff itself** (scope + claim match) — not just the `<promise>DONE</promise>` and evidence JSON, but its own diff-read, distinct from the delegated sub-judges.
    `$crank` enforces this as the anti-green-washing Step 3.5 of its Wave Acceptance ([crank wave-patterns.md §Wave Acceptance Check](../crank/references/wave-patterns.md)).
 3. **Validate:** invoke `$validate <epic-id> --complexity=<level>` when an

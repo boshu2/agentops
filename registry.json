@@ -688,9 +688,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
         "bounded_context": "",
-        "driven_by_skills": [
-          "crank"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao eval",
@@ -752,9 +750,7 @@
         "bounded_context": "",
         "driven_by_skills": [
           "council",
-          "crank",
-          "pawl-review",
-          "push"
+          "pawl-review"
         ]
       },
       {
@@ -1468,12 +1464,7 @@
         "git-changes"
       ],
       "drives_commands": [
-        "ao beads dir",
         "ao beads exec",
-        "ao done",
-        "ao gate check",
-        "ao pawl",
-        "ao pawl review",
         "ao provenance emit-verdict",
         "ao provenance verify",
         "ao session handoff",
@@ -2277,7 +2268,7 @@
       "hex_role": "driving-adapter",
       "tier": "execution",
       "capability_class": "delivery",
-      "purpose": "Validate, commit, and push. Triggers: \"push\", \"ship it\", \"commit and push\".",
+      "purpose": "Run repository-selected deterministic delivery. Triggers: \"push\", \"ship it\", \"commit and push\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2295,8 +2286,7 @@
         "git-changes"
       ],
       "drives_commands": [
-        "ao gate check",
-        "ao pawl"
+        "ao gate check"
       ],
       "path": "skills/push/",
       "references": 0
@@ -3085,9 +3075,7 @@
       "bounded_context": "",
       "purpose": "Close a bead with a verdict-referenced stamp — no verdict = not done",
       "status": "active",
-      "driven_by_skills": [
-        "crank"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -3239,9 +3227,7 @@
       "status": "active",
       "driven_by_skills": [
         "council",
-        "crank",
-        "pawl-review",
-        "push"
+        "pawl-review"
       ],
       "flags": [
         "--config",

@@ -1,0 +1,5 @@
+role=push
+checks=deterministic
+delivery=repository-owned
+llm_verdict=none
+lifecycle_authority=false

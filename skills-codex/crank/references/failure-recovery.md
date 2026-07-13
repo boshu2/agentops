@@ -4,13 +4,10 @@
 
 **On swarm validation failure:**
 
-1. Do NOT close the beads issue
-2. Add failure context:
-   ```bash
-   bd comments add <issue-id> "Validation failed: <reason>. Retrying..." 2>/dev/null
-   ```
-3. Re-add to next wave
-4. After 3 failures, take one bounded helper pass — hand the blocker, the
+1. Preserve the failed issue identifier and evidence in the wave result.
+2. Return the proposed adjustment to the orchestrator; do not mutate tracker
+   terminal state from Crank.
+3. After 3 failures, take one bounded helper pass — hand the blocker, the
    evidence, and what was tried to a fresh context or cross-family model
    (`codex exec`, `/council`); resume on UNSTUCK. Escalate only what survives
    it (never a second pass on the same blocker class):
@@ -101,32 +98,18 @@ Read the failure output and classify:
 
 ### Step 2: Execute Recovery
 
-**RETRY:** Re-add issue to next wave with context:
-```bash
-bd comments add <issue-id> "RETRY (attempt N/2): <failure reason>. Adjustment: <what to try differently>"
-```
-Worker gets the adjustment context in its task prompt.
+**RETRY:** Return a proposed retry adjustment with the failure evidence. Only
+the orchestrator may place it into a later wave or update its tracker record.
 
-**DECOMPOSE:** Split the issue:
-```bash
-# Create sub-issues
-bd create --title "<original-title> — part A" --body "<scoped description>" --parent <epic-id>
-bd create --title "<original-title> — part B" --body "<scoped description>" --parent <epic-id>
-# Close original as decomposed
-bd update <issue-id> --labels decomposed
-bd close <issue-id>
-bd comments add <issue-id> "DECOMPOSED into <new-id-a>, <new-id-b>"
-```
+**DECOMPOSE:** Return a proposed split with acceptance and write scopes for each
+candidate slice. Do not create or close tracker records inside Crank.
 
-**PRUNE:** Take one bounded helper pass, then escalate only what survives it.
+**PRUNE:** Take one bounded helper pass, then return only what survives it.
 Hand the blocker, the evidence, and what was tried to a fresh context or
 cross-family model (`codex exec`, `/council`); on UNSTUCK resume with its next
 action; on ESCALATE (or a refusal-lane / explicit-judgment class, which skips
-the helper) mark for the human:
-```bash
-bd update <issue-id> --labels BLOCKER
-bd comments add <issue-id> "PRUNED: <reason>. Helper pass: <ESCALATE|skipped>. Human review required."
-```
+the helper) mark the wave evidence for human judgment. The orchestrator owns any
+tracker change.
 Never a second helper pass on the same blocker class.
 
 ### Step 3: Budget Check

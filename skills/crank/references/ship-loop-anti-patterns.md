@@ -111,7 +111,9 @@ Run BEFORE `git commit`. Fix any failures in the same commit. Treat the bats sui
 **Rule:** After push, prove the landing before closing the bead:
 1. `git fetch origin`
 2. `git merge-base --is-ancestor <landed-sha> origin/main` MUST pass (exit 0) — the deterministic proof the commit is reachable from the canonical tip.
-3. Only then close via `ao done <bead-id> --sha <landed-sha>`, so the close carries the commit-bound verdict stamp.
+3. Only then let the repository owner update its tracker using the repository's
+   own policy. Delivery success is evidence for that decision, not lifecycle
+   authority inside Crank.
 
 **Evidence:** Seen live 2026-07-01 under parallel-lane churn on this repo's hot main — a `git push` reported success but the pushed tip lost the race and never became an ancestor of `origin/main`.
 

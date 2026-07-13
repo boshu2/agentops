@@ -55,9 +55,8 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
   activates a constraint.
 - Postmortem is optional and runs only for retrospective causal analysis. Learn
   may request that specialization; the caller decides whether to invoke it.
-- Because proof, repository, tracker, delivery, and Premortem ports have
-  separate owners, emit observations plus one Learn receipt without operating
-  those authorities.
+- Emit observations plus one Learn receipt. Do not operate proof, repository,
+  tracker, delivery, or Premortem authority.
 - Emit a `plan_impact` packet for the orchestrator. Learn does not mutate the
   plan and does not invoke Premortem.
 - `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is

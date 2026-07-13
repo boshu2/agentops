@@ -28,6 +28,7 @@ metadata:
   author: AI Platform Team
   version: 1.4.0
   tier: contribute
+  graph_root: true
   internal: false
 allowed-tools: Read, Write, Bash, Grep, Glob
 output_contract: PR body (markdown), git branch
