@@ -31,9 +31,14 @@ This command:
 
 Examples:
   ao quick-start              # One-screen setup, tailored to this environment
+  ao quick-start --dry-run    # Preview the file plan — writes nothing
   ao quick-start --no-beads   # Skip beads initialization
   ao quick-start --minimal    # Just .agents/ structure
-  ao quick-start --verbose    # Full step-by-step long form`,
+  ao quick-start --verbose    # Full step-by-step long form
+
+Re-running on an already-initialized repo (CLAUDE.md seeded, GOALS.md and
+.agents/ present) collapses the output to a short "Already set up" summary
+instead of repeating the full setup ceremony.`,
 	RunE: runQuickstart,
 }
 
@@ -63,6 +68,28 @@ type quickstartResult struct {
 	// reachability + the exact next command. Nil on --dry-run (no writes, no
 	// probes).
 	FirstVerdict *firstVerdictInfo `json:"first_verdict,omitempty"`
+	// Plan is the --dry-run file plan: one row per on-disk artifact quick-start
+	// touches, naming the action (create/append/skip/skipped) it would take.
+	// Empty outside --dry-run.
+	Plan []quickstartPlanItem `json:"plan,omitempty"`
+	// AlreadySetUp is true when a non-dry-run run found every required
+	// artifact already in place before doing any work (the idempotent
+	// re-run case), which collapses the default output to a short summary.
+	AlreadySetUp bool `json:"already_set_up,omitempty"`
+}
+
+// quickstartPlanItem is one row of the --dry-run file plan.
+type quickstartPlanItem struct {
+	// Path is the artifact label (e.g. "CLAUDE.md", ".agents/**", "beads init").
+	Path string `json:"path"`
+	// Action is one of: create, append, skip, skipped.
+	Action string `json:"action"`
+	// Reason explains a skip/skipped action (e.g. "exists", "--minimal",
+	// "--no-beads", "not a git repo"). Empty for create/append.
+	Reason string `json:"reason,omitempty"`
+	// Preview is the first line of the block that would be appended. Only set
+	// when Action is "append".
+	Preview string `json:"preview,omitempty"`
 }
 
 func init() {
@@ -167,6 +194,7 @@ func runQuickstartDryRun(cwd string, opts lifecycle.ReadinessOptions) error {
 		NoBeads:   noBeads,
 		Beads:     beadsReadinessStatus(cwd, noBeads),
 		Readiness: report,
+		Plan:      planQuickstartFiles(cwd, report),
 	})
 }
 
@@ -206,6 +234,19 @@ func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode 
 }
 
 func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool, app *App) error {
+	// Snapshot readiness BEFORE any write, so the idempotent re-run summary
+	// reflects what was already true on disk, not the post-seed state.
+	preReport, err := lifecycle.InspectRepoReadiness(cwd, opts)
+	if err != nil {
+		return err
+	}
+	// .gitignore is part of the no-op contract too: a seeded repo whose
+	// .gitignore still needs the /.agents/ entry is NOT "already set up" —
+	// the run below will write it (planGitignore encodes the exact rule).
+	gitignorePlan := planGitignore(cwd)
+	gitignoreSettled := gitignorePlan.Action != "create" && gitignorePlan.Action != "append"
+	alreadySetUp := preReport.Ready && gitignoreSettled && (noBeads || beadsReadinessStatus(cwd, false) == "ready")
+
 	if !jsonMode && quickstartVerbose {
 		fmt.Println("━━━ STEP 1: Applying core repo seed ━━━")
 	}
@@ -241,12 +282,35 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 			Beads:        beadsStatus,
 			Readiness:    report,
 			FirstVerdict: firstVerdict,
+			AlreadySetUp: alreadySetUp,
 		})
 	}
 	if quickstartVerbose {
 		return finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
 	}
+	if alreadySetUp {
+		if err := quickstartBeadsStepVerbose(cwd, app, false); err != nil {
+			return err
+		}
+		return finalizeQuickstartRerun(cwd, report, firstVerdict)
+	}
 	return finalizeQuickstartDiet(cwd, claudeAlreadyExisted, report, firstVerdict, app)
+}
+
+// finalizeQuickstartRerun renders the idempotent re-run summary: quick-start
+// found every required artifact already in place (CLAUDE.md seed marker,
+// GOALS.md, .agents core scaffolding, and — when tracking is enabled — an
+// initialized ledger) before doing any work, so the ceremony collapses to a
+// one-line confirmation instead of repeating the full "Created:" summary.
+// Reuses the diet rendering helpers (printReadinessChecklist, the single Next
+// line, printFirstVerdictStep) rather than forking a parallel render path.
+func finalizeQuickstartRerun(cwd string, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo) error {
+	fmt.Println("\nAlready set up — nothing changed.")
+	fmt.Printf("Project: %s\n\n", cwd)
+	printReadinessChecklist(report)
+	fmt.Printf("Next: run %s to shape your first capability  ·  %s\n", quickstartNextSkill, quickstartDocsLink)
+	printFirstVerdictStep(firstVerdict)
+	return nil
 }
 
 func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
@@ -451,12 +515,163 @@ func outputQuickstartResult(result quickstartResult) error {
 		return enc.Encode(result)
 	}
 	if result.DryRun {
+		if len(result.Plan) > 0 {
+			printQuickstartPlan(result.Plan)
+			return nil
+		}
 		fmt.Println("Dry run complete. No files were created.")
 	}
 	if result.Readiness != nil {
 		printReadinessSummary(result.Readiness)
 	}
 	return nil
+}
+
+// planQuickstartFiles returns the --dry-run file plan: one row per on-disk
+// artifact quick-start ever touches, and the action it would take without
+// writing anything. report must come from lifecycle.PlanRepoSeed (read-only)
+// so the plan and the printed readiness stay derived from the same inspection.
+func planQuickstartFiles(cwd string, report *lifecycle.ReadinessReport) []quickstartPlanItem {
+	return []quickstartPlanItem{
+		planAgentsDirs(report),
+		planGoalsFile(report),
+		planClaudeMd(cwd),
+		planGitignore(cwd),
+		planBeadsInit(cwd, report),
+	}
+}
+
+// planAgentsDirs reports the .agents/** core scaffolding as one summarized row.
+func planAgentsDirs(report *lifecycle.ReadinessReport) quickstartPlanItem {
+	present, total, _ := readinessLayerStatus(report, lifecycle.LayerCore)
+	if total > 0 && present >= total {
+		return quickstartPlanItem{Path: ".agents/**", Action: "skip", Reason: "exists"}
+	}
+	return quickstartPlanItem{Path: ".agents/**", Action: "create"}
+}
+
+// planGoalsFile reports GOALS.md (or an existing GOALS.yaml).
+func planGoalsFile(report *lifecycle.ReadinessReport) quickstartPlanItem {
+	if minimal {
+		return quickstartPlanItem{Path: "GOALS.md", Action: "skipped", Reason: "--minimal"}
+	}
+	item := findReadinessItem(report, lifecycle.LayerGoals)
+	if item != nil && item.Present {
+		return quickstartPlanItem{Path: item.Name, Action: "skip", Reason: "exists"}
+	}
+	return quickstartPlanItem{Path: "GOALS.md", Action: "create"}
+}
+
+// planClaudeMd reports CLAUDE.md: create when absent, append (with a preview
+// of the first line of the seeded block) when present but unseeded, skip when
+// the seed marker is already there.
+func planClaudeMd(cwd string) quickstartPlanItem {
+	if minimal {
+		return quickstartPlanItem{Path: "CLAUDE.md", Action: "skipped", Reason: "--minimal"}
+	}
+	data, err := os.ReadFile(filepath.Join(cwd, "CLAUDE.md"))
+	if err != nil {
+		return quickstartPlanItem{Path: "CLAUDE.md", Action: "create"}
+	}
+	if lifecycle.HasSeedMarker(string(data)) {
+		return quickstartPlanItem{Path: "CLAUDE.md", Action: "skip", Reason: "exists"}
+	}
+	return quickstartPlanItem{Path: "CLAUDE.md", Action: "append", Preview: firstNonBlankLine(lifecycle.ClaudeMDSeedSection)}
+}
+
+// planGitignore reports the repo-root .gitignore's /.agents/ entry — quick-start
+// never uses the --stealth (.git/info/exclude) target, so this always names
+// .gitignore.
+func planGitignore(cwd string) quickstartPlanItem {
+	if minimal {
+		return quickstartPlanItem{Path: ".gitignore", Action: "skipped", Reason: "--minimal"}
+	}
+	if !isGitRepository(cwd) {
+		return quickstartPlanItem{Path: ".gitignore", Action: "skip", Reason: "not a git repo"}
+	}
+	path := filepath.Join(cwd, ".gitignore")
+	if fileContainsLine(path, "/.agents/") {
+		return quickstartPlanItem{Path: ".gitignore", Action: "skip", Reason: "exists"}
+	}
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		return quickstartPlanItem{Path: ".gitignore", Action: "append", Preview: "/.agents/"}
+	}
+	return quickstartPlanItem{Path: ".gitignore", Action: "create"}
+}
+
+// planBeadsInit reports the tracker ledger: skipped when disabled by a flag,
+// skip when a ledger already exists on disk, create otherwise. This mirrors
+// beadsReadinessStatus's on-disk check — it never resolves or shells out to a
+// tracker binary, keeping --dry-run a pure read.
+func planBeadsInit(cwd string, report *lifecycle.ReadinessReport) quickstartPlanItem {
+	if noBeads {
+		return quickstartPlanItem{Path: "beads init", Action: "skipped", Reason: "--no-beads"}
+	}
+	if minimal {
+		return quickstartPlanItem{Path: "beads init", Action: "skipped", Reason: "--minimal"}
+	}
+	item := findReadinessItem(report, lifecycle.LayerTracking)
+	if item != nil && item.Present {
+		return quickstartPlanItem{Path: "beads init", Action: "skip", Reason: "exists"}
+	}
+	return quickstartPlanItem{Path: "beads init", Action: "create"}
+}
+
+// findReadinessItem returns the first report item on the given layer, or nil.
+func findReadinessItem(report *lifecycle.ReadinessReport, layer lifecycle.ReadinessLayer) *lifecycle.ReadinessItem {
+	if report == nil {
+		return nil
+	}
+	for i := range report.Items {
+		if report.Items[i].Layer == layer {
+			return &report.Items[i]
+		}
+	}
+	return nil
+}
+
+// firstNonBlankLine returns the first non-blank, trimmed line of s.
+func firstNonBlankLine(s string) string {
+	for _, line := range strings.Split(s, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+// printQuickstartPlan renders the --dry-run file plan as a short table, one
+// line per artifact, then confirms nothing was written.
+func printQuickstartPlan(items []quickstartPlanItem) {
+	fmt.Println("Dry run — file plan (nothing will be written):")
+	for _, it := range items {
+		fmt.Printf("  %-14s %s\n", it.Path, formatPlanAction(it))
+	}
+	fmt.Println("\nDry run complete. No files were created.")
+}
+
+// formatPlanAction renders one plan row's action + reason/preview suffix.
+func formatPlanAction(it quickstartPlanItem) string {
+	switch it.Action {
+	case "append":
+		if it.Preview != "" {
+			return fmt.Sprintf("append (preview: %q)", it.Preview)
+		}
+		return "append"
+	case "skip":
+		if it.Reason != "" {
+			return fmt.Sprintf("skip (%s)", it.Reason)
+		}
+		return "skip"
+	case "skipped":
+		if it.Reason != "" {
+			return fmt.Sprintf("skipped (%s)", it.Reason)
+		}
+		return "skipped"
+	default:
+		return it.Action
+	}
 }
 
 func createQuickstartDirs(cwd string) error {
