@@ -13,6 +13,7 @@
     "input_verdict_digest",
     "artifact",
     "observations",
+    "producer_candidates",
     "remaining_work",
     "plan_impact"
   ],
@@ -84,7 +85,39 @@
           "kind": {"enum": ["finding", "coverage-gap", "strength", "process-signal"]},
           "summary": {"type": "string", "minLength": 1},
           "evidence_ref": {"type": "string", "minLength": 1},
-          "disposition": {"enum": ["record", "candidate", "no_change"]}
+          "disposition": {"enum": ["record", "candidate", "no_change"]},
+          "observation_id": {"type": "string", "minLength": 1},
+          "class_key": {"type": "string", "minLength": 1},
+          "objective_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "producer_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "class_key", "recurrence_count", "advisory", "evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^producer-[0-9a-f]{12}$"},
+          "class_key": {"type": "string", "minLength": 1},
+          "summary": {"type": "string"},
+          "recurrence_count": {"type": "integer", "minimum": 2},
+          "advisory": {"const": true},
+          "evidence": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["observation_id", "objective_id", "evidence_ref"],
+              "properties": {
+                "observation_id": {"type": "string", "minLength": 1},
+                "objective_id": {"type": "string", "minLength": 1},
+                "evidence_ref": {"type": "string", "minLength": 1}
+              }
+            }
+          }
         }
       }
     },

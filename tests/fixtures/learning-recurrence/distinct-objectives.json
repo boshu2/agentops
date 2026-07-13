@@ -1,0 +1,44 @@
+[
+  {
+    "id": "obs-a-1",
+    "class_key": "v1:docs/stale-surface",
+    "objective_id": "objective-a",
+    "evidence_ref": ".agents/evidence/objective-a/round-1.md",
+    "summary": "A retired surface remained in active documentation."
+  },
+  {
+    "id": "obs-a-2",
+    "class_key": "v1:docs/stale-surface",
+    "objective_id": "objective-a",
+    "evidence_ref": ".agents/evidence/objective-a/round-2.md",
+    "summary": "A retired surface remained in active documentation."
+  },
+  {
+    "id": "obs-a-3",
+    "class_key": "v1:docs/stale-surface",
+    "objective_id": "objective-a",
+    "evidence_ref": ".agents/evidence/objective-a/round-3.md",
+    "summary": "A retired surface remained in active documentation."
+  },
+  {
+    "id": "obs-a-4",
+    "class_key": "v1:docs/stale-surface",
+    "objective_id": "objective-a",
+    "evidence_ref": ".agents/evidence/objective-a/round-4.md",
+    "summary": "A retired surface remained in active documentation."
+  },
+  {
+    "id": "obs-b-1",
+    "class_key": "v1:docs/stale-surface",
+    "objective_id": "objective-b",
+    "evidence_ref": ".agents/evidence/objective-b/round-1.md",
+    "summary": "A retired surface remained in active documentation."
+  },
+  {
+    "id": "obs-c-1",
+    "class_key": "v1:shell/one-off",
+    "objective_id": "objective-c",
+    "evidence_ref": ".agents/evidence/objective-c/round-1.md",
+    "summary": "A one-off shell typo was caught."
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/finding-observation.v1.schema.json",
+  "title": "Finding Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "class_key", "objective_id", "evidence_ref", "summary"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "class_key": {"type": "string", "minLength": 1},
+    "objective_id": {"type": "string", "minLength": 1},
+    "evidence_ref": {"type": "string", "minLength": 1},
+    "summary": {"type": "string", "minLength": 1}
+  }
+}
