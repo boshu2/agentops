@@ -1,33 +1,34 @@
-# Gate 4 Loop and Spawn Next Work
+# Orchestrator Loop and Spawn Next Work
 
-## Post-Validation Loop (Optional) -- Post-mortem to Spawn Another /rpi
+## Post-Learn Loop (Optional)
 
-**Default behavior:** /rpi ends after Validation (Phase 3).
+**Default behavior:** `/rpi` ends after Learn and the orchestrator decision.
 
 **Enable loop:** pass `--loop` (and optionally `--max-cycles=<n>`).
 
-**Gate 4 goal:** make the "ITERATE vs TEMPER" decision explicit, and if iteration is required, run another full /rpi cycle with tighter context.
+**Loop goal:** make retry, continue, stop, escalate, re-plan, and close explicit.
 
-**Loop decision input:** the most recent post-mortem council verdict.
+**Loop decision input:** the latest schema-valid Learn receipt, bound to its
+immutable Validate verdict.
 
-1. Find the most recent post-mortem report:
-   ```bash
-   REPORT=$(ls -t .agents/council/*post-mortem*.md 2>/dev/null | head -1)
-   ```
-2. Read `REPORT` and extract the verdict line (`## Council Verdict: PASS / WARN / FAIL`).
-3. Apply gate logic (only when `--loop` is set). If verdict is PASS or WARN, stop (TEMPER path). If verdict is FAIL, iterate (spawn another /rpi cycle), up to `--max-cycles`.
-4. Iterate behavior (spawn). Read the post-mortem report and extract 3 concrete fixes, then re-invoke /rpi from Phase 1 with a tightened goal that includes the fixes:
-   ```
-   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>"                 # default strict-quality path (test-first on)
-   /rpi "<original goal> (Iteration <n>): Fix <item1>; <item2>; <item3>" --no-test-first # explicit opt-out path
-   ```
-   If still FAIL after `--max-cycles` total cycles, stop and require manual intervention (file follow-up bd issues).
+1. Read `.agents/rpi/phase-4-summary.md` and the referenced Learn receipt.
+2. Verify the receipt's verdict digest and `plan_impact` disposition.
+3. Apply the disposition:
+   - `material_change` with remaining work: the orchestrator invokes Discovery,
+     persists the changed plan, runs Premortem on that plan, then may loop;
+   - `no_change` with remaining work: the orchestrator explicitly retries,
+     continues, stops, or escalates;
+   - `terminal`: close without another Premortem or `/rpi` invocation.
+4. Enforce `--max-cycles` and oscillation bounds on orchestrator decisions, not
+   inside Validate or Learn.
 
-## Spawn Next Work (Optional) -- Post-mortem to Queue Next RPI
+## Spawn Next Work (Optional) -- Learn Evidence to Queue Next RPI
 
 **Enable:** pass `--spawn-next` flag.
 
-**Complementary to Gate 4:** Gate 4 (`--loop`) handles FAIL->iterate (same goal, tighter). `--spawn-next` handles PASS/WARN->new-goal (different work harvested from post-mortem).
+**Complementary to the loop:** `--loop` continues the same objective after an
+explicit orchestrator decision. `--spawn-next` only suggests separately queued
+work; it never converts a verdict directly into execution.
 
 1. Read `.agents/rpi/next-work.jsonl` for unconsumed entries (schema contract: [`docs/contracts/next-work.schema.md`](../../../docs/contracts/next-work.schema.md)).
    Filter entries by `target_repo`:
@@ -44,15 +45,15 @@
      ```
      ## Next Work Available
 
-     Post-mortem harvested N follow-up items from <source_epic>:
+     Learn recorded N follow-up candidates from <source_epic>:
      1. <title> (severity: <severity>, type: <type>)
      ...
 
      To start the next RPI cycle:
        /rpi "<highest-severity item title>"
      ```
-   - Do NOT auto-invoke `/rpi` -- the user decides when to start the next cycle
-3. If no unconsumed entries: report "No follow-up work harvested. Flywheel stable."
+   - Do NOT auto-invoke `/rpi` -- the orchestrator or user decides when to start the next cycle
+3. If no unconsumed entries: report "No follow-up work recorded."
 
 **Note:** Phase 0 read is read-only. Mutating queue state follows a claim/finalize lifecycle so failed cycles can safely release work back to the queue without blacklisting sibling items in the same harvested batch.
 

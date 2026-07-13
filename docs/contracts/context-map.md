@@ -11,7 +11,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 - `behavior-first-planning` — Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
-- `crank` — Execute epics through waves. Triggers: "crank an epic", "execute epics through waves", "drive the bead wave plan".
+- `crank` — Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: "crank an epic", "execute the next wave", "drive the bead wave plan".
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
 - `domain` — Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
 - `dueling-idea-genies` — Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".
@@ -192,10 +192,7 @@ graph LR
   crank --> beads_br
   crank --> dcg
   crank --> implement
-  crank --> pawl_review
-  crank --> postmortem
   crank --> swarm
-  crank --> validate
   discovery --> behavior_first_planning
   discovery --> dueling_idea_genies
   discovery --> idea_genie
@@ -385,9 +382,7 @@ graph LR
 | `council` | produces | verdict.json |
 | `crank` | consumes | beads-br |
 | `crank` | consumes | implement |
-| `crank` | consumes | postmortem |
 | `crank` | consumes | swarm |
-| `crank` | consumes | validate |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
 | `discovery` | consumes | plan |

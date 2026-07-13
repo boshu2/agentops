@@ -1,11 +1,10 @@
 # Executable spec for the /crank skill — wave execution (BC3 Loop, Move 5).
-# /crank consumes a slice-validation plan and drives an epic to DONE wave by wave,
-# dispatching /swarm + /implement per wave under a wave-validity hard gate, looping
-# FIRE (Find→Ignite→Reap→Vibe→Escalate) until every issue is closed — then it must
-# emit an explicit completion marker. Hexagon: domain; consumes: beads, implement,
-# post-mortem, swarm, vibe; produces: wave-by-wave slice completion. (soc-qk4b.2)
+# /crank consumes a slice-validation plan and executes one ready wave under a
+# wave-validity hard gate. It dispatches /swarm + /implement, runs deterministic
+# FIRE acceptance, and returns evidence before any between-wave decision.
+# Hexagon: domain; consumes: beads, implement, swarm; produces: wave evidence.
 
-Feature: Crank executes an epic through conflict-free waves to completion
+Feature: Crank executes one conflict-free epic wave
   As the loop's wave executor
   I want each epic driven wave by wave under an explicit validity gate
   So that parallelism is owned, not chaotic, and the epic provably reaches DONE
@@ -20,10 +19,16 @@ Feature: Crank executes an epic through conflict-free waves to completion
       owner per slice, and a discard path per slice
     And any failed row forces those slices to run sequentially, not in parallel
 
-  Scenario: FIRE loop repeats per wave until issues close
+  Scenario: One FIRE wave returns before another wave starts
     When a wave runs
     Then /crank executes Find → Ignite → Reap → Vibe → Escalate
-    And it loops to the next wave until all issues are closed or a blocker is hit
+    And it returns DONE, PARTIAL, or BLOCKED evidence before another wave starts
+
+  @covered-by:scripts/validate-workflow-contract.sh
+  Scenario: Wave evidence exits Crank before any re-plan
+    When a wave reaches its acceptance verdict
+    Then Crank hands the wave evidence to Validate
+    And Crank does not invoke Discovery, Learn, Premortem, or a silent retry
 
   Scenario: Orchestrator's own diff-read flags an out-of-boundary slice at acceptance
     Given a slice whose evidence JSON claims PASS and a green <promise>DONE</promise>

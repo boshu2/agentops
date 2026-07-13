@@ -69,7 +69,7 @@ Each era baseline includes:
 - **Baseline metadata** embedded in the snapshot JSON written by `ao goals measure`
 - **No regression comparisons** — this is the starting point for that era
 
-When the session ends (at Teardown), the system computes the **session fitness trajectory** by comparing the current era baseline against the final cycle snapshot. This produces `session-fitness-delta.md`, which shows which goals improved, regressed, or stayed unchanged over the entire $evolve session.
+When the session ends (at Teardown), the system computes the **session fitness trajectory** by comparing the current era baseline against the final cycle snapshot. This produces `session-fitness-delta.md`, which shows which goals improved, regressed, or stayed unchanged over the entire /evolve session.
 
 ## Meta-Goals
 
@@ -93,10 +93,10 @@ goals:
 
 ## Maintaining GOALS.yaml
 
-Use `$goals` to maintain the fitness specification:
-- `$goals` — run all checks, report pass/fail by pillar
-- `$goals generate` — scan repo for uncovered areas, propose new goals
-- `$goals prune` — find stale/broken goals, propose removals or updates
+Use `/goals` to maintain the fitness specification:
+- `/goals` — run all checks, report pass/fail by pillar
+- `/goals generate` — scan repo for uncovered areas, propose new goals
+- `/goals prune` — find stale/broken goals, propose removals or updates
 
 ## GOALS.md Format (Version 4)
 

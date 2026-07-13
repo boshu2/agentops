@@ -6,20 +6,30 @@ makes `--auto` *autonomous* rather than *blind*.
 
 ## At every wave boundary (and after the validation phase)
 
-1. **Reflect** — run a bounded post-mortem$discovery delta over the wave just
-   completed (delegate to `$post-mortem` then `$discovery`'s re-plan, isolated;
-   do not inline). Input = what shipped, what the gate/refuters said, what broke,
-   what the wave *taught* that the plan didn't know.
-2. **Re-plan the REMAINING waves** — the delta may, autonomously:
+The mandatory route is `Validate -> Learn -> orchestrator`. Validate produces
+proof and structured observations. Learn binds those observations to the
+immutable verdict and emits exactly one plan-impact disposition:
+
+- `material_change` when cited evidence invalidates or changes a remaining-plan
+  assumption;
+- `no_change` when work remains but no plan mutation is warranted;
+- `terminal` when no work remains.
+
+The orchestrator then applies the matching transition:
+
+1. **Material change** — invoke Discovery with the cited Learn packet to
+   re-plan the remaining waves. The changed plan may autonomously:
    - **refactor** a downstream wave's scope (split, merge, narrow, widen),
    - **insert** a new wave the evidence revealed is needed,
    - **drop** a wave the evidence made unnecessary,
    - **reorder** waves as the critical path shifts,
    - **re-scope / re-prioritize / re-sequence** beads,
    - **escalate** (circuit-breaker) when the evidence invalidates the objective itself.
-   Persist the mutated plan (the execution packet / plan doc is rewritten, not
-   appended-to-blindly) so the next wave reads the *current* plan, not the stale one.
-3. **Proceed** to the next (possibly new/changed) wave.
+   Persist the mutated plan so the next wave reads the current plan, then run
+   Premortem on that exact changed plan before proceeding.
+2. **No change** — explicitly retry, continue, stop, or escalate. Do not
+   fabricate a learning or invoke Premortem.
+3. **Terminal** — close the tick. Do not re-plan or invoke Premortem.
 
 ## Bounds (so agility ≠ thrash)
 
@@ -39,6 +49,7 @@ to approve a pivot.
 
 ## How the phase skills feed this loop
 
-`$crank` (implementation) and `$validate` **surface their findings up to the
-orchestrator** for re-planning — they do not swallow a finding into a silent
-local retry. `$discovery` is the re-plan engine; `$post-mortem` is the reflect step.
+`/crank` emits wave evidence to `/validate`; `/validate` hands its immutable
+verdict to `/learn`; `/learn` returns plan impact to the orchestrator. Only the
+orchestrator selects `/discovery` as the re-plan engine and sends a changed plan
+through `/premortem`. No phase swallows a finding into a silent retry.

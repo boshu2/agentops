@@ -17,6 +17,16 @@ The v2 prevention ladder has four layers:
 
 This contract governs only the registry ledger. The promotion ladder, executable constraint index, and runtime enforcement expectations are governed by [finding-compiler.md](finding-compiler.md).
 
+## Recurrence is objective-scoped
+
+Registry hit counts and citation counts are lifecycle telemetry; they do not by
+themselves establish recurrence. The Learn/bookkeeper recurrence seam is
+governed by [producer-defect-register.md](producer-defect-register.md): repeated
+review rounds inside one objective collapse to one occurrence, and only the
+same defect class observed in at least two distinct objectives creates one
+advisory producer-rule candidate. A single finding never creates policy or a
+delivery blocker.
+
 ## Canonical Shape
 
 - One JSON object per line.

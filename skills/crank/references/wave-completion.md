@@ -6,9 +6,12 @@
 
 ### Step 5.5: Wave Acceptance Check (MANDATORY)
 
-> **Principle:** Verify each wave meets acceptance criteria using lightweight inline judges. No skill invocations — prevents context explosion in the orchestrator loop.
+> **Principle:** Verify each wave with deterministic acceptance, evidence-schema,
+> and scope checks. Independent judgment runs once in downstream Validate.
 
-**For acceptance check details (diff computation, inline judges, verdict gating, CI-policy parity gate), read `skills/crank/references/wave-patterns.md`.**
+**For acceptance check details (diff computation, evidence/schema checks, scope
+read, verdict handoff, and CI-policy parity), read
+`skills/crank/references/wave-patterns.md`.**
 
 **CI-Policy Parity Gate (conditional):** When a wave's diff touches `.github/workflows/*.yml`, the orchestrator MUST run `bash scripts/validate-ci-policy-parity.sh` as part of wave acceptance. On failure, the wave verdict is **FAIL**. See [wave-patterns.md](wave-patterns.md) "CI-Policy Parity Gate" for trigger pattern, worked example, and the soc-lmww1 / commit `c587b361` motivation.
 
@@ -56,9 +59,13 @@ Display a consolidated status table (task, subject, status, validation, duration
 
 After committing a wave, verify HEAD advanced past `WAVE_START_SHA`. Next wave's worktrees must branch from this new SHA to prevent cross-wave file collisions. Before spawning the next wave, cross-reference next wave's file manifests (`metadata.files`) against `git diff --name-only "${WAVE_START_SHA}..HEAD"` — log any overlap so workers are aware of prior-wave changes in their worktree base.
 
-### Step 6: Check for More Work
+### Step 6: Report Remaining Work
 
-After completing a wave, check for newly unblocked issues (beads: `bd ready`, TaskList: `TaskList()`). Loop back to Step 4 if work remains, or proceed to Step 7 when done.
+After completing a wave, check for newly unblocked issues (beads: `bd ready`,
+TaskList: `TaskList()`). Record `remaining_work` and return PARTIAL when another
+wave exists. Do not loop to Step 4. The wave evidence must pass through
+Validate and Learn before the orchestrator may invoke Crank again. If no work
+remains, proceed to the final evidence summary.
 
 **For detailed check/retry logic, read `skills/crank/references/team-coordination.md`.**
 
@@ -96,9 +103,11 @@ b) Skill(skill="test", args="coverage --quick")
      Append coverage report to vibe context.
 ```
 
-### Step 7: Final Batched Validation
+### Step 7: Final Evidence Handoff
 
-When all issues complete, run ONE comprehensive vibe on recent changes. Fix CRITICAL issues before completion.
+When all issues complete, assemble the acceptance roll-up and changed-surface
+evidence for one final Validate invocation by the caller/orchestrator. Crank
+does not invoke Validate itself.
 
 If hooks or `lib/hook-helpers.sh` were modified, verify embedded copies are in sync: `cd cli && make sync-hooks`.
 
@@ -123,15 +132,19 @@ cat > ".agents/rpi/phase-2-summary-$(date +%Y-%m-%d)-crank.md" <<PHASE2
 PHASE2
 ```
 
-This summary is consumed by `/validate` closeout (and its internal `/post-mortem`) for scope reconciliation.
+This summary is consumed by `/validate` for scope reconciliation. Validate
+does not run learning or Premortem inline.
 
-### Step 8.5: Extract Learnings (ao Integration)
+### Step 8.5: Emit Wave Evidence
 
-If ao CLI available: run `ao forge transcript`, `ao flywheel close-loop --quiet`, `ao metrics flywheel status`, and `ao pool list --status=pending` to extract and review learnings. If ao unavailable, skip and recommend `/validate` manually.
+Return the phase summary and evidence references to Validate. Do not extract or
+promote learnings here; Learn owns post-verdict bookkeeping after Validate.
 
 ### Step 8.6: Archive Shared Task Notes
 
-Archive `.agents/crank/SHARED_TASK_NOTES.md` to `.agents/crank/archives/` for post-mortem review. See [shared-task-notes.md](shared-task-notes.md) for the archive script.
+Archive `.agents/crank/SHARED_TASK_NOTES.md` to `.agents/crank/archives/` as
+evidence for downstream Validate and Learn. See
+[shared-task-notes.md](shared-task-notes.md) for the archive script.
 
 ### Step 8.7: Scope-Completion Check (Pre-Close Gate)
 

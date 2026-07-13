@@ -5,46 +5,40 @@ After all phases complete, summarize the entire lifecycle to the user.
 ## Summary Report
 
 ```markdown
-## $rpi Complete
+## /rpi Complete
 
 **Goal:** <goal>
 **Epic:** <epic-id>
 **Cycle:** <rpi_state.cycle> (parent: <rpi_state.parent_epic or "none">)
 
-| Phase | Verdict/Status |
+| Umbrella | Verdict/Status |
 |-------|---------------|
-| Research | Complete |
-| Plan | Complete (<N> issues, <M> waves) |
-| Pre-mortem | <PASS/WARN/FAIL> |
+| Discovery | DONE |
 | Crank | <DONE/BLOCKED/PARTIAL> |
-| Vibe | <PASS/WARN/FAIL> |
-| Post-mortem | Complete |
+| Validate | <PASS/WARN/FAIL> |
+| Learn | <DONE/BLOCKED/PARTIAL> |
 
 **Artifacts:**
-- Research: .agents/research/...
-- Plan: .agents/plans/...
-- Pre-mortem: .agents/council/...
-- Vibe: .agents/council/...
-- Post-mortem: .agents/council/...
-- Learnings: .agents/learnings/...
+- Discovery: .agents/rpi/phase-1-summary.md
+- Crank: .agents/rpi/phase-2-summary.md
+- Validate: .agents/rpi/phase-3-summary.md
+- Learn: .agents/rpi/phase-4-summary.md
 - Next Work: .agents/rpi/next-work.jsonl
 ```
 
-## Flywheel Section
+## Learn Section
 
-**ALWAYS include the flywheel section** (regardless of `--spawn-next` flag):
+Always include the immutable verdict reference and Learn plan impact:
 
 ```markdown
-## Flywheel: Next Cycle
+## Learn: Plan Impact
 
-Post-mortem harvested N follow-up items (M process-improvements, K tech-debt):
-
-| # | Title | Type | Severity |
-|---|-------|------|----------|
-| 1 | ... | process-improvement | high |
-
-Ready to run:
-    $rpi "<highest-severity item title>"
+- Verdict: <artifact + digest>
+- Remaining work: <true|false>
+- Disposition: <material_change|no_change|terminal>
+- Orchestrator decision: <replan|retry|continue|stop|escalate|close>
+- Changed-plan Premortem: <artifact or not-applicable>
 ```
 
-The `--spawn-next` flag controls whether items are **marked consumed** in `next-work.jsonl`. The suggestion is ALWAYS shown. This ensures every `$rpi` cycle ends by pointing at the next one -- the flywheel never stops spinning unless there's nothing to improve.
+Optional next-work suggestions remain advisory. They never replace the Learn
+receipt or authorize a direct retry.

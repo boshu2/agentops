@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T13:41:38Z",
+  "generated_at": "2026-07-13T14:18:17Z",
   "skill_count": 63,
   "skills": [
     {
@@ -431,16 +431,14 @@
     },
     {
       "name": "crank",
-      "description": "Execute epics through waves. Triggers: \"crank an epic\", \"execute epics through waves\", \"drive the bead wave plan\".",
+      "description": "Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: \"crank an epic\", \"execute the next wave\", \"drive the bead wave plan\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": true,
       "consumes": [
         "beads-br",
         "implement",
-        "postmortem",
-        "swarm",
-        "validate"
+        "swarm"
       ],
       "produces": [
         ".agents/swarm/results/*.json",
@@ -448,14 +446,11 @@
       ],
       "dependencies": [
         "swarm",
-        "validate",
         "implement",
         "beads-br",
-        "postmortem",
         "agent-native",
         "automation-shape-routing",
-        "dcg",
-        "pawl-review"
+        "dcg"
       ],
       "practices": [
         "continuous-delivery",
@@ -829,7 +824,7 @@
     },
     {
       "name": "learn",
-      "description": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
+      "description": "Consume an immutable Validate verdict and emit evidence-bound bookkeeping. Triggers: \"learn\", \"consume a validation verdict\", \"record observations\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": false,
@@ -1082,7 +1077,7 @@
     },
     {
       "name": "postmortem",
-      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
+      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": false,
@@ -1721,7 +1716,7 @@
     },
     {
       "name": "validate",
-      "description": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
+      "description": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound verdict. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "graph_root": true,

@@ -26,21 +26,19 @@ After all phases complete, summarize the entire lifecycle to the user.
 - Next Work: .agents/rpi/next-work.jsonl
 ```
 
-## Flywheel Section
+## Learn Section
 
-**ALWAYS include the flywheel section** (regardless of `--spawn-next` flag):
+Always include the immutable verdict reference and Learn plan impact:
 
 ```markdown
-## Flywheel: Next Cycle
+## Learn: Plan Impact
 
-Post-mortem harvested N follow-up items (M process-improvements, K tech-debt):
-
-| # | Title | Type | Severity |
-|---|-------|------|----------|
-| 1 | ... | process-improvement | high |
-
-Ready to run:
-    /rpi "<highest-severity item title>"
+- Verdict: <artifact + digest>
+- Remaining work: <true|false>
+- Disposition: <material_change|no_change|terminal>
+- Orchestrator decision: <replan|retry|continue|stop|escalate|close>
+- Changed-plan Premortem: <artifact or not-applicable>
 ```
 
-The `--spawn-next` flag controls whether items are **marked consumed** in `next-work.jsonl`. The suggestion is ALWAYS shown. This ensures every `/rpi` cycle ends by pointing at the next one -- the flywheel never stops spinning unless there's nothing to improve.
+Optional next-work suggestions remain advisory. They never replace the Learn
+receipt or authorize a direct retry.

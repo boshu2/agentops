@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/ports"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -132,6 +134,9 @@ type catchDigest struct {
 	IncludePlaceholders bool               `json:"include_placeholders"`
 	TotalHits           int                `json:"total_hits"`
 	Entries             []catchDigestEntry `json:"entries"`
+	// ProducerCandidates are advisory proposals backed by at least two distinct
+	// objectives. Review retries inside one objective never inflate recurrence.
+	ProducerCandidates []ports.ProducerRuleCandidate `json:"producer_candidates"`
 }
 
 // rankCatchDigest returns catches sorted by HitCount DESC, tie-broken by ClassKey
@@ -198,7 +203,7 @@ func digestPathsHint(paths []string) string {
 // then placeholders, then topN truncates the combined list (so it trims placeholders
 // before any actionable class). now is injected for deterministic render under test;
 // TotalClasses/TotalHits are over ALL classes so the checklist reports what it filtered.
-func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders bool, now time.Time) catchDigest {
+func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders bool, now time.Time) (catchDigest, error) {
 	var actionable, placeholders []yieldledger.Catch
 	for _, c := range all {
 		if yieldledger.IsPlaceholderReason(c.Reason) {
@@ -238,6 +243,10 @@ func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders boo
 			Placeholder:   yieldledger.IsPlaceholderReason(c.Reason),
 		})
 	}
+	candidates, err := newProductionFindingRecurrenceReducer().Reduce(context.Background(), findingObservationsForCatches(all))
+	if err != nil {
+		return catchDigest{}, fmt.Errorf("reconcile producer candidates: %w", err)
+	}
 	return catchDigest{
 		GeneratedAt:         now.UTC().Format(time.RFC3339),
 		TopN:                topN,
@@ -247,7 +256,31 @@ func buildCatchDigest(all []yieldledger.Catch, topN int, includePlaceholders boo
 		IncludePlaceholders: includePlaceholders,
 		TotalHits:           totalHits,
 		Entries:             entries,
+		ProducerCandidates:  candidates,
+	}, nil
+}
+
+// findingObservationsForCatches projects one representative observation per
+// (class, objective) from the catch corpus. Catch.Beads already contains unique
+// objective IDs, so review rounds and new heads inside one objective collapse
+// before the recurrence reducer sees them.
+func findingObservationsForCatches(catches []yieldledger.Catch) []ports.FindingObservation {
+	observations := make([]ports.FindingObservation, 0)
+	for _, catch := range catches {
+		if yieldledger.IsPlaceholderReason(catch.Reason) {
+			continue
+		}
+		for _, objectiveID := range catch.Beads {
+			observations = append(observations, ports.FindingObservation{
+				ID:          catch.ClassKey + "@" + objectiveID,
+				ClassKey:    catch.ClassKey,
+				ObjectiveID: objectiveID,
+				EvidenceRef: ".agents/yield/yield-ledger.jsonl#objective=" + objectiveID,
+				Summary:     catch.Reason,
+			})
+		}
 	}
+	return observations
 }
 
 // catchDeltaEntry is one class's recurrence split around the --since cutoff: how
@@ -456,6 +489,18 @@ func renderCatchDigest(d catchDigest) []byte {
 		}
 		fmt.Fprintf(&b, "%d. **[×%d]** %s → %s%s\n", e.Rank, e.HitCount, e.Reason, e.WatchFor, tag)
 	}
+	if len(d.ProducerCandidates) > 0 {
+		b.WriteString("\n## Advisory producer-rule candidates\n\n")
+		b.WriteString("These are bookkeeping candidates, not policy or blockers. Recurrence counts distinct objectives, not review retries.\n\n")
+		for _, candidate := range d.ProducerCandidates {
+			objectives := make([]string, 0, len(candidate.Evidence))
+			for _, evidence := range candidate.Evidence {
+				objectives = append(objectives, evidence.ObjectiveID)
+			}
+			fmt.Fprintf(&b, "- `%s` — recurrence=%d; objectives: `%s`; %s\n",
+				candidate.ID, candidate.RecurrenceCount, strings.Join(objectives, "`, `"), candidate.Summary)
+		}
+	}
 	b.WriteString("\nSource: `.agents/yield/yield-ledger.jsonl` (catch corpus).\n")
 	return []byte(b.String())
 }
@@ -488,7 +533,10 @@ func runMembraneDigest(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	digest := buildCatchDigest(yieldledger.DetectCatches(ledger), membraneDigestTopN, membraneDigestIncludePlaceholders, time.Now())
+	digest, err := buildCatchDigest(yieldledger.DetectCatches(ledger), membraneDigestTopN, membraneDigestIncludePlaceholders, time.Now())
+	if err != nil {
+		return err
+	}
 
 	abs := filepath.Join(root, filepath.FromSlash(catchDigestRelPath))
 	if err := writeFindingFileAtomic(abs, renderCatchDigest(digest), 0o644); err != nil {

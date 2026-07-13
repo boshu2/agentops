@@ -6,7 +6,7 @@ Evolve runs without human intervention from start to teardown. Every `/rpi` invo
 
 ### Operator-shape carve-out
 
-A single, bounded exception applies. a single operator question is permitted ONLY when the cycle has identified a **shape decision** that affects > 50 files OR touches a schema/contract surface, and where picking wrong costs > 10 minutes of rework. Examples that qualify: declaration carrier shape across a 533-file pool, frontmatter-key vs `$comment`-key vs sidecar-file choice, struct-field addition to a shared contract type. Anything that fits inside an established shape continues to be fully autonomous. The carve-out exists because a 30-second user pick can unblock 300+ file edits — but it is narrow: ask once per shape decision, then resume the autonomous loop.
+A single, bounded exception applies. `AskUserQuestion` is permitted ONLY when the cycle has identified a **shape decision** that affects > 50 files OR touches a schema/contract surface, and where picking wrong costs > 10 minutes of rework. Examples that qualify: declaration carrier shape across a 533-file pool, frontmatter-key vs `$comment`-key vs sidecar-file choice, struct-field addition to a shared contract type. Anything that fits inside an established shape continues to be fully autonomous. The carve-out exists because a 30-second user pick can unblock 300+ file edits — but it is narrow: ask once per shape decision, then resume the autonomous loop.
 
 ## ScheduleWakeup self-perpetuation (Claude-Code harness)
 

@@ -20,6 +20,13 @@ Feature: Discovery hands dense intent to planning
     Then it writes a JSON execution packet on disk for the next loop phase
     And the packet carries the goal, research, and design artifact references
 
+  @covered-by:scripts/validate-workflow-contract.sh
+  Scenario: Between-wave discovery requires an orchestrator request
+    Given Learn emitted a cited material_change plan impact
+    When the orchestrator requests a re-plan
+    Then Discovery changes only the remaining plan
+    And the changed plan returns to the orchestrator for Premortem
+
   # Gherkin acceptance is emitted by default — the operator never hand-specifies BDD (ag-9jle.2).
   Scenario: Discovery requires every planned bead to carry Gherkin scenarios by default
     Given Discovery crosses the plan_slices port to /plan
