@@ -293,10 +293,11 @@ EOF
 # ---------------------------------------------------------------------------
 
 @test "no fixed /tmp build/capture paths remain in the gate scripts" {
-    # The mktemp template `ao-gate.XXXXXX` (and the per-run ao-goals-val.XXXXXX)
-    # are the sanctioned replacements; every fixed literal must be gone.
+    # The mktemp template `ao-gate.XXXXXX` (and the per-run ao-gate.XXXXXX in
+    # pre-push.local) are the sanctioned replacements; every fixed literal must
+    # be gone.
     local sg="$REPO_ROOT/scripts/check-three-gap-supergate.sh"
-    local pp="$REPO_ROOT/scripts/pre-push-gate.sh"
+    local pp="$REPO_ROOT/scripts/hooks/pre-push.local"
     # No fixed build binary path.
     run grep -nE '/tmp/ao-sg([^.]|$)' "$sg"
     [ "$status" -ne 0 ]
@@ -309,7 +310,7 @@ EOF
     # The mktemp seam is present in both scripts.
     run grep -qF 'mktemp -d "${TMPDIR:-/tmp}/ao-gate.XXXXXX"' "$sg"
     [ "$status" -eq 0 ]
-    run grep -qF 'mktemp -d "${TMPDIR:-/tmp}/ao-goals-val.XXXXXX"' "$pp"
+    run grep -qE 'mktemp .+ao-gate\.XXXXXX' "$pp"
     [ "$status" -eq 0 ]
 }
 

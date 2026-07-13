@@ -47,7 +47,7 @@ EOF
 ---
 type: learning
 maturity: canonical
-enforced_by: .github/workflows/validate.yml::process-hygiene
+enforced_by: .github/workflows/validate.yml::go-gate-shadow
 ---
 
 The doctrine rule is now a CI gate.

@@ -226,7 +226,6 @@ scripts/portfolio-stewardship.sh
 scripts/post-land-provenance-emit.sh
 scripts/post-merge-check.sh
 scripts/pre-commit-gate.sh
-scripts/pre-push-gate.sh
 scripts/pre-push-proof.sh
 scripts/preflight-swarm.sh
 scripts/preflight-uat-binary.sh

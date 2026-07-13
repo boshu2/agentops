@@ -86,27 +86,10 @@ if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     exit 0
 fi
 
-# --- bash gate (escape hatch) ------------------------------------------------
-# AGENTOPS_GATE_BASH=1 routes through the legacy bash gate (scripts/pre-push-gate.sh)
-# instead of the Go orchestrator. Kept during the transition; remove once the bash
-# gate is retired (ag-3n71 PB2 tail).
-if [ "${AGENTOPS_GATE_BASH:-0}" = "1" ]; then
-    gate="${toplevel}/scripts/pre-push-gate.sh"
-    if [ -x "$gate" ]; then
-        acquire_push_lock
-        "$gate" --fast
-        exit $?
-    fi
-    echo >&2 "AgentOps: bash gate requested but ${gate} missing — skipping"
-    exit 0
-fi
-
-# --- DEFAULT: Go gate (ao gate check) ----------------------------------------
-# Flipped to default in PB2 once the registry reached coverage parity (gated by
-# the coverage-equivalence test). From-source bootstrap so the gate that checks
-# Go compiles can never run a stale `ao` (pre-mortem BLOCKER-3): prove
-# compilation first (block with the build error if broken), then build a fresh
-# ao and exec it.
+# --- Go gate (ao gate check) — sole release path -----------------------------
+# From-source bootstrap so the gate that checks Go compiles can never run a
+# stale `ao` (pre-mortem BLOCKER-3): prove compilation first (block with the
+# build error if broken), then build a fresh ao and exec it.
 if ! ( cd "${toplevel}/cli" && go build ./... ); then
     echo >&2 "✗ go build ./... failed — fix compilation before pushing (ao gate cannot run on broken Go)"
     exit 1

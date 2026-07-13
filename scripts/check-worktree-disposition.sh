@@ -51,7 +51,7 @@ is_gate_managed_path() {
 
 is_tracked_policy_path() {
     case "$1" in
-        .gitattributes|.gitignore|AGENTS.md|CLAUDE.md|docs/contracts/*|docs/preserved-refs.tsv|docs/runbooks/*|hooks/hooks.json|scripts/check-worktree-disposition.sh|scripts/pre-push-gate.sh|scripts/ci-local-release.sh|scripts/release-smoke-test.sh|scripts/check-release-agent-metadata-stable.sh)
+        .gitattributes|.gitignore|AGENTS.md|CLAUDE.md|docs/contracts/*|docs/preserved-refs.tsv|docs/runbooks/*|hooks/hooks.json|scripts/check-worktree-disposition.sh|scripts/hooks/pre-push.local|scripts/ci-local-release.sh|scripts/release-smoke-test.sh|scripts/check-release-agent-metadata-stable.sh)
             return 0
             ;;
         *)

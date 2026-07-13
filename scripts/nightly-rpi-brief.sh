@@ -427,7 +427,7 @@ top_target="$(jq -r '.stabilization_targets[0].title // "No current stabilizatio
 top_reason="$(jq -r '.stabilization_targets[0].reason // "No current blocking evidence found."' "$SUMMARY_JSON")"
 
 cat >"$PROMPT_TXT" <<EOF
-\$agentops:rpi --auto "Use Nightly evidence from ${SINCE} through ${TODAY} before selecting work. Start from top stabilization target: ${top_target} - ${top_reason} Only override it with fresher blocking evidence from current CI, open Nightly failure issues, or open PR check rollups. Treat runtime-artifact and corpus-state flips as diagnostics, not success. Avoid flywheel-compounding unless corpus-active preconditions are true. If bd is unavailable, record tracker degradation and continue with an explicit issue-free fallback. Validate with the smallest relevant gate plus scripts/pre-push-gate.sh --fast, commit, rebase, push, and report evidence."
+\$agentops:rpi --auto "Use Nightly evidence from ${SINCE} through ${TODAY} before selecting work. Start from top stabilization target: ${top_target} - ${top_reason} Only override it with fresher blocking evidence from current CI, open Nightly failure issues, or open PR check rollups. Treat runtime-artifact and corpus-state flips as diagnostics, not success. Avoid flywheel-compounding unless corpus-active preconditions are true. If bd is unavailable, record tracker degradation and continue with an explicit issue-free fallback. Validate with the smallest relevant gate plus ao gate check --fast --scope head, commit, rebase, push, and report evidence."
 EOF
 
 pr_total="$(jq -r '.prs.total' "$SUMMARY_JSON")"

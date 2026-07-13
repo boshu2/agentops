@@ -16,7 +16,7 @@
 # Test seam: set SKILL_DISPOSITIONS_FILE to point at a fixture ledger.
 #
 # Sourced by validate-codex-rpi-contract.sh, validate-codex-lifecycle-guards.sh,
-# check-hookless-cold-start.sh, and pre-push-gate.sh. These ARE the pre-push
+# check-hookless-cold-start.sh, and the cockpit pre-push path. These ARE the pre-push
 # gate: on a repo where no historical row matches a routed path, behavior must
 # stay byte-identical.
 

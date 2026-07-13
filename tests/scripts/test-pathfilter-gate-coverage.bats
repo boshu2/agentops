@@ -1,45 +1,18 @@
 #!/usr/bin/env bats
 #
 # Drift-blocking test for the path-filter <-> gate coverage invariant in
-# .github/workflows/validate.yml. A correctness/contract gate that reads a
-# specific set of files MUST be triggered by a change-filter that covers those
-# files; otherwise an edit to a guarded file SKIPS the very gate that guards it,
-# and `summary` (a required branch-protection check) goes green-but-incomplete.
+# .github/workflows/validate.yml.
 #
-# Two concrete gaps this guards (both real regressions):
-#
-#  ag-nl1u (#634): the security redteam pack
-#    (skills/security/references/agentops-redteam-pack.json) asserts
-#    behavioral contracts against AGENTS.md + several docs/ + skills/security*
-#    files via the contracts-sync canaries. The `contracts` filter previously
-#    only matched schemas/** + docs/contracts/**, so editing a guarded file
-#    skipped the canary that guards it. INVARIANT: every redteam-pack target
-#    glob must be covered by the `contracts` filter.
-#
-#  ag-n4m7 (#591/#593): the directive<->scenario correctness gates police
-#    GOALS.md + spec/scenarios/**, but ran only on go/docs/ci -> a GOALS.md-only
-#    edit citing a phantom scenario merged with the gate SKIPPED. INVARIANT: a
-#    `goals` filter exists (GOALS.md + spec/scenarios/**) and the spec-link
-#    gates trigger on it.
-#
-#  ag-g9ex (repo-wide path-filter audit): scripts/validate-agents-split.sh reads
-#    AGENTS.md AND the four siblings AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md, but
-#    the gate triggered only on docs/ci/shell and the siblings were covered by no
-#    filter -> a sibling-only edit skipped the split gate. INVARIANT: every
-#    AGENTS*.md file the split script reads is covered by the `contracts` filter
-#    AND the split gate triggers on `contracts`. Full findings:
-#    docs/contracts/ci-pathfilter-coverage-audit.md.
-#
-# Sibling pattern: tests/scripts/test-bats-path-filter-wiring.bats — grep/parse
-# the artifact-under-test and assert the expected wiring is present.
+# Wave 2 collapsed purpose jobs into go-gate-shadow; surviving consumers of
+# path-filter outputs are correctness + security (+ go-gate-shadow always runs).
+# These tests keep the filter definitions honest for those consumers and for
+# the redteam/AGENTS coverage invariants that still live in the changes job.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
     PACK_PATH="$REPO_ROOT/skills/security/references/agentops-redteam-pack.json"
 }
-
-# ── ag-nl1u: redteam-pack targets are all covered by the `contracts` filter ──
 
 @test "contracts filter is a superset of every redteam-pack target glob" {
     run python3 - "$WORKFLOW_PATH" "$PACK_PATH" <<'PY'
@@ -64,8 +37,6 @@ filters = yaml.safe_load(filt_step["with"]["filters"])
 contracts = filters["contracts"]
 
 def covered(target, patterns):
-    # A pack target is covered if some contracts glob equals it OR a
-    # directory-glob pattern (foo/**) is a prefix of the target path.
     for p in patterns:
         if p == target:
             return True
@@ -86,14 +57,6 @@ PY
     [ "$status" -eq 0 ]
     [[ "$output" == *"ok: all redteam-pack targets covered"* ]]
 }
-
-@test "contracts-sync job triggers on needs.changes.outputs.contracts" {
-    run bash -c "awk '/^  contracts-sync:/{inblock=1} inblock && /needs.changes.outputs.contracts/{print; exit}' '$WORKFLOW_PATH'"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"needs.changes.outputs.contracts"* ]]
-}
-
-# ── ag-n4m7: a `goals` filter exists and the spec-link gates trigger on it ──
 
 @test "validate.yml declares a goals: filter under the changes job" {
     run grep -E "^            goals:" "$WORKFLOW_PATH"
@@ -126,20 +89,6 @@ PY
     [ "$status" -eq 0 ]
 }
 
-@test "directive-to-scenario link lint triggers on needs.changes.outputs.goals" {
-    run bash -c "awk '/name: Directive-to-scenario link lint/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
-}
-
-@test "scenario-test linkage gate triggers on needs.changes.outputs.goals" {
-    run bash -c "awk '/name: Scenario.*linkage gate/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
-}
-
-# ── ag-g9ex: AGENTS tiered-split siblings covered + gate triggers on contracts ──
-
 @test "contracts filter covers every AGENTS*.md file the split script reads" {
     SPLIT_SCRIPT="$REPO_ROOT/scripts/validate-agents-split.sh"
     run python3 - "$WORKFLOW_PATH" "$SPLIT_SCRIPT" <<'PY'
@@ -147,7 +96,6 @@ import sys, re, fnmatch, yaml
 
 workflow_path, split_path = sys.argv[1], sys.argv[2]
 
-# Extract the AGENTS*.md filenames the split script reads.
 with open(split_path) as f:
     src = f.read()
 agents_files = sorted(set(re.findall(r'\bAGENTS(?:-[A-Z]+)?\.md\b', src)))
@@ -185,8 +133,18 @@ PY
     [[ "$output" == *"ok: all AGENTS split targets covered"* ]]
 }
 
-@test "AGENTS tiered-split gate triggers on needs.changes.outputs.contracts" {
-    run bash -c "awk '/name: Validate AGENTS.md tiered-split contract/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
+@test "surviving jobs still consume changes outputs (correctness + security)" {
+    run python3 - "$WORKFLOW_PATH" <<'PY'
+import sys, yaml
+with open(sys.argv[1]) as f:
+    doc = yaml.safe_load(f)
+jobs = doc["jobs"]
+assert "correctness" in jobs and "security" in jobs
+for name in ("correctness", "security"):
+    cond = jobs[name].get("if") or ""
+    assert "needs.changes.outputs" in cond, f"{name} missing changes gating: {cond}"
+print("ok: correctness+security gated on changes")
+PY
     [ "$status" -eq 0 ]
-    [[ "$output" == *"needs.changes.outputs.contracts == 'true'"* ]]
+    [[ "$output" == *"ok: correctness+security gated on changes"* ]]
 }
