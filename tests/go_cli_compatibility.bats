@@ -74,7 +74,7 @@ PY
 }
 
 @test "fresh binaries match default, flywheel, legacy, and combined manifests" {
-  run "$CHECKER"
+  run "$CHECKER" --oracle-version current
   [ "$status" -eq 0 ]
   [[ "$output" == *"default,flywheel,legacy,combined"* ]]
 }
@@ -198,4 +198,147 @@ JSON
   run env AO_CLI_COMPAT_REPO_ROOT="$repo" AO_CLI_COMPAT_BASELINE_DIR="$fixture_root" "$CHECKER" --validate-family-fixture demo --verify-frozen
   [ "$status" -ne 0 ]
   [[ "$output" == *"fixture digest drift"* ]]
+}
+
+@test "append-only compatibility oracle selects v1 or v2 without rewriting evidence" {
+  c59="c59d36e58d2c5f6cefce2aa5c48e97be1db8f66f"
+  main_sha="$(git -C "$REPO_ROOT" rev-parse origin/main)"
+
+  # The production checker must never use untracked runtime evidence.
+  run rg -n '\.agents/' "$CHECKER"
+  [ "$status" -ne 0 ]
+
+  # The recorded equivalent main is immutable; behavior-identical descendants advance safely.
+  recorded_main="$(jq -r '.equivalent_main_sha' "$BASELINE/v2/metadata.json")"
+  head_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+  git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$main_sha"
+  git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$head_sha"
+  run git -C "$REPO_ROOT" merge-base --is-ancestor "$recorded_main" "$c59"
+  [ "$status" -ne 0 ]
+
+  run "$CHECKER" --verify-source-decision "$c59" "$recorded_main"
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --verify-source-decision "$c59" "$main_sha"
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --verify-source-decision "$c59" "$head_sha"
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --verify-source-decision "$c59" "$c59"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"not a descendant"* ]]
+
+  # Explicit and unflagged v1; current rolls back only when v2 is absent.
+  run "$CHECKER" --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --oracle-version v1 --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  run "$CHECKER" --oracle-version future --verify-baseline-integrity
+  [ "$status" -eq 2 ]
+
+  cp -R "$BASELINE" "$TMP/base"
+  rm -rf "$TMP/base/v2"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version v2 --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+
+  # Any partial successor is poison; arbitrary future directories are ignored.
+  mkdir -p "$TMP/base/v2"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+  rm -rf "$TMP/base/v2"
+  mkdir -p "$TMP/base/v3"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+
+  # Capture is four-profile, twice deterministic, exact-delta, and non-overwriting.
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
+    --capture --oracle-version v2 --execution-base "$c59" --equivalent-main-sha "$main_sha"
+  [ "$status" -eq 0 ]
+  [ "$head_sha" != "$c59" ]
+  jq -e --arg c59 "$c59" --arg main "$main_sha" '
+    .schema_version == 2
+    and .behavioral_source_sha == $c59
+    and .equivalent_main_sha == $main
+    and (.capture_sha | test("^[0-9a-f]{40}$"))
+    and (.profiles | keys | sort) == ["combined","default","flywheel","legacy"]
+    and (.intentional_deltas | sort) == ["environment_projection","pawl_review_hold_5","provenance_reconcile","verify_hold_5"]
+    and ([.intentional_deltas[] | select(test("plan-pawl"))] | length) == 0
+  ' "$TMP/base/v2/metadata.json"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version v2 --profiles default,flywheel,legacy,combined
+  [ "$status" -eq 0 ]
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -eq 0 ]
+
+  # Capture must measure the requested execution base, not the producer checkout.
+  old_execution_base="$(jq -r '.execution_base' "$BASELINE/metadata.json")"
+  cp -R "$BASELINE" "$TMP/old-source-base"
+  rm -rf "$TMP/old-source-base/v2"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/old-source-base" "$CHECKER" \
+    --capture --oracle-version v2 --execution-base "$old_execution_base" --equivalent-main-sha "$main_sha"
+  [ "$status" -ne 0 ]
+  [ ! -e "$TMP/old-source-base/v2" ]
+  [ ! -e "$TMP/old-source-base/.v2.lock" ]
+  [ -z "$(find "$TMP/old-source-base" -maxdepth 1 -name '.v2-stage.*' -print -quit)" ]
+
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
+    --capture --oracle-version v2 --execution-base "$c59" --equivalent-main-sha "$main_sha"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"already exists"* ]]
+
+  # Missing-profile permutations, bad hashes, and exact-delta drift fail closed.
+  cp -R "$TMP/base/v2" "$TMP/v2-pristine"
+  for profile in default flywheel legacy combined; do
+    rm -rf "$TMP/base/v2"
+    cp -R "$TMP/v2-pristine" "$TMP/base/v2"
+    rm "$TMP/base/v2/profiles/$profile.json"
+    run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+    [ "$status" -ne 0 ]
+  done
+
+  # Recreate a pristine capture after the destructive permutations.
+  rm -rf "$TMP/base/v2"
+  cp -R "$TMP/v2-pristine" "$TMP/base/v2"
+  jq '.profiles.default.sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"' \
+    "$TMP/base/v2/metadata.json" >"$TMP/bad-metadata.json"
+  mv "$TMP/bad-metadata.json" "$TMP/base/v2/metadata.json"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+
+  rm -rf "$TMP/base/v2"
+  cp -R "$TMP/v2-pristine" "$TMP/base/v2"
+  jq '.intentional_deltas += ["plan-pawl-degraded-5"]' "$TMP/base/v2/metadata.json" >"$TMP/bad-delta.json"
+  mv "$TMP/bad-delta.json" "$TMP/base/v2/metadata.json"
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+
+  # A coherently rewritten successor must still bind to freshly measured source behavior.
+  rm -rf "$TMP/base/v2"
+  cp -R "$TMP/v2-pristine" "$TMP/base/v2"
+  for profile in default flywheel legacy combined; do
+    jq '.env_vars.ZZZ_NOT_A_RUNTIME_INPUT = "unclassified mutation"' \
+      "$TMP/base/v2/profiles/$profile.json" >"$TMP/$profile-mutated.json"
+    mv "$TMP/$profile-mutated.json" "$TMP/base/v2/profiles/$profile.json"
+    mutated_hash="$(hash_file "$TMP/base/v2/profiles/$profile.json")"
+    jq --arg profile "$profile" --arg sha "$mutated_hash" \
+      '.profiles[$profile].sha256 = $sha' "$TMP/base/v2/metadata.json" >"$TMP/metadata-mutated.json"
+    mv "$TMP/metadata-mutated.json" "$TMP/base/v2/metadata.json"
+  done
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"measured source mismatch"* ]]
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
+    --verify-source-decision "$c59" "$main_sha"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"measured source mismatch"* ]]
+
+  # Every injected boundary failure is nonzero and publishes no successor.
+  for failpoint in build binary json jq git lock stage rename; do
+    rm -rf "$TMP/base/v2" "$TMP/base"/.v2-stage.* "$TMP/base/.v2.lock"
+    run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" AO_CLI_COMPAT_TEST_FAIL="$failpoint" "$CHECKER" \
+      --capture --oracle-version v2 --execution-base "$c59" --equivalent-main-sha "$main_sha"
+    [ "$status" -ne 0 ]
+    [ ! -e "$TMP/base/v2" ]
+    [ ! -e "$TMP/base/.v2.lock" ]
+    [ -z "$(find "$TMP/base" -maxdepth 1 -name '.v2-stage.*' -print -quit)" ]
+  done
 }
