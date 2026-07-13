@@ -523,7 +523,7 @@ Files beginning with `//go:build flywheel`, `legacy`, `windows`, `linux`, or neg
 
 ### Pattern 3: Typed Exit Result
 
-**Instances:** gate `ExitError`, close `Failure`/command `exitError`, beads `ExitError`, root's family-neutral `commandExitError`.
+**Instances:** gate `ExitError`, close `Failure` / command `exitError`, beads `ExitError`, root's family-neutral `commandExitError`.
 
 **Invariant:**
 

@@ -1,7 +1,7 @@
 # Post-mortem: Go CLI Goal Stall and Tracker-Layer Confusion
 
-**Date:** 2026-07-12  
-**Scope:** Agent execution of the Go CLI production-hardening goal  
+**Date:** 2026-07-12
+**Scope:** Agent execution of the Go CLI production-hardening goal
 **Impact:** The operator returned after roughly ten hours to an opaque, stopped
 workflow, no useful status summary, and no initially visible decomposition in
 the repository's issue tracker. The follow-up explanation then blurred the
@@ -163,4 +163,3 @@ composition model and invites a false global conclusion.
 - [Go CLI Production-Readiness Audit](../audits/2026-07-12-go-cli-production-readiness.md)
 - [Repository tracker instructions](../../AGENTS.md)
 - [Gas City composition](../3.0.md)
-
