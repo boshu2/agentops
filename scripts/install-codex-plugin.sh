@@ -161,6 +161,52 @@ sha256_file() {
   fail "Need shasum, sha256sum, or openssl to compute install snapshots"
 }
 
+# manifest_doctor_count prints the exact skill count `ao doctor` derives from a
+# skills-codex manifest, so the self-test compares against the same number the
+# operator's next `ao doctor` will. It mirrors ReadCodexManifestSkillCount in
+# cli/internal/quality/skills_codex.go: prefer the explicit `package_count`
+# field (which also counts installable compatibility pointers), and fall back to
+# len(skills[]) only when package_count is absent or zero. The historical
+# 66-vs-62 mismatch (age-txfnl) is exactly that fallback firing on a stale
+# installed manifest: the installer counts 66 on-disk SKILL.md dirs while a
+# manifest missing package_count makes doctor report the 62 implementation rows
+# in skills[]. Prints nothing only when the manifest cannot be read at all.
+manifest_doctor_count() {
+  local path="$1"
+  local pkg
+
+  [[ -f "$path" ]] || return 0
+
+  if command -v jq >/dev/null 2>&1; then
+    pkg="$(jq -er '.package_count // empty' "$path" 2>/dev/null || true)"
+    if [[ "$pkg" =~ ^[0-9]+$ ]] && [[ "$pkg" -gt 0 ]]; then
+      printf '%s\n' "$pkg"
+      return
+    fi
+    jq -r '.skills | length' "$path" 2>/dev/null || true
+    return
+  fi
+
+  # jq-free fallback. package_count first; else count skills[] entries via the
+  # per-entry "source_skill" key (present once per skill, and nowhere else in the
+  # manifest — verified against the generated schema).
+  pkg="$(sed -n 's/.*"package_count"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$path" | head -1)"
+  if [[ "$pkg" =~ ^[0-9]+$ ]] && [[ "$pkg" -gt 0 ]]; then
+    printf '%s\n' "$pkg"
+    return
+  fi
+  grep -c '"source_skill"' "$path" 2>/dev/null || echo 0
+}
+
+# json_int_field prints the first integer value for a top-level JSON key.
+# Used to read back the skill_count we just wrote into the install metadata so
+# the self-test compares the persisted value, not an in-memory variable.
+json_int_field() {
+  local path="$1"
+  local key="$2"
+  sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p" "$path" | head -1
+}
+
 upsert_toml_key() {
   local file="$1"
   local section="$2"
@@ -266,6 +312,61 @@ remove_toml_key() {
     }
     ' "$file" > "$tmp"
   mv "$tmp" "$file"
+}
+
+# selftest_codex_plugin verifies the installer's own claims before it prints
+# success (age-txfnl). It proves the three numbers `ao doctor` reconciles are
+# equal — installed SKILL.md directory count == manifest package_count ==
+# recorded metadata skill_count — plus a live config-enable entry and one
+# readable sentinel skill. On any mismatch it exits nonzero naming the delta so
+# the installer never declares victory over a state doctor will flag. Args:
+#   $1 disk_count   on-disk SKILL.md directory count (the number we print)
+#   $2 pkg_count    manifest package_count (empty when the field is absent)
+selftest_codex_plugin() {
+  local disk_count="$1"
+  local manifest_count="$2"
+  local -a problems=()
+  local meta_count sentinel
+
+  # (a) counts agree: disk == manifest count (the number doctor reads) ==
+  #     metadata skill_count.
+  if [[ -z "$manifest_count" ]]; then
+    problems+=("cannot read a skill count from manifest ${PLUGIN_SKILLS_DST}/${SKILL_MANIFEST_NAME} — regenerate with 'bash scripts/refresh-codex-local.sh'")
+  elif [[ "$disk_count" != "$manifest_count" ]]; then
+    problems+=("installed skill directory count ($disk_count) != manifest skill count ($manifest_count) that 'ao doctor' reads — regenerate with 'bash scripts/refresh-codex-local.sh'")
+  fi
+
+  meta_count="$(json_int_field "$INSTALL_META" "skill_count")"
+  if [[ -z "$meta_count" ]]; then
+    problems+=("install metadata ${INSTALL_META} has no readable skill_count")
+  elif [[ "$meta_count" != "$disk_count" ]]; then
+    problems+=("install metadata skill_count ($meta_count) != installed skill directory count ($disk_count)")
+  fi
+
+  # (b) config enable entry present.
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    problems+=("config file ${CONFIG_FILE} was not written")
+  elif ! grep -qF "[plugins.\"${PLUGIN_KEY}\"]" "$CONFIG_FILE"; then
+    problems+=("config ${CONFIG_FILE} is missing the plugin enable entry [plugins.\"${PLUGIN_KEY}\"]")
+  fi
+
+  # (c) at least one sentinel skill file is readable.
+  sentinel="$(find "$PLUGIN_SKILLS_DST" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | head -1)"
+  if [[ -z "$sentinel" || ! -r "$sentinel" ]]; then
+    problems+=("no readable sentinel SKILL.md under ${PLUGIN_SKILLS_DST}")
+  fi
+
+  if [[ ${#problems[@]} -gt 0 ]]; then
+    echo "" >&2
+    warn "Self-test FAILED — install left on disk for inspection but NOT healthy:"
+    local p
+    for p in "${problems[@]}"; do
+      echo -e "  ${RED}✗${NC} $p" >&2
+    done
+    fail "Codex plugin self-test failed with ${#problems[@]} problem(s); refusing to report success."
+  fi
+
+  info "Self-test passed: $disk_count skills; manifest, metadata, and config are consistent (ao doctor will agree)"
 }
 
 stage_plugin_source() {
@@ -430,6 +531,10 @@ EOF
 remove_toml_key "$CONFIG_FILE" "[features]" "hooks"
 info "Codex hooks not installed (hookless — skills + ao CLI only)"
 
+# ── Self-test: verify our own claims before declaring success (age-txfnl) ──
+MANIFEST_DOCTOR_COUNT="$(manifest_doctor_count "$PLUGIN_SKILLS_DST/$SKILL_MANIFEST_NAME")"
+selftest_codex_plugin "$SKILL_COUNT" "$MANIFEST_DOCTOR_COUNT"
+
 info "Native Codex plugin installed"
 echo "  Plugin key: $PLUGIN_KEY"
 echo "  Plugin root: $PLUGIN_CACHE_ROOT"
@@ -448,4 +553,4 @@ if [[ -n "$USER_BACKUP_DIR" ]]; then
 fi
 info "Install metadata written: $INSTALL_META"
 echo ""
-echo "Restart Codex to pick up the native plugin."
+echo "Verify it worked: restart Codex, then type /plan to confirm the skills are live."

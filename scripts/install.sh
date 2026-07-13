@@ -31,6 +31,12 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WITH_HOOKS="${AGENTOPS_INSTALL_HOOKS:-0}"
 TIER="${AGENTOPS_INSTALL_TIER:-all}"
+# Offline/local-source mode: install from an already-extracted checkout instead
+# of downloading from GitHub. Shared with install-codex.sh / install-agy.sh /
+# install-opencode.sh so tests (and air-gapped installs) run against the
+# worktree. Local-source mode installs the full bundle (no spine pruning, which
+# would mutate the source checkout).
+SOURCE_ROOT_OVERRIDE="${AGENTOPS_BUNDLE_ROOT:-}"
 
 # prune_bundle_to_spine removes every non-spine skill dir from an extracted
 # AgentOps bundle so a --tier spine install ships only the proven spine skills
@@ -196,14 +202,21 @@ fi
 
 # Step 1: Install Codex plugin
 echo "Step 1/3: Installing Codex plugin..."
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
-curl -fsSL https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main \
-    | tar xz -C "$TMP" --strip-components=1
-
-if [[ "$TIER" == "spine" ]]; then
-    echo "Tier: spine — pruning bundle to spine skills before install..."
-    prune_bundle_to_spine "$TMP"
+if [ -n "$SOURCE_ROOT_OVERRIDE" ]; then
+    [ -f "$SOURCE_ROOT_OVERRIDE/scripts/install-codex.sh" ] \
+        || { echo "Error: AGENTOPS_BUNDLE_ROOT missing scripts/install-codex.sh: $SOURCE_ROOT_OVERRIDE" >&2; exit 1; }
+    BUNDLE="$SOURCE_ROOT_OVERRIDE"
+    echo "Local-source mode: installing from $BUNDLE (full bundle; spine pruning skipped)."
+else
+    TMP=$(mktemp -d)
+    trap 'rm -rf "$TMP"' EXIT
+    curl -fsSL https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main \
+        | tar xz -C "$TMP" --strip-components=1
+    BUNDLE="$TMP"
+    if [[ "$TIER" == "spine" ]]; then
+        echo "Tier: spine — pruning bundle to spine skills before install..."
+        prune_bundle_to_spine "$BUNDLE"
+    fi
 fi
 
 if command -v codex >/dev/null 2>&1; then
@@ -211,7 +224,10 @@ if command -v codex >/dev/null 2>&1; then
     if [[ "$WITH_HOOKS" == "1" ]]; then
         codex_args+=(--with-hooks)
     fi
-    AGENTOPS_BUNDLE_ROOT="$TMP" bash "$TMP/scripts/install-codex.sh" "${codex_args[@]}"
+    # Expand-only-if-set: an empty array under `set -u` is an unbound-variable
+    # error on macOS bash 3.2, which is reachable now that local-source mode
+    # exercises this path offline.
+    AGENTOPS_BUNDLE_ROOT="$BUNDLE" bash "$BUNDLE/scripts/install-codex.sh" ${codex_args[@]+"${codex_args[@]}"}
 else
     echo "Codex CLI not found. Skipping Codex plugin install."
     echo "For Claude Code, install skills via the plugin system:"
@@ -224,7 +240,7 @@ fi
 if command -v agy >/dev/null 2>&1; then
     if command -v jq >/dev/null 2>&1; then
         echo "Installing Gemini/AGY plugin..."
-        AGENTOPS_BUNDLE_ROOT="$TMP" bash "$TMP/scripts/install-agy.sh"
+        AGENTOPS_BUNDLE_ROOT="$BUNDLE" bash "$BUNDLE/scripts/install-agy.sh"
     else
         echo "Gemini/AGY detected but 'jq' is missing. Install jq, then run:"
         echo "  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash"
@@ -269,5 +285,29 @@ else
     echo "Step 3/3: Runtime-specific setup complete."
 fi
 
+# Self-test: verify install.sh's aggregate claim before printing "Done"
+# (age-txfnl). The per-runtime installers self-test and abort on failure, so
+# reaching here already implies each ran clean; this tail is the orchestrator's
+# own belt-and-suspenders check that the runtime we detected actually landed a
+# config-enable entry + install metadata, so we never print "Done" over a
+# half-installed state.
+selftest_problems=0
+if [ "$HAS_CODEX" = "yes" ]; then
+    codex_meta="${HOME}/.codex/.agentops-codex-install.json"
+    codex_cfg="${HOME}/.codex/config.toml"
+    if [ ! -f "$codex_meta" ]; then
+        echo "self-test: Codex install metadata missing ($codex_meta)" >&2
+        selftest_problems=$((selftest_problems + 1))
+    fi
+    if ! grep -qF 'agentops@agentops-marketplace' "$codex_cfg" 2>/dev/null; then
+        echo "self-test: Codex config missing plugin enable entry ($codex_cfg)" >&2
+        selftest_problems=$((selftest_problems + 1))
+    fi
+fi
+if [ "$selftest_problems" -gt 0 ]; then
+    echo "Error: install self-test failed with $selftest_problems problem(s); not all runtimes installed cleanly. Re-run this installer or run 'ao doctor' for details." >&2
+    exit 1
+fi
+
 echo ""
-echo "Done! Start with: /quickstart"
+echo "Done! Verify it worked: start your coding agent and type /plan (or /quickstart)."
