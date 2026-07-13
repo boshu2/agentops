@@ -31,9 +31,9 @@ not the bind.
 1. **Commit the feat.** `git commit -m "feat(<scope>): <subject> (<bead>)"`
    — WHY: the subject must cite the bead id; the gate and the pawl resolve the bead from the HEAD subject.
 
-2. **Review — FOREGROUND.** `ao pawl review <bead> --scope head`
+2. **Review — FOREGROUND.** Run the legacy Pawl review command for the bead and head scope.
    — WHY: the codex refuter writes a CONFIRMED verdict to `.agents/pawl-verdicts/<bead>.json`; run it in the FOREGROUND (~3–5 min) because backgrounding reaps the codex subprocess mid-review.
-   - **NOTE:** `ao pawl review` runs from a temp script copy and sets `PAWL_UNTRUSTED_REPO=1`, which **SKIPS auto-bind** — so you must do steps 3–4 by hand. (`bash scripts/pawl-review.sh` from the live checkout auto-binds instead; see the [Land Loop](../SKILL.md).)
+   - **NOTE:** the legacy Pawl review command runs from a temp script copy and sets `PAWL_UNTRUSTED_REPO=1`, which **SKIPS auto-bind** — so you must do steps 3–4 by hand. (`bash scripts/pawl-review.sh` from the live checkout auto-binds instead; see the historical Land Loop.)
 
 3. **Emit the sealed verdict.** `ao provenance emit-verdict --file .agents/pawl-verdicts/<bead>.json`
    — WHY: this is the SEALED, hash-chained emit. NEVER hand-append the ledger — a `git add` of a raw edge breaks the hash chain (payload_hash mismatch) and every downstream `provenance.chain` check fails.
@@ -54,7 +54,7 @@ not the bind.
   does this restamp for you; a manual land must re-emit, not edit the ledger.
 - **RE-PAWL on tip change.** If the reviewed tree changed after CONFIRMED (a rebase brought in
   conflicting content, or you amended the feat), the verdict no longer describes the pushed tree —
-  re-run `ao pawl review <bead> --scope head` before landing. `head_sha` must equal the pushed commit.
+  re-run the legacy Pawl review command before landing. `head_sha` must equal the pushed commit.
 
 ## Failure playbook
 
@@ -63,9 +63,9 @@ not the bind.
 | **non-fast-forward** on push | `scripts/pawl-land.sh <bead>` | rebases onto the moved `origin/main` AND restamps the verdict onto the post-rebase feat — the one command that survives a raced tip. |
 | **`provenance.chain` FAIL at an old line** while `ao provenance verify` reports intact | `cd cli && go build -o bin/ao ./cmd/ao` | a STALE `cli/bin/ao` is the cause — the gate prefers `cli/bin/ao`. Confirm the true state: only the appended line should differ from `git show origin/main:docs/provenance/ledger.jsonl`. |
 | **race-suite flake** (the `-shuffle=on` tmux/session isolation test) | retry the push | the shuffle-order suite is a late backstop, not a real regression here; a clean retry lands. |
-| **codex stall / reaped** mid-review | re-run the pawl FOREGROUND: `timeout 450 ao pawl review <bead> --scope head` | the reviewer needs the full budget in the foreground; a reaped subprocess produces no verdict. |
-| **NO-VERDICT** (push refused, no CONFIRMED verdict) | run the pawl first: `ao pawl review <bead> --scope head` | the pre-push pawl-gate is fail-closed — no CONFIRMED verdict = push refused (no verdict = not done). |
-| **false-REFUTE with deterministic ground truth** | `ao pawl review <bead> --scope head --smoke "<the deterministic check that proves it>"` | re-review attaching the runnable ground-truth check; a green live smoke overrides a diff-read REFUTE (a red runtime still REFUTES fail-first). |
+| **codex stall / reaped** mid-review | re-run the legacy Pawl review command in the foreground | the reviewer needs the full budget in the foreground; a reaped subprocess produces no verdict. |
+| **NO-VERDICT** (push refused, no CONFIRMED verdict) | run the legacy Pawl review command first | the historical pre-push Pawl gate was fail-closed. |
+| **false-REFUTE with deterministic ground truth** | re-run the legacy Pawl review command with its smoke argument | re-review attaching the runnable ground-truth check. |
 
 ## Anti-patterns (do NOT)
 

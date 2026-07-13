@@ -55,7 +55,10 @@ bash scripts/preflight-swarm.sh "$WAVE_TASK_FILES" || PREFLIGHT_RC=$?
   done
   ```
 
-  Workers in escalated mode operate in their own worktree. Orchestrator removes the worktree at wave-end after the worker's commit + push lands:
+  Workers in escalated mode operate in their own worktree. Crank reports every
+  worktree and preserved result in its handoff. The caller removes a worktree
+  only after independently confirming that its result is preserved; cleanup is
+  not coupled to repository delivery:
 
   ```bash
   for task in $WAVE_TASKS; do

@@ -1,0 +1,7 @@
+role=rpi
+proof=immutable
+delivery=none
+git=none
+tracker=none
+verdict_mutation=none
+git_queue=owned

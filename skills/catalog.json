@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T14:14:55Z",
+  "generated_at": "2026-07-13T14:51:11Z",
   "skill_count": 63,
   "skills": [
     {
@@ -1001,7 +1001,7 @@
       "description": "Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: \"run a pawl reviewer\", \"fresh-context review lane\", \"collect independent review evidence\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
-      "graph_root": false,
+      "graph_root": true,
       "consumes": [
         "code-under-review",
         "specification"
@@ -1114,7 +1114,7 @@
       "description": "Prepare PR commits and body. Triggers: \"pr-prep\", \"pr prep\", \"prepare pr commits and body.\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
-      "graph_root": false,
+      "graph_root": true,
       "consumes": [
         "domain"
       ],
@@ -1193,7 +1193,7 @@
     },
     {
       "name": "push",
-      "description": "Validate, commit, and push. Triggers: \"push\", \"ship it\", \"commit and push\".",
+      "description": "Run repository-selected deterministic delivery. Triggers: \"push\", \"ship it\", \"commit and push\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "graph_root": true,
@@ -1203,10 +1203,7 @@
       "produces": [
         "git-changes"
       ],
-      "dependencies": [
-        "pr-prep",
-        "pawl-review"
-      ],
+      "dependencies": [],
       "practices": [
         "continuous-delivery",
         "gitops",
