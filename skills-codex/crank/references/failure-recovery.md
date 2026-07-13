@@ -12,8 +12,8 @@
 3. Re-add to next wave
 4. After 3 failures, take one bounded helper pass — hand the blocker, the
    evidence, and what was tried to a fresh context or cross-family model
-   ($council, a fresh Codex session); resume on UNSTUCK. Escalate only what
-   survives it (never a second pass on the same blocker class):
+   (`codex exec`, `/council`); resume on UNSTUCK. Escalate only what survives
+   it (never a second pass on the same blocker class):
    ```bash
    bd update <issue-id> --labels BLOCKER 2>/dev/null
    bd comments add <issue-id> "ESCALATED: 3 validation failures. Helper pass: <ESCALATE|skipped>. Human review required." 2>/dev/null
@@ -27,6 +27,7 @@ if [[ $wave -ge 50 ]]; then
     echo "<promise>BLOCKED</promise>"
     echo "Global wave limit (50) reached. Remaining issues:"
     # Beads mode: bd children <epic-id> --status open
+    # TaskList mode: TaskList() → pending tasks
     # STOP - do not continue
 fi
 ```
@@ -35,24 +36,31 @@ fi
 
 **Verify there are issues to work on:**
 
+**If 0 ready issues found (beads mode) or 0 pending unblocked tasks (TaskList mode):**
 ```
 STOP and return error:
   "No ready issues found for this epic. Either:
    - All issues are blocked (check dependencies)
-   - Epic has no child issues (run $plan first)
+   - Epic has no child issues (run /plan first)
    - All issues already completed"
 ```
 
-Also verify: epic has at least 1 child issue total. An epic with 0 children means $plan was not run.
+Also verify: epic has at least 1 child issue total. An epic with 0 children means /plan was not run.
 
 Do NOT proceed with empty issue list - this produces false "epic complete" status.
 
-## Final Batched Validation
+## Final Evidence Handoff
 
-When all issues complete, check whether a full $validate is needed:
+When all issues complete, Crank assembles the wave checkpoints and acceptance
+roll-up for one final Validate invocation by the caller/orchestrator. Per-wave
+checks do not substitute for that independent verdict. Crank itself does not
+invoke Validate, Learn, Discovery, or Premortem.
+
+Wave checkpoint verdicts may advise the caller about validation depth, but
+never authorize a skip:
 
 ```bash
-# Check wave checkpoint verdicts — skip final vibe if ALL waves passed clean
+# Check wave checkpoint verdicts — clean waves scale the gate down, never skip it
 ALL_PASS=true
 for checkpoint in .agents/crank/wave-*-checkpoint.json; do
     verdict=$(jq -r '.acceptance_verdict // "UNKNOWN"' "$checkpoint" 2>/dev/null)
@@ -63,44 +71,79 @@ for checkpoint in .agents/crank/wave-*-checkpoint.json; do
 done
 ```
 
-**If ALL waves passed acceptance check with PASS verdict (no WARNs, no retries):**
-Skip the final $validate — per-wave acceptance checks already validated acceptance criteria. Proceed directly to Step 8 (learnings extraction).
+**If all waves passed:** suggest the default one fresh independent Validate
+judge. **If any wave had WARN, FAIL, or missing evidence:** include those facts
+in the Validate packet; deeper review remains an explicit caller choice.
 
-**If ANY wave had WARN, FAIL, or missing verdicts:**
-Run ONE comprehensive vibe on recent changes:
+Changed files remain part of the handoff:
 
 ```bash
 # Get list of changed files from recent commits
 git diff --name-only HEAD~10 2>/dev/null | sort -u
 ```
 
+The resulting Validate verdict must flow to Learn and then the orchestrator.
+No direct retry occurs in this reference.
+
+## Node Repair Operator
+
+Structured recovery replaces simple retry logic. When a task fails:
+
+### Step 1: Classify
+
+Read the failure output and classify:
+
+| Signal | Classification |
+|--------|---------------|
+| "timeout", "connection refused", "EAGAIN", test passed on retry | RETRY |
+| Partial completion, >3 files changed, merge conflict mid-task | DECOMPOSE |
+| "blocked by", "spec impossible", "missing API", external dep | PRUNE |
+
+### Step 2: Execute Recovery
+
+**RETRY:** Re-add issue to next wave with context:
+```bash
+bd comments add <issue-id> "RETRY (attempt N/2): <failure reason>. Adjustment: <what to try differently>"
 ```
-Tool: Skill
-Parameters:
-  skill: "agentops:vibe"
-  args: "recent"
+Worker gets the adjustment context in its task prompt.
+
+**DECOMPOSE:** Split the issue:
+```bash
+# Create sub-issues
+bd create --title "<original-title> — part A" --body "<scoped description>" --parent <epic-id>
+bd create --title "<original-title> — part B" --body "<scoped description>" --parent <epic-id>
+# Close original as decomposed
+bd update <issue-id> --labels decomposed
+bd close <issue-id>
+bd comments add <issue-id> "DECOMPOSED into <new-id-a>, <new-id-b>"
 ```
 
-**If CRITICAL issues found:**
-1. Fix them
-2. Re-run vibe on affected files
-3. Only proceed to completion when clean
+**PRUNE:** Take one bounded helper pass, then escalate only what survives it.
+Hand the blocker, the evidence, and what was tried to a fresh context or
+cross-family model (`codex exec`, `/council`); on UNSTUCK resume with its next
+action; on ESCALATE (or a refusal-lane / explicit-judgment class, which skips
+the helper) mark for the human:
+```bash
+bd update <issue-id> --labels BLOCKER
+bd comments add <issue-id> "PRUNED: <reason>. Helper pass: <ESCALATE|skipped>. Human review required."
+```
+Never a second helper pass on the same blocker class.
 
-## Retry Strategy
+### Step 3: Budget Check
 
-| Failure Type | Action |
-|--------------|--------|
-| Validation failure | Re-add to next wave (max 3 attempts) |
-| Blocked dependencies | Escalate after 3 checks |
-| Context exhaustion (distributed) | Checkpoint + spawn replacement |
-| Build failure | Re-add to retry queue |
-| Spec impossible | Mark blocked, one bounded helper pass, escalate what survives |
+| Action | Cost | Running Total |
+|--------|------|--------------|
+| RETRY | 1 | +1 |
+| DECOMPOSE | 2 | terminal (no further repair) |
+| PRUNE | 0 | terminal (escalated) |
+
+Max budget per task: 2. Exhausted budget → auto-PRUNE.
 
 ## Escalation
 
 When issues cannot be resolved automatically:
 - Take one bounded helper pass per blocker class first (fresh context,
-  cross-family model, or $council — [pawls.md §Escalation](../../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model));
+  cross-family model, or `/council` — [pawls.md §Escalation](../../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model));
   refusal-lane / explicit-judgment classes skip it
 - Mark what survives with BLOCKER label (beads mode)
 - Output `<promise>BLOCKED</promise>` with reason

@@ -10,6 +10,7 @@
 
 For each **spec-eligible** issue (feature/bugfix/refactor):
 
+1. **TaskCreate** with subject `SPEC: <issue-title>`
 2. **Worker prompt:**
    ```
    You are a spec writer. Generate a contract for this issue.
@@ -78,6 +79,7 @@ If a spec worker writes `BLOCKED` instead of a contract:
 
 For each **spec-eligible** issue:
 
+1. **TaskCreate** with subject `TEST: <issue-title>`
 2. **Worker prompt:**
    ```
    You are a test writer. Generate FAILING tests from the contract.

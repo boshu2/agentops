@@ -20,7 +20,7 @@ Council brainstorm + judge verdicts: `.agents/council/2026-04-30-brainstorm-cran
 
 ## Tier 1 — Branch isolation prompt rule (every parallel wave ≥ 2)
 
-Inject this rule verbatim at the top of every worker's `spawn_agent(message=...)` text, before the issue body:
+Inject this rule verbatim at the top of every worker's TaskCreate description, before the issue body:
 
 ```
 WORKER GIT DISCIPLINE (parallel wave — read first):

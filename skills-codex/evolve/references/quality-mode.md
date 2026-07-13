@@ -6,7 +6,7 @@ Use `--quality` when:
 - Post-mortem findings are accumulating faster than they're consumed
 - All GOALS pass but `next-work.jsonl` has unconsumed high-severity items
 - You want to resolve context-hot findings from a just-completed epic
-- Running immediately after `$post-mortem` to action its findings
+- Running immediately after `/post-mortem` to action its findings
 
 Do NOT use `--quality` when:
 - GOALS have critical failures (build broken, tests failing)
@@ -32,13 +32,13 @@ Where counts are unconsumed findings remaining in next-work.jsonl.
 
 ## Priority Cascade (Quality Mode)
 
-1. High-severity unconsumed findings → $rpi
-2. Medium-severity unconsumed findings → $rpi
-3. Open ready beads → prefer $rpi with bead context
-4. Failing GOALS.yaml goals and directive gaps → $rpi
-5. Testing improvements → $rpi
-6. Validation tightening / bug-hunt / drift mining → $rpi
-7. Feature suggestions → durable work + $rpi
+1. High-severity unconsumed findings → /rpi
+2. Medium-severity unconsumed findings → /rpi
+3. Open ready beads → prefer /rpi with bead context
+4. Failing GOALS.yaml goals and directive gaps → /rpi
+5. Testing improvements → /rpi
+6. Validation tightening / bug-hunt / drift mining → /rpi
+7. Feature suggestions → durable work + /rpi
 8. Nothing after repeated generator passes → dormancy fallback
 
 ## Marking Findings Consumed
@@ -47,9 +47,9 @@ When evolve picks a finding from next-work.jsonl, claim it first:
 - Set `claim_status: "in_progress"`
 - Set `claimed_by: "evolve-quality:cycle-N"`
 - Set `claimed_at: "<timestamp>"`
-- Keep `consumed: false` until the $rpi cycle and regression gate both succeed
+- Keep `consumed: false` until the /rpi cycle and regression gate both succeed
 
-If the $rpi cycle fails (regression), clear the claim and leave the finding available.
+If the /rpi cycle fails (regression), clear the claim and leave the finding available.
 
 ## Artifacts
 

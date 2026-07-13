@@ -120,9 +120,20 @@
     },
     {
       "name": "crank",
-      "treatment": "bespoke",
+      "treatment": "parity_only",
       "wave": "backbone",
-      "reason": "Hands-free execution depends on Codex-native agent control, progress reporting, and scope discipline."
+      "reason": "The one-wave execution and evidence boundary are runtime-portable; Codex-specific worker guidance is a small generated operator contract, not a second hand-maintained skill.",
+      "operator_contract": {
+        "required_sections": [
+          "## Codex Execution Profile",
+          "## Guardrails"
+        ],
+        "required_markers": [
+          "In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.",
+          "Prefer direct Codex session-agent orchestration for disjoint workers; preserve the source skill's one-wave boundary.",
+          "End after one wave. RPI routes evidence through `$validate`, `$learn`, and the orchestrator before another `$crank` invocation."
+        ]
+      }
     },
     {
       "name": "dcg",
@@ -160,9 +171,20 @@
     },
     {
       "name": "evolve",
-      "treatment": "bespoke",
+      "treatment": "parity_only",
       "wave": "backbone",
-      "reason": "The always-on improvement loop needs explicit Codex operating semantics around queues, generators, and persistence."
+      "reason": "The four-umbrella cycle is runtime-portable; Codex persistence and lead-loop guidance fit in a generated operator contract.",
+      "operator_contract": {
+        "required_sections": [
+          "## Codex Execution Profile",
+          "## Guardrails"
+        ],
+        "required_markers": [
+          "Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.",
+          "Persist loop state under `.agents/evolve/` and recover from disk instead of relying on live context.",
+          "Enforce `Validate -> Learn -> orchestrator`; only an orchestrator-owned changed plan enters `$premortem`."
+        ]
+      }
     },
     {
       "name": "goals",
@@ -270,9 +292,20 @@
     },
     {
       "name": "premortem",
-      "treatment": "bespoke",
+      "treatment": "parity_only",
       "wave": "core-execution",
-      "reason": "Go/no-go judgment depends on Codex-specific gate framing and concise blocker reporting."
+      "reason": "Plan judgment is runtime-portable; concise Codex verdict framing fits in a generated operator contract.",
+      "operator_contract": {
+        "required_sections": [
+          "## Codex Execution Profile",
+          "## Guardrails"
+        ],
+        "required_markers": [
+          "Lead with the verdict, then the smallest set of blocking findings that would change implementation behavior.",
+          "Between waves, accept only a changed plan from an explicit orchestrator request.",
+          "Do not accept direct control transfer from `$validate` or `$learn`."
+        ]
+      }
     },
     {
       "name": "product",
@@ -363,10 +396,9 @@
     },
     {
       "name": "rpi",
-      "treatment": "bespoke",
+      "treatment": "parity_only",
       "wave": "backbone",
-      "reason": "The lead orchestration path and disk-backed state contract require explicit Codex-native operating rules.",
-      "operator_contract_required": true,
+      "reason": "The four-umbrella lifecycle is runtime-portable; Codex-native lead orchestration remains a generated operator contract instead of a second hand-maintained skill.",
       "operator_contract": {
         "required_sections": [
           "## Codex Execution Profile",
@@ -377,15 +409,16 @@
           "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
           "Keep a single lifecycle objective spine across discovery, crank, validation, and learning. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
           "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
-          "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
+          "If `$crank` returns `<promise>PARTIAL</promise>`, treat it as one completed wave: run `$validate` on that wave, pass the immutable verdict to `$learn`, and let the lead orchestrator consume `plan_impact` before deciding whether to invoke `$crank` again.",
           "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
           "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, `$validate`, and `$learn` delegation is auditable from disk.",
           "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
           "Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.",
           "Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
+          "Enforce `Validate -> Learn -> orchestrator`. Only the lead orchestrator may invoke `$discovery` to change the remaining plan and then `$premortem` on that exact changed plan.",
           "claim, release, and consume semantics exactly",
           "claim before work, consume on success, release on failure or interruption",
-          "Do not stop after a partial phase result; only stop on `<promise>BLOCKED</promise>`, retry-budget exhaustion, or final completion. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
+          "Do not silently loop after a partial wave. Preserve the objective, route the wave through Validate and Learn, and make the next orchestrator decision explicit. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
         ]
       }
     },

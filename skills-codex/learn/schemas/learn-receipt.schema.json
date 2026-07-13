@@ -12,7 +12,59 @@
     "input_verdict_ref",
     "input_verdict_digest",
     "artifact",
-    "observations"
+    "observations",
+    "remaining_work",
+    "plan_impact"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {"remaining_work": {"const": false}},
+        "required": ["remaining_work"]
+      },
+      "then": {
+        "properties": {
+          "plan_impact": {
+            "properties": {"disposition": {"const": "terminal"}}
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "plan_impact": {
+            "properties": {
+              "disposition": {"enum": ["material_change", "no_change"]}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "plan_impact": {
+            "properties": {"disposition": {"const": "material_change"}},
+            "required": ["disposition"]
+          }
+        },
+        "required": ["plan_impact"]
+      },
+      "then": {
+        "properties": {
+          "plan_impact": {
+            "required": ["proposed_changes"],
+            "properties": {"proposed_changes": {"minItems": 1}}
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "plan_impact": {
+            "properties": {"proposed_changes": {"maxItems": 0}}
+          }
+        }
+      }
+    }
   ],
   "properties": {
     "schema_version": {"const": "learn-receipt.v1"},
@@ -33,6 +85,27 @@
           "summary": {"type": "string", "minLength": 1},
           "evidence_ref": {"type": "string", "minLength": 1},
           "disposition": {"enum": ["record", "candidate", "no_change"]}
+        }
+      }
+    },
+    "remaining_work": {"type": "boolean"},
+    "plan_impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disposition", "summary", "evidence_refs"],
+      "properties": {
+        "disposition": {
+          "enum": ["material_change", "no_change", "terminal"]
+        },
+        "summary": {"type": "string", "minLength": 1},
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "proposed_changes": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
         }
       }
     },

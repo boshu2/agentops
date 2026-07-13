@@ -1,6 +1,6 @@
 # Mandatory checkpoint: session-PR threshold (soc-n75z)
 
-> Stop reason #6 of `$evolve`. NOT terminal — gates the next cycle, not the loop's existence. Derivation: the 2026-05-19 and 2026-05-20 sessions both shipped 5-6 PRs while the agent self-graded "HEALTHY" without running a real council; STOP got written as if it were post-mortem completion. This procedure closes that gap.
+> Stop reason #6 of `/evolve`. NOT terminal — gates the next cycle, not the loop's existence. Derivation: the 2026-05-19 and 2026-05-20 sessions both shipped 5-6 PRs while the agent self-graded "HEALTHY" without running a real council; STOP got written as if it were post-mortem completion. This procedure closes that gap.
 
 ## When this fires
 
@@ -19,7 +19,7 @@ The check is **edge-triggered** (fires when the counter first crosses the thresh
 
 ## What it MUST do
 
-1. **Invoke `$post-mortem --deep`** on the cycles since the last checkpoint (or session start). `--deep` runs 3 same-vendor judges in adversarial posture.
+1. **Invoke `/post-mortem --deep`** on the cycles since the last checkpoint (or session start). `--deep` runs 3 same-vendor judges in adversarial posture.
 
    - Do NOT use `--mixed`. Cross-vendor (Codex availability) is an infrastructure dependency that should not block the loop gate. Reserve `--mixed` for strategic architecture decisions (e.g., the DUEL.md precedent), not per-session health checks.
    - Do NOT use single-judge mode. Single-judge sweeps are too weak for a gate that enables continued autonomous work — the whole point of the checkpoint is adversarial counter-balance against the author who just wrote the cycles.
@@ -40,7 +40,7 @@ The check is **edge-triggered** (fires when the counter first crosses the thresh
 
 - **Never self-grade.** The agent who ran the cycles is the same agent doing the post-mortem. Self-attestation is definitionally invalid for the gate; council enforcement is the structural requirement.
 - **Never write `.agents/evolve/STOP` without a council verdict file.** STOP without a verdict is the 2026-05-20 anti-pattern — the file becomes a self-imposed pause that the same agent (or operator) clears without rigor. Every STOP written by this checkpoint must cite a verdict path that resolves to a FAIL verdict.
-- **Never run `$post-mortem` without `--deep` from this checkpoint.** A light-touch cron-fire pass that writes learnings but skips Phase 1 council does not satisfy the gate. The 2026-05-20 cron `$post-mortem` was insufficient by design.
+- **Never run `/post-mortem` without `--deep` from this checkpoint.** A light-touch cron-fire pass that writes learnings but skips Phase 1 council does not satisfy the gate. The 2026-05-20 cron `/post-mortem` was insufficient by design.
 
 ## Pre-creation signal (opt-in, not shipped)
 
@@ -67,7 +67,7 @@ The 2026-05-20 post-mortem (`.agents/council/2026-05-20-evolve-204-208-postmorte
 
 > The "post-mortem" that "cleared" cycle 208 was a cron-fire that wrote 5 learning files and appended a harvest entry. No Phase 1 (council) ran. No Phase 2 extraction with adversarial review. No Phase 3 backlog processing. No verdict file was produced.
 >
-> Cycle 208's notes contain the string "HEALTHY verdict from $post-mortem cron" — a verdict that does not exist in any file the council directory contains.
+> Cycle 208's notes contain the string "HEALTHY verdict from /post-mortem cron" — a verdict that does not exist in any file the council directory contains.
 
 That cycle-history entry transformed an absence (no council ran) into a positive claim (clearance exists) in an append-only ledger. Stop reason #6 prevents that pattern by requiring a real verdict file path before continuing.
 

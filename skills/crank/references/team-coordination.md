@@ -93,20 +93,22 @@ Swarm finds unblocked TaskList tasks and executes them.
 
 **Note:** Per-issue review is handled by swarm validation. Wave-level semantic review happens in the Wave Acceptance Check.
 
-## Check for More Work
+## Report Remaining Work
 
 After completing a wave:
 
 ### Beads Mode
-1. Clear completed tasks from TaskList
-2. Check if new beads issues are now unblocked: `bd ready`
-3. If yes, return to wave execution (create new TaskList tasks, invoke swarm)
-4. If no more issues after 3 retry attempts, proceed to final validation
+1. Clear completed tasks from TaskList.
+2. Inspect `bd ready` only to determine whether work remains.
+3. If work remains, emit `PARTIAL` with the wave evidence and remaining-work summary to Validate.
+4. If no work remains, emit `DONE` with final wave evidence to Validate.
 
 ### TaskList Mode
-1. `TaskList()` → any remaining pending tasks with no blockers?
-2. If yes, loop back to wave execution
-3. If all completed, proceed to final validation
+1. Inspect `TaskList()` only to determine whether pending work remains.
+2. If work remains, emit `PARTIAL` with the wave evidence and remaining-work summary to Validate.
+3. If all work is complete, emit `DONE` with final wave evidence to Validate.
 
 ### Both Modes
-- **Max retries:** If issues remain blocked after 3 checks, escalate: "Epic blocked - cannot unblock remaining issues"
+- Crank never creates the next wave, invokes another swarm, retries blocked work, or changes the plan from this step.
+- Blocked remaining work produces `BLOCKED` evidence for the orchestrator; it does not trigger an inline retry or escalation policy.
+- The mandatory handoff is `Validate -> Learn -> orchestrator`. Only the orchestrator decides whether to continue, retry, stop, escalate, or route a changed plan through Discovery and Premortem.

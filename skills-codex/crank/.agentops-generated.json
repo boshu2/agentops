@@ -1,7 +1,7 @@
 {
-  "generator": "manual-maintained",
+  "generator": "codex-sync",
   "source_skill": "skills/crank",
   "layout": "modular",
-  "source_hash": "0a15e15c21e1d39161858101fa53eabd33ae3c4dd1ba4b310ae0e4cb6b06c9b8",
-  "generated_hash": "032faff85f838916c84cf75604cecd06250bf55e40f0ecc43bdb68ceedfbbc43"
+  "source_hash": "3108087604b81cb30b306e732fe402fe6f37726247ae9d17864111da6fccb060",
+  "generated_hash": "d8b3547ea1685be7b5c911d7665da32f2b2b8ca4868ddae2bf6fddbe7a85a517"
 }
