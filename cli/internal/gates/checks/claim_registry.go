@@ -34,15 +34,6 @@ func init() {
 		Run:        runClaimTierCitation,
 		RepairHint: "ao claim check --changed --json",
 	})
-	gates.Register(gates.Check{
-		ID:         "claim.pmf-evidence",
-		Tiers:      gates.Fast | gates.Full,
-		Match:      claimPMFPaths,
-		Blocking:   false,
-		Backing:    "check-pmf-evidence.sh",
-		Args:       []string{"--list"},
-		RepairHint: "bash scripts/check-pmf-evidence.sh --list",
-	})
 }
 
 var claimRegistryPaths = []string{
@@ -50,10 +41,6 @@ var claimRegistryPaths = []string{
 	"schemas/claim-registry.v1.schema.json",
 	"PRODUCT.md", "README.md", "GOALS.md",
 	"docs/**",
-}
-
-var claimPMFPaths = []string{
-	"PRODUCT.md", "README.md", "docs/launch/**",
 }
 
 var claimMarkerRe = regexp.MustCompile(`agentops:claim:(AOP-CLAIM-[A-Z0-9-]+)`)

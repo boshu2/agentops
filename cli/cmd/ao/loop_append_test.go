@@ -124,7 +124,7 @@ func TestLoadCycleTrace_InlineJSON(t *testing.T) {
 func TestLoadCycleTrace_FromFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "trace.json")
-	if err := os.WriteFile(path, []byte(`{"exemption_reason":"trivial typo fix","bead_id":"soc-file","validation_commands":["bash scripts/check-loop-shape.sh --self-test"],"closeout_verdict":"exempt"}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"exemption_reason":"trivial typo fix","bead_id":"soc-file","validation_commands":["bash scripts/check-compile-health.sh --self-test"],"closeout_verdict":"exempt"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	tr, err := loadCycleTrace(path)
@@ -137,7 +137,7 @@ func TestLoadCycleTrace_FromFile(t *testing.T) {
 	if tr.BeadID != "soc-file" || tr.CloseoutVerdict != "exempt" {
 		t.Fatalf("file closeout fields parsed to %+v", tr)
 	}
-	if len(tr.ValidationCommands) != 1 || tr.ValidationCommands[0] != "bash scripts/check-loop-shape.sh --self-test" {
+	if len(tr.ValidationCommands) != 1 || tr.ValidationCommands[0] != "bash scripts/check-compile-health.sh --self-test" {
 		t.Fatalf("file validation commands parsed to %+v", tr.ValidationCommands)
 	}
 }

@@ -6,14 +6,14 @@
 # Source it (do NOT execute it):
 #     . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/docs-scope.sh"
 #
-# Extracted from scripts/check-docs-no-retired-tech.sh (age-gate-the-ungated-egwt.1)
+# Shared LIVE-doc scope helper (age-gate-the-ungated-egwt.1)
 # so any docs-scoped gate resolves the SAME live-doc set and the SAME
 # historical-exemption rule from one place. The retired-tech line-level
 # REMOVAL_LANG past-tense exemption is retired-tech-specific and stays in that
 # check script — it is deliberately NOT part of this lib.
 #
 # IMPORTANT — behavior-preserving contract: this lib does NOT `set -euo pipefail`
-# on behalf of its callers. The extracting script (check-docs-no-retired-tech.sh)
+# on behalf of its callers. Historical extractor
 # sets strict mode itself; forcing it here could change a different caller's
 # behavior. The functions below are pure/idempotent and safe under either mode.
 #
@@ -26,7 +26,6 @@
 # always begin with `docs/` (matching the extracting script's historical output).
 #
 # The exclude list is the dated/historical-archive set copied verbatim from
-# check-docs-no-retired-tech.sh; keep the two in lockstep.
 docs_scope_live_files() {
   local root="${DOCS_ROOT:-.}"
   ( cd "$root" && find docs -name '*.md' \

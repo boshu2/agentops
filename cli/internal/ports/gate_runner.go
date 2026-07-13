@@ -4,7 +4,7 @@ package ports
 import "context"
 
 // GateName identifies a CI/validation gate by its canonical name (e.g.
-// "registry-check", "validate-three-gap-supergate"). Values match the
+// "registry-check", "compile-health"). Values match the
 // job names declared in .github/workflows/validate.yml.
 type GateName string
 
@@ -49,9 +49,8 @@ type GateRunRequest struct {
 }
 
 // GateRunnerPort is the BC2 Validation read+execute side. Callers —
-// evolve's Step 5 regression gate, the /rpi validation phase, the
-// supergate composer in scripts/check-three-gap-supergate.sh's Go
-// twin, and any future per-PR gate-runner — depend on this port so
+// evolve's Step 5 regression gate, the /rpi validation phase,
+// and any future per-PR gate-runner — depend on this port so
 // the gate-running surface can be exercised against an in-memory
 // adapter without standing up the real exec/subprocess machinery.
 //

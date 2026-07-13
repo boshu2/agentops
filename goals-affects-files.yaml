@@ -88,8 +88,6 @@ affects_files:
     - scripts/install*.sh
     - tests/install/test-install-smoke.sh
 
-  flywheel-proof:
-    - scripts/proof-run.sh
 
   eval-workbench-verify:
     - evals/**

@@ -327,7 +327,7 @@ for scripts that want structured output (status, reason, log tail).
 
 Examples:
   ao gate run compile-health
-  ao gate run three-gap-supergate
+  ao gate run quarantine-empty
   ao gate run xxx-does-not-exist`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {

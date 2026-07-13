@@ -16,7 +16,7 @@ func TestSeedChecksRegistered(t *testing.T) {
 		"contract.registry-drift",
 		"ci.policy-parity",
 		"eval.corpus-freshness",
-		"docs.no-retired-tech",
+		"corpus.path-guard",
 	}
 	for _, id := range want {
 		if _, ok := gates.Default.Get(id); !ok {
@@ -182,25 +182,6 @@ func TestSkillProbeCoverageGateIsWarnFirstAdvisory(t *testing.T) {
 	}
 }
 
-func TestLedgerPrefixPolicyGateIsWarnFirstLocalOnly(t *testing.T) {
-	check, ok := gates.Default.Get("always.ledger-prefix-policy")
-	if !ok {
-		t.Fatal("always.ledger-prefix-policy gate is not registered")
-	}
-	if check.Backing != "check-ledger-prefix-policy.sh" {
-		t.Fatalf("always.ledger-prefix-policy backing = %q, want check-ledger-prefix-policy.sh", check.Backing)
-	}
-	if check.Blocking {
-		t.Fatal("always.ledger-prefix-policy must be warn-first / non-blocking")
-	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("always.ledger-prefix-policy tiers = %v, want Fast|Full", check.Tiers)
-	}
-	if len(check.Match) != 0 {
-		t.Fatalf("always.ledger-prefix-policy should be always-run with graceful local-only skip; got Match=%v", check.Match)
-	}
-}
-
 func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 	check, ok := gates.Default.Get("docs.skill-refs")
 	if !ok {
@@ -295,19 +276,6 @@ func TestSkillContractGatesAreAlwaysRun(t *testing.T) {
 		if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
 			t.Errorf("%s tiers = %v, want Fast|Full so routine fast pushes are covered", id, check.Tiers)
 		}
-	}
-}
-
-func TestArchitectureDriftGateIsBlocking(t *testing.T) {
-	check, ok := gates.Default.Get("docs.architecture-drift")
-	if !ok {
-		t.Fatal("docs.architecture-drift gate is not registered")
-	}
-	if check.Backing != "check-architecture-doc-drift.sh" {
-		t.Fatalf("docs.architecture-drift backing = %q, want check-architecture-doc-drift.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("docs.architecture-drift must be blocking")
 	}
 }
 

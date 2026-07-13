@@ -173,7 +173,7 @@ bd_mk G1 \
 
 bd_mk G2 \
   "G2: Wire flywheel-proof gate as CI-blocking" \
-  "scripts/proof-run.sh exists but is not invoked from blocking automation. Wire into .github/workflows/validate.yml (and pre-push if cheap enough). Acceptance: every push to main runs flywheel-proof; failure blocks merge." \
+  "scripts/check-flywheel-compounding.sh exists but is not invoked from blocking automation. Wire into .github/workflows/validate.yml (and pre-push if cheap enough). Acceptance: every push to main runs flywheel-proof; failure blocks merge." \
   feature 1 "evolution-roadmap,gates,flywheel" "$E2"
 
 bd_mk G3 \
@@ -313,12 +313,12 @@ bd_mk A3 \
 # =========================================================================
 bd_mk LC_EPIC \
   "[epic] Evolution LC: Learning capture loop (compound the loop on itself)" \
-  "Three-layer self-reflection so each day improves the next: (1) per-cycle 1-line micro-capture to .agents/evolve/daily-learning-log-YYYY-MM-DD.md, (2) every-5th-productive-cycle pattern reflect inline in cycle-history note, (3) end-of-day consolidate via scripts/evolve-capture-daily-learning.sh writing to .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md and auto-filing evolve-improvement beads for cross-day recurring frictions. $ROAD_REF (section LC)." \
+  "Three-layer self-reflection so each day improves the next: (1) per-cycle 1-line micro-capture to .agents/evolve/daily-learning-log-YYYY-MM-DD.md, (2) every-5th-productive-cycle pattern reflect inline in cycle-history note, (3) end-of-day consolidate via ao loop learn writing to .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md and auto-filing evolve-improvement beads for cross-day recurring frictions. $ROAD_REF (section LC)." \
   task 1 "evolution-roadmap,learning-capture"
 
 bd_mk LC1 \
   "LC1: Wire learning-capture protocol into /evolve all-day loop" \
-  "Verify the three layers operate end-to-end on a real day: (a) micro-capture appends one line per cycle, (b) every-5th-productive reflect surfaces pattern annotations, (c) end-of-day consolidator runs at hard stop and writes the dated learning file. Acceptance: after one full /evolve day, .agents/evolve/daily-learning-log-YYYY-MM-DD.md has N entries (one per cycle), .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md exists with counts + ledger + frictions sections, and if any FRICTION tag matches a prior day a LC-followup bead is auto-filed under evolution-roadmap. Cross-link: scripts/evolve-capture-daily-learning.sh, .agents/evolve/daily-learning-log.template.md." \
+  "Verify the three layers operate end-to-end on a real day: (a) micro-capture appends one line per cycle, (b) every-5th-productive reflect surfaces pattern annotations, (c) end-of-day consolidator runs at hard stop and writes the dated learning file. Acceptance: after one full /evolve day, .agents/evolve/daily-learning-log-YYYY-MM-DD.md has N entries (one per cycle), .agents/learnings/YYYY-MM-DD-evolve-loop-learnings.md exists with counts + ledger + frictions sections, and if any FRICTION tag matches a prior day a LC-followup bead is auto-filed under evolution-roadmap. Cross-link: ao loop learn, .agents/evolve/daily-learning-log.template.md." \
   feature 1 "evolution-roadmap,learning-capture" "$LC_EPIC"
 
 echo ""

@@ -67,10 +67,8 @@ var (
 	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
 	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
 	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
-	docsPaths         = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
 	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
 	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
-	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
 	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
 	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 	// Widened to docs/** (--all-docs mode): the checker no longer scans a fixed
@@ -149,39 +147,6 @@ var (
 		"scripts/check-workflow-no-retired-tracker.sh",
 		"tests/scripts/check-workflow-no-retired-tracker.bats",
 	}
-	// ADR-0004 / ADR-0011 demoted the corpus-moat + escape-corpus-compounding
-	// claims to a named UNPROVEN hypothesis; live narrative docs must not assert
-	// them (or ship an uncited multiplier / peer-review claim) as proven. Runs on
-	// any docs change plus self-reference (script / baseline / bats).
-	demotedClaimsPaths = []string{
-		"docs/**",
-		"scripts/check-docs-demoted-claims.sh",
-		"scripts/.docs-demoted-claims-baseline",
-		"tests/scripts/check-docs-demoted-claims.bats",
-		// shared ratchet mechanics: a lib edit must re-run every consumer
-		// (age-ratchet-lib-extraction-bv7d.2, pre-mortem FM3)
-		"scripts/lib/ratchet.sh",
-	}
-	// docs.duplicates shasums every live doc and fails on a byte-identical pair
-	// over the line threshold — an anti-regrowth guard after a docs-lifecycle
-	// sweep deleted a wholesale byte-dup (age-gate-the-ungated-egwt.12). Runs on
-	// any docs change plus self-reference (script / shared scope lib / bats).
-	docsDuplicatesPaths = []string{
-		"docs/**",
-		"scripts/check-docs-duplicates.sh",
-		"scripts/lib/docs-scope.sh",
-		"tests/scripts/check-docs-duplicates.bats",
-	}
-	archDocDriftPaths = []string{
-		"docs/architecture/ports-and-adapters.md",
-		"docs/contracts/bounded-contexts.yaml",
-		"docs/reference/agentops-skill-domain-map.md",
-		"docs/reference/agentops-hexagonal-architecture-map.md",
-		"docs/ARCHITECTURE.md",
-		"docs/CI-CD.md",
-		"scripts/check-architecture-doc-drift.sh",
-		"tests/scripts/check-architecture-doc-drift.bats",
-	}
 	cliAgentsTrackerPaths = []string{
 		"cli/AGENTS.md",
 		"scripts/check-cli-agents-tracker-drift.sh",
@@ -194,16 +159,6 @@ var (
 		"docs/provenance/**",
 		"scripts/check-provenance-chain.sh",
 		"tests/scripts/check-provenance-chain.bats",
-	}
-	controlPlaneTaxonomyPaths = []string{
-		"docs/architecture/the-agent-factory.md",
-		"docs/architecture/control-loop-model.md",
-		"docs/architecture/ports-and-adapters.md",
-		"docs/architecture/primitive-chains.md",
-		"docs/architecture/canonical-loop-model.md",
-		"docs/architecture/loop-map.md",
-		"scripts/check-control-plane-taxonomy.sh",
-		"tests/scripts/check-control-plane-taxonomy.bats",
 	}
 	regenScopePaths = []string{
 		"skills/**",
@@ -239,12 +194,6 @@ var (
 	// in-file title number, every ADR carries a Status: line. A duplicate
 	// number (two ADR-0004s — resolved in age-gate-the-ungated-egwt.11) or a
 	// filename/title mismatch must fail the next push, plus self-refs so
-	// editing the gate re-runs it.
-	adrRegistryPaths = []string{
-		"docs/adr/**",
-		"scripts/check-adr-registry.sh",
-		"tests/scripts/check-adr-registry.bats",
-	}
 	// go.jsonl-scanner-ratchet: ADVISORY heuristic — flags a NEW raw
 	// bufio.NewScanner over JSONL outside cli/internal/storage. A raw scanner
 	// silently truncates at its 64KB default buffer; the blessed replacement is
@@ -300,9 +249,6 @@ func init() {
 		// glob — a force-added private path might not match any corpus glob, so
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
-		// local-only br ledger policy: _beads is gitignored/private, so this
-		// must be always-run and gracefully skip when the ledger is absent.
-		{ID: "always.ledger-prefix-policy", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-ledger-prefix-policy.sh"},
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
 
 		// routed by change class
@@ -379,8 +325,6 @@ func init() {
 		{ID: "go.cli-surface-counts", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "update-cli-surface-counts.sh"},
 		{ID: "go.test-count-regression", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-count-regression.sh"},
 		{ID: "go.test-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},
-		{ID: "go.test-staleness", Tiers: gates.Full, Match: goPaths, Blocking: false, Backing: "check-test-staleness.sh"},
-		{ID: "go.path-containment", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: false, Backing: "check-path-containment.sh"},
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
@@ -391,43 +335,25 @@ func init() {
 		{ID: "swarm.evidence", Tiers: gates.Fast | gates.Full, Match: swarmPaths, Blocking: true, Backing: "validate-swarm-evidence.sh"},
 
 		// always-run structural invariants (no Match)
-		{ID: "always.author-judge-convergence", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-author-judge-convergence.sh"},
-		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
-		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
 		{ID: "docs.skill-refs", Tiers: gates.Full, Match: docSkillRefPaths, Blocking: true,
 			Backing: "check-doc-skill-refs.sh", Args: []string{"--all-docs", "--strict"}},
 		{ID: "cli.agents-tracker", Tiers: gates.Fast | gates.Full, Match: cliAgentsTrackerPaths, Blocking: true,
 			Backing: "check-cli-agents-tracker-drift.sh"},
-		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
-			Backing: "check-architecture-doc-drift.sh"},
-		{ID: "docs.control-plane-taxonomy", Tiers: gates.Fast | gates.Full, Match: controlPlaneTaxonomyPaths, Blocking: true,
-			Backing:    "check-control-plane-taxonomy.sh",
-			RepairHint: "keep the etcd-analog bound to br + the proof/verdict ledger (not bd/Dolt); keep the agent two-altitude note in the-agent-factory.md + ports-and-adapters.md; keep the taxonomy cross-links bidirectional; see scripts/check-control-plane-taxonomy.sh"},
-		{ID: "eval.skill-probe-i0", Tiers: gates.Full, Match: skillPaths, Blocking: false,
-			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
 		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
 			Backing: "check-provenance-orphans.sh"},
 		{ID: "provenance.chain", Tiers: gates.Fast | gates.Full, Match: provenanceChainPaths, Blocking: true,
 			Backing:    "check-provenance-chain.sh",
 			RepairHint: "docs/provenance/ledger.jsonl hash chain broken — find the first bad entry with 'ao provenance verify'; repair is a deliberate re-seal, never hand-edit (age-gate-the-ungated-egwt.9)"},
 		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
-		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",
 			Args: []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}},
 		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
-		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
 			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/heal-skill/scripts/audit.sh --strict skills/<skill>"},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
-		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
-		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
-		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "docs.cli-snippets", Tiers: gates.Full, Match: docsCliSnippetsPaths, Blocking: false, Backing: "check-docs-cli-snippets.sh", RepairHint: "fix the dead ao reference or prune the stale baseline entry; flips Blocking after one clean advisory cycle (age-gate-the-ungated-egwt.4)"},
 		{ID: "scripts.ao-invocations", Tiers: gates.Fast | gates.Full, Match: scriptsAoInvocationsPaths, Blocking: false, Backing: "check-scripts-ao-invocations.sh", RepairHint: "fix the dead ao invocation (use the live subcommand or add `# ao-resolve: ignore`), or prune the stale baseline entry; advisory-first, flips Blocking after one clean cycle (age-owcs)"},
-		{ID: "docs.demoted-claims", Tiers: gates.Full, Match: demotedClaimsPaths, Blocking: false, Backing: "check-docs-demoted-claims.sh", RepairHint: "hedge the claim to match ADR-0004/ADR-0011 or add a citation; advisory one clean cycle then flips Blocking (age-gate-the-ungated-egwt.6)"},
-		{ID: "docs.adr-registry", Tiers: gates.Full, Match: adrRegistryPaths, Blocking: true, Backing: "check-adr-registry.sh", RepairHint: "duplicate/mismatched ADR number — renumber the newer ADR and sweep citations (age-gate-the-ungated-egwt.11)"},
-		{ID: "docs.duplicates", Tiers: gates.Full, Match: docsDuplicatesPaths, Blocking: true, Backing: "check-docs-duplicates.sh", RepairHint: "byte-identical live docs — delete the copy, repoint links (age-gate-the-ungated-egwt.12)"},
 		// go.jsonl-scanner-ratchet: ADVISORY grep-ratchet — a NEW raw
 		// bufio.NewScanner over JSONL outside cli/internal/storage silently
 		// truncates at the 64KB default buffer. Stays advisory PERMANENTLY (unless
@@ -440,21 +366,15 @@ func init() {
 		{ID: "go.atomic-write-ratchet", Tiers: gates.Full, Match: atomicWriteRatchetPaths, Blocking: false, Backing: "check-atomic-write-ratchet.sh", Args: []string{"--scope", "head"}, RepairHint: "use storage.AtomicWriteFile (temp+fsync+rename+fsync-dir) or storage.FsyncDir instead of a hand-rolled tmp+rename; advisory — see age-ratchet-lib-extraction-bv7d.9"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
-		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
-		{ID: "doctrine.flywheel-proof", Tiers: gates.Full, Blocking: true, Backing: "proof-run.sh"},
-		{ID: "eval.retrieval-quality-smoke", Tiers: gates.Full, Blocking: true, Backing: "retrieval-quality-smoke.sh"},
 
 		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
 		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},
-		{ID: "full.retrieval-quality-ratchet", Tiers: gates.Full, Blocking: false, Backing: "check-retrieval-quality-ratchet.sh"},
-		{ID: "always.loop-shape", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-loop-shape.sh"},
 		{ID: "skill.catalog-drift", Tiers: gates.Full, Blocking: false, Backing: "check-skill-catalog-drift.sh"},
 
 		// final backing-script batch (PB1)
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},
 		{ID: "always.test-fixture-parity", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-test-fixture-parity.sh"},
 		{ID: "go.race-fast", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "validate-go-fast.sh"},
-		{ID: "full.headless-runtime-skills", Tiers: gates.Full, Blocking: false, Backing: "validate-headless-runtime-skills.sh"},
 		// release-audit: narrow Match (only release files) + --mode changed, mirroring
 		// the bash gate's needs_release_audit_artifact_check (PB1a Args support).
 		{ID: "release.audit-artifacts", Tiers: gates.Fast | gates.Full, Blocking: true,

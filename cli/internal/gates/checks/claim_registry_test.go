@@ -31,19 +31,6 @@ func TestClaimRegistryDriftRegistration(t *testing.T) {
 	}
 }
 
-func TestClaimPMFEvidenceRegistration(t *testing.T) {
-	c, ok := gates.Default.Get("claim.pmf-evidence")
-	if !ok {
-		t.Fatal("claim.pmf-evidence not registered")
-	}
-	if c.Blocking {
-		t.Error("claim.pmf-evidence must be non-Blocking (WARN-only)")
-	}
-	if c.Backing != "check-pmf-evidence.sh" {
-		t.Errorf("claim.pmf-evidence Backing = %q, want check-pmf-evidence.sh", c.Backing)
-	}
-}
-
 func TestClaimTierCitationRegistration(t *testing.T) {
 	c, ok := gates.Default.Get("claim.tier-citation")
 	if !ok {

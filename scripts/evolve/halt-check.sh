@@ -122,7 +122,7 @@ elif (( governor_rc != 0 )); then
   echo "WARN: governor budget check unavailable (rc=${governor_rc}) — failing open, not halting." >&2
 fi
 
-# The canonical cycle ledger written by scripts/evolve-log-cycle.sh / `ao loop
+# The canonical cycle ledger written by `ao loop
 # append`. Each line carries `result` and, on productive cycles, `goals_passing`
 # + `goals_total`. We read the last two productive entries to detect regression
 # and the last entry's `result` for the restorative signal — no parallel report
