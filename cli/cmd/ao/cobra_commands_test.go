@@ -2138,7 +2138,7 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 
 		var buf bytes.Buffer
 		_, _ = io.Copy(&buf, r)
-		if !strings.Contains(buf.String(), "ao beads ready") {
+		if !strings.Contains(buf.String(), "ao beads exec ready") {
 			t.Error("expected selected-tracker ready route in next steps with beads")
 		}
 	})

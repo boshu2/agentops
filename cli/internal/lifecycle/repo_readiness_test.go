@@ -22,7 +22,7 @@ func TestInspectRepoReadinessEmptyRepo(t *testing.T) {
 	if report.Template != "generic" {
 		t.Fatalf("Template = %q, want generic", report.Template)
 	}
-	for _, layer := range []ReadinessLayer{LayerCore, LayerGoals, LayerInstructions, LayerTracking, LayerProduct, LayerProgram, LayerSchedule} {
+	for _, layer := range []ReadinessLayer{LayerCore, LayerGoals, LayerInstructions, LayerTracking, LayerProduct, LayerReadme} {
 		if !readinessHasLayer(report, layer) {
 			t.Fatalf("expected readiness layer %q in report", layer)
 		}
