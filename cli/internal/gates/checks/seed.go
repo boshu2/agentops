@@ -346,6 +346,7 @@ func init() {
 		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
 		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.validation-learning-boundary", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-validation-learning-boundary.sh"},
+		{ID: "skill.validation-delivery-boundary", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-validation-delivery-boundary.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
 		{ID: "skill.isolation", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: false, Backing: "check-skill-isolation.sh"},
 		// skill.probe-coverage (ADVISORY): a product-/judgment-tier skill whose
