@@ -196,9 +196,10 @@ Narrative full flow: [Intent → Validated Code](intent-to-validated-code.md).
 | Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
 | Slice validation | `validate`, `council`, `pawl-review` | Acceptance proof plus independent lane evidence |
 | Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
-| Capture | `post-mortem` | Evidence + promoted learnings |
+| Capture | `learn` | Immutable-verdict observations + plan impact for the orchestrator |
+| Causal retrospective | `postmortem` | Evidence-tested causal finding for an explicit retrospective question |
 | Compound | `pattern-mining`, `operationalize` | Earned patterns → rules → weakest durable mechanism |
-| One full tick | `rpi` | Research → plan → implement → validate over one bead |
+| One full tick | `rpi` | Research → plan → implement → validate → learn over one objective |
 
 ## How the loop composes with the architectural seams
 

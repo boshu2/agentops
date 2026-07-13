@@ -17,7 +17,7 @@ The CLI records startup once per thread and skips duplicates automatically.
 
 > Quick ref: `$discovery` -> `$crank` -> `$validate` -> `$learn`, then report.
 
-**Execute this workflow. Do not only describe it.** RPI is autonomous unless `--interactive` is set. The user touchpoint is after validation or after a real
+**Execute this workflow. Do not only describe it.** RPI is autonomous unless `--interactive` is set. The user touchpoint is after Learn returns control to the orchestrator or after a real
 blocked state exhausts retries. Read [autonomous-execution.md](references/autonomous-execution.md)
 when you need the full autonomy contract.
 

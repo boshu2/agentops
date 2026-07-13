@@ -661,7 +661,7 @@ dispositions:
     path:             skills/postmortem/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Loop closeout; connect to next-work and ratchet evidence"
+    rationale:        "Retrospective causal analysis only; no validation, learning promotion, or delivery authority"
   - skill:            pr-prep
     domain:           "BC5 Runtime"
     hexagonal_role:   driving-adapter

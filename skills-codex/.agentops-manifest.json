@@ -886,8 +886,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "5f0e1f3efc744fe339fa0d68dc17c7351718dd5c741d8617208a26e5f1c62bc3",
-      "generated_hash": "1713164eb40059cf5aab5b08549475b339d0428ad00ba3897a1f1a74a1d14545"
+      "source_hash": "3bd52e6acee8021da79b0b8ccc082afd1977e061901a39b4012e409ec51dd984",
+      "generated_hash": "46243785c13bf77afb8adeebcea382fcc239950a12d26620aad636fff4223fb9"
     },
     {
       "name": "sbh",
@@ -934,8 +934,8 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "a8eaf542348ad541ab4b356ef0d095abc7cd22777237b15336b6032ce2c29dd0",
-      "generated_hash": "3a8c876244b764f74fe670aef26d37ba3fddf54c9291683102537c092b35bed0"
+      "source_hash": "197ae775062c08ec1b1a1ea7c3600f60d39959c2a8f890dcca6eca5597d97633",
+      "generated_hash": "a93b8dc734ac4794cb92ba3351ad7cfadb6385719fc19e0e959c447b1efc1684"
     },
     {
       "name": "swarm",

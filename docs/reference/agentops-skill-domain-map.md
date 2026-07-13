@@ -97,7 +97,7 @@ Disposition meanings:
 | `pattern-mining` | BC1 Corpus | supporting | keep | Promotes abstractions only after three exemplars, holdout, and back-application; weak evidence stays hypothesis.. |
 | `pawl-review` | BC2 Validation | driving-adapter | keep | Immutable transport-neutral reviewer-lane execution; ao pawl alone binds the panel verdict.. |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
-| `postmortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
+| `postmortem` | BC3 Loop | domain | update | Retrospective causal analysis only; no validation, learning promotion, or delivery authority. |
 | `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
 | `premortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
 | `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
