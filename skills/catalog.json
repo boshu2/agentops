@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T12:11:11Z",
+  "generated_at": "2026-07-13T12:56:05Z",
   "skill_count": 63,
   "skills": [
     {
@@ -829,7 +829,7 @@
     },
     {
       "name": "learn",
-      "description": "Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.",
+      "description": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": false,
@@ -853,7 +853,7 @@
           "with": "validate"
         }
       ],
-      "references_count": 0,
+      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -1082,33 +1082,33 @@
     },
     {
       "name": "postmortem",
-      "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
+      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
       "hexagonal_role": "domain",
-      "user_invocable": false,
+      "user_invocable": true,
       "graph_root": false,
       "consumes": [
-        "implement",
-        "validate",
-        "council"
+        "learn",
+        "toil-mining"
       ],
       "produces": [
-        "result.json"
+        "postmortem-report.md"
       ],
       "dependencies": [
         "council",
-        "beads-br",
-        "operationalize",
         "toil-mining"
       ],
       "practices": [
-        "dora-metrics",
         "sre",
         "lean-startup"
       ],
       "context_rel": [
         {
-          "kind": "shared-kernel",
-          "with": "standards"
+          "kind": "customer-of",
+          "with": "learn"
+        },
+        {
+          "kind": "customer-of",
+          "with": "toil-mining"
         }
       ],
       "references_count": 22,
@@ -1721,7 +1721,7 @@
     },
     {
       "name": "validate",
-      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
+      "description": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "graph_root": true,
@@ -1729,9 +1729,7 @@
       "produces": [
         "result.json"
       ],
-      "dependencies": [
-        "pawl-review"
-      ],
+      "dependencies": [],
       "practices": [
         "design-by-contract",
         "llm-eval-harness"

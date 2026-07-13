@@ -2,6 +2,26 @@
 
 ## Schema Validation
 
+The canonical machine-checkable contract is the committed JSON Schema pair
+[../../../schemas/next-work-batch.v1.schema.json](../../../schemas/next-work-batch.v1.schema.json)
+(one JSONL line = one batch entry) and
+[../../../schemas/next-work-item.v1.schema.json](../../../schemas/next-work-item.v1.schema.json)
+(each `items[]` element), both derived from
+[../../../docs/contracts/next-work.schema.md](../../../docs/contracts/next-work.schema.md).
+The reusable validator is
+[../../../scripts/validate-next-work.sh](../../../scripts/validate-next-work.sh):
+
+```bash
+# Advisory (logs violations, exits 0); add --strict to reject and exit non-zero
+# naming the offending file:line + field. --json emits a machine-readable verdict.
+bash scripts/validate-next-work.sh --strict .agents/rpi/next-work.jsonl
+```
+
+The validator reads its enums and required-field lists directly from the schema
+files, so the schema is the single source of truth. The inline bash below is a
+dependency-free fallback (jq-only) that mirrors the same checks for environments
+where running the script is inconvenient; prefer the script when available.
+
 Before writing, validate each harvested item against the tracked schema
 contract in [../../../docs/contracts/next-work.schema.md](../../../docs/contracts/next-work.schema.md):
 
@@ -13,6 +33,10 @@ validate_next_work_item() {
   local severity=$(echo "$item" | jq -r '.severity // empty')
   local source=$(echo "$item" | jq -r '.source // empty')
   local description=$(echo "$item" | jq -r '.description // empty')
+  local proof_kind=$(echo "$item" | jq -r '.proof_ref.kind // empty')
+  local proof_target_id=$(echo "$item" | jq -r '.proof_ref.target_id // empty')
+  local proof_run_id=$(echo "$item" | jq -r '.proof_ref.run_id // empty')
+  local proof_path=$(echo "$item" | jq -r '.proof_ref.path // empty')
 
   # Required fields
   if [ -z "$title" ] || [ -z "$description" ]; then
@@ -37,6 +61,34 @@ validate_next_work_item() {
     council-finding|retro-learning|retro-pattern|evolve-generator|feature-suggestion|backlog-processing|post-mortem-finding|manifest-classification|dream-degraded) ;;
     *) echo "SCHEMA VALIDATION FAILED: invalid source '$source' for item '$title'"; return 1 ;;
   esac
+
+  # Optional proof reference validation
+  if [ -n "$proof_kind" ]; then
+    case "$proof_kind" in
+      completed_run)
+        [ -n "$proof_run_id" ] || {
+          echo "SCHEMA VALIDATION FAILED: completed_run proof_ref requires run_id for item '$title'"
+          return 1
+        }
+        ;;
+      evidence_only_closure)
+        [ -n "$proof_target_id" ] || {
+          echo "SCHEMA VALIDATION FAILED: evidence_only_closure proof_ref requires target_id for item '$title'"
+          return 1
+        }
+        ;;
+      execution_packet)
+        [ -n "$proof_path" ] || {
+          echo "SCHEMA VALIDATION FAILED: execution_packet proof_ref requires path for item '$title'"
+          return 1
+        }
+        ;;
+      *)
+        echo "SCHEMA VALIDATION FAILED: invalid proof_ref.kind '$proof_kind' for item '$title'"
+        return 1
+        ;;
+    esac
+  fi
 
   return 0
 }
@@ -81,21 +133,67 @@ done
 
 # Append one entry per epic (schema v1.4: docs/contracts/next-work.schema.md)
 # Only include VALID_ITEMS that passed schema validation
-# Each item: {title, type, severity, source, description, evidence, target_repo}
+# Each item: {title, type, severity, source, description, evidence, target_repo, proof_ref?}
 # Entry aggregate fields: source_epic, timestamp, items[], consumed: false,
 #   claim_status: "available", claimed_by: null, claimed_at: null,
 #   consumed_by: null, consumed_at: null
 # Item lifecycle fields are optional on write and are populated by consumers:
 #   claim_status, claimed_by, claimed_at, consumed, consumed_by, consumed_at, failed_at
+# Optional proof_ref shape:
+#   {kind, target_id?, run_id?, path?}
+#     completed_run         => run_id required
+#     evidence_only_closure => target_id required
+#     execution_packet      => path required
 # Consumers may rewrite existing lines to claim, release, fail, or consume
 # existing items. The queue is not append-only after initial write.
 ```
 
-Append a single JSON line to `.agents/rpi/next-work.jsonl` with:
+When a harvested item already maps to a known proof surface, preserve that as
+`proof_ref` instead of burying identifiers in `description` or `evidence`. For
+example:
+
+```json
+{
+  "title": "Verify the next-work parity gate after the repair lands",
+  "type": "task",
+  "severity": "medium",
+  "source": "council-finding",
+  "description": "Re-run the targeted contract validator after proof propagation changes land.",
+  "target_repo": "agentops",
+  "proof_ref": {
+    "kind": "execution_packet",
+    "run_id": "6f36a5640805",
+    "path": ".agents/rpi/runs/6f36a5640805/execution-packet.json"
+  }
+}
+```
+
+Use the Write tool to append a single JSON line to `.agents/rpi/next-work.jsonl` with:
 - `source_epic`: the epic ID being postmortemed
 - `timestamp`: current ISO-8601
 - `items`: array of harvested items (min 0 — if nothing found, write entry with empty items array)
 - `consumed`: false, `claim_status`: "available", `claimed_by`: null, `claimed_at`: null, `consumed_by`: null, `consumed_at`: null
+
+## Materialize into durable beads (lessons → beads)
+
+The queue line is a carry-forward signal, not the durable record. Writing it is
+only half the flywheel — harvested follow-ups must also become tracked beads so
+the lesson compounds into the backlog instead of living only in a queue file.
+
+After appending the queue entry, materialize the fresh items into durable beads:
+
+```bash
+# Idempotent: creates one bead per unmaterialized item, stamps bead_id back onto
+# the queue item, and carries source_epic + proof_ref on the bead's native
+# metadata. Re-runs skip already-materialized / consumed / held-for-review items.
+ao next-work materialize
+# Preview without creating: ao next-work materialize --dry-run
+# Scope to this run's epic:  ao next-work materialize --source-epic <epic-id>
+```
+
+The CLI owns the deterministic core (the `bd create` + back-reference); this
+skill just invokes it. Held-for-review items (`requires` set or
+`status != ready`) are intentionally left in the queue for explicit promotion.
 
 ## Queue Lifecycle
 
@@ -103,7 +201,7 @@ Writers always append entries in **available** state. Consumers use a claim/fina
 
 1. **available**: item has `consumed=false`, `claim_status="available"` (or omitted status, which consumers treat as available)
 2. **in_progress**: consumer sets item `claim_status="in_progress"`, plus `claimed_by` and `claimed_at`
-3. **consumed**: after a successful `$rpi` cycle and regression gate, consumer sets item `consumed=true`, `claim_status="consumed"`, `consumed_by`, and `consumed_at`
+3. **consumed**: after a successful `/rpi` cycle and regression gate, consumer sets item `consumed=true`, `claim_status="consumed"`, `consumed_by`, and `consumed_at`
 4. **release on failure**: failed or regressed cycles clear item `claimed_by` / `claimed_at`, reset `claim_status="available"`, keep `consumed=false`, and may record `failed_at`
 
 Selection rules:

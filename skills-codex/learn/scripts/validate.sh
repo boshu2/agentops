@@ -5,11 +5,13 @@ skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 schema="$skill_dir/schemas/learn-receipt.schema.json"
 
 grep -q '^name: learn$' "$skill_dir/SKILL.md"
-grep -q '^## Critical Constraints$' "$skill_dir/SKILL.md"
-grep -q 'phase-4-summary.md' "$skill_dir/SKILL.md"
-grep -q '^Feature: Learn records the fourth lifecycle receipt$' "$skill_dir/references/learn.feature"
+grep -Fq 'The input verdict is immutable.' "$skill_dir/SKILL.md"
+grep -Fq 'input_verdict_digest' "$skill_dir/SKILL.md"
+grep -Fq 'Postmortem is optional and runs only for retrospective causal analysis.' "$skill_dir/SKILL.md"
+grep -q '^Feature: Learn bookkeeps an immutable verdict$' "$skill_dir/references/learn.feature"
 
 SCHEMA="$schema" python3 - <<'PY'
+import copy
 import json
 import os
 from pathlib import Path
@@ -24,16 +26,26 @@ valid = {
     "skill": "learn",
     "status": "DONE",
     "input_verdict_ref": ".agents/council/validate.md",
+    "input_verdict_digest": "sha256:" + "a" * 64,
     "artifact": ".agents/rpi/phase-4-summary.md",
-    "observations": [
-        {"summary": "Preserve the acceptance fixture", "evidence_ref": "tests/integration/example.sh"}
-    ],
+    "observations": [{
+        "kind": "strength",
+        "summary": "Acceptance fixture passed",
+        "evidence_ref": "tests/integration/example.sh",
+        "disposition": "record",
+    }],
 }
 validator.validate(valid)
-invalid = dict(valid)
-invalid["phase"] = "validate"
-if not list(validator.iter_errors(invalid)):
-    raise SystemExit("learn schema accepted a non-Learn phase")
+
+mutable = copy.deepcopy(valid)
+mutable["verdict"] = "PASS"
+if not list(validator.iter_errors(mutable)):
+    raise SystemExit("Learn schema accepted a mutable verdict field")
+
+unbound = copy.deepcopy(valid)
+unbound.pop("input_verdict_digest")
+if not list(validator.iter_errors(unbound)):
+    raise SystemExit("Learn schema accepted an unbound verdict")
 PY
 
-echo "learn skill contract: PASS"
+echo 'learn skill contract: PASS'

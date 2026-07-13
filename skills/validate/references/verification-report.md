@@ -6,7 +6,7 @@
 
 - Before any PR submission
 - After `/crank` wave completion
-- As `/post-mortem` pre-check
+- As deterministic evidence for `/validate --mode=post-impl`
 - When `--structured` flag is passed to `/vibe`
 
 ## Report Template
@@ -114,5 +114,5 @@ Review for: unintended changes, leftover debug code, TODO comments, missing erro
 
 - `/vibe --structured` triggers this report format
 - `/crank` Step 7 can use this as wave-end gate
-- `/post-mortem` uses this as pre-check before council
+- `/validate --mode=post-impl` may use this as deterministic evidence
 - `/pr-prep` includes this in PR body
