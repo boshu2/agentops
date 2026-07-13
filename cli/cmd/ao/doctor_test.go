@@ -740,8 +740,17 @@ func TestCheckSkills_WithNativeCodexPlugin(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# Fake Skill"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	// Compatibility pointers are installable packages, but are deliberately
+	// absent from manifest skills[] because they are not implementations.
+	pointerDir := filepath.Join(skillsRoot, "pre-mortem")
+	if err := os.MkdirAll(pointerDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pointerDir, "SKILL.md"), []byte("---\nname: pre-mortem\nimplementation: false\nredirect_to: premortem\n---\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	manifestPath := filepath.Join(skillsRoot, ".agentops-manifest.json")
-	if err := os.WriteFile(manifestPath, []byte(`{"skills":[{"name":"fake-skill"}]}`), 0644); err != nil {
+	if err := os.WriteFile(manifestPath, []byte(`{"package_count":2,"skills":[{"name":"fake-skill"}]}`), 0644); err != nil {
 		t.Fatal(err)
 	}
 	manifestHash, err := sha256File(manifestPath)
@@ -751,7 +760,7 @@ func TestCheckSkills_WithNativeCodexPlugin(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(fakeHome, ".codex"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(fakeHome, ".codex", ".agentops-codex-install.json"), []byte(fmt.Sprintf(`{"install_mode":"native-plugin","plugin_root":"%s","manifest_hash":"%s","skill_count":1}`, filepath.Join(fakeHome, ".codex", "plugins", "cache", "agentops-marketplace", "agentops", "local"), manifestHash)), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(fakeHome, ".codex", ".agentops-codex-install.json"), []byte(fmt.Sprintf(`{"install_mode":"native-plugin","plugin_root":"%s","manifest_hash":"%s","skill_count":2}`, filepath.Join(fakeHome, ".codex", "plugins", "cache", "agentops-marketplace", "agentops", "local"), manifestHash)), 0644); err != nil {
 		t.Fatal(err)
 	}
 

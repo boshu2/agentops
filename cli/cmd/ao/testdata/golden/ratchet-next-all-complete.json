@@ -1,7 +1,7 @@
 {
   "next": "",
   "reason": "all steps completed",
-  "last_step": "post-mortem",
+  "last_step": "postmortem",
   "last_artifact": "retro.md",
   "skill": "",
   "complete": true

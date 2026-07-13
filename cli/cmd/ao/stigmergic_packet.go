@@ -35,7 +35,7 @@ type StigmergicPacket struct {
 type stigmergicScorecard struct {
 	PromotedFindings       int `json:"promoted_findings"`
 	PlanningRules          int `json:"planning_rules"`
-	PreMortemChecks        int `json:"pre_mortem_checks"`
+	PreMortemChecks        int `json:"premortem_checks"`
 	QueueEntries           int `json:"queue_entries"`
 	UnconsumedBatches      int `json:"unconsumed_batches"`
 	UnconsumedItems        int `json:"unconsumed_items"`
@@ -75,11 +75,15 @@ func assembleStigmergicPacket(cwd string, target StigmergicTarget) (StigmergicPa
 	if err != nil {
 		return StigmergicPacket{}, err
 	}
+	knownRisks, err := compiledPremortemSummariesForFindings(cwd, findingIDs)
+	if err != nil {
+		return StigmergicPacket{}, err
+	}
 
 	return StigmergicPacket{
 		AppliedFindings: uniqueStringsPreserveOrder(findingIDs),
 		PlanningRules:   compiledSummariesForFindings(cwd, "planning-rules", findingIDs),
-		KnownRisks:      compiledSummariesForFindings(cwd, "pre-mortem-checks", findingIDs),
+		KnownRisks:      knownRisks,
 		PriorFindings:   priorFindings,
 		Scorecard:       scorecard,
 	}, nil
@@ -123,10 +127,18 @@ func flattenNextWorkEntries(entries []nextWorkEntry) []nextWorkItem {
 }
 
 func loadStigmergicScorecard(cwd string) (stigmergicScorecard, error) {
+	premortemIDs, err := premortemCheckIDs(cwd)
+	if err != nil {
+		return stigmergicScorecard{}, err
+	}
+	premortemChecks, err := reconciledPremortemCheckPaths(cwd, premortemIDs)
+	if err != nil {
+		return stigmergicScorecard{}, err
+	}
 	scorecard := stigmergicScorecard{
 		PromotedFindings: countMatchingFiles(filepath.Join(cwd, ".agents", SectionFindings), "*.md"),
 		PlanningRules:    countMatchingFiles(filepath.Join(cwd, ".agents", "planning-rules"), "*.md"),
-		PreMortemChecks:  countMatchingFiles(filepath.Join(cwd, ".agents", "pre-mortem-checks"), "*.md"),
+		PreMortemChecks:  len(premortemChecks),
 	}
 
 	entries, err := loadVisibleNextWorkEntries(cwd, "")

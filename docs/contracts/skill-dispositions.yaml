@@ -36,6 +36,26 @@
 #   date         date the terminal state was reached
 #   rationale    one-line historical justification
 historical:
+  pre-mortem:
+    state:        merged-into
+    merged-into:  premortem
+    date:         2026-07-12
+    rationale:    "Permanent historical request alias after the canonical mortem naming migration."
+  post-mortem:
+    state:        merged-into
+    merged-into:  postmortem
+    date:         2026-07-12
+    rationale:    "Permanent historical request alias after the canonical mortem naming migration."
+  pre_mortem:
+    state:        merged-into
+    merged-into:  premortem
+    date:         2026-07-12
+    rationale:    "Permanent underscore-form request alias after the canonical mortem naming migration."
+  post_mortem:
+    state:        merged-into
+    merged-into:  postmortem
+    date:         2026-07-12
+    rationale:    "Permanent underscore-form request alias after the canonical mortem naming migration."
   beads:
     state:        merged-into
     merged-into:  beads-br
@@ -356,17 +376,17 @@ historical:
     rationale:    "Retired via ao skills retire: cut."
   flywheel:
     state:        merged-into
-    merged-into:  post-mortem
+    merged-into:  postmortem
     date:         2026-07-07
     rationale:    "Retire wave (skills-audit-2026-07-06, l6ic.12): user surface absorbed by post-mortem's mining section; mechanical surface is `ao flywheel status`. merged-into (not cut) keeps the inbound ratchet -> flywheel redirect chain resolvable."
   compile:
     state:        merged-into
-    merged-into:  post-mortem
+    merged-into:  postmortem
     date:         2026-07-07
     rationale:    "Retired via ao skills retire: merged into post-mortem."
   curate:
     state:        merged-into
-    merged-into:  post-mortem
+    merged-into:  postmortem
     date:         2026-07-07
     rationale:    "Retired via ao skills retire: merged into post-mortem."
   review:
@@ -618,7 +638,7 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Must output vertical slices and wave-validity checks"
-  - skill:            post-mortem
+  - skill:            postmortem
     domain:           "BC3 Loop"
     hexagonal_role:   domain
     disposition:      update
@@ -626,7 +646,7 @@ dispositions:
     runtime_targets:  [claude, codex]
     parity_policy:    required
     capability_class: corpus
-    path:             skills/post-mortem/SKILL.md
+    path:             skills/postmortem/SKILL.md
     aliases:          []
     supersedes:       null
     rationale:        "Loop closeout; connect to next-work and ratchet evidence"
@@ -642,7 +662,7 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "PR publication adapter; align to evidence and release discipline"
-  - skill:            pre-mortem
+  - skill:            premortem
     domain:           "BC2 Validation"
     hexagonal_role:   domain
     disposition:      update
@@ -650,7 +670,7 @@ dispositions:
     runtime_targets:  [claude, codex]
     parity_policy:    required
     capability_class: validation
-    path:             skills/pre-mortem/SKILL.md
+    path:             skills/premortem/SKILL.md
     aliases:          []
     supersedes:       null
     rationale:        "Plan risk gate; add scenario/verdict self-test"

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -39,6 +40,9 @@ func (p ExecutionPacket) Validate() error {
 // execution-packet bytes. Raw validation is used by storage loads so unknown
 // persisted fields cannot be hidden by struct unmarshalling.
 func ValidateJSON(data []byte) error {
+	if err := validateMortemFieldOwnership(data); err != nil {
+		return fmt.Errorf("%w: %v", ErrSchemaViolation, err)
+	}
 	schema, err := schemaForExecutionPacket()
 	if err != nil {
 		return err
@@ -53,13 +57,40 @@ func ValidateJSON(data []byte) error {
 	return nil
 }
 
-// DecodeJSON validates and decodes a canonical rich execution packet. It also
-// accepts the pre-rich slim persisted shape and migrates it in memory so older
-// archives remain readable.
+// DecodeRequirements carries caller-owned presence requirements independently
+// of the packet schema-version field-ownership policy.
+type DecodeRequirements struct {
+	PreMortemVerdict bool
+}
+
+// DecodeJSON validates and decodes a packet with optional mortem evidence.
 func DecodeJSON(data []byte) (ExecutionPacket, error) {
+	return DecodeJSONWithRequirements(data, DecodeRequirements{})
+}
+
+// DecodeJSONWithRequirements validates, decodes, and then enforces required
+// evidence declared by the caller.
+func DecodeJSONWithRequirements(data []byte, requirements DecodeRequirements) (ExecutionPacket, error) {
+	p, err := decodeJSON(data)
+	if err != nil {
+		return ExecutionPacket{}, err
+	}
+	if requirements.PreMortemVerdict && p.PreMortemVerdict == "" {
+		return ExecutionPacket{}, fmt.Errorf("required execution packet field is absent: pre_mortem_verdict or premortem_verdict")
+	}
+	return p, nil
+}
+
+// decodeJSON also accepts the pre-rich slim persisted shape and migrates it in
+// memory so older archives remain readable.
+func decodeJSON(data []byte) (ExecutionPacket, error) {
 	if err := ValidateJSON(data); err == nil {
+		normalized, normalizeErr := normalizeMortemAliasesJSON(data)
+		if normalizeErr != nil {
+			return ExecutionPacket{}, normalizeErr
+		}
 		var p ExecutionPacket
-		if err := json.Unmarshal(data, &p); err != nil {
+		if err := json.Unmarshal(normalized, &p); err != nil {
 			return ExecutionPacket{}, err
 		}
 		p.DefaultVerdict = p.EffectiveVerdict()
@@ -85,6 +116,110 @@ func DecodeJSON(data []byte) (ExecutionPacket, error) {
 		}
 		return ExecutionPacket{}, err
 	}
+}
+
+func validateMortemFieldOwnership(data []byte) error {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
+		return fmt.Errorf("parse execution packet: %w", err)
+	}
+	versionRaw, ok := root["schema_version"]
+	if !ok {
+		return nil
+	}
+	var version int
+	if err := json.Unmarshal(versionRaw, &version); err != nil {
+		return fmt.Errorf("schema_version must be an integer: %w", err)
+	}
+	if version < 1 || version > 3 {
+		return fmt.Errorf("unsupported schema_version %d", version)
+	}
+	if err := validateVersionedJSONAlias(root, version, "pre_mortem_verdict", "premortem_verdict", "", true); err != nil {
+		return err
+	}
+	if rawArtifacts, ok := root["artifacts"]; ok {
+		var artifacts map[string]json.RawMessage
+		if err := json.Unmarshal(rawArtifacts, &artifacts); err == nil && artifacts != nil {
+			return validateVersionedJSONAlias(artifacts, version, "pre_mortem_path", "premortem_path", "artifacts.", false)
+		}
+	}
+	return nil
+}
+
+func validateVersionedJSONAlias(object map[string]json.RawMessage, version int, legacyKey, canonicalKey, prefix string, allowEqualDual bool) error {
+	legacy, hasLegacy := object[legacyKey]
+	canonical, hasCanonical := object[canonicalKey]
+	if hasLegacy && hasCanonical {
+		if !allowEqualDual || !rawJSONEqual(legacy, canonical) {
+			return fmt.Errorf("conflicting execution packet fields %s%s and %s%s", prefix, legacyKey, prefix, canonicalKey)
+		}
+		return nil
+	}
+	if version < 3 && hasCanonical {
+		return fmt.Errorf("schema_version %d does not own field %s%s", version, prefix, canonicalKey)
+	}
+	if version == 3 && hasLegacy {
+		return fmt.Errorf("schema_version %d does not own field %s%s", version, prefix, legacyKey)
+	}
+	return nil
+}
+
+// normalizeMortemAliasesJSON makes schema-v3 canonical fields available to the
+// legacy-tagged aggregate without changing the schema-v2 writer. Canonical input is
+// rewritten to the legacy field consumed by the aggregate. Equal dual verdicts
+// are deduplicated; artifact aliases are rejected before normalization because
+// the published schema cannot prove equality between arbitrary path strings.
+func normalizeMortemAliasesJSON(data []byte) ([]byte, error) {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("parse execution packet: %w", err)
+	}
+	if err := normalizeJSONAlias(root, "pre_mortem_verdict", "premortem_verdict", ""); err != nil {
+		return nil, err
+	}
+	if rawArtifacts, ok := root["artifacts"]; ok {
+		var artifacts map[string]json.RawMessage
+		if err := json.Unmarshal(rawArtifacts, &artifacts); err == nil && artifacts != nil {
+			if err := normalizeJSONAlias(artifacts, "pre_mortem_path", "premortem_path", "artifacts."); err != nil {
+				return nil, err
+			}
+			normalizedArtifacts, err := json.Marshal(artifacts)
+			if err != nil {
+				return nil, fmt.Errorf("marshal normalized execution packet artifacts: %w", err)
+			}
+			root["artifacts"] = normalizedArtifacts
+		}
+	}
+	normalized, err := json.Marshal(root)
+	if err != nil {
+		return nil, fmt.Errorf("marshal normalized execution packet: %w", err)
+	}
+	return normalized, nil
+}
+
+func normalizeJSONAlias(object map[string]json.RawMessage, legacyKey, canonicalKey, prefix string) error {
+	legacy, hasLegacy := object[legacyKey]
+	canonical, hasCanonical := object[canonicalKey]
+	if !hasCanonical {
+		return nil
+	}
+	if hasLegacy && !rawJSONEqual(legacy, canonical) {
+		return fmt.Errorf("conflicting execution packet fields %s%s and %s%s", prefix, legacyKey, prefix, canonicalKey)
+	}
+	if !hasLegacy {
+		object[legacyKey] = canonical
+	}
+	delete(object, canonicalKey)
+	return nil
+}
+
+func rawJSONEqual(left, right json.RawMessage) bool {
+	var leftValue any
+	var rightValue any
+	if json.Unmarshal(left, &leftValue) != nil || json.Unmarshal(right, &rightValue) != nil {
+		return bytes.Equal(bytes.TrimSpace(left), bytes.TrimSpace(right))
+	}
+	return reflect.DeepEqual(leftValue, rightValue)
 }
 
 func schemaForExecutionPacket() (*jsonschema.Schema, error) {

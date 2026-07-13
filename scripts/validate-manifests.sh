@@ -382,6 +382,9 @@ if [[ -f "$SKILL_SCHEMA" ]]; then
         # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
         # test fixtures, not real skills.
         [[ "$skill_name" == _* ]] && continue
+        # Runtime compatibility pointers are loadable aliases, not independent
+        # skill implementations. The redirect gate owns their compact schema.
+        grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_md" && continue
 
         # Extract YAML frontmatter and convert to JSON.
         # Prefer PyYAML when present, but fall back to a repo-local Go helper so

@@ -325,17 +325,17 @@
         "reference_count": 0
       },
       {
-        "name": "post-mortem",
+        "name": "postmortem",
         "tier": "judgment",
-        "path": "skills/post-mortem/",
+        "path": "skills/postmortem/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 22
       },
       {
-        "name": "pre-mortem",
+        "name": "premortem",
         "tier": "judgment",
-        "path": "skills/pre-mortem/",
+        "path": "skills/premortem/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 14
@@ -1446,7 +1446,7 @@
       "consumes": [
         "beads-br",
         "implement",
-        "post-mortem",
+        "postmortem",
         "swarm",
         "validate"
       ],
@@ -1517,7 +1517,7 @@
       "supersedes": null,
       "consumes": [
         "plan",
-        "pre-mortem",
+        "premortem",
         "research",
         "shared"
       ],
@@ -1651,7 +1651,7 @@
       "consumes": [
         "rpi",
         "goals",
-        "post-mortem"
+        "postmortem"
       ],
       "produces": [
         "git-changes",
@@ -2101,8 +2101,8 @@
       "references": 14
     },
     {
-      "sku": "skill:post-mortem",
-      "name": "post-mortem",
+      "sku": "skill:postmortem",
+      "name": "postmortem",
       "type": "skill",
       "kind": "skill",
       "bounded_context": "BC3",
@@ -2136,7 +2136,7 @@
         "ao membrane triage",
         "ao session close"
       ],
-      "path": "skills/post-mortem/",
+      "path": "skills/postmortem/",
       "references": 22
     },
     {
@@ -2170,8 +2170,8 @@
       "references": 4
     },
     {
-      "sku": "skill:pre-mortem",
-      "name": "pre-mortem",
+      "sku": "skill:premortem",
+      "name": "premortem",
       "type": "skill",
       "kind": "skill",
       "bounded_context": "BC2",
@@ -2200,7 +2200,7 @@
         "ao beads verify",
         "ao plan-pawl decide"
       ],
-      "path": "skills/pre-mortem/",
+      "path": "skills/premortem/",
       "references": 14
     },
     {

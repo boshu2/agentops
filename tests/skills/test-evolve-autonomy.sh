@@ -14,7 +14,7 @@ EVOLVE="$REPO_ROOT/skills/evolve/SKILL.md"
 EVOLVE_EXAMPLES="$REPO_ROOT/skills/evolve/references/examples.md"
 RPI_CONTRACT="$REPO_ROOT/skills/rpi/references/phase-data-contracts.md"
 RPI_GATE4="$REPO_ROOT/skills/rpi/references/gate4-loop-and-spawn.md"
-PM_HARVEST="$REPO_ROOT/skills/post-mortem/references/harvest-next-work.md"
+PM_HARVEST="$REPO_ROOT/skills/postmortem/references/harvest-next-work.md"
 
 check_contains() {
     local file="$1"

@@ -29,9 +29,9 @@ check_contains() {
 }
 
 PLAN_SKILL="$REPO_ROOT/skills/plan/SKILL.md"
-PM_SKILL="$REPO_ROOT/skills/pre-mortem/SKILL.md"
+PM_SKILL="$REPO_ROOT/skills/premortem/SKILL.md"
 VIBE_SKILL="$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"
-POST_MORTEM_SKILL="$REPO_ROOT/skills/post-mortem/SKILL.md"
+POST_MORTEM_SKILL="$REPO_ROOT/skills/postmortem/SKILL.md"
 REGISTRY_CONTRACT="$REPO_ROOT/docs/contracts/finding-registry.md"
 REGISTRY_SCHEMA="$REPO_ROOT/docs/contracts/finding-registry.schema.json"
 
@@ -48,7 +48,7 @@ check_contains "$VIBE_SKILL" 'dedup_key' "/vibe write path requires dedup_key"
 check_contains "$VIBE_SKILL" 'finding-compiler.sh' "/vibe refreshes compiled outputs after registry writes"
 check_contains "$POST_MORTEM_SKILL" '.agents/pre-mortem-checks' "/post-mortem reads compiled prevention inputs"
 check_contains "$POST_MORTEM_SKILL" 'registry.jsonl' "/post-mortem writes finding registry"
-check_contains "$POST_MORTEM_SKILL" 'temp-file-plus-rename atomic write rule' "/post-mortem uses atomic registry writes"
+check_contains "$POST_MORTEM_SKILL" 'atomically update `.agents/findings/registry.jsonl`' "/postmortem uses atomic registry writes"
 check_contains "$POST_MORTEM_SKILL" 'finding-compiler.sh' "/post-mortem refreshes compiled outputs after registry writes"
 check_contains "$REGISTRY_CONTRACT" 'dedup_key =' "registry contract defines dedup_key normalization"
 check_contains "$REGISTRY_CONTRACT" 'plan-shape' "registry contract defines controlled applicable_when vocabulary"

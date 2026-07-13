@@ -52,11 +52,11 @@ skills (skill-prune phase 2). Fire `$discovery` for their use-cases:
 
 ## Strict Delegation Contract (default)
 
-Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**. Strict delegation is the **default**.
+Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$premortem` as **separate skill invocations**. Strict delegation is the **default**.
 
-**Anti-pattern to reject:** inlining `$research` work (grep + read + synthesize), collapsing `$plan` into an inline decomposition, skipping `$pre-mortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Pre-Mortem Anti-Rationalization Clause** (what does NOT count as a pre-mortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
+**Anti-pattern to reject:** inlining `$research` work (grep + read + synthesize), collapsing `$plan` into an inline decomposition, skipping `$premortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Premortem Anti-Rationalization Clause** (what does NOT count as a premortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
 
-**Re-baseline before you scope** (mandatory for "improve X" / "build the missing Y"): `$research` MUST confirm a capability doesn't already exist before scoping *new construction*. The `--auto` trap is author-as-researcher scoping "what's unbuilt" from memory without grepping — existing machinery gets re-estimated as net-new. Every "X is missing" claim carries the search that proved it; no search → `$pre-mortem`'s re-baseline check (2.4–2.8) WARN/FAILs it. Run that existence search as `ms search "<capability phrase>"` first (fast path when `ms` is available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`) and cite the hits in the packet's overlap/prior-art section.
+**Re-baseline before you scope** (mandatory for "improve X" / "build the missing Y"): `$research` MUST confirm a capability doesn't already exist before scoping *new construction*. The `--auto` trap is author-as-researcher scoping "what's unbuilt" from memory without grepping — existing machinery gets re-estimated as net-new. Every "X is missing" claim carries the search that proved it; no search → `$premortem`'s re-baseline check (2.4–2.8) WARN/FAILs it. Run that existence search as `ms search "<capability phrase>"` first (fast path when `ms` is available — `command -v ms`, or the `mcp__ms__search` tool is attached; else grep `skills/**/SKILL.md` + `docs/SKILLS.md`) and cite the hits in the packet's overlap/prior-art section.
 
 See [`references/isolation-contract.md`](references/isolation-contract.md) for the mechanical four-lever model and the compression patterns flagged by `scripts/check-skill-isolation.sh`. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
@@ -91,7 +91,7 @@ for the boundary between Discovery and Plan:
 | Driving adapter | `$discovery` skill invocation |
 | Driven adapter | `$plan` skill invocation plus br/file persistence |
 | Context packet | density block, artifact links, acceptance examples, non-goals, constraints |
-| Guard adapter | plan-pawl duel verdict (fanout) or `$pre-mortem` verdict (MVP-slice) before packet handoff |
+| Guard adapter | plan-pawl duel verdict (fanout) or `$premortem` verdict (MVP-slice) before packet handoff |
 
 Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
@@ -104,7 +104,7 @@ The duel is for one-way doors, not every slice. Route first:
 - **Fanout class** (architecture forks, one-way-door decisions, cross-agent
   coordination contracts, product decisions): run the **plan-pawl duel** below — the
   `multi-model` pawl over the PLAN artifact ([`docs/contracts/pawls.md`](../../docs/contracts/pawls.md)).
-  It SUBSUMES the old single-judge Codex fanout approval AND the `$pre-mortem`
+  It SUBSUMES the old single-judge Codex fanout approval AND the `$premortem`
   council into one cross-family gate (`--duel`, auto-on for fanout/`--complexity=full`).
 - **MVP vertical slice** (default for routine runtime/CLI work): skip the duel
   (`--no-duel`). Run the discovery DAG under a hard time-box — **~15 min discovery,
@@ -225,4 +225,4 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
 - [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
 - [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
-**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)
+**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../premortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)

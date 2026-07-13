@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: 'Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".'
+description: 'Handle blocked destructive commands and configure agent safety guardrails. Triggers: "dcg", "handle blocked destructive commands. use", "dcg skill".'
 practices:
 - pragmatic-programmer
 ---
@@ -14,6 +14,12 @@ practices:
 # DCG: When You Get Blocked
 
 > **Core Insight:** Blocks are checkpoints, not errors. A safe alternative almost always exists. Find it before mentioning override.
+
+## Constraints
+
+- Never request, generate, or run an allow-once bypass because only the human may authorize and execute the exact blocked command.
+- Preserve the user's intended outcome with the narrowest reversible alternative because the guard protects state, not merely command spelling.
+- Explain the matched rule and surviving risk before asking for judgment; never retry, obfuscate, or route around a DCG block.
 
 ## Quick Navigation
 
@@ -162,6 +168,20 @@ dcg test "git reset --hard HEAD"
 
 # Should show: WOULD BE BLOCKED
 ```
+
+## Output Specification
+
+- **Path:** the response and command output on stdout/stderr; write `.dcg.toml` or `.dcg/allowlist.toml` only when configuration was explicitly requested.
+- **Filename:** preserve DCG's project filenames exactly; ordinary block handling creates no persistent file.
+- **Format:** state the blocked command, matched rule, risk, reversible alternative, and the alternative's validation result; quote commands exactly.
+- **Exit code:** run `bash skills/dcg/scripts/validate-dcg.sh` and require zero for installation/configuration work; a blocked `dcg test` result is expected evidence, not permission to bypass.
+- **Downstream handoff:** proceed with the validated safe alternative, or hand the exact risk and allow-once choice to the human when no equivalent exists.
+
+## Quality Checklist
+
+- The response identifies the exact block and rule without exposing or suggesting an unauthorized bypass path.
+- The chosen alternative is narrower, reversible where possible, and demonstrably preserves the user's requested outcome.
+- Validation distinguishes an expected destructive-command block from a broken DCG installation or configuration.
 
 ---
 

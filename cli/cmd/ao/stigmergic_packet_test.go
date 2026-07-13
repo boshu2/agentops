@@ -181,7 +181,10 @@ func TestCollectRankedContextBundle_ExcludesProofBackedNextWork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bundle := collectRankedContextBundle(dir, "backlog item", 5)
+	bundle, err := collectRankedContextBundle(dir, "backlog item", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(bundle.NextWork) != 1 {
 		t.Fatalf("NextWork = %+v, want only the live sibling", bundle.NextWork)
 	}

@@ -100,7 +100,9 @@ def add(severity, code, msg, suggest=None):
 # ---- Source of truth: actual skills/ contents ----
 actual_skills = sorted(
     p.name for p in SKILLS_DIR.iterdir()
-    if p.is_dir() and (p / "SKILL.md").is_file()
+    if p.is_dir()
+    and p.name not in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}
+    and (p / "SKILL.md").is_file()
 )
 actual_count = len(actual_skills)
 

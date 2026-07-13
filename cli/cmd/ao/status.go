@@ -76,7 +76,7 @@ type flywheelBrief struct {
 	StaleArtifacts         int     `json:"stale_artifacts"`
 	PromotedFindings       int     `json:"promoted_findings,omitempty"`
 	PlanningRules          int     `json:"planning_rules,omitempty"`
-	PreMortemChecks        int     `json:"pre_mortem_checks,omitempty"`
+	PreMortemChecks        int     `json:"premortem_checks,omitempty"`
 	UnconsumedItems        int     `json:"unconsumed_items,omitempty"`
 	HighSeverityUnconsumed int     `json:"high_severity_unconsumed,omitempty"`
 	LastForgeAge           string  `json:"last_forge_age,omitempty"`
@@ -147,6 +147,23 @@ func loadFlywheelBrief(cwd string) *flywheelBrief {
 	}
 }
 
+func loadStatusFlywheelBrief(cwd string) (*flywheelBrief, error) {
+	scorecard, err := loadStigmergicScorecard(cwd)
+	if err != nil {
+		return nil, fmt.Errorf("load stigmergic scorecard: %w", err)
+	}
+	brief := loadFlywheelBrief(cwd)
+	if brief == nil {
+		return nil, nil
+	}
+	brief.PromotedFindings = scorecard.PromotedFindings
+	brief.PlanningRules = scorecard.PlanningRules
+	brief.PreMortemChecks = scorecard.PreMortemChecks
+	brief.UnconsumedItems = scorecard.UnconsumedItems
+	brief.HighSeverityUnconsumed = scorecard.HighSeverityUnconsumed
+	return brief, nil
+}
+
 func computeStatusFlywheelBrief(ctx context.Context, cwd string) *flywheelBrief {
 	if ctx.Err() != nil {
 		return nil
@@ -165,13 +182,6 @@ func computeStatusFlywheelBrief(ctx context.Context, cwd string) *flywheelBrief 
 		Velocity:       metrics.Velocity,
 		NewArtifacts:   metrics.NewArtifacts,
 		StaleArtifacts: metrics.StaleArtifacts,
-	}
-	if scorecard, err := loadStigmergicScorecard(cwd); err == nil {
-		brief.PromotedFindings = scorecard.PromotedFindings
-		brief.PlanningRules = scorecard.PlanningRules
-		brief.PreMortemChecks = scorecard.PreMortemChecks
-		brief.UnconsumedItems = scorecard.UnconsumedItems
-		brief.HighSeverityUnconsumed = scorecard.HighSeverityUnconsumed
 	}
 	if lastForge := findLastForgeTime(cwd); !lastForge.IsZero() {
 		brief.LastForgeTime = lastForge.Format("2006-01-02 15:04")
@@ -242,7 +252,10 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	status.Flywheel = loadFlywheelBrief(cwd)
+	status.Flywheel, err = loadStatusFlywheelBrief(cwd)
+	if err != nil {
+		return err
+	}
 	status.QualitySignals = loadQualitySignals(filepath.Dir(baseDir), 10)
 
 	return outputStatus(status)

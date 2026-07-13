@@ -446,7 +446,10 @@ def exact_mirror_source_payload(src_dir: pathlib.Path, twin_dir: pathlib.Path) -
 source_skills = sorted(
     p.name
     for p in source_root.iterdir()
-    if p.is_dir() and not p.name.startswith("_") and (p / "SKILL.md").exists()
+    if p.is_dir()
+    and not p.name.startswith("_")
+    and p.name not in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}
+    and (p / "SKILL.md").exists()
 )
 known_skills = set(source_skills)
 
@@ -620,7 +623,18 @@ desired_manifest_skills = []
 existing_manifest_by_name = {
     entry.get("name"): entry for entry in manifest_skills if entry.get("name")
 }
-for twin_dir in sorted(p for p in codex_root.iterdir() if p.is_dir() and (p / "SKILL.md").exists()):
+package_count = sum(
+    1
+    for package_dir in codex_root.iterdir()
+    if package_dir.is_dir() and (package_dir / "SKILL.md").exists()
+)
+for twin_dir in sorted(
+    p
+    for p in codex_root.iterdir()
+    if p.is_dir()
+    and p.name not in {"pre-mortem", "post-mortem", "pre_mortem", "post_mortem"}
+    and (p / "SKILL.md").exists()
+):
     marker_path = twin_dir / marker_name
     if not marker_path.exists():
         continue  # the manifest validator reports the missing marker fail-closed
@@ -636,12 +650,15 @@ for twin_dir in sorted(p for p in codex_root.iterdir() if p.is_dir() and (p / "S
 
 manifest_inventory_drift = manifest_skills != desired_manifest_skills
 embedded_catalog_drift = manifest_catalog_skills != overrides_skills
+package_count_drift = manifest.get("package_count") != package_count
 
 if check_only:
     if manifest_inventory_drift:
         drift.append(("<manifest>", ["artifact inventory differs from skills-codex directories"]))
     if embedded_catalog_drift:
         drift.append(("<manifest-catalog>", ["embedded treatment catalog differs from authoritative overrides catalog"]))
+    if package_count_drift:
+        drift.append(("<manifest>", [f"package_count differs from {package_count} installable skill directories"]))
     if drift:
         print(f"codex-sync drift: {len(drift)} parity twin(s) differ from generator output:")
         for n, reasons in drift:
@@ -653,8 +670,9 @@ if check_only:
 
 manifest_skills[:] = desired_manifest_skills
 manifest_catalog_skills[:] = [dict(entry) for entry in overrides_skills]
+manifest["package_count"] = package_count
 
-if generated or manifest_inventory_drift or embedded_catalog_drift:
+if generated or manifest_inventory_drift or embedded_catalog_drift or package_count_drift:
     # Recompute the embedded catalog hash (same algorithm as
     # register-new-codex-skill.sh) so the manifest catalog stays self-consistent.
     catalog_for_hash = json.dumps(

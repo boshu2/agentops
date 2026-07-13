@@ -1,0 +1,1 @@
+{"phase":"verify","manifest_present":true,"manifest_paths":["skills/premortem/**"],"local_changes":[],"upstream_changes":["skills/premortem/SKILL.md"],"expected_pass":false}

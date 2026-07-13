@@ -3,8 +3,18 @@ name: agent-mail
 user-invocable: false
 skill_api_version: 1
 hexagonal_role: supporting
+consumes:
+- task-intent
+produces:
+- agent-identity
+- file-reservation
+- acknowledged-handoff
+context_rel:
+- kind: supplier-to
+  with: agent-native
 metadata:
   tier: execution
+  dependencies: []
 description: 'Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. Triggers: "agent-mail", "agent mail", "use when coordinating agents with".'
 practices:
 - pragmatic-programmer
@@ -21,7 +31,17 @@ practices:
 
 > **When this applies (scope guard).** Agent Mail coordination — `start-session`, identity registration, file reservations, cross-lane ACKs — is **required when ≥2 lanes/panes share the repo** (a swarm, or you plus a concurrent peer session). With **only one active writer** (no second lane/pane), do **not** register or reserve against yourself — coordination is an escalation, not a session-start tax. If you are the sole writer, skip to the work. (Doctrine: [operating-loop principle 8](../../docs/architecture/operating-loop.md#governing-principles) — single-agent-first.)
 >
-> **Asymmetry guardrail — the part of the de-mandate that does NOT relax.** AM answers a **contention** axis; ATM answers a separate **durability** axis (they're not a package — full 4-case matrix in [`using-atm`](../using-atm/SKILL.md#when-to-use-atm-vs-am-the-4-case-matrix)). The de-mandate removes the single-writer *session-start tax*, **not** the *collision guard*. The costs are asymmetric: an **unneeded** AM call costs one command; a **missing** one lets two writers silently clobber a shared file and the merge looks like ordinary conflict cleanup while the design forked. So the **`≥2-writers → reserve` reflex stays non-negotiable.** "Trust the models" does not grant two concurrent writers consistency on one path. **Partition before you lock:** if you can cut the write-sets disjoint (sole writer per file), do that instead of reserving — locks are the fallback when partition fails.
+> **Asymmetry guardrail.** Agent Mail answers the contention axis; persistent NTM panes answer a separate durability axis. They are independently selectable adapters. Removing the single-writer startup tax does not relax collision safety: partition write scopes first, then require reservations for two live writers sharing a path.
+
+## Critical Constraints
+
+- **Use Agent Mail only for live multi-writer coordination. Why:** registering
+  and reserving in a one-writer session adds state without preventing a real
+  collision.
+- **Put durable work truth in BR/beads. Why:** leases and messages expire or can
+  be missed, while the tracker carries dependencies, evidence, and closure.
+- **Treat a conflicting reservation as a stop signal. Why:** writing through a
+  live exclusive lease defeats the collision boundary this adapter provides.
 
 ## Coordination Boundary
 
@@ -66,7 +86,7 @@ The fix is structural: intent on the graph is the lock.
 
 When routing a write through a single writer (e.g. a beads-intake lane), require
 **ACK-with-id** back to the requester — the AM message id of the filed bead or the
-`br show <id>` output confirming the record exists. An unacknowledged routed write
+`ao beads exec show <id>` output confirming the record exists. An unacknowledged routed write
 is invisible work. "Are these filed?" must not be a question — the ACK closes it.
 
 ## When to Use What
@@ -110,20 +130,42 @@ The discipline, not the syntax (syntax: `am file_reservations --help` or the `fi
 
 ## Beads Integration
 
-Use bead IDs as your threading anchor. BR remains authoritative; mail carries the lease, notification, and discussion side channel.
+Use bead IDs as your threading anchor. The bead tracker remains authoritative; mail carries the lease, notification, and discussion side channel.
 
 ```
-1. Pick work:        br ready --json → choose bd-123
+1. Pick work:        ao beads exec ready --json → choose bd-123
 2. Reserve files:    file_reservation_paths(..., reason="bd-123")
 3. Announce:         send_message(..., thread_id="bd-123", subject="[bd-123] Starting...")
 4. Work:             Reply in thread with progress
-5. Record evidence:  br update bd-123 --notes "Validation: tests, commit, CI, or handoff proof"
-6. Complete:         br close bd-123, release_file_reservations(...), final message
+5. Record evidence:  ao beads exec update bd-123 --notes "Validation: tests, commit, CI, or handoff proof"
+6. Complete:         ao beads exec close bd-123, release_file_reservations(...), final message
 ```
 
 **Bead ID (often bd-###) goes in:** thread_id, subject prefix, reservation reason, commit message
 
-**Do not infer durable state from mail silence.** A missing reply is not proof that a bead is abandoned, blocked, or complete. Check `br show <id> --json`, `bv --robot-insights`, git state, and CI evidence before changing work state.
+**Do not infer durable state from mail silence.** A missing reply is not proof that a bead is abandoned, blocked, or complete. Check `ao beads exec show <id> --json`, `bv --robot-insights`, git state, and CI evidence before changing work state.
+
+## Output Specification
+
+- **Artifact directory:** no repository directory; Agent Mail persists identity,
+  reservation, and message records in its own project store and returns receipts
+  through MCP results or CLI stdout.
+- **Filename convention:** none. Refer to durable coordination records by
+  project, agent name, bead/thread id, and returned message or reservation id.
+- **Serialization/schema format:** use the MCP tool result objects or the CLI's
+  `--json` output when another agent must consume the receipt mechanically.
+- **Validator command:** confirm identities with
+  `am robot agents --project <abs> --active`, then inspect reservations/inbox
+  with the matching self-described `am file_reservations` or `am mail` command.
+- **Downstream handoff:** record the acknowledged message/reservation id in the
+  BR/bead note when it matters to the work, then release leases after landing.
+
+## Quality Rubric
+
+- [ ] Every active writer is registered under the same absolute project path.
+- [ ] Every hot-path write has a non-conflicting lease tied to its bead id.
+- [ ] Every routed write returns an ACK with a discoverable id or tracker proof.
+- [ ] Durable decisions and completion evidence are present in BR/beads, not mail alone.
 
 ## Quick Troubleshooting
 

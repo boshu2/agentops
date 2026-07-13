@@ -16,8 +16,8 @@ import (
 // Integration Test 1: Ratchet Next After Recording
 //
 // Verifies that after recording a "research" step as locked in a chain,
-// computeNextStep returns "pre-mortem" as the next step. Then after recording
-// pre-mortem, it returns "plan", and so on through the full lifecycle.
+// computeNextStep returns "premortem" as the next step. Then after recording
+// premortem, it returns "plan", and so on through the full lifecycle.
 // =============================================================================
 
 func TestIntegration_RatchetNextAfterRecording(t *testing.T) {
@@ -36,7 +36,7 @@ func TestIntegration_RatchetNextAfterRecording(t *testing.T) {
 			wantDone: false,
 		},
 		{
-			name: "after research locked, next is pre-mortem",
+			name: "after research locked, next is premortem",
 			entries: []ratchet.ChainEntry{
 				{
 					Step:      ratchet.StepResearch,
@@ -45,11 +45,11 @@ func TestIntegration_RatchetNextAfterRecording(t *testing.T) {
 					Locked:    true,
 				},
 			},
-			wantNext: "pre-mortem",
+			wantNext: "premortem",
 			wantDone: false,
 		},
 		{
-			name: "after research + pre-mortem locked, next is plan",
+			name: "after research + premortem locked, next is plan",
 			entries: []ratchet.ChainEntry{
 				{
 					Step:      ratchet.StepResearch,
@@ -68,7 +68,7 @@ func TestIntegration_RatchetNextAfterRecording(t *testing.T) {
 			wantDone: false,
 		},
 		{
-			name: "full chain through vibe yields post-mortem",
+			name: "full chain through vibe yields postmortem",
 			entries: []ratchet.ChainEntry{
 				{
 					Step:      ratchet.StepResearch,
@@ -101,7 +101,7 @@ func TestIntegration_RatchetNextAfterRecording(t *testing.T) {
 					Locked:    true,
 				},
 			},
-			wantNext: "post-mortem",
+			wantNext: "postmortem",
 			wantDone: false,
 		},
 		{
@@ -210,11 +210,11 @@ func TestIntegration_RatchetNextProgressiveRecording(t *testing.T) {
 		output   string
 		wantNext string
 	}{
-		{ratchet.StepResearch, ".agents/research/findings.md", "pre-mortem"},
+		{ratchet.StepResearch, ".agents/research/findings.md", "premortem"},
 		{ratchet.StepPreMortem, ".agents/council/pre-mortem.md", "plan"},
 		{ratchet.StepPlan, ".agents/plans/epic-plan.md", "implement"},
 		{ratchet.StepImplement, "feature implemented", "vibe"},
-		{ratchet.StepVibe, ".agents/council/vibe.md", "post-mortem"},
+		{ratchet.StepVibe, ".agents/council/vibe.md", "postmortem"},
 	}
 
 	for _, s := range steps {
@@ -244,7 +244,7 @@ func TestIntegration_RatchetNextProgressiveRecording(t *testing.T) {
 		}
 	}
 
-	// Final step: post-mortem should mark complete
+	// Final step: postmortem should mark complete
 	finalEntry := ratchet.ChainEntry{
 		Step:      ratchet.StepPostMortem,
 		Timestamp: time.Now(),

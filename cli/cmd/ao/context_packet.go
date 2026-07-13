@@ -93,7 +93,7 @@ func printPacketHuman(cmd *cobra.Command, packet StigmergicPacket) {
 	fmt.Fprintln(w, "## Scorecard")
 	fmt.Fprintf(w, "  Promoted findings:        %d\n", sc.PromotedFindings)
 	fmt.Fprintf(w, "  Planning rules:           %d\n", sc.PlanningRules)
-	fmt.Fprintf(w, "  Pre-mortem checks:        %d\n", sc.PreMortemChecks)
+	fmt.Fprintf(w, "  Premortem checks:         %d\n", sc.PreMortemChecks)
 	fmt.Fprintf(w, "  Queue entries:            %d\n", sc.QueueEntries)
 	fmt.Fprintf(w, "  Unconsumed batches:       %d\n", sc.UnconsumedBatches)
 	fmt.Fprintf(w, "  Unconsumed items:         %d\n", sc.UnconsumedItems)

@@ -7,11 +7,11 @@
   "transform": "none",
   "description": "Claude image = the CORE skill set shipped DIRECT. SKILL.md is Claude-native (YAML frontmatter name/description + markdown body); no conversion, no wrapper. Skills are consumed in place from agentops/skills/<slug>/ via the Claude harness skills path / marketplace plugin. First-class Claude primitives (Workflows, Agent subagents, scheduled tasks) wrap USAGE, not the skill files. This bundle is the manifest + README + verify only; it does NOT copy or duplicate the skill files.",
   "counts": {
-    "method_core": 24,
-    "tool_op_core": 10,
-    "core_total": 34,
+    "method_core": 20,
+    "tool_op_core": 9,
+    "core_total": 29,
     "operator": 2,
-    "manifest_total": 36
+    "manifest_total": 31
   },
   "core_skills": [
     {
@@ -69,32 +69,14 @@
       "ship": "direct"
     },
     {
-      "slug": "pre-mortem",
-      "path": "skills/pre-mortem/",
+      "slug": "premortem",
+      "path": "skills/premortem/",
       "category": "method-core",
       "ship": "direct"
     },
     {
-      "slug": "red-team",
-      "path": "skills/red-team/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "post-mortem",
-      "path": "skills/post-mortem/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "compile",
-      "path": "skills/compile/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "flywheel",
-      "path": "skills/flywheel/",
+      "slug": "postmortem",
+      "path": "skills/postmortem/",
       "category": "method-core",
       "ship": "direct"
     },
@@ -119,12 +101,6 @@
     {
       "slug": "handoff",
       "path": "skills/handoff/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "recover",
-      "path": "skills/recover/",
       "category": "method-core",
       "ship": "direct"
     },
@@ -197,12 +173,6 @@
     {
       "slug": "account-rotation",
       "path": "skills/account-rotation/",
-      "category": "tool-op-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "review",
-      "path": "skills/review/",
       "category": "tool-op-core",
       "ship": "direct"
     },

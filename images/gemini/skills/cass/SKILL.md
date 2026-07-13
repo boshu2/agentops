@@ -1,6 +1,6 @@
 ---
 name: cass
-description: 'Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. Triggers: "cass", "mine past agent sessions for", "cass skill".'
+description: 'Mine past agent sessions for working prompts, decisions, and patterns (session archaeology). Triggers: "cass", "mine past agent sessions for", "cass skill".'
 practices:
 - pragmatic-programmer
 skill_api_version: 1
@@ -28,6 +28,12 @@ cass robot-docs guide|commands|examples|schemas|contracts   # machine-targeted d
 ```
 
 This skill carries only the AgentOps operating doctrine: when to reach for cass, the discovery workflow, the recovery posture, and the anti-patterns we have actually hit.
+
+## Constraints
+
+- Never run bare `cass` because it launches a blocking TUI; use a JSON, robot, or explicit file-output command.
+- Treat a stale index as searchable and refresh it with a bounded background command because stale is not broken and an unbounded rebuild can stall the lane.
+- Preserve source sessions and require explicit permission for destructive cleanup; recovery may rebuild only derived index state.
 
 ## When to Use
 
@@ -159,3 +165,17 @@ cass status --json | jq '.index.fresh'
 ```
 
 If `false`, run: `cass index --json`
+
+## Output Specification
+
+- **Path:** stdout for search, status, capability, and introspection results; this skill creates no artifact directory by default.
+- **Filename:** none unless the caller explicitly requests an export path such as `/tmp/cass-export.json` with `-o`.
+- **Format:** use the installed command's JSON schema from `cass introspect --json`; wide searches should keep `--fields minimal` and downstream narrowing must preserve `source_path` and line location.
+- **Exit code:** validate with `cass status --json | jq -e .` and parse every selected result with `jq`; a nonzero command, malformed JSON, or unresolved source path blocks the handoff.
+- **Downstream handoff:** consumed by research, planning, recovery, or post-mortem work with the exact query, canonical workspace, selected source paths/lines, and index freshness noted.
+
+## Quality Checklist
+
+- Results come from a canonical workspace key and include enough source location to reopen the session context.
+- A zero-hit result was retried against discovered workspace keys before concluding that no prior art exists.
+- Index recovery stayed bounded and preserved source sessions; no stale state was misreported as broken.

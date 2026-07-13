@@ -9,7 +9,7 @@ hexagonal_role: domain
 consumes:
 - rpi
 - goals
-- post-mortem
+- postmortem
 produces:
 - git-changes
 - goals-fitness-delta
@@ -31,7 +31,7 @@ metadata:
   tier: experimental
   dependencies:
   - rpi
-  - post-mortem
+  - postmortem
   triggers:
   - evolve
   - improve everything

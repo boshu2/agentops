@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: 'Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".'
+description: 'Graph-aware task triage with bv and br — prioritize work, find bottlenecks, track dependencies across projects. Triggers: "beads-bv", "beads bv", "graph-aware task triage with bv".'
 practices:
 - pragmatic-programmer
 ---
@@ -14,6 +14,12 @@ practices:
 <!-- TOC: Robot Mode | Commands | Workflow | Scoping | Metrics | br | Troubleshooting | References -->
 
 > **Core Insight:** Your backlog is a directed graph. PageRank finds what everything depends on. Betweenness finds bottlenecks. The math knows your priorities better than your gut.
+
+## Constraints
+
+- Run only `bv --robot-*` commands because bare `bv` launches an interactive TUI and blocks an agent lane.
+- Treat graph recommendations as triage evidence, not permission to mutate or close work; the owning workflow still applies its acceptance gate.
+- Resolve the live tracker store before every `br` command because linked worktrees may not contain the canonical ledger.
 
 ## CRITICAL: Robot Mode Only
 
@@ -77,12 +83,12 @@ bv --robot-triage     # CORRECT — JSON output for agents
 bv --robot-triage | jq '.recommendations[0]'
 
 # 2. Claim it
-br update bd-123 --status in_progress
+BEADS_DIR="$(ao beads dir)" br update ag-123 --status in_progress
 
 # 3. Do the work...
 
 # 4. Done
-br close bd-123 --reason "Implemented in abc123"
+BEADS_DIR="$(ao beads dir)" br close ag-123 --reason "Implemented in abc123"
 
 # 5. Next
 bv --robot-triage
@@ -129,12 +135,12 @@ bv --robot-alerts --severity=critical        # Filter alerts
 ## br Essentials
 
 ```bash
-br ready --json                              # What's unblocked?
-br create "Title" -d "desc"                  # New issue
-br update bd-123 --status in_progress        # Working on this
-br close bd-123 --reason "Done"              # Done
-br dep add bd-123 bd-456                      # Add dependency
-br dep remove bd-123 bd-456                   # Break cycle
+BEADS_DIR="$(ao beads dir)" br ready --json                  # What's unblocked?
+BEADS_DIR="$(ao beads dir)" br create "Title" -d "desc"      # New issue
+BEADS_DIR="$(ao beads dir)" br update ag-123 --status in_progress   # Working on this
+BEADS_DIR="$(ao beads dir)" br close ag-123 --reason "Done"  # Done
+BEADS_DIR="$(ao beads dir)" br dep add ag-123 ag-456         # Add dependency
+BEADS_DIR="$(ao beads dir)" br dep remove ag-123 ag-456      # Break cycle
 ```
 
 ---
@@ -155,12 +161,26 @@ br dep remove bd-123 bd-456                   # Break cycle
 
 ```bash
 # Tools working?
-bv --robot-triage >/dev/null && br list >/dev/null && echo "OK"
+bv --robot-triage >/dev/null && BEADS_DIR="$(ao beads dir)" br list >/dev/null && echo "OK"
 
 # Graph healthy?
 bv --robot-insights | jq '{cycles: .Cycles, density: .density}'
 # cycles must be [], density < 0.3 is healthy
 ```
+
+## Output Specification
+
+- **Path:** stdout; this skill creates no durable artifact directory or file.
+- **Filename:** none. Preserve the selected `bv --robot-*` JSON on stdout instead of inventing a report file.
+- **Format:** the command's JSON schema, narrowed with `jq` only when the downstream consumer requests a smaller object.
+- **Exit code:** validate with `bv --robot-triage >/dev/null` and a resolved-store `br list >/dev/null`; any nonzero exit is a failed handoff.
+- **Downstream handoff:** consumed by the planning or execution skill that requested triage; report the selected bead IDs, graph reason, and exact command used.
+
+## Quality Checklist
+
+- The command is a robot-mode command and its JSON parses successfully.
+- Recommendations cite graph evidence such as PageRank, betweenness, blockers, or cycles instead of intuition alone.
+- No tracker mutation is presented as completed unless its own command and acceptance gate succeeded.
 
 ---
 

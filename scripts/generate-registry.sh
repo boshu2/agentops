@@ -33,6 +33,9 @@ build_skills() {
     # — planted test fixtures, shared helpers — not real skills. Skip them so
     # they never inflate the registry / skill count.
     [[ "$name" == _* ]] && continue
+    # Runtime compatibility pointers ship in install bundles but are aliases,
+    # not canonical skills in the active registry/count surface.
+    [[ "$name" == "pre-mortem" || "$name" == "post-mortem" || "$name" == "pre_mortem" || "$name" == "post_mortem" ]] && continue
 
     local tier="unknown"
     if [[ -f "$tiers_file" ]]; then
@@ -153,7 +156,6 @@ build_knowledge_stores() {
     [plans]="Plan outputs from /plan skill"
     [pool]="Knowledge pool (ingested raw material)"
     [pre-mortem-checks]="Pre-mortem validation outputs"
-    [pre-mortems]="Pre-mortem analysis documents"
     [products]="Product definition outputs"
     [releases]="Release notes and changelogs"
     [research]="Research outputs and reports"

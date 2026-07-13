@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-12T20:26:54Z",
+  "generated_at": "2026-07-13T06:19:04Z",
   "skill_count": 62,
   "skills": [
     {
@@ -438,7 +438,7 @@
       "consumes": [
         "beads-br",
         "implement",
-        "post-mortem",
+        "postmortem",
         "swarm",
         "validate"
       ],
@@ -451,7 +451,7 @@
         "validate",
         "implement",
         "beads-br",
-        "post-mortem",
+        "postmortem",
         "agent-native",
         "automation-shape-routing",
         "dcg",
@@ -495,7 +495,7 @@
       "graph_root": true,
       "consumes": [
         "plan",
-        "pre-mortem",
+        "premortem",
         "research",
         "shared"
       ],
@@ -507,7 +507,7 @@
       "dependencies": [
         "research",
         "plan",
-        "pre-mortem",
+        "premortem",
         "shared",
         "behavior-first-planning",
         "idea-genie",
@@ -620,7 +620,7 @@
       "consumes": [
         "rpi",
         "goals",
-        "post-mortem"
+        "postmortem"
       ],
       "produces": [
         "git-changes",
@@ -628,7 +628,7 @@
       ],
       "dependencies": [
         "rpi",
-        "post-mortem"
+        "postmortem"
       ],
       "practices": [
         "lean-startup",
@@ -1031,7 +1031,7 @@
       "dependencies": [
         "research",
         "beads-br",
-        "pre-mortem",
+        "premortem",
         "crank",
         "implement",
         "scope",
@@ -1052,7 +1052,7 @@
       "codex_override_present": true
     },
     {
-      "name": "post-mortem",
+      "name": "postmortem",
       "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "hexagonal_role": "domain",
       "user_invocable": false,
@@ -1113,7 +1113,7 @@
       "codex_override_present": true
     },
     {
-      "name": "pre-mortem",
+      "name": "premortem",
       "description": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
       "hexagonal_role": "domain",
       "user_invocable": false,

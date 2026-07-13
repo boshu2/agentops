@@ -54,8 +54,8 @@ if ! bash "$repo_root/scripts/check-bounded-contexts-drift.sh" --check >/dev/nul
 fi
 
 go_files="$(git -C "$repo_root" ls-files | awk '/\.go$/ { count++ } END { print count+0 }')"
-skill_count="$(git -C "$repo_root" ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md" { count++ } END { print count+0 }')"
-codex_skill_count="$(git -C "$repo_root" ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md" { count++ } END { print count+0 }')"
+skill_count="$(git -C "$repo_root" ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md" && $2 != "pre-mortem" && $2 != "post-mortem" && $2 != "pre_mortem" && $2 != "post_mortem" { count++ } END { print count+0 }')"
+codex_skill_count="$(git -C "$repo_root" ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md" && $2 != "pre-mortem" && $2 != "post-mortem" && $2 != "pre_mortem" && $2 != "post_mortem" { count++ } END { print count+0 }')"
 shell_scripts="$(git -C "$repo_root" ls-files scripts | awk '/\.sh$/ { count++ } END { print count+0 }')"
 bats_files="$(git -C "$repo_root" ls-files tests | awk '/\.bats$/ { count++ } END { print count+0 }')"
 workflow_count="$(git -C "$repo_root" ls-files .claude/workflows | awk '/\.js$/ { count++ } END { print count+0 }')"

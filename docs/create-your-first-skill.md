@@ -154,7 +154,7 @@ Start from a simple, high-signal skill rather than the biggest orchestration lay
 Useful examples:
 
 - [skills/research/SKILL.md](skills/research.md)
-- [skills/post-mortem/SKILL.md](skills/post-mortem.md)
+- [skills/postmortem/SKILL.md](skills/postmortem.md)
 - [skills/doc/SKILL.md](skills/doc.md)
 - [skills/implement/SKILL.md](skills/implement.md)
 

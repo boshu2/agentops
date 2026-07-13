@@ -85,7 +85,7 @@ require_contains "skills/shared/references/strict-delegation-contract.md" '**Pha
   'shared strict-delegation contract must include file-backed receipt detection'
 # brainstorm/design folded into discovery, vibe into validate (ag-s43tg, 2026-06-12):
 # the chaining contract now names only surviving skills; absorbed modes are internal.
-require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
+require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$premortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
 require_contains "skills-codex/validate/SKILL.md" 'vibe` → `--mode=post-impl`' \
   'validate must document the absorbed vibe quick mode'

@@ -14,7 +14,7 @@ places every skill on the loop. Router: [docs/SKILLS.md](../docs/SKILLS.md).
 
 - `/validate` — canonical PASS/WARN/FAIL verdict on artifacts, plans, code, PRs, and gates; absorbs the retired `/review` (`--mode=pr`) and adversarial `--debate` (ex-`/red-team`, retired).
 - `/council` — multi-judge consensus; the core primitive under every validation skill.
-- `/pre-mortem` — simulate failures before implementing; predictions tracked into validate.
+- `/premortem` — simulate failures before implementing; predictions tracked into validate.
 - `/converge` — drive a fix → re-run-judge-panel loop to terminal agreement or a hard BLOCK.
 - `/security` — repository security scans (vulns, dependency risk, secrets) plus release gating.
 - `/reality-check` — mid-epic drift audit: code is ground truth, the plan is the measuring stick.
@@ -25,7 +25,7 @@ places every skill on the loop. Router: [docs/SKILLS.md](../docs/SKILLS.md).
 - `/beads-br` — local-first, git-native issue tracker (find ready work, update, close).
 - `/status` — single-screen dashboard of project state.
 - `/handoff` — compact session handoff so the next turn continues instead of restarting.
-- `/discovery` — shape intent into a dense execution packet (ideate → search → research → plan → pre-mortem).
+- `/discovery` — shape intent into a dense execution packet (ideate → search → research → plan → premortem).
 - `/goal-design` — create checked `.agents/goal-design/<slug>/` intent and driver packets before discovery or planning.
 - `/plan` — decompose a goal into an acceptance-gated bead DAG with dependency waves.
 - `/implement` — execute a single bead through its full TDD lifecycle.
@@ -53,7 +53,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 
 | Tier | Category | Description | Examples |
 |------|----------|-------------|----------|
-| **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, validate, pre-mortem, post-mortem |
+| **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, validate, premortem, postmortem |
 | **execution** | Primitives + flows | Research, plan, build, and ship — the work itself | research, plan, implement, crank, swarm, rpi |
 | **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | domain |
 | **product** | Execution | Define mission, goals, release, docs | product, goals, release, doc |
@@ -81,7 +81,7 @@ Council is the core primitive. Every validation skill depends on it. Remove coun
         │                     │                     │
         ▼                     ▼                     ▼
   ┌────────────┐        ┌─────────┐         ┌─────────────┐
-  │ pre-mortem │        │validate │         │ post-mortem │
+  │ premortem │        │validate │         │ postmortem │
   │ (plans)    │        │ (code)  │         │ (knowledge  │
   └────────────┘        └────┬────┘         │ + knowledge)│
                              │              └─────────────┘
@@ -105,7 +105,7 @@ RESEARCH          PLAN              IMPLEMENT           VALIDATE
                      │                  │                 │
                      ▼                  │                 │
                ┌────────────┐           │                 │
-               │ pre-mortem │           │                 │
+               │ premortem │           │                 │
                │ (council)  │           │                 │
                └────────────┘           │                 │
                                         │                 │
@@ -123,7 +123,7 @@ POST-SHIP                             ONBOARDING / STATUS
 ─────────                             ───────────────────
 
 ┌─────────────┐                       ┌────────────┐
-│ post-mortem │                       │ bootstrap  │ (first-time setup)
+│ postmortem │                       │ bootstrap  │ (first-time setup)
 │ (council +  │                       └────────────┘
 │ knowledge)  │                       ┌────────────┐
 └──────┬──────┘                       │   status   │ (dashboard)
@@ -140,7 +140,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
 
 ```
 ┌───────────┐     ┌────────────┐     ┌───────────┐
-│post-mortem│───► │ ao compile │───► │ ao lookup │
+│postmortem│───► │ ao compile │───► │ ao lookup │
 └───────────┘     └────────────┘     └───────────┘
       ▲                                     │
       │           ┌────────────────┐        │
@@ -148,7 +148,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
                   │    status      │
                   └────────────────┘
 
-User-facing: /post-mortem --quick (quick-capture), /post-mortem (full — mines + compiles the corpus)
+User-facing: /postmortem --quick (quick-capture), /postmortem (full — mines + compiles the corpus)
 CLI:         ao compile, ao flywheel status, ao lookup, ao extract, ao forge, ao maturity
 ```
 
@@ -170,8 +170,8 @@ taxonomy and the tier tables below, nothing else.
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
 | **pawl-review** | judgment | Run an immutable fresh-context reviewer lane and hand evidence to ao pawl. |
-| **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
-| **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
+| **premortem** | judgment | Council on plans — simulate failures before implementation |
+| **postmortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
 
 **Execution:**
 
@@ -181,7 +181,7 @@ taxonomy and the tier tables below, nothing else.
 | **plan** | execution | Decompose epics into issues with dependency waves |
 | **implement** | execution | Full lifecycle for one task |
 | **crank** | execution | Autonomous epic execution — parallel waves |
-| **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → pre-mortem |
+| **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → premortem |
 | **goal-design** | execution | Create checked goal-design intent + driver packets before discovery or planning |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
@@ -263,7 +263,6 @@ taxonomy and the tier tables below, nothing else.
 | **dueling-idea-genies** | execution | 'Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".' |
 | **idea-genie** | execution | 'Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".' |
 | **pattern-mining** | execution | 'Test repeated implementation shapes against independent exemplars and a holdout before routing an earned abstraction. Triggers: "mine a recurring code pattern", "is this abstraction earned", "extract invariants from implementations".' |
-
 ### Internal Skills (2) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
@@ -284,20 +283,20 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **operationalize** | - | - (standalone; ao compile / ao flywheel CLIs optional) |
 | **council** | - | - (core primitive) |
 | **validate** | - | - (standalone validator role) |
-| **pre-mortem** | council | required |
-| **post-mortem** | council, beads-br | required, optional |
+| **premortem** | council | required |
+| **postmortem** | council, beads-br | required, optional |
 | domain | - | - |
 | **agent-native** | - | - (standalone runtime guide) |
-| **crank** | swarm, validate, implement, beads-br, post-mortem | required, required, required, optional, optional |
+| **crank** | swarm, validate, implement, beads-br, postmortem | required, required, required, optional, optional |
 | doc | standards | required |
 | handoff | - | - |
 | **implement** | beads-br, standards | optional, required |
-| **plan** | research, beads-br, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
+| **plan** | research, beads-br, premortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
 | **pr-prep** | validate | optional |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
-| **discovery** | research, plan, pre-mortem, shared | research+plan+pre-mortem required, shared optional |
+| **discovery** | research, plan, premortem, shared | research+plan+premortem required, shared optional |
 | **goal-design** | validate, discovery, plan | validate required after checker; discovery/plan consume checked packets |
 | **rpi** | discovery, crank, validate | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
@@ -351,8 +350,8 @@ All council-based skills write to `.agents/council/`:
 | `/council brainstorm` | `.agents/council/YYYY-MM-DD-brainstorm-<topic>.md` |
 | `/council research` | `.agents/council/YYYY-MM-DD-research-<topic>.md` |
 | `/validate` | `.agents/council/YYYY-MM-DD-validate-<target>.md` |
-| `/pre-mortem` | `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` |
-| `/post-mortem` | `.agents/council/YYYY-MM-DD-post-mortem-<topic>.md` |
+| `/premortem` | `.agents/council/YYYY-MM-DD-premortem-<topic>.md` |
+| `/postmortem` | `.agents/council/YYYY-MM-DD-postmortem-<topic>.md` |
 
 Individual judge outputs also go to `.agents/council/`:
 - `YYYY-MM-DD-<target>-claude-pragmatist.md`, `...-claude-skeptic.md`, `...-claude-visionary.md`
@@ -405,7 +404,7 @@ Discovery skills that produce filesystem artifacts. User wants the output, not t
 |-------|------|-----|
 | research | Discovery | Massive codebase exploration → `.agents/research/*.md` |
 | plan | Discovery | Decomposition + beads creation → `.agents/plans/*.md` + beads |
-| post-mortem | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
+| postmortem | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
 
 ### Tier 3: FORK (judgment + worker spawners)
 
@@ -413,8 +412,8 @@ Judgment skills validate artifacts in isolation. Worker spawners fan out paralle
 
 | Skill | Role | Why |
 |-------|------|-----|
-| pre-mortem | Judgment | Plan validation, user wants verdict |
-| post-mortem | Judgment | Validation close-out + knowledge extraction |
+| premortem | Judgment | Plan validation, user wants verdict |
+| postmortem | Judgment | Validation close-out + knowledge extraction |
 | council | Worker spawner | Parallel judges, merge verdicts |
 | swarm | Worker spawner | Parallel runtime agents, merge results |
 
@@ -442,7 +441,7 @@ transport and returns only bounded artifacts.
 
 - `skills/council/SKILL.md` — Core judgment primitive
 - `skills/validate/SKILL.md` — Complexity + council for code
-- `skills/pre-mortem/SKILL.md` — Council for plans
-- `skills/post-mortem/SKILL.md` — Council + knowledge closeout for wrap-up
+- `skills/premortem/SKILL.md` — Council for plans
+- `skills/postmortem/SKILL.md` — Council + knowledge closeout for wrap-up
 - `skills/swarm/SKILL.md` — Parallelize any skill
 - `skills/rpi/SKILL.md` — Full pipeline orchestrator

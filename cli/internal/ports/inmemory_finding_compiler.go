@@ -114,15 +114,23 @@ func parseCompilerTargets(raw string) []CompiledOutputKind {
 	}
 	parts := strings.Split(trimmed, ",")
 	result := make([]CompiledOutputKind, 0, len(parts))
+	seen := make(map[CompiledOutputKind]struct{}, len(parts))
+	appendUnique := func(kind CompiledOutputKind) {
+		if _, exists := seen[kind]; exists {
+			return
+		}
+		seen[kind] = struct{}{}
+		result = append(result, kind)
+	}
 	for _, raw := range parts {
 		name := strings.ToLower(strings.TrimSpace(raw))
 		switch name {
 		case "plan", "planning-rule", "planning_rule":
-			result = append(result, CompiledOutputPlanningRule)
+			appendUnique(CompiledOutputPlanningRule)
 		case "pre-mortem", "pre_mortem", "premortem":
-			result = append(result, CompiledOutputPreMortemCheck)
+			appendUnique(CompiledOutputPreMortemCheck)
 		case "constraint", "constraints":
-			result = append(result, CompiledOutputConstraint)
+			appendUnique(CompiledOutputConstraint)
 		default:
 			// silently skip unknown — port contract notes this
 		}

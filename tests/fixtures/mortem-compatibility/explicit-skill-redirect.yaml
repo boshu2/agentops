@@ -1,0 +1,13 @@
+historical:
+  pre-mortem:
+    state: merged-into
+    merged-into: premortem
+  post-mortem:
+    state: merged-into
+    merged-into: postmortem
+  pre_mortem:
+    state: merged-into
+    merged-into: premortem
+  post_mortem:
+    state: merged-into
+    merged-into: postmortem

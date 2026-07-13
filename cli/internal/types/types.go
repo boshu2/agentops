@@ -908,7 +908,7 @@ type GoldenSignals struct {
 type StigmergicScorecard struct {
 	PromotedFindings       int `json:"promoted_findings"`
 	PlanningRules          int `json:"planning_rules"`
-	PreMortemChecks        int `json:"pre_mortem_checks"`
+	PreMortemChecks        int `json:"premortem_checks"`
 	QueueEntries           int `json:"queue_entries"`
 	UnconsumedBatches      int `json:"unconsumed_batches"`
 	UnconsumedItems        int `json:"unconsumed_items"`

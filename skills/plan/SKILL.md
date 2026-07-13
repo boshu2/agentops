@@ -22,7 +22,7 @@ metadata:
   dependencies:
   - research
   - beads-br
-  - pre-mortem
+  - premortem
   - crank
   - implement
   - scope

@@ -66,7 +66,10 @@ func runContextExplain(cmd *cobra.Command, args []string) error {
 	query := strings.TrimSpace(contextExplainFlags.task)
 	phase := normalizeAssemblePhase(contextExplainFlags.phase)
 	repo := detectRepoName(cwd)
-	bundle := collectRankedContextBundle(cwd, query, contextExplainFlags.limit)
+	bundle, err := collectRankedContextBundle(cwd, query, contextExplainFlags.limit)
+	if err != nil {
+		return err
+	}
 	result := buildContextExplainResult(cwd, repo, query, phase, bundle)
 
 	if GetOutput() == "json" {
@@ -182,7 +185,7 @@ func collectContextExplainHealth(cwd string, bundle rankedContextBundle) []conte
 	return []contextExplainFamilyHealth{
 		describeContextFamily("findings", countMatchingFiles(filepath.Join(cwd, ".agents", SectionFindings), "*.md"), false),
 		describeContextFamily("planning-rules", countMatchingFiles(filepath.Join(cwd, ".agents", "planning-rules"), "*.md"), false),
-		describeContextFamily("pre-mortem-checks", countMatchingFiles(filepath.Join(cwd, ".agents", "pre-mortem-checks"), "*.md"), false),
+		describeContextFamily("premortem-checks", bundle.Packet.Scorecard.PreMortemChecks, false),
 		describeContextFamily("next-work", bundle.Packet.Scorecard.UnconsumedItems, false),
 		describeContextFamily("topic-packets", countKnowledgeArtifacts(filepath.Join(cwd, ".agents", "topics")), true),
 		describeContextFamily("source-manifests", countKnowledgeArtifacts(filepath.Join(cwd, ".agents", "packets", "source-manifests")), true),

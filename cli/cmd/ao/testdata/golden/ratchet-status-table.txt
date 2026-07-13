@@ -4,14 +4,14 @@ Chain: golden-test-003
 Started: 2025-06-15T10:00:00Z
 Epic: ag-table
 
-STEP            STATUS       OUTPUT                                  
-----            ------       ------                                  
-research        ✓ locked     findings.md                             
-pre-mortem      ⊘ skipped                                            
-plan            ✓ locked     plan.md                                 
-implement       ◐ in_progress                                         
-crank           ○ pending                                            
-vibe            ○ pending                                            
-post-mortem     ○ pending                                            
+STEP            STATUS       OUTPUT
+----            ------       ------
+research        ✓ locked     findings.md
+premortem       ⊘ skipped
+plan            ✓ locked     plan.md
+implement       ◐ in_progress
+crank           ○ pending
+vibe            ○ pending
+postmortem      ○ pending
 
 Path: /tmp/test/.agents/ao/chain.jsonl

@@ -1,0 +1,1 @@
+{"schema_version":2,"packet_fields":{"pre_mortem_verdict":"PASS"},"runtime_paths":[".agents/pre-mortem-checks/current.md"],"ratchet_steps":["premortem","postmortem"]}

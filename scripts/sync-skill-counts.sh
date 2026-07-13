@@ -43,8 +43,8 @@ fi
 
 # `-not -name '_*'` excludes non-skill scaffolding dirs (e.g. skills/_fixtures/,
 # planted test fixtures) from the skill count — they are not real skills.
-TOTAL=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -not -name '_*' | wc -l | tr -d ' ')
-CODEX_TOTAL=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+TOTAL=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -not -name '_*' -not -name 'pre-mortem' -not -name 'post-mortem' -not -name 'pre_mortem' -not -name 'post_mortem' | wc -l | tr -d ' ')
+CODEX_TOTAL=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -not -name 'pre-mortem' -not -name 'post-mortem' -not -name 'pre_mortem' -not -name 'post_mortem' | wc -l | tr -d ' ')
 CODEX_OVERRIDES=$(find "$REPO_ROOT/skills-codex-overrides" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
 HOOK_EVENT_SECTIONS=$(jq -r '.hooks | length' "$REPO_ROOT/hooks/hooks.json" 2>/dev/null || echo 0)
 

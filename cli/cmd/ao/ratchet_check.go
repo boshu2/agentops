@@ -21,8 +21,9 @@ func init() {
 
 Returns exit code 0 if gate passes, 1 if not.
 
-Steps: research, pre-mortem, plan, implement, crank, vibe, post-mortem
-Aliases: premortem, postmortem, autopilot, validate, review
+Steps: research, premortem, plan, implement, crank, vibe, postmortem
+Legacy aliases: pre-mortem, post-mortem, pre_mortem, post_mortem
+Other aliases: autopilot, validate, review
 
 Examples:
   ao ratchet check research

@@ -19,9 +19,10 @@ done
 # 2. Every skill directory should appear in SKILL-TIERS.md
 if [ -f skills/SKILL-TIERS.md ]; then
   for skill_dir in skills/*/; do
-    [ -d "$skill_dir" ] || continue
-    [ -f "${skill_dir}/SKILL.md" ] || continue
-    skill_name=$(basename "$skill_dir")
+	[ -d "$skill_dir" ] || continue
+	[ -f "${skill_dir}/SKILL.md" ] || continue
+	grep -Eq '^implementation:[[:space:]]+false$' "${skill_dir}/SKILL.md" && continue
+	skill_name=$(basename "$skill_dir")
     # Leading-underscore dirs (e.g. skills/_fixtures/) are non-skill scaffolding
     # (planted test fixtures); they are intentionally absent from SKILL-TIERS.md.
     case "$skill_name" in _*) continue ;; esac

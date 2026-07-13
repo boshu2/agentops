@@ -33,7 +33,7 @@ dispositions rows, a separate one-line change outside this skill's directory.)
 |---|---|---|
 | `$status` | What do the tracker counts and recent activity say? | Do those counts correspond to shipped value? Status reads the tracker; reality-check reads the code *against the promise*. |
 | `$validate` | Does this one artifact (plan, PR, gate) pass? | Does the *aggregate* of all merged artifacts deliver the vision? Artifact-level verdicts can all be PASS while the epic drifts. |
-| `$post-mortem` | What did we learn after the work finished? | What do we steer *now*, mid-epic, while waves remain? |
+| `$postmortem` | What did we learn after the work finished? | What do we steer *now*, mid-epic, while waves remain? |
 | `/review` | Is this diff well-built (bugs, risk, quality)? | Is the well-built code the *right* code for the claimed value proposition? |
 
 Non-goals: stub-hunting for its own sake (that is an input, not the output),
@@ -161,5 +161,5 @@ user was promised in #2 or #3.
 
 - [discovery](../discovery/SKILL.md) — downstream: sharpens uncovered gaps into plans
 - [beads-br](../beads-br/SKILL.md) — downstream: lands the bridge plan as sequenced beads
-- [post-mortem](../post-mortem/SKILL.md) — the after-the-fact sibling of this mid-epic check
+- [post-mortem](../postmortem/SKILL.md) — the after-the-fact sibling of this mid-epic check
 - [validate](../validate/SKILL.md) — artifact-level verdicts; compose per-gap when evidence needs a judge

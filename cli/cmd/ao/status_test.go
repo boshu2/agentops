@@ -176,7 +176,10 @@ func TestLoadFlywheelBrief_IncludesStigmergicScorecard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	brief := loadFlywheelBrief(tmp)
+	brief, err := loadStatusFlywheelBrief(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if brief == nil {
 		t.Fatal("expected flywheel brief")
 	}

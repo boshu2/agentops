@@ -56,12 +56,12 @@ func TestParseStep(t *testing.T) {
 	}{
 		// Canonical names
 		{"canonical research", "research", StepResearch},
-		{"canonical pre-mortem", "pre-mortem", StepPreMortem},
+		{"canonical premortem", "premortem", StepPreMortem},
 		{"canonical plan", "plan", StepPlan},
 		{"canonical implement", "implement", StepImplement},
 		{"canonical crank", "crank", StepCrank},
 		{"canonical vibe", "vibe", StepVibe},
-		{"canonical post-mortem", "post-mortem", StepPostMortem},
+		{"canonical postmortem", "postmortem", StepPostMortem},
 
 		// Case insensitivity
 		{"uppercase RESEARCH", "RESEARCH", StepResearch},
@@ -75,9 +75,9 @@ func TestParseStep(t *testing.T) {
 		{"both spaces", " vibe ", StepVibe},
 		{"tab whitespace", "\tcrank\t", StepCrank},
 
-		// Aliases without hyphen
-		{"premortem no hyphen", "premortem", StepPreMortem},
-		{"postmortem no hyphen", "postmortem", StepPostMortem},
+		// Legacy aliases with hyphen
+		{"pre-mortem legacy hyphen", "pre-mortem", StepPreMortem},
+		{"post-mortem legacy hyphen", "post-mortem", StepPostMortem},
 
 		// Aliases with underscore
 		{"pre_mortem underscore", "pre_mortem", StepPreMortem},
@@ -115,12 +115,12 @@ func TestStepIsValid(t *testing.T) {
 		valid bool
 	}{
 		{"research is valid", StepResearch, true},
-		{"pre-mortem is valid", StepPreMortem, true},
+		{"premortem is valid", StepPreMortem, true},
 		{"plan is valid", StepPlan, true},
 		{"implement is valid", StepImplement, true},
 		{"crank is valid", StepCrank, true},
 		{"vibe is valid", StepVibe, true},
-		{"post-mortem is valid", StepPostMortem, true},
+		{"postmortem is valid", StepPostMortem, true},
 		{"empty is invalid", Step(""), false},
 		{"unknown is invalid", Step("bogus"), false},
 		{"partial is invalid", Step("res"), false},
@@ -142,12 +142,12 @@ func TestStepConstants(t *testing.T) {
 		want string
 	}{
 		{StepResearch, "research"},
-		{StepPreMortem, "pre-mortem"},
+		{StepPreMortem, "premortem"},
 		{StepPlan, "plan"},
 		{StepImplement, "implement"},
 		{StepCrank, "crank"},
 		{StepVibe, "vibe"},
-		{StepPostMortem, "post-mortem"},
+		{StepPostMortem, "postmortem"},
 	}
 
 	for _, tt := range tests {

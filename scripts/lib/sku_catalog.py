@@ -81,7 +81,7 @@ LOOP_MOVES = {
     4: ["implement"],
     5: ["crank", "swarm", "autodev"],
     6: ["validation", "council", "vibe"],
-    7: ["post-mortem", "forge", "retro", "ratchet", "flywheel", "harvest"],
+    7: ["postmortem", "forge", "retro", "ratchet", "flywheel", "harvest"],
 }
 
 
@@ -101,13 +101,15 @@ def parse_skill_frontmatter(skill_md: pathlib.Path) -> Dict[str, object]:
     """Parse the subset of SKILL.md frontmatter the catalog needs.
 
     Returns a dict with: name, description, hexagonal_role, status (optional),
-    consumes (list), produces (list).
+    implementation, redirect_to, consumes (list), produces (list).
     """
     result: Dict[str, object] = {
         "name": skill_md.parent.name,
         "description": "",
         "hexagonal_role": "",
         "status": "",
+        "implementation": True,
+        "redirect_to": "",
         "consumes": [],
         "produces": [],
     }
@@ -141,6 +143,10 @@ def parse_skill_frontmatter(skill_md: pathlib.Path) -> Dict[str, object]:
                 result["hexagonal_role"] = val
             elif key == "status":
                 result["status"] = val
+            elif key == "implementation":
+                result["implementation"] = val.lower() != "false"
+            elif key == "redirect_to":
+                result["redirect_to"] = val
             continue
         # List opener `key:`.
         opener = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*$", raw)
@@ -306,6 +312,16 @@ def build_skill_skus(
         if name.startswith("_"):
             continue
         fm = parse_skill_frontmatter(skill_md)
+        if fm.get("implementation") is False:
+            redirect_to = str(fm.get("redirect_to", "")).strip()
+            if not redirect_to:
+                raise ValueError(
+                    f"{skill_md}: implementation:false requires redirect_to; "
+                    "refusing to classify a malformed runtime pointer"
+                )
+            # Redirect-only packages remain discoverable at runtime but are not
+            # independent active capabilities or active-inventory members.
+            continue
         disp = dispositions.get(name, {})
         drives = sku_extract.extract_skill_commands(skill_dir, valid_commands)
         refs_dir = skill_dir / "references"

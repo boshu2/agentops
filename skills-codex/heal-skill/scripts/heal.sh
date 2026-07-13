@@ -323,8 +323,12 @@ for skill_dir in "${TARGETS[@]}"; do
     fi
   fi
 
-  # Check 2b: Missing metadata.tier
-  if [[ "$skill_dir" != "$REPO_ROOT"/skills-codex/* ]] && ! grep -q '^\s*tier:' "$skill_md"; then
+  # Check 2b: Missing metadata.tier. Redirect-only runtime packages are aliases,
+  # not independently governed implementations; check-skill-redirects.sh owns
+  # their compact frontmatter contract.
+  if [[ "$skill_dir" != "$REPO_ROOT"/skills-codex/* ]] \
+    && ! grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_md" \
+    && ! grep -q '^\s*tier:' "$skill_md"; then
     report "MISSING_TIER" "$skill_dir" "No metadata.tier in frontmatter"
   fi
 
@@ -528,6 +532,7 @@ for check_dir in "${TARGETS[@]}"; do
   esac
   skill_check="$check_dir/SKILL.md"
   [[ -f "$skill_check" ]] || continue
+  grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_check" && continue
   if ! get_frontmatter "$skill_check" "skill_api_version" >/dev/null 2>&1; then
     report "MISSING_API_VERSION" "$check_dir" "No skill_api_version field in frontmatter"
     if [[ "$MODE" == "fix" ]]; then
@@ -557,6 +562,10 @@ if [[ -f "$DISPOSITIONS_FILE" ]]; then
     [[ -f "$skill_check" ]] || continue
     check_dir="$(dirname "$skill_check")"
     check_name="$(basename "$check_dir")"
+    # Redirect-only runtime packages are historical aliases rather than
+    # independent active skills; their historical ledger rows are validated by
+    # check-skill-redirects.sh, not the active dispositions list.
+    if grep -Eq '^implementation:[[:space:]]+false([[:space:]]|$)' "$skill_check"; then continue; fi
     # Skip internal/non-invocable skills (same exemptions as catalog check).
     if grep -q 'user-invocable: false' "$skill_check" 2>/dev/null; then continue; fi
     if grep -q 'internal: true' "$skill_check" 2>/dev/null; then continue; fi

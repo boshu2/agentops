@@ -52,13 +52,13 @@ Four product layers (public framing):
 
 | Dimension | Size |
 |-----------|------|
-| Go source files | 1521 (`git ls-files '*.go'`) |
+| Go source files | 1531 (`git ls-files '*.go'`) |
 | Active skills | 62 (`git ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | Codex skill twins | 61 (`git ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | CLI top-level commands | 32 default / 89 with `flywheel legacy` (`go run [-tags profile] ./cmd/ao --help`) |
 | Gate checks | 103 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
-| Shell scripts | 371 (`git ls-files scripts | awk '/\.sh$/'`) |
-| Bats test files | 293 (`git ls-files tests | awk '/\.bats$/'`) |
+| Shell scripts | 373 (`git ls-files scripts | awk '/\.sh$/'`) |
+| Bats test files | 294 (`git ls-files tests | awk '/\.bats$/'`) |
 | Claude workflows | 4 (`git ls-files .claude/workflows | awk '/\.js$/'`) |
 | Registry capabilities | 105 (`jq '.capabilities | length' registry.json`) |
 
@@ -95,7 +95,7 @@ BC6 Orchestration ──▶ dispatches whole skills (never decomposes RPI intern
 | `skills-codex/` | Checked-in Codex runtime twins (61); maintained with refresh scripts |
 | `skills-codex-overrides/` | Durable Codex tailoring when runtime must diverge |
 | `cli/` | Go control plane — `cmd/ao/`, `internal/`, gates, corpus, RPI legacy |
-| `scripts/` | Validation, regen, release (371 shell scripts) |
+| `scripts/` | Validation, regen, release (373 shell scripts) |
 | `tests/` | Bats gate tests, integration, e2e, docs validation |
 | `schemas/` | JSON schemas for config, provenance, packets |
 | `docs/` | Narrative architecture, ADRs, contracts, MkDocs site |

@@ -1,7 +1,7 @@
 ---
 name: operationalize
 description: >-
-  Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
+  Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Triggers: when a finished artifact should become skills, gates, or beads.
 practices:
 - wiki-knowledge-surface
 - design-by-contract
@@ -9,6 +9,7 @@ practices:
 hexagonal_role: domain
 consumes:
 - .agents/research/*.md
+- pattern-mining.v1
 produces:
 - .agents/operationalize/*.md
 - routed-handoffs
@@ -19,6 +20,8 @@ context_rel:
   with: automation-shape-routing
 - kind: customer-of
   with: validate
+- kind: customer-of
+  with: pattern-mining
 - kind: supplier-to
   with: skill-builder
 - kind: supplier-to
@@ -75,7 +78,7 @@ finished artifact; the output is rules with anchors and a handoff per rule.
 - **Disagreement is marked DISPUTED, never averaged,** because splitting the
   difference between conflicting sources produces a rule nobody measured.
   A DISPUTED entry routes to investigation (beads), not to automation.
-- **Shape is decided by routing, not by vibe** — to prevent everything
+- **Shape and boundary are decided by routing, not by vibe** — to prevent everything
   becoming a skill. Compose [/automation-shape-routing](../automation-shape-routing/SKILL.md)
   for the shape decision; this skill only extends its target list.
 - **Gates start warn-only,** because a fresh rule promoted straight to a
@@ -170,11 +173,11 @@ its own source records a 9% duplicate-work counter-example.
 
 ## Output Specification
 
-**Format:** markdown rule packet — sources-in-place list, numbered rules in
-"When X, do Y because Z" form with anchors, DISPUTED section, route table, and
-the validate verdict reference.
-**Path:** written to `.agents/operationalize/YYYY-MM-DD-<slug>.md`; handoff
-stubs accompany it as a `## Handoffs` section (one block per routed rule).
+**Format:** Markdown rule packet with sources-in-place, anchored "When X, do Y because Z" rules, DISPUTED entries, route table, validation evidence, and handoff stubs.
+**Path:** `.agents/operationalize/YYYY-MM-DD-<slug>.md` with one `## Handoffs` block per routed rule.
+**Filename:** `YYYY-MM-DD-<slug>.md`, where the slug names the source topic or operationalization goal.
+**Validation command:** run `skills/operationalize/scripts/validate.sh`, then obtain a successful [/validate](../validate/SKILL.md) verdict on the emitted packet.
+**Downstream handoff:** consumed only after validation by exactly one selected builder; each stub names the rule, anchors, route, target invocation, and next action.
 **Exit signal:** packet path + per-rule route summary reported to the caller.
 
 ## Quality Rubric
@@ -193,14 +196,17 @@ here from the retired `/inject` skill (lineage: the former `knowledge-activation
 skill, cp-auc) — *operationalizes* a mature `.agents` corpus into durable operator
 surfaces (beliefs, playbooks, briefings, gaps). Where retrieval reads, activation
 promotes; the two are the read and write-to-surface halves of the same flywheel.
-Activation is the **fourth step** of the global-corpus workflow:
+Activation follows the live capture-and-ratchet workflow:
 
-1. `/curate --mode=harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
-2. `/compile` — synthesize raw artifacts into `.agents/compiled/`
-3. *(optional)* `/curate --mode=dream` overnight — bounded compounding loop
-4. **knowledge activation** — lift compiled knowledge into playbooks, beliefs, and runtime briefings
+1. `/post-mortem` captures only evidence that changes future behavior.
+2. `/pattern-mining` tests repeated shapes before promotion.
+3. `/operationalize` routes an earned rule to its weakest durable mechanism.
+4. **knowledge activation** lifts mature evidence into playbooks, beliefs, and runtime briefings.
 
-`/compile` remains the hygiene loop; activation owns corpus operationalization. Use it when the problem is no longer "capture more knowledge" but: promote the strongest recurring claims into a belief system, turn healthy topics into reusable playbooks, compile a small goal-time briefing, and surface thin topics and promotion gaps before they calcify.
+Activation owns corpus operationalization. Use it when the problem is no longer
+"capture more knowledge" but promoting strong recurring claims, turning healthy
+topics into reusable playbooks, building a small goal-time briefing, and
+surfacing thin topics before they calcify.
 
 ### Command contract
 
@@ -217,33 +223,9 @@ ao knowledge gaps                                                   # thin topic
 
 `ao` owns the belief/playbook/brief/gap product surfaces directly; the skill owns routing, sequencing, interpretation, and next-step recommendations. `ao lookup` and `ao codex start` consume these outputs as operator context — matched briefings are the preferred dynamic startup surface, while selected beliefs and healthy playbooks provide bounded supporting guidance. When a retrieved briefing, belief, or playbook changes a recommendation, record it with `ao metrics cite "<path>" --type applied 2>/dev/null || true` (use `--type retrieved` for loaded-but-unused context).
 
-### Activation steps
+### Activation details
 
-1. **Preflight** — verify `.agents/` exists. To run `ao knowledge activate`, verify at least one evidence substrate is present: packet builders (`source_manifest_build.py`, `topic_packet_build.py`, `corpus_packet_promote.py`, `knowledge_chunk_build.py`) under `.agents/scripts/`; or the harvest fallback `.agents/harvest/latest.json`; or the native operator surfaces (`ao knowledge beliefs|playbooks|brief|gaps`).
-2. **Consolidate evidence** — run packet layers in order: source manifests → topic packets → promoted packets → historical chunk bundles. See [references/knowledge-activation-dag.md](references/knowledge-activation-dag.md) for the full DAG and its trust gates.
-3. **Distill operator surfaces** — `ao knowledge beliefs` then `ao knowledge playbooks` materialize consumer surfaces under `.agents/knowledge/` and `.agents/playbooks/`.
-4. **Compile a goal-time briefing** — when there is an active objective: `ao knowledge brief --goal "..."`. Keep it small, cite source surfaces, warn when a selected topic is thin.
-5. **Surface gaps** — `ao knowledge gaps` reports thin topics, missing promotions, weak claims needing review, and the next recommended mining work.
-6. **Full outer loop** — `ao knowledge activate --goal "..."` sequences evidence consolidation, belief/playbook refresh, optional briefing compilation, and a gap summary in one pass.
-
-### Activation trust rules
-
-- packetization is substrate, not the product
-- beliefs, playbooks, and briefings are the real operator surfaces
-- thin topics stay discovery-only until evidence improves
-- every generated surface should name its consumer
-- repeated unchanged runs should stay structurally deterministic
-
-### Activation output surfaces
-
-Consumer-facing outputs: `.agents/knowledge/book-of-beliefs.md`, `.agents/playbooks/index.md`, `.agents/playbooks/<topic>.md`, `.agents/briefings/YYYY-MM-DD-<goal>.md`, `.agents/retro/`. Substrate surfaces: `.agents/packets/`, `.agents/topics/`, `.agents/packets/chunks/catalog.jsonl`. See [references/knowledge-activation-output-surfaces.md](references/knowledge-activation-output-surfaces.md) and [references/knowledge-activation-script-contracts.md](references/knowledge-activation-script-contracts.md) for trust boundaries and the builder inventory.
-
-### Activation reference documents
-
-- [references/knowledge-activation.feature](references/knowledge-activation.feature) — Executable spec: consolidate evidence, distill beliefs/playbooks, compile goal-time briefing, surface gaps (soc-qk4b)
-- [references/knowledge-activation-dag.md](references/knowledge-activation-dag.md) — DAG and trust gates for evidence consolidation
-- [references/knowledge-activation-output-surfaces.md](references/knowledge-activation-output-surfaces.md) — canonical activation output surfaces and trust boundaries
-- [references/knowledge-activation-script-contracts.md](references/knowledge-activation-script-contracts.md) — builder inventory and `ao knowledge` command ownership
+Load [the activation DAG](references/knowledge-activation-dag.md) for ordered steps and trust gates, [output surfaces](references/knowledge-activation-output-surfaces.md) for consumer/substrate boundaries, and [script contracts](references/knowledge-activation-script-contracts.md) for builder ownership. The executable behavior remains specified by [knowledge-activation.feature](references/knowledge-activation.feature).
 
 ## See Also
 
