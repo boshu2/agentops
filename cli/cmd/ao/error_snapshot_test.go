@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 // errorTestdataDir returns the absolute path to testdata/errors/ relative to
@@ -201,18 +203,18 @@ func TestErrorRatchetRecordMissingOutput(t *testing.T) {
 func TestErrorDoctorEmptyDir(t *testing.T) {
 	_ = chdirTemp(t)
 
-	// Use the computeResult + renderDoctorTable path to get deterministic output.
+	// Use the quality.ComputeResult + quality.RenderTable path to get deterministic output.
 	// gatherDoctorChecks depends on filesystem state. For a controlled test,
 	// synthesize checks matching what an empty dir produces.
-	checks := []doctorCheck{
+	checks := []quality.Check{
 		{Name: "ao CLI", Status: "pass", Detail: "vdev", Required: true},
 		{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true},
 		{Name: "Flywheel Health", Status: "warn", Detail: "No learnings found \u2014 the flywheel hasn't started", Required: false},
 	}
-	result := computeResult(checks)
+	result := quality.ComputeResult(checks)
 
 	var buf bytes.Buffer
-	renderDoctorTable(&buf, result)
+	quality.RenderTable(&buf, result)
 
 	errorGoldenTest(t, "doctor-empty-dir.txt", buf.Bytes())
 }

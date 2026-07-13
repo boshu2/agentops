@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
@@ -440,13 +441,13 @@ func materializeLedger(content []byte) (string, func(), error) {
 // PARSING-DISCIPLINE SWEEP (age-rk3r.6): every verdict-edge / ledger / git-output
 // recognition in the gate is exact-match and fail-closed; a near-miss is
 // rejected, not accepted. Concretely:
-//   - confirmedVerdictEdgeIn: exact relation (wasDerivedFrom) + shaBindsCommit
-//     (hex-validated) + parseDisposition == "CONFIRMED" (exact token, never a
+//   - confirmedVerdictEdgeIn: exact relation (wasDerivedFrom) + doneapp.SHABindsCommit
+//     (hex-validated) + doneapp.ParseDisposition == "CONFIRMED" (exact token, never a
 //     substring) — shared with the `ao done` recognizer.
 //   - the #trivial waiver: git diff-tree --name-only -z (raw NUL-separated paths)
-//   - the shared provenanceOnlyChangedFiles, so a leading-space / quoted /
+//   - the shared doneapp.ProvenanceOnlyChangedFiles, so a leading-space / quoted /
 //     surprising-byte path is matched exactly, never trimmed into the allowlist.
-//   - splitSHAList / commitRange feed shas that any downstream match (shaBindsCommit,
+//   - splitSHAList / commitRange feed shas that any downstream match (doneapp.SHABindsCommit,
 //     git plumbing) re-validates, so junk is fail-closed (refused), not waived.
 //   - isMainRef / isZeroSHA / refBranch / trunkRemoteRefs compare exact ref/sha
 //     forms; the pre-push stdin is git-generated (not repo-controlled), and a line
@@ -652,10 +653,10 @@ func hasConfirmedVerdictEdge(ledgerPath, sha string) bool {
 //
 //   - Relation is required EXACTLY (wasDerivedFrom). A hash-valid row with a
 //     different relation (e.g. wasAttributedTo) is NOT a verdict authorization.
-//   - shaBindsCommit is the SHARED sha match (done path): both sides hex-valid,
+//   - doneapp.SHABindsCommit is the SHARED sha match (done path): both sides hex-valid,
 //     >=7 chars, one a prefix of the other — a non-hex or too-short to_id is
 //     rejected, not accepted.
-//   - parseDisposition extracts the EXACT `disposition=<v>` whitespace-delimited
+//   - doneapp.ParseDisposition extracts the EXACT `disposition=<v>` whitespace-delimited
 //     token; the check is v == "CONFIRMED", NEVER strings.Contains — so
 //     "disposition=CONFIRMEDLY", "xdisposition=CONFIRMED", or an evidence_ref
 //     that merely mentions the word does NOT authorize.
@@ -677,10 +678,10 @@ func confirmedVerdictEdgeIn(edges []provenancegraph.Edge, sha string) bool {
 		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
 			continue
 		}
-		if !shaBindsCommit(sha, e.ToID) {
+		if !doneapp.SHABindsCommit(sha, e.ToID) {
 			continue
 		}
-		if parseDisposition(e.EvidenceRef) == doneStampConfirmed {
+		if doneapp.ParseDisposition(e.EvidenceRef) == doneapp.DispositionConfirmed {
 			return true
 		}
 	}
@@ -702,10 +703,10 @@ func reboundEdgeBoundTo(edges []provenancegraph.Edge, sha string) bool {
 		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
 			continue
 		}
-		if !shaBindsCommit(sha, e.ToID) {
+		if !doneapp.SHABindsCommit(sha, e.ToID) {
 			continue
 		}
-		if parseDisposition(e.EvidenceRef) == doneStampRebound {
+		if doneapp.ParseDisposition(e.EvidenceRef) == doneStampRebound {
 			return true
 		}
 	}
@@ -723,7 +724,7 @@ func confirmedVerdictCommitSHAs(edges []provenancegraph.Edge) []string {
 		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
 			continue
 		}
-		if parseDisposition(e.EvidenceRef) != doneStampConfirmed {
+		if doneapp.ParseDisposition(e.EvidenceRef) != doneapp.DispositionConfirmed {
 			continue
 		}
 		if e.ToID == "" || seen[e.ToID] {
@@ -801,7 +802,7 @@ func reboundVerdictAuthorizes(repo string, edges []provenancegraph.Edge, sha str
 		// SECURITY (age-rk3r.18 refuter fix): the lineage to_id is fed to git as a
 		// commit for the diff re-derivation, so it MUST be a HEX commit id resolved
 		// as an OBJECT — never a revision expression. The direct-CONFIRMED path
-		// (confirmedVerdictEdgeIn → shaBindsCommit) already requires this; the
+		// (confirmedVerdictEdgeIn → doneapp.SHABindsCommit) already requires this; the
 		// REBOUND lineage MUST apply the identical discipline, or a crafted ledger
 		// with a fake CONFIRMED edge to_id="HEAD~1" (a ref alias, not a hex id)
 		// would let `git show HEAD~1` supply a matching diff and certify an
@@ -812,7 +813,7 @@ func reboundVerdictAuthorizes(repo string, edges []provenancegraph.Edge, sha str
 		if rOID == "" {
 			continue // non-hex / ref-alias / non-committish lineage to_id → not a valid lineage
 		}
-		if shaBindsCommit(sha, rOID) {
+		if doneapp.SHABindsCommit(sha, rOID) {
 			continue // a CONFIRMED on the tip itself is the confirmedVerdictEdgeIn path, not lineage
 		}
 		rPID := commitPatchIDGit(gitBin, repo, rOID)
@@ -839,7 +840,7 @@ func reboundVerdictAuthorizes(repo string, edges []provenancegraph.Edge, sha str
 // author ASSERTION, so triviality is proven from the diff, not the message; an
 // unreadable diff cannot prove triviality and is fail-closed (not waived).
 //
-// The path allowlist is the SHARED provenanceOnlyChangedFiles — the SAME
+// The path allowlist is the SHARED doneapp.ProvenanceOnlyChangedFiles — the SAME
 // discipline `ao done` uses (doneCommitProvenanceOnly). Routing both through one
 // helper closes the parity gap: an earlier per-line strings.TrimSpace here
 // trimmed a leading-space path " docs/provenance/x" INTO the allowlist and
@@ -854,12 +855,12 @@ func trivialWaiver(repo, sha string) (bool, error) {
 	// --no-renames forces a rename to show as delete(old)+add(new) so a rename
 	// FROM a non-provenance path INTO docs/provenance/ still exposes the old path.
 	// -z emits raw, unquoted, NUL-separated paths so the allowlist check compares
-	// exact bytes (parsing sweep) — see provenanceOnlyChangedFiles.
+	// exact bytes (parsing sweep) — see doneapp.ProvenanceOnlyChangedFiles.
 	changed, err := gitStdout(repo, "diff-tree", "--no-commit-id", "--no-renames", "--name-only", "-z", "-r", sha)
 	if err != nil {
 		return false, err // cannot prove triviality → fail-closed
 	}
-	return provenanceOnlyChangedFiles(changed), nil
+	return doneapp.ProvenanceOnlyChangedFiles(changed), nil
 }
 
 // verifyLedgerChain runs the in-place hash-chain verification (the same
@@ -923,7 +924,7 @@ func gitCommitExists(repo, ref string) bool {
 }
 
 // hexCommitObjectID validates that candidate is a HEX commit id (the exact
-// discipline confirmedVerdictEdgeIn/shaBindsCommit applies to a bound to_id) and
+// discipline confirmedVerdictEdgeIn/doneapp.SHABindsCommit applies to a bound to_id) and
 // resolves it to its FULL commit object id — returning "" (reject) for anything
 // that is not a hex, committish OBJECT. It is the fix for the age-rk3r.18 refuter
 // fail-open: the REBOUND lineage to_id is fed to `git show` for the diff re-
@@ -934,13 +935,13 @@ func gitCommitExists(repo, ref string) bool {
 //
 // Discipline, fail-closed at every step:
 //   - candidate must be a HEX token of >= minShaPrefixLen chars (isHexToken +
-//     length — the SAME predicate shaBindsCommit uses). This alone rejects every
+//     length — the SAME predicate doneapp.SHABindsCommit uses). This alone rejects every
 //     revision expression, since "~", "^", ":", "/", "HEAD", branch/tag names all
 //     carry non-hex bytes.
 //   - it is resolved with `git rev-parse --verify --quiet <hex>^{commit}` via the
 //     trusted git, so a non-existent or non-committish object rejects.
 //   - DEFENSE-IN-DEPTH against a ref NAMED like a hex prefix: the resolved full
-//     oid must BIND the input hex (shaBindsCommit — one a prefix of the other). A
+//     oid must BIND the input hex (doneapp.SHABindsCommit — one a prefix of the other). A
 //     branch "deadbeef" whose tip oid does not start with "deadbeef" is thereby
 //     rejected even if git resolved the name; only a genuine object-id resolution
 //     (oid has the hex as a prefix, or vice-versa) passes.
@@ -955,7 +956,7 @@ func hexCommitObjectID(gitBin, repo, candidate string) string {
 		return "" // non-existent / non-committish object → reject
 	}
 	oid := strings.TrimSpace(string(out))
-	if oid == "" || !shaBindsCommit(oid, candidate) {
+	if oid == "" || !doneapp.SHABindsCommit(oid, candidate) {
 		return "" // resolved something that does not bind the hex (a ref alias) → reject
 	}
 	return oid

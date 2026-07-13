@@ -72,12 +72,10 @@ func executeCommand(args ...string) (string, error) {
 	origFindingsPullForce := findingsPullForce
 	origFindingsRetireBy := findingsRetireBy
 	origForgeTier1LegacyLocalLLM := forgeTier1LegacyLocalLLM
-	origScenarioListStatus := scenarioListStatus
 	// Struct-type flag vars (fields persist across Execute calls):
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
 	origContextPacketStatusFlags := contextPacketStatusFlags
-	origDoctorJSON := doctorJSON
 	origMaturityApply := maturityApply
 	origMaturityScan := maturityScan
 	origMaturityCurate := maturityCurate
@@ -143,11 +141,9 @@ func executeCommand(args ...string) (string, error) {
 		findingsPullForce = origFindingsPullForce
 		findingsRetireBy = origFindingsRetireBy
 		forgeTier1LegacyLocalLLM = origForgeTier1LegacyLocalLLM
-		scenarioListStatus = origScenarioListStatus
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
-		doctorJSON = origDoctorJSON
 		maturityApply = origMaturityApply
 		maturityScan = origMaturityScan
 		maturityCurate = origMaturityCurate
@@ -211,25 +207,6 @@ func executeCommand(args ...string) (string, error) {
 	findingsPullForce = false
 	findingsRetireBy = ""
 	forgeTier1LegacyLocalLLM = false
-	scenarioListStatus = ""
-	evalRunOutput = ""
-	evalRunID = ""
-	evalRunRuntime = ""
-	evalRunBaseline = ""
-	evalCompareOutput = ""
-	evalCompareMaxAgg = 0
-	evalCompareMaxDim = 0
-	evalScorecardOutput = ""
-	evalScorecardKind = "rpi"
-	evalScorecardMaxCat = 0
-	evalBaselineOutput = ""
-	evalBaselineBy = ""
-	evalBaselineReason = ""
-	evalCoverageRoot = "evals/agentops-core"
-	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed", "security"}
-	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
-	evalCoverageRuntimes = []string{"static", "shell", "mock"}
-	doctorJSON = false
 	maturityApply = false
 	maturityScan = false
 	maturityCurate = false
@@ -1430,232 +1407,6 @@ func TestCobraOutputValidateResult(t *testing.T) {
 	})
 }
 
-// TestCobraDoctorHelpers exercises doctor helper functions.
-func TestCobraDoctorHelpers(t *testing.T) {
-	assertDoctorStatusIcons(t)
-	assertDoctorRequiredFailure(t)
-	assertDoctorStatusCounts(t)
-	assertDoctorSummaries(t)
-	assertDoctorResults(t)
-	assertDoctorTableRendering(t)
-	assertDoctorFormatNumbers(t)
-	assertDoctorFormatDurations(t)
-	assertDoctorFileLineCounts(t)
-	assertDoctorHealFindingCounts(t)
-}
-
-func assertDoctorStatusIcons(t *testing.T) {
-	t.Helper()
-
-	t.Run("doctorStatusIcon", func(t *testing.T) {
-		cases := []struct {
-			status string
-			want   string
-		}{
-			{"pass", "\u2713"},
-			{"warn", "!"},
-			{"fail", "\u2717"},
-			{"unknown", "?"},
-		}
-		for _, tc := range cases {
-			got := doctorStatusIcon(tc.status)
-			if got != tc.want {
-				t.Errorf("doctorStatusIcon(%q) = %q, want %q", tc.status, got, tc.want)
-			}
-		}
-	})
-}
-
-func assertDoctorRequiredFailure(t *testing.T) {
-	t.Helper()
-
-	t.Run("hasRequiredFailure", func(t *testing.T) {
-		checks := []doctorCheck{
-			{Name: "a", Status: "pass", Required: true},
-			{Name: "b", Status: "warn", Required: false},
-		}
-		if hasRequiredFailure(checks) {
-			t.Error("expected no required failure")
-		}
-
-		checks = append(checks, doctorCheck{Name: "c", Status: "fail", Required: true})
-		if !hasRequiredFailure(checks) {
-			t.Error("expected required failure")
-		}
-	})
-}
-
-func assertDoctorStatusCounts(t *testing.T) {
-	t.Helper()
-
-	t.Run("countCheckStatuses", func(t *testing.T) {
-		checks := []doctorCheck{
-			{Status: "pass"}, {Status: "pass"}, {Status: "warn"}, {Status: "fail"},
-		}
-		p, f, w := countCheckStatuses(checks)
-		if p != 2 || f != 1 || w != 1 {
-			t.Errorf("countCheckStatuses = (%d, %d, %d), want (2, 1, 1)", p, f, w)
-		}
-	})
-}
-
-func assertDoctorSummaries(t *testing.T) {
-	t.Helper()
-
-	t.Run("buildDoctorSummary", func(t *testing.T) {
-		assertDoctorSummaryEquals(t, buildDoctorSummary(5, 0, 0, 5), "5/5 checks passed")
-		assertDoctorSummaryContains(t, buildDoctorSummary(4, 0, 1, 5), "1 warning")
-		assertDoctorSummaryContains(t, buildDoctorSummary(3, 1, 1, 5), "1 failed")
-	})
-}
-
-func assertDoctorSummaryEquals(t *testing.T, got string, want string) {
-	t.Helper()
-
-	if got != want {
-		t.Errorf("got %q", got)
-	}
-}
-
-func assertDoctorSummaryContains(t *testing.T, got string, want string) {
-	t.Helper()
-
-	if !strings.Contains(got, want) {
-		t.Errorf("expected %q, got %q", want, got)
-	}
-}
-
-func assertDoctorResults(t *testing.T) {
-	t.Helper()
-
-	t.Run("computeResult", func(t *testing.T) {
-		cases := []struct {
-			checks []doctorCheck
-			want   string
-		}{
-			{checks: []doctorCheck{{Status: "pass"}}, want: "HEALTHY"},
-			{checks: []doctorCheck{{Status: "warn"}}, want: "DEGRADED"},
-			{checks: []doctorCheck{{Status: "fail"}}, want: "UNHEALTHY"},
-		}
-		for _, tc := range cases {
-			result := computeResult(tc.checks)
-			if result.Result != tc.want {
-				t.Errorf("expected %s, got %s", tc.want, result.Result)
-			}
-		}
-	})
-}
-
-func assertDoctorTableRendering(t *testing.T) {
-	t.Helper()
-
-	t.Run("renderDoctorTable", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		out := doctorOutput{
-			Checks: []doctorCheck{
-				{Name: "Test Check", Status: "pass", Detail: "OK"},
-			},
-			Result:  "HEALTHY",
-			Summary: "1/1 checks passed",
-		}
-		renderDoctorTable(buf, out)
-		s := buf.String()
-		if !strings.Contains(s, "Test Check") || !strings.Contains(s, "1/1") {
-			t.Errorf("renderDoctorTable output missing expected content: %s", s)
-		}
-	})
-}
-
-func assertDoctorFormatNumbers(t *testing.T) {
-	t.Helper()
-
-	t.Run("formatNumber", func(t *testing.T) {
-		cases := []struct {
-			n    int
-			want string
-		}{
-			{0, "0"},
-			{42, "42"},
-			{999, "999"},
-			{1000, "1,000"},
-			{1247, "1,247"},
-			{1000000, "1,000,000"},
-		}
-		for _, tc := range cases {
-			got := formatNumber(tc.n)
-			if got != tc.want {
-				t.Errorf("formatNumber(%d) = %q, want %q", tc.n, got, tc.want)
-			}
-		}
-	})
-}
-
-func assertDoctorFormatDurations(t *testing.T) {
-	t.Helper()
-
-	t.Run("formatDuration", func(t *testing.T) {
-		cases := []struct {
-			d    time.Duration
-			want string
-		}{
-			{30 * time.Second, "30s"},
-			{5 * time.Minute, "5m"},
-			{3 * time.Hour, "3h"},
-			{48 * time.Hour, "2d"},
-		}
-		for _, tc := range cases {
-			got := formatDuration(tc.d)
-			if got != tc.want {
-				t.Errorf("formatDuration(%v) = %q, want %q", tc.d, got, tc.want)
-			}
-		}
-	})
-}
-
-func assertDoctorFileLineCounts(t *testing.T) {
-	t.Helper()
-
-	t.Run("countFileLines", func(t *testing.T) {
-		tmp := t.TempDir()
-		path := filepath.Join(tmp, "test.txt")
-		content := "line1\nline2\n\nline3\n"
-		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-			t.Fatal(err)
-		}
-		got := countFileLines(path)
-		if got != 3 {
-			t.Errorf("countFileLines = %d, want 3", got)
-		}
-	})
-
-	t.Run("countFileLines_nonexistent", func(t *testing.T) {
-		got := countFileLines("/nonexistent/path")
-		if got != 0 {
-			t.Errorf("countFileLines(nonexistent) = %d, want 0", got)
-		}
-	})
-}
-
-func assertDoctorHealFindingCounts(t *testing.T) {
-	t.Helper()
-
-	t.Run("countHealFindings", func(t *testing.T) {
-		output := "[CODE] path/to/file: finding 1\n[CODE] other/file: finding 2\nSummary line\n"
-		got := countHealFindings(output)
-		if got != 2 {
-			t.Errorf("countHealFindings = %d, want 2", got)
-		}
-	})
-
-	t.Run("countHealFindings_from_summary", func(t *testing.T) {
-		output := "Some output\n5 finding(s) detected.\n"
-		got := countHealFindings(output)
-		if got != 5 {
-			t.Errorf("countHealFindings = %d, want 5", got)
-		}
-	})
-}
-
 // TestCobraStatusHelpers exercises status helper functions.
 func TestCobraStatusHelpers(t *testing.T) {
 	t.Run("truncateStatus", func(t *testing.T) {
@@ -2415,93 +2166,6 @@ func TestCobraQuickstartHelpers(t *testing.T) {
 	})
 }
 
-// TestCobraNewestFileModTime exercises newestFileModTime.
-func TestCobraNewestFileModTime(t *testing.T) {
-	tmp := t.TempDir()
-	// Create files with different times
-	f1 := filepath.Join(tmp, "a.txt")
-	f2 := filepath.Join(tmp, "b.txt")
-	if err := os.WriteFile(f1, []byte("a"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(10 * time.Millisecond) // ensure different modtimes
-	if err := os.WriteFile(f2, []byte("b"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	entries, err := os.ReadDir(tmp)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	newest := newestFileModTime(entries)
-	if newest.IsZero() {
-		t.Error("expected non-zero newest time")
-	}
-}
-
-// TestCobraCountFiles exercises countFiles.
-func TestCobraCountFiles(t *testing.T) {
-	tmp := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmp, "a.txt"), []byte("a"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(tmp, "subdir"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, "b.txt"), []byte("b"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	got := countFiles(tmp)
-	if got != 2 {
-		t.Errorf("countFiles = %d, want 2", got)
-	}
-
-	got = countFiles("/nonexistent/path")
-	if got != 0 {
-		t.Errorf("countFiles(nonexistent) = %d, want 0", got)
-	}
-}
-
-// TestCobraCountLearningFiles exercises countLearningFiles.
-func TestCobraCountLearningFiles(t *testing.T) {
-	tmp := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmp, "a.md"), []byte("md"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, "b.jsonl"), []byte("jsonl"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, "c.txt"), []byte("txt"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	got := countLearningFiles(tmp)
-	if got != 2 {
-		t.Errorf("countLearningFiles = %d, want 2", got)
-	}
-}
-
-// TestCobraCountEstablished exercises countEstablished.
-func TestCobraCountEstablished(t *testing.T) {
-	tmp := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmp, "learning-established.md"), []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, "promoted-pattern.md"), []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(tmp, "regular.md"), []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	got := countEstablished(tmp)
-	if got != 2 {
-		t.Errorf("countEstablished = %d, want 2", got)
-	}
-}
-
 // TestCobraResolveGoalsFile exercises resolveGoalsFile.
 func TestCobraResolveGoalsFile(t *testing.T) {
 	tmp := chdirTemp(t)
@@ -2547,22 +2211,6 @@ func TestCobraResolveGoalsFile(t *testing.T) {
 			t.Errorf("resolveGoalsFile = %q, want default 'GOALS.md'", got)
 		}
 	})
-}
-
-// TestCobraFileExists exercises fileExists.
-func TestCobraFileExists(t *testing.T) {
-	tmp := t.TempDir()
-	path := filepath.Join(tmp, "exists.txt")
-	if err := os.WriteFile(path, []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if !fileExists(path) {
-		t.Error("fileExists should return true for existing file")
-	}
-	if fileExists(filepath.Join(tmp, "nope.txt")) {
-		t.Error("fileExists should return false for nonexistent file")
-	}
 }
 
 // TestCobraRatchetParentHelp ensures ratchet parent help works.

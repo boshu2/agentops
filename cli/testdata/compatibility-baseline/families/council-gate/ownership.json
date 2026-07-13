@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "family": "council-gate",
+  "profiles": {"default":"present","flywheel":"present","legacy":"present","combined":"present"},
+  "legacy_symbols": [
+    "councilGateCmd", "tickCouncilGate", "tickVerdictLineCap", "tickScanVerdictLines",
+    "tickVerdictHasCommandsRun", "tickVerdictIdentityInfo", "tickVerdictIdentity",
+    "tickVerdictMetadataValue", "tickNormalizeMetadataKey", "tickNormalizeIdentityValue",
+    "tickNormalizeModelFamily", "tickUnknownModelFamily", "tickVerdictTokenCounts"
+  ],
+  "live_owner": "cli/internal/commands/council_gate",
+  "allowed_paths": [
+    "cli/cmd/ao/council_gate*.go", "cli/cmd/ao/tick.go", "cli/cmd/ao/tick_test.go", "cli/cmd/ao/tick_cmd_legacy.go",
+    "cli/cmd/ao/codex.go", "cli/cmd/ao/converge_canary.go",
+    "cli/internal/adapters/council_gate/**", "cli/internal/councilgate/**", "cli/internal/commands/council_gate/**",
+    "cli/internal/verdict/**", "cli/testdata/compatibility-baseline/families/council-gate/lineage.json"
+  ]
+}

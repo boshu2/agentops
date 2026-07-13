@@ -205,11 +205,11 @@ func TestRunBeadsTrackerCmdJSON(t *testing.T) {
 	t.Chdir(root)
 
 	var out strings.Builder
-	cmd := beadsTrackerCmd
+	cmd := legacyBeadsTrackerCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	if err := runBeadsTrackerCmd(cmd, nil); err != nil {
-		t.Fatalf("runBeadsTrackerCmd: %v", err)
+	if err := executeBeadsTracker(cmd, nil); err != nil {
+		t.Fatalf("executeBeadsTracker: %v", err)
 	}
 	var res trackerResolution
 	if err := json.Unmarshal([]byte(out.String()), &res); err != nil {
@@ -263,11 +263,11 @@ func TestRunBeadsDirBdRepoReturnsBeadsDir(t *testing.T) {
 	beadsDirJSON = false
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	if err := runBeadsDir(cmd, nil); err != nil {
-		t.Fatalf("runBeadsDir: %v", err)
+	if err := executeBeadsDir(cmd, nil); err != nil {
+		t.Fatalf("executeBeadsDir: %v", err)
 	}
 	if got := strings.TrimSpace(out.String()); got != beadsDir {
 		t.Fatalf("beads dir in bd repo = %q, want %q", got, beadsDir)
@@ -297,11 +297,11 @@ func TestRunBeadsDirBothPresentStaysBr(t *testing.T) {
 	beadsDirJSON = true
 
 	var out strings.Builder
-	cmd := beadsDirCmd
+	cmd := legacyBeadsDirCommand
 	cmd.SetOut(&out)
 	t.Cleanup(func() { cmd.SetOut(nil) })
-	if err := runBeadsDir(cmd, nil); err != nil {
-		t.Fatalf("runBeadsDir: %v", err)
+	if err := executeBeadsDir(cmd, nil); err != nil {
+		t.Fatalf("executeBeadsDir: %v", err)
 	}
 	var payload map[string]string
 	if err := json.Unmarshal([]byte(out.String()), &payload); err != nil {

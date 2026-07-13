@@ -25,10 +25,12 @@ import (
 	"github.com/boshu2/agentops/cli/internal/adapters/vendorimage/codexruntime"
 	"github.com/boshu2/agentops/cli/internal/bridge"
 	"github.com/boshu2/agentops/cli/internal/pool"
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
+	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
 )
 
 var (
@@ -432,7 +434,7 @@ func codexStartAlreadyStarted(state *codexLifecycleState, sessionID string) bool
 	if startupContextPath == "" {
 		return false
 	}
-	return fileExists(startupContextPath)
+	return quality.FileExists(startupContextPath)
 }
 
 func performCodexStart(cwd string) (codexStartResult, error) {
@@ -919,13 +921,13 @@ func codexImageHealthMissingScript(cwd string, command []string) string {
 	}
 	scriptPath := command[1]
 	if filepath.IsAbs(scriptPath) {
-		if !fileExists(scriptPath) {
+		if !quality.FileExists(scriptPath) {
 			return scriptPath
 		}
 		return ""
 	}
 	abs := filepath.Join(cwd, scriptPath)
-	if !fileExists(abs) {
+	if !quality.FileExists(abs) {
 		return scriptPath
 	}
 	return ""
@@ -1443,12 +1445,12 @@ func codexFinalMessageVerdict(text string) codexReceiptVerdict {
 	if status == "ERROR" {
 		return verdict
 	}
-	if !tickVerdictHasCommandsRun(text) {
+	if !verdictparse.HasCommandsRun(text) {
 		verdict.Status = "ERROR"
 		verdict.Summary = "Final verdict missing non-empty COMMANDS RUN body."
 		return verdict
 	}
-	identity, gaps := tickVerdictIdentity(text)
+	identity, gaps := verdictparse.Identity(text)
 	if len(gaps) > 0 {
 		verdict.Status = "ERROR"
 		verdict.Summary = "Final verdict identity unproven: " + strings.Join(gaps, "; ")
@@ -1516,7 +1518,7 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 		gaps = append(gaps, "successful Codex run did not produce a verifiable verdict")
 	}
 	if status == "PASS" || status == "WARN" || status == "FAIL" {
-		identity := tickVerdictIdentityInfo{
+		identity := verdictparse.IdentityInfo{
 			Author:           receipt.Verdict.AuthorID,
 			JudgeName:        receipt.Verdict.JudgeName,
 			JudgeProgram:     receipt.Verdict.JudgeProgram,
@@ -1531,7 +1533,7 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 		if strings.TrimSpace(identity.JudgeProgram) == "" {
 			gaps = append(gaps, "missing judge_program")
 		}
-		if strings.TrimSpace(identity.JudgeModelFamily) == "" || tickUnknownModelFamily(identity.JudgeModelFamily) {
+		if strings.TrimSpace(identity.JudgeModelFamily) == "" || verdictparse.UnknownModelFamily(identity.JudgeModelFamily) {
 			gaps = append(gaps, "missing or unknown judge_model_family")
 		}
 		if strings.TrimSpace(identity.Author) != "" && strings.TrimSpace(identity.Author) == strings.TrimSpace(identity.JudgeName) {
@@ -2230,7 +2232,7 @@ func writeCodexStartupOperatorModel(sb *strings.Builder, cwd, agentsRoot string)
 	sb.WriteString("- Canonical primitives: `fitness gradient`, `stateful environment`, `replaceable actors`, `stigmergic traces`, `selection gates`, `evolutionary promotion`, `governance`\n")
 	sb.WriteString("- Treat the control plane as the product; actors are replaceable executors and the environment carries memory, coordination, trust, and adaptation.\n")
 	operatorModelPath := filepath.Join(agentsRoot, "knowledge", "operator-model.md")
-	if fileExists(operatorModelPath) {
+	if quality.FileExists(operatorModelPath) {
 		fmt.Fprintf(sb, "- Doctrine: `%s`\n", displayKnowledgeContextPath(cwd, operatorModelPath))
 	}
 }
@@ -2329,10 +2331,10 @@ func codexStartupSourceLinks(cwd, agentsRoot string, briefings []codexArtifactRe
 	links := make([]string, 0, 8)
 	operatorModelPath := filepath.Join(agentsRoot, "knowledge", "operator-model.md")
 	beliefBookPath := filepath.Join(agentsRoot, "knowledge", "book-of-beliefs.md")
-	if fileExists(operatorModelPath) {
+	if quality.FileExists(operatorModelPath) {
 		links = append(links, fmt.Sprintf("Doctrine: `%s`", displayKnowledgeContextPath(cwd, operatorModelPath)))
 	}
-	if fileExists(beliefBookPath) {
+	if quality.FileExists(beliefBookPath) {
 		links = append(links, fmt.Sprintf("Beliefs: `%s`", displayKnowledgeContextPath(cwd, beliefBookPath)))
 	}
 	for _, item := range briefings {

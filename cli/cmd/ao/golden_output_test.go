@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
 
@@ -241,7 +242,7 @@ func TestGoldenRatchetNextJSON_AllComplete(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGoldenDoctorTableAllPass(t *testing.T) {
-	checks := []doctorCheck{
+	checks := []quality.Check{
 		{Name: "ao CLI", Status: "pass", Detail: "v2.10.0", Required: true},
 		{Name: "CLI Dependencies", Status: "pass", Detail: "gt and bd available", Required: false},
 		{Name: "Hook Coverage", Status: "pass", Detail: "Full coverage: 5/5 events", Required: false},
@@ -251,10 +252,10 @@ func TestGoldenDoctorTableAllPass(t *testing.T) {
 		{Name: "Flywheel Health", Status: "pass", Detail: "12 learnings (3 established)", Required: false},
 		{Name: "Plugin", Status: "pass", Detail: "18 skills found", Required: false},
 	}
-	result := computeResult(checks)
+	result := quality.ComputeResult(checks)
 
 	var buf bytes.Buffer
-	renderDoctorTable(&buf, result)
+	quality.RenderTable(&buf, result)
 
 	goldenTest(t, "doctor-all-pass.txt", buf.Bytes())
 }
@@ -264,17 +265,17 @@ func TestGoldenDoctorTableAllPass(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGoldenDoctorTableMixed(t *testing.T) {
-	checks := []doctorCheck{
+	checks := []quality.Check{
 		{Name: "ao CLI", Status: "pass", Detail: "v2.10.0", Required: true},
 		{Name: "CLI Dependencies", Status: "warn", Detail: "bd not found — install with 'brew install beads'", Required: false},
 		{Name: "Hook Coverage", Status: "warn", Detail: "Partial coverage: 3/5 events — run 'ao hooks install --force'", Required: false},
 		{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true},
 		{Name: "Flywheel Health", Status: "warn", Detail: "No learnings found — the flywheel hasn't started", Required: false},
 	}
-	result := computeResult(checks)
+	result := quality.ComputeResult(checks)
 
 	var buf bytes.Buffer
-	renderDoctorTable(&buf, result)
+	quality.RenderTable(&buf, result)
 
 	goldenTest(t, "doctor-mixed.txt", buf.Bytes())
 }
@@ -284,11 +285,11 @@ func TestGoldenDoctorTableMixed(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGoldenDoctorJSON(t *testing.T) {
-	checks := []doctorCheck{
+	checks := []quality.Check{
 		{Name: "ao CLI", Status: "pass", Detail: "v2.10.0", Required: true},
 		{Name: "Knowledge Base", Status: "fail", Detail: ".agents/ao not initialized", Required: true},
 	}
-	result := computeResult(checks)
+	result := quality.ComputeResult(checks)
 
 	data, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {

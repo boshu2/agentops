@@ -193,54 +193,84 @@ func tickTestLedgerLine(id, status string) string {
 	return `{"_type": "issue", "id": "` + id + `", "title": "Node 2", "status": "` + status + `", "priority": 2, "issue_type": "task", "created_at": "2026-05-08T12:09:00Z", "updated_at": "2026-05-30T12:57:05Z", "closed_at": "2026-05-08T12:09:11Z", "close_reason": "Closed", "dependency_count": 0, "dependent_count": 1, "comment_count": 0}` + "\n"
 }
 
-func TestTickClosePortAlreadyClosedIsIdempotent(t *testing.T) {
-	tests := []struct {
-		name      string
-		ledgerDir string
-	}{
-		{name: "br workspace _beads", ledgerDir: "_beads"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("BEADS_DIR", "")
-			dir := t.TempDir()
-			if err := os.Mkdir(filepath.Join(dir, tc.ledgerDir), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			body := tickTestLedgerLine("cp-done", "closed")
-			if err := os.WriteFile(filepath.Join(dir, tc.ledgerDir, "issues.jsonl"), []byte(body), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			var stdout bytes.Buffer
-			rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &bytes.Buffer{}}
-			if err := tickClosePort(rt, "cp-done", "msg", "missing-evidence.md", nil); err != nil {
-				t.Fatalf("tickClosePort() unexpected error: %v", err)
-			}
-			if got := stdout.String(); got != "already closed cp-done @ none\n" {
-				t.Fatalf("tickClosePort() stdout = %q", got)
-			}
-		})
-	}
-}
-
-func TestTickCommitPublicCloseWithoutPublicPathsIsNoop(t *testing.T) {
+func TestTickClosePortAlreadyClosedCompletesPendingPersistence(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("GIT_AUTHOR_NAME", "tick-test")
+	t.Setenv("GIT_AUTHOR_EMAIL", "tick@test")
+	t.Setenv("GIT_COMMITTER_NAME", "tick-test")
+	t.Setenv("GIT_COMMITTER_EMAIL", "tick@test")
 	dir := t.TempDir()
-	rt := tickRuntime{
-		workDir: dir,
-		stdout:  &bytes.Buffer{},
-		stderr:  &bytes.Buffer{},
+	ledger := filepath.Join(dir, "_beads")
+	if err := os.MkdirAll(filepath.Join(dir, "docs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(ledger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGit := func(workDir string, args ...string) string {
+		t.Helper()
+		command := exec.Command("git", args...)
+		command.Dir = workDir
+		out, err := command.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v in %s: %v\n%s", args, workDir, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	runGit(dir, "init", "-q")
+	if err := os.WriteFile(filepath.Join(dir, "proof.md"), []byte("proof\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit(dir, "add", "proof.md")
+	runGit(dir, "commit", "-q", "-m", "seed public")
+	publicBefore := runGit(dir, "rev-parse", "HEAD")
+
+	runGit(ledger, "init", "-q")
+	if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-done", "open")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit(ledger, "add", "issues.jsonl")
+	runGit(ledger, "commit", "-q", "-m", "seed ledger")
+	if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-done", "closed")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "docs", "close.md"), []byte("pending public persistence\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	if err := tickCommitPublicClose(rt, filepath.Join(dir, "_beads"), "", "close bead", nil); err != nil {
-		t.Fatalf("tickCommitPublicClose() with no public paths = %v, want nil", err)
+	fakebin := filepath.Join(dir, "fakebin")
+	if err := os.MkdirAll(fakebin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in show) printf '%s\\n' '{\"id\":\"cp-done\",\"status\":\"closed\"}' ;; sync) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
+	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
+	if err := tickClosePort(rt, "cp-done", "finish close", "proof.md", []string{"docs/close.md"}); err != nil {
+		t.Fatalf("tickClosePort() error: %v (stderr=%q)", err, stderr.String())
+	}
+	ledgerAfter := runGit(ledger, "rev-parse", "HEAD")
+	if ledgerAfter == "" || ledgerAfter == publicBefore {
+		t.Fatalf("ledger close was not committed: ledger=%q public-before=%q", ledgerAfter, publicBefore)
+	}
+	publicAfter := runGit(dir, "rev-parse", "HEAD")
+	if publicAfter == publicBefore {
+		t.Fatal("pending public paths were not committed on retry")
+	}
+	if got, want := stdout.String(), "already closed cp-done @ "+tickShortSHA(ledgerAfter)+"\n"; got != want {
+		t.Fatalf("tickClosePort() stdout = %q, want %q", got, want)
 	}
 }
 
 func TestTickClosePortBDDoesNotTrustOrCommitBRLedger(t *testing.T) {
 	t.Setenv("AGENTOPS_TRACKER", "bd")
-	t.Setenv("BEADS_DIR", "")
+	t.Setenv("BEADS_DIR", "/foreign/br-ledger")
 	dir := t.TempDir()
-	for _, sub := range []string{"_beads", ".beads", "fakebin"} {
+	for _, sub := range []string{"_beads", ".beads", "fakebin", "nested"} {
 		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -273,7 +303,7 @@ func TestTickClosePortBDDoesNotTrustOrCommitBRLedger(t *testing.T) {
 		t.Fatal(err)
 	}
 	fakeBD := `#!/usr/bin/env bash
-printf '%s\n' "$*" >> "${TICK_TEST_BD_LOG:?}"
+printf 'pwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-unset}" "$*" >> "${TICK_TEST_BD_LOG:?}"
 case "${1:-}" in
   show)
     status="$(tr -d '\n' < "${TICK_TEST_BD_STATE:?}")"
@@ -296,8 +326,8 @@ esac
 	t.Setenv("TICK_TEST_BD_LOG", logFile)
 
 	var stdout, stderr bytes.Buffer
-	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
-	if err := tickClosePort(rt, "agentops-123", "close bd issue", "proof.md", nil); err != nil {
+	rt := tickRuntime{workDir: filepath.Join(dir, "nested"), stdout: &stdout, stderr: &stderr}
+	if err := tickClosePort(rt, "agentops-123", "close bd issue", filepath.Join(dir, "proof.md"), nil); err != nil {
 		t.Fatalf("tickClosePort() error: %v (stderr=%q)", err, stderr.String())
 	}
 	logBody, err := os.ReadFile(logFile)
@@ -305,8 +335,17 @@ esac
 		t.Fatalf("bd was never invoked: %v", err)
 	}
 	logText := string(logBody)
-	if !strings.Contains(logText, "close agentops-123 --reason evidence: proof.md") {
+	resolvedDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(logText, "close agentops-123 --reason evidence: "+filepath.Join(dir, "proof.md")) {
 		t.Fatalf("BD close missing; calls:\n%s", logText)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(logText), "\n") {
+		if !strings.Contains(line, "pwd="+resolvedDir+" ") || !strings.Contains(line, "beads=unset ") {
+			t.Fatalf("BD child did not use canonical repo root with BEADS_DIR stripped: %q", line)
+		}
 	}
 	if strings.Contains(logText, "sync") {
 		t.Fatalf("BR-only sync leaked into BD close; calls:\n%s", logText)
@@ -317,6 +356,228 @@ esac
 		t.Fatalf("git diff --cached: %v\n%s", err, out)
 	} else if strings.Contains(string(out), ".beads") || strings.Contains(string(out), "_beads") {
 		t.Fatalf("tracker ledger was staged in public repo: %s", out)
+	}
+}
+
+func TestTickPublicStagePathsSkipsGitignoredRuntimeCorpusEvidence(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".agents", "evidence"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(".agents/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".agents", "evidence", "close.md"), []byte("runtime proof\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command("git", "init", "-q")
+	command.Dir = dir
+	if out, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+	got := tickPublicStagePaths(rt, filepath.Join(dir, "_beads"), ".agents/evidence/close.md", []string{"docs/result.md"})
+	want := []string{"docs/result.md"}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("tickPublicStagePaths() = %q, want %q", got, want)
+	}
+}
+
+func TestTickClosePortPreflightsExplicitPathsBeforeTrackerMutation(t *testing.T) {
+	for _, status := range []string{"open", "closed"} {
+		t.Run(status, func(t *testing.T) {
+			t.Setenv("BEADS_DIR", "")
+			dir := t.TempDir()
+			ledger := filepath.Join(dir, "_beads")
+			fakebin := filepath.Join(dir, "fakebin")
+			if err := os.MkdirAll(ledger, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(fakebin, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-path", status)), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "proof.md"), []byte("proof\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			logFile := filepath.Join(dir, "br.log")
+			fakeBR := "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"${TICK_TEST_BR_LOG:?}\"\nexit 0\n"
+			if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("TICK_TEST_BR_LOG", logFile)
+			var stdout, stderr bytes.Buffer
+			rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
+			err := tickClosePort(rt, "cp-path", "close", "proof.md", []string{"missing-result.md"})
+			if code := tickExitCode(err); code != tickExitCloseRef {
+				t.Fatalf("exit = %d, want %d (err=%v stderr=%q)", code, tickExitCloseRef, err, stderr.String())
+			}
+			if _, err := os.Stat(logFile); !os.IsNotExist(err) {
+				t.Fatalf("tracker was invoked before preflight completed: err=%v", err)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("success output emitted on refusal: %q", stdout.String())
+			}
+		})
+	}
+}
+
+func TestTickClosePortRetriesForwardAfterPublicPersistenceFailure(t *testing.T) {
+	t.Setenv("BEADS_DIR", "")
+	t.Setenv("GIT_AUTHOR_NAME", "tick-test")
+	t.Setenv("GIT_AUTHOR_EMAIL", "tick@test")
+	t.Setenv("GIT_COMMITTER_NAME", "tick-test")
+	t.Setenv("GIT_COMMITTER_EMAIL", "tick@test")
+	dir := t.TempDir()
+	ledger := filepath.Join(dir, "_beads")
+	fakebin := filepath.Join(dir, "fakebin")
+	for _, path := range []string{ledger, fakebin, filepath.Join(dir, "docs")} {
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatal(err)
+	}
+	runGit := func(workDir string, args ...string) string {
+		t.Helper()
+		command := exec.Command(realGit, args...)
+		command.Dir = workDir
+		out, err := command.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v in %s: %v\n%s", args, workDir, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	runGit(dir, "init", "-q")
+	if err := os.WriteFile(filepath.Join(dir, "proof.md"), []byte("proof\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit(dir, "add", "proof.md")
+	runGit(dir, "commit", "-q", "-m", "seed public")
+	if err := os.WriteFile(filepath.Join(dir, "docs", "result.md"), []byte("result\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit(ledger, "init", "-q")
+	if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-retry", "open")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit(ledger, "add", "issues.jsonl")
+	runGit(ledger, "commit", "-q", "-m", "seed ledger")
+
+	brLog := filepath.Join(dir, "br.log")
+	failOnce := filepath.Join(dir, "fail-public-add-once")
+	if err := os.WriteFile(failOnce, []byte("1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fakeBR := `#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${TICK_TEST_BR_LOG:?}"
+case "${1:-}" in
+  show)
+    if grep -q '"status": "closed"' "${TICK_TEST_LEDGER:?}/issues.jsonl"; then status=closed; else status=open; fi
+    printf '{"id":"%s","status":"%s"}\n' "${2:-}" "$status"
+    ;;
+  close) sed 's/"status": "open"/"status": "closed"/' "${TICK_TEST_LEDGER:?}/issues.jsonl" > "${TICK_TEST_LEDGER:?}/issues.tmp" && mv "${TICK_TEST_LEDGER:?}/issues.tmp" "${TICK_TEST_LEDGER:?}/issues.jsonl" ;;
+  sync) ;;
+  *) echo "unexpected br call: $*" >&2; exit 43 ;;
+esac
+`
+	fakeGit := `#!/usr/bin/env bash
+if [ "${1:-}" = "add" ] && [ -f "${TICK_TEST_FAIL_ONCE:?}" ]; then
+  rm -f "${TICK_TEST_FAIL_ONCE:?}"
+  exit 77
+fi
+exec "${TICK_TEST_REAL_GIT:?}" "$@"
+`
+	if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fakebin, "git"), []byte(fakeGit), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TICK_TEST_BR_LOG", brLog)
+	t.Setenv("TICK_TEST_LEDGER", ledger)
+	t.Setenv("TICK_TEST_FAIL_ONCE", failOnce)
+	t.Setenv("TICK_TEST_REAL_GIT", realGit)
+
+	var firstOut, firstErr bytes.Buffer
+	firstRT := tickRuntime{workDir: dir, stdout: &firstOut, stderr: &firstErr}
+	err = tickClosePort(firstRT, "cp-retry", "finish close", "proof.md", []string{"docs/result.md"})
+	if code := tickExitCode(err); code != tickExitNoCommit {
+		t.Fatalf("first exit = %d, want %d (err=%v stderr=%q)", code, tickExitNoCommit, err, firstErr.String())
+	}
+	if firstOut.Len() != 0 {
+		t.Fatalf("success output emitted on persistence failure: %q", firstOut.String())
+	}
+	if !tickLedgerShowsClosed(filepath.Join(ledger, "issues.jsonl"), "cp-retry") {
+		t.Fatal("persistence failure reopened a proven-closed BR bead")
+	}
+
+	var retryOut, retryErr bytes.Buffer
+	retryRT := tickRuntime{workDir: dir, stdout: &retryOut, stderr: &retryErr}
+	if err := tickClosePort(retryRT, "cp-retry", "finish close", "proof.md", []string{"docs/result.md"}); err != nil {
+		t.Fatalf("retry error: %v (stderr=%q)", err, retryErr.String())
+	}
+	logBody, err := os.ReadFile(brLog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closeCalls := 0
+	for _, line := range strings.Split(strings.TrimSpace(string(logBody)), "\n") {
+		if strings.HasPrefix(line, "close ") {
+			closeCalls++
+		}
+		if strings.HasPrefix(line, "update ") {
+			t.Fatalf("retry-forward state machine attempted rollback: %q", line)
+		}
+	}
+	if closeCalls != 1 {
+		t.Fatalf("tracker close calls = %d, want exactly 1 across failure+retry\n%s", closeCalls, logBody)
+	}
+	ledgerHead := runGit(ledger, "rev-parse", "HEAD")
+	if got, want := retryOut.String(), "already closed cp-retry @ "+tickShortSHA(ledgerHead)+"\n"; got != want {
+		t.Fatalf("retry stdout = %q, want %q", got, want)
+	}
+}
+
+func TestTickClosePortTrackerStatusFailureIsNotTreatedAsOpen(t *testing.T) {
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	t.Setenv("BEADS_DIR", "/foreign/br-ledger")
+	dir := t.TempDir()
+	fakebin := filepath.Join(dir, "fakebin")
+	if err := os.MkdirAll(fakebin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "proof.md"), []byte("proof\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logFile := filepath.Join(dir, "bd.log")
+	fakeBD := "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" >> \"${TICK_TEST_BD_LOG:?}\"\nexit 77\n"
+	if err := os.WriteFile(filepath.Join(fakebin, "bd"), []byte(fakeBD), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TICK_TEST_BD_LOG", logFile)
+	var stdout, stderr bytes.Buffer
+	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &stderr}
+	err := tickClosePort(rt, "agentops-unknown", "close", "proof.md", nil)
+	if code := tickExitCode(err); code != tickExitCloseFail {
+		t.Fatalf("exit = %d, want %d (err=%v stderr=%q)", code, tickExitCloseFail, err, stderr.String())
+	}
+	logBody, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(logBody), "close ") {
+		t.Fatalf("unknown status was treated as open:\n%s", logBody)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("success output emitted on status failure: %q", stdout.String())
 	}
 }
 
@@ -564,8 +825,8 @@ esac
 						strings.Contains(line, "issues.jsonl") || strings.Contains(line, "metadata.json") {
 						t.Fatalf("public git add staged ledger path: %q", line)
 					}
-					if line != "add -- evidence/proof.md docs/close.md" {
-						t.Fatalf("public git add = %q, want evidence and caller path only", line)
+					if line != "add -- docs/close.md" {
+						t.Fatalf("public git add = %q, want caller path only", line)
 					}
 				}
 			}

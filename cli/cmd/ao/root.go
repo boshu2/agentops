@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/adapters/worktreeconfig"
+	doctorcommands "github.com/boshu2/agentops/cli/internal/commands/doctor"
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
@@ -105,7 +106,7 @@ func Execute() {
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
 		}
-		var docErr *doctorExitError
+		var docErr *doctorcommands.ExitError
 		if errors.As(err, &docErr) {
 			// Exit 1 means findings are present — a normal diagnostic result,
 			// not a failure, so it carries no stderr noise. Higher codes are
@@ -164,14 +165,6 @@ func Execute() {
 			// propagate the code with no extra cobra noise.
 			os.Exit(landErr.ExitCode())
 		}
-		var beadsErr *beadsExitError
-		if errors.As(err, &beadsErr) {
-			// The exit code IS the verdict in `ao beads verify|lint|audit`:
-			// 1 means stale/flagged beads found. The verdict already went to
-			// stdout and the command silenced cobra's error print, so there is
-			// nothing more to surface here — just map to the process exit code.
-			os.Exit(beadsErr.ExitCode())
-		}
 		var tickErr *tickExitError
 		if errors.As(err, &tickErr) {
 			if tickErr.Error() != "" {
@@ -202,10 +195,22 @@ func Execute() {
 			// surface — just map to the process exit code.
 			os.Exit(wikiHealthErr.ExitCode())
 		}
+		var commandExit commandExitError
+		if errors.As(err, &commandExit) {
+			// Family modules can return a typed verdict without making the root
+			// executable import their concrete error type. Command output already
+			// carries the explanation; the root owns only process-code mapping.
+			os.Exit(commandExit.ExitCode())
+		}
 		printRemovedCommandHint(os.Stderr, rootCmd, err)
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}
+}
+
+type commandExitError interface {
+	error
+	ExitCode() int
 }
 
 func init() {

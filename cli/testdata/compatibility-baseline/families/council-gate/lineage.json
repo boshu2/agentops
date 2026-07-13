@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "family": "council-gate",
+  "old_implementation_sha": "8a8efedfce8cbad39d665c44f20635a368219abc",
+  "freeze_sha": "e54af35a79de81e792449b8824cef50a647e9487",
+  "fixture_sha256": "be0e78852c998cf61f76ac635fa0fa8c86c071969b0012168ee47ecc78b40247",
+  "ownership_sha256": "8677bfaf108ee9da2fde85527c10ca1e10167612f49ddf9254ff60155a4d3d6b",
+  "scope_sha256": "d0bfb45b0a3592d67d411c21645bf83c65a2dc085c4d55b17c4d58a8ac8c737b",
+  "migration_state": "migrated",
+  "accepted_sha": "e38c499458012d159a6397e5b56af5be5ba5d3ba"
+}

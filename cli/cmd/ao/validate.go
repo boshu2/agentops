@@ -36,7 +36,7 @@ const (
 
 // gateExitError carries a gate exit code out through cobra's RunE so Execute()
 // can map it to os.Exit. Reuses the typed-error + errors.As pattern
-// (see doctorExitError, AgentsLintError).
+// (see the doctor command module's typed exit and AgentsLintError).
 type gateExitError struct {
 	code int
 	msg  string
