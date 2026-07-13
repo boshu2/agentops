@@ -328,6 +328,71 @@ func TestSeed_BootstrapLearning(t *testing.T) {
 	}
 }
 
+// TestSeed_HonestVoice guards the age-5qjyn sweep: the seed command's
+// user-facing output (next-steps banner + the bootstrap-learning decision
+// record) must not regrow the demoted claims — hookless-3.0-violating "session
+// hooks" or proven/automatic knowledge compounding (unproven — ADR-0004,
+// ADR-0011). This is the in-cmd regression guard that pairs with the
+// contract.honest-voice gate (scripts/check-honest-voice.sh).
+func TestSeed_HonestVoice(t *testing.T) {
+	tmp := t.TempDir()
+
+	dryRun = false
+	seedForce = false
+	seedTemplate = "go-cli"
+	output = "table"
+
+	stdout, err := captureStdout(t, func() error {
+		return runSeed(seedCmd, []string{tmp})
+	})
+	if err != nil {
+		t.Fatalf("runSeed: %v", err)
+	}
+
+	// Read the bootstrap-learning decision record.
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	entries, err := os.ReadDir(learningsDir)
+	if err != nil {
+		t.Fatalf("read learnings dir: %v", err)
+	}
+	var record string
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), "-seed-bootstrap.md") {
+			data, err := os.ReadFile(filepath.Join(learningsDir, e.Name()))
+			if err != nil {
+				t.Fatalf("read bootstrap learning: %v", err)
+			}
+			record = string(data)
+			break
+		}
+	}
+	if record == "" {
+		t.Fatal("expected a bootstrap-learning record to assert against")
+	}
+
+	forbidden := []string{
+		"session hooks",
+		"compounds automatically",
+		"knowledge compounds automatically",
+		"ao init --hooks",
+	}
+	for _, surface := range []struct{ name, text string }{
+		{"seed stdout (next steps)", strings.ToLower(stdout)},
+		{"bootstrap-learning record", strings.ToLower(record)},
+	} {
+		for _, bad := range forbidden {
+			if strings.Contains(surface.text, strings.ToLower(bad)) {
+				t.Errorf("%s must not claim %q (age-5qjyn: 3.0 is hookless; compounding is unproven — ADR-0004, ADR-0011)", surface.name, bad)
+			}
+		}
+	}
+
+	// Positive: the honest hookless orientation step is present.
+	if !strings.Contains(stdout, "ao session bootstrap") {
+		t.Error("expected seed next-steps to point at 'ao session bootstrap' (the hookless orientation)")
+	}
+}
+
 func TestSeed_IdempotentForce(t *testing.T) {
 	tmp := t.TempDir()
 
