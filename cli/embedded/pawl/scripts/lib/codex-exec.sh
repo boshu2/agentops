@@ -76,7 +76,7 @@
 #
 # IMPORTANT — behavior-preserving contract: this lib does NOT `set -euo pipefail`
 # on behalf of its callers, and it NEVER edits the pawl surfaces (pawl-review.sh /
-# pawl.sh / pawl-verdict.sh), which own their own richer, verdict-bound flow. The
+# pawl-verdict.sh), which own their own richer, verdict-bound flow. The
 # functions below are pure/idempotent and safe under either shell mode.
 #
 # THE HARD CONTRACT: NO-VERDICT ≠ REFUTED. A caller must be able to tell a run

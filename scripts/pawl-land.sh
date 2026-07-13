@@ -26,7 +26,7 @@
 # itself (when no auto-bind ran — e.g. an idempotent emit that did not append to the ledger).
 #
 # Preconditions: the bead's code is already committed (HEAD cites the bead) and a CONFIRMED
-# pawl verdict exists at .agents/pawl-verdicts/<bead>.json (e.g. via `pawl.sh route`).
+# pawl verdict exists at .agents/pawl-verdicts/<bead>.json (e.g. via `ao pawl review`).
 #
 # When [review-base] is supplied (the `ao land` upstream-range path), origin/main
 # must still equal that exact commit after the post-review fetch. An advance HOLDs
@@ -74,7 +74,7 @@ _tip_is_autobind() {
   ! grep -qvE '^docs/provenance/' <<<"$files"
 }
 
-[[ -f "$VF" ]] || die "no pawl verdict at $VF — route the bead through pawl.sh first"
+[[ -f "$VF" ]] || die "no pawl verdict at $VF — route the bead through ao pawl review first"
 jq -e '.disposition == "CONFIRMED"' "$VF" >/dev/null 2>&1 || die "$VF is not CONFIRMED — not landable"
 
 # The HEAD that will be pushed must cite the bead (the gate resolves the bead from the

@@ -111,9 +111,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/pawl-evidence-dir.sh
 . "$SCRIPT_DIR/lib/pawl-evidence-dir.sh"
 PAWL="$SCRIPT_DIR/pawl-verdict.sh"
-# The standing-pawl service script (overridable for tests). Always the real script next
-# to this one — NOT the repo-under-review's (they differ for alt worktrees). (ml8.7)
-PAWL_SH="${PAWL_SERVICE_SCRIPT:-$SCRIPT_DIR/pawl.sh}"
 # The repo UNDER REVIEW (overridable for tests / alt worktrees); PAWL itself is always
 # the real script next to this one.
 REPO_ROOT="${AGENTOPS_REPO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -255,16 +252,6 @@ bead=""; scope="head"; review_base_arg=""; extra=""; author_family="claude"; con
 # cold families to BOTH CONFIRMED and REFUSES to degrade to a single family on an outage (HOLD).
 strict=0
 [[ "${PAWL_STRICT:-0}" == "1" || "${PAWL_STRICT:-}" == "true" ]] && strict=1
-# F1 (age-pawl-intent-zhndq.1): PAWL_REQUIRE_SERVICE / --require-warm — warm-or-HOLD for
-# warm-ELIGIBLE review modes (non-strict, non-converge, head/upstream, codex reviewer). When ON,
-# a warm-eligible review that would otherwise fall through to the cold codex-exec (service down +
-# `up` failed, or a routed verdict that failed the real gate) HOLDs (exit 5) instead of silently
-# reviewing cold — the warm NTM panel is the REQUIRED substrate. Default OFF: behavior is
-# byte-identical to pre-F1. The flag overrides the env. Strict/converge/staged/non-codex remain
-# documented COLD exceptions (LAW 0: no cold claude adapter; the warm route writes one
-# codex-family verdict) — the knob prints a notice for those, never silently ignores itself.
-require_warm=0
-[[ "${PAWL_REQUIRE_SERVICE:-0}" == "1" || "${PAWL_REQUIRE_SERVICE:-}" == "true" ]] && require_warm=1
 need_val() { [[ -n "${2:-}" ]] || { echo "pawl-review: $1 needs a value" >&2; exit 2; }; }
 
 # age-mwhj: assemble the review body. At/below the byte cap, the full inline diff (unchanged).
@@ -866,7 +853,6 @@ while [[ $# -gt 0 ]]; do
     --smoke)         need_val "$1" "${2:-}"; smoke_cmd="$2"; shift 2 ;;
     --converge)      converge=1; shift ;;
     --strict)        strict=1; shift ;;   # age-rk3r.13: opt-in two-family cold quorum (never degrades)
-    --require-warm)  require_warm=1; shift ;;  # F1: warm-or-HOLD for warm-eligible modes
     -h|--help)       sed -n '2,44p' "$0"; exit 0 ;;
     -*)              echo "pawl-review: unknown flag $1" >&2; exit 2 ;;
     *)               bead="$1"; shift ;;
@@ -921,21 +907,12 @@ fi
 # STRICT certifies a COMMIT with a two-family verdict, so it requires --scope head (staged has no
 # commit to bind — the same constraint --converge carries).
 [[ "$strict" -eq 1 && "$scope" != "head" ]] && { echo "pawl-review: --strict requires --scope head (a two-family quorum certifies a commit; staged has nothing to bind)" >&2; exit 2; }
-# F1 (age-pawl-intent-zhndq.1): --require-warm governs ONLY warm-eligible modes. Strict / converge /
-# staged are documented COLD exceptions — print a notice ONCE so the knob is never silently ignored,
-# then let them run their own cold path. (A non-codex reviewer is also a cold exception, handled at
-# the cold-path chokepoint below where the resolved reviewer is known.)
-if [[ "$require_warm" -eq 1 ]] && { [[ "$strict" -eq 1 ]] || [[ "$converge" -eq 1 ]] || { [[ "$scope" != "head" && "$scope" != "upstream" ]]; }; }; then
-  _rw_mode="--strict"; [[ "$converge" -eq 1 ]] && _rw_mode="--converge"
-  [[ "$scope" != "head" && "$scope" != "upstream" ]] && _rw_mode="--scope $scope"
-  echo "pawl-review: --require-warm/PAWL_REQUIRE_SERVICE is set, but $_rw_mode is a COLD exception (LAW 0: no cold claude adapter; the warm route writes one codex-family verdict) — the warm requirement does NOT govern this review; proceeding on the cold path." >&2
-fi
 [[ -x "$PAWL" ]] || { echo "pawl-review: $PAWL not executable" >&2; exit 1; }
 # age-rk3r.2: resolve the cold REVIEWER CHAIN (default codex-only). The lib (lib/codex-exec.sh)
 # owns the per-adapter argv/marker/echo/sandbox contract + run classification; this script is a
 # THIN switch that resolves each family (via _reviewer_spec, the SINGLE mapping source), honors it
-# for the precondition + same-family guard, routes a non-codex reviewer to the COLD adapter (the
-# warm tmux service stays on its codex-family route), and passes REVIEWER to the lib per attempt.
+# for the precondition + same-family guard, routes a non-codex reviewer to the COLD adapter,
+# and passes REVIEWER to the lib per attempt.
 # reviewer_family is the label written into the binding verdict's refuter entry (age-rk3r.1 DEFECT 2:
 # a hardcoded "codex" made REVIEWER=agy certify family=codex). Labels are values pawl-verdict.sh's
 # normalize_family accepts: codex->"codex" (byte-compat; canonicalizes to gpt), agy->CANONICAL
@@ -1150,7 +1127,7 @@ if [[ "$strict" -eq 0 ]]; then
       else
         echo "    - re-run with the default codex reviewer (unset REVIEWER) if the codex CLI is installed, or"
       fi
-      echo "    - stand up the adaptive standing service: ao pawl up (it uses ANY installed reviewer family)."
+      echo "    - or install another cold reviewer family on PATH (e.g. agy) and re-run with REVIEWER=<family>."
       echo "  (exit 2 = precondition, not a REFUTE)"
     } >&2
     triage_block MISSING ""
@@ -1267,8 +1244,7 @@ head="$(git -C "$REPO_ROOT" rev-parse "$review_target" 2>/dev/null)"
 [[ -n "$diff" ]] || { echo "pawl-review: empty diff for scope=$scope — nothing to review" >&2; exit 2; }
 [[ -n "$head" && "${#head}" -ge 7 ]] || { echo "pawl-review: cannot resolve HEAD sha" >&2; exit 1; }
 # age-sylz HIJACK GUARD: snapshot the LIVE worktree HEAD at review start and export it,
-# so the verdict step (pawl-verdict.sh write, cold path here; and the routed pawl.sh
-# path, which inherits the env) can refuse to bind if a concurrent lane resets a SHARED
+# so the verdict step (pawl-verdict.sh write) can refuse to bind if a concurrent lane resets a SHARED
 # landing worktree mid-review — a review runs for minutes, and binding onto a hijacked
 # HEAD would certify the WRONG commit (real incident 2026-07-02). The `check`
 # stale-guard misses this (it passes when verdict.head_sha and --head moved together).
@@ -1316,13 +1292,8 @@ fi
 # Meter (ebec.1): review wall-clock starts here; both write sites below pass it
 # via --wall-seconds so every verdict carries cost telemetry.
 _REVIEW_T0="$(date +%s)"
-# age-33nx: the routed warm path (pawl.sh route) binds its own resolved head; export
-# the review target so a walked-back review binds the routed verdict to the SAME
-# change commit the packet was built from.
-export PAWL_ROUTE_HEAD="$head"
-
 # age-mwhj: choose inline vs read-files-not-inline by packet size. Above the cap, the reviewer
-# (cold codex --sandbox read-only OR the warm panes) reads the changed files directly.
+# (cold codex --sandbox read-only) reads the changed files directly.
 diff_bytes="$(printf '%s' "$diff" | wc -c | tr -d ' ')"
 review_stat=""; review_files=""
 if [[ "$diff_bytes" -gt "$MAX_INLINE_BYTES" ]]; then
@@ -1581,127 +1552,6 @@ for (( _ui=0; _ui<_n_usable; _ui++ )); do
     fi
     triage_block MISSING ""   # DUEL AMENDMENT (age-rk3r.10): name `ao doctor` + the --smoke reviewer-optional lane
     exit 2
-  fi
-
-  # Lazy auto-start (the "membrane is never silently cold again" fix): when routing is
-  # eligible (head scope, not --converge, not opted out) but the standing service is DOWN,
-  # stand it up ONCE here so this and every later review in the session run WARM through the
-  # tri-model duel instead of paying a cold codex-exec each time (the gap that left ~13 reviews
-  # cold in a single session). One-time ~couple-min warmup; fail-safe — if `up` fails the
-  # health check below stays false and we fall through to the cold path. Opt out:
-  # PAWL_NO_SERVICE=1 (disable the whole service path) or PAWL_NO_AUTOUP=1 (route-if-up only).
-  # age-rk3r.1: only for the codex-family route. An explicit non-codex REVIEWER (e.g. agy) wants
-  # the COLD portable adapter below — the warm tmux service stays on its own codex-family route.
-  # age-rk3r.2: also gated on the NON-DEGRADED first codex attempt — a warm route writes its OWN
-  # verdict with no degraded flag, so it must never run for a fall-over-to-codex (rare) attempt.
-  # age-rk3r.13: STRICT runs COLD, one review PER family, to collect two DISTINCT evidence files —
-  # it must NOT route to the warm single-verdict pawl-service (which writes ONE codex-family verdict).
-  # `"$strict" -eq 0` gates both the auto-up and the route below onto the non-strict path only.
-  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && ( "$scope" == "head" || "$scope" == "upstream" ) && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" && "${PAWL_NO_AUTOUP:-0}" != "1" ]] \
-     && ! bash "$PAWL_SH" health >/dev/null 2>&1; then
-    echo "pawl-review: standing pawl-service not up — starting it once (warm cross-family pawl-service)…" >&2
-    bash "$PAWL_SH" up >&2 || echo "pawl-review: pawl up failed — falling through to cold codex-exec" >&2
-  fi
-
-  # ml8.7 + tri-model: route the DEFAULT adversarial pawl through the standing pawl-service (the
-  # warm opus+codex+agy DUEL) instead of a cold per-pawl `codex exec`, when a healthy service is
-  # up. The routed verdict is STRONGER (multi-model agreement vs codex-only fresh-context) and
-  # warm (no per-bead subprocess spin-up — the anti-pattern this deprecates). Fail SAFE: any
-  # routing error falls through to the codex-exec path below (never fail-open). --converge
-  # (lineage-gated, bounded, codex-only) AND --scope staged (REVIEW-ONLY, no commit to bind —
-  # routing would wrongly write a HEAD-bound verdict for an uncommitted diff) stay on the cold
-  # path. Opt out: PAWL_NO_SERVICE=1. age-rk3r.1: an explicit non-codex REVIEWER also stays on the
-  # cold adapter below (the warm service route is codex-family); "$reviewer" == "codex" gates this.
-  # age-rk3r.2: also gated on the non-degraded first attempt (see auto-up above).
-  # age-rk3r.13: `"$strict" -eq 0` — STRICT stays on the cold per-family path (it collects two
-  # distinct cold evidences and writes ONE multi-model verdict itself; the warm route would write a
-  # single codex-family verdict, defeating the quorum).
-  if [[ "$strict" -eq 0 && "$degraded" == false && "$converge" -eq 0 && ( "$scope" == "head" || "$scope" == "upstream" ) && "$reviewer" == "codex" && "${PAWL_NO_SERVICE:-0}" != "1" ]] \
-     && bash "$PAWL_SH" health >/dev/null 2>&1; then
-    route_pkt="$(mktemp "${TMPDIR:-/tmp}/pawl-route-pkt.XXXXXX")"
-    # The routing packet is the review content WITHOUT pawl-review's own VERDICT instruction —
-    # pawl.sh route appends its own nonce-tagged verdict format ("PAWL <nonce> CONFIRMED|REFUTED").
-    { printf '%s\n' "$read_instr"
-      printf '%s\n' "$posture"
-      [[ -n "$extra" ]] && printf '\nEXTRA CONTEXT FROM THE AUTHOR:\n%s\n' "$extra"
-      # S3: the SAME membrane-memory injection as the cold path — so head-scope reviews
-      # through the warm pawl-service ALSO consume prior catches (computed at $prior_catches).
-      [[ -n "$prior_catches" ]] && printf '%s\n' "$prior_catches"
-      # age-rk3r.7: the SAME live-smoke runtime evidence goes into the routed packet too, so a
-      # head-scope review through the warm pawl-service also sees the running-code proof.
-      [[ -n "$smoke_evidence" ]] && printf '%s\n' "$smoke_evidence"
-      printf '\n=== CHANGE UNDER REVIEW (bead %s, scope %s, head %s%s) ===\n' "$bead" "$scope" "${head:0:12}" "${review_base:+, base ${review_base:0:12}}"
-      printf '%s\n' "$review_body"
-    } > "$route_pkt"
-    echo "pawl-review: routing through the standing pawl-service (warm cross-family panel, ml8.7)…" >&2
-    route_rc=0
-    # Pass the REAL PR ($PR, from AGENTOPS_PAWL_PR) — NOT a hardcoded 0 — so the routed
-    # verdict binds to the right PR (push-to-main is PR 0; a PR review is its number).
-    bash "$PAWL_SH" route "$bead" "$route_pkt" "$PR" >&2 || route_rc=$?
-    rm -f "$route_pkt"
-    # Trust the route ONLY if it actually wrote a verdict bound to THIS head (fail-safe: a
-    # routing error must not be read as a clean pass, and an absent/stale verdict falls back).
-    # The routed path deliberately does NOT write --converge lineage: --converge is a cold,
-    # codex-only bounded re-review that folds in the COLD adversarial run's preserved defects;
-    # a routed duel is a different mode, so leaving no lineage makes --converge correctly
-    # require a genuine cold adversarial run first (closes the auditability gap codex flagged).
-    # Trust the route's CONFIRMED ONLY if the written verdict PASSES the REAL gate — the same
-    # `pawl-verdict.sh check` the push gate runs (schema + PR + head-binding + cross-family
-    # evidence/diversity). A shallow head+disposition jq is NOT enough: a malformed verdict
-    # could slip through (codex caught exactly this). A REFUTED route is a real HOLD; anything
-    # else (no gate-valid verdict) falls back to the cold codex-exec — never fail-open.
-    if [[ "$route_rc" -eq 0 ]] && "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >&2; then
-      routed_mode="$(jq -r '.mode // "multi-model"' "$VERDICT_DIR/${bead}.json" 2>/dev/null)"
-      echo "pawl-review: CONFIRMED (routed: $(pawl_tier_note "$routed_mode")) + VERIFIED by pawl-verdict.sh check for $bead @ ${head:0:12} — ready to push." >&2
-      exit 0
-    fi
-    routed_disp="$(jq -r 'select(.head_sha=="'"$head"'") | .disposition // empty' \
-                    "$VERDICT_DIR/${bead}.json" 2>/dev/null | tail -1)"
-    if [[ "$route_rc" -eq 1 && "$routed_disp" == "REFUTED" ]]; then
-      echo "=== PAWL ROUTE: REFUTED — the cross-family panel did not all CONFIRM (verdict recorded). Fix, recommit, re-run. ===" >&2
-      # age-2yh2 double-record guard: NO emit_pawl_catch here. pawl.sh cmd_route records
-      # the structured catch itself (_route_emit_catch) from the REFUTING lane's per-family
-      # capture — the reviewer's REAL finding. The old emit here read the global $evidence
-      # (${bead}-pawl-review.txt), which the routed path NEVER writes: absent => placeholder
-      # boilerplate, or worse STALE content from a prior cold review of the same bead. One
-      # recorder per routed REFUTE, at the point that owns the evidence.
-      exit 3
-    fi
-    echo "pawl-review: pawl-route did not produce a head-bound verdict (rc=$route_rc, disp=${routed_disp:-none}) — falling back to cold codex-exec…" >&2
-  fi
-
-  # F1 (age-pawl-intent-zhndq.1): warm-or-HOLD. When --require-warm/PAWL_REQUIRE_SERVICE is set and
-  # this is a warm-ELIGIBLE codex review that nonetheless reached the cold path (service down + `up`
-  # failed, or a routed verdict that failed the real gate), HOLD (exit 5, NO verdict) rather than
-  # silently reviewing cold — the warm NTM panel is the required substrate here. This chokepoint sits
-  # BEFORE the cold refuter, so a HOLD never spawns a cold codex-exec. Strict/converge/staged printed
-  # their cold-exception notice at parse time; a NON-codex reviewer is a cold exception too (notice
-  # once, proceed). The untrusted/stranger path is a distinct HOLD (warm can never run there).
-  if [[ "$require_warm" -eq 1 && "$strict" -eq 0 && "$converge" -eq 0 && ( "$scope" == "head" || "$scope" == "upstream" ) && "$degraded" == false ]]; then
-    if [[ "$reviewer" == "codex" ]]; then
-      # HOLD leaves no INVALID verdict artifact — but must NEVER destroy a valid one. A warm route
-      # may have written a NON-gate-valid verdict to the canonical path (that failure is why we fell
-      # through); remove ONLY that. Reaching the cold path proves only that THIS invocation got no
-      # gate-valid routed verdict — NOT that a pre-existing file is invalid (the service may simply
-      # be down and no route ran). So gate the removal on the REAL check for the current head:
-      # delete only when the present file FAILS it. Deleting a pre-existing gate-valid verdict would
-      # be data loss (cross-family refutes, 2026-07-11, rounds 1-2).
-      if [[ -f "$VERDICT_DIR/${bead}.json" ]] \
-         && ! "$PAWL" check "$bead" "$PR" --dir "$VERDICT_DIR" --head "$head" >/dev/null 2>&1; then
-        rm -f "$VERDICT_DIR/${bead}.json" 2>/dev/null || true
-      fi
-      if [[ "${PAWL_UNTRUSTED_REPO:-0}" == "1" ]]; then
-        echo "=== PAWL REQUIRE-WARM HOLD — untrusted/stranger repo (exit 5; NO verdict) ===" >&2
-        echo "pawl-review: --require-warm/PAWL_REQUIRE_SERVICE is set, but this is an UNTRUSTED repo (PAWL_UNTRUSTED_REPO=1) — the warm NTM pawl-service never runs on the stranger path (cold by design), so the warm requirement cannot be satisfied. HOLD rather than silently review cold. Run from the in-checkout dogfood binary to route warm, or drop --require-warm to accept the cold review." >&2
-        exit 5
-      fi
-      echo "=== PAWL REQUIRE-WARM HOLD — warm-eligible review could not route (exit 5; NO verdict) ===" >&2
-      echo "pawl-review: --require-warm/PAWL_REQUIRE_SERVICE is set and this warm-eligible review reached the cold path (the standing pawl-service was down and 'up' failed, or the routed verdict failed the real gate). HOLD rather than silently review cold. Bring the service up (ao pawl up) and re-run, or drop --require-warm to accept the cold codex-exec review." >&2
-      exit 5
-    elif [[ -z "${_rw_notice_printed:-}" ]]; then
-      echo "pawl-review: --require-warm/PAWL_REQUIRE_SERVICE is set, but the resolved reviewer '$reviewer' is a non-codex family — the warm route is codex-family only, so this is a COLD exception; proceeding cold." >&2
-      _rw_notice_printed=1
-    fi
   fi
 
   # Run the refuter, CAPTURING the exit status: a timeout/crash must NOT be trusted as a

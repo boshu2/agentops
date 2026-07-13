@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # pawl-preflight.bats — the deterministic pre-reviewer gate (age-verification-economics-ebec.9).
 # Unit-tests the pure decision logic of pawl_preflight() with stubbed batteries,
-# mirroring how pawl-adaptive.bats sources pawl.sh and tests pure functions.
+# Unit-tests pure functions by sourcing the lib.
 
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
