@@ -56,9 +56,9 @@ Four product layers (public framing):
 | Active skills | 62 (`git ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | Codex skill twins | 61 (`git ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | CLI top-level commands | 32 default / 89 with `flywheel legacy` (`go run [-tags profile] ./cmd/ao --help`) |
-| Gate checks | 103 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
+| Gate checks | 102 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
 | Shell scripts | 373 (`git ls-files scripts | awk '/\.sh$/'`) |
-| Bats test files | 294 (`git ls-files tests | awk '/\.bats$/'`) |
+| Bats test files | 296 (`git ls-files tests | awk '/\.bats$/'`) |
 | Claude workflows | 4 (`git ls-files .claude/workflows | awk '/\.js$/'`) |
 | Registry capabilities | 105 (`jq '.capabilities | length' registry.json`) |
 
