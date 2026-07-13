@@ -5,7 +5,7 @@
 # source skill. The Codex runtime ships skills-codex/ ONLY (never skills/ source
 # — see install-codex-plugin.sh + plugin.json "skills": "./skills-codex"), so a
 # twin must carry its own body + references; a bare pointer to skills/<name>
-# would dangle at runtime (AGENTS-CODEX.md). The generated twin is therefore:
+# would dangle at runtime (docs/contracts/codex-skill-api.md). The generated twin is therefore:
 #   - SKILL.md: slim (name + description) frontmatter + the source body
 #     transformed runtime-native (slash-command invocations of known skills ->
 #     `$` prefix, ~/.claude -> ~/.codex, "Claude Code" -> "Codex");
@@ -334,7 +334,7 @@ def twin_skill_md(
     """A self-contained Codex twin: slim (name + terse catalog description)
     frontmatter + the source body transformed runtime-native. Self-contained
     because the Codex runtime ships skills-codex/ ONLY (never skills/ source) —
-    a twin must carry its own body + references (AGENTS-CODEX.md)."""
+    a twin must carry its own body + references (docs/contracts/codex-skill-api.md)."""
     fm = {"name": name, "description": description}
     front = yaml.safe_dump(fm, sort_keys=False, allow_unicode=True, width=10_000).strip()
     body = transform_body(source_body, known_skills, exempt)

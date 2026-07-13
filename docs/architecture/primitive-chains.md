@@ -158,7 +158,7 @@ The current repo state behind this document:
 - `52` CLI commands and `7` runtime hook event sections recorded in the current CLI/skills map
 - prevention is partly `ao`-mediated and partly file-native through the finding registry and compiled constraints
 
-For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-skills-map.md).
+Command membership is generated in [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md). A replacement command-to-skill matrix is intentionally deferred until the catalog reverse join is mechanically complete.
 
 ## Hexagonal seams
 
@@ -178,6 +178,6 @@ For the architectural rationale and the recipe for adding a new adapter, see [Po
 - [Knowledge Flywheel](../knowledge-flywheel.md)
 - [Context Lifecycle Contract](../context-lifecycle.md)
 - [Brownian Ratchet](../brownian-ratchet.md)
-- [CLI ↔ Skills/Hooks Map](../cli-skills-map.md)
+- [CLI Command Reference](../../cli/docs/COMMANDS.md)
 - [Ports and Adapters](ports-and-adapters.md)
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md)

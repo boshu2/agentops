@@ -41,7 +41,7 @@ For each gate that reads specific files, the **trigger** column is the union of 
 | `contracts-sync` → Run official AgentOps contract canaries | redteam-pack target globs: `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CI-CD.md`, `docs/strategic-direction.md`, `docs/standards/shell-script-standards.md`, `skills/security/SKILL.md` | `ci, contracts, go, skills` | COVERED (closed by #638 — `contracts` is now a superset; guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`) |
 | `doctrine-proof` → F1/F2 executable-spec link e2e | `GOALS.md`, `spec/scenarios/**`, `.feature` files | `ci, docs, go, goals` | COVERED (`goals` added by #638) |
 | `doctrine-proof` → Scenario→test linkage | `skills/*/references/*.feature`, `spec/scenarios/**` | `ci, goals, shell, skills` | COVERED |
-| `doctrine-proof` → Validate AGENTS.md tiered-split contract | `AGENTS.md`, `AGENTS-WORKFLOW.md`, `AGENTS-CI.md`, `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md` | `ci, docs, shell` | **GAP → FIXED** (this PR) |
+| `doctrine-proof` → Validate AGENTS.md route contract | `AGENTS.md` plus canonical workflow, CI, Codex, and runtime destinations | `ci, docs, shell` | **GAP → FIXED** (this PR) |
 | `doctrine-proof` → Verify all scripts/skills/hooks are wired (wiring-closure) | `scripts/*.sh`, `GOALS.md`, `GOALS.yaml`, `.github/workflows/`, `tests/`, `skills/SKILL-TIERS.md` | `ci, go, hooks, shell` | **GAP → FIXED** (this PR) |
 | `doctrine-proof` → Validate sovereignty-proof citations | `docs/sovereignty-proof/**` + every cited `file:line` (repo-wide) | `ci, contracts, docs, go, hooks, shell, skills` | COVERED (broad trigger; `docs/**` covers the proof dir) |
 | `doctrine-proof` → finding-registry contract | `.agents/findings/registry.jsonl`, `docs/contracts/finding-registry.{md,schema.json}` | `ci, contracts` | COVERED (`contracts` covers `docs/contracts/**`; `.agents/findings/` is runtime state, not a PR-editable contract source) |
@@ -62,7 +62,9 @@ For each gate that reads specific files, the **trigger** column is the union of 
 
 ### Gap 1 — AGENTS tiered-split siblings uncovered (the direct #634 class)
 
-`scripts/validate-agents-split.sh` validates `AGENTS.md` **and** the four siblings `AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md` (line-count cap, existence, bidirectional links). The gate step triggers on `docs || ci || shell`. `AGENTS.md` is covered by the `contracts` filter (post-#638) but `contracts` was not in the trigger, and the four `AGENTS-*.md` siblings are covered by **no** filter except `markdown` (which no gate consumes). So an edit to `AGENTS-WORKFLOW.md` alone — e.g. a future docs-thinning that breaks the bidirectional link or blows the size cap — would skip the very gate that enforces the split. This is the identical mechanism that disabled the security canary in `bbfd278e`.
+`scripts/validate-agents-split.sh` retains its compatibility filename but validates
+the compact root budget and the four canonical on-demand destinations. The gate
+matches those destinations directly, so changing routed policy reruns the check.
 
 **Fix:** add the four `AGENTS-*.md` siblings to the `contracts` filter (they are operator-contract source, sibling to `AGENTS.md` which is already there), and add `|| needs.changes.outputs.contracts == 'true'` to the agents-split gate step's trigger.
 

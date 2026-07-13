@@ -7,6 +7,7 @@
   "required": [
     "agents_md_read",
     "agents_siblings_read",
+    "canonical_routes_present",
     "onboard_phase",
     "beads_dir",
     "beads_dir_source",
@@ -34,14 +35,20 @@
     },
     "agents_siblings_read": {
       "type": "array",
-      "description": "Post-soc-vuu6.3 tiered-split siblings that were detected at the repo root. Empty when no siblings exist (pre-split repo or non-AgentOps project).",
+      "maxItems": 0,
+      "description": "Deprecated v1 compatibility field. The sibling topology is retired; this is always empty. Use canonical_routes_present.",
+      "items": {"type": "string"}
+    },
+    "canonical_routes_present": {
+      "type": "array",
+      "description": "Canonical on-demand workflow, CI, Codex, and runtime destinations detected in the repository. Empty outside AgentOps or when routes are unavailable.",
       "items": {
         "type": "string",
         "enum": [
-          "AGENTS-WORKFLOW.md",
-          "AGENTS-CI.md",
-          "AGENTS-CODEX.md",
-          "AGENTS-RUNTIME.md"
+          "docs/agent-workflow-reference.md",
+          "docs/CI-CD.md",
+          "docs/contracts/codex-skill-api.md",
+          "docs/contracts/repo-execution-profile.md"
         ]
       }
     },

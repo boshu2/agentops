@@ -3,14 +3,14 @@
 #
 # Inverted 2026-06-11 (ag-joto6): the tracker migrated bd/Dolt -> br (beads_rust,
 # workspace _beads/). This gate now asserts the NEW br closeout contract in
-# AGENTS-WORKFLOW.md:
+# docs/agent-workflow-reference.md:
 #   1. flush discipline is documented:  br sync --flush-only
 #   2. ledger staging is documented through the canonical resolver:
 #                                      git -C "$(ao beads dir)" add/commit/push
 #   3. no live bd/Dolt closeout instructions remain (bd dolt push / bd dolt commit)
 #
 # Retired with the migration: the bd-era conditional `bd dolt push` wording checks
-# (AGENTS-WORKFLOW.md + cli/AGENTS.md) and the bd-server-mode-closeout runbook
+# (the canonical workflow reference + cli/AGENTS.md) and the bd-server-mode-closeout runbook
 # anchors. cli/AGENTS.md still carries bd-era text pending its own doc flip
 # (wave 3) and is deliberately NOT asserted here.
 #
@@ -22,7 +22,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/.." && pwd)"
 
-workflow_doc="${CLOSEOUT_CONTRACT_WORKFLOW_DOC:-$repo_root/AGENTS-WORKFLOW.md}"
+workflow_doc="${CLOSEOUT_CONTRACT_WORKFLOW_DOC:-$repo_root/docs/agent-workflow-reference.md}"
 
 failures=0
 

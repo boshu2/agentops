@@ -4,7 +4,7 @@
 > This is the by-hand discipline behind the [Land Loop](../SKILL.md)
 > when the automated `scripts/pawl-land.sh` auto-bind path does not apply — it decays like ungated
 > docs unless it lives here, gated. It **consolidates, does not duplicate**, three existing surfaces:
-> the rebase-on-reject rule in [`AGENTS-WORKFLOW.md`](../../../AGENTS-WORKFLOW.md) (git serializes
+> the rebase-on-reject rule in [`docs/agent-workflow-reference.md`](../../../docs/agent-workflow-reference.md) (git serializes
 > concurrent pushers), the pawl-before-merge / bead-acceptance rule in
 > [`failure-recovery.md`](failure-recovery.md) "Final Batched Validation" +
 > [`docs/contracts/pawls.md`](../../../docs/contracts/pawls.md), and the rebase+restamp automation in

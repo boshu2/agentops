@@ -9,6 +9,37 @@
 
 ---
 
+## Checked-in AgentOps artifact ownership
+
+`skills/<slug>/SKILL.md` is the shared behavior source,
+`skills-codex-overrides/catalog.json` declares treatment, and
+`skills-codex/<slug>/` is the shipped projection.
+
+- `parity_only`: edit the source skill or shared transform, then run
+  `make regen-all` or `scripts/codex-sync.sh`. Do not hand-edit the projection.
+- `bespoke`: the cataloged Codex body and references are deliberately
+  hand-maintained. Source changes never overwrite them; review and edit the
+  checked-in Codex artifact deliberately.
+- A pointer treatment is valid only when explicitly cataloged. Guessed counts
+  and prose-only pointer claims do not establish ownership.
+
+After source or override changes, run:
+
+```bash
+bash scripts/audit-codex-parity.sh --skill <slug>
+bash scripts/validate-codex-override-coverage.sh
+bash scripts/validate-codex-generated-artifacts.sh --scope worktree
+bash scripts/validate-codex-backbone-prompts.sh
+bash scripts/validate-codex-rpi-contract.sh
+bash scripts/validate-codex-lifecycle-guards.sh
+bash scripts/validate-headless-runtime-skills.sh
+```
+
+Command membership is generated from Cobra in `cli/docs/COMMANDS.md`; no manual
+command-to-skill map is current authority.
+
+---
+
 ## SKILL.md Frontmatter
 
 Codex recognizes **only** these frontmatter fields:

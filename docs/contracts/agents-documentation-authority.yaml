@@ -47,31 +47,8 @@ documents:
     references:
       phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
       consumers:
-        - .github/workflows/validate.yml
-        - AGENTS-CI.md
-        - AGENTS-CODEX.md
-        - AGENTS-RUNTIME.md
         - AGENTS.md
         - CLAUDE.md
-        - cli/cmd/ao/session_bootstrap.go
-        - cli/cmd/ao/session_bootstrap_test.go
-        - cli/internal/gates/checks/seed.go
-        - docs/agent-workflow-reference.md
-        - docs/architecture/codebase-overview.md
-        - docs/contracts/ci-pathfilter-coverage-audit.md
-        - docs/runbooks/bash-gate-sunset.md
-        - docs/runbooks/beads-failure-recovery.md
-        - evals/agentops-core/push-worktree-closeout.json
-        - schemas/session-bootstrap.v1.schema.json
-        - scripts/check-hookless-cold-start.sh
-        - scripts/validate-agents-split.sh
-        - scripts/validate-bd-closeout-contract.sh
-        - skills-codex/crank/references/land-protocol.md
-        - skills/crank/references/land-protocol.md
-        - tests/docs/mkdocs-strict-allowlist.txt
-        - tests/scripts/docs-no-dangling-hooks-doc-parity.bats
-        - tests/scripts/validate-agents-split.bats
-        - tests/scripts/validate-bd-closeout-contract.bats
 
   - path: AGENTS-CI.md
     tracked: true
@@ -82,25 +59,8 @@ documents:
     references:
       phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
       consumers:
-        - .github/workflows/validate.yml
-        - AGENTS-CODEX.md
-        - AGENTS-RUNTIME.md
-        - AGENTS-WORKFLOW.md
         - AGENTS.md
         - CLAUDE.md
-        - cli/cmd/ao/session_bootstrap.go
-        - cli/cmd/ao/session_bootstrap_test.go
-        - cli/internal/gates/checks/seed.go
-        - docs/agent-workflow-reference.md
-        - docs/architecture/codebase-overview.md
-        - docs/contracts/ci-jobs.yaml
-        - docs/contracts/ci-pathfilter-coverage-audit.md
-        - schemas/session-bootstrap.v1.schema.json
-        - scripts/generate-ci-jobs-table.sh
-        - scripts/validate-agents-split.sh
-        - scripts/validate-ci-policy-parity.sh
-        - tests/docs/mkdocs-strict-allowlist.txt
-        - tests/scripts/validate-agents-split.bats
 
   - path: AGENTS-CODEX.md
     tracked: true
@@ -111,23 +71,8 @@ documents:
     references:
       phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
       consumers:
-        - .github/workflows/validate.yml
-        - AGENTS-CI.md
-        - AGENTS-RUNTIME.md
-        - AGENTS-WORKFLOW.md
         - AGENTS.md
         - CLAUDE.md
-        - cli/cmd/ao/session_bootstrap.go
-        - cli/cmd/ao/session_bootstrap_test.go
-        - cli/internal/gates/checks/seed.go
-        - docs/agent-workflow-reference.md
-        - docs/architecture/codebase-overview.md
-        - docs/contracts/ci-pathfilter-coverage-audit.md
-        - schemas/session-bootstrap.v1.schema.json
-        - scripts/codex-sync.sh
-        - scripts/validate-agents-split.sh
-        - tests/docs/mkdocs-strict-allowlist.txt
-        - tests/scripts/validate-agents-split.bats
 
   - path: AGENTS-RUNTIME.md
     tracked: true
@@ -138,24 +83,8 @@ documents:
     references:
       phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
       consumers:
-        - .github/workflows/validate.yml
-        - AGENTS-CI.md
-        - AGENTS-CODEX.md
-        - AGENTS-WORKFLOW.md
         - AGENTS.md
         - CLAUDE.md
-        - MEMORY.md
-        - cli/cmd/ao/session_bootstrap.go
-        - cli/cmd/ao/session_bootstrap_test.go
-        - cli/internal/gates/checks/seed.go
-        - docs/agent-workflow-reference.md
-        - docs/architecture/codebase-overview.md
-        - docs/contracts/ci-pathfilter-coverage-audit.md
-        - docs/newcomer-guide.md
-        - schemas/session-bootstrap.v1.schema.json
-        - scripts/validate-agents-split.sh
-        - tests/docs/mkdocs-strict-allowlist.txt
-        - tests/scripts/validate-agents-split.bats
 
   - path: README.md
     tracked: true

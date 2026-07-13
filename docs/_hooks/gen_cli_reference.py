@@ -52,7 +52,7 @@ Go binary.
   Every `ao` command with flags, examples, and exit codes. Auto-generated from
   `ao --help`.
 
-- :material-map: **[CLI ↔ Skills Map](../cli-skills-map.md)**
+- :material-map: **[Capability catalog contract](contracts/sku-catalog.md)**
   Which commands are called by which skills.
 
 </div>

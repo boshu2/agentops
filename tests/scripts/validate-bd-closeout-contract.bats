@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Tests for scripts/validate-bd-closeout-contract.sh — the INVERTED (br-era)
 # closeout doc-contract gate (pre-push check 19b). The gate asserts
-# AGENTS-WORKFLOW.md documents the br flush discipline and carries no live
+# docs/agent-workflow-reference.md documents the br flush discipline and carries no live
 # bd/Dolt closeout instructions. CLOSEOUT_CONTRACT_WORKFLOW_DOC points the
 # gate at fixture docs so the real ones are never modified.
 
@@ -16,12 +16,12 @@ teardown() {
 }
 
 write_doc() {
-    local path="$TMP_DIR/AGENTS-WORKFLOW.md"
+    local path="$TMP_DIR/workflow-reference.md"
     printf '%s\n' "$@" > "$path"
     echo "$path"
 }
 
-@test "passes against the repo's live flipped AGENTS-WORKFLOW.md" {
+@test "passes against the repo's canonical workflow reference" {
     run "$SCRIPT"
     [ "$status" -eq 0 ]
     [[ "$output" == *"BR_CLOSEOUT_CONTRACT: PASS"* ]]

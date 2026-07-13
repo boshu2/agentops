@@ -109,7 +109,6 @@
         {"type": "artifact_contains", "target": "../../docs/context-lifecycle.md", "value": "ao notebook update: merge insights into MEMORY.md"},
         {"type": "artifact_contains", "target": "../../docs/context-lifecycle.md", "value": "ao memory sync: sync to repo-root MEMORY.md (cross-runtime)"},
         {"type": "artifact_contains", "target": "../../docs/contracts/session-intelligence-trust-model.md", "value": "Consumers:** `ao context assemble`, `ao context explain`, `ao codex start`"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao task-sync` | Hidden | Task synchronization |"},
         {"type": "artifact_contains", "target": "../../skills/status/SKILL.md", "value": "ao task-status --json"},
         {"type": "artifact_contains", "target": "../../skills/recover/SKILL.md", "value": "ao codex status --json"},
         {"type": "artifact_contains", "target": "../../skills/handoff/SKILL.md", "value": "Create structured handoff for session continuation"},

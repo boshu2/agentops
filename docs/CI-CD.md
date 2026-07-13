@@ -4,6 +4,27 @@ AgentOps uses a local push-as-CI gate for routine direct-main work. The release 
 
 Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
+The CI job source of truth is `docs/contracts/ci-jobs.yaml`. The explanatory
+table below is rendered by `scripts/generate-ci-jobs-table.sh`; edit the
+manifest, not generated rows.
+
+### CI Jobs and What They Check
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **go-gate-shadow** | Required Go-gate authority lane for the migration to `ao gate check --full`; runs the single Go registry with GitHub annotations, JSON evidence, workflow coverage, and `--require-workflow-parity` so blocking validate.yml scripts cannot drift outside the Go gate contract | A blocking Go-gate check failure, a workflow coverage parity gap for a non-deferred blocking script, or an inability to produce/upload the `ao-gate-shadow-report` JSON artifact |
+| **correctness** | `ao` builds (Linux + native Windows smoke via matrix); Go tests pass with `-race`/coverage floor; embedded lib/skills in sync; Go complexity budget; CLI + v2.18 integration; release smoke; JSON-flag consistency; bats; Python smoke; advisory `ao doctor` dead-reference check | Build/test failure, race, coverage-floor regression, embedded drift, a function exceeding cyclomatic complexity 25, integration/smoke/bats/JSON-flag breakage, or Windows-smoke regression |
+| **lint** | ShellCheck (error severity) on all `.sh`, markdownlint on docs, and the skill lint suite (`tests/skills/run-all.sh`) | Unquoted shell variables, markdown formatting regressions, or a skill-lint rule violation |
+| **security** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`); unified security toolchain gate (`scripts/security-gate.sh --mode quick`) — gosec, golangci-lint, gitleaks, trivy, semgrep — blocking on any CRITICAL/HIGH finding | Hardcoded API keys/passwords in non-test files, a dangerous pattern, or a CRITICAL/HIGH security/quality finding |
+| **skill-gates** | Consolidated skill-authoring gate surface (ag-87sv) — structural heal (`--strict`), SKILL.md schema + v2 frontmatter, skill-body command/flag refs resolve against the live CLI, skill-flow connectivity + closed `consumes` vocabulary, scenario↔test linkage (`@covered-by`), and the six-surface derived-artifact drift sweep (`scripts/regen-all.sh --check`) | A SKILL.md schema/frontmatter violation, a stranded skill-body command/flag ref, a skill-flow connectivity break, an unlinked Gherkin scenario, or six-surface derived-artifact drift (`regen-all.sh --check`) |
+| **skills-integrity** | Skill dependencies resolve, headless-runtime skills, manifests valid against versioned schemas, no symlinks, local-only `.agents/`, plugin directory structure | An unresolved skill dependency, a symlink, or invalid plugin/manifest structure |
+| **contracts-sync** | Every derived artifact is in sync — `registry.json`, CLI docs, context map, skill-domain map, SKU catalog, skill catalog (advisory), bounded-contexts, embedded lib/skills, CI policy parity, contract compatibility + next-work parity, contracts structural floor — plus the official AgentOps contract canaries | Editing a source (skill/CLI/contract) without regenerating its derived artifact, a contract-compat break, or a contract canary regression |
+| **codex-parity** | Codex runtime sections, generated `parity_only` twins sourced from `skills/`, hand-maintained cataloged `bespoke` artifacts, backbone prompts, override coverage, RPI contract, lifecycle guards, and parity drift (GOALS.md directive D7) | A `parity_only` twin differs from its source or transform, a cataloged `bespoke` artifact is missing or stale under deliberate review, an artifact is unclassified, or a Codex runtime/contract/override mismatch exists |
+| **doctrine-proof** | Flywheel/goals/wiring/corpus/finding-registry/memrl/sovereignty/three-gap proofs PLUS spec-linkage — executable-spec link integrity (`ao goals scenarios --lint`), compact AGENTS route contract, docs↔learning references (scenario↔test linkage moved to `skill-gates`) | A failing GOALS/doctrine proof gate, a broken directive↔scenario link, an AGENTS route-contract violation, or a dangling docs↔learning reference |
+| **eval** | Eval baseline-audit drift-only gate (`stale_suite_hashes>0`), eval-skill-delta dry-run, workbench golden state (D10 delta), and offline retrieval-quality bench + comparison smoke | A promoted baseline's suite SHA drift, broken delta/harness infrastructure, a workbench golden-state regression, or a retrieval-quality regression |
+| **skill-eval** | T1 changed-files-scoped: gates each CHANGED skill's SKILL.md through Jeff Emanuel's `ms` (meta_skill v0.1.2) lint + validate via `scripts/skill-eval.sh`. Pinned-`ms` install gated on `ms --version` before the gate runs — a failed install HARD-FAILS the job (never green-skips). Runs `ms` only for skills whose `skills/<id>/**` changed in the PR. Also carries an I0-INFORMATIONAL step (ag-iyu4) — `scripts/skill-probe-i0.sh` runs the deterministic lexical trigger ranker (`scan_descriptions.py --probe`, ag-7led) over each `trigger_probes:` phrase, writes a per-skill JSON receipt to `.agents/ao/skill-eval/<id>.json` (uploaded as the `skill-retrieval-probe-receipts` artifact), and asserts byte-stable determinism across two runs. The I0 step is `continue-on-error` INSIDE this job, so it produces no separate PR check and cannot block; a non-deterministic probe is surfaced as a `::warning::` only. GATE-PROMOTION GUARD: the probe stays I0 (no blocking assertion) until this receipt lane runs green + byte-stable across the corpus for a 2-WEEK STABILITY BASELINE of merges. | A blocking `ms` finding (no-secrets/no-injection/safe-paths/required-metadata/no-cycle/valid-version) on a changed skill's SKILL.md, or a pinned-`ms`-install failure. The I0 retrieval-probe step never contributes to this job's pass/fail (informational; not a PR check). |
+| **process-hygiene** | Doc-release stabilization (skill counts + links), `tests/_quarantine/` empty (D3), test-count non-regression ratchet, file-manifest overlap self-test, plus advisory test-staleness, swarm-evidence, and Evidence-line lint | Skill-count drift, a non-empty quarantine, a net per-package test-count decrease without a `Test-Removal-Reason:` trailer, or a manifest-overlap regression |
+
 ## Live Main-Push Path
 
 ```text
@@ -18,51 +39,36 @@ git push origin HEAD:main
   -> remote main fast-forward
 ```
 
-The tracked `.githooks/` directory is legacy `bd` hook plumbing. It is inert for the current AgentOps cockpit gate: Git uses `.git/hooks` unless `core.hooksPath` says otherwise, and `scripts/install-pre-push-gate.sh` installs/chains the live gate in the shared `.git/hooks` directory.
+The tracked `.githooks/` directory is legacy tracker plumbing. Git uses
+`.git/hooks` unless configured otherwise; `scripts/install-pre-push-gate.sh`
+installs or chains the live gate in the shared Git directory.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
-|----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Backstop telemetry for routine `main`; authoritative blocking gate for release tags, PRs, and manual validation; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
-| Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
-| Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
-| Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
-| Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
-| Label PRs | `labeler.yml` | PR opened/synced/reopened | Auto-label PRs by changed paths |
+|---|---|---|---|
+| Validate | `validate.yml` | `main`, `v*`, PR, manual | Routine telemetry; blocking backstop for tags, PRs, and manual validation |
+| Release Publisher | `release.yml` | `v*`, manual | Build, publish, and attest releases |
+| Nightly | `nightly.yml` | Daily, manual | Public test, retrieval, security, and report-contract proof |
+| Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily, manual | Builds an evidence digest and prompt packet; does not mutate source |
+| Stale Issues | `stale.yml` | Weekly | Repository issue/PR hygiene |
+| Label PRs | `labeler.yml` | PR events | Labels changed paths |
 
-## Nightly vs Dream
+## Nightly and private compounding
 
-AgentOps has two different overnight surfaces:
+GitHub Nightly validates the public product against the checked-out repository.
+It cannot see gitignored `.agents/` state. Private compounding runs in-session or
+through an explicitly selected external scheduling substrate; AgentOps ships no
+daemon or scheduler. Corpus-empty or corpus-dormant conditions skip the private
+knowledge cycle with an explicit reason instead of converting unavailable local
+state into three CI failures.
 
-- **GitHub nightly** validates AgentOps the product. It runs in GitHub Actions against the checked-out repository and proves the CI, flywheel, and Dream report contracts still work.
-- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (the reference is NTM + MCP + managed-agents) as a scheduled dispatch — AgentOps ships no daemon or scheduler of its own.
+## validate.yml architecture
 
-They share primitive steps and report shapes, but they are not the same pipeline.
-
-Important constraint: GitHub Actions cannot see the private `.agents/` corpus when that directory is gitignored. The nightly workflow is therefore a proof harness, not the user's primary Dream runtime.
-
-The Nightly RPI Brief workflow is a prompt packet lane, not a CI-side agent
-runner. It reads recent Nightly PR bodies, scheduled Nightly workflow results,
-latest Validate runs, open PR check rollups, open "Nightly build failed" issues,
-and the current "Nightly RPI auto prompt" issue. It emits structured
-`summary.json` fields for `current_ci`, `open_prs`, `open_incidents`,
-`prompt_issue`, and ranked `stabilization_targets`, then updates the prompt
-issue with a ready `$agentops:rpi --auto` command. This keeps autonomous RPI
-selection grounded in observed Nightly drift and current CI blockers while
-avoiding hidden source-code mutation from GitHub Actions.
-
-If you want scheduled private Dream runs, delegate them to an orchestration
-substrate (the reference is NTM + MCP + managed-agents) and wire a scheduled
-dispatch (a managed-agent driver or cron) that runs the Dream loop on a schedule;
-the substrate owns the wake, scheduling, and supervision semantics. For the
-cross-vendor private local chain that combines Dream, Claude/Codex runners,
-RPI/evolve, and PR digest output, see
-[`docs/runbooks/nightly-evolution.md`](runbooks/nightly-evolution.md).
-
-## validate.yml Architecture
-
-The validate workflow runs many focused jobs across 4 tiers of parallelism. Most jobs run independently with no `needs` dependencies, maximizing throughput.
+Validate jobs are path-filtered and mostly independent. The final `summary`
+aggregator uses `if: always()` and fails when any blocking dependency fails.
+Tag pushes force release categories on and reject unexpected skips; PR-only
+evidence jobs are explicitly allowlisted on tag events.
 
 ### Job Dependency Graph
 
@@ -112,7 +118,9 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the rollup target for any required check on tags/PRs/manual dispatch — only `summary` needs to be required, not every individual job. Note: under the push-to-main model (ag-qidx) branch protection is **off**, so on routine `main` pushes the authoritative release gate is the local pre-push Go gate (`ao gate check`); `validate.yml`/`summary` is a CI backstop on tags, PRs, and manual dispatch, not a required main-push gate.
 
-Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
+There are no job-level `continue-on-error` entries in current `validate.yml`.
+Advisory behavior is scoped to named steps inside blocking consolidated jobs;
+the generated CI table remains the blocking-policy source.
 
 For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
 For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
@@ -124,18 +132,16 @@ skipped is not treated as passed for releases.
 
 ## Blocking vs Soft Gates
 
-### Soft Gates (continue-on-error: true)
+### Advisory steps inside blocking jobs
 
-These jobs run but their failure does **not** block merges. Advisory jobs carry an `(advisory)` suffix in the GitHub check name; `executable-spec-link-integrity` is named `(warn-only, F1.6)`. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
+These observations do not change their containing job's required checks:
 
 | Job | Triage SLA | Reason |
 |-----|------------|--------|
 | `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
-| `factory-claim-ledger-strict` | 14d | Advisory claim-ledger drift observation for Wave 1E promotion evidence |
-| `practice-citations` | 14d | Advisory strict walk for missing or invalid `practices: [slug,...]` citations |
 | `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
 | `swarm-evidence` | none (info-only) | Advisory -- validates swarm evidence artifact shape; missing/malformed swarm artifacts are informational, not blocking (item 34) |
-| `executable-spec-link-integrity` | none (warn-only) | Warn-only directive/scenario link lint and orphan/gap trace until the F1.6 promotion criterion is met |
+| `executable-spec-link-integrity` inner trace | none (warn-only) | Scenario lint is blocking; only `ao goals trace --orphans` remains observational |
 
 ### Retrieval-bench ratchet (nightly)
 
@@ -143,12 +149,27 @@ The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is a **
 
 - **Promotion criterion:** `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**.
 - **Baseline source:** pinned fallback `baseline_p_at_5 = 0.30` in this section. Do not store the baseline under repo-root `.agents/`; that tree is local runtime state and is blocked by `scripts/check-no-tracked-agents.sh`.
-- **Future durable source:** if the ratchet needs a machine-readable baseline, add it outside `.agents/` and update this section plus AGENTS.md in the same PR.
+- **Future durable source:** if the ratchet needs a machine-readable baseline, add it outside `.agents/`, wire the nightly workflow to that source, and update this section in the same change.
 - **Observation window:** intentionally observational. The 14-consecutive-nightly counter is not yet wired into automation; track manually until a separate bead promotes the gate. This avoids accidental promotion during corpus quarantine windows (`f-2026-04-30-002`).
 
-When the window closes green and the gate is promoted, update both this section and the AGENTS.md advisory table. Until then, retrieval-bench red is informational; do not block release on it.
+When the window closes green and the gate is promoted, update `.github/workflows/nightly.yml` and this section. If promotion changes a `Validate` job policy, update `docs/contracts/ci-jobs.yaml` and regenerate the CI job table. Until then, retrieval-bench red is informational; do not block release on it.
 
-Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, and 39 are tracked in root `AGENTS.md` §DEFERRED CI Hardening, including the promotion triggers that would move each item back to FIX scope.
+### Deferred hardening triggers
+
+| Item | Revisit when |
+|---|---|
+| Go build | The same build-class failure reaches merged `main` twice in 30 days |
+| CLI integration cascade | It fails independently after build and core tests are green twice |
+| Contract compatibility | The same false positive repeats twice in a quarter |
+| Python 3.14 smoke | It recurs in two independent runs within 30 days |
+| GoReleaser publish | The same root cause breaks two consecutive release attempts |
+| Doc-release publish block | It blocks publish after the local doc gate passed |
+| Markdownlint or ShellCheck | Either fails more than twice in a quarter or blocks release |
+| Plugin manifest | The same false positive repeats twice in a quarter |
+| MemRL health | It fires more than once per quarter |
+| Nightly static validation | It fails in 3 of 10 runs outside a known quarantine |
+
+These are promotion triggers, not current waivers for required checks.
 
 ### Blocking Gates (all others)
 
@@ -158,7 +179,7 @@ Every other job is blocking. If any of these fail, `summary` exits non-zero and 
 
 Consolidated checklist of rules enforced by the pipeline:
 
-1. **No symlinks.** `plugin-load-test` rejects all symlinks in the repo. If you need the same file in multiple places, copy it.
+1. **No symlinks in distributable skill/plugin trees.** Copy shared skill references. The tracked root `CLAUDE.md -> AGENTS.md` compatibility alias is intentional.
 2. **Skill counts must be synced.** Adding or removing a skill directory requires `scripts/sync-skill-counts.sh`. Forgetting this fails `doc-release-gate`.
 3. **Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it. Check with `heal.sh --strict`.
 4. **Embedded hooks must stay in sync (2.x / opt-in only).** AgentOps 3.0 ships zero hooks by default. If you edit the legacy `hooks/` tree or opt-in `skills/cc-hooks` references for a custom install, run `cd cli && make sync-hooks`. Checked by `embedded-sync` and `go-build`.

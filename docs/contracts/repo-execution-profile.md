@@ -1,6 +1,6 @@
 # Repo Execution Profile
 
-> **Status:** Draft
+> **Status:** Current repository policy contract
 > **Schema:** `repo-execution-profile.schema.json`
 > **Consumers:** `/evolve`, `/rpi`, and future repo-native orchestration loaders
 
@@ -16,6 +16,31 @@ The profile reduces giant repo-specific prompts by moving stable operating polic
 - concrete definition_of_done predicates
 
 `/evolve` uses the profile for repo bootstrap before queue or goal selection. When a repo-local `PROGRAM.md` contract exists, `/evolve` composes both: the execution profile governs bootstrap and session-level policy, while the program contract governs mutable scope and per-cycle keep/revert criteria. `/rpi` carries the relevant fields forward inside a normalized `execution_packet` so later phases do not fall back to loose prompt prose.
+
+## Repository safety invariants
+
+- Keep the canonical root clean and attached to `main`; use bead-owned linked
+  worktrees for tracked changes intended to land. Linked worktrees resolve the
+  private tracker with `ao beads dir`, never by assuming `_beads/` is local.
+- Every foreign worktree ends as merged, preserved, exported, or deleted. Run
+  `bash scripts/check-worktree-disposition.sh` before landing and closeout.
+  Unfinished work uses a `codex/preserve-*` ref with owner and retirement rule
+  recorded in `docs/preserved-refs.tsv`.
+- Repo-root `.agents/` is gitignored runtime state. During old-branch merges,
+  keep its deletion unless explicitly authorized; `git ls-files .agents` must
+  remain empty.
+- The no-symlink distribution rule applies to skill/plugin trees. The tracked
+  root `CLAUDE.md -> AGENTS.md` compatibility alias is intentional.
+- `ao codex start`, `stop`, `ensure-start`, and `ensure-stop` are legacy
+  lifecycle shims, not routine validation or closeout commands. A targeted
+  lifecycle task uses isolated agent state and verifies repository status.
+- Edit generated artifacts at their source. Inventory changes finish with
+  `make regen-all && make regen-check`; embedded library/standards changes also
+  run `cd cli && make sync-hooks`; CLI membership changes run
+  `scripts/generate-cli-reference.sh`.
+- Skill reference files must be linked from their `SKILL.md`; new contracts are
+  cataloged; modified Go functions stay below the repository complexity budget;
+  follow-up work belongs in `br`, not `TODO`/`FIXME` markers in skills.
 
 ## Field Semantics
 

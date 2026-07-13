@@ -1,99 +1,117 @@
-# Agent Workflow Reference (on-demand)
+# Agent Workflow Reference
 
-> **Not auto-loaded.** This is the deep-detail sidecar for `CLAUDE.md`. The root
-> `CLAUDE.md` is a thin router; the CI-validation detail, release-pipeline
-> detail, key-scripts table, and agent-goals command surface live here so they
-> don't cost context on every session. Read this when you're actually touching
-> CI, the release pipeline, or `GOALS.md` — not before.
->
-> See also the tiered `AGENTS-*.md` split (`AGENTS-WORKFLOW.md`, `AGENTS-CI.md`,
-> `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md`) which owns the AGENTS-side scope detail.
+> Canonical on-demand mechanics for tracked repository changes. The doctrine is
+> `docs/architecture/operating-loop.md`; this page owns tracker, worktree,
+> landing, provenance, and closeout procedure.
 
-## Building the CLI
+## Change shape
 
-```bash
-cd cli && make build        # Build ao binary to cli/bin/ao
-cd cli && make test         # Run tests
-cd cli && make lint         # Run linter
-cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
-```
+A landed change is one coherent, reversible bead arc. Read-only work and a
+one-response local or ignored artifact need no bead or worktree. Before a
+tracked edit intended to land, claim or create its bead and use a bead-owned
+linked worktree. Parallel writers require disjoint scopes; serialize collisions.
 
-## Key Scripts
+Acceptance is executable Given/When/Then behavior with an edge, non-goals,
+rollback, and evidence for done. Slice vertically, demonstrate RED for the
+intended reason, turn it green with the smallest change, then refactor under
+green without changing acceptance.
 
-| Script | Purpose |
-|--------|---------|
-| `make regen-all` | **One-command finalizer** — regenerates *every* derived artifact (skill counts, skill-domain-map, `registry.json`, context-map, embedded skills, CLI reference, cli-surface inventory, codex hashes) after adding a skill/command. Run this instead of hunting the generators one CI round at a time (`ag-jima`, ex-PR #598). |
-| `make regen-check` | The no-write companion: runs the matching drift validators (the same gates `contracts-sync` enforces). Green here ⇒ those gates pass in CI. |
-| `scripts/ship.sh` | One-knob ship loop — detects inventory changes, runs regen sweep, opens PR |
-| `scripts/ci-local-release.sh` | Local release validation gate (run before tagging) |
-| `scripts/sync-skill-counts.sh` | Sync skill counts across docs after adding/removing skills |
-| `scripts/generate-cli-reference.sh` | Regenerate CLI docs after changing commands/flags |
-| `scripts/regen-codex-hashes.sh` | Regenerate hashes after changing skills-codex/ files |
-| `scripts/verify-gate-claim.sh` | AP#7 mechanical enforcement — verify `Evidence:` claims against gate logs |
+An autonomous session normally ships 2–4 coherent arcs. At five shipped or
+in-flight arcs, stop for a post-mortem and re-plan the remaining set; the
+checkpoint may reorder, split, add, or drop later arcs rather than rubber-stamp
+continuation.
 
-## Local Validation
+## Tracker boundary
 
-Routine AgentOps changes land by local validation plus direct push to `main`. `ao gate check --fast --scope head` is the Go-owned cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. The legacy bash gate remains available only through the documented `AGENTOPS_GATE_BASH=1` fallback while its backing scripts still serve CI. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
-
-### Quick Local Sanity Checks (per-tool, not omnibus)
+This repository uses `br` (beads_rust). The private nested ledger is resolved
+from the canonical checkout; linked worktrees normally have no `_beads/`:
 
 ```bash
-cd cli && make build && make test         # If you changed Go code
-make regen-all && make regen-check        # If you ADDED/REMOVED a skill or `ao` command (then commit the regenerated files)
-cd cli && make sync-hooks                 # If you changed lib/ or skills/standards/references/
-scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
-bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
-
-# If you touched docs/ and need the mkdocs strict check locally:
-# (system mkdocs ≤1.1.2 cannot parse the modern mkdocs.yml — needs material plugins)
-python3 -m venv .venv-mkdocs && .venv-mkdocs/bin/pip install -r requirements-docs.txt && .venv-mkdocs/bin/mkdocs build --strict
+BEADS_DIR="$(ao beads dir)" br ready --json
+BEADS_DIR="$(ao beads dir)" br show <id> --json
+BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
 ```
 
-Run only the per-tool checks for the surfaces you actually touched. Push, let CI run, fix any failures. The 30-90s CI feedback loop replaced the 10-20s local omnibus gate intentionally — the per-incident drift cost dominates the per-push wait.
-
-### Rules That Break CI
-
-**No symlinks.** Ever. The plugin-load-test rejects all symlinks in the repo. If you need the same reference file in multiple skills, **copy** it.
-
-**Skill counts must be synced.** Adding or removing a skill directory requires:
+Writes fail closed on resolution:
 
 ```bash
-scripts/sync-skill-counts.sh
+BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR
+br update <id> --status in_progress --json
+br close <id> --reason "Completed" --json
 ```
 
-This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md. Forgetting this fails the doc-release-gate. `make regen-all` runs this **plus** every other derived-artifact generator, so prefer it when adding a skill rather than remembering each script individually.
+`bd`/Dolt is the Gas City substrate store, not this repository's tracker. Never
+stage `_beads/` in the public repository. Sync it through its private Git repo:
 
-**Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it or a `Read` instruction referencing it. Use `heal.sh --strict` to check.
+```bash
+BEADS_DIR="$(ao beads dir)" br sync --flush-only
+git -C "$(ao beads dir)" add -A
+git -C "$(ao beads dir)" commit -m "tracker: <summary>"
+git -C "$(ao beads dir)" push
+```
 
-**Codex skills are manually maintained.** Edit `skills-codex/<name>/SKILL.md` directly or add overrides in `skills-codex-overrides/<name>/`. Audit drift with `bash scripts/audit-codex-parity.sh --skill <name>`.
+## Worktree lifecycle
 
-**Embedded lib/skills must stay in sync.** After editing `lib/` or `skills/standards/references/`: run `cd cli && make sync-hooks`.
+The canonical root is the stable `main` anchor, not task scratch space. Every
+foreign worktree ends as merged, preserved, exported, or deleted. Preserve
+unfinished work under a documented `codex/preserve-*` ref. Repo-root `.agents/`
+is gitignored runtime state; durable public evidence belongs in tracked docs,
+provenance, or release artifacts.
 
-**CLI docs must stay in sync.** After changing commands/flags: run `scripts/generate-cli-reference.sh`.
+Before landing and closeout run:
 
-**Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`.
+```bash
+bash scripts/check-worktree-disposition.sh
+```
 
-**Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15).
+## Proof and landing
 
-**No TODOs in SKILL.md.** Use `br` issue tracking (`BEADS_DIR="$(ao beads dir)" br`) instead.
+Run focused checks, then the cockpit gate:
 
-**No secrets in code.** CI greps for hardcoded passwords, API keys, tokens in non-test files.
+```bash
+ao gate check --fast --scope head
+```
 
-## Testing Rules
+For bead-backed work, `ao land <bead>` is the canonical landing transition. It
+builds a fresh binary, obtains the commit-bound independent pawl verdict, and
+performs the atomic landing path. REFUTED or NO-VERDICT stops the land. GitHub
+Actions are a tag/PR/manual backstop, not routine direct-main authority.
 
-See `.claude/rules/go.md` and `.claude/rules/python.md` for language-specific testing conventions. Key rules: L2 integration tests first, L1 unit tests always. No coverage-padding. No `cov*_test.go` naming.
+Public provenance is append-only at `docs/provenance/ledger.jsonl`. Tracker
+metadata is a projection; the provenance ledger wins on disagreement.
 
-## Release Pipeline
+Branch names use `<type>/<bead>-<scenario>-<slug>`. Commit messages state the
+behavioral change and carry the bead/provenance linkage expected by the landing
+path. Helper/library extraction includes a shrink-only observational ratchet so
+the removed duplication cannot silently regrow; promotion from observation to a
+blocking gate requires separately demonstrated precision.
 
-Tag triggers GoReleaser + GitHub Actions: `git tag v2.X.0 && git push origin v2.X.0`. **Always run `scripts/ci-local-release.sh` before tagging.** Retag with `scripts/retag-release.sh v2.X.0`.
+## Closeout
 
-For iterative pre-tag work, use `scripts/ci-local-release.sh --quick` (alias `--sanity`) — the fast code-correctness subset (current-platform build + test + version consistency + release smoke + cheap doc/snippet/shellcheck gates) that skips the slow release-rehearsal lane (SBOM, multi-platform cross-build, vuln scan, eval/HIL/readiness). Run the full gate (no flag) once before the actual tag.
+Before reporting completion:
 
-## Agent Goals
+1. Inspect the final diff and status.
+2. Map each acceptance scenario to passing evidence.
+3. Confirm non-goals and rollback.
+4. Record the independent verdict against the exact reviewed artifact.
+5. Align bead and provenance state.
+6. Report outcome, checks, residual risk, unchecked scope, and required work.
 
-GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:
-- `ao goals measure` — fitness gate checks
-- `ao goals measure --directives` — list strategic directives as JSON
-- `ao goals steer add/remove/prioritize` — manage directives
-- `ao goals init` — bootstrap GOALS.md interactively
-- `ao goals migrate --to-md` — convert GOALS.yaml → GOALS.md
+If required work, proof, authority, tracker synchronization, or push remains,
+the arc is not done. Never present “ready to push” as completed work.
+
+## Triggered validation
+
+```bash
+cd cli && go build ./... && go vet ./... && go test ./...   # Go changes
+bats tests/scripts/<focused-suite>.bats                     # shell gates
+make regen-all && make regen-check                          # inventory sources
+make docs-check                                              # documentation graph
+```
+
+Release preparation is explicit: use `scripts/ci-local-release.sh --quick` for
+pre-tag iteration and the full command for actual release readiness.
+
+Validation tiers are T0 (required fast gates), T1 (verification), T2 (quality),
+and I0 (informational). T0–T2 are required when selected by the declared gate;
+I0 reports evidence but does not authorize or block landing.

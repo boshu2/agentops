@@ -107,7 +107,6 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-hook-port-replacements.sh"
     make_stub "$FAKE_REPO/scripts/validate-ci-policy-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh"
-    make_stub "$FAKE_REPO/scripts/validate-cli-skills-map.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
     make_stub "$FAKE_REPO/tests/docs/validate-skill-citation-parity.sh"
     make_stub "$FAKE_REPO/tests/hooks/test-orphan-hooks.sh"

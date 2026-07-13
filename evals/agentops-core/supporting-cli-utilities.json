@@ -133,14 +133,6 @@
       "kind": "artifact_check",
       "objective": "Ensure utility commands remain represented in the CLI-skill map and README proof path, not only in generated command help.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao badge` | flywheel, status |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao seed` | quickstart |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao extract` |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao completion` | User utility | Shell completion generation |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao config` | User utility | Config management |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao demo` | User utility | Council-first AgentOps 3.0 demonstration |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao vibe-check` | User utility |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao trace` | User utility | Artifact tracing |"},
         {"type": "artifact_contains", "target": "../../README.md", "value": "ao demo"}
       ],
       "dimensions": ["process_adherence", "artifact_quality"]
