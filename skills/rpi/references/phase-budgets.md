@@ -12,7 +12,8 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 | Plan | 2 min | Single epic, 1-3 issues, no deep decomposition |
 | Pre-mortem | 1 min | Inline check, no council spawn |
 | Implementation | unlimited | Crank wave limits apply (MAX_EPIC_WAVES=50) |
-| Validation | skipped | Fast complexity skips Phase 3 |
+| Validation | 2 min | One focused fresh-context verdict |
+| Learn | 1 min | Bind observations and emit plan impact |
 
 ### Standard Complexity
 
@@ -22,7 +23,8 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 | Plan | 5 min | Epic decomposition, 3-6 issues with dependencies |
 | Pre-mortem | 3 min | Quick council (2 judges) |
 | Implementation | unlimited | Crank wave limits apply |
-| Validation | 5 min | Quick vibe + post-mortem |
+| Validation | 5 min | Focused independent acceptance verdict |
+| Learn | 1 min | Bind observations and emit plan impact |
 
 ### Full Complexity
 
@@ -32,7 +34,8 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 | Plan | 10 min | Complex decomposition, 7+ issues, multi-wave dependency graph |
 | Pre-mortem | 5 min | Full council (3+ judges), deep risk analysis |
 | Implementation | unlimited | Crank wave limits apply |
-| Validation | 10 min | Full vibe + comprehensive post-mortem |
+| Validation | 10 min | Explicit deep or mixed acceptance review |
+| Learn | 2 min | Bind observations and emit plan impact |
 
 ## Why Implementation Is Always Unlimited
 
@@ -65,14 +68,14 @@ Note: Research produced file list + 2 learnings. Plan phase proceeds
 with available context. This is NOT a retry — attempt counter stays at 0.
 ```
 
-### Example 2: Budget Expiry vs Retry Gate
+### Example 2: Budget Expiry vs Premortem Repair
 
 ```
 Phase: pre-mortem (budget: 180s, attempt: 1/3)
 
 [0:00]  /pre-mortem spawns council
 [2:30]  Council returns verdict: FAIL (3 critical risks)
-[2:30]  Verdict is FAIL → triggers retry gate (attempt 1/3)
+[2:30]  Verdict is FAIL → plan author repairs before another Premortem
 
 [2:30]  Re-running /plan with findings context...
 [4:00]  /pre-mortem attempt 2 spawns council
@@ -97,7 +100,7 @@ Attempt counter: 2/3 (budget expiry does NOT count as attempt 3).
 
 | Control | Scope | Relationship to Budgets |
 |---------|-------|------------------------|
-| Retry gates (3 attempts) | Per-phase | Orthogonal — budget expiry is not a retry |
+| Repair attempts (3) | Premortem/implementation | Orthogonal — budget expiry is not a retry |
 | `--fast-path` | All phases | Sets fast budgets regardless of classification |
 | `--deep` | All phases | Sets full budgets regardless of classification |
 | `--no-budget` | All phases | Disables budgets entirely |

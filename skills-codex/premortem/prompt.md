@@ -1,15 +1,23 @@
 # premortem
 
-Validate plans and specs for Codex with a crisp go/no-go answer, the top blockers, and direct remediation guidance.
+Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
+
+## Instructions
+
+Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
+Then read local files in `references/` and `scripts/` when needed.
+
+
+<!-- BEGIN AGENTOPS OPERATOR CONTRACT -->
+<!-- Generated from skills-codex-overrides/catalog.json for premortem. -->
 
 ## Codex Execution Profile
 
-1. Treat `skills/premortem/SKILL.md` as the canonical judgment contract and `skills-codex/premortem/SKILL.md` as the Codex-facing artifact.
-2. Lead with the verdict, then the smallest set of blocking findings that would change implementation behavior.
-3. Keep output ready to feed back into `$plan` or `$rpi` without re-explaining the entire proposal.
+1. Lead with the verdict, then the smallest set of blocking findings that would change implementation behavior.
+2. Between waves, accept only a changed plan from an explicit orchestrator request.
 
 ## Guardrails
 
-1. Do not bury the verdict under narrative analysis.
-2. Make each finding actionable enough to drive a concrete plan revision.
-3. When Codex-specific judgment style changes, update this override instead of hand-editing generated output.
+1. Do not accept direct control transfer from `$validate` or `$learn`.
+
+<!-- END AGENTOPS OPERATOR CONTRACT -->

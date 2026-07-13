@@ -21,8 +21,10 @@ Count **improved→fail transitions** for the same `target` in
 `.agents/evolve/cycle-history.jsonl`:
 
 ```bash
-# Count oscillations for a given goal
-jq -r "select(.target==\"$GOAL_ID\") | .result" .agents/evolve/cycle-history.jsonl \
+# Count oscillations for a given goal — reads via BC3 LoopReaderPort
+# (soc-y5vh.4 wrapper) instead of inline JSONL slurp.
+scripts/evolve-read-cycle-history.sh recent 0 \
+  | jq -r "select(.target==\"$GOAL_ID\") | .result" \
   | awk 'prev=="improved" && $0=="fail" {count++} {prev=$0} END {print count+0}'
 ```
 

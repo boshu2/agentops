@@ -27,7 +27,9 @@ If `ao beads exec list --type epic --status open` returns an epic matching the c
 
 ## /validate
 
-`/validate` is **NOT idempotent** — each run produces a new vibe report and post-mortem.
+`/validate` is **NOT idempotent** — each run produces a new immutable verdict.
+That verdict must pass through Learn before the orchestrator chooses any retry
+or re-plan.
 
 ### Re-run Behavior
 

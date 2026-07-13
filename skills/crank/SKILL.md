@@ -1,6 +1,6 @@
 ---
 name: crank
-description: 'Execute epics through waves. Triggers: "crank an epic", "execute epics through waves", "drive the bead wave plan".'
+description: 'Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: "crank an epic", "execute the next wave", "drive the bead wave plan".'
 practices:
 - continuous-delivery
 - xp
@@ -9,9 +9,7 @@ hexagonal_role: domain
 consumes:
 - beads-br
 - implement
-- postmortem
 - swarm
-- validate
 produces:
 - .agents/swarm/results/*.json
 - git-changes
@@ -33,19 +31,17 @@ metadata:
   tier: execution
   dependencies:
   - swarm
-  - validate
   - implement
   - beads-br
-  - postmortem
   - agent-native
   - automation-shape-routing
   - dcg
-  - pawl-review
 output_contract: code changes across wave execution, .agents/swarm/results/*.json
 ---
 # Crank Skill
 
-> **Quick Ref:** Autonomous epic execution. `/swarm` for each wave with runtime-native spawning. Output: closed issues + phase-2 handoff for `/validate`.
+> **Quick Ref:** Execute the next ready wave with runtime-native workers. Output:
+> wave evidence + phase-2 handoff for Validate.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -53,15 +49,18 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 
 - Execute only tracker-ready vertical slices because crank consumes an accepted plan; it does not silently redefine intent.
 - Parallelize only disjoint write scopes and serialize shared derived surfaces to prevent workers from invalidating one another's base.
-- Consult the pawl and take one bounded helper pass for ordinary blockers before escalating because human interruption is the terminal recovery path, not the first retry.
+- Return unresolved wave evidence to the orchestrator instead of choosing a
+  cross-phase retry or re-plan inside Crank.
 
 ## Loop position
 
 Move **5 (wave execution)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces wave-by-wave slice completion via `/swarm` + `/implement`. Each slice runs the canonical [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this): its acceptance test authored RED before code is the slice contract, and **refactor-under-green is its own wave, never optional** (`references/wave-patterns.md`) — a refactor wave must change no test. Hard gate at wave start: every row of the wave-validity check must pass (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Any failed row → run those slices sequential, not parallel. **Coupled-chain rule:** two slices that both regenerate a shared *derived* surface (`cli-command-surface` / `registry.json` / `context-map` / codex manifest) collide even with disjoint source files — run them as a sequential chain, each link branched off the freshly-MERGED prior link. Parallelism is explicit ownership, not swarm chaos.
 
-Autonomous execution: implement all issues until the epic is DONE.
+Under RPI, one Crank invocation ends at one accepted wave. PARTIAL means work
+remains and returns through Validate and Learn before another wave. Standalone
+callers fulfill the same orchestrator contract rather than looping silently.
 
-**Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `/rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave is *re-plan input*, not just a retry target: per the [`/rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next one runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
+**Feed the orchestrator's decision loop — do not swallow findings into a silent retry.** Crank hands wave evidence to Validate and stops at its phase boundary. It does not invoke Discovery, Learn, or Premortem. Validate produces the immutable verdict, Learn classifies plan impact, and only the orchestrator may retry or change the remaining waves.
 
 **CLI dependencies:** br (issue tracking, via `BEADS_DIR="$(ao beads dir)" br`), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
 
@@ -69,7 +68,11 @@ For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared
 
 ## Architecture: Crank + Swarm
 
-Crank owns orchestration, epic/task lifecycle, and knowledge-flywheel steps. Swarm owns runtime-native worker spawning, fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets each wave from `ao beads exec ready` (tracker- and ledger-agnostic — it resolves bd or br and its ledger automatically), bridges issues into worker tasks, verifies results, and syncs status back to beads. In TaskList mode the same loop runs over pending unblocked tasks instead of beads issues.
+Crank owns within-wave execution and task lifecycle. RPI owns between-wave
+transitions. Swarm owns runtime-native worker spawning, fresh-context isolation,
+per-wave execution, and cleanup. In beads mode Crank gets the next wave from
+`ao beads exec ready`, bridges issues into worker tasks, verifies results, and
+syncs status back to beads. TaskList mode uses the same one-wave boundary.
 
 Read `references/team-coordination.md` for the full per-wave execution model, `references/ralph-loop-contract.md` for the fresh-context worker contract, and [references/worker-specs.md](references/worker-specs.md) for per-worker model/tool/prompt specs.
 
@@ -152,7 +155,11 @@ Not a checkbox ([the flywheel](../../docs/architecture/the-flywheel.md)): the cl
 1. **What did completing this bead teach?** (one line — usually "nothing new", and that's fine)
 2. **Does it CONTRADICT an assumption the remaining plan depends on?**
 
-If **no** → proceed to the next bead. If **yes** (a falsified plan assumption) → re-plan the remaining slices NOW, not at the wave boundary: invoke `/discovery` as the re-plan engine over the remaining DAG (split / re-order / add / drop beads) and record the trigger in the close reason (`replan: <falsified assumption>`). **Anti-thrash guard:** the trigger is a falsified plan assumption ONLY — most closes teach nothing; never re-plan on mere surprise, difficulty, or a new idea (park those for `/post-mortem`). **Andon bound:** a re-plan that would rework the same remaining DAG a 3rd time stops re-planning and takes one bounded helper pass (fresh context, cross-family model, or `/council` — [pawls.md §Escalation](../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model)); it escalates to the human only if the helper cannot unstick it.
+If **no** → record `no_change` evidence. If **yes** → record the falsified
+assumption and its evidence. In both cases, return the evidence through
+Validate and Learn; Crank does not invoke Discovery or mutate the remaining
+plan. The orchestrator alone decides whether a material Learn packet warrants
+re-planning and Premortem.
 
 **Multi-lane serialization + by-hand land.** When several lanes land onto a hot `main` at once, or when you land by hand via the `ao pawl review` CLI (which sets `PAWL_UNTRUSTED_REPO=1` and SKIPS auto-bind, so the sealed bind is manual), follow the serialized land-token discipline and the exact `[feat, #trivial-bind]` command sequence in [references/land-protocol.md](references/land-protocol.md) — one land at a time across lanes, `ao provenance emit-verdict` for the sealed bind (never a hand-appended ledger edge), and `git merge-base --is-ancestor` before every `ao beads exec close`.
 
@@ -162,14 +169,21 @@ If **no** → proceed to the next bead. If **yes** (a falsified plan assumption)
 
 ## The FIRE Loop
 
-Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wave until all issues are CLOSED (beads) or all tasks are completed (TaskList). Read `references/wave-patterns.md` for the loop model, parallel wave rules, and acceptance check details.
+Crank runs FIRE (Find → Ignite → Reap → Vibe → Escalate) for one wave. RPI may
+invoke another Crank wave only after Validate, Learn, and an explicit
+orchestrator decision. Read `references/wave-patterns.md` for the parallel-wave
+and acceptance details.
 
 ## Key Rules
 
 - Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
-- Use `/swarm` for every wave, preserve fresh per-issue context, and refuse to continue past unresolved conflicts or the 50-wave cap.
-- Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): use lightweight inline checks between waves. Reserve `/validate`, council, and `/pawl-review` evidence for the bead-acceptance / merge-to-main pawl, not every intermediate wave.
-- Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
+- Use `/swarm` for the selected wave, preserve fresh per-issue context, and
+  refuse to continue past unresolved conflicts or the 50-wave cap.
+- Per-wave deterministic acceptance stays lightweight; the resulting wave
+  evidence is handed to Validate rather than interpreted as a re-plan inside
+  Crank.
+- Load relevant prior evidence at the start, emit current evidence at the end,
+  and always return `DONE`, `BLOCKED`, or `PARTIAL`.
 
 ### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
 
@@ -188,8 +202,8 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 
 ## Examples
 
-**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final validation.
-**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final validation.
+**User says:** `/crank ag-m0r` — execute the next ready wave and return evidence.
+**User says:** `/crank .agents/plans/auth-refactor.md` — execute the plan's next ready wave.
 **User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
 
 ---
@@ -200,13 +214,16 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 - **Filename:** preserve each worker's declared result filename; the final response is emitted to stdout and does not invent a second evidence file.
 - **Format:** markdown progress/closeout summary with epic ID/title, issue count, iterations, validation result, flywheel status, and per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
 - **Exit code:** run `bash skills/crank/scripts/validate.sh` and require zero; the semantic exit signal is `<promise>DONE</promise>` only when all slices are accepted, `PARTIAL` while work remains, or `BLOCKED` after bounded recovery.
-- **Downstream handoff:** pass committed slices and their evidence to `validate`, then the pawl; close a bead only after its feature commit is an ancestor of `origin/main`.
+- **Downstream handoff:** pass committed slices and their evidence to Validate.
+  Validate hands an immutable verdict to Learn, which returns plan impact to
+  the orchestrator; Crank does not choose that transition.
 
 ## Quality Checklist
 
 - Every completed slice has an executable acceptance result, owned files, and tracker state consistent with its landed commit.
 - Parallel waves contain no shared write or generated-surface collision, and sequential dependencies use the freshly landed prior base.
-- The final marker matches reality: no `DONE` while issues, failed checks, unlanded commits, or unresolved pawl findings remain.
+- The final marker matches reality: no `DONE` while issues or failed checks
+  remain, and no cross-phase retry is hidden inside Crank.
 
 ## Troubleshooting
 

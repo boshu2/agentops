@@ -49,6 +49,8 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
   may request that specialization; the caller decides whether to invoke it.
 - Emit observations plus one Learn receipt. Do not operate proof, repository,
   tracker, delivery, or Premortem authority.
+- Emit a `plan_impact` packet for the orchestrator. Learn does not mutate the
+  plan and does not invoke Premortem.
 - `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
   `BLOCKED`; incomplete bookkeeping is `PARTIAL`.
 
@@ -60,10 +62,19 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
    `kind`, `summary`, or `evidence_ref`.
 3. Record a bounded disposition for each observation: `record`, `candidate`, or
    `no_change`. This is bookkeeping, not promotion.
-4. If an explicit retrospective causal question exists, emit a Postmortem
+4. Inspect whether work remains and classify plan impact:
+   - `material_change`: cite the evidence and propose concrete remaining-plan
+     changes;
+   - `no_change`: record that the evidence does not require a plan mutation;
+   - `terminal`: no remaining work exists, so the tick closes without another
+     Premortem.
+   Learn writes this `plan_impact` into its receipt and returns it to the orchestrator.
+   Only the orchestrator may mutate the plan or choose the next
+   transition.
+5. If an explicit retrospective causal question exists, emit a Postmortem
    request as `next_action`; do not perform the retrospective inline.
-5. Write `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
-6. Append the ordered RPI completion receipt:
+6. Write `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+7. Append the ordered RPI completion receipt:
 
 ```json
 {
@@ -81,6 +92,8 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 - **Validator:** `bash skills/learn/scripts/validate.sh`.
 - **Downstream:** the orchestrator consumes the receipt and alone decides
   whether to continue, re-plan, stop, or route a causal-analysis request.
+  Learn is the only post-verdict handoff from Validate, but it is not the
+  workflow controller.
 
 Executable behavior is in [learn.feature](references/learn.feature). The
 post-verdict ownership map is in

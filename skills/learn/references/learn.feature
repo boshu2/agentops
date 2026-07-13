@@ -20,3 +20,21 @@ Feature: Learn bookkeeps an immutable verdict
     When Learn finishes bookkeeping
     Then it may return a Postmortem request to the orchestrator
     And it does not run Postmortem inline
+
+  Scenario: Material evidence changes the remaining plan through the orchestrator
+    Given work remains and the Validate observations invalidate a plan assumption
+    When Learn classifies the impact as material_change
+    Then it emits cited proposed changes to the orchestrator
+    And Learn does not mutate the plan or invoke Premortem
+
+  Scenario: No material delta does not fabricate learning
+    Given work remains and the verdict does not change the plan
+    When Learn classifies the impact as no_change
+    Then the orchestrator may retry, continue, stop, or escalate
+    And no plan mutation or Premortem is implied
+
+  Scenario: Terminal work closes the tick
+    Given no work remains after validation
+    When Learn classifies the impact as terminal
+    Then the orchestrator closes the tick
+    And Premortem is not invoked

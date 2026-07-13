@@ -1,6 +1,6 @@
 # Phase Skill Isolation Contract
 
-How RPI keeps phase skills (`$discovery`, `$crank`, `$validate`, `$learn`) from
+How RPI keeps phase skills (`/discovery`, `/crank`, `/validate`, `/learn`) from
 compressing each other's work into one agent context while preserving strict
 delegation and operator visibility.
 
@@ -53,7 +53,7 @@ The lint script (`scripts/check-skill-isolation.sh`) flags the following pattern
 1. **Cross-phase first-person verbs.** Phrases like `I will research`, `I will plan`, `I will crank`, `I will validate` (case-insensitive). A phase skill should not describe itself as doing another phase's work.
 2. **Inline research vocabulary.** Phrases like `let me grep`, `let me read`, `let me search`, `I'll grep`, `I'll read`, `I'll search` (case-insensitive). These signal that the agent intends to inline research-phase work into the current context instead of delegating.
 3. **Phase-skill calling another phase skill.** A `Skill(skill="research")`, `Skill(skill="plan")`, `Skill(skill="crank")`, or `Skill(skill="validate")` callsite inside a phase-skill SKILL.md, **except** for the legitimate orchestration patterns:
-   - `$rpi` legitimately orchestrates `discovery`, `crank`, `validate`, and `learn` (this is its core contract). It should NOT call `research` or `plan` directly — those are discovery's sub-skills.
+   - `/rpi` legitimately orchestrates `discovery`, `crank`, `validate`, and `learn` (this is its core contract). It should NOT call `research` or `plan` directly — those are discovery's sub-skills.
    - `/discovery` legitimately orchestrates `research` and `plan`. It should NOT call `crank` or `validation` — those are downstream phases.
    - `/crank` should NOT call `research`, `plan`, `crank`, or `validation` — phase 2 is sealed.
    - `/validate` should NOT call `research`, `plan`, `crank`, or `validation` — phase 3 is sealed.

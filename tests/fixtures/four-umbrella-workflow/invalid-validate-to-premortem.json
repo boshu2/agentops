@@ -1,0 +1,9 @@
+{
+  "remaining_work": true,
+  "validate_next": "premortem",
+  "learn_disposition": "material_change",
+  "learn_next": "orchestrator",
+  "orchestrator_decision": "replan",
+  "plan_changed": true,
+  "premortem_invoked": true
+}

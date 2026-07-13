@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: bash skills-codex/crank/scripts/validate-wave-checkpoint.sh <checkpoint-json> [repo-root]" >&2
+  echo "Usage: bash skills/crank/scripts/validate-wave-checkpoint.sh <checkpoint-json> [repo-root]" >&2
 }
 
 fail() {

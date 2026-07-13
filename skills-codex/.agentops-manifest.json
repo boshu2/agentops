@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "3e7c4736bf11bee9365acc92ca9be0afb9e82d5ca6742384db7c2b9d90a6a918",
+  "codex_override_catalog_hash": "b53084bb32109e9bf3bf7d39a98bbf125d79e0c3f29fbbd2afb1ed833cde39ae",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -125,9 +125,20 @@
       },
       {
         "name": "crank",
-        "treatment": "bespoke",
+        "treatment": "parity_only",
         "wave": "backbone",
-        "reason": "Hands-free execution depends on Codex-native agent control, progress reporting, and scope discipline."
+        "reason": "The one-wave execution and evidence boundary are runtime-portable; Codex-specific worker guidance is a small generated operator contract, not a second hand-maintained skill.",
+        "operator_contract": {
+          "required_sections": [
+            "## Codex Execution Profile",
+            "## Guardrails"
+          ],
+          "required_markers": [
+            "In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.",
+            "Prefer direct Codex session-agent orchestration for disjoint workers; preserve the source skill's one-wave boundary.",
+            "End after one wave. RPI routes evidence through `$validate`, `$learn`, and the orchestrator before another `$crank` invocation."
+          ]
+        }
       },
       {
         "name": "dcg",
@@ -165,9 +176,20 @@
       },
       {
         "name": "evolve",
-        "treatment": "bespoke",
+        "treatment": "parity_only",
         "wave": "backbone",
-        "reason": "The always-on improvement loop needs explicit Codex operating semantics around queues, generators, and persistence."
+        "reason": "The four-umbrella cycle is runtime-portable; Codex persistence and lead-loop guidance fit in a generated operator contract.",
+        "operator_contract": {
+          "required_sections": [
+            "## Codex Execution Profile",
+            "## Guardrails"
+          ],
+          "required_markers": [
+            "Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.",
+            "Persist loop state under `.agents/evolve/` and recover from disk instead of relying on live context.",
+            "Enforce `Validate -> Learn -> orchestrator`; only an orchestrator-owned changed plan enters `$premortem`."
+          ]
+        }
       },
       {
         "name": "goals",
@@ -275,9 +297,20 @@
       },
       {
         "name": "premortem",
-        "treatment": "bespoke",
+        "treatment": "parity_only",
         "wave": "core-execution",
-        "reason": "Go/no-go judgment depends on Codex-specific gate framing and concise blocker reporting."
+        "reason": "Plan judgment is runtime-portable; concise Codex verdict framing fits in a generated operator contract.",
+        "operator_contract": {
+          "required_sections": [
+            "## Codex Execution Profile",
+            "## Guardrails"
+          ],
+          "required_markers": [
+            "Lead with the verdict, then the smallest set of blocking findings that would change implementation behavior.",
+            "Between waves, accept only a changed plan from an explicit orchestrator request.",
+            "Do not accept direct control transfer from `$validate` or `$learn`."
+          ]
+        }
       },
       {
         "name": "product",
@@ -368,10 +401,9 @@
       },
       {
         "name": "rpi",
-        "treatment": "bespoke",
+        "treatment": "parity_only",
         "wave": "backbone",
-        "reason": "The lead orchestration path and disk-backed state contract require explicit Codex-native operating rules.",
-        "operator_contract_required": true,
+        "reason": "The four-umbrella lifecycle is runtime-portable; Codex-native lead orchestration remains a generated operator contract instead of a second hand-maintained skill.",
         "operator_contract": {
           "required_sections": [
             "## Codex Execution Profile",
@@ -382,15 +414,16 @@
             "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
             "Keep a single lifecycle objective spine across discovery, crank, validation, and learning. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
             "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
-            "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
+            "If `$crank` returns `<promise>PARTIAL</promise>`, treat it as one completed wave: run `$validate` on that wave, pass the immutable verdict to `$learn`, and let the lead orchestrator consume `plan_impact` before deciding whether to invoke `$crank` again.",
             "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
             "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, `$validate`, and `$learn` delegation is auditable from disk.",
             "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
             "Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.",
             "Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
+            "Enforce `Validate -> Learn -> orchestrator`. Only the lead orchestrator may invoke `$discovery` to change the remaining plan and then `$premortem` on that exact changed plan.",
             "claim, release, and consume semantics exactly",
             "claim before work, consume on success, release on failure or interruption",
-            "Do not stop after a partial phase result; only stop on `<promise>BLOCKED</promise>`, retry-budget exhaustion, or final completion. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
+            "Do not silently loop after a partial wave. Preserve the objective, route the wave through Validate and Learn, and make the next orchestrator decision explicit. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
           ]
         }
       },
@@ -667,8 +700,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "0a15e15c21e1d39161858101fa53eabd33ae3c4dd1ba4b310ae0e4cb6b06c9b8",
-      "generated_hash": "032faff85f838916c84cf75604cecd06250bf55e40f0ecc43bdb68ceedfbbc43"
+      "source_hash": "3108087604b81cb30b306e732fe402fe6f37726247ae9d17864111da6fccb060",
+      "generated_hash": "d8b3547ea1685be7b5c911d7665da32f2b2b8ca4868ddae2bf6fddbe7a85a517"
     },
     {
       "name": "dcg",
@@ -679,8 +712,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "df9cdb5da4797e74229fa4f1deb10aa16c1b1625f335ba5b09cbf2552e936151",
-      "generated_hash": "81926655ddcb9d694983a056d08433aa54bea015a8f883dd7d43db5718ffccd5"
+      "source_hash": "907dc64c32f184c1e028792e28e25d8ccdda9d29af66f1cb4739cfc91692a740",
+      "generated_hash": "0ec57fdd08c2d3fbe38b23e03375f5d0c6bfd271c92ab166bb017eaa1903c3ac"
     },
     {
       "name": "doc",
@@ -703,8 +736,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "b1218f8521e126f760f56834b9b3c22097bdc23c5d5fa538892d394db8cfa538",
-      "generated_hash": "2259fad42ba657a182e1d0efb11f916231dbb47849f7effe53885345a3d00a3a"
+      "source_hash": "55c76744e4c12983e52be73e4da86e467cb0166b67243d2d55f16b71eb0f264c",
+      "generated_hash": "48419a84bc6455dece46d5b5361cfa38276f572b0219a19d6923b70f6cbddf98"
     },
     {
       "name": "gc-membrane",
@@ -751,8 +784,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "4facf44c52d42d33ee624b78eb173310b3ee3ac8e27028b1c3a16ad6433cfdf5",
-      "generated_hash": "e9b1f492023d12f043e98d7ec6b627c2271702c50e2fa02b2e6e6e4fa2d7266f"
+      "source_hash": "7ab4a4c013bde54180120e922163ce8fefa5775e508002ba656fb90f06794d21",
+      "generated_hash": "79e82b8e59a1e896ebd26363aec48a69524020da1e4f650b71e2cd147c21b66c"
     },
     {
       "name": "ms",
@@ -799,8 +832,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "24c0f8fde9f3ff8161d7670c5373aabf99feaa2c8ecda022fbde4eb670947ac0",
-      "generated_hash": "9ac37ed8acabea83ffe2126d6be3745b61109959ca2d4471ef276ef5624ad4e5"
+      "source_hash": "795eaff2f5d547b569117a9ff7792ba5b456fc68a2fcf80d2bd4e2dc9ec2b6d7",
+      "generated_hash": "b2ca86c5e974356b97d84e15adeb999c83d8850ab10df61d015d6c6174137782"
     },
     {
       "name": "product",
@@ -853,8 +886,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "947df77ac08d1135c49c775a6ad0cfeb8039e70d6b5bcd904a68f1187346aa97",
-      "generated_hash": "b234d7821bc4b68263f3aa5ec66cc0d29edf78a3ecadd0d81752c238d05724fb"
+      "source_hash": "7a7e16943bac25c089cd9e8cc4725f65df125deba9dbb8556c56efe0fe32ea66",
+      "generated_hash": "f36479f14f435a51f319ba43f4d2b84ec584b6302a5a678a3183047f64b2d0b1"
     },
     {
       "name": "sbh",
