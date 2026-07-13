@@ -1,6 +1,6 @@
 # Phase Skill Isolation Contract
 
-How RPI keeps phase skills (`/discovery`, `/crank`, `/validate`) from
+How RPI keeps phase skills (`/discovery`, `/crank`, `/validate`, `/learn`) from
 compressing each other's work into one agent context while preserving strict
 delegation and operator visibility.
 
@@ -9,7 +9,7 @@ delegation and operator visibility.
 **Declaration.** [`PRODUCT.md`](../../../PRODUCT.md) operational principle #5
 (two-tier execution) declares that phase skills own their own phase artifacts,
 gates, and retry policies. `/rpi` owns the lifecycle objective and phase order,
-not the internals of discovery, implementation, or validation.
+not the internals of discovery, implementation, validation, or learning.
 
 **Enforcement.** This document plus
 [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh)
@@ -53,7 +53,7 @@ The lint script (`scripts/check-skill-isolation.sh`) flags the following pattern
 1. **Cross-phase first-person verbs.** Phrases like `I will research`, `I will plan`, `I will crank`, `I will validate` (case-insensitive). A phase skill should not describe itself as doing another phase's work.
 2. **Inline research vocabulary.** Phrases like `let me grep`, `let me read`, `let me search`, `I'll grep`, `I'll read`, `I'll search` (case-insensitive). These signal that the agent intends to inline research-phase work into the current context instead of delegating.
 3. **Phase-skill calling another phase skill.** A `Skill(skill="research")`, `Skill(skill="plan")`, `Skill(skill="crank")`, or `Skill(skill="validate")` callsite inside a phase-skill SKILL.md, **except** for the legitimate orchestration patterns:
-   - `/rpi` legitimately orchestrates `discovery`, `crank`, `validation` (this is its core contract). It should NOT call `research` or `plan` directly — those are discovery's sub-skills.
+   - `/rpi` legitimately orchestrates `discovery`, `crank`, `validate`, and `learn` (this is its core contract). It should NOT call `research` or `plan` directly — those are discovery's sub-skills.
    - `/discovery` legitimately orchestrates `research` and `plan`. It should NOT call `crank` or `validation` — those are downstream phases.
    - `/crank` should NOT call `research`, `plan`, `crank`, or `validation` — phase 2 is sealed.
    - `/validate` should NOT call `research`, `plan`, `crank`, or `validation` — phase 3 is sealed.
@@ -73,7 +73,7 @@ When the lint script needs to evolve, prefer narrowing the trigger over widening
 Three surfaces, layered:
 
 1. **Lint.** [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) walks `skills/{rpi,discovery,crank,validation}/SKILL.md` (or any path passed positionally) and exits non-zero on the first compression pattern. Run with `-q` / `--quiet` to suppress diagnostic output and rely on exit code only. The script ships a `--self-test` mode that injects a known violation into a tmpdir and asserts the lint catches it.
-2. **Artifact handoff.** [`phase-data-contracts.md`](phase-data-contracts.md) defines the bounded files that may cross phase boundaries. Discovery hands implementation an execution packet, implementation hands validation a phase summary and changed surfaces, and validation hands RPI a verdict. Raw reasoning does not cross phases.
+2. **Artifact handoff.** [`phase-data-contracts.md`](phase-data-contracts.md) defines the bounded files that may cross phase boundaries. Discovery hands Crank an execution packet, Crank hands Validate a phase summary and changed surfaces, Validate hands Learn an immutable verdict, and Learn hands RPI a bounded observation receipt. Raw reasoning does not cross phases.
 3. **Phase-isolated skill transport.** When the runtime can isolate phase execution, RPI should run each phase contract in a fresh phase context and keep the main orchestrator visible. The transport may be a daemon job, a process runner, or a subagent wrapper, but its contract is the same: load the declared phase skill, execute it against the bounded handoff, write the expected artifact, and return only artifact path, verdict, and next action.
 
 Cross-references:

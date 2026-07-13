@@ -18,13 +18,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `evolve` — Run autonomous improvement loops. Triggers: "evolve", "improve everything", "autonomous improvement".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `idea-genie` — Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".
+- `learn` — Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.
 - `operationalize` — >-
 - `plan` — Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".
 - `postmortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
 - `premortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md. Triggers: "product", "create or refine product.md.", "product skill".
 - `reality-check` — >-
-- `rpi` — Run discovery, crank, validation. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".
+- `rpi` — Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".
 - `shared` — Shared AgentOps skill contracts. Triggers: "shared", "shared agentops skill contracts.", "shared skill".
 - `standards` — Provide repo coding standards. Triggers: "standards", "provide repo coding standards.", "standards skill".
 
@@ -127,6 +128,7 @@ graph LR
   heal_skill["heal-skill"]
   idea_genie["idea-genie"]
   implement["implement"]
+  learn["learn"]
   ms["ms"]
   ntm["ntm"]
   operationalize["operationalize"]
@@ -215,6 +217,7 @@ graph LR
   implement --> refactor
   implement --> standards
   implement --> test
+  learn --> validate
   operationalize --> automation_shape_routing
   operationalize --> beads_br
   operationalize --> cc_hooks
@@ -252,6 +255,7 @@ graph LR
   rpi --> crank
   rpi --> discovery
   rpi --> domain
+  rpi --> learn
   rpi --> validate
   scaffold --> standards
   skill_builder --> converter
@@ -270,7 +274,7 @@ graph LR
 | Diagnostic | Values |
 |---|---|
 | Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `plan`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
-| User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `pattern-mining`, `pawl-review`, `push`, `release`, `rpi`, `using-gc`, `validate` |
+| User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `push`, `release`, `rpi`, `using-gc`, `validate` |
 | Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
 | Dependency cycles | _(none)_ |
@@ -306,6 +310,7 @@ graph LR
   idea-genie -- "supplier-to" --> discovery
   idea-genie -- "customer-of" --> research
   implement -- "customer-of" --> domain
+  learn -- "customer-of" --> validate
   ntm -- "supplier-to" --> agent-native
   operationalize -- "customer-of" --> automation-shape-routing
   operationalize -- "supplier-to" --> beads-br
@@ -331,6 +336,7 @@ graph LR
   release -- "supplier-to" --> crank
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
+  rpi -- "customer-of" --> learn
   rpi -- "customer-of" --> validate
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> validate
@@ -416,6 +422,9 @@ graph LR
 | `idea-genie` | produces | idea-portfolio.v1 |
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
+| `learn` | consumes | validate |
+| `learn` | produces | .agents/rpi/phase-4-summary.md |
+| `learn` | produces | learn-receipt.json |
 | `ntm` | consumes | task-intent |
 | `ntm` | produces | agent-worker-transcript |
 | `ntm` | produces | ntm-robot-state |
@@ -456,6 +465,7 @@ graph LR
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
 | `rpi` | consumes | domain |
+| `rpi` | consumes | learn |
 | `rpi` | consumes | validate |
 | `rpi` | produces | .agents/rpi/*.md |
 | `scaffold` | produces | converted-skill |

@@ -626,6 +626,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Slice executor; enforce first-failing-test language"
+  - skill:            learn
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/learn/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Fourth RPI umbrella; captures evidence-backed observations after an immutable Validate verdict without taking proof or delivery authority"
   - skill:            plan
     domain:           "BC3 Loop"
     hexagonal_role:   domain

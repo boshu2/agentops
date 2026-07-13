@@ -71,6 +71,14 @@
       "type": "string",
       "minLength": 1
     },
+    "skills_loaded": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/SkillLoad"}
+    },
+    "phase_receipts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/PhaseReceipt"}
+    },
     "run_id": {
       "type": "string"
     },
@@ -306,6 +314,27 @@
     }
   },
   "$defs": {
+    "SkillLoad": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "reason"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "PhaseReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "skill", "status", "artifact"],
+      "properties": {
+        "phase": {"type": "string", "enum": ["discovery", "crank", "validate", "learn"]},
+        "skill": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED"]},
+        "artifact": {"type": "string", "minLength": 1},
+        "next_action": {"type": "string"}
+      }
+    },
     "AutodevProgram": {
       "type": "object",
       "additionalProperties": false,

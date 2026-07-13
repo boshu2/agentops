@@ -69,8 +69,8 @@ require_contains "skills-codex/discovery/references/output-templates.md" 'this e
 
 echo "=== Codex skill chaining defaults ==="
 
-require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validate` as **separate skill invocations**' \
-  'rpi must default to Codex skill chaining across phases'
+require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validate`, and `$learn` as **separate skill invocations**' \
+  'rpi must default to Codex skill chaining across all four umbrellas'
 require_contains "skills-codex/rpi/SKILL.md" '## Phase Receipt Contract' \
   'rpi must define disk-backed phase receipts for delegated skill execution'
 require_contains "skills-codex/rpi/SKILL.md" '"phase_receipts"' \
@@ -79,10 +79,16 @@ require_contains "skills-codex/rpi/references/phase-data-contracts.md" '`skills_
   'phase-data contracts must require skill receipts in RPI artifacts'
 require_contains "skills-codex/rpi/references/phase-data-contracts.md" '`phase_receipts`' \
   'phase-data contracts must document cumulative phase receipts'
+require_contains "skills-codex/rpi/references/phase-data-contracts.md" 'discovery, crank, validate, learn' \
+  'phase-data contracts must require the four ordered umbrella receipts'
 require_contains "skills-codex/rpi/prompt.md" 'Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary' \
   'rpi Codex prompt must preserve phase receipt enforcement'
+require_contains "skills-codex/rpi/prompt.md" '`$discovery`, `$crank`, `$validate`, and `$learn` delegation is auditable from disk' \
+  'rpi Codex prompt must preserve all four delegated umbrellas'
 require_contains "skills/shared/references/strict-delegation-contract.md" '**Phase artifact receipts**' \
   'shared strict-delegation contract must include file-backed receipt detection'
+require_contains "skills/shared/references/strict-delegation-contract.md" '`/discovery`, `/crank`, `/validate`, and `/learn` as four distinct skill invocations' \
+  'shared strict-delegation contract must keep all four umbrellas distinct'
 # brainstorm/design folded into discovery, vibe into validate (ag-s43tg, 2026-06-12):
 # the chaining contract now names only surviving skills; absorbed modes are internal.
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$premortem` as **separate skill invocations**' \
@@ -91,6 +97,20 @@ require_contains "skills-codex/validate/SKILL.md" 'vibe` → `--mode=post-impl`'
   'validate must document the absorbed vibe quick mode'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'
+
+require_not_contains "skills-codex/rpi/SKILL.md" 'Run discovery, crank, and validation.' \
+  'rpi Codex header must not retain the legacy three-phase lifecycle'
+require_not_contains "skills-codex/rpi/references/autonomous-execution.md" 'The Three-Phase Rule' \
+  'rpi Codex autonomy contract must not stop after three phases'
+require_contains "skills-codex/rpi/references/autonomous-execution.md" 'UMBRELLA 4 COMPLETE' \
+  'rpi Codex autonomy contract must complete Learn explicitly'
+require_contains "skills-codex/rpi/references/isolation-contract.md" '$validate`, `$learn`' \
+  'rpi Codex isolation contract must carry the Validate-to-Learn boundary'
+
+if ! bash skills-codex/rpi/scripts/validate.sh >/dev/null; then
+  echo "FAIL: Codex RPI executable validator rejected the four-umbrella contract" >&2
+  failures=$((failures + 1))
+fi
 
 require_contains "skills-codex/evolve/SKILL.md" 'Treat retired CLI wrappers as terminal' \
   'evolve must classify the retired ao evolve/ao rpi CLIs as terminal wrappers, not Codex defaults (ag-llni: ao evolve deleted)'

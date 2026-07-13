@@ -23,8 +23,8 @@ For high-cost lifecycle phases, the desired runtime shape is:
    retry policy.
 2. A phase runner receives only the phase skill name, the bounded handoff
    artifact, and the minimum objective context.
-3. The runner executes the declared skill contract (`/discovery`, `/crank`, or
-   `/validate`) in an isolated phase context.
+3. The runner executes one declared skill contract (`/discovery`, `/crank`,
+   `/validate`, or `/learn`) in an isolated phase context.
 4. The orchestrator receives only artifact path, verdict, and next action.
 
 This is not a compression escape. It is strict delegation over an isolated
@@ -37,18 +37,18 @@ Do not inline phase work, compress multiple phases into one pass, substitute
 direct `Agent()` work for a skill contract, or skip mandatory phases. Typical
 rationalizations to reject:
 
-- *"I'll compress the three phases into one pass."*
+- *"I'll compress the four umbrellas into one pass."*
 - *"Let me do discovery inline — I already know what to do."*
 - *"Nested `Skill()` calls waste context; I'll spawn an `Agent()` instead."*
 - *"The implementation is validated by tests passing; skipping `/validate`."*
-- *"The plan looks good, skipping pre-mortem to save time."*
+- *"The plan looks good, skipping premortem to save time."*
 - *"I'll just spawn 3 judges directly — it's what `/validate` does anyway."*
-- *"Post-mortem is just writing a summary, I'll do it inline."*
+- *"Learn is just writing a summary, I'll do it inline."*
 
-### Pre-Mortem Anti-Rationalization Clause
+### Premortem Anti-Rationalization Clause
 
 The following do **NOT** count as a pre-mortem and **MUST NOT** be used to skip
-the delegated `/pre-mortem` pass:
+the delegated `/premortem` pass:
 
 1. **An inline risk or "honest risk" section the author wrote.** The author's
    own risk assessment is autocorrelated with the plan — the same blind spots
@@ -61,7 +61,7 @@ the delegated `/pre-mortem` pass:
    version of the plan, or a different artifact in the same epic does not
    transfer. Pre-mortem is plan-specific.
 
-**Pre-mortem = DELEGATED + INDEPENDENT (author ≠ reviewer) + fresh-context on
+**Premortem = DELEGATED + INDEPENDENT (author ≠ reviewer) + fresh-context on
 THIS plan.** All three conditions must hold. An inline section satisfies none;
 a prior-premise adversarial pass satisfies at most one (independent) but not
 the other two (not this plan, not delegated).
@@ -90,13 +90,13 @@ artifact, and return a compact result. It must not perform the phase directly.
 These flags scale *gate depth* or *scope*, **never skip phases**. They are the only supported shortcuts:
 
 ### `/rpi`
-- `--quick` / `--fast-path` — force fast complexity (inline `--quick` gates inside sub-skills; still runs all three phases)
+- `--quick` / `--fast-path` — force fast complexity (inline `--quick` gates inside sub-skills; still runs all four umbrellas)
 - `--from=<phase>` — resume from a specific phase when earlier artifacts already exist
-- `--skip-pre-mortem` / `--no-retro` / `--no-forge` — skip specific sub-skills inside a phase
+- `--skip-premortem` / `--no-retro` / `--no-forge` — skip specific sub-skills inside a phase
 - `--no-budget` — disable phase time budgets
 
 ### `/discovery`
-- `--quick` — passed through to `/pre-mortem` for fast inline gate
+- `--quick` — passed through to `/premortem` for fast inline gate
 - `--skip-brainstorm` — skip STEP 1 when the goal is specific (>50 chars, no vague keywords)
 - `--interactive` / `--auto` — control human-gate behavior in research and plan
 - `--no-scaffold` — skip STEP 4.5 scaffold auto-invocation (canonical name; `--no-lifecycle` is a deprecated alias through v2.40.0)
@@ -112,7 +112,7 @@ These flags scale *gate depth* or *scope*, **never skip phases**. They are the o
 
 ## Positive Pattern: What Correct Delegation Looks Like
 
-A correct `/rpi` invocation shows three distinct `Skill()` tool calls at phase boundaries:
+A correct `/rpi` invocation runs `/discovery`, `/crank`, `/validate`, and `/learn` as four distinct skill invocations at umbrella boundaries:
 
 ```
 Skill(skill="discovery", args="<goal> --auto")      # Phase 1
@@ -124,6 +124,9 @@ Skill(skill="crank", args="<packet-path> [--test-first]")   # Phase 2
 Skill(skill="validate", args="--complexity=<level> [--strict-surfaces]")   # Phase 3
   → <promise>DONE</promise>
   → writes .agents/rpi/phase-3-summary-*.md
+Skill(skill="learn", args="<validate-verdict-path>")   # Phase 4
+  → <promise>DONE</promise>
+  → writes .agents/rpi/phase-4-summary-*.md
 ```
 
 Anything less is compressed.
@@ -143,10 +146,10 @@ phase after chat or runtime traces are unavailable.
 
 When auditing a session that claims to have run `/rpi`, check the transcript for:
 
-1. **Three delegated phase contracts** at phase boundaries (`Skill()` directly,
+1. **Four delegated phase contracts** at phase boundaries (`Skill()` directly,
    or a phase runner whose sole job is to execute the named skill contract).
-2. **Three `<promise>DONE</promise>` markers**, each from the delegated sub-skill.
-3. **Three phase summary files** in `.agents/rpi/phase-{1,2,3}-summary-*.md`.
+2. **Four terminal markers**, one from each delegated sub-skill (Validate uses its verdict).
+3. **Four phase summary files** in `.agents/rpi/phase-{1,2,3,4}-summary-*.md`.
 4. **Phase artifact receipts** in the execution packet or phase summaries:
    `skills_loaded` names the orchestrator and phase skill, and
    `phase_receipts` names phase, skill, status/verdict, and artifact path.

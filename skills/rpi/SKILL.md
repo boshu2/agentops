@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Run discovery, crank, validation. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".'
+description: 'Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".'
 practices:
 - bdd-gherkin
 - ddd-bounded-context
@@ -15,6 +15,7 @@ consumes:
 - crank
 - discovery
 - domain
+- learn
 - validate
 produces:
 - .agents/rpi/*.md
@@ -23,6 +24,8 @@ context_rel:
   with: crank
 - kind: customer-of
   with: discovery
+- kind: customer-of
+  with: learn
 - kind: customer-of
   with: validate
 skill_api_version: 1
@@ -43,13 +46,14 @@ metadata:
   - discovery
   - crank
   - validate
+  - learn
   internal: false
 output_contract: .agents/rpi/YYYY-MM-DD-*.md
 ---
 
 # /rpi - Full Lifecycle Orchestrator
 
-> Quick ref: `/discovery` -> `/crank` -> `/validate`, then report.
+> Quick ref: `/discovery` -> `/crank` -> `/validate` -> `/learn`, then report.
 
 **Execute this workflow. Do not only describe it.** RPI is autonomous unless
 `--interactive` is set. The user touchpoint is after validation, or after a
@@ -85,8 +89,9 @@ you need the full autonomy contract.
 ## Core Contract
 
 RPI delegates via `Skill(skill="discovery", ...)`,
-`Skill(skill="crank", ...)`, and `Skill(skill="validate", ...)` as separate
-tool invocations. Keep strict delegation on by default; do not compress phases,
+`Skill(skill="crank", ...)`, `Skill(skill="validate", ...)`, and
+`Skill(skill="learn", ...)` as separate tool invocations. Keep strict
+delegation on by default; do not compress phases,
 replace phase skills with direct agent spawns, or skip validation. Read
 [../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
 for the full anti-compression contract.
@@ -120,7 +125,8 @@ deterministic surface to reject missing phase execution. Full schema + example
 2. Resolve `--from`:
    - default, `research`, `plan`, `pre-mortem`, `brainstorm` -> discovery
    - `implementation` or `crank` -> implementation
-   - `validation`, `vibe`, or `post-mortem` -> validation
+   - `validation` or `vibe` -> validation
+   - `learn` or `postmortem` -> learn
 3. If the input is a bead and `--from` is absent, resolve it with `ao beads exec show`:
    - epic -> implementation with that epic
    - child with parent -> implementation with the parent epic
@@ -131,7 +137,7 @@ deterministic surface to reject missing phase execution. Full schema + example
 5. Log `RPI mode: rpi-phased (complexity: <level>)`.
 
 Track state compactly as `rpi_state`: `goal` (string), `epic_id` (null until
-discovered), `phase` (discovery|implementation|validation), `complexity`
+discovered), `phase` (discovery|crank|validate|learn), `complexity`
 (fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle`
 (from 1), and `verdicts` ({}).
 
@@ -144,7 +150,7 @@ Enter at the routed phase and run every phase after it.
    On DONE, read `.agents/rpi/execution-packet.json` or the run archive and
    preserve its objective spine. On BLOCKED, classify it through the pawl
    recovery state machine; never stop on the label alone.
-2. **Implementation:** invoke `/crank <epic-id>` when the packet has `epic_id`;
+2. **Crank:** invoke `/crank <epic-id>` when the packet has `epic_id`;
    otherwise invoke `/crank .agents/rpi/execution-packet.json`, directly or
    through phase-isolated skill transport. Pass `--test-first` or
    `--no-test-first` through. On DONE, record `ao ratchet record implement
@@ -152,14 +158,18 @@ Enter at the routed phase and run every phase after it.
    on BLOCKED, classify it through pawl recovery. Use 3 total attempts before
    `EXHAUSTED-BUDGET`. **Before accepting a slice/wave the orchestrator reads the actual diff itself** (scope + claim match) — not just the `<promise>DONE</promise>` and evidence JSON, but its own diff-read, distinct from the delegated sub-judges.
    `/crank` enforces this as the anti-green-washing Step 3.5 of its Wave Acceptance ([crank wave-patterns.md §Wave Acceptance Check](../crank/references/wave-patterns.md)).
-3. **Validation:** invoke `/validate <epic-id> --complexity=<level>` when an
+3. **Validate:** invoke `/validate <epic-id> --complexity=<level>` when an
    epic exists; otherwise invoke `/validate --complexity=<level>`, directly
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
    DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the bead-acceptance pawl, once per objective. Any work crossing shared trunk obtains fresh evidence through [`/pawl-review`](../pawl-review/SKILL.md); `ao pawl` applies the complexity-scaled diversity and verdict gate.
-4. **Re-plan (mandatory between waves; the loop's hinge).** With remaining waves, run the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) before the next — a post-mortem/discovery delta that MAY mutate the remaining plan (autonomous under `--auto`). No remaining waves → straight to Report.
-5. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
+4. **Learn:** invoke `/learn` with the immutable Validate verdict and its
+   evidence reference. Record a `learn` receipt with status `DONE`, `PARTIAL`,
+   or `BLOCKED` and a file-backed `.agents/rpi/phase-4-summary.md`. Learn may
+   capture observations; it cannot change the verdict or delivery state.
+5. **Re-plan (mandatory between waves; the loop's hinge).** With remaining waves, run the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) before the next — a postmortem/discovery delta that MAY mutate the remaining plan (autonomous under `--auto`). No remaining waves → straight to Report.
+6. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
    status using [references/report-template.md](references/report-template.md).
    With `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
    `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
@@ -217,7 +227,10 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 **Filename convention:** mutable `execution-packet.json`, immutable `runs/<run-id>/execution-packet.json`, `phase-<n>-summary.md`, and optional `next-work.jsonl`.
 **Serialization/schema format:** packet JSON matches `schemas/execution-packet.schema.json` plus the `skills_loaded`/`phase_receipts` extension in [phase-data-contracts](references/phase-data-contracts.md); summaries follow the markdown [report template](references/report-template.md).
 **Validator command:** `python3 skills/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
-**Downstream handoff:** discovery creates the packet, crank updates evidence and receipts, validate appends the acceptance verdict, and Report emits the human-readable roll-up.
+**Downstream handoff:** discovery creates the packet, crank updates
+implementation evidence, validate appends the immutable acceptance verdict,
+Learn records post-verdict observations, and Report emits the human-readable
+roll-up.
 **Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
 
 ## Quality Checklist

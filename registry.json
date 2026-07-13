@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
   "summary": {
-    "skills": 62,
+    "skills": 63,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
     "cli_commands": 29,
     "workflows": 4,
-    "capabilities": 105
+    "capabilities": 106
   },
   "surfaces": {
     "skills": [
@@ -314,6 +314,14 @@
         "path": "skills/council/",
         "has_skill_md": true,
         "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "learn",
+        "tier": "judgment",
+        "path": "skills/learn/",
+        "has_skill_md": true,
+        "has_references": true,
         "reference_count": 0
       },
       {
@@ -909,8 +917,8 @@
     ]
   },
   "capability_summary": {
-    "total": 105,
-    "skills": 62,
+    "total": 106,
+    "skills": 63,
     "cli_commands": 29,
     "gates": 14,
     "reference_impls": 0
@@ -1902,6 +1910,37 @@
       "references": 7
     },
     {
+      "sku": "skill:learn",
+      "name": "learn",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "capability_class": "corpus",
+      "purpose": "Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "validate"
+      ],
+      "produces": [
+        ".agents/rpi/phase-4-summary.md",
+        "learn-receipt.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/learn/",
+      "references": 0
+    },
+    {
       "sku": "skill:ms",
       "name": "ms",
       "type": "skill",
@@ -2452,7 +2491,7 @@
       "hex_role": "domain",
       "tier": "meta",
       "capability_class": "orchestration",
-      "purpose": "Run discovery, crank, validation. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
+      "purpose": "Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
       "status": "active",
       "disposition": "refactor",
       "runtime_targets": [
@@ -2467,6 +2506,7 @@
         "crank",
         "discovery",
         "domain",
+        "learn",
         "validate"
       ],
       "produces": [
