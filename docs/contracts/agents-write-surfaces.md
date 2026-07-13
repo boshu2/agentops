@@ -152,7 +152,6 @@ orchestration
 overnight
 packets
 patterns
-pawl
 pawl-evidence
 pawl-review
 pawl-verdicts
