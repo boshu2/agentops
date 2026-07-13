@@ -299,8 +299,12 @@ JSON
     and (.intentional_deltas | sort) == ["environment_projection","pawl_review_hold_5","provenance_reconcile","verify_hold_5"]
     and ([.intentional_deltas[] | select(test("plan-pawl"))] | length) == 0
   ' "$TMP/base/v2/metadata.json"
-  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version v2 --profiles default,flywheel,legacy,combined
-  [ "$status" -eq 0 ]
+  # Frozen v2 remains valid, but a binary with classified v3 behavior must not
+  # masquerade as v2. The v3 test below owns the projected current behavior.
+  run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" \
+    --oracle-version v2 --profiles default,flywheel,legacy,combined
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CLI compatibility drift in profile default"* ]]
   run env AO_CLI_COMPAT_BASELINE_DIR="$TMP/base" "$CHECKER" --oracle-version current --verify-baseline-integrity
   [ "$status" -eq 0 ]
 
