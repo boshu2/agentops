@@ -193,5 +193,41 @@ if [ "$NO_ENABLE" -eq 0 ]; then
   }
 fi
 
+# ── Self-test: verify our own claims before declaring success (age-txfnl) ──
+# (b) plugin registered/enabled: `agy plugin list` must name the plugin. When
+#     enable was skipped (--no-enable) we only require it to be listed.
+# (c) one sentinel skill file is readable in the installed image bundle.
+selftest_agy() {
+  local problems=0
+
+  local sentinel
+  sentinel="$(find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | head -1)"
+  if [ -z "$sentinel" ] || [ ! -r "$sentinel" ]; then
+    printf 'FAIL: self-test: no readable sentinel SKILL.md under %s/skills\n' "$PLUGIN_DIR" >&2
+    problems=$((problems + 1))
+  fi
+
+  local list_out
+  if list_out="$(agy plugin list 2>/dev/null)"; then
+    if ! printf '%s' "$list_out" | grep -qF "$PLUGIN_NAME"; then
+      printf 'FAIL: self-test: agy plugin list does not report %s after install\n' "$PLUGIN_NAME" >&2
+      problems=$((problems + 1))
+    fi
+  else
+    # The install itself ran through agy moments ago, so a failing
+    # `agy plugin list` is a broken registration surface, not an optional
+    # check to skip — skipping here would fail-open the self-test.
+    printf 'FAIL: self-test: `agy plugin list` exited nonzero — cannot verify %s registration\n' "$PLUGIN_NAME" >&2
+    problems=$((problems + 1))
+  fi
+
+  if [ "$problems" -gt 0 ]; then
+    fail "Gemini/Antigravity plugin self-test failed with $problems problem(s); refusing to report success."
+  fi
+  ok "Self-test passed: plugin present and a sentinel skill is readable"
+}
+
+selftest_agy
+
 ok "AgentOps Gemini/Antigravity plugin is installed"
-printf 'Next: restart Antigravity/Gemini, then run /quickstart.\n'
+printf 'Verify it worked: restart Antigravity/Gemini, then type /plan (or /quickstart).\n'
