@@ -14,6 +14,7 @@ lifecycle=(
   "$ROOT/skills/learn/SKILL.md"
   "$ROOT/skills/crank/SKILL.md"
   "$ROOT/skills/rpi/SKILL.md"
+  "$ROOT/skills/evolve/SKILL.md"
 )
 
 for file in "${lifecycle[@]}"; do
@@ -30,6 +31,11 @@ grep -Fq 'Crank stops after it writes wave evidence' "$ROOT/skills/crank/SKILL.m
   fail 'Crank does not stop at the implementation evidence boundary'
 grep -Fq 'RPI ends at the four receipts and its report.' "$ROOT/skills/rpi/SKILL.md" ||
   fail 'RPI does not stop at its lifecycle report'
+grep -Fq 'repository-selected deterministic `/push` adapter' "$ROOT/skills/evolve/SKILL.md" ||
+  fail 'Evolve does not route optional delivery through Push'
+grep -Fq 'Push cannot change the verdict, close tracker state, or complete the lifecycle' \
+  "$ROOT/skills/evolve/SKILL.md" ||
+  fail 'Evolve does not preserve caller-owned lifecycle and tracker authority'
 
 # A top-level boundary is insufficient when the skill links reachable reference
 # contracts. Scan every reference directly consumed by Crank for imperative

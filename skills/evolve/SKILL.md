@@ -6,10 +6,7 @@ practices:
 - dora-metrics
 - agile-manifesto
 hexagonal_role: domain
-consumes:
-- rpi
-- goals
-- postmortem
+consumes: [rpi, goals, postmortem, push]
 produces:
 - git-changes
 - goals-fitness-delta
@@ -32,6 +29,7 @@ metadata:
   dependencies:
   - rpi
   - postmortem
+  - push
   triggers:
   - evolve
   - improve everything
@@ -57,7 +55,7 @@ output_contract: code changes, GOALS.md fitness deltas
 
 - Run one complete `rpi --auto` cycle per selected item and re-read the work ladder afterward, because partial phases and fixed backlogs break the feedback loop.
 - Never let Validate or Learn push, close work, mutate the plan, or choose the next cycle; those are separate adapter/orchestrator decisions.
-- Treat breaker trips with one bounded helper pass before escalation; only judgment, refusal, spent budgets, or a failed helper reach a human, because ordinary blockers belong to the pawl recovery path.
+- Treat breaker trips with one bounded helper pass before escalation; only judgment, refusal, spent budgets, or a failed helper reach a human, because ordinary blockers return to the earliest invalidated loop move.
 
 ## Work selection ladder
 
@@ -114,7 +112,7 @@ Recover cycle state from disk (survives compaction): `CYCLE`, `IDLE_STREAK`, `GE
 
 **Repo-local contracts.** If `docs/contracts/repo-execution-profile.md` exists, read its ordered `startup_reads` and bootstrap from them before selecting work; cache `validation_commands`, `tracker_commands`, `definition_of_done`. If a repo-local `PROGRAM.md` (or `AUTODEV.md` alias — `PROGRAM.md` wins) contract exists, `rpi` loads it automatically — cache its `mutable_scope`, `validation_commands`, `decision_policy`, `stop_conditions`; prefer work inside mutable scope, never silently widen it around immutable files. The PROGRAM.md contract is the legacy autodev lane (built only under `-tags legacy`); its spec + repair guidance live in [docs/contracts/autodev-program.md](../../docs/contracts/autodev-program.md), with executable specs `references/autodev.feature` and `references/autodev-cli.feature`.
 
-**Circuit breakers (tunable — also the pawl-escalation governor):** time-based (60 min no productive work) · max-cycles/max-attempts cap · cost/quota budget · oscillation. These are the **same breakers that govern pawl escalation** — a REFUTED pawl auto-redoes; a tripped breaker takes one bounded helper pass (fresh context, cross-family model, or council — [pawls.md §Escalation](../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model)); a human is pulled in only past the helper or on the skip classes (refusal lane, explicit judgment flag, spent ceiling). Thresholds are configurable (`EVOLVE_KILL_TTL_DAYS`, `--max-cycles`, max-attempts), not hard-coded. **Oscillation quarantine:** pre-populate from cycle history (goals with 3+ improved→fail transitions). See `references/oscillation.md`.
+**Circuit breakers (tunable):** time-based (60 min no productive work) · max-cycles/max-attempts cap · cost/quota budget · oscillation. Ordinary REFUTED results auto-redo; a tripped breaker takes one bounded fresh-context helper pass, and only a failed helper or a skip class (refusal, explicit judgment, spent ceiling) reaches the human. Thresholds are configurable (`EVOLVE_KILL_TTL_DAYS`, `--max-cycles`, max-attempts), not hard-coded. **Oscillation quarantine:** pre-populate from cycle history (goals with 3+ improved→fail transitions). See `references/oscillation.md`.
 
 ### Step 0.2 / 0.5: Warmup + baseline
 
@@ -158,7 +156,7 @@ Primary engine: `/rpi` (all 3 phases mandatory). `/implement` or `/crank` only w
 
 ```
 Invoke /rpi "{normalized work title}" --auto --max-cycles=1     # harvested / goal / gap / testing / bug / drift / feature
-Invoke /rpi "Land {issue_id}: {title}" --auto --max-cycles=1    # a bead (fallback: /implement {issue_id})
+Invoke /rpi "Complete {issue_id}: {title}" --auto --max-cycles=1 # a bead (fallback: /implement {issue_id})
 Invoke /crank {epic_id}                                         # epic with children
 ```
 
@@ -176,13 +174,13 @@ Sync binaries and generated surfaces before the gate: Go CLI changes require bui
 
 **PRODUCTIVE** (improved / regressed / harvested): log via `scripts/evolve-log-cycle.sh`, commit real changes. **IDLE** (nothing found even after generators): log `--result "unchanged"`; no git add, no commit. Record the XP/BDD/TDD trace via `--trace-json` when a cycle worked a product or goal-backed gap (goal hypothesis → gap → Gherkin → failing proof → red/green → refactor → validation → ratchet → goal reshape); trivial one-shot cycles record a `trace.exemption_reason`. Trace completeness is advisory, never a gate. See `references/cycle-history.md`, `references/quality-mode.md`.
 
-### Step 7: Land — worktree → gate → pawl → push
+### Step 7: Optional deterministic delivery
 
-Push is the **mutate-shared-trunk pawl**: work from a per-cycle worktree, run `ao gate check --fast --scope head`, obtain a cross-family commit-current verdict with `scripts/pawl-review.sh`, then use `scripts/pawl-land.sh`. Same-family review and pushes without CONFIRMED are refused. REFUTED auto-redoes; breaker trips get one bounded helper pass before the documented human-only skip classes. See [pawls](../../docs/contracts/pawls.md) and the [land protocol](../crank/references/land-protocol.md). Never `claude -p` (LAW 0).
+After the immutable Validate proof passes through Learn and the orchestrator accepts the cycle, invoke the repository-selected deterministic `/push` adapter only when repo policy or the operator authorizes delivery. Pass the exact source SHA, destination, and deterministic check results. Push cannot change the verdict, close tracker state, or complete the lifecycle; without delivery authority, return the prepared SHA and evidence. A delivery failure returns the unchanged proof to the orchestrator.
 
 ### Step 7 loop / stop
 
-After landing, increment `CYCLE` and return to Step 1.
+After the caller records the delivery or prepared-handoff result, increment `CYCLE` and return to Step 1.
 
 **Stop ONLY on** (all require a genuine reason — never just context size): (1) **KILL/STOP marker** — operator override; (2) **`--max-cycles` cap**; (3) **genuine stagnation** — `ao beads exec ready=0 AND harvested=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK ≥ 2 AND IDLE_STREAK ≥ 2` → writes DORMANT, which auto-clears the moment `ao beads exec create` adds a ready bead; (4) **regression breaker after a revert**. **Context exhaustion is NOT a stop** — write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"`, exit the turn; the next fire clears HANDOFF in Step 1 and resumes (`references/context-budget.md`).
 
@@ -190,7 +188,7 @@ After landing, increment `CYCLE` and return to Step 1.
 
 ### Teardown
 
-Commit any staged `cycle-history.jsonl`, run `/post-mortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), push only if unpushed commits exist, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
+Commit any staged `cycle-history.jsonl`, run `/post-mortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), invoke `/push` for unpushed commits only when authorized, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
 
 Release-shaped branches must follow [the release teardown contract](references/teardown.md#release-shaped-teardown): never recommend `/release` from per-cycle `--fast`, carry the unchecked checklist into the handoff, and require the full release gate before tagging.
 
@@ -199,14 +197,14 @@ Release-shaped branches must follow [the release teardown contract](references/t
 - **Path:** emit the cycle summary to stdout; append `.agents/evolve/cycle-history.jsonl`; write `.agents/evolve/{fitness-latest.json,session-state.json}` and control files `{STOP,DORMANT,HANDOFF}`.
 - **Filename:** cycle history is `cycle-history.jsonl`; current fitness and resumable state use the fixed filenames above.
 - **Format:** stdout is Markdown; state and fitness use JSON; cycle history uses JSONL following `references/cycle-history.md`.
-- **Validation command:** run repo/profile tests, `bash scripts/check-wiring-closure.sh`, and `ao gate check --fast --scope head`; require a commit-current pawl verdict before land.
-- **Downstream handoff:** return cycle counts, fitness delta, result, stop reason, changed paths, and the verdict; the next cycle consumes persisted state and unconsumed work.
+- **Validation command:** run repo/profile tests, `bash scripts/check-wiring-closure.sh`, and `ao gate check --fast --scope head`; if delivery is selected, also require `bash skills/push/scripts/validate.sh`.
+- **Downstream handoff:** return cycle counts, fitness delta, result, stop reason, changed paths, immutable Validate verdict, and any deterministic delivery result; the next cycle consumes persisted state and unconsumed work.
 
 ## Quality Checklist
 
 - Selected work follows the ladder and remains inside declared mutable scope.
-- A productive cycle has deterministic validation plus a commit-current independent verdict.
-- Regressions revert, queue items stay unconsumed until land, and breaker handling follows helper-before-human policy.
+- A productive cycle has deterministic validation plus an immutable candidate-current Validate verdict.
+- Regressions revert, queue items stay unconsumed until authorized delivery succeeds or the caller releases them, and breaker handling follows helper-before-human policy.
 
 ## Troubleshooting
 
@@ -220,7 +218,7 @@ Release-shaped branches must follow [the release teardown contract](references/t
 ## References
 
 - **Loop mechanics** — [work-selection-ladder.md](references/work-selection-ladder.md) (per-rung selection), [fitness-scoring.md](references/fitness-scoring.md) (baseline / regression / revert), [convergence-mechanics.md](references/convergence-mechanics.md) (healing-first classifier), [cycle-history.md](references/cycle-history.md) (JSONL, recovery, trace), [oscillation.md](references/oscillation.md), [metronome-gate.md](references/metronome-gate.md), [scout-mode.md](references/scout-mode.md), [long-loop-discipline.md](references/long-loop-discipline.md)
-- **Gating + landing** — [gate-hygiene.md](references/gate-hygiene.md) (source-surface, red triage), [new-skill-landing.md](references/new-skill-landing.md) (six derived surfaces), [ao-command-landing.md](references/ao-command-landing.md), [postmortem-checkpoint.md](references/postmortem-checkpoint.md), [pre-flight-schema-check.md](references/pre-flight-schema-check.md), [mechanical-batches.md](references/mechanical-batches.md), [snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md)
+- **Gating + delivery preparation** — [gate-hygiene.md](references/gate-hygiene.md) (source-surface, red triage), [new-skill-landing.md](references/new-skill-landing.md) (six derived surfaces), [ao-command-landing.md](references/ao-command-landing.md), [postmortem-checkpoint.md](references/postmortem-checkpoint.md), [pre-flight-schema-check.md](references/pre-flight-schema-check.md), [mechanical-batches.md](references/mechanical-batches.md), [snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md)
 - **Autonomy + knowledge** — [autonomous-execution.md](references/autonomous-execution.md) (loop rules + operator-shape carve-out), [context-budget.md](references/context-budget.md), [knowledge-loop-integration.md](references/knowledge-loop-integration.md) (claim/release, teardown), [compounding.md](references/compounding.md) (hypothesis-posture per ADR-0004/0011), [domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md), [quality-mode.md](references/quality-mode.md), [parallel-execution.md](references/parallel-execution.md), [teardown.md](references/teardown.md), [artifacts.md](references/artifacts.md)
 ## Behavioral contract anchors (validated by scripts/validate.sh)
 
@@ -233,7 +231,7 @@ own validator greps them, and they are the loop's load-bearing behavior:
 - **The CLI is required for fitness measurement** — `ao goals measure` is the instrument; prose self-grades are not fitness.
 - **Harvested-first selection order:** Harvested `.agents/rpi/next-work.jsonl` work outranks generated candidates; drain the harvest before generating.
 - **Generator ladder (when the harvest is dry):** Testing improvements → Validation tightening and bug-hunt passes → Concrete feature suggestions.
-- **Queue claim before consume:** claim it first (set the claim marker), keep `consumed: false` until the work actually lands; a crash between claim and consume must leave the row re-runnable.
+- **Queue claim before consume:** claim it first (set the claim marker), keep `consumed: false` until authorized delivery succeeds or the caller finalizes the handoff; a crash between claim and consume must leave the row re-runnable.
 - **Immediate queue reread:** after each /rpi turn, immediately re-read `.agents/rpi/next-work.jsonl` — the turn may have harvested new work.
 - **Repo execution profile:** honor `docs/contracts/repo-execution-profile.md` (`startup_reads`, `validation_commands`) when present.
 

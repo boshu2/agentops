@@ -700,8 +700,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "89cb2b547c7d01a18644991d25cfaad13726fe2a4f766277c46a863e1d13f427",
-      "generated_hash": "d452b02a3457847f0ee79ad49f97a413c3a0cb5890c70555e2398d160da9a9a4"
+      "source_hash": "735480096e58a637aac88dc093e1fba6edea5b680a40d07c126ccdcf666a5697",
+      "generated_hash": "3b0bad2e05fd6c0e4e60c2336cc9c89ff43533503bcc41b0e3fc61d4bfdb998a"
     },
     {
       "name": "dcg",
@@ -736,8 +736,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "55c76744e4c12983e52be73e4da86e467cb0166b67243d2d55f16b71eb0f264c",
-      "generated_hash": "48419a84bc6455dece46d5b5361cfa38276f572b0219a19d6923b70f6cbddf98"
+      "source_hash": "aa7a594f05deb5f49c3819f1461329381a2d243dcf369661a5141b8dc2e73925",
+      "generated_hash": "3263a166b99c46059b354e873d60b0d330ae6c16bbc17e5bf8034b55ff8b73fe"
     },
     {
       "name": "gc-membrane",
