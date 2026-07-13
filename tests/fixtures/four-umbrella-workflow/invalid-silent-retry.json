@@ -1,0 +1,9 @@
+{
+  "remaining_work": true,
+  "validate_next": "crank",
+  "learn_disposition": "no_change",
+  "learn_next": "orchestrator",
+  "orchestrator_decision": "retry",
+  "plan_changed": false,
+  "premortem_invoked": false
+}

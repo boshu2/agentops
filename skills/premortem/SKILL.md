@@ -46,7 +46,7 @@ output_contract: skills/council/schemas/verdict.json
 
 ## Loop position
 
-Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing.
+Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing. Between waves, Premortem accepts only a changed plan from an explicit orchestrator request; Validate and Learn cannot invoke it directly.
 
 Run `/council validate` on a plan or spec to get multi-model judgment before committing to implementation.
 

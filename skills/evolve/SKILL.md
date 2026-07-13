@@ -47,16 +47,16 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > **Experimental tier.** Autonomous long-loop; run attended or dispatched onto a substrate, never as an in-repo daemon (ADR-0009).
 
-**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (`/validate`, `/pawl-review`, then `ao pawl`) fires once at bead acceptance, not per slice or wave.
+**Cycle feedback is explicit.** Each completed execution unit routes `Validate -> Learn -> orchestrator`; neither proof nor bookkeeping controls retry or delivery.
 
-**The loop runs as this skill.** `evolve` selects work and invokes complete `/rpi --auto` cycles — that *is* the loop. Each cycle's post-mortem checkpoint is a **re-plan point** (re-scope / reorder / drop / add to the remaining queue from what the cycle taught), one altitude up from `/rpi`'s [agile re-plan loop](../rpi/references/agile-replan-loop.md) — agile across cycles, not a fixed backlog. Substrates dispatch the whole loop as one unit through NTM, Agent Mail, or `ao agent`; the former RPI CLI wrappers are retired (ADR-0009).
+**The loop runs as this skill.** `evolve` selects work and invokes complete `/rpi --auto` cycles — that *is* the loop. A material Learn packet returns to the orchestrator, which changes the remaining plan through Discovery and sends only that changed plan through Premortem. `no_change` permits an explicit continue/retry/stop/escalate decision; `terminal` closes the cycle. Substrates dispatch the whole loop as one unit; the former RPI CLI wrappers are retired (ADR-0009).
 
-**Operator cadence:** post-mortem finished work → measure repo state → select the next highest-value item → let `rpi` run research → plan → pre-mortem → implement → validate → harvest follow-ups → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
+**Operator cadence:** measure repo state → select the next highest-value item → Discovery → Premortem → Crank → Validate → Learn → orchestrator decision → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
 
 ## Constraints
 
 - Run one complete `rpi --auto` cycle per selected item and re-read the work ladder afterward, because partial phases and fixed backlogs break the feedback loop.
-- Never push without a commit-current CONFIRMED pawl verdict, because a green producer gate is necessary but not sufficient proof.
+- Never let Validate or Learn push, close work, mutate the plan, or choose the next cycle; those are separate adapter/orchestrator decisions.
 - Treat breaker trips with one bounded helper pass before escalation; only judgment, refusal, spent budgets, or a failed helper reach a human, because ordinary blockers belong to the pawl recovery path.
 
 ## Work selection ladder

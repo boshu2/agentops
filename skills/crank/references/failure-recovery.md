@@ -49,11 +49,15 @@ Also verify: epic has at least 1 child issue total. An epic with 0 children mean
 
 Do NOT proceed with empty issue list - this produces false "epic complete" status.
 
-## Final Batched Validation
+## Final Evidence Handoff
 
-When all issues complete, run the final bead-acceptance `/validate` — the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../../docs/contracts/pawls.md)). This is the lock at the irreversible door (close-as-accepted / merge-to-main); it is **NOT skippable on any path that reaches merge-to-main**, no matter how clean the per-wave checks were. Per-wave inline checks are chaos-side treads — cheap and wrong-tolerant — and they do **not** substitute for the pawl. Standalone `/crank` and `evolve`'s direct `/crank` epic path must not degrade to per-wave checks only: every path still hits the bead-pawl `/validate` before merge.
+When all issues complete, Crank assembles the wave checkpoints and acceptance
+roll-up for one final Validate invocation by the caller/orchestrator. Per-wave
+checks do not substitute for that independent verdict. Crank itself does not
+invoke Validate, Learn, Discovery, or Premortem.
 
-Use the wave checkpoint verdicts only to scale the gate's DEPTH (quick vs full council), never to exempt it:
+Wave checkpoint verdicts may advise the caller about validation depth, but
+never authorize a skip:
 
 ```bash
 # Check wave checkpoint verdicts — clean waves scale the gate down, never skip it
@@ -67,28 +71,19 @@ for checkpoint in .agents/crank/wave-*-checkpoint.json; do
 done
 ```
 
-**If ALL waves passed acceptance check with PASS verdict (no WARNs, no retries):**
-Run the final bead-acceptance `/validate` at reduced depth (one comprehensive pass / `--quick`) — the pawl still fires; the clean waves only let it run lighter, never let it be skipped.
+**If all waves passed:** suggest the default one fresh independent Validate
+judge. **If any wave had WARN, FAIL, or missing evidence:** include those facts
+in the Validate packet; deeper review remains an explicit caller choice.
 
-**If ANY wave had WARN, FAIL, or missing verdicts:**
-Run ONE comprehensive vibe on recent changes:
+Changed files remain part of the handoff:
 
 ```bash
 # Get list of changed files from recent commits
 git diff --name-only HEAD~10 2>/dev/null | sort -u
 ```
 
-```
-Tool: Skill
-Parameters:
-  skill: "agentops:vibe"
-  args: "recent"
-```
-
-**If CRITICAL issues found:**
-1. Fix them
-2. Re-run vibe on affected files
-3. Only proceed to completion when clean
+The resulting Validate verdict must flow to Learn and then the orchestrator.
+No direct retry occurs in this reference.
 
 ## Node Repair Operator
 

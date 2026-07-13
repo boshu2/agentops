@@ -25,6 +25,27 @@ Feature: RPI runs one turn's lifecycle without skipping moves
     Then Validate runs before Learn and before the turn is considered done
     And the lifecycle objective is preserved, not silently dropped at a phase boundary
 
+  @covered-by:scripts/validate-workflow-contract.sh
+  Scenario: A material verdict changes the remaining plan before Premortem
+    Given work remains and Learn reports material_change
+    When the orchestrator consumes the Learn receipt
+    Then it changes the remaining plan through Discovery
+    And it runs Premortem on that changed plan before the next Crank wave
+
+  @covered-by:scripts/validate-workflow-contract.sh
+  Scenario: No material delta permits an explicit no-op decision
+    Given work remains and Learn reports no_change
+    When the orchestrator consumes the Learn receipt
+    Then it may retry, continue, stop, or escalate without fabricating a learning
+    And it does not invoke Premortem
+
+  @covered-by:scripts/validate-workflow-contract.sh
+  Scenario: Terminal work skips Premortem
+    Given no work remains and Learn reports terminal
+    When the orchestrator consumes the Learn receipt
+    Then it closes the tick without re-planning
+    And it does not invoke Premortem
+
   @covered-by:tests/integration/test-four-umbrella-packet.sh
   Scenario: Missing Learn is rejected
     Given a legacy packet with Discovery, Crank, and Validate receipts only

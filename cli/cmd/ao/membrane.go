@@ -111,6 +111,7 @@ affected paths from git by --scope (the --head commit, the index for staged,
 or the upstream range). For upstream, --base pins the exact reviewed ancestor;
 without it the configured-upstream merge-base is used. Any explicit
 --reason/--domain/--paths wins over extraction.`,
+	Args: cobra.NoArgs,
 	RunE: runMembraneCatch,
 }
 

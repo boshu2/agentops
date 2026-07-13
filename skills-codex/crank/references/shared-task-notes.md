@@ -41,7 +41,7 @@ A persistent file that the crank orchestrator maintains between waves. Workers R
 # Read shared notes and include in every worker prompt
 if [ -f .agents/crank/SHARED_TASK_NOTES.md ]; then
     SHARED_NOTES=$(cat .agents/crank/SHARED_TASK_NOTES.md)
-    # Include in worker prompt (spawn_agent description):
+    # Include in TaskCreate description:
     # "Context from prior waves:\n${SHARED_NOTES}"
 fi
 ```
@@ -70,7 +70,7 @@ EOF
 
 - Full error logs (too verbose, pollutes context)
 - Implementation details (workers should read code directly)
-- Task status (tracked by beads or issue tracker)
+- Task status (tracked by beads/TaskList)
 - Anything already in the issue description
 
 ### Size Management
@@ -82,14 +82,13 @@ Cap at ~50 lines. When exceeding:
 
 ### Integration with Worker Prompts
 
-Include shared notes in the worker's prompt (via `spawn_agent` description), after the issue body:
+Include shared notes in the worker's TaskCreate description, after the issue body:
 
 ```
-# Worker prompt includes:
-# <issue body>
-# ---
-# Context from prior waves (read before starting):
-# <shared notes content>
+TaskCreate(
+  subject="ag-1234: Add auth middleware",
+  description="<issue body>\n\n---\nContext from prior waves (read before starting):\n<shared notes content>"
+)
 ```
 
 Workers should read shared notes before starting implementation and add their own discoveries to their task output for the orchestrator to harvest.

@@ -9,8 +9,8 @@ Crank follows FIRE for each wave:
 | **FIND** | `bd ready` — get unblocked beads issues | `TaskList()` → pending, unblocked |
 | **IGNITE** | TaskCreate from beads + `/swarm` | `/swarm` (tasks already in TaskList) |
 | **REAP** | Swarm results + `bd update --status closed` | Swarm results (TaskUpdate by workers) |
-| **CHECK** | Wave acceptance check (2 inline judges) → PASS/WARN/FAIL | Same |
-| **ESCALATE** | `bd comments add` + retry | Update task description + retry |
+| **CHECK** | Deterministic wave acceptance → PASS/FAIL evidence | Same |
+| **ESCALATE** | Return blocked evidence to the orchestrator | Same |
 
 **With `--test-first` flag, FIRE extends with two pre-implementation phases:**
 
@@ -24,7 +24,7 @@ Crank follows FIRE for each wave:
 ### Beads Mode
 
 ```
-Wave 1: bd ready → [issue-1, issue-2, issue-3]
+Wave N: bd ready → [issue-1, issue-2, issue-3]
         ↓
         TaskCreate for each issue
         ↓
@@ -32,42 +32,43 @@ Wave 1: bd ready → [issue-1, issue-2, issue-3]
                   ↓         ↓         ↓
                DONE      DONE      BLOCKED
                                      ↓
-                               (retry in next wave)
+                               (record as remaining work)
         ↓
         bd update --status closed for completed
-
-Wave 2: bd ready → [issue-4, issue-3-retry]
         ↓
-        TaskCreate for each
+        deterministic wave acceptance
         ↓
-        /swarm → spawns 2 fresh-context agents
+        Crank PARTIAL / DONE / BLOCKED + evidence
         ↓
-        bd update for completed
-
-Final vibe on all changes → Epic DONE
+        Validate → Learn → orchestrator
+                               ↓
+        orchestrator may invoke Wave N+1; a changed plan first goes
+        through Discovery → Premortem
 ```
 
 ### TaskList Mode
 
 ```
-Wave 1: TaskList() → [task-1, task-2, task-3] (pending, unblocked)
+Wave N: TaskList() → [task-1, task-2, task-3] (pending, unblocked)
         ↓
         /swarm → spawns 3 fresh-context agents
                   ↓         ↓         ↓
                DONE      DONE      BLOCKED
                                      ↓
-                               (reset to pending, retry next wave)
-
-Wave 2: TaskList() → [task-4, task-3-retry] (pending, unblocked)
+                               (record as remaining work)
         ↓
-        /swarm → spawns 2 fresh-context agents
+        deterministic wave acceptance
         ↓
-        TaskUpdate → completed
-
-Final vibe on all changes → All tasks DONE
+        Crank PARTIAL / DONE / BLOCKED + evidence
+        ↓
+        Validate → Learn → orchestrator
+                               ↓
+        orchestrator may invoke Wave N+1; a changed plan first goes
+        through Discovery → Premortem
 ```
 
-Loop until all issues are CLOSED (beads) or all tasks are completed (TaskList).
+Crank never directs Wave N to Wave N+1. Every wave terminates at its evidence
+handoff; only the orchestrator can start another wave after Validate and Learn.
 
 ## Spec-First Wave Model (--test-first)
 
@@ -150,7 +151,11 @@ But do NOT read implementation details of the specific feature being specified.
 
 ## Wave Acceptance Check (MANDATORY)
 
-> **Principle:** Verify each wave meets acceptance criteria before advancing. The orchestrator reads the actual wave diff itself (Step 3.5, the anti-green-washing check) and *also* spawns lightweight inline judges (Step 4) — the orchestrator's own diff-read is distinct from the delegated sub-judges, and a green promise + passing evidence JSON is never sufficient on its own. No skill invocations, no context explosion.
+> **Principle:** Verify each wave deterministically before handoff. The
+> orchestrator reads the actual wave diff itself (Step 3.5, the
+> anti-green-washing check); a green promise plus evidence JSON is never
+> sufficient. Independent judgment belongs to the downstream Validate umbrella,
+> not duplicate inline judges inside Crank.
 
 **After closing all beads in a wave, before advancing to the next wave:**
 
@@ -186,66 +191,27 @@ But do NOT read implementation details of the specific feature being specified.
 
 3.5. **Orchestrator's own diff-read (MANDATORY — the anti-green-washing check):**
 
-   > **The orchestrator itself reads `WAVE_DIFF` before counting any slice — distinct from the delegated sub-judges in Step 4.** A green `<promise>DONE</promise>` plus a passing evidence JSON is a *claim*, not proof of scope: a worker can emit a clean evidence file while its diff touches files outside the slice's declared boundary. The roll-up of verdicts does not catch this; only reading the actual diff does. (This is the exact check that caught the Codex pawl-embed + `validate.yml` drift — `git status` showed 7 files where 3 were expected.)
+   > **The orchestrator itself reads `WAVE_DIFF` before counting any slice.** A green `<promise>DONE</promise>` plus a passing evidence JSON is a *claim*, not proof of scope: a worker can emit a clean evidence file while its diff touches files outside the slice's declared boundary. The roll-up of verdicts does not catch this; only reading the actual diff does. (This is the exact check that caught the Codex pawl-embed + `validate.yml` drift — `git status` showed 7 files where 3 were expected.)
 
    For each issue closed in the wave, the orchestrator (not a sub-judge) attributes the files THAT slice touched **from its evidence** — the per-issue result (`.agents/swarm/results/<issue-id>.json`, already validated in Step 3) records the slice's touched-file list, the authoritative attribution. **Do NOT use `git log --grep "<issue-id>"`** — a slice that omits the id from its commit message yields an empty changeset and passes vacuously. Then check each slice's claim + write-scope:
 - **Scope match (per-slice, evidence-attributed):** every file in *this slice's recorded touched-file list* falls inside *its* declared write scope. This catches a slice writing OUTSIDE its boundary — including into **another** slice's file (it is in THIS slice's evidence but not its scope → FAIL; another slice owning that path does not excuse it). Do NOT compare the full `WAVE_DIFF` against one slice's scope — multi-slice waves touch disjoint files, which would false-flag every valid parallel slice.
 - **Wave coverage (union):** every file in the full `WAVE_DIFF` appears in *some* slice's recorded touched-file list. A file in **no** slice's evidence is unclaimed drift — the case that caught the Codex pawl-embed + `validate.yml` drift (files touched that no slice owns). (A diff file absent from every slice's evidence also means the evidence is incomplete, which Step 3 already fails on.)
 - **Claim match:** each slice's diff actually does what it claims (not an empty or unrelated change behind a green promise).
 
-   If a slice's evidence-files fall outside *its* scope, OR any wave file is in *no* slice's evidence, OR a claim doesn't match, the slice/wave is **flagged** — set the wave verdict to **FAIL** (do not silently count it) and surface the offending file list to the operator. This is a hard gate, evaluated before the delegated judges run.
+   If a slice's evidence-files fall outside *its* scope, OR any wave file is in *no* slice's evidence, OR a claim doesn't match, the slice/wave is **flagged** — set the wave verdict to **FAIL** (do not silently count it) and surface the offending file list to the operator. This is a hard deterministic gate.
 
-4. **Spawn 2 inline judges** (Task agents, NOT skill invocations):
-
-   ```
-   # Judge 1: Spec compliance
-   Tool: Task
-   Parameters:
-     subagent_type: "general-purpose"
-     model: "haiku"
-     description: "Wave N spec-compliance check"
-     prompt: |
-       Review this git diff against the acceptance criteria below.
-       Does the implementation satisfy all acceptance criteria?
-       Return: PASS, WARN (minor gaps), or FAIL (criteria not met) with brief justification.
-
-       ## Acceptance Criteria
-       <acceptance criteria from step 2>
-
-       ## Git Diff
-       <wave diff>
-
-   # Judge 2: Error paths
-   Tool: Task
-   Parameters:
-     subagent_type: "general-purpose"
-     model: "haiku"
-     description: "Wave N error-paths check"
-     prompt: |
-       Review this git diff for error handling and edge cases.
-       Are error paths handled? Any unhandled exceptions or missing validations?
-       Return: PASS, WARN (minor gaps), or FAIL (critical gaps) with brief justification.
-
-       ## Git Diff
-       <wave diff>
-   ```
-
-   **Dispatch both judges in parallel** (single message, 2 Task tool calls).
-
-5. **Aggregate verdicts:**
+4. **Aggregate deterministic verdict:**
    - If Step 3 fails evidence validation → **FAIL**
    - If Step 3.5 flags an out-of-scope or claim-mismatched diff → **FAIL**
-   - Else, both judges PASS → **PASS**
-   - Else, any judge FAIL → **FAIL**
-   - Otherwise → **WARN**
+   - Otherwise → **PASS**
 
-6. **Gate on verdict:**
+5. **Hand off verdict and evidence:**
 
    | Verdict | Action |
    |---------|--------|
-   | **PASS** | Record verdict in epic notes. Advance to next wave. |
-   | **WARN** | Create fix beads as children of the epic (`bd create`). Execute fixes inline (small) or as wave N.5 via swarm. Re-run acceptance check. If PASS on re-check, advance. If still WARN after 2 attempts, treat as FAIL. WARN is only for non-critical review gaps after evidence is complete. |
-   | **FAIL** | Record verdict in epic notes. Take one bounded helper pass (fresh context or cross-family model gets the verdict + evidence; resume on UNSTUCK). If it survives, output `<promise>BLOCKED</promise>` and exit — human review required. Includes missing mandatory evidence. |
+   | **PASS** | Record verdict and return wave evidence for Validate. Do not advance inside Crank. |
+   | **WARN** | Record caveats and return wave evidence for Validate. Do not create an inline fix wave. |
+   | **FAIL** | Record blockers and return BLOCKED evidence. The orchestrator owns any helper, retry, or re-plan. |
 
    ```bash
    # Record verdict in epic notes

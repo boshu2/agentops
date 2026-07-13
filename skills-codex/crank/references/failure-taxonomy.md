@@ -132,10 +132,10 @@ bd show <issue-b> | grep "blocked by"
 
 ```bash
 # Step 1: Identify the cycle
-br dep graph <epic>  # Visual if available
+bd dep graph <epic>  # Visual if available
 
 # Step 2: Remove weakest dependency
-br dep remove <issue> <blocking-issue>
+bd dep remove <issue> <blocking-issue>
 
 # Step 3: Add comment explaining
 bd comments add <issue> "Removed dep on <blocking> to break deadlock.
@@ -382,14 +382,14 @@ After epic completion (or major milestone), analyze failures:
 
 ```bash
 # List all issues that required retries
-br list --parent=<epic> --has-label=BLOCKER
-br list --parent=<epic> --has-label=WAITING_EXTERNAL
+bd list --parent=<epic> --has-label=BLOCKER
+bd list --parent=<epic> --has-label=WAITING_EXTERNAL
 
 # Check retry patterns
 # (requires custom tooling or log analysis)
 
 # Feed into retrospective
-$post-mortem --topic="crank failures on <epic>"
+/post-mortem --topic="crank failures on <epic>"
 ```
 
 ## Prevention Strategies

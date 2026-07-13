@@ -744,10 +744,8 @@
         "driven_by_skills": [
           "council",
           "crank",
-          "evolve",
           "pawl-review",
-          "push",
-          "rpi"
+          "push"
         ]
       },
       {
@@ -1439,7 +1437,7 @@
       "hex_role": "domain",
       "tier": "execution",
       "capability_class": "orchestration",
-      "purpose": "Execute epics through waves. Triggers: \"crank an epic\", \"execute epics through waves\", \"drive the bead wave plan\".",
+      "purpose": "Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: \"crank an epic\", \"execute the next wave\", \"drive the bead wave plan\".",
       "status": "active",
       "disposition": "refactor",
       "runtime_targets": [
@@ -1453,9 +1451,7 @@
       "consumes": [
         "beads-br",
         "implement",
-        "postmortem",
-        "swarm",
-        "validate"
+        "swarm"
       ],
       "produces": [
         ".agents/swarm/results/*.json",
@@ -1668,7 +1664,6 @@
         "ao beads exec",
         "ao gate check",
         "ao goals measure",
-        "ao pawl",
         "ao skills edit digest",
         "ao skills edit seal"
       ],
@@ -2504,8 +2499,7 @@
         ".agents/rpi/*.md"
       ],
       "drives_commands": [
-        "ao beads exec",
-        "ao pawl"
+        "ao beads exec"
       ],
       "path": "skills/rpi/",
       "references": 18
@@ -3215,10 +3209,8 @@
       "driven_by_skills": [
         "council",
         "crank",
-        "evolve",
         "pawl-review",
-        "push",
-        "rpi"
+        "push"
       ],
       "flags": [
         "--config",

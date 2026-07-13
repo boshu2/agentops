@@ -125,10 +125,13 @@ func TestCatchWatchFor_DeterministicImperative(t *testing.T) {
 // TestRenderCatchDigest_ByteIdempotent proves a fixed digest renders identically
 // twice (no nondeterministic map iteration), and carries the loader's frontmatter.
 func TestRenderCatchDigest_ByteIdempotent(t *testing.T) {
-	d := buildCatchDigest([]yieldledger.Catch{
+	d, err := buildCatchDigest([]yieldledger.Catch{
 		{ClassKey: "v1:shell/top", Domain: "shell", Reason: "unguarded cmdsub aborts under set -e", HitCount: 5, Beads: []string{"age-a", "age-b"}, AffectedPaths: []string{"scripts/x.sh"}},
 		{ClassKey: "v1:docs/stale", Domain: "docs", Reason: "stale retired surface referenced in shipped docs", HitCount: 2, Beads: []string{"age-c"}},
 	}, 10, false, fixedDigestClock)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	first := renderCatchDigest(d)
 	second := renderCatchDigest(d)
@@ -169,7 +172,10 @@ func TestBuildCatchDigest_ExcludesPlaceholdersByDefault(t *testing.T) {
 		{ClassKey: "v1:gates/real", Domain: "gates", Reason: "gate-routing gap: a .agents edit skips its own contract gate", HitCount: 1},
 	}
 
-	d := buildCatchDigest(in, 10, false, fixedDigestClock)
+	d, err := buildCatchDigest(in, 10, false, fixedDigestClock)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if d.TotalClasses != 3 {
 		t.Errorf("TotalClasses should report the full corpus (3), got %d", d.TotalClasses)
@@ -200,7 +206,10 @@ func TestBuildCatchDigest_IncludePlaceholders(t *testing.T) {
 		{ClassKey: "v1:gates/real", Domain: "gates", Reason: "gate-routing gap: a .agents edit skips its own contract gate", HitCount: 1},
 	}
 
-	d := buildCatchDigest(in, 10, true, fixedDigestClock)
+	d, err := buildCatchDigest(in, 10, true, fixedDigestClock)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(d.Entries) != 2 {
 		t.Fatalf("--include-placeholders must show all classes; got %d", len(d.Entries))
@@ -214,6 +223,42 @@ func TestBuildCatchDigest_IncludePlaceholders(t *testing.T) {
 	}
 	if d.Entries[0].Rank != 1 || d.Entries[1].Rank != 2 {
 		t.Errorf("ranks must be contiguous 1,2; got %d,%d", d.Entries[0].Rank, d.Entries[1].Rank)
+	}
+}
+
+func TestBuildCatchDigest_FindingRecurrenceCreatesAdvisoryProducerCandidateByObjective(t *testing.T) {
+	d, err := buildCatchDigest([]yieldledger.Catch{
+		{
+			ClassKey: "v1:docs/stale-surface",
+			Domain:   "docs",
+			Reason:   "A retired surface remained in active documentation.",
+			// Five review occurrences, but only two objectives.
+			HitCount: 5,
+			Beads:    []string{"objective-a", "objective-b"},
+		},
+		{
+			ClassKey: "v1:shell/one-off",
+			Domain:   "shell",
+			Reason:   "A one-off typo was caught.",
+			HitCount: 1,
+			Beads:    []string{"objective-c"},
+		},
+	}, 10, false, fixedDigestClock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.ProducerCandidates) != 1 {
+		t.Fatalf("producer_candidates = %d, want 1", len(d.ProducerCandidates))
+	}
+	candidate := d.ProducerCandidates[0]
+	if candidate.RecurrenceCount != 2 || !candidate.Advisory {
+		t.Fatalf("candidate = %+v, want advisory recurrence_count=2", candidate)
+	}
+	if len(candidate.Evidence) != 2 || candidate.Evidence[0].ObjectiveID != "objective-a" || candidate.Evidence[1].ObjectiveID != "objective-b" {
+		t.Fatalf("candidate must cite both distinct objectives: %+v", candidate.Evidence)
+	}
+	if body := string(renderCatchDigest(d)); !strings.Contains(body, "Advisory producer-rule candidates") || !strings.Contains(body, "recurrence=2") {
+		t.Fatalf("rendered digest omitted advisory candidate:\n%s", body)
 	}
 }
 

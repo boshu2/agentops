@@ -1,19 +1,23 @@
 # crank
 
-Execute epics hands-free with Codex-native wave progression.
+Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: "crank an epic", "execute the next wave", "drive the bead wave plan".
+
+## Instructions
+
+Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
+Then read local files in `references/` and `scripts/` when needed.
+
+
+<!-- BEGIN AGENTOPS OPERATOR CONTRACT -->
+<!-- Generated from skills-codex-overrides/catalog.json for crank. -->
 
 ## Codex Execution Profile
 
-1. Treat `skills/crank/SKILL.md` as canonical execution contract.
-2. Accept either an epic id or `.agents/rpi/execution-packet.json` as the execution handoff.
-3. In execution-packet mode, preserve the packet objective instead of inventing an epic or narrowing to one slice.
-4. Run waves from beads dependencies when tracker mode is beads, and from the execution packet or plan file otherwise.
-5. Keep retries bounded and report blockers with exact issue ids or file-backed task refs.
-6. In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.
+1. In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.
+2. Prefer direct Codex session-agent orchestration for disjoint workers; preserve the source skill's one-wave boundary.
 
 ## Guardrails
 
-1. Prefer direct Codex session-agent orchestration for parallel issue execution; do not reintroduce `$swarm` as a required wrapper.
-2. Do not blur done/partial/blocked status boundaries.
-3. Include validation metadata checks in worker instructions when available.
-4. Leave `ao codex ensure-stop` to closeout skills after the execution loop completes.
+1. End after one wave. RPI routes evidence through `$validate`, `$learn`, and the orchestrator before another `$crank` invocation.
+
+<!-- END AGENTOPS OPERATOR CONTRACT -->
