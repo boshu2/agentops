@@ -14,21 +14,21 @@ What are you trying to do?
 │
 ├─ "Run the full loop / first time"
 │   ├─ See the whole product ─────► docs: Intent → Validated Code + Skills Matrix
-│   ├─ One behavior end-to-end ───► /plan → /implement → /validate
+│   ├─ One behavior end-to-end ───► /plan → /implement → /validate → /learn
 │   ├─ One tick wrapped ──────────► /rpi "goal"
 │   └─ Repo setup ────────────────► /bootstrap · ao quick-start · ao doctor
 │
 ├─ "Prove it's done / validate" (the Membrane — needs acceptance behavior; no verdict = not done)
 │   ├─ Code ready to ship? ───────► /validate
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
-│   ├─ Plan ready to build? ──────► /pre-mortem
+│   ├─ Plan ready to build? ──────► /premortem
 │   ├─ Independent judges ────────► /council validate recent
 │   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
-│   ├─ Fresh immutable landing lane ► /pawl-review → ao pawl
+│   ├─ Optional high-assurance delivery ► /pawl-review (adapter; after Validate)
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
 │   ├─ Security + release gate ───► /security
-│   └─ Work ready to close? ──────► /validate, then /post-mortem
+│   └─ Work ready to close? ──────► /validate, then /learn
 │
 ├─ "Track it / bookkeep it" (the Bookkeeper)
 │   ├─ Break it into issues ──────► /plan
@@ -64,8 +64,8 @@ What are you trying to do?
 │   ├─ Extract a recurring code shape ─► /pattern-mining → /operationalize
 │   ├─ Turn the corpus into operator surfaces ─► /operationalize
 │   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
-│   ├─ Save this insight ─────────► /post-mortem --quick "insight"
-│   └─ Full retrospective ────────► /post-mortem
+│   ├─ Route validated observations ─► /learn
+│   └─ Answer a causal question ───► /postmortem
 │
 ├─ "Parallelize work"
 │   ├─ Multiple independent tasks ► /swarm
@@ -81,11 +81,11 @@ What are you trying to do?
 │
 ├─ "Session management"
 │   ├─ Compile a reusable operator surface ► /operationalize
-│   ├─ Capture the session learning ─► /post-mortem
+│   ├─ Capture validated learning ───► /learn
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► /plan → /implement → /validate
+└─ "First time here" ────────────► /plan → /implement → /validate → /learn
                                    (maps: Intent → Validated Code · Skills Matrix)
 ```

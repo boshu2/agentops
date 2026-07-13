@@ -42,7 +42,7 @@ If the cycle fails, regresses, or is interrupted before success, release the cla
 - **success:** finalize any claimed queue item with `consumed: true`, `consumed_by`, and `consumed_at`; clear transient claim fields
 - **failure/regression:** clear `claim_status`, `claimed_by`, and `claimed_at`; keep `consumed: false`; record the release in `session-state.json`
 
-After the cycle's `/post-mortem` finishes, immediately re-read `.agents/rpi/next-work.jsonl` before selecting the next item. Never assume the queue state from before the cycle.
+After the cycle's `/postmortem` finishes, immediately re-read `.agents/rpi/next-work.jsonl` before selecting the next item. Never assume the queue state from before the cycle.
 
 ## Teardown Learning Extraction
 
@@ -53,7 +53,7 @@ if git diff --cached --name-only | grep -q cycle-history.jsonl; then
 fi
 ```
 
-2. Run `/post-mortem "evolve session: ${CYCLE} cycles"` to harvest learnings.
+2. Run `/postmortem "evolve session: ${CYCLE} cycles"` to harvest learnings.
 
 3. Push only if unpushed commits exist:
 ```bash

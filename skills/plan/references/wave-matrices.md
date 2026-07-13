@@ -68,4 +68,4 @@ For EACH declared dependency, verify:
 2. Does the blocked issue read output produced by the blocker? → **Keep**
 3. Is the dependency only logical ordering (e.g., "specs before roles")? → **Remove**
 
-False dependencies reduce parallelism. Pre-mortem judges will also flag these. In ol-571, unnecessary serialization between independent spec rewrites was caught by pre-mortem.
+False dependencies reduce parallelism. Premortem judges will also flag these. In ol-571, unnecessary serialization between independent spec rewrites was caught by premortem.

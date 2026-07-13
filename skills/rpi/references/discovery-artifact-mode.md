@@ -4,7 +4,7 @@
 
 ## The problem it solves
 
-The default `/rpi` flow runs `/discovery` as Phase 1: brainstorm → design → search → research → plan → pre-mortem. This is expensive (several skill invocations, potentially spawning council judges) and redundant when the caller already has a validated scope document. Without this flag, the only way to skip Phase 1 was `--from=implementation`, which requires an existing epic ID in the bead tracker. That left a gap: **how do you resume RPI mid-session with a council-validated plan but no bead?**
+The default `/rpi` flow runs `/discovery` as Phase 1: brainstorm → design → search → research → plan → premortem. This is expensive (several skill invocations, potentially spawning council judges) and redundant when the caller already has a validated scope document. Without this flag, the only way to skip Phase 1 was `--from=implementation`, which requires an existing epic ID in the bead tracker. That left a gap: **how do you resume RPI mid-session with a council-validated plan but no bead?**
 
 ## When to use
 
@@ -53,7 +53,7 @@ Step by step:
 
 ## Gate behavior
 
-The pre-mortem gate that normally runs at the end of `/discovery` is **assumed to have been passed** by whatever upstream process produced the artifact. This is the core trust trade-off: you are skipping the gate in exchange for the work done upstream. To preserve safety:
+The premortem gate that normally runs at the end of `/discovery` is **assumed to have been passed** by whatever upstream process produced the artifact. This is the core trust trade-off: you are skipping the gate in exchange for the work done upstream. To preserve safety:
 
 - The orchestrator **requires** the artifact to contain at least one of: an explicit verdict (e.g., "PASS with HIGH confidence"), abort gates, or a test matrix.
 - If the artifact is empty or lacks any of the above, `/rpi` downgrades to treating it as an informational hint and runs `/discovery` anyway. Do NOT silently skip gates when the artifact is too thin to validate.

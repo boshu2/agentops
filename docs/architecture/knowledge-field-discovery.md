@@ -2,7 +2,7 @@
 
 > Discovery packet. Research basis: `KNOWLEDGE-FIELD-RESEARCH.md` (5-scout sweep) +
 > `LOOP-INVENTORY.md`. This shapes intent as BDD and slices it into a crank-ready
-> DAG with acceptance examples. Guarded by a fresh-context pre-mortem (below).
+> DAG with acceptance examples. Guarded by a fresh-context premortem (below).
 > Complexity: full (foundational). Lane: knowledge/corpus (carved to this lane by
 > the active single-agent doctrine lane — no collision).
 
@@ -20,7 +20,7 @@ the holdout battery), not a greenfield store.
   gate-passed session, *When* `ao wiki gold` next runs, *Then* that learning's
   strength/tier increases and it ranks higher in the next retrieval.
 - **Cold-start broken:** *Given* a corpus where retrieval rate is 0%, *When* a
-  session runs discovery/plan/pre-mortem, *Then* relevant gold is retrieved
+  session runs discovery/plan/premortem, *Then* relevant gold is retrieved
   (retrieval rate > 0) and a citation is recorded.
 - **Credit, not co-presence:** *Given* two trails both present in a winning session —
   one load-bearing, one merely co-retrieved — *When* credit is assigned, *Then* only
@@ -42,7 +42,7 @@ the holdout battery), not a greenfield store.
   it. (3) NOT a new datastore — `citations.jsonl` + projections (Kappa). (4) NOT
   bookend hooks — produce is async/decoupled, consume is decision-point pull.
 - **Write scope:** agentops `cli/internal/{wiki,search,lifecycle}`, the decision-point
-  skills (discovery/plan/pre-mortem), `.ao/wiki` projection. **Lane:** knowledge/corpus
+  skills (discovery/plan/premortem), `.ao/wiki` projection. **Lane:** knowledge/corpus
   (mine). **Door 9:** no `claude -p`; cross-family critic uses `codex exec`/AGY.
 - **Coordination:** the field lives in agentops; the active lane owns orchestration/
   single-agent + the bead DB. Operationalize into beads *in agentops*, coordinated, not
@@ -52,7 +52,7 @@ the holdout battery), not a greenfield store.
 Ordered by the research build-order. **S1 is the MVP that proves the loop closes;**
 the rest deepen it. Each slice ships behind a flag, additive, gates-green.
 
-**S0 — Author knowledge-field holdout scenarios (NEW — pre-mortem caught this).**
+**S0 — Author knowledge-field holdout scenarios (NEW — premortem caught this).**
 - The promotion gate S4 names **does not exist**: the current holdout battery is 4
   scenarios about BDD-foundry/planning quality, in mt-olympus, not agentops. Author
   *knowledge-reuse* holdout scenarios in agentops: with-vs-without-knowledge tasks the
@@ -62,7 +62,7 @@ the rest deepen it. Each slice ships behind a flag, additive, gates-green.
   without-knowledge and score the outcome delta; isolated so implementers never see them.
 
 **S1 — Break cold-start + wire the pull (the unlock) — BOUNDED against ADR-0002.**
-- Make decision-point retrieval real: discovery + plan + pre-mortem call `ao lookup
+- Make decision-point retrieval real: discovery + plan + premortem call `ao lookup
   --gold`. (Correction: today's retrieve is **fail-open best-effort** (`2>/dev/null ||
   true`) **and hits the raw `.agents/` corpus, not `--gold`** — so this is net-new, not
   "extend the pattern.") Retriever gets **optimistic init** + **ε-floor**, written as
@@ -83,7 +83,7 @@ the rest deepen it. Each slice ships behind a flag, additive, gates-green.
 - `ao wiki gold` emits a **heat scalar** (`α·N_visit + β·magnitude + γ·exp(−Δt/μ)`,
   MemoryOS form) + a tier band; retrieval ranks by strength×relevance; decay computed
   **lazily on read** (`2^(−Δt/h)`); **verified reuse multiplies `h`** (→ power-law durability).
-- *Reality (pre-mortem):* gold today is **thin + flat** — ~20 learnings/3 patterns/59
+- *Reality (premortem):* gold today is **thin + flat** — ~20 learnings/3 patterns/59
   findings, **every doc Utility 0.35 (the default prior)**; reward has never propagated
   into gold. So S2's "verified citation raises half-life" needs **S1 to have driven ≥1
   non-default utility into gold first** (explicit DAG edge S1→S2).
@@ -94,7 +94,7 @@ the rest deepen it. Each slice ships behind a flag, additive, gates-green.
 - On a gate-passed outcome, a **CriticSearch-style cross-family retrospective critic**
   (`codex exec`/AGY) scores which cited trail was *load-bearing* vs. *merely present*;
   the marginal score feeds the **S1 deposit chokepoint** (already gate-locked).
-- *Cost de-risk (pre-mortem):* the critic per gate-pass is a real quota/latency sink and
+- *Cost de-risk (premortem):* the critic per gate-pass is a real quota/latency sink and
   its ~80% agreement is benchmark-not-our-trajectories. So: **run it on a sampled
   subset**, and **prove on the S0 holdout that hindsight-credit beats the cheap
   co-presence prior (equal credit to all cited trails) BEFORE paying for it fleet-wide.**
@@ -131,7 +131,7 @@ reuse: `ao lookup --gold` (shipped), `citations.jsonl`/`feedback.jsonl`,
 
 ## decision
 Slice S1-first because the failure is **cold-start, not the reward rule** — and the
-pre-mortem sharpened *what* the cold-start is: retrieval IS happening (3,739 citations /
+premortem sharpened *what* the cold-start is: retrieval IS happening (3,739 citations /
 209 sessions, ongoing) but **against the raw `.agents/` corpus, not gold, and reward
 never flows back into gold** (every gold doc sits at the 0.35 default prior). So S1's
 real job is narrower and clearer: route the pull at *gold* and let reward reach gold.
@@ -152,14 +152,14 @@ On PASS-WITH-CHANGES (applied) → operationalize **S0 + S1** into agentops `br`
 (coordinated with the active lane; NOT the contended mt-olympus tracker) and
 `/rpi --from=implementation`. S2–S5 follow; S6 is a separate epic.
 
-## pre-mortem verdict (fresh-context, 2026-06-16): PASS-WITH-CHANGES — all applied
+## Premortem verdict (fresh-context, 2026-06-16): PASS-WITH-CHANGES — all applied
 Re-baseline (verified against agentops, not assumed):
 - `ao lookup --gold`: **CONFIRMED** (commit a04b6d51f) — but the resident `cli/ao`
   binary predates the flag → **rebuild preflight required** (folded into S1).
 - reward→maturity machinery (`feedback.go`, `ratchet/maturity.go`): **CONFIRMED, complete.**
 - gold corpus: **CONFIRMED but thin + flat** (~20/3/59 docs, all Utility 0.35 default —
   reward never propagated to gold) → S1→S2 DAG edge added.
-- "pre-mortem already does mandatory retrieval": **OVERSTATED** — it's fail-open
+- "premortem already does mandatory retrieval": **OVERSTATED** — it's fail-open
   best-effort and hits raw `.agents/`, not `--gold` → S1 corrected to net-new.
 - holdout battery as the promotion gate: **WRONG for this purpose** (4 scenarios, about
   planning not knowledge-reuse, in mt-olympus not agentops) → **S0 added** to author

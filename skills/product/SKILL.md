@@ -30,7 +30,7 @@ output_contract: PRODUCT.md
 
 > **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability into testable behaviors (the S2 handoff into the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this)).
 
-> **Purpose:** Guide the user through creating a `PRODUCT.md` that unlocks product-aware reviews in `/pre-mortem` and `/validate`, including the default quick-mode inline paths.
+> **Purpose:** Guide the user through creating a `PRODUCT.md` that unlocks product-aware reviews in `/premortem` and `/validate`, including the default quick-mode inline paths.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -40,7 +40,7 @@ output_contract: PRODUCT.md
 
 - **Preserve user authority over the product claim.** Never overwrite an existing `PRODUCT.md` without the user's explicit choice, because product intent cannot be inferred safely from repository text alone.
 - **Separate evidence from aspiration.** Label unmeasured claims and pre-traction assumptions honestly, because this file governs downstream scope and review judgment.
-- **Keep gaps and alternatives honest.** Record where competitors win and what remains broken, because marketing-only framing makes `/discovery`, `/pre-mortem`, and `/validate` optimize against fiction.
+- **Keep gaps and alternatives honest.** Record where competitors win and what remains broken, because marketing-only framing makes `/discovery`, `/premortem`, and `/validate` optimize against fiction.
 - **Consult the pawl before raising the andon.** A plain WARN, FAIL, or REFUTED result repairs and reruns automatically; only a breaker may enter HOLD or consume the one-helper lane.
 
 ## Breaker State Machine
@@ -189,10 +189,10 @@ Tell the user:
 
 1. **What was created:** `PRODUCT.md` at `{path}`
 2. **What it unlocks:**
-   - `/pre-mortem` will now load product context by default, including in `--quick` mode; deeper modes add a dedicated product perspective
+   - `/premortem` will now load product context by default, including in `--quick` mode; deeper modes add a dedicated product perspective
    - `/validate` will now load developer-experience context by default, including in `--quick` mode; deeper modes add a dedicated DX perspective
    - `/council --preset=product` and `/council --preset=developer-experience` are available on demand
-3. **Next steps:** Suggest running `/pre-mortem` on their next plan to see product perspectives in action
+3. **Next steps:** Suggest running `/premortem` on their next plan to see product perspectives in action
 
 ## Output Specification
 
@@ -200,7 +200,7 @@ Tell the user:
 - **Filename convention:** `PRODUCT.md`.
 - **Serialization/schema format:** Markdown with a closed leading YAML frontmatter block containing exactly one valid `last_reviewed`, followed by the canonical body section order in [references/product-frameworks.md](references/product-frameworks.md#canonical-productmd-template).
 - **Validator command:** resolve the target once, then run `bash skills/product/scripts/validate.sh --artifact "<target-dir>/PRODUCT.md"`; never fall back to `./PRODUCT.md`.
-- **Downstream handoff:** after validation, hand the same resolved `<target-dir>/PRODUCT.md` to `/discovery`, `/pre-mortem`, and `/validate`. Plain rejection returns here for AUTO-REDO; only the breaker state machine may enter HOLD or HUMAN.
+- **Downstream handoff:** after validation, hand the same resolved `<target-dir>/PRODUCT.md` to `/discovery`, `/premortem`, and `/validate`. Plain rejection returns here for AUTO-REDO; only the breaker state machine may enter HOLD or HUMAN.
 
 ## Quality Checklist
 

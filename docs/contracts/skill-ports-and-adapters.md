@@ -52,7 +52,7 @@ carry context without dragging the whole session forward.
 | Execution packet | Runnable packet for downstream lifecycle phases | Discovery, Plan | Crank, Validation, RPI |
 | Acceptance criteria | Testable BDD/TDD completion contract | Discovery, Plan, Beads | Implement, Crank, Validation |
 | Verdict | PASS/WARN/FAIL judgment with evidence | Validate, Validation, Council, Vibe | Beads, Release, Ratchet |
-| Learning | Durable behavior change candidate | Retro, Forge, Post-mortem | Compile, Flywheel, future skills |
+| Learning | Durable behavior change candidate | Retro, Forge, Postmortem | Compile, Flywheel, future skills |
 | Finding | Indexed evidence or risk record | Research, Bug-hunt, Council | Plan, Validation, Context assembly |
 | Handoff | Compact session continuity packet | Handoff, Recover, RPI | Next operator or agent session |
 
@@ -73,7 +73,7 @@ table as the short contract when editing skills:
 | `execute_slice` | `/implement` | Commit-ready slice result and proof output | `validate_acceptance` |
 | `execute_wave` | `/crank`, `/swarm`, `/evolve` | Wave result, worker evidence, phase handoff | `validate_acceptance` |
 | `validate_acceptance` | `/validation`, `/validate`, `/vibe`, `/scenario`, `/goals` | Criterion verdicts and acceptance roll-up | `record_evidence` |
-| `record_evidence` | `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | Ratchet entry, learning disposition, residual gaps | `steer_goal` |
+| `record_evidence` | `/ratchet`, `/postmortem`, `/retro`, `/curate --mode=forge` | Ratchet entry, learning disposition, residual gaps | `steer_goal` |
 | `steer_goal` | `/goals`, `/flywheel`, `/harvest`, `/dream` | Updated directive, learning, or next-work packet | `shape_intent` |
 
 Every non-trivial boundary artifact should name its inbound port, bounded
@@ -141,7 +141,7 @@ language.
 ```gherkin
 Feature: Discovery creates a dense packet
   Scenario: Discovery delegates child research
-    Given an operator goal and child artifacts from research, design, plan, and pre-mortem
+    Given an operator goal and child artifacts from research, design, plan, and premortem
     When Discovery crosses the planning boundary
     Then the inbound port is `shape_intent`
     And the outbound ports include `research_facts`, `plan_slices`, and `stress_test_plan`
@@ -153,7 +153,7 @@ Feature: Discovery creates a dense packet
 | Inbound port | `shape_intent` from an operator goal |
 | Driving adapter | `/discovery` skill invocation |
 | Outbound ports | `research_facts`, `plan_slices`, `stress_test_plan`, `persist_issue` |
-| Driven adapters | `/research`, `/plan`, `/pre-mortem`, `br`, `.agents/plans` |
+| Driven adapters | `/research`, `/plan`, `/premortem`, `br`, `.agents/plans` |
 | Context packet | `.agents/rpi/execution-packet.json` plus phase summary |
 
 ### Plan

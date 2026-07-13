@@ -1,12 +1,12 @@
 # Teardown Procedure
 
-**Auto-run /post-mortem on the full evolution session:**
+**Auto-run /postmortem on the full evolution session:**
 
 ```
-/post-mortem "evolve session: $CYCLE cycles, goals improved: X, harvested: Y"
+/postmortem "evolve session: $CYCLE cycles, goals improved: X, harvested: Y"
 ```
 
-This captures learnings from the ENTIRE evolution run (all cycles, all /rpi invocations) in one council review. The post-mortem harvests follow-up items into `next-work.jsonl`, feeding the next `/evolve` session.
+This captures learnings from the ENTIRE evolution run (all cycles, all /rpi invocations) in one council review. The postmortem harvests follow-up items into `next-work.jsonl`, feeding the next `/evolve` session.
 
 **Compute session fitness trajectory:**
 
@@ -84,8 +84,8 @@ $(cat .agents/evolve/cycle-history.jsonl)
 ## Final Fitness
 $(cat .agents/evolve/fitness-latest.json)
 
-## Post-Mortem
-<path to post-mortem report from above>
+## Postmortem
+<path to postmortem report from above>
 
 ## Next Steps
 - Run \`/evolve\` again to continue improving
@@ -103,7 +103,7 @@ Cycles: N of M
 Goals improved: X
 Goals regressed: Y (reverted)
 Goals unchanged: Z
-Post-mortem: <verdict> (see <report-path>)
+Postmortem: <verdict> (see <report-path>)
 
 Run `/evolve` again to continue improving.
 ```

@@ -47,7 +47,7 @@ rationalizations to reject:
 
 ### Premortem Anti-Rationalization Clause
 
-The following do **NOT** count as a pre-mortem and **MUST NOT** be used to skip
+The following do **NOT** count as a premortem and **MUST NOT** be used to skip
 the delegated `/premortem` pass:
 
 1. **An inline risk or "honest risk" section the author wrote.** The author's
@@ -59,14 +59,14 @@ the delegated `/premortem` pass:
    that premise. Different artifact, different failure modes.
 3. **"A related council already ran."** A council on a sibling plan, a prior
    version of the plan, or a different artifact in the same epic does not
-   transfer. Pre-mortem is plan-specific.
+   transfer. Premortem is plan-specific.
 
 **Premortem = DELEGATED + INDEPENDENT (author ≠ reviewer) + fresh-context on
 THIS plan.** All three conditions must hold. An inline section satisfies none;
 a prior-premise adversarial pass satisfies at most one (independent) but not
 the other two (not this plan, not delegated).
 
-All of these are contract violations. A live compression was observed 2026-04-19 (see [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md)). The compression "worked" mechanically (strict build passed, 2-judge inline vibe PASSed) but the knowledge flywheel never turned — no forged learnings, no post-mortem artifact, no structured council verdict. Contract strength depends on actual `Skill()` invocations, not self-certification.
+All of these are contract violations. A live compression was observed 2026-04-19 (see [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md)). The compression "worked" mechanically (strict build passed, 2-judge inline vibe PASSed) but the knowledge flywheel never turned — no forged learnings, no postmortem artifact, no structured council verdict. Contract strength depends on actual `Skill()` invocations, not self-certification.
 
 ## `Agent()` vs `Skill()`
 
@@ -102,7 +102,7 @@ These flags scale *gate depth* or *scope*, **never skip phases**. They are the o
 - `--no-scaffold` — skip STEP 4.5 scaffold auto-invocation (canonical name; `--no-lifecycle` is a deprecated alias through v2.40.0)
 
 ### `/validate`
-- `--quick` — fast inline gates inside sub-skills (vibe, post-mortem)
+- `--quick` — fast inline gates inside sub-skills (vibe, postmortem)
 - `--no-retro` / `--no-forge` — skip specific sub-skills
 - `--no-lifecycle` — skip STEP 1.7 lifecycle checks (test, deps, review, perf)
 - `--no-behavioral` — skip STEP 1.8 holdout scenarios

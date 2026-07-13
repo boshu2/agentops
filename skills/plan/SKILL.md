@@ -109,7 +109,7 @@ into acceptance; carry non-goals, rollback, and hard rules into boundaries.
     keep the markdown plan as the durable handoff.
 12. **Approve and report.** Unless `--auto`, request approval before declaring
     completion. Report plan path, issue count/IDs, waves, and next route through
-    `/pre-mortem` then `/crank`. Record `ao ratchet record plan` when available.
+    `/premortem` then `/crank`. Record `ao ratchet record plan` when available.
 
 ## Required Plan Sections
 
@@ -135,7 +135,7 @@ references below; load only the modules required by the selected complexity.
   YAML `acceptance_criteria`, issue IDs, dependency edges, and file matrices.
 - **Validation command:** run `bash skills/plan/scripts/validate.sh`, relevant
   scenario/validation admission checks, and verify every cited symbol/path.
-- **Downstream handoff:** consumed by `/pre-mortem`, `/crank`, `/implement`, and
+- **Downstream handoff:** consumed by `/premortem`, `/crank`, `/implement`, and
   future agents without relying on chat-only context.
 
 Report:
@@ -146,7 +146,7 @@ Issues: <count and IDs>
 Waves: <ordered groups or sequential>
 Validation: <PASS|WARN|FAIL with commands>
 Assumptions: <verified facts and unresolved risks>
-Next: </pre-mortem, /crank, or revision>
+Next: </premortem, /crank, or revision>
 ```
 
 ## Quality Rubric

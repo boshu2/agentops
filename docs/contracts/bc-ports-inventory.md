@@ -49,7 +49,7 @@ factory/front-door and orchestration beads.
 |---|---|---|
 | `CorpusReaderPort` | `corpus_reader.go` | Decay-ranked retrieval (Lookup) |
 | `CorpusWriterPort` | `corpus_writer.go` | Typed capture (Capture, idempotent) |
-| `FindingCompilerPort` | `finding_compiler.go` | Promote finding → plan/pre-mortem/constraint outputs |
+| `FindingCompilerPort` | `finding_compiler.go` | Promote finding → plan/premortem/constraint outputs |
 | `CitationPort` | `citation.go` | Verify per-citation freshness against HEAD |
 | `ContextCompilerPort` | `context_compiler.go` | Assemble bounded phase context explicitly, replacing startup/prompt context hooks |
 

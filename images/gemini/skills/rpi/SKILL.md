@@ -100,7 +100,7 @@ RPI cannot rely on memory or a final narrative to prove delegated skills ran. Ev
 
 1. Create `.agents/rpi/`.
 2. Resolve `--from`:
-   - default, `research`, `plan`, `pre-mortem`, `brainstorm` -> discovery
+   - default, `research`, `plan`, `premortem`, `brainstorm` -> discovery
    - `implementation` or `crank` -> implementation
    - `validation` or `vibe` -> validation
    - `learn` or `postmortem` -> learn

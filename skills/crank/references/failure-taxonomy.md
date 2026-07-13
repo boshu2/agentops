@@ -389,7 +389,7 @@ bd list --parent=<epic> --has-label=WAITING_EXTERNAL
 # (requires custom tooling or log analysis)
 
 # Feed into retrospective
-/post-mortem --topic="crank failures on <epic>"
+/postmortem --topic="crank failures on <epic>"
 ```
 
 ## Prevention Strategies

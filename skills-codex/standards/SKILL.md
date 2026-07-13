@@ -40,16 +40,16 @@ references that other skills load based on file types being processed.
 | YAML | `references/yaml.md` | validate |
 | JSON | `references/json.md` | validate |
 | Markdown | `references/markdown.md` | validate, doc |
-| SQL Safety | `references/sql-safety-checklist.md` | validate, pre-mortem (when DB code detected) |
-| LLM Trust Boundaries | `references/llm-trust-boundary-checklist.md` | validate, pre-mortem (when LLM code detected) |
-| Race Conditions | `references/race-condition-checklist.md` | validate, pre-mortem (when concurrent code detected) |
+| SQL Safety | `references/sql-safety-checklist.md` | validate, premortem (when DB code detected) |
+| LLM Trust Boundaries | `references/llm-trust-boundary-checklist.md` | validate, premortem (when LLM code detected) |
+| Race Conditions | `references/race-condition-checklist.md` | validate, premortem (when concurrent code detected) |
 | Codex Skills | `references/codex-skill.md` | validate (when `skills-codex/` or converter files detected) |
-| Behavioral Discipline | `references/behavioral-discipline.md` | implement, review, validate, pre-mortem |
-| Test Pyramid | `references/test-pyramid.md` | plan, pre-mortem, implement, crank, validation, post-mortem |
+| Behavioral Discipline | `references/behavioral-discipline.md` | implement, review, validate, premortem |
+| Test Pyramid | `references/test-pyramid.md` | plan, premortem, implement, crank, validation, postmortem |
 | SKILL.md Tier-Caps | `references/skill-tier-caps.md` | validate (skill line-cap audits), doc, plan |
 | External-Source Attribution | `references/external-source-attribution.md` | doc (when absorbing external corpora), heal-skill |
-| Migration-Owner Discipline | `references/migration-owner.md` | implement, plan, review, pre-mortem (when writing a breaking migration / retirement / `--fix`) |
-| Agentic-Workflow Evidence | [references/agentic-workflow-evidence.md](references/agentic-workflow-evidence.md) | plan, implement, review, pre-mortem (empirical basis — Finster 2026 — for the workflow discipline) |
+| Migration-Owner Discipline | `references/migration-owner.md` | implement, plan, review, premortem (when writing a breaking migration / retirement / `--fix`) |
+| Agentic-Workflow Evidence | [references/agentic-workflow-evidence.md](references/agentic-workflow-evidence.md) | plan, implement, review, premortem (empirical basis — Finster 2026 — for the workflow discipline) |
 
 ## How It Works
 
@@ -75,7 +75,7 @@ elif file.endswith('.rs'):
 
 ## Domain-Specific Checklists
 
-Specialized checklists for high-risk code patterns. Loaded automatically by `$validate` and `/pre-mortem` when matching code patterns are detected:
+Specialized checklists for high-risk code patterns. Loaded automatically by `$validate` and `$premortem` when matching code patterns are detected:
 
 | Checklist | Trigger Pattern | Risk Area |
 |-----------|----------------|-----------|
@@ -94,6 +94,7 @@ Skills that use standards:
 - `$implement` - Loads for files being modified
 - `/review` - Loads for change-quality and blast-radius checks
 - `$doc` - Loads markdown standards
+- `$postmortem` - Loads for root cause analysis
 - `$refactor` - Loads for refactoring recommendations
 
 ## Output Specification

@@ -36,7 +36,7 @@ The orchestrator then applies the matching transition:
 Re-planning shares the run's circuit breakers — token/time budget, the attempt
 cap, and **oscillation detection** (if the plan flips the same decision back and
 forth across waves, stop and surface it). Honor the autonomous-session scope
-(CLAUDE.md): at ≥5 ships in one session, the post-mortem checkpoint is mandatory
+(CLAUDE.md): at ≥5 ships in one session, the postmortem checkpoint is mandatory
 and may itself end the session. The operator is touched only at the terminal
 objective or a breaker trip that survives its bounded helper pass — never just
 to approve a pivot.

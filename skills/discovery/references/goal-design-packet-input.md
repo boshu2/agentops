@@ -4,7 +4,7 @@ Use this when `/discovery` receives `.agents/goal-design/<slug>` or any director
 containing `intent.md` and `driver.md`.
 
 1. Run `scripts/check-goal-design-packet.sh <packet-dir>` before any research,
-   planning, or pre-mortem work. A failing checker blocks Discovery.
+   planning, or premortem work. A failing checker blocks Discovery.
 2. Extract `intent.objective`, `why_it_matters`, `boundaries`, `bdd.scenarios`,
    `evidence_for_done`, and `hard_rules` into the six density fields.
 3. Use `driver.candidate_beads[]` as candidate slice seeds for `/plan`.

@@ -15,7 +15,7 @@ Plans assume correctness through convention rather than enforcement.
 - Configuration boundaries have no consistency assertion
 - Retry/fallback paths silently diverge from primary paths
 
-**Pre-mortem check:** For each issue, can I run a command that returns 0 (pass) or non-zero (fail)? If not, the acceptance criteria are incomplete.
+**Premortem check:** For each issue, can I run a command that returns 0 (pass) or non-zero (fail)? If not, the acceptance criteria are incomplete.
 
 **Example:** ArgoCD CMP timeout mismatch — three layers (CMP, repo-server, application) with independent timeouts. No test verified alignment. Cache poisoning was invisible for weeks.
 
@@ -31,7 +31,7 @@ Workers or agents declare their own work complete without independent validation
 - Unit tests pass but no integration/E2E coverage
 - Manual QA as the sole acceptance gate
 
-**Pre-mortem check:** Is there a validation step performed by a different agent, tool, or process than the implementer?
+**Premortem check:** Is there a validation step performed by a different agent, tool, or process than the implementer?
 
 **Example:** Unit tests found zero production bugs across all analyzed sessions. L3+ tests (integration, E2E) found all real bugs. Self-grading is confirmation bias.
 
@@ -47,7 +47,7 @@ Long sessions or compacted contexts produce incorrect assumptions treated as fac
 - Multi-phase work in a single session (research -> plan -> implement)
 - Learnings or references not verified against current code
 
-**Pre-mortem check:** Does the plan enforce fresh sessions at phase boundaries? Are knowledge artifacts verified before citation?
+**Premortem check:** Does the plan enforce fresh sessions at phase boundaries? Are knowledge artifacts verified before citation?
 
 **Example:** 7 hallucination-contaminated learning files found after a TDD sprint — forensic retro caught 23% baseline hallucination rate.
 
@@ -63,7 +63,7 @@ Changes to shared abstractions (namespaces, directories, CLI surfaces) miss down
 - CLI flag changes without regenerating docs
 - Skill directory changes without syncing counts
 
-**Pre-mortem check:** For each structural change, is the full propagation surface enumerated? (Go source, tests, hooks, skills, docs, scripts, CI)
+**Premortem check:** For each structural change, is the full propagation surface enumerated? (Go source, tests, hooks, skills, docs, scripts, CI)
 
 **Contract-atomic namespace/refactor gate:** If the plan renames or flattens a
 CLI namespace, skill path, schema field, artifact directory, or other shared
@@ -87,7 +87,7 @@ Direction reverses mid-execution, doubling the mechanical cost of propagation.
 - Architecture decisions reconsidered after propagation work begins
 - Multiple pivots without shipping code between them (pivot-heavy, zero-code delivery)
 
-**Pre-mortem check:** Has the architectural direction been validated (via council or user confirmation) BEFORE propagation work begins?
+**Premortem check:** Has the architectural direction been validated (via council or user confirmation) BEFORE propagation work begins?
 
 **Example:** Namespace flattening reversed a prior namespace creation — opposite direction, double the file changes, identical propagation surface.
 
@@ -103,7 +103,7 @@ Plan provisions infrastructure (VMs, clusters, services) without activation test
 - Infrastructure created in earlier waves but first used in much later waves
 - No readiness probe or traffic test in acceptance criteria
 
-**Pre-mortem check:** For every provisioned resource, is there an activation/smoke test issue that proves it handles real traffic?
+**Premortem check:** For every provisioned resource, is there an activation/smoke test issue that proves it handles real traffic?
 
 **Example:** Bootstrap cluster provisioned but never validated under load — DNS and NIC mismatches only discovered during first real workload, causing multi-day debugging. *(Source: bootstrap-idempotent-design, core-hardening-postmortem)*
 
@@ -119,7 +119,7 @@ Plan modifies production state (deployments, configs, data migrations) without s
 - Config changes without a "revert to previous" step
 - Deployment plans without a rescue/rollback section
 
-**Pre-mortem check:** Does every production-state change have a documented rollback procedure? Can you undo each step independently?
+**Premortem check:** Does every production-state change have a documented rollback procedure? Can you undo each step independently?
 
 **Example:** Velero backup configuration deployed without specifying how to restore previous state if the new config broke DR workflows. *(Source: uds-velero-dr-session, zero-context-smoke-testing)*
 
@@ -135,7 +135,7 @@ Implementation covers code but skips docs, examples, or proof surfaces. Incomple
 - Missing proof artifacts (test results, benchmark data, demo output)
 - "Will update docs later" in issue descriptions
 
-**Pre-mortem check:** Does the plan address all 4 surfaces (Code, Docs, Examples, Proof) for every feature? Are doc/example/proof tasks explicitly tracked?
+**Premortem check:** Does the plan address all 4 surfaces (Code, Docs, Examples, Proof) for every feature? Are doc/example/proof tasks explicitly tracked?
 
 **Example:** CLI namespace restructuring shipped code changes but skipped doc regeneration and example updates — downstream users hit stale references for weeks. *(Source: four-surface-closure pattern, repo-history-retro)*
 

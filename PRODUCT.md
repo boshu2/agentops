@@ -12,13 +12,31 @@ last_reviewed: 2026-06-14
 
 > **Proven vs still-measuring.** The canonical honesty block is in the [README](README.md#the-honest-version), and every surface points to it. **Proven:** independent verification that records a verdict, plus a durable, tamper-evident record of it — no verdict, not done. **Still measuring:** whether the accumulated corpus makes the next session measurably better; not claimed until the numbers say so ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)).
 
-## One self-contained factory; the gate is the in-repo floor
+## One self-contained factory; independent verification is the floor
 
-AgentOps is the one self-contained software factory: it researches, plans, validates the plan, implements, and proves work end-to-end, and it carries its own **acceptance gate in-repo**. The gate is the **ratchet pawl-gate** — `docs/contracts/pawls.md` + `scripts/pawl-verdict.sh` + `scripts/reconcile-pr.sh`. At the merge pawl (the one-way door) work reaches *accepted* only through a fresh-context reviewer whose `context_id ≠ author` (model-agnostic by default; ≥2 distinct model families opt-in per pawl), with a verdict that is **evidence-bound and commit-bound** (`head_sha`) and **enforced fail-closed** (no CONFIRMED verdict → HOLD; green CI alone cannot merge), plus auto-redo on REFUTED and circuit-breaker escalation to a human only when a tunable breaker trips. The trust is the **separation of duties**: a stochastic worker never approves its own work, and the author cannot choose, brief, or transcribe its own reviewer. The destination (*autonomous goal → verified done*) lives in [GOALS.md](GOALS.md).
+AgentOps is the one self-contained software factory for producing and judging
+agent work. Four umbrellas keep the roles explicit: Discovery shapes behavior,
+Crank executes small slices, Validate gives each completed slice to a fresh
+context that did not create it, and Learn routes evidence into the next
+experiment. A single fresh sub-agent is the default independent judge;
+cross-family councils are an optional higher-rigor strategy. The verdict binds
+to the acceptance behavior and evidence, and the provenance ledger preserves
+it. **No verdict = not done.**
 
-> **There is no separate Mount Olympus product or daemon in the running factory.** The gate is in-repo policy at the pawl, not an external `olympusd` service consuming claims. "Mount Olympus" survives in two reduced forms: (1) **lineage** — the typed-loop, explicit-ratchet-rules work (2026) the pawl-gate descends from; and (2) an optional **high-assurance Linux build** — a binding daemon with OS-account / peercred isolation, for *adversarial multi-tenant* deployments where a hostile worker might forge its own approval. That threat model does not apply to a single operator running their own factory, so the daemon is **parked until earned at scale**; the in-repo pawl-gate is the gate for everyone else.
+Validation is deliberately independent from Git delivery. AgentOps does not
+decide whether a repository uses direct pushes, PRs, merge queues, hosted CI,
+or a custom release pipeline. The `ao` CLI supplies deterministic checks and
+optional delivery adapters; those adapters never define domain completion.
+The older Pawl/landing machinery remains an optional high-assurance adapter and
+lineage surface, not the universal route through Validate.
 
-**The gate is table stakes, not the moat.** Binding cross-vendor pre-merge review with non-author override is *already shipped commercially* — CodeRabbit, Qodo, and GitHub Copilot Code Review all gate merges on independent, often cross-model review (adversarial siege, 2026-06-14). So the fail-closed cross-family gate is the **correctness floor a serious factory needs**, not a differentiator. What AgentOps positions on is **proven**: the membrane verifies independently and the provenance ledger records the verdict — no verdict, not done — and that record is **sovereign**, staying in your repo across any model or vendor. The membrane's *self-improvement from an escape-corpus* is a named, unproven hypothesis still being measured ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)), not the moat; the earlier corpus-delta bet was measured and did **not** hold at frontier altitude ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)). The differentiator is sovereignty.
+**Independent verification is table stakes, not the moat.** What AgentOps
+positions on is the sovereign proof record: the membrane verifies independently
+and the provenance ledger records the verdict in the operator's repo across any
+model or vendor. The membrane's self-improvement from an escape corpus and the
+broader corpus-delta bet remain measured hypotheses, not product claims
+([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md),
+[ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)).
 
 ## Product Identity
 
@@ -29,7 +47,7 @@ It gives agents the shared practices humans use to build complex software togeth
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-It is not a packet generator. Packets are one artifact. The public wedge is **autonomous code validation**; the SDLC control-plane shape and the **Context Development Life Cycle (CDLC)** are the mechanism that make validation repeatable. CDLC is the DevSecOps SDLC translated to context, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, and planner/implementer/validator separation. Software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and CI/substrate adapters. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validate` runs validator agents that have not seen the code. The four layers — validation membrane, evidence trail, context compilation, and knowledge ratchet — are the public product model. Scheduled or unattended compounding belongs to an orchestration substrate.
+It is not a packet generator. Packets are one artifact. The public wedge is **autonomous code validation**; the SDLC control-plane shape and the **Context Development Life Cycle (CDLC)** are the mechanism that make validation repeatable. CDLC is the DevSecOps SDLC translated to context, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, and planner/implementer/validator separation. Software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, checks, standards, artifacts, and CI/substrate adapters. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validate` runs validator agents that have not seen the code, and `/learn` returns evidence-bound plan impact to the orchestrator. The four layers — validation membrane, evidence trail, context compilation, and knowledge ratchet — are the public product model. Scheduled or unattended compounding belongs to an orchestration substrate.
 
 One factory, two AgentOps operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode) and the **`ao` CLI** (terminal/CI control plane). Out-of-session orchestration is delegated to the substrate boundary (reference: NTM + MCP + managed-agents). AgentOps owns **execution packets, explicit gates, skills, and corpus compounding**; it does not ship a daemon, scheduler, or default hook layer.
 
@@ -116,7 +134,7 @@ The labs will ship native versions of memory, councils, and dreaming; your recor
 
 1. **Repo-local memory for agent work.** Attempts, decisions, citations, verdicts, handoffs, findings, retros, and run packets become artifacts the next session can use.
 2. **Context starts warm.** AgentOps compiles prior work into phase-scoped context instead of asking every agent to rediscover the repo from scratch.
-3. **Judgment becomes a gate.** `/pre-mortem`, `/vibe`, and `/council` add fresh-context review before risky plans and code ship.
+3. **Judgment becomes a gate.** `/premortem`, `/vibe`, and `/council` add fresh-context review before risky plans and code ship.
 4. **Engineering practice becomes executable.** Pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, and product-management practices become reusable skills, standards, gates, issue flows, and acceptance proofs the operator can jump into, automate, or review.
 5. **Learning compounds under operator control.** `/forge`, `ao flywheel`, and substrate-run maintenance turn completed work into reusable constraints without requiring an AgentOps cloud.
 6. **The corpus stays portable.** The same local knowledge base can outlive a model, chat session, harness, or vendor.
@@ -172,10 +190,10 @@ Two layers are proven and carry the product: validation gates enforce judgment, 
 
 **Problem:** Agents do not keep their own operational memory. They forget what they tried, why they changed course, which warnings mattered, what passed validation, and what should be reused next time.
 
-**What the compiler emits:** File-backed traces of agent work: attempts, decisions, citations, handoffs, findings, retros, post-mortems, council verdicts, and run packets. This is the raw material for context compilation and compounding.
+**What the compiler emits:** File-backed traces of agent work: attempts, decisions, citations, handoffs, findings, retros, postmortems, council verdicts, and run packets. This is the raw material for context compilation and compounding.
 
 - `.agents/` — repo-local bookkeeping substrate
-- `/post-mortem --quick` and `/post-mortem` — capture decisions, lessons, and follow-up work
+- `/postmortem --quick` and `/postmortem` — capture decisions, lessons, and follow-up work
 - `/provenance` and `/trace` — connect artifacts back to their source
 - `ao metrics cite` and citation logs — record what knowledge was used
 - RPI packets and council verdicts — preserve plan/build/validation evidence
@@ -199,7 +217,7 @@ Two layers are proven and carry the product: validation gates enforce judgment, 
 
 **What the compiler emits:** Multi-model consensus validates plans before build and code before commit. Gates block, not advise. Independent judges debate against the same product/domain context and return one auditable verdict.
 
-- `/pre-mortem` — validate plans before implementation
+- `/premortem` — validate plans before implementation
 - `/vibe` — validate code after implementation
 - `/council` — multi-model adversarial review (Claude + Codex judges) over agreed product, goals, standards, and issue context
 - 63 eval suites + 12-task workbench — deterministic context quality testing
@@ -245,7 +263,7 @@ The CDLC is not a packet pipeline. It is the operating discipline that ensures e
 
 The bet is **sovereignty, not features.** Every harness — ours included — gets absorbed into the model. Memory primitives, learning loops, validation gates: frontier vendors will ship them natively. What they won't ship is *your* corpus — what your repo learned, what your team scarred, what your codebase decided.
 
-**Position on the ruler, not the gate.** The fail-closed cross-family gate is table stakes — binding cross-vendor pre-merge review with non-author override already ships (CodeRabbit, Qodo, Copilot). It is a necessary correctness floor, not a wedge, and the messaging does not lean on it. The only *candidate* moat is the **corpus delta**: does the compounding `.agents/` corpus measurably improve agent output versus the same models with no corpus? That is **unproven** — the one A/B on record (ADR-0002, Δ=0) was a hook-layer test, not a corpus A/B, and the corpus delta itself (`ag-8p8o`) is still being measured. So the moat is a *hypothesis gated on a ruler*, not a claim; the load-bearing work is building that ruler. **Fungible dispatch** — identical generalist workers, any-agent-any-bead, mixed families coordinated through the durable board rather than a shared context window — is the *mechanism* that makes the cheap cross-family gate, disposable-context management, and vendor-cost arbitrage possible; it is not itself the moat. The durable, non-quality differentiator is **sovereignty**: the corpus stays in your repo and outlives any model, harness, or vendor.
+**Position on the ruler, not the gate.** Independent fresh-context verification is table stakes. Cross-family review is an optional rigor tier, and merge control belongs to the repository rather than the membrane. The only *candidate* quality moat is the **corpus delta**: does the compounding `.agents/` corpus measurably improve agent output versus the same models with no corpus? That is **unproven** — the one A/B on record (ADR-0002, Δ=0) was a hook-layer test, not a corpus A/B, and the corpus delta itself (`ag-8p8o`) is still being measured. So the moat is a *hypothesis gated on a ruler*, not a claim; the load-bearing work is building that ruler. **Fungible dispatch** — identical generalist workers, any-agent-any-bead, mixed families coordinated through the durable board rather than a shared context window — supports disposable-context management and vendor-cost arbitrage; it is not itself the moat. The durable, non-quality differentiator is **sovereignty**: the corpus stays in your repo and outlives any model, harness, or vendor.
 
 **When Anthropic ships native scheduling, councils, Skillify, and Dreaming inside Claude Code in the next 6 months, what specifically does AgentOps still do?** The honest answer:
 
@@ -264,8 +282,8 @@ Full profile: [docs/assurance-profile.md](docs/assurance-profile.md).
 
 - **Local-first control.** The corpus lives in `.agents/` beside the code. AgentOps requires no product telemetry, and operators choose which model runtimes, networks, and subscriptions touch the repo.
 - **Context as a boundary.** Research, planning, implementation, and validation receive different context. Workers get fresh windows. Validators get evidence packets instead of the implementer's accumulated chat.
-- **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, post-mortems, handoffs, and substrate/job outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
-- **Policy gates over advice.** Pre-push checks, CI gates, security scans, goal fitness gates, and pre-mortems encode process as executable constraints instead of relying on the agent to remember a runbook.
+- **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, postmortems, handoffs, and substrate/job outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
+- **Policy gates over advice.** Pre-push checks, CI gates, security scans, goal fitness gates, and premortems encode process as executable constraints instead of relying on the agent to remember a runbook.
 - **Variable autonomy.** The same factory can run interactive, supervised, or substrate-scheduled loops. High-risk environments can keep humans in the loop for planning, validation, release, and promotion while still using agents for bounded work.
 - **Constrained-network fit.** The design favors repo-local state, explicit artifacts, no required cloud control plane, and operator-owned or substrate-owned scheduling. Formal deployment into classified, export-controlled, or safety-critical environments still requires the local authority's security controls, model approvals, supply-chain process, and accreditation work.
 
@@ -277,7 +295,7 @@ As of 2026-05-10:
 
 - GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 63 shared skills, 62 checked-in Codex artifacts, and 13 Codex overrides. `/validate` owns validation, `/post-mortem` owns session mining, and retired names resolve only through the disposition ledger.
+- Distribution/runtime reach: 63 shared skills, 62 checked-in Codex artifacts, and 13 Codex overrides. `/validate` owns validation, `/postmortem` owns session mining, and retired names resolve only through the disposition ledger.
 
 **Measured operational proof:**
 
@@ -319,7 +337,7 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 | High-assurance profile needs deeper control mapping | The initial [assurance profile](docs/assurance-profile.md) now documents local-first state, evidence packets, policy gates, telemetry boundaries, autonomy modes, and out-of-scope claims. Remaining work is redaction, evidence export, supply-chain inputs, and program-specific control mapping. | in-progress |
 | Public messaging is still converging | README, PRODUCT.md, GOALS.md, CDLC, the docs landing page, and the one-page brief are being sharpened around autonomous code validation, with SDLC control-plane/CDLC language as the implementation mechanism. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 | **The moat is unproven — corpus delta not yet measured** | The product's only *candidate* moat (does the compounding corpus measurably improve agent output?) has no A/B proof. ADR-0002's Δ=0 was a hook-layer test, not a corpus A/B. Until `ag-8p8o` produces a measured delta on realistic tasks, the moat is a hypothesis — public quality/moat claims stay gated on it. This is the single highest-leverage gap: the ruler is the product. | open (`ag-8p8o`) |
-| **The cross-family gate is table stakes, not a differentiator** | Binding cross-vendor pre-merge review with non-author override already ships commercially (CodeRabbit, Qodo, Copilot — adversarial siege 2026-06-14). The in-repo pawl-gate is a necessary correctness floor; messaging must not position on it as a wedge. | acknowledged |
+| **Independent verification is table stakes, not a differentiator** | Fresh-context review already ships commercially. AgentOps positions on acceptance-bound sovereign proof, not on controlling the repository's merge path. | acknowledged |
 
 ## Lineage and design principles
 
@@ -329,7 +347,7 @@ The systems-theory lineage (Knowledge OS → Olympus → AgentOps → Mt. Olympu
 
 This file enables product-aware council reviews:
 
-- **`/pre-mortem`** — Automatically loads product context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `product` perspective alongside plan-review judges.
+- **`/premortem`** — Automatically loads product context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `product` perspective alongside plan-review judges.
 - **`/vibe`** — Automatically loads developer-experience context when this file exists. Default `--quick` mode includes the context inline; deeper modes add a dedicated `developer-experience` perspective alongside code-review judges.
 - **`/council --preset=product`** — Run product review on demand.
 - **`/council --preset=developer-experience`** — Run DX review on demand.

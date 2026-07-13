@@ -47,6 +47,7 @@ func TestRepo_RoundTripPersistsAndLoads(t *testing.T) {
 	ctx := context.Background()
 	runID := "run-001"
 	p := validPacket()
+	p.SchemaVersion = packet.CurrentExecutionPacketSchemaVersion
 
 	if err := r.Save(ctx, runID, p); err != nil {
 		t.Fatalf("Save returned unexpected error: %v", err)

@@ -48,7 +48,7 @@ evidence/skill-prune-recon.md).
 - Reserve council for irreversible decisions; use `validate` for per-slice acceptance so one artifact is not double-gated by overlapping authorities.
 - Keep author and judges distinct and judge lanes read-only because consensus is evidence only when verdicts are independent of production and mutation.
 
-> **Narrow-waist obligations (must hold at the canonical body):** council is the S5 membrane for irreversible **decisions**, not slice-acceptance closes — `/validate` owns the per-slice acceptance verdict, so do not double-gate. Its verdict binds to the slice's BDD/ATDD acceptance test; author ≠ judge; and every REFUTE feeds a lesson into the next loop's `/pre-mortem` checks (S6). See the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this).
+> **Narrow-waist obligations (must hold at the canonical body):** council is the S5 membrane for irreversible **decisions**, not slice-acceptance closes — `/validate` owns the per-slice acceptance verdict, so do not double-gate. Its verdict binds to the slice's BDD/ATDD acceptance test; author ≠ judge; and every REFUTE feeds a lesson into the next loop's `/premortem` checks (S6). See the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this).
 
 ## Absorbed trigger surfaces (skill-prune phase 2)
 

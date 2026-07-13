@@ -12,12 +12,12 @@ delegating via separate `Skill()` calls. This happened live in the
 2026-04-19 MkDocs rebuild session: the agent explicitly chose to compress
 RPI into three direct phases, then never called `Skill(skill="discovery")`,
 `Skill(skill="crank")`, or `Skill(skill="validate")`. Phase 3 validation
-was skipped entirely until the user asked whether post-mortem validation
+was skipped entirely until the user asked whether postmortem validation
 had happened.
 
 The compression passed a strict MkDocs build and an inline two-judge vibe
 review, so it looked mechanically successful. The knowledge flywheel did
-not turn: no forged learnings, no post-mortem artifact, no retro, and no
+not turn: no forged learnings, no postmortem artifact, no retro, and no
 structured council verdict.
 
 ## Detection

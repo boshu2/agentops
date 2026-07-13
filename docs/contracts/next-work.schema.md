@@ -132,7 +132,8 @@ Allowed `kind` values:
 - `evolve-generator`
 - `feature-suggestion`
 - `backlog-processing`
-- `post-mortem-finding`
+- `postmortem-finding` (canonical writer value)
+- `post-mortem-finding` (legacy read alias)
 - `manifest-classification`
 - `dream-degraded`
 

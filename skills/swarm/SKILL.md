@@ -127,7 +127,7 @@ Missing `commit_sha`, `red_evidence`, or `test_tail` means unverified. See
   `bash scripts/validate-swarm-evidence.sh` when evidence exists, project tests,
   and the wave/landing gates.
 - **Downstream handoff:** consumed by `/crank`, `/validate`, PAWL, tracker
-  closeout, and `/post-mortem` harvesting.
+  closeout, and `/postmortem` harvesting.
 
 ## Quality Rubric
 

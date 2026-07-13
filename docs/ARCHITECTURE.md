@@ -43,7 +43,7 @@ Three principles drive every architectural decision:
 **The cycle is the product.** No single layer is the value. Context compilation,
 validation gates, and knowledge flywheel only matter when they turn into a
 repeatable loop: discovery, implementation, validation, learn, repeat.
-Post-mortem doesn't just extract learnings; it proposes the next cycle's work.
+Postmortem doesn't just extract learnings; it proposes the next cycle's work.
 The system feeds itself.
 
 ---
@@ -91,12 +91,12 @@ The reconciliation engine that implements the ratchet:
 
 ### Validation Gates
 
-Gates are checkpoints enforced by the local cockpit gate, explicit `/validate` / `/pre-mortem` runs, and optional/manual CI backstops. They block progress until a condition is met:
+Gates are checkpoints enforced by the local cockpit gate, explicit `/validate` / `/premortem` runs, and optional/manual CI backstops. They block progress until a condition is met:
 
 | Gate | Blocks | Condition |
 |------|--------|-----------|
-| Shared-trunk gate | push to `main` | `ao gate check --fast --scope head` passes with the relevant `/validate` or `/pre-mortem` evidence |
-| Pre-mortem gate | `/crank` on 3+ issue epics | `/pre-mortem` must pass |
+| Shared-trunk gate | push to `main` | `ao gate check --fast --scope head` passes with the relevant `/validate` or `/premortem` evidence |
+| Premortem gate | `/crank` on 3+ issue epics | `/premortem` must pass |
 | Task validation | Task completion | Acceptance criteria verified |
 | Worker guard | Workers committing | Only lead commits |
 | Dangerous git guard | `force-push`, `reset --hard` | Explicit user request required |
@@ -107,7 +107,7 @@ The core validation primitive. Spawns independent judge agents (Claude and/or Co
 
 Judges write all analysis to output files. Messages to the lead contain only minimal completion signals. This context budget rule prevents N judges from exploding the lead's context window.
 
-Foundation for `/validate`, `/pre-mortem`, and `/post-mortem`.
+Foundation for `/validate`, `/premortem`, and `/postmortem`.
 
 Deep dive: [brownian-ratchet.md](brownian-ratchet.md) — full philosophy, economics, FIRE loop details.
 
@@ -208,30 +208,27 @@ tiered storage -> retrieval -> injection -> compounding.
 ### The Phased Lifecycle
 
 ```
-Discovery → Implementation → Validation
-    ↑                            │
-    └──── Knowledge Flywheel ────┘
+Discovery → Crank → Validate → Learn
+    ↑                         │
+    └────── evidence + plan impact ─┘
 ```
 
 Each phase is a context boundary. The output of one phase is compressed and scoped before entering the next — preventing context contamination across phases.
 
 | Phase | Skills | Output |
 |-------|--------|--------|
-| **Discovery** | `/discovery`, `/research`, `/plan`, `/pre-mortem` (error/rescue mapping, scope modes, temporal interrogation, prediction tracking) | research artifacts, execution packet, scoped risks, predictions |
-| **Implementation** | `/crank`, `/swarm`, `/implement` | code, tests, ratchet checkpoints |
-| **Validation** | `/validate` (finding classification + suppression + domain checklists), `/post-mortem` (council + extraction + streak tracking + prediction accuracy + history + backlog + activation + retirement) | learnings, findings, predictions, next-work queue |
+| **Discovery** | `/discovery`, `/research`, `/plan`, `/premortem` (error/rescue mapping, scope modes, temporal interrogation, prediction tracking) | research artifacts, execution packet, scoped risks, predictions |
+| **Crank** | `/crank`, `/swarm`, `/implement` | code, tests, slice receipts |
+| **Validate** | `/validate`; optional `/council` strategy | immutable verdict, cited acceptance evidence, structured observations |
+| **Learn** | `/learn`; optional `/postmortem` for a causal question | bookkeeping receipt, plan impact, advisory producer candidates |
 
-Every `/post-mortem` feeds back into the next `/rpi` cycle:
+Every `/learn` receipt feeds back into the next `/rpi` cycle:
 
-1. Council validates the implementation
-2. Prediction accuracy scored (HIT/MISS/SURPRISE against pre-mortem predictions)
-3. Knowledge extraction → `.agents/learnings/` (activation + retirement)
-4. Process improvement proposals synthesized from findings
-5. Retro history persisted → `.agents/retro/` for cross-epic trend analysis
-6. Next-work items harvested → `.agents/rpi/next-work.jsonl`
-   - Each item includes a `target_repo` field: repo name (string) for repo-scoped work, `"*"` for cross-repo items, or omitted for legacy backward compatibility
-   - Consumers filter items by matching `target_repo` against the current repo
-5. **Suggested `/rpi` command presented** — ready to copy-paste
+1. Validate preserves the acceptance verdict and structured observations.
+2. Learn binds those observations to the verdict digest without rewriting it.
+3. Learn classifies plan impact as `material_change`, `no_change`, or `terminal`.
+4. The orchestrator alone chooses continue, re-plan, stop, or optional Postmortem.
+5. Repeated defect classes become advisory producer candidates; deterministic replay and shadow evidence are required before enforcement.
 
 ### Quality Gates
 
@@ -253,7 +250,7 @@ The flywheel is curation, not just storage.
 ├── learnings/     # Extracted lessons
 ├── patterns/      # Reusable patterns
 ├── plans/         # Implementation plans
-├── pre-mortems/   # Failure simulations
+├── premortems/   # Failure simulations
 ├── reports/       # General reports
 ├── research/      # Exploration findings
 ├── retros/        # Retrospective reports
@@ -334,7 +331,7 @@ Cross-cutting rules enforced by the local cockpit gate, the scripts it routes to
 | Workers MUST NOT race-claim tasks | Pre-assignment before spawn | Race conditions in multi-worker waves |
 | Verify THEN trust | Validation contract | False completion claims from agents |
 | Push blocked until the cockpit gate and required `/validate` evidence pass | Local cockpit gate | Unvalidated code reaching remote |
-| `/crank` blocked until `/pre-mortem` passes (3+ issues) | Pre-mortem gate (`/crank` skill) | Expensive implementation of flawed plans |
+| `/crank` blocked until `/premortem` passes (3+ issues) | Premortem gate (`/crank` skill) | Expensive implementation of flawed plans |
 | No destructive git without explicit request | Dangerous-git gate | Accidental data loss |
 | Mechanical checks override council PASS | Constraint tests | LLMs estimating instead of measuring |
 | Max 50 waves per epic | Global wave limit | Infinite execution loops |
@@ -363,8 +360,8 @@ AgentOps 3.0 is hookless — these invariants live in local gates, optional/manu
 │   ├── research/        # solo — Deep codebase exploration
 │   ├── plan/            # solo — Decompose epics into issues
 │   ├── validate/        # solo — Code validation (complexity + council)
-│   ├── pre-mortem/      # solo — Council on plans
-│   ├── post-mortem/     # solo — Council + knowledge lifecycle (wrap up work)
+│   ├── premortem/      # solo — Council on plans
+│   ├── postmortem/     # solo — Council + knowledge lifecycle (wrap up work)
 │   ├── shared/          # library — Shared reference docs
 │   └── ...              # See registry.json and generated skill-domain maps
 ├── cli/                 # Go CLI (ao binary) — the control plane
@@ -380,7 +377,7 @@ Skills span six tiers. Each level composes the ones below it.
 |------|--------|---------|
 | **Orchestration** | `/rpi`, `/crank`, `/swarm`, `/evolve` | Multi-phase flows |
 | **Team** | `/implement` | Single issue, full lifecycle |
-| **Solo** | `/research`, `/plan`, `/validate`, `/pre-mortem`, `/post-mortem`, etc. | Standalone use |
+| **Solo** | `/research`, `/plan`, `/validate`, `/premortem`, `/postmortem`, etc. | Standalone use |
 | **Library** | `beads`, `standards`, `shared` | Reference docs loaded by other skills |
 | **Background** | `inject`, `forge`, `flywheel`, `compile` | Invoked by `ao` commands or lifecycle closeout, mostly invisible |
 | **Meta** | `ao session bootstrap` | Flow guide surfaced by the CLI, not a checked-in skill |
@@ -389,7 +386,7 @@ Skills span six tiers. Each level composes the ones below it.
 
 Subagents are disposable. Each gets fresh context scoped to its role — no accumulated state, no bleed-through. Clean context in, validated output out, then terminate.
 
-Subagent behaviors are defined inline within SKILL.md files. Skills that use subagents (e.g., `/council`, `/validate`, `/pre-mortem`, `/post-mortem`, `/research`) spawn them via runtime-native backends.
+Subagent behaviors are defined inline within SKILL.md files. Skills that use subagents (e.g., `/council`, `/validate`, `/premortem`, `/postmortem`, `/research`) spawn them via runtime-native backends.
 
 ### Custom Agents
 
@@ -430,8 +427,8 @@ For full flow orchestration and headless automation, skills integrate with the
 | Skill | ao Command |
 |-------|------------|
 | `/research` | `ao lookup`, `ao search`, `ao rpi phased` |
-| `/post-mortem --quick` | `ao forge markdown`, `ao session close` |
-| `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
+| `/postmortem --quick` | `ao forge markdown`, `ao session close` |
+| `/postmortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
 | `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
 | `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |
 

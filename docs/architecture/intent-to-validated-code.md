@@ -43,13 +43,13 @@
  └───────────────────────────────┬─────────────────────────────────┘
                                  ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │  6. Prove acceptance      /validate  /council  /pawl-review     │
+ │  6. Prove acceptance      /validate  (/council when needed)    │
  │     Every GWT → passing test + independent verdict              │
  │     no verdict = not done                                       │
  └───────────────────────────────┬─────────────────────────────────┘
                                  ▼
  ┌─────────────────────────────────────────────────────────────────┐
- │  7. Capture + ratchet      /post-mortem                          │
+ │  7. Capture + ratchet      /learn  (/postmortem if causal)      │
  │     Evidence always · learnings only if they change the next run│
  └───────────────────────────────┬─────────────────────────────────┘
                                  │
@@ -57,13 +57,13 @@
                                       (re-plan the remaining route)
 ```
 
-**One-tick wrapper:** `/rpi` runs research → plan → implement → validate over
+**One-tick wrapper:** `/rpi` runs Discovery → Crank → Validate → Learn over
 one bead (one behavior, one acceptance proof). It does not replace the loop; it
 *is* one pass through it. `/evolve` is N ticks toward a goal (experimental /
 second-stage).
 
-**Supporting CLI (not the front door):** `ao` bookkeeps, retrieves, and gates
-(`ao beads`, `ao gate check`, `ao verify` as commit/pre-push ratchet, ledger).
+**Supporting CLI (not the front door):** `ao` bookkeeps, retrieves, and runs
+deterministic checks (`ao beads`, `ao gate check`, `ao verify`, ledger).
 Agents enter through **skills**.
 
 ## Why behavior comes before the membrane
@@ -94,12 +94,13 @@ the parent intent prose. See [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)
 | 1. Shape intent | Intent issue / packet with Feature + Scenarios | `/discovery`, `/product`, `/plan` | Happy path + ≥1 edge are testable; non-goals and evidence named |
 | 2. Track | Bead carrying Gherkin or linking to it | `/beads-br`, `/goal-design` | Bead has acceptance + validation commands |
 | 3. Slice | Slice list, one row per behavior | `/plan`, `/behavior-first-planning` | Each slice has first-failing proof + write scope |
-| Pre-flight (optional but recommended) | Plan stress-test | `/pre-mortem`, `/council` | Plan HOLD/PASS before build |
+| Pre-flight (optional but recommended) | Plan stress-test | `/premortem`, `/council` | Plan HOLD/PASS before build |
 | 4. Implement | RED → green → refactor commits | `/implement`, `/test` | Acceptance test failed for the right reason, then passes; refactor did not edit the contract |
 | 5. Wave | Parallel ownership map | `/crank`, `/swarm` (+ `/agent-mail` if ≥2 writers) | Scopes disjoint or forced sequential |
-| 6. Membrane | Criterion verdicts + roll-up | `/validate`, `/council`, `/pawl-review` | Every GWT mapped to fresh passing evidence; independent verdict recorded; **no verdict = not done** |
-| Land | Commit-bound proof on the trunk path | `ao land` / pawl + `ao gate check` | CONFIRM bound to `head_sha`; gate green |
-| 7. Ratchet | Evidence + promoted constraints | `/post-mortem` | Evidence cited; learnings only if next loop will read them |
+| 6. Membrane | Criterion verdicts + roll-up | `/validate`, `/council` | Every GWT mapped to fresh passing evidence; independent verdict recorded; **no verdict = not done** |
+| 7. Ratchet | Observations + plan impact | `/learn` | Verdict preserved; evidence cited; remaining-plan impact returned to the orchestrator |
+| Optional causal review | Retrospective hypotheses | `/postmortem` | Explicit causal question tested against evidence and counterfactuals |
+| Delivery (outside loop completion) | Repository-specific transition | direct push, PR, CI, or adapter | Repository policy succeeds without changing the verdict |
 
 Templates: [`intent-issue.md`](../templates/intent-issue.md),
 [`slice-validation.md`](../templates/slice-validation.md).
@@ -109,7 +110,7 @@ Templates: [`intent-issue.md`](../templates/intent-issue.md),
 | Altitude | When | Skills in view | Still the same? |
 |----------|------|----------------|-----------------|
 | **Single tick** | One behavior, one session | `/plan` → `/implement` → `/validate` (or `/rpi`) | Yes |
-| **Tracked project** | Multi-bead epic | `/discovery` → `/plan` → `/crank` → `/validate` → `/post-mortem` | Yes |
+| **Tracked project** | Multi-bead epic | `/discovery` → `/crank` → `/validate` → `/learn` | Yes |
 | **Orchestrated** | ≥2 lanes or unattended | `/swarm`, `/ntm`, `/agent-mail`, `/using-gc` (operator choice) | Yes — substrate dispatches a **whole** `/rpi` tick; it does not re-implement the loop |
 
 Do not start at the third altitude. Shape 0 is single-agent with bookkeeping
@@ -123,7 +124,7 @@ Do not start at the third altitude. Shape 0 is single-agent with bookkeeping
 4. Run `/plan` (or `/discovery` then `/plan`) until one Given/When/Then is frozen.
 5. Run `/implement` on that slice (RED acceptance first).
 6. Run `/validate` — the verdict must cite the scenario / acceptance evidence.
-7. Only then optionally `/post-mortem` or scale to `/crank`.
+7. Run `/learn` to record plan impact; invoke `/postmortem` only for an explicit causal question.
 
 Success signal: a PASS/CONFIRMED (or honest HOLD) that names the behavior that
 was proved — not a green CI alone, and not a review with no acceptance mapping.

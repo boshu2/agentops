@@ -155,7 +155,7 @@ build_knowledge_stores() {
     [planning-rules]="Reusable planning constraints"
     [plans]="Plan outputs from /plan skill"
     [pool]="Knowledge pool (ingested raw material)"
-    [pre-mortem-checks]="Pre-mortem validation outputs"
+    [premortem-checks]="Premortem validation outputs"
     [products]="Product definition outputs"
     [releases]="Release notes and changelogs"
     [research]="Research outputs and reports"

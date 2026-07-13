@@ -82,4 +82,4 @@ PRE-TASK CHECKS (run before writing code):
 
 ## Source
 
-Phase 3 retrospective: workers writing duplicate utilities and assuming stale plan symbols still existed. agentops-zm8 post-mortem reinforced.
+Phase 3 retrospective: workers writing duplicate utilities and assuming stale plan symbols still existed. agentops-zm8 postmortem reinforced.

@@ -40,5 +40,5 @@
 
 - future startup context
 - planning and validation work
-- post-mortem / retro loops
+- postmortem / retro loops
 - weekly or milestone knowledge activation runs

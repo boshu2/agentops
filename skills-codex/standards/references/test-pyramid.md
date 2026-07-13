@@ -1,6 +1,6 @@
 # AI-Native Test Shape — L0 through L7
 
-> Shared reference for RPI lifecycle skills. Loaded by `/discovery`, `/plan`, `/pre-mortem`, `/implement`, `/crank`, `/validate`, and `/post-mortem`.
+> Shared reference for RPI lifecycle skills. Loaded by `/discovery`, `/plan`, `/premortem`, `/implement`, `/crank`, `/validate`, and `/postmortem`.
 
 ## The AI-Native Test Shape
 
@@ -77,9 +77,9 @@ The Traditional Pyramid          The AI-Native Shape
 | RPI Phase | Test Levels | What Happens |
 |-----------|-------------|--------------|
 | **Discovery** (`/discovery`, `/plan`) | L0–L3 scoping | Plan identifies which test levels apply. **Default: L2 required for all code-change issues.** Issues include `test_level` metadata. |
-| **Pre-mortem** (`/pre-mortem`) | L0–L3 coverage check | Validates plan covers appropriate test levels. **Flags L1-only coverage as WARN.** |
+| **Premortem** (`/premortem`) | L0–L3 coverage check | Validates plan covers appropriate test levels. **Flags L1-only coverage as WARN.** |
 | **Implementation** (`/implement`, `/crank`) | L0–L2 writing + execution | **TDD writes L2 integration tests first (RED).** L0 contracts from specs. L1 as regression guards. |
-| **Validation** (`/validate`, `/post-mortem`) | L0–L3 coverage audit | Assesses test coverage. **L2+ coverage weighted 3-5x over L1 in vibe scoring.** |
+| **Validation** (`/validate`, `/postmortem`) | L0–L3 coverage audit | Assesses test coverage. **L2+ coverage weighted 3-5x over L1 in vibe scoring.** |
 
 ## Test Level Selection Guide
 
@@ -398,14 +398,14 @@ After L0–L3 coverage is complete, run bug-finding levels:
 | RPI Phase | Bug-Finding Action |
 |-----------|--------------------|
 | `/plan` | Classify which BF levels apply per issue |
-| `/pre-mortem` | Verify BF levels are planned for boundary-touching code |
+| `/premortem` | Verify BF levels are planned for boundary-touching code |
 | `/implement` | Write BF tests alongside L0–L3 (or as separate wave) |
 | `/validate` | **Check BF coverage before council** — flag missing chaos/property tests on boundary code |
-| `/post-mortem` | Assess BF bug discovery count. If BF4 found 0 bugs → either code is solid or chaos tests are too weak |
+| `/postmortem` | Assess BF bug discovery count. If BF4 found 0 bugs → either code is solid or chaos tests are too weak |
 | `/implement` (bug fix) | **BF6 mandatory** — reproduce bug as failing test BEFORE writing fix |
 | `/validate` (performance) | Check BF7 benchmarks if hot-path code changed |
 | `/plan` (format changes) | Flag BF8 backward compat — add old format as fixture before changing |
-| `/pre-mortem` (security) | Verify BF9 tests planned for code handling secrets or user input |
+| `/premortem` (security) | Verify BF9 tests planned for code handling secrets or user input |
 
 ## Fixture Fidelity — guard tests must use the real persisted shape
 
@@ -420,7 +420,7 @@ After L0–L3 coverage is complete, run bug-finding levels:
 - Match the marker granularity exactly: if production records `consumed`/`skip`/`dedup` state at the batch (or parent, or envelope) level, set it there — never only at the item level.
 - Prefer a checked-in real sample (a trimmed copy of an actual artifact) over a synthetic one for the canonical happy/skip cases.
 
-**Pre-mortem / checklist flag:** when reviewing a plan or diff that adds a skip/dedup/consumed/idempotency guard test, FLAG any fixture built only from an in-memory constructor or that sets the guard marker at item-level when the persisted artifact marks it at batch-level. Require the fixture to round-trip the real persisted shape before the test counts as coverage. (See `.claude/rules/go.md` → "Guard-test fixtures must use the real persisted shape.")
+**Premortem / checklist flag:** when reviewing a plan or diff that adds a skip/dedup/consumed/idempotency guard test, FLAG any fixture built only from an in-memory constructor or that sets the guard marker at item-level when the persisted artifact marks it at batch-level. Require the fixture to round-trip the real persisted shape before the test counts as coverage. (See `.claude/rules/go.md` → "Guard-test fixtures must use the real persisted shape.")
 
 ## Match thoroughness to task stakes — the over-testing tax
 
@@ -451,7 +451,7 @@ behavior changed — that is a new slice, not a refactor). Caveats and full numb
 
 ## Coverage Assessment Template
 
-Used by `/post-mortem` and `/validate` to assess test shape health:
+Used by `/postmortem` and `/validate` to assess test shape health:
 
 ### Coverage Shape (L0–L3)
 

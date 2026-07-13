@@ -37,7 +37,7 @@ They do not need NTM, Gas City, evolve autonomy, or multi-judge council on day o
 | Shape one behavior | 3–8 min | One Gherkin scenario (happy + edge) written on a bead or plan |
 | Implement | 5–15 min | Acceptance test went RED for the right reason, then green |
 | Membrane | 3–10 min | `/validate` PASS/HOLD that **names the scenario / acceptance evidence** |
-| Optional bookkeeping | 2 min | Follow-up bead or `/post-mortem --quick` |
+| Optional bookkeeping | 2 min | Follow-up bead or `/postmortem --quick` |
 
 ## Commands and expected outcomes
 
@@ -109,7 +109,7 @@ Optional upgrades after first value (not required):
 
 ```text
 /council validate …
-/pre-mortem          # next time, before implement
+/premortem          # next time, before implement
 ```
 
 ### 5. Optional: one-tick wrapper next time
@@ -118,7 +118,7 @@ Optional upgrades after first value (not required):
 /rpi "<small goal>"
 ```
 
-Same loop (research → plan → implement → validate) as one orchestrated tick.
+Same loop (Discovery → Crank → Validate → Learn) as one orchestrated tick.
 See [operating loop](architecture/operating-loop.md).
 
 ### 6. Optional out-of-session lane (later)

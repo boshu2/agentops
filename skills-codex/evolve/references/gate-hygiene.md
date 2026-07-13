@@ -51,7 +51,7 @@ Documented release valve for the eval canary lane only, when:
 - The current diff is unrelated to evals/, schemas/eval-, or cli/cmd/ao/eval
 - A recorded recent run has confirmed the canary is currently 50/50
 
-Never use `--no-verify`. The pre-commit hook is a no-op for most diffs but the principle violation is durable in `git log` and surfaces in post-mortem.
+Never use `--no-verify`. The pre-commit hook is a no-op for most diffs but the principle violation is durable in `git log` and surfaces in postmortem.
 
 ## Pre-push diff-scope check (mandatory before every commit)
 

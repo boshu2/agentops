@@ -11,10 +11,10 @@ canonical live tree; no executable legacy skill tree remains.
 
 ## Staged persisted-data migration
 
-S1 through S7 keep execution-packet writers on schema v2 `pre_mortem_*` fields
+S1 through S7 kept execution-packet writers on schema v2 `pre_mortem_*` fields
 and the executable compiler writer on `.agents/pre-mortem-checks/`. Schema v1 and v2 own the legacy packet keys; schema v3
-owns `premortem_*`. S8 alone may switch writers to schema v3 and canonical
-directories after its cross-family release judgment. Equal old and new verdicts
+owns `premortem_*`. S8 switches current writers to schema v3 and canonical
+directories while retaining legacy readback. Equal old and new verdicts
 are accepted only as a transition representation and normalize once. Artifact
 path aliases never coexist: Draft 2020-12 cannot prove equality between arbitrary
 string properties, so accepting both would let schema-only consumers certify
@@ -28,7 +28,7 @@ different content for the same ID is an error naming both paths.
 repository; premortem reports are written under `.agents/council/`. It is
 therefore not part of the staged runtime-writer cutover contract.
 
-Legacy readback, conflict, optional-absence, redirect, and legacy-v2 writer
-fixtures are enforced by `scripts/check-mortem-compatibility.sh
---writer=legacy-v2`. The reserved S8 command shape is
-`--writer=canonical-v3 --legacy-readback`; before S8 it fails closed.
+Legacy readback, conflict, optional-absence, redirect, and both writer-era
+fixtures are enforced by `scripts/check-mortem-compatibility.sh`. The current
+cutover gate is `--writer=canonical-v3 --legacy-readback`; the legacy-v2 mode
+remains available to prove compatibility with the preceding writer contract.

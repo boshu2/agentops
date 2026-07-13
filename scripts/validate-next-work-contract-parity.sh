@@ -29,6 +29,10 @@ if [[ "$ROOT" != /* ]]; then
 fi
 
 SCHEMA="$ROOT/docs/contracts/next-work.schema.md"
+POSTMORTEM_SKILL="$ROOT/skills/postmortem/SKILL.md"
+POSTMORTEM_CODEX_SKILL="$ROOT/skills-codex/postmortem/SKILL.md"
+LEARN_SKILL="$ROOT/skills/learn/SKILL.md"
+LEARN_CODEX_SKILL="$ROOT/skills-codex/learn/SKILL.md"
 PHASE_CONTRACT="$ROOT/skills/rpi/references/phase-data-contracts.md"
 GATE4="$ROOT/skills/rpi/references/gate4-loop-and-spawn.md"
 RUNTIME="$(mktemp -t nextwork-runtime.XXXXXX)"
@@ -90,6 +94,10 @@ require_contains() {
 
 for path in \
   "$SCHEMA" \
+  "$POSTMORTEM_SKILL" \
+  "$POSTMORTEM_CODEX_SKILL" \
+  "$LEARN_SKILL" \
+  "$LEARN_CODEX_SKILL" \
   "$PHASE_CONTRACT" \
   "$GATE4" \
   "$RUNTIME" \
@@ -127,7 +135,7 @@ item_types=(
 )
 item_sources=(
   council-finding retro-learning retro-pattern evolve-generator
-  feature-suggestion backlog-processing post-mortem-finding manifest-classification
+  feature-suggestion backlog-processing postmortem-finding post-mortem-finding manifest-classification
   dream-degraded
 )
 
@@ -182,6 +190,19 @@ for value in available in_progress consumed; do
     "runtime next-work logic missing claim_status value $value"
 done
 
+require_contains "$POSTMORTEM_SKILL" "not the general learning" \
+  "postmortem must remain a causal-analysis specialization"
+require_contains "$POSTMORTEM_CODEX_SKILL" "not the general learning" \
+  "generated Codex postmortem must remain a causal-analysis specialization"
+require_contains "$LEARN_SKILL" 'plan_impact' \
+  "Learn must own the post-verdict plan-impact handoff"
+require_contains "$LEARN_CODEX_SKILL" 'plan_impact' \
+  "generated Codex Learn must own the post-verdict plan-impact handoff"
+for skill in "$POSTMORTEM_SKILL" "$POSTMORTEM_CODEX_SKILL"; do
+  if contains_fixed_file "docs/contracts/next-work.schema.md" "$skill"; then
+    fail "${skill#$ROOT/} must not own general next-work bookkeeping"
+  fi
+done
 require_contains "$GATE4" "docs/contracts/next-work.schema.md" \
   "rpi gate4 reference must point at the tracked next-work schema"
 require_contains "$PHASE_CONTRACT" "item lifecycle as authoritative" \
@@ -276,7 +297,7 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
       def valid_source:
         . == "council-finding" or . == "retro-learning" or . == "retro-pattern" or
         . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing" or
-        . == "post-mortem-finding" or . == "manifest-classification" or
+        . == "postmortem-finding" or . == "post-mortem-finding" or . == "manifest-classification" or
         . == "dream-degraded";
       to_entries[] as $line |
       select(($line.value.items? | type) == "array") |

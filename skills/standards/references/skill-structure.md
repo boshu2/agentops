@@ -79,7 +79,7 @@ Skills follow a three-tier execution model based on what the caller needs to see
 |------|-----------------|-------------|
 | Orchestrator | Do NOT set | Skills that loop, gate phases, or report progress (evolve, rpi, crank) |
 | Discovery primitive | Set `window: fork` | Skills that explore/decompose and produce filesystem artifacts (research, plan) |
-| Worker spawner / Judgment | Set `window: fork` | Skills that fan out parallel workers or validate artifacts (council, vibe, pre-mortem) |
+| Worker spawner / Judgment | Set `window: fork` | Skills that fan out parallel workers or validate artifacts (council, vibe, premortem) |
 
 When `window: fork` is set, the skill's markdown body becomes the task prompt for a forked subagent. The subagent runs in isolation — only the summary returns to the caller's context.
 

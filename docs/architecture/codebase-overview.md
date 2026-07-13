@@ -41,8 +41,8 @@ Four product layers (public framing):
 |-------|---------|--------------|
 | **Bookkeeping** | work vanishes between sessions | `.agents/`, RPI packets, council verdicts |
 | **Context compiler** | agents start cold | `ao session bootstrap`, skills, execution packets |
-| **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/pre-mortem`, `ao gate` |
-| **Knowledge flywheel** | lessons don't compound | `/post-mortem`, `/pattern-mining`, `/operationalize`, promotion ratchet, `ao lookup` |
+| **Validation gates** | plausible ≠ correct | `/council`, `/vibe`, `/premortem`, `ao gate` |
+| **Knowledge flywheel** | lessons don't compound | `/postmortem`, `/pattern-mining`, `/operationalize`, promotion ratchet, `ao lookup` |
 
 **Honest fitness posture:** the apparatus to measure corpus delta exists; live-agent uplift is **not yet proven**. See [AgentOps effectiveness evidence](../evals/agentops-effectiveness-evidence.md).
 
@@ -70,7 +70,7 @@ Product and code route through six DDD bounded contexts. Full routing: [Componen
 
 | BC | Name | Center of gravity |
 |----|------|-------------------|
-| **BC1** | Corpus | `.agents/`, `ao inject`, `/post-mortem`, `/pattern-mining`, `/operationalize`, `/harvest` |
+| **BC1** | Corpus | `.agents/`, `ao inject`, `/postmortem`, `/pattern-mining`, `/operationalize`, `/harvest` |
 | **BC2** | Validation | `ao gate check`, `/validate`, `/council`, `/vibe` |
 | **BC3** | Loop | operating loop, `/evolve`, `br`, goals, autodev |
 | **BC4** | Factory | skill-builder, registries, standards, dispositions |
@@ -247,7 +247,7 @@ cd cli && go test ./internal/gates/checks -count=1   # registry parity tests
 ## Knowledge flywheel
 
 ```text
-Work → /post-mortem → /pattern-mining → /operationalize
+Work → /postmortem → /pattern-mining → /operationalize
      → .agents/learnings/pending/
      → pool score → promote (gold/silver/bronze)
      → ao lookup (decay-ranked, cited) → next session

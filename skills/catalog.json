@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T15:07:39Z",
+  "generated_at": "2026-07-13T15:53:58Z",
   "skill_count": 63,
   "skills": [
     {
@@ -463,7 +463,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 32,
+      "references_count": 31,
       "codex_override_present": true
     },
     {
@@ -615,7 +615,8 @@
       "consumes": [
         "rpi",
         "goals",
-        "postmortem"
+        "postmortem",
+        "push"
       ],
       "produces": [
         "git-changes",
@@ -623,7 +624,8 @@
       ],
       "dependencies": [
         "rpi",
-        "postmortem"
+        "postmortem",
+        "push"
       ],
       "practices": [
         "lean-startup",

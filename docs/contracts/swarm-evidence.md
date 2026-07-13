@@ -9,7 +9,7 @@ Swarm workers spawned via `/swarm` or `/crank` write one JSON result file per ta
 .agents/swarm/results/<task>.json
 ```
 
-The orchestrator (`/crank`, the swarm skill, post-mortem) consumes these files to determine task outcomes, harvest evidence, and decide whether to advance an epic. This contract specifies the minimum well-formed shape every result file must satisfy.
+The orchestrator (`/crank`, the swarm skill, postmortem) consumes these files to determine task outcomes, harvest evidence, and decide whether to advance an epic. This contract specifies the minimum well-formed shape every result file must satisfy.
 
 ## Required Fields
 

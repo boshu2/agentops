@@ -158,7 +158,7 @@ structural gaps and a test architecture; do not generate code in this mode.
 - **Validator command:** run the focused test, relevant suite, coverage command,
   and `bash scripts/check-bead-scenario-coverage.sh ... --run` when scenarios exist.
 - **Downstream handoff:** consumed by `/implement`, `/validate`, `/review`, the
-  bead-acceptance pawl, and `/post-mortem` evidence harvesting.
+  bead-acceptance pawl, and `/postmortem` evidence harvesting.
 
 ## Quality Rubric
 

@@ -145,7 +145,7 @@ If all concrete remediation layers are empty, propose one or more specific featu
 
 **Quality mode (`--quality`)** — inverted cascade (findings before directives):
 
-Step 3.0q: Unconsumed high-severity post-mortem findings:
+Step 3.0q: Unconsumed high-severity postmortem findings:
 ```bash
 HIGH=$(jq -r 'select(.consumed==false) | .items[] | select(.severity=="high") | .title' \
   .agents/rpi/next-work.jsonl 2>/dev/null | head -1)
