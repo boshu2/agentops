@@ -117,13 +117,12 @@
       "id": "pr-workflow-contracts",
       "title": "open-source PR workflow skills preserve upstream fit and isolation",
       "kind": "artifact_check",
-      "objective": "Protect contribution workflows from scope creep by checking PR research, implementation, preparation, validation, and PR-outcome learning artifacts (planning folds into /plan; PR retros into /postmortem --scope=pr).",
+      "objective": "Protect contribution workflows from scope creep by checking PR research, implementation, preparation, and validation artifacts.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/pr-research/SKILL.md", "value": "Maintainer Research -> Response patterns, review expectations"},
         {"type": "artifact_contains", "target": "../../skills/pr-implement/SKILL.md", "value": "DO NOT PROCEED IF PRE-CHECK FAILS"},
         {"type": "artifact_contains", "target": "../../skills/validate/SKILL.md", "value": "scope-creep"},
-        {"type": "artifact_contains", "target": "../../skills-codex/validate/prompt.md", "value": "PASS/WARN/FAIL"},
-        {"type": "artifact_contains", "target": "../../skills/postmortem/references/pr-scope.md", "value": "Success Patterns (If Merged)"}
+        {"type": "artifact_contains", "target": "../../skills-codex/validate/prompt.md", "value": "PASS/WARN/FAIL"}
       ],
       "dimensions": ["process_adherence", "correctness", "artifact_quality"]
     },

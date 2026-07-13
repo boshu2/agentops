@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T12:56:05Z",
+  "generated_at": "2026-07-13T13:41:38Z",
   "skill_count": 63,
   "skills": [
     {
@@ -1111,7 +1111,7 @@
           "with": "toil-mining"
         }
       ],
-      "references_count": 22,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1735,7 +1735,7 @@
         "llm-eval-harness"
       ],
       "context_rel": [],
-      "references_count": 24,
+      "references_count": 3,
       "codex_override_present": true
     },
     {

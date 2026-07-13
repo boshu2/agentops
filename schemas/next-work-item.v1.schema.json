@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "$id": "https://agentops.dev/schemas/next-work-item.v1.schema.json",
   "title": "Next-Work Item",
-  "description": "One actionable follow-up item harvested into .agents/rpi/next-work.jsonl. Canonical typed contract for the post-mortem harvest output (docs/contracts/next-work.schema.md, schema_version 1.4). Enums mirror validate_next_work_item() in skills/post-mortem/references/harvest-next-work.md. additionalProperties is true: readers MUST tolerate unknown fields for forward compatibility.",
+  "description": "One actionable follow-up item harvested into .agents/rpi/next-work.jsonl. Canonical typed contract for producer output (docs/contracts/next-work.schema.md, schema_version 1.4). additionalProperties is true: readers MUST tolerate unknown fields for forward compatibility.",
   "type": "object",
   "required": ["title", "type", "severity", "source", "description"],
   "properties": {

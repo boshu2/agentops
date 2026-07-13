@@ -35,7 +35,7 @@ skills/implement/references/implement.feature
 skills/operationalize/references/knowledge-activation.feature
 skills/plan/references/plan.feature
 skills/postmortem/references/postmortem.feature
-skills/postmortem/references/pr-retro.feature
+skills/learn/references/learn.feature
 skills/pr-prep/references/pr-prep.feature
 skills/premortem/references/premortem.feature
 skills/product/references/product.feature
@@ -54,4 +54,3 @@ skills/status/references/status.feature
 skills/swarm/references/swarm.feature
 skills/test/references/test.feature
 skills/validate/references/validate.feature
-skills/validate/references/vibe.feature

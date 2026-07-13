@@ -93,7 +93,7 @@ require_contains "skills/shared/references/strict-delegation-contract.md" '`/dis
 # the chaining contract now names only surviving skills; absorbed modes are internal.
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$premortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
-require_contains "skills-codex/validate/SKILL.md" 'vibe` → `--mode=post-impl`' \
+require_contains "skills-codex/validate/SKILL.md" 'vibe` trigger maps to `--mode=post-impl`' \
   'validate must document the absorbed vibe quick mode'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'

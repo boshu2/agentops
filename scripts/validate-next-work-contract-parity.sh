@@ -29,9 +29,6 @@ if [[ "$ROOT" != /* ]]; then
 fi
 
 SCHEMA="$ROOT/docs/contracts/next-work.schema.md"
-HARVEST_REF="$ROOT/skills/postmortem/references/harvest-next-work.md"
-POST_MORTEM_SKILL="$ROOT/skills/postmortem/SKILL.md"
-POST_MORTEM_CODEX_SKILL="$ROOT/skills-codex/postmortem/SKILL.md"
 PHASE_CONTRACT="$ROOT/skills/rpi/references/phase-data-contracts.md"
 GATE4="$ROOT/skills/rpi/references/gate4-loop-and-spawn.md"
 RUNTIME="$(mktemp -t nextwork-runtime.XXXXXX)"
@@ -91,59 +88,8 @@ require_contains() {
   fi
 }
 
-require_section_contains() {
-  local path="$1"
-  local start="$2"
-  local end="$3"
-  local needle="$4"
-  local label="$5"
-  local section
-
-  section="$(awk -v start="$start" -v end="$end" '
-    index($0, start) {in_section=1}
-    in_section {print}
-    in_section && index($0, end) {exit}
-  ' "$path")"
-
-  if [[ -z "$section" ]]; then
-    fail "missing section $start in ${path#$ROOT/}"
-    return
-  fi
-
-  if ! printf '%s\n' "$section" | contains_fixed_stdin "$needle"; then
-    fail "$label"
-  fi
-}
-
-require_section_not_contains() {
-  local path="$1"
-  local start="$2"
-  local end="$3"
-  local needle="$4"
-  local label="$5"
-  local section
-
-  section="$(awk -v start="$start" -v end="$end" '
-    index($0, start) {in_section=1}
-    in_section {print}
-    in_section && index($0, end) {exit}
-  ' "$path")"
-
-  if [[ -z "$section" ]]; then
-    fail "missing section $start in ${path#$ROOT/}"
-    return
-  fi
-
-  if printf '%s\n' "$section" | contains_fixed_stdin "$needle"; then
-    fail "$label"
-  fi
-}
-
 for path in \
   "$SCHEMA" \
-  "$HARVEST_REF" \
-  "$POST_MORTEM_SKILL" \
-  "$POST_MORTEM_CODEX_SKILL" \
   "$PHASE_CONTRACT" \
   "$GATE4" \
   "$RUNTIME" \
@@ -155,7 +101,7 @@ require_contains "$SCHEMA" "schema_version: 1.4" \
   "next-work schema is not at v1.4"
 require_contains "$SCHEMA" 'Item lifecycle inside `items[]` is authoritative.' \
   "next-work schema must declare item lifecycle authority"
-require_contains "$SCHEMA" "may be empty when a post-mortem finds nothing actionable" \
+require_contains "$SCHEMA" "may be empty when a producer finds nothing actionable" \
   "next-work schema must permit empty items arrays"
 require_contains "$SCHEMA" "consumers may rewrite existing lines to claim, release, fail, or consume individual items" \
   "next-work schema must describe rewrite semantics"
@@ -205,8 +151,6 @@ done
 for value in "${proof_ref_kinds[@]}"; do
   require_contains "$SCHEMA" "\`$value\`" \
     "next-work schema missing proof_ref kind $value"
-  require_contains "$HARVEST_REF" "$value" \
-    "harvest-next-work reference missing proof_ref kind $value"
 done
 
 require_contains "$RUNTIME" 'json:"proof_ref,omitempty"' \
@@ -219,8 +163,6 @@ done
 for value in "${item_types[@]}"; do
   require_contains "$SCHEMA" "\`$value\`" \
     "next-work schema missing type enum value $value"
-  require_contains "$HARVEST_REF" "$value" \
-    "harvest-next-work reference missing type enum value $value"
 done
 
 for value in high medium low; do
@@ -231,8 +173,6 @@ done
 for value in "${item_sources[@]}"; do
   require_contains "$SCHEMA" "\`$value\`" \
     "next-work schema missing source enum value $value"
-  require_contains "$HARVEST_REF" "$value" \
-    "harvest-next-work reference missing source enum value $value"
 done
 
 for value in available in_progress consumed; do
@@ -242,14 +182,6 @@ for value in available in_progress consumed; do
     "runtime next-work logic missing claim_status value $value"
 done
 
-require_contains "$HARVEST_REF" "docs/contracts/next-work.schema.md" \
-  "harvest-next-work must reference the tracked next-work schema"
-require_contains "$HARVEST_REF" "proof_ref" \
-  "harvest-next-work must document proof_ref emission"
-require_contains "$POST_MORTEM_SKILL" "docs/contracts/next-work.schema.md" \
-  "post-mortem skill must reference the tracked next-work schema"
-require_contains "$POST_MORTEM_CODEX_SKILL" "docs/contracts/next-work.schema.md" \
-  "generated Codex post-mortem skill must reference the tracked next-work schema"
 require_contains "$GATE4" "docs/contracts/next-work.schema.md" \
   "rpi gate4 reference must point at the tracked next-work schema"
 require_contains "$PHASE_CONTRACT" "item lifecycle as authoritative" \
@@ -274,16 +206,6 @@ require_contains "$RUNTIME" 'CompletionEvidence' \
 require_contains "$RUNTIME" 'completion_evidence' \
   "runtime next-work struct must have completion_evidence json tag"
 
-# Harvest reference must show the batched v1.4 write shape.
-require_contains "$HARVEST_REF" "source_epic" \
-  "harvest-next-work reference must show batched source_epic field"
-require_contains "$HARVEST_REF" "items" \
-  "harvest-next-work reference must show batched items array"
-require_contains "$HARVEST_REF" 'claim_status' \
-  "harvest-next-work reference must show claim_status lifecycle"
-require_contains "$HARVEST_REF" "Schema Validation" \
-  "harvest-next-work reference must include schema validation section"
-
 # Crank skill must not contain flat next-work append examples.
 CRANK_SKILL="$ROOT/skills/crank/SKILL.md"
 if [[ -f "$CRANK_SKILL" ]]; then
@@ -291,27 +213,6 @@ if [[ -f "$CRANK_SKILL" ]]; then
     fail "crank skill contains legacy flat-row next-work append example"
   fi
 fi
-
-for skill in "$POST_MORTEM_SKILL" "$POST_MORTEM_CODEX_SKILL"; do
-  require_section_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    "docs/contracts/next-work.schema.md" \
-    "${skill#$ROOT/} ACT.3 must reference the tracked next-work schema"
-  require_section_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    "source_epic:" \
-    "${skill#$ROOT/} ACT.3 must show batched next-work entries"
-  require_section_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    "items:" \
-    "${skill#$ROOT/} ACT.3 must show batched item arrays"
-  require_section_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    "\"proof_ref\"" \
-    "${skill#$ROOT/} ACT.3 must show proof_ref emission guidance"
-  require_section_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    'claim_status: "available"' \
-    "${skill#$ROOT/} ACT.3 must initialize entry claim_status"
-  require_section_not_contains "$skill" '#### Step ACT.3: Feed Next-Work' '#### Step ACT.4: Update Marker' \
-    'echo "{\"title\":' \
-    "${skill#$ROOT/} ACT.3 still contains the legacy flat-row append example"
-done
 
 # Drift validation: if a live next-work.jsonl exists, verify all entries conform to v1.4.
 LIVE_QUEUE="$ROOT/.agents/rpi/next-work.jsonl"

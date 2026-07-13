@@ -3,7 +3,7 @@
 - **Status:** Accepted (2026-07-08)
 - **Author:** AgentOps maintainers
 - **Builds on:** [ADR-0011](ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) (escape-corpus compounding unproven — data-starved), [ADR-0004](ADR-0004-corpus-moat-unproven-position-on-the-system.md) (corpus moat unproven). The EM spine (`escape → derived check → future block`) and `ao membrane {catch,triage,derive-checks}`.
-- **Evidence:** the live catch corpus `.agents/yield/yield-ledger.jsonl` and `ao membrane triage` (numbers below, 2026-07-08), the producer-defect register `docs/architecture/producer-defect-register.md`, post-mortem Step BP.7 (`skills/post-mortem/references/maintenance-phases.md`).
+- **Evidence:** the live catch corpus `.agents/yield/yield-ledger.jsonl` and `ao membrane triage` (numbers below, 2026-07-08), the producer-defect register `docs/architecture/producer-defect-register.md`, and the current Learn ownership map (`skills/learn/references/post-verdict-actions.md`).
 
 ## Context
 

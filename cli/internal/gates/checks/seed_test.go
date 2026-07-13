@@ -269,12 +269,16 @@ func TestCliAgentsTrackerGateIsBlockingAndStrict(t *testing.T) {
 	}
 }
 
-func TestCodexContractGatesAreAlwaysRun(t *testing.T) {
-	// age-2s5k: the two codex-contract validators assert whole-twin invariants,
+func TestSkillContractGatesAreAlwaysRun(t *testing.T) {
+	// age-2s5k, age-tpeel: these validators assert whole-skill invariants,
 	// so they must run on EVERY push (empty Match => AlwaysRun), not be
 	// scope-gated to skills-codex changes — otherwise latent twin drift lies
 	// invisible on green main and ambushes a later unrelated skill push.
-	for _, id := range []string{"skill.codex-rpi-contract", "skill.codex-lifecycle-guards"} {
+	for _, id := range []string{
+		"skill.codex-rpi-contract",
+		"skill.codex-lifecycle-guards",
+		"skill.validation-learning-boundary",
+	} {
 		check, ok := gates.Default.Get(id)
 		if !ok {
 			t.Fatalf("%s gate is not registered", id)

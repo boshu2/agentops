@@ -66,7 +66,6 @@ func TestCoreCanaryMortemReferencesAreCanonical(t *testing.T) {
 		"../../../skills-codex/premortem/prompt.md",
 		"../../../skills-codex/premortem/scripts/validate.sh",
 		"../../../skills/postmortem/SKILL.md",
-		"../../../skills/postmortem/references/pr-scope.md",
 	} {
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("canonical mortem canary dependency missing %q: %v", path, err)
