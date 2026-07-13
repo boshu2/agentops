@@ -8,8 +8,7 @@
     "eval_files": 55,
     "cli_commands": 30,
     "workflows": 4,
-    "capabilities": 107
-    "capabilities": 97
+    "capabilities": 98
   },
   "surfaces": {
     "skills": [
@@ -751,11 +750,8 @@
         "bounded_context": "",
         "driven_by_skills": [
           "council",
-          "pawl-review"
-          "crank",
           "ntm",
-          "pawl-review",
-          "push"
+          "pawl-review"
         ]
       },
       {
@@ -924,12 +920,9 @@
     ]
   },
   "capability_summary": {
-    "total": 107,
-    "total": 97,
+    "total": 98,
     "skills": 63,
     "cli_commands": 30,
-    "gates": 14,
-    "cli_commands": 29,
     "gates": 5,
     "reference_impls": 0
   },
@@ -3231,11 +3224,8 @@
       "status": "active",
       "driven_by_skills": [
         "council",
-        "pawl-review"
-        "crank",
         "ntm",
-        "pawl-review",
-        "push"
+        "pawl-review"
       ],
       "flags": [
         "--config",
