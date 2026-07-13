@@ -24,7 +24,6 @@ Feature: Crank executes one conflict-free epic wave
     Then /crank executes Find → Ignite → Reap → Vibe → Escalate
     And it returns DONE, PARTIAL, or BLOCKED evidence before another wave starts
 
-  @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Wave evidence exits Crank before any re-plan
     When a wave reaches its acceptance verdict
     Then Crank hands the wave evidence to Validate

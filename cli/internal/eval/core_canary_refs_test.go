@@ -33,7 +33,6 @@ func TestCoreCanaryMortemReferencesAreCanonical(t *testing.T) {
 	}
 
 	for _, suitePath := range suitePaths {
-		suitePath := suitePath
 		t.Run(filepath.Base(suitePath), func(t *testing.T) {
 			suite, _, err := LoadSuite(suitePath)
 			if err != nil {

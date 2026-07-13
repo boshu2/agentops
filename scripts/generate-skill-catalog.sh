@@ -125,7 +125,7 @@ parse_frontmatter() {
           val = line; sub(/^[[:space:]]+dependencies:[[:space:]]*\[/, "", val); sub(/\][[:space:]]*$/, "", val)
           count = split(val, parts, ",")
           for (j = 1; j <= count; j++) {
-            item = trim(parts[j]); gsub(/^['\''\"]|['\''\"]$/, "", item)
+            item = trim(parts[j]); gsub(/^['\''"]|['\''"]$/, "", item)
             if (item != "") list_vals["dependencies"] = list_vals["dependencies"] (list_vals["dependencies"] == "" ? "" : ",") jstr(item)
           }
           in_list = 0; cur_key = ""

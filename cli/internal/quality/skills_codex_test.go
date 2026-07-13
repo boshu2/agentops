@@ -5,9 +5,23 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+// setHome points os.UserHomeDir() at dir on every platform for the duration of
+// the test. On POSIX Go resolves the home directory from $HOME, but on Windows
+// it reads %USERPROFILE% and ignores HOME entirely — so a HOME-only setenv
+// silently misses on the Windows runners and the production checks scan the real
+// (fixture-free) home. Setting both keeps these tests platform-independent.
+func setHome(t *testing.T, dir string) {
+	t.Helper()
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+}
 
 func writeSkill(t *testing.T, root, name string) {
 	t.Helper()
@@ -56,7 +70,7 @@ func writeInstallMeta(t *testing.T, home, root, version, hash string, count int)
 }
 
 func TestCheckSkillsReportsInstallGuidanceWhenEmpty(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	check := CheckSkills()
 	if check.Status != "warn" || !strings.Contains(check.Detail, "install.sh") {
 		t.Fatalf("check = %+v", check)
@@ -65,7 +79,7 @@ func TestCheckSkillsReportsInstallGuidanceWhenEmpty(t *testing.T) {
 
 func TestCheckSkillsValidatesNativeManifest(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setHome(t, home)
 	root, hash := writeNativeManifest(t, home, "research")
 	writeInstallMeta(t, home, root, "v1", hash, 1)
 	check := CheckSkills()
@@ -82,7 +96,7 @@ func TestCheckSkillsValidatesNativeManifest(t *testing.T) {
 
 func TestCheckSkillsCountsCompatibilityPointerPackages(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setHome(t, home)
 	root := CodexNativePluginRootPath(home)
 	skills := filepath.Join(root, "skills-codex")
 	writeSkill(t, skills, "research")
@@ -120,7 +134,7 @@ func TestCheckSkillsWarnsForOverlappingInstallLayouts(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			home := t.TempDir()
-			t.Setenv("HOME", home)
+			setHome(t, home)
 			root, hash := writeNativeManifest(t, home, "research")
 			writeInstallMeta(t, home, root, "v1", hash, 1)
 			writeSkill(t, filepath.Join(home, test.duplicateRoot), "research")
@@ -175,7 +189,7 @@ func TestCheckCodexSyncDetectsMatchManifestDriftAndStaleVersion(t *testing.T) {
 			repo, current, currentHash := setupCodexSyncRepo(t)
 			t.Chdir(repo)
 			home := t.TempDir()
-			t.Setenv("HOME", home)
+			setHome(t, home)
 			version, hash := test.version, test.hash
 			if version == "" {
 				version = current
@@ -203,7 +217,7 @@ func TestCheckSkillIntegrityAbsentCleanAndFindings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			t.Chdir(root)
-			t.Setenv("HOME", t.TempDir())
+			setHome(t, t.TempDir())
 			if test.script != "" {
 				path := filepath.Join(root, "skills", "heal-skill", "scripts", "heal.sh")
 				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

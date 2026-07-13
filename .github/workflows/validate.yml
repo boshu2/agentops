@@ -311,20 +311,42 @@ jobs:
       # self-tests in the bats suite read stale validate.yml. Running bats up
       # front — exactly the pristine-checkout + npm-bats setup the standalone
       # bats-tests job used pre-rebuild — keeps it pollution-free (ag-877).
+      #
       # bats needs only the runner's preinstalled python+PyYAML/jq/ripgrep; it
-      # does not need Go or a built ao.
+      # does not need Go or a built ao — but it DOES need PAWL_EDGE_FAIL_OPEN=1
+      # (set on the Run step below). Several suites (reconcile-pr, pawl-review*,
+      # check-pawl-pre-push, reviewer-adapters, …) seed verdicts via
+      # scripts/pawl-verdict.sh, whose F2 hardening (age-pawl-intent-zhndq.2)
+      # makes `write` fail-CLOSED exit 7 (EDGE-UNBOUND) when no trusted ao can
+      # emit the provenance verdict edge. There is deliberately NO ao here: an
+      # ao on PATH would instead trip pawl-review's preflight `ao gate check`
+      # against the hermetic temp repos. The verdict-edge emit is a best-effort
+      # sensor, so fail-OPEN it for the whole suite; the dedicated fail-closed
+      # regression files re-assert the strict default by unsetting the var
+      # themselves (pawl-verdict-edge-failclosed / pawl-verdict-autobind /
+      # pawl-review-edge-unbound).
       - name: Install bats
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: sudo npm install -g bats@1.12.0
 
       - name: Run bats tests
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        env:
+          # See the note above "Install bats": with no trusted ao in this phase,
+          # scripts/pawl-verdict.sh's F2 verdict-edge emit would fail-CLOSED
+          # (exit 7) and abort every suite that seeds a verdict. The emit is a
+          # best-effort sensor, so fail-OPEN it here. The fail-closed regression
+          # files unset this per-invocation to keep asserting the strict default.
+          PAWL_EDGE_FAIL_OPEN: "1"
         run: |
           echo "=== Running bats tests (4-way parallel) ==="
           # bats --jobs needs GNU parallel; the serial run was ~237s (55% of the
           # correctness critical path). --no-parallelize-within-files preserves
           # ordering inside each file; only independent files run concurrently.
-          sudo apt-get install -y parallel >/dev/null 2>&1 || { sudo apt-get update -qq && sudo apt-get install -y parallel; }
+          # ripgrep is NOT preinstalled on the runner image: a few gate scripts
+          # (check-orchestration-skill-boundaries.sh, skill-standards-convergence,
+          # the cli_contract nested gate) shell out to `rg` and otherwise 127.
+          sudo apt-get install -y parallel ripgrep >/dev/null 2>&1 || { sudo apt-get update -qq && sudo apt-get install -y parallel ripgrep; }
           bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats
           echo "✅ Bats tests passed"
 

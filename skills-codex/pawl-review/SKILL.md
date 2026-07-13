@@ -22,9 +22,8 @@ the subject and the author never counts as its own reviewer.
 
 - Use for a fresh-context or multi-model pawl lane after deterministic tests
   have produced a reviewable commit and diff.
-- Use NTM when an attachable warm pane materially helps; use cold Codex/AGY
-  adapters when it does not. Gas City may implement the same port inside an
-  explicitly selected quest.
+- Use cold Codex/AGY adapters for the review lane. Gas City may implement the
+  same port inside an explicitly selected quest.
 - Agent Mail is optional coordination for separate live actors. One local lane
   does not need identity, reservations, or acknowledgements.
 

@@ -14,9 +14,14 @@ setup() {
   mkdir -p "$TMP/bin"
   export PATH="$TMP/bin:$PATH"
   export TMPDIR="$TMP"
+  # Single `if` so setup's terminal exit status is always 0. A bare
+  # `command -v gtimeout ... && HAVE_TIMEOUT=1` as the last setup line returns
+  # non-zero on Linux CI (gtimeout is a macOS/coreutils-only name), which bats
+  # treats as a setup FAILURE and errors every test in the file.
   HAVE_TIMEOUT=0
-  command -v timeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
-  command -v gtimeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
+  if command -v timeout >/dev/null 2>&1 || command -v gtimeout >/dev/null 2>&1; then
+    HAVE_TIMEOUT=1
+  fi
 }
 
 teardown() { rm -rf "$TMP"; }

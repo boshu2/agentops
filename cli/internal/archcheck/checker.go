@@ -180,7 +180,7 @@ func checkTree(root, tree string) ([]Violation, error) {
 		if err != nil {
 			return err
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) // #nosec G122 -- dev-time arch checker walks this repo's own trusted source tree; no symlink-TOCTOU threat model.
 		if err != nil {
 			return err
 		}

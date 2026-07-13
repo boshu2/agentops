@@ -13,7 +13,6 @@
 #  have cleaned sites.)
 cli/cmd/ao/batch_forge.go
 cli/cmd/ao/c2_event_reader.go
-cli/cmd/ao/claim_evidence_binder_adapter.go
 cli/cmd/ao/codex.go
 cli/cmd/ao/context_assemble.go
 cli/cmd/ao/dedup.go
@@ -30,7 +29,6 @@ cli/cmd/ao/pool_reindex_test.go
 cli/cmd/ao/session_outcome.go
 cli/cmd/ao/task_sync.go
 cli/cmd/ao/temper.go
-cli/cmd/ao/tick.go
 cli/internal/adapters/vendorimage/codexruntime/runtime.go
 cli/internal/canon/ledger.go
 cli/internal/doctor/engine.go

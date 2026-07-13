@@ -145,12 +145,16 @@ setup_rpi_fake_repo() {
     /bin/cp "$REPO_ROOT/scripts/validate-codex-rpi-contract.sh" "$FAKE_REPO/scripts/"
     /bin/cp "$LIB" "$FAKE_REPO/scripts/lib/"
     chmod +x "$FAKE_REPO/scripts/validate-codex-rpi-contract.sh"
-    mkdir -p "$FAKE_REPO/skills-codex" "$FAKE_REPO/skills-codex-overrides/evolve"
-    for slug in rpi crank discovery validate evolve autodev inject; do
+    mkdir -p "$FAKE_REPO/skills-codex" "$FAKE_REPO/skills-codex-overrides/research"
+    # Padding dirs for the fake repo — the fold under test is on `rpi`. Only copy
+    # slugs that still exist (autodev/inject were retired and the `evolve` codex
+    # override was removed; `/bin/cp` of a missing path aborts setup, erroring
+    # both tests in CI). `research` is a currently-present codex skill + override.
+    for slug in rpi crank discovery validate research; do
         /bin/cp -R "$REPO_ROOT/skills-codex/$slug" "$FAKE_REPO/skills-codex/$slug"
     done
-    /bin/cp "$REPO_ROOT/skills-codex-overrides/evolve/prompt.md" \
-        "$FAKE_REPO/skills-codex-overrides/evolve/prompt.md"
+    /bin/cp "$REPO_ROOT/skills-codex-overrides/research/prompt.md" \
+        "$FAKE_REPO/skills-codex-overrides/research/prompt.md"
     # Simulate a fold: rpi's dir moved to its merge target, path now absent.
     mv "$FAKE_REPO/skills-codex/rpi" "$FAKE_REPO/skills-codex/rpi-target"
     RPI_LEDGER="$TMP_DIR/rpi-ledger.yaml"
