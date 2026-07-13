@@ -186,7 +186,7 @@ for the canonical shape.
 - **Filename:** the filename convention is ISO date plus stable goal slug.
 - **Format:** Markdown with Gherkin, fenced YAML criteria, issue IDs, dependencies, and file matrices.
 - **Validation command:** run `bash skills/plan/scripts/validate.sh` plus admission and symbol checks.
-- **Downstream handoff:** consumed by `$pre-mortem`, `$crank`, `$implement`, and future Codex sessions.
+- **Downstream handoff:** consumed by `$premortem`, `$crank`, `$implement`, and future Codex sessions.
 
 ## Quality Rubric
 

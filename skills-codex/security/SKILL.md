@@ -1,6 +1,6 @@
 ---
 name: security
-description: "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: security review, release security, scan this repository."
+description: "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates, using canonical premortem/postmortem handoffs. Triggers: security review, release security, scan this repository."
 ---
 # Security Skill
 

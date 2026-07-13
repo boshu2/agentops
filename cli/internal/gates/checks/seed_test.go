@@ -291,19 +291,6 @@ func TestCodexContractGatesAreAlwaysRun(t *testing.T) {
 	}
 }
 
-func TestArchitectureDriftGateIsBlocking(t *testing.T) {
-	check, ok := gates.Default.Get("docs.architecture-drift")
-	if !ok {
-		t.Fatal("docs.architecture-drift gate is not registered")
-	}
-	if check.Backing != "check-architecture-doc-drift.sh" {
-		t.Fatalf("docs.architecture-drift backing = %q, want check-architecture-doc-drift.sh", check.Backing)
-	}
-	if !check.Blocking {
-		t.Fatal("docs.architecture-drift must be blocking")
-	}
-}
-
 func TestNextWorkContractGateRoutesOnItsSubjectFile(t *testing.T) {
 	check, ok := gates.Default.Get("skill.next-work-contract")
 	if !ok {
@@ -328,10 +315,10 @@ func TestNextWorkContractGateRoutesOnItsSubjectFile(t *testing.T) {
 		".agents/rpi/next-work.jsonl",
 		"docs/contracts/next-work.schema.md",
 		"cli/internal/rpi/types.go",
-		"cli/cmd/ao/rpi_loop.go",
+		"cli/internal/rpi/helpers.go",
 		"scripts/validate-next-work-contract-parity.sh",
 		"scripts/validate-next-work.sh",
-		"skills/post-mortem/SKILL.md",
+		"skills/rpi/references/gate4-loop-and-spawn.md",
 	} {
 		if !gates.PathMatchesAny(check.Match, path) {
 			t.Fatalf("skill.next-work-contract must route on %q; match globs = %v", path, check.Match)

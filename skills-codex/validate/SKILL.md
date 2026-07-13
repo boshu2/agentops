@@ -9,22 +9,22 @@ description: Independently remeasure a bounded artifact
 
 ## Critical Constraints
 
-- **One role: validator.** Never edit the subject, control its producer, mutate
+- **Why: preserve independence. One role: validator.** Never edit the subject, control its producer, mutate
   repository or tracker state, or take delivery authority.
-- Pin the artifact by path plus commit or digest before checking it. A changed
+- **Why: prevent stale proof.** Pin the artifact by path plus commit or digest before checking it. A changed
   artifact makes prior evidence stale.
-- Rerun cited deterministic commands on the pinned artifact. Author claims and
+- **Why: ground the verdict.** Rerun cited deterministic commands on the pinned artifact. Author claims and
   conversational memory are context, not proof.
-- PASS requires every mandatory check green, no blocking finding, disclosed
+- **Why: fail closed.** PASS requires every mandatory check green, no blocking finding, disclosed
   `not_checked`, and a judge identity different from the author when
   independence is claimed.
-- Judge lanes are read-only except for their one verdict artifact.
-- Structured observations are part of the immutable verdict; they describe
+- **Why: protect the subject.** Judge lanes are read-only except for their one verdict artifact.
+- **Why: keep evidence reusable.** Structured observations are part of the immutable verdict; they describe
   evidence without classifying recurrence, promoting knowledge, or changing
   future work.
-- WARN and FAIL identify the owning producer and an executable next action, but
+- **Why: preserve ownership.** WARN and FAIL identify the owning producer and an executable next action, but
   Validate does not perform the action, retry, re-plan, or choose escalation.
-- Use runtime-native fresh context. Additional judges are optional depth, not a
+- **Why: reduce shared-context bias.** Use runtime-native fresh context. Additional judges are optional depth, not a
   substitute for one accountable validator.
 
 ## Modes
@@ -67,6 +67,35 @@ The proof-only post-verdict boundary is in
 [post-verdict-actions.md](references/post-verdict-actions.md). Quick mode is
 defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 
+### Compatibility references
+
+The active workflow above does not load the older specialist material below by
+default. These paths remain discoverable because live skills and distribution
+images still cite them; when selected explicitly, the canonical protocol and
+constraints above take precedence:
+
+[complexity-analysis.md](references/complexity-analysis.md),
+[deep-audit-protocol.md](references/deep-audit-protocol.md),
+[deep-checks.md](references/deep-checks.md), [examples.md](references/examples.md),
+[go-patterns.md](references/go-patterns.md),
+[go-standards.md](references/go-standards.md),
+[json-standards.md](references/json-standards.md),
+[markdown-standards.md](references/markdown-standards.md),
+[patterns.md](references/patterns.md),
+[python-standards.md](references/python-standards.md),
+[report-format.md](references/report-format.md),
+[rust-standards.md](references/rust-standards.md),
+[shell-standards.md](references/shell-standards.md),
+[test-pyramid-inventory.md](references/test-pyramid-inventory.md),
+[test-pyramid-weighting.md](references/test-pyramid-weighting.md),
+[typescript-standards.md](references/typescript-standards.md),
+[verification-report.md](references/verification-report.md),
+[vibe-coding.md](references/vibe-coding.md),
+[vibe-suppressions.md](references/vibe-suppressions.md),
+[vibe.feature](references/vibe.feature),
+[write-time-quality.md](references/write-time-quality.md), and
+[yaml-standards.md](references/yaml-standards.md).
+
 For entry-documentation work, load
 [`docs/contracts/entry-documentation-behavior.md`](../../docs/contracts/entry-documentation-behavior.md)
 and judge the pinned four-document journey. Prose meaning is a judgment surface:
@@ -83,7 +112,7 @@ verdict shape, but never replace the judges with keyword or regex semantics.
 - **Evidence:** exactly one anchored `VERDICT: PASS|WARN|FAIL`, a nonempty
   `COMMANDS RUN:` section with `judge=<id> command=<command>`, `REASONS:`,
   findings, structured observations, and `not_checked`.
-- **Validator:** `bash skills/validate/scripts/validate.sh`.
+- **Validator command:** `bash skills/validate/scripts/validate.sh`.
 - **Downstream handoff:** callers may pass the immutable verdict and digest to
   Learn or to their own delivery process. A repository may consume PASS without
   another LLM landing verdict. Validate has no authority after the handoff.
@@ -98,4 +127,3 @@ verdict shape, but never replace the judges with keyword or regex semantics.
 - [ ] No implementation, learning, retry, tracker, or delivery action occurred.
 
 Executable behavior is in [validate.feature](references/validate.feature).
-

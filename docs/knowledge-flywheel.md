@@ -163,7 +163,7 @@ ao flywheel status
 | Durable learning | Stale knowledge pollutes retrieval | `ao maturity`, `ao dedup`, and `ao contradict` keep the corpus current |
 | Loop closure | Handoffs rely on chat memory | AgentOps stores handoffs and phased state on disk in `.agents/` |
 | Loop closure | Session 50 starts from scratch | Session 50 starts with 50 sessions of flywheel-promoted wisdom |
-| Loop closure | Completed work teaches nothing | `/post-mortem` + finding compiler + `ao-flywheel-close.sh` harvest and compile learnings automatically |
+| Loop closure | Completed work teaches nothing | `/learn` emits verdict-bound observations and plan impact; qualified evidence may later flow through pattern mining and operationalization |
 
 ## See Also
 

@@ -157,7 +157,7 @@ AgentOps `/vibe` validates 8 aspects beyond tests:
      ↓
 /crank        →  Implement → validate → commit loop
      ↓
-/post-mortem  →  Validate + extract learnings (FOR NEXT TIME)
+/validate → /learn  →  immutable verdict + bounded plan impact
 ```
 
 **Key difference:** AgentOps has gates *before* and *after* implementation, and learnings persist to future sessions.

@@ -51,6 +51,24 @@ install_manifest() {
   [[ "$output" == *"undeclared live consumers: second-consumer.txt"* ]]
 }
 
+@test "a bounded reference assertion ignores literals outside its declared scope" {
+  install_manifest valid.yaml
+  python3 - "$TEST_REPO/docs/contracts/authority.yaml" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace("      consumers: [consumer.txt]", "      include_globs: [consumer.txt]\n      consumers: [consumer.txt]")
+path.write_text(text)
+PY
+  printf 'A.md\n' >"$TEST_REPO/outside-scope.txt"
+  git -C "$TEST_REPO" add .
+  git -C "$TEST_REPO" commit -qm scoped-consumer
+  run "$CHECKER" --root="$TEST_REPO" --manifest=docs/contracts/authority.yaml --phase=inventory
+  [ "$status" -eq 0 ]
+}
+
 @test "manifest rejects duplicate document records" {
   install_manifest duplicate-path.yaml
   run "$CHECKER" --root="$TEST_REPO" --manifest=docs/contracts/authority.yaml --phase=inventory
@@ -63,6 +81,13 @@ install_manifest() {
   run "$CHECKER" --root="$TEST_REPO" --manifest=docs/contracts/authority.yaml --phase=inventory
   [ "$status" -eq 1 ]
   [[ "$output" == *"documents[0]: unknown key: referneces"* ]]
+}
+
+@test "manifest rejects a completely vacuous reference audit" {
+  install_manifest no-references.yaml
+  run "$CHECKER" --root="$TEST_REPO" --manifest=docs/contracts/authority.yaml --phase=inventory
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must declare at least one bounded literal-reference assertion"* ]]
 }
 
 @test "manifest rejects duplicate YAML mapping keys before loading values" {

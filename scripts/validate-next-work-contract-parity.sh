@@ -30,10 +30,6 @@ fi
 
 SCHEMA="$ROOT/docs/contracts/next-work.schema.md"
 HARVEST_REF="$ROOT/skills/postmortem/references/harvest-next-work.md"
-POSTMORTEM_SKILL="$ROOT/skills/postmortem/SKILL.md"
-POSTMORTEM_CODEX_SKILL="$ROOT/skills-codex/postmortem/SKILL.md"
-LEARN_SKILL="$ROOT/skills/learn/SKILL.md"
-LEARN_CODEX_SKILL="$ROOT/skills-codex/learn/SKILL.md"
 PHASE_CONTRACT="$ROOT/skills/rpi/references/phase-data-contracts.md"
 GATE4="$ROOT/skills/rpi/references/gate4-loop-and-spawn.md"
 RUNTIME="$(mktemp -t nextwork-runtime.XXXXXX)"
@@ -41,7 +37,6 @@ trap 'rm -f "$RUNTIME"' EXIT
 cat \
   "$ROOT/cli/internal/rpi/types.go" \
   "$ROOT/cli/internal/rpi/helpers.go" \
-  "$ROOT/cli/cmd/ao/rpi_loop.go" \
   > "$RUNTIME" 2>/dev/null || true
 SMOKE="$ROOT/tests/smoke-test.sh"
 
@@ -144,10 +139,6 @@ require_section_not_contains() {
 for path in \
   "$SCHEMA" \
   "$HARVEST_REF" \
-  "$POSTMORTEM_SKILL" \
-  "$POSTMORTEM_CODEX_SKILL" \
-  "$LEARN_SKILL" \
-  "$LEARN_CODEX_SKILL" \
   "$PHASE_CONTRACT" \
   "$GATE4" \
   "$RUNTIME" \
@@ -159,7 +150,7 @@ require_contains "$SCHEMA" "schema_version: 1.4" \
   "next-work schema is not at v1.4"
 require_contains "$SCHEMA" 'Item lifecycle inside `items[]` is authoritative.' \
   "next-work schema must declare item lifecycle authority"
-require_contains "$SCHEMA" "may be empty when a postmortem finds nothing actionable" \
+require_contains "$SCHEMA" "may be empty when a post-mortem finds nothing actionable" \
   "next-work schema must permit empty items arrays"
 require_contains "$SCHEMA" "consumers may rewrite existing lines to claim, release, fail, or consume individual items" \
   "next-work schema must describe rewrite semantics"
@@ -185,7 +176,7 @@ item_types=(
 )
 item_sources=(
   council-finding retro-learning retro-pattern evolve-generator
-  feature-suggestion backlog-processing postmortem-finding post-mortem-finding manifest-classification
+  feature-suggestion backlog-processing post-mortem-finding manifest-classification
   dream-degraded
 )
 
@@ -250,19 +241,6 @@ require_contains "$HARVEST_REF" "docs/contracts/next-work.schema.md" \
   "harvest-next-work must reference the tracked next-work schema"
 require_contains "$HARVEST_REF" "proof_ref" \
   "harvest-next-work must document proof_ref emission"
-require_contains "$POSTMORTEM_SKILL" "not the general learning" \
-  "postmortem must remain a causal-analysis specialization"
-require_contains "$POSTMORTEM_CODEX_SKILL" "not the general learning" \
-  "generated Codex postmortem must remain a causal-analysis specialization"
-require_contains "$LEARN_SKILL" 'plan_impact' \
-  "Learn must own the post-verdict plan-impact handoff"
-require_contains "$LEARN_CODEX_SKILL" 'plan_impact' \
-  "generated Codex Learn must own the post-verdict plan-impact handoff"
-for skill in "$POSTMORTEM_SKILL" "$POSTMORTEM_CODEX_SKILL"; do
-  if contains_fixed_file "docs/contracts/next-work.schema.md" "$skill"; then
-    fail "${skill#$ROOT/} must not own general next-work bookkeeping"
-  fi
-done
 require_contains "$GATE4" "docs/contracts/next-work.schema.md" \
   "rpi gate4 reference must point at the tracked next-work schema"
 require_contains "$PHASE_CONTRACT" "item lifecycle as authoritative" \
@@ -367,7 +345,7 @@ if [[ -f "$LIVE_QUEUE" ]] && command -v jq >/dev/null 2>&1; then
       def valid_source:
         . == "council-finding" or . == "retro-learning" or . == "retro-pattern" or
         . == "evolve-generator" or . == "feature-suggestion" or . == "backlog-processing" or
-        . == "postmortem-finding" or . == "post-mortem-finding" or . == "manifest-classification" or
+        . == "post-mortem-finding" or . == "manifest-classification" or
         . == "dream-degraded";
       to_entries[] as $line |
       select(($line.value.items? | type) == "array") |

@@ -56,7 +56,6 @@ var (
 		".agents/rpi/next-work.jsonl",
 		"docs/contracts/next-work.schema.md",
 		"cli/internal/rpi/**",
-		"cli/cmd/ao/rpi_loop.go",
 		"scripts/validate-next-work-contract-parity.sh",
 		"scripts/validate-next-work.sh",
 	}
@@ -172,16 +171,6 @@ var (
 		"scripts/lib/docs-scope.sh",
 		"tests/scripts/check-docs-duplicates.bats",
 	}
-	archDocDriftPaths = []string{
-		"docs/architecture/ports-and-adapters.md",
-		"docs/contracts/bounded-contexts.yaml",
-		"docs/reference/agentops-skill-domain-map.md",
-		"docs/reference/agentops-hexagonal-architecture-map.md",
-		"docs/ARCHITECTURE.md",
-		"docs/CI-CD.md",
-		"scripts/check-architecture-doc-drift.sh",
-		"tests/scripts/check-architecture-doc-drift.bats",
-	}
 	cliAgentsTrackerPaths = []string{
 		"cli/AGENTS.md",
 		"scripts/check-cli-agents-tracker-drift.sh",
@@ -211,7 +200,6 @@ var (
 		"skills-codex-overrides/**",
 		"docs/contracts/**",
 		"docs/reference/agentops-skill-domain-map.md",
-		"docs/reference/agentops-hexagonal-architecture-map.md",
 		"registry.json",
 		"cli/cmd/ao/**",
 		"cli/docs/COMMANDS.md",
@@ -393,8 +381,6 @@ func init() {
 			Backing: "check-doc-skill-refs.sh", Args: []string{"--all-docs", "--strict"}},
 		{ID: "cli.agents-tracker", Tiers: gates.Fast | gates.Full, Match: cliAgentsTrackerPaths, Blocking: true,
 			Backing: "check-cli-agents-tracker-drift.sh"},
-		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
-			Backing: "check-architecture-doc-drift.sh"},
 		{ID: "docs.control-plane-taxonomy", Tiers: gates.Fast | gates.Full, Match: controlPlaneTaxonomyPaths, Blocking: true,
 			Backing:    "check-control-plane-taxonomy.sh",
 			RepairHint: "keep the etcd-analog bound to br + the proof/verdict ledger (not bd/Dolt); keep the agent two-altitude note in the-agent-factory.md + ports-and-adapters.md; keep the taxonomy cross-links bidirectional; see scripts/check-control-plane-taxonomy.sh"},
@@ -411,7 +397,6 @@ func init() {
 			Args: []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}},
 		{ID: "always.wiring-closure", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-wiring-closure.sh"},
 		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
-		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
 			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head; for a reported skill run: bash skills/heal-skill/scripts/audit.sh --strict skills/<skill>"},

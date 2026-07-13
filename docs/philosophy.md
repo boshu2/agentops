@@ -31,7 +31,9 @@ Sessions → Bookkeeping → Learnings → Findings → Planning Rules → Gates
 Each phase is deliberate:
 
 - **Sessions** produce signal: commits, decisions, failures, retros.
-- **Bookkeeping** (`/post-mortem`, which folded the retired `/curate` mining modes, `ao harvest`) extracts and scores that signal. Scores on specificity, actionability, novelty, and confidence filter noise.
+- **Bookkeeping** (`/learn`) binds structured observations to the immutable
+  verdict and emits plan impact. Pattern mining and operationalization own later
+  promotion; `/postmortem` is reserved for explicit causal analysis.
 - **Learnings** are the raw output — scored, attributed, timestamped.
 - **Findings** are promoted learnings: higher confidence, cross-session validation, broader applicability.
 - **Planning rules** are enforcement-level knowledge: if a finding is violated, the pre-mortem blocks the plan.

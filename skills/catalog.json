@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T15:35:55Z",
+  "generated_at": "2026-07-13T15:51:44Z",
   "skill_count": 63,
   "skills": [
     {
@@ -824,7 +824,7 @@
     },
     {
       "name": "learn",
-      "description": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
+      "description": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan. Triggers: \"learn\", \"consume verdict\", \"record learning\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": false,
@@ -1077,7 +1077,7 @@
     },
     {
       "name": "postmortem",
-      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
+      "description": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping. Triggers: \"postmortem\", \"retrospective causal analysis\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": false,
@@ -1713,7 +1713,7 @@
     },
     {
       "name": "validate",
-      "description": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
+      "description": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver. Triggers: \"validate\", \"verify\", \"judge\".",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "graph_root": true,
@@ -1761,4 +1761,3 @@
     }
   ]
 }
-

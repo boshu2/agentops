@@ -33,9 +33,9 @@ var rootCmd = &cobra.Command{
 produces validated output with proof — no verdict = not done.
 
 The operating loop:
-  ao session bootstrap                  Orient any agent in this repo (run first)
-  ao lookup --query "<topic>"           Pull decay-ranked prior context
+  /plan -> /implement -> /validate      Shape, build, and judge one behavior
   ao gate check --fast --scope head     The release gate before any push
+  ao land <bead>                        Land bead-backed work through the pawl
 
 For AI agents:
   ao capabilities     Machine-readable CLI contract (JSON) — run this first.

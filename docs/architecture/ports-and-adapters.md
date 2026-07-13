@@ -20,13 +20,17 @@ Invariants are exercised by `pgregory.net/rapid` property tests in `aggregate_pr
 Primary adapters drive the domain from the outside: a human, an agent, or a workflow calls into them, and they translate the call into a domain operation. Categories currently in use:
 
 - **CLI commands** in `cli/cmd/ao/` — every `ao <verb>` is a driving adapter.
-- **Slash commands** in `skills/` — invocations like `/plan`, `/discovery`, `/validation`, `/vibe`.
-- **MCP** — Model Context Protocol entry points exposed by `ao` and by skills.
-- **Autonomous loops** — `/dream`, `/evolve`. These are in-session driving adapters; running them out of session (always-on, scheduled) is delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents), not an AgentOps daemon.
+- **Skills** in `skills/` — instruction adapters such as `plan`, `discovery`,
+  `premortem`, and `validate` that shape how an agent drives the runtime.
+- **Optional MCP adapters** — Model Context Protocol entry points available in
+  archive/optional profiles; `ao mcp` is not on the default CLI surface.
+- **Whole-loop execution** — `rpi` and `evolve` skills can drive an iteration;
+  optional out-of-session scheduling belongs to an operator-selected substrate,
+  not an AgentOps daemon.
 - **CI gates** — `scripts/*.sh` and `.github/workflows/validate.yml` jobs that drive validation against the same domain types they would in interactive runs.
 
 > **The agent at two altitudes (reconciliation).** Here the agent is on the **driving** side: it calls
-> *into* this domain hexagon through the slash-command / MCP / autonomous-loop driving adapters above. At
+> *into* this domain hexagon through the CLI, skill, optional MCP, and whole-loop driving adapters above. At
 > the *process* control-plane altitude — [the-agent-factory.md](the-agent-factory.md) — the same agent is
 > the **data-plane workload** (the AgentPod / actuator) that the controller schedules and gates. Both are
 > true: the agent *drives* the code-level domain and *is driven by* the process-level controller. See
@@ -34,31 +38,43 @@ Primary adapters drive the domain from the outside: a human, an agent, or a work
 
 ## Secondary (driven) adapters
 
-Secondary adapters are driven *by* the domain through a port interface — the domain calls them. The first concrete adapter is `cli/internal/adapters/storage_fs/`, which implements `ports.PacketRepository` against the local filesystem and is exercised by `t.TempDir()` L2 integration tests.
+Secondary adapters are driven *by* application code through port interfaces.
+Concrete packages live under `cli/internal/adapters/`; current examples include
+filesystem corpus and packet storage, Git workspaces, CI status, Agent Mail,
+review workers, runtime surfaces, and tracker adapters. Compile-time assertions
+bind several of them to their ports—for example `storage_fs` to
+`PacketRepository`, `corpus_fs` to the corpus ports, `workspace_git` to
+`WorkspacePort`, and the legacy `tracker_bd` adapter to `IssueTracker`.
 
-Future driven adapters (not delivered in v1, kept here as a design forecast):
-
-- **Git adapter** — packet history, ratchet snapshots, ADR provenance.
-- **Beads / tasklist adapter** — `br` (beads_rust) via shell invocation (`BEADS_DIR="$(ao beads dir)" br …`) in handoff and session bootstrap; legacy `tracker_bd` port adapter remains for other paths until the full IssueTracker port migrates.
-- **LLM-provider adapters** — `ports.LLMClient` against Claude, Codex, or local providers.
+The product-repo tracker is `br`, usually invoked through the resolved tracker
+facade or local shell. The `tracker_bd` package remains an implemented legacy
+adapter for substrate paths; its presence does not make `bd` this repository's
+tracker.
 
 ## Ports
 
-Port interfaces live at `cli/internal/ports/`. Three are declared today:
+Port interfaces live at `cli/internal/ports/`. The exact current inventory is
+**32 interfaces**: 29 use the normalized `*Port` suffix and three foundational
+interfaces retain pre-normalization names:
 
 - **`PacketRepository`** (`storage.go`) — abstracts ExecutionPacket persistence: save / load / load-latest.
 - **`IssueTracker`** (`tracker.go`) — abstracts epic and issue creation; production bootstrap/handoff paths call `br` directly; `tracker_bd` remains a legacy driven adapter behind the port interface.
 - **`LLMClient`** (`llm.go`) — abstracts model completion calls behind a provider-neutral `Complete(ctx, prompt, opts)` shape.
 
-Ports are deliberately narrow. New ports earn their place when at least a second implementation is in sight — the v1 set already meets that bar (tracker has two intended impls; LLM has many; storage has one today and is honest about that in ADR-0001).
+The six bounded-context owners for all 32 interfaces are canonical in
+[`bounded-contexts.yaml`](../contracts/bounded-contexts.yaml) and projected in
+the [component map](component-map.md). `check-bounded-contexts-drift.sh` fails
+closed when a Go interface is unowned, multiply owned, or declared without an
+implementation. New interfaces should use the `*Port` suffix; the three names
+above remain inventoried compatibility exceptions.
 
 ## Hexagon diagram
 
 ```text
                      Primary (driving)
                 ┌────────────────────────┐
-   CLI       → │                          │ ← slash commands
-   MCP       → │      ╔═══════════╗       │ ← /dream, /evolve
+   CLI       → │                          │ ← agent skills
+   MCP       → │      ╔═══════════╗       │ ← skills / loop drivers
                  │      ║   domain  ║       │
                  │      ║  (inner)  ║       │
    CI gates  → │      ╚═══════════╝       │ ← scripts/*.sh
@@ -68,8 +84,8 @@ Ports are deliberately narrow. New ports earn their place when at least a second
                               ▼
               ┌──────────────────────────────┐
               │ Secondary (driven) adapters  │
-              │  storage_fs   git   beads    │
-              │  LLM provider  …             │
+              │ storage_fs · corpus_fs · Git │
+              │ tracker · reviewers · MCP …  │
               └──────────────────────────────┘
 ```
 

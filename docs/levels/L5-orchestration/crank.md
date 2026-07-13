@@ -95,4 +95,4 @@ Crank handles failures automatically:
 ## Next
 
 - `/validate` - Runs automatically at end
-- `/post-mortem` - Extract learnings after epic completes
+- `/learn` - Consume each immutable Validate verdict before the next decision

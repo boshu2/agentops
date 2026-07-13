@@ -1,192 +1,82 @@
-# AgentOps — System Map
+# AgentOps System Map
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    AgentOps at a Glance                          │
-├───────────────────┬──────────────────────┬───────────────────────┤
-│   63 Skills       │   76 CLI Commands    │   Hookless (CI-gated) │
-│  (workflows)      │  (ao binary)         │  (validate.yml)       │
-└───────────────────┴──────────────────────┴───────────────────────┘
-```
+AgentOps is a local verification membrane around an operator-selected coding
+agent. Skills carry domain contracts; the `ao` CLI supplies deterministic
+bookkeeping, provenance, gates, and landing mechanics.
 
----
+## One loop
 
-## The Pipeline — Skills Calling Skills
-
-The top-level skill `/rpi` chains the full pipeline. Each node is a skill. Arrows show calls.
-
-```
-                         ┌─────────────┐
-                         │   /evolve   │  ← loops /rpi overnight
-                         └──────┬──────┘    fitness-gated
-                                │ calls
-                                ▼
-┌───────────────────────────────────────────────────────────────────┐
-│                             /rpi                                  │
-│                    (full pipeline orchestrator)                   │
-└──┬──────────┬───────────┬─────────────┬──────────┬────────────────┘
-   │          │           │             │          │
-   ▼          ▼           ▼             ▼          ▼
-/research   /plan    /pre-mortem     /crank    /post-mortem
-   │          │           │             │          │
-   │          │      calls /council     │          ├── calls /council
-   │          │                         │          └── calls /retro
-   │          │                         │
-   │          │              ┌──────────┴──────────┐
-   │          │              │        /crank       │
-   │          │              │  (wave executor)    │
-   │          │              └──────────┬──────────┘
-   │          │                         │ spawns N parallel
-   │          │                         ▼
-   │          │                   /implement
-   │          │                   /implement    ← one per issue
-   │          │                   /implement
-   │          │                         │
-   │          │                         ▼
-   │          │                      /vibe  ←── calls /council
-   │          │                             ←── calls /complexity
-   │          │                             ←── calls /bug-hunt
-   │          │
-   └──────────┴──────────────────────────────────────────────────────
+```text
+operator intent
+  → Discovery: BDD acceptance + execution packet
+  → Crank: behavior-sized slices and waves
+  → Validate: immutable evidence-bound verdict
+  → Learn: observations + recurrence bookkeeping + plan impact
+  → orchestrator: retry | re-plan | stop | terminal
+  → pawl / ao gate: commit-bound evidence
+  → land
 ```
 
----
+`/postmortem` is an optional side path after Validate and Learn. It answers one
+explicit retrospective causal question; it does not validate completion,
+harvest general learnings, mutate the plan, or activate constraints.
 
-## Judgment Layer — Everything Flows Through Council
+## Six bounded contexts
 
-`/council` is the core validation primitive. Three skills wrap it:
+| Context | Owns |
+|---|---|
+| BC1 Corpus | local evidence, retrieval, pattern mining, operationalization |
+| BC2 Validation | verdicts, gates, pawls, plan risk review |
+| BC3 Loop | Discovery, Crank, Learn, goals, execution state |
+| BC4 Factory | skill generation, registries, standards, dispositions |
+| BC5 Runtime | CLI, installers, plugin/runtime packaging |
+| BC6 Orchestration | substrate-neutral whole-skill dispatch and coordination |
 
-```
-                   ┌──────────────────────────────┐
-                   │           /council           │
-                   │  (independent judges debate, │
-                   │   verdict gates delivery)    │
-                   └───────────┬──────────────────┘
-                               │ used by
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-   /pre-mortem              /vibe              /post-mortem
-   (validate plans          (validate code     (wrap-up +
-    before building)         before shipping)   learnings)
-```
+The exact skill and Go-interface ownership is generated from
+`docs/contracts/skill-dispositions.yaml`, `docs/contracts/bounded-contexts.yaml`,
+and `cli/internal/ports/`. See the [Component Map](architecture/component-map.md)
+and [Ports and Adapters](architecture/ports-and-adapters.md).
 
----
+## Authority flow
 
-## Knowledge Layer — Skills Calling the CLI
-
-Skills hand off to `ao` to persist knowledge across sessions:
-
-```
-   SKILL                   ao CLI COMMAND              RESULT
-   ─────                   ──────────────              ──────
-/research          →    ao lookup                  Prior knowledge loaded into session
-/retro             →    ao forge transcript        Learnings extracted from session
-/retro             →    ao pool promote            Validated learnings promoted
-/evolve            →    ao goals measure           Fitness checked before next cycle
-/rpi               →    ao ratchet record          Progress gate checkpointed
-/implement         →    ao ratchet check           Gate verified before work starts
-/post-mortem       →    ao compile                 Findings become artifacts, checks, and constraints
-/post-mortem       →    ao flywheel close-loop     Citation feedback and lifecycle updates applied
+```text
+skills/**/SKILL.md               declared behavior
+cli/cmd/ao + cli/internal        executable behavior
+schemas + docs/contracts         machine-readable boundaries
+registry/catalog/CLI docs        generated projections
+docs narrative                   explanation and routing
 ```
 
----
+When these disagree, executable and declared contracts win; report and repair
+the stale consumer rather than teaching both versions.
 
-## Prevention Ratchet
+## Prevention ratchet
 
-The closed-loop prevention path is file-native:
-
-```
-/post-mortem or /pre-mortem
-        │
-        ▼
-.agents/findings/registry.jsonl
-        │
-        ▼
-ao flywheel / compile  (explicit command — no auto-hook)
-        │
-        ├──> .agents/findings/<id>.md
-        ├──> .agents/planning-rules/<id>.md
-        ├──> .agents/pre-mortem-checks/<id>.md
-        └──> .agents/constraints/index.json   (mechanical + active only)
-                                              │
-                                              ▼
-                              .github/workflows/validate.yml  (CI gate)
+```text
+Validate observation
+  → Learn advisory candidate
+  → replay over stored positives + negative controls
+  → warn-only shadow evidence
+  → measured precision threshold
+  → operator/CLI activation
 ```
 
-`/plan`, `/pre-mortem`, `/vibe`, and `/post-mortem` load compiled planning and review artifacts first, then fall back to the registry when compiled outputs are missing. AgentOps 3.0 is hookless: enforcement of active mechanical findings is shift-left via the CI gates in `.github/workflows/validate.yml`, not an auto-firing hook.
+Generated detector scripts are compatibility metadata, not proof. Learn and
+Postmortem never activate a constraint.
 
----
+## Runtime boundary
 
-## CLI Command Groups (76 commands including subcommands)
+AgentOps 3.0 is hookless and ships no daemon. One local agent plus the shell is
+the default. Out-of-session or parallel execution is an explicit
+operator-selected substrate—NTM, Agent Mail, managed agents, Gas City, or
+another adapter—that dispatches whole skill contracts without reimplementing
+the loop.
 
-```
-KNOWLEDGE FLYWHEEL          VALIDATION GATES         SESSION / LIFECYCLE
-──────────────────          ────────────────         ───────────────────
-ao forge                    ao gate pending          ao session close
-ao pool ingest              ao gate approve          ao session bootstrap
-ao pool promote             ao gate reject           ao gate check
-ao lookup                   ao ratchet status        ao session bootstrap
-ao lookup                   ao ratchet record        ao config
-ao search                   ao ratchet check
-ao dedup                    ao ratchet promote       METRICS / HEALTH
-ao curate                                            ────────────────
-                            GOALS / FITNESS          ao metrics health
-MEMORY TOOLS                ───────────────          ao metrics flywheel
-────────────                ao goals measure         ao metrics report
-ao mind                     ao goals steer           ao flywheel status
-ao notebook                 ao goals add             ao maturity
-ao memory                   ao goals prune           ao doctor
-ao trace                    ao goals history
-ao extract                  ao goals drift           UTILITIES
-                                                     ─────────
-                                                     ao search
-                                                     ao constraint
-                                                     ao badge
-                                                     ao version
-```
+## Current inventories
 
----
+Do not copy totals into this map. Read:
 
-## Enforcement — Hookless, CI-Gated
-
-AgentOps 3.0 is hookless: it ships zero hooks by default and nothing auto-injects or auto-enforces at session boundaries. Validation that used to live in shell hooks is now the authoritative CI gate in `.github/workflows/validate.yml` (T0/T1/T2 tiers, all required), with explicit `ao` commands and skills doing the in-session work. An opt-in `hooks-authoring` skill lets you add your own hooks if you want always-on local signals, but the corpus carries none.
-
-```
-WAS A HOOK                  NOW
-──────────                  ───
-Session-boundary staging    ao session bootstrap / ao inject (explicit, run on demand)
-Learning-loop close         ao flywheel close-loop (called by /post-mortem)
-Task/constraint validation   .github/workflows/validate.yml CI gates
-Complexity budget            golangci-lint + validate.yml
-Skill / git / pre-mortem     validate.yml gates + /pre-mortem skill
-checks                       (re-author as opt-in via hooks-authoring skill)
-```
-
----
-
-## Skill Tiers at a Glance
-
-```
-JUDGMENT             EXECUTION              KNOWLEDGE           INTERNAL
-────────             ─────────              ─────────           ────────
-council              research               retro               inject
-vibe                 plan                   forge               extract
-pre-mortem           implement              flywheel            ratchet
-post-mortem          crank                  goals               standards
-                     swarm                                      beads
-                     rpi                                        shared
-                     evolve
-                     release
-                     doc
-                     status
-                     handoff
-                     quickstart
-                     brainstorm
-                     bug-hunt
-                     complexity
-                     + 14 more
-```
-
----
-
-*63 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*
+- `registry.json` and `skills/catalog.json` for skills and relationships;
+- `cli/docs/COMMANDS.md` and `docs/cli-surface.json` for the CLI;
+- `docs/reference/agentops-skill-domain-map.md` for generated BC ownership;
+- `docs/skills-matrix.md` for the curated human-facing loop matrix.

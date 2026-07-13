@@ -9,26 +9,27 @@ description: Consume an immutable Validate verdict
 
 ## Critical Constraints
 
-- The input verdict is immutable. Bind it by `input_verdict_ref` and
+- **Why: preserve proof identity.** The input verdict is immutable. Bind it by `input_verdict_ref` and
   `input_verdict_digest`; never author, edit, reinterpret, or replace its value.
-- Consume only structured observations already present in the verdict. Missing
+- **Why: prevent invented evidence.** Consume only structured observations already present in the verdict. Missing
   evidence remains missing; Learn does not manufacture a lesson.
-- Classify bookkeeping outcomes such as `record`, `candidate`, or `no_change`,
+- **Why: keep bookkeeping bounded.** Classify bookkeeping outcomes such as `record`, `candidate`, or `no_change`,
   but do not promote a rule or alter the remaining plan in this mode.
-- Reconcile finding recurrence by stable defect class and distinct objective.
+- **Why: avoid counting retries as recurrence.** Reconcile finding recurrence by stable defect class and distinct objective.
   Retries inside one objective count once. One objective emits no producer
   candidate; two or more emit one advisory candidate citing each objective.
-- Mechanical candidates remain advisory until deterministic replay catches all
-  stored positives, passes explicit negative controls, and subsequent warn-only
-  shadow evidence demonstrates the activation precision threshold. Learn never
-  activates a constraint.
-- Postmortem is optional and runs only for retrospective causal analysis. Learn
+- **Why: require measured precision before enforcement.** Mechanical candidates
+  remain advisory until deterministic replay catches all stored positives,
+  passes explicit negative controls, and subsequent warn-only shadow evidence
+  demonstrates the activation precision threshold. Learn never activates a
+  constraint.
+- **Why: separate causality from bookkeeping.** Postmortem is optional and runs only for retrospective causal analysis. Learn
   may request that specialization; the caller decides whether to invoke it.
-- Emit observations plus one Learn receipt. Do not operate proof, repository,
+- **Why: preserve authority boundaries.** Emit observations plus one Learn receipt. Do not operate proof, repository,
   tracker, delivery, or Premortem authority.
-- Emit a `plan_impact` packet for the orchestrator. Learn does not mutate the
+- **Why: keep plan control with the orchestrator.** Emit a `plan_impact` packet for the orchestrator. Learn does not mutate the
   plan and does not invoke Premortem.
-- `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
+- **Why: fail closed on malformed handoff.** `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
   `BLOCKED`; incomplete bookkeeping is `PARTIAL`.
 
 ## Workflow
@@ -68,15 +69,25 @@ description: Consume an immutable Validate verdict
 
 ## Output Specification
 
-- **Artifacts:** `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+- **Artifact directory:** invocation output for `learn-receipt.json` and
+  `.agents/rpi/` for the phase summary.
+- **Filename convention:** `learn-receipt.json` and `phase-4-summary.md`.
 - **Recurrence contract:**
   [producer-defect-register.md](../../docs/contracts/producer-defect-register.md).
-- **Schema:** [learn-receipt.schema.json](schemas/learn-receipt.schema.json).
-- **Validator:** `bash skills/learn/scripts/validate.sh`.
-- **Downstream:** the orchestrator consumes the receipt and alone decides
+- **Serialization/schema format:** JSON follows
+  [learn-receipt.schema.json](schemas/learn-receipt.schema.json); the summary is Markdown.
+- **Validator command:** `bash skills/learn/scripts/validate.sh`.
+- **Downstream handoff:** the orchestrator consumes the receipt and alone decides
   whether to continue, re-plan, stop, or route a causal-analysis request.
   Learn is the only post-verdict handoff from Validate, but it is not the
   workflow controller.
+
+## Quality Checklist
+
+- [ ] The immutable verdict reference and digest agree.
+- [ ] Every observation and producer candidate cites evidence.
+- [ ] Recurrence counts distinct objectives, never retries.
+- [ ] The receipt validates without mutating proof, plan, tracker, or delivery state.
 
 Executable behavior is in [learn.feature](references/learn.feature). The
 post-verdict ownership map is in

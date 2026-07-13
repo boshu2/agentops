@@ -104,6 +104,10 @@ skills, the runtime, and external integrations.
 
     ---
 
+-   :material-repeat: **[Producer-Defect Recurrence](producer-defect-register.md)**
+
+    Distinct-objective recurrence reduction from immutable findings to advisory producer-rule candidates.
+
     Canonical intake-ledger contract for reusable findings.
 
 -   :material-hammer-wrench: **[Finding Compiler](finding-compiler.md)**

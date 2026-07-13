@@ -49,7 +49,13 @@ v1 (ship first)           v2 (after v1 proves out)      v3 (after v2 proves out)
 
 **v2 adds discoverability and quality measurement.** Once artifacts are structured and verified, they can be tagged for retrieval and scored for quality. This makes `ao search` and `ao lookup` return better results and enables the pool tiering system (gold/silver/bronze) to operate on verified data.
 
-> `2026-03-09` status note: the repo now runs a finding-compiler prevention ratchet alongside the broader curation pipeline. In current implementation terms, reusable findings enter through `.agents/findings/registry.jsonl`, are deduplicated and promoted into `.agents/findings/<id>.md`, and then compile into user-facing advisory surfaces under `.agents/planning-rules/<id>.md` and `.agents/pre-mortem-checks/<id>.md`. When detector metadata exists and is valid, the same promoted finding can also compile into `.agents/constraints/index.json` plus `.agents/constraints/<id>.sh` for `task-validation-gate.sh`. The general `ao curate` stage family is still partial, but the prevention slice is no longer advisory-only.
+> Current status: reusable findings enter through `.agents/findings/registry.jsonl`,
+> are deduplicated into evidence artifacts, and may compile into planning and
+> premortem advisory surfaces. Detector candidates begin in shadow/warn mode;
+> the generated `.sh` artifact is compatibility metadata, not activation proof.
+> Blocking activation requires replay coverage, negative controls, and measured
+> shadow precision at the threshold in
+> [the finding-compiler contract](contracts/finding-compiler.md).
 
 **v3 adds the feedback loop.** Once artifacts are scored, the system can reject low-quality or stale knowledge and compile high-quality knowledge into permanent defenses. This is where the system starts to exhibit self-organization: it generates its own constraints from its own experience.
 
@@ -68,7 +74,7 @@ Raw output from existing skills:
 | `/curate --mode=forge` | `.agents/forge/YYYY-MM-DD-forge.md` | Decisions, learnings, failures, patterns extracted from transcripts |
 | `/retro` | `.agents/learnings/YYYY-MM-DD-<topic>.md` | Lessons learned from completed work |
 | `/retro` | `.agents/learnings/YYYY-MM-DD-<topic>.md` | Retrospective summaries with improvement agendas |
-| `/post-mortem` | `.agents/learnings/`, `.agents/findings/registry.jsonl` | Council-validated learnings plus reusable structured findings |
+| `/learn` | `learn-receipt.json`, `.agents/rpi/phase-4-summary.md` | Verdict-bound observations and advisory recurrence candidates |
 
 ### Output
 

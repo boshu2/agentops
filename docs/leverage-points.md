@@ -71,7 +71,7 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 ```
 
 **Flows:**
-- **Inflow:** `ao forge` (session learnings), `/retro`, `/post-mortem` deposit into `I(t)`
+- **Inflow:** `/learn` deposits verdict-bound observations; later promotion is explicit
 - **Outflow (decay):** `ao maturity --expire` removes stale artifacts, freshness scoring deprioritizes old knowledge
 - **Reinforcement:** `ao lookup` retrieves from stock on demand, citation tracking records usage, MemRL utility scoring adjusts future retrieval priority
 - **Friction:** As `K` grows, retrieval quality degrades without active scale controls (tiering, pruning, re-indexing)
@@ -183,7 +183,7 @@ When `dominant: "R1"`, the flywheel is spinning faster than decay can drain it. 
 | Flow | From | To | Mechanism | Why it matters |
 |------|------|----|-----------|----------------|
 | Knowledge injection | `.agents/learnings/` | Session context | `ao lookup` (freshness-weighted, utility-scored, on demand) | Session N knows what session 1 learned |
-| Knowledge extraction | Session output | `.agents/learnings/` | `ao forge` (explicit session-end step, e.g. via `/post-mortem` / `/handoff`) | Experience survives session death |
+| Knowledge extraction | Validate verdict | Learn receipt | `/learn` | Evidence-bound observations survive phase boundaries |
 | Briefing packets | Prior research/plans | Agent context | `ao context assemble` (500-token summaries) | Right information, right phase, right agent |
 | Least-privilege loading | Full knowledge stock | Filtered subset | Phase-based and role-based filtering | Prevents lost-in-the-middle; context as security boundary |
 | Ralph Wiggum | Previous wave state | New wave workers | Fresh context per wave (zero bleed-through) | Workers reason from clean state, not accumulated garbage |
@@ -209,7 +209,7 @@ AgentOps 3.0 is **hookless**: it ships zero runtime hooks. The core knowledge li
 | Rule | Enforcement | What it prevents |
 |------|-------------|------------------|
 | Session orientation | Explicit `ao session bootstrap` + `ao inject` at session start | Cold starts without prior knowledge |
-| Session-end extraction | Explicit `ao forge` step via `/post-mortem` / `/handoff` | Lost session learnings and stale pools |
+| Post-verdict bookkeeping | Explicit `/learn` receipt before orchestrator close | Lost observations and implicit next actions |
 | Flywheel close-loop | Explicit `/post-mortem` / citation-tracking step | Unclosed flywheel feedback cycles |
 | Validation gate | Local pre-push Go gate (`ao gate check`) + `/vibe` pre-push step (`validate.yml` is a tag/PR/manual backstop) | Mechanically detectable failures escaping validation |
 

@@ -8,7 +8,7 @@ Three groups worth knowing:
 - **Operations** — [Testing](../TESTING.md), [CI/CD](../CI-CD.md), [Releasing](../RELEASING.md), [Incident Runbook](../INCIDENT-RUNBOOK.md). Load these before you ship a release or page someone.
 - **Field guides** — [Agent Footguns](../agent-footguns.md), [Troubleshooting](../troubleshooting.md), [AgentOps Brief](../agentops-brief.md). Read before onboarding a new teammate.
 - **Curation** — [Skill Quality Rubric](skill-quality-rubric.md). Use this when scoring skill packaging standards and readiness.
-- **Evolution control** — [AgentOps Domain Evolution BDD](agentops-domain-evolution-bdd.md), [AgentOps Skill Domain Map](agentops-skill-domain-map.md), [AgentOps Hexagonal Architecture Map](agentops-hexagonal-architecture-map.md), and [AgentOps Domain Evolution Plan](agentops-domain-evolution-plan.md). Use these before running broad skill, CLI, or hook evolution loops.
+- **Architecture** — [Component Map](../architecture/component-map.md), [Ports and Adapters](../architecture/ports-and-adapters.md), the [bounded-context contract](../contracts/bounded-contexts.yaml), and the generated [Skill Domain Map](agentops-skill-domain-map.md).
 
 <div class="grid cards" markdown>
 
@@ -90,28 +90,16 @@ Three groups worth knowing:
 
     Scoring model for repo-runtime, export, and mega-skill readiness.
 
--   :material-graph-outline: **[Domain Evolution BDD](agentops-domain-evolution-bdd.md)**
-
-    ---
-
-    Gherkin acceptance contract for auditing, domain-mapping, and evolving AgentOps.
-
 -   :material-sitemap: **[Skill Domain Map](agentops-skill-domain-map.md)**
 
     ---
 
     All checked-in AgentOps skills mapped to BC1-BC6 with first dispositions.
 
--   :material-hexagon-multiple: **[Hexagonal Architecture Map](agentops-hexagonal-architecture-map.md)**
+-   :material-hexagon-multiple: **[Component Map](../architecture/component-map.md)**
 
     ---
 
-    Domain, port, adapter, and proof-gate target for skill, CLI, and hook evolution.
-
--   :material-progress-check: **[Domain Evolution Plan](agentops-domain-evolution-plan.md)**
-
-    ---
-
-    Sequenced bootstrap and evolution plan anchored to `soc-y5vh`.
+    Stable bounded contexts and their implemented and target ports.
 
 </div>

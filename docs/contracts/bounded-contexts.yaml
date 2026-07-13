@@ -12,7 +12,8 @@
 #   product_layer   how this BC shows up in the product (used by skill-domain-map.md)
 #   responsibility  one-sentence "what does it do" (used by both registry docs)
 #   center_of_gravity  example skills + paths where this BC lives today
-#   ports           canonical port names the BC exposes (driving + driven)
+#   implemented_ports  exact interfaces present under cli/internal/ports
+#   target_ports       reviewed seams not yet implemented
 #
 # Adding/renaming a BC: edit this file, then run
 #   bash scripts/check-bounded-contexts-drift.sh
@@ -21,105 +22,122 @@
 bounded_contexts:
   - id: BC1
     name: Corpus
-    product_layer: "Bookkeeping + Context Compiler + Knowledge Flywheel"
-    responsibility: "Capture, retrieve, compile, cite, and promote knowledge."
+    product_layer: "Local bookkeeping and experimental context reuse"
+    responsibility: "Capture, retrieve, cite, and promote local knowledge and evidence."
     center_of_gravity:
       - ".agents/"
-      - "ao corpus"
-      - compile
-      - inject
-      - forge
-      - harvest
-      - dream
-    ports:
+      - post-mortem
+      - pattern-mining
+      - operationalize
+      - "ao wiki"
+    implemented_ports:
       - CorpusReaderPort
       - CorpusWriterPort
+      - ContextCompilerPort
       - CitationPort
       - FindingCompilerPort
+      - FreshnessPolicyPort
+      - FrontmatterCodecPort
+      - WikiIndexPort
+    target_ports: []
 
   - id: BC2
     name: Validation
-    product_layer: "Validation Gates"
-    responsibility: "Judge whether plans, code, docs, dependencies, and releases are fit."
+    product_layer: "Verification membrane"
+    responsibility: "Judge whether plans, code, docs, dependencies, and releases satisfy declared acceptance."
     center_of_gravity:
-      - validation
-      - vibe
+      - validate
       - council
       - pawl-review
       - gates
       - evals
       - CI scripts
-    ports:
+    implemented_ports:
       - GateRunnerPort
       - CIStatusPort
-      - ScenarioRunnerPort
-      - EvidenceBinderPort
+      - SafetyPolicyPort
+      - ClaimEvidenceBinderPort
       - ReviewLanePort
+    target_ports:
+      - ScenarioRunnerPort
 
   - id: BC3
     name: Loop
     product_layer: "Operating loop"
-    responsibility: "Select work, execute RPI, log cycles, measure fitness, and stop at convergence."
+    responsibility: "Shape intent, execute vertical slices, record evidence, and steer repair to verified done."
     center_of_gravity:
       - evolve
       - rpi
-      - autodev
+      - discovery
+      - plan
+      - crank
       - goals
       - beads
-      - loop CLI
-    ports:
+      - operating-loop
+    implemented_ports:
       - LoopReaderPort
       - LoopWriterPort
       - HypothesisLedgerPort
       - ConvergenceCheckPort
+      - CloseoutPort
+      - FindingRecurrenceReducerPort
+      - PacketRepository
+    target_ports:
       - WorkSelectorPort
 
   - id: BC4
     name: Factory
     product_layer: "Skill and claim factory"
-    responsibility: "Build, audit, package, and govern reusable skills and product claims."
+    responsibility: "Build, audit, package, and govern reusable skills, workflows, and claims."
     center_of_gravity:
       - skill-builder
-      - skill-auditor
       - heal-skill
+      - workflow-builder
       - standards
       - docs
-    ports:
+    implemented_ports:
+      - ClaimEvidencePort
+    target_ports:
       - SkillCatalogPort
       - SkillScorerPort
       - FactoryAdmissionPort
-      - ClaimEvidencePort
 
   - id: BC5
     name: Runtime
     product_layer: "Harness and operator adapters"
-    responsibility: "Adapt the control plane to harnesses, shells, local gates, and operator machines (hookless by default)."
+    responsibility: "Adapt the core loop to harnesses, workspaces, shells, installers, and operator machines."
     center_of_gravity:
-      - "Codex/Claude skills"
-      - cc-hooks
-      - "GitHub PR skills"
+      - cli/cmd/ao
+      - skills-codex
+      - installers
       - push
       - scope
-      - swarm
-      - agent-native
-    ports:
+    implemented_ports:
       - HarnessPort
+      - WorkspacePort
       - OperatorPort
       - EventBusPort
+      - IssueTracker
+      - LLMClient
+    target_ports:
       - GitPort
-      - IssueTrackerPort
       - AgentWorkerPort
 
   - id: BC6
     name: Orchestration
     product_layer: "Multi-agent orchestration substrate"
-    responsibility: "Spawn, coordinate, and converge multi-agent swarms across panes, mailboxes, and renewal loops."
+    responsibility: "Dispatch and coordinate whole loop units across explicitly selected substrates."
     center_of_gravity:
       - ntm
       - swarm
       - agent-mail
-    ports:
+      - using-gc
+    implemented_ports:
       - OrchestrationPort
-      - SwarmDispatchPort
       - AgentMailPort
+      - PreflightPort
+      - VerifyPort
+      - SubstrateProbePort
+    target_ports:
+      - SwarmDispatchPort
       - ConvergencePort

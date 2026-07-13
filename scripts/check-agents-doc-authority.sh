@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+# shellcheck source=scripts/lib/preamble.sh
+# shellcheck disable=SC1007,SC1091
+. "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 
 phase="inventory"
 root="."
@@ -164,9 +167,10 @@ for index, record in enumerate(documents):
         if not isinstance(references, dict):
             error(f"{path}: references must be a mapping")
         else:
-            reject_unknown(references, {"phase_policy", "consumers"}, f"{path}.references")
+            reject_unknown(references, {"phase_policy", "consumers", "include_globs"}, f"{path}.references")
             policies = references.get("phase_policy")
             consumers = references.get("consumers")
+            include_globs = references.get("include_globs")
             if not isinstance(policies, dict):
                 error(f"{path}: references.phase_policy must be a mapping")
             else:
@@ -182,6 +186,15 @@ for index, record in enumerate(documents):
                 error(f"{path}: references.consumers must be a list of paths")
             elif len(consumers) != len(set(consumers)):
                 error(f"{path}: duplicate declared consumer")
+            if include_globs is not None:
+                if not isinstance(include_globs, list) or not include_globs or any(
+                    not isinstance(item, str) or not item or Path(item).is_absolute() or ".." in Path(item).parts
+                    for item in include_globs
+                ):
+                    error(f"{path}: references.include_globs must be a non-empty list of repository globs")
+
+if records and not any(isinstance(record.get("references"), dict) for record in records.values()):
+    error("manifest must declare at least one bounded literal-reference assertion")
 
 actual_root = sorted(item.name for item in repo.iterdir() if item.name.endswith(".md") and (item.is_file() or item.is_symlink()))
 declared_root = sorted(seen_paths)
@@ -230,6 +243,7 @@ for path, record in records.items():
     if not isinstance(references, dict):
         continue
     consumers = references.get("consumers", [])
+    include_globs = references.get("include_globs")
     for consumer in consumers:
         if Path(consumer).is_absolute() or ".." in Path(consumer).parts:
             error(f"{path}: consumer must stay inside the repository: {consumer}")
@@ -244,6 +258,8 @@ for path, record in records.items():
     needle = path.encode("utf-8")
     for candidate in tracked_files:
         if candidate in (path, manifest_rel):
+            continue
+        if include_globs and not any(fnmatch.fnmatch(candidate, glob) for glob in include_globs):
             continue
         if any(fnmatch.fnmatch(candidate, glob) for glob in exclude_globs):
             continue

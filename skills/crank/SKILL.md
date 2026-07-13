@@ -147,6 +147,9 @@ push, open or merge a PR, operate a Git queue, require a landing verdict, or
 close tracker state as a side effect of delivery. The repository/operator may
 later choose direct push, a PR, user-owned CI, or the optional deterministic
 `/push` adapter. That decision is outside Crank and cannot change its evidence.
+For this repository's serialized direct-main adapter, see
+[references/land-protocol.md](references/land-protocol.md); it consumes Crank
+and Validate evidence but is not part of Crank execution.
 
 Wave acceptance still uses deterministic checks because implementation needs a
 ground-truth handoff before Validate. Those checks prove the wave artifact; they

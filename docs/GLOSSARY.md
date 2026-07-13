@@ -24,7 +24,9 @@ A unit of work with no shared mutable state with concurrent workers. Pure functi
 Git-native issue tracking system accessed via the `br` CLI (beads_rust). Issues live in `_beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](../skills/beads-br/SKILL.md)
 
 ### Bookkeeping
-AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/curate --mode=forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
+Repo-native persistence of objectives, attempts, evidence, verdicts, receipts,
+and handoffs. `.agents/`, beads, provenance, and `/learn` are bookkeeping
+surfaces; promotion is a separate qualified step.
 
 ### Brownian Ratchet
 The core execution model: spawn parallel agents (chaos), validate their output with a multi-model council (filter), and merge passing results to main (ratchet). Progress locks forward — failed agents are discarded cheaply because fresh context means no contamination. [Full documentation](how-it-works.md#the-brownian-ratchet)
@@ -66,7 +68,8 @@ A long-haul autonomous run that executes while you are away, emitting morning wo
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
 
 ### Extract
-An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/curate --mode=forge` (promote step). [Full documentation](../skills/postmortem/SKILL.md)
+A compatibility/archive process that mined transcripts into structured files.
+It is not the active post-verdict route; `/learn` consumes Validate verdicts.
 
 ## F
 
@@ -80,7 +83,8 @@ The automated loop that extracts learnings from completed work, scores them for 
 A composite measure of whether the knowledge flywheel is actually compounding: retrieval rate, promotion rate, decay rate, and injection hit rate. Surfaced by `ao flywheel` commands and used by `/evolve` to steer improvements.
 
 ### Forge
-Transcript mining that pulls knowledge artifacts — decisions, patterns, failures, and fixes — into `.agents/`. Folded into `/curate --mode=forge`; the `ao forge` CLI is unchanged. [Full documentation](../skills/postmortem/SKILL.md)
+Archive-profile transcript mining. It is distinct from the active `/learn`
+receipt and is not owned by Postmortem.
 
 ## G
 
@@ -90,7 +94,8 @@ A checkpoint that blocks progress until a condition is met. AgentOps 3.0 is hook
 ## H
 
 ### Harvest
-A curation step that pulls learning candidates from recent sessions, scores them, and filters low-confidence output before they enter the flywheel. Invoked via `ao harvest` or inside `/curate --mode=forge` (promote step).
+A compatibility curation concept for transcript-derived candidates; it is not
+the active Validate → Learn handoff.
 
 ### Handoff
 A skill (`/handoff`) that creates structured session handoff documents so another agent or future session can continue work with full context. [Full documentation](../skills/handoff/SKILL.md)
@@ -130,7 +135,10 @@ A cross-cutting rule that applies to all skills and agents. Examples: workers mu
 A knowledge quality tier — pending, tempered, or promoted. Artifacts start in pending, get tempered through repeated validation and use, and can be promoted to the permanent knowledge base. [Full documentation](ARCHITECTURE.md#knowledge-artifacts)
 
 ### Post-mortem
-A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](../skills/postmortem/SKILL.md)
+A skill (`/postmortem`) that tests an explicit retrospective causal question
+against evidence and counterfactuals after Validate and Learn. It owns no
+general closeout, bookkeeping, promotion, plan, or delivery authority.
+[Full documentation](../skills/postmortem/SKILL.md)
 
 ### Pre-mortem
 A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate failures against the plan — including spec-completeness checks — and surface problems while they are still cheap to fix. A FAIL verdict sends the plan back for revision. [Full documentation](../skills/premortem/SKILL.md)
@@ -144,19 +152,26 @@ A documentation grouping for domain-specific workflows and standards. Profiles o
 The practice of giving every worker agent a fresh context window instead of letting context accumulate across tasks. Named after the [Ralph Wiggum pattern](https://ghuntley.com/ralph/). Each wave spawns new workers with clean context, preventing bleed-through and contamination from prior work. [Full documentation](how-it-works.md#ralph-wiggum-pattern-fresh-context-every-wave)
 
 ### Ratchet
-A mechanism that locks progress forward so it cannot regress. Once a gate is passed (e.g., vibe validation), the ratchet records that state and the gate / pawl enforces it going forward. Combined with the Brownian Ratchet execution model, this ensures quality only moves in one direction. [Full documentation](../skills/postmortem/SKILL.md)
+A mechanism that records proven state so a later claim cannot silently weaken
+it. The gate and pawl enforce commit-bound evidence; Postmortem does not own the
+ratchet. [Full documentation](brownian-ratchet.md)
 
 ### Research
 The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](../skills/research/SKILL.md)
 
 ### Retro
-Quick-capture of learnings from completed work — decisions made, patterns discovered, and failures encountered — fed into the knowledge flywheel and scored for specificity, actionability, and novelty. Folded into `/post-mortem --quick` (the retired `/retro`, cp-bzj). [Full documentation](../skills/postmortem/SKILL.md)
+A retired quick-capture surface. The active post-verdict path is `/learn`;
+Postmortem has no quick-capture mode.
 
 ### RPI (Research-Plan-Implement)
-The historical name for AgentOps' full lifecycle workflow. In current runtime terms, `/rpi` orchestrates **Discovery -> Implementation -> Validation** while `ao rpi phased` enforces fresh context windows between those phases. The older acronym persists in product language and command names, but validation and loop closure are now first-class parts of the executable lifecycle. [Full documentation](ARCHITECTURE.md#the-phased-lifecycle)
+The historical name retained for the lifecycle orchestrator. Current `/rpi`
+runs four ordered, independently receipted umbrellas: **Discovery → Crank →
+Validate → Learn**. The removed `ao rpi` CLI is not the runtime.
+[Full documentation](../skills/rpi/SKILL.md)
 
 ### RPI Phase
-One of the three named stages inside an RPI run: **Discovery**, **Implementation**, **Validation**. Each phase gets a fresh context window and emits a [`rpi-phase-result.schema.json`](contracts/rpi-phase-result.schema.json) artifact. Distinct from the broader RPI workflow.
+One of four ordered umbrellas: **Discovery**, **Crank**, **Validate**, or
+**Learn**. Each emits a disk-backed receipt.
 
 ## S
 
@@ -177,7 +192,9 @@ A knowledge quality state indicating an artifact has been validated through mult
 ## V
 
 ### Validation Gates
-The second product layer (Layer 2). Multi-model councils challenge plans before build and code before commit, returning auditable verdicts — PASS, WARN, or FAIL. Gates block progress, not advise. Encompasses `/council`, `/vibe`, `/pre-mortem`, `/post-mortem`, and the local cockpit Go gate (`ao gate check`). Maps to the Validation gap (judgment validation) in the [Context Lifecycle Contract](context-lifecycle.md).
+Independent review and deterministic gates that challenge plans and completion
+claims. Encompasses `/council`, `/validate`, `/premortem`, pawl, and the local
+Go gate; Postmortem is not a validation gate.
 
 ### Vibe
 A skill (`/vibe`) that validates code after implementation by running a council of judges against the changes. Produces a PASS, WARN, or FAIL verdict. A passing vibe is typically required by the push gate before code can be pushed to the remote. [Full documentation](../skills/validate/SKILL.md)

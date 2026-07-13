@@ -10,6 +10,9 @@ documents:
     disposition: retain
     owner: A.md
     proof: factual fixture
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [consumer.txt]
   - path: B.md
     tracked: true
     class: owner

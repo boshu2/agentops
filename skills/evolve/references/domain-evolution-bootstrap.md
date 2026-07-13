@@ -23,22 +23,24 @@ compounding context.
 
 1. Read current direction from `PRODUCT.md`, `GOALS.md`,
    `docs/cdlc.md`, and `docs/architecture/operating-loop.md`.
-2. Validate the durable control artifacts:
+2. Read the stable architecture and classification owners:
 
-   ```bash
-   bash scripts/check-agentops-domain-evolution-plan.sh
-   ```
-
-3. Select one domain and one vertical slice from:
-   - `docs/reference/agentops-domain-evolution-bdd.md`
+   - `docs/architecture/component-map.md`
+   - `docs/architecture/ports-and-adapters.md`
+   - `docs/contracts/bounded-contexts.yaml`
    - `docs/reference/agentops-skill-domain-map.md`
-   - `docs/reference/agentops-hexagonal-architecture-map.md`
-   - `docs/reference/agentops-domain-evolution-plan.md`
+3. Select one bounded context and one observable vertical behavior.
 4. Use `skill-builder` and the heal-skill deep audit for skill changes. Use
    `skills/heal-skill/scripts/score_agentops_skill.py` to choose the
    smallest score-improving patch.
 5. Keep CLI and hook changes behind typed ports or existing validation scripts.
-6. Run focused validation before selecting the next slice.
+6. Run focused validation before selecting the next slice:
+
+   ```bash
+   bash scripts/generate-skill-domain-map.sh --check
+   bash scripts/check-bounded-contexts-drift.sh
+   bash scripts/validate-skill-disposition-schema.sh
+   ```
 
 ## Hard Rules
 

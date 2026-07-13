@@ -205,7 +205,7 @@ After bulk-merging wave results, audit for scaffold-era names:
 - If any `skills/` files were modified, run `scripts/regen-codex-hashes.sh` to sync codex parity and copy reference files.
 
 ## Next Steps
-- Run `/pre-mortem` to validate plan
+- Run `$premortem` to validate plan
 - Run `/crank` for autonomous execution
 - Or `/implement <issue>` for single issue
 ```

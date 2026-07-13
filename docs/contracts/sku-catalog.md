@@ -41,7 +41,7 @@ the catalog adds no new authored datum. Even the skill↔command join key
 | `sku` | string | stable id: `skill:<name>` / `cmd:ao.<path>` / `gate:<job>` / `ref-impl:<name>` | derived |
 | `name` | string | display name | source |
 | `type` | enum | `skill` \| `cli-command` \| `gate` \| `reference-impl` | derived |
-| `bounded_context` | `BC1`..`BC5` | owning context | `skill-dispositions.yaml` (skills); same-named skill or `COMMAND_BC` map (commands) |
+| `bounded_context` | `BC1`..`BC6` or empty | owning context | `skill-dispositions.yaml` (skills); same-named skill or `COMMAND_BC` map (commands). Empty command ownership is known debt, not implicit coverage. |
 | `hex_role` | string | hexagonal role | `skill-dispositions.yaml` / SKILL.md frontmatter |
 | `tier` | string | skill tier | `skills/SKILL-TIERS.md` |
 | `purpose` | string | one-line purpose | SKILL.md `description` / cobra `Short` |
@@ -49,7 +49,7 @@ the catalog adds no new authored datum. Even the skill↔command join key
 | `disposition` | string | editorial disposition | `skill-dispositions.yaml` |
 | `consumes` / `produces` | list | data flow | SKILL.md frontmatter |
 | `drives_commands` | list | the `ao` commands a skill drives (the join key) | **derived from skill body** |
-| `driven_by_skills` | list | reverse of `drives_commands` | derived |
+| `driven_by_skills` | list | intended reverse of `drives_commands`; currently incomplete | derived |
 | `flags` | list | long flags of a cli-command | live cobra help |
 
 ### `status` derivation
@@ -65,11 +65,31 @@ the catalog adds no new authored datum. Even the skill↔command join key
 No prior artifact linked a skill to the `ao` commands it drives. The SKU catalog
 derives this by scanning each skill's SKILL.md + `references/*` body for
 `` `ao <command>` `` snippets and resolving each against the **live cobra tree**.
-Only commands that actually resolve become edges, so a stale reference (e.g. the
-removed `ao schedule`) is never silently promoted to a join edge. Implementation:
-`scripts/lib/sku_extract.py`. This is the shared primitive both the generator and
-the drift gate's linkage check reuse, so the two surfaces can never disagree about
-what a "real command" is.
+Only commands that actually resolve become forward edges, so a stale reference
+(e.g. the removed `ao schedule`) is never silently promoted. Implementation:
+`scripts/lib/sku_extract.py`. The current reverse projection is not yet an exact
+inverse; the known gap is recorded below.
+
+## Known join and ownership gap
+
+The active catalog is honest but incomplete: the 2026-07-13 audit measured 80
+skill→CLI edges, 7 CLI→skill reverse edges, and 14 public CLI roots with no
+bounded-context owner. Therefore reverse equality and every-BC command coverage
+are not current guarantees. Bead
+`age-documentation-agents-contract-sd7y1.6` owns one canonical relationship
+source, complete or explicitly excluded CLI ownership, and negative fixtures
+that fail when either side of the join is removed. Until it closes, consumers
+must treat `driven_by_skills` and empty `bounded_context` values as partial data.
+
+Derive this volatile baseline from `registry.json`; never update it by memory:
+
+```bash
+jq '{skills: ([.capabilities[] | select(.type == "skill")] | length),
+     cli_skus: ([.capabilities[] | select(.type == "cli-command")] | length),
+     forward_edges: ([.capabilities[] | select(.type == "skill") | .drives_commands[]] | length),
+     reverse_edges: ([.capabilities[] | select(.type == "cli-command") | .driven_by_skills[]] | length),
+     blank_cli_ownership: ([.capabilities[] | select(.type == "cli-command" and (.bounded_context == ""))] | length)}' registry.json
+```
 
 ## Generation
 
@@ -96,9 +116,11 @@ bash scripts/generate-registry.sh
 2. **Linkage integrity** — every skill `drives_commands` edge must resolve to a
    real `ao` command in the live cobra tree (closes oracle gaps #1/#2/#3: stale
    skill→CLI references can no longer ship undetected).
-3. **Coverage** — every bounded context (BC1–BC5) and every operating-loop move
-   (1–7) has at least one **active** skill, and every BC has at least one
-   cli-command SKU.
+3. **Forward coverage** — active skill and operating-loop classifications meet
+   the generator's current checks. Exact reverse-edge equality and complete CLI
+   bounded-context ownership are deferred to
+   `age-documentation-agents-contract-sd7y1.6`; this gate must not be read as
+   proving them.
 
 ## Retired: the "163 cli_commands" count
 
@@ -111,7 +133,7 @@ counts the **live top-level cobra command nodes** (the real surface), sourced fr
 
 - **Supersedes:** `registry.json`'s shallow v1 skill/CLI arrays (now enriched into
   SKU entries; v1 keys retained as a superset).
-- **Extends / joins:** the 5-BC kernel (`bounded-contexts.yaml`), `skill-dispositions.yaml`,
+- **Extends / joins:** the 6-BC kernel (`bounded-contexts.yaml`), `skill-dispositions.yaml`,
   `context-map.md`'s frontmatter source, `SKILL-TIERS.md`, and the live cobra tree
   remain the upstream sources — the catalog is the downstream aggregate.
 - **Distinct from:** `skills/catalog.json` (a skills-only frontmatter projection,

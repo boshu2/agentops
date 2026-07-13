@@ -33,14 +33,14 @@
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
-## Four Product Layers
+## Product surfaces
 
 | Layer | What it does | Key surfaces |
 |-------|-------------|-------------|
-| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, postmortems |
-| **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
-| **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/premortem`, `/postmortem` |
-| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/postmortem --quick`, `/curate --mode=forge`, `ao lookup`, `.agents/` |
+| **Evidence trail** | Records candidate-bound verdicts and landings | tracked provenance, pawl verdicts, post-mortems |
+| **Local context** | Preserves useful workspace evidence without claiming authority | gitignored `.agents/`, skills, execution packets |
+| **Validation membrane** | Challenges plans and code before they ship | `/council`, `/validate`, `/premortem`, `ao gate` |
+| **Learning ratchet** | Records verdict-bound observations and promotes only qualified evidence | `/learn`, `/pattern-mining`, `/operationalize` |
 
 Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
@@ -91,10 +91,7 @@ Bridge / framing docs:
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
 - [Critical Skills Policy](contracts/critical-skills.txt) — Human-supervised skill-edit denylist consumed by `ao skills edit seal`
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
-- [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 63 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
-- [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
-- [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — Generated classification of checked-in skills across BC1-BC6 (drift-checked by `scripts/check-registry-drift.sh`)
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) — Scaffold or absorb new SKILL.md files against the unified template
 - [heal-skill (deep audit mode)](https://github.com/boshu2/agentops/blob/main/skills/heal-skill/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (absorbed from the retired skill-auditor)
@@ -294,8 +291,8 @@ Bridge / framing docs:
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Mortem Naming Migration](contracts/mortem-naming-migration.md) — Canonical `premortem`/`postmortem` identities, permanent legacy reads, and the schema-v3/S8 writer cutover boundary
+- [Four-Umbrella Examples](contracts/four-umbrella-examples.md) — Positive and negative examples for the Discovery → Crank → Validate → Learn contract
 - [Four-Umbrella Write Manifests](contracts/four-umbrella-write-manifests.json) — Per-slice write ownership and frozen S1 base for the validation-loop refactor
-- [Four-Umbrella Examples](contracts/four-umbrella-examples.md) — Executable request, execution-packet, Learn-receipt, and plan-impact examples
 - [Pawls — the one-way doors](contracts/pawls.md) — The ratchet's static map: the short list of irreversible actions (mutate-shared-trunk · delete · external-send/shared-state-mutation · schema/contract change · credential/authority change · spend) where the cross-family gate fires; everything else runs as ungated chaos
 - [Entry Documentation Behavior Contract](contracts/entry-documentation-behavior.md) — Agent-judged Given/When/Then contract for the actual first-value journey; deterministic tooling checks facts and evidence shape, never prose meaning
 - [Root Documentation Authority Contract](contracts/agents-documentation-authority.yaml) — Exact root Markdown inventory and literal consumers; deterministic checks prove paths and references while agents judge ownership and disposition meaning
@@ -328,7 +325,7 @@ Bridge / framing docs:
 - [AO / MTO Seam](contracts/ao-mto-seam.md) — Reduction contract separating the lean AO image from the outer MTO factory and routing RELOCATE surfaces through MTO, vendor-adapter, or defer-load-bearing seams
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [Goal Design Artifacts](contracts/goal-design-artifacts.md) — Two-artifact contract for `.agents/goal-design/<slug>/intent.md` and `driver.md`, including schemas, digest integrity, validation, lifecycle, and route-back rules
-- [CI Path-Filter / Gate-Target Coverage Audit](contracts/ci-pathfilter-coverage-audit.md) — Repo-wide audit (ag-g9ex) of the invariant "a CI gate that reads a file must be triggered by a path-filter covering that file" (the #634/#638 class). Findings table for every file-reading gate in `validate.yml`, the two gaps fixed (AGENTS tiered-split siblings; wiring-closure GOALS.md de-wire), and the `--admin` self-merge governance policy. Guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`.
+- [CI Path-Filter / Gate-Target Coverage Audit](contracts/ci-pathfilter-coverage-audit.md) — Audit of the invariant "a CI gate that reads a file must be triggered by a path-filter covering that file," including the compact root `AGENTS.md` authority route and wiring-closure coverage.
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
@@ -378,6 +375,7 @@ Bridge / framing docs:
 - [Context Assembly Interface](contracts/context-assembly-interface.md) — Interface contract for adaptive context assembly and mechanical token budgeting
 - [Session Intelligence Trust Model](contracts/session-intelligence-trust-model.md) — Artifact eligibility contract for runtime context assembly, explainability, and startup suppression rules
 - [Finding Registry Contract](contracts/finding-registry.md) — Canonical intake-ledger contract for reusable findings in `.agents/findings/registry.jsonl`
+- [Producer-Defect Recurrence Contract](contracts/producer-defect-register.md) — Distinct-objective recurrence reduction from immutable findings to advisory producer-rule candidates
 - [Finding Registry Schema](contracts/finding-registry.schema.json) — Machine-readable schema for the finding intake ledger
 - [Finding Artifact Schema](contracts/finding-artifact.schema.json) — Machine-readable schema for promoted finding artifacts under `.agents/findings/*.md`
 - [Finding Item Schema](https://github.com/boshu2/agentops/blob/main/schemas/finding.json) — Canonical finding-item schema for validation skill outputs (compatible subset of finding-artifact)

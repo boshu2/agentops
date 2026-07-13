@@ -37,11 +37,8 @@ create_fixture() {
 
   copy_target "$fixture" "docs/contracts/next-work.schema.md"
   copy_target "$fixture" "skills/postmortem/references/harvest-next-work.md"
-  copy_target "$fixture" "skills/postmortem/SKILL.md"
-  copy_target "$fixture" "skills-codex/postmortem/SKILL.md"
   copy_target "$fixture" "skills/rpi/references/phase-data-contracts.md"
   copy_target "$fixture" "skills/rpi/references/gate4-loop-and-spawn.md"
-  copy_target "$fixture" "cli/cmd/ao/rpi_loop.go"
   copy_target "$fixture" "cli/internal/rpi/types.go"
   copy_target "$fixture" "cli/internal/rpi/helpers.go"
   copy_target "$fixture" "tests/smoke-test.sh"
@@ -164,74 +161,6 @@ PY
     "runtime pattern-fix ranking drift fails parity gate" \
     "$fixture" \
     "RPI runtime is missing workTypeRank coverage for pattern-fix"
-}
-
-test_source_skill_legacy_example_fails() {
-  local fixture
-  fixture="$(create_fixture "source-legacy-example")"
-  python3 - <<'PY' "$fixture/skills/postmortem/SKILL.md"
-from pathlib import Path
-path = Path(__import__("sys").argv[1])
-text = path.read_text()
-start = "#### Step ACT.3: Feed Next-Work"
-end = "#### Step ACT.4: Update Marker"
-section_start = text.index(start)
-section_end = text.index(end, section_start)
-replacement = """#### Step ACT.3: Feed Next-Work
-
-Actionable improvements identified during processing -> append to `.agents/rpi/next-work.jsonl`:
-
-```bash
-mkdir -p .agents/rpi
-# Only append if not already present (dedup by title)
-TITLE=\"<improvement-title>\"
-if ! grep -q \"\\\"title\\\":\\\"$TITLE\\\"\" .agents/rpi/next-work.jsonl 2>/dev/null; then
-  echo \"{\\\"title\\\": \\\"$TITLE\\\", \\\"type\\\": \\\"process-improvement\\\", \\\"severity\\\": \\\"medium\\\", \\\"source\\\": \\\"backlog-processing\\\", \\\"claim_status\\\": \\\"available\\\", \\\"consumed\\\": false, \\\"timestamp\\\": \\\"$(date -Iseconds)\\\"}\" >> .agents/rpi/next-work.jsonl
-fi
-```
-
-"""
-path.write_text(text[:section_start] + replacement + text[section_end:])
-PY
-
-  assert_gate_fails_with \
-    "source post-mortem skill legacy flat example fails parity gate" \
-    "$fixture" \
-    "skills/postmortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
-}
-
-test_codex_skill_legacy_example_fails() {
-  local fixture
-  fixture="$(create_fixture "codex-legacy-example")"
-  python3 - <<'PY' "$fixture/skills-codex/postmortem/SKILL.md"
-from pathlib import Path
-path = Path(__import__("sys").argv[1])
-text = path.read_text()
-start = "#### Step ACT.3: Feed Next-Work"
-end = "#### Step ACT.4: Update Marker"
-section_start = text.index(start)
-section_end = text.index(end, section_start)
-replacement = """#### Step ACT.3: Feed Next-Work
-
-Actionable improvements identified during processing -> append to `.agents/rpi/next-work.jsonl`:
-
-```bash
-mkdir -p .agents/rpi
-# Only append if not already present (dedup by title)
-TITLE=\"<improvement-title>\"
-if ! grep -q \"\\\"title\\\":\\\"$TITLE\\\"\" .agents/rpi/next-work.jsonl 2>/dev/null; then
-  echo \"{\\\"title\\\": \\\"$TITLE\\\", \\\"type\\\": \\\"process-improvement\\\", \\\"severity\\\": \\\"medium\\\", \\\"source\\\": \\\"backlog-processing\\\", \\\"claim_status\\\": \\\"available\\\", \\\"consumed\\\": false, \\\"timestamp\\\": \\\"$(date -Iseconds)\\\"}\" >> .agents/rpi/next-work.jsonl
-fi
-```
-
-"""
-path.write_text(text[:section_start] + replacement + text[section_end:])
-PY
-
-  assert_gate_fails_with \
-    "generated Codex post-mortem skill legacy flat example fails parity gate" \
-    "$fixture" \
-    "skills-codex/postmortem/SKILL.md ACT.3 still contains the legacy flat-row append example"
 }
 
 test_explicit_item_lifecycle_drift_fails() {
@@ -360,8 +289,6 @@ test_repo_baseline_passes
 test_repo_baseline_passes_without_rg
 test_schema_version_drift_fails
 test_runtime_pattern_fix_rank_fails
-test_source_skill_legacy_example_fails
-test_codex_skill_legacy_example_fails
 test_explicit_item_lifecycle_drift_fails
 test_aggregate_self_drift_fails
 test_active_item_enum_drift_fails

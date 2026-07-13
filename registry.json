@@ -1224,7 +1224,6 @@
       ],
       "produces": [],
       "drives_commands": [
-        "ao gate check",
         "ao quick-start",
         "ao session bootstrap"
       ],
@@ -1465,8 +1464,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao provenance emit-verdict",
-        "ao provenance verify",
+        "ao gate check",
         "ao session handoff",
         "ao version"
       ],
@@ -1913,7 +1911,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
+      "purpose": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan. Triggers: \"learn\", \"consume verdict\", \"record learning\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2143,7 +2141,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
+      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping. Triggers: \"postmortem\", \"retrospective causal analysis\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2876,7 +2874,7 @@
       "hex_role": "driving-adapter",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
+      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver. Triggers: \"validate\", \"verify\", \"judge\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [

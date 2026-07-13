@@ -166,7 +166,8 @@ Future sessions will see what you did and how it went.
 ## INTEL
 
 No prior knowledge found — this is the first cycle.
-As you work, use `/retro` or `/post-mortem` to extract learnings for future sessions.
+After validation, pass the immutable verdict to `/learn`; use `/postmortem` only
+for an explicit retrospective causal question.
 ```
 
 ---

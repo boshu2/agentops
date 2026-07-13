@@ -26,4 +26,3 @@ Feature: Validate emits immutable proof only
     Then isolated judgment evaluates the actual passages rather than keyword proxies
     And a blocker cites an artifact-present passage, a violated scenario, and a material user decision
     And hypothetical absent wording is a holdout rather than a semantic regex gate
-

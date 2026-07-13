@@ -67,7 +67,7 @@ actually closes these gaps.
 | `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
 | Finding registry | [docs/contracts/finding-registry.md](contracts/finding-registry.md) | Stores reusable structured findings that planning and validation can load before rediscovering the same failure |
 | `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
-| `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](../skills/postmortem/SKILL.md) | Turns completed work into reusable learnings and patterns |
+| `/learn` receipt | [skills/learn/SKILL.md](../skills/learn/SKILL.md) | Binds structured observations to the immutable Validate verdict and emits plan impact |
 | Freshness / maturity controls | `ao maturity`, `ao dedup`, `ao contradict` | Keeps retrieval focused on useful, current knowledge |
 | Compile cycle | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |
 
@@ -91,13 +91,14 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `/post-mortem` | [skills/post-mortem/SKILL.md](../skills/postmortem/SKILL.md) | Validates shipped work, extracts learnings, and harvests next work |
+| `/learn` | [skills/learn/SKILL.md](../skills/learn/SKILL.md) | Performs bounded post-verdict bookkeeping; the orchestrator owns the next transition |
+| `/postmortem` | [skills/postmortem/SKILL.md](../skills/postmortem/SKILL.md) | Optionally tests an explicit retrospective causal question after Validate and Learn |
 | Finding registry + compiler path | [docs/contracts/finding-registry.md](contracts/finding-registry.md), [docs/contracts/finding-compiler.md](contracts/finding-compiler.md), `ao findings` / `ao constraint` | Promotes reusable findings into advisory artifacts and active constraint index entries |
 | Task-validation constraint execution | `/validate` skill + `ao constraint` reading `.agents/constraints/index.json` | Turns mechanically detectable findings into enforced validation checks before task completion |
-| Flywheel close | `/post-mortem` skill + [docs/how-it-works.md](how-it-works.md) | Closes the feedback loop at session end |
+| Loop decision | `/learn` receipt + RPI orchestrator | Makes retry, re-plan, stop, or terminal close explicit |
 | GOALS + `/evolve` | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) and `/evolve` flows | Turns findings into measurable next work instead of leaving them as loose notes |
 | Ratchet + run registry | `ao ratchet`, `.agents/rpi/next-work.jsonl` | Records what passed, what remains, and what should be worked next |
-| Phase chaining | [README.md](https://github.com/boshu2/agentops/blob/main/README.md) full pipeline | Makes `research -> plan -> pre-mortem -> crank -> post-mortem` the normal operating shape |
+| Phase chaining | [README.md](https://github.com/boshu2/agentops/blob/main/README.md) full pipeline | Makes `Discovery -> Crank -> Validate -> Learn` the ordered RPI shape |
 
 **Supporting failure modes addressed inside this gap:**
 
@@ -115,9 +116,9 @@ actually closes these gaps.
 | Bookkeeping | extraction + retrieval | `.agents/`, `ao lookup`, `ao forge`, finding registry, finding artifacts | Repo-specific context and reusable structured findings loaded into later sessions |
 | Bookkeeping | curation | `ao maturity`, `ao dedup`, `ao contradict` | Freshness, contradiction, and duplication control |
 | Bookkeeping | Compile | `GOALS.md`, Compile checks | Daily maintenance of learning quality |
-| Closure | `/post-mortem` + finding compiler | `skills/post-mortem/SKILL.md`, `docs/contracts/finding-registry.md`, `docs/contracts/finding-compiler.md` | Learnings + next work harvested from completed work; reusable findings re-enter planning/review and compile into preventive artifacts |
+| Closure | `/learn` + orchestrator | `skills/learn/SKILL.md`, Learn receipt schema | Verdict-bound observations and an explicit retry, re-plan, stop, or terminal decision |
 | Closure | task-validation compiled enforcement | `/validate` skill, `ao constraint`, `.agents/constraints/index.json` | Task-validation executes active compiled constraints before completion is accepted |
-| Closure | flywheel close | `/post-mortem` skill | Session-end closure of the feedback loop |
+| Closure | optional causal analysis | `/postmortem` skill | Tests one explicit retrospective causal question without taking closeout authority |
 | Closure | goals / evolve | `GOALS.md`, flywheel-proof gate | Proof that the system compounds across sessions |
 
 ## What AgentOps Does Not Claim

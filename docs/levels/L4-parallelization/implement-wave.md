@@ -91,4 +91,4 @@ Done. Next wave has 2 issues ready.
 
 - `BEADS_DIR="$(ao beads dir)" br ready` - See next wave
 - `/crank` - Run next wave
-- `/post-mortem` - Extract learnings after completing plan
+- `/learn` - Consume the Validate verdict after the wave

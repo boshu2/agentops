@@ -5,7 +5,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+**Scope window:** full tagged history, with `Unreleased` covering changes after
+the latest GitHub Release (`v3.2.0`, 2026-07-03).
+
+## Version Timeline
+
+| Version | Date | Publication |
+|---|---|---|
+| Unreleased | 2026-07-04 onward | Git history after `v3.2.0` |
+| [v3.2.0](https://github.com/boshu2/agentops/releases/tag/v3.2.0) | 2026-07-03 | GitHub Release |
+| [v3.1.0](https://github.com/boshu2/agentops/releases/tag/v3.1.0) | 2026-06-10 | GitHub Release |
+| [v3.0.1](https://github.com/boshu2/agentops/releases/tag/v3.0.1) | 2026-05-25 | GitHub Release |
+| [v3.0.0](https://github.com/boshu2/agentops/releases/tag/v3.0.0) | 2026-05-25 | GitHub Release |
+
 ## [Unreleased]
+
+This section covers the post-3.2 development window beginning 2026-07-04. It
+summarizes landed capability waves from git history; it is not a generated
+release note or a claim that the next version has been cut.
+
+### Added
+
+- **Pawl review became an inspectable, fail-closed service boundary.** The
+  review path gained crash-safe state and route leases, persisted bench state,
+  warm-service requirements, per-panel agreement metrics, embedded-bundle
+  provenance, and verdict/ledger reconciliation. Representative commits:
+  [`80504d241`](https://github.com/boshu2/agentops/commit/80504d241),
+  [`2d3b1d1ac`](https://github.com/boshu2/agentops/commit/2d3b1d1ac),
+  [`663f5c175`](https://github.com/boshu2/agentops/commit/663f5c175).
+- **Verification economics is measurable.** Pawl verdicts now carry cost and
+  token telemetry, deterministic checks run before model review, and gate
+  repair hints are checked against live commands. Representative commits:
+  [`ab673341d`](https://github.com/boshu2/agentops/commit/ab673341d),
+  [`69d5e7c39`](https://github.com/boshu2/agentops/commit/69d5e7c39),
+  [`8bb8e53c9`](https://github.com/boshu2/agentops/commit/8bb8e53c9).
+- **CLI compatibility has an explicit architecture contract.** Four build
+  profiles, profile-aware root assembly, centralized tracker resolution,
+  command-boundary enforcement, and a source-bound compatibility oracle make
+  the supported command surface testable. Representative commits:
+  [`b712416f7`](https://github.com/boshu2/agentops/commit/b712416f7),
+  [`55c93b477`](https://github.com/boshu2/agentops/commit/55c93b477),
+  [`412474d7a`](https://github.com/boshu2/agentops/commit/412474d7a).
+
+### Changed
+
+- **Skill contracts converged on one executable lifecycle.** The supported
+  catalog was reduced and then audited across triggers, inputs, outputs,
+  recovery, independent judgment, and pawl handoffs. Canonical standards and
+  generated parity now own the repeated structure instead of ad hoc prose.
+  Representative commits:
+  [`3baf9ca1e`](https://github.com/boshu2/agentops/commit/3baf9ca1e),
+  [`9a23ba9cc`](https://github.com/boshu2/agentops/commit/9a23ba9cc),
+  [`8f8f1bcfd`](https://github.com/boshu2/agentops/commit/8f8f1bcfd).
+- **Breaker recovery now consults one bounded fresh context before operator
+  escalation.** Ordinary refutation remains in automatic repair; only a true
+  breaker HOLD enters the helper lane. Representative commits:
+  [`f4cc56a69`](https://github.com/boshu2/agentops/commit/f4cc56a69),
+  [`a192905e7`](https://github.com/boshu2/agentops/commit/a192905e7),
+  [`15bc5119d`](https://github.com/boshu2/agentops/commit/15bc5119d).
+- **Gate baselines share one shrink-only ratchet primitive.** Documentation,
+  scenario linkage, invocation, preamble, and JSONL baselines were migrated to
+  a common library, then exercised through a new atomic-write consumer.
+  Representative commits:
+  [`c0d12e400`](https://github.com/boshu2/agentops/commit/c0d12e400),
+  [`703db62ef`](https://github.com/boshu2/agentops/commit/703db62ef),
+  [`8e47876ff`](https://github.com/boshu2/agentops/commit/8e47876ff).
+- **Repository documentation now has a compact operating contract and explicit
+  authority graph.** Prose meaning moved out of brittle semantic scripts and
+  into fresh-context judgment; factual drift remains mechanically checked.
+  Root manuals and volatile architecture snapshots were consolidated into
+  stable owners. Representative commits:
+  [`eed93d992`](https://github.com/boshu2/agentops/commit/eed93d992),
+  [`159d1bb74`](https://github.com/boshu2/agentops/commit/159d1bb74),
+  [`092de1a22`](https://github.com/boshu2/agentops/commit/092de1a22).
+
+### Fixed
+
+- Verdict-to-ledger binding now fails closed, evidence paths are portable, and
+  a measured 76% false-positive evidence-floor auto-flip was removed.
+  Representative commits:
+  [`60f26fcbf`](https://github.com/boshu2/agentops/commit/60f26fcbf),
+  [`cf0f93388`](https://github.com/boshu2/agentops/commit/cf0f93388),
+  [`a914ae875`](https://github.com/boshu2/agentops/commit/a914ae875).
+- Membrane retry handling now fails closed when `max_attempts < 2`, and helper
+  escalation is terminal instead of silently falling through.
+  Representative commits:
+  [`fa5869b41`](https://github.com/boshu2/agentops/commit/fa5869b41),
+  [`15bc5119d`](https://github.com/boshu2/agentops/commit/15bc5119d).
 
 ## [3.2.0] - 2026-07-03
 

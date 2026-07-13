@@ -52,12 +52,14 @@ through a three-gap lifecycle contract (see
 
 1. **Validation** (internal: judgment validation) — the agent ships without the risk context that would challenge its choices. `/pre-mortem` before implementation, `/vibe` before commit, `/council` for multi-judge review.
 2. **Bookkeeping** (internal: durable learning) — solved problems recur because nothing extracts, scores, and retrieves the lesson. The `.agents/` ledger, `ao lookup`, finding registry, and `/retro` keep learnings alive across sessions.
-3. **Closure** (internal: loop closure) — completed work does not produce better next work. `/post-mortem` harvests learnings and next-work items, the finding compiler promotes repeat failures into preventive constraints, and `GOALS.md` + `/evolve` turn findings into measurable improvements.
+3. **Closure** (internal: loop closure) — completed work does not produce an
+   explicit next decision. `/learn` binds observations to the Validate verdict
+   and emits plan impact; the orchestrator chooses the next transition.
 
 These three gaps are not separate features. They form a single feedback loop:
 
 ```
-/pre-mortem → Implement → /vibe → Commit → /post-mortem → extract → curate → retrieve → next session
+/premortem → implement → validate → learn → orchestrator decision → land
    (gap 1)                (gap 1)           (gap 3)        (gap 2)   (gap 2)   (gap 2)    (gap 3)
 ```
 

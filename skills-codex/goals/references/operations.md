@@ -390,7 +390,7 @@ ao goals render --out spec.feature     # write Gherkin to a file
 
 **Result:** New GOALS.md ready for `/evolve` consumption.
 
-### Adding a new goal after a post-mortem
+### Adding a new goal after a postmortem
 
 **User says:** `/goals add go-parser-fuzz "cd cli && go test -fuzz=. ./internal/goals/ -fuzztime=10s" --weight=3 --description="Markdown parser survives fuzz testing"`
 

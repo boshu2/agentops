@@ -171,7 +171,7 @@ Every skill has a role in the pattern:
 | `/vibe` | THE filter | Quality gate that blocks bad code |
 | `/implement` | Micro-ratchet | Single issue: open → closed (atomic) |
 | `/swarm` | Parallel chaos engine | Fresh worker set per wave |
-| `/post-mortem` | Knowledge ratchet | Learnings locked, never go backward |
+| `/learn` | Verdict-bound bookkeeping | Observations and plan impact remain tied to immutable proof |
 
 ---
 
@@ -253,7 +253,7 @@ This is why token cost is front-loaded (more attempts early) but total cost is l
 /plan <goal>              # Generate issues with dependencies
 /pre-mortem <spec>        # Filter the plan before execution
 /crank <epic>             # FIRE loop until complete
-/post-mortem              # Extract learnings, close the loop
+/learn                    # Consume the immutable verdict and emit plan impact
 ```
 
 ### During Execution
@@ -268,7 +268,7 @@ The orchestrator runs FIRE:
 ### After Completion
 
 ```bash
-/post-mortem <epic>       # Validate + extract learnings
+/learn                    # Record verdict-bound observations after Validate
 ```
 
 Learnings get ratcheted:
@@ -411,7 +411,7 @@ The ratchet produces constant raw output. *If* the flywheel hypothesis holds, it
 **After each FIRE cycle (ratchet point):**
 1. Merge code (immediate ratchet)
 2. Close beads issue (state ratchet)
-3. Run `/post-mortem` (knowledge extraction)
+3. Run `/learn` on the immutable Validate verdict
 4. Store learnings in `.agents/` (flywheel entry)
 5. Store memories in MCP (semantic recall)
 

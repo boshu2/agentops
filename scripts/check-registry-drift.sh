@@ -1,28 +1,22 @@
 #!/usr/bin/env bash
 # scripts/check-registry-drift.sh
 #
-# Detect drift between skills/ (source of truth) and the hand-edited DDD/hex
-# registry docs. Encodes the registries-drift lesson (2026-05-17): hand-
-# maintained inventory docs drift silently against the catalog they describe.
+# Detect drift between skills/ (source of truth) and the generated domain map.
 #
 # Checks:
-#   1. Skill count in docs/reference/agentops-skill-domain-map.md narrative
-#      and audit table matches `find skills -maxdepth 1 -type d` count.
-#   2. Skill count in docs/reference/agentops-domain-evolution-bdd.md Gherkin
-#      ("contains N skills") matches actual.
-#   3. Every skill listed in the Full Skill Map table exists in skills/.
-#   4. Every skill in skills/ is listed in the Full Skill Map table.
-#   5. hexagonal_role column in the doc matches each SKILL.md frontmatter
+#   1. Skill count in the domain-map audit table matches skills/.
+#   2. Every skill listed in the Full Skill Map table exists in skills/.
+#   3. Every skill in skills/ is listed in the Full Skill Map table.
+#   4. hexagonal_role column in the doc matches each SKILL.md frontmatter
 #      `hexagonal_role:` field.
 #
 # Exit codes:
 #   0 = no drift
-#   1 = drift detected (or --fix-counts updated files; rerun to confirm)
+#   1 = drift detected
 #   2 = usage error / missing inputs
 #
 # Modes:
 #   --check       (default) report drift to stdout, non-zero on any
-#   --fix-counts  update narrative count tokens in-place where unambiguous
 #   --json        emit machine-readable JSON report instead of human prose
 #
 # Schema reference: schemas/skill-frontmatter.v2.schema.json
@@ -35,13 +29,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SKILLS_DIR="${REPO_ROOT}/skills"
 MAP_DOC="${REPO_ROOT}/docs/reference/agentops-skill-domain-map.md"
-BDD_DOC="${REPO_ROOT}/docs/reference/agentops-domain-evolution-bdd.md"
 
 MODE="check"
 JSON_OUT=0
 for arg in "$@"; do
   case "$arg" in
-    --fix-counts) MODE="fix-counts" ;;
     --check)      MODE="check" ;;
     --json)       JSON_OUT=1 ;;
     -h|--help)
@@ -59,14 +51,12 @@ if [[ ! -d "${SKILLS_DIR}" ]]; then
   echo "ERROR: skills/ not found at ${SKILLS_DIR}" >&2
   exit 2
 fi
-for f in "${MAP_DOC}" "${BDD_DOC}"; do
-  if [[ ! -f "$f" ]]; then
-    echo "ERROR: registry doc missing: $f" >&2
-    exit 2
-  fi
-done
+if [[ ! -f "${MAP_DOC}" ]]; then
+  echo "ERROR: registry doc missing: ${MAP_DOC}" >&2
+  exit 2
+fi
 
-export SKILLS_DIR MAP_DOC BDD_DOC MODE JSON_OUT
+export SKILLS_DIR MAP_DOC MODE JSON_OUT
 
 exec python3 - <<'PY'
 import json
@@ -83,7 +73,6 @@ except ImportError:
 
 SKILLS_DIR = Path(os.environ["SKILLS_DIR"])
 MAP_DOC    = Path(os.environ["MAP_DOC"])
-BDD_DOC    = Path(os.environ["BDD_DOC"])
 MODE       = os.environ.get("MODE", "check")
 JSON_OUT   = os.environ.get("JSON_OUT") == "1"
 
@@ -124,25 +113,15 @@ for name in actual_skills:
     fm_role[name] = fm.get("hexagonal_role")
 
 
-# ---- Parse declared counts in registry docs ----
+# ---- Parse the generated audit count ----
 map_text = MAP_DOC.read_text()
-bdd_text = BDD_DOC.read_text()
-
-# Map narrative count: e.g. "It classifies all 78 checked-in AgentOps skills"
-map_narr_match = re.search(r'(\d+)\s+checked-in AgentOps skills', map_text)
-map_narr_count = int(map_narr_match.group(1)) if map_narr_match else None
 
 # Map audit table: "| Skills audited | 78 |"
 map_audit_match = re.search(r'\|\s*Skills audited\s*\|\s*(\d+)\s*\|', map_text)
 map_audit_count = int(map_audit_match.group(1)) if map_audit_match else None
 
-# BDD Gherkin: "Given the checked-in skill catalog contains 77 skills"
-bdd_match = re.search(r'checked-in skill catalog contains\s+(\d+)\s+skills', bdd_text)
-bdd_count = int(bdd_match.group(1)) if bdd_match else None
-
-
-def check_count(label, declared, doc_path, pattern_for_fix):
-    """Compare declared count to actual; in fix-counts mode, rewrite."""
+def check_count(label, declared, doc_path):
+    """Compare the generated declared count to actual."""
     if declared is None:
         add("warn", "COUNT_NOT_FOUND",
             f"could not find declared count in {doc_path.name} ({label}); pattern may have drifted")
@@ -152,25 +131,10 @@ def check_count(label, declared, doc_path, pattern_for_fix):
     add("fail", "COUNT_DRIFT",
         f"{doc_path.name} ({label}): declared {declared} skills, actual {actual_count}",
         f"sed -i 's/{declared}\\([^0-9]\\)/{actual_count}\\1/g' {doc_path}  # manual review required")
-    if MODE == "fix-counts" and pattern_for_fix:
-        new_text = doc_path.read_text()
-        # pattern_for_fix is a regex with one numeric capture group
-        new_text, n = re.subn(pattern_for_fix,
-                              lambda m: m.group(0).replace(m.group(1), str(actual_count)),
-                              new_text)
-        if n == 1:
-            doc_path.write_text(new_text)
-            add("info", "COUNT_FIXED",
-                f"{doc_path.name} ({label}): {declared} -> {actual_count}")
-        else:
-            add("warn", "COUNT_FIX_AMBIGUOUS",
-                f"{doc_path.name} ({label}): expected exactly 1 match for fix, got {n}; left alone")
     return False
 
 
-check_count("narrative",   map_narr_count,  MAP_DOC, r'(\d+)\s+checked-in AgentOps skills')
-check_count("audit table", map_audit_count, MAP_DOC, r'\|\s*Skills audited\s*\|\s*(\d+)\s*\|')
-check_count("Gherkin",     bdd_count,       BDD_DOC, r'checked-in skill catalog contains\s+(\d+)\s+skills')
+check_count("audit table", map_audit_count, MAP_DOC)
 
 
 # ---- Parse Full Skill Map rows ----
@@ -214,9 +178,7 @@ infos  = [f for f in findings if f["severity"] == "info"]
 if JSON_OUT:
     print(json.dumps({
         "actual_count": actual_count,
-        "declared_map_narrative": map_narr_count,
         "declared_map_audit":     map_audit_count,
-        "declared_bdd":           bdd_count,
         "missing_from_doc":       missing_from_doc,
         "extra_in_doc":           extra_in_doc,
         "findings":               findings,
@@ -224,9 +186,7 @@ if JSON_OUT:
     }, indent=2))
 else:
     print(f"Registry drift check: {actual_count} skills in skills/")
-    print(f"  declared in map narrative: {map_narr_count}")
     print(f"  declared in map audit:     {map_audit_count}")
-    print(f"  declared in BDD Gherkin:   {bdd_count}")
     print()
     for f in findings:
         tag = {"fail": "FAIL", "warn": "WARN", "info": "INFO"}[f["severity"]]

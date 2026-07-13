@@ -36,9 +36,9 @@ var provenanceCmd = &cobra.Command{
 (e.g. a decision and the artifact it produced), recorded as per-record
 hash-chained events in the committed ledger at docs/provenance/ledger.jsonl.
 
-Per CLAUDE.md the committed JSONL ledger is the AUDIT authority and source of
-truth; any Dolt projection is rebuildable and loses on disagreement, so these
-subcommands write the JSONL ledger directly.`,
+The committed JSONL ledger is the audit authority and source of truth; any Dolt
+projection is rebuildable and loses on disagreement, so these subcommands write
+the JSONL ledger directly.`,
 }
 
 var provenanceAddCmd = &cobra.Command{

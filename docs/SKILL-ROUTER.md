@@ -2,9 +2,9 @@
 
 Use this when you're not sure which skill to run. **Product map:**
 [Intent → Validated Code](architecture/intent-to-validated-code.md) ·
-[Skills Matrix](skills-matrix.md). The same tree is embedded in
-[`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep the two in
-sync when skills are folded or renamed.
+[Skills Matrix](skills-matrix.md). This file owns the canonical routing tree;
+[`docs/SKILLS.md`](SKILLS.md) explains individual skill contracts and must link
+here instead of becoming a second routing authority.
 
 To search skills by intent instead of reading this tree, use `ms search "<task>"`
 (or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
@@ -23,7 +23,7 @@ What are you trying to do?
 │   ├─ Deeper code audit? ────────► /validate --mode=post-impl
 │   ├─ Plan ready to build? ──────► /premortem
 │   ├─ Independent judges ────────► /council validate recent
-│   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
+│   ├─ Adversarially probe it ────► /validate --debate
 │   ├─ Optional high-assurance delivery ► /pawl-review (adapter; after Validate)
 │   ├─ Drive fixes to agreement ──► /converge
 │   ├─ Mid-epic drift check ──────► /reality-check
@@ -51,7 +51,7 @@ What are you trying to do?
 │
 ├─ "Fix a bug"
 │   ├─ Already scoped? ────────────► /implement <issue-id>
-│   └─ Need to investigate? ───────► /review (bug-hunt mode)
+│   └─ Need to investigate? ───────► /validate --mode=pr
 │
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /codebase-recon
@@ -63,7 +63,7 @@ What are you trying to do?
 ├─ "Learn from past work"
 │   ├─ Extract a recurring code shape ─► /pattern-mining → /operationalize
 │   ├─ Turn the corpus into operator surfaces ─► /operationalize
-│   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
+│   ├─ What do we know about X? ──► host-native session search; optional archive profile for ao lookup/search
 │   ├─ Route validated observations ─► /learn
 │   └─ Answer a causal question ───► /postmortem
 │
@@ -84,7 +84,7 @@ What are you trying to do?
 │   ├─ Capture validated learning ───► /learn
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
-│   └─ Recover after compaction ──► /recover
+│   └─ Recover after compaction ──► /status --recover
 │
 └─ "First time here" ────────────► /plan → /implement → /validate → /learn
                                    (maps: Intent → Validated Code · Skills Matrix)
