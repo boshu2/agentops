@@ -93,7 +93,7 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 
 	t.Run("docs change", func(t *testing.T) {
 		ids := selectedIDs(t, []string{"docs/how-it-works.md"})
-		assertHas(t, ids, "docs.no-retired-tech")
+		assertHas(t, ids, "claim.registry-drift")
 		assertHas(t, ids, alwaysIDs...)
 		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift")
 	})

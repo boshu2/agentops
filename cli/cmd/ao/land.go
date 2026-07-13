@@ -48,7 +48,7 @@ stranger/UNTRUSTED path (cold review, PAWL_NO_SERVICE=1, no verdict auto-bind).
   0. Fetch origin/main and rebase before review, then capture that exact base. Build
      a fresh in-checkout binary (cli/bin/ao) from the rebased source so the review runs under a binary
      that is BOTH HEAD-fresh AND physically inside the checkout — aoBinaryInside()
-     passes, so the review takes the LIVE (trusted) path: warm auto-up + deterministic
+     passes, so the review takes the LIVE (trusted) path: deterministic
      preflight + verdict AUTO-BIND. Re-exec the whole verb through that fresh binary.
   1. Pin AO_BIN to the fresh binary for every child step (the live path passes
      extraEnv=nil, so it does NOT pin AO_BIN itself — pin it here so preflight + the
@@ -147,23 +147,6 @@ var landReexec = func(cmd *cobra.Command, freshBin string, args []string) (int, 
 	return 0, err
 }
 
-// landEnsureWarmService brings the standing pawl-service up once if it is down
-// (Step 2, best-effort). Never fails the land — a cold review still works, and
-// pawl-review lazy-auto-ups on the LIVE path anyway; this just makes the warm
-// intent explicit. Routes through the trusted-script boundary (aoBinaryInside).
-var landEnsureWarmService = func(cmd *cobra.Command, repoRoot, aoBin string) {
-	// Already healthy? Nothing to do (a non-zero health exit means down/absent).
-	if _, err := runTrustedRepoScriptStreaming(repoRoot, defaultPawlServiceScript,
-		nil, nil, nil, []string{"AO_BIN=" + aoBin}, "health"); err == nil {
-		return
-	}
-	fmt.Fprintln(cmd.ErrOrStderr(), "ao land: standing pawl-service not up — bringing it up once (best-effort; cold review still works)…")
-	if _, err := runTrustedRepoScriptStreaming(repoRoot, defaultPawlServiceScript,
-		cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), []string{"AO_BIN=" + aoBin}, "up"); err != nil {
-		fmt.Fprintf(cmd.ErrOrStderr(), "ao land: pawl up failed (best-effort, ignored — review will run cold): %v\n", err)
-	}
-}
-
 // landRunReview runs the existing `ao pawl review <bead> --scope upstream` machinery
 // in-process (Step 3). Because the caller is the fresh in-checkout binary,
 // runPawlReview takes the LIVE (trusted) path — auto-bind fires on CONFIRM. It
@@ -227,10 +210,10 @@ func runLand(cmd *cobra.Command, args []string) error {
 
 	// Step 1: build a fresh in-checkout binary so the review runs the LIVE (trusted)
 	// path — HEAD-fresh AND physically inside the checkout ⇒ aoBinaryInside() passes ⇒
-	// warm auto-up + preflight + auto-bind all enabled. Skipped in the re-exec'd child
+	// preflight + auto-bind all enabled. Skipped in the re-exec'd child
 	// (its parent just built it).
 	if !reexeced {
-		fmt.Fprintf(cmd.ErrOrStderr(), "ao land: building a fresh in-checkout ao (→ %s) so the review takes the trusted path (warm auto-up + auto-bind)…\n", freshBin)
+		fmt.Fprintf(cmd.ErrOrStderr(), "ao land: building a fresh in-checkout ao (→ %s) so the review takes the trusted path (auto-bind)…\n", freshBin)
 		if buildErr := landBuildFreshBinary(repoRoot, freshBin); buildErr != nil {
 			return fmt.Errorf("ao land: building the fresh in-checkout ao binary failed (fix the build, then re-run): %w", buildErr)
 		}
@@ -257,10 +240,7 @@ func runLand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ao land: pinning AO_BIN=%s: %w", freshBin, err)
 	}
 
-	// Step 4 (warm-service liveness, best-effort — never hard-fails on warm-up).
-	landEnsureWarmService(cmd, repoRoot, freshBin)
-
-	// Step 5: run the pawl review on the LIVE path. auto-bind fires on CONFIRM; a
+	// Step 4: run the pawl review on the LIVE path. auto-bind fires on CONFIRM; a
 	// REFUTED / NO-VERDICT stops the land here (the review already printed the verdict
 	// + defects and carries its own exit code).
 	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: running the cross-family pawl review for %s (scope upstream from %s, trusted path)…\n", bead, reviewedBase[:12])
@@ -268,7 +248,7 @@ func runLand(cmd *cobra.Command, args []string) error {
 		return reviewErr
 	}
 
-	// Step 6: CONFIRM — the auto-bind emitted the single #trivial verdict commit. Hand
+	// Step 5: CONFIRM — the auto-bind emitted the single #trivial verdict commit. Hand
 	// off with the exact reviewed base. pawl-land fetches once more and refuses if
 	// origin/main advanced; a range verdict is never silently restamped onto a new base.
 	fmt.Fprintf(cmd.ErrOrStderr(), "ao land: CONFIRMED — handing off to scripts/pawl-land.sh (remote-base check → single push)…\n")

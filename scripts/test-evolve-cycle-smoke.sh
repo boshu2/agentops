@@ -11,7 +11,8 @@
 #   1. `git rev-parse HEAD` advances by at least one commit during the run.
 #   2. `git fsck --unreachable | grep -c "^unreachable commit"` does not grow.
 #
-# This script is opt-in. It is wired into `scripts/pre-push-gate.sh` behind
+# This script is opt-in. It was historically wired into the bash pre-push
+# gate; run it explicitly or via the Go gate registry when selected.
 # the `--smoke-evolve` flag because a single bounded cycle takes 15-30 minutes;
 # normal push gates skip it. Run manually:
 #

@@ -34,7 +34,7 @@ check_file "$REPO_ROOT/scripts/lib/flywheel-compile.sh" "$EMBEDDED/skills/compil
 # Check the pawl bundle: scripts + verdict schema embedded so `ao pawl review` runs
 # zero-config on a stranger's repo (no AgentOps checkout). The scripts/ + schemas/
 # sibling layout must be preserved (pawl-verdict.sh reads its schema script-relative).
-for s in pawl-review.sh pawl-verdict.sh pawl.sh; do
+for s in pawl-review.sh pawl-verdict.sh; do
     check_file "$REPO_ROOT/scripts/$s" "$EMBEDDED/pawl/scripts/$s"
 done
 # The membrane-receipts generator + its freshness check ride along in the bundle so

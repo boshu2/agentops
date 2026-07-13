@@ -1,5 +1,4 @@
 # Portable role profiles over the external NTM adapter.
-# Drift gate: scripts/check-orchestration-profiles.sh ↔ agent-native lifecycle.
 
 profiles:
   ntm-workers:

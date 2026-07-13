@@ -434,7 +434,7 @@ func TestRunSteerAdd_DryRun(t *testing.T) {
 func TestRunSteerAdd_PreservesNonDirectiveContent(t *testing.T) {
 	tmp := t.TempDir()
 	t.Chdir(tmp)
-	extra := `| flywheel-proof | bash scripts/proof-run.sh | 7 | proof |
+	extra := `| flywheel-compounding | bash scripts/check-flywheel-compounding.sh | 3 | proof |
 
 ## Three-Gap Contract Proof Surface
 
@@ -471,7 +471,7 @@ A doctrine section the GoalFile model does not represent.
 		"## Three-Gap Contract Proof Surface",
 		"<!-- agentops:claim:AOP-CLAIM-GOALS-PRESERVE -->",
 		"A doctrine section the GoalFile model does not represent.",
-		"flywheel-proof",
+		"flywheel-compounding",
 	} {
 		if !strings.Contains(got, must) {
 			t.Errorf("non-directive content dropped (soc-byt52 regression): %q missing from:\n%s", must, got)

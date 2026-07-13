@@ -13,7 +13,7 @@
 #   2. If inventory: run the regen scripts (sync-skill-counts, codex-hashes,
 #      domain-map, context-map, registry, sync-hooks) preemptively so the
 #      gates see consistent state
-#   3. Run pre-push-gate.sh in full mode (inventory diff) or --fast (routine)
+#   3. Run ao gate check --full (inventory diff) or --fast --scope head (routine)
 #   4. On green: exit 0 with a clean next-step report pointing at the current
 #      proof-aware land wrapper
 #   5. On red: exit 2 with a clear reason — same as the gate itself
@@ -151,11 +151,7 @@ echo "ship: branch=$branch  gate=$gate_mode  ($reason)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
     regen_msg="$([[ "$gate_mode" == "full" ]] && echo "yes" || echo "no")"
-    if [[ "${AGENTOPS_GATE_BASH:-0}" == "1" ]]; then
-        gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "pre-push-gate.sh --fast (AGENTOPS_GATE_BASH=1)" || echo "pre-push-gate.sh (full; AGENTOPS_GATE_BASH=1)")"
-    else
-        gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "ao gate check --fast --scope head" || echo "ao gate check --full")"
-    fi
+    gate_msg="$([[ "$gate_mode" == "fast" ]] && echo "ao gate check --fast --scope head" || echo "ao gate check --full")"
     echo "ship: --dry-run — would run regen sweep: $regen_msg; then $gate_msg"
     exit 0
 fi
@@ -190,22 +186,11 @@ if [[ "$gate_mode" == "full" && "$SKIP_REGEN" != "true" ]]; then
 fi
 
 # --- Gate ------------------------------------------------------------------
-# Release authority is the Go gate (`ao gate check`). The legacy bash gate
-# (scripts/pre-push-gate.sh) stays reachable via AGENTOPS_GATE_BASH=1, mirroring
-# scripts/hooks/pre-push.local's documented escape hatch. Inventory-touching diffs
+# Release authority is the Go gate (`ao gate check`). Inventory-touching diffs
 # run the FULL gate (routing ignored); routine diffs run the fast changed-file
 # cockpit subset scoped to HEAD.
 
 run_gate() {
-    local bash_args=()
-    [[ "$gate_mode" == "fast" ]] && bash_args=(--fast)
-
-    if [[ "${AGENTOPS_GATE_BASH:-0}" == "1" ]]; then
-        echo "ship: running legacy bash gate (AGENTOPS_GATE_BASH=1): pre-push-gate.sh ${bash_args[*]:-(full)}"
-        bash scripts/pre-push-gate.sh "${bash_args[@]}"
-        return $?
-    fi
-
     # Resolution order: AO_BIN, then the REPO's own build, then PATH — the repo
     # binary is the freshly-built one (pre-push.local builds it); a stale PATH ao
     # shadowing it is the landed!=installed trap (cross-family refute, age-fkps).
@@ -214,9 +199,8 @@ run_gate() {
     [[ -z "$ao_bin" && -x "$REPO_ROOT/cli/bin/ao" ]] && ao_bin="$REPO_ROOT/cli/bin/ao"
     [[ -z "$ao_bin" ]] && ao_bin="$(command -v ao 2>/dev/null || true)"
     if [[ -z "$ao_bin" ]]; then
-        echo "ship: WARN — ao not resolvable; falling back to the legacy bash gate (install ao, or set AGENTOPS_GATE_BASH=1 to silence)." >&2
-        bash scripts/pre-push-gate.sh "${bash_args[@]}"
-        return $?
+        echo "ship: ERROR — ao not resolvable; build cli/bin/ao or set AO_BIN." >&2
+        return 1
     fi
 
     if [[ "$gate_mode" == "full" ]]; then
