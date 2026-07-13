@@ -9,15 +9,16 @@ description: Test an explicit retrospective causal
 
 ## Critical Constraints
 
-- Postmortem is retrospective causal analysis, not the general learning
-  umbrella and not a completion gate.
-- It consumes an immutable Validate verdict plus Learn receipt and does not re-run acceptance validation by default.
-- Treat causal statements as hypotheses. Separate observed sequence,
-  contributing conditions, counterfactuals, and unknowns.
+- Because proof and causal inference are different judgments, Postmortem is retrospective causal analysis, not the general learning umbrella and not a completion gate.
+- It consumes an immutable Validate verdict plus Learn receipt and does not re-run acceptance validation by default because Validate already owns that proof.
+- Treat causal statements as hypotheses because causal confidence must survive
+  alternatives. Separate observed sequence, contributing conditions,
+  counterfactuals, and unknowns.
 - A correlation is not promoted to cause without evidence that discriminates
   plausible alternatives.
-- Do not rewrite proof, operate delivery or tracker state, change the remaining
-  plan, or promote a rule. Return evidence to the caller.
+- Because the caller owns delivery decisions, do not rewrite proof, operate
+  tracker state, change the remaining plan, or promote a rule. Return evidence
+  to the caller.
 - Empty or inconclusive analysis is valid; manufacture neither certainty nor a
   lesson to make the retrospective feel useful.
 
@@ -37,11 +38,19 @@ description: Test an explicit retrospective causal
 
 ## Output Specification
 
-- **Artifact:** `.agents/council/YYYY-MM-DD-postmortem-<topic>.md`.
-- **Required sections:** causal question, pinned inputs, timeline, hypotheses,
-  evidence, counterfactuals, unknowns, and experiments.
-- **Validator:** `bash skills/postmortem/scripts/validate.sh`.
-- **Downstream:** Learn or the orchestrator may consume the analysis; they own
+- **Artifact directory:** `.agents/council/`.
+- **Filename convention:** `YYYY-MM-DD-postmortem-<topic>.md`.
+- **Serialization/schema format:** Markdown with causal question, pinned inputs,
+  timeline, hypotheses, evidence, counterfactuals, unknowns, and experiments.
+- **Validator command:** `bash skills/postmortem/scripts/validate.sh`.
+- **Downstream handoff:** Learn or the orchestrator may consume the analysis; they own
   any bookkeeping, promotion, planning, or delivery decision.
+
+## Quality Checklist
+
+- [ ] The causal question and immutable inputs are pinned.
+- [ ] Supported and rejected claims cite discriminating evidence.
+- [ ] Alternatives, counterfactuals, and unknowns remain visible.
+- [ ] The report stops short of proof, planning, tracker, and delivery authority.
 
 Executable behavior is in [postmortem.feature](references/postmortem.feature).

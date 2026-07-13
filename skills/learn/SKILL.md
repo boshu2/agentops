@@ -1,7 +1,7 @@
 ---
 name: learn
 spine: true
-description: 'Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.'
+description: 'Consume an immutable Validate verdict and emit evidence-bound bookkeeping. Triggers: "learn", "consume a validation verdict", "record observations".'
 practices:
 - lean-startup
 - devops
@@ -39,16 +39,18 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 
 ## Critical Constraints
 
-- The input verdict is immutable. Bind it by `input_verdict_ref` and
-  `input_verdict_digest`; never author, edit, reinterpret, or replace its value.
-- Consume only structured observations already present in the verdict. Missing
-  evidence remains missing; Learn does not manufacture a lesson.
+- The input verdict is immutable. Because Learn cannot grade its own input, bind
+  it by `input_verdict_ref` and `input_verdict_digest`; never author, edit,
+  reinterpret, or replace its value.
+- Consume only structured observations already present in the verdict because
+  missing evidence remains missing; Learn does not manufacture a lesson.
 - Classify bookkeeping outcomes such as `record`, `candidate`, or `no_change`,
   but do not promote a rule or alter the remaining plan in this mode.
 - Postmortem is optional and runs only for retrospective causal analysis. Learn
   may request that specialization; the caller decides whether to invoke it.
-- Emit observations plus one Learn receipt. Do not operate proof, repository,
-  tracker, delivery, or Premortem authority.
+- Because proof, repository, tracker, delivery, and Premortem ports have
+  separate owners, emit observations plus one Learn receipt without operating
+  those authorities.
 - `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
   `BLOCKED`; incomplete bookkeeping is `PARTIAL`.
 
@@ -76,11 +78,20 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 
 ## Output Specification
 
-- **Artifacts:** `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
-- **Schema:** [learn-receipt.schema.json](schemas/learn-receipt.schema.json).
-- **Validator:** `bash skills/learn/scripts/validate.sh`.
-- **Downstream:** the orchestrator consumes the receipt and alone decides
+- **Artifact directory:** the invocation root plus `.agents/rpi/`.
+- **Filename convention:** `learn-receipt.json` and `phase-4-summary.md`.
+- **Serialization/schema format:** JSON follows
+  [learn-receipt.schema.json](schemas/learn-receipt.schema.json); summary is Markdown.
+- **Validator command:** `bash skills/learn/scripts/validate.sh`.
+- **Downstream handoff:** the orchestrator consumes the receipt and alone decides
   whether to continue, re-plan, stop, or route a causal-analysis request.
+
+## Quality Checklist
+
+- [ ] The receipt binds the immutable verdict reference and digest.
+- [ ] Every observation is copied without semantic mutation.
+- [ ] Every disposition remains bookkeeping rather than promotion.
+- [ ] The phase summary and receipt pass the validator command.
 
 Executable behavior is in [learn.feature](references/learn.feature). The
 post-verdict ownership map is in

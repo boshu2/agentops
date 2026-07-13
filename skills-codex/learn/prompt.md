@@ -1,6 +1,6 @@
 # learn
 
-Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.
+Consume an immutable Validate verdict and emit evidence-bound bookkeeping. Triggers: "learn", "consume a validation verdict", "record observations".
 
 ## Instructions
 

@@ -9,15 +9,16 @@ description: Independently remeasure a bounded artifact
 
 ## Critical Constraints
 
-- **One role: validator.** Never edit the subject, control its producer, mutate
-  repository or tracker state, or take delivery authority.
-- Pin the artifact by path plus commit or digest before checking it. A changed
-  artifact makes prior evidence stale.
-- Rerun cited deterministic commands on the pinned artifact. Author claims and
-  conversational memory are context, not proof.
-- PASS requires every mandatory check green, no blocking finding, disclosed
-  `not_checked`, and a judge identity different from the author when
-  independence is claimed.
+- **One role: validator.** Because independence is the proof boundary, never
+  edit the subject, control its producer, mutate repository or tracker state,
+  or take delivery authority.
+- Pin the artifact by path plus commit or digest before checking it because a
+  changed artifact makes prior evidence stale.
+- Rerun cited deterministic commands on the pinned artifact because author
+  claims and conversational memory are context, not proof.
+- Because claimed independence must be real, PASS requires every mandatory
+  check green, no blocker, disclosed `not_checked`, and a judge identity
+  different from the author.
 - Judge lanes are read-only except for their one verdict artifact.
 - Structured observations are part of the immutable verdict; they describe
   evidence without classifying recurrence, promoting knowledge, or changing
@@ -77,7 +78,7 @@ defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 - **Evidence:** exactly one anchored `VERDICT: PASS|WARN|FAIL`, a nonempty
   `COMMANDS RUN:` section with `judge=<id> command=<command>`, `REASONS:`,
   findings, structured observations, and `not_checked`.
-- **Validator:** `bash skills/validate/scripts/validate.sh`.
+- **Validator command:** `bash skills/validate/scripts/validate.sh`.
 - **Downstream handoff:** callers may pass the immutable verdict and digest to
   Learn or to their own delivery process. Validate has no authority after the
   handoff.

@@ -1917,7 +1917,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
+      "purpose": "Consume an immutable Validate verdict and emit evidence-bound bookkeeping. Triggers: \"learn\", \"consume a validation verdict\", \"record observations\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2147,7 +2147,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
+      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: \"postmortem\", \"causal retrospective\", \"test a retrospective hypothesis\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2873,7 +2873,7 @@
       "hex_role": "driving-adapter",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
+      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound verdict. Triggers: \"validate\", \"independently validate\", \"vibe\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [

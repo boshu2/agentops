@@ -55,11 +55,9 @@ output_contract: .agents/rpi/YYYY-MM-DD-*.md
 
 > Quick ref: `/discovery` -> `/crank` -> `/validate` -> `/learn`, then report.
 
-**Execute this workflow. Do not only describe it.** RPI is autonomous unless
-`--interactive` is set. The user touchpoint is after validation, or after a
-real blocked state exhausts retries. Read
-[references/autonomous-execution.md](references/autonomous-execution.md) when
-you need the full autonomy contract.
+**Execute this workflow. Do not only describe it.** RPI is autonomous unless `--interactive` is set. The user touchpoint is after validation or after a real
+blocked state exhausts retries. Read [autonomous-execution.md](references/autonomous-execution.md)
+when you need the full autonomy contract.
 
 **`--auto` means *pivot autonomously*, NOT *execute the initial plan to the letter*.** Autonomy is agility, not waterfall: between waves the orchestrator re-plans the remaining work and changes course on its own — refactoring, adding, dropping, reordering waves as evidence arrives — without the operator saying so (touched only at the terminal objective or a circuit-breaker trip that survives its bounded helper pass). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule).
 
@@ -88,36 +86,22 @@ you need the full autonomy contract.
 
 ## Core Contract
 
-RPI delegates via `Skill(skill="discovery", ...)`,
-`Skill(skill="crank", ...)`, `Skill(skill="validate", ...)`, and
-`Skill(skill="learn", ...)` as separate tool invocations. Keep strict
-delegation on by default; do not compress phases,
-replace phase skills with direct agent spawns, or skip validation. Read
-[../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
-for the full anti-compression contract.
-See [references/isolation-contract.md](references/isolation-contract.md) for
-phase-isolated transport and [references/best-practices.md](references/best-practices.md) for its anti-patterns.
+RPI delegates via `Skill(skill="discovery", ...)`, `Skill(skill="crank", ...)`,
+`Skill(skill="validate", ...)`, and `Skill(skill="learn", ...)` as separate calls.
+Do not compress phases, replace phase skills with direct agent spawns, or skip validation. Read the [strict-delegation contract](../shared/references/strict-delegation-contract.md),
+[isolation contract](references/isolation-contract.md), and [best practices](references/best-practices.md).
 
-When the runtime supports phase isolation, keep `/rpi` visible in the main
-session and run each phase contract through isolated transport: phase skill name in, bounded handoff artifact in, phase artifact/verdict/next action out.
-The transport may be a daemon job, process runner, or subagent wrapper, but it must execute the declared phase skill contract rather than doing phase work directly.
+When phase isolation exists, keep `/rpi` visible and pass phase skill name plus bounded handoff in, then artifact/verdict/next action out.
+The transport may be a process or subagent wrapper, but it must execute the declared phase contract rather than doing phase work directly.
 
-RPI owns one lifecycle objective across all phases. Preserve the discovered
-`epic_id` when present; otherwise preserve the original goal and execution
-packet objective. A child bead or one ready slice is context, not a replacement
-objective. `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the
-same objective.
+RPI owns one lifecycle objective. Preserve the discovered `epic_id` or original goal and packet objective; a child bead or ready slice is context, not a replacement.
+`<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
 
 ## Phase Receipt Contract
 
-RPI cannot rely on memory or a final narrative to prove delegated skills ran.
-Every execution packet and phase summary MUST carry compact receipts — JSON
-`skills_loaded` + `phase_receipts` (canonical slugs, no sigils) and a
-`## Skill Receipts` bullet list in each markdown phase summary. Receipts do not
-replace transcript/runtime proof; they make delegation auditable from disk when
-the transcript is unavailable and give validation or pre-land review a
-deterministic surface to reject missing phase execution. Full schema + example
-(the phase-receipt rule + fields): [references/phase-data-contracts.md](references/phase-data-contracts.md).
+RPI cannot rely on memory or final narrative to prove delegation. Every packet and phase summary MUST carry JSON `skills_loaded` + `phase_receipts` (canonical slugs, no sigils)
+and a `## Skill Receipts` list. Receipts do not replace runtime proof; they make delegation auditable from disk and let validation reject missing phase execution.
+Full schema and example: [phase-data-contracts.md](references/phase-data-contracts.md).
 
 ## Route And Classify
 

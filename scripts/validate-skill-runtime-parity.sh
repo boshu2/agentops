@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="${1:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
-DOCTOR_GO="$ROOT/cli/cmd/ao/doctor.go"
+DEPRECATED_COMMANDS_GO="$ROOT/cli/internal/quality/stale_refs.go"
 SKILL_ROOTS=("$ROOT/skills" "$ROOT/skills-codex")
 
 failures=0
@@ -27,7 +27,7 @@ require_path() {
   }
 }
 
-require_path "$DOCTOR_GO"
+require_path "$DEPRECATED_COMMANDS_GO"
 for root in "${SKILL_ROOTS[@]}"; do
   require_path "$root"
 done
@@ -35,7 +35,7 @@ done
 echo "=== Skill runtime parity validation ==="
 
 mapfile -t deprecated_commands < <(
-  sed -n '/var deprecatedCommands/,/^}/p' "$DOCTOR_GO" \
+  sed -n '/var DeprecatedCommands/,/^}/p' "$DEPRECATED_COMMANDS_GO" \
     | grep '"ao ' \
     | sed 's/.*"\(ao [^"]*\)".*:.*"\(ao [^"]*\)".*/\1|\2/' \
     | cut -d'|' -f1 \
