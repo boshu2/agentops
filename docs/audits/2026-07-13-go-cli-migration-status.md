@@ -83,7 +83,8 @@ The candidate establishes a useful migration floor:
   profiles;
 - `origin/main` ancestry plus explicit overlap dispositions;
 - ten descendant revalidation receipts bound to the integrated SHA; and
-- a compiled fast gate with 49 passing checks, zero warnings, and zero failures.
+- a compiled fast gate with 32 passing checks, zero warnings, and zero failures
+  on the final documentation/product scope.
 
 These checks prove the bounded slice they name. They do not prove that every
 command family has moved or that the current semantic checker covers every
