@@ -40,6 +40,27 @@ mode rather than growing the public surface.
 A goal-design packet containing `intent.md` and `driver.md` first runs
 `scripts/check-goal-design-packet.sh <packet-dir>`; nonzero is FAIL evidence.
 
+### Documentation behavior scenarios
+
+When the artifact is prose whose correctness depends on meaning, use the
+`scenario` target with an explicit behavior contract. Deterministic prechecks
+may pin the artifact, resolve links, confirm commands, and validate evidence
+schemas. They must not infer whether prose is misleading, primary, historical,
+contradictory, coherent, or semantically correct.
+
+Judge only the actual pinned artifact. A blocking documentation finding must:
+
+1. cite an exact artifact passage;
+2. name the acceptance scenario it violates;
+3. show a material user decision affected by that passage; and
+4. survive independent reproduction or reconciliation.
+
+Counterfactual wording that is absent from the artifact is holdout input, not a
+current blocker. Do not expand acceptance during review by converting every
+imagined phrase into a new deterministic recognizer. After two failures from
+the same semantic family, re-plan the mechanism at the abstraction boundary
+instead of growing regexes or keyword windows.
+
 ## Post-implementation acceptance
 
 Every Given/When/Then maps to a passing acceptance test for its own vertical

@@ -67,6 +67,12 @@ The proof-only post-verdict boundary is in
 [post-verdict-actions.md](references/post-verdict-actions.md). Quick mode is
 defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 
+For entry-documentation work, load
+[`docs/contracts/entry-documentation-behavior.md`](../../docs/contracts/entry-documentation-behavior.md)
+and judge the pinned four-document journey. Prose meaning is a judgment surface:
+deterministic prechecks may verify identity, links, command existence, and
+verdict shape, but never replace the judges with keyword or regex semantics.
+
 ## Output Specification
 
 - **Artifact directory:** `.agents/council/` for markdown; invocation output
@@ -92,3 +98,4 @@ defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 - [ ] No implementation, learning, retry, tracker, or delivery action occurred.
 
 Executable behavior is in [validate.feature](references/validate.feature).
+

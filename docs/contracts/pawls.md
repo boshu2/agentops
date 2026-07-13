@@ -52,6 +52,23 @@ AGENTS/skill contract edits, and "temporary" bypasses). The boundary is a
 > leaves the machine), or it is **hard to roll back**. Otherwise it is chaos —
 > run it free.
 
+### Deterministic facts versus semantic judgment
+
+The deterministic windshield proves facts: artifact identity, builds, tests,
+schemas, links, command existence, generated parity, scope, and verdict binding.
+It must not pretend to understand prose intent through expanding regexes,
+keyword windows, or hand-built language parsing.
+
+Meaning belongs to bounded, context-isolated judges operating against an
+explicit behavior contract and the actual pinned artifact. A semantic finding
+blocks only when it cites an artifact-present passage, violates a named
+acceptance scenario, affects a material user decision, and survives independent
+reproduction or reconciliation. An imagined phrase absent from the artifact is
+a holdout or follow-up, not a reason to move the acceptance bar mid-review.
+
+After two failures in the same semantic family, re-plan the mechanism at the
+abstraction boundary. Do not grow another regex and call it recovery.
+
 When you hit an action that isn't in the table, apply the rule, not the list. If
 it trips any clause, it is a missing pawl: treat it as a pawl now, and add it.
 
