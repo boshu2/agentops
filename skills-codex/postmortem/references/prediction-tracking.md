@@ -35,7 +35,7 @@ Each finding in the premortem report includes its prediction ID:
 
 ## Downstream Correlation
 
-### In $validate (Step 3.6)
+### In /validate (Step 3.6)
 
 When a premortem report exists for the current epic:
 1. Load prediction IDs from the most recent premortem report
@@ -43,7 +43,7 @@ When a premortem report exists for the current epic:
 3. Tag matched findings with the prediction ID: `predicted_by: pm-20260312-001`
 4. Tag unmatched findings as: `predicted_by: none` (surprise issue)
 
-### In $postmortem (Phase 2)
+### In /postmortem (Phase 2)
 
 Add "Prediction Accuracy" section to the report:
 

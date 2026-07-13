@@ -94,8 +94,9 @@ all **judgment-class**, so a gate is the exception, not the goal:
   planning-rule, or a `/discovery` premortem check. For a judgment defect this **is**
   the highest feasible binding, not a fallback. **When a gate/adversary CAUGHT a defect
   a green test missed, also append the dimension to `docs/gate/findings-ledger.md`** —
-  the ledger `behavior-first-planning` reads to ratchet its Standing Review Dimensions,
-  so the catch closes back into the NEXT loop's planning (S6). Then add a row to the
+  that is the ledger [`behavior-first-planning`](../../behavior-first-planning/SKILL.md)
+  reads to ratchet its Standing Review Dimensions, so the catch closes back into the
+  NEXT loop's planning (S6). Then add a row to the
   **[producer-defect register](../../../docs/architecture/producer-defect-register.md)**:
   the class, the fix + surface, and the recurrence count now (the "before").
 

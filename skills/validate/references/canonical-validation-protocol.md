@@ -5,7 +5,9 @@ This reference carries the detailed mode, target, and evidence rules for the
 
 ## Mode details
 
-- Default: two independent judges; PASS requires both PASS.
+- Default: one independent fresh-context judge; PASS requires that judge to
+  return PASS. Additional judges are an explicit depth or council choice, not
+  part of the default validation contract.
 - `--quick`: inline structured review. It may guide work but is stamped
   `waived`, never independently validated.
 - `--deep`: four perspectives—missing requirements, feasibility, scope, and
@@ -98,19 +100,16 @@ Every judge brief includes this exact clamp:
 Register dispatch intent before spawning. Two validators accidentally assigned
 to the same lane/bead are a dedup incident, not an independent quorum.
 
-## Assurance and landing
+## Verdict boundary
 
-Non-merge validation may use runtime-native judges. Assurance close requires the
-policy-selected independent-family floor. Benched families are not presented as
-live strict lanes.
+Validation may use runtime-native fresh-context judges. The result is an
+immutable proof artifact, not implementation, learning, retry, tracker, or
+delivery authority. After the verdict is written, Validate returns it to the
+caller and stops. Repository-specific publication policy remains outside this
+skill.
 
-Landing is a different door: `ao pawl` produces the commit-bound verdict and the
-pre-push gate authorizes the remote-main write. A validation PASS never replaces
-or pre-authorizes that landing proof.
+## Failure handoff
 
-## Failure routing
-
-WARN/FAIL/REFUTED findings return to the operating loop as re-plan evidence.
-Repair and remeasure automatically while the bounded budget has progress.
-HOLD/ESCALATE occurs only on a breaker: exhausted attempts/time/cost, oscillation,
-refusal, unavailable authority, or explicit risk/waiver judgment.
+WARN or FAIL identifies the owning producer, evidence, and one executable next
+action. The caller decides whether to repair, re-plan, stop, or escalate;
+Validate does not control that loop.

@@ -1,20 +1,8 @@
 # postmortem
 
-Close out completed work in a Codex-native way: validate outcomes, extract durable learnings, and harvest concrete follow-up work back into the queue.
+Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.
 
+## Instructions
 
-<!-- BEGIN AGENTOPS OPERATOR CONTRACT -->
-<!-- Generated from skills-codex-overrides/catalog.json for postmortem. -->
-
-## Codex Execution Profile
-
-1. Treat `skills/postmortem/SKILL.md` as the canonical close-out contract and `skills-codex/postmortem/SKILL.md` as the Codex-facing artifact.
-2. Keep the council/validation summary concise, then write learnings and harvested work to disk.
-3. Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.
-4. Own Codex closeout during the postmortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.
-
-## Guardrails
-
-1. Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle.
-
-<!-- END AGENTOPS OPERATOR CONTRACT -->
+Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
+Then read local files in `references/` and `scripts/` when needed.
