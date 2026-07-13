@@ -279,7 +279,7 @@ Bridge / framing docs:
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
 - [CLI Command Surface](cli-surface.md) — Generated classification of leaf commands by coverage and runtime safety
-- [CLI ↔ Skills Map](cli-skills-map.md) — Which commands are called by which skills
+- [CLI Command Reference](../cli/docs/COMMANDS.md) — generated command and flag truth; [Skills Matrix](skills-matrix.md) routes skills by loop move
 - [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence

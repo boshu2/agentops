@@ -5,9 +5,8 @@
 // guarantee: no two agents in a swarm start with different orientation.
 //
 // Substeps (all fail-open):
-//   1. Confirm AGENTS.md (and post-vuu6.3 siblings AGENTS-WORKFLOW.md,
-//      AGENTS-CI.md, AGENTS-CODEX.md, AGENTS-RUNTIME.md) exist and are
-//      readable. Read by the agent itself, not pre-loaded into the report.
+//   1. Confirm AGENTS.md and its canonical on-demand workflow, CI, Codex, and
+//      runtime destinations exist. Read by the agent itself when triggered.
 //   2. Run `ao onboard --auto` if it exists (soc-vuu6.9 — currently a P3
 //      stub). Falls back to phase="skipped:not-implemented" if absent.
 //   3. Resolve the live br ledger directory and call `br ready --json` with
@@ -58,7 +57,7 @@ var sessionBootstrapCmd = &cobra.Command{
 	Short: "Universal init prompt — every agent runs this first",
 	Long: `Universal init prompt for any agent spawned into an AgentOps repo.
 
-Reports orientation status (AGENTS.md tier-split presence), invokes
+Reports orientation status (AGENTS.md and canonical route presence), invokes
 optional follow-on commands (ao onboard, mcp-agent-mail), counts ready
 work, and emits a machine-readable summary so swarm coordination layers
 can rely on identical agent starting frames regardless of model.
@@ -94,6 +93,7 @@ func init() {
 type SessionBootstrapStatus struct {
 	AgentsMDRead                bool                         `json:"agents_md_read"`
 	AgentsSiblingsRead          []string                     `json:"agents_siblings_read"`
+	CanonicalRoutesPresent      []string                     `json:"canonical_routes_present"`
 	OnboardPhase                string                       `json:"onboard_phase"`
 	BeadsDir                    string                       `json:"beads_dir"`
 	BeadsDirSource              string                       `json:"beads_dir_source"`
@@ -123,13 +123,12 @@ type SessionBootstrapMemoryItem struct {
 	Tokens   int     `json:"tokens"`
 }
 
-// agentsMDSiblings are the post-vuu6.3 split files. Reported individually so
-// callers can detect partial splits or operator-customized tier layouts.
-var agentsMDSiblings = []string{
-	"AGENTS-WORKFLOW.md",
-	"AGENTS-CI.md",
-	"AGENTS-CODEX.md",
-	"AGENTS-RUNTIME.md",
+// canonicalAgentRoutes are the on-demand owners reached from the root contract.
+var canonicalAgentRoutes = []string{
+	"docs/agent-workflow-reference.md",
+	"docs/CI-CD.md",
+	"docs/contracts/codex-skill-api.md",
+	"docs/contracts/repo-execution-profile.md",
 }
 
 const sessionBootstrapMemoryTokenBudget = 1200
@@ -168,7 +167,8 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 	}
 
 	status := SessionBootstrapStatus{
-		AgentsSiblingsRead:          []string{},
+		AgentsSiblingsRead:          []string{}, // v1 compatibility: topology retired, always empty.
+		CanonicalRoutesPresent:      []string{},
 		Runtime:                     detectRuntime(),
 		StartedAt:                   time.Now().UTC().Format(time.RFC3339),
 		BootstrapVersion:            "v1",
@@ -181,9 +181,9 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 	status.BeadsDirSource = beadsDir.Source
 
 	status.AgentsMDRead = fileExists(filepath.Join(cwd, "AGENTS.md"))
-	for _, sib := range agentsMDSiblings {
-		if fileExists(filepath.Join(cwd, sib)) {
-			status.AgentsSiblingsRead = append(status.AgentsSiblingsRead, sib)
+	for _, route := range canonicalAgentRoutes {
+		if fileExists(filepath.Join(cwd, route)) {
+			status.CanonicalRoutesPresent = append(status.CanonicalRoutesPresent, route)
 		}
 	}
 
@@ -513,7 +513,7 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 
 	parts := []string{
 		fmt.Sprintf("agents_md=%s", mdMark),
-		fmt.Sprintf("siblings=%d/%d", len(s.AgentsSiblingsRead), len(agentsMDSiblings)),
+		fmt.Sprintf("routes=%d/%d", len(s.CanonicalRoutesPresent), len(canonicalAgentRoutes)),
 		fmt.Sprintf("onboard=%s", s.OnboardPhase),
 		fmt.Sprintf("beads=%s", s.BeadsDirSource),
 		fmt.Sprintf("ready=%s", ready),

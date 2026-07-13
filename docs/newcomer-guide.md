@@ -134,7 +134,7 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 ## Practical tips
 
 - Run the local gate before pushing: `ao gate check --fast --scope head` (Go registry; smart routing checks only what changed). Legacy bash escape hatch: `AGENTOPS_GATE_BASH=1` → `scripts/pre-push-gate.sh --fast`.
-- Use a **git worktree** per bead when the canonical checkout is shared — see `AGENTS-RUNTIME.md`.
+- Use a **git worktree** per bead when the canonical checkout is shared — see `docs/contracts/repo-execution-profile.md`.
 - Trust runtime files over narrative docs when there is a mismatch.
 - Keep changes small and verify with local gates before pushing.
 - Treat `.agents/` as a first-class part of the system behavior.

@@ -290,7 +290,6 @@ scripts/validate-agy-plugin.sh
 scripts/validate-am-coordination-discoverable.sh
 scripts/validate-bd-closeout-contract.sh
 scripts/validate-ci-policy-parity.sh
-scripts/validate-cli-skills-map.sh
 scripts/validate-codex-api-conformance.sh
 scripts/validate-codex-backbone-prompts.sh
 scripts/validate-codex-cli-skills.sh

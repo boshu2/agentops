@@ -4,7 +4,7 @@ Deep documentation, runbooks, and lookup tables. These are the pages you open wh
 
 Three groups worth knowing:
 
-- **Lookup** — [Glossary](../GLOSSARY.md), [Environment Variables](../ENV-VARS.md), [CLI ↔ Skills Map](../cli-skills-map.md). Skim once, then search-on-demand.
+- **Lookup** — [Glossary](../GLOSSARY.md), [Environment Variables](../ENV-VARS.md), and the generated [CLI command reference](../../cli/docs/COMMANDS.md). Skim once, then search on demand.
 - **Operations** — [Testing](../TESTING.md), [CI/CD](../CI-CD.md), [Releasing](../RELEASING.md), [Incident Runbook](../INCIDENT-RUNBOOK.md). Load these before you ship a release or page someone.
 - **Field guides** — [Agent Footguns](../agent-footguns.md), [Troubleshooting](../troubleshooting.md), [AgentOps Brief](../agentops-brief.md). Read before onboarding a new teammate.
 - **Curation** — [Skill Quality Rubric](skill-quality-rubric.md). Use this when scoring skill packaging standards and readiness.
@@ -72,7 +72,7 @@ Three groups worth knowing:
 
     Visual system map.
 
--   :material-file-tree: **[CLI ↔ Skills Map](../cli-skills-map.md)**
+-   :material-file-tree: **[CLI Command Reference](../../cli/docs/COMMANDS.md)**
 
     ---
 

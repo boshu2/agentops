@@ -139,22 +139,20 @@ PY
     [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
 }
 
-# ── ag-g9ex: AGENTS tiered-split siblings covered + gate triggers on contracts ──
+# ── ag-g9ex: compact AGENTS canonical routes covered + gate triggers ──
 
-@test "contracts filter covers every AGENTS*.md file the split script reads" {
-    SPLIT_SCRIPT="$REPO_ROOT/scripts/validate-agents-split.sh"
-    run python3 - "$WORKFLOW_PATH" "$SPLIT_SCRIPT" <<'PY'
-import sys, re, fnmatch, yaml
+@test "contracts filter covers AGENTS.md and every canonical route" {
+    run python3 - "$WORKFLOW_PATH" <<'PY'
+import sys, fnmatch, yaml
 
-workflow_path, split_path = sys.argv[1], sys.argv[2]
-
-# Extract the AGENTS*.md filenames the split script reads.
-with open(split_path) as f:
-    src = f.read()
-agents_files = sorted(set(re.findall(r'\bAGENTS(?:-[A-Z]+)?\.md\b', src)))
-if not agents_files:
-    print("FAIL: no AGENTS*.md references found in split script (refactored?)")
-    sys.exit(1)
+workflow_path = sys.argv[1]
+targets = [
+    "AGENTS.md",
+    "docs/agent-workflow-reference.md",
+    "docs/CI-CD.md",
+    "docs/contracts/codex-skill-api.md",
+    "docs/contracts/repo-execution-profile.md",
+]
 
 with open(workflow_path) as f:
     doc = yaml.safe_load(f)
@@ -176,18 +174,18 @@ def covered(target, patterns):
             return True
     return False
 
-uncovered = sorted(t for t in agents_files if not covered(t, contracts))
+uncovered = sorted(t for t in targets if not covered(t, contracts))
 if uncovered:
-    print("UNCOVERED AGENTS split targets:", uncovered)
+    print("UNCOVERED AGENTS route targets:", uncovered)
     sys.exit(1)
-print("ok: all AGENTS split targets covered by contracts filter:", agents_files)
+print("ok: all AGENTS route targets covered by contracts filter:", targets)
 PY
     [ "$status" -eq 0 ]
-    [[ "$output" == *"ok: all AGENTS split targets covered"* ]]
+    [[ "$output" == *"ok: all AGENTS route targets covered"* ]]
 }
 
-@test "AGENTS tiered-split gate triggers on needs.changes.outputs.contracts" {
-    run bash -c "awk '/name: Validate AGENTS.md tiered-split contract/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
+@test "AGENTS canonical-route gate triggers on needs.changes.outputs.contracts" {
+    run bash -c "awk '/name: Validate AGENTS.md canonical-route contract/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.contracts == 'true'"* ]]
 }

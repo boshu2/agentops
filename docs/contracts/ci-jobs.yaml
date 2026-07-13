@@ -1,4 +1,4 @@
-# CI jobs manifest — source of truth for the AGENTS-CI.md "### CI Jobs and What
+# CI jobs manifest — source of truth for the docs/CI-CD.md "### CI Jobs and What
 # They Check" table (rendered by scripts/generate-ci-jobs-table.sh) and parity-
 # gated by scripts/validate-ci-policy-parity.sh.
 #
@@ -32,11 +32,11 @@ jobs:
   reason: Every derived artifact is in sync — `registry.json`, CLI docs, context map, skill-domain map, SKU catalog, skill catalog (advisory), bounded-contexts, embedded lib/skills, CI policy parity, contract compatibility + next-work parity, contracts structural floor — plus the official AgentOps contract canaries
   failure: Editing a source (skill/CLI/contract) without regenerating its derived artifact, a contract-compat break, or a contract canary regression
 - name: codex-parity
-  reason: Codex runtime sections, generated artifacts, backbone prompts, override coverage, RPI contract, lifecycle guards, and parity drift (GOALS.md directive D7). `skills-codex/` is manually maintained — audit drift with `scripts/audit-codex-parity.sh`
-  failure: A Codex runtime/artifact/contract/parity drift between `skills/` and the manually-maintained `skills-codex/`
+  reason: Codex runtime sections, generated `parity_only` twins sourced from `skills/`, hand-maintained cataloged `bespoke` artifacts, backbone prompts, override coverage, RPI contract, lifecycle guards, and parity drift (GOALS.md directive D7)
+  failure: A `parity_only` twin differs from its source or transform, a cataloged `bespoke` artifact is missing or stale under deliberate review, an artifact is unclassified, or a Codex runtime/contract/override mismatch exists
 - name: doctrine-proof
-  reason: Flywheel/goals/wiring/corpus/finding-registry/memrl/sovereignty/three-gap proofs PLUS spec-linkage — executable-spec link integrity (`ao goals scenarios --lint`), AGENTS.md tiered split, docs↔learning references (scenario↔test linkage moved to `skill-gates`)
-  failure: A failing GOALS/doctrine proof gate, a broken directive↔scenario link, an AGENTS.md split-contract violation, or a dangling docs↔learning reference
+  reason: Flywheel/goals/wiring/corpus/finding-registry/memrl/sovereignty/three-gap proofs PLUS spec-linkage — executable-spec link integrity (`ao goals scenarios --lint`), compact AGENTS route contract, docs↔learning references (scenario↔test linkage moved to `skill-gates`)
+  failure: A failing GOALS/doctrine proof gate, a broken directive↔scenario link, an AGENTS route-contract violation, or a dangling docs↔learning reference
 - name: eval
   reason: Eval baseline-audit drift-only gate (`stale_suite_hashes>0`), eval-skill-delta dry-run, workbench golden state (D10 delta), and offline retrieval-quality bench + comparison smoke
   failure: A promoted baseline's suite SHA drift, broken delta/harness infrastructure, a workbench golden-state regression, or a retrieval-quality regression

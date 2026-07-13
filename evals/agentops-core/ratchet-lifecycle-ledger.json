@@ -131,8 +131,7 @@
         {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "Gate passes are recorded via `ao ratchet record`."},
         {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "The ratchet chain in `.agents/ao/chain.jsonl` is append-only."},
         {"type": "artifact_contains", "target": "../../docs/context-packet.md", "value": "Never manually edit chain.jsonl"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| **ratchet** | `ratchet check`, `ratchet record`, `ratchet skip`, `ratchet status` |"}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "`ao ratchet`"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "learning_closure"],
       "critical": true

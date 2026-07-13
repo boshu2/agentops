@@ -40,7 +40,7 @@ porcelain_path() {
 
 is_gate_managed_path() {
     case "$1" in
-        cli/docs/COMMANDS.md|cli/embedded/*|docs/ARCHITECTURE.md|docs/SKILLS.md|docs/cli-skills-map.md|PRODUCT.md|README.md|SKILL-TIERS.md|skills-codex/*)
+        cli/docs/COMMANDS.md|cli/embedded/*|docs/ARCHITECTURE.md|docs/SKILLS.md|PRODUCT.md|README.md|SKILL-TIERS.md|skills-codex/*)
             return 0
             ;;
         *)

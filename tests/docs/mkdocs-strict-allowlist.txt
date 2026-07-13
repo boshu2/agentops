@@ -30,10 +30,6 @@ WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/swarm/SKILL.md', bu
 WARNING -  Doc file 'GLOSSARY.md' contains a link '../skills/validate/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'SKILL-ROUTER.md' contains a link '../skills/ms/SKILL.md', but the target is not found among documentation files.
 WARNING -  Doc file 'SKILLS.md' contains a link '../skills/ms/SKILL.md', but the target is not found among documentation files.
-WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-CI.md', but the target '../AGENTS-CI.md' is not found among documentation files.
-WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-CODEX.md', but the target '../AGENTS-CODEX.md' is not found among documentation files.
-WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-RUNTIME.md', but the target '../AGENTS-RUNTIME.md' is not found among documentation files.
-WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../AGENTS-WORKFLOW.md', but the target '../AGENTS-WORKFLOW.md' is not found among documentation files.
 WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../GOALS.md', but the target '../GOALS.md' is not found among documentation files.
 WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../cli/docs/COMMANDS.md', but the target '../cli/docs/COMMANDS.md' is not found among documentation files.
 WARNING -  Doc file 'architecture/codebase-overview.md' contains a link '../../skills/SKILL-TIERS.md', but the target '../skills/SKILL-TIERS.md' is not found among documentation files.

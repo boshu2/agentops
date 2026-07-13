@@ -275,7 +275,7 @@ Read the right layer for your question:
 | Altitude | Files |
 |----------|-------|
 | **Router** | `AGENTS.md`, `CLAUDE.md` (≤250 lines; pointers only) |
-| **Tiered operator detail** | `AGENTS-WORKFLOW.md`, `AGENTS-CI.md`, `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md` |
+| **Triggered operator detail** | `docs/agent-workflow-reference.md`, `docs/CI-CD.md`, `docs/contracts/codex-skill-api.md`, `docs/contracts/repo-execution-profile.md` |
 | **Contributor onboarding** | [`newcomer-guide.md`](../newcomer-guide.md), this page |
 | **Doctrine** | [`3.0.md`](../3.0.md), [`operating-loop.md`](operating-loop.md), `GOALS.md`, `PRODUCT.md` |
 | **Deep workflow sidecar** | [`agent-workflow-reference.md`](../agent-workflow-reference.md) |
@@ -291,7 +291,7 @@ Read the right layer for your question:
 4. **Verify** — `ao gate check --fast --scope head` (+ targeted tests for touched surfaces)
 5. **Land** — push to `main`; cockpit pre-push hook runs gate; rebase-on-reject on conflict
 
-Branch shape, provenance trailers, and session scope rules: [`AGENTS-WORKFLOW.md`](../../AGENTS-WORKFLOW.md).
+Branch shape, provenance trailers, and session scope rules: [`agent-workflow-reference.md`](../agent-workflow-reference.md).
 
 ---
 
@@ -341,7 +341,7 @@ Some older docs (`ARCHITECTURE.md`, `ports-and-adapters.md`) still mention hooks
 3. [`3.0.md`](../3.0.md)
 4. [`operating-loop.md`](operating-loop.md)
 5. [`component-map.md`](component-map.md)
-6. [`AGENTS-WORKFLOW.md`](../../AGENTS-WORKFLOW.md) + [`AGENTS-RUNTIME.md`](../../AGENTS-RUNTIME.md)
+6. [`agent-workflow-reference.md`](../agent-workflow-reference.md) + [`repo-execution-profile.md`](../contracts/repo-execution-profile.md)
 
 ### By task
 
@@ -349,8 +349,8 @@ Some older docs (`ARCHITECTURE.md`, `ports-and-adapters.md`) still mention hooks
 |------|------|
 | Pick a skill | [`SKILLS.md`](../SKILLS.md), [`skills-decision-tree.md`](../skills-decision-tree.md) |
 | CLI behavior | [`cli/docs/COMMANDS.md`](../../cli/docs/COMMANDS.md) |
-| CI / gates | [`AGENTS-CI.md`](../../AGENTS-CI.md), [`agent-workflow-reference.md`](../agent-workflow-reference.md) |
-| Codex parity | [`AGENTS-CODEX.md`](../../AGENTS-CODEX.md) |
+| CI / gates | [`CI-CD.md`](../CI-CD.md), [`agent-workflow-reference.md`](../agent-workflow-reference.md) |
+| Codex parity | [`codex-skill-api.md`](../contracts/codex-skill-api.md) |
 | Fitness / honesty | [`GOALS.md`](../../GOALS.md), [`evals/agentops-effectiveness-evidence.md`](../evals/agentops-effectiveness-evidence.md) |
 | `.agents/` writes | [`contracts/agents-write-surfaces.md`](../contracts/agents-write-surfaces.md) |
 

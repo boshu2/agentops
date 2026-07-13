@@ -56,7 +56,7 @@
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "scripts/generate-cli-reference.sh --check && bash scripts/validate-cli-skills-map.sh"
+        "shell": "scripts/generate-cli-reference.sh --check && bash scripts/validate-sku-catalog-drift.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

@@ -68,7 +68,7 @@ var (
 	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
 	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
 	docsPaths         = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
-	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
+	agentsDocPaths    = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", "docs/contracts/repo-execution-profile.md", ".github/workflows/validate.yml"}
 	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
 	goalsPaths        = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
 	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
@@ -327,7 +327,6 @@ func init() {
 		{ID: "eval.corpus-freshness", Tiers: gates.Fast | gates.Full, Match: evalPaths, Blocking: true, Backing: "check-corpus-freshness.sh"},
 
 		// skill class (PB1 parity batch — all shell-backed via ScriptRunner)
-		{ID: "skill.cli-skills-map", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-cli-skills-map.sh"},
 		{ID: "skill.runtime-formats", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-formats.sh"},
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
@@ -383,7 +382,7 @@ func init() {
 		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh", RepairHint: "bash scripts/generate-context-map.sh"},
 		{ID: "contract.registry-json", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "generate-registry.sh", Args: []string{"--check"}},
 		{ID: "contract.sku-catalog-drift", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "validate-sku-catalog-drift.sh"},
-		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
+		{ID: "docs.agents-routes", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
 		{ID: "swarm.evidence", Tiers: gates.Fast | gates.Full, Match: swarmPaths, Blocking: true, Backing: "validate-swarm-evidence.sh"},
 
 		// always-run structural invariants (no Match)

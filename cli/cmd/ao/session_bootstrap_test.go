@@ -24,16 +24,16 @@ func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
 	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-CI.md"), "# c")
+	mustWriteFile(t, filepath.Join(dir, "docs/agent-workflow-reference.md"), "# w")
+	mustWriteFile(t, filepath.Join(dir, "docs/CI-CD.md"), "# c")
 
 	got := computeBootstrapStatus(context.Background(), dir, true /*noMail*/)
 
 	if !got.AgentsMDRead {
 		t.Fatalf("AgentsMDRead: want true, got false")
 	}
-	if len(got.AgentsSiblingsRead) != 2 {
-		t.Fatalf("AgentsSiblingsRead: want [WORKFLOW, CI] (2 entries), got %v", got.AgentsSiblingsRead)
+	if len(got.CanonicalRoutesPresent) != 2 {
+		t.Fatalf("CanonicalRoutesPresent: want [workflow, CI] (2 entries), got %v", got.CanonicalRoutesPresent)
 	}
 	if got.OnboardPhase != "skipped:not-implemented" {
 		// onboard subcommand may exist if registered; allow both shapes
@@ -124,25 +124,25 @@ func TestSessionBootstrap_AgentsMDMissing(t *testing.T) {
 	if got.AgentsMDRead {
 		t.Fatalf("AgentsMDRead: want false when AGENTS.md absent, got true")
 	}
-	if len(got.AgentsSiblingsRead) != 0 {
-		t.Fatalf("AgentsSiblingsRead: want empty, got %v", got.AgentsSiblingsRead)
+	if len(got.CanonicalRoutesPresent) != 0 {
+		t.Fatalf("CanonicalRoutesPresent: want empty, got %v", got.CanonicalRoutesPresent)
 	}
 }
 
-func TestSessionBootstrap_PartialSplit(t *testing.T) {
+func TestSessionBootstrap_PartialCanonicalRoutes(t *testing.T) {
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-RUNTIME.md"), "# r")
-	// Intentionally omit AGENTS-WORKFLOW.md, AGENTS-CI.md, AGENTS-CODEX.md
+	mustWriteFile(t, filepath.Join(dir, "docs/contracts/repo-execution-profile.md"), "# r")
+	// Intentionally omit the workflow, CI, and Codex canonical routes.
 
 	got := computeBootstrapStatus(context.Background(), dir, true)
 
 	if !got.AgentsMDRead {
 		t.Fatalf("AgentsMDRead: want true, got false")
 	}
-	want := []string{"AGENTS-RUNTIME.md"}
-	if !equalStringSlices(got.AgentsSiblingsRead, want) {
-		t.Fatalf("AgentsSiblingsRead: want %v, got %v", want, got.AgentsSiblingsRead)
+	want := []string{"docs/contracts/repo-execution-profile.md"}
+	if !equalStringSlices(got.CanonicalRoutesPresent, want) {
+		t.Fatalf("CanonicalRoutesPresent: want %v, got %v", want, got.CanonicalRoutesPresent)
 	}
 }
 
@@ -177,7 +177,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# A")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
+	mustWriteFile(t, filepath.Join(dir, "docs/agent-workflow-reference.md"), "# w")
 	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "human.md"),
 		"Canon Human", "established", "", "0.8", "1.0", "human bootstrap canon memory should be visible")
 
@@ -195,7 +195,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 	for _, want := range []string{
 		"session bootstrap:",
 		"agents_md=ok",
-		"siblings=1/4",
+		"routes=1/4",
 		"onboard=skipped",
 		"beads=",
 		"tracker: BEADS_DIR=",
@@ -213,7 +213,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 func TestSessionBootstrap_JSONRoundTripsStatus(t *testing.T) {
 	s := SessionBootstrapStatus{
 		AgentsMDRead:                true,
-		AgentsSiblingsRead:          []string{"AGENTS-WORKFLOW.md"},
+		CanonicalRoutesPresent:      []string{"docs/agent-workflow-reference.md"},
 		OnboardPhase:                "skipped:not-implemented",
 		Runtime:                     "test",
 		StartedAt:                   "2026-05-20T00:00:00Z",

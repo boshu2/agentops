@@ -181,7 +181,6 @@ nav:
   - CLI:
       - cli/index.md
       - Command Reference: cli/commands.md
-      - CLI ↔ Skills Map: cli-skills-map.md
   - Architecture:
       - architecture/index.md
       - Codebase Overview: architecture/codebase-overview.md

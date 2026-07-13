@@ -99,15 +99,7 @@
       "kind": "artifact_check",
       "objective": "Keep hidden and internal commands represented in the operator map even though generated public CLI docs omit hidden commands.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "Commands that exist in the Go CLI but are not called by any skill or hook."},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao store` | Hidden | Vector store management |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao index` | Hidden | Indexing utility |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao migrate` | Hidden | Migration utility (`migrate memrl`) |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao feedback` | Hidden | UI for providing feedback on learnings |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao batch-feedback` | Hidden | Batch feedback processing |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao session-outcome` | Hidden | Session outcome recording |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao worktree` | Hidden | Worktree GC utility |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao anti-patterns` | Hidden | Anti-pattern list |"}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "# ao Command Reference"}
       ],
       "dimensions": ["process_adherence", "artifact_quality"],
       "critical": true

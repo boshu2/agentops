@@ -17,7 +17,7 @@
 
 ## Patterns
 
-- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves — but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see AGENTS-RUNTIME.md (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
+- **CLI-Owned Lifecycle** *(superseded)*: skills should delegate lifecycle state to the CLI instead of parsing state files themselves — but the specific commands this taught (`ao codex ensure-start` / `ensure-stop`) are now deprecated legacy shims; see `docs/contracts/repo-execution-profile.md` (source: `.agents/learnings/2026-03-24-codex-hookless-followup.md`)
 
 ## Key Lessons
 
