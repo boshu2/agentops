@@ -82,7 +82,7 @@ Use the most recent file. If nothing found, ask user.
 
 ### Step 1.4: Retrieve Prior Learnings & Compiled Prevention (Mandatory)
 
-Run `ao lookup` for the plan's domain, then load compiled checks from `.agents/pre-mortem-checks/*.md` (fall back to `.agents/findings/registry.jsonl`). Include matched entries in the council packet as `known_risks` and record `ao metrics cite` influence. Full contract (fail-open rules, section-evidence handling, ranking heuristics, citation lifecycle) in [references/compiled-prevention.md](references/compiled-prevention.md). This file also contains Step 1a (flywheel search, skipped under `--quick`) and Step 1b (PRODUCT.md auto-include).
+Run `ao lookup` for the plan's domain, then load compiled checks from `.agents/premortem-checks/*.md` (fall back to `.agents/findings/registry.jsonl`). Include matched entries in the council packet as `known_risks` and record `ao metrics cite` influence. Full contract (fail-open rules, section-evidence handling, ranking heuristics, citation lifecycle) in [references/compiled-prevention.md](references/compiled-prevention.md). This file also contains Step 1a (flywheel search, skipped under `--quick`) and Step 1b (PRODUCT.md auto-include).
 
 Fail-open reader behavior is mandatory: missing or empty compiled prevention inputs skip silently; malformed line -> warn and ignore that line; unreadable file -> warn once and continue without findings.
 
@@ -165,7 +165,7 @@ Apply the no-self-grading rule, cross-family rule for one-way doors, pre-registe
 
 Write to `.agents/council/YYYY-MM-DD-premortem-<topic>.md` using the full template (frontmatter, verdict table, pseudocode-fix format, decision gate) in [references/write-premortem-output.md](references/write-premortem-output.md). That reference also contains Step 4.5 (persist reusable findings to `.agents/findings/registry.jsonl`) and Step 4.6 (copy pseudocode fixes verbatim into plan issues so workers do not reimplement them from scratch).
 
-When Step 4.5 writes reusable findings, include `dedup_key` and refresh compiled findings by running `finding-compiler.sh` when it is available.
+When Step 4.5 writes reusable findings, include `dedup_key`; do not invoke a repository hook or activate a constraint. `ao membrane digest` refreshes the canonical recurring-catch advisory sink. Mechanical candidates use explicit `ao membrane derive-checks --detector-evidence <json>` replay and remain warn-only shadows until separately measured.
 
 The generated report must preserve this exact heading because downstream validators and ledger readers extract verdicts with a regex anchored to it:
 

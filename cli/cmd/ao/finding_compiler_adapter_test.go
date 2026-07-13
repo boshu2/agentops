@@ -57,9 +57,10 @@ func TestProductionFindingCompiler_AdvisoryDefaultsToTwoKinds(t *testing.T) {
 func TestProductionFindingCompiler_MechanicalDefaultsIncludeConstraint(t *testing.T) {
 	c := newProductionFindingCompiler()
 	out, err := c.Compile(context.Background(), ports.FindingArtifact{
-		ID:          "soc-test",
-		Frontmatter: mechanicalFrontmatter(nil),
-		Body:        "rationale",
+		ID:               "soc-test",
+		Frontmatter:      mechanicalFrontmatter(nil),
+		Body:             "rationale",
+		DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -75,9 +76,10 @@ func TestProductionFindingCompiler_MechanicalDefaultsIncludeConstraint(t *testin
 func TestProductionFindingCompiler_HonorsCompilerTargets(t *testing.T) {
 	c := newProductionFindingCompiler()
 	out, err := c.Compile(context.Background(), ports.FindingArtifact{
-		ID:          "soc-test",
-		Frontmatter: mechanicalFrontmatter(map[string]string{"compiler_targets": "plan, constraint"}),
-		Body:        "rationale",
+		ID:               "soc-test",
+		Frontmatter:      mechanicalFrontmatter(map[string]string{"compiler_targets": "plan, constraint"}),
+		Body:             "rationale",
+		DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -96,23 +98,25 @@ func TestProductionFindingCompiler_HonorsCompilerTargets(t *testing.T) {
 func TestProductionFindingCompiler_DeduplicatesTargets(t *testing.T) {
 	c := newProductionFindingCompiler()
 	out, _ := c.Compile(context.Background(), ports.FindingArtifact{
-		ID:          "soc-test",
-		Frontmatter: mechanicalFrontmatter(map[string]string{"compiler_targets": "plan,plan,constraint,plan"}),
-		Body:        "x",
+		ID:               "soc-test",
+		Frontmatter:      mechanicalFrontmatter(map[string]string{"compiler_targets": "plan,plan,constraint,plan"}),
+		Body:             "x",
+		DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json"),
 	})
 	if len(out) != 2 {
 		t.Fatalf("len = %d, want 2 (dedup)", len(out))
 	}
 }
 
-// The structured constraint entry is a DRAFT with detector fields matching the
-// landed gate exactly (kind=regex / pattern / path_globs).
-func TestProductionFindingCompiler_MechanicalEmitsDraftEntry(t *testing.T) {
+// The structured constraint entry starts warn-only in shadow with detector
+// fields matching the landed gate exactly (kind=regex / pattern / path_globs).
+func TestProductionFindingCompiler_MechanicalEmitsShadowEntry(t *testing.T) {
 	c := newProductionFindingCompiler()
 	out, err := c.Compile(context.Background(), ports.FindingArtifact{
-		ID:          "f-test-1",
-		Frontmatter: mechanicalFrontmatter(map[string]string{"compiler_targets": "constraint", "detector_message": "no panic"}),
-		Body:        "x",
+		ID:               "f-test-1",
+		Frontmatter:      mechanicalFrontmatter(map[string]string{"compiler_targets": "constraint", "detector_message": "no panic"}),
+		Body:             "x",
+		DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -124,8 +128,8 @@ func TestProductionFindingCompiler_MechanicalEmitsDraftEntry(t *testing.T) {
 	if err := json.Unmarshal(out[0].Body, &e); err != nil {
 		t.Fatalf("constraint body is not a ConstraintEntry: %v", err)
 	}
-	if e.ID != "f-test-1" || e.Status != "draft" {
-		t.Fatalf("entry id/status = %q/%q, want f-test-1/draft", e.ID, e.Status)
+	if e.ID != "f-test-1" || e.Status != "shadow" || e.EnforcementMode != "warn" {
+		t.Fatalf("entry id/status/mode = %q/%q/%q, want f-test-1/shadow/warn", e.ID, e.Status, e.EnforcementMode)
 	}
 	if e.Detector.Kind != "regex" || e.Detector.Pattern != "panic\\(" || e.Detector.Message != "no panic" {
 		t.Fatalf("detector = %+v, want regex/panic\\(/no panic", e.Detector)
@@ -139,11 +143,11 @@ func TestProductionFindingCompiler_MechanicalEmitsDraftEntry(t *testing.T) {
 // emitted as a broken entry (advisory-only is the safe default).
 func TestProductionFindingCompiler_IncompleteDetectorSkipsConstraint(t *testing.T) {
 	cases := map[string]map[string]string{
-		"advisory (no detectability)": {"compiler_targets": "constraint"},
-		"mechanical but no pattern":   {"compiler_targets": "constraint", "detectability": "mechanical", "constraint_path_globs": "cli/**", "compiled_at": "x"},
-		"mechanical but no globs":     {"compiler_targets": "constraint", "detectability": "mechanical", "detector_pattern": "x", "compiled_at": "x"},
+		"advisory (no detectability)":   {"compiler_targets": "constraint"},
+		"mechanical but no pattern":     {"compiler_targets": "constraint", "detectability": "mechanical", "constraint_path_globs": "cli/**", "compiled_at": "x"},
+		"mechanical but no globs":       {"compiler_targets": "constraint", "detectability": "mechanical", "detector_pattern": "x", "compiled_at": "x"},
 		"mechanical but no compiled_at": {"compiler_targets": "constraint", "detectability": "mechanical", "detector_pattern": "x", "constraint_path_globs": "cli/**"},
-		"unsupported detector kind":   {"compiler_targets": "constraint", "detectability": "mechanical", "detector_kind": "command", "detector_pattern": "x", "constraint_path_globs": "cli/**", "compiled_at": "x"},
+		"unsupported detector kind":     {"compiler_targets": "constraint", "detectability": "mechanical", "detector_kind": "command", "detector_pattern": "x", "constraint_path_globs": "cli/**", "compiled_at": "x"},
 	}
 	c := newProductionFindingCompiler()
 	for name, fm := range cases {
@@ -172,14 +176,14 @@ func TestProductionFindingCompiler_UnknownTargetErrors(t *testing.T) {
 
 func TestProductionFindingCompiler_PathsFollowContract(t *testing.T) {
 	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{ID: "soc-y5vh", Frontmatter: mechanicalFrontmatter(nil)})
+	out, _ := c.Compile(context.Background(), ports.FindingArtifact{ID: "soc-y5vh", Frontmatter: mechanicalFrontmatter(nil), DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json")})
 	pathByKind := map[ports.CompiledOutputKind]string{}
 	for _, o := range out {
 		pathByKind[o.Kind] = o.Path
 	}
 	want := map[ports.CompiledOutputKind]string{
 		ports.CompiledOutputPlanningRule:   ".agents/planning-rules/soc-y5vh.md",
-		ports.CompiledOutputPreMortemCheck: ".agents/pre-mortem-checks/soc-y5vh.md",
+		ports.CompiledOutputPremortemCheck: ".agents/premortem-checks/soc-y5vh.md",
 		// A constraint is a structured entry in the shared index, not a per-id file.
 		ports.CompiledOutputConstraint: ".agents/constraints/index.json",
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestInMemoryFindingCompiler_PremortemAliasStillWritesOneLegacyArtifactThroughS7(t *testing.T) {
+func TestInMemoryFindingCompiler_PremortemAliasesWriteOneCanonicalArtifact(t *testing.T) {
 	out, err := NewInMemoryFindingCompiler().Compile(context.Background(), FindingArtifact{
 		ID: "finding-mortem-writer",
 		Frontmatter: map[string]string{
@@ -18,7 +18,7 @@ func TestInMemoryFindingCompiler_PremortemAliasStillWritesOneLegacyArtifactThrou
 	if len(out) != 1 {
 		t.Fatalf("mortem aliases emitted %d artifacts, want exactly one", len(out))
 	}
-	if out[0].Path != ".agents/pre-mortem-checks/finding-mortem-writer.md" {
-		t.Fatalf("writer path = %q, want legacy path through S7", out[0].Path)
+	if out[0].Path != ".agents/premortem-checks/finding-mortem-writer.md" {
+		t.Fatalf("writer path = %q, want canonical premortem path", out[0].Path)
 	}
 }

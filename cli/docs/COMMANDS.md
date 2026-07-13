@@ -124,6 +124,58 @@ ao claim list [flags]
 
 ---
 
+### `ao constraint`
+
+Manage constraints compiled from promoted findings.
+
+```
+ao constraint [command]
+```
+
+**Subcommands:**
+
+#### `ao constraint activate`
+
+Promote a precision-backed shadow constraint to active blocking
+
+```
+ao constraint activate <id> [flags]
+```
+
+#### `ao constraint list`
+
+List all constraints with status
+
+```
+ao constraint list [flags]
+```
+
+#### `ao constraint publish`
+
+Export the ACTIVE constraints to docs/constraints/published.json (tracked + committed),
+
+```
+ao constraint publish [flags]
+```
+
+#### `ao constraint retire`
+
+Change constraint status from active to retired
+
+```
+ao constraint retire <id> [flags]
+```
+
+#### `ao constraint review`
+
+List constraints compiled >90 days ago without recent citation
+
+```
+ao constraint review [flags]
+```
+
+---
+
 ### `ao doctor`
 
 Run health checks on your AgentOps installation.
@@ -1689,10 +1741,11 @@ ao membrane derive-checks --run <id> [flags]
 **Flags:**
 
 ```
-      --dry-run      Report what would be derived without writing files
-      --force        Overwrite existing derived artifacts
-  -h, --help         help for derive-checks
-      --run string   Run id to scan for escapes (required)
+      --detector-evidence string   JSON file with stored positives, negative controls, and optional shadow precision evidence
+      --dry-run                    Report what would be derived without writing files
+      --force                      Overwrite existing derived artifacts
+  -h, --help                       help for derive-checks
+      --run string                 Run id to scan for escapes (required)
 ```
 
 #### `ao membrane digest`
