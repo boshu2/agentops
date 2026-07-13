@@ -141,7 +141,7 @@ verification gate (which we already have and others lack) is the differentiator.
 
 ## The decision (build order)
 1. **Break cold-start + wire the pull** — optimistic init + ε-floor + mandatory
-   decision-point retrieval (`ao lookup --gold` in discovery/plan/pre-mortem). *Without
+   decision-point retrieval (`ao lookup --gold` in discovery/plan/premortem). *Without
    this nothing else matters; it's the silent-signal fix.*
 2. **Emit tiers, don't gate to binary** — gold carries a strength scalar (MemoryOS heat
    form) + tier band; retrieval ranks by strength×relevance; lazy exponential decay with

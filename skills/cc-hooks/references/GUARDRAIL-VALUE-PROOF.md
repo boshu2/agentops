@@ -74,7 +74,7 @@ stop happening, which the hook cannot do by counting.
 ### Why NOT the hand-roll / "did they comply" rate (the Goodhart trap)
 
 The original design measured the hand-roll rate with the guard on vs off. That
-was **rejected** (pre-mortem finding #3) as circular / Goodhart:
+was **rejected** (premortem finding #3) as circular / Goodhart:
 
 - The gate's redirect lowers the post-redirect hand-roll rate *by construction* —
   the guard exists to do exactly that, so "the rate went down" proves nothing.

@@ -45,7 +45,7 @@ Adapters may change; the domain contract does not.
 | 4. Execute slice | `execute_slice` | Worker brief with slice, proof, scope, and rollback path | `/implement`, `/crank`, `/swarm` | git, test runners, scope guard, runtime agents | Failing proof failed for the right reason, then passes after the smallest implementation |
 | 5. Execute wave | `execute_wave` | Wave packet with independent slice ownership | `/crank`, `/swarm`, `/evolve` | file-conflict matrix, worktrees, agent messaging | Same-wave writes do not collide, integration order is declared |
 | 6. Validate acceptance | `validate_acceptance` | Criterion verdicts and roll-up validation report | `/validation`, `/validate`, `/vibe`, `/council`, `/scenario` | tests, evals, GOALS measure, completion-claim kernel | Every Given/When/Then maps to fresh passing evidence; no test theater |
-| 7. Record evidence | `record_evidence` | Ratchet entry, evidence index, residual-gap disposition | `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | `.agents/ratchet/`, learning promotion gates, findings registry | Evidence is cited, residual gaps have next-step beads or accepted disposition |
+| 7. Record evidence | `record_evidence` | Ratchet entry, evidence index, residual-gap disposition | `/ratchet`, `/postmortem`, `/retro`, `/curate --mode=forge` | `.agents/ratchet/`, learning promotion gates, findings registry | Evidence is cited, residual gaps have next-step beads or accepted disposition |
 | 8. Steer loop | `steer_goal` | Goal trace, learning, or next-work packet | `/goals`, `/flywheel`, `/harvest`, `/dream` | GOALS.md, scenarios, knowledge compile, scheduler | Durable behavior changed, or the observation dies at handoff |
 
 ## BDD and Done-State Rules
@@ -71,7 +71,7 @@ Adapters may change; the domain contract does not.
 |---|---|---|
 | Driving adapters | slash skills, `$` Codex skills, `ao` commands, operator prompts, scheduled jobs | Translate outside requests into the current inbound port without smuggling raw chat context |
 | Driven adapters | br, git, filesystem, search, eval runners, model providers, GitHub | Persist, retrieve, execute, or observe through narrow outbound ports |
-| Guard adapters | scope guard, schema validation, pre-push gates, CI, pre-mortem, wave-validity matrix | Warn or block when a boundary contract is not met |
+| Guard adapters | scope guard, schema validation, pre-push gates, CI, premortem, wave-validity matrix | Warn or block when a boundary contract is not met |
 | Runtime adapters | `skills/`, `skills-codex/`, OpenCode skill bundles, hooks | Package the same domain contract for a specific agent runtime |
 
 ## Agent Output Contract
@@ -87,7 +87,7 @@ hexagon:
   driven_adapters:
     - "<br/git/test/eval/filesystem/model/etc. used behind the port>"
   guard_adapters:
-    - "<pre-mortem/scope/schema/CI/completion-claim-kernel/etc.>"
+    - "<premortem/scope/schema/CI/completion-claim-kernel/etc.>"
   context_packet: "<artifact path or bead id crossing the boundary>"
   done_state: "<specific proof required before the next port may accept it>"
 ```
@@ -103,11 +103,11 @@ agents are expected to consume.
 | `/discovery` | Owns `shape_intent`, emits the dense execution packet, and preserves BDD/Gherkin acceptance examples |
 | `/beads` | Owns `persist_intent`, makes work self-contained, dependency-linked, and proof-bearing |
 | `/plan` | Owns `plan_slices`, maps scenarios to vertical slices, file ownership, and wave validity |
-| `/pre-mortem` and `/council` | Guard intent and plan quality before implementation starts |
+| `/premortem` and `/council` | Guard intent and plan quality before implementation starts |
 | `/implement` | Owns `execute_slice`, runs first failing proof then smallest green implementation |
 | `/crank` and `/swarm` | Own `execute_wave`, coordinate workers without collapsing ownership boundaries |
 | `/validation`, `/validate`, `/vibe`, `/scenario`, `/goals` | Own `validate_acceptance`, prove claims with fresh evidence |
-| `/ratchet`, `/post-mortem`, `/retro`, `/curate --mode=forge` | Own `record_evidence`, promote only reusable learnings |
+| `/ratchet`, `/postmortem`, `/retro`, `/curate --mode=forge` | Own `record_evidence`, promote only reusable learnings |
 | `/rpi` | Orchestrates the port chain without replacing the phase skills that own each port |
 
 ## Failure Modes

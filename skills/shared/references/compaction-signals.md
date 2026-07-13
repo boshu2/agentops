@@ -86,7 +86,7 @@ exit 0
 | Discovery → Implementation | Yes | Fresh context for coding |
 | Between crank waves | Optional | If context feels stale |
 | Implementation → Validation | Yes | Fresh context for review |
-| Post-mortem → Next RPI | Yes | Clean slate |
+| Postmortem → Next RPI | Yes | Clean slate |
 
 ### Configuration
 

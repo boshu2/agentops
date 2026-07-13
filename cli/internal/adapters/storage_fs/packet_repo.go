@@ -61,6 +61,12 @@ func (r *Repo) Save(_ context.Context, runID string, p packet.ExecutionPacket) e
 	if err := validateRunID(runID); err != nil {
 		return err
 	}
+	// S8 cutover: every supported in-memory packet is persisted using the
+	// canonical v3 wire names. Invalid/unknown versions remain invalid rather
+	// than being silently upgraded through the writer boundary.
+	if p.SchemaVersion == 1 || p.SchemaVersion == 2 {
+		p.SchemaVersion = packet.CurrentExecutionPacketSchemaVersion
+	}
 	p.DefaultVerdict = p.EffectiveVerdict()
 	if err := p.Validate(); err != nil {
 		return err

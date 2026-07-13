@@ -15,8 +15,8 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | Libraries (Maven, npm, crates.io) | Context libraries (the `.agents/` corpus) |
 | Compilers | Context compilers (`ao compile` → wiki) |
 | Code review | Multi-model councils |
-| CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
-| Postmortems | Automated postmortems (`/post-mortem` → learnings) |
+| CI/CD | Validation gates (`/vibe`, `/premortem`) |
+| Postmortems | Automated postmortems (`/postmortem` → learnings) |
 | Runbooks | Skills + planning rules |
 | Software factories | The in-session operating loop (driven by `/rpi` + `/evolve`; the `ao rpi` CLI engine was **removed** in 3.0) run out of session on an orchestration substrate (reference: NTM + MCP + managed-agents) |
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
@@ -145,7 +145,7 @@ Validate that context produces the intended agent behavior.
 
 **AgentOps implementation:**
 
-- `/pre-mortem` — validate plans before implementation (LLM-as-judge)
+- `/premortem` — validate plans before implementation (LLM-as-judge)
 - `/vibe` — validate code after implementation (multi-model consensus)
 - `/council` — multi-judge adversarial review
 - `ao eval run` — deterministic eval suites with scoring dimensions
@@ -239,7 +239,7 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 |---|---|---|---|
 | Plan | Generate | What context should exist? | `/research`, `/plan`, SKILL.md |
 | Code + Build | Compile | How is context assembled for this task? | `ao context assemble`, `ao lookup`, `ao compile` |
-| Test | Test | Does this context produce the right behavior? | `/pre-mortem`, `/vibe`, `ao eval run` |
+| Test | Test | Does this context produce the right behavior? | `/premortem`, `/vibe`, `ao eval run` |
 | Release | Distribute | How do others get this context? | Skills registry, `/converter`, `install.sh` |
 | Deploy | Deliver | Did the right context reach the agent? | Explicit phase packets, optional `SessionStart` hooks, SkillLoadEvent |
 | Operate | Observe | Is the context working in practice? | `quality-signals.sh`, citation tracking, session-outcome |
@@ -262,7 +262,7 @@ BDD-shaped intent issue            ← Generate (the intent is the spec; phase 1
   → evidence + learning capture    ← Adapt (ratcheted promotion into the next loop turn; phase 7)
 ```
 
-The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/curate --mode=forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
+The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/premortem`, `/vibe`, `/postmortem`, `/curate --mode=forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
 
 Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](https://github.com/boshu2/agentops/blob/main/GOALS.md).
 

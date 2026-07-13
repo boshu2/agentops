@@ -8,10 +8,10 @@ AgentOps is the **operational layer for coding agents**: a skills + CLI system t
 
 At a high level:
 
-1. Run primitives and flows with skills (`/research`, `/implement`, `/validate`, `/rpi`)
-2. Persist bookkeeping in `.agents/`
-3. Inject the best prior learnings into the next session
-4. Enforce quality through local gates, with CI as an optional/manual backstop
+1. Shape behavior through Discovery (`/discovery`, `/plan`, and `/premortem` when risk warrants it)
+2. Execute small vertical slices through Crank (`/implement` or `/crank`)
+3. Judge each completed slice through fresh-context `/validate`
+4. Route catches and plan impact through `/learn`, with `/postmortem` as the terminal-review compatibility entry point
 
 See also:
 
@@ -70,6 +70,20 @@ Use the router in [Skills Reference](SKILLS.md) to choose the right entry point:
 - Implement one issue: `/implement`
 - Run multi-issue waves: `/crank`
 - Run end-to-end lifecycle: follow [Operating Loop](architecture/operating-loop.md) (the `/rpi` skill is one turn's executor — not the primary navigation surface)
+
+The normal explicit request sequence is:
+
+```text
+/discovery "shape one testable behavior"
+/premortem
+/crank
+/validate
+/learn
+```
+
+Validation completion and Git delivery are separate. Your repository may use a
+direct push, a PR, its own CI, or another delivery adapter after AgentOps has
+recorded the verdict.
 
 ### 3) Issue tracking uses br, not bd
 

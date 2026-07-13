@@ -18,7 +18,7 @@ goal improvements concurrently instead of fixing one goal per cycle.
   │  ├─ Artifact isolation: .agents/evolve/parallel-rpi/{goal.id}/
   │  ├─ Git isolation: /swarm --worktrees (each worker in /tmp/evolve-{goal.id})
   │  └─ /swarm spawns N fresh-context workers, each runs full /rpi cycle:
-  │     └─ research → plan → pre-mortem → crank → vibe → post-mortem
+  │     └─ research → plan → premortem → crank → vibe → postmortem
   │
   ├─ Step 5: Single regression gate (re-measure ALL goals after wave)
   │  ├─ If ANY goal regressed → revert ENTIRE parallel wave
@@ -35,7 +35,7 @@ Swarm is the universal coordination primitive at every level:
 LEVEL 0: /evolve --parallel
   └─ /swarm (parallel goal improvements)     ← NEW: swarm at evolve level
      └─ LEVEL 1: /rpi (per-goal lifecycle)
-        └─ research → plan → crank → vibe → post-mortem
+        └─ research → plan → crank → vibe → postmortem
            └─ LEVEL 2: /crank (epic execution)
               └─ /swarm (parallel issue implementation)  ← existing: swarm at crank level
                  └─ LEVEL 3: workers (atomic tasks)
@@ -107,7 +107,7 @@ Legacy entries may use `goal_id` instead of `target` and `commit_sha` instead of
 
 ## Compounding
 
-Each parallel /rpi worker runs its own /post-mortem, which feeds the knowledge
+Each parallel /rpi worker runs its own /postmortem, which feeds the knowledge
 flywheel independently. Learnings from all N parallel cycles compound into the
 flywheel, feeding the next /evolve cycle.
 

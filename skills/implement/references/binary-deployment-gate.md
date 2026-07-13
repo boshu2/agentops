@@ -2,7 +2,7 @@
 
 **Purpose:** Block declaring "done" on any CLI or runtime-hook bug fix until the **deployed runtime** matches the **source fix**. The user invokes the deployed binary and the cached hook — those are the actual surfaces under test, not the source tree.
 
-**Why this gate exists:** A fix shipped to source while the deployed runtime is pre-fix keeps reproducing the bug during its own post-mortem. The post-mortem of the close-loop dedup fix on 2026-05-01 hit exactly this: source-level tests passed, the issue was closed, but `~/go/bin/ao` was still the pre-fix binary, so duplicates kept generating during the post-mortem itself.
+**Why this gate exists:** A fix shipped to source while the deployed runtime is pre-fix keeps reproducing the bug during its own postmortem. The postmortem of the close-loop dedup fix on 2026-05-01 hit exactly this: source-level tests passed, the issue was closed, but `~/go/bin/ao` was still the pre-fix binary, so duplicates kept generating during the postmortem itself.
 
 **Sources:**
 - Council finding: `.agents/council/2026-05-01-evolution-cycle-council.md`, finding 1, action item A (6/6 judges concurred this is the highest-priority follow-up).
@@ -123,4 +123,4 @@ If Check B fails: reinstall the plugin or delete stale cache copies. Re-run Chec
 
 ## Why this is a block, not a warning
 
-A passing source-level test suite proves the source is correct. It does NOT prove the deployed runtime — the actual surface the user invokes — got the fix. The 2026-05-01 close-loop incident demonstrated the failure mode in vivo: the post-mortem itself reproduced the bug because the binary it ran was pre-fix. A warning would not have stopped that. A block does.
+A passing source-level test suite proves the source is correct. It does NOT prove the deployed runtime — the actual surface the user invokes — got the fix. The 2026-05-01 close-loop incident demonstrated the failure mode in vivo: the postmortem itself reproduced the bug because the binary it ran was pre-fix. A warning would not have stopped that. A block does.

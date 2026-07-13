@@ -86,7 +86,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `quarantine` | rolling | cli | failure-quarantine | Failed worker payloads and retry/quarantine evidence for operator review |
 | `reconcile` | persistent | scripts, operators | reconciliation-artifact | Reconciliation engine artifacts: observation log aggregated from `factory-claim-ledger-strict (advisory)` CI runs, promotion-decision template, and related Wave-1E gate evidence (epic soc-e4ulx) |
 | `releases` | rolling | scripts | release-evidence | Local CI release evidence |
-| `retro` | persistent | cli | retro-artifact | Quick-capture learning index (`.agents/retro/index.jsonl`) written by the ratchet/index/init CLI; formerly covered by the retired `retro` skill (folded into `post-mortem --quick`, cp-bzj) |
+| `retro` | persistent | cli | retro-artifact | Quick-capture learning index (`.agents/retro/index.jsonl`) written by the ratchet/index/init CLI; formerly covered by the retired `retro` skill (folded into `postmortem --quick`, cp-bzj) |
 | `retros` | persistent | skills | retro-artifact | Retrospectives |
 | `schedule` | persistent | cli, scripts | schedule-store | Legacy schedule entries from the retired in-tree scheduler; out-of-session scheduling is now the substrate's job (NTM / MCP / managed-agents) |
 | `schedule.yaml.example` | persistent | scripts, operators | schedule-example | Checked-in example schedule retained for the legacy/registry reader; out-of-session scheduling runs on the substrate (NTM / MCP / managed-agents) |

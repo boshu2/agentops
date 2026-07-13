@@ -62,6 +62,6 @@
 | Council times out | Plan too large or complex for judges to review in allocated time | Split plan into smaller epics or increase timeout via council config |
 | FAIL verdict on valid plan | Judges misunderstand domain-specific constraints | Add context via `--perspectives-file` with domain explanations |
 | Product perspectives missing | PRODUCT.md exists but not included in council packet | Verify PRODUCT.md is in project root and no explicit `--preset` override was passed |
-| Pre-mortem gate blocks /crank | Epic has 3+ issues and no premortem ran | Run `/premortem` before `/crank`, or use `--skip-pre-mortem` flag (not recommended) |
+| Premortem gate blocks /crank | Epic has 3+ issues and no premortem ran | Run `/premortem` before `/crank`, or use `--skip-premortem` flag (not recommended) |
 | Spec-completeness judge warns | Plan lacks Boundaries or Conformance Checks sections | Add SDD sections or accept WARN (backward compatibility — not a failure) |
-| Mandatory for epics enforcement | Hook blocks /crank on 3+ issue epic without premortem | Run `/premortem` first, or set `AGENTOPS_SKIP_PRE_MORTEM_GATE=1` to bypass |
+| Mandatory for epics enforcement | Hook blocks /crank on 3+ issue epic without premortem | Run `/premortem` first, or set `AGENTOPS_SKIP_PREMORTEM_GATE=1` to bypass |

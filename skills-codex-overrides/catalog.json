@@ -315,22 +315,9 @@
     },
     {
       "name": "push",
-      "treatment": "bespoke",
+      "treatment": "parity_only",
       "wave": "core-execution",
-      "reason": "Validate-commit-push flow must align with Codex gate discipline and remote-verification habits.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "relevant tests first, commit second, push third, remote verification last",
-          "branch is synced with origin at the end",
-          "Do not run `ao codex stop` after the remote push; finish session closeout before `$push` if the session is ending.",
-          "If push fails, stay in recovery mode until it succeeds or a real blocker is identified"
-        ]
-      }
+      "reason": "Repository-selected deterministic delivery is runtime-portable; Codex has no durable need for a second hand-maintained lifecycle or authorization policy."
     },
     {
       "name": "rch",

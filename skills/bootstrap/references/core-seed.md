@@ -35,7 +35,7 @@ This directory contains accumulated knowledge from agent sessions.
 
 Knowledge is managed by explicit AgentOps commands:
 - `ao lookup` surfaces relevant prior knowledge on demand.
-- `/post-mortem` extracts and processes new learnings.
+- `/postmortem` extracts and processes new learnings.
 - `/compile` runs maintenance when that skill is installed.
 ```
 

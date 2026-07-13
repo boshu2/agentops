@@ -134,7 +134,7 @@ Lifecycle notes:
 
 - later retrieval and close-loop paths may increment `hit_count`
 - later retrieval and close-loop paths may update `last_cited`
-- post-mortem scoring inputs such as confidence, citations, and recency may guide promotion decisions
+- postmortem scoring inputs such as confidence, citations, and recency may guide promotion decisions
 - the registry remains the source intake ledger even when higher-level v2 surfaces mutate these fields
 
 ## Retirement and Supersession
@@ -166,8 +166,8 @@ If a lock is used, the canonical lock path is `.agents/findings/registry.lock`, 
   "source": {
     "repo": "agentops/crew/nami",
     "session": "2026-03-09",
-    "file": ".agents/council/2026-03-09-pre-mortem-finding-compiler-v1.md",
-    "skill": "pre-mortem"
+    "file": ".agents/council/2026-03-09-premortem-finding-compiler-v1.md",
+    "skill": "premortem"
   },
   "date": "2026-03-09",
   "severity": "significant",

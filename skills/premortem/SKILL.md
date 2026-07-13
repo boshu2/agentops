@@ -34,8 +34,7 @@ output_contract: skills/council/schemas/verdict.json
 # Premortem Skill
 
 > **Purpose:** Is this plan/spec good enough to implement?
-
-> **Mandatory doctrine for 3+ issue epics.** Run premortem before `/crank` on epics with 3+ child issues — operating doctrine, not a hook (AgentOps 3.0 is hookless). 6/6 consecutive positive ROI. Bypass: `--skip-pre-mortem` flag or `AGENTOPS_SKIP_PRE_MORTEM_GATE=1`.
+> **Mandatory doctrine for 3+ issue epics.** Run premortem before `/crank` on epics with 3+ child issues — operating doctrine, not a hook (AgentOps 3.0 is hookless). 6/6 consecutive positive ROI. Bypass: `--skip-premortem` flag or `AGENTOPS_SKIP_PREMORTEM_GATE=1`.
 
 ## Constraints
 
@@ -231,7 +230,6 @@ Use the structured troubleshooting table in [references/examples.md](references/
 ## Reference Documents
 
 - [references/premortem.feature](references/premortem.feature) — Executable spec: plan PASS/WARN/FAIL verdict before work, wave-validity gates parallelism, --quick inline default (soc-qk4b)
-
 - [references/compiled-prevention.md](references/compiled-prevention.md)
 - [references/scope-mode.md](references/scope-mode.md)
 - [references/mandatory-checks.md](references/mandatory-checks.md)
@@ -246,4 +244,3 @@ Use the structured troubleshooting table in [references/examples.md](references/
 - [references/prediction-tracking.md](references/prediction-tracking.md)
 - [references/spec-verification-checklist.md](references/spec-verification-checklist.md)
 - [references/temporal-interrogation.md](references/temporal-interrogation.md)
-- Shared stale-scope validation rule — re-validate inherited scope estimates against HEAD before acting on deferred beads or handoff docs.

@@ -89,7 +89,7 @@ Selection is a ladder re-read from the TOP after every productive cycle — neve
 | `--dry-run` | off | Show planned cycle actions without executing |
 | `--beads-only` | off | Skip goal measurement and run backlog-only selection |
 | `--skip-baseline` | off | Skip first-run baseline snapshot |
-| `--quality` | off | Prioritize harvested post-mortem findings |
+| `--quality` | off | Prioritize harvested postmortem findings |
 | `--compile` | off | Run `ao compile` knowledge warmup before cycle 1 |
 | `--test-first` | on | Pass strict-quality defaults through to `rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `rpi` |
@@ -187,11 +187,11 @@ After the caller records the delivery or prepared-handoff result, increment `CYC
 
 **Stop ONLY on** (all require a genuine reason — never just context size): (1) **KILL/STOP marker** — operator override; (2) **`--max-cycles` cap**; (3) **genuine stagnation** — `ao beads exec ready=0 AND harvested=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK ≥ 2 AND IDLE_STREAK ≥ 2` → writes DORMANT, which auto-clears the moment `ao beads exec create` adds a ready bead; (4) **regression breaker after a revert**. **Context exhaustion is NOT a stop** — write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"`, exit the turn; the next fire clears HANDOFF in Step 1 and resumes (`references/context-budget.md`).
 
-**Mandatory checkpoint — session-PR threshold (gates next cycle, NOT terminal):** at `session_pr_count >= 5`, invoke `/post-mortem --deep` and wait for the verdict file. PASS → continue; WARN → continue with a caveat in the next cycle's `notes`; FAIL / non-convergence → write STOP. The agent MUST NOT self-grade or self-write STOP — STOP without a verdict is the 2026-05-20 anti-pattern (`references/postmortem-checkpoint.md`).
+**Mandatory checkpoint — session-PR threshold (gates next cycle, NOT terminal):** at `session_pr_count >= 5`, invoke `/postmortem --deep` and wait for the verdict file. PASS → continue; WARN → continue with a caveat in the next cycle's `notes`; FAIL / non-convergence → write STOP. The agent MUST NOT self-grade or self-write STOP — STOP without a verdict is the 2026-05-20 anti-pattern (`references/postmortem-checkpoint.md`).
 
 ### Teardown
 
-Commit any staged `cycle-history.jsonl`, run `/post-mortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), invoke `/push` for unpushed commits only when authorized, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
+Commit any staged `cycle-history.jsonl`, run `/postmortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), invoke `/push` for unpushed commits only when authorized, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
 
 Release-shaped branches must follow [the release teardown contract](references/teardown.md#release-shaped-teardown): never recommend `/release` from per-cycle `--fast`, carry the unchecked checklist into the handoff, and require the full release gate before tagging.
 
@@ -244,7 +244,7 @@ The trim moved procedure to references/, but these invariants stay inline — th
 `/evolve` runs until a genuine stop; `/evolve --max-cycles=3` bounds it; `/evolve --dry-run` reports selection without mutation. Full walkthroughs: [references/examples.md](references/examples.md).
 - `skills/rpi/SKILL.md` — full lifecycle orchestrator (called per cycle)
 - `skills/crank/SKILL.md` — epic execution (called for beads epics)
-- `skills/post-mortem/SKILL.md` — learning extraction + mining surface; absorbed the retired `/curate`, `/compile`, and `/flywheel` skills (mechanical surfaces are the `ao compile` and `ao flywheel status` CLI, not skills)
+- `skills/postmortem/SKILL.md` — learning extraction + mining surface; absorbed the retired `/curate`, `/compile`, and `/flywheel` skills (mechanical surfaces are the `ao compile` and `ao flywheel status` CLI, not skills)
 - `docs/contracts/autodev-program.md` — repo-local PROGRAM.md contract (legacy autodev lane)
 - `GOALS.yaml` — fitness goals for this repo
 - [test](../test/SKILL.md) · [refactor](../refactor/SKILL.md) · [security](../security/SKILL.md) · [validate](../validate/SKILL.md) — the work generators

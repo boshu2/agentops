@@ -139,15 +139,15 @@ Before finalizing a plan, optionally spawn a reviewer (strongest available model
 
 The reviewer produces a findings list. Critical findings block plan finalization; WARN findings are logged.
 
-## Integration with /post-mortem
+## Integration with /postmortem
 
-Post-mortem should read the mutation log to assess plan quality:
+Postmortem should read the mutation log to assess plan quality:
 - High mutation count → plan was underspecified
 - Many splits → tasks were too coarse
 - Many inserts → requirements were unclear
 - Mutations clustered in early waves → research was insufficient
 
-Include mutation summary in post-mortem report.
+Include mutation summary in postmortem report.
 
 ## Self-Contained Step Context
 

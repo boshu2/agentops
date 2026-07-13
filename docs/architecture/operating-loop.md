@@ -28,7 +28,7 @@ small batch          one behavior per slice — never a big-batch bundle        
                      loop (a gate catch → a check; an escape → a new gate)
 ```
 
-Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), [`/pawl-review`](../../skills/pawl-review/SKILL.md), and the [pawl-gate](../contracts/pawls.md) (`no verdict = not done`); **S6 ratchet** — move 7 below + the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
+Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), with `/council` as an optional judging strategy (`no verdict = not done`); **S6 ratchet** — [`/learn`](../../skills/learn/SKILL.md), move 7 below, and the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
 
 > **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane (S5) has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (S6: escape → new check → re-measure) is the compounding that has a deterministic gradient.
 
@@ -146,9 +146,12 @@ Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; 
 
 ### 6. Close the bead by proving its acceptance
 
-Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validate`, `/council`, `/pawl-review`; `ao pawl` binds the verdict.
+Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. `/validate` obtains a verdict from fresh context that did not create the work; `/council` is an optional higher-rigor judging strategy. The authoring context cannot validate its own slice.
 
-The land itself is one verb: **`ao land <bead>`** is the canonical land path. It builds a fresh in-checkout `ao` and re-execs through it so the pawl review runs the LIVE/trusted path (an installed `ao` fails `aoBinaryInside` and takes the cold, un-auto-binding stranger path), pins `AO_BIN` for preflight + the gate, runs `ao pawl review <bead> --scope head` (cross-family codex refuter; **auto-binds** the commit-bound verdict on CONFIRM — no hand `ao provenance emit-verdict`/`#trivial` bind step), then hands off to the atomic land machinery (`scripts/pawl-land.sh`: rebase `origin/main` → restamp → single push through the deterministic pre-push gate — the *windshield*). REFUTED / NO-VERDICT stops the land (exit non-zero); no verdict = not done.
+Validation completion and Git delivery are separate transitions. After proof is
+recorded, the consuming repository chooses direct push, PR, merge queue, hosted
+CI, or an optional AgentOps delivery adapter. No landing tool creates or
+upgrades the validation verdict, and no validation skill operates Git.
 
 When a cycle is logged, the CycleTrace can carry the closeout join explicitly:
 `bead_id`, `acceptance_examples`, `validation_commands`, and
@@ -157,13 +160,13 @@ example to the test, gate, or eval that proved it.
 
 ### 7. Capture evidence and learning, then ratchet
 
-Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/post-mortem` (primary).
+Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/learn` (primary). `/postmortem` is optional and answers a specific retrospective causal question after Validate and Learn; it is not the general learning umbrella.
 
-**S6 is not "write a learning" — it is "make the NEXT loop consume it."** A by-product of inference or a lesson learned is durable only when it lands as something a later move will *read* (the 3.0 rule "knowledge becomes constraints"). Route by class: a **membrane escape** (CONFIRMED-but-later-wrong) compiles into a mechanical gate/check (the escape→check ratchet); a **judgment lesson** compiles into a `/plan` planning-rule, a `/pre-mortem` check, or — when a gate caught a defect a green test missed — a new dimension appended to `docs/gate/findings-ledger.md`, which is exactly the ledger [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) reads to ratchet its Standing Review Dimensions. If nothing downstream reads the artifact, S6 did not happen — it is a landfill entry, not a ratchet ([3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules)). The corpus-flywheel skills `/curate`, `/flywheel`, and `/compile` are retired (2026-07-07 wave — folded into `/post-mortem`'s mining surface; mechanical surfaces live on the CLI: `ao compile`, `ao flywheel status`) and are no longer part of the primary ratchet.
+**S6 is not "write a learning" — it is "make the NEXT loop consume it."** A by-product of inference or a lesson learned is durable only when it lands as something a later move will *read* (the 3.0 rule "knowledge becomes constraints"). Route by class: a **membrane escape** (CONFIRMED-but-later-wrong) compiles into a mechanical gate/check (the escape→check ratchet); a **judgment lesson** compiles into a `/plan` planning-rule, a `/premortem` check, or — when a gate caught a defect a green test missed — a new dimension appended to `docs/gate/findings-ledger.md`, which is exactly the ledger [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) reads to ratchet its Standing Review Dimensions. If nothing downstream reads the artifact, S6 did not happen — it is a landfill entry, not a ratchet ([3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules)). The corpus-flywheel skills `/curate`, `/flywheel`, and `/compile` are retired; mechanical surfaces live on the CLI (`ao compile`, `ao flywheel status`) and Learn owns the primary bookkeeping handoff.
 
 ### The loop closes here: re-plan on evidence, not just on failure
 
-Move 7 feeds **back into move 1** — this is where the route gets re-routed (principle 7). The sharpening principle 7 leaves implicit: re-routing is triggered by **evidence, not only by failure.** A wave that *succeeds* still teaches something the plan didn't know, and that evidence may **refactor, insert, drop, reorder, or re-scope the *remaining* waves** before the next one runs. The wave plan is a hypothesis; each wave is the experiment that tests it. Under `--auto` the orchestrator executes those pivots itself — it is not gated on a wave *failing* first, and it does not run the initial wave-list to the letter. Two failure modes this kills: **retry-not-replan** (re-cranking a failed wave forever instead of asking whether the *remaining plan* should change) and **waterfall** (executing the pre-written wave list because "that was the plan"). Bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-arc post-mortem checkpoint; the operator is surfaced only at the terminal objective or a breaker trip that survives its bounded helper pass — never just to approve a pivot. The orchestrator that owns this across a turn is `/rpi`; full mechanics: [Agile Re-Plan Loop](../../skills/rpi/references/agile-replan-loop.md).
+Move 7 feeds **back into move 1** — this is where the route gets re-routed (principle 7). The sharpening principle 7 leaves implicit: re-routing is triggered by **evidence, not only by failure.** A wave that *succeeds* still teaches something the plan didn't know, and that evidence may **refactor, insert, drop, reorder, or re-scope the *remaining* waves** before the next one runs. The wave plan is a hypothesis; each wave is the experiment that tests it. Under `--auto` the orchestrator executes those pivots itself — it is not gated on a wave *failing* first, and it does not run the initial wave-list to the letter. Two failure modes this kills: **retry-not-replan** (re-cranking a failed wave forever instead of asking whether the *remaining plan* should change) and **waterfall** (executing the pre-written wave list because "that was the plan"). Bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-arc postmortem checkpoint; the operator is surfaced only at the terminal objective or a breaker trip that survives its bounded helper pass — never just to approve a pivot. The orchestrator that owns this across a turn is `/rpi`; full mechanics: [Agile Re-Plan Loop](../../skills/rpi/references/agile-replan-loop.md).
 
 ## The promotion ratchet
 
@@ -191,15 +194,15 @@ Narrative full flow: [Intent → Validated Code](intent-to-validated-code.md).
 | Shape intent | `discovery`, `product`, `plan` | BDD intent issue with acceptance examples |
 | Track as bead | `beads-br` | Bead with slice list + acceptance contract |
 | Slice + wave plan | `plan`, `behavior-first-planning` | Slice list + wave grouping + ownership map |
-| Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
+| Pre-flight check | `premortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
 | Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
-| Slice validation | `validate`, `council`, `pawl-review` | Acceptance proof plus independent lane evidence |
+| Slice validation | `validate`, `council` | Acceptance proof plus independent lane evidence |
 | Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
 | Capture | `learn` | Immutable-verdict observations + plan impact for the orchestrator |
-| Causal retrospective | `postmortem` | Evidence-tested causal finding for an explicit retrospective question |
+| Optional causal analysis | `postmortem` | Tested retrospective hypotheses |
 | Compound | `pattern-mining`, `operationalize` | Earned patterns → rules → weakest durable mechanism |
-| One full tick | `rpi` | Research → plan → implement → validate → learn over one objective |
+| One full tick | `rpi` | Discovery → Crank → Validate → Learn over one bead |
 
 ## How the loop composes with the architectural seams
 

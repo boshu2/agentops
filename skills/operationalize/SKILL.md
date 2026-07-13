@@ -198,7 +198,7 @@ surfaces (beliefs, playbooks, briefings, gaps). Where retrieval reads, activatio
 promotes; the two are the read and write-to-surface halves of the same flywheel.
 Activation follows the live capture-and-ratchet workflow:
 
-1. `/post-mortem` captures only evidence that changes future behavior.
+1. `/postmortem` captures only evidence that changes future behavior.
 2. `/pattern-mining` tests repeated shapes before promotion.
 3. `/operationalize` routes an earned rule to its weakest durable mechanism.
 4. **knowledge activation** lifts mature evidence into playbooks, beliefs, and runtime briefings.

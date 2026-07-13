@@ -6,7 +6,7 @@ Given `/implement <issue-id-or-description>`:
 
 **For resume protocol details, read `skills/implement/references/resume-protocol.md`.**
 
-**For ratchet gate checks and pre-mortem gate details, read `skills/implement/references/gate-checks.md`.**
+**For ratchet gate checks and premortem gate details, read `skills/implement/references/gate-checks.md`.**
 
 ## Step 0.5: Pull Relevant Knowledge
 
@@ -307,7 +307,7 @@ these paths to the committed SHA.
 
 **For the full gate spec (rationale, mtime check, plugin-cache check, remediation), read `skills/implement/references/binary-deployment-gate.md`.**
 
-**This gate BLOCKS declaring "done" when the diff touches CLI/hook surfaces.** It is not a warning. Council finding (`.agents/council/2026-05-01-evolution-cycle-council.md`, finding 1, action item A; 6/6 judges): a fix shipped to source while the deployed runtime is pre-fix keeps reproducing the bug during its own post-mortem. Captured failure mode: `.agents/learnings/2026-05-01-fix-shipped-binary-stale.md`.
+**This gate BLOCKS declaring "done" when the diff touches CLI/hook surfaces.** It is not a warning. Council finding (`.agents/council/2026-05-01-evolution-cycle-council.md`, finding 1, action item A; 6/6 judges): a fix shipped to source while the deployed runtime is pre-fix keeps reproducing the bug during its own Postmortem. Captured failure mode: `.agents/learnings/2026-05-01-fix-shipped-binary-stale.md`.
 
 **Trigger** — gate fires if the diff touches `cli/cmd/**`, `hooks/**`, or `cli/embedded/hooks/**`:
 

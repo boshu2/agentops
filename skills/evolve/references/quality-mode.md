@@ -3,10 +3,10 @@
 ## When to Use
 
 Use `--quality` when:
-- Post-mortem findings are accumulating faster than they're consumed
+- Postmortem findings are accumulating faster than they're consumed
 - All GOALS pass but `next-work.jsonl` has unconsumed high-severity items
 - You want to resolve context-hot findings from a just-completed epic
-- Running immediately after `/post-mortem` to action its findings
+- Running immediately after `/postmortem` to action its findings
 
 Do NOT use `--quality` when:
 - GOALS have critical failures (build broken, tests failing)

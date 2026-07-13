@@ -196,7 +196,7 @@ Remaining: <what's left>
 
 - [references/behavioral-spec.md](references/behavioral-spec.md) — Behavioral spec format for Stage 4 validation
 - [references/binary-deployment-gate.md](references/binary-deployment-gate.md) — CLI/hook binary-deployment gate spec
-- [references/gate-checks.md](references/gate-checks.md) — Ratchet and pre-mortem gate checks
+- [references/gate-checks.md](references/gate-checks.md) — Ratchet and premortem gate checks
 - [references/green-mode.md](references/green-mode.md) — GREEN mode test-first implementation rules
 - [references/implement.feature](references/implement.feature) — Executable spec: the /implement done-state (first-failing-test → green → refactor → verified close) (soc-qk4b.2)
 - [references/quality-loop.md](references/quality-loop.md) — Pre-commit autonomous quality loop

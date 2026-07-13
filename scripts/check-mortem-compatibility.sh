@@ -15,13 +15,10 @@ if [[ "$writer" == "canonical-v3" ]]; then
     echo "canonical-v3 requires --legacy-readback" >&2
     exit 2
   }
-  echo "canonical-v3 writer is reserved for the cross-family-approved S8 cutover" >&2
-  exit 1
-fi
-[[ "$writer" == "legacy-v2" && "$legacy_readback" == false ]] || {
+elif [[ "$writer" != "legacy-v2" || "$legacy_readback" == true ]]; then
   echo "usage: $0 --writer=legacy-v2 | --writer=canonical-v3 --legacy-readback" >&2
   exit 2
-}
+fi
 
 repo_root="$(git rev-parse --show-toplevel)"
 fixtures="${MORTEM_COMPAT_FIXTURES_DIR:-$repo_root/tests/fixtures/mortem-compatibility}"
@@ -41,6 +38,7 @@ required=(
   legacy-readback/v1-old-only.json
   legacy-readback/v2-old-only.json
   writer-legacy-v2.json
+  writer-canonical-v3.json
 )
 for relative in "${required[@]}"; do
   [[ -f "$fixtures/$relative" ]] || {
@@ -100,6 +98,15 @@ if writer.get("runtime_paths") != [".agents/pre-mortem-checks/current.md"]:
 if writer.get("ratchet_steps") != ["premortem", "postmortem"]:
     raise SystemExit(f"{writer_path}: canonical ratchet_steps contract mismatch: {writer!r}")
 
+writer_path = "writer-canonical-v3.json"
+writer = load_json(writer_path)
+if writer.get("schema_version") != 3 or writer.get("packet_fields") != {"premortem_verdict": "PASS"}:
+    raise SystemExit(f"{writer_path}: canonical-v3 schema_version/packet_fields contract mismatch: {writer!r}")
+if writer.get("runtime_paths") != [".agents/premortem-checks/current.md"]:
+    raise SystemExit(f"{writer_path}: canonical-v3 runtime_paths contract mismatch: {writer!r}")
+if writer.get("ratchet_steps") != ["premortem", "postmortem"]:
+    raise SystemExit(f"{writer_path}: canonical ratchet_steps contract mismatch: {writer!r}")
+
 legacy_path = "directory-conflict/pre-mortem-check.json"
 canonical_path = "directory-conflict/premortem-check.json"
 legacy = load_json(legacy_path)
@@ -119,14 +126,23 @@ for source, target in (
         raise SystemExit(f"{redirect_path}: {source} must redirect to {target}; got {actual}")
 PY
 
+domain_tests='TestExecutionPacketDecodeJSON_MortemSchemaOwnership|TestExecutionPacketPublishedSchema_MortemOwnership|TestExecutionPacketDecodeJSON_MortemArtifactPathOwnershipMatchesSchemaVersion|TestExecutionPacketDecodeJSON_MortemEqualAndConflictRules|TestMortemCompatibilityFixtures_|TestExecutionPacketMarshal_ExplicitLegacyV2KeepsLegacyWireNames'
+if [[ "$writer" == "canonical-v3" ]]; then
+  domain_tests="$domain_tests|TestExecutionPacketMarshal_MortemWriterIsCanonicalV3"
+fi
+
 (
   cd "$repo_root/cli"
   export MORTEM_COMPAT_FIXTURES_DIR="$fixtures"
   go test ./internal/domain/packet \
-    -run 'TestExecutionPacketDecodeJSON_MortemSchemaOwnership|TestExecutionPacketPublishedSchema_MortemOwnership|TestExecutionPacketDecodeJSON_MortemArtifactPathOwnershipMatchesSchemaVersion|TestExecutionPacketDecodeJSON_MortemEqualAndConflictRules|TestMortemCompatibilityFixtures_|TestExecutionPacketMarshal_MortemWriterRemainsLegacyV2OnlyThroughS7' \
+    -run "$domain_tests" \
     -count=1
   go test ./internal/ports -run 'Mortem|Premortem' -count=1
-  go test ./internal/adapters/storage_fs -count=1
+  if [[ "$writer" == "canonical-v3" ]]; then
+    go test ./internal/adapters/storage_fs -count=1
+  else
+    go test ./internal/adapters/storage_fs -run 'TestRepo_LoadConsumesLegacyMortemReadbackFixtures' -count=1
+  fi
   go test ./cmd/ao \
     -run 'TestProductionFindingCompiler_PremortemAliases|TestMortemCompatibilityFixture_|TestStigmergicScorecard_EmitsCanonicalMortem|TestStatusFlywheel_EmitsCanonicalPremortem|TestPremortemDirectoryReader_|TestMortemCompatibilityFixtures_Directory|TestCollectContextExplainHealth_UsesCanonicalReconciledPremortemCount|TestRunContextExplain_RejectsConflictingPremortemDirectories|TestMortemJSONLChainLoad_' \
     -count=1
@@ -141,4 +157,4 @@ export SKILL_DISPOSITIONS_FILE="$fixtures/explicit-skill-redirect.yaml"
 [[ "$(resolve_skill_path skills/premortem/SKILL.md)" == "skills/premortem/SKILL.md" ]]
 [[ "$(resolve_skill_path skills-codex/postmortem/SKILL.md)" == "skills-codex/postmortem/SKILL.md" ]]
 
-echo "mortem compatibility: PASS (version-owned readers, legacy-v2 writer, permanent redirects)"
+echo "mortem compatibility: PASS (version-owned readers, writer=$writer, legacy-readback=$legacy_readback, permanent redirects)"

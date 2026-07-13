@@ -83,7 +83,7 @@ var defaultManifests = map[int]phaseManifest{
 
 **Rationale:**
 - Phase 1 has no predecessors; manifest is empty.
-- Phase 2 carries forward decisions and risks so implementation addresses pre-mortem findings. Narrative is short (500 chars) because structured fields convey most of the signal.
+- Phase 2 carries forward decisions and risks so implementation addresses premortem findings. Narrative is short (500 chars) because structured fields convey most of the signal.
 - Phase 3 needs to know what was produced (artifacts) to validate it. Longer narrative (1000 chars) gives validation richer context about implementation choices.
 - MaxTokens of 2500 per phase keeps context injection under ~10% of a typical 32k context window.
 
@@ -192,4 +192,4 @@ Each invocation of `applyContextBudget` should write a one-line JSON log entry t
 {"run_id":"abc123","phase":2,"original_tokens":3200,"budget_tokens":2500,"truncated_tokens":2480,"was_truncated":true,"ts":"2026-03-02T12:00:00Z"}
 ```
 
-This enables post-mortem analysis of whether budgets are too tight (frequent truncation) or too loose (consistent under-use).
+This enables postmortem analysis of whether budgets are too tight (frequent truncation) or too loose (consistent under-use).

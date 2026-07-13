@@ -119,7 +119,7 @@ Run grep/wc/ls commands to count the current state of what you're changing:
 - **Code to modify:** count LOC, packages, import references
 - **Coverage gaps:** count missing items with `grep -L` or `find`
 
-**Record the verification commands alongside their results.** These become pre-mortem evidence and acceptance criteria.
+**Record the verification commands alongside their results.** These become premortem evidence and acceptance criteria.
 
 | Bad | Good |
 |-----|------|
@@ -131,4 +131,4 @@ Run grep/wc/ls commands to count the current state of what you're changing:
 - **File size limits:** check `wc -l` on files near size limits (especially SKILL.md files with the 800-line lint limit). If a planned change will push a file past the limit, split or refactor before implementation.
 - **Test fixtures affected:** count test fixtures upstream of any filter/gate/hook being added or modified with `grep -rn 'func Test' <test-dir>/ | wc -l`. Changing a gate without updating its test fixtures causes false-green CI.
 
-Ground truth with numbers prevents scope creep and makes completion verifiable. In ol-571, the audit found 5,752 LOC to remove — without it, the plan would have been vague. In ag-dnu, wrong counts (11 vs 14, 0 vs 7) caused a pre-mortem FAIL that a simple grep audit would have prevented.
+Ground truth with numbers prevents scope creep and makes completion verifiable. In ol-571, the audit found 5,752 LOC to remove — without it, the plan would have been vague. In ag-dnu, wrong counts (11 vs 14, 0 vs 7) caused a premortem FAIL that a simple grep audit would have prevented.

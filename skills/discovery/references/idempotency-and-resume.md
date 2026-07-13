@@ -12,14 +12,14 @@
 | History search | **Always runs** — ao search is read-only |
 | Research | **Runs again** — research output appends, does not overwrite |
 | Plan | **Runs again** — creates new epic if none open, reuses if open epic matches goal |
-| Pre-mortem | **Runs again** — council always produces a fresh verdict |
+| Premortem | **Runs again** — council always produces a fresh verdict |
 
 ### Resume via `/rpi --from=discovery`
 
 When `/rpi --from=discovery` is invoked:
 - Discovery runs from Step 1 (brainstorm) regardless of prior progress
 - Step-level skip logic prevents duplicate brainstorm artifacts
-- A new pre-mortem verdict is always produced (council is not cached)
+- A new premortem verdict is always produced (council is not cached)
 
 ### Epic Deduplication
 
@@ -36,7 +36,7 @@ or re-plan.
 | Step | Behavior on Re-run |
 |------|--------------------|
 | Vibe | **Runs again** — produces new council report |
-| Post-mortem | **Runs again** — produces new retrospective |
+| Postmortem | **Runs again** — produces new retrospective |
 | Retro | **Runs again** — may capture duplicate learnings |
 | Forge | **Runs again** — transcript mining is append-only |
 

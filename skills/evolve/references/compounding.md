@@ -6,7 +6,7 @@ Two mechanisms feed the loop:
 ```
 Session 1:
   ao lookup --query "recent learnings" (nothing yet)  → cycle runs blind
-  /rpi fixes test-pass-rate       → post-mortem runs ao forge
+  /rpi fixes test-pass-rate       → postmortem runs ao forge
   Learnings extracted: "tests/skills/run-all.sh validates frontmatter"
 
 Session 2:
@@ -18,17 +18,17 @@ Session 2:
 **2. Work harvesting (each cycle discovers the next):**
 ```
 Cycle 1: /rpi fixes test-pass-rate
-  → post-mortem harvests: "add missing smoke test for /evolve" → next-work.jsonl
+  → postmortem harvests: "add missing smoke test for /evolve" → next-work.jsonl
 
 Cycle 2: all GOALS.yaml goals pass
   → /evolve reads next-work.jsonl (exact repo first, then cross-repo '*', then legacy)
   → picks "add missing smoke test"
-  → /rpi fixes it → post-mortem harvests: "update SKILL-TIERS count"
+  → /rpi fixes it → postmortem harvests: "update SKILL-TIERS count"
 
 Cycle 3: reads next-work.jsonl → picks "update SKILL-TIERS count" → ...
 ```
 
-The loop keeps running as long as post-mortem keeps finding follow-up work. Each /rpi cycle generates next-work items from its own post-mortem. The system feeds itself.
+The loop keeps running as long as postmortem keeps finding follow-up work. Each /rpi cycle generates next-work items from its own postmortem. The system feeds itself.
 
 **Priority cascade:**
 ```
@@ -65,5 +65,5 @@ moat unproven) and
 **Posture for this skill:** the proven product is the per-cycle verification (**no verdict =
 not done**); compounding is the *tracked hypothesis*, not the promise. Do not market the
 flywheel ahead of the ruler. Mechanical corpus surfaces live on the CLI (`ao compile`,
-`ao flywheel status`), harvested into the loop by `/post-mortem` — the retired `/curate`,
+`ao flywheel status`), harvested into the loop by `/postmortem` — the retired `/curate`,
 `/compile`, and `/flywheel` skills folded into it (2026-07-07 wave).

@@ -196,9 +196,11 @@ Also verify: epic has at least 1 child issue total. An epic with 0 children mean
 
 Do NOT proceed with empty issue list - this produces false "epic complete" status.
 
-### Step 3a.1: Pre-flight Check - Pre-Mortem Required (3+ issues)
+### Step 3a.1: Pre-flight Check - Premortem Required (3+ issues)
 
-If the epic has 3+ child issues, look for a pre-mortem report in `.agents/council/*pre-mortem*`. If none found, emit `<promise>BLOCKED</promise>` and stop — run `/pre-mortem` first. Pre-mortems have positive ROI for 3+ issue epics; cost (~2 min) is negligible.
+If the epic has 3+ child issues, look for its Premortem report. If none exists,
+emit `<promise>BLOCKED</promise>` and stop — run `/premortem` first. Premortems
+have positive ROI for 3+ issue epics; cost (~2 min) is negligible.
 
 ### Step 3a.2: Pre-flight Check - Bead Audit (Stale/Fixed/Consolidatable)
 

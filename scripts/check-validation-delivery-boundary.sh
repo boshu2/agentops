@@ -57,10 +57,12 @@ grep -Fq 'it is not a repository integration loop or a tracker-closing loop' \
   "$ROOT/skills/crank/references/fire.md" ||
   fail 'Crank FIRE reference does not preserve the phase boundary'
 
-if grep -Eqi 'pawl-review|pawl-land|ao[[:space:]]+land|commit-bound[^.]*verdict|no verdict means no push' "$ROOT/skills/push/SKILL.md"; then
-  fail 'Push still requires LLM landing authority'
-fi
-bash "$ROOT/skills/push/scripts/validate.sh" >/dev/null
+for push_dir in "$ROOT/skills/push" "$ROOT/skills-codex/push"; do
+  if grep -Eqi 'pawl-review|pawl-land|ao[[:space:]]+land|commit-bound[^.]*verdict|no verdict means no push' "$push_dir/SKILL.md"; then
+    fail "Push still requires LLM landing authority: ${push_dir#"$ROOT/"}/SKILL.md"
+  fi
+  bash "$push_dir/scripts/validate.sh" >/dev/null
+done
 
 packet_value() {
   local file="$1" key="$2"

@@ -28,7 +28,7 @@ tracking) and `docs/plans/2026-05-12-rescope-evolve-and-architecture.md`
 |---|---|---|
 | `CorpusReaderPort` | `cli/internal/ports/corpus_reader.go` | Decay-ranked retrieval (Lookup). Read-side of BC1. |
 | `CorpusWriterPort` | `cli/internal/ports/corpus_writer.go` | Typed capture (Capture). Write-side of BC1. |
-| `FindingCompilerPort` | `cli/internal/ports/finding_compiler.go` | Promote finding artifacts into planning-rules / pre-mortem-checks / constraints (Compile). |
+| `FindingCompilerPort` | `cli/internal/ports/finding_compiler.go` | Promote finding artifacts into planning-rules / premortem-checks / constraints (Compile). |
 | `CitationPort` | `cli/internal/ports/citation.go` | Verify per-citation freshness against HEAD (Verify). |
 
 Each interface ships with one in-memory adapter (`InMemoryX`) intended
@@ -61,7 +61,7 @@ These are normative summaries; the port doc-comments in
 - Returns a non-nil slice on success.
 - No duplicate `Path` values in the output slice.
 - Honors `Frontmatter["compiler_targets"]` (comma-separated list of
-  `plan|pre-mortem|constraint`) when present; defaults to all three.
+  `plan|premortem|constraint`) when present; defaults to all three.
 - Unknown target strings are silently skipped — callers can detect
   the gap by comparing requested vs emitted slices.
 - Empty `ID` is a structural-rejection error.
