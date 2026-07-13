@@ -295,7 +295,7 @@ As of 2026-05-10:
 
 - GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 63 shared skills, 62 checked-in Codex artifacts, and 13 Codex overrides. `/validate` owns validation, `/postmortem` owns session mining, and retired names resolve only through the disposition ledger.
+- Distribution/runtime reach: 63 shared skills, 62 checked-in Codex artifacts, and 12 Codex overrides. `/validate` owns validation, `/postmortem` owns session mining, and retired names resolve only through the disposition ledger.
 
 **Measured operational proof:**
 
