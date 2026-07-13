@@ -119,10 +119,11 @@ ao verify                 # deterministic support check; skills own completion
 ao provenance show <sha>  # recorded verdict trail
 ao skills graph           # inspect the generated skill dependency graph
 
-# Experimental (still measuring whether these pay off; see the honest version below):
-ao search "query"         # search history and local knowledge
-ao lookup --query "topic" # retrieve curated learnings
-ao compile                # rebuild the corpus
+# Archive-profile experiments (not present in the default spine build):
+# make build-flywheel restores the archived command tree for revival tests.
+ao search "query"         # archive build: search history and local knowledge
+ao lookup --query "topic" # archive build: retrieve curated learnings
+ao compile                # archive build: rebuild the corpus
 ```
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
