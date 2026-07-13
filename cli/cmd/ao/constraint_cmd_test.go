@@ -122,16 +122,14 @@ func TestConstraintLoadMissingIndex(t *testing.T) {
 	}
 }
 
-func TestConstraintActivateDraft(t *testing.T) {
+func TestConstraintActivateMeasuredShadow(t *testing.T) {
 	wd := t.TempDir()
 	chdirTo(t, wd)
 	mkdirConstraintsDir(t)
 
 	idx := &constraintIndex{
 		SchemaVersion: 1,
-		Constraints: []constraintEntry{
-			{ID: "c-1", Status: "draft", CompiledAt: time.Now().Format(time.RFC3339)},
-		},
+		Constraints:   []constraintEntry{activationReadyConstraintEntry("c-1")},
 	}
 	if err := saveConstraintIndex(idx); err != nil {
 		t.Fatalf("saveConstraintIndex: %v", err)
@@ -244,14 +242,9 @@ func TestConstraintActivateJSONAndReviewStale(t *testing.T) {
 
 	stale := &constraintIndex{
 		SchemaVersion: 1,
-		Constraints: []constraintEntry{
-			{
-				ID:         "old-c1",
-				Title:      "Old constraint",
-				Status:     "draft",
-				CompiledAt: time.Now().AddDate(0, 0, -91).Format(time.RFC3339),
-			},
-		},
+		Constraints: []constraintEntry{activationReadyConstraintEntryAt(
+			"old-c1", time.Now().AddDate(0, 0, -91).Format(time.RFC3339),
+		)},
 	}
 	if err := saveConstraintIndex(stale); err != nil {
 		t.Fatalf("saveConstraintIndex: %v", err)
@@ -282,7 +275,7 @@ func TestConstraintActivateJSONAndReviewStale(t *testing.T) {
 	}
 }
 
-func TestConstraintActivateRejectsNonDraft(t *testing.T) {
+func TestConstraintActivateRejectsNonShadow(t *testing.T) {
 	wd := t.TempDir()
 	chdirTo(t, wd)
 	mkdirConstraintsDir(t)
@@ -298,7 +291,7 @@ func TestConstraintActivateRejectsNonDraft(t *testing.T) {
 	}
 
 	if err := constraintActivateCmd.RunE(constraintActivateCmd, []string{"c-1"}); err == nil {
-		t.Fatal("expected activate to reject non-draft constraint")
+		t.Fatal("expected activate to reject non-shadow constraint")
 	}
 }
 

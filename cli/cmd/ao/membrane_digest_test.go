@@ -141,10 +141,10 @@ func TestRenderCatchDigest_ByteIdempotent(t *testing.T) {
 	body := string(first)
 	t.Logf("rendered digest:\n%s", body)
 	for _, want := range []string{
-		`type: "pre-mortem-check"`,
+		`type: "premortem-check"`,
 		`status: "active"`,
 		`applicable_when: ["recurring-catch"]`,
-		"# Pre-Mortem Check: Recurring catch classes to watch for",
+		"# Premortem Check: Recurring catch classes to watch for",
 		"unguarded cmdsub aborts under set -e → watch for it when working in `shell`",
 		"stale retired surface referenced in shipped docs → watch for it when working in `docs`",
 	} {
@@ -285,7 +285,7 @@ func TestRunMembraneDigest_FiltersPlaceholdersE2E(t *testing.T) {
 		if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
 			t.Fatalf("runMembraneDigest(include=%v): %v", includePlaceholders, err)
 		}
-		raw, err := os.ReadFile(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md"))
+		raw, err := os.ReadFile(filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md"))
 		if err != nil {
 			t.Fatalf("digest not written: %v", err)
 		}
@@ -345,10 +345,10 @@ func setDigestProjectDir(t *testing.T, root string) {
 	})
 }
 
-// TestRunMembraneDigest_WritesChecklistToPreMortemChecks is the e2e acceptance:
+// TestRunMembraneDigest_WritesChecklistToPremortemChecks is the e2e acceptance:
 // seed a real ledger, run the command, assert the checklist lands in the
-// pre-mortem-checks sink ranked correctly and in the loader's expected format.
-func TestRunMembraneDigest_WritesChecklistToPreMortemChecks(t *testing.T) {
+// premortem-checks sink ranked correctly and in the loader's expected format.
+func TestRunMembraneDigest_WritesChecklistToPremortemChecks(t *testing.T) {
 	root := t.TempDir()
 	setDigestProjectDir(t, root)
 
@@ -370,21 +370,21 @@ func TestRunMembraneDigest_WritesChecklistToPreMortemChecks(t *testing.T) {
 	t.Logf("stdout:\n%s", buf.String())
 
 	// The auto-mined sink exists at the loader's canonical location.
-	path := filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md")
+	path := filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md")
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("digest file not written to pre-mortem-checks sink: %v", err)
+		t.Fatalf("digest file not written to premortem-checks sink: %v", err)
 	}
 	body := string(raw)
 	t.Logf("catch-digest.md:\n%s", body)
 
-	// Loader-shape assertions: a subsequent /pre-mortem load globs *.md here and
+	// Loader-shape assertions: a subsequent /premortem load globs *.md here and
 	// reads YAML frontmatter (type/status/applicable_when) + the check heading.
 	for _, want := range []string{
-		`type: "pre-mortem-check"`,
+		`type: "premortem-check"`,
 		`status: "active"`,
 		`applicable_when: ["recurring-catch"]`,
-		"# Pre-Mortem Check:",
+		"# Premortem Check:",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("digest missing loader-expected token %q", want)
@@ -429,7 +429,7 @@ func TestRunMembraneDigest_Idempotent(t *testing.T) {
 		if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
 			t.Fatalf("runMembraneDigest: %v", err)
 		}
-		path := filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md")
+		path := filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md")
 		raw, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("read digest: %v", err)
@@ -440,7 +440,7 @@ func TestRunMembraneDigest_Idempotent(t *testing.T) {
 	second := run()
 
 	// Exactly one digest file — a re-run overwrites, never accumulates.
-	matches, _ := filepath.Glob(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest*.md"))
+	matches, _ := filepath.Glob(filepath.Join(root, ".agents", "premortem-checks", "catch-digest*.md"))
 	if len(matches) != 1 {
 		t.Fatalf("re-run must overwrite one file, found %d: %v", len(matches), matches)
 	}
@@ -492,7 +492,7 @@ func TestRunMembraneDigest_JSON(t *testing.T) {
 		t.Errorf("entry[0] rank/watch_for malformed: %+v", got.Entries[0])
 	}
 	// --json still writes the file.
-	if _, err := os.Stat(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md")); err != nil {
 		t.Errorf("--json must still write the checklist file: %v", err)
 	}
 }
@@ -509,7 +509,7 @@ func TestRunMembraneDigest_EmptyCorpus(t *testing.T) {
 	if err := runMembraneDigest(membraneDigestCmd, nil); err != nil {
 		t.Fatalf("runMembraneDigest on empty corpus: %v", err)
 	}
-	raw, err := os.ReadFile(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md"))
+	raw, err := os.ReadFile(filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md"))
 	if err != nil {
 		t.Fatalf("empty-corpus digest not written: %v", err)
 	}
@@ -629,7 +629,7 @@ func TestRunMembraneDigest_DeltasBeforeAfter(t *testing.T) {
 		t.Errorf("0-since class must be marked improved; got:\n%s", improvedLine)
 	}
 	// Read-only: no checklist file (that is the default mode's sink, not a measurement's).
-	if _, err := os.Stat(filepath.Join(root, ".agents", "pre-mortem-checks", "catch-digest.md")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(root, ".agents", "premortem-checks", "catch-digest.md")); !os.IsNotExist(err) {
 		t.Errorf("--deltas must not write the checklist sink (stat err=%v)", err)
 	}
 }

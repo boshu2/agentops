@@ -18,7 +18,7 @@ import (
 )
 
 // A mechanical finding's compiled constraint must MERGE into the root
-// .agents/constraints/index.json as a draft entry (the gate's surface) rather
+// .agents/constraints/index.json as a warn-only shadow entry rather
 // than land as a per-id markdown file — the producer↔gate seam of EM-ENF.
 func TestWriteDerivedArtifacts_MergesConstraintIntoIndex(t *testing.T) {
 	root := t.TempDir()
@@ -32,7 +32,8 @@ func TestWriteDerivedArtifacts_MergesConstraintIntoIndex(t *testing.T) {
 			"constraint_path_globs": "cli/**",
 			"compiled_at":           "2026-06-21T00:00:00Z",
 		},
-		Body: "x",
+		Body:             "x",
+		DetectorEvidence: loadDetectorEvidenceFixtureFromRepo(t, "replay-pass.json"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -53,8 +54,8 @@ func TestWriteDerivedArtifacts_MergesConstraintIntoIndex(t *testing.T) {
 		t.Fatalf("want 1 constraint, got %d", len(idx.Constraints))
 	}
 	e := idx.Constraints[0]
-	if e.ID != "f-merge" || e.Status != "draft" || e.Detector.Pattern != "panic\\(" {
-		t.Fatalf("merged entry = %+v, want f-merge/draft/panic\\(", e)
+	if e.ID != "f-merge" || e.Status != "shadow" || e.EnforcementMode != "warn" || e.Detector.Pattern != "panic\\(" {
+		t.Fatalf("merged entry = %+v, want f-merge/shadow/warn/panic\\(", e)
 	}
 	// No per-id markdown constraint file should exist (the old dead artifact).
 	if _, err := os.Stat(filepath.Join(root, ".agents", "constraints", "f-merge.md")); err == nil {
@@ -101,6 +102,24 @@ func captureMembraneDerive(t *testing.T) *bytes.Buffer {
 	return &buf
 }
 
+func writeDetectorEvidenceFixture(t *testing.T, root, name string) string {
+	t.Helper()
+	return writeDetectorEvidence(t, root, name, loadDetectorEvidenceFixtureFromRepo(t, name))
+}
+
+func writeDetectorEvidence(t *testing.T, root, name string, evidence *ports.DetectorEvidence) string {
+	t.Helper()
+	raw, err := json.Marshal(evidence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, name)
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
 func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 	root := t.TempDir()
 	const run = "r-membrane-test"
@@ -120,11 +139,11 @@ func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 		t.Fatalf("runMembraneDeriveChecks: %v", err)
 	}
 
-	// Exactly one escape → one finding, one pre-mortem-check; the clean bead is absent.
+	// Exactly one escape → one finding, one premortem check; the clean bead is absent.
 	// ID is keyed on run + bead + confirmed + refuted sha (collision-safe).
 	findingID := "escape-age-flaky-" + run + "-abc1234def-999feed888"
 	findingPath := filepath.Join(root, ".agents", "findings", findingID+".md")
-	checkPath := filepath.Join(root, ".agents", "pre-mortem-checks", findingID+".md")
+	checkPath := filepath.Join(root, ".agents", "premortem-checks", findingID+".md")
 
 	findingBytes, err := os.ReadFile(findingPath)
 	if err != nil {
@@ -140,11 +159,11 @@ func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 
 	checkBytes, err := os.ReadFile(checkPath)
 	if err != nil {
-		t.Fatalf("pre-mortem-check not written: %v", err)
+		t.Fatalf("premortem check not written: %v", err)
 	}
 	check := string(checkBytes)
-	if !strings.Contains(check, "Pre-Mortem Check") {
-		t.Errorf("compiled check missing pre-mortem heading:\n%s", check)
+	if !strings.Contains(check, "Premortem Check") {
+		t.Errorf("compiled check missing premortem heading:\n%s", check)
 	}
 	if !strings.Contains(check, "fresh-context refuter") {
 		t.Errorf("compiled check missing the derived detection question:\n%s", check)
@@ -162,7 +181,7 @@ func TestMembraneDeriveChecks_WritesFindingAndCheck(t *testing.T) {
 }
 
 // EM.2.10 ACCEPTANCE: a MECHANICAL escape, run through `ao membrane derive-checks`,
-// lands a draft ConstraintEntry in .agents/constraints/index.json (the empty index
+// lands a warn-only shadow ConstraintEntry in .agents/constraints/index.json
 // the whole direction was unblocking). This is the product-path proof at the
 // command level: the loop's compile half fires end-to-end on a real ledger input.
 func TestMembraneDeriveChecks_MechanicalEscape_WritesConstraint(t *testing.T) {
@@ -190,7 +209,13 @@ func TestMembraneDeriveChecks_MechanicalEscape_WritesConstraint(t *testing.T) {
 	testProjectDir = root
 	defer func() { testProjectDir = orig }()
 	membraneDeriveRun = run
-	defer func() { membraneDeriveRun, membraneDeriveDryRun, membraneDeriveForce = "", false, false }()
+	membraneDeriveEvidence = writeDetectorEvidence(t, root, "eval-replay.json", &ports.DetectorEvidence{
+		PositiveFixtures: []ports.DetectorFixture{{Ref: "positive/eval.go", Content: `func bad() { eval("x") }`}},
+		NegativeControls: []ports.DetectorFixture{{Ref: "negative/safe.go", Content: `func safe() { parse("x") }`}},
+	})
+	defer func() {
+		membraneDeriveRun, membraneDeriveEvidence, membraneDeriveDryRun, membraneDeriveForce = "", "", false, false
+	}()
 
 	captureMembraneDerive(t)
 	if err := runMembraneDeriveChecks(membraneDeriveCmd, nil); err != nil {
@@ -206,10 +231,10 @@ func TestMembraneDeriveChecks_MechanicalEscape_WritesConstraint(t *testing.T) {
 		t.Fatalf("index.json malformed: %v", err)
 	}
 	if len(idx.Constraints) != 1 {
-		t.Fatalf("mechanical escape must yield exactly 1 draft constraint, got %d", len(idx.Constraints))
+		t.Fatalf("mechanical escape must yield exactly 1 shadow constraint, got %d", len(idx.Constraints))
 	}
 	c := idx.Constraints[0]
-	if c.Status != "draft" || c.Detector.Pattern != `\beval\(` || len(c.AppliesTo.PathGlobs) == 0 {
+	if c.Status != "shadow" || c.EnforcementMode != "warn" || c.Detector.Pattern != `\beval\(` || len(c.AppliesTo.PathGlobs) == 0 {
 		t.Fatalf("constraint not compiled from the escape's detector: %+v", c)
 	}
 }
@@ -299,7 +324,7 @@ func TestMembraneDeriveChecks_RepairsMissingCheck(t *testing.T) {
 
 	run1() // first derive writes finding + check
 	findingID := "escape-age-flaky-" + run + "-abc1234def-999feed888"
-	checkPath := filepath.Join(root, ".agents", "pre-mortem-checks", findingID+".md")
+	checkPath := filepath.Join(root, ".agents", "premortem-checks", findingID+".md")
 
 	// Delete the load-bearing compiled check; the finding stays.
 	if err := os.Remove(checkPath); err != nil {
@@ -465,8 +490,7 @@ func TestDeriveFindingFromEscape_ThreeSignalRecord(t *testing.T) {
 
 // EM.2.10 — THE CUT WIRE, reconnected. A MECHANICAL escape (one carrying a
 // detector pattern + path globs) must now compile, through the SHARED
-// search.BuildConstraintEntry contract, into a real draft constraint — proving
-// the membrane can BLOCK a re-introduction, not merely remember the escape.
+// search.BuildConstraintEntry contract, into a warn-only shadow constraint.
 func TestDeriveFindingFromEscape_MechanicalEscape_CompilesToConstraint(t *testing.T) {
 	a := deriveFindingFromEscape(yieldledger.Escape{
 		BeadID: "age-mech", RunID: "r1",
@@ -486,13 +510,14 @@ func TestDeriveFindingFromEscape_MechanicalEscape_CompilesToConstraint(t *testin
 	if !strings.Contains(a.Frontmatter["compiler_targets"], "constraint") {
 		t.Fatalf("compiler_targets must include constraint, got %q", a.Frontmatter["compiler_targets"])
 	}
-	// THE PROOF: it compiles through the shared contract into a real draft constraint.
-	entry, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter)
+	// THE PROOF: deterministic replay compiles through the shared contract.
+	replay := ports.DetectorReplayResult{PositiveRefs: []string{"positive"}, NegativeControlRefs: []string{"negative"}}
+	entry, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter, replay)
 	if !ok {
 		t.Fatalf("mechanical finding must compile to a constraint via BuildConstraintEntry; frontmatter=%v", a.Frontmatter)
 	}
-	if entry.Status != "draft" {
-		t.Errorf("derived constraint must be status=draft (human activates), got %q", entry.Status)
+	if entry.Status != "shadow" || entry.EnforcementMode != "warn" {
+		t.Errorf("derived constraint must be warn-only shadow, got %q/%q", entry.Status, entry.EnforcementMode)
 	}
 	if entry.Detector.Pattern != `contains:\s*"(gate|pawl)"` {
 		t.Errorf("detector pattern not carried through: %q", entry.Detector.Pattern)
@@ -516,7 +541,7 @@ func TestDeriveFindingFromEscape_ProcessGapEscape_StaysAdvisory(t *testing.T) {
 	if a.Frontmatter["detectability"] != "advisory" {
 		t.Fatalf("process-gap escape must stay advisory, got %q", a.Frontmatter["detectability"])
 	}
-	if _, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter); ok {
+	if _, ok := search.BuildConstraintEntry(a.ID, a.Frontmatter, ports.DetectorReplayResult{}); ok {
 		t.Fatal("an advisory escape must NOT compile to a constraint")
 	}
 }

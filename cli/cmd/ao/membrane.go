@@ -2,10 +2,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,12 +29,13 @@ import (
 // age-cwo): an ESCAPE — a gate-verdict that CONFIRMED a bead a later attempt
 // REFUTED — is the label that makes the membrane harder to fool. derive-checks
 // turns each escape into a finding (the check that would have caught it) and
-// compiles it into a pre-mortem membrane check via the existing
+// compiles it into a Premortem membrane check via the existing
 // FindingCompilerPort. The escape is the label; the compiled check is the
 // membrane getting harder to fool.
 
 var (
 	membraneDeriveRun            string
+	membraneDeriveEvidence       string
 	membraneDeriveDryRun         bool
 	membraneDeriveForce          bool
 	membraneRecallDomain         string
@@ -214,6 +217,7 @@ func init() {
 	membraneCmd.AddCommand(membraneCalibrateCmd)
 
 	membraneDeriveCmd.Flags().StringVar(&membraneDeriveRun, "run", "", "Run id to scan for escapes (required)")
+	membraneDeriveCmd.Flags().StringVar(&membraneDeriveEvidence, "detector-evidence", "", "JSON file with stored positives, negative controls, and optional shadow precision evidence")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveDryRun, "dry-run", false, "Report what would be derived without writing files")
 	membraneDeriveCmd.Flags().BoolVar(&membraneDeriveForce, "force", false, "Overwrite existing derived artifacts")
 
@@ -755,11 +759,15 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 	escapes := yieldledger.DetectEscapes(ledger, membraneDeriveRun)
 
 	compiler := newProductionFindingCompiler()
+	detectorEvidence, err := readDetectorEvidence(membraneDeriveEvidence)
+	if err != nil {
+		return err
+	}
 	report := membraneDeriveReport{
 		Run:      membraneDeriveRun,
 		DryRun:   membraneDeriveDryRun,
 		Escapes:  len(escapes),
-		Compiler: string(ports.CompiledOutputPreMortemCheck),
+		Compiler: string(ports.CompiledOutputPremortemCheck),
 	}
 
 	// cmd.Context() is nil when a test invokes the RunE directly (no SetContext);
@@ -770,6 +778,7 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 	}
 	for _, e := range escapes {
 		artifact := deriveFindingFromEscape(e, buildDomainRecord(ctx, root, e))
+		artifact.DetectorEvidence = detectorEvidence
 		outputs, err := compiler.Compile(context.Background(), artifact)
 		if err != nil {
 			return fmt.Errorf("compile finding %s: %w", artifact.ID, err)
@@ -781,7 +790,7 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 			FindingPath: filepath.Join(".agents", "findings", artifact.ID+".md"),
 		}
 		for _, out := range outputs {
-			if out.Kind == ports.CompiledOutputPreMortemCheck {
+			if out.Kind == ports.CompiledOutputPremortemCheck {
 				dc.CheckPath = out.Path
 			}
 		}
@@ -800,8 +809,33 @@ func runMembraneDeriveChecks(cmd *cobra.Command, args []string) error {
 	return writeMembraneDeriveReport(cmd.OutOrStdout(), report)
 }
 
+func readDetectorEvidence(path string) (*ports.DetectorEvidence, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil, nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("ao membrane derive-checks: read detector evidence: %w", err)
+	}
+	var evidence ports.DetectorEvidence
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&evidence); err != nil {
+		return nil, fmt.Errorf("ao membrane derive-checks: parse detector evidence: %w", err)
+	}
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("ao membrane derive-checks: parse detector evidence: trailing JSON value")
+		}
+		return nil, fmt.Errorf("ao membrane derive-checks: parse detector evidence: trailing data: %w", err)
+	}
+	return &evidence, nil
+}
+
 // deriveFindingFromEscape turns an escape into the finding that would have
-// caught it: a pre-mortem-targeted finding asking whether a unit like this one
+// caught it: a Premortem-targeted finding asking whether a unit like this one
 // was re-verified by a fresh-context refuter before the membrane confirmed it.
 // The id is deterministic (escape bead + confirmed head sha) so re-running is
 // idempotent.
@@ -864,7 +898,7 @@ func deriveFindingFromEscape(e yieldledger.Escape, dom domainsignal.Record) port
 			"status":               "active",
 			"severity":             "significant",
 			"detectability":        "advisory",
-			"compiler_targets":     string(ports.CompiledOutputPreMortemCheck),
+			"compiler_targets":     string(ports.CompiledOutputPremortemCheck),
 			"escape_bead_id":       e.BeadID,
 			"escape_run_id":        e.RunID,
 			"escape_confirmed_sha": e.ConfirmedHeadSHA,
@@ -895,11 +929,12 @@ func deriveFindingFromEscape(e yieldledger.Escape, dom domainsignal.Record) port
 	// EM.2.10 — THE CUT WIRE, reconnected. When the escape carries a mechanical
 	// detector (a re-introducible pattern + the paths it applies to), upgrade the
 	// finding from advisory to MECHANICAL and add the constraint compile target, so
-	// productionFindingCompiler -> search.BuildConstraintEntry emits a real draft
-	// constraint into .agents/constraints/index.json that the gate enforces. Until
-	// this, every escape was hardcoded advisory and the index stayed empty — the
+	// productionFindingCompiler -> search.BuildConstraintEntry emits a warn-only
+	// shadow into .agents/constraints/index.json. Until deterministic replay and
+	// precision-backed activation, it cannot block. Before this path existed,
+	// every escape was hardcoded advisory and the index stayed empty — the
 	// membrane remembered escapes but never BLOCKED their re-introduction. A
-	// process-gap escape (no detector) keeps the advisory pre-mortem path above.
+	// process-gap escape (no detector) keeps the advisory Premortem path above.
 	if e.DetectorPattern != "" {
 		kind := e.DetectorKind
 		if kind == "" {
@@ -914,7 +949,7 @@ func deriveFindingFromEscape(e yieldledger.Escape, dom domainsignal.Record) port
 		art.Frontmatter["detector_kind"] = kind
 		art.Frontmatter["constraint_path_globs"] = e.ConstraintPathGlobs
 		art.Frontmatter["compiled_at"] = compiledAt
-		art.Frontmatter["compiler_targets"] = string(ports.CompiledOutputPreMortemCheck) + "," + string(ports.CompiledOutputConstraint)
+		art.Frontmatter["compiler_targets"] = string(ports.CompiledOutputPremortemCheck) + "," + string(ports.CompiledOutputConstraint)
 	}
 	return art
 }

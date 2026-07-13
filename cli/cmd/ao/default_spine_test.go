@@ -8,7 +8,7 @@ import (
 
 var approvedDefaultSpine = map[string]bool{
 	"beads": true, "capabilities": true, "claim": true, "close": true,
-	"config": true, "council-gate": true, "doctor": true, "done": true,
+	"config": true, "constraint": true, "council-gate": true, "doctor": true, "done": true,
 	"eval": true, "gate": true, "goals": true, "governor": true,
 	"init": true, "land": true, "membrane": true, "pawl": true,
 	"plan-pawl": true, "provenance": true, "quick-start": true, "ready": true,

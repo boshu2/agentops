@@ -29,19 +29,12 @@ func TestConstraint_Integration_FullLifecycle(t *testing.T) {
 	dir := chdirTemp(t)
 	setupAgentsDir(t, dir)
 
-	// Seed index with a draft constraint
+	// Seed index with a measured warn-only shadow constraint.
 	seedConstraintIndex(t, dir, []constraintEntry{
-		{
-			ID:         "C001-no-eval",
-			Title:      "No eval() in production code",
-			Source:     "retro-2026-01",
-			Status:     "draft",
-			CompiledAt: "2026-01-15T10:00:00Z",
-			File:       ".agents/constraints/C001-no-eval.md",
-		},
+		activationReadyConstraintEntryAt("C001-no-eval", "2026-01-15T10:00:00Z"),
 	})
 
-	// Step 1: list shows the draft constraint
+	// Step 1: list shows the shadow constraint
 	out, err := captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"constraint", "list"})
 		return rootCmd.Execute()
@@ -52,11 +45,11 @@ func TestConstraint_Integration_FullLifecycle(t *testing.T) {
 	if !strings.Contains(out, "C001-no-eval") {
 		t.Errorf("expected C001-no-eval in list output, got: %s", out)
 	}
-	if !strings.Contains(out, "draft") {
-		t.Errorf("expected 'draft' status in list output, got: %s", out)
+	if !strings.Contains(out, "shadow") {
+		t.Errorf("expected 'shadow' status in list output, got: %s", out)
 	}
 
-	// Step 2: activate transitions draft -> active
+	// Step 2: activate transitions measured shadow -> active
 	out, err = captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"constraint", "activate", "C001-no-eval"})
 		return rootCmd.Execute()
@@ -136,7 +129,7 @@ func TestConstraint_Integration_RetireNonexistent(t *testing.T) {
 	}
 }
 
-func TestConstraint_Integration_ActivateNotDraft(t *testing.T) {
+func TestConstraint_Integration_ActivateNotShadow(t *testing.T) {
 	dir := chdirTemp(t)
 	setupAgentsDir(t, dir)
 
@@ -159,8 +152,8 @@ func TestConstraint_Integration_ActivateNotDraft(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error activating already-active constraint, got nil")
 	}
-	if !strings.Contains(err.Error(), "can only activate from draft") {
-		t.Errorf("expected 'can only activate from draft' error, got: %v", err)
+	if !strings.Contains(err.Error(), "can only activate from warn-only shadow") {
+		t.Errorf("expected warn-only shadow activation error, got: %v", err)
 	}
 }
 
