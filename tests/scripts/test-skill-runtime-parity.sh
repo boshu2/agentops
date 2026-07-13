@@ -20,13 +20,13 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 setup_fixture() {
   local fixture="$1"
-  mkdir -p "$fixture/scripts" "$fixture/cli/cmd/ao" "$fixture/skills/fixture" "$fixture/skills-codex/fixture"
+  mkdir -p "$fixture/scripts" "$fixture/cli/internal/quality" "$fixture/skills/fixture" "$fixture/skills-codex/fixture"
   cp "$SCRIPT" "$fixture/scripts/validate-skill-runtime-parity.sh"
 
-  cat > "$fixture/cli/cmd/ao/doctor.go" <<'EOF'
-package main
+  cat > "$fixture/cli/internal/quality/stale_refs.go" <<'EOF'
+package quality
 
-var deprecatedCommands = map[string]string{
+var DeprecatedCommands = map[string]string{
 	"ao work goals": "ao goals",
 	"ao know lookup": "ao lookup",
 	"ao quality metrics": "ao metrics",
