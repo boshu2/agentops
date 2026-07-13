@@ -122,7 +122,7 @@
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 32
+        "reference_count": 31
       },
       {
         "name": "dcg",
@@ -1465,13 +1465,11 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao provenance emit-verdict",
-        "ao provenance verify",
         "ao session handoff",
         "ao version"
       ],
       "path": "skills/crank/",
-      "references": 32
+      "references": 31
     },
     {
       "sku": "skill:dcg",
@@ -1655,7 +1653,8 @@
       "consumes": [
         "rpi",
         "goals",
-        "postmortem"
+        "postmortem",
+        "push"
       ],
       "produces": [
         "git-changes",
