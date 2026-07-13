@@ -25,7 +25,7 @@ If learnings are returned, include them as `known_context` in the review packet.
 
 ## Step 1.4b: Load Compiled Prevention First (Mandatory)
 
-Before quick or deep review, load compiled checks from `.agents/pre-mortem-checks/*.md` when they exist. This is separate from flywheel search and does NOT get skipped by `--quick`.
+Before quick or deep review, load compiled checks from `.agents/premortem-checks/*.md` when they exist. This is separate from flywheel search and does NOT get skipped by `--quick`.
 
 Use the tracked contracts in `docs/contracts/finding-compiler.md` and `docs/contracts/finding-registry.md`:
 

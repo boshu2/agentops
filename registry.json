@@ -6,9 +6,9 @@
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 55,
-    "cli_commands": 29,
+    "cli_commands": 30,
     "workflows": 4,
-    "capabilities": 106
+    "capabilities": 107
   },
   "surfaces": {
     "skills": [
@@ -663,6 +663,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao constraint",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage compiled constraints",
+        "bounded_context": "BC2",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao council-gate",
         "path": "cli/cmd/ao/",
         "purpose": "Fail-closed two-plus judge verdict aggregation",
@@ -734,7 +741,9 @@
         "path": "cli/cmd/ao/",
         "purpose": "Self-improving membrane: turn escapes into membrane checks",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "premortem"
+        ]
       },
       {
         "name": "ao pawl",
@@ -914,9 +923,9 @@
     ]
   },
   "capability_summary": {
-    "total": 106,
+    "total": 107,
     "skills": 63,
-    "cli_commands": 29,
+    "cli_commands": 30,
     "gates": 14,
     "reference_impls": 0
   },
@@ -926,6 +935,7 @@
     "claim",
     "close",
     "config",
+    "constraint",
     "council-gate",
     "doctor",
     "done",
@@ -2230,6 +2240,8 @@
       ],
       "drives_commands": [
         "ao beads verify",
+        "ao membrane",
+        "ao membrane digest",
         "ao plan-pawl decide"
       ],
       "path": "skills/premortem/",
@@ -3013,6 +3025,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.constraint",
+      "name": "ao constraint",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Manage compiled constraints",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.council-gate",
       "name": "ao council-gate",
       "type": "cli-command",
@@ -3198,7 +3227,9 @@
       "bounded_context": "",
       "purpose": "Self-improving membrane: turn escapes into membrane checks",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "premortem"
+      ],
       "flags": [
         "--config",
         "--dry-run",

@@ -18,6 +18,10 @@ description: Consume an immutable Validate verdict
 - Reconcile finding recurrence by stable defect class and distinct objective.
   Retries inside one objective count once. One objective emits no producer
   candidate; two or more emit one advisory candidate citing each objective.
+- Mechanical candidates remain advisory until deterministic replay catches all
+  stored positives, passes explicit negative controls, and subsequent warn-only
+  shadow evidence demonstrates the activation precision threshold. Learn never
+  activates a constraint.
 - Postmortem is optional and runs only for retrospective causal analysis. Learn
   may request that specialization; the caller decides whether to invoke it.
 - Emit observations plus one Learn receipt. Do not operate proof, repository,

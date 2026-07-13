@@ -157,6 +157,41 @@
     },
     {
       "category": "public-tested",
+      "command": "constraint activate",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by constraint list smoke behavior."
+    },
+    {
+      "category": "public-tested",
+      "command": "constraint list",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "constraint publish",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "constraint retire",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by constraint list smoke behavior."
+    },
+    {
+      "category": "public-tested",
+      "command": "constraint review",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Covered by constraint list smoke behavior."
+    },
+    {
+      "category": "public-tested",
       "command": "council-gate",
       "coverage_status": "covered",
       "kind": "leaf",

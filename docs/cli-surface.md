@@ -26,6 +26,11 @@
 | `ao close` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao completion` | `public-tested` | `allowlisted` | Framework completion root; subcommand generation has focused tests. |
 | `ao config models` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao constraint activate` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
+| `ao constraint list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao constraint publish` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao constraint retire` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
+| `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao council-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao doctor capabilities` | `public-stateful-fixture-needed` | `allowlisted` | Inspects local installation capabilities and needs a controlled home/repo fixture. |
 | `ao doctor diff` | `public-stateful-fixture-needed` | `allowlisted` | Compares local installation state and needs a controlled home/repo fixture. |

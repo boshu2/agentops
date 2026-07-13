@@ -16,18 +16,18 @@ import (
 // productionFindingCompiler satisfies ports.FindingCompilerPort by
 // rendering a FindingArtifact into the three compiler-target
 // artifacts named in docs/contracts/finding-compiler.md: planning
-// rules, pre-mortem checks, and constraints.
+// rules, Premortem checks, and constraints.
 //
 // Target selection:
 //   - Honors artifact.Frontmatter["compiler_targets"] when present
-//     (comma-separated list of "plan", "pre-mortem", "constraint").
+//     (comma-separated list of "plan", "premortem", "constraint").
 //   - When the frontmatter key is absent OR empty, defaults to
 //     emitting all three kinds — matches the contract's "adapter
 //     chooses defaults (and documents them)" clause.
 //
 // Output rendering:
 //   - Path follows the canonical layout in the contract:
-//     .agents/planning-rules/<id>.md, .agents/pre-mortem-checks/<id>.md,
+//     .agents/planning-rules/<id>.md, .agents/premortem-checks/<id>.md,
 //     .agents/constraints/<id>.md.
 //   - Body is a slim markdown wrapper: a kind-specific header line
 //     plus the original artifact Body. Frontmatter is propagated via
@@ -64,7 +64,18 @@ func (c *productionFindingCompiler) Compile(ctx context.Context, artifact ports.
 			// correctly produces no constraint rather than a dead artifact the gate
 			// ignores. (finding-compiler.md: "constraint only when detector metadata
 			// is present and valid".)
-			entry, ok := search.BuildConstraintEntry(artifact.ID, artifact.Frontmatter)
+			replay, ready, err := ports.ReplayDetectorEvidence(
+				strings.TrimSpace(artifact.Frontmatter["detector_pattern"]),
+				strings.TrimSpace(artifact.Frontmatter["detector_kind"]),
+				artifact.DetectorEvidence,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("productionFindingCompiler %q: detector replay: %w", artifact.ID, err)
+			}
+			if !ready {
+				continue
+			}
+			entry, ok := search.BuildConstraintEntry(artifact.ID, artifact.Frontmatter, replay)
 			if !ok {
 				continue
 			}
@@ -95,7 +106,7 @@ func resolveCompilerTargets(raw string) ([]ports.CompiledOutputKind, error) {
 	if strings.TrimSpace(raw) == "" {
 		return []ports.CompiledOutputKind{
 			ports.CompiledOutputPlanningRule,
-			ports.CompiledOutputPreMortemCheck,
+			ports.CompiledOutputPremortemCheck,
 			ports.CompiledOutputConstraint,
 		}, nil
 	}
@@ -123,8 +134,8 @@ func parseCompilerKind(name string) (ports.CompiledOutputKind, bool) {
 	switch name {
 	case string(ports.CompiledOutputPlanningRule):
 		return ports.CompiledOutputPlanningRule, true
-	case string(ports.CompiledOutputPreMortemCheck), "pre_mortem", "premortem":
-		return ports.CompiledOutputPreMortemCheck, true
+	case string(ports.CompiledOutputPremortemCheck), "pre-mortem", "pre_mortem":
+		return ports.CompiledOutputPremortemCheck, true
 	case string(ports.CompiledOutputConstraint):
 		return ports.CompiledOutputConstraint, true
 	}
@@ -136,8 +147,8 @@ func compiledPath(kind ports.CompiledOutputKind, id string) string {
 	switch kind {
 	case ports.CompiledOutputPlanningRule:
 		return ".agents/planning-rules/" + id + ".md"
-	case ports.CompiledOutputPreMortemCheck:
-		return ".agents/pre-mortem-checks/" + id + ".md"
+	case ports.CompiledOutputPremortemCheck:
+		return ".agents/premortem-checks/" + id + ".md"
 	case ports.CompiledOutputConstraint:
 		return ".agents/constraints/" + id + ".md"
 	}
@@ -180,8 +191,8 @@ func compiledHeading(kind ports.CompiledOutputKind) string {
 	switch kind {
 	case ports.CompiledOutputPlanningRule:
 		return "Planning Rule"
-	case ports.CompiledOutputPreMortemCheck:
-		return "Pre-Mortem Check"
+	case ports.CompiledOutputPremortemCheck:
+		return "Premortem Check"
 	case ports.CompiledOutputConstraint:
 		return "Constraint"
 	}
