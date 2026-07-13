@@ -1,0 +1,248 @@
+schema_version: agentops-documentation-authority.v1
+status: active
+
+# This contract records judgments; it does not make them. The checker validates
+# only filesystem/index facts and literal references, never prose meaning.
+scope:
+  root_markdown_count: 17
+  reference_excludes:
+    - glob: .agents/rpi/**
+      reason: generated runtime evidence
+    - glob: docs/releases/**
+      reason: immutable release history
+    - glob: docs/plans/**
+      reason: historical planning records
+    - glob: docs/audits/**
+      reason: point-in-time audit evidence
+    - glob: docs/provenance/**
+      reason: append-only provenance evidence
+    - glob: docs/handoffs/**
+      reason: historical session handoffs
+    - glob: spec/teardown-2026-05-28/**
+      reason: archived teardown specification
+    - glob: CHANGELOG.md
+      reason: immutable release history
+
+documents:
+  - path: AGENTS.md
+    tracked: true
+    class: operating-contract
+    disposition: rewrite
+    owner: AGENTS.md
+    proof: docs/contracts/agents-operating-contract.md plus fresh-context verdicts
+
+  - path: CLAUDE.md
+    tracked: true
+    class: compatibility-adapter
+    disposition: retain-or-replace-with-import-shim
+    owner: AGENTS.md
+    proof: factual symlink check plus fresh-context verdicts
+
+  - path: AGENTS-WORKFLOW.md
+    tracked: true
+    class: compatibility-detail
+    disposition: migrate-then-delete
+    owner: docs/agent-workflow-reference.md
+    proof: factual reference check plus fresh-context migration verdict
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - .github/workflows/validate.yml
+        - AGENTS-CI.md
+        - AGENTS-CODEX.md
+        - AGENTS-RUNTIME.md
+        - AGENTS.md
+        - CLAUDE.md
+        - cli/cmd/ao/session_bootstrap.go
+        - cli/cmd/ao/session_bootstrap_test.go
+        - cli/internal/gates/checks/seed.go
+        - docs/agent-workflow-reference.md
+        - docs/architecture/codebase-overview.md
+        - docs/contracts/ci-pathfilter-coverage-audit.md
+        - docs/runbooks/bash-gate-sunset.md
+        - docs/runbooks/beads-failure-recovery.md
+        - evals/agentops-core/push-worktree-closeout.json
+        - schemas/session-bootstrap.v1.schema.json
+        - scripts/check-hookless-cold-start.sh
+        - scripts/validate-agents-split.sh
+        - scripts/validate-bd-closeout-contract.sh
+        - skills-codex/crank/references/land-protocol.md
+        - skills/crank/references/land-protocol.md
+        - tests/docs/mkdocs-strict-allowlist.txt
+        - tests/scripts/docs-no-dangling-hooks-doc-parity.bats
+        - tests/scripts/validate-agents-split.bats
+        - tests/scripts/validate-bd-closeout-contract.bats
+
+  - path: AGENTS-CI.md
+    tracked: true
+    class: compatibility-detail
+    disposition: migrate-then-delete
+    owner: docs/CI-CD.md
+    proof: factual reference check plus fresh-context migration verdict
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - .github/workflows/validate.yml
+        - AGENTS-CODEX.md
+        - AGENTS-RUNTIME.md
+        - AGENTS-WORKFLOW.md
+        - AGENTS.md
+        - CLAUDE.md
+        - cli/cmd/ao/session_bootstrap.go
+        - cli/cmd/ao/session_bootstrap_test.go
+        - cli/internal/gates/checks/seed.go
+        - docs/agent-workflow-reference.md
+        - docs/architecture/codebase-overview.md
+        - docs/contracts/ci-jobs.yaml
+        - docs/contracts/ci-pathfilter-coverage-audit.md
+        - schemas/session-bootstrap.v1.schema.json
+        - scripts/generate-ci-jobs-table.sh
+        - scripts/validate-agents-split.sh
+        - scripts/validate-ci-policy-parity.sh
+        - tests/docs/mkdocs-strict-allowlist.txt
+        - tests/scripts/validate-agents-split.bats
+
+  - path: AGENTS-CODEX.md
+    tracked: true
+    class: compatibility-detail
+    disposition: migrate-then-delete
+    owner: docs/contracts/codex-skill-api.md
+    proof: factual reference check plus fresh-context migration verdict
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - .github/workflows/validate.yml
+        - AGENTS-CI.md
+        - AGENTS-RUNTIME.md
+        - AGENTS-WORKFLOW.md
+        - AGENTS.md
+        - CLAUDE.md
+        - cli/cmd/ao/session_bootstrap.go
+        - cli/cmd/ao/session_bootstrap_test.go
+        - cli/internal/gates/checks/seed.go
+        - docs/agent-workflow-reference.md
+        - docs/architecture/codebase-overview.md
+        - docs/contracts/ci-pathfilter-coverage-audit.md
+        - schemas/session-bootstrap.v1.schema.json
+        - scripts/codex-sync.sh
+        - scripts/validate-agents-split.sh
+        - tests/docs/mkdocs-strict-allowlist.txt
+        - tests/scripts/validate-agents-split.bats
+
+  - path: AGENTS-RUNTIME.md
+    tracked: true
+    class: compatibility-detail
+    disposition: migrate-then-delete
+    owner: docs/contracts/repo-execution-profile.md
+    proof: factual reference check plus fresh-context migration verdict
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - .github/workflows/validate.yml
+        - AGENTS-CI.md
+        - AGENTS-CODEX.md
+        - AGENTS-WORKFLOW.md
+        - AGENTS.md
+        - CLAUDE.md
+        - MEMORY.md
+        - cli/cmd/ao/session_bootstrap.go
+        - cli/cmd/ao/session_bootstrap_test.go
+        - cli/internal/gates/checks/seed.go
+        - docs/agent-workflow-reference.md
+        - docs/architecture/codebase-overview.md
+        - docs/contracts/ci-pathfilter-coverage-audit.md
+        - docs/newcomer-guide.md
+        - schemas/session-bootstrap.v1.schema.json
+        - scripts/validate-agents-split.sh
+        - tests/docs/mkdocs-strict-allowlist.txt
+        - tests/scripts/validate-agents-split.bats
+
+  - path: README.md
+    tracked: true
+    class: public-entrypoint
+    disposition: retain-and-tighten
+    owner: README.md
+    proof: docs/contracts/entry-documentation-behavior.md plus fresh-context verdicts
+
+  - path: PRODUCT.md
+    tracked: true
+    class: product-contract
+    disposition: retain-and-tighten
+    owner: PRODUCT.md
+    proof: scripts/check-docs-demoted-claims.sh
+
+  - path: GOALS.md
+    tracked: true
+    class: fitness-contract
+    disposition: retain-and-tighten
+    owner: GOALS.md
+    proof: ao goals validate --json
+
+  - path: CHANGELOG.md
+    tracked: true
+    class: release-history
+    disposition: retain-historical
+    owner: CHANGELOG.md
+    proof: tests/docs/validate-doc-release.sh
+
+  - path: PROGRAM.md
+    tracked: true
+    class: machine-consumed-controller-contract
+    disposition: retain-until-consumers-migrate
+    owner: PROGRAM.md
+    proof: cli/internal/autodev
+
+  - path: MEMORY.md
+    tracked: true
+    class: machine-consumed-memory-projection
+    disposition: retain-until-consumers-migrate
+    owner: MEMORY.md
+    proof: factual path and consumer audit
+
+  - path: PRACTICE-REGISTRY.md
+    tracked: true
+    class: machine-consumed-practice-registry
+    disposition: retain-until-structured-owner-exists
+    owner: PRACTICE-REGISTRY.md
+    proof: scripts/validate-practice-citations.sh
+
+  - path: PRE-REDUCTION-SNAPSHOT.md
+    tracked: true
+    class: dated-snapshot
+    disposition: delete-after-zero-consumer-proof
+    owner: git-history
+    proof: factual zero-reference check plus agent disposition judgment
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers: []
+
+  - path: REDUCTION.md
+    tracked: true
+    class: completed-migration-plan
+    disposition: delete-after-zero-consumer-proof
+    owner: docs/contracts/ao-mto-seam.md
+    proof: factual zero-reference check plus agent disposition judgment
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - PRE-REDUCTION-SNAPSHOT.md
+
+  - path: SYSTEM.md
+    tracked: true
+    class: duplicate-system-map
+    disposition: migrate-then-delete
+    owner: docs/architecture/operating-loop.md
+    proof: factual reference check plus fresh-context migration verdict
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
+      consumers:
+        - docs/CLEANUP-distill-to-core.md
+        - scripts/dynamo-e2e.sh
+
+  - path: release-notes.md
+    tracked: false
+    presence: optional-generated
+    class: ignored-generated-runtime-output
+    disposition: preserve-outside-repository-cleanup
+    owner: scripts/extract-release-notes.sh
+    proof: tests/docs/validate-doc-release.sh
