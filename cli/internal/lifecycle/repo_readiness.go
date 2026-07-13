@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/autodev"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/paths"
 )
@@ -18,12 +17,9 @@ const (
 	LayerCore         ReadinessLayer = "core"
 	LayerGoals        ReadinessLayer = "goals"
 	LayerInstructions ReadinessLayer = "instructions"
-	LayerHooks        ReadinessLayer = "hooks"
 	LayerTracking     ReadinessLayer = "tracking"
 	LayerProduct      ReadinessLayer = "product"
 	LayerReadme       ReadinessLayer = "readme"
-	LayerProgram      ReadinessLayer = "program"
-	LayerSchedule     ReadinessLayer = "schedule"
 )
 
 // ReadinessItem is one inspectable artifact or capability in a repo setup.
@@ -189,54 +185,29 @@ func InspectRepoReadiness(root string, opts ReadinessOptions) (*ReadinessReport,
 		Action:  claudeAction,
 	})
 
+	// The product supports both trackers (br and bd); br leads for guidance
+	// consistency, and both init commands are real. Presence checks both
+	// ledger layouts so a br repo is not reported as tracker-less.
 	addOptional(ReadinessItem{
 		Layer:   LayerTracking,
 		Name:    "beads tracker",
 		Path:    filepath.Join(absRoot, ".beads"),
-		Present: isDir(filepath.Join(absRoot, ".beads")),
-		Action:  "bd init --prefix <prefix>",
-	})
-	addOptional(ReadinessItem{
-		Layer:   LayerHooks,
-		Name:    "session hooks",
-		Present: false,
-		Action:  "ao init --hooks",
+		Present: isDir(filepath.Join(absRoot, ".beads")) || isDir(filepath.Join(absRoot, "_beads")),
+		Action:  "br init --prefix <prefix> (or bd init --prefix <prefix>)",
 	})
 	addOptional(ReadinessItem{
 		Layer:   LayerProduct,
 		Name:    "PRODUCT.md",
 		Path:    filepath.Join(absRoot, "PRODUCT.md"),
 		Present: isFile(filepath.Join(absRoot, "PRODUCT.md")),
-		Action:  "$product",
+		Action:  "write PRODUCT.md (the /product skill drafts it)",
 	})
 	addOptional(ReadinessItem{
 		Layer:   LayerReadme,
 		Name:    "README.md",
 		Path:    filepath.Join(absRoot, "README.md"),
 		Present: isFile(filepath.Join(absRoot, "README.md")),
-		Action:  "$readme",
-	})
-
-	programRel := autodev.ResolveProgramPath(absRoot)
-	programPath := filepath.Join(absRoot, "PROGRAM.md")
-	programPresent := false
-	if programRel != "" {
-		programPath = filepath.Join(absRoot, programRel)
-		programPresent = true
-	}
-	addOptional(ReadinessItem{
-		Layer:   LayerProgram,
-		Name:    "PROGRAM.md or AUTODEV.md",
-		Path:    programPath,
-		Present: programPresent,
-		Action:  `ao autodev init "your objective"`,
-	})
-	addOptional(ReadinessItem{
-		Layer:   LayerSchedule,
-		Name:    ".agents/schedule.yaml",
-		Path:    filepath.Join(statePaths.AgentsDir, "schedule.yaml"),
-		Present: isFile(filepath.Join(statePaths.AgentsDir, "schedule.yaml")),
-		Action:  "ao init --with-schedule",
+		Action:  "write README.md",
 	})
 
 	return report, nil

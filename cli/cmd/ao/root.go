@@ -35,7 +35,7 @@ produces validated output with proof — no verdict = not done.
 
 The operating loop:
   ao session bootstrap                  Orient any agent in this repo (run first)
-  ao lookup --query "<topic>"           Pull decay-ranked prior context
+  ao verify <change-slug>               Independent cross-family review of your latest commit
   ao gate check --fast --scope head     The release gate before any push
 
 For AI agents:

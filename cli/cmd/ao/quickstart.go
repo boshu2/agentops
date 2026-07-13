@@ -283,8 +283,6 @@ func printReadinessSummary(report *lifecycle.ReadinessReport) {
 		lifecycle.LayerInstructions,
 		lifecycle.LayerTracking,
 		lifecycle.LayerProduct,
-		lifecycle.LayerProgram,
-		lifecycle.LayerSchedule,
 	} {
 		present, total, action := readinessLayerStatus(report, layer)
 		status := "ready"
@@ -533,7 +531,7 @@ func createProjectClaudeMd(cwd string) error {
 `+"```bash"+`
 ao quick-start        # Repair or inspect the repo seed
 ao session bootstrap  # Orient the agent in this repository
-ao beads ready        # See unblocked issues when tracking is enabled
+ao beads exec ready   # See unblocked issues when tracking is enabled
 `+"```"+`
 
 ## Session Protocol
@@ -541,7 +539,7 @@ ao beads ready        # See unblocked issues when tracking is enabled
 `+"```bash"+`
 # Start
 ao status             # Check AgentOps state
-ao beads ready        # Find available work through the selected tracker
+ao beads exec ready   # Find available work through the selected tracker
 
 # End
 git add .
@@ -575,7 +573,7 @@ func quickstartJourney(hasBeads bool) []quickstartJourneyStep {
 	if hasBeads {
 		steps = append(steps, quickstartJourneyStep{
 			Title:    "Select tracked work",
-			Commands: []string{"ao beads tracker", "ao beads ready"},
+			Commands: []string{"ao beads tracker", "ao beads exec ready"},
 		})
 	} else {
 		steps = append(steps, quickstartJourneyStep{

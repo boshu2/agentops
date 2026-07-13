@@ -103,8 +103,8 @@ func TestQuickstart_CreateTasksFile_ValidJSON(t *testing.T) {
 
 func TestQuickstart_ShowNextSteps_WithBeads(t *testing.T) {
 	out, _ := captureStdout(t, func() error { showNextSteps(true); return nil })
-	if !strings.Contains(out, "ao beads ready") {
-		t.Errorf("with beads=true, expected selected-tracker route 'ao beads ready' in output:\n%s", out)
+	if !strings.Contains(out, "ao beads exec ready") {
+		t.Errorf("with beads=true, expected selected-tracker route 'ao beads exec ready' in output:\n%s", out)
 	}
 	for _, tombstone := range []string{"ao factory", "ao orchestrate", "ao codex", "/rpi"} {
 		if strings.Contains(out, tombstone) {

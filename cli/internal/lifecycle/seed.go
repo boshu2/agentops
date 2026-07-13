@@ -118,43 +118,54 @@ func BuildSeedGoalFile(root string, template string) *goals.GoalFile {
 	}
 }
 
-// ClaudeMDSeedSection is the section appended to CLAUDE.md by ao seed.
+// ClaudeMDSeedSection is the section appended to CLAUDE.md by repo seeding.
+// AgentOps 3.0 is hookless: nothing runs automatically, so this section must
+// only describe explicit commands that exist in the default `ao` build.
 const ClaudeMDSeedSection = `
-## AgentOps Knowledge Flywheel
+## AgentOps Operating Loop
 
-Knowledge compounds automatically across sessions:
-
-- **MEMORY.md** is auto-loaded by your AI coding tool every session
-- **Session hooks** extract learnings, update MEMORY.md, and prune stale knowledge
-- **Skills** invoke flywheel commands at the right moments (no manual ao commands needed)
-
-Verify the flywheel any time:
+AgentOps is hookless: nothing runs automatically. Work moves through one
+explicit loop — shape the intent, track it, implement against a failing test,
+then prove the change with an independent verdict. No verdict = not done.
 
 ` + "```bash" + `
-ao flywheel status    # escape velocity check
-ao status             # current knowledge inventory
+ao session bootstrap    # orient the agent at session start
+ao status               # repo readiness and current state
+ao beads exec ready     # unblocked tracked work (br or bd)
+ao verify <change-slug> # independent cross-family review of your latest commit
 ` + "```" + `
+
+Learnings persist in .agents/ because a session writes them there (the
+/post-mortem skill), not because a hook extracts them.
 `
 
 // ClaudeMDSeedMarker is used to detect if the seed section was already added.
-const ClaudeMDSeedMarker = "## AgentOps Knowledge Flywheel"
+const ClaudeMDSeedMarker = "## AgentOps Operating Loop"
 
-// ClaudeMDSeedMarkerLegacy is the legacy marker for backward compatibility.
+// ClaudeMDSeedMarkerLegacyFlywheel is the pre-3.0 "knowledge compounds
+// automatically" marker, kept so seeding never duplicates the section in
+// repos seeded by older builds.
+const ClaudeMDSeedMarkerLegacyFlywheel = "## AgentOps Knowledge Flywheel"
+
+// ClaudeMDSeedMarkerLegacy is the oldest legacy marker for backward compatibility.
 const ClaudeMDSeedMarkerLegacy = "## AgentOps Session Protocol"
 
-// HasSeedMarker returns true if content contains the current or legacy seed marker.
+// seedMarkers lists every marker that identifies an already-seeded CLAUDE.md,
+// current first.
+var seedMarkers = []string{ClaudeMDSeedMarker, ClaudeMDSeedMarkerLegacyFlywheel, ClaudeMDSeedMarkerLegacy}
+
+// HasSeedMarker returns true if content contains the current or a legacy seed marker.
 func HasSeedMarker(content string) bool {
-	return strings.Contains(content, ClaudeMDSeedMarker) || strings.Contains(content, ClaudeMDSeedMarkerLegacy)
+	return FindSeedMarker(content) != ""
 }
 
 // FindSeedMarker returns the marker string found in content (current or
-// legacy), or empty string if neither is present.
+// legacy), or empty string if none is present.
 func FindSeedMarker(content string) string {
-	if strings.Contains(content, ClaudeMDSeedMarker) {
-		return ClaudeMDSeedMarker
-	}
-	if strings.Contains(content, ClaudeMDSeedMarkerLegacy) {
-		return ClaudeMDSeedMarkerLegacy
+	for _, marker := range seedMarkers {
+		if strings.Contains(content, marker) {
+			return marker
+		}
 	}
 	return ""
 }
