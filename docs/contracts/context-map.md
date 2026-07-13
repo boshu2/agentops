@@ -39,7 +39,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
 - `pawl-review` — Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: "run a pawl reviewer", "fresh-context review lane", "collect independent review evidence".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
-- `push` — Validate, commit, and push. Triggers: "push", "ship it", "commit and push".
+- `push` — Run repository-selected deterministic delivery. Triggers: "push", "ship it", "commit and push".
 - `research` — Explore and write findings. Triggers: "research", "explore and write findings.", "research skill".
 - `status` — Show AgentOps work status. Triggers: "status", "show agentops work status.", "status skill".
 - `validate` — Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.
@@ -235,8 +235,6 @@ graph LR
   postmortem --> council
   postmortem --> toil_mining
   premortem --> council
-  push --> pawl_review
-  push --> pr_prep
   reality_check --> beads_br
   reality_check --> discovery
   refactor --> beads_br
@@ -267,9 +265,9 @@ graph LR
 
 | Diagnostic | Values |
 |---|---|
-| Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `plan`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
+| Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `pawl-review`, `plan`, `pr-prep`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
 | User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `postmortem`, `push`, `release`, `rpi`, `using-gc`, `validate` |
-| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
+| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `pawl-review`, `pr-prep`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
 | Dependency cycles | _(none)_ |
 | Unreachable non-roots | _(none)_ |
