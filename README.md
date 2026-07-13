@@ -6,7 +6,7 @@
 
 ### Operating loop for coding agents — intent → validated code
 
-Coding agents declare "done" on code that is still wrong. AgentOps is the **operating loop** that turns declared intent into validated code with proof: shape behavior (Gherkin), implement against a failing acceptance test, then bind an independent membrane verdict to **that** contract. **No verdict = not done.** Skills are the front door; it sits on the agent you already use (Claude Code, Codex, Cursor, OpenCode).
+Coding agents declare "done" on code that is still wrong. AgentOps is the **operating loop** that turns declared intent into validated code with proof: shape behavior (Gherkin), implement against a failing acceptance test, then bind an independent membrane verdict (a check by a model or test that did not write the code) to **that** contract. **No verdict = not done.** Skills are the front door; it sits on the agent you already use (Claude Code, Codex, Cursor, OpenCode).
 
 </div>
 
@@ -52,6 +52,8 @@ git pull && ao skills link  # after a pull: mint links for any newly-added skill
 Opt-in — the live/edit-in-place tier for people working from a clone; the installers above stay the copy-based path for everyone else. Never copies or clobbers: existing non-AgentOps skills (e.g. other marketplaces) are reported as conflicts and left untouched. `--dest <dir>` targets one specific dir instead.
 
 Installs hookless. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Dependencies: [docs/dependencies.md](docs/dependencies.md) · Day-2 ops (update, backup, recovery): [docs/install-day2-ops.md](docs/install-day2-ops.md).
+
+Verify it worked: open your agent and type `/plan` — it should resolve as a skill (restart Codex first).
 
 ---
 
