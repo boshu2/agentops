@@ -5,6 +5,7 @@ ROOT="${AO_CLI_COMPAT_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
 CLI="$ROOT/cli"
 BASELINE_ROOT="${AO_CLI_COMPAT_BASELINE_DIR:-$CLI/testdata/compatibility-baseline}"
 V2_DIR="$BASELINE_ROOT/v2"
+V3_DIR="$BASELINE_ROOT/v3"
 BASELINE="$BASELINE_ROOT"
 NORMALIZER="$BASELINE/normalize.jq"
 PROFILE_DIR="$BASELINE/profiles"
@@ -32,7 +33,7 @@ usage() {
 usage: check-go-cli-compatibility.sh [options]
 
   --capture --execution-base SHA  Capture the immutable four-profile baseline.
-  --oracle-version V              Select v1, v2, or current (default: v1).
+  --oracle-version V              Select v1, v2, v3, or current (default: v1).
   --equivalent-main-sha SHA       Bind a behaviorally equivalent main SHA during v2 capture.
   --verify-source-decision A B    Compare clean-archive four-profile behavior and emit JSON.
   --family NAME                   Validate one frozen family fixture.
@@ -67,8 +68,8 @@ while (($#)); do
 done
 
 case "$oracle_version" in
-  v1|v2|current) ;;
-  *) printf 'unknown oracle version: %s (want v1, v2, or current)\n' "$oracle_version" >&2; exit 2 ;;
+  v1|v2|v3|current) ;;
+  *) printf 'unknown oracle version: %s (want v1, v2, v3, or current)\n' "$oracle_version" >&2; exit 2 ;;
 esac
 
 sha256() {
@@ -112,8 +113,21 @@ select_oracle() {
       }
       BASELINE="$V2_DIR"
       ;;
+    v3)
+      [[ -d "$V3_DIR" && ! -L "$V3_DIR" ]] || {
+        printf 'compatibility oracle v3 is absent or not a real directory: %s\n' "$V3_DIR" >&2
+        return 1
+      }
+      BASELINE="$V3_DIR"
+      ;;
     current)
-      if [[ ! -e "$V2_DIR" && ! -L "$V2_DIR" ]]; then
+      if [[ -e "$V3_DIR" || -L "$V3_DIR" ]]; then
+        [[ -d "$V3_DIR" && ! -L "$V3_DIR" ]] || {
+          printf 'compatibility oracle v3 is partial or corrupt: %s\n' "$V3_DIR" >&2
+          return 1
+        }
+        BASELINE="$V3_DIR"
+      elif [[ ! -e "$V2_DIR" && ! -L "$V2_DIR" ]]; then
         BASELINE="$BASELINE_ROOT"
       elif [[ -d "$V2_DIR" && ! -L "$V2_DIR" ]]; then
         BASELINE="$V2_DIR"
@@ -124,7 +138,11 @@ select_oracle() {
       ;;
   esac
   NORMALIZER="$BASELINE_ROOT/normalize.jq"
-  PROFILE_DIR="$BASELINE/profiles"
+  if [[ "$BASELINE" == "$V3_DIR" ]]; then
+    PROFILE_DIR="$TMP/v3-profiles"
+  else
+    PROFILE_DIR="$BASELINE/profiles"
+  fi
   FAMILY_DIR="$BASELINE_ROOT/families"
 }
 
@@ -199,6 +217,30 @@ verify_v2_git_freeze() {
     git -C "$ROOT" show "$intro:$repo_rel" >"$snapshot"
     cmp -s "$snapshot" "$V2_DIR/$rel" || {
       printf 'v2 baseline drift from capture commit %s: %s\n' "$intro" "$rel" >&2
+      return 1
+    }
+  done
+}
+
+verify_v3_git_freeze() {
+  local intro="" current_intro rel repo_rel snapshot
+  local -a paths=(metadata.json project-v2.jq)
+  [[ "$BASELINE_ROOT" == "$CLI/testdata/compatibility-baseline" ]] || return 0
+  for rel in "${paths[@]}"; do
+    repo_rel="cli/testdata/compatibility-baseline/v3/$rel"
+    current_intro="$(git -C "$ROOT" log --diff-filter=A --format=%H HEAD -- "$repo_rel" | tail -n 1)"
+    test -n "$current_intro" || { printf 'v3 artifact is not committed: %s\n' "$rel" >&2; return 1; }
+    if [[ -z "$intro" ]]; then
+      intro="$current_intro"
+      git -C "$ROOT" merge-base --is-ancestor "$intro" HEAD || return 1
+    elif [[ "$intro" != "$current_intro" ]]; then
+      printf 'v3 artifacts do not share one capture commit: %s\n' "$rel" >&2
+      return 1
+    fi
+    snapshot="$TMP/v3-frozen-${rel//\//_}"
+    git -C "$ROOT" show "$intro:$repo_rel" >"$snapshot"
+    cmp -s "$snapshot" "$V3_DIR/$rel" || {
+      printf 'v3 baseline drift from capture commit %s: %s\n' "$intro" "$rel" >&2
       return 1
     }
   done
@@ -315,6 +357,65 @@ verify_v2_integrity() {
   [[ "$mode" == capture ]] || verify_v2_git_freeze
 }
 
+materialize_v3_profiles() {
+  local metadata="$V3_DIR/metadata.json" projection profile
+  projection="$V3_DIR/$(jq -r '.projection' "$metadata")"
+  mkdir -p "$PROFILE_DIR"
+  for profile in default flywheel legacy combined; do
+    jq -S \
+      --arg profile "$profile" \
+      --slurpfile tagged "$V2_DIR/profiles/flywheel.json" \
+      -f "$projection" \
+      "$V2_DIR/profiles/$profile.json" >"$PROFILE_DIR/$profile.json"
+  done
+}
+
+verify_v3_integrity() {
+  local metadata="$V3_DIR/metadata.json" projection profile expected actual
+  test -f "$metadata" && [[ ! -L "$metadata" ]] || { printf 'missing v3 metadata.json\n' >&2; return 1; }
+  jq -e '
+    .schema_version == 3
+    and .base_oracle == "v2"
+    and (.behavioral_source_sha | test("^[0-9a-f]{40}$"))
+    and (.capture_sha | test("^[0-9a-f]{40}$"))
+    and .projection == "project-v2.jq"
+    and (.projection_sha256 | test("^[0-9a-f]{64}$"))
+    and (.profiles | keys | sort) == ["combined","default","flywheel","legacy"]
+    and (.intentional_deltas | sort) == [
+      "constraint_default_spine",
+      "constraint_shadow_activation",
+      "membrane_detector_evidence"
+    ]
+  ' "$metadata" >/dev/null || { printf 'invalid schema-3 v3 metadata\n' >&2; return 1; }
+  for sha in "$(jq -r '.behavioral_source_sha' "$metadata")" "$(jq -r '.capture_sha' "$metadata")"; do
+    is_commit "$sha" || { printf 'v3 metadata references unreachable commit: %s\n' "$sha" >&2; return 1; }
+  done
+  git -C "$ROOT" merge-base --is-ancestor \
+    "$(jq -r '.behavioral_source_sha' "$metadata")" \
+    "$(jq -r '.capture_sha' "$metadata")" || {
+    printf 'v3 behavioral source is not an ancestor of its capture\n' >&2
+    return 1
+  }
+  git -C "$ROOT" merge-base --is-ancestor "$(jq -r '.capture_sha' "$metadata")" HEAD || {
+    printf 'v3 capture is not an ancestor of HEAD\n' >&2
+    return 1
+  }
+  projection="$V3_DIR/$(jq -r '.projection' "$metadata")"
+  test -f "$projection" && [[ ! -L "$projection" ]] || { printf 'missing v3 projection\n' >&2; return 1; }
+  test "$(sha256 "$projection")" = "$(jq -r '.projection_sha256' "$metadata")" || {
+    printf 'v3 projection hash mismatch\n' >&2
+    return 1
+  }
+  materialize_v3_profiles
+  for profile in default flywheel legacy combined; do
+    expected="$(jq -r --arg p "$profile" '.profiles[$p].sha256' "$metadata")"
+    actual="$(sha256 "$PROFILE_DIR/$profile.json")"
+    test "$expected" = "$actual" || { printf 'v3 profile hash mismatch: %s\n' "$profile" >&2; return 1; }
+  done
+  verify_tracked_family_lineages
+  verify_v3_git_freeze
+}
+
 profile_tags() {
   case "$1" in
     default) printf '%s' "" ;;
@@ -389,49 +490,60 @@ capture_profile_from_cli() {
   cp "$actual" "$PROFILE_DIR/$profile.json"
 }
 
-bind_measured_v2_profile() {
-  local profile="$1" measured="$2" tracked
+bind_measured_profile() {
+  local profile="$1" measured="$2" expected_dir="$3" metadata="$4" oracle="$5" tracked
   local measured_hash tracked_hash metadata_hash
-  tracked="$V2_DIR/profiles/$profile.json"
+  tracked="$expected_dir/$profile.json"
   measured_hash="$(sha256 "$measured")"
   tracked_hash="$(sha256 "$tracked")"
-  metadata_hash="$(jq -r --arg p "$profile" '.profiles[$p].sha256' "$V2_DIR/metadata.json")"
+  metadata_hash="$(jq -r --arg p "$profile" '.profiles[$p].sha256' "$metadata")"
   if ! cmp -s "$measured" "$tracked" \
       || [[ "$measured_hash" != "$tracked_hash" ]] \
       || [[ "$measured_hash" != "$metadata_hash" ]]; then
-    printf 'v2 measured source mismatch: %s\n' "$profile" >&2
+    printf '%s measured source mismatch: %s\n' "$oracle" "$profile" >&2
     return 1
   fi
 }
 
-verify_v2_source_binding_at() {
-  local source="$1" label="$2" tree profile bin raw1 raw2 norm1 norm2
-  tree="$TMP/v2-$label-source"
+verify_source_binding_at() {
+  local source="$1" label="$2" expected_dir="$3" metadata="$4" oracle="$5"
+  local tree profile bin raw1 raw2 norm1 norm2
+  tree="$TMP/$oracle-$label-source"
   mkdir -p "$tree"
   git -C "$ROOT" archive "$source" | tar -x -C "$tree"
   for profile in default flywheel legacy combined; do
-    bin="$TMP/v2-$label-$profile-ao"
-    raw1="$TMP/v2-$label-$profile-1.json"
-    raw2="$TMP/v2-$label-$profile-2.json"
-    norm1="$TMP/v2-$label-$profile-1.norm.json"
-    norm2="$TMP/v2-$label-$profile-2.norm.json"
+    bin="$TMP/$oracle-$label-$profile-ao"
+    raw1="$TMP/$oracle-$label-$profile-1.json"
+    raw2="$TMP/$oracle-$label-$profile-2.json"
+    norm1="$TMP/$oracle-$label-$profile-1.norm.json"
+    norm2="$TMP/$oracle-$label-$profile-2.norm.json"
     build_profile_from_cli "$tree/cli" "$profile" "$bin"
     "$bin" capabilities --json >"$raw1"
     "$bin" capabilities --json >"$raw2"
     normalize "$raw1" "$norm1"
     normalize "$raw2" "$norm2"
     cmp -s "$norm1" "$norm2" || {
-      printf 'nondeterministic v2 %s source: %s\n' "$label" "$profile" >&2
+      printf 'nondeterministic %s %s source: %s\n' "$oracle" "$label" "$profile" >&2
       return 1
     }
-    bind_measured_v2_profile "$profile" "$norm1"
+    bind_measured_profile "$profile" "$norm1" "$expected_dir" "$metadata" "$oracle"
   done
+}
+
+verify_v2_source_binding_at() {
+  verify_source_binding_at "$1" "$2" "$V2_DIR/profiles" "$V2_DIR/metadata.json" v2
 }
 
 verify_v2_source_binding() {
   local source
   source="$(jq -r '.behavioral_source_sha' "$V2_DIR/metadata.json")"
   verify_v2_source_binding_at "$source" behavioral
+}
+
+verify_v3_source_binding() {
+  local source
+  source="$(jq -r '.behavioral_source_sha' "$V3_DIR/metadata.json")"
+  verify_source_binding_at "$source" behavioral "$PROFILE_DIR" "$V3_DIR/metadata.json" v3
 }
 
 verify_source_decision() {
@@ -490,13 +602,36 @@ verify_source_decision() {
   done
   if [[ "$v2_selected" == 1 ]]; then
     for profile in default flywheel legacy combined; do
-      bind_measured_v2_profile "$profile" "$TMP/source-c59-$profile-1.norm.json"
-      bind_measured_v2_profile "$profile" "$TMP/source-main-$profile-1.norm.json"
+      bind_measured_profile "$profile" "$TMP/source-c59-$profile-1.norm.json" "$V2_DIR/profiles" "$V2_DIR/metadata.json" v2
+      bind_measured_profile "$profile" "$TMP/source-main-$profile-1.norm.json" "$V2_DIR/profiles" "$V2_DIR/metadata.json" v2
     done
   fi
   jq -s '.' "$records" >"$TMP/source-runs.json"
   jq -s '.' "$comparisons" >"$TMP/source-comparisons.json"
   jq -n --arg c59 "$left" --arg main "$right" --slurpfile runs "$TMP/source-runs.json" --slurpfile comparisons "$TMP/source-comparisons.json" '{schema_version:1,c59_sha:$c59,main_sha:$main,runs:$runs[0],cross_source:$comparisons[0],all_deterministic:true,all_cross_source_equal:true}'
+}
+
+verify_v3_source_decision() {
+  local left="$source_decision_c59" right="$source_decision_main" recorded
+  is_commit "$left" || { printf 'invalid v3 source-decision commit: %s\n' "$left" >&2; return 1; }
+  is_commit "$right" || { printf 'invalid v3 candidate commit: %s\n' "$right" >&2; return 1; }
+  recorded="$(jq -r '.behavioral_source_sha' "$V3_DIR/metadata.json")"
+  [[ "$left" == "$recorded" ]] || {
+    printf 'source-decision LEFT does not match recorded v3 behavioral source: %s\n' "$left" >&2
+    return 1
+  }
+  git -C "$ROOT" merge-base --is-ancestor "$recorded" "$right" || {
+    printf 'source-decision RIGHT is not a descendant of recorded v3 source: %s\n' "$right" >&2
+    return 1
+  }
+  oracle_version=v3
+  select_oracle
+  verify_integrity
+  verify_source_binding_at "$right" candidate "$PROFILE_DIR" "$V3_DIR/metadata.json" v3
+  jq -n \
+    --arg source "$recorded" \
+    --arg candidate "$right" \
+    '{schema_version:3,behavioral_source_sha:$source,candidate_sha:$candidate,all_deterministic:true,all_cross_source_equal:true}'
 }
 
 capture_v2() {
@@ -607,17 +742,32 @@ verify_v1_integrity() {
 
 verify_integrity() {
   local selected="$BASELINE" selected_profiles="$PROFILE_DIR"
-  if [[ "$BASELINE" == "$V2_DIR" ]]; then
-    BASELINE="$BASELINE_ROOT"
-    PROFILE_DIR="$BASELINE_ROOT/profiles"
-    verify_v1_integrity
-    BASELINE="$selected"
-    PROFILE_DIR="$selected_profiles"
-    verify_v2_integrity
-    verify_v2_source_binding
-  else
-    verify_v1_integrity
-  fi
+  case "$BASELINE" in
+    "$V3_DIR")
+      BASELINE="$BASELINE_ROOT"
+      PROFILE_DIR="$BASELINE_ROOT/profiles"
+      verify_v1_integrity
+      BASELINE="$V2_DIR"
+      PROFILE_DIR="$V2_DIR/profiles"
+      verify_v2_integrity
+      BASELINE="$selected"
+      PROFILE_DIR="$selected_profiles"
+      verify_v3_integrity
+      verify_v3_source_binding
+      ;;
+    "$V2_DIR")
+      BASELINE="$BASELINE_ROOT"
+      PROFILE_DIR="$BASELINE_ROOT/profiles"
+      verify_v1_integrity
+      BASELINE="$selected"
+      PROFILE_DIR="$selected_profiles"
+      verify_v2_integrity
+      verify_v2_source_binding
+      ;;
+    *)
+      verify_v1_integrity
+      ;;
+  esac
 }
 
 validate_dimension() {
@@ -690,7 +840,11 @@ validate_family() {
 }
 
 if [[ "$mode" == source_decision ]]; then
-  verify_source_decision
+  if [[ "$oracle_version" == v3 ]] || [[ "$oracle_version" == current && -e "$V3_DIR" ]]; then
+    verify_v3_source_decision
+  else
+    verify_source_decision
+  fi
   exit 0
 fi
 
