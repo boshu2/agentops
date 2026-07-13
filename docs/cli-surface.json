@@ -962,6 +962,13 @@
     },
     {
       "category": "public-tested",
+      "command": "skills unlink",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "status",
       "coverage_status": "covered",
       "kind": "leaf",
