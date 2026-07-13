@@ -333,8 +333,11 @@ func TestQuickstart_runQuickstart_existingClaudeMd(t *testing.T) {
 		}
 	})
 
-	if !strings.Contains(got, "CLAUDE.md already exists") {
-		t.Fatalf("expected 'already exists' message, got: %s", got)
+	// The diet default surfaces a pre-existing CLAUDE.md in the created summary
+	// as an appended AgentOps section (the verbose "already exists" line moved
+	// behind --verbose). Assert the diet phrasing here.
+	if !strings.Contains(got, "AgentOps section appended") {
+		t.Fatalf("expected diet 'AgentOps section appended' note, got: %s", got)
 	}
 
 	// Verify original content preserved and AgentOps section appended.
