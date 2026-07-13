@@ -63,6 +63,15 @@ var (
 	operatorLeakPaths = []string{"skills/**", "skills-codex/**", "docs/SKILLS.md", "registry.json", "tests/scripts/check-no-operator-skills.bats", "scripts/check-no-operator-skills.sh"}
 	frontDoorPaths    = []string{"skills/**", ".claude/workflows/**"}
 	contractPaths     = []string{"docs/contracts/**", "schemas/**"}
+	// honest-voice gate (age-5qjyn / FU3): routes on the user-facing surfaces it
+	// scans (cli/** Go + seed/template assets), the lexicon it reads, and a
+	// self-reference (the gate script + its bats) so editing the gate re-runs it.
+	honestVoicePaths = []string{
+		"cli/**",
+		"docs/contracts/forbidden-claims.yaml",
+		"scripts/check-honest-voice.sh",
+		"tests/scripts/check-honest-voice.bats",
+	}
 	ciPolicyPaths     = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
 	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
 	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
@@ -250,6 +259,12 @@ func init() {
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
+		// honest-voice: user-facing CLI strings + seed/template assets must not
+		// claim proven/automatic knowledge compounding (unproven — ADR-0004,
+		// ADR-0011) or hookless-3.0-violating "session hooks" (docs/3.0.md, honest-voice:allow
+		// ADR-0009). The claims regrew because nothing gated them (#907, FU4);
+		// this is the gate. Lexicon: docs/contracts/forbidden-claims.yaml (age-5qjyn).
+		{ID: "contract.honest-voice", Tiers: gates.Fast | gates.Full, Match: honestVoicePaths, Blocking: true, Backing: "check-honest-voice.sh", RepairHint: "rewrite to honest phrasing (context accrues in .agents/ — compounding still being measured; 3.0 is hookless), or add a reviewed `honest-voice:allow`; lexicon docs/contracts/forbidden-claims.yaml"},
 
 		// routed by change class
 		gates.GoCLIArchitectureCheck(),

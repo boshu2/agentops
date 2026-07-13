@@ -1,0 +1,95 @@
+# forbidden-claims.yaml — honest-voice claims lexicon (bead age-5qjyn / FU3).
+#
+# The README's "honest version" demotes corpus-compounding to "still measuring"
+# (docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md,
+# docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)
+# and AgentOps 3.0 is HOOKLESS (docs/3.0.md, ADR-0009). Yet user-facing CLI
+# strings have repeatedly claimed "You get smarter every session", "knowledge
+# compounds automatically", and "Session hooks extract learnings". Piecemeal
+# fixes (#907, the FU4 diet commit) never completed the sweep and nothing GATED
+# it, so the claims regrow. This lexicon + scripts/check-honest-voice.sh gate it.
+#
+# SCOPE (what scripts/check-honest-voice.sh scans): user-facing string literals
+# in cli/cmd/**/*.go + cli/internal/**/*.go (excluding *_test.go) and the seed /
+# template assets (cli/embedded/templates/**, cli/internal/extract/templates/**).
+# It deliberately does NOT scan docs/** — narrative docs discuss the UNPROVEN
+# hypothesis honestly, citing the ADRs, and must be free to say "whether the
+# corpus compounds is unproven".
+#
+# CURATION RULE: these patterns ban CLAIMS OF PROVEN / AUTOMATIC compounding.
+# They do NOT ban the word "flywheel" (it names a subsystem) nor the CONDITIONAL
+# escape-velocity model ("σ×ρ > δ/100 → knowledge compounds"), which is honest
+# framing. Patterns are kept tight (each requires an "automatic" / "every
+# session" qualifier) so legitimate sentences — "whether the corpus compounds is
+# unproven", "knowledge compounds when retrieval beats decay" — never match.
+# No negative lookarounds are used (RE2 / POSIX ERE lack them); tightness is the
+# mechanism. Patterns are Python `re` (IGNORECASE) — no lookarounds, RE2-safe.
+#
+# ESCAPE HATCH: a line carrying `honest-voice:allow` is skipped (deliberate,
+# reviewed exception). Per-entry allowed_contexts globs also skip a file.
+
+version: 1
+
+# Contexts allowed for EVERY claim: the ADRs that state the honest stance, the
+# evidence corpus, the changelog (historical record), this lexicon itself (it
+# quotes the banned phrases as data), the gate's own tests, and test/fixture code
+# (which asserts the ABSENCE of a phrase and must be free to name it).
+default_allowed_contexts: &common
+  - "docs/adr/**"
+  - "docs/evidence/**"
+  - "docs/CHANGELOG.md"
+  - "CHANGELOG.md"
+  - "docs/contracts/forbidden-claims.yaml"
+  - "scripts/check-honest-voice.sh"
+  - "tests/**"
+  - "cli/testdata/**"
+  - "**/*_test.go"
+
+claims:
+  - id: session-hooks
+    pattern: 'session hooks'
+    rationale: >-
+      AgentOps 3.0 is HOOKLESS (docs/3.0.md, ADR-0009) — no session hook extracts
+      learnings; a session writes them explicitly via /post-mortem. `ao init
+      --hooks` is not a real flag.
+    allowed_contexts: *common
+
+  - id: automatically-compounds
+    pattern: 'automatically compound(s|ing)?'
+    rationale: >-
+      Corpus compounding is an UNPROVEN hypothesis facing a data-starvation
+      headwind (ADR-0011); it does not happen "automatically". State that context
+      accrues in .agents/ and that compounding is still being measured.
+    allowed_contexts: *common
+
+  - id: compounds-automatically
+    pattern: 'compounds?\s+automatically'
+    rationale: >-
+      Reverse-order form of the same unproven claim (ADR-0004, ADR-0011). The
+      honest conditional "knowledge compounds when retrieval beats decay" is fine;
+      the "automatically" qualifier is what is banned.
+    allowed_contexts: *common
+
+  - id: smarter-every-session
+    pattern: 'gets?\s+smarter\s+every\s+session'
+    rationale: >-
+      The model does not "get smarter every session"; only the environment
+      accrues context, and whether that compounds into an advantage is the
+      unproven flywheel hypothesis (ADR-0011). The proven asset is the
+      verification loop.
+    allowed_contexts: *common
+
+  - id: others-start-fresh
+    pattern: 'others\s+start\s+fresh'
+    rationale: >-
+      Competitive "others start fresh, you compound" framing overstates the
+      unproven moat (ADR-0004). Do not market ahead of the ruler.
+    allowed_contexts: *common
+
+  - id: no-manual-needed
+    pattern: 'no\s+manual\b[^.\n]{0,60}\bneeded'
+    rationale: >-
+      "No manual X needed" implies an automatic extraction/compounding step that
+      3.0 does not have (hookless — the session writes learnings explicitly).
+      Describe the explicit step instead.
+    allowed_contexts: *common

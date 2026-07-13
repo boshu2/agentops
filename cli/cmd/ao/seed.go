@@ -177,8 +177,8 @@ func outputSeedResult(result seedResult) error {
 		}
 	}
 	fmt.Println("\nNext steps:")
-	fmt.Println("  ao init --hooks    # Register session hooks")
-	fmt.Println("  ao flywheel status # Verify flywheel health")
+	fmt.Println("  ao session bootstrap        # Orient a fresh session (3.0 is hookless — run explicitly)")
+	fmt.Println("  ao lookup --query \"<topic>\"  # Pull decay-ranked prior context from .agents/")
 	return nil
 }
 
@@ -300,16 +300,17 @@ Seeded on %s with template %s.
 
 ## Decision
 
-Adopted AgentOps knowledge compounding workflow:
-- .agents/ directory for session artifacts
+Adopted the AgentOps operating loop:
+- .agents/ directory for session artifacts (context accrues here — whether it
+  compounds into an advantage is still being measured; see ADR-0004, ADR-0011)
 - GOALS.md for fitness gates
-- Knowledge flywheel via MEMORY.md and session hooks
+- MEMORY.md for durable cross-session notes a session writes explicitly
 
 ## Next Steps
 
-- Run `+"`ao init --hooks`"+` to register session hooks
-- Knowledge compounds automatically — MEMORY.md updates after each session
-- Run `+"`ao flywheel status`"+` to check flywheel health
+- Run `+"`ao session bootstrap`"+` to orient a fresh session (3.0 is hookless — run it explicitly)
+- Learnings persist in .agents/ because the /post-mortem skill writes them, not because a hook extracts them
+- Run `+"`ao flywheel status`"+` to inspect flywheel health (experimental)
 `, dateStr, dateStr, template)
 
 	if GetDryRun() {
