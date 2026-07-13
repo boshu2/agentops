@@ -39,11 +39,7 @@ func loadLegacyV2WriterFixture(t *testing.T) legacyV2WriterFixture {
 	return fixture
 }
 
-func TestProductionFindingCompiler_PremortemAliasesWriteOneLegacyArtifactThroughS7(t *testing.T) {
-	fixture := loadLegacyV2WriterFixture(t)
-	if len(fixture.RuntimePaths) != 1 {
-		t.Fatalf("writer fixture runtime paths = %v, want the one executable compiler sink", fixture.RuntimePaths)
-	}
+func TestProductionFindingCompiler_PremortemAliasesWriteOneCanonicalArtifact(t *testing.T) {
 	out, err := newProductionFindingCompiler().Compile(context.Background(), ports.FindingArtifact{
 		ID: "finding-production-mortem",
 		Frontmatter: map[string]string{
@@ -56,9 +52,9 @@ func TestProductionFindingCompiler_PremortemAliasesWriteOneLegacyArtifactThrough
 	if len(out) != 1 {
 		t.Fatalf("mortem aliases emitted %d artifacts, want exactly one", len(out))
 	}
-	wantPath := strings.Replace(fixture.RuntimePaths[0], "current.md", "finding-production-mortem.md", 1)
+	wantPath := ".agents/premortem-checks/finding-production-mortem.md"
 	if out[0].Path != wantPath {
-		t.Fatalf("writer path = %q, want fixture-derived legacy path %q through S7", out[0].Path, wantPath)
+		t.Fatalf("writer path = %q, want canonical path %q", out[0].Path, wantPath)
 	}
 }
 

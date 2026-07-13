@@ -12,7 +12,7 @@ import (
 // build removes satellite registrations so those paths cannot execute.
 var defaultSpineCommands = map[string]struct{}{
 	"beads": {}, "capabilities": {}, "claim": {}, "close": {},
-	"config": {}, "council-gate": {}, "doctor": {}, "done": {},
+	"config": {}, "constraint": {}, "council-gate": {}, "doctor": {}, "done": {},
 	"eval": {}, "gate": {}, "goals": {}, "governor": {},
 	"init": {}, "land": {}, "membrane": {}, "pawl": {},
 	"plan-pawl": {}, "provenance": {}, "quick-start": {}, "ready": {},

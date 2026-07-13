@@ -82,13 +82,16 @@ Use the finding-registry contract:
 
 Do NOT write every comment. Persist only findings that should change future planning or review behavior.
 
-After the registry update, if `hooks/finding-compiler.sh` exists, run:
+After a catch-ledger update, refresh the canonical recurring-catch advisory sink:
 
 ```bash
-bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
+ao membrane digest
 ```
 
-This refreshes `.agents/findings/*.md`, `.agents/planning-rules/*.md`, `.agents/pre-mortem-checks/*.md`, and draft constraint metadata in the same session. `session-end-maintenance.sh` remains the idempotent backstop.
+Do not run a repository hook from Premortem. Mechanical candidates are compiled
+only through `ao membrane derive-checks --detector-evidence <json>` after stored
+positives and explicit negative controls exist. They begin as warn-only shadows;
+Premortem never activates them.
 
 ## Step 4.6: Copy Pseudocode Fixes into Plan Issues
 

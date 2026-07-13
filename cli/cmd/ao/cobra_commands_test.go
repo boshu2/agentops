@@ -368,6 +368,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"close",
 		"completion",
 		"config",
+		"constraint",
 		"council-gate",
 		"doctor",
 		"done",
@@ -455,6 +456,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"close",
 		"completion",
 		"config",
+		"constraint",
 		"council-gate",
 		"doctor",
 		"done",
@@ -1153,23 +1155,14 @@ func TestCobraConstraintActivateCommand(t *testing.T) {
 
 	idx := constraintIndex{
 		SchemaVersion: 1,
-		Constraints: []constraintEntry{
-			{
-				ID:         "c-draft",
-				Title:      "Draft constraint",
-				Source:     "test",
-				Status:     "draft",
-				CompiledAt: time.Now().Format(time.RFC3339),
-				File:       "draft.md",
-			},
-		},
+		Constraints:   []constraintEntry{activationReadyConstraintEntry("c-shadow")},
 	}
 	data, _ := json.MarshalIndent(idx, "", "  ")
 	if err := os.WriteFile(filepath.Join(tmp, ".agents", "constraints", "index.json"), data, 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	out, err := executeCommand("constraint", "activate", "c-draft")
+	out, err := executeCommand("constraint", "activate", "c-shadow")
 	if err != nil {
 		t.Fatalf("ao constraint activate failed: %v", err)
 	}

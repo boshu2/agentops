@@ -36,10 +36,10 @@ const (
 	// recurring classes without turning the checklist into a wall the reviewer skims.
 	catchDigestDefaultTopN = 10
 	// catchDigestRelPath is the AUTO-mined consumption sink — the SAME
-	// .agents/pre-mortem-checks/ directory /pre-mortem loads (Step 1.4b) and
+	// .agents/premortem-checks/ directory /premortem loads (Step 1.4b) and
 	// `ao membrane derive-checks` writes ESCAPE checks into. One well-known
 	// filename (not one-file-per-class) so a re-run overwrites cleanly.
-	catchDigestRelPath = ".agents/pre-mortem-checks/catch-digest.md"
+	catchDigestRelPath = ".agents/premortem-checks/catch-digest.md"
 )
 
 var (
@@ -59,9 +59,9 @@ catch; DetectCatches groups them into classes by ClassKey. digest ranks those
 classes by HitCount ACROSS ALL DOMAINS (stable tie-break by ClassKey) and writes
 the top N — each as a "<reason> -> watch for it ..." imperative line — to
 
-    .agents/pre-mortem-checks/catch-digest.md
+    .agents/premortem-checks/catch-digest.md
 
-the SAME sink /pre-mortem loads at Step 1.4b and ` + "`ao membrane derive-checks`" + `
+the SAME sink /premortem loads at Step 1.4b and ` + "`ao membrane derive-checks`" + `
 writes escape checks into, so the START of the loop front-loads the most-recurring
 misses before touching anything. This is the domain-LESS twin of
 ` + "`ao membrane recall --include-catches`" + ` (a per-domain review-time query).
@@ -196,7 +196,7 @@ func digestPathsHint(paths []string) string {
 // and PLACEHOLDER (reason-less boilerplate — "pawl-review REFUTED (see evidence)", a
 // bare token) via yieldledger.IsPlaceholderReason, then ranks and assembles the digest.
 //
-// The whole point of the digest is an ACTIONABLE pre-mortem checklist, so placeholders
+// The whole point of the digest is an ACTIONABLE Premortem checklist, so placeholders
 // are EXCLUDED by default: injecting "watch for: pawl-review REFUTED (see evidence)" is
 // pure noise. --include-placeholders (includePlaceholders=true) restores them for
 // corpus auditing, but always BELOW every actionable class — real-reason classes lead,
@@ -431,15 +431,15 @@ func runMembraneDigestDeltas(cmd *cobra.Command) error {
 	return nil
 }
 
-// renderCatchDigest serializes the digest into the .agents/pre-mortem-checks/*.md
-// shape /pre-mortem's loader reads: YAML frontmatter (type: pre-mortem-check,
-// status: active, applicable_when) then a `# Pre-Mortem Check:` heading and the
+// renderCatchDigest serializes the digest into the .agents/premortem-checks/*.md
+// shape /premortem's loader reads: YAML frontmatter (type: premortem-check,
+// status: active, applicable_when) then a `# Premortem Check:` heading and the
 // ranked "<reason> -> <imperative>" checklist. Deterministic given the digest.
 func renderCatchDigest(d catchDigest) []byte {
 	var b strings.Builder
 	b.WriteString("---\n")
 	b.WriteString("id: \"catch-digest\"\n")
-	b.WriteString("type: \"pre-mortem-check\"\n")
+	b.WriteString("type: \"premortem-check\"\n")
 	b.WriteString("source: \"catch-corpus\"\n")
 	b.WriteString("status: \"active\"\n")
 	b.WriteString("generated_by: \"ao membrane digest\"\n")
@@ -449,7 +449,7 @@ func renderCatchDigest(d catchDigest) []byte {
 	fmt.Fprintf(&b, "total_classes: %d\n", d.TotalClasses)
 	b.WriteString("---\n\n")
 
-	b.WriteString("# Pre-Mortem Check: Recurring catch classes to watch for (catch-digest)\n\n")
+	b.WriteString("# Premortem Check: Recurring catch classes to watch for (catch-digest)\n\n")
 	b.WriteString("The membrane's most-recurring REFUTED defect classes, ranked by hit count\n")
 	b.WriteString("across ALL domains — mined from the catch corpus (`.agents/yield/yield-ledger.jsonl`)\n")
 	b.WriteString("by `ao membrane digest`. **Advisory only:** these are recurring classes to watch\n")
@@ -506,7 +506,7 @@ func renderCatchDigest(d catchDigest) []byte {
 }
 
 // runMembraneDigest loads the yield ledger, detects catch classes, ranks them
-// globally, and writes the checklist to the auto-mined pre-mortem-checks sink.
+// globally, and writes the checklist to the auto-mined premortem-checks sink.
 func runMembraneDigest(cmd *cobra.Command, _ []string) error {
 	// --deltas/--since pair or neither: --since without --deltas would silently do
 	// nothing, and --deltas without a cutoff has nothing to measure against.

@@ -30,7 +30,7 @@ Constraints live in .agents/constraints/index.json. This command manages their
 lifecycle.
 
 Subcommands:
-  activate  Change a constraint from draft to active
+  activate  Promote a measured shadow constraint to active blocking
   retire    Change a constraint from active to retired
   review    List constraints needing review (>90 days without citation)
   list      List all constraints with status`,
@@ -77,7 +77,7 @@ func printConstraintTable(entries []constraintEntry) {
 
 var constraintActivateCmd = &cobra.Command{
 	Use:   "activate <id>",
-	Short: "Change constraint status from draft to active",
+	Short: "Promote a precision-backed shadow constraint to active blocking",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -91,10 +91,11 @@ var constraintActivateCmd = &cobra.Command{
 			if c == nil {
 				return fmt.Errorf("constraint %q not found\n  List available constraints with: ao constraint list", id)
 			}
-			if c.Status != "draft" {
-				return fmt.Errorf("constraint %q is %q, can only activate from draft", id, c.Status)
+			if err := search.ValidateConstraintActivation(*c); err != nil {
+				return err
 			}
 			c.Status = "active"
+			c.EnforcementMode = "block"
 			clone := *c
 			activated = &clone
 			return saveConstraintIndexUnlocked(idx)
@@ -159,7 +160,7 @@ carrying ONLY the enforceable detector surface — finding ids and the .agents/ 
 are stripped, so no private findings or evidence leak.
 
 This is a DELIBERATE act, not auto-on-activate: a derived rule that hardens the whole repo for
-everyone should be a conscious, reviewable, committed change (mirroring the draft->activate human
+everyone should be a conscious, reviewable, committed change (mirroring the measured shadow->active
 gate). ao gate check unions the published set with the local .agents/ index, so a clean CI checkout
 (which has no .agents/) enforces exactly what you publish. Commit the file to make it travel.`,
 	Args: cobra.NoArgs,

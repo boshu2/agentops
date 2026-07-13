@@ -1,0 +1,16 @@
+{
+  "positive_fixtures": [
+    {"ref": "tests/fixtures/constraint-shadow/positive-1.go", "content": "package demo\nfunc a() { panic(\"a\") }\n"},
+    {"ref": "tests/fixtures/constraint-shadow/positive-2.go", "content": "package demo\nfunc b() { panic(\"b\") }\n"}
+  ],
+  "negative_controls": [
+    {"ref": "tests/fixtures/constraint-shadow/negative-1.go", "content": "package demo\nfunc safe() {}\n"},
+    {"ref": "tests/fixtures/constraint-shadow/negative-2.go", "content": "package demo\n// panic is discussed but not invoked\n"}
+  ],
+  "precision": {
+    "evidence_ref": ".agents/evidence/constraints/panic-shadow.json",
+    "samples": 40,
+    "true_positives": 39,
+    "false_positives": 1
+  }
+}

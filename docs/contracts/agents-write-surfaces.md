@@ -76,7 +76,8 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `plans` | persistent | skills, scripts | planning-artifact | Planning artifacts |
 | `playbooks` | persistent | cli | generated-playbook | Compiled playbook candidates |
 | `pool` | persistent | cli | candidate-inbox | Idea pool / candidate inbox |
-| `pre-mortem-checks` | persistent | skills | validation-artifact | Pre-mortem check templates and runs |
+| `premortem-checks` | persistent | cli, scripts, skills | validation-artifact | Canonical Premortem checks, including replay-qualified compiler output and the recurring-catch digest |
+| `pre-mortem-checks` | persistent | cli, skills | legacy-validation-artifact | Read-compatible legacy Premortem check directory retained during naming migration; new writers use `premortem-checks` |
 | `products` | persistent | skills | product-artifact | Product validation artifacts |
 | `profile` | persistent | cli | profile-cache | Repo execution profile cache |
 | `provenance` | persistent | cli | legacy-ratchet-chain | Legacy ratchet provenance chain (`.agents/provenance/chain.yaml`) read/migrated by the ratchet CLI; formerly covered by the retired `provenance` skill |
@@ -158,6 +159,7 @@ planning-rules
 plans
 playbooks
 pool
+premortem-checks
 pre-mortem-checks
 products
 profile

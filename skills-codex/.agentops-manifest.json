@@ -784,8 +784,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "35089ee9b6435faf1106cff3d0b349b43f4b77589ac3a01ca1b2b93857704b42",
-      "generated_hash": "6690b0295941e6d3843e85904a57cb558cb21d6f851ecd8f1fa6b64688bc7730"
+      "source_hash": "c45d7c22b5eb94602c22edcc878f5bf83ed71e835820b22f1711d3a533802d3d",
+      "generated_hash": "dc993403e1e8b72cb7fcd0dcaa13da9593b68f1a53f13c5bb0d12a4f1b12c2d2"
     },
     {
       "name": "ms",
@@ -832,8 +832,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "795eaff2f5d547b569117a9ff7792ba5b456fc68a2fcf80d2bd4e2dc9ec2b6d7",
-      "generated_hash": "b2ca86c5e974356b97d84e15adeb999c83d8850ab10df61d015d6c6174137782"
+      "source_hash": "05f8696110d8a4d1052a2609d8b5a7dd36457d0c0e3163f533002467c62265db",
+      "generated_hash": "7df9583bdba44922f3145a50787bd3141bfa2b6867a24f984ea5312610010873"
     },
     {
       "name": "product",

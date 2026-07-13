@@ -19,7 +19,7 @@ func mechanicalFM(targets string) map[string]string {
 	fm := map[string]string{
 		"detectability":         "mechanical",
 		"detector_kind":         "regex",
-		"detector_pattern":      "panic",
+		"detector_pattern":      `panic\(`,
 		"constraint_path_globs": "cli/**",
 		"compiled_at":           "2026-06-21T00:00:00Z",
 	}
@@ -27,6 +27,13 @@ func mechanicalFM(targets string) map[string]string {
 		fm["compiler_targets"] = targets
 	}
 	return fm
+}
+
+func replayReadyDetectorEvidence() *DetectorEvidence {
+	return &DetectorEvidence{
+		PositiveFixtures: []DetectorFixture{{Ref: "positive/panic.go", Content: "panic(\"boom\")"}},
+		NegativeControls: []DetectorFixture{{Ref: "negative/return.go", Content: "return errors.New(\"boom\")"}},
+	}
 }
 
 // An ADVISORY finding (no detector metadata) defaults to plan + pre-mortem only;
@@ -50,9 +57,10 @@ func TestInMemoryFindingCompiler_AdvisoryDefaultEmitsTwoTargets(t *testing.T) {
 func TestInMemoryFindingCompiler_MechanicalDefaultEmitsThreeTargets(t *testing.T) {
 	c := NewInMemoryFindingCompiler()
 	got, err := c.Compile(context.Background(), FindingArtifact{
-		ID:          "fnd-xyz",
-		Frontmatter: mechanicalFM(""),
-		Body:        "body content",
+		ID:               "fnd-xyz",
+		Frontmatter:      mechanicalFM(""),
+		Body:             "body content",
+		DetectorEvidence: replayReadyDetectorEvidence(),
 	})
 	if err != nil {
 		t.Fatalf("Compile: %v", err)
@@ -63,7 +71,7 @@ func TestInMemoryFindingCompiler_MechanicalDefaultEmitsThreeTargets(t *testing.T
 	kinds := collectKinds(got)
 	for _, want := range []CompiledOutputKind{
 		CompiledOutputPlanningRule,
-		CompiledOutputPreMortemCheck,
+		CompiledOutputPremortemCheck,
 		CompiledOutputConstraint,
 	} {
 		if !contains(kinds, want) {
@@ -82,7 +90,7 @@ func TestInMemoryFindingCompiler_CompileEmptyIDIsRejected(t *testing.T) {
 
 func TestInMemoryFindingCompiler_CompilePathsAreNamespacedByID(t *testing.T) {
 	c := NewInMemoryFindingCompiler()
-	got, err := c.Compile(context.Background(), FindingArtifact{ID: "fnd-pathing", Frontmatter: mechanicalFM(""), Body: "x"})
+	got, err := c.Compile(context.Background(), FindingArtifact{ID: "fnd-pathing", Frontmatter: mechanicalFM(""), Body: "x", DetectorEvidence: replayReadyDetectorEvidence()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,9 +104,9 @@ func TestInMemoryFindingCompiler_CompilePathsAreNamespacedByID(t *testing.T) {
 			if !strings.Contains(item.Path, "planning-rules") {
 				t.Fatalf("plan kind path %q missing planning-rules/ segment", item.Path)
 			}
-		case CompiledOutputPreMortemCheck:
-			if !strings.Contains(item.Path, "pre-mortem-checks") {
-				t.Fatalf("pre-mortem kind path %q missing pre-mortem-checks/ segment", item.Path)
+		case CompiledOutputPremortemCheck:
+			if !strings.Contains(item.Path, "premortem-checks") {
+				t.Fatalf("premortem kind path %q missing premortem-checks/ segment", item.Path)
 			}
 		case CompiledOutputConstraint:
 			if !strings.HasSuffix(item.Path, ".sh") {
@@ -124,10 +132,10 @@ func TestInMemoryFindingCompiler_CompileTargetsHonorFrontmatter(t *testing.T) {
 		},
 		{
 			name:    "two targets comma separated",
-			targets: "plan, pre-mortem",
+			targets: "plan, premortem",
 			wantKinds: []CompiledOutputKind{
 				CompiledOutputPlanningRule,
-				CompiledOutputPreMortemCheck,
+				CompiledOutputPremortemCheck,
 			},
 		},
 		{
@@ -147,8 +155,9 @@ func TestInMemoryFindingCompiler_CompileTargetsHonorFrontmatter(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := c.Compile(context.Background(), FindingArtifact{
-				ID:          "fnd-targeted",
-				Frontmatter: mechanicalFM(tc.targets),
+				ID:               "fnd-targeted",
+				Frontmatter:      mechanicalFM(tc.targets),
+				DetectorEvidence: replayReadyDetectorEvidence(),
 			})
 			if err != nil {
 				t.Fatalf("Compile: %v", err)
@@ -187,8 +196,9 @@ func TestInMemoryFindingCompiler_CompileOutputPathsAreUnique(t *testing.T) {
 	c := NewInMemoryFindingCompiler()
 	// Pass the same target twice — adapter must deduplicate.
 	got, err := c.Compile(context.Background(), FindingArtifact{
-		ID:          "fnd-dedup",
-		Frontmatter: mechanicalFM("plan, plan, constraint"),
+		ID:               "fnd-dedup",
+		Frontmatter:      mechanicalFM("plan, plan, constraint"),
+		DetectorEvidence: replayReadyDetectorEvidence(),
 	})
 	if err != nil {
 		t.Fatal(err)
