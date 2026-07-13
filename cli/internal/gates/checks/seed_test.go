@@ -277,6 +277,8 @@ func TestSkillContractGatesAreAlwaysRun(t *testing.T) {
 	for _, id := range []string{
 		"skill.codex-rpi-contract",
 		"skill.codex-lifecycle-guards",
+		"skill.four-umbrella-examples",
+		"skill.mortem-name-migration",
 		"skill.validation-learning-boundary",
 		"skill.validation-delivery-boundary",
 	} {
