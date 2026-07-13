@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/agents-operating-contract-verdict.v1.schema.json",
+  "title": "AGENTS Operating Contract Judgment",
+  "description": "One independent scenario judgment over one pinned AGENTS.md candidate.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "contract_path",
+    "contract_sha256",
+    "candidate_path",
+    "pinned_head",
+    "candidate_sha256",
+    "author_session",
+    "judge_session",
+    "judge_family",
+    "verdict",
+    "scenario_results",
+    "findings",
+    "not_checked",
+    "commands",
+    "validated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "agents-operating-contract-verdict.v1"},
+    "contract_path": {"const": "docs/contracts/agents-operating-contract.md"},
+    "contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_path": {"type": "string", "minLength": 1},
+    "pinned_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "candidate_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "author_session": {"type": "string", "minLength": 1},
+    "judge_session": {"type": "string", "minLength": 1},
+    "judge_family": {"type": "string", "minLength": 1},
+    "verdict": {"enum": ["PASS", "WARN", "FAIL"]},
+    "scenario_results": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "verdict", "citations", "material_decision", "rationale"],
+        "properties": {
+          "scenario_id": {
+            "enum": [
+              "authority",
+              "trust-boundary",
+              "law0-runtime",
+              "precedence",
+              "ordered-loop-repair",
+              "exact-done",
+              "concurrency",
+              "triggered-routes",
+              "closeout"
+            ]
+          },
+          "verdict": {"enum": ["PASS", "WARN", "FAIL"]},
+          "citations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path", "line_start", "line_end", "quote"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "line_start": {"type": "integer", "minimum": 1},
+                "line_end": {"type": "integer", "minimum": 1},
+                "quote": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": false
+            }
+          },
+          "material_decision": {"type": "string", "minLength": 1},
+          "rationale": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "scenario_id", "description"],
+        "properties": {
+          "severity": {"enum": ["blocking", "nonblocking"]},
+          "scenario_id": {
+            "enum": [
+              "authority",
+              "trust-boundary",
+              "law0-runtime",
+              "precedence",
+              "ordered-loop-repair",
+              "exact-done",
+              "concurrency",
+              "triggered-routes",
+              "closeout"
+            ]
+          },
+          "description": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "not_checked": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["command", "exit_code"],
+        "properties": {
+          "command": {"type": "string", "minLength": 1},
+          "exit_code": {"type": "integer"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "validated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

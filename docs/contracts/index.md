@@ -59,6 +59,13 @@ skills, the runtime, and external integrations.
     literal consumer sets. Its checker verifies filesystem facts only; agents
     judge whether the declarations are semantically correct.
 
+-   :material-robot-outline: **[AGENTS Operating Contract Behavior](agents-operating-contract.md)**
+
+    ---
+
+    Nine scenario-level decisions required from the always-loaded contract,
+    with paired fresh-context verdicts and factual-only reconciliation.
+
 -   :material-clipboard-text-clock: **[Eval Verdict Pipeline](eval-verdict-pipeline.md)**
 
     ---
