@@ -23,11 +23,11 @@
 #    gates trigger on it.
 #
 #  ag-g9ex (repo-wide path-filter audit): scripts/validate-agents-split.sh reads
-#    AGENTS.md AND the four siblings AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md, but
-#    the gate triggered only on docs/ci/shell and the siblings were covered by no
-#    filter -> a sibling-only edit skipped the split gate. INVARIANT: every
-#    AGENTS*.md file the split script reads is covered by the `contracts` filter
-#    AND the split gate triggers on `contracts`. Companion: wiring-closure greps
+#    AGENTS.md and four canonical on-demand routes, but the gate triggered only on
+#    docs/ci/shell and the root contract was covered by no filter -> a root-only
+#    edit skipped the gate. INVARIANT: every file the script reads is covered by
+#    the `contracts` filter AND the gate triggers on `contracts`. Companion:
+#    wiring-closure greps
 #    GOALS.md/GOALS.yaml, so it must trigger on `goals`. Full findings:
 #    docs/contracts/ci-pathfilter-coverage-audit.md.
 #
