@@ -51,6 +51,14 @@ skills, the runtime, and external integrations.
     Agent-judged acceptance contract for the actual first-value documentation
     journey; deterministic tooling verifies facts, not prose meaning.
 
+-   :material-file-tree-outline: **[Root Documentation Authority](agents-documentation-authority.yaml)**
+
+    ---
+
+    Exact root-Markdown inventory, declared owners and dispositions, and
+    literal consumer sets. Its checker verifies filesystem facts only; agents
+    judge whether the declarations are semantically correct.
+
 -   :material-clipboard-text-clock: **[Eval Verdict Pipeline](eval-verdict-pipeline.md)**
 
     ---

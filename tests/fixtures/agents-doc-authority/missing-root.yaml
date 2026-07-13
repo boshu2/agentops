@@ -1,0 +1,12 @@
+schema_version: agentops-documentation-authority.v1
+status: active
+scope:
+  root_markdown_count: 1
+  reference_excludes: []
+documents:
+  - path: A.md
+    tracked: true
+    class: contract
+    disposition: retain
+    owner: A.md
+    proof: factual fixture
