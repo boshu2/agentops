@@ -377,6 +377,7 @@ Bridge / framing docs:
 - [Context Assembly Interface](contracts/context-assembly-interface.md) — Interface contract for adaptive context assembly and mechanical token budgeting
 - [Session Intelligence Trust Model](contracts/session-intelligence-trust-model.md) — Artifact eligibility contract for runtime context assembly, explainability, and startup suppression rules
 - [Finding Registry Contract](contracts/finding-registry.md) — Canonical intake-ledger contract for reusable findings in `.agents/findings/registry.jsonl`
+- [Producer-Defect Recurrence Contract](contracts/producer-defect-register.md) — Distinct-objective recurrence reduction from evidence-backed findings to advisory producer-rule candidates
 - [Finding Registry Schema](contracts/finding-registry.schema.json) — Machine-readable schema for the finding intake ledger
 - [Finding Artifact Schema](contracts/finding-artifact.schema.json) — Machine-readable schema for promoted finding artifacts under `.agents/findings/*.md`
 - [Finding Item Schema](https://github.com/boshu2/agentops/blob/main/schemas/finding.json) — Canonical finding-item schema for validation skill outputs (compatible subset of finding-artifact)
