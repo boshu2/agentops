@@ -10,6 +10,7 @@
     "skill",
     "status",
     "input_verdict_ref",
+    "input_verdict_digest",
     "artifact",
     "observations"
   ],
@@ -19,16 +20,19 @@
     "skill": {"const": "learn"},
     "status": {"enum": ["DONE", "PARTIAL", "BLOCKED"]},
     "input_verdict_ref": {"type": "string", "minLength": 1},
+    "input_verdict_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "artifact": {"type": "string", "minLength": 1},
     "observations": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["summary", "evidence_ref"],
+        "required": ["kind", "summary", "evidence_ref", "disposition"],
         "properties": {
+          "kind": {"enum": ["finding", "coverage-gap", "strength", "process-signal"]},
           "summary": {"type": "string", "minLength": 1},
-          "evidence_ref": {"type": "string", "minLength": 1}
+          "evidence_ref": {"type": "string", "minLength": 1},
+          "disposition": {"enum": ["record", "candidate", "no_change"]}
         }
       }
     },

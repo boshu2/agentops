@@ -1,6 +1,6 @@
 # Deep Audit Protocol
 
-> Used by `/vibe --deep`, `/vibe --sweep`, and `/post-mortem` (unless `--skip-sweep`).
+> Used by `/validate --deep` and `/validate --mode=post-impl` when a per-file sweep is required.
 
 Two-phase architecture: cheap per-file explorer sweep (discovery) followed by council judges (adjudication). All reporting caps removed.
 
@@ -223,6 +223,3 @@ The final report includes ALL findings — both confirmed sweep findings and jud
 | `/vibe --deep` | Yes | 3 | Enhanced: sweep + 3 judges in adjudication mode |
 | `/vibe --sweep` | Yes | 2 | New: sweep + 2 judges in adjudication mode |
 | `/vibe --sweep recent` | Yes | 2 | Same, targeting recent changes |
-| `/post-mortem` | Yes | 3 | Enhanced: sweep before retrospective council |
-| `/post-mortem --skip-sweep` | No | 3 | Old behavior: 3 judges, no sweep |
-| `/post-mortem --quick` | No | 1 (inline) | Unchanged: fast inline check |

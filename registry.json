@@ -322,7 +322,7 @@
         "path": "skills/learn/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
+        "reference_count": 1
       },
       {
         "name": "pawl-review",
@@ -747,8 +747,7 @@
           "evolve",
           "pawl-review",
           "push",
-          "rpi",
-          "validate"
+          "rpi"
         ]
       },
       {
@@ -1918,7 +1917,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.",
+      "purpose": "Consume an immutable Validate verdict, perform evidence-bound bookkeeping, and emit the fourth RPI receipt without changing proof, delivery state, or the remaining plan.",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1938,7 +1937,7 @@
       ],
       "drives_commands": [],
       "path": "skills/learn/",
-      "references": 0
+      "references": 1
     },
     {
       "sku": "skill:ms",
@@ -2148,7 +2147,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "corpus",
-      "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
+      "purpose": "Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn; never repeat acceptance validation or own general learning bookkeeping.",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2160,12 +2159,11 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "implement",
-        "validate",
-        "council"
+        "learn",
+        "toil-mining"
       ],
       "produces": [
-        "result.json"
+        "postmortem-report.md"
       ],
       "drives_commands": [
         "ao beads exec",
@@ -2882,7 +2880,7 @@
       "hex_role": "driving-adapter",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — quick pre-commit checks (absorbs vibe) through completion audits. Triggers: \"validate an artifact\", \"PASS/WARN/FAIL verdict\", \"readiness / completion audit\".",
+      "purpose": "Independently remeasure a bounded artifact and emit one immutable, evidence-bound PASS/WARN/FAIL verdict with structured observations. Validate ends at proof; it does not implement, learn, retry, close, or deliver.",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -2898,8 +2896,7 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao beads exec",
-        "ao pawl"
+        "ao beads exec"
       ],
       "path": "skills/validate/",
       "references": 24
@@ -3230,8 +3227,7 @@
         "evolve",
         "pawl-review",
         "push",
-        "rpi",
-        "validate"
+        "rpi"
       ],
       "flags": [
         "--config",

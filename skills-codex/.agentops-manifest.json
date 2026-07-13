@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "da5b9c2de3b53a11239c7a268da453bfcafc929220c712a3a56c3ca90e484217",
+  "codex_override_catalog_hash": "3e7c4736bf11bee9365acc92ca9be0afb9e82d5ca6742384db7c2b9d90a6a918",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -263,23 +263,9 @@
       },
       {
         "name": "postmortem",
-        "treatment": "bespoke",
-        "wave": "backbone",
-        "reason": "Harvested follow-up work and closure semantics need Codex-specific framing.",
-        "operator_contract_required": true,
-        "operator_contract": {
-          "required_sections": [
-            "## Codex Execution Profile",
-            "## Guardrails"
-          ],
-          "required_markers": [
-            "Treat `skills/postmortem/SKILL.md` as the canonical close-out contract and `skills-codex/postmortem/SKILL.md` as the Codex-facing artifact.",
-            "Keep the council/validation summary concise, then write learnings and harvested work to disk.",
-            "Prefer concrete follow-up items that can flow directly into `.agents/rpi/next-work.jsonl` for the next Codex loop.",
-            "Own Codex closeout during the postmortem flywheel phase by running `ao session close --auto-extract` followed by `ao flywheel close-loop --quiet`; use `ao forge transcript <path-or-glob> --queue` first only when transcript discovery must be explicit.",
-            "Keep harvested work machine-checkable: available on write, then claim/release/consume through the queue lifecycle."
-          ]
-        }
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Retrospective causal analysis is runtime-portable; the retired Codex-specific closeout/flywheel behavior violated the Validate-to-Learn boundary."
       },
       {
         "name": "pr-prep",
@@ -765,8 +751,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "db22138a342a311918786a048c2720d613ea6419245e905082d12cd51e6ea948",
-      "generated_hash": "489289fe82bed935c46594afbed490fc58c325e0796072625332f6acd9200249"
+      "source_hash": "4facf44c52d42d33ee624b78eb173310b3ee3ac8e27028b1c3a16ad6433cfdf5",
+      "generated_hash": "e9b1f492023d12f043e98d7ec6b627c2271702c50e2fa02b2e6e6e4fa2d7266f"
     },
     {
       "name": "ms",
@@ -801,8 +787,8 @@
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "4930533938897324cc40e3c7d7801c7158c2adf9f306b10263ea25532a2cf9e0",
-      "generated_hash": "9e7623c9de926908c5e24f76fa90176fbbe588a1a3fc63fbb42dfec88aedd1cb"
+      "source_hash": "a2863a398ad72fd61e763df92d04c3f2e055d07c4fca28a0d32d4cc20fc4031c",
+      "generated_hash": "a252e1424afe4da4e696695d54a1afbf60bf7e31096915cb73d957db43c31008"
     },
     {
       "name": "pr-prep",
@@ -945,8 +931,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "365a0640f005f086b211669d0bb4eca3aa9947bd43d2733f3d4098deafd18550",
-      "generated_hash": "407e3bdfa5aa67be1d3ba89ae60a20bb01e234dad9b0be1d4c8ab135dc01503f"
+      "source_hash": "b253cd81bfea7136010a062850d2d5987d9fd9309c3b61737b39c8d62c2ee45d",
+      "generated_hash": "c94f4c3deacb6a620663643c1ac65b6656df59fb894aa151525750c7d7dd98eb"
     },
     {
       "name": "workflow-builder",

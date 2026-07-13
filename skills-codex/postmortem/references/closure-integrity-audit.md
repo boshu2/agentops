@@ -2,12 +2,13 @@
 
 **Mechanically verify that closed beads represent real completed work, not premature or phantom closures.**
 
-This audit catches four failure modes discovered in production:
+This audit catches five failure modes discovered in production:
 
 1. **Multi-wave regressions** — A later wave's worker removes code that an earlier wave added. Each wave passes tests independently, but the net result is incomplete.
 2. **Phantom closures** — Beads closed with generic/empty descriptions ("task"), no spec, no git evidence.
 3. **Orphaned children** — Child beads exist in `br list` but aren't linked to parent in `br show <parent>`.
 4. **Stretch goals closed without work** — Items marked "stretch" bulk-closed when epic closes, with no implementation or documented deferral rationale.
+5. **Stranded approval evidence** — Fable/ATM/council approval gated implementation, but the verdict artifact lives only in an ignored `.agents/` dir inside a temporary worktree, so the proof disappears when the worktree is removed.
 
 For **evidence-only closures** that intentionally do not produce a code delta, require a proof artifact at `.agents/releases/evidence-only-closures/<target-id>.json` (or, for legacy artifacts, `.agents/council/evidence-only-closures/<target-id>.json`). The artifact is written with `bash skills/postmortem/scripts/write-evidence-only-closure.sh` and gives later audits something durable to validate besides bead notes.
 
@@ -53,7 +54,7 @@ Beads with scoped files OUTSIDE the discovery-phase prefixes that lack evidence 
 
 - **Step 2.3** of postmortem (Reconcile Plan vs Delivered Scope)
 - After `/crank` completes (before closing epic)
-- During `$postmortem` when reviewing multi-wave epics
+- During `/postmortem` when reviewing multi-wave epics
 
 ## Audit Procedure
 
@@ -74,7 +75,7 @@ For each closed child bead, verify evidence in precedence order: `commit`, then 
 EPIC_ID="<epic-id>"
 FAILURES=""
 
-# Get all children (parent-child dependents; br has no `children` subcommand)
+# Get all children (parent-child dependents; `ao beads exec children` works for bd and br)
 for child in $(ao beads exec children "$EPIC_ID" 2>/dev/null | sort -u); do
   # 1. Commit evidence: strongest path
   COMMITS=$(git log --oneline --all --grep="$child" 2>/dev/null | wc -l | tr -d ' ')
@@ -226,7 +227,7 @@ done
 For multi-wave epics (crank), compare each wave's additions against the next wave's deletions.
 
 ```bash
-# Get wave commits from crank notes
+# Get wave commits from crank notes (description + comment text)
 WAVE_COMMITS=$(ao beads exec show "$EPIC_ID" --json 2>/dev/null | jq -r '.[0].description, (.[0].comments[]?.text // empty)' | grep 'CRANK_WAVE' | grep -oP 'at \K\S+')
 
 # For each consecutive pair, check if Wave N+1 deleted lines Wave N added
@@ -253,35 +254,49 @@ done
 
 ### Check 5: Acceptance-Text vs Delivered Drift
 
-For each closed child, read the bead's `Acceptance:` text and check whether it has drifted from what the closure commit delivered. Catches the case where a bead's acceptance language names a specific gate as a pass requirement but the close-note doesn't confirm the gate ran green.
+For each closed child in scope, read the bead's `Acceptance:` (or `ACCEPTANCE CRITERIA:`) text and check whether it has obviously drifted from what the closure commit delivered. Catches a real failure mode from the v2.41-evolve-run arc: `soc-w6vh.4` had acceptance "`check-no-tracked-agents` AND `check-worktree-disposition` pass", but was closed when the operator-blocker was resolved — the gate itself still failed. The bead's acceptance language and the delivered evidence mismatched.
 
 ```bash
 for child in $CLOSED_CHILDREN; do
   ACCEPT=$(ao beads exec show "$child" --json 2>/dev/null | jq -r '.[0].description // ""' \
-           | awk '/^Acceptance:/,/^[A-Z][A-Z]+:|^---/' | head -50)
+           | awk '/^Acceptance:/,/^[A-Z][A-Z]+:|^---/' \
+           | head -50)
   CLOSE_NOTE=$(ao beads exec show "$child" --json 2>/dev/null \
-               | jq -r '(.[0].close_reason // ""), (.[0].comments[]?.text // empty)' | tail -30)
+               | jq -r '(.[0].close_reason // ""), (.[0].comments[]?.text // empty)' \
+               | tail -30)
+
+  # Look for explicit gate references in the acceptance text. Acceptance that
+  # names a specific script as a pass requirement is a drift hazard: closing
+  # the bead without running the script (or before the script passes) is the
+  # mismatch we want to catch.
   GATE_REFS=$(printf '%s\n' "$ACCEPT" \
               | grep -oE '(scripts/check-[a-z0-9-]+\.sh|check-[a-z0-9-]+|pre-push-gate|ci-local-release)' \
               | sort -u)
+
   if [ -n "$GATE_REFS" ]; then
+    # For each gate named in the acceptance, look for a corresponding "PASS"
+    # or "passes" reference in the close-note (operator confirmation that the
+    # gate ran green at closure time). Missing confirmation → drift WARN.
     for gate in $GATE_REFS; do
-      if ! printf '%s\n' "$CLOSE_NOTE" | grep -qiE "$gate.*pass|$gate.*green|pass.*$gate"; then
-        FAILURES="${FAILURES}\n- ACCEPTANCE DRIFT: $child — acceptance names gate '$gate', close-note does not confirm green"
+      if ! printf '%s\n' "$CLOSE_NOTE" | grep -qiE "$gate.*pass|$gate.*green|pass.*$gate|$gate.*ok\\b"; then
+        FAILURES="${FAILURES}\n- ACCEPTANCE DRIFT: $child — acceptance names gate '$gate' as pass requirement, close-note does not confirm green"
       fi
     done
   fi
+
+  # Second heuristic: acceptance contains "OR" alternatives — verify the close
+  # note articulates which branch was taken.
   if printf '%s\n' "$ACCEPT" | grep -qE '\bOR\b'; then
     if ! printf '%s\n' "$CLOSE_NOTE" | grep -qiE 'chose|picked|path [0-9]|operator chose|alternative'; then
-      FAILURES="${FAILURES}\n- ACCEPTANCE BRANCH UNCLEAR: $child — acceptance has OR alternatives, close-note doesn't state which was satisfied"
+      FAILURES="${FAILURES}\n- ACCEPTANCE BRANCH UNCLEAR: $child — acceptance has OR alternatives, close-note does not state which was satisfied"
     fi
   fi
 done
 ```
 
-WARN-level (not FAIL): wording variance is expected. The intent is to surface drift for council review.
+This check is **WARN-level**, not FAIL — false positives are likely (closure notes might use different wording than the acceptance). The intent is to surface drift for council review, not auto-fail.
 
-Origin: v2.41-evolve-run cycle 182. `soc-w6vh.4` acceptance: "`check-no-tracked-agents` AND `check-worktree-disposition` pass". Close-note described the operator's chosen action (commit the worktree) but did NOT confirm the worktree-disposition gate ran green — because it still failed on broader fleet state. Correct alternatives: (a) explicitly narrow the bead's acceptance before closing, or (b) leave open with a scope-narrowing follow-up filed.
+Origin: v2.41-evolve-run cycle 182. `soc-w6vh.4` acceptance: "`check-no-tracked-agents` AND `check-worktree-disposition` pass". Close-note correctly described the operator's chosen action (commit the worktree) but did NOT include language showing the worktree-disposition gate was green at close — because it wasn't (still fails on broader fleet state). A correct closure would either (a) explicitly narrow the bead's acceptance before closing, or (b) leave the bead open with a scope-narrowing follow-up filed.
 
 ### Check 6: Stretch Goal Audit
 
@@ -307,6 +322,38 @@ for child in $(ao beads exec children "$EPIC_ID" 2>/dev/null | sort -u); do
 done
 ```
 
+### Check 7: Approval-Artifact Durability
+
+When the epic/bead was gated on a Fable/ATM/council approval (a `codex-approval`
+verdict, fanout `ApprovalEdge`, or council PASS that permitted implementation),
+verify the approval evidence survived closeout on a durable tracked surface.
+
+```bash
+# For each approval artifact referenced in the bead text / ApprovalEdge:
+for artifact in $APPROVAL_ARTIFACTS; do
+  if [ ! -e "$artifact" ]; then
+    FAILURES="${FAILURES}\n- STRANDED APPROVAL: $artifact — referenced but missing (worktree removed?)"
+  elif git check-ignore -q "$artifact" 2>/dev/null; then
+    FAILURES="${FAILURES}\n- STRANDED APPROVAL: $artifact — exists but gitignored; mirror to a tracked path before close"
+  fi
+done
+```
+
+A passing closure requires the council artifact — or a compact proof packet
+(verdict, judge_source, capture path, required changes/accepted risks) — at a
+tracked path (`docs/` or a tracked `.agents/` location in the canonical
+checkout). Paths under a temporary worktree, and gitignored `.agents/` paths,
+are not proof surfaces.
+
+This check is **WARN-level** for ordinary beads and **FAIL-level** when the
+approval was the gate that authorized implementation of the epic.
+
+**Origin:** 2026-06-12 Codex runtime post-review (finding 6) — the Fable
+plan-approval artifacts for `ag-codex-runtime-enhancement-o0nds` lived only
+under an ignored `.agents/` dir in a since-removable worktree
+(`agentops-wt-codex-fanout-discovery`). See
+`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`.
+
 ## Output Format
 
 Write results into the postmortem report under `## Closure Integrity`:
@@ -320,8 +367,9 @@ Write results into the postmortem report under `## Closure Integrity`:
 | Phantom Beads | PASS/WARN | N phantom beads detected |
 | Orphaned Children | PASS/WARN | N orphans found |
 | Multi-Wave Regression | PASS/FAIL | N regressions detected |
-| Acceptance Drift | PASS/WARN | N closed beads whose acceptance text names gates that the close-note does not confirm green |
+| Acceptance Drift | PASS/WARN | N closed beads whose acceptance text references gates that the close-note does not confirm green |
 | Stretch Goals | PASS/WARN | N stretch goals closed without rationale |
+| Approval Durability | PASS/WARN/FAIL | N gating approval artifacts missing or gitignored (stranded evidence) |
 
 ### Findings
 - <specific findings from each check>
