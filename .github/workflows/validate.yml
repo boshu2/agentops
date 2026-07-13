@@ -1291,7 +1291,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────
   # doctrine-proof — flywheel/goals/wiring/corpus/finding-registry/memrl/
   # sovereignty/three-gap proofs PLUS the spec-linkage gates (executable-spec
-  # link integrity, scenario↔test linkage, AGENTS.md tiered split, docs↔
+  # link integrity, scenario↔test linkage, compact AGENTS contract, docs↔
   # learning references). Both clusters prove the GOALS/doctrine/spec
   # apparatus is internally consistent and share the Go+ao+Python setup.
   # Absorbs: validate-flywheel-proof, validate-flywheel-compounding-snapshot,
@@ -1457,11 +1457,11 @@ jobs:
 
       # ── spec-linkage (merged in) ──────────────────────────────────────────
       - name: Validate AGENTS.md canonical-route contract
-        # soc-vuu6.3 — AGENTS.md stays <=250 lines; AGENTS-{WORKFLOW,CI,CODEX,
-        # RUNTIME}.md exist; links are bidirectional.
-        # ag-g9ex: + contracts — AGENTS.md and the four siblings are covered by
-        # the contracts filter, so a sibling-only edit re-runs the split gate that
-        # guards it (the #634 path-filter-gap class).
+        # soc-vuu6.3 — AGENTS.md stays <=250 lines; specialist detail lives in
+        # four canonical on-demand routes checked by the gate.
+        # ag-g9ex: + contracts — AGENTS.md and those routes are covered by the
+        # contracts filter, so a route-only edit re-runs the gate that guards it
+        # (the #634 path-filter-gap class).
         if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.contracts == 'true'
         run: |
           chmod +x scripts/validate-agents-split.sh

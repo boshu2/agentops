@@ -4,7 +4,7 @@ status: active
 # This contract records judgments; it does not make them. The checker validates
 # only filesystem/index facts and literal references, never prose meaning.
 scope:
-  root_markdown_count: 17
+  root_markdown_count: 10
   reference_excludes:
     - glob: .agents/rpi/**
       reason: generated runtime evidence
@@ -37,54 +37,6 @@ documents:
     disposition: retain-or-replace-with-import-shim
     owner: AGENTS.md
     proof: factual symlink check plus fresh-context verdicts
-
-  - path: AGENTS-WORKFLOW.md
-    tracked: true
-    class: compatibility-detail
-    disposition: migrate-then-delete
-    owner: docs/agent-workflow-reference.md
-    proof: factual reference check plus fresh-context migration verdict
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - AGENTS.md
-        - CLAUDE.md
-
-  - path: AGENTS-CI.md
-    tracked: true
-    class: compatibility-detail
-    disposition: migrate-then-delete
-    owner: docs/CI-CD.md
-    proof: factual reference check plus fresh-context migration verdict
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - AGENTS.md
-        - CLAUDE.md
-
-  - path: AGENTS-CODEX.md
-    tracked: true
-    class: compatibility-detail
-    disposition: migrate-then-delete
-    owner: docs/contracts/codex-skill-api.md
-    proof: factual reference check plus fresh-context migration verdict
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - AGENTS.md
-        - CLAUDE.md
-
-  - path: AGENTS-RUNTIME.md
-    tracked: true
-    class: compatibility-detail
-    disposition: migrate-then-delete
-    owner: docs/contracts/repo-execution-profile.md
-    proof: factual reference check plus fresh-context migration verdict
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - AGENTS.md
-        - CLAUDE.md
 
   - path: README.md
     tracked: true
@@ -134,39 +86,6 @@ documents:
     disposition: retain-until-structured-owner-exists
     owner: PRACTICE-REGISTRY.md
     proof: scripts/validate-practice-citations.sh
-
-  - path: PRE-REDUCTION-SNAPSHOT.md
-    tracked: true
-    class: dated-snapshot
-    disposition: delete-after-zero-consumer-proof
-    owner: git-history
-    proof: factual zero-reference check plus agent disposition judgment
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers: []
-
-  - path: REDUCTION.md
-    tracked: true
-    class: completed-migration-plan
-    disposition: delete-after-zero-consumer-proof
-    owner: docs/contracts/ao-mto-seam.md
-    proof: factual zero-reference check plus agent disposition judgment
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - PRE-REDUCTION-SNAPSHOT.md
-
-  - path: SYSTEM.md
-    tracked: true
-    class: duplicate-system-map
-    disposition: migrate-then-delete
-    owner: docs/architecture/operating-loop.md
-    proof: factual reference check plus fresh-context migration verdict
-    references:
-      phase_policy: {inventory: exact, pre-cutover: exact, cutover: zero}
-      consumers:
-        - docs/CLEANUP-distill-to-core.md
-        - scripts/dynamo-e2e.sh
 
   - path: release-notes.md
     tracked: false
