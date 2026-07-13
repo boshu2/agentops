@@ -27,8 +27,7 @@
 #    the gate triggered only on docs/ci/shell and the siblings were covered by no
 #    filter -> a sibling-only edit skipped the split gate. INVARIANT: every
 #    AGENTS*.md file the split script reads is covered by the `contracts` filter
-#    AND the split gate triggers on `contracts`. Companion: wiring-closure greps
-#    GOALS.md/GOALS.yaml, so it must trigger on `goals`. Full findings:
+#    AND the split gate triggers on `contracts`. Full findings:
 #    docs/contracts/ci-pathfilter-coverage-audit.md.
 #
 # Sibling pattern: tests/scripts/test-bats-path-filter-wiring.bats — grep/parse
@@ -190,10 +189,4 @@ PY
     run bash -c "awk '/name: Validate AGENTS.md tiered-split contract/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.contracts == 'true'"* ]]
-}
-
-@test "wiring-closure gate triggers on needs.changes.outputs.goals" {
-    run bash -c "awk '/name: Verify all scripts.skills.hooks are wired/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
 }

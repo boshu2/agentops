@@ -71,7 +71,6 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-skill-disposition-schema.sh"
     make_stub "$FAKE_REPO/scripts/generate-skill-domain-map.sh"
     make_stub "$FAKE_REPO/scripts/proof-run.sh"
-    make_stub "$FAKE_REPO/scripts/check-wiring-closure.sh"
     make_stub "$FAKE_REPO/scripts/check-agentops-domain-evolution-plan.sh"
     make_stub "$FAKE_REPO/scripts/check-corpus-freshness.sh"
     make_stub "$FAKE_REPO/scripts/check-loop-shape.sh"

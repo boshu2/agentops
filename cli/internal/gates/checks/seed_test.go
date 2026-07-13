@@ -212,8 +212,8 @@ func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
 	if !check.Blocking {
 		t.Fatal("docs.skill-refs must be blocking")
 	}
-	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
-		t.Fatalf("docs.skill-refs tiers = %v, want Fast|Full", check.Tiers)
+	if check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("docs.skill-refs tiers = %v, want Full only (not on --fast path)", check.Tiers)
 	}
 	if len(check.Args) != 2 || check.Args[0] != "--all-docs" || check.Args[1] != "--strict" {
 		t.Fatalf("docs.skill-refs args = %v, want [--all-docs --strict]", check.Args)

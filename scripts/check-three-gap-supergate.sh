@@ -167,8 +167,6 @@ gap_loop_closure() {
     run_gate "goals-validate" \
         "bash -c 'cd $REPO_ROOT/cli && go build -o $tmpdir/ao-sg ./cmd/ao && cd .. && $tmpdir/ao-sg goals validate --json | jq -e .valid==true'" \
         || fails=$((fails+1))
-    run_gate "wiring-closure" \
-        "timeout 60 bash $REPO_ROOT/scripts/check-wiring-closure.sh" || fails=$((fails+1))
     if [ -x "$REPO_ROOT/cli/bin/ao" ] || [ -f "$REPO_ROOT/scripts/proof-run.sh" ]; then
         run_gate "flywheel-proof" \
             "bash $REPO_ROOT/scripts/proof-run.sh" || fails=$((fails+1))

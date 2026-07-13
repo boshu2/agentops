@@ -19,7 +19,6 @@ scripts/append-codex-override-entry.sh
 scripts/append-skill-disposition.sh
 scripts/assert-no-actions.sh
 scripts/audit-assertion-density.sh
-scripts/audit-cli-command-deps.sh
 scripts/audit-codex-parity.sh
 scripts/audit-skill-metadata.sh
 scripts/auto-resume-stale-claims.sh
@@ -91,7 +90,6 @@ scripts/check-no-operator-skills.sh
 scripts/check-no-tracked-agents.sh
 scripts/check-opencode-live.sh
 scripts/check-orchestration-contracts.sh
-scripts/check-orchestration-profiles.sh
 scripts/check-outcomes-holdout-leak.sh
 scripts/check-path-containment.sh
 scripts/check-paths-resolver-coverage.sh
@@ -134,7 +132,6 @@ scripts/check-three-gap-supergate.sh
 scripts/check-tip-verdict-ci.sh
 scripts/check-verdict-close-rate.sh
 scripts/check-wave-ownership-disjoint.sh
-scripts/check-wiring-closure.sh
 scripts/check-workflow-drift.sh
 scripts/check-workflow-governance.sh
 scripts/check-workflow-no-retired-tracker.sh
@@ -220,7 +217,6 @@ scripts/nightly-knowledge-cycle.sh
 scripts/nightly-pr-digest.sh
 scripts/nightly-rpi-brief.sh
 scripts/ntm-attention-tend.sh
-scripts/overnight-evolve-preflight.sh
 scripts/overnight-evolve.sh
 scripts/pawl-land.sh
 scripts/pawl-review.sh
@@ -263,7 +259,6 @@ scripts/safe-pull.sh
 scripts/scaffold-release-notes.sh
 scripts/second-poll.sh
 scripts/security-gate.sh
-scripts/security-suite.sh
 scripts/seed-evolution-roadmap-beads.sh
 scripts/session-pr-scope.sh
 scripts/ship.sh
@@ -281,13 +276,9 @@ scripts/test-agentops-contract-canaries.sh
 scripts/test-ci-deterministic-gates.sh
 scripts/test-codex-native-install.sh
 scripts/test-evolve-cycle-smoke.sh
-scripts/test-flywheel.sh
-scripts/test-rpi-surface-smoke.sh
 scripts/toolchain-validate.sh
 scripts/update-cli-surface-counts.sh
 scripts/validate-agents-split.sh
-scripts/validate-agy-plugin.sh
-scripts/validate-am-coordination-discoverable.sh
 scripts/validate-bd-closeout-contract.sh
 scripts/validate-ci-policy-parity.sh
 scripts/validate-cli-skills-map.sh

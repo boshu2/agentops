@@ -187,8 +187,8 @@ bd_mk G4 \
   feature 1 "evolution-roadmap,gates" "$E2"
 
 bd_mk G5 \
-  "G5: Wire wiring-closure as CI-blocking" \
-  "scripts/check-wiring-closure.sh exists. Wire as blocking in CI. Acceptance: orphan scripts/skills/hooks block push." \
+  "G5: (RETIRED) former script-citation meta-gate" \
+  "RETIRED cut-plan wave 1: meta check that forced every check-*.sh citation removed. Historical bead only." \
   feature 1 "evolution-roadmap,gates" "$E2"
 
 # =========================================================================
@@ -287,7 +287,7 @@ bd_mk TG2 \
 
 bd_mk TG3 \
   "TG3: Gap-3 loop-closure super-gate" \
-  "Combine release-cadence + flywheel-proof (G2) + goals-validate (G4) + wiring-closure (G5) into a loop-closure super-gate. Acceptance: single ao goals measure --gap=loop-closure emits unified status." \
+  "Combine release-cadence + flywheel-proof (G2) + goals-validate (G4) into a loop-closure super-gate. Acceptance: single ao goals measure --gap=loop-closure emits unified status." \
   feature 2 "evolution-roadmap,three-gap-contract,loop-closure" "$E5"
 
 # =========================================================================

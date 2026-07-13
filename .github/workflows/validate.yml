@@ -1300,7 +1300,7 @@ jobs:
   # apparatus is internally consistent and share the Go+ao+Python setup.
   # Absorbs: validate-flywheel-proof, validate-flywheel-compounding-snapshot,
   # validate-goals-validate, validate-three-gap-supergate,
-  # validate-wiring-closure, validate-corpus-freshness,
+  # validate-corpus-freshness,
   # validate-finding-registry, memrl-health, validate-sovereignty-proof-citations,
   # executable-spec-link-integrity, validate-scenario-test-linkage,
   # validate-agents-split, validate-docs-learning-references.
@@ -1418,15 +1418,6 @@ jobs:
           ./scripts/check-three-gap-supergate.sh \
             --gap=council-coverage --strict-coverage \
             || echo "ADVISORY-WARN: --strict-coverage non-blocking failure (soc-33bw)"
-
-      - name: Verify all scripts/skills/hooks are wired (GOALS.md gate id wiring-closure, weight 7)
-        # ag-g9ex: + goals — wiring-closure greps GOALS.md/GOALS.yaml to confirm
-        # every check-*.sh is referenced; a GOALS.md-only edit that de-wires a
-        # gate must re-run this check (GOALS.md is covered only by the goals filter).
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
-        run: |
-          chmod +x scripts/check-wiring-closure.sh
-          timeout 60 bash scripts/check-wiring-closure.sh
 
       - name: Run corpus-freshness gate (GOALS.md gate id corpus-freshness, weight 4 — Directive D11)
         if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'

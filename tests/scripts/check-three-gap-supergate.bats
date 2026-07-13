@@ -225,9 +225,8 @@ Pre-mortem: see .agents/council/x.md"
 
 # Gap 3 — loop closure (cycle 174 / soc-wxh5.3)
 #
-# Gap 3 invokes three sub-gates: goals-validate (via a real `go build`
-# of cmd/ao + `ao goals validate --json | jq -e .valid==true`),
-# wiring-closure (via scripts/check-wiring-closure.sh), and
+# Gap 3 invokes two sub-gates: goals-validate (via a real `go build`
+# of cmd/ao + `ao goals validate --json | jq -e .valid==true`) and
 # flywheel-proof (via scripts/proof-run.sh or cli/bin/ao). The
 # goals-validate sub-gate is the tricky one because the original script
 # invocation needs a real Go build context that SHIM_ROOT cannot easily
@@ -264,12 +263,6 @@ EOF
 
 @test "Gap 3 PASSes loop-closure when all sub-gates pass (shimmed go + stub scripts)" {
     shim_go_for_gap3 true
-    cat > "$SHIM_ROOT/scripts/check-wiring-closure.sh" <<'EOF'
-#!/usr/bin/env bash
-echo "stub wiring-closure OK"
-exit 0
-EOF
-    chmod +x "$SHIM_ROOT/scripts/check-wiring-closure.sh"
     PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
     [ "$status" -eq 0 ]
     [[ "$output" == *"three-gap super-gate (loop-closure): PASS"* ]]
@@ -277,11 +270,6 @@ EOF
 
 @test "Gap 3 FAILs loop-closure when goals-validate stub reports valid:false" {
     shim_go_for_gap3 false
-    cat > "$SHIM_ROOT/scripts/check-wiring-closure.sh" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-    chmod +x "$SHIM_ROOT/scripts/check-wiring-closure.sh"
     PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
     [ "$status" -ne 0 ]
     [[ "$output" == *"FAIL  goals-validate"* ]]
@@ -289,11 +277,6 @@ EOF
 
 @test "Gap 3 SKIPs flywheel-proof when neither cli/bin/ao nor proof-run.sh exists" {
     shim_go_for_gap3 true
-    cat > "$SHIM_ROOT/scripts/check-wiring-closure.sh" <<'EOF'
-#!/usr/bin/env bash
-exit 0
-EOF
-    chmod +x "$SHIM_ROOT/scripts/check-wiring-closure.sh"
     rm -f "$SHIM_ROOT/scripts/proof-run.sh" "$SHIM_ROOT/cli/bin/ao"
     PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
     [[ "$output" == *"SKIP  flywheel-proof (cli/bin/ao not built)"* ]]
@@ -346,20 +329,14 @@ EOF
 @test "Gap 3 writes captures under the per-run tmpdir, never a fixed /tmp/sg- path" {
     # Force a failing sub-gate so run_gate captures output, then assert the
     # capture is not left behind at a predictable /tmp/sg-*.out path.
-    shim_go_for_gap3 true
-    cat > "$SHIM_ROOT/scripts/check-wiring-closure.sh" <<'EOF'
-#!/usr/bin/env bash
-echo "forced wiring-closure failure"
-exit 1
-EOF
-    chmod +x "$SHIM_ROOT/scripts/check-wiring-closure.sh"
+    shim_go_for_gap3 false
     # Clear any stale residue at the OLD fixed capture path first, so the
     # post-run assertion proves THIS run did not (re-)create it.
-    rm -f /tmp/sg-wiring-closure.out
+    rm -f /tmp/sg-goals-validate.out
     PATH="$TMP_HOME/bin:$PATH" run bash "$SHIM_ROOT/scripts/check-three-gap-supergate.sh" --gap=loop-closure
     [ "$status" -ne 0 ]
-    [[ "$output" == *"FAIL  wiring-closure"* ]]
+    [[ "$output" == *"FAIL  goals-validate"* ]]
     # The gate captured to (and cleaned up) its own per-run tmpdir on EXIT:
     # it must not have written the old fixed-path capture at all.
-    [ ! -e /tmp/sg-wiring-closure.out ]
+    [ ! -e /tmp/sg-goals-validate.out ]
 }

@@ -65,9 +65,6 @@ affects_files:
     - .claude-plugin/marketplace.json
     - .claude-plugin/plugin.json
 
-  wiring-closure:
-    - scripts/check-wiring-closure.sh
-
   contract-compatibility:
     - scripts/check-contract-compatibility.sh
     - schemas/**
