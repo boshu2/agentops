@@ -37,7 +37,7 @@ Every agent session starts cold. Same mistakes. Same rework. The landmine in `au
 |-------|-------------|
 | **Bookkeeping** | Records what agents tried, changed, validated, and learned so the work leaves evidence |
 | **Context Compiler** | Assembles the right context for the right phase — decay-ranked, token-budgeted, loaded at session start |
-| **Validation Gates** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
+| **Validation Membrane** | `/validate` checks the declared acceptance behavior; `/pre-mortem` and `/council` add independent challenge when warranted |
 | **Knowledge Flywheel** | Extracts learnings, scores them, and resurfaces them so the next session starts smarter |
 
 Session 1, your agent spends two hours debugging a timeout bug. Session 15, a new agent finds the lesson in seconds because the corpus kept it.
@@ -89,7 +89,9 @@ Pick the runtime you use.
     curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
     ```
 
-Restart your agent after install, then type `/quickstart` in your agent chat.
+Restart your agent after install, then make one small validated change:
+`/plan` → `/implement` → `/validate`. The [first-value path](first-value-path.md)
+walks through the evidence each move must produce.
 
 Day-2 install, update, backup, permission, recovery, and escalation paths:
 [Install And Day-2 Operations](install-day2-ops.md).
@@ -115,35 +117,27 @@ The `ao` CLI is optional but recommended. It unlocks repo-native bookkeeping, re
 
 ## See It Work
 
-Two commands. Real output.
+One behavior, carried from intent to proof.
 
-### Validate a PR with independent judges
-
-```text
-> /council validate this PR
-
-[council] 3 judges spawned independently
-[judge-1] PASS — token bucket implementation correct
-[judge-2] WARN — rate limiting missing on /login endpoint
-[judge-3] PASS — Redis integration follows middleware pattern
-Consensus: WARN — add rate limiting to /login before shipping
-```
-
-### Full loop: research through post-mortem
+### Full loop: acceptance through validation
 
 ```text
-> /rpi "add retry backoff to rate limiter"
+> /plan "add retry backoff to rate limiter"
 
-[research]    Found 3 prior learnings on rate limiting
-[plan]        2 issues, 1 wave
-[pre-mortem]  Council validates the plan
-[crank]       Executes the scoped work
-[vibe]        Council validates the code
-[post-mortem] Captures new learnings in .agents/
-[flywheel]    Next session starts with better context
+[plan]       Given a transient failure, when a retry is scheduled,
+             then delay grows with bounded jitter
+[implement] acceptance test RED → implementation → GREEN
+[validate]  scenario mapped, behavior independently reproduced
+Verdict: CONFIRMED — evidence recorded
 ```
 
-The point is not a bigger prompt. The point is a repo that remembers what was tried, what worked, what failed, and what should constrain the next run.
+Use `/rpi "add retry backoff to rate limiter"` when you want the same skill loop
+coordinated as one full tick. Add `/pre-mortem` before implementation or
+`/council` after acceptance exists when the stakes justify more independent
+judgment.
+
+The point is not a bigger prompt. The point is behavior with an explicit
+acceptance surface, independent verification, and durable evidence.
 
 ---
 
@@ -153,13 +147,13 @@ Every skill works alone. Compose flows for end-to-end cycles.
 
 | Skill | Use it when |
 |-------|-------------|
-| [`/quickstart`](skills/status.md) | You want the fastest setup check and next action |
-| [`/council`](skills/council.md) | You want independent judges to review a plan, PR, or decision |
-| [`/research`](skills/research.md) | You need codebase context and prior learnings before changing code |
-| [`/premortem`](skills/premortem.md) | You want to pressure-test a plan before implementation |
+| [`/plan`](skills/plan.md) | You need testable acceptance behavior and vertical slices |
 | [`/implement`](skills/implement.md) | You want one scoped task built and validated |
+| [`/validate`](skills/validate.md) | You need an independent verdict against the declared behavior |
 | [`/rpi`](skills/rpi.md) | You want discovery, build, validation, and bookkeeping in one flow |
-| [`/vibe`](skills/validate.md) | You want a code-quality and risk review before shipping |
+| [`/pre-mortem`](skills/pre-mortem.md) | You want to pressure-test a plan before implementation |
+| [`/council`](skills/council.md) | You want additional independent judges for a high-stakes plan, change, or decision |
+| [`/research`](skills/research.md) | You need codebase context and prior learnings before changing code |
 | [`/evolve`](skills/evolve.md) | You want a goal-driven improvement loop with regression gates |
 
 !!! info "Full catalog"
@@ -203,8 +197,8 @@ Run compounding on the substrate's schedule, then Evolve in the morning against 
 ## Next steps
 
 1. **[Install](#install)** — pick your runtime.
-2. **Seed** your repo with `ao quick-start` (`ao quickstart` also works), then run `/quickstart` in your agent chat.
-3. **Choose a golden path:** `/plan` → `/implement` → `/validate` (or `/rpi "a small goal"`) for a first validated change — see [Intent → Validated Code](architecture/intent-to-validated-code.md) and [first-value path](first-value-path.md); `/council` for high-stakes review after acceptance exists; `BEADS_DIR="$(ao beads dir)" br ready` then `/implement` to continue tracked work.
+2. **Seed** your repo with `ao quick-start` (`ao quickstart` also works).
+3. **Make one validated change:** `/plan` → `/implement` → `/validate` (or `/rpi "a small goal"`) — see [Intent → Validated Code](architecture/intent-to-validated-code.md) and the [first-value path](first-value-path.md). Use `/council` for high-stakes review after acceptance exists; use `BEADS_DIR="$(ao beads dir)" br ready` then `/implement` to continue tracked work.
 
 Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.
 
