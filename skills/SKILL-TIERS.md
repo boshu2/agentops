@@ -161,13 +161,14 @@ taxonomy and the tier tables below, nothing else.
 
 ## Current Skill Tiers
 
-### User-Facing Skills (60)
+### User-Facing Skills (61)
 
 **Judgment:**
 
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
+| **learn** | judgment | Fourth RPI umbrella — capture evidence-backed observations after Validate without changing proof or delivery state |
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
 | **pawl-review** | judgment | Run an immutable fresh-context reviewer lane and hand evidence to ao pawl. |
 | **premortem** | judgment | Council on plans — simulate failures before implementation |
@@ -184,7 +185,7 @@ taxonomy and the tier tables below, nothing else.
 | **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → premortem |
 | **goal-design** | execution | Create checked goal-design intent + driver packets before discovery or planning |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
-| **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
+| **rpi** | meta | Four-umbrella lifecycle: /discovery → /crank → /validate → /learn with independent receipts |
 | **evolve** | experimental | Autonomous fitness-scored improvement loop |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |

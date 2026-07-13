@@ -11,22 +11,18 @@ After all phases complete, summarize the entire lifecycle to the user.
 **Epic:** <epic-id>
 **Cycle:** <rpi_state.cycle> (parent: <rpi_state.parent_epic or "none">)
 
-| Phase | Verdict/Status |
+| Umbrella | Verdict/Status |
 |-------|---------------|
-| Research | Complete |
-| Plan | Complete (<N> issues, <M> waves) |
-| Pre-mortem | <PASS/WARN/FAIL> |
+| Discovery | DONE |
 | Crank | <DONE/BLOCKED/PARTIAL> |
-| Vibe | <PASS/WARN/FAIL> |
-| Post-mortem | Complete |
+| Validate | <PASS/WARN/FAIL> |
+| Learn | <DONE/BLOCKED/PARTIAL> |
 
 **Artifacts:**
-- Research: .agents/research/...
-- Plan: .agents/plans/...
-- Pre-mortem: .agents/council/...
-- Vibe: .agents/council/...
-- Post-mortem: .agents/council/...
-- Learnings: .agents/learnings/...
+- Discovery: .agents/rpi/phase-1-summary.md
+- Crank: .agents/rpi/phase-2-summary.md
+- Validate: .agents/rpi/phase-3-summary.md
+- Learn: .agents/rpi/phase-4-summary.md
 - Next Work: .agents/rpi/next-work.jsonl
 ```
 

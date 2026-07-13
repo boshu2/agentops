@@ -102,37 +102,34 @@ def validate_receipts(packet: dict[str, object], repo_root: Path) -> None:
     receipts = packet.get("phase_receipts")
     if not isinstance(receipts, list) or not receipts:
         fail("phase_receipts must be a nonempty array")
-    allowed = {"DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED"}
-    observed_phases: set[str] = set()
-    final_status_by_phase: dict[str, str] = {}
-    for index, receipt in enumerate(receipts):
+    required = [
+        ("discovery", "discovery", "DONE"),
+        ("crank", "crank", "DONE"),
+        ("validate", "validate", "PASS"),
+        ("learn", "learn", "DONE"),
+    ]
+    if len(receipts) != len(required):
+        fail("phase_receipts must contain discovery, crank, validate, learn in order")
+    for index, (receipt, expected) in enumerate(zip(receipts, required)):
         if not isinstance(receipt, dict):
             fail(f"phase_receipts[{index}] must be an object")
         phase = require_nonempty(receipt.get("phase"), f"phase_receipts[{index}].phase")
-        observed_phases.add(phase)
         skill = require_nonempty(receipt.get("skill"), f"phase_receipts[{index}].skill")
+        status = require_nonempty(receipt.get("status"), f"phase_receipts[{index}].status")
+        expected_phase, expected_skill, expected_status = expected
+        if (phase, skill) != (expected_phase, expected_skill):
+            fail(
+                f"phase_receipts[{index}] must be phase {expected_phase} "
+                f"with skill {expected_skill}"
+            )
         if skill not in loaded_names:
             fail(f"phase_receipts[{index}].skill is absent from skills_loaded")
-        status = require_nonempty(receipt.get("status"), f"phase_receipts[{index}].status")
-        if status not in allowed:
-            fail(f"phase_receipts[{index}].status is not a recognized verdict")
-        final_status_by_phase[phase] = status
+        if status != expected_status:
+            fail(
+                f"phase_receipts[{index}].status {status} is not successful; "
+                f"want {expected_status}"
+            )
         resolve_artifact(repo_root, receipt.get("artifact"), f"phase_receipts[{index}].artifact")
-
-    required_phases = {"discovery", "implementation", "validation"}
-    missing = sorted(required_phases - observed_phases)
-    if missing:
-        fail(f"phase_receipts missing required lifecycle phases: {', '.join(missing)}")
-
-    successful_statuses = {
-        "discovery": {"DONE"},
-        "implementation": {"DONE"},
-        "validation": {"PASS"},
-    }
-    for phase, successful in successful_statuses.items():
-        status = final_status_by_phase[phase]
-        if status not in successful:
-            fail(f"final {phase} receipt status {status} is not successful")
 
 
 def main() -> int:
@@ -150,12 +147,7 @@ def main() -> int:
             fail("execution packet must be a JSON object")
         validate_mortem_aliases(packet)
         validate_receipts(packet, repo_root)
-        core_packet = {
-            key: value
-            for key, value in packet.items()
-            if key not in {"skills_loaded", "phase_receipts"}
-        }
-        Draft202012Validator(schema, format_checker=FormatChecker()).validate(core_packet)
+        Draft202012Validator(schema, format_checker=FormatChecker()).validate(packet)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"invalid execution packet: {exc}", file=sys.stderr)
         return 1

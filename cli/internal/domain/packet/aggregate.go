@@ -7,6 +7,8 @@ package packet
 type ExecutionPacket struct {
 	SchemaVersion           int                                   `json:"schema_version"`
 	Objective               string                                `json:"objective"`
+	SkillsLoaded            []ExecutionPacketSkillLoad            `json:"skills_loaded,omitempty"`
+	PhaseReceipts           []ExecutionPacketPhaseReceipt         `json:"phase_receipts,omitempty"`
 	RunID                   string                                `json:"run_id,omitempty"`
 	EpicID                  string                                `json:"epic_id,omitempty"`
 	BeadID                  string                                `json:"bead_id,omitempty"`
@@ -55,6 +57,23 @@ type ExecutionPacket struct {
 	DoneWhen                []string                              `json:"done_when,omitempty"`
 	LikelyBlocker           string                                `json:"likely_blocker,omitempty"`
 	IgnoreToday             []string                              `json:"ignore_today,omitempty"`
+}
+
+// ExecutionPacketSkillLoad records why a canonical skill participated in one
+// lifecycle run. It is an audit index, not proof of invocation by itself.
+type ExecutionPacketSkillLoad struct {
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
+}
+
+// ExecutionPacketPhaseReceipt binds one lifecycle umbrella to its delegated
+// skill, terminal status, and file-backed artifact.
+type ExecutionPacketPhaseReceipt struct {
+	Phase      string `json:"phase"`
+	Skill      string `json:"skill"`
+	Status     string `json:"status"`
+	Artifact   string `json:"artifact"`
+	NextAction string `json:"next_action,omitempty"`
 }
 
 // ExecutionPacketIssue is a slim-packet bead entry (the issues[] array emitted

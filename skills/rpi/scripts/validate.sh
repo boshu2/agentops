@@ -25,6 +25,7 @@ check "SKILL.md mentions research phase" "grep -qi 'research' '$SKILL_DIR/SKILL.
 check "SKILL.md mentions plan phase" "grep -qiE '/plan|plan' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions pre-mortem phase" "grep -qi 'pre-mortem' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions crank phase" "grep -qi '/crank' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md mentions Learn phase" "grep -qi '/learn' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions vibe phase" "grep -qiE '/vibe|vibe' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/phase-data-contracts.md'"
 check "SKILL.md mentions post-mortem phase" "grep -qi 'post-mortem' '$SKILL_DIR/SKILL.md'"
 check "RPI docs mention next-work handoff metadata" "grep -q 'queue claim/finalize metadata' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/phase-data-contracts.md'"
@@ -47,11 +48,13 @@ artifact_dir="$REPO_ROOT/.agents/rpi"
 discovery_artifact="$artifact_dir/validate-fixture-$$-discovery.md"
 implementation_artifact="$artifact_dir/validate-fixture-$$-implementation.md"
 validation_artifact="$artifact_dir/validate-fixture-$$-validation.md"
+learn_artifact="$artifact_dir/validate-fixture-$$-learn.md"
 mkdir -p "$artifact_dir"
 printf 'discovery evidence\n' >"$discovery_artifact"
 printf 'implementation evidence\n' >"$implementation_artifact"
 printf 'validation evidence\n' >"$validation_artifact"
-trap 'rm -f "$deletion_fixture" "$packet_fixture" "$invalid_packet_fixture" "$discovery_artifact" "$implementation_artifact" "$validation_artifact"' EXIT
+printf 'learn evidence\n' >"$learn_artifact"
+trap 'rm -f "$deletion_fixture" "$packet_fixture" "$invalid_packet_fixture" "$discovery_artifact" "$implementation_artifact" "$validation_artifact" "$learn_artifact"' EXIT
 awk '!/HELPER-UNSTUCK -> AUTO-REDO/' "$SKILL_DIR/SKILL.md" >"$deletion_fixture"
 if validate_pawl_contract "$deletion_fixture"; then
   echo "FAIL: deletion fixture rejects a missing pawl transition"
@@ -61,7 +64,7 @@ else
   PASS=$((PASS + 1))
 fi
 
-printf '%s\n' "{\"schema_version\":1,\"objective\":\"prove pawl recovery\",\"skills_loaded\":[{\"name\":\"rpi\",\"reason\":\"orchestrator\"},{\"name\":\"discovery\",\"reason\":\"phase-1\"},{\"name\":\"crank\",\"reason\":\"phase-2\"},{\"name\":\"validate\",\"reason\":\"phase-3\"}],\"phase_receipts\":[{\"phase\":\"discovery\",\"skill\":\"discovery\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$discovery_artifact")\"},{\"phase\":\"implementation\",\"skill\":\"crank\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$implementation_artifact")\"},{\"phase\":\"validation\",\"skill\":\"validate\",\"status\":\"PASS\",\"artifact\":\".agents/rpi/$(basename "$validation_artifact")\"}]}" >"$packet_fixture"
+printf '%s\n' "{\"schema_version\":1,\"objective\":\"prove four umbrellas\",\"skills_loaded\":[{\"name\":\"rpi\",\"reason\":\"orchestrator\"},{\"name\":\"discovery\",\"reason\":\"phase-1\"},{\"name\":\"crank\",\"reason\":\"phase-2\"},{\"name\":\"validate\",\"reason\":\"phase-3\"},{\"name\":\"learn\",\"reason\":\"phase-4\"}],\"phase_receipts\":[{\"phase\":\"discovery\",\"skill\":\"discovery\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$discovery_artifact")\"},{\"phase\":\"crank\",\"skill\":\"crank\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$implementation_artifact")\"},{\"phase\":\"validate\",\"skill\":\"validate\",\"status\":\"PASS\",\"artifact\":\".agents/rpi/$(basename "$validation_artifact")\"},{\"phase\":\"learn\",\"skill\":\"learn\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$learn_artifact")\"}]}" >"$packet_fixture"
 check "execution packet validator accepts core schema plus receipts" "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$packet_fixture' >/dev/null"
 jq '.schema_version = 3
     | .pre_mortem_verdict = "PASS"
@@ -113,7 +116,7 @@ else
   echo "PASS: execution packet validator rejects missing receipts"
   PASS=$((PASS + 1))
 fi
-jq 'del(.phase_receipts[] | select(.phase == "validation"))' "$packet_fixture" >"$invalid_packet_fixture"
+jq 'del(.phase_receipts[] | select(.phase == "learn"))' "$packet_fixture" >"$invalid_packet_fixture"
 if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
   echo "FAIL: execution packet validator rejects incomplete lifecycle receipts"
   FAIL=$((FAIL + 1))
@@ -121,7 +124,15 @@ else
   echo "PASS: execution packet validator rejects incomplete lifecycle receipts"
   PASS=$((PASS + 1))
 fi
-jq '(.phase_receipts[] | select(.phase == "discovery") | .status) = "BLOCKED" | (.phase_receipts[] | select(.phase == "implementation") | .status) = "PARTIAL" | (.phase_receipts[] | select(.phase == "validation") | .status) = "REFUTED"' "$packet_fixture" >"$invalid_packet_fixture"
+jq '.phase_receipts = [.phase_receipts[0], .phase_receipts[1], .phase_receipts[3], .phase_receipts[2]]' "$packet_fixture" >"$invalid_packet_fixture"
+if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
+  echo "FAIL: execution packet validator rejects out-of-order Learn receipt"
+  FAIL=$((FAIL + 1))
+else
+  echo "PASS: execution packet validator rejects out-of-order Learn receipt"
+  PASS=$((PASS + 1))
+fi
+jq '(.phase_receipts[] | select(.phase == "discovery") | .status) = "BLOCKED" | (.phase_receipts[] | select(.phase == "crank") | .status) = "PARTIAL" | (.phase_receipts[] | select(.phase == "validate") | .status) = "REFUTED" | (.phase_receipts[] | select(.phase == "learn") | .status) = "PARTIAL"' "$packet_fixture" >"$invalid_packet_fixture"
 if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
   echo "FAIL: execution packet validator rejects unsuccessful final receipts"
   FAIL=$((FAIL + 1))
@@ -137,7 +148,7 @@ else
   echo "PASS: execution packet validator rejects missing artifact evidence"
   PASS=$((PASS + 1))
 fi
-jq '(.phase_receipts[] | select(.phase == "validation") | .artifact) = "../outside.md"' "$packet_fixture" >"$invalid_packet_fixture"
+jq '(.phase_receipts[] | select(.phase == "validate") | .artifact) = "../outside.md"' "$packet_fixture" >"$invalid_packet_fixture"
 if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
   echo "FAIL: execution packet validator rejects artifact path escape"
   FAIL=$((FAIL + 1))

@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "cbdf8db4fa37396bde1619035568c80998fc64807133b8cb9e5c5f07721f1e60",
+  "codex_override_catalog_hash": "da5b9c2de3b53a11239c7a268da453bfcafc929220c712a3a56c3ca90e484217",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -375,6 +375,12 @@
         }
       },
       {
+        "name": "learn",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "The post-verdict learning receipt and proof/delivery boundary are runtime-portable."
+      },
+      {
         "name": "rpi",
         "treatment": "bespoke",
         "wave": "backbone",
@@ -388,11 +394,11 @@
           "required_markers": [
             "In Codex hookless mode, run `ao codex ensure-start` before phase orchestration; the CLI records startup once per thread and skips duplicates automatically.",
             "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
-            "Keep a single lifecycle objective spine across discovery, crank, and validation. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
+            "Keep a single lifecycle objective spine across discovery, crank, validation, and learning. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
             "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
             "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
             "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
-            "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, and `$validate` delegation is auditable from disk.",
+            "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, `$validate`, and `$learn` delegation is auditable from disk.",
             "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
             "Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.",
             "Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
@@ -757,6 +763,12 @@
       "generated_hash": "a3e94af497617b3d06862a2707e8097e7795a0f5d57df5d4ddb5e0672aab9590"
     },
     {
+      "name": "learn",
+      "source_skill": "skills/learn",
+      "source_hash": "db22138a342a311918786a048c2720d613ea6419245e905082d12cd51e6ea948",
+      "generated_hash": "489289fe82bed935c46594afbed490fc58c325e0796072625332f6acd9200249"
+    },
+    {
       "name": "ms",
       "source_skill": "skills/ms",
       "source_hash": "1429dd68934d58248d1ed28e06b546019b7ec4b3e62a5926858e2b2b35bec418",
@@ -855,8 +867,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "3d2628b93c093b56687e6397aea367da2f546f80cf518ff592f1ef7d4b01055a",
-      "generated_hash": "4b5d5ebc69e372309f1f8b1995396b2c1f2fda2f657a8b69d751e6ab83055d3d"
+      "source_hash": "947df77ac08d1135c49c775a6ad0cfeb8039e70d6b5bcd904a68f1187346aa97",
+      "generated_hash": "b234d7821bc4b68263f3aa5ec66cc0d29edf78a3ecadd0d81752c238d05724fb"
     },
     {
       "name": "sbh",
@@ -943,5 +955,5 @@
       "generated_hash": "1a384a412ebc52fa9be22c33647fcf28147ebfbb0c7552f375217b137971a739"
     }
   ],
-  "package_count": 65
+  "package_count": 66
 }

@@ -1,7 +1,7 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T06:19:04Z",
-  "skill_count": 62,
+  "generated_at": "2026-07-13T12:11:11Z",
+  "skill_count": 63,
   "skills": [
     {
       "name": "account-rotation",
@@ -828,6 +828,35 @@
       "codex_override_present": true
     },
     {
+      "name": "learn",
+      "description": "Capture bounded observations after an immutable validation verdict and emit the fourth RPI phase receipt. Use after Validate completes, when a wave or objective needs learning evidence without changing the verdict, delivery state, or tracker.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "graph_root": false,
+      "consumes": [
+        "validate"
+      ],
+      "produces": [
+        ".agents/rpi/phase-4-summary.md",
+        "learn-receipt.json"
+      ],
+      "dependencies": [
+        "validate"
+      ],
+      "practices": [
+        "lean-startup",
+        "devops"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "ms",
       "description": "meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm). Find a skill for a task, search skills, or load runnable skill guidance. Triggers: \"ms\", \"meta_skill\", \"skill search\", \"find a skill for\", \"load skill guidance\".",
       "hexagonal_role": "supporting",
@@ -1339,7 +1368,7 @@
     },
     {
       "name": "rpi",
-      "description": "Run discovery, crank, validation. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
+      "description": "Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: \"run rpi\", \"research-plan-implement one turn\", \"drive a turn through the operating loop\".",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "graph_root": true,
@@ -1347,6 +1376,7 @@
         "crank",
         "discovery",
         "domain",
+        "learn",
         "validate"
       ],
       "produces": [
@@ -1356,7 +1386,8 @@
         "domain",
         "discovery",
         "crank",
-        "validate"
+        "validate",
+        "learn"
       ],
       "practices": [
         "bdd-gherkin",
@@ -1376,6 +1407,10 @@
         {
           "kind": "customer-of",
           "with": "discovery"
+        },
+        {
+          "kind": "customer-of",
+          "with": "learn"
         },
         {
           "kind": "customer-of",

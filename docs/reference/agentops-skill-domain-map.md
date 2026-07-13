@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-62 checked-in AgentOps skills after the AgentOps-native mesh rewrite, using current
+63 checked-in AgentOps skills after the AgentOps-native mesh rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 62 |
+| Skills audited | 63 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 62 / 62 |
+| Dispositions assigned | 63 / 63 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -90,6 +90,7 @@ Disposition meanings:
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
 | `idea-genie` | BC3 Loop | domain | keep | Original evidence-grounded opportunity portfolio with adaptive saturation; discovery retains BDD persistence.. |
 | `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
+| `learn` | BC3 Loop | domain | keep | Fourth RPI umbrella; captures evidence-backed observations after an immutable Validate verdict without taking proof or delivery authority. |
 | `ms` | BC1 Corpus | supporting | keep | Wraps Jeffrey Emanuel's meta_skill (ms) — the skill-search/load engine over both corpora (agentops + jsm); MCP consume, CLI writes. A corpus reader like cass.. |
 | `ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `operationalize` | BC1 Corpus | domain | keep | Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam.. |
