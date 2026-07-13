@@ -205,6 +205,7 @@ graph LR
   dueling_idea_genies --> council
   dueling_idea_genies --> idea_genie
   evolve --> postmortem
+  evolve --> push
   evolve --> rpi
   goal_design --> discovery
   goal_design --> validate
@@ -267,7 +268,7 @@ graph LR
 |---|---|
 | Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `pawl-review`, `plan`, `pr-prep`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
 | User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `postmortem`, `push`, `release`, `rpi`, `using-gc`, `validate` |
-| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `pawl-review`, `pr-prep`, `push`, `reality-check`, `release`, `security`, `status`, `using-gc` |
+| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `pawl-review`, `pr-prep`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
 | Dependency cycles | _(none)_ |
 | Unreachable non-roots | _(none)_ |
@@ -398,6 +399,7 @@ graph LR
 | `dueling-idea-genies` | produces | idea-challenge.v1 |
 | `evolve` | consumes | goals |
 | `evolve` | consumes | postmortem |
+| `evolve` | consumes | push |
 | `evolve` | consumes | rpi |
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |

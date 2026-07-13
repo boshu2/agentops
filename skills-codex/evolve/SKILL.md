@@ -5,7 +5,6 @@ description: Run autonomous improvement loops.
 # $evolve — Goal-Driven Autonomous Loop
 
 > Measure what's wrong. Fix the worst thing. Measure again. **Whether the fixes *compound* into a durable knowledge moat is a tracked hypothesis, not a promise** — DEMOTED to unproven by [ADR-0004](../../docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md) and [ADR-0011](../../docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md). The proven product is the per-cycle verification (**no verdict = not done**), not the compounding. Do not market the flywheel ahead of the ruler.
-
 > **Experimental tier.** Autonomous long-loop; run attended or dispatched onto a substrate, never as an in-repo daemon (ADR-0009).
 
 **Cycle feedback is explicit.** Each completed execution unit routes `Validate -> Learn -> orchestrator`; neither proof nor bookkeeping controls retry or delivery.
@@ -185,8 +184,7 @@ Release-shaped branches must follow [the release teardown contract](references/t
 - **Autonomy + knowledge** — [autonomous-execution.md](references/autonomous-execution.md) (loop rules + operator-shape carve-out), [context-budget.md](references/context-budget.md), [knowledge-loop-integration.md](references/knowledge-loop-integration.md) (claim/release, teardown), [compounding.md](references/compounding.md) (hypothesis-posture per ADR-0004/0011), [domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md), [quality-mode.md](references/quality-mode.md), [parallel-execution.md](references/parallel-execution.md), [teardown.md](references/teardown.md), [artifacts.md](references/artifacts.md)
 ## Behavioral contract anchors (validated by scripts/validate.sh)
 
-The trim moved procedure to references/, but these invariants stay inline — the skill's
-own validator greps them, and they are the loop's load-bearing behavior:
+The trim moved procedure to references/, but these invariants stay inline — the skill's own validator greps them, and they are the loop's load-bearing behavior:
 
 - **Continuous values, not booleans:** every fitness metric reports a continuous value against a threshold (value/threshold), never a bare pass/fail.
 - **Oscillation sweep (always-on, Step 0):** Pre-populate quarantine list from `ao compile`'s oscillation report before selecting a goal.
