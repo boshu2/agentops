@@ -1,0 +1,27 @@
+{
+  "schema_version": "agents-operating-contract-verdict.v1",
+  "contract_path": "docs/contracts/agents-operating-contract.md",
+  "contract_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "candidate_path": "AGENTS.md",
+  "pinned_head": "0000000000000000000000000000000000000000",
+  "candidate_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "author_session": "REPLACE-author-session",
+  "judge_session": "REPLACE-judge-session",
+  "judge_family": "REPLACE-runtime-family",
+  "verdict": "FAIL",
+  "scenario_results": [
+    {"scenario_id": "authority", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "trust-boundary", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "law0-runtime", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "precedence", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "ordered-loop-repair", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "exact-done", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "concurrency", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "triggered-routes", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"},
+    {"scenario_id": "closeout", "verdict": "FAIL", "citations": [{"path": "AGENTS.md", "line_start": 1, "line_end": 1, "quote": "REPLACE exact passage"}], "material_decision": "REPLACE material decision", "rationale": "REPLACE judgment"}
+  ],
+  "findings": [],
+  "not_checked": ["REPLACE or remove disclosed gaps"],
+  "commands": [{"command": "REPLACE command rerun by this judge", "exit_code": 1}],
+  "validated_at": "2026-01-01T00:00:00Z"
+}
