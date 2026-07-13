@@ -200,6 +200,41 @@ JSON
   [[ "$output" == *"fixture digest drift"* ]]
 }
 
+@test "v2 integrity seals finalized family lineage state" {
+  repo="$TMP/terminal-lineage-repo"
+  git clone -q --no-hardlinks "$REPO_ROOT" "$repo"
+  git -C "$repo" config user.email test@example.com
+  git -C "$repo" config user.name test
+
+  family_dir="$repo/cli/testdata/compatibility-baseline/families/terminal-demo"
+  mkdir -p "$family_dir"
+  cat >"$family_dir/lineage.json" <<'JSON'
+{"schema_version":1,"family":"terminal-demo","migration_state":"migrating"}
+JSON
+  git -C "$repo" add cli/testdata/compatibility-baseline/families/terminal-demo/lineage.json
+  git -C "$repo" commit -q -m 'start terminal demo migration'
+  accepted_sha="$(git -C "$repo" rev-parse HEAD)"
+
+  jq --arg accepted "$accepted_sha" '.migration_state = "migrated" | .accepted_sha = $accepted' \
+    "$family_dir/lineage.json" >"$TMP/terminal-lineage.json"
+  mv "$TMP/terminal-lineage.json" "$family_dir/lineage.json"
+  git -C "$repo" add cli/testdata/compatibility-baseline/families/terminal-demo/lineage.json
+  git -C "$repo" commit -q -m 'seal terminal demo migration'
+
+  run env AO_CLI_COMPAT_REPO_ROOT="$repo" \
+    "$CHECKER" --verify-baseline-integrity --oracle-version v2
+  printf '%s\n' "$output"
+  [ "$status" -eq 0 ]
+
+  jq '.accepted_sha = "0000000000000000000000000000000000000000"' \
+    "$family_dir/lineage.json" >"$TMP/terminal-lineage-mutated.json"
+  mv "$TMP/terminal-lineage-mutated.json" "$family_dir/lineage.json"
+  run env AO_CLI_COMPAT_REPO_ROOT="$repo" \
+    "$CHECKER" --verify-baseline-integrity --oracle-version v2
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"terminal seal"* ]]
+}
+
 @test "append-only compatibility oracle selects v1 or v2 without rewriting evidence" {
   c59="c59d36e58d2c5f6cefce2aa5c48e97be1db8f66f"
   main_sha="$(git -C "$REPO_ROOT" rev-parse origin/main)"
