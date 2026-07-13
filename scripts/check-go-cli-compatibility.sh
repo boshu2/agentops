@@ -3,7 +3,9 @@ set -euo pipefail
 
 ROOT="${AO_CLI_COMPAT_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CLI="$ROOT/cli"
-BASELINE="${AO_CLI_COMPAT_BASELINE_DIR:-$CLI/testdata/compatibility-baseline}"
+BASELINE_ROOT="${AO_CLI_COMPAT_BASELINE_DIR:-$CLI/testdata/compatibility-baseline}"
+V2_DIR="$BASELINE_ROOT/v2"
+BASELINE="$BASELINE_ROOT"
 NORMALIZER="$BASELINE/normalize.jq"
 PROFILE_DIR="$BASELINE/profiles"
 FAMILY_DIR="$BASELINE/families"
@@ -18,12 +20,21 @@ all_migrated=0
 execution_base=""
 raw_file=""
 profile_file=""
+oracle_version="v1"
+equivalent_main_sha=""
+source_decision_c59=""
+source_decision_main=""
+v2_stage=""
+v2_lock="$BASELINE_ROOT/.v2.lock"
 
 usage() {
   cat <<'EOF'
 usage: check-go-cli-compatibility.sh [options]
 
   --capture --execution-base SHA  Capture the immutable four-profile baseline.
+  --oracle-version V              Select v1, v2, or current (default: v1).
+  --equivalent-main-sha SHA       Bind a behaviorally equivalent main SHA during v2 capture.
+  --verify-source-decision A B    Compare clean-archive four-profile behavior and emit JSON.
   --family NAME                   Validate one frozen family fixture.
   --all-migrated                  Validate every family with lineage.json.
   --verify-frozen                 Enforce family fixture digest and git lineage.
@@ -38,6 +49,9 @@ EOF
 while (($#)); do
   case "$1" in
     --capture) mode=capture; shift ;;
+    --oracle-version) oracle_version="${2:?missing oracle version}"; shift 2 ;;
+    --equivalent-main-sha) equivalent_main_sha="${2:?missing equivalent main SHA}"; shift 2 ;;
+    --verify-source-decision) mode=source_decision; source_decision_c59="${2:?missing source SHA}"; source_decision_main="${3:?missing main SHA}"; shift 3 ;;
     --execution-base) execution_base="${2:?missing SHA}"; shift 2 ;;
     --family) family="${2:?missing family}"; shift 2 ;;
     --all-migrated) all_migrated=1; shift ;;
@@ -52,12 +66,66 @@ while (($#)); do
   esac
 done
 
+case "$oracle_version" in
+  v1|v2|current) ;;
+  *) printf 'unknown oracle version: %s (want v1, v2, or current)\n' "$oracle_version" >&2; exit 2 ;;
+esac
+
 sha256() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
   else
     shasum -a 256 "$1" | awk '{print $1}'
   fi
+}
+
+is_commit() {
+  [[ "$1" =~ ^[0-9a-f]{40}$ ]] && git -C "$ROOT" cat-file -e "$1^{commit}" 2>/dev/null
+}
+
+maybe_fail() {
+  local point="$1"
+  if [[ "${AO_CLI_COMPAT_TEST_FAIL:-}" == "$point" ]]; then
+    printf 'injected %s failure\n' "$point" >&2
+    return 1
+  fi
+}
+
+cleanup_v2_capture() {
+  if [[ -n "$v2_stage" && -e "$v2_stage" ]]; then
+    rm -rf "$v2_stage"
+  fi
+  if [[ -d "$v2_lock" ]]; then
+    rmdir "$v2_lock" 2>/dev/null || true
+  fi
+}
+
+select_oracle() {
+  case "$oracle_version" in
+    v1)
+      BASELINE="$BASELINE_ROOT"
+      ;;
+    v2)
+      [[ -d "$V2_DIR" && ! -L "$V2_DIR" ]] || {
+        printf 'compatibility oracle v2 is absent or not a real directory: %s\n' "$V2_DIR" >&2
+        return 1
+      }
+      BASELINE="$V2_DIR"
+      ;;
+    current)
+      if [[ ! -e "$V2_DIR" && ! -L "$V2_DIR" ]]; then
+        BASELINE="$BASELINE_ROOT"
+      elif [[ -d "$V2_DIR" && ! -L "$V2_DIR" ]]; then
+        BASELINE="$V2_DIR"
+      else
+        printf 'compatibility oracle v2 is partial or corrupt: %s\n' "$V2_DIR" >&2
+        return 1
+      fi
+      ;;
+  esac
+  NORMALIZER="$BASELINE_ROOT/normalize.jq"
+  PROFILE_DIR="$BASELINE/profiles"
+  FAMILY_DIR="$BASELINE_ROOT/families"
 }
 
 verify_git_freeze() {
@@ -112,6 +180,113 @@ verify_git_freeze() {
   done
 }
 
+verify_v2_git_freeze() {
+  local intro="" rel repo_rel snapshot
+  local -a paths=(metadata.json profiles/default.json profiles/flywheel.json profiles/legacy.json profiles/combined.json)
+  [[ "$BASELINE_ROOT" == "$CLI/testdata/compatibility-baseline" ]] || return 0
+  for rel in "${paths[@]}"; do
+    repo_rel="cli/testdata/compatibility-baseline/v2/$rel"
+    current_intro="$(git -C "$ROOT" log --diff-filter=A --format=%H HEAD -- "$repo_rel" | tail -n 1)"
+    test -n "$current_intro" || { printf 'v2 artifact is not committed: %s\n' "$rel" >&2; return 1; }
+    if [[ -z "$intro" ]]; then
+      intro="$current_intro"
+      git -C "$ROOT" merge-base --is-ancestor "$intro" HEAD || return 1
+    elif [[ "$intro" != "$current_intro" ]]; then
+      printf 'v2 artifacts do not share one capture commit: %s\n' "$rel" >&2
+      return 1
+    fi
+    snapshot="$TMP/v2-frozen-${rel//\//_}"
+    git -C "$ROOT" show "$intro:$repo_rel" >"$snapshot"
+    cmp -s "$snapshot" "$V2_DIR/$rel" || {
+      printf 'v2 baseline drift from capture commit %s: %s\n' "$intro" "$rel" >&2
+      return 1
+    }
+  done
+}
+
+verify_tracked_family_lineages() {
+  local lineage family rel intro snapshot
+  [[ "$BASELINE_ROOT" == "$CLI/testdata/compatibility-baseline" ]] || return 0
+  while IFS= read -r lineage; do
+    family="$(basename "$(dirname "$lineage")")"
+    rel="cli/testdata/compatibility-baseline/families/$family/lineage.json"
+    intro="$(git -C "$ROOT" log --diff-filter=A --format=%H HEAD -- "$rel" | tail -n 1)"
+    test -n "$intro" || { printf 'family lineage is not committed: %s\n' "$family" >&2; return 1; }
+    snapshot="$TMP/lineage-$family.json"
+    git -C "$ROOT" show "$intro:$rel" >"$snapshot"
+    cmp -s "$snapshot" "$lineage" || { printf 'frozen family lineage mutated: %s\n' "$family" >&2; return 1; }
+  done < <(find "$BASELINE_ROOT/families" -mindepth 2 -maxdepth 2 -name lineage.json -type f 2>/dev/null | sort)
+}
+
+verify_exact_v2_deltas() {
+  local profile old new
+  local -a expected=(environment_projection pawl_review_hold_5 provenance_reconcile verify_hold_5)
+  test "$(jq -r '.intentional_deltas[]' "$V2_DIR/metadata.json" | sort | paste -sd ' ' -)" = "$(printf '%s\n' "${expected[@]}" | sort | paste -sd ' ' -)" || {
+    printf 'v2 intentional delta allowlist is not exact\n' >&2
+    return 1
+  }
+  ! jq -e '.intentional_deltas[] | select(test("plan-pawl"; "i"))' "$V2_DIR/metadata.json" >/dev/null || {
+    printf 'plan-pawl exit 5 predates v1 and must not be a v2 delta\n' >&2
+    return 1
+  }
+  for profile in default flywheel legacy combined; do
+    old="$BASELINE_ROOT/profiles/$profile.json"
+    new="$V2_DIR/profiles/$profile.json"
+    jq -S --slurpfile old "$old" '
+      ($old[0]) as $o
+      | .env_vars = $o.env_vars
+      | .command_exit_codes = $o.command_exit_codes
+      | .commands = [.commands[]
+          | select(.path != "ao provenance reconcile")
+          | . as $n
+          | ($o.commands[] | select(.id == $n.id)) as $prior
+          | if ($n.id == "ao.pawl.review" or $n.id == "ao.verify")
+            then .exit_codes = $prior.exit_codes
+            else . end]
+    ' "$new" >"$TMP/v2-$profile-sanitized.json"
+    cmp -s "$old" "$TMP/v2-$profile-sanitized.json" || {
+      printf 'unclassified v1 -> v2 compatibility delta in profile %s\n' "$profile" >&2
+      return 1
+    }
+    jq -e '
+      ([.commands[] | select(.path == "ao provenance reconcile")] | length) == 1
+      and .command_exit_codes["pawl review"]["5"] != null
+      and .command_exit_codes.verify["5"] != null
+    ' "$new" >/dev/null || { printf 'required v2 delta missing in profile %s\n' "$profile" >&2; return 1; }
+  done
+}
+
+verify_v2_integrity() {
+  local metadata="$V2_DIR/metadata.json" profile expected actual count sha
+  test -f "$metadata" && [[ ! -L "$metadata" ]] || { printf 'missing v2 metadata.json\n' >&2; return 1; }
+  jq -e '
+    .schema_version == 2
+    and (.behavioral_source_sha | test("^[0-9a-f]{40}$"))
+    and (.capture_sha | test("^[0-9a-f]{40}$"))
+    and ((.equivalent_main_sha == null) or (.equivalent_main_sha | test("^[0-9a-f]{40}$")))
+    and (.profiles | keys | sort) == ["combined","default","flywheel","legacy"]
+    and (.intentional_deltas | type == "array")
+  ' "$metadata" >/dev/null || { printf 'invalid schema-2 v2 metadata\n' >&2; return 1; }
+  for sha in "$(jq -r '.behavioral_source_sha' "$metadata")" "$(jq -r '.capture_sha' "$metadata")"; do
+    is_commit "$sha" || { printf 'v2 metadata references unreachable commit: %s\n' "$sha" >&2; return 1; }
+  done
+  sha="$(jq -r '.equivalent_main_sha // empty' "$metadata")"
+  [[ -z "$sha" ]] || is_commit "$sha" || { printf 'v2 metadata references unreachable equivalent main: %s\n' "$sha" >&2; return 1; }
+  test -d "$V2_DIR/profiles" && [[ ! -L "$V2_DIR/profiles" ]] || return 1
+  count="$(find "$V2_DIR/profiles" -mindepth 1 -maxdepth 1 -type f -name '*.json' | wc -l | tr -d ' ')"
+  test "$count" -eq 4 || { printf 'v2 requires exactly four profile files\n' >&2; return 1; }
+  for profile in default flywheel legacy combined; do
+    test -f "$V2_DIR/profiles/$profile.json" || { printf 'missing v2 profile: %s\n' "$profile" >&2; return 1; }
+    jq -e . "$V2_DIR/profiles/$profile.json" >/dev/null || { printf 'invalid v2 profile JSON: %s\n' "$profile" >&2; return 1; }
+    expected="$(jq -r --arg p "$profile" '.profiles[$p].sha256' "$metadata")"
+    actual="$(sha256 "$V2_DIR/profiles/$profile.json")"
+    test "$expected" = "$actual" || { printf 'v2 profile hash mismatch: %s\n' "$profile" >&2; return 1; }
+  done
+  verify_exact_v2_deltas
+  verify_tracked_family_lineages
+  [[ "$mode" == capture ]] || verify_v2_git_freeze
+}
+
 profile_tags() {
   case "$1" in
     default) printf '%s' "" ;;
@@ -156,6 +331,202 @@ build_profile() {
   fi
 }
 
+build_profile_from_cli() {
+  local source_cli="$1" profile="$2" out="$3" tags
+  tags="$(profile_tags "$profile")"
+  if [[ -n "$tags" ]]; then
+    (cd "$source_cli" && go build -tags "$tags" -o "$out" ./cmd/ao)
+  else
+    (cd "$source_cli" && go build -o "$out" ./cmd/ao)
+  fi
+}
+
+capture_profile_from_cli() {
+  local source_cli="$1" profile="$2" bin raw1 raw2 actual second
+  bin="$TMP/capture-$profile-ao"
+  raw1="$TMP/capture-$profile-1.json"
+  raw2="$TMP/capture-$profile-2.json"
+  actual="$TMP/capture-$profile.norm.json"
+  second="$TMP/capture-$profile-2.norm.json"
+  build_profile_from_cli "$source_cli" "$profile" "$bin"
+  "$bin" capabilities --json >"$raw1"
+  "$bin" capabilities --json >"$raw2"
+  normalize "$raw1" "$actual"
+  normalize "$raw2" "$second"
+  cmp -s "$actual" "$second" || {
+    printf 'nondeterministic capture execution source: %s\n' "$profile" >&2
+    return 1
+  }
+  mkdir -p "$PROFILE_DIR"
+  cp "$actual" "$PROFILE_DIR/$profile.json"
+}
+
+bind_measured_v2_profile() {
+  local profile="$1" measured="$2" tracked
+  local measured_hash tracked_hash metadata_hash
+  tracked="$V2_DIR/profiles/$profile.json"
+  measured_hash="$(sha256 "$measured")"
+  tracked_hash="$(sha256 "$tracked")"
+  metadata_hash="$(jq -r --arg p "$profile" '.profiles[$p].sha256' "$V2_DIR/metadata.json")"
+  if ! cmp -s "$measured" "$tracked" \
+      || [[ "$measured_hash" != "$tracked_hash" ]] \
+      || [[ "$measured_hash" != "$metadata_hash" ]]; then
+    printf 'v2 measured source mismatch: %s\n' "$profile" >&2
+    return 1
+  fi
+}
+
+verify_v2_source_binding_at() {
+  local source="$1" label="$2" tree profile bin raw1 raw2 norm1 norm2
+  tree="$TMP/v2-$label-source"
+  mkdir -p "$tree"
+  git -C "$ROOT" archive "$source" | tar -x -C "$tree"
+  for profile in default flywheel legacy combined; do
+    bin="$TMP/v2-$label-$profile-ao"
+    raw1="$TMP/v2-$label-$profile-1.json"
+    raw2="$TMP/v2-$label-$profile-2.json"
+    norm1="$TMP/v2-$label-$profile-1.norm.json"
+    norm2="$TMP/v2-$label-$profile-2.norm.json"
+    build_profile_from_cli "$tree/cli" "$profile" "$bin"
+    "$bin" capabilities --json >"$raw1"
+    "$bin" capabilities --json >"$raw2"
+    normalize "$raw1" "$norm1"
+    normalize "$raw2" "$norm2"
+    cmp -s "$norm1" "$norm2" || {
+      printf 'nondeterministic v2 %s source: %s\n' "$label" "$profile" >&2
+      return 1
+    }
+    bind_measured_v2_profile "$profile" "$norm1"
+  done
+}
+
+verify_v2_source_binding() {
+  local source
+  source="$(jq -r '.behavioral_source_sha' "$V2_DIR/metadata.json")"
+  verify_v2_source_binding_at "$source" behavioral
+}
+
+verify_source_decision() {
+  local left="$source_decision_c59" right="$source_decision_main" label sha tree profile bin raw1 raw2 norm1 norm2 hash equal
+  local recorded_left="" recorded_right="" v2_selected=0
+  local records="$TMP/source-runs.jsonl" comparisons="$TMP/source-comparisons.jsonl"
+  maybe_fail git
+  is_commit "$left" || { printf 'invalid source-decision commit: %s\n' "$left" >&2; return 1; }
+  is_commit "$right" || { printf 'invalid source-decision commit: %s\n' "$right" >&2; return 1; }
+  if [[ -e "$BASELINE_ROOT/v2" || -L "$BASELINE_ROOT/v2" ]]; then
+    v2_selected=1
+    V2_DIR="$BASELINE_ROOT/v2"
+    verify_v2_integrity
+    recorded_left="$(jq -r '.behavioral_source_sha' "$V2_DIR/metadata.json")"
+    recorded_right="$(jq -r '.equivalent_main_sha' "$V2_DIR/metadata.json")"
+    [[ "$left" == "$recorded_left" ]] || {
+      printf 'source-decision LEFT does not match recorded behavioral source: %s\n' "$left" >&2
+      return 1
+    }
+    is_commit "$recorded_right" || {
+      printf 'invalid recorded equivalent main commit: %s\n' "$recorded_right" >&2
+      return 1
+    }
+    git -C "$ROOT" merge-base --is-ancestor "$recorded_right" "$right" || {
+      printf 'source-decision RIGHT is not a descendant of recorded equivalent main: %s\n' "$right" >&2
+      return 1
+    }
+  fi
+  touch "$records" "$comparisons"
+  for label in c59 main; do
+    [[ "$label" == c59 ]] && sha="$left" || sha="$right"
+    tree="$TMP/source-$label"
+    mkdir -p "$tree"
+    git -C "$ROOT" archive "$sha" | tar -x -C "$tree"
+    for profile in default flywheel legacy combined; do
+      bin="$TMP/source-$label-$profile-ao"
+      build_profile_from_cli "$tree/cli" "$profile" "$bin"
+      raw1="$TMP/source-$label-$profile-1.json"
+      raw2="$TMP/source-$label-$profile-2.json"
+      norm1="$TMP/source-$label-$profile-1.norm.json"
+      norm2="$TMP/source-$label-$profile-2.norm.json"
+      "$bin" capabilities --json >"$raw1"
+      "$bin" capabilities --json >"$raw2"
+      jq -e . "$raw1" >/dev/null && jq -e . "$raw2" >/dev/null
+      jq -S -f "$BASELINE_ROOT/normalize.jq" "$raw1" >"$norm1"
+      jq -S -f "$BASELINE_ROOT/normalize.jq" "$raw2" >"$norm2"
+      cmp -s "$norm1" "$norm2" || { printf 'nondeterministic source decision: %s/%s\n' "$label" "$profile" >&2; return 1; }
+      hash="$(sha256 "$norm1")"
+      jq -nc --arg source "$label" --arg sha "$sha" --arg profile "$profile" --arg hash "$hash" '{source:$source,sha:$sha,profile:$profile,normalized_sha256:$hash,deterministic:true}' >>"$records"
+    done
+  done
+  for profile in default flywheel legacy combined; do
+    if cmp -s "$TMP/source-c59-$profile-1.norm.json" "$TMP/source-main-$profile-1.norm.json"; then equal=true; else equal=false; fi
+    jq -nc --arg profile "$profile" --argjson equal "$equal" '{profile:$profile,equal:$equal}' >>"$comparisons"
+    [[ "$equal" == true ]] || { printf 'source-decision behavior differs: %s\n' "$profile" >&2; return 1; }
+  done
+  if [[ "$v2_selected" == 1 ]]; then
+    for profile in default flywheel legacy combined; do
+      bind_measured_v2_profile "$profile" "$TMP/source-c59-$profile-1.norm.json"
+      bind_measured_v2_profile "$profile" "$TMP/source-main-$profile-1.norm.json"
+    done
+  fi
+  jq -s '.' "$records" >"$TMP/source-runs.json"
+  jq -s '.' "$comparisons" >"$TMP/source-comparisons.json"
+  jq -n --arg c59 "$left" --arg main "$right" --slurpfile runs "$TMP/source-runs.json" --slurpfile comparisons "$TMP/source-comparisons.json" '{schema_version:1,c59_sha:$c59,main_sha:$main,runs:$runs[0],cross_source:$comparisons[0],all_deterministic:true,all_cross_source_equal:true}'
+}
+
+capture_v2() {
+  local target="$BASELINE_ROOT/v2" capture_sha profile execution_tree
+  test -n "$execution_base" || { printf '--capture v2 requires --execution-base SHA\n' >&2; return 2; }
+  test -n "$equivalent_main_sha" || { printf '--capture v2 requires --equivalent-main-sha SHA\n' >&2; return 2; }
+  maybe_fail git
+  is_commit "$execution_base" || { printf 'unreachable v2 behavioral source: %s\n' "$execution_base" >&2; return 1; }
+  is_commit "$equivalent_main_sha" || { printf 'unreachable equivalent main: %s\n' "$equivalent_main_sha" >&2; return 1; }
+  [[ "$profiles_csv" == "default,flywheel,legacy,combined" ]] || { printf 'v2 capture requires all four profiles\n' >&2; return 1; }
+  [[ ! -e "$target" && ! -L "$target" ]] || { printf 'compatibility oracle v2 target already exists: %s\n' "$target" >&2; return 1; }
+  maybe_fail lock
+  mkdir "$v2_lock" || { printf 'cannot acquire v2 capture lock: %s\n' "$v2_lock" >&2; return 1; }
+  trap 'cleanup_v2_capture; rm -rf "$TMP"' EXIT
+  trap 'cleanup_v2_capture; exit 143' HUP INT TERM
+  maybe_fail stage
+  v2_stage="$(mktemp -d "$BASELINE_ROOT/.v2-stage.XXXXXX")"
+  mkdir -p "$v2_stage/profiles"
+  V2_DIR="$v2_stage"
+  PROFILE_DIR="$v2_stage/profiles"
+  BASELINE="$v2_stage"
+  maybe_fail build
+  execution_tree="$TMP/capture-execution-source"
+  mkdir -p "$execution_tree"
+  git -C "$ROOT" archive "$execution_base" | tar -x -C "$execution_tree"
+  for profile in default flywheel legacy combined; do
+    capture_profile_from_cli "$execution_tree/cli" "$profile"
+  done
+  maybe_fail binary
+  maybe_fail json
+  maybe_fail jq
+  capture_sha="$(git -C "$ROOT" rev-parse HEAD)"
+  jq -n --arg source "$execution_base" --arg capture "$capture_sha" --arg main "$equivalent_main_sha" \
+    --arg d "$(sha256 "$PROFILE_DIR/default.json")" \
+    --arg f "$(sha256 "$PROFILE_DIR/flywheel.json")" \
+    --arg l "$(sha256 "$PROFILE_DIR/legacy.json")" \
+    --arg c "$(sha256 "$PROFILE_DIR/combined.json")" \
+    '{schema_version:2,behavioral_source_sha:$source,capture_sha:$capture,equivalent_main_sha:$main,normalized_fields:["tool_version","platform.os","platform.arch"],intentional_deltas:["provenance_reconcile","pawl_review_hold_5","verify_hold_5","environment_projection"],profiles:{default:{tags:[],sha256:$d},flywheel:{tags:["flywheel"],sha256:$f},legacy:{tags:["legacy"],sha256:$l},combined:{tags:["flywheel","legacy"],sha256:$c}}}' >"$v2_stage/metadata.json"
+  BASELINE="$BASELINE_ROOT"
+  PROFILE_DIR="$BASELINE_ROOT/profiles"
+  verify_v1_integrity
+  BASELINE="$v2_stage"
+  PROFILE_DIR="$v2_stage/profiles"
+  verify_v2_integrity
+  verify_v2_source_binding_at "$equivalent_main_sha" capture-equivalent
+  [[ ! -e "$target" && ! -L "$target" ]] || { printf 'compatibility oracle v2 target appeared during capture: %s\n' "$target" >&2; return 1; }
+  maybe_fail rename
+  mv "$v2_stage" "$target"
+  v2_stage=""
+  rmdir "$v2_lock"
+  trap 'rm -rf "$TMP"' EXIT
+  trap - HUP INT TERM
+  V2_DIR="$target"
+  BASELINE="$target"
+  PROFILE_DIR="$target/profiles"
+  printf 'captured append-only Go CLI compatibility oracle v2 at %s\n' "$execution_base"
+}
+
 capture_or_check_profile() {
   local profile="$1" action="$2" bin raw1 raw2 actual
   bin="$TMP/ao-$profile"
@@ -184,7 +555,7 @@ capture_or_check_profile() {
   fi
 }
 
-verify_integrity() {
+verify_v1_integrity() {
   local metadata="$BASELINE/metadata.json" profile expected actual
   test -f "$metadata" || { printf 'missing compatibility metadata.json\n' >&2; return 1; }
   jq -e '.schema_version == 1 and (.execution_base | length) == 40 and (.profiles | keys | sort) == ["combined","default","flywheel","legacy"]' "$metadata" >/dev/null
@@ -203,6 +574,21 @@ verify_integrity() {
   fi
   if [[ "$mode" != capture ]]; then
     verify_git_freeze
+  fi
+}
+
+verify_integrity() {
+  local selected="$BASELINE" selected_profiles="$PROFILE_DIR"
+  if [[ "$BASELINE" == "$V2_DIR" ]]; then
+    BASELINE="$BASELINE_ROOT"
+    PROFILE_DIR="$BASELINE_ROOT/profiles"
+    verify_v1_integrity
+    BASELINE="$selected"
+    PROFILE_DIR="$selected_profiles"
+    verify_v2_integrity
+    verify_v2_source_binding
+  else
+    verify_v1_integrity
   fi
 }
 
@@ -274,6 +660,18 @@ validate_family() {
     }
   done < <(jq -c '.checks[]' "$case_file")
 }
+
+if [[ "$mode" == source_decision ]]; then
+  verify_source_decision
+  exit 0
+fi
+
+if [[ "$mode" == capture && "$oracle_version" == v2 ]]; then
+  capture_v2
+  exit 0
+fi
+
+select_oracle
 
 case "$mode" in
   raw)
