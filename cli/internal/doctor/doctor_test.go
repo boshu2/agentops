@@ -345,10 +345,10 @@ func TestFix_NoDetectorsSelectedNoFindings(t *testing.T) {
 // TestGC_RefusesWithoutGates verifies gc never deletes silently.
 func TestGC_RefusesWithoutGates(t *testing.T) {
 	repo := t.TempDir()
-	if _, err := GC(repo, time.Time{}, true); err == nil {
+	if _, err := GC(repo, time.Time{}, true, false); err == nil {
 		t.Fatal("gc accepted a zero cutoff")
 	}
-	if _, err := GC(repo, time.Now(), false); err == nil {
+	if _, err := GC(repo, time.Now(), false, false); err == nil {
 		t.Fatal("gc accepted without --yes")
 	}
 }

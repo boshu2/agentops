@@ -13,18 +13,15 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/liveness"
+	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
 	"github.com/spf13/cobra"
 )
 
 const (
 	tickExitUsage      = 1
-	tickExitCloseRef   = 3
-	tickExitNoCommit   = 4
 	tickExitUnverified = 5
 	tickExitCouncil    = 6
 	tickExitDisagree   = 8
-	tickExitCloseFail  = 10
 )
 
 type tickExitError struct {
@@ -91,7 +88,21 @@ func (rt tickRuntime) runTracker(args ...string) ([]byte, int, error) {
 	if err != nil {
 		return nil, 127, err
 	}
-	return rt.run(resolution.Binary, args...)
+	return rt.runResolvedTracker(resolution, args...)
+}
+
+func (rt tickRuntime) runResolvedTracker(resolution trackerResolution, args ...string) ([]byte, int, error) {
+	command := exec.Command(resolution.Binary, args...) // #nosec G204 -- resolution constrains the executable to br|bd.
+	command.Dir = resolution.WorkDir
+	command.Env = append([]string(nil), resolution.ChildEnv...)
+	out, err := command.CombinedOutput()
+	if err == nil {
+		return out, 0, nil
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		return out, exitErr.ExitCode(), err
+	}
+	return out, 127, err
 }
 
 var verdictGateCmd = &cobra.Command{
@@ -100,15 +111,6 @@ var verdictGateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return tickRunVerdictGate(newTickRuntime(cmd), args[0])
-	},
-}
-
-var councilGateCmd = &cobra.Command{
-	Use:   "council-gate <verdict1> <verdict2> [...]",
-	Short: "Fail-closed two-plus judge verdict aggregation",
-	Args:  cobra.MinimumNArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickCouncilGate(newTickRuntime(cmd), args)
 	},
 }
 
@@ -149,24 +151,13 @@ var readyCmd = &cobra.Command{
 	},
 }
 
-var closeCmd = &cobra.Command{
-	Use:   "close <id> <commit-message> <evidence-ref> [paths...]",
-	Short: "Close a bead and persist the explicit ledger/evidence paths",
-	Args:  cobra.MinimumNArgs(3),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return tickClosePort(newTickRuntime(cmd), args[0], args[1], args[2], args[3:])
-	},
-}
-
 func init() {
 	// The `tick` command + its subcommands are archived behind //go:build legacy
 	// (tick_cmd_legacy.go). These sibling top-level commands are spine — they use
 	// the untagged tick engine below and ship in the default binary.
 	rootCmd.AddCommand(
 		readyCmd,
-		closeCmd,
 		verdictGateCmd,
-		councilGateCmd,
 		installGuardsCmd,
 		guardStatusCmd,
 		chaosTestCmd,
@@ -338,395 +329,11 @@ func tickAnyOpenOrInProgress(list []tickBead) bool {
 	return false
 }
 
-func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
-	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
-	if err != nil {
-		return err
-	}
-	return tickCloseResolved(rt, resolution, id, msg, evidence, paths)
-}
-
-func tickCloseResolved(rt tickRuntime, resolution trackerResolution, id, msg, evidence string, paths []string) error {
-	evFirst := tickFirstEvidenceToken(evidence)
-	if reason := tickEvidenceRefusal(rt, evidence, evFirst); reason != "" {
-		fmt.Fprintf(rt.stderr, "REFUSED close %s: evidence %q %s\n", id, evidence, reason)
-		return &tickExitError{code: tickExitCloseRef}
-	}
-
-	ledgerDir := resolution.LedgerDir
-	if _, code, err := rt.run(resolution.Binary, "close", id, "--reason", "evidence: "+evidence); err != nil || code != 0 {
-		fmt.Fprintf(rt.stderr, "FAILED close %s: %s close failed or skipped; no files staged\n", id, resolution.Tracker)
-		return &tickExitError{code: tickExitCloseFail}
-	}
-
-	closedRef, err := tickPersistClosedTracker(rt, resolution, id, msg)
-	if err != nil {
-		return err
-	}
-	if err := tickCommitPublicClose(rt, ledgerDir, evFirst, msg, paths); err != nil {
-		return err
-	}
-	if resolution.Tracker == trackerBD {
-		closedRef = tickGitRevParse(rt)
-		if closedRef == "" {
-			closedRef = "none"
-		}
-	}
-	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(closedRef))
-	return nil
-}
-
-func tickPersistClosedTracker(rt tickRuntime, resolution trackerResolution, id, msg string) (string, error) {
-	if resolution.Tracker == trackerBR {
-		return tickCommitBRClose(rt, resolution, id, msg)
-	}
-
-	// bd persists into its Dolt-backed store itself. Never inspect, stage, or
-	// commit the unrelated BR JSONL ledger; verify through the selected bd
-	// backend instead.
-	if tickTrackerShowsClosed(rt, resolution, id) {
-		return "none", nil
-	}
-	_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-	fmt.Fprintf(rt.stderr, "FAILED close %s: %s does not report the issue closed; issue reopened\n", id, resolution.Tracker)
-	return "", &tickExitError{code: tickExitCloseFail}
-}
-
-func tickCommitBRClose(rt tickRuntime, resolution trackerResolution, id, msg string) (string, error) {
-	ledgerDir := resolution.LedgerDir
-	before := tickGitRevParseInDir(rt, ledgerDir)
-	if before == "" {
-		before = "none"
-	}
-	if _, code, syncErr := rt.run(resolution.Binary, "sync", "--flush-only"); syncErr != nil || code != 0 {
-		_, _, _ = rt.run(resolution.Binary, "sync")
-	}
-	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
-	if !tickLedgerShowsClosed(issuesPath, id) {
-		_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-		_, _, _ = rt.run(resolution.Binary, "sync", "--flush-only")
-		fmt.Fprintf(rt.stderr, "FAILED close %s: %s ledger does not show a closed bead after close; bead reopened\n", id, resolution.Tracker)
-		return "", &tickExitError{code: tickExitCloseFail}
-	}
-
-	ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
-	if tickPathExists(rt.workDir, filepath.Join(ledgerDir, "metadata.json")) {
-		ledgerStage = append(ledgerStage, "metadata.json")
-	}
-	if _, code, addErr := rt.run("git", ledgerStage...); addErr != nil || code != 0 {
-		return "", &tickExitError{code: code, msg: "ledger git add failed"}
-	}
-	ledgerCommitOut, code, commitErr := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
-	ledgerCommitNoop := false
-	if commitErr != nil || code != 0 {
-		if !tickGitCommitNothingToCommit(ledgerCommitOut) {
-			return "", &tickExitError{code: code, msg: "ledger git commit failed"}
-		}
-		ledgerCommitNoop = true
-	}
-	after := tickGitRevParseInDir(rt, ledgerDir)
-	if after == "" {
-		after = "none"
-	}
-	if before == after && !ledgerCommitNoop {
-		_, _, _ = rt.run(resolution.Binary, "update", id, "--status", "open")
-		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
-		return "", &tickExitError{code: tickExitNoCommit}
-	}
-	return after, nil
-}
-
-func tickCommitPublicClose(rt tickRuntime, ledgerDir, evidence, msg string, paths []string) error {
-	stage := tickPublicStagePaths(rt, ledgerDir, evidence, paths)
-	if len(stage) == 0 {
-		return nil
-	}
-	args := append([]string{"add", "--"}, stage...)
-	if _, code, err := rt.run("git", args...); err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "git add failed"}
-	}
-	out, code, err := rt.run("git", "commit", "-q", "-m", msg)
-	if (err != nil || code != 0) && !tickGitCommitNothingToCommit(out) {
-		return &tickExitError{code: code, msg: "git commit failed"}
-	}
-	return nil
-}
-
-func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) error {
-	resolution, err := resolveTracker(rt.workDir, append(os.Environ(), rt.env...))
-	if err != nil {
-		return err
-	}
-	if tickTrackerShowsClosed(rt, resolution, id) {
-		after := tickGitRevParse(rt)
-		if after == "" {
-			after = "none"
-		}
-		fmt.Fprintf(rt.stdout, "already closed %s @ %s\n", id, tickShortSHA(after))
-		return nil
-	}
-	return tickCloseResolved(rt, resolution, id, msg, evidence, paths)
-}
-
-func tickTrackerShowsClosed(rt tickRuntime, resolution trackerResolution, id string) bool {
-	if resolution.Tracker == trackerBR {
-		return tickLedgerShowsClosed(filepath.Join(resolution.LedgerDir, "issues.jsonl"), id)
-	}
-	queries := [][]string{{"show", id, "--json"}, {"list", "--all", "--json"}}
-	for _, args := range queries {
-		out, code, err := rt.run(resolution.Binary, args...)
-		if err != nil || code != 0 {
-			continue
-		}
-		for _, item := range tickParseBeads(out) {
-			if item.ID == id && item.Status == "closed" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// tickEvidenceRefusal applies the close-evidence gate and returns a non-empty
-// reason if the close must be refused, or "" if it may proceed.
-//
-// Durable git-blob binding (age-l7yh): a repo-internal evidence path must be a
-// committed git blob in HEAD (an ancestor of the close commit tickClose is about
-// to create). Evidence that is present in the working tree but not in history
-// looks durable yet isn't — refuse it. The gate uses git itself for every
-// classification (repo-root relativization, cat-file, ls-tree, diff,
-// check-ignore) rather than string heuristics on the cited text, so it cannot be
-// bypassed by an absolute path inside the repo, a subdirectory-relative path, a
-// crafted substring, a committed directory (tree), a dirty tracked file, a
-// committed symlink, or a symlink/component whose target escapes the repo.
-//
-// Only two classes are allowed:
-//   - a committed, clean, regular-file blob in HEAD (the durable ideal);
-//   - the gitignored AgentOps runtime corpus (.agents/**), confirmed via
-//     git check-ignore — ephemeral by design (admitted state under .ao/ is
-//     tracked and so passes the committed-blob check directly).
-//
-// Everything else is refused, INCLUDING evidence that resolves outside the repo:
-// it cannot be a durable in-repo git blob, and exempting outside paths was the
-// fail-open that crafted symlinks exploited.
-//
-// No Agent-Mail lookup is involved, so Agent-Mail availability never blocks a
-// close. This strengthens "no verdict = not done" without replacing main's
-// ContextID-independence verdict model. Where there is no git history to bind to
-// (not a repo, before the first commit) or repo placement is undeterminable
-// (a stubbed harness), the binding falls back to plain existence so a legit
-// close is not blocked.
-func tickEvidenceRefusal(rt tickRuntime, evidence, evFirst string) string {
-	_ = evidence // classification is by the cited token + git, not the raw text
-	if evFirst == "" {
-		return "resolves to no real artifact"
-	}
-	// Resolve once: tickResolvePath returns evFirst unchanged when it is already
-	// absolute, else joins it under rt.workDir. os.Stat on that absolute path is
-	// the existence check — an absolute evidence path is never falsely treated as
-	// missing by being re-joined under workDir.
-	abs := tickResolvePath(rt.workDir, evFirst)
-	if _, err := os.Stat(abs); err != nil {
-		return "resolves to no real artifact"
-	}
-	if !tickHasGitHead(rt) {
-		return "" // no history to bind to — existence is the only available check
-	}
-	root, rel, ok := tickRepoRelEvidence(rt, evFirst)
-	if !ok {
-		return "" // repo placement undeterminable (e.g. a stubbed test harness)
-	}
-	if rel == ".." || strings.HasPrefix(rel, "../") {
-		// Resolves outside the repo (including via a symlink whose target escapes
-		// it). Such evidence cannot be a durable in-repo git blob, so refuse it
-		// rather than exempt it — exempting outside paths was the fail-open that
-		// let crafted symlinks bypass the binding.
-		return "resolves outside the repository; durable evidence must be a committed file tracked in this repo"
-	}
-	if tickEvidenceCommittedRel(rt, root, rel) {
-		return "" // durable: a committed regular-file blob, ancestor of the close commit
-	}
-	if tickEvidenceRuntimeCorpus(rt, root, rel) {
-		return "" // gitignored .agents/** runtime corpus — ephemeral by design
-	}
-	return "is present but not a committed git blob in history (durable-evidence binding); commit the evidence before closing"
-}
-
-// tickHasGitHead reports whether rt.workDir is inside a git repo with at least
-// one commit (a resolvable HEAD). Used to gate the durable-evidence binding so
-// it never fires where there is no history to bind to.
-func tickHasGitHead(rt tickRuntime) bool {
-	_, code, err := rt.run("git", "rev-parse", "--verify", "-q", "HEAD")
-	return err == nil && code == 0
-}
-
-// tickRepoRelEvidence maps the cited evidence token to the repo top-level plus a
-// clean repo-root-relative slash path. The bool reports only whether repo
-// placement could be DETERMINED (a real git top-level was resolved) — not
-// whether the path is inside; the returned rel may begin with "../" when the
-// path escapes the repo, and the caller refuses that. Relativizing against the
-// repo top-level — rather than trusting the caller's spelling — is what makes the
-// binding immune to absolute-inside-repo and subdirectory bypasses.
-//
-// The parent directory is symlink-resolved (so a symlinked prefix like macOS
-// /var -> /private/var, or any symlinked component that escapes the repo,
-// resolves to its real location and is then correctly judged inside or outside)
-// while the leaf name is kept as-is. A leaf or component symlink that escapes the
-// repo yields a "../" rel and is refused by the caller — escaping is never
-// exempted.
-func tickRepoRelEvidence(rt tickRuntime, evFirst string) (root, rel string, ok bool) {
-	out, code, err := rt.run("git", "rev-parse", "--show-toplevel")
-	if err != nil || code != 0 {
-		return "", "", false
-	}
-	root = strings.TrimSpace(string(out))
-	// A real git top-level is an absolute path; anything else (e.g. a stubbed
-	// test harness echoing a token) means placement is undeterminable.
-	if !filepath.IsAbs(root) {
-		return "", "", false
-	}
-	if resolved, e := filepath.EvalSymlinks(root); e == nil {
-		root = resolved
-	}
-	var lexAbs string
-	if filepath.IsAbs(evFirst) {
-		// Resolve the parent directory (so a symlinked prefix like /var ->
-		// /private/var matches the resolved root) but keep the leaf name as-is, so
-		// a leaf symlink is not followed out of the repo.
-		clean := filepath.Clean(evFirst)
-		parent := filepath.Dir(clean)
-		if resolved, e := filepath.EvalSymlinks(parent); e == nil {
-			parent = resolved
-		}
-		lexAbs = filepath.Join(parent, filepath.Base(clean))
-	} else {
-		base := rt.workDir
-		if resolved, e := filepath.EvalSymlinks(base); e == nil {
-			base = resolved
-		}
-		lexAbs = filepath.Clean(filepath.Join(base, evFirst))
-	}
-	r, err := filepath.Rel(root, lexAbs)
-	if err != nil {
-		return root, "", false // cannot relativize (e.g. different volume) — undeterminable
-	}
-	// Determinable: r is the repo-relative path. It may begin with "../" when the
-	// path (or a resolved symlink target) escapes the repo; the caller refuses
-	// that rather than exempting it.
-	return root, filepath.ToSlash(r), true
-}
-
-// tickEvidenceCommittedRel reports whether the repo-root-relative path rel is
-// durable evidence: a committed FILE in HEAD whose working-tree content matches
-// HEAD exactly. Two checks:
-//
-//   - `git cat-file -t HEAD:<rel>` must report type "blob" — `-e` alone also
-//     succeeds for a tree, which would let a close cite a whole committed
-//     directory (e.g. docs/) instead of a specific durable artifact. rel is
-//     root-relative, which is what the HEAD:<path> form expects.
-//   - `git -C root diff --quiet HEAD -- <rel>` must report no difference — a
-//     committed path with uncommitted or staged content changes is NOT durably
-//     in history, so the cited working-tree artifact must equal the committed
-//     blob. diff runs with -C root because its pathspec is cwd-relative whereas
-//     rel is root-relative.
-//
-// A clean committed regular-file blob is durable evidence reachable from (an
-// ancestor of) the close commit. A committed SYMLINK is also a blob, but its
-// bytes are just the target path — the pointed-at content is not in history — so
-// it is rejected via its tree mode (120000).
-func tickEvidenceCommittedRel(rt tickRuntime, root, rel string) bool {
-	if rel == "" {
-		return false
-	}
-	out, code, err := rt.run("git", "cat-file", "-t", "HEAD:"+rel)
-	if err != nil || code != 0 || strings.TrimSpace(string(out)) != "blob" {
-		return false
-	}
-	// Reject a committed symlink: ls-tree reports its mode as 120000. Require a
-	// regular file (100644/100755) so the durable bytes ARE the evidence, not a
-	// pointer to an untracked, possibly-external, mutable target.
-	lt, ltcode, lterr := rt.run("git", "-C", root, "ls-tree", "HEAD", "--", rel)
-	if lterr != nil || ltcode != 0 {
-		return false
-	}
-	if mode := strings.TrimSpace(string(lt)); !strings.HasPrefix(mode, "100") {
-		return false
-	}
-	_, dcode, derr := rt.run("git", "-C", root, "diff", "--quiet", "HEAD", "--", rel)
-	return derr == nil && dcode == 0
-}
-
-// tickEvidenceRuntimeCorpus reports whether the repo-root-relative path rel is
-// in the AgentOps runtime corpus (.agents/**) AND is actually gitignored. Both
-// conditions are required: scoping to .agents/** keeps other gitignored paths
-// (build artifacts, logs, temp files) from serving as durable evidence, and
-// confirming via git check-ignore honors the documented exemption being for the
-// *gitignored* corpus (a force-added, tracked .agents path is not exempt — it is
-// committed and so passes the blob check anyway). check-ignore runs with -C root
-// so the root-relative rel resolves correctly regardless of rt.workDir.
-func tickEvidenceRuntimeCorpus(rt tickRuntime, root, rel string) bool {
-	if rel != ".agents" && !strings.HasPrefix(rel, ".agents/") {
-		return false
-	}
-	_, code, err := rt.run("git", "-C", root, "check-ignore", "-q", "--", rel)
-	return err == nil && code == 0
-}
-
-func tickFirstEvidenceToken(evidence string) string {
-	ev := strings.TrimSpace(evidence)
-	if i := strings.IndexByte(ev, ' '); i >= 0 {
-		return ev[:i]
-	}
-	return ev
-}
-
-func tickPathExists(root, path string) bool {
-	if path == "" {
-		return false
-	}
-	_, err := os.Stat(tickResolvePath(root, path))
-	return err == nil
-}
-
 func tickResolvePath(root, path string) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
 	return filepath.Join(root, path)
-}
-
-// tickLedgerDir resolves the tracker ledger directory used for close
-// verification and staging. Resolution order matches what spawned `br`
-// child processes see: explicit BEADS_DIR (rt.env overrides inherited process
-// env), then the canonical git-common-dir `_beads` ledger for linked worktrees.
-func tickLedgerDir(rt tickRuntime) string {
-	if dir := tickEnvValue(rt, "BEADS_DIR"); dir != "" {
-		return tickResolvePath(rt.workDir, dir)
-	}
-	return resolveBeadsDir(rt.workDir, append(os.Environ(), rt.env...)).Path
-}
-
-// tickEnvValue mirrors the environment a tickRuntime child process receives:
-// rt.env entries are appended after os.Environ() in rt.run, so the last
-// rt.env match wins over the inherited process value.
-func tickEnvValue(rt tickRuntime, key string) string {
-	prefix := key + "="
-	for i := len(rt.env) - 1; i >= 0; i-- {
-		if strings.HasPrefix(rt.env[i], prefix) {
-			return strings.TrimPrefix(rt.env[i], prefix)
-		}
-	}
-	return os.Getenv(key)
-}
-
-// tickStagePath renders a ledger path for git add: repo-relative when the
-// path sits under the work dir, absolute otherwise.
-func tickStagePath(root, path string) string {
-	rel, err := filepath.Rel(root, path)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return path
-	}
-	return rel
 }
 
 func tickGitRevParse(rt tickRuntime) string {
@@ -735,73 +342,6 @@ func tickGitRevParse(rt tickRuntime) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
-}
-
-func tickGitRevParseInDir(rt tickRuntime, dir string) string {
-	out, code, err := rt.run("git", "-C", dir, "rev-parse", "HEAD")
-	if err != nil || code != 0 {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
-func tickGitCommitNothingToCommit(out []byte) bool {
-	text := strings.ToLower(string(out))
-	return strings.Contains(text, "nothing to commit") ||
-		strings.Contains(text, "nothing added to commit") ||
-		strings.Contains(text, "no changes added to commit")
-}
-
-func tickPublicStagePaths(rt tickRuntime, ledgerDir, evFirst string, paths []string) []string {
-	stage := []string{}
-	if tickPathExists(rt.workDir, evFirst) {
-		stage = tickAppendPublicStagePath(stage, rt.workDir, ledgerDir, evFirst)
-	}
-	for _, path := range paths {
-		stage = tickAppendPublicStagePath(stage, rt.workDir, ledgerDir, path)
-	}
-	return stage
-}
-
-func tickAppendPublicStagePath(stage []string, root, ledgerDir, path string) []string {
-	if path == "" || tickIsPrivateLedgerPath(root, ledgerDir, path) {
-		return stage
-	}
-	return append(stage, path)
-}
-
-func tickIsPrivateLedgerPath(root, ledgerDir, path string) bool {
-	resolved := filepath.Clean(tickResolvePath(root, path))
-	ledger := filepath.Clean(tickResolvePath(root, ledgerDir))
-	if rel, err := filepath.Rel(ledger, resolved); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return true
-	}
-	clean := filepath.Clean(path)
-	return clean == "_beads" || strings.HasPrefix(clean, "_beads"+string(filepath.Separator)) ||
-		clean == ".beads" || strings.HasPrefix(clean, ".beads"+string(filepath.Separator))
-}
-
-func tickShortSHA(sha string) string {
-	if len(sha) <= 7 {
-		return sha
-	}
-	return sha[:7]
-}
-
-func tickLedgerShowsClosed(path, id string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer func() { _ = f.Close() }()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		var item tickBead
-		if json.Unmarshal(scanner.Bytes(), &item) == nil && item.ID == id && item.Status == "closed" {
-			return true
-		}
-	}
-	return false
 }
 
 func tickReadVerdict(rt tickRuntime, path string) (string, error) {
@@ -823,263 +363,16 @@ func tickRunVerdictGate(rt tickRuntime, path string) error {
 	if err != nil {
 		return err
 	}
-	if !tickVerdictHasCommandsRun(text) {
+	if !verdictparse.HasCommandsRun(text) {
 		fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
 		return &tickExitError{code: tickExitUnverified}
 	}
-	if _, gaps := tickVerdictIdentity(text); len(gaps) > 0 {
+	if _, gaps := verdictparse.Identity(text); len(gaps) > 0 {
 		fmt.Fprintf(rt.stderr, "REJECTED: verdict identity unproven: %s\n", strings.Join(gaps, "; "))
 		return &tickExitError{code: tickExitUnverified}
 	}
 	fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites commands and independent judge identity")
 	return nil
-}
-
-// tickVerdictLineCap is the deliberate maximum length of a single line in a
-// council verdict artifact. It raises the implicit 64KB bufio.Scanner token
-// limit to a bounded ceiling: any legitimate verdict line fits well under it,
-// while a pathological line beyond it fails the scan closed rather than silently
-// truncating the rest of the artifact.
-const tickVerdictLineCap = 1 << 20 // 1 MiB
-
-// tickScanVerdictLines reads a verdict artifact into its lines with an explicit,
-// bounded scan buffer and surfaces any scanner error — including a line longer
-// than tickVerdictLineCap. Callers in the council verdict path MUST fail closed
-// on a non-nil error: an artifact that cannot be fully scanned must never be
-// treated as a PASS (Codex sweep F-03 — an unchecked scanner.Err() let a
-// 70000-byte line hide a trailing FAIL behind a truncated scan).
-func tickScanVerdictLines(text string) ([]string, error) {
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	scanner.Buffer(make([]byte, 0, 64*1024), tickVerdictLineCap)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
-}
-
-func tickVerdictHasCommandsRun(text string) bool {
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact has no verifiable COMMANDS RUN body.
-		return false
-	}
-	inBlock := false
-	commandHeader := regexp.MustCompile(`(?i)commands[ _-]*run`)
-	for _, line := range lines {
-		lower := strings.ToLower(line)
-		if commandHeader.MatchString(line) {
-			inBlock = true
-			if i := strings.Index(line, ":"); i >= 0 && strings.TrimSpace(line[i+1:]) != "" {
-				return true
-			}
-			continue
-		}
-		if inBlock && regexp.MustCompile(`^\s*reasons`).MatchString(lower) {
-			inBlock = false
-		}
-		if inBlock && strings.TrimSpace(line) != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func tickCouncilGate(rt tickRuntime, paths []string) error {
-	n := len(paths)
-	pass, fail, unverified := 0, 0, 0
-	families := map[string]bool{}
-	judges := map[string]bool{}
-	contexts := map[string]bool{}
-	for _, path := range paths {
-		text, err := tickReadVerdict(rt, path)
-		identity, identityGaps := tickVerdictIdentity(text)
-		// A verdict with any identity gap — now including a missing context_id or a
-		// judge context equal to the author context (self-judge) — is unverified and
-		// fails closed.
-		if err != nil || !tickVerdictHasCommandsRun(text) || len(identityGaps) > 0 {
-			unverified++
-			continue
-		}
-		// The independence axis is the judge CONTEXT, not the judge name: a
-		// duplicate context is one judge regardless of how it labels itself.
-		// Canonicalize first so a single judge cannot forge "distinct" contexts via
-		// whitespace/case/unicode variants.
-		canonCtx := liveness.CanonicalizeContextID(identity.ContextID)
-		if contexts[canonCtx] {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge context %q does not count as an independent judge\n", identity.ContextID)
-			return &tickExitError{code: tickExitCouncil}
-		}
-		contexts[canonCtx] = true
-		// Retain the judge-name dedup as a secondary guard.
-		if judges[identity.JudgeName] {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge %q does not count as an independent judge\n", identity.JudgeName)
-			return &tickExitError{code: tickExitCouncil}
-		}
-		judges[identity.JudgeName] = true
-		p, f := tickVerdictTokenCounts(text)
-		switch {
-		case p == 1 && f == 0:
-			pass++
-			families[identity.JudgeModelFamily] = true
-		case f == 1 && p == 0:
-			fail++
-		default:
-			unverified++
-		}
-	}
-	if unverified > 0 {
-		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d verdict(s) unverified (no COMMANDS RUN / identity gap)\n", unverified, n)
-		return &tickExitError{code: tickExitCouncil}
-	}
-	if pass == n {
-		// Context floor: need >=2 distinct non-author judge contexts.
-		if len(contexts) < 2 {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: PASS quorum has %d distinct judge context; need at least 2 independent contexts\n", len(contexts))
-			return &tickExitError{code: tickExitCouncil}
-		}
-		// Optional cross-family strengthener: only gated when explicitly required.
-		if rt.requireCrossFamily && len(families) < 2 {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: --require-cross-family set but PASS quorum spans %d model family; need at least 2 (cross-family)\n", len(families))
-			return &tickExitError{code: tickExitCouncil}
-		}
-		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous across %d distinct contexts (%d model families)\n", pass, n, len(contexts), len(families))
-		return nil
-	}
-	if fail == n {
-		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d judges FAIL\n", fail, n)
-		return &tickExitError{code: tickExitCouncil}
-	}
-	fmt.Fprintf(rt.stderr, "DISAGREEMENT: %d PASS / %d FAIL - fail-closed; dispatch tie-break\n", pass, fail)
-	return &tickExitError{code: tickExitDisagree}
-}
-
-type tickVerdictIdentityInfo struct {
-	Author           string
-	JudgeName        string
-	JudgeProgram     string
-	JudgeModelFamily string
-	// ContextID is the judge's session-identity axis (the independence axis): two
-	// distinct ContextIDs are two independent judges even on the same model.
-	ContextID string
-	// AuthorContextID is the author's context — a judge whose ContextID equals it
-	// is self-judging and fails closed.
-	AuthorContextID string
-}
-
-func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
-	info := tickVerdictIdentityInfo{
-		Author:           tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author", "author_id", "author-id", "author id", "author_name", "author-name", "author name")),
-		JudgeName:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge", "judge_name", "judge-name", "judge name", "judge_id", "judge-id", "judge id")),
-		JudgeProgram:     tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge_program", "judge-program", "judge program", "program", "validator_program", "validator-program", "validator program")),
-		JudgeModelFamily: tickNormalizeModelFamily(tickVerdictMetadataValue(text, "judge_model_family", "judge-model-family", "judge model family", "model_family", "model-family", "model family", "family")),
-		ContextID:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "context_id", "context-id", "context id", "validator_session", "validator-session", "validator session")),
-		AuthorContextID:  tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author_context_id", "author-context-id", "author context id")),
-	}
-	var gaps []string
-	if info.Author == "" {
-		gaps = append(gaps, "missing author")
-	}
-	if info.JudgeName == "" {
-		gaps = append(gaps, "missing judge.name")
-	}
-	if info.JudgeProgram == "" {
-		gaps = append(gaps, "missing judge.program")
-	}
-	if info.JudgeModelFamily == "" {
-		gaps = append(gaps, "missing judge.model_family")
-	} else if tickUnknownModelFamily(info.JudgeModelFamily) {
-		gaps = append(gaps, "judge.model_family is unknown")
-	}
-	if info.ContextID == "" {
-		gaps = append(gaps, "missing judge.context_id")
-	}
-	if info.Author != "" && info.JudgeName != "" && info.Author == info.JudgeName {
-		gaps = append(gaps, "judge.name equals author")
-	}
-	if info.AuthorContextID != "" && info.ContextID != "" && info.AuthorContextID == info.ContextID {
-		gaps = append(gaps, "judge.context_id equals author context")
-	}
-	if tickVerdictMetadataValue(text, "allow_self", "allow-self", "allow self", "self_waiver", "self-waiver", "self waiver") != "" {
-		gaps = append(gaps, "self-judge waiver must be external and principal-logged, not verdict-authored")
-	}
-	return info, gaps
-}
-
-func tickVerdictMetadataValue(text string, keys ...string) string {
-	wanted := map[string]bool{}
-	for _, key := range keys {
-		wanted[tickNormalizeMetadataKey(key)] = true
-	}
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact yields no trusted metadata, which
-		// surfaces as an identity gap upstream.
-		return ""
-	}
-	for _, raw := range lines {
-		line := strings.TrimSpace(raw)
-		line = strings.TrimPrefix(line, "-")
-		line = strings.TrimPrefix(strings.TrimSpace(line), "*")
-		line = strings.TrimSpace(line)
-		i := strings.Index(line, ":")
-		if i < 0 {
-			continue
-		}
-		key := tickNormalizeMetadataKey(line[:i])
-		if !wanted[key] {
-			continue
-		}
-		return strings.Trim(strings.TrimSpace(line[i+1:]), "`\"'")
-	}
-	return ""
-}
-
-func tickNormalizeMetadataKey(key string) string {
-	key = strings.ToLower(strings.TrimSpace(key))
-	key = strings.ReplaceAll(key, "-", "_")
-	key = strings.ReplaceAll(key, " ", "_")
-	return key
-}
-
-func tickNormalizeIdentityValue(value string) string {
-	return strings.TrimSpace(value)
-}
-
-func tickNormalizeModelFamily(value string) string {
-	return strings.ToLower(strings.TrimSpace(value))
-}
-
-func tickUnknownModelFamily(family string) bool {
-	switch strings.ToLower(strings.TrimSpace(family)) {
-	case "", "unknown", "none", "n/a", "na", "unset":
-		return true
-	default:
-		return false
-	}
-}
-
-func tickVerdictTokenCounts(text string) (pass, fail int) {
-	lines, err := tickScanVerdictLines(text)
-	if err != nil {
-		// Fail closed: an unscannable artifact yields no PASS token. Returning
-		// (0, 0) lands in the council's default branch (unverified), never a PASS.
-		return 0, 0
-	}
-	passRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*PASS\b`)
-	failRE := regexp.MustCompile(`(?i)^\s*VERDICT:\s*FAIL\b`)
-	for _, line := range lines {
-		if passRE.MatchString(line) {
-			pass++
-		}
-		if failRE.MatchString(line) {
-			fail++
-		}
-	}
-	return pass, fail
 }
 
 func tickInstallGuards(rt tickRuntime) error {
@@ -1143,8 +436,8 @@ func tickSmoke(rt tickRuntime) error {
 		failLine("1 guard posture invalid")
 	}
 
-	if !tickVerdictHasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
-		tickVerdictHasCommandsRun("COMMANDS RUN:\n  ao tick guard-status\nREASONS: ok\n") {
+	if !verdictparse.HasCommandsRun("COMMANDS RUN:\nREASONS:\nbecause\n") &&
+		verdictparse.HasCommandsRun("COMMANDS RUN:\n  ao tick guard-status\nREASONS: ok\n") {
 		passLine("2 verdict-gate rejects empty / accepts cited")
 	} else {
 		failLine("2 verdict-gate command body matrix failed")
@@ -1168,20 +461,20 @@ func tickSmoke(rt tickRuntime) error {
 	quietRT := rt
 	quietRT.stdout = io.Discard
 	quietRT.stderr = io.Discard
-	if tickExitCode(tickCouncilGate(quietRT, []string{pass1, pass2})) == 0 &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, fail1})) == tickExitDisagree &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, unver})) == tickExitCouncil &&
-		tickExitCode(tickCouncilGate(quietRT, []string{pass1, contra})) == tickExitCouncil {
+	if tickExitCode(runCouncilGate(quietRT, []string{pass1, pass2})) == 0 &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, fail1})) == tickExitDisagree &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, unver})) == tickExitCouncil &&
+		tickExitCode(runCouncilGate(quietRT, []string{pass1, contra})) == tickExitCouncil {
 		passLine("3 council-gate 2PASS/mixed/unverified/contradictory")
 	} else {
 		failLine("3 council-gate matrix failed")
 	}
-	if !tickVerdictHasCommandsRun("VERDICT: FAIL\n") {
+	if !verdictparse.HasCommandsRun("VERDICT: FAIL\n") {
 		passLine("4 chaos bare-verdict rejected")
 	} else {
 		failLine("4 chaos bare-verdict accepted")
 	}
-	if tickSmokeCloseFailure(rt, tmp) {
+	if runCloseSmokeFailure(rt, tmp) {
 		passLine("5 close aborts before git commit when br close fails")
 	} else {
 		failLine("5 close failure path committed")
@@ -1212,43 +505,10 @@ func tickExitCode(err error) int {
 	if err == nil {
 		return 0
 	}
-	if e, ok := err.(*tickExitError); ok {
+	if e, ok := err.(interface{ ExitCode() int }); ok {
 		return e.ExitCode()
 	}
 	return 1
-}
-
-func tickSmokeCloseFailure(rt tickRuntime, tmp string) bool {
-	fakebin := filepath.Join(tmp, "fakebin")
-	_ = os.MkdirAll(fakebin, 0o755)
-	fakeBR := `#!/usr/bin/env bash
-if [ "${1:-}" = "close" ]; then echo "stubbed br close failure" >&2; exit 42; fi
-if [ "${1:-}" = "sync" ] || [ "${1:-}" = "update" ]; then exit 0; fi
-echo "unexpected br call: $*" >&2; exit 43
-`
-	fakeGitLog := filepath.Join(tmp, "fake-git.log")
-	fakeGit := `#!/usr/bin/env bash
-case "${1:-}" in
-  rev-parse) echo fakehead ;;
-  add) : ;;
-  commit) printf 'commit\n' >> "${TICK_SMOKE_FAKE_GIT_LOG:?}" ;;
-  *) : ;;
-esac
-`
-	_ = os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755)
-	_ = os.WriteFile(filepath.Join(fakebin, "git"), []byte(fakeGit), 0o755)
-	evidence := filepath.Join(tmp, "close-evidence.md")
-	_ = os.WriteFile(evidence, []byte("evidence"), 0o644)
-	smokeRT := rt
-	smokeRT.stdout = io.Discard
-	smokeRT.stderr = io.Discard
-	smokeRT.env = []string{
-		"PATH=" + fakebin + string(os.PathListSeparator) + os.Getenv("PATH"),
-		"TICK_SMOKE_FAKE_GIT_LOG=" + fakeGitLog,
-	}
-	code := tickExitCode(tickClose(smokeRT, "cp-smoke", "smoke close should not commit", evidence, nil))
-	info, err := os.Stat(fakeGitLog)
-	return code != 0 && (os.IsNotExist(err) || (err == nil && info.Size() == 0))
 }
 
 func tickNoClaudePrintOnScriptSurfaces(rt tickRuntime) bool {

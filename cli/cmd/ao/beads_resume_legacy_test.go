@@ -1,0 +1,149 @@
+// `ao beads resume <id>` — slice 3 of soc-vuu6.27 (fungible-swarm death
+// recovery). Atomically transfers an in_progress claim from a previous
+// (likely stale) agent to the current one via `br update <id> --claim`,
+// then appends a stale-claim-event (event_type="claim_transferred") to
+// docs/provenance/ledger.jsonl so the audit trail records who picked up
+// whose work.
+//
+// Slice 2 (`stale-claims`) surfaces candidates. This slice acts on them.
+// Slice 4 (daemon job) will wrap both for periodic re-dispatch.
+//
+// practices: [agile-manifesto, continuous-delivery, dora-metrics]
+
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/spf13/cobra"
+
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
+)
+
+var (
+	beadsResumeAgentID     string
+	beadsResumeLedgerPath  string
+	beadsResumeJSON        bool
+	beadsResumeNowOverride string // test seam
+)
+
+// beadsResumeShowFunc is the test seam for fetching a bead's current state
+// (assignee + updated_at) BEFORE the claim transfer, so we can record the
+// prior revision. Production: shells out to `br show <id> --json`.
+var beadsResumeShowFunc = func(ctx context.Context, beadID string) (staleBeadRecord, error) {
+	return currentBeadsTracker().Show(ctx, beadID)
+}
+
+// beadsResumeClaimFunc is the test seam for performing the atomic update.
+// Production: `br update <id> --claim --actor <agent>`.
+var beadsResumeClaimFunc = func(ctx context.Context, beadID, agent string) error {
+	return currentBeadsTracker().Claim(ctx, beadID, agent)
+}
+
+// beadsResumeAppendLedger is the test seam for writing the provenance event.
+// Production: appends one JSON object per line to the ledger file. Accepts
+// `any` so the caller can pass the full claim_transferred shape (which
+// extends staleEvent with new_claimant + transfer) without us introducing
+// an interface.
+var beadsResumeAppendLedger = func(ledgerPath string, event any) error {
+	return currentBeadsRuntime().AppendEvent(ledgerPath, event)
+}
+
+func currentBeadsRuntime() beadsadapter.Runtime { return beadsadapter.NewRuntime() }
+
+func executeBeadsResume(cmd *cobra.Command, args []string) error {
+	beadID := args[0]
+	if beadID == "" {
+		return fmt.Errorf("bead id is required")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 1. Capture prior revision via `br show`.
+	prior, err := beadsResumeShowFunc(ctx, beadID)
+	if err != nil {
+		return fmt.Errorf("fetch prior state: %w", err)
+	}
+	if prior.Status != "in_progress" {
+		return fmt.Errorf("bead %s is %q, not in_progress — resume only handles in_progress claims", beadID, prior.Status)
+	}
+
+	// 2. Compute now (test override OK).
+	now := currentBeadsRuntime().Now()
+	if beadsResumeNowOverride != "" {
+		parsed, err := time.Parse(time.RFC3339, beadsResumeNowOverride)
+		if err != nil {
+			return fmt.Errorf("invalid now-override: %w", err)
+		}
+		now = parsed.UTC()
+	}
+
+	// 3. Resolve the new claimant id.
+	agent := beadsResumeAgentID
+	if agent == "" {
+		agent = currentBeadsRuntime().Actor()
+	}
+	if agent == "" {
+		agent = "ao-beads-resume"
+	}
+
+	// 4. Perform the atomic claim transfer.
+	if err := beadsResumeClaimFunc(ctx, beadID, agent); err != nil {
+		return fmt.Errorf("claim transfer: %w", err)
+	}
+
+	// 5. Fetch posterior revision for the audit trail.
+	posterior, err := beadsResumeShowFunc(ctx, beadID)
+	if err != nil {
+		// Claim succeeded but we can't read back — record what we know.
+		posterior = staleBeadRecord{ID: beadID, Status: "in_progress", Assignee: agent, UpdatedAt: now.Format(time.RFC3339)}
+	}
+
+	// 6. Build + write the event.
+	priorAgent := prior.Assignee
+	if priorAgent == "" {
+		priorAgent = "unknown"
+	}
+	transferred := beadsapp.BuildTransferredEvent(beadID, agent, prior, posterior, now)
+
+	// 7. Resolve ledger path relative to repo root.
+	ledger, err := currentBeadsRuntime().ResolveRepoPath(beadsResumeLedgerPath)
+	if err != nil {
+		return err
+	}
+
+	// Write the full claim_transferred shape (with new_claimant + transfer).
+	if err := beadsResumeAppendLedger(ledger, transferred); err != nil {
+		// Best-effort: include extra context but don't roll back the claim.
+		return fmt.Errorf("append ledger (claim already transferred): %w", err)
+	}
+
+	// 8. Optional JSON-to-stdout.
+	if beadsResumeJSON {
+		raw, err := json.Marshal(transferred)
+		if err != nil {
+			return fmt.Errorf("marshal transferred claim: %w", err)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(),
+			"ao beads resume: %s transferred from %q to %q (prior_rev=%s, new_rev=%s)\n",
+			beadID, priorAgent, agent, transferred.Transfer.PriorRevision, transferred.Transfer.NewRevision)
+	}
+	return nil
+}
+
+// transferInfo mirrors the `transfer` sub-object in stale-claim-event.v1.
+type transferInfo = beadsapp.TransferInfo
+
+// fingerprint produces a compact, stable revision token from (assignee,
+// updated_at). br itself does not expose an etag; (assignee, updated_at)
+// changes on every claim/update so it serves as the audit fingerprint.
+func fingerprint(r staleBeadRecord) string {
+	return beadsapp.Fingerprint(r)
+}

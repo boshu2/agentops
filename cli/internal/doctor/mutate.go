@@ -156,11 +156,13 @@ func cmpStrict(a, b string) error {
 // allowed to write to user-state disk under fix.
 func Mutate(ctx *MutateContext, path string, op Op) (ActionResult, error) {
 	// Step 1 — per-path advisory lock.
-	guard, err := ctx.Locks.Acquire(path)
-	if err != nil {
-		return ActionResult{Err: err}, err
+	if !ctx.DryRun {
+		guard, err := ctx.Locks.Acquire(path)
+		if err != nil {
+			return ActionResult{Err: err}, err
+		}
+		defer func() { _ = guard.Release() }()
 	}
-	defer func() { _ = guard.Release() }()
 
 	// Step 2 — before_hash.
 	beforeBytes, err := readOrEmpty(path)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
@@ -32,7 +33,7 @@ func hasVerdictEdgeForDisposition(ledgerPath, sha, disposition string) bool {
 		if e.Relation != "wasDerivedFrom" || e.FromType != "verdict" || e.ToType != "commit" {
 			continue
 		}
-		if !shaBindsCommit(sha, e.ToID) {
+		if !doneapp.SHABindsCommit(sha, e.ToID) {
 			continue
 		}
 		if parseDisposition(e.EvidenceRef) == disposition {

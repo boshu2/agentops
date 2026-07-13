@@ -18,6 +18,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
@@ -397,7 +399,7 @@ func TestSessionBootstrapGateHookStatus_NeverExecutesInstaller(t *testing.T) {
 	if got := sessionBootstrapGateHookStatus(dir); got != "inactive" {
 		t.Fatalf("spoofed agentops repo, unwired hook: want inactive, got %q", got)
 	}
-	if fileExists(sentinel) {
+	if quality.FileExists(sentinel) {
 		t.Fatal("SECURITY: gate-hook status executed a working-tree installer script")
 	}
 }

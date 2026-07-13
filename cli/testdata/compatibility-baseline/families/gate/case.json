@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "gate",
+  "checks": [
+    {
+      "id": "gate-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-gate.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" gate --help >\"$tmp/help\"; grep -Fq 'ao gate [command]' \"$tmp/help\"; for child in approve bulk-approve check pending reject run; do grep -Eq \"^[[:space:]]+$child([[:space:]]|$)\" \"$tmp/help\"; done; \"$tmp/ao\" gate approve --help >\"$tmp/approve-help\"; grep -Fq -- '--note' \"$tmp/approve-help\"; \"$tmp/ao\" gate reject --help >\"$tmp/reject-help\"; grep -Fq -- '--reason' \"$tmp/reject-help\"; \"$tmp/ao\" gate bulk-approve --help >\"$tmp/bulk-help\"; grep -Fq -- '--older-than' \"$tmp/bulk-help\"; grep -Fq -- '--tier' \"$tmp/bulk-help\"; \"$tmp/ao\" gate check --help >\"$tmp/check-help\"; for flag in fail-fast fast full github-annotations json require-workflow-parity scope workflow-coverage workflow-path; do grep -Fq -- \"--$flag\" \"$tmp/check-help\"; done; test \"$(\"$tmp/ao\" gate pending --dry-run)\" = '[dry-run] Would list pending gate reviews'; test \"$(\"$tmp/ao\" gate approve cand-1 --note ok --dry-run)\" = '[dry-run] Would approve candidate cand-1 with note: ok'; test \"$(\"$tmp/ao\" gate reject cand-1 --reason no --dry-run)\" = '[dry-run] Would reject candidate cand-1 with reason: no'; set +e; \"$tmp/ao\" gate reject cand-1 >\"$tmp/out\" 2>\"$tmp/err\"; code=$?; set -e; test \"$code\" -eq 1; grep -Fq 'required flag(s) \"reason\" not set' \"$tmp/err\"; \"$tmp/ao\" gate run does-not-exist >\"$tmp/run\"; grep -Fq '\"Status\":\"UNKNOWN\"' \"$tmp/run\""
+    },
+    {
+      "id": "gate-go-behavior",
+      "command": "cd cli && go test ./cmd/ao -run 'Test(Gate|ProductionGateRunner|ApplyRangeScope)' -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "aliases": {"status": "not_applicable", "reason": "The gate family declares no command aliases."},
+    "accepted_args": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "rejected_args": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "stdout": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "stderr": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "exit_classes": {"status": "evidence", "evidence": ["gate-black-box", "gate-go-behavior"]},
+    "tracker_selection": {"status": "not_applicable", "reason": "The gate family does not select a repository issue tracker."},
+    "ordered_effects": {"status": "evidence", "evidence": ["gate-go-behavior"]}
+  }
+}

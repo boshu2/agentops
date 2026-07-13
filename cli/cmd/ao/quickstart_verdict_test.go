@@ -9,7 +9,16 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/reviewerhealth"
 )
+
+func writeFakeBin(t *testing.T, dir, name, script string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(script), 0o755); err != nil {
+		t.Fatalf("write fake %s: %v", name, err)
+	}
+}
 
 // stubReviewerPATH points PATH at a temp bin dir containing instantly-answering
 // fake binaries for the given reviewer families, plus the system dirs (git/sh
@@ -178,11 +187,12 @@ func TestPrepareFirstVerdict_InstallLinesCoverEveryFamily(t *testing.T) {
 	chdirTo(t, t.TempDir())
 	stubReviewerPATH(t) // nothing reachable
 	info := prepareFirstVerdict()
-	if len(info.ReviewerInstall) != len(wedgeReviewers) {
-		t.Fatalf("got %d install lines, want %d (one per reviewer family)", len(info.ReviewerInstall), len(wedgeReviewers))
+	reviewers := reviewerhealth.DefaultCatalog()
+	if len(info.ReviewerInstall) != len(reviewers) {
+		t.Fatalf("got %d install lines, want %d (one per reviewer family)", len(info.ReviewerInstall), len(reviewers))
 	}
-	for i, r := range wedgeReviewers {
-		want := r.name + ": " + r.installCmd
+	for i, reviewer := range reviewers {
+		want := reviewer.Name + ": " + reviewer.InstallCommand
 		if info.ReviewerInstall[i] != want {
 			t.Errorf("install[%d] = %q, want %q", i, info.ReviewerInstall[i], want)
 		}

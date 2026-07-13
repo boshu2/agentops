@@ -4,12 +4,9 @@
 package claimproof
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -24,15 +21,20 @@ const defaultBase = "origin/main"
 
 var markerRe = regexp.MustCompile(`agentops:claim:(AOP-CLAIM-[A-Z0-9-]+)`)
 
-// GitRunner runs a git subcommand in repoRoot and returns stdout.
-type GitRunner func(ctx context.Context, repoRoot string, args ...string) (string, error)
+type Workspace interface {
+	WorkingDirectory() (string, error)
+	ReadFile(string) ([]byte, error)
+	Stat(string) error
+	IsNotExist(error) bool
+	Git(context.Context, string, ...string) (string, error)
+}
 
 // Options configure a claim proof-card check.
 type Options struct {
 	RepoRoot    string
 	Base        string
 	ChangedOnly bool
-	RunGit      GitRunner
+	Workspace   Workspace
 }
 
 // Report is the structured output for ao claim check.
@@ -97,8 +99,11 @@ type markerHit struct {
 
 // Check returns proof cards for changed claim markers.
 func Check(ctx context.Context, opts Options) (Report, error) {
+	if opts.Workspace == nil {
+		return Report{}, errors.New("claim proof: workspace is required")
+	}
 	if opts.RepoRoot == "" {
-		cwd, err := os.Getwd()
+		cwd, err := opts.Workspace.WorkingDirectory()
 		if err != nil {
 			return Report{}, fmt.Errorf("claim proof: get working directory: %w", err)
 		}
@@ -112,7 +117,7 @@ func Check(ctx context.Context, opts Options) (Report, error) {
 		return Report{}, errors.New("claim proof: only --changed mode is implemented")
 	}
 
-	reg, err := loadRegistry(opts.RepoRoot)
+	reg, err := loadRegistry(opts.Workspace, opts.RepoRoot)
 	if err != nil {
 		return Report{}, err
 	}
@@ -121,7 +126,7 @@ func Check(ctx context.Context, opts Options) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	hits, err := markerHits(opts.RepoRoot, changed)
+	hits, err := markerHits(opts.Workspace, opts.RepoRoot, changed)
 	if err != nil {
 		return Report{}, err
 	}
@@ -147,9 +152,9 @@ func Check(ctx context.Context, opts Options) (Report, error) {
 	return report, nil
 }
 
-func loadRegistry(repoRoot string) (registryFile, error) {
+func loadRegistry(workspace Workspace, repoRoot string) (registryFile, error) {
 	path := filepath.Join(repoRoot, "docs", "contracts", "claim-registry.yaml")
-	data, err := os.ReadFile(path)
+	data, err := workspace.ReadFile(path)
 	if err != nil {
 		return registryFile{}, fmt.Errorf("claim proof: read claim registry: %w", err)
 	}
@@ -164,18 +169,13 @@ func loadRegistry(repoRoot string) (registryFile, error) {
 }
 
 func changedPaths(ctx context.Context, opts Options) ([]string, error) {
-	run := opts.RunGit
-	if run == nil {
-		run = realGit
-	}
-
 	var out []string
 	for _, args := range [][]string{
 		{"diff", "--name-only", opts.Base + "...HEAD"},
 		{"diff", "--name-only", "HEAD"},
 		{"ls-files", "--others", "--exclude-standard"},
 	} {
-		s, err := run(ctx, opts.RepoRoot, args...)
+		s, err := opts.Workspace.Git(ctx, opts.RepoRoot, args...)
 		if err != nil {
 			return nil, fmt.Errorf("claim proof: git %s: %w", strings.Join(args, " "), err)
 		}
@@ -184,7 +184,7 @@ func changedPaths(ctx context.Context, opts Options) ([]string, error) {
 	return dedupe(out), nil
 }
 
-func markerHits(repoRoot string, paths []string) ([]markerHit, error) {
+func markerHits(workspace Workspace, repoRoot string, paths []string) ([]markerHit, error) {
 	seen := map[string]bool{}
 	var hits []markerHit
 	for _, rel := range paths {
@@ -192,9 +192,9 @@ func markerHits(repoRoot string, paths []string) ([]markerHit, error) {
 		if rel == "" || shouldSkipPath(rel) || !looksLikeClaimHost(rel) {
 			continue
 		}
-		ids, err := extractClaimIDs(filepath.Join(repoRoot, filepath.FromSlash(rel)))
+		ids, err := extractClaimIDs(workspace, filepath.Join(repoRoot, filepath.FromSlash(rel)))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
+			if workspace.IsNotExist(err) {
 				continue
 			}
 			return nil, err
@@ -235,28 +235,22 @@ func looksLikeClaimHost(path string) bool {
 	}
 }
 
-func extractClaimIDs(path string) ([]string, error) {
-	f, err := os.Open(path)
+func extractClaimIDs(workspace Workspace, path string) ([]string, error) {
+	data, err := workspace.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	// Read-only handle: a Close error cannot lose data, so it is safe to drop.
-	defer func() { _ = f.Close() }()
-
 	seen := map[string]bool{}
 	var ids []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		for _, match := range markerRe.FindAllStringSubmatch(scanner.Text(), -1) {
-			id := match[1]
-			if seen[id] {
-				continue
-			}
-			seen[id] = true
-			ids = append(ids, id)
+	for _, match := range markerRe.FindAllStringSubmatch(string(data), -1) {
+		id := match[1]
+		if seen[id] {
+			continue
 		}
+		seen[id] = true
+		ids = append(ids, id)
 	}
-	return ids, scanner.Err()
+	return ids, nil
 }
 
 func buildCard(ctx context.Context, opts Options, hit markerHit, row registryRow, found bool, tiers map[string]registryTier) Card {
@@ -297,8 +291,8 @@ func classifyEvidence(ctx context.Context, opts Options, path string) Evidence {
 		return e
 	}
 	abs := filepath.Join(opts.RepoRoot, filepath.FromSlash(e.Path))
-	if _, err := os.Stat(abs); err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+	if err := opts.Workspace.Stat(abs); err != nil {
+		if opts.Workspace.IsNotExist(err) {
 			e.Status = "missing"
 			e.Reason = "registry evidence path does not exist in the working tree"
 			return e
@@ -317,11 +311,7 @@ func classifyEvidence(ctx context.Context, opts Options, path string) Evidence {
 }
 
 func isTracked(ctx context.Context, opts Options, path string) bool {
-	run := opts.RunGit
-	if run == nil {
-		run = realGit
-	}
-	_, err := run(ctx, opts.RepoRoot, "ls-files", "--error-unmatch", "--", path)
+	_, err := opts.Workspace.Git(ctx, opts.RepoRoot, "ls-files", "--error-unmatch", "--", path)
 	return err == nil
 }
 
@@ -381,14 +371,4 @@ func dedupe(in []string) []string {
 		out = append(out, v)
 	}
 	return out
-}
-
-func realGit(ctx context.Context, repoRoot string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Dir = repoRoot
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }

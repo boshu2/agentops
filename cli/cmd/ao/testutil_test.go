@@ -291,11 +291,9 @@ func resetCommandState(t *testing.T) {
 	origFindingsPullAll := findingsPullAll
 	origFindingsPullForce := findingsPullForce
 	origFindingsRetireBy := findingsRetireBy
-	origScenarioListStatus := scenarioListStatus
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
 	origContextPacketStatusFlags := contextPacketStatusFlags
-	origDoctorJSON := doctorJSON
 	origMaturityApply := maturityApply
 	origMaturityScan := maturityScan
 	origMaturityCurate := maturityCurate
@@ -362,11 +360,9 @@ func resetCommandState(t *testing.T) {
 		findingsPullAll = origFindingsPullAll
 		findingsPullForce = origFindingsPullForce
 		findingsRetireBy = origFindingsRetireBy
-		scenarioListStatus = origScenarioListStatus
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
-		doctorJSON = origDoctorJSON
 		maturityApply = origMaturityApply
 		maturityScan = origMaturityScan
 		maturityCurate = origMaturityCurate
@@ -437,8 +433,6 @@ func resetCommandState(t *testing.T) {
 	findingsPullAll = false
 	findingsPullForce = false
 	findingsRetireBy = ""
-	scenarioListStatus = ""
-	doctorJSON = false
 	maturityApply = false
 	maturityScan = false
 	maturityCurate = false

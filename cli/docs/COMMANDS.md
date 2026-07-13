@@ -414,7 +414,7 @@ ao eval baseline-audit [suite.json ...] [flags]
 
 #### `ao eval bench`
 
-Measure Precision@K and MRR against a curated corpus of learning artifacts.
+Run retrieval quality benchmarks
 
 ```
 ao eval bench [flags]
@@ -499,7 +499,7 @@ ao eval coverage [suite.json ...] [flags]
 
 #### `ao eval outcomes`
 
-Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority. Subcommands compile holdout-safe rubric payloads and ingest returned scores into the one verdict format.
+Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority.
 
 ```
 ao eval outcomes [command]
@@ -556,7 +556,7 @@ ao eval run <suite.json> [flags]
 
 #### `ao eval scenario`
 
-Create, list, and validate holdout scenarios stored in .agents/holdout/.
+Create, list, validate, and evaluate holdout scenarios stored in .agents/holdout/.
 
 ```
 ao eval scenario [command]
@@ -564,7 +564,7 @@ ao eval scenario [command]
 
 ##### `ao eval scenario add`
 
-Author a schema-compliant holdout scenario in .agents/holdout/.
+Author a holdout scenario from a goal description
 
 ```
 ao eval scenario add <goal> [flags]
@@ -583,7 +583,7 @@ ao eval scenario add <goal> [flags]
 
 ##### `ao eval scenario evaluate`
 
-Evaluate the executable-spec scenarios linked to GOALS.md directives and
+Evaluate directive-linked scenarios and record satisfaction results
 
 ```
 ao eval scenario evaluate [flags]
@@ -633,7 +633,7 @@ ao eval scenario validate [flags]
 
 #### `ao eval scenario-ab`
 
-Run one holdout scenario (scenario.v1) twice — a control arm WITHOUT the gold
+Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)
 
 ```
 ao eval scenario-ab [flags]
@@ -652,7 +652,7 @@ ao eval scenario-ab [flags]
 
 #### `ao eval scenario-moat`
 
-Render a moat positive/null/inconclusive verdict over one or more
+Aggregate moat-eligible scenario A/B scorecards into a publication verdict
 
 ```
 ao eval scenario-moat [flags]
@@ -685,7 +685,7 @@ ao eval scorecard <candidate-run.json> [baseline-run.json] [flags]
 
 #### `ao eval session-outcome`
 
-Parse a Claude Code session transcript and derive a composite reward signal.
+Analyze session transcript to derive reward signal
 
 ```
 ao eval session-outcome [transcript-path] [flags]
@@ -771,7 +771,7 @@ ao eval task list [flags]
 
 ##### `ao eval task run`
 
-Opens a new Run under $AGENTOPS_EVALS_ROOT/runs/<run-id>/manifest.json
+Open a new Run manifest for <task-id>; refuses on gate failure
 
 ```
 ao eval task run <task-id> [flags]
@@ -1407,7 +1407,7 @@ ao beads [command]
 
 #### `ao beads audit`
 
-Audits open and in-progress beads for backlog hygiene issues.
+Audit open beads for likely-fixed, stale, or consolidatable work
 
 ```
 ao beads audit [flags]
@@ -1424,7 +1424,7 @@ ao beads audit [flags]
 
 #### `ao beads cluster`
 
-Analyzes open beads for domain overlap and suggests consolidation groups.
+Suggest consolidation clusters for overlapping open beads
 
 ```
 ao beads cluster [flags]
@@ -1440,7 +1440,7 @@ ao beads cluster [flags]
 
 #### `ao beads dir`
 
-Print the BEADS_DIR path AgentOps will use for br subprocesses.
+Print the resolved live br ledger directory
 
 ```
 ao beads dir [flags]
@@ -1456,7 +1456,7 @@ ao beads dir [flags]
 
 #### `ao beads epic-status`
 
-Emit a deterministic "is this epic/wave actually done" verdict, replacing
+Deterministic group-terminality verdict for an epic/wave
 
 ```
 ao beads epic-status <epic-id> [flags]
@@ -1472,7 +1472,7 @@ ao beads epic-status <epic-id> [flags]
 
 #### `ao beads exec`
 
-Forward a bead command verbatim to the resolved beads tracker (bd or br),
+Run a bead CRUD command against whichever tracker (bd or br) this environment uses
 
 ```
 ao beads exec [args...] [flags]
@@ -1480,7 +1480,7 @@ ao beads exec [args...] [flags]
 
 #### `ao beads harvest`
 
-Reads a closed bead via 'bd show <id>' and writes its closure reason
+Materialize a closed bead's reason as a structured learning file
 
 ```
 ao beads harvest <bead-id> [flags]
@@ -1496,7 +1496,7 @@ ao beads harvest <bead-id> [flags]
 
 #### `ao beads lint`
 
-Runs 'ao beads verify' on every bead matching a status filter and
+Batch-verify every open bead (or filtered set) against HEAD
 
 ```
 ao beads lint [flags]
@@ -1512,7 +1512,7 @@ ao beads lint [flags]
 
 #### `ao beads resume`
 
-Transfers a stale claim via 'br update <bead-id> --claim', then appends a
+Atomically transfer an in_progress claim from a stale agent to this one
 
 ```
 ao beads resume <bead-id> [flags]
@@ -1529,7 +1529,7 @@ ao beads resume <bead-id> [flags]
 
 #### `ao beads scenarios`
 
-Turn a bead's free-text acceptance criteria into structured Gherkin
+[DEPRECATED — use 'ao beads verify-acceptance'] Convert bead acceptance criteria into Gherkin scenarios
 
 ```
 ao beads scenarios [command]
@@ -1537,7 +1537,7 @@ ao beads scenarios [command]
 
 ##### `ao beads scenarios extract`
 
-Read a bead's acceptance criteria via 'bd show <id> --json', convert the
+Print a candidate Gherkin '## Scenarios' block from a bead's acceptance (dry-run)
 
 ```
 ao beads scenarios extract <bead-id> [flags]
@@ -1554,7 +1554,7 @@ ao beads scenarios extract <bead-id> [flags]
 
 ##### `ao beads scenarios validate`
 
-Read a bead via 'bd show <id> --json' and validate its authored
+Check that a bead's authored '## Scenarios' block is well-formed Gherkin
 
 ```
 ao beads scenarios validate <bead-id> [flags]
@@ -1569,7 +1569,7 @@ ao beads scenarios validate <bead-id> [flags]
 
 #### `ao beads stale-claims`
 
-Lists in_progress beads whose claim activity is older than --threshold.
+List in_progress beads whose claim looks stale
 
 ```
 ao beads stale-claims [flags]
@@ -1585,7 +1585,7 @@ ao beads stale-claims [flags]
 
 #### `ao beads tracker`
 
-Detect which beads tracker AgentOps will drive here and how it was
+Print the resolved beads tracker (bd or br) for this environment
 
 ```
 ao beads tracker [flags]
@@ -1600,7 +1600,7 @@ ao beads tracker [flags]
 
 #### `ao beads verify`
 
-Reads a bead description via 'bd show <id>' and checks every file
+Detect stale citations in a bead description (files, functions, symbols)
 
 ```
 ao beads verify <bead-id> [flags]
@@ -1616,7 +1616,7 @@ ao beads verify <bead-id> [flags]
 
 #### `ao beads verify-acceptance`
 
-Read beads via br (never the retired bd) and check each bead carries the
+Assert each bead carries the acceptance contract for its type (br-native)
 
 ```
 ao beads verify-acceptance <bead-id>... [flags]

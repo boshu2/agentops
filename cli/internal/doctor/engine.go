@@ -40,6 +40,7 @@ type Options struct {
 	Severity    string // minimum severity: P0|P1|P2|P3
 	DryRun      bool
 	JSON        bool
+	Since       string
 	Now         time.Time
 }
 
@@ -194,12 +195,30 @@ func summarize(findings []Finding) ReportSummary {
 // the report with the correct exit code (0 healthy / 1 findings / 4 refused /
 // 6 online-required).
 func Diagnose(opts Options) (*Report, error) {
+	return diagnose(opts, strings.TrimSpace(opts.Since) == "")
+}
+
+func diagnose(opts Options, persist bool) (*Report, error) {
 	now := opts.Now
 	if now.IsZero() {
 		now = time.Now()
 	}
 	sha := targetSHA(opts.RepoRoot)
-	ra, err := NewRunArtifact(opts.RepoRoot, sha, now)
+	var prior []Finding
+	if strings.TrimSpace(opts.Since) != "" {
+		var err error
+		prior, err = reportFindings(opts.RepoRoot, opts.Since)
+		if err != nil {
+			return nil, err
+		}
+	}
+	var ra *RunArtifact
+	var err error
+	if persist {
+		ra, err = NewRunArtifact(opts.RepoRoot, sha, now)
+	} else {
+		ra = transientRunArtifact(opts.RepoRoot, sha, now)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("doctor: %w", err)
 	}
@@ -216,6 +235,9 @@ func Diagnose(opts Options) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
+	if prior != nil {
+		findings = findingsSince(findings, prior)
+	}
 
 	rep := buildReport(ra, opts.ToolVersion, sha, now, findings)
 	rep.Summary.OnlineRequired = onlineSkipped
@@ -226,22 +248,71 @@ func Diagnose(opts Options) (*Report, error) {
 	}
 	rep.OK = rep.ExitCode == ExitHealthy
 	rep.NextSteps = append(diagnoseNextSteps(findings), onlineCoverageNote(onlineSkipped, opts.Online)...)
-	if err := persistRun(ra, opts, rep, 0); err != nil {
-		return rep, err
+	if persist {
+		if err := persistRun(ra, opts, rep, 0); err != nil {
+			return rep, err
+		}
 	}
 	return rep, nil
+}
+
+func transientRunArtifact(repoRoot, targetSHA string, now time.Time) *RunArtifact {
+	started := now.UTC().Truncate(time.Second)
+	runID := RunID(targetSHA, started)
+	doctorDir := filepath.Join(repoRoot, ".doctor")
+	return &RunArtifact{
+		RepoRoot: repoRoot, DoctorDir: doctorDir, RunID: runID,
+		RunDir: filepath.Join(doctorDir, "runs", runDirName(started, runID)), StartedAt: started,
+	}
+}
+
+func reportFindings(repoRoot, runID string) ([]Finding, error) {
+	runDir, err := resolveRunDir(repoRoot, runID)
+	if err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: %w", runID, err)
+	}
+	data, err := os.ReadFile(filepath.Join(runDir, "report.json"))
+	if err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: read report: %w", runID, err)
+	}
+	var report Report
+	if err := json.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("doctor: --since %q: parse report: %w", runID, err)
+	}
+	return report.Findings, nil
+}
+
+func findingsSince(current, prior []Finding) []Finding {
+	seen := make(map[string]bool, len(prior))
+	for _, finding := range prior {
+		seen[finding.ID] = true
+	}
+	out := make([]Finding, 0, len(current))
+	for _, finding := range current {
+		if !seen[finding.ID] {
+			out = append(out, finding)
+		}
+	}
+	return out
 }
 
 // buildReport assembles a Report shell from a finding set.
 func buildReport(ra *RunArtifact, toolVersion, sha string, now time.Time, findings []Finding) *Report {
 	finished := time.Now()
+	if findings == nil {
+		findings = []Finding{}
+	}
+	runID, runDir := ra.RunID, filepath.Join(".doctor", "runs", filepath.Base(ra.RunDir))
+	if !ra.Persisted {
+		runID, runDir = "", ""
+	}
 	return &Report{
 		SchemaVersion: SchemaVersion,
 		Tool:          ToolName,
 		ToolVersion:   toolVersion,
 		DoctorVersion: DoctorVersion,
-		RunID:         ra.RunID,
-		RunDir:        filepath.Join(".doctor", "runs", filepath.Base(ra.RunDir)),
+		RunID:         runID,
+		RunDir:        runDir,
 		StartedAt:     ra.StartedAt.Format(time.RFC3339),
 		FinishedAt:    finished.UTC().Format(time.RFC3339Nano),
 		DurationMS:    finished.Sub(now).Milliseconds(),
@@ -296,9 +367,15 @@ func Fix(opts Options) (*Report, error) {
 		now = time.Now()
 	}
 	sha := targetSHA(opts.RepoRoot)
-	ra, err := NewRunArtifact(opts.RepoRoot, sha, now)
-	if err != nil {
-		return nil, fmt.Errorf("doctor: %w", err)
+	var ra *RunArtifact
+	var err error
+	if opts.DryRun {
+		ra = transientRunArtifact(opts.RepoRoot, sha, now)
+	} else {
+		ra, err = NewRunArtifact(opts.RepoRoot, sha, now)
+		if err != nil {
+			return nil, fmt.Errorf("doctor: %w", err)
+		}
 	}
 	env := &DetectEnv{
 		RepoRoot: opts.RepoRoot, CWD: opts.CWD, HomeDir: opts.HomeDir,
@@ -317,14 +394,20 @@ func Fix(opts Options) (*Report, error) {
 		rep.OK = true
 		rep.NextSteps = append([]string{"No findings. Nothing to fix."},
 			onlineCoverageNote(onlineSkipped, opts.Online)...)
+		if opts.DryRun {
+			return rep, nil
+		}
 		return rep, persistRun(ra, opts, rep, 0)
 	}
 
-	actionsFile, err := ra.OpenActionsFile()
-	if err != nil {
-		return rep, err
+	var actionsFile *os.File
+	if !opts.DryRun {
+		actionsFile, err = ra.OpenActionsFile()
+		if err != nil {
+			return rep, err
+		}
+		defer func() { _ = actionsFile.Close() }()
 	}
-	defer func() { _ = actionsFile.Close() }()
 
 	caps := NewCapabilities(opts.ToolVersion)
 	locks := NewLockManager(filepath.Join(opts.RepoRoot, ".doctor", "locks"))
@@ -333,9 +416,11 @@ func Fix(opts Options) (*Report, error) {
 	totalActions, fixedCount, failed, skipped := applyFixers(opts.RepoRoot, mctx, env, findings)
 
 	rep.ActionsTaken = totalActions
-	rep.ActionsPath = filepath.Join(rep.RunDir, "actions.jsonl")
-	rep.BackupsDir = filepath.Join(rep.RunDir, "backups")
-	rep.UndoCommand = fmt.Sprintf("ao doctor undo %s", filepath.Base(ra.RunDir))
+	if !opts.DryRun {
+		rep.ActionsPath = filepath.Join(rep.RunDir, "actions.jsonl")
+		rep.BackupsDir = filepath.Join(rep.RunDir, "backups")
+		rep.UndoCommand = fmt.Sprintf("ao doctor undo %s", filepath.Base(ra.RunDir))
+	}
 	rep.ExitCode = fixExitCode(len(findings), fixedCount, failed)
 	if opts.DryRun {
 		// A dry-run executes nothing; per the doctor CLI contract
@@ -353,6 +438,9 @@ func Fix(opts Options) (*Report, error) {
 		rep.NextSteps = append(rep.NextSteps, "refused (ambiguous, resolve by hand): "+s)
 	}
 	rep.OK = rep.ExitCode == ExitHealthy
+	if opts.DryRun {
+		return rep, nil
+	}
 	return rep, persistRun(ra, opts, rep, totalActions)
 }
 
@@ -783,7 +871,7 @@ func Explain(repoRoot, findingID string) (*Finding, error) {
 // empty registry it always reports a clean diff.
 func Diff(opts Options) (*Report, error) {
 	opts.DryRun = true
-	return Diagnose(opts)
+	return diagnose(opts, false)
 }
 
 // RobotTriageResult is the mega-command JSON for --robot-triage.
@@ -825,20 +913,28 @@ func RobotTriage(opts Options) (*RobotTriageResult, *Report, error) {
 	}, rep, nil
 }
 
+// GCResult describes a doctor run garbage-collection operation.
+type GCResult struct {
+	Matched int  `json:"matched"`
+	Pruned  int  `json:"pruned"`
+	DryRun  bool `json:"dry_run"`
+}
+
 // GC prunes run directories whose started_at is before the cutoff. It refuses
-// unless yes is true and cutoff is non-zero (never deletes silently).
-func GC(repoRoot string, cutoff time.Time, yes bool) (int, error) {
+// unless yes is true and cutoff is non-zero (never deletes silently). Dry-run
+// reports matching runs without removing them.
+func GC(repoRoot string, cutoff time.Time, yes, dryRun bool) (GCResult, error) {
+	result := GCResult{DryRun: dryRun}
 	if !yes || cutoff.IsZero() {
-		return 0, fmt.Errorf("doctor: gc requires --yes and --before <date>")
+		return result, fmt.Errorf("doctor: gc requires --yes and --before <date>")
 	}
 	entries, err := os.ReadDir(runsDir(repoRoot))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 0, nil
+			return result, nil
 		}
-		return 0, fmt.Errorf("doctor: read runs dir: %w", err)
+		return result, fmt.Errorf("doctor: read runs dir: %w", err)
 	}
-	pruned := 0
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
@@ -848,12 +944,16 @@ func GC(repoRoot string, cutoff time.Time, yes bool) (int, error) {
 		if started.IsZero() || !started.Before(cutoff) {
 			continue
 		}
-		if err := os.RemoveAll(dir); err != nil {
-			return pruned, fmt.Errorf("doctor: prune %s: %w", e.Name(), err)
+		result.Matched++
+		if dryRun {
+			continue
 		}
-		pruned++
+		if err := os.RemoveAll(dir); err != nil {
+			return result, fmt.Errorf("doctor: prune %s: %w", e.Name(), err)
+		}
+		result.Pruned++
 	}
-	return pruned, nil
+	return result, nil
 }
 
 // runStartedAt reads a run's started_at, falling back to dir mtime.

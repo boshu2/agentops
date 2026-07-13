@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestRunHandoff_WritesArtifact(t *testing.T) {
@@ -28,7 +30,7 @@ func TestRunHandoff_WritesArtifact(t *testing.T) {
 	}
 
 	// Verify file exists
-	if !fileExists(path) {
+	if !quality.FileExists(path) {
 		t.Fatalf("artifact file not found at %s", path)
 	}
 
@@ -83,7 +85,7 @@ func TestRunHandoff_DryRun(t *testing.T) {
 
 	// Verify NO file is written
 	handoffDir := filepath.Join(dir, ".agents", "handoff")
-	if fileExists(handoffDir) {
+	if quality.FileExists(handoffDir) {
 		t.Error("handoff dir should not exist in dry-run mode")
 	}
 }
@@ -106,7 +108,7 @@ func TestRunHandoff_NoKill(t *testing.T) {
 	}
 
 	// Verify artifact was written (no-kill still writes)
-	if !fileExists(path) {
+	if !quality.FileExists(path) {
 		t.Fatal("artifact should exist with --no-kill")
 	}
 }
@@ -409,7 +411,7 @@ func TestWriteHandoffArtifact_AtomicWrite(t *testing.T) {
 
 	// Verify no .tmp file lingering
 	tmpPath := path + ".tmp"
-	if fileExists(tmpPath) {
+	if quality.FileExists(tmpPath) {
 		t.Error(".tmp file should not exist after successful write")
 	}
 
@@ -585,11 +587,11 @@ func TestRunHandoff_DryRunViaRunHandoff(t *testing.T) {
 
 	// Verify NO files were written
 	handoffDir := filepath.Join(dir, ".agents", "handoff")
-	if fileExists(handoffDir) {
+	if quality.FileExists(handoffDir) {
 		t.Error("handoff dir should not exist when --dry-run is set")
 	}
 	agentsDir := filepath.Join(dir, ".agents")
-	if fileExists(agentsDir) {
+	if quality.FileExists(agentsDir) {
 		t.Error(".agents dir should not exist when --dry-run is set")
 	}
 }

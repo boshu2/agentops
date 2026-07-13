@@ -119,7 +119,7 @@ func TestFlagCompletions_Registered(t *testing.T) {
 			sortedCompletionValues("health", "architecture", "quality", "meta")},
 		{"goals steer add --steer", goalsSteerAddCmd, "steer",
 			sortedCompletionValues("increase", "decrease", "hold", "explore")},
-		{"gate bulk-approve --tier", gateBulkApproveCmd, "tier", tierValues},
+		{"gate bulk-approve --tier", mustFindCompletionCommand(t, "gate", "bulk-approve"), "tier", tierValues},
 		{"pool list --tier", poolListCmd, "tier", tierValues},
 		{"pool list --status", poolListCmd, "status",
 			sortedCompletionValues("pending", "staged", "promoted", "rejected")},

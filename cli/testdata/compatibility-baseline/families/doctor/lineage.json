@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "family": "doctor",
+  "old_implementation_sha": "d1cd4f6790a9682645ed139ba81912340858540a",
+  "freeze_sha": "a0715471fe6197dcecfbabc455ebf169ef18ea4e",
+  "fixture_sha256": "b49b9432a87f6d73cf216abbff3c728816d18bcc4982a5b1d132827c5c0ff8de",
+  "ownership_sha256": "c8220109d1ca1c8cd069aad0cf0f212da7057a5a4cff50fd2aee4b3a3569e6aa",
+  "scope_sha256": "4845ae371d9a39227eeacca258bf3cf016c00eec17ca8c405f7cf2893d76dd1f",
+  "migration_state": "migrated",
+  "accepted_sha": "bcd021c05a4d9d51ff3a3d0f53b1648002ef898b"
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "family": "eval",
+  "checks": [
+    {
+      "id": "eval-black-box",
+      "command": "tmp=$(mktemp -d /tmp/ao-eval.XXXXXX); (cd cli && go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" eval --help >\"$tmp/help\"; grep -Fq 'ao eval [command]' \"$tmp/help\"; for child in baseline baseline-audit bench chaos cleanup compare coverage outcomes run scenario scenario-ab scenario-moat scorecard session-outcome suite task; do grep -Eq \"^[[:space:]]+$child([[:space:]]|$)\" \"$tmp/help\"; done; \"$tmp/ao\" eval run --help >\"$tmp/run-help\"; for flag in baseline baseline-mode context-mode delta-out out run-id runtime; do grep -Fq -- \"--$flag\" \"$tmp/run-help\"; done; set +e; \"$tmp/ao\" eval run >\"$tmp/out\" 2>\"$tmp/err\"; code=$?; set -e; test \"$code\" -eq 1; grep -Fq 'accepts 1 arg(s), received 0' \"$tmp/err\""
+    },
+    {
+      "id": "eval-go-behavior",
+      "command": "cd cli && go test ./cmd/ao -run 'Test(Eval|RunEval|Scenario|RetrievalBench)' -count=1"
+    }
+  ],
+  "dimensions": {
+    "path": {"status":"evidence","evidence":["eval-black-box","eval-go-behavior"]},
+    "aliases": {"status":"evidence","evidence":["eval-go-behavior"]},
+    "accepted_args": {"status":"evidence","evidence":["eval-black-box","eval-go-behavior"]},
+    "rejected_args": {"status":"evidence","evidence":["eval-black-box","eval-go-behavior"]},
+    "stdout": {"status":"evidence","evidence":["eval-go-behavior"]},
+    "stderr": {"status":"evidence","evidence":["eval-black-box","eval-go-behavior"]},
+    "exit_classes": {"status":"evidence","evidence":["eval-black-box","eval-go-behavior"]},
+    "tracker_selection": {"status":"not_applicable","reason":"The eval family does not select a repository issue tracker."},
+    "ordered_effects": {"status":"evidence","evidence":["eval-go-behavior"]}
+  }
+}
