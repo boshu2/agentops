@@ -338,7 +338,7 @@
         "path": "skills/postmortem/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 22
+        "reference_count": 0
       },
       {
         "name": "premortem",
@@ -354,7 +354,7 @@
         "path": "skills/validate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 24
+        "reference_count": 3
       },
       {
         "name": "domain",
@@ -2165,16 +2165,9 @@
       "produces": [
         "postmortem-report.md"
       ],
-      "drives_commands": [
-        "ao beads exec",
-        "ao goals history",
-        "ao goals measure",
-        "ao membrane digest",
-        "ao membrane triage",
-        "ao session close"
-      ],
+      "drives_commands": [],
       "path": "skills/postmortem/",
-      "references": 22
+      "references": 0
     },
     {
       "sku": "skill:pr-prep",
@@ -2895,11 +2888,9 @@
       "produces": [
         "result.json"
       ],
-      "drives_commands": [
-        "ao beads exec"
-      ],
+      "drives_commands": [],
       "path": "skills/validate/",
-      "references": 24
+      "references": 3
     },
     {
       "sku": "skill:workflow-builder",

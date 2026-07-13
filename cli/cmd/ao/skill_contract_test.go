@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// TestCouncilVerdictHeadingContract verifies that the wrapper skills used by
-// extractCouncilVerdict (premortem, vibe, postmortem) each contain the
-// exact heading "## Council Verdict:" that the CLI regex depends on.
+// TestCouncilVerdictHeadingContract verifies that skills which still emit a
+// council verdict contain the exact compatibility heading. Postmortem is
+// intentionally absent: it now emits causal claims, not an acceptance verdict.
 //
 // The regex in rpi_phased_processing.go is:
 //
@@ -52,7 +52,6 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 	wrapperSkills := []string{
 		"premortem",
 		"vibe",
-		"postmortem",
 	}
 
 	const requiredHeading = "## Council Verdict:"
@@ -89,7 +88,7 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 			if !found {
 				t.Errorf(
 					"%s skill (SKILL.md + references/) is missing the required heading %q\n"+
-						"The CLI regex in extractCouncilVerdict depends on this heading being present.\n"+
+						"Legacy council-report readers depend on this heading being present.\n"+
 						"Regex: `(?m)^## Council Verdict:\\s*(PASS|WARN|FAIL)`",
 					skill, requiredHeading,
 				)
@@ -162,9 +161,8 @@ func TestSkillContract_FrontmatterYAMLParseable(t *testing.T) {
 	}
 }
 
-// TestSkillContract_CouncilVerdictRegexMatchesReportFormat verifies that the
-// Council Verdict regex in extractCouncilVerdict actually matches the format
-// that council wrapper skills instruct the model to produce.
+// TestSkillContract_CouncilVerdictRegexMatchesReportFormat verifies the
+// compatibility regex against the format council-verdict skills produce.
 func TestSkillContract_CouncilVerdictRegexMatchesReportFormat(t *testing.T) {
 	re := regexp.MustCompile(`(?m)^## Council Verdict:\s*(PASS|WARN|FAIL)`)
 
@@ -216,9 +214,8 @@ func TestSkillContract_CouncilVerdictRegexMatchesReportFormat(t *testing.T) {
 	}
 }
 
-// TestSkillContract_FindingsRegexMatchesReportFormat verifies that the two
-// findings extraction regexes in extractCouncilFindings match the actual
-// format produced by council reports.
+// TestSkillContract_FindingsRegexMatchesReportFormat verifies the compatibility
+// findings regexes against the format produced by council reports.
 func TestSkillContract_FindingsRegexMatchesReportFormat(t *testing.T) {
 	// Structured findings format: FINDING: ... | FIX: ... | REF: ...
 	reStructured := regexp.MustCompile(`(?m)FINDING:\s*(.+?)\s*\|\s*FIX:\s*(.+?)\s*\|\s*REF:\s*(.+?)$`)

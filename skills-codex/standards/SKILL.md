@@ -75,7 +75,7 @@ elif file.endswith('.rs'):
 
 ## Domain-Specific Checklists
 
-Specialized checklists for high-risk code patterns. Loaded automatically by `$validate` and `$pre-mortem` when matching code patterns are detected:
+Specialized checklists for high-risk code patterns. Loaded automatically by `$validate` and `/pre-mortem` when matching code patterns are detected:
 
 | Checklist | Trigger Pattern | Risk Area |
 |-----------|----------------|-----------|
@@ -87,17 +87,6 @@ Specialized checklists for high-risk code patterns. Loaded automatically by `$va
 
 Skills detect triggers via file content patterns and import statements. Each checklist's "When to Apply" section defines exact detection rules.
 
-## Deep Standards
-
-For comprehensive audits, skills can load extended standards from
-`validate/references/*-standards.md` which contain full compliance catalogs.
-
-| Standard | Size | Use Case |
-|----------|------|----------|
-| Tier 1 (this skill) | ~5KB each | Normal validation |
-| Tier 2 (validate/references) | ~15-20KB each | Deep audits, `--deep` flag |
-| Domain checklists | ~3-5KB each | Triggered by code pattern detection |
-
 ## Integration
 
 Skills that use standards:
@@ -105,7 +94,6 @@ Skills that use standards:
 - `$implement` - Loads for files being modified
 - `/review` - Loads for change-quality and blast-radius checks
 - `$doc` - Loads markdown standards
-- `$post-mortem` - Loads for root cause analysis
 - `$refactor` - Loads for refactoring recommendations
 
 ## Output Specification
@@ -164,7 +152,6 @@ Skills that use standards:
 |---------|-------|----------|
 | Standards not loaded | File type not detected or standards skill missing | Check file extension matches reference; verify standards in dependencies |
 | Wrong standard loaded | File type misidentified (e.g., .sh as .bash) | Manually specify standard; update file type detection logic |
-| Deep standards missing | Validate needs extended catalog, not found | Check `validate/references/*-standards.md` exists; use `--deep` flag |
 | Standard conflicts | Multiple languages in same changeset | Load all relevant standards; prioritize by primary language |
 
 ## Reference Documents

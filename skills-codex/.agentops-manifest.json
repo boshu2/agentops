@@ -787,8 +787,8 @@
     {
       "name": "postmortem",
       "source_skill": "skills/postmortem",
-      "source_hash": "a2863a398ad72fd61e763df92d04c3f2e055d07c4fca28a0d32d4cc20fc4031c",
-      "generated_hash": "a252e1424afe4da4e696695d54a1afbf60bf7e31096915cb73d957db43c31008"
+      "source_hash": "2c4494a3867f34ec949facf13a5eac5ca06293a3e875fd5720bc676f6a3b18c6",
+      "generated_hash": "7d91a1626ec49651dec0fc04e2ea063a2ebf1bee2873f1f64c7082bea543a07b"
     },
     {
       "name": "pr-prep",
@@ -895,8 +895,8 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "b6d7dbecf9affa31e07f2e097bbd8c544f7d2b8cea7a4154fea9c1477bdab103",
-      "generated_hash": "f1b1303b85ea8bb1b1f7dd37e277441f00f508561f1a9d147476d38edec94dca"
+      "source_hash": "b5e5efa3cea2b9041a6e4a8536349d67dd45e14c2640e440c00be4763b341e3b",
+      "generated_hash": "1684f6c0ed3f59534cd2e5ca517c6828b623d776be9514037bff397e614f357e"
     },
     {
       "name": "status",
@@ -931,8 +931,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "b253cd81bfea7136010a062850d2d5987d9fd9309c3b61737b39c8d62c2ee45d",
-      "generated_hash": "c94f4c3deacb6a620663643c1ac65b6656df59fb894aa151525750c7d7dd98eb"
+      "source_hash": "dd90acb61e35030c901099763e208a5f659cd3a8d4c87f360fc8523514740b0b",
+      "generated_hash": "c9f18845d4423824c8a060cbce2697a8adc11153e0b9cdeb855d9eb160feb68a"
     },
     {
       "name": "workflow-builder",

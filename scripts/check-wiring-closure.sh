@@ -6,12 +6,13 @@ set -euo pipefail
 
 ERRORS=0
 
-# 1. Every scripts/check-*.sh must be referenced somewhere (goals, CI, tests, or other scripts)
+# 1. Every scripts/check-*.sh must be referenced by an enforcing or testing
+# surface. The Go gate registry is the canonical local/CI execution owner.
 for script in scripts/check-*.sh; do
   [ -f "$script" ] || continue
   base=$(basename "$script")
-  if ! grep -rq "$base" GOALS.md GOALS.yaml .github/workflows/ tests/ scripts/ 2>/dev/null; then
-    echo "UNWIRED SCRIPT: $base not referenced in goals, CI, tests, or scripts"
+  if ! grep -rq "$base" GOALS.md GOALS.yaml .github/workflows/ cli/internal/gates/ tests/ scripts/ 2>/dev/null; then
+    echo "UNWIRED SCRIPT: $base not referenced in goals, CI, Go gates, tests, or scripts"
     ERRORS=$((ERRORS + 1))
   fi
 done

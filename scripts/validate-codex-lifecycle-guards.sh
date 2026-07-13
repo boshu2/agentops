@@ -122,12 +122,6 @@ spine_closeout_files=(
   "skills-codex/handoff/prompt.md"
 )
 
-# Frozen ambient closeout twin (post-mortem): assert-if-present.
-frozen_closeout_files=(
-  "skills-codex/post-mortem/SKILL.md"
-  "skills-codex/post-mortem/prompt.md"
-)
-
 spine_tracker_guidance_files=(
   "skills-codex/status/SKILL.md"
   "skills-codex/implement/SKILL.md"
@@ -135,11 +129,12 @@ spine_tracker_guidance_files=(
   "skills-codex-overrides/catalog.json"
 )
 
-# Frozen ambient tracker-guidance twins: assert-if-present.
+# Frozen ambient tracker-guidance twins: assert-if-present. Postmortem is not
+# listed: it became causal analysis under the four-umbrella split and must not
+# own closeout or tracker execution (age-tpeel).
 frozen_tracker_guidance_files=(
   "skills-codex/recover/SKILL.md"
   "skills-codex/crank/SKILL.md"
-  "skills-codex/post-mortem/SKILL.md"
   "skills-codex/rpi/prompt.md"
 )
 
@@ -156,12 +151,14 @@ check_closeout() {
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
 }
 
-check_post_mortem_closeout() {
+check_postmortem_boundary() {
   local file="$1"
-  require_contains "$file" 'ao session close --auto-extract' "post-mortem closeout must use ao session close --auto-extract"
-  require_contains "$file" 'ao flywheel close-loop --quiet' "post-mortem closeout must run ao flywheel close-loop --quiet"
-  require_not_contains "$file" 'ao codex ensure-stop' "post-mortem closeout must not use the archived Codex ensure-stop shim"
-  require_not_contains "$file" 'ao codex status' "post-mortem closeout must not depend on archived Codex status"
+  require_contains "$file" 'retrospective causal analysis' "postmortem must remain causal analysis"
+  require_contains "$file" 'not a completion gate' "postmortem must not regain completion-gate authority"
+  require_not_contains "$file" 'ao session close --auto-extract' "postmortem must not close sessions"
+  require_not_contains "$file" 'ao flywheel close-loop --quiet' "postmortem must not own flywheel closeout"
+  require_not_contains "$file" 'ao codex ensure-stop' "postmortem must not own Codex lifecycle closeout"
+  require_not_regex "$file" '\bbr (close|update)\b' "postmortem must not operate tracker state"
 }
 
 for file in "${spine_entry_files[@]}"; do
@@ -175,10 +172,7 @@ done
 for file in "${spine_closeout_files[@]}"; do
   check_closeout "$file"
 done
-for file in "${frozen_closeout_files[@]}"; do
-  resolved_exists "$file" || continue  # frozen ambient twin removed — exempt
-  check_post_mortem_closeout "$file"
-done
+check_postmortem_boundary "skills-codex/postmortem/SKILL.md"
 
 # quickstart folded into status, using-agentops into inject (ag-s43tg, 2026-06-12);
 # the ensure-start/stop lifecycle assertions live on status (the Codex entry/closeout doc).
