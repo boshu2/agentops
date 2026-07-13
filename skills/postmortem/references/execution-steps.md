@@ -75,7 +75,7 @@ If a plan is found, include it in the council packet's `context.spec` field:
 Before council and retro synthesis, load compiled prevention outputs when they exist:
 
 - `.agents/planning-rules/*.md`
-- `.agents/pre-mortem-checks/*.md`
+- `.agents/premortem-checks/*.md`
 
 Use these compiled artifacts first, then fall back to `.agents/findings/registry.jsonl` only when compiled outputs are missing or incomplete. Carry matched finding IDs into the retro as `Applied findings` / `Known risks applied` context so postmortem can judge whether the flywheel actually prevented rediscovery.
 
@@ -134,7 +134,7 @@ In summary:
 4. Merge all explorer findings into a sweep manifest at `.agents/council/sweep-manifest.md`
 5. Include sweep manifest in council packet — judges shift to adjudication mode (confirm/reject/reclassify sweep findings + add cross-cutting findings)
 
-**Why:** Post-mortem council judges exhibit satisfaction bias when reviewing monolithic file sets — they stop at ~10 findings regardless of actual issue count. Per-file explorers with category checklists find 3x more issues, and the sweep manifest gives judges structured input to adjudicate rather than discover from scratch.
+**Why:** Postmortem council judges exhibit satisfaction bias when reviewing monolithic file sets — they stop at ~10 findings regardless of actual issue count. Per-file explorers with category checklists find 3x more issues, and the sweep manifest gives judges structured input to adjudicate rather than discover from scratch.
 
 **Skip conditions:**
 - `--quick` flag -> skip (fast inline path)
@@ -156,12 +156,12 @@ Run `/council` with the **retrospective** preset and always 3 judges:
 - `tech-debt`: What shortcuts were taken? What will bite us later? What needs cleanup?
 - `learnings`: What patterns emerged? What should be extracted as reusable knowledge?
 
-Post-mortem always uses 3 judges (`--deep`) because completed work deserves thorough review.
+Postmortem always uses 3 judges (`--deep`) because completed work deserves thorough review.
 
 **Four-Surface Closure:** Validate all four surfaces -- Code, Documentation, Examples, and Proof. A PASS verdict requires all four surfaces addressed, not just code correctness. Read `skills/postmortem/references/four-surface-closure.md` for the closure checklist and common gaps.
 
-**Timeout:** Post-mortem inherits council timeout settings. If judges time out,
-the council report will note partial results. Post-mortem treats a partial council
+**Timeout:** Postmortem inherits council timeout settings. If judges time out,
+the council report will note partial results. Postmortem treats a partial council
 report the same as a full report — the verdict stands with available judges.
 
 The plan/spec content is injected into the council packet context so the `plan-compliance` judge can compare planned vs delivered.

@@ -10,7 +10,7 @@ Track consecutive days of RPI usage to surface workflow adoption trends in postm
 
 **File:** `.agents/rpi/rpi-state.json`
 
-This file is written by `/rpi` (the RPI orchestrator) on every session start and phase transition. Post-mortem reads it but never writes to it.
+This file is written by `/rpi` (the RPI orchestrator) on every session start and phase transition. Postmortem reads it but never writes to it.
 
 ## Detection Logic
 

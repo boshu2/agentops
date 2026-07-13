@@ -212,7 +212,7 @@ mcp__ai-platform__memory_store(
 
 | Type | Use For | Example |
 |------|---------|---------|
-| `fact` | Learned information | "Pre-mortem simulation catches 80% of spec issues" |
+| `fact` | Learned information | "Premortem simulation catches 80% of spec issues" |
 | `preference` | User/project choices | "This project prefers snake_case over camelCase" |
 | `episode` | Significant events | "Wave 6 timeout issue resolved by increasing limit to 900s" |
 

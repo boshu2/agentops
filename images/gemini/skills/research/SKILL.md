@@ -128,7 +128,7 @@ module selected for the run.
   machine handoff is required.
 - **Validator command:** run `bash skills/research/scripts/validate.sh`, verify
   cited paths/lines or URLs, and confirm critical depth/gap reporting.
-- **Downstream handoff:** consumed by `/plan`, `/product`, `/pre-mortem`, or the
+- **Downstream handoff:** consumed by `/plan`, `/product`, `/premortem`, or the
   requesting decision maker; reusable findings feed compiled prevention context.
 
 ## Quality Rubric

@@ -8,9 +8,9 @@ AgentOps once had roughly twenty surfaces that read like a loop (evolve, rpi, au
 
 **One loop body, two drivers, one inner tick, one config.**
 
-- **One loop body**: the same five-beat tick (research, plan, implement, validate, ratchet) at every scale.
+- **One loop body**: the same four umbrellas (Discovery, Crank, Validate, Learn) at every scale.
 - **Two drivers**: an **Evolve** driver (an in-session agent runs the loop, self-paced) and a **Factory** driver (an out-of-session substrate runs the same loop unattended over a queue).
-- **One inner tick**: **rpi**, one research-plan-implement-validate cycle over one bead.
+- **One inner tick**: **rpi**, one Discovery→Crank→Validate→Learn cycle over one bead.
 - **One config**: **Autodev**, the durable intent layer the loop reads every tick. Autodev is not a loop.
 
 Everything else is a step of the loop, a config source, a runtime adapter, an execution profile, or a read projection. None of them is a peer loop.
@@ -24,7 +24,7 @@ AUTODEV-CONFIG  (PROGRAM.md / AUTODEV.md + GOALS.md + ADRs)   ← NOT a loop; th
         │ drives
         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ ONE LOOP BODY  (the rpi tick: Research → Plan → Implement → Validate → Ratchet)
+│ ONE LOOP BODY  (the rpi tick: Discovery → Crank → Validate → Learn)
 │                                                               │
 │   EVOLVE driver (in session)             FACTORY driver (out of session)
 │     an agent runs the loop                 a SUBSTRATE runs the SAME loop
@@ -37,7 +37,7 @@ AUTODEV-CONFIG  (PROGRAM.md / AUTODEV.md + GOALS.md + ADRs)   ← NOT a loop; th
 │                          ▼
 │         ┌──────────────────────────────────────────────┐
 │         │ RPI TICK  =  inner loop (one cycle)            │
-│         │   discovery → plan → crank(wave) → validate    │
+│         │   discovery → crank(wave) → validate → learn  │
 │         │   one bead, one behavior, one acceptance proof │
 │         └──────────────────────────────────────────────┘
 └─────────────────────────────────────────────────────────────┘
@@ -48,7 +48,7 @@ AUTODEV-CONFIG  (PROGRAM.md / AUTODEV.md + GOALS.md + ADRs)   ← NOT a loop; th
 The loop is fractal: the same shape at every layer, run by a human or by a stand-in agent. The only things that change across layers are the **driver** and the **stop policy**.
 
 - **rpi** is one tick.
-- **evolve** is N rpi ticks toward a goal: select next-best work, run a tick, post-mortem, repeat.
+- **evolve** is N rpi ticks toward a goal: select next-best work, run a tick, postmortem, repeat.
 - **crank / swarm** fan one wave of an rpi tick across an in-session team of agents in isolated worktrees — still in session, still the same five beats per worker.
 - A **Factory** is the same loop run unattended over a whole queue by an out-of-session substrate.
 

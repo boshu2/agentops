@@ -19,10 +19,10 @@ This document maps the live primitives to the chains they form.
 |------|-----------|------------------|---------------------|
 | Mission / fitness | explicit goals | `GOALS.md`, `GOALS.yaml`, `ao goals`, `/evolve` | Mission-type orders, measurable fit, next-gap selection |
 | Discovery | understand before acting | `/brainstorm`, `/research`, `ao search`, `ao lookup`, `.agents/research/` | Observe, orient, and scope using repo-native context |
-| Risk / prevention | confront what can fail | `/plan`, `/pre-mortem`, findings registry, planning rules, pre-mortem checks | Risk-first scoping and reusable failure prevention |
+| Risk / prevention | confront what can fail | `/plan`, `/premortem`, findings registry, planning rules, premortem checks | Risk-first scoping and reusable failure prevention |
 | Execution | fresh-context implementation | `/crank`, `/swarm`, `/implement`, worktrees, beads waves | Parallel OODA loops with bounded scope and retries |
-| Validation | judgment before closure | `/vibe`, `/validation`, `/council`, task-validation gate | Detect defects and regressions before accepting completion |
-| Learning | extract and reinforce | `/post-mortem`, `/retro`, `/curate --mode=forge`, `ao flywheel`, `ao maturity` | Convert completed work into reusable knowledge |
+| Validation | judgment before closure | `/validate`, optional `/council`, deterministic checks | Detect defects and regressions before accepting completion |
+| Learning | extract and reinforce | `/learn`, optional `/postmortem`, `ao flywheel`, `ao maturity` | Convert completed work into evidence-bound plan impact and reusable candidates |
 | Ratchet / provenance | lock progress | `ao ratchet`, commits, `.agents/ao/chain.jsonl` | Ensure accepted work becomes the new baseline |
 | Continuity | survive context loss | `/handoff`, `/recover`, phased manifests, session hooks, `.agents/rpi/` | Disk-backed continuity when sessions compact or die |
 
@@ -31,24 +31,25 @@ This document maps the live primitives to the chains they form.
 This is the executable replacement for the older "five commands" story.
 
 ```text
-Discovery -> Implementation -> Validation
-    |             |                 |
-    v             v                 v
-scope/risk    validated build   learn + next work
+Discovery -> Crank -> Validate -> Learn
+    |           |         |          |
+    v           v         v          v
+scope/risk    build     verdict   plan impact
 ```
 
 | Phase | Primary Skills | Durable Outputs |
 |------|----------------|-----------------|
-| Discovery | `/brainstorm` -> `/research` -> `/plan` -> `/pre-mortem` | research artifacts, beads graph, execution packet, known risks |
-| Implementation | `/crank` -> `/swarm` -> `/implement` | closed issues, code, tests, ratchet checkpoints |
-| Validation | `/validation` -> `/vibe` -> `/post-mortem` -> `/retro` -> `/curate --mode=forge` | findings, learnings, promoted constraints, next-work queue |
+| Discovery | `/brainstorm` -> `/research` -> `/plan` -> `/premortem` | research artifacts, beads graph, execution packet, known risks |
+| Crank | `/crank` -> `/swarm` -> `/implement` | code, tests, slice receipts |
+| Validate | `/validate` -> optional `/council` | immutable verdict and structured observations |
+| Learn | `/learn` -> optional `/postmortem` | plan impact, advisory candidates, causal analysis when requested |
 
 `/rpi` is the orchestrator that routes across those phases. The historical acronym remains, but the current runtime shape is phased.
 
 ## Chain 2: Discovery
 
 ```text
-Mission -> brainstorm -> search / lookup -> research -> plan -> pre-mortem
+Mission -> brainstorm -> search / lookup -> research -> plan -> premortem
 ```
 
 What happens:
@@ -58,7 +59,7 @@ What happens:
 3. `ao search` and `ao lookup` pull prior repo knowledge and nearby precedents.
 4. `/research` synthesizes the current state into `.agents/research/*.md`.
 5. `/plan` decomposes the work, loading prior findings and planning rules before it does.
-6. `/pre-mortem` pressure-tests the plan and can promote reusable findings back into prevention surfaces.
+6. `/premortem` pressure-tests the plan and can promote reusable findings back into prevention surfaces.
 
 This chain is the "scope + risk" half of the Stigmergic Spiral.
 
@@ -82,13 +83,13 @@ This chain is the micro-tempo engine. The worker set is disposable. The accepted
 ## Chain 4: Validation and Learning
 
 ```text
-vibe -> post-mortem -> retro -> forge -> flywheel close-loop
+vibe -> postmortem -> retro -> forge -> flywheel close-loop
 ```
 
 What happens:
 
 1. `/vibe` validates the produced system against code quality, architecture, security, and intent.
-2. `/post-mortem` captures what changed, what failed, and what should become reusable.
+2. `/postmortem` captures what changed, what failed, and what should become reusable.
 3. `/retro` provides quick-capture learning when full wrap-up is unnecessary.
 4. `/curate --mode=forge` turns transcripts or markdown artifacts into structured knowledge.
 5. `ao flywheel close-loop` records session closure so the next run starts with better retrieval.
@@ -104,8 +105,8 @@ finding -> registry -> compiler outputs -> planning / validation / task-complete
 | Step | Surface | Effect |
 |------|---------|--------|
 | Capture | `.agents/findings/registry.jsonl` | Normalized reusable findings ledger |
-| Compile | `.agents/pre-mortem-checks/`, `.agents/planning-rules/`, `.agents/constraints/index.json` | Findings become advisory or enforceable artifacts |
-| Reuse | `/plan`, `/pre-mortem`, `/vibe`, `task-validation-gate.sh` | Future work starts with prior failures already loaded |
+| Compile | `.agents/premortem-checks/`, `.agents/planning-rules/`, `.agents/constraints/index.json` | Findings become advisory or enforceable artifacts |
+| Reuse | `/plan`, `/premortem`, `/vibe`, `task-validation-gate.sh` | Future work starts with prior failures already loaded |
 
 This is the contract ratchet: surprises are expected once, then compiled into the environment.
 
@@ -141,8 +142,8 @@ AgentOps 3.0 ships no hooks. Every behavior a lifecycle hook used to fire automa
 
 | Term | Historical Meaning | Current Executable Meaning |
 |------|--------------------|----------------------------|
-| `RPI` | Research -> Plan -> Implement | Historical product name for the full lifecycle; the runtime now executes `Discovery -> Implementation -> Validation` |
-| `five commands` | `/research`, `/plan`, `/pre-mortem`, `/crank`, `/post-mortem` | Useful legacy teaching aid, but incomplete because it omits `/brainstorm`, `/validation`, `/vibe`, `/retro`, `/curate --mode=forge`, and continuity surfaces |
+| `RPI` | Research -> Plan -> Implement | Historical product name for the full lifecycle; the runtime now executes `Discovery -> Crank -> Validate -> Learn` |
+| `five commands` | `/research`, `/plan`, `/premortem`, `/crank`, `/postmortem` | Useful legacy teaching aid, but incomplete because it omits `/brainstorm`, `/validation`, `/vibe`, `/retro`, `/curate --mode=forge`, and continuity surfaces |
 | `knowledge injection` | startup context loading | Now broader: `lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together |
 | `three hooks` | session start/end/stop | The runtime currently declares 7 hook event sections, with three lifecycle anchors plus prompt/tool/task guardrails |
 | `Research-Plan-Implement` | product slogan | Still appears in names and legacy docs, but phased execution and validation are first-class now |

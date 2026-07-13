@@ -12,7 +12,7 @@ Boundaries define the scope of a plan using three tiers:
 | **Ask First** | Decisions requiring human input before proceeding | "Which rate limit values to use?" |
 | **Never** | Explicit out-of-scope items preventing scope creep | "No new database tables" |
 
-**Always** boundaries become cross-cutting constraints — /crank injects them into every worker task's validation metadata. **Ask First** boundaries are logged in auto mode and prompted in interactive mode. **Never** boundaries are guardrails for workers and pre-mortem judges.
+**Always** boundaries become cross-cutting constraints — /crank injects them into every worker task's validation metadata. **Ask First** boundaries are logged in auto mode and prompted in interactive mode. **Never** boundaries are guardrails for workers and premortem judges.
 
 ## What Are Conformance Checks?
 

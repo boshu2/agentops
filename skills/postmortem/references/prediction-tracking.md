@@ -61,8 +61,8 @@ Add "Prediction Accuracy" section to the report:
 
 ## Accuracy Scoring
 
-- **HIT**: Pre-mortem prediction matched an actual vibe/implementation finding
-- **MISS**: Pre-mortem prediction did not materialize
+- **HIT**: Premortem prediction matched an actual vibe/implementation finding
+- **MISS**: Premortem prediction did not materialize
 - **SURPRISE**: Actual issue that no premortem prediction covered
 
 High miss rate is acceptable — premortem is precautionary. High surprise rate suggests premortem perspectives need expansion.

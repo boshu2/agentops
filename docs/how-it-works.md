@@ -29,14 +29,14 @@ page are organized around proving they are actually closed:
 
 1. **Validation gap** (internal label: judgment validation) — agents ship
    without risk context. **Validation Gates** (Layer 2) challenge plans and
-   implementations before they land (pre-mortem gate, `/validate`, `/council`,
+   implementations before they land (premortem gate, `/validate`, `/council`,
    task-validation gate).
 2. **Bookkeeping gap** (internal label: durable learning) — solved problems
    recur. The **Knowledge Flywheel** (Layer 3) extracts, scores, promotes,
    and retrieves learnings so the same lesson is never re-paid (session-end
    forging, `ao forge`, `ao lookup`, maturity controls).
 3. **Closure gap** (internal label: loop closure) — completed work does not
-   produce better next work. Post-mortems, finding registries, compiled
+   produce better next work. Postmortems, finding registries, compiled
    constraints, and the flywheel close hook ensure every session leaves the
    environment smarter than it found it. The **Context Compiler** (Layer 1)
    loads these learnings at session start.
@@ -58,7 +58,7 @@ Chaos in, locked progress out.
           can't go backward
 ```
 
-Spawn parallel agents (chaos), validate with multi-model council (filter), merge to main (ratchet). Failed agents are cheap — fresh context means no contamination.
+Run bounded workers, validate each completed slice in fresh context, and route the verdict through Learn. A multi-model council is an optional filter for higher-risk work; Git delivery remains a separate repository decision.
 
 See also: [Brownian Ratchet (deep dive)](brownian-ratchet.md)
 
@@ -66,7 +66,7 @@ See also: [Brownian Ratchet (deep dive)](brownian-ratchet.md)
 
 The repo now expresses the Stigmergic Spiral as executable mechanics:
 
-- **Spiral macro-cycle:** `Discovery -> Implementation -> Validation`
+- **Spiral macro-cycle:** `Discovery -> Crank -> Validate -> Learn`
 - **OODA micro-cycles:** each wave repeatedly observes state, orients with repo artifacts, decides a bounded move, and acts
 - **Stigmergic memory:** `.agents/`, finding registries, contracts, handoffs, and commits carry state forward
 - **Degraded operation:** fresh workers, disk-backed recovery, and hook-enforced checkpoints assume context loss and tool drift are normal
@@ -182,7 +182,7 @@ For repos over ~1500 files, `/rpi` uses deterministic shards to keep each worker
 
 ## Parallel RPI — N Epics in Isolated Worktrees
 
-`/crank` runs multiple epics concurrently, each in its own git worktree. Every epic gets a full 3-phase lifecycle (discovery → implementation → validation) with zero cross-contamination, then merges back sequentially.
+`/crank` runs multiple epics concurrently, each in its own git worktree. Every epic gets the same four-umbrella lifecycle (Discovery → Crank → Validate → Learn) with zero cross-contamination. Delivery happens afterward under repository policy.
 
 Use `/crank` to split independent epics into coordinated lanes with explicit ownership and merge order.
 

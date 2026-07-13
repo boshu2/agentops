@@ -53,7 +53,7 @@ if [ -f .agents/rpi/next-work.jsonl ] && command -v jq &>/dev/null; then
 fi
 ```
 
-This is a **soft WARN** — it does not block the release. It surfaces carry-forward findings from prior retro/post-mortem sessions so the release engineer can make an informed decision.
+This is a **soft WARN** — it does not block the release. It surfaces carry-forward findings from prior retro/postmortem sessions so the release engineer can make an informed decision.
 
 **Test/lint detection:**
 

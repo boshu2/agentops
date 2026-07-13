@@ -5,7 +5,7 @@
 
 ## The Four Surfaces
 
-Every completed feature or fix touches up to four surfaces. Post-mortem must validate ALL four, not just code:
+Every completed feature or fix touches up to four surfaces. Postmortem must validate ALL four, not just code:
 
 ### Surface 1: Code
 - Implementation matches the spec/plan

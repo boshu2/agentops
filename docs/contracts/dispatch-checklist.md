@@ -39,5 +39,5 @@ GIT POLICY: Do NOT run git add, git commit, or git push — the lead commits.
 
 Update this checklist when:
 - A new reference document is created that all agents should know about
-- A post-mortem identifies a knowledge gap that dispatch injection could prevent
+- A postmortem identifies a knowledge gap that dispatch injection could prevent
 - A contract or template is added to docs/contracts/

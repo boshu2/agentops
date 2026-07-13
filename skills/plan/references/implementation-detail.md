@@ -113,7 +113,7 @@ Example from context orchestration (na-0v2):
 | `INTEL` | `Learnings`, `Patterns` |
 | `TASK` | `BeadID`, `Predecessor` |
 
-**Why:** Without explicit mapping tables, workers misinterpret data transformations. In na-0v2, section→field mapping ambiguity was caught only in pre-mortem. An explicit table prevents the concern entirely.
+**Why:** Without explicit mapping tables, workers misinterpret data transformations. In na-0v2, section→field mapping ambiguity was caught only in premortem. An explicit table prevents the concern entirely.
 
 ## Symbol Verification
 

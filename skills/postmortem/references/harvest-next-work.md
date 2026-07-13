@@ -22,6 +22,10 @@ files, so the schema is the single source of truth. The inline bash below is a
 dependency-free fallback (jq-only) that mirrors the same checks for environments
 where running the script is inconvenient; prefer the script when available.
 
+Current Postmortem writers emit `postmortem-finding`. The hyphenated
+`post-mortem-finding` value remains a read-only compatibility alias for
+historical queue rows.
+
 Before writing, validate each harvested item against the tracked schema
 contract in [../../../docs/contracts/next-work.schema.md](../../../docs/contracts/next-work.schema.md):
 
@@ -58,7 +62,7 @@ validate_next_work_item() {
 
   # Source enum validation
   case "$source" in
-    council-finding|retro-learning|retro-pattern|evolve-generator|feature-suggestion|backlog-processing|post-mortem-finding|manifest-classification|dream-degraded) ;;
+    council-finding|retro-learning|retro-pattern|evolve-generator|feature-suggestion|backlog-processing|postmortem-finding|post-mortem-finding|manifest-classification|dream-degraded) ;;
     *) echo "SCHEMA VALIDATION FAILED: invalid source '$source' for item '$title'"; return 1 ;;
   esac
 

@@ -4,7 +4,7 @@
 > §3g (bead `age-skills-audit-fable-l6ic.10`, generic-craft trim). It is a nine-framework
 > name-drop — a capable model already knows these frameworks and applies them without the
 > table. The skill's durable value is the AgentOps council-autoload wiring (PRODUCT.md →
-> `/pre-mortem` + `/validate` product/DX perspectives) and the interview flow, both of which
+> `/premortem` + `/validate` product/DX perspectives) and the interview flow, both of which
 > stay in `SKILL.md`. This file is the reference for the per-lens questions; consult it
 > during §3g, but do **not** name-drop these frameworks in the generated PRODUCT.md —
 > translate each into a concrete product decision.
@@ -103,7 +103,7 @@ last_reviewed: YYYY-MM-DD
 | [gap] | [who it affects and how] | [open/in-progress/planned] |
 
 ## Usage
-- `/pre-mortem`: loads product context; deeper modes add a product perspective.
+- `/premortem`: loads product context; deeper modes add a product perspective.
 - `/validate`: loads developer-experience context; deeper modes add a DX perspective.
 - `/discovery`: turns the wedge and journey into acceptance behaviors.
 - `/council --preset=product`: product review on demand.

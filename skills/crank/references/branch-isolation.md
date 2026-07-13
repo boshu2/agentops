@@ -37,4 +37,4 @@ The convention exists so sibling sessions can detect each other via branch name 
 
 ## Source
 
-agentops-zm8 post-mortem: parallel-session reset clobber.
+agentops-zm8 postmortem: parallel-session reset clobber.

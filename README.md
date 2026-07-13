@@ -60,21 +60,26 @@ Installs hookless. The only hard requirement is an agent runtime and `git`; ever
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
-- **An operating loop.** Skills run intent → Gherkin → ATDD → implement → membrane → ratchet. Full map: [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md).
-- **A validation membrane.** `/validate`, `/council`, `/pre-mortem`, and `/pawl-review` prove or reject work against the slice's acceptance behavior. No verdict = not done. Without a behavior contract, there is nothing honest to accept.
+- **An operating loop.** Four umbrellas carry work from intent to evidence: Discovery shapes behavior, Crank executes small slices, Validate independently judges each completed slice, and Learn routes what changes the next experiment. Full map: [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md).
+- **A validation membrane.** `/validate` uses fresh context to prove or refute work against the slice's acceptance behavior; `/council` is an optional higher-rigor judging strategy. No verdict = not done. Without a behavior contract, there is nothing honest to accept.
 - **A bookkeeper that outlives the session.** Beads track work; verdicts bind into a hash-chained provenance ledger — tamper-evident, portable across sessions and models.
 - **An evidence trail that's yours.** Runs, decisions, and verdicts land in `.agents/` in your repo. No hosted control plane; Apache-2.0.
 - **It runs on the agent you already use.** Claude Code, Codex, Cursor, OpenCode. Same skills, same corpus.
 
 ```text
 > /plan "rate-limit /login"     # freeze Given/When/Then + acceptance
+> /premortem                    # stress-test the plan before execution
 > /implement <bead>             # RED acceptance → green → refactor
-> /validate                     # membrane vs those scenarios
+> /validate                     # fresh-context membrane vs those scenarios
+> /learn                        # route catches into the next experiment
 
 [membrane] acceptance mapped → scenarios S1, S2
 [judge] REFUTE  S2 burst refill lacks jitter — claimed covered, isn't
 Verdict: HOLD — not done. Fix S2, then re-validate.
 ```
+
+Validation completion and Git delivery are separate. After the verdict, use
+your repository's own direct-push, PR, merge, and CI policy.
 
 <!-- agentops:claim:AOP-CLAIM-README-FIRST-VALIDATED -->
 Already installed? First value is one loop tick via **skills**: `/plan` a small behavior (Gherkin), `/implement` it against a failing acceptance test, `/validate` so the verdict cites that scenario. Or run `/rpi "a small goal"` for the same tick in one flow. Step-by-step: [first-value path](docs/first-value-path.md).
@@ -94,10 +99,11 @@ Skills are the front door. Every skill is one move (or a wrapper) in the operati
 | `/plan` | Shape intent as BDD; slice + acceptance-gated beads |
 | `/implement` | One bead: RED acceptance → green → refactor |
 | `/validate` | Membrane — prove acceptance; no verdict = not done |
-| `/rpi` | One full tick (research → plan → implement → validate) |
-| `/pre-mortem` | Stress-test the plan before build |
+| `/rpi` | One full tick (Discovery → Crank → Validate → Learn) |
+| `/premortem` | Stress-test the plan before build |
 | `/council` | Multi-judge consensus when stakes are high |
-| `/post-mortem` | Capture evidence; ratchet learnings into the next loop |
+| `/learn` | Convert validated outcomes into plan impact and future checks |
+| `/postmortem` | Optional retrospective causal analysis after Validate and Learn |
 
 ## The `ao` CLI
 
@@ -108,10 +114,10 @@ Supporting control plane behind the skills (bookkeeping, retrieval, release gate
 ```bash
 ao quick-start            # set up AgentOps in a repo
 ao doctor                 # check skills, reviewers, ledger health
-ao gate check --fast      # the release gate before you push
-ao verify                 # commit/pre-push ratchet (supporting; skills own the loop)
+ao gate check --fast      # optional deterministic release check before you push
+ao verify                 # deterministic support check; skills own completion
 ao provenance show <sha>  # recorded verdict trail
-ao done <bead-id>         # close tracked work with its verdict attached
+ao skills graph           # inspect the generated skill dependency graph
 
 # Experimental (still measuring whether these pay off; see the honest version below):
 ao search "query"         # search history and local knowledge

@@ -19,7 +19,7 @@
 | 3 | **VERIFICATION (pawl)** | balancing loop — don't regress | Brownian ratchet; pawl gates at merge/accept | ✅ working |
 | 4 | **KNOWLEDGE** | the stock + its feedback (mine→compile→retrieve→reward) | *(no forcing function on consume)* | ⚠️ **starved at consume** |
 | 5 | **NUDGE / TIME** | keep loops turning, unstick | cron / ScheduleWakeup / NTM ticks | ✅ working |
-| L | **PROMOTION ladder** | routes a lesson to its enforcement surface | post-mortem ratchet + finding-compiler | ✅ working |
+| L | **PROMOTION ladder** | routes a lesson to its enforcement surface | postmortem ratchet + finding-compiler | ✅ working |
 
 **The headline: 4 of 5 loops work. The knowledge loop is the lone broken one — and it's broken at *consume*, not anywhere else.**
 
@@ -56,8 +56,8 @@
   - **Retrieve:** decay-ranked scoring (`scoring.go`: freshness `exp(-0.17·weeks)`, maturity weights, multi-feature relevance). Scores **0.93 synthetic.**
   - **Reward:** citation → EMA utility (`feedback.go`) → `reward_count`/maturity (`ratchet/maturity.go`: provisional→candidate@≥3→established@≥5).
   - **Eval:** `eval-outcomes` + holdout — but it never measures "does retrieval help."
-- **State: BUILT BUT STARVED.** The Apr-2026 `flywheel-audit.md` measured **0% cross-session citation** — 2,275 learning files across 14 workspaces, *zero* cited by any later plan/pre-mortem. Live retrieval scores **0.13** (vs 0.93 synthetic).
-- **Root cause — the over-correction:** the v2.x **bookend push** failed (ADR-0002: a trivial RPI cycle hit **10.35M tokens @ 97.6% cache-read / $7.48**, and the **A/B eval showed injected context delta = 0** — "the problem was never hooks; it was noise stacking in the prompt"). 3.0 moved to **JIT pull**… but then **nothing pulls.** Injection was disabled (post-`ag-8km`) with no replacement, and **no decision-point skill calls `ao lookup`** (pre-mortem is the lone exception). The pendulum swung **spray → silence.**
+- **State: BUILT BUT STARVED.** The Apr-2026 `flywheel-audit.md` measured **0% cross-session citation** — 2,275 learning files across 14 workspaces, *zero* cited by any later plan/premortem. Live retrieval scores **0.13** (vs 0.93 synthetic).
+- **Root cause — the over-correction:** the v2.x **bookend push** failed (ADR-0002: a trivial RPI cycle hit **10.35M tokens @ 97.6% cache-read / $7.48**, and the **A/B eval showed injected context delta = 0** — "the problem was never hooks; it was noise stacking in the prompt"). 3.0 moved to **JIT pull**… but then **nothing pulls.** Injection was disabled (post-`ag-8km`) with no replacement, and **no decision-point skill calls `ao lookup`** (premortem is the lone exception). The pendulum swung **spray → silence.**
 - **The diagnosis:** this is the **only loop with no forcing function on its consume step.** Goal is forced by the Stop-hook; workflow by RPI's mandatory phases; verification by the merge gate; nudge by the timer. Knowledge-consume relies on an agent *choosing* to retrieve — and it doesn't. **Enforce the knowledge loop = give consume a forcing function**, the way every other loop has one.
 
 ## 5. NUDGE / TIME loops (keep loops turning)
@@ -67,7 +67,7 @@
 - **Lesson:** one continuous machine with multiple control surfaces, not a cascade of systems. All honor the same kill markers.
 
 ## L. PROMOTION ladder (routes a lesson to its surface)
-- once→handoff / twice→`.agents/learnings` / changes-behavior→`SKILL.md` / must-never-regress→gate / doctrine→`PRODUCT.md`. Plus **R3: no durable learning without a constraint** (`check-ratchet-r3-constraint.sh`). Enforcement-strength routing (AGENTS.md / skill / hook — weakest that changes behavior) added to the post-mortem skill this session.
+- once→handoff / twice→`.agents/learnings` / changes-behavior→`SKILL.md` / must-never-regress→gate / doctrine→`PRODUCT.md`. Plus **R3: no durable learning without a constraint** (`check-ratchet-r3-constraint.sh`). Enforcement-strength routing (AGENTS.md / skill / hook — weakest that changes behavior) added to the postmortem skill this session.
 - **Where:** `docs/architecture/operating-loop.md#the-promotion-ratchet`, `docs/contracts/finding-compiler.md`, `.agents/findings/`.
 
 ---
@@ -78,7 +78,7 @@
 
 **The knowledge loop's three cadences are different and must be decoupled:**
 1. **PRODUCE (harvest the session-end gold):** async + gated, decoupled from the session boundary — a separate loop on its own timer (nudge tier), not a synchronous SessionEnd. The end-of-session agent is the highest-knowledge *and* most-biased context → the harvest must pass the **pawl** (independent verification), or it pays forward confident slop.
-2. **CONSUME (feed the next agent):** **JIT pull at the point of need, wired as a mandatory step in the decision-point skills** (discovery/plan/pre-mortem call `ao lookup --gold`) — a *forcing function*, the thing the knowledge loop uniquely lacks. Never bookend-push.
+2. **CONSUME (feed the next agent):** **JIT pull at the point of need, wired as a mandatory step in the decision-point skills** (discovery/plan/premortem call `ao lookup --gold`) — a *forcing function*, the thing the knowledge loop uniquely lacks. Never bookend-push.
 3. **MEASURE (does it help):** the eval/holdout closes the loop empirically — did the next agent avoid the mistake? Without this, you can't tell gold from slop accumulating.
 
 **One line:** every other loop is enforced by a forcing function; the knowledge loop isn't. Give *consume* a forcing function (mandatory decision-point retrieval), keep *produce* async+gated, and let the eval prove it — and the dormant reward/maturity machinery lights up the moment retrieval happens.

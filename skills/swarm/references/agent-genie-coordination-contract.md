@@ -45,7 +45,7 @@ work *before* the regen and skip the regen entirely.
 > prevents collisions on generated artifacts and lets one stream
 > unblock another without relying on ad hoc chat memory."
 — `.agents/learnings/2026-05-16-agent-genie-coordination-contract.md`
-(post-mortem for soc-z3qo.1 / PR #285)
+(postmortem for soc-z3qo.1 / PR #285)
 
 The empirical anchor: PR #285. The doctor stream owned doctor/canary
 drift; the RPI stream owned execution-packet files plus final

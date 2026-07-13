@@ -22,7 +22,7 @@ Execution packet v1 should remain additive. Recommended fields:
 - `tracker_mode`
 - `tracker_health`
 - `done_criteria`
-- `pre_mortem_verdict`
+- `premortem_verdict`
 - `test_levels`
 - `ranked_packet_path`
 
@@ -40,7 +40,7 @@ Validation lane selection rule:
 - unclassified commands containing `go test -race`, `-shuffle`, `-count=N` where `N > 1`, eval runners, retrieval bench, headless runtime smoke, or release gates are explicit-only
 
 Queue lifecycle rule:
-- post-mortem writes new entries as available: entry aggregate `consumed=false`, `claim_status="available"`
+- postmortem writes new entries as available: entry aggregate `consumed=false`, `claim_status="available"`
 - consumers treat item lifecycle as authoritative inside `items[]`; omitted item `claim_status` means available
 - `/evolve` and `/rpi loop` claim an item before starting a cycle: item `claim_status="in_progress"`
 - successful `/rpi` + regression gate finalizes that item claim: item `consumed=true`, `claim_status="consumed"`, `consumed_by`, `consumed_at`
@@ -54,6 +54,6 @@ Canonical schema contract: [`docs/contracts/next-work.schema.md`](../../../docs/
 
 When changing phase-boundary logic, ship phase-3 (closeout) updates FIRST and remove phase-2 (handoff) logic SECOND. This keeps a working closeout path in place during the transition window — if phase-3 ships broken, you can revert before phase-2's removal lands.
 
-Pre-mortem F3 of `soc-bcrn` (`.agents/council/2026-05-07-pre-mortem-rpi-lifecycle-sharpening.md`) called this out as the primary rollback risk for the consolidated daemon epic (E3).
+Premortem F3 of `soc-bcrn` (`.agents/council/2026-05-07-pre-mortem-rpi-lifecycle-sharpening.md`) called this out as the primary rollback risk for the consolidated daemon epic (E3).
 
 Worked example: `cli/cmd/ao/rpi_cleanup.go:preserveWorktreeCommits` (phase-3 commit-preservation logic) was added BEFORE the phase-2 cleanup-removal as part of E3.S3. The order matters: orphaned worktree commits that previously fell into git fsck dangling now land on `codex/preserve-<runID>` branches before the worktree is force-removed. If preservation had been wired in the opposite order, a regression window would have lost commits during the transition.

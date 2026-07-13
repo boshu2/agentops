@@ -261,7 +261,7 @@ func TestMortemCompatibilityFixtureLoader_ConsumesAndRejectsInvalidContent(t *te
 	}
 }
 
-func TestExecutionPacketMarshal_MortemWriterRemainsLegacyV2OnlyThroughS7(t *testing.T) {
+func TestExecutionPacketMarshal_ExplicitLegacyV2KeepsLegacyWireNames(t *testing.T) {
 	fixtureData, err := os.ReadFile(filepath.Join(mortemFixtureDir(t), "writer-legacy-v2.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -287,22 +287,72 @@ func TestExecutionPacketMarshal_MortemWriterRemainsLegacyV2OnlyThroughS7(t *test
 	}
 	var version int
 	if err := json.Unmarshal(raw["schema_version"], &version); err != nil || version != 2 {
-		t.Fatalf("schema_version = %d (err=%v), want existing v2 writer", version, err)
+		t.Fatalf("schema_version = %d (err=%v), want explicit legacy v2 representation", version, err)
 	}
 	if _, ok := raw["pre_mortem_verdict"]; !ok {
-		t.Error("S1-S7 writer omitted legacy pre_mortem_verdict")
+		t.Error("explicit v2 representation omitted legacy pre_mortem_verdict")
 	}
 	if _, ok := raw["premortem_verdict"]; ok {
-		t.Error("S1-S7 writer crossed S8 by emitting premortem_verdict")
+		t.Error("explicit v2 representation emitted v3 premortem_verdict")
 	}
 	var artifacts map[string]json.RawMessage
 	if err := json.Unmarshal(raw["artifacts"], &artifacts); err != nil {
 		t.Fatalf("decode marshaled artifacts: %v", err)
 	}
 	if _, ok := artifacts["pre_mortem_path"]; !ok {
-		t.Error("S1-S7 writer omitted artifacts.pre_mortem_path")
+		t.Error("explicit v2 representation omitted artifacts.pre_mortem_path")
 	}
 	if _, ok := artifacts["premortem_path"]; ok {
-		t.Error("S1-S7 writer crossed S8 by emitting artifacts.premortem_path")
+		t.Error("explicit v2 representation emitted artifacts.premortem_path")
+	}
+}
+
+func TestExecutionPacketMarshal_MortemWriterIsCanonicalV3(t *testing.T) {
+	fixtureData, err := os.ReadFile(filepath.Join(mortemFixtureDir(t), "writer-canonical-v3.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var writerFixture struct {
+		SchemaVersion int                               `json:"schema_version"`
+		PacketFields  map[string]ExecutionPacketVerdict `json:"packet_fields"`
+		RuntimePaths  []string                          `json:"runtime_paths"`
+	}
+	if err := json.Unmarshal(fixtureData, &writerFixture); err != nil {
+		t.Fatalf("parse canonical writer fixture: %v", err)
+	}
+	p := validBase()
+	p.SchemaVersion = CurrentExecutionPacketSchemaVersion
+	p.PreMortemVerdict = writerFixture.PacketFields["premortem_verdict"]
+	p.Artifacts = &ExecutionPacketArtifacts{PreMortemPath: writerFixture.RuntimePaths[0]}
+	data, err := json.Marshal(p)
+	if err != nil {
+		t.Fatalf("marshal execution packet: %v", err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var version int
+	if err := json.Unmarshal(raw["schema_version"], &version); err != nil || version != 3 {
+		t.Fatalf("schema_version = %d (err=%v), want canonical v3", version, err)
+	}
+	if _, ok := raw["premortem_verdict"]; !ok {
+		t.Error("canonical writer omitted premortem_verdict")
+	}
+	if _, ok := raw["pre_mortem_verdict"]; ok {
+		t.Error("canonical writer emitted legacy pre_mortem_verdict")
+	}
+	var artifacts map[string]json.RawMessage
+	if err := json.Unmarshal(raw["artifacts"], &artifacts); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := artifacts["premortem_path"]; !ok {
+		t.Error("canonical writer omitted artifacts.premortem_path")
+	}
+	if _, ok := artifacts["pre_mortem_path"]; ok {
+		t.Error("canonical writer emitted legacy artifacts.pre_mortem_path")
+	}
+	if err := ValidateJSON(data); err != nil {
+		t.Fatalf("canonical writer emitted invalid v3 packet: %v", err)
 	}
 }

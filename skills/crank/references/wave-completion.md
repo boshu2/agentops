@@ -29,7 +29,7 @@ After each wave completes (post-vibe-gate, pre-next-wave), write `.agents/crank/
 
 `evidence_path` points to a file or log line that justifies the verdict (test output, grep result, gate report). `SKIP` is reserved for criteria not exercised this wave (e.g., gated by a flag, deferred to a later wave) and must include a `notes` reason.
 
-**Back-compat fallback (back-compat):** When the bead has no `acceptance_criteria` block, omit `criterion_verdicts` from the checkpoint and emit a WARN log line: `[deprecated] no acceptance_criteria found in packet — running vibe-only`. This is the pre-mortem advisory fix #2 ramp: WARN until **2026-06-30**, then FAIL after that date. Tracker beads created before this rollout date are grandfathered for that window; new packets must include the block.
+**Back-compat fallback (back-compat):** When the bead has no `acceptance_criteria` block, omit `criterion_verdicts` from the checkpoint and emit a WARN log line: `[deprecated] no acceptance_criteria found in packet — running vibe-only`. This is the premortem advisory fix #2 ramp: WARN until **2026-06-30**, then FAIL after that date. Tracker beads created before this rollout date are grandfathered for that window; new packets must include the block.
 
 Immediately validate the checkpoint before using it downstream:
 
