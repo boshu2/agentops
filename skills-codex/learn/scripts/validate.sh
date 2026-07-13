@@ -44,6 +44,7 @@ valid = {
         "evidence_ref": "tests/integration/example.sh",
         "disposition": "record",
     }],
+    "producer_candidates": [],
 }
 validator.validate(valid)
 
@@ -80,6 +81,25 @@ terminal["plan_impact"] = {
     "proposed_changes": [],
 }
 validator.validate(terminal)
+
+recurring = copy.deepcopy(valid)
+recurring["producer_candidates"] = [{
+    "id": "producer-0123456789ab",
+    "class_key": "v1:docs/stale-surface",
+    "summary": "A retired surface remained in active documentation.",
+    "recurrence_count": 2,
+    "advisory": True,
+    "evidence": [
+        {"observation_id": "obs-a", "objective_id": "objective-a", "evidence_ref": "a.md"},
+        {"observation_id": "obs-b", "objective_id": "objective-b", "evidence_ref": "b.md"},
+    ],
+}]
+validator.validate(recurring)
+
+inflated = copy.deepcopy(recurring)
+inflated["producer_candidates"][0]["recurrence_count"] = 1
+if not list(validator.iter_errors(inflated)):
+    raise SystemExit("Learn schema accepted a producer candidate without recurrence")
 PY
 
 echo 'learn skill contract: PASS'

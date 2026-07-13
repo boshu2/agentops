@@ -33,6 +33,19 @@ Feature: Learn bookkeeps an immutable verdict
     Then the orchestrator may retry, continue, stop, or escalate
     And no plan mutation or Premortem is implied
 
+  Scenario: Distinct objectives establish advisory recurrence
+    Given the same finding class was observed in two distinct objectives
+    And one objective retried the same finding three times
+    When Learn reconciles the observations
+    Then recurrence counts two distinct objectives rather than five review events
+    And one advisory producer candidate cites both objectives
+
+  Scenario: One catch does not create policy
+    Given one evidence-backed finding in one objective
+    When Learn reconciles the observations
+    Then producer_candidates is empty
+    And no rule or delivery blocker is created
+
   Scenario: Terminal work closes the tick
     Given no work remains after validation
     When Learn classifies the impact as terminal

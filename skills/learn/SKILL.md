@@ -45,6 +45,9 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
   evidence remains missing; Learn does not manufacture a lesson.
 - Classify bookkeeping outcomes such as `record`, `candidate`, or `no_change`,
   but do not promote a rule or alter the remaining plan in this mode.
+- Reconcile finding recurrence by stable defect class and distinct objective.
+  Retries inside one objective count once. One objective emits no producer
+  candidate; two or more emit one advisory candidate citing each objective.
 - Postmortem is optional and runs only for retrospective causal analysis. Learn
   may request that specialization; the caller decides whether to invoke it.
 - Emit observations plus one Learn receipt. Do not operate proof, repository,
@@ -61,7 +64,11 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 2. Copy structured observations into the Learn receipt without changing their
    `kind`, `summary`, or `evidence_ref`.
 3. Record a bounded disposition for each observation: `record`, `candidate`, or
-   `no_change`. This is bookkeeping, not promotion.
+   `no_change`. Reconcile evidence-backed finding observations through the
+   deterministic recurrence reducer. Emit `producer_candidates: []` for no
+   recurrence or one advisory candidate per class seen in at least two distinct
+   objectives. Review retries never increase the recurrence count. This is
+   bookkeeping, not promotion.
 4. Inspect whether work remains and classify plan impact:
    - `material_change`: cite the evidence and propose concrete remaining-plan
      changes;
@@ -88,6 +95,8 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 ## Output Specification
 
 - **Artifacts:** `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+- **Recurrence contract:**
+  [producer-defect-register.md](../../docs/contracts/producer-defect-register.md).
 - **Schema:** [learn-receipt.schema.json](schemas/learn-receipt.schema.json).
 - **Validator:** `bash skills/learn/scripts/validate.sh`.
 - **Downstream:** the orchestrator consumes the receipt and alone decides
