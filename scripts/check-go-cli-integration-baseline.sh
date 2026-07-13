@@ -139,7 +139,7 @@ for family in "${FAMILIES[@]}"; do
       and .architecture_command == ("scripts/check-go-cli-architecture.sh --family " + $family)
       and .architecture_exit == 0
       and (.architecture_output_tail | type == "string" and length > 0)
-      and .compatibility_command == ("scripts/check-go-cli-compatibility.sh --verify-frozen --profiles default,flywheel,legacy,combined --family " + $family)
+      and .compatibility_command == ("scripts/check-go-cli-compatibility.sh --oracle-version current --verify-frozen --profiles default,flywheel,legacy,combined --family " + $family)
       and .compatibility_exit == 0
       and (.compatibility_output_tail | type == "string" and length > 0)
       and (.historical_seal_blobs | keys | sort) == ["case.json", "lineage.json", "ownership.json"]
