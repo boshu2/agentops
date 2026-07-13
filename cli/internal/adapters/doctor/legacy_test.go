@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
+	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/reviewerhealth"
 )
 
@@ -23,6 +25,10 @@ func (probe fakeReviewerProbe) Check(_ context.Context, reviewer reviewerhealth.
 
 func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 	root := t.TempDir()
+	// Make root look like an agentops repo clone so repo-dev checks are shown
+	// rather than collapsed to a single info line (that collapse is covered by
+	// TestLegacyChecksCollapsesRepoDevOutsideClone).
+	writeFakeAgentopsRepo(t, root)
 	t.Chdir(root)
 	t.Setenv("HOME", t.TempDir())
 	reviewers := reviewerhealth.NewService(reviewerhealth.DefaultCatalog(), fakeReviewerProbe{
@@ -50,7 +56,8 @@ func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 			t.Errorf("LegacyChecks missing %q: %v", name, byName)
 		}
 	}
-	if byName["Reviewer: codex"] != "pass" || byName["Reviewer: agy"] != "warn" || byName["Cross-Family Review"] != "pass" {
+	// A missing optional reviewer is softened from "warn" to "info".
+	if byName["Reviewer: codex"] != "pass" || byName["Reviewer: agy"] != "info" || byName["Cross-Family Review"] != "pass" {
 		t.Fatalf("reviewer integration = %v", byName)
 	}
 }
@@ -62,7 +69,7 @@ func TestCrossFamilyCheck(t *testing.T) {
 	}{
 		{name: "both", live: []string{"codex", "agy"}, status: "pass", detail: "live families: codex, agy"},
 		{name: "one", live: []string{"agy"}, status: "pass", detail: "live families: agy"},
-		{name: "none", status: "warn", detail: "npm install -g @openai/codex"},
+		{name: "none", status: "info", detail: "cross-family capable: no"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			check := CrossFamilyCheck(test.live)
@@ -70,6 +77,25 @@ func TestCrossFamilyCheck(t *testing.T) {
 				t.Fatalf("check = %+v", check)
 			}
 		})
+	}
+	// When no reviewer is reachable the remediation is a runnable install
+	// command carried in Fix, not a repo-relative script.
+	if fix := CrossFamilyCheck(nil).Fix; fix != "npm install -g @openai/codex" {
+		t.Fatalf("cross-family fix = %q", fix)
+	}
+}
+
+func writeFakeAgentopsRepo(t *testing.T, root string) {
+	t.Helper()
+	dir := filepath.Join(root, "cli", "cmd", "ao")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "cli", "go.mod"), []byte(agentopsModuleLine+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\nvar version = \"1.0.0\"\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -87,6 +113,142 @@ func makeFakeAgentopsRepo(t *testing.T, declared string) string {
 		t.Fatal(err)
 	}
 	return root
+}
+
+// pristineAdapter builds a LegacyChecks configured to look like a pristine
+// install: an initialized-but-empty knowledge base, an empty ledger, and no
+// optional CLIs (gt, bd, codex) on PATH. cwd is the caller's fixture root.
+func pristineAdapter(t *testing.T, cwd string) LegacyChecks {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(cwd, ".agents", "ao", "sessions"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	reviewers := reviewerhealth.NewService(reviewerhealth.DefaultCatalog(), fakeReviewerProbe{
+		"codex": {Status: "warn", Detail: "not found"},
+		"agy":   {Status: "warn", Detail: "not found"},
+	})
+	return LegacyChecks{
+		ToolVersion: "1.0.0", IndexDir: ".agents/index", IndexFile: "index.json", Reviewers: reviewers,
+		WorkingDir:  func() (string, error) { return cwd, nil },
+		LedgerPath:  func() string { return filepath.Join(cwd, "ledger.jsonl") },
+		Environment: func() []string { return nil },
+		LookPath:    func(string) (string, error) { return "", errors.New("not found") },
+		Now:         time.Now,
+	}
+}
+
+// TestLegacyChecksDeclareAudience is the registry test: every check the adapter
+// emits (inside a clone, where all checks run) must declare a valid audience.
+func TestLegacyChecksDeclareAudience(t *testing.T) {
+	root := t.TempDir()
+	writeFakeAgentopsRepo(t, root)
+	t.Chdir(root)
+	t.Setenv("HOME", t.TempDir())
+	adapter := pristineAdapter(t, root)
+	checks := adapter.Checks(context.Background())
+	if len(checks) == 0 {
+		t.Fatal("no checks emitted")
+	}
+	valid := map[string]bool{
+		quality.AudienceInstalledUser: true,
+		quality.AudienceRepoDev:       true,
+	}
+	for _, check := range checks {
+		if !valid[check.Audience] {
+			t.Errorf("check %q declares invalid audience %q", check.Name, check.Audience)
+		}
+	}
+}
+
+var runnableFixPattern = regexp.MustCompile(`^(ao |br |brew |npm |curl |https://)`)
+
+// TestDoctor_FixStringsRunnableByAudience asserts every installed-user check's
+// Fix is either empty or a command runnable from the reader's own context —
+// never a repo-relative script path.
+func TestDoctor_FixStringsRunnableByAudience(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", t.TempDir())
+	adapter := pristineAdapter(t, root)
+	checks := adapter.Checks(context.Background())
+	sawFix := false
+	for _, check := range checks {
+		if check.Audience != quality.AudienceInstalledUser || check.Fix == "" {
+			continue
+		}
+		sawFix = true
+		if !runnableFixPattern.MatchString(check.Fix) {
+			t.Errorf("check %q fix %q is not runnable from the user's context", check.Name, check.Fix)
+		}
+	}
+	if !sawFix {
+		t.Fatal("expected at least one installed-user check to carry a Fix")
+	}
+}
+
+// TestDoctor_PristineInstallGreen: a pristine install outside any agentops clone
+// exits success (no fail, no above-info warning) and names no repo-relative
+// script in any check detail.
+func TestDoctor_PristineInstallGreen(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", t.TempDir())
+	adapter := pristineAdapter(t, root)
+	checks := adapter.Checks(context.Background())
+
+	for _, check := range checks {
+		switch check.Status {
+		case quality.StatusFail:
+			t.Errorf("pristine install must not fail: %q — %s", check.Name, check.Detail)
+		case quality.StatusWarn:
+			t.Errorf("pristine install must not warn above info: %q — %s", check.Name, check.Detail)
+		}
+		if strings.Contains(check.Detail, "scripts/") || strings.Contains(check.Detail, ".sh") {
+			t.Errorf("check %q names a repo-relative script: %s", check.Name, check.Detail)
+		}
+		if strings.Contains(strings.ToLower(check.Detail), "required") && check.Status != quality.StatusPass {
+			t.Errorf("check %q labels an optional dep required: %s", check.Name, check.Detail)
+		}
+	}
+
+	output := quality.ComputeResult(checks)
+	if quality.HasRequiredFailure(output.Checks) {
+		t.Fatalf("pristine install has a required failure: %s", output.Summary)
+	}
+	if output.Result != "HEALTHY" {
+		t.Fatalf("pristine result = %q, want HEALTHY (%s)", output.Result, output.Summary)
+	}
+}
+
+// TestLegacyChecksCollapseRepoDevOutsideClone: outside a clone the repo-dev
+// checks are collapsed to a single info line rather than emitting warnings.
+func TestLegacyChecksCollapseRepoDevOutsideClone(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", t.TempDir())
+	adapter := pristineAdapter(t, root)
+	checks := adapter.Checks(context.Background())
+	repoDev := 0
+	var collapse *quality.Check
+	for i, check := range checks {
+		if check.Audience == quality.AudienceRepoDev {
+			repoDev++
+			collapse = &checks[i]
+		}
+	}
+	if repoDev != 1 {
+		t.Fatalf("expected exactly one repo-dev line outside a clone, got %d", repoDev)
+	}
+	if collapse.Status != quality.StatusInfo || collapse.Name != "Repo-dev checks" {
+		t.Fatalf("collapse line = %+v", *collapse)
+	}
+	for _, name := range []string{"Plugin", "Codex Sync", "Skill Integrity", "Binary Freshness"} {
+		for _, check := range checks {
+			if check.Name == name {
+				t.Errorf("repo-dev check %q leaked outside a clone", name)
+			}
+		}
+	}
 }
 
 func TestBinaryFreshnessCheck(t *testing.T) {

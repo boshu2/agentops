@@ -636,14 +636,18 @@ func CheckSkillIntegrity() Check {
 }
 
 // CheckOptionalCLI reports whether an optional CLI dependency is installed.
-func CheckOptionalCLI(name string, reason string) Check {
+// fix is an optional remediation runnable from the reader's own context (e.g.
+// "npm install -g @openai/codex"); it must never be a repo-relative script.
+func CheckOptionalCLI(name, reason, fix string) Check {
 	_, err := exec.LookPath(name)
 	if err != nil {
 		return Check{
 			Name:     strings.Title(name) + " CLI", //nolint:staticcheck
-			Status:   "warn",
+			Status:   "info",
 			Detail:   fmt.Sprintf("not found (optional — %s)", reason),
 			Required: false,
+			Audience: AudienceInstalledUser,
+			Fix:      fix,
 		}
 	}
 
@@ -652,5 +656,6 @@ func CheckOptionalCLI(name string, reason string) Check {
 		Status:   "pass",
 		Detail:   "available",
 		Required: false,
+		Audience: AudienceInstalledUser,
 	}
 }

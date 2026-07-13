@@ -83,11 +83,15 @@ func TestDoctor_Integration_JSONOutput(t *testing.T) {
 	}
 }
 
-func TestDoctor_Integration_DegradedState(t *testing.T) {
+// A fresh install with an initialized-but-empty knowledge base (no sessions, no
+// learnings, no index yet) must NOT manufacture warnings: those are "you
+// haven't done anything yet" info lines, not defects. This encodes the FU2
+// doctrine — a pristine install is green.
+func TestDoctor_Integration_FreshInstallIsNotDegraded(t *testing.T) {
 	resetCommandState(t)
 	dir := chdirTemp(t)
 
-	// Minimal .agents/ without a learnings dir — should trigger legacy warnings.
+	// Minimal .agents/ — initialized base, no sessions/learnings/index yet.
 	writeFile(t, dir+"/.agents/ao/sessions/.gitkeep", "")
 
 	// The legacy check table runs in human mode (`ao doctor` without --json).
@@ -96,11 +100,16 @@ func TestDoctor_Integration_DegradedState(t *testing.T) {
 	if out == "" {
 		t.Fatal("expected doctor output, got empty string")
 	}
-	// A missing learnings dir must surface as a non-healthy summary.
-	if !strings.Contains(out, "DEGRADED") &&
-		!strings.Contains(out, "UNHEALTHY") &&
-		!strings.Contains(out, "warning") {
-		t.Errorf("expected a degraded/unhealthy summary, got:\n%s", out)
+	if strings.Contains(out, "UNHEALTHY") {
+		t.Errorf("fresh install must not be UNHEALTHY, got:\n%s", out)
+	}
+	// "you haven't started yet" states are info lines, never warnings.
+	if strings.Contains(out, "warning") {
+		t.Errorf("fresh install must not surface warnings, got:\n%s", out)
+	}
+	// No check may point the user at a repo-relative script.
+	if strings.Contains(out, "scripts/") {
+		t.Errorf("fresh install names a repo-relative script, got:\n%s", out)
 	}
 }
 

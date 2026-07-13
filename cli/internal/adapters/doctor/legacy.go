@@ -33,47 +33,87 @@ type LegacyChecks struct {
 }
 
 func (adapter LegacyChecks) Checks(ctx context.Context) []quality.Check {
-	checks := []quality.Check{quality.CheckCLIDependencies(adapter.LookPath)}
 	cwd, cwdErr := adapter.WorkingDir()
+	inRepo := false
+	if cwdErr == nil {
+		_, inRepo = FindAgentopsRepoRoot(cwd)
+	}
+
+	var checks []quality.Check
+	// add appends a check, defaulting its audience when the producer did not set
+	// one so every rendered check is guaranteed to declare an audience.
+	add := func(c quality.Check, audience string) {
+		if c.Audience == "" {
+			c.Audience = audience
+		}
+		checks = append(checks, c)
+	}
+
+	// Installed-user: optional external tooling (gt/bd), reported as optional.
+	add(quality.CheckCLIDependencies(adapter.LookPath), quality.AudienceInstalledUser)
+
+	// Installed-user: local knowledge state.
 	if cwdErr != nil {
-		checks = append(checks,
-			quality.Check{Name: "Knowledge Base", Status: "fail", Detail: "cannot determine working directory", Required: true},
-			quality.Check{Name: "Knowledge Freshness", Status: "warn", Detail: "cannot determine working directory"},
-			quality.Check{Name: "Search Index", Status: "warn", Detail: "cannot determine working directory"},
-			quality.Check{Name: "Flywheel Health", Status: "warn", Detail: "cannot determine working directory"},
-		)
+		add(quality.Check{Name: "Knowledge Base", Status: "fail", Detail: "cannot determine working directory", Required: true}, quality.AudienceInstalledUser)
+		add(quality.Check{Name: "Knowledge Freshness", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
+		add(quality.Check{Name: "Search Index", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
+		add(quality.Check{Name: "Flywheel Health", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
 	} else {
 		base := filepath.Join(cwd, storage.DefaultBaseDir)
-		checks = append(checks,
-			quality.CheckKnowledgeBase(base),
-			quality.CheckKnowledgeFreshness(filepath.Join(base, "sessions")),
-			quality.CheckSearchIndex(filepath.Join(cwd, adapter.IndexDir, adapter.IndexFile)),
-			quality.CheckFlywheelHealth(base),
-		)
+		add(quality.CheckKnowledgeBase(base), quality.AudienceInstalledUser)
+		add(quality.CheckKnowledgeFreshness(filepath.Join(base, "sessions")), quality.AudienceInstalledUser)
+		add(quality.CheckSearchIndex(filepath.Join(cwd, adapter.IndexDir, adapter.IndexFile)), quality.AudienceInstalledUser)
+		add(quality.CheckFlywheelHealth(base), quality.AudienceInstalledUser)
 	}
-	checks = append(checks,
-		quality.CheckSkills(), quality.CheckCodexSync(), quality.CheckSkillIntegrity(),
-		quality.CheckStaleReferences([]string{
+
+	// Installed-user: optional cross-family review capability.
+	add(quality.CheckOptionalCLI("codex", "enables --mixed council review", "npm install -g @openai/codex"), quality.AudienceInstalledUser)
+	reviewerChecks, live := adapter.Reviewers.Check(ctx, reviewerTimeout)
+	for _, reviewerCheck := range reviewerChecks {
+		add(softenOptional(reviewerCheck), quality.AudienceInstalledUser)
+	}
+	add(CrossFamilyCheck(live), quality.AudienceInstalledUser)
+
+	// Repo-dev: skill/codex/plugin/binary hygiene — meaningful only inside a
+	// clone, where the remediations (heal.sh, refresh-codex-local.sh, rebuild)
+	// are runnable. Outside a clone, collapse to a single info line so a
+	// pristine install never sees repo-internal warnings.
+	if inRepo {
+		add(quality.CheckSkills(), quality.AudienceRepoDev)
+		add(quality.CheckCodexSync(), quality.AudienceRepoDev)
+		add(quality.CheckSkillIntegrity(), quality.AudienceRepoDev)
+		add(quality.CheckStaleReferences([]string{
 			"skills/*/SKILL.md", "skills/*/references/*.md", "skills-codex/*/SKILL.md",
 			"skills-codex-overrides/*/SKILL.md", "docs/*.md", "scripts/*.sh",
 			"docs/contracts/*.md", "docs/plans/*.md",
-		}),
-		quality.CheckOptionalCLI("codex", "needed for --mixed council"),
-	)
-	reviewerChecks, live := adapter.Reviewers.Check(ctx, reviewerTimeout)
-	checks = append(checks, reviewerChecks...)
-	checks = append(checks, CrossFamilyCheck(live))
-	if cwdErr != nil {
-		checks = append(checks, quality.Check{Name: "Binary Freshness", Status: "warn", Detail: "cannot determine working directory"})
+		}), quality.AudienceRepoDev)
+		add(BinaryFreshnessCheck(cwd, adapter.ToolVersion), quality.AudienceRepoDev)
 	} else {
-		checks = append(checks, BinaryFreshnessCheck(cwd, adapter.ToolVersion))
+		add(quality.Check{
+			Name:   "Repo-dev checks",
+			Status: quality.StatusInfo,
+			Detail: "skipped — outside an agentops repo clone (skill hygiene, codex sync, stale refs, plugin manifest, binary freshness)",
+		}, quality.AudienceRepoDev)
 	}
+
+	// Installed-user: required integrity.
 	ledgerPath := ""
 	if adapter.LedgerPath != nil {
 		ledgerPath = adapter.LedgerPath()
 	}
-	checks = append(checks, CheckLedgerHealth(ledgerPath, adapter.Now), CheckLaw0Guard(adapter.Environment()))
+	add(CheckLedgerHealth(ledgerPath, adapter.Now), quality.AudienceInstalledUser)
+	add(CheckLaw0Guard(adapter.Environment()), quality.AudienceInstalledUser)
 	return checks
+}
+
+// softenOptional downgrades an optional-capability check from "warn" to "info":
+// a missing optional reviewer CLI is expected on a fresh install and must not
+// read as something wrong. A pass/fail is left untouched.
+func softenOptional(check quality.Check) quality.Check {
+	if check.Status == quality.StatusWarn {
+		check.Status = quality.StatusInfo
+	}
+	return check
 }
 
 func SystemLegacyChecks(toolVersion, indexDir, indexFile string, ledgerPath func() string, reviewers reviewerhealth.Service) LegacyChecks {
@@ -85,9 +125,11 @@ func SystemLegacyChecks(toolVersion, indexDir, indexFile string, ledgerPath func
 
 func CrossFamilyCheck(live []string) quality.Check {
 	if len(live) > 0 {
-		return quality.Check{Name: "Cross-Family Review", Status: "pass", Detail: fmt.Sprintf("cross-family capable: yes (live families: %s)", strings.Join(live, ", "))}
+		return quality.Check{Name: "Cross-Family Review", Status: "pass", Detail: fmt.Sprintf("cross-family capable: yes (live families: %s)", strings.Join(live, ", ")), Audience: quality.AudienceInstalledUser}
 	}
-	return quality.Check{Name: "Cross-Family Review", Status: "warn", Detail: "cross-family capable: no (no reviewer CLI reachable) — install one: npm install -g @openai/codex && codex login"}
+	// Optional capability: no reviewer CLI is expected on a fresh install, so
+	// this is informational, not a warning.
+	return quality.Check{Name: "Cross-Family Review", Status: quality.StatusInfo, Detail: "cross-family capable: no (no reviewer CLI reachable) — install one to enable cross-family review", Audience: quality.AudienceInstalledUser, Fix: "npm install -g @openai/codex"}
 }
 
 const agentopsModuleLine = "module github.com/boshu2/agentops/cli"

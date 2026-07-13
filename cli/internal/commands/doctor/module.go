@@ -111,8 +111,10 @@ func (module Module) Command() *cobra.Command {
 		Use: "doctor", Short: "Check AgentOps health", Args: cobra.NoArgs,
 		Long: `Run health checks on your AgentOps installation.
 
-Validates that all required components are present and configured.
-Optional components are reported as warnings but do not cause failure.
+Validates that all required components are present and configured. Optional
+components (and states you simply haven't reached yet) are reported as
+informational lines, not warnings, and never cause failure. Checks meaningful
+only inside an agentops repo clone are collapsed to a single line outside one.
 
 Examples:
   ao doctor
