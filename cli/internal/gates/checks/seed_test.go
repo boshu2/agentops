@@ -278,6 +278,7 @@ func TestSkillContractGatesAreAlwaysRun(t *testing.T) {
 		"skill.codex-rpi-contract",
 		"skill.codex-lifecycle-guards",
 		"skill.validation-learning-boundary",
+		"skill.validation-delivery-boundary",
 	} {
 		check, ok := gates.Default.Get(id)
 		if !ok {
