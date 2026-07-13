@@ -58,7 +58,7 @@ done < "$CHAIN_FILE"
 
 If an epic ID is provided, check `.agents/rpi/next-work.jsonl` for an existing entry with the same `source_epic`:
 
-1. If found and `consumed: false`: **WARN** "Post-mortem already harvested for this epic. Re-running will create duplicate entries."
+1. If found and `consumed: false`: **WARN** "Postmortem already harvested for this epic. Re-running will create duplicate entries."
 2. If found and `consumed: true`: **INFO** "Prior postmortem consumed by `<consumed_by>`. Fresh harvest will be appended."
 3. If not found: no action needed
 
@@ -69,7 +69,7 @@ if [ -n "$EPIC_ID" ] && [ -f "$NEXT_WORK" ]; then
   if [ -n "$existing" ]; then
     consumed=$(echo "$existing" | jq -r '.consumed')
     if [ "$consumed" = "false" ]; then
-      echo "WARN: Post-mortem already harvested for $EPIC_ID. Re-running will create duplicate entries."
+      echo "WARN: Postmortem already harvested for $EPIC_ID. Re-running will create duplicate entries."
     else
       consumed_by=$(echo "$existing" | jq -r '.consumed_by')
       echo "INFO: Prior postmortem consumed by $consumed_by. Fresh harvest will be appended."

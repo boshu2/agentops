@@ -1,6 +1,6 @@
 # Plan Mutation Audit Trail
 
-> Crank logs every plan mutation to `.agents/rpi/plan-mutations.jsonl` so post-mortem can assess plan drift.
+> Crank logs every plan mutation to `.agents/rpi/plan-mutations.jsonl` so Postmortem can assess plan drift.
 
 ## JSONL Format
 
@@ -63,9 +63,9 @@ Crank appends to the JSONL file at these points in the execution loop:
 6. **File manifest updated after exploration:** Log `scope_changed`.
 7. **Wave checkpoint (Step 5.7):** Include `mutations_this_wave` count in checkpoint JSON.
 
-### Post-mortem (reader)
+### Postmortem (reader)
 
-Post-mortem reads the JSONL file to assess plan quality:
+Postmortem reads the JSONL file to assess plan quality:
 
 - **High mutation count** indicates the plan was underspecified
 - **Many task_added** indicates requirements were unclear
@@ -73,7 +73,7 @@ Post-mortem reads the JSONL file to assess plan quality:
 - **Mutations clustered in early waves** indicates insufficient research phase
 - **scope_changed on most tasks** indicates the plan lacked file-level specificity
 
-Post-mortem includes a mutation summary table in its report.
+Postmortem includes a mutation summary table in its report.
 
 ### Wave Checkpoint Integration
 

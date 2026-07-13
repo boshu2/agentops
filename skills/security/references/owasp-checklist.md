@@ -1,6 +1,6 @@
 # OWASP Top 10 Security Checklist
 
-> Pre-deployment security audit checklist. Use as gate in `/validate --preset=security-audit` or `/post-mortem --scope security`.
+> Pre-deployment security audit checklist. Use as gate in `/validate --preset=security-audit` or `/postmortem --scope security`.
 
 ## Checklist
 
@@ -92,9 +92,9 @@ grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"
 ```
 Loads this checklist as judge context. Each judge evaluates against relevant checklist items.
 
-### With /post-mortem
+### With /postmortem
 ```bash
-/post-mortem --scope security
+/postmortem --scope security
 ```
 Runs full checklist as pre-check before council validation.
 

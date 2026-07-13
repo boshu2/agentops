@@ -1,6 +1,6 @@
 ---
 name: rpi
-description: 'Run discovery, crank, validation. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".'
+description: 'Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".'
 practices:
 - bdd-gherkin
 - ddd-bounded-context
@@ -15,6 +15,7 @@ consumes:
 - crank
 - discovery
 - domain
+- learn
 - validate
 produces:
 - .agents/rpi/*.md
@@ -23,6 +24,8 @@ context_rel:
   with: crank
 - kind: customer-of
   with: discovery
+- kind: customer-of
+  with: learn
 - kind: customer-of
   with: validate
 skill_api_version: 1
@@ -43,13 +46,14 @@ metadata:
   - discovery
   - crank
   - validate
+  - learn
   internal: false
 output_contract: .agents/rpi/YYYY-MM-DD-*.md
 ---
 
 # /rpi - Full Lifecycle Orchestrator
 
-> Quick ref: `/discovery` -> `/crank` -> `/validate`, then report.
+> Quick ref: `/discovery` -> `/crank` -> `/validate` -> `/learn`, then report.
 
 **Execute this workflow. Do not only describe it.** RPI is autonomous unless
 `--interactive` is set. The user touchpoint is after validation, or after a
@@ -61,19 +65,34 @@ you need the full autonomy contract.
 
 ## Critical Constraints
 
-- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, feed its findings into re-plan, and retry the same lifecycle objective. **Why:** a negative verdict is evidence for the loop, not an andon by itself.
-- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. A breaker is a capability, permission, safety, or irreducible ambiguity stop—not an ordinary failed check. **Why:** one bounded helper can restore progress without hiding a true stop condition.
-- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** human attention is reserved for decisions or terminal recovery lanes the loop cannot own.
+- `Validate -> Learn -> orchestrator` is the only legal post-execution
+  transition. Learn is the only post-verdict handoff; Validate never jumps to
+  Crank, Discovery, Premortem, retry, or delivery.
+- Only the orchestrator may invoke Premortem, and only after it has accepted a
+  material Learn result, changed the remaining plan, and still has work to do.
+- `no_change` is a valid result. The orchestrator may retry, continue, stop, or
+  escalate without fabricating a lesson or plan mutation.
+- `terminal` closes the tick. No remaining work means no re-plan and no
+  Premortem.
+- RPI ends at the four receipts and its report. It does not push Git refs,
+  operate a Git queue, close tracker state through delivery, or require another
+  LLM landing verdict. Repository-selected delivery is a separate adapter.
 - Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
 
 ## Loop position
 
-`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → bead acceptance → evidence + learning mined back into the next loop. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/curate --mode=forge`/`/post-mortem`), and enforces these loop-level invariants:
+`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → acceptance proof → Learn receipt → orchestrator decision. It delegates each move to the skill that owns it (`/discovery`, `/premortem`, `/crank`, `/validate`, `/learn`) and enforces these loop-level invariants:
 
 - **Agile, not waterfall — the plan is a hypothesis.** Every wave closes with a **re-plan, not just a retry** (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
-- **No move-skipping, but validation cadence is pawl-gated, not per-tread.** The acceptance roll-up plus heavy gates (`/validate`, optional council, `/pawl-review`, then `ao pawl`) fire once at bead acceptance. Intermediate slices use cheap local checks.
+- **No move-skipping.** Intermediate slices use cheap deterministic checks;
+  scoped or final Validate produces the independent verdict, then Learn records
+  plan impact before the orchestrator selects another move.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path. `/crank` runs **refactor-under-green as its own step after green** — the load-bearing quality move — and a refactor must never change a test (S4; test-first *ordering* alone is not the quality lever).
-- **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
+- **Acceptance examples close the bead, not activity.** Every validation
+  verdict routes through Learn; only the orchestrator may choose to re-crank
+  the same objective. DONE requires the acceptance roll-up in the
+  [slice-validation template](../../docs/templates/slice-validation.md) to be
+  fully green.
 - **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
 - **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
 
@@ -85,8 +104,9 @@ you need the full autonomy contract.
 ## Core Contract
 
 RPI delegates via `Skill(skill="discovery", ...)`,
-`Skill(skill="crank", ...)`, and `Skill(skill="validate", ...)` as separate
-tool invocations. Keep strict delegation on by default; do not compress phases,
+`Skill(skill="crank", ...)`, `Skill(skill="validate", ...)`, and
+`Skill(skill="learn", ...)` as separate tool invocations. Keep strict
+delegation on by default; do not compress phases,
 replace phase skills with direct agent spawns, or skip validation. Read
 [../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)
 for the full anti-compression contract.
@@ -110,7 +130,7 @@ Every execution packet and phase summary MUST carry compact receipts — JSON
 `skills_loaded` + `phase_receipts` (canonical slugs, no sigils) and a
 `## Skill Receipts` bullet list in each markdown phase summary. Receipts do not
 replace transcript/runtime proof; they make delegation auditable from disk when
-the transcript is unavailable and give validation or pre-land review a
+the transcript is unavailable and give downstream proof consumers a
 deterministic surface to reject missing phase execution. Full schema + example
 (the phase-receipt rule + fields): [references/phase-data-contracts.md](references/phase-data-contracts.md).
 
@@ -118,9 +138,10 @@ deterministic surface to reject missing phase execution. Full schema + example
 
 1. Create `.agents/rpi/`.
 2. Resolve `--from`:
-   - default, `research`, `plan`, `pre-mortem`, `brainstorm` -> discovery
+   - default, `research`, `plan`, `premortem`, `brainstorm` -> discovery
    - `implementation` or `crank` -> implementation
-   - `validation`, `vibe`, or `post-mortem` -> validation
+   - `validation` or `vibe` -> validation
+   - `learn` or `postmortem` -> learn
 3. If the input is a bead and `--from` is absent, resolve it with `ao beads exec show`:
    - epic -> implementation with that epic
    - child with parent -> implementation with the parent epic
@@ -131,7 +152,7 @@ deterministic surface to reject missing phase execution. Full schema + example
 5. Log `RPI mode: rpi-phased (complexity: <level>)`.
 
 Track state compactly as `rpi_state`: `goal` (string), `epic_id` (null until
-discovered), `phase` (discovery|implementation|validation), `complexity`
+discovered), `phase` (discovery|crank|validate|learn), `complexity`
 (fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle`
 (from 1), and `verdicts` ({}).
 
@@ -142,38 +163,64 @@ Enter at the routed phase and run every phase after it.
 1. **Discovery:** invoke `/discovery <goal> [--interactive] --complexity=<level>`
    directly or through phase-isolated skill transport.
    On DONE, read `.agents/rpi/execution-packet.json` or the run archive and
-   preserve its objective spine. On BLOCKED, classify it through the pawl
-   recovery state machine; never stop on the label alone.
-2. **Implementation:** invoke `/crank <epic-id>` when the packet has `epic_id`;
+   preserve its objective spine. On BLOCKED, return the evidence to the
+   orchestrator; never stop or retry on the label alone.
+2. **Crank:** invoke `/crank <epic-id>` when the packet has `epic_id`;
    otherwise invoke `/crank .agents/rpi/execution-packet.json`, directly or
    through phase-isolated skill transport. Pass `--test-first` or
    `--no-test-first` through. On DONE, record `ao ratchet record implement
    2>/dev/null || true` and continue. On PARTIAL, auto-redo the same objective;
-   on BLOCKED, classify it through pawl recovery. Use 3 total attempts before
+   on BLOCKED, classify it through bounded recovery. Use 3 total attempts before
    `EXHAUSTED-BUDGET`. **Before accepting a slice/wave the orchestrator reads the actual diff itself** (scope + claim match) — not just the `<promise>DONE</promise>` and evidence JSON, but its own diff-read, distinct from the delegated sub-judges.
    `/crank` enforces this as the anti-green-washing Step 3.5 of its Wave Acceptance ([crank wave-patterns.md §Wave Acceptance Check](../crank/references/wave-patterns.md)).
-3. **Validation:** invoke `/validate <epic-id> --complexity=<level>` when an
+3. **Validate:** invoke `/validate <epic-id> --complexity=<level>` when an
    epic exists; otherwise invoke `/validate --complexity=<level>`, directly
    or through phase-isolated skill transport. Add `--strict-surfaces` when
-   `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
-   objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the bead-acceptance pawl, once per objective. Any work crossing shared trunk obtains fresh evidence through [`/pawl-review`](../pawl-review/SKILL.md); `ao pawl` applies the complexity-scaled diversity and verdict gate.
-4. **Re-plan (mandatory between waves; the loop's hinge).** With remaining waves, run the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) before the next — a post-mortem/discovery delta that MAY mutate the remaining plan (autonomous under `--auto`). No remaining waves → straight to Report.
-5. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
+   `--quality` is set. Preserve the immutable PASS/WARN/FAIL verdict and hand
+   it to Learn regardless of value. Validate does not retry, mutate the plan,
+   or invoke Premortem.
+4. **Learn:** invoke `/learn` with the immutable Validate verdict and its
+   evidence reference. Record a `learn` receipt with status `DONE`, `PARTIAL`,
+   or `BLOCKED` and a file-backed `.agents/rpi/phase-4-summary.md`. Learn binds
+   observations to the verdict and emits `remaining_work` plus a `plan_impact`
+   disposition. It cannot change the verdict, mutate the plan, invoke
+   Premortem, or operate delivery state.
+5. **Orchestrator decision (the loop's hinge).** Consume the Learn receipt:
+   - remaining work + `material_change`: invoke Discovery for a bounded
+     re-plan, persist the changed plan, then invoke Premortem on that exact
+     changed plan before Crank continues;
+   - remaining work + `no_change`: explicitly retry, continue, stop, or
+     escalate without inventing a plan delta;
+   - no remaining work + `terminal`: close the tick and proceed to Report.
+   This preserves the legal `Validate -> Learn -> orchestrator` sequence and
+   prevents direct `validate -> premortem` or `learn -> premortem` routing.
+6. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
    status using [references/report-template.md](references/report-template.md).
-   With `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
+   With `--loop`, apply the Learn disposition while `cycle < max_cycles`. With
    `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
    command without invoking it. Before emitting the report, apply the Context
    Density Rule: every line should carry intent, boundary, evidence, decision,
    constraint, or next action.
 
-## Pawl Recovery State Machine
+## Orchestrator Decision State Machine
 
-Treat validation WARN, FAIL, and REFUTED as `AUTO-REDO`: persist findings, re-plan remaining work, then re-enter the owning phase. Raise `BREAKER` only when execution cannot safely or meaningfully proceed; hold the objective and dispatch exactly one bounded helper. Helper recovery returns to auto-redo. Helper escalation, an explicit refusal/judgment lane, or exhausted budget is the only human andon path. Record every transition in the execution packet and final report.
+The orchestrator, not Validate or Learn, owns retry and re-plan decisions.
+Every verdict first becomes a Learn receipt. A material plan impact with work
+remaining routes to Discovery, then the changed plan through Premortem. A
+`no_change` result makes the next action explicit without manufacturing a
+learning. A `terminal` result closes the tick without Premortem.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
-The initial plan is a **hypothesis**; each wave is an experiment whose evidence re-plans the rest. At every wave boundary (and after validation): **reflect** (a bounded `/post-mortem` + `/discovery` re-plan delta over what shipped/broke) → **re-plan the REMAINING waves** (refactor / insert / drop / reorder / re-scope / escalate, persisting the mutated plan so the next wave reads the *current* one) → **proceed**. Under `--auto` this is autonomous, bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-ship post-mortem checkpoint; the operator is touched only at the terminal objective or a breaker trip that survives its bounded helper pass. `/crank` and `/validate` surface findings UP for re-planning (never a silent local retry); `/discovery` is the re-plan engine. Anti-patterns: **waterfall** (run the plan to the letter), **retry-not-replan** (re-crank forever instead of changing the remaining plan), **permission-seeking** (pause to approve a pivot `--auto` already authorizes). **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
+The initial plan is a **hypothesis**; each wave is an experiment. Its evidence
+flows through `Validate -> Learn -> orchestrator`. Learn reports whether the
+remaining plan has a material impact; it does not apply one. When the impact is
+material, the orchestrator invokes Discovery to change the remaining plan and
+sends that changed plan through Premortem before the next Crank wave. With
+`no_change`, the orchestrator makes an explicit continue/retry/stop/escalate
+decision. With `terminal`, it closes the tick. Anti-patterns: **waterfall**,
+**retry-not-replan**, **validate-to-premortem**, and **permission-seeking**.
+**Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
 
 ## Phase Data Contract
 
@@ -183,11 +230,13 @@ the latest alias at `.agents/rpi/execution-packet.json` and read
 [references/phase-data-contracts.md](references/phase-data-contracts.md) for
 schemas and archive paths.
 
-## Complexity-Scaled Gates
+## Complexity-Scaled Review
 
-> The pawl gates ([pawls.md](../../docs/contracts/pawls.md)) fire at the irreversible doors — bead-acceptance and merge-to-main — never per slice/wave; chaos between pawls. The merge-to-main pawl fires **regardless of complexity** (see Phase 3); complexity below only scales the DEPTH of the gate, never whether it runs.
-
-`fast`/`standard` use a 2-judge minimum panel; `full` uses a full council; all cap at 3 attempts. Pre-mortem is a chaos-side stress test, not a pawl. Final validation and post-mortem sit at bead acceptance. Read [references/complexity-scaling.md](references/complexity-scaling.md) for the complete matrix.
+Complexity scales the depth of Premortem and Validate, never the phase order.
+Routine work defaults to one fresh independent validator; deep or mixed review
+is explicit. Learn remains bounded bookkeeping at every depth. Delivery policy
+belongs to the target repository, outside this lifecycle. Read
+[references/complexity-scaling.md](references/complexity-scaling.md).
 
 ## Flags
 
@@ -196,7 +245,7 @@ schemas and archive paths.
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
 | `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
-| `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
+| `--loop --max-cycles=<n>` | off / 3 | Repeat only after an explicit orchestrator decision |
 | `--spawn-next` | off | Surface follow-up work after reporting |
 | `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
@@ -217,21 +266,26 @@ Read [references/examples.md](references/examples.md) for resume, interactive, l
 **Filename convention:** mutable `execution-packet.json`, immutable `runs/<run-id>/execution-packet.json`, `phase-<n>-summary.md`, and optional `next-work.jsonl`.
 **Serialization/schema format:** packet JSON matches `schemas/execution-packet.schema.json` plus the `skills_loaded`/`phase_receipts` extension in [phase-data-contracts](references/phase-data-contracts.md); summaries follow the markdown [report template](references/report-template.md).
 **Validator command:** `python3 skills/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
-**Downstream handoff:** discovery creates the packet, crank updates evidence and receipts, validate appends the acceptance verdict, and Report emits the human-readable roll-up.
+**Downstream handoff:** discovery creates the packet, crank updates
+implementation evidence, validate appends the immutable acceptance verdict,
+Learn records post-verdict observations plus plan impact, the orchestrator owns
+any plan mutation and Premortem transition, and Report emits the human-readable
+roll-up.
 **Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
 
 ## Quality Checklist
 
 - [ ] The same objective and acceptance examples survive every phase and retry.
 - [ ] Each phase has a disk-backed receipt, evidence path, and explicit verdict.
-- [ ] Ordinary negative verdicts re-plan through the pawl; only terminal lanes raise the andon.
+- [ ] Every verdict routes through Learn before the orchestrator decides the next action.
+- [ ] Premortem receives only an orchestrator-owned changed plan while work remains.
 - [ ] The execution packet passes its validator before Report or downstream handoff.
 
 ## Troubleshooting
 
 | Problem | Response |
 |---------|----------|
-| Phase returns BLOCKED | Classify it through pawl recovery; stop only on a terminal transition |
+| Phase returns BLOCKED | Return evidence to the orchestrator; stop only on an explicit terminal transition |
 | Packet validation fails | Repair the packet or receipts, then rerun the validator before handoff |
 | External executor fails | Use direct local checks; raise a breaker only for a reproducible capability stop |
 

@@ -4,6 +4,7 @@ SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL="$SKILL_DIR/SKILL.md"
 ADJUDICATION="$SKILL_DIR/references/mandatory-checks.md"
 CODEX_SKILL="$SKILL_DIR/../../skills-codex/premortem/SKILL.md"
+CODEX_ADJUDICATION="$SKILL_DIR/../../skills-codex/premortem/references/mandatory-checks.md"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0
@@ -60,8 +61,8 @@ validate_markers "$SKILL" "${KERNEL_MARKERS[@]}"
 delete_one_negative_fixture "$SKILL" "kernel" "${KERNEL_MARKERS[@]}"
 validate_markers "$ADJUDICATION" "${STATE_MARKERS[@]}"
 delete_one_negative_fixture "$ADJUDICATION" "source state-machine" "${STATE_MARKERS[@]}"
-validate_markers "$CODEX_SKILL" "${STATE_MARKERS[@]}"
-delete_one_negative_fixture "$CODEX_SKILL" "Codex state-machine" "${STATE_MARKERS[@]}"
+validate_markers "$CODEX_ADJUDICATION" "${STATE_MARKERS[@]}"
+delete_one_negative_fixture "$CODEX_ADJUDICATION" "Codex state-machine" "${STATE_MARKERS[@]}"
 
 check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"

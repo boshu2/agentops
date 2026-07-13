@@ -45,16 +45,16 @@ brainstorm (goal-vs-implementation clarification) + design (product-fit pressure
 
 ## Constraints
 
-- Delegate research and plan separately; delegate pre-mortem only for MVP-slice mode because the fanout duel is already its pre-mortem verdict.
+- Delegate research and plan separately; delegate premortem only for MVP-slice mode because the fanout duel is already its premortem verdict.
 - Prove a capability is absent before scoping new construction to prevent duplicate machinery and false net-new estimates.
 - Route only fanout/one-way-door decisions through the duel; keep routine MVP slices inside the bounded quick path.
-- After three MVP pre-mortem failures, run exactly one bounded plan-pawl helper round; resume on `UNSTUCK` and ask the human only on `ESCALATE`.
+- After three MVP premortem failures, run exactly one bounded plan-pawl helper round; resume on `UNSTUCK` and ask the human only on `ESCALATE`.
 
 > **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3 (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
 > packet for `/crank` and `/validate`. It is also the **re-plan engine** for `/rpi`'s
-> [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
-> boundary to mutate the *remaining* waves from what the last wave taught — not only at the start. **Seed slice candidates small:** one Given/When/Then behavior each, refactor candidates kept separate from feature candidates — small batches + refactor-after-green are the load-bearing quality moves, not test-first ordering (Finster 2026, `skills/standards/references/agentic-workflow-evidence.md`); binding decomposition discipline is `/plan` (PR-010/PR-011).
+> [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): after the initial plan,
+> it runs only from an explicit orchestrator re-plan request carrying a cited Learn plan-impact packet. **Seed slice candidates small:** one Given/When/Then behavior each, refactor candidates kept separate from feature candidates — small batches + refactor-after-green are the load-bearing quality moves, not test-first ordering (Finster 2026, `skills/standards/references/agentic-workflow-evidence.md`); binding decomposition discipline is `/plan` (PR-010/PR-011).
 
 ## Folded-In Trigger Surface (brainstorm, design)
 
@@ -130,7 +130,7 @@ The duel is for one-way doors, not every slice. Route first:
   council into one cross-family gate (`--duel`, auto-on for fanout/`--complexity=full`).
 - **MVP vertical slice** (default for routine runtime/CLI work): skip the duel
   (`--no-duel`). Run the discovery DAG under a hard time-box — **~15 min discovery,
-  ~90 min slice** — then stop; the slice gets only the inline `--quick` pre-mortem.
+  ~90 min slice** — then stop; the slice gets only the inline `--quick` premortem.
   Work surfaced mid-slice becomes follow-up beads, never absorbed into the active bead.
 
 The plan-pawl gates plan SHAPE, never behavior: the 2026-06-12 runtime review found a
@@ -157,7 +157,7 @@ the DAG step is STEP 3.5 in [`references/dag.md`](references/dag.md).
    a judgment WARN is surfaced, non-blocking); exit 4 `BLOCKED` -> breaker tripped
    (round > max / judgment flag / oscillation), stop (the andon).
 5. Persist a duel `ApprovalEdge` (both judge panes, the `duel_verdict_dir`, the
-   decision). For fanout this verdict IS the pre-mortem verdict — do not run a
+   decision). For fanout this verdict IS the premortem verdict — do not run a
    second council.
 
 Approval evidence must survive the worktree: before the gated bead/epic closes, mirror
@@ -166,12 +166,12 @@ the council/duel artifacts (or a compact proof packet) to a tracked durable surf
 
 ## Open-Ended Path (generate-winnow → operationalize → refine)
 
-> **Additive to the default flow — it does not replace the strict-delegation contract or the artifact-first DAG.** This path activates for open-ended "improve the project"-style goals (`"improve the project"`, `"what should we build next"`, `"make X more robust"`) OR when `--ideate` is passed. For a specific goal, the default flow (brainstorm-clarify → research → plan → pre-mortem) is unchanged.
+> **Additive to the default flow — it does not replace the strict-delegation contract or the artifact-first DAG.** This path activates for open-ended "improve the project"-style goals (`"improve the project"`, `"what should we build next"`, `"make X more robust"`) OR when `--ideate` is passed. For a specific goal, the default flow (brainstorm-clarify → research → plan → premortem) is unchanged.
 
 On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`references/bead-operationalization.md`](references/bead-operationalization.md) and [`references/ideation-mode.md`](references/ideation-mode.md).
 
 1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
-2. **Research + plan-pawl duel + Plan.** Run research over the selected portfolio. Open-ended/high-risk work is fanout class: produce `PerspectivePlan` artifacts and a `SynthesisPacket`, then run the STEP 3.5 plan-pawl **duel** (two distinct families, `ao plan-pawl decide`) before `/plan` creates tracker rows — that duel verdict subsumes the pre-mortem. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
+2. **Research + plan-pawl duel + Plan.** Run research over the selected portfolio. Open-ended/high-risk work is fanout class: produce `PerspectivePlan` artifacts and a `SynthesisPacket`, then run the STEP 3.5 plan-pawl **duel** (two distinct families, `ao plan-pawl decide`) before `/plan` creates tracker rows — that duel verdict subsumes the premortem. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting beads** — tasks, subtasks, dependency structure (`ao beads exec dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`ao beads exec list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `ao beads exec ready`).
 
@@ -190,14 +190,14 @@ and the acceptance-criteria YAML contract.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--auto` | on | Fully autonomous (no human gates). Inverse of `--interactive`. Passed through to `/research` and `/plan`. |
-| `--interactive` | off | Human gates in research and plan (STEP 3, STEP 4). Does NOT affect pre-mortem gate. |
+| `--interactive` | off | Human gates in research and plan (STEP 3, STEP 4). Does NOT affect premortem gate. |
 | `--skip-brainstorm` | auto | Skip STEP 1 brainstorm when goal is already specific |
 | `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `br` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
 | `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
 | `--no-budget` | off | Disable phase time budgets |
 | `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |
-| `--duel` | auto | Run the plan-pawl cross-family duel at STEP 3.5. Auto-on for fanout class and `--complexity=full`; opt-in elsewhere. Subsumes the single-judge fanout approval + pre-mortem council. |
-| `--no-duel` | off | Skip the duel (MVP-slice class): single-Fable `ApprovalEdge` if approval is needed, plus the inline `--quick` pre-mortem at STEP 5. |
+| `--duel` | auto | Run the plan-pawl cross-family duel at STEP 3.5. Auto-on for fanout class and `--complexity=full`; opt-in elsewhere. Subsumes the single-judge fanout approval + premortem council. |
+| `--no-duel` | off | Skip the duel (MVP-slice class): single-Fable `ApprovalEdge` if approval is needed, plus the inline `--quick` premortem at STEP 5. |
 | `--duel-rounds=<N>` | 3 | Max duel rounds before the max-attempts breaker trips (`ao plan-pawl decide --max-rounds`). |
 
 ## Quick Start
@@ -247,4 +247,4 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
 - [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
 - [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
-**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../premortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)
+**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [premortem](../premortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)

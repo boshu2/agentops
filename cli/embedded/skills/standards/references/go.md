@@ -218,7 +218,7 @@ func TestGateDiscoveryVerdictC2Event(t *testing.T) {
 func TestGateDiscoveryVerdictC2Event(t *testing.T) {
     ev, err := appendRPIC2Event(root, rpiC2EventInput{
         RunID: runID, Phase: 1, Type: "gate.discovery.verdict",
-        Message: "Pre-mortem verdict: PASS",
+        Message: "Premortem verdict: PASS",
         Details: map[string]any{"verdict": "PASS", "report": "report.md"},
     })
     require.NoError(t, err)

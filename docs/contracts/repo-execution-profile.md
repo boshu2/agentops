@@ -74,7 +74,7 @@ Concrete predicates that determine when a cycle or full autonomous run may stop.
 - the user objective or selected epic
 - the repo execution profile
 - discovery artifacts
-- the active epic id and pre-mortem verdict
+- the active epic id and premortem verdict
 
 Recommended packet fields for the first slice:
 - `objective`

@@ -71,4 +71,4 @@ When crank dispatches `epic-1`, it:
 
 - Schema: [schemas/worker-spec.v1.schema.json](../../../schemas/worker-spec.v1.schema.json)
 - Spec issue: soc-yjzp.8
-- Pre-mortem fix 6: enum strictness on the `model` field (applied — see schema)
+- Premortem fix 6: enum strictness on the `model` field (applied — see schema)

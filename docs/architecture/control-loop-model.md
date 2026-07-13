@@ -38,7 +38,7 @@ Keep them on separate clocks. The fast loop never edits a gate; the slow loop ne
 
 ## 4. Slow-loop contract (the self-improving membrane — improvement across runs)
 
-- **Engine: escape → shift-left.** When a defect slips a filter and is caught later (or in prod), add the check **one altitude earlier**, where it is cheap — poka-yoke (make the error impossible at the stage that missed it) via the existing **blameless-postmortem → finding → one durable compiled gate** path (`age-cwo`; the post-mortem → finding-compiler shape already exists). An escape's output is exactly one new gate at the right altitude, not a one-off fix.
+- **Engine: escape → shift-left.** When a defect slips a filter and is caught later (or in prod), add the check **one altitude earlier**, where it is cheap — poka-yoke (make the error impossible at the stage that missed it) via the existing **blameless-postmortem → finding → one durable compiled gate** path (`age-cwo`; the postmortem → finding-compiler shape already exists). An escape's output is exactly one new gate at the right altitude, not a one-off fix.
 - **The governor — the genuinely missing setpoint (Deming / SPC):**
   - **Adjust ONLY on special-cause signal** — a repeated escape pattern past a control limit. **Never adjust on common-cause noise** (a one-off). Adjusting on noise is *tampering*: it increases variance, and it is itself what makes the membrane oscillate (cry-wolf). A self-improving membrane that adds a gate for *every* escape over-fits and degrades.
   - **Bound every added filter by TWO-SIDED FITNESS:** an added gate must raise catch-rate **and not raise false-alarm-rate** (measured: `ao yield gauge` — catch_rate ↑, false_refute ↓). A gate that catches more by crying wolf is rejected.
@@ -51,7 +51,7 @@ Importing all ten control-theory patterns would be vocabulary-instead-of-mechani
 | # | Mechanism | Loop | Current AgentOps state |
 |---|---|---|---|
 | 1 | **Circuit breaker + no-delta-stop** | fast (stability) | **Mostly exists** — 3-attempt cap + circuit-breaker escalation ([pawls.md](../contracts/pawls.md) §Escalation), dry/no-delta stop. Gap: the cap should be the *backstop*, the grounded verdict the *terminator*. |
-| 2 | **Escape → shift-left check** | slow (engine) | **Open** — `age-cwo` (escape-tracking → finding → one-altitude-earlier gate); the post-mortem→finding-compiler shape exists, the escape→gate closure does not. |
+| 2 | **Escape → shift-left check** | slow (engine) | **Open** — `age-cwo` (escape-tracking → finding → one-altitude-earlier gate); the postmortem→finding-compiler shape exists, the escape→gate closure does not. |
 | 3 | **SPC governor** (special-cause-only, two-sided fitness, error budget) | slow (setpoint) | **Built** (`age-wy3`). `cli/internal/governor`: the error-budget burn-rate (`ao governor budget`, ship-vs-harden — SPC.1) and the special-cause noise-band + two-sided-fitness gate + `DetectFalseAlarms` (`ao governor noise-band` — SPC.2). The governor is the canonical SLOW-loop owner; it does NOT merge the fast/outer breakers (different timescales by design — `planpawl/decide.go` is the fast loop, `scripts/evolve/halt-check.sh` the evolve outer loop). The coherence wire (SPC.3): `halt-check.sh` consults `ao governor budget`, so a burned budget halts the evolve cycle (`governor_budget_burned`). `rpi_loop_supervisor.go` was deleted by ADR-0009/soc-2rtm0; the old "3 scattered breakers" framing is obsolete. |
 
 ## 6. Conformance contract

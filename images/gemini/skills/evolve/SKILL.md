@@ -47,16 +47,16 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > **Experimental tier.** Autonomous long-loop; run attended or dispatched onto a substrate, never as an in-repo daemon (ADR-0009).
 
-**Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (`/validate`, `/pawl-review`, then `ao pawl`) fires once at bead acceptance, not per slice or wave.
+**Cycle feedback is explicit.** Each completed execution unit routes `Validate -> Learn -> orchestrator`; neither proof nor bookkeeping controls retry or delivery.
 
-**The loop runs as this skill.** `evolve` selects work and invokes complete `/rpi --auto` cycles — that *is* the loop. Each cycle's post-mortem checkpoint is a **re-plan point** (re-scope / reorder / drop / add to the remaining queue from what the cycle taught), one altitude up from `/rpi`'s [agile re-plan loop](../rpi/references/agile-replan-loop.md) — agile across cycles, not a fixed backlog. Substrates dispatch the whole loop as one unit through NTM, Agent Mail, or `ao agent`; the former RPI CLI wrappers are retired (ADR-0009).
+**The loop runs as this skill.** `evolve` selects work and invokes complete `/rpi --auto` cycles — that *is* the loop. A material Learn packet returns to the orchestrator, which changes the remaining plan through Discovery and sends only that changed plan through Premortem. `no_change` permits an explicit continue/retry/stop/escalate decision; `terminal` closes the cycle. Substrates dispatch the whole loop as one unit; the former RPI CLI wrappers are retired (ADR-0009).
 
-**Operator cadence:** post-mortem finished work → measure repo state → select the next highest-value item → let `rpi` run research → plan → pre-mortem → implement → validate → harvest follow-ups → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
+**Operator cadence:** measure repo state → select the next highest-value item → Discovery → Premortem → Crank → Validate → Learn → orchestrator decision → repeat until a kill switch, max-cycle cap, regression breaker, or real dormancy stops it.
 
 ## Constraints
 
 - Run one complete `rpi --auto` cycle per selected item and re-read the work ladder afterward, because partial phases and fixed backlogs break the feedback loop.
-- Never push without a commit-current CONFIRMED pawl verdict, because a green producer gate is necessary but not sufficient proof.
+- Never let Validate or Learn push, close work, mutate the plan, or choose the next cycle; those are separate adapter/orchestrator decisions.
 - Treat breaker trips with one bounded helper pass before escalation; only judgment, refusal, spent budgets, or a failed helper reach a human, because ordinary blockers belong to the pawl recovery path.
 
 ## Work selection ladder
@@ -88,7 +88,7 @@ Selection is a ladder re-read from the TOP after every productive cycle — neve
 | `--dry-run` | off | Show planned cycle actions without executing |
 | `--beads-only` | off | Skip goal measurement and run backlog-only selection |
 | `--skip-baseline` | off | Skip first-run baseline snapshot |
-| `--quality` | off | Prioritize harvested post-mortem findings |
+| `--quality` | off | Prioritize harvested postmortem findings |
 | `--compile` | off | Run `ao compile` knowledge warmup before cycle 1 |
 | `--test-first` | on | Pass strict-quality defaults through to `rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `rpi` |
@@ -186,11 +186,11 @@ After landing, increment `CYCLE` and return to Step 1.
 
 **Stop ONLY on** (all require a genuine reason — never just context size): (1) **KILL/STOP marker** — operator override; (2) **`--max-cycles` cap**; (3) **genuine stagnation** — `ao beads exec ready=0 AND harvested=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK ≥ 2 AND IDLE_STREAK ≥ 2` → writes DORMANT, which auto-clears the moment `ao beads exec create` adds a ready bead; (4) **regression breaker after a revert**. **Context exhaustion is NOT a stop** — write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"`, exit the turn; the next fire clears HANDOFF in Step 1 and resumes (`references/context-budget.md`).
 
-**Mandatory checkpoint — session-PR threshold (gates next cycle, NOT terminal):** at `session_pr_count >= 5`, invoke `/post-mortem --deep` and wait for the verdict file. PASS → continue; WARN → continue with a caveat in the next cycle's `notes`; FAIL / non-convergence → write STOP. The agent MUST NOT self-grade or self-write STOP — STOP without a verdict is the 2026-05-20 anti-pattern (`references/postmortem-checkpoint.md`).
+**Mandatory checkpoint — session-PR threshold (gates next cycle, NOT terminal):** at `session_pr_count >= 5`, invoke `/postmortem --deep` and wait for the verdict file. PASS → continue; WARN → continue with a caveat in the next cycle's `notes`; FAIL / non-convergence → write STOP. The agent MUST NOT self-grade or self-write STOP — STOP without a verdict is the 2026-05-20 anti-pattern (`references/postmortem-checkpoint.md`).
 
 ### Teardown
 
-Commit any staged `cycle-history.jsonl`, run `/post-mortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), push only if unpushed commits exist, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
+Commit any staged `cycle-history.jsonl`, run `/postmortem "evolve session: N cycles"` (a light session-end retrospective — it does NOT substitute for the council-gated threshold checkpoint), push only if unpushed commits exist, and report the summary (cycles, productive/regressed/idle counts, stop reason). Full procedure: `references/knowledge-loop-integration.md`, `references/teardown.md`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file.
 
 Release-shaped branches must follow [the release teardown contract](references/teardown.md#release-shaped-teardown): never recommend `/release` from per-cycle `--fast`, carry the unchecked checklist into the handoff, and require the full release gate before tagging.
 
@@ -244,7 +244,7 @@ own validator greps them, and they are the loop's load-bearing behavior:
 `/evolve` runs until a genuine stop; `/evolve --max-cycles=3` bounds it; `/evolve --dry-run` reports selection without mutation. Full walkthroughs: [references/examples.md](references/examples.md).
 - `skills/rpi/SKILL.md` — full lifecycle orchestrator (called per cycle)
 - `skills/crank/SKILL.md` — epic execution (called for beads epics)
-- `skills/post-mortem/SKILL.md` — learning extraction + mining surface; absorbed the retired `/curate`, `/compile`, and `/flywheel` skills (mechanical surfaces are the `ao compile` and `ao flywheel status` CLI, not skills)
+- `skills/postmortem/SKILL.md` — learning extraction + mining surface; absorbed the retired `/curate`, `/compile`, and `/flywheel` skills (mechanical surfaces are the `ao compile` and `ao flywheel status` CLI, not skills)
 - `docs/contracts/autodev-program.md` — repo-local PROGRAM.md contract (legacy autodev lane)
 - `GOALS.yaml` — fitness goals for this repo
 - [test](../test/SKILL.md) · [refactor](../refactor/SKILL.md) · [security](../security/SKILL.md) · [validate](../validate/SKILL.md) — the work generators

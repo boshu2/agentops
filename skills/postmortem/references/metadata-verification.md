@@ -102,4 +102,4 @@ fi
 
 **If plan doc found:** Compare planned deliverables (file paths, issue counts) against actual. Mismatches become pre-loaded findings for the `plan-compliance` judge.
 
-**Why:** Post-mortem councils were spending judge cycles on metadata errors (wrong line counts, missing files, broken cross-refs) that are mechanically verifiable. Pre-council verification frees judges to focus on structural assessment and learning extraction.
+**Why:** Postmortem councils were spending judge cycles on metadata errors (wrong line counts, missing files, broken cross-refs) that are mechanically verifiable. Pre-council verification frees judges to focus on structural assessment and learning extraction.

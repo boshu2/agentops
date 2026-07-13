@@ -205,7 +205,7 @@ If `--from` is omitted:
 |------|-----|
 | Snapshot before risky refactor | `checkpoint save` |
 | Revert code + panes to an earlier state | `checkpoint restore` or `rollback` |
-| Post-mortem: when did agents stop progressing? | `timeline show` |
+| Postmortem: when did agents stop progressing? | `timeline show` |
 | Transfer state to another operator | `handoff create` + `resume --from` |
 | Move a session to a new machine | `checkpoint export` + `checkpoint import` |
 | Resume after `ntm kill` | `resume --spawn` with prior handoff |

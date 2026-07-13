@@ -37,10 +37,10 @@
 
 | Layer | What it does | Key surfaces |
 |-------|-------------|-------------|
-| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, post-mortems |
+| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, postmortems |
 | **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
-| **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
-| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/post-mortem --quick`, `/curate --mode=forge`, `ao lookup`, `.agents/` |
+| **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/premortem`, `/postmortem` |
+| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/postmortem --quick`, `/curate --mode=forge`, `ao lookup`, `.agents/` |
 
 Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
@@ -295,6 +295,7 @@ Bridge / framing docs:
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Mortem Naming Migration](contracts/mortem-naming-migration.md) — Canonical `premortem`/`postmortem` identities, permanent legacy reads, and the schema-v3/S8 writer cutover boundary
 - [Four-Umbrella Write Manifests](contracts/four-umbrella-write-manifests.json) — Per-slice write ownership and frozen S1 base for the validation-loop refactor
+- [Four-Umbrella Examples](contracts/four-umbrella-examples.md) — Executable request, execution-packet, Learn-receipt, and plan-impact examples
 - [Pawls — the one-way doors](contracts/pawls.md) — The ratchet's static map: the short list of irreversible actions (mutate-shared-trunk · delete · external-send/shared-state-mutation · schema/contract change · credential/authority change · spend) where the cross-family gate fires; everything else runs as ungated chaos
 - [Operating Discipline (D1–D16)](doctrine/operating-discipline.md) — The general, substrate-neutral fleet-operating rules (admission-first · author≠judge · fail-closed · evidence-bound · single-writer · typed transitions) folded from the mt-olympus triangulated kernel; each rule marked embodied-in-gate (cited to pawls.md / pawl-verdict.sh / reconcile-pr.sh), advisory doctrine, or dropped-as-cathedral
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)

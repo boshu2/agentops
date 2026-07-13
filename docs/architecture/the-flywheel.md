@@ -25,13 +25,13 @@ commands "run *this loop* toward X, and park what needs me." The operating loop 
 ```
 goal (bounded: done-condition + scope + andon policy)
   → /rpi  ── the outer driver
-      → DISCOVERY loop   — re-plans until the plan survives the PRE-MORTEM loop
+      → DISCOVERY loop   — re-plans until the plan survives the PREMORTEM loop
       → CRANK loop       — iterates small waves until each is complete
       → VALIDATE         — emits a verdict; on FAIL, routes back to DISCOVERY
 ```
 
 1. **/rpi** — the outer driver; the goal is its input.
-2. **Discovery loop** — iterates (with the inner pre-mortem adversarial loop) until the plan
+2. **Discovery loop** — iterates (with the inner premortem adversarial loop) until the plan
    is sound. Decomposes the goal into a DAG of **small vertical slices**. It is also the
    **re-plan engine**, re-invoked whenever a slice teaches something (not only at the start).
 3. **Crank loop** — runs the slices in small batches until each wave is complete.
@@ -137,7 +137,7 @@ the stochastic agent reliable enough that you can walk away for 8 hours and trus
 ## The shift-left feedback edge (validate → discovery)
 
 The catch corpus is the concrete instance of loop-4's feedback edge: what the pawl/validate
-*catches* is mined and fed to the **start** of the loop (discovery/pre-mortem), so plans catch
+*catches* is mined and fed to the **start** of the loop (discovery/premortem), so plans catch
 a defect class *before* it reaches the pawl. Detail + honest status:
 [ADR-0014](../adr/ADR-0014-catch-to-producer-loop-judgment-catches-need-a-producer-route.md),
 [the producer-defect register](producer-defect-register.md).

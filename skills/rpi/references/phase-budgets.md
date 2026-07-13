@@ -10,7 +10,7 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 |-------|--------|-----------|
 | Research | 3 min | Quick keyword search + 2-3 file reads |
 | Plan | 2 min | Single epic, 1-3 issues, no deep decomposition |
-| Pre-mortem | 1 min | Inline check, no council spawn |
+| Premortem | 1 min | Inline check, no council spawn |
 | Implementation | unlimited | Crank wave limits apply (MAX_EPIC_WAVES=50) |
 | Validation | 2 min | One focused fresh-context verdict |
 | Learn | 1 min | Bind observations and emit plan impact |
@@ -21,7 +21,7 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 |-------|--------|-----------|
 | Research | 5 min | Explore agent + knowledge lookup + file analysis |
 | Plan | 5 min | Epic decomposition, 3-6 issues with dependencies |
-| Pre-mortem | 3 min | Quick council (2 judges) |
+| Premortem | 3 min | Quick council (2 judges) |
 | Implementation | unlimited | Crank wave limits apply |
 | Validation | 5 min | Focused independent acceptance verdict |
 | Learn | 1 min | Bind observations and emit plan impact |
@@ -32,7 +32,7 @@ Time budgets for each RPI phase, scaled by complexity level. Prevents sessions f
 |-------|--------|-----------|
 | Research | 10 min | Deep exploration, multiple Explore agents, cross-file analysis |
 | Plan | 10 min | Complex decomposition, 7+ issues, multi-wave dependency graph |
-| Pre-mortem | 5 min | Full council (3+ judges), deep risk analysis |
+| Premortem | 5 min | Full council (3+ judges), deep risk analysis |
 | Implementation | unlimited | Crank wave limits apply |
 | Validation | 10 min | Explicit deep or mixed acceptance review |
 | Learn | 2 min | Bind observations and emit plan impact |
@@ -71,18 +71,18 @@ with available context. This is NOT a retry — attempt counter stays at 0.
 ### Example 2: Budget Expiry vs Premortem Repair
 
 ```
-Phase: pre-mortem (budget: 180s, attempt: 1/3)
+Phase: premortem (budget: 180s, attempt: 1/3)
 
-[0:00]  /pre-mortem spawns council
+[0:00]  /premortem spawns council
 [2:30]  Council returns verdict: FAIL (3 critical risks)
 [2:30]  Verdict is FAIL → plan author repairs before another Premortem
 
 [2:30]  Re-running /plan with findings context...
-[4:00]  /pre-mortem attempt 2 spawns council
+[4:00]  /premortem attempt 2 spawns council
 [5:00]  BUDGET EXPIRED at 300s (cumulative across retries)
 
 Writing [TIME-BOXED] marker. Auto-transitioning to implementation.
-Pre-mortem verdict was FAIL but budget expired — proceed with WARN.
+Premortem verdict was FAIL but budget expired — proceed with WARN.
 Attempt counter: 2/3 (budget expiry does NOT count as attempt 3).
 ```
 

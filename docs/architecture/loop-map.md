@@ -26,7 +26,7 @@ The views are not parallel; they telescope. One outer-loop turn contains many op
 ```
 Three developer loops        the timescale (outer → middle → inner)
   └─ Operating loop          one turn: intent → … → ratchet
-       └─ RPI                one move's executor: research → plan → implement → validate
+       └─ RPI                one move's executor: Discovery → Crank → Validate → Learn
             └─ CDLC phases   what each step does to context: generate … adapt
                  on top of
             Operator model   stateful env · actors · traces · gates · promotion · governance

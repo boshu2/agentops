@@ -9,7 +9,7 @@ The goal is simple: do not let high-volume `.agents` capture turn into low-trust
 
 ## Trust Tiers
 
-| Class | Tier | Default startup | Planning | Pre-mortem | Post-mortem | Notes |
+| Class | Tier | Default startup | Planning | Premortem | Postmortem | Notes |
 |------|------|-----------------|----------|------------|-------------|-------|
 | discovery-notes | discovery-only | no | no | no | yes | Brainstorms, raw discovery notes, and rough research are useful provenance, not default runtime context. |
 | pending-knowledge | discovery-only | no | no | no | yes | Pending extraction artifacts are not stable enough for automatic injection. |
@@ -21,7 +21,7 @@ The goal is simple: do not let high-volume `.agents` capture turn into low-trust
 | playbook | canonical | yes | yes | yes | yes | Generated operator workflows from healthy topics and promoted packets. |
 | knowledge-briefing | runtime-eligible | yes | no | no | yes | Preferred explicit goal-time briefing surface for a concrete goal; task-scoped, not universal policy. |
 | planning-rule | canonical | yes | yes | yes | yes | Compiled planning rules are canonical prevention memory. |
-| known-risk | canonical | yes | yes | yes | yes | Compiled pre-mortem checks are canonical risk memory. |
+| known-risk | canonical | yes | yes | yes | yes | Compiled premortem checks are canonical risk memory. |
 | next-work | runtime-eligible | yes | yes | yes | yes | Ranked next-work gives the next session continuity. |
 | recent-session | runtime-eligible | yes | no | no | yes | Session summaries help startup recovery when query-matched. |
 | research | runtime-eligible | yes | yes | no | yes | Research can help, but it does not outrank findings or compiled rules. |
@@ -47,7 +47,7 @@ Session Intelligence should prefer this order when building startup or planning 
 2. matched knowledge briefings when the operator or runtime explicitly assembles goal-time context
 3. runtime-eligible artifacts
 4. experimental families only after explicit health review
-5. discovery-only or archive-only artifacts only by explicit lookup or post-mortem use
+5. discovery-only or archive-only artifacts only by explicit lookup or postmortem use
 
 ## Explainability Requirement
 

@@ -1,7 +1,7 @@
 # Discovery Artifact-First DAG
 
 Discovery is the densest RPI phase. Its job is not to keep research,
-planning, and pre-mortem prose resident in the caller. Its job is to run the
+planning, and premortem prose resident in the caller. Its job is to run the
 declared child skill contracts and compile their artifacts into one execution
 packet.
 
@@ -36,7 +36,7 @@ discovery_state = {
     fable_approval_path: null,
     approval_edge_path: null,
     plan_path: null,
-    pre_mortem_path: null
+    premortem_path: null
   },
   density: {
     intent: null,
@@ -136,8 +136,8 @@ record a short inline list of citation paths only.
 
 **Catch-digest known risks (same context-assembly pass, age-8rrz).** `ao lookup`
 retrieves prior art; the catch digest retrieves prior *defects*. Read it here so
-slices are shaped around recurring defect classes BEFORE pre-mortem even runs —
-this is the same `.agents/pre-mortem-checks/catch-digest.md` sink `/pre-mortem`
+slices are shaped around recurring defect classes BEFORE premortem even runs —
+this is the same `.agents/premortem-checks/catch-digest.md` sink `/premortem`
 Step 1.4 loads as `known_risks`, consumed one move earlier. Honest scope
 (ADR-0004/0011): these are recurring catch classes to watch for, nothing more.
 
@@ -145,7 +145,8 @@ Step 1.4 loads as `known_risks`, consumed one move earlier. Honest scope
 # Fresh mine (regenerates + prints the digest); if ao or the subcommand is
 # unavailable, fall back to the last written digest file.
 ao membrane digest --json 2>/dev/null \
-  || cat .agents/pre-mortem-checks/catch-digest.md 2>/dev/null \
+  || cat .agents/premortem-checks/catch-digest.md 2>/dev/null \
+  || cat .agents/pre-mortem-checks/catch-digest.md 2>/dev/null `# legacy readback` \
   || true  # fail-open: no digest AND no ledger -> skip silently (no catch corpus yet)
 ```
 
@@ -182,13 +183,13 @@ The research artifact is the source of detail. Discovery extracts only:
 architecture forks, one-way doors, contract/coordination changes (the `plan-pawl`
 row in [`docs/contracts/pawls.md`](../../../docs/contracts/pawls.md)). For an **MVP
 vertical slice** (cheap, reversible work), SKIP this step — gating it is the
-waterfall `pawls.md` forbids; the slice gets only the inline `--quick` pre-mortem
+waterfall `pawls.md` forbids; the slice gets only the inline `--quick` premortem
 at STEP 5.
 
 The plan-pawl is the `multi-model` pawl applied to the PLAN artifact instead of a
 code diff. It SUBSUMES the two redundant cross-family-review gates discovery used to
-run — the single-judge Codex fanout approval and the STEP 5 pre-mortem council —
-into ONE gate. For fanout class this duel verdict IS the pre-mortem verdict; STEP 5
+run — the single-judge Codex fanout approval and the STEP 5 premortem council —
+into ONE gate. For fanout class this duel verdict IS the premortem verdict; STEP 5
 is already satisfied.
 
 Generate, then duel:
@@ -296,22 +297,22 @@ Skill(skill="scaffold", args="<detected-language> <project-name>")
 ```
 
 Record only the scaffold artifact path and constraints that affect
-pre-mortem.
+premortem.
 
-### STEP 5 - Pre-Mortem Contract (MVP-slice class)
+### STEP 5 - Premortem Contract (MVP-slice class)
 
-**Fanout class:** the pre-mortem is SUBSUMED by the STEP 3.5 plan-pawl duel — that
-cross-family verdict IS the pre-mortem verdict. Do not run a second council; skip
+**Fanout class:** the premortem is SUBSUMED by the STEP 3.5 plan-pawl duel — that
+cross-family verdict IS the premortem verdict. Do not run a second council; skip
 to STEP 6.
 
 **MVP-slice class** (the STEP 3.5 duel was skipped): invoke the inline `--quick`
-pre-mortem against the exact plan artifact:
+premortem against the exact plan artifact:
 
 ```text
-Skill(skill="pre-mortem", args="<plan_path> --quick")
+Skill(skill="premortem", args="<plan_path> --quick")
 ```
 
-PASS/WARN continues. FAIL triggers re-plan with the pre-mortem findings, up to 3
+PASS/WARN continues. FAIL triggers re-plan with the premortem findings, up to 3
 total attempts. The third FAIL trips the ordinary MVP breaker, but it does **not**
 page the human yet. Consult the plan pawl through exactly one bounded helper pass:
 
@@ -337,10 +338,10 @@ fail closed; it never auto-breaks a lock it does not own.
 3. Run one STEP 3.5-style cross-family plan-pawl round with
    `ao plan-pawl decide --dir <helper-verdict-dir> --round 1 --max-rounds 1`.
 4. Map exit 0 `PASS` to `UNSTUCK` and continue. Map exit 3 `REDO` to `UNSTUCK`,
-   apply its concrete correction once, then run one final quick pre-mortem. Do
+   apply its concrete correction once, then run one final quick premortem. Do
    not dispatch another helper round.
 5. Map exit 4 `BLOCKED`, an explicit judgment/refusal, or failure of that final
-   quick pre-mortem to `ESCALATE`; only then write BLOCKED and ask the human.
+   quick premortem to `ESCALATE`; only then write BLOCKED and ask the human.
 
 ```bash
 # Set transition from the mapping above before continuing or stopping.
@@ -357,7 +358,7 @@ decision artifact to existing `evaluator_artifacts.discovery_mvp_helper`; do not
 invent packet fields. Resume always reads `$STATE_PATH` before helper dispatch.
 
 Before STEP 6, propagate required hardening — from the STEP 3.5 duel verdict
-(fanout) or this pre-mortem (MVP-slice) — into the plan issues or file-backed task
+(fanout) or this premortem (MVP-slice) — into the plan issues or file-backed task
 specs. Workers read issues and specs, not the report.
 
 ### STEP 6 - Compile Execution Packet
@@ -432,7 +433,7 @@ else
 fi
 ```
 
-A plan packet + a passing pre-mortem with **no persisted beads is NOT DONE** — return to STEP 4 to
+A plan packet + a passing premortem with **no persisted beads is NOT DONE** — return to STEP 4 to
 operationalize (epic + vertical slices with Gherkin acceptance + deps), then re-check. Only then emit:
 
 ```text

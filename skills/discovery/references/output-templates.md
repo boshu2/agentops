@@ -29,7 +29,7 @@ When no `epic_id` exists, this execution packet becomes the file-backed discover
   "artifacts": {
     "research_path": ".agents/research/<topic>.md",
     "plan_path": ".agents/plans/<plan>.md",
-    "pre_mortem_path": ".agents/council/<pre-mortem>.md",
+    "premortem_path": ".agents/council/<premortem>.md",
     "ranked_packet_path": ".agents/rpi/ranked-packet.json",
     "perspective_plan_paths": [
       ".agents/discovery/<run-id>/perspective-product.md",
@@ -74,7 +74,7 @@ When no `epic_id` exists, this execution packet becomes the file-backed discover
   },
   "done_criteria": ["<from repo profile or defaults>"],
   "complexity": "<fast|standard|full>",
-  "pre_mortem_verdict": "<PASS|WARN>",
+  "premortem_verdict": "<PASS|WARN>",
   "test_levels": {
     "required": ["L0", "L1"],
     "recommended": ["L2"],
@@ -135,7 +135,7 @@ Write to `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md`:
 - **Epic:** <epic-id>
 - **Issues:** <count>
 - **Complexity:** <fast|standard|full>
-- **Pre-mortem:** <PASS|WARN> (attempt <N>/3)
+- **Premortem:** <PASS|WARN> (attempt <N>/3)
 - **Brainstorm:** <used|skipped>
 - **History search:** <findings count or skipped>
 - **Density:** intent, boundary, evidence, decision, constraint, next action

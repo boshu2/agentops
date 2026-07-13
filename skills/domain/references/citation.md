@@ -16,7 +16,7 @@ A Citation is an explicit, traceable mention of an Entry slug from one of:
 - another Entry's `see-also` frontmatter or body
 - a skill SKILL.md, hook script, or CLI doc
 - a commit message, PR description, or `bd` issue body
-- an `.agents/` artifact (plan, findings, post-mortem)
+- an `.agents/` artifact (plan, findings, postmortem)
 - the output an agent emits during a session
 
 ## Shape

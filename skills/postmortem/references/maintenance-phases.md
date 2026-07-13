@@ -459,7 +459,7 @@ If no actionable items found, write: "No follow-up items identified. Flywheel st
 
 ### Step 6: Feed the Knowledge Flywheel
 
-Post-mortem automatically feeds learnings into the flywheel:
+Postmortem automatically feeds learnings into the flywheel:
 
 ```bash
 if command -v ao &>/dev/null; then

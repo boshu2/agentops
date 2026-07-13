@@ -30,7 +30,7 @@ Promoted entries are written into auto-managed sections of the project MEMORY.md
 |---------|---------|---------------|
 | Last Session | Most recent session summary | Date, summary, key outcome |
 | Architecture | Structural decisions and patterns | "Council is the core validation primitive -- no upstream deps except optional standards" |
-| Process | Workflow and execution patterns | "Pre-mortem mandatory for 3+ issue epics (7 consecutive positive ROI)" |
+| Process | Workflow and execution patterns | "Premortem mandatory for 3+ issue epics (7 consecutive positive ROI)" |
 | Debugging | Troubleshooting insights | "macOS cp alias prompts on overwrite -- use /bin/cp to bypass" |
 | Patterns | Reusable patterns and anti-patterns | "Lead-Only Commit: workers write, never git commit" |
 | Key Lessons | High-confidence cross-cutting lessons | "Skills source of truth is THIS REPO -- never edit installed copies" |

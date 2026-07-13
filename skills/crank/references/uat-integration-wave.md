@@ -8,7 +8,7 @@ Add a UAT integration wave when:
 - An epic spans 3+ features that interact at runtime
 - Features share state (filesystem, config, CLI flags)
 - Pipeline flows cross feature boundaries (e.g., harvest → mine → defrag)
-- The epic's pre-mortem identified cross-feature risk
+- The epic's premortem identified cross-feature risk
 
 ## Read-Only Wave Concept
 

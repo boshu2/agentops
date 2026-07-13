@@ -44,7 +44,7 @@ Use this skill when a productive session is pausing, changing agents, nearing a
 context reset, or explicitly needs a continuation packet. The handoff must let a
 fresh session resume without reconstructing the lane from chat.
 
-Do not use it as a post-mortem: handoff records **current state**; `post-mortem`
+Do not use it as a postmortem: handoff records **current state**; `postmortem`
 records reusable learning. Do not call an idle session successful: when there is
 no durable activity, report `EMPTY` with the reason and write no fabricated
 accomplishments.
@@ -139,7 +139,7 @@ The behavior contract is
 ### 6. Optional learning and runtime closeout
 
 When the session produced a major decision or at least three meaningful
-commits, suggest `post-mortem --quick`; do not run it in place of the handoff.
+commits, suggest `postmortem --quick`; do not run it in place of the handoff.
 If `ms` is installed, grade only skills genuinely consulted with
 `ms outcome <skill> --success|--failure`.
 
@@ -212,7 +212,7 @@ Verify HEAD/tracker, then preserve pawl disposition and helper outcome separatel
 - **Filename:** use `YYYY-MM-DD-<topic>.md` for the authoritative handoff and `YYYY-MM-DD-<topic>-prompt.md` for its continuation pointer.
 - **Format:** serialize both as UTF-8 Markdown; the handoff uses the exact required headings in the template and the prompt names its referenced handoff path.
 - **Validation command:** run the `test -s` and `rg -q` checkpoint commands above; every command must exit zero before reporting `DONE`.
-- **Downstream handoff:** the next session reads the handoff first, verifies the recorded HEAD/tracker state, then executes the named first action; post-mortem and corpus tooling may consume the artifact later.
+- **Downstream handoff:** the next session reads the handoff first, verifies the recorded HEAD/tracker state, then executes the named first action; postmortem and corpus tooling may consume the artifact later.
 
 ## Quality Checklist
 
@@ -239,5 +239,5 @@ Reason: No session activity found to hand off
 
 ## See Also
 
-- `skills/post-mortem/SKILL.md` — extract reusable learning after state is safe.
+- `skills/postmortem/SKILL.md` — extract reusable learning after state is safe.
 - `skills/bootstrap/SKILL.md` — rehydrate a fresh session before resuming.

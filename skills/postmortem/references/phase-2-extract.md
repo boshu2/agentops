@@ -136,7 +136,7 @@ If `hooks/finding-compiler.sh` exists, run:
 bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
 ```
 
-This promotes registry rows into `.agents/findings/*.md`, refreshes `.agents/planning-rules/*.md` and `.agents/pre-mortem-checks/*.md`, and rewrites draft constraint metadata under `.agents/constraints/`. Active enforcement still depends on the constraint index lifecycle and runtime hook support, but compilation itself is no longer deferred.
+This promotes registry rows into `.agents/findings/*.md`, refreshes `.agents/planning-rules/*.md` and `.agents/premortem-checks/*.md`, and rewrites draft constraint metadata under `.agents/constraints/`. Active enforcement still depends on the constraint index lifecycle and runtime hook support, but compilation itself is no longer deferred.
 
 ### Step ACT.3: Feed Next-Work
 

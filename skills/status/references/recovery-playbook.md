@@ -232,7 +232,7 @@ Evaluate context top-to-bottom. Use the FIRST matching condition:
 | Priority | Condition | Suggestion |
 |----------|-----------|------------|
 | 1 | RPI run in-progress + phase=research | "Continue research: `/research` or `/plan` if ready" |
-| 2 | RPI run in-progress + phase=plan | "Review plan: `/pre-mortem` to validate before coding" |
+| 2 | RPI run in-progress + phase=plan | "Review plan: `/premortem` to validate before coding" |
 | 3 | RPI run in-progress + phase=implement | "Resume implementation: `/implement <next-issue-id>`" |
 | 4 | RPI run in-progress + phase=validate | "Complete cycle: `/validate` to extract learnings and close out" |
 | 5 | Evolve cycle in-progress | "Continue autonomous improvements: `/evolve --resume`" |
@@ -307,7 +307,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 4. Agent shows goal, current phase (plan), cycle 1, started 2 hours ago
 5. Agent lists 2 in-progress issues and 3 ready issues
 6. Agent shows clean git state, recent commit
-7. Agent suggests: "Review plan: `/pre-mortem` to validate before coding"
+7. Agent suggests: "Review plan: `/premortem` to validate before coding"
 
 **Result:** Dashboard confirms in-progress RPI session, loads context, suggests next step.
 

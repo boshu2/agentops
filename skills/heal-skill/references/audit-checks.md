@@ -21,7 +21,7 @@
 
 > Severity downgraded from FAIL to WARN after pilot test (2026-05-06). Existing AgentOps skills (`heal-skill`, `forge`, `council`) use single-line descriptions without triggers — a real but cosmetic gap. WARN surfaces it without blocking CI. Re-promote to FAIL after pilot refactor (I9) addresses the gap.
 
-**Why:** Pillar #6 (knowledge flywheel) — searchability requires structured description. AgentOps' established convention is single-line `description: '...'`; the auditor must NOT false-fail valid existing artifacts (per pre-mortem F1).
+**Why:** Pillar #6 (knowledge flywheel) — searchability requires structured description. AgentOps' established convention is single-line `description: '...'`; the auditor must NOT false-fail valid existing artifacts (per premortem F1).
 
 **Accepted forms (any one passes):**
 

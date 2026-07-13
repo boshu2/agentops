@@ -56,7 +56,7 @@ Each entry MUST include:
 | Tier | Skills | Examples | Troubleshooting | Word Budget |
 |------|--------|----------|-----------------|-------------|
 | Tier 1 | council, crank, vibe | 3+ scenarios | 3+ entries | Examples: max 400 words |
-| Tier 2 | research, plan, implement, pre-mortem, post-mortem, rpi | 2+ scenarios | 2+ entries (skip if exists) | Examples: max 250 words |
+| Tier 2 | research, plan, implement, premortem, postmortem, rpi | 2+ scenarios | 2+ entries (skip if exists) | Examples: max 250 words |
 | Tier 3 | swarm, codex-team, evolve, release, quickstart, handoff | 2+ scenarios | 2+ entries (skip if exists) | Examples: max 250 words |
 | Tier 4 | bug-hunt, complexity, doc, product, status, trace, inbox, knowledge, retro | 2 scenarios | 2-3 entries | Examples: max 250 words |
 | Internal | extract, flywheel, forge, inject, provenance, ratchet, standards, using-agentops | 1-2 scenarios | 2 entries | Examples: max 200 words |

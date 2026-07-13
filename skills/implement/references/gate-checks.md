@@ -1,6 +1,6 @@
 # Gate Checks
 
-> Extracted from implement SKILL.md Steps 0a-0b. Ratchet gate checks and pre-mortem validation prerequisites.
+> Extracted from implement SKILL.md Steps 0a-0b. Ratchet gate checks and premortem validation prerequisites.
 
 ## Ratchet Status Check (RPI Workflow)
 
@@ -36,24 +36,24 @@ fi
 
 **Fallback:** If ao is not available, proceed without ratchet checks. The skill continues normally.
 
-## Pre-Flight Pre-Mortem Gate
+## Pre-Flight Premortem Gate
 
-**Before starting implementation, check if pre-mortem validation was run on the plan:**
+**Before starting implementation, check if premortem validation was run on the plan:**
 
 ```bash
 if command -v ao &>/dev/null; then
   RATCHET_JSON=$(ao ratchet status --json 2>/dev/null || echo '{}')
-  PRE_MORTEM_STATUS=$(echo "$RATCHET_JSON" | jq -r '.steps[]? | select(.name == "pre-mortem") | .status // "none"')
+  PREMORTEM_STATUS=$(echo "$RATCHET_JSON" | jq -r '.steps[]? | select(.name == "premortem") | .status // "none"')
   PLAN_EXISTS=$(ls .agents/plans/*.md 2>/dev/null | head -1)
 
-  if [ "$PRE_MORTEM_STATUS" = "pending" ] && [ -n "$PLAN_EXISTS" ]; then
-    echo "Pre-mortem hasn't been run on your plan."
+  if [ "$PREMORTEM_STATUS" = "pending" ] && [ -n "$PLAN_EXISTS" ]; then
+    echo "Premortem hasn't been run on your plan."
     echo "Options:"
-    echo "  1. Run /pre-mortem first"
-    echo "  2. Skip: ao ratchet skip pre-mortem --reason 'user chose to skip'"
+    echo "  1. Run /premortem first"
+    echo "  2. Skip: ao ratchet skip premortem --reason 'user chose to skip'"
     echo "  3. Proceed anyway"
-    # Ask user: "Pre-mortem hasn't been run on your plan. Run /pre-mortem first, skip, or proceed?"
-    # If skip: ao ratchet skip pre-mortem --reason "user chose to skip"
+    # Ask user: "Premortem hasn't been run on your plan. Run /premortem first, skip, or proceed?"
+    # If skip: ao ratchet skip premortem --reason "user chose to skip"
   fi
   # If ao unavailable or no chain: proceed silently
 fi

@@ -33,7 +33,7 @@ Codex is a first-class runtime in this repo.
 
 > **Bespoke twins are HAND-MAINTAINED in full — body AND references (age-0js4).**
 > A `treatment: bespoke` twin (catalog.json — `council`, `crank`, `evolve`,
-> `plan`, `pre-mortem`, `research`, `rpi`, … 19 total) is skipped ENTIRELY by
+> `plan`, `premortem`, `research`, `rpi`, … 19 total) is skipped ENTIRELY by
 > codex-sync, **including `--force`**. Its `SKILL.md` body and everything under
 > `references/`/`scripts/` are authored by hand: many bespoke references are
 > deliberate Codex-condensed rewrites of source (e.g. `research/references/
