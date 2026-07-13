@@ -23,6 +23,13 @@ archives:
   - id: ao
     name_template: ao-{{ .Os }}-{{ .Arch }}
     wrap_in_directory: false
+    # Pack the repo's own docs at tag time (explicit, not GoReleaser defaults) so
+    # the tarball README/LICENSE always match the tagged commit. Enforced by
+    # scripts/check-release-parity.sh (tarball README sha256 == repo README).
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG.md
 
 checksum:
   name_template: checksums.txt

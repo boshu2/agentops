@@ -1,8 +1,20 @@
-# Homebrew Tap for AgentOps
+# Homebrew Tap for AgentOps — pointer only
 
-Install the ao CLI via Homebrew.
+**This directory does not contain the live Homebrew formula.**
 
-## Quick Install
+The real tap lives at **[github.com/boshu2/homebrew-agentops](https://github.com/boshu2/homebrew-agentops)**
+and its `Formula/agentops.rb` is generated automatically by **GoReleaser** on every
+release tag (see the `brews:` block in [`.goreleaser.yml`](../.goreleaser.yml) and the
+[Release Publisher workflow](../.github/workflows/release.yml)). The generated formula
+carries the correct version, `license "Apache-2.0"`, and per-artifact `sha256` sums.
+
+Do **not** re-add a hand-written `Formula/agentops.rb` here. A checked-in formula
+drifts silently from the release — it once shipped `version "2.31.0"` +
+`license "MIT"` while the repo was 3.2.0 / Apache-2.0, so anyone browsing the repo
+read the wrong license. `scripts/check-release-parity.sh` guards against a
+reintroduced in-repo formula that disagrees with `LICENSE` or the release tag.
+
+## Install
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops
@@ -15,34 +27,9 @@ Or directly:
 brew install boshu2/agentops/agentops
 ```
 
-## Update to Latest
+## Update
 
 ```bash
 brew update && brew upgrade agentops
 ao version
-```
-
-## Commands
-
-```bash
-ao forge transcript <path>  # Extract from JSONL transcripts
-ao forge markdown <path>   # Extract from markdown files
-ao ratchet record <type>   # Record progress
-ao ratchet verify <epic>   # Verify completion
-```
-
-## Claude Code Plugin
-
-The ao CLI integrates with the AgentOps Claude Code plugin:
-
-```bash
-claude plugin add boshu2/agentops
-```
-
-## Development
-
-To install from HEAD:
-
-```bash
-brew install --HEAD agentops
 ```

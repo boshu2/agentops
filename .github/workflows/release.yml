@@ -222,6 +222,16 @@ jobs:
             echo "No existing release for $VERSION"
           fi
 
+      - name: Release parity pre-check (inputs, fail-closed)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          chmod +x scripts/check-release-parity.sh
+          # Input-level check BEFORE anything is published: lints any in-repo
+          # formula against LICENSE and the tag (formula-only mode — no
+          # tarball yet). A divergence here means no release asset and no tap
+          # commit ever exist.
+          scripts/check-release-parity.sh --tag "$VERSION"
+
       - name: Publish with GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
         with:
@@ -230,6 +240,44 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+
+      - name: Verify published artifacts (identity-bound parity gate)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          chmod +x scripts/check-release-parity.sh
+          # Identity-bound: download the EXACT assets the release now serves
+          # (not the local dist/ copies) and parity-check those. The checkout
+          # is at the tag, so the working-tree README is the tag README.
+          # GoReleaser wraps flat (wrap_in_directory: false), so README.md
+          # sits at the tarball root. On ANY divergence: delete the release
+          # so no bad asset stays served (the tap formula then points at a
+          # missing asset and brew fails closed on download, not silently).
+          dl="$(mktemp -d)"
+          fail=0
+          for name in ao-darwin-arm64.tar.gz ao-darwin-amd64.tar.gz \
+                      ao-linux-arm64.tar.gz ao-linux-amd64.tar.gz; do
+            echo "== parity (published asset): $name =="
+            # A failed download is itself a divergence (missing/renamed
+            # asset) and must reach the rollback path, not abort under set -e.
+            if ! gh release download "$VERSION" --pattern "$name" --dir "$dl"; then
+              echo "FAIL download: $name missing from release $VERSION" >&2
+              fail=1
+              continue
+            fi
+            scripts/check-release-parity.sh --tarball "$dl/$name" --tag "$VERSION" || fail=1
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "parity divergence in PUBLISHED assets — rolling back release $VERSION" >&2
+            if gh release delete "$VERSION" --yes; then
+              echo "rollback complete: release $VERSION deleted" >&2
+            else
+              echo "ROLLBACK FAILED: release $VERSION is still served and DIVERGENT — delete it manually NOW: gh release delete $VERSION --yes" >&2
+            fi
+            exit 1
+          fi
 
       - name: Set release notes
         env:
