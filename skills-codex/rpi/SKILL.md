@@ -23,8 +23,8 @@ The CLI records startup once per thread and skips duplicates automatically.
 
 ## Critical Constraints
 
-- `Validate -> Learn -> orchestrator` is the only legal post-execution transition. Learn is the only post-verdict handoff; Validate never jumps to Crank, Discovery, Premortem, retry, or delivery.
-- Only the orchestrator may invoke Premortem, and only after it has accepted a material Learn result, changed the remaining plan, and still has work to do.
+- `Validate -> Learn -> orchestrator` is the only legal post-execution transition because the immutable verdict must reach Learn before any plan or control decision. Learn is the only post-verdict handoff; Validate never jumps to Crank, Discovery, Premortem, retry, or delivery.
+- Only the orchestrator may invoke Premortem, and only after it has accepted a material Learn result, changed the remaining plan, and still has work to do, to prevent phase skills from silently taking over loop control.
 - `no_change` is valid; the orchestrator may retry, continue, stop, or escalate without fabricating a lesson or plan mutation.
 - `terminal` closes the tick; no remaining work means no re-plan and no Premortem.
 - RPI ends at the four receipts and its report. It does not push Git refs, operate a Git queue, close tracker state through delivery, or require another LLM landing verdict. Repository-selected delivery is a separate adapter.

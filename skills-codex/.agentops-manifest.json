@@ -873,8 +873,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "0a300ed87f974a892a6ad6f65e628da2c48acd1f2b4aeb88ba0a6dfbe5f0444b",
-      "generated_hash": "2bd2a09a8ad305be22d718da8b9a282573da59ad310c2ad1ec75dfa34637d9d7"
+      "source_hash": "de60528bd3214f06b3fa40fc5e91712adfa0e55d5b90abb63702fd8e66f93e37",
+      "generated_hash": "3dffbaa14c010467ace76a81dd9e1a3e22af8e09cea317ab511e89e8c9e56104"
     },
     {
       "name": "sbh",
