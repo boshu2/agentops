@@ -61,6 +61,98 @@ runtime installer supports it.
   reinstalling, then keep any exported Antigravity workspace settings with the
   project backup.
 
+## Uninstall
+
+A clean, documented exit. Two categories, stated up front so you know which is
+which before you remove anything:
+
+- **AgentOps-owned artifacts** — the plugin/skill installs each runtime installer
+  wrote. Safe to remove; the steps below remove exactly these.
+- **User-owned data** — anything in your own repos. AgentOps never removes it,
+  and the uninstall deliberately leaves it in place (see "What is kept").
+
+### Per-runtime plugin/skill removal
+
+Remove the runtime(s) you installed:
+
+**Claude Code**
+
+```bash
+claude plugin uninstall agentops@agentops-marketplace
+claude plugin marketplace remove agentops-marketplace
+```
+
+**Codex CLI**
+
+The Codex installer writes the native plugin cache and one enable entry. Remove
+both, plus the install manifest:
+
+```bash
+rm -rf ~/.codex/plugins/cache/agentops-marketplace   # cached plugin bundle
+rm -f  ~/.codex/.agentops-codex-install.json          # install manifest + backup pointers
+# then delete the AgentOps plugin's enable entry from ~/.codex/config.toml (edit by hand)
+```
+
+If the installer archived overlapping raw skills into a timestamped backup
+directory, its path is recorded in `~/.codex/.agentops-codex-install.json`;
+restore or discard that backup as you prefer.
+
+**Gemini / Antigravity (AGY)**
+
+```bash
+agy plugin disable agentops-core-gemini
+agy plugin uninstall agentops-core-gemini
+```
+
+**OpenCode**
+
+The OpenCode installer symlinks a plugin and a skills dir; remove both symlinks
+(they are links, so removing them never touches the repo they point at):
+
+```bash
+rm -f ~/.config/opencode/plugins/agentops.js
+rm -f ~/.config/opencode/skills/agentops
+```
+
+**Clone-linked skills (`ao skills link` / the generic `scripts/install.sh` and
+npx skill paths)**
+
+If you followed a repo clone with `ao skills link` (the "track main" path), run
+its inverse from inside the clone. It removes exactly the symlinks link minted —
+those pointing into this repo's `skills/` tree — across every runtime, and leaves
+every foreign skill and real directory (e.g. the jsm corpus) untouched:
+
+```bash
+ao skills unlink --dry-run   # rehearse: show what would be removed
+ao skills unlink             # remove AgentOps-owned links from every installed runtime
+```
+
+### CLI binary
+
+If you installed the `ao` CLI via Homebrew:
+
+```bash
+brew uninstall agentops
+```
+
+For a source checkout (`scripts/install.sh --dev`), remove the checkout directory
+itself; nothing was installed outside it except the clone-linked skills handled
+by `ao skills unlink` above.
+
+### What is kept (by design)
+
+Uninstall stops at the AgentOps-owned artifacts above. It deliberately does not
+touch your data — this is the whole portability pitch, that AgentOps rides on top
+of your work without owning it:
+
+- **`.agents/` in your repos is YOUR data**, not an AgentOps artifact — the local
+  knowledge corpus, provenance, and runtime state. It is never removed. Delete it
+  yourself only if you want to discard that history.
+- **Quick-start artifacts are your files.** The `CLAUDE.md` block the quick-start
+  appended and the generated `GOALS.md` are checked into your repo and owned by
+  you. Edit or delete them by hand if you no longer want them; the uninstall
+  leaves them alone.
+
 ## Permissions
 
 All installers are user-space installers. They must not require `sudo`.

@@ -2374,6 +2374,22 @@ ao skills retire <slug> [flags]
       --no-regen         Skip the regen scripts after the ledger flip
 ```
 
+#### `ao skills unlink`
+
+The clean uninstall inverse of `ao skills link`. Scan each runtime's
+
+```
+ao skills unlink [flags]
+```
+
+**Flags:**
+
+```
+      --dest string   Sweep this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)
+  -h, --help          help for unlink
+      --json          Emit machine-readable JSON
+```
+
 ---
 
 ### `ao verdict-gate`
