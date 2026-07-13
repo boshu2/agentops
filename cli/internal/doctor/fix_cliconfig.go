@@ -82,9 +82,9 @@ func installHintFor(name string) string {
 	switch name {
 	case "br":
 		if runtime.GOOS == "windows" {
-			return "br: install beads_rust from its Windows release or use WSL/Homebrew"
+			return "br: install beads_rust from its Windows release or use WSL/Homebrew — https://github.com/Dicklesworthstone/beads_rust"
 		}
-		return "br: install beads_rust; see AGENTS.md for the BEADS_DIR workflow"
+		return "br: install beads_rust — https://github.com/Dicklesworthstone/beads_rust ('ao beads dir' prints the resolved ledger)"
 	case "git":
 		if runtime.GOOS == "windows" {
 			return "git: choco install git  |  https://git-scm.com/download/win"

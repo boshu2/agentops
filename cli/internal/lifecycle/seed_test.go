@@ -81,7 +81,8 @@ func TestHasSeedMarker(t *testing.T) {
 		want    bool
 	}{
 		{"empty", "", false},
-		{"current marker", "before\n## AgentOps Knowledge Flywheel\nafter", true},
+		{"current marker", "before\n## AgentOps Operating Loop\nafter", true},
+		{"legacy flywheel marker", "before\n## AgentOps Knowledge Flywheel\nafter", true},
 		{"legacy marker", "before\n## AgentOps Session Protocol\nafter", true},
 		{"no marker", "some random content", false},
 	}
@@ -101,9 +102,10 @@ func TestFindSeedMarker(t *testing.T) {
 		want    string
 	}{
 		{"empty returns empty", "", ""},
-		{"current marker", "x\n## AgentOps Knowledge Flywheel\ny", ClaudeMDSeedMarker},
+		{"current marker", "x\n## AgentOps Operating Loop\ny", ClaudeMDSeedMarker},
+		{"legacy flywheel marker only", "x\n## AgentOps Knowledge Flywheel\ny", ClaudeMDSeedMarkerLegacyFlywheel},
 		{"legacy marker only", "x\n## AgentOps Session Protocol\ny", ClaudeMDSeedMarkerLegacy},
-		{"current wins over legacy when both present", "## AgentOps Knowledge Flywheel\n## AgentOps Session Protocol", ClaudeMDSeedMarker},
+		{"current wins over legacy when both present", "## AgentOps Operating Loop\n## AgentOps Knowledge Flywheel\n## AgentOps Session Protocol", ClaudeMDSeedMarker},
 		{"no marker", "nothing here", ""},
 	}
 	for _, tc := range cases {

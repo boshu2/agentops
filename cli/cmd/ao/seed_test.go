@@ -431,11 +431,11 @@ func TestSeed_ClaudeMDCreated(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "ao flywheel status") {
-		t.Error("expected CLAUDE.md to contain 'ao flywheel status' instruction")
+	if !strings.Contains(content, "ao session bootstrap") {
+		t.Error("expected CLAUDE.md to contain 'ao session bootstrap' instruction")
 	}
-	if !strings.Contains(content, "MEMORY.md") {
-		t.Error("expected CLAUDE.md to contain MEMORY.md reference")
+	if !strings.Contains(content, "nothing runs automatically") {
+		t.Error("expected CLAUDE.md to state the hookless contract")
 	}
 	if !strings.Contains(content, claudeMDSeedMarker) {
 		t.Error("expected CLAUDE.md to contain seed section marker")
