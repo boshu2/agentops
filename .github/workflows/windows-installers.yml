@@ -1,0 +1,97 @@
+# Windows onboarding leg: exercise scripts/install-codex.ps1 and
+# scripts/install-ao.ps1 on a real windows-latest runner. Companion to
+# install-e2e.yml (which covers install.sh on ubuntu/macos) — README sells
+# the Windows installers too (irm ... | iex), but nothing tested them, so a
+# drift like the one FU7 fixed on the bash side (rg -n "selftest"
+# scripts/install-codex-plugin.sh, age-txfnl: a manifest/disk skill-count
+# mismatch) could break silently for the first Windows user who tries it.
+#
+# Runs from the checked-out tree, not from main: install-codex.ps1 is pointed
+# at this checkout via -RepoRoot (its AGENTOPS_BUNDLE_ROOT local-source mode,
+# shared with the bash installers) so a PR editing the installer or the
+# skills-codex bundle is what gets tested, not last release's copy.
+# install-ao.ps1 has no local-source mode (its production path always
+# downloads a published ao-windows-<arch>.tar.gz release asset — there is no
+# Windows package-manager fallback the way install.sh has brew), so this job
+# exercises it against the latest real GitHub release; that still validates
+# every line of the checked-out script (download, checksum verify, tar
+# extraction, PATH update) even though the ao.exe payload itself is
+# unaffected by the PR.
+#
+# Assertions live in scripts/ci/verify-windows-install.ps1 so a human with a
+# Windows box can reproduce this outside CI. Not on every push: like
+# install-e2e, this is a periodic/PR-scoped drift detector, not the merge
+# gate.
+
+name: windows-installers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 9 * * *'  # nightly, offset from install-e2e's :30 slot
+  pull_request:
+    paths:
+      - 'scripts/install-codex.ps1'
+      - 'scripts/install-ao.ps1'
+      - 'scripts/ci/verify-windows-install.ps1'
+      - '.github/workflows/windows-installers.yml'
+      # The job installs the checked-out bundle and asserts the three-way
+      # disk==manifest==metadata skill-count identity, so bundle edits must
+      # select it too — otherwise manifest/disk drift lands unexercised.
+      - 'skills-codex/**'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installers:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Install AgentOps Codex plugin from this checkout (sandboxed CODEX_HOME)
+        run: |
+          $sandboxCodexHome = Join-Path $env:RUNNER_TEMP ".codex-test"
+          New-Item -ItemType Directory -Force -Path $sandboxCodexHome | Out-Null
+          "SANDBOX_CODEX_HOME=$sandboxCodexHome" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          # install-codex.ps1 signals failure by throw()ing (it sets
+          # $ErrorActionPreference = "Stop" and never calls exit N), not by
+          # setting $LASTEXITCODE — a .ps1 invocation leaves $LASTEXITCODE
+          # untouched ($null), so checking it here would falsely fail on
+          # success ($null -ne 0 is $true). GitHub's pwsh step runner already
+          # sets $ErrorActionPreference = 'Stop' and fails the step on an
+          # uncaught terminating error, so the throw alone is sufficient;
+          # verified locally (uncaught throw in a called script propagates
+          # and exits the parent process with code 1).
+          & "$env:GITHUB_WORKSPACE\scripts\install-codex.ps1" `
+            -RepoRoot $env:GITHUB_WORKSPACE `
+            -CodexHome $sandboxCodexHome `
+            -Version "ci-windows-leg"
+
+      - name: Install ao CLI release binary (sandboxed install dir)
+        env:
+          # The workflow-scoped token, not a repo secret: raises the GitHub
+          # API rate limit for the release lookup from 60/hr to 5000/hr. No
+          # secret configuration required.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $sandboxBin = Join-Path $env:RUNNER_TEMP "ao-bin-test"
+          New-Item -ItemType Directory -Force -Path $sandboxBin | Out-Null
+          "SANDBOX_AO_BIN=$sandboxBin" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          # Same reasoning as the install-codex.ps1 step above: rely on the
+          # thrown exception, not $LASTEXITCODE.
+          & "$env:GITHUB_WORKSPACE\scripts\install-ao.ps1" `
+            -InstallDir $sandboxBin `
+            -NoPathUpdate
+
+      - name: Verify installer output (skill-count identity, config, ao version)
+        run: |
+          & "$env:GITHUB_WORKSPACE\scripts\ci\verify-windows-install.ps1" `
+            -CodexHome $env:SANDBOX_CODEX_HOME `
+            -AoExePath (Join-Path $env:SANDBOX_AO_BIN "ao.exe")
