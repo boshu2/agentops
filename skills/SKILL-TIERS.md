@@ -172,7 +172,7 @@ taxonomy and the tier tables below, nothing else.
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
 | **pawl-review** | judgment | Run an immutable fresh-context reviewer lane and hand evidence to ao pawl. |
 | **premortem** | judgment | Council on plans — simulate failures before implementation |
-| **postmortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
+| **postmortem** | judgment | Retrospective causal analysis — test an explicit hypothesis against evidence and counterfactuals |
 
 **Execution:**
 
@@ -395,7 +395,7 @@ returns artifact path, verdict, and next action.
 | discovery | Phase 1 contract | Research and planning context should not stay resident through implementation |
 | goal-design | Pre-discovery contract | Intent and driver identity should be checked before planning |
 | crank | Phase 2 contract | Wave execution context should not stay resident through validation |
-| validate | Phase 3 contract | Review and closeout context should not pollute the next lifecycle turn |
+| validate | Phase 3 contract | Independent proof context should not pollute Learn or the orchestrator's next lifecycle turn |
 
 ### Tier 2: FORK (discovery primitives)
 
@@ -405,7 +405,6 @@ Discovery skills that produce filesystem artifacts. User wants the output, not t
 |-------|------|-----|
 | research | Discovery | Massive codebase exploration → `.agents/research/*.md` |
 | plan | Discovery | Decomposition + beads creation → `.agents/plans/*.md` + beads |
-| postmortem | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
 
 ### Tier 3: FORK (judgment + worker spawners)
 
@@ -414,7 +413,7 @@ Judgment skills validate artifacts in isolation. Worker spawners fan out paralle
 | Skill | Role | Why |
 |-------|------|-----|
 | premortem | Judgment | Plan validation, user wants verdict |
-| postmortem | Judgment | Validation close-out + knowledge extraction |
+| postmortem | Causal judgment | Test an explicit retrospective hypothesis without re-running validation or promoting learnings |
 | council | Worker spawner | Parallel judges, merge verdicts |
 | swarm | Worker spawner | Parallel runtime agents, merge results |
 
@@ -443,6 +442,6 @@ transport and returns only bounded artifacts.
 - `skills/council/SKILL.md` — Core judgment primitive
 - `skills/validate/SKILL.md` — Complexity + council for code
 - `skills/premortem/SKILL.md` — Council for plans
-- `skills/postmortem/SKILL.md` — Council + knowledge closeout for wrap-up
+- `skills/postmortem/SKILL.md` — Retrospective causal analysis over an explicit question
 - `skills/swarm/SKILL.md` — Parallelize any skill
 - `skills/rpi/SKILL.md` — Full pipeline orchestrator

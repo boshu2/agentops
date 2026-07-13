@@ -104,7 +104,8 @@ first failing test against the port interface, not an adapter internal.
   stdout-as-data / stderr-as-diagnostics separation, errors name the exact
   corrective command, unknown flags return a typo hint, and machine-readable
   introspection stays consistent with `ao capabilities` / `ao robot-docs`.
-  Mirror the doctor surface in `cli/cmd/ao/doctor_surface.go`.
+  Mirror the doctor presentation contract in `cli/internal/commands/doctor/module.go`;
+  keep root wiring thin in `cli/cmd/ao/doctor_module.go`.
 - Revert or narrow a slice that expands beyond its bead, crosses immutable scope,
   crosses a bounded-context boundary, or produces no measurable improvement after
   validation.

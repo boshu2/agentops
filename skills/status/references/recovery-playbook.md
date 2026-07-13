@@ -221,7 +221,7 @@ QUICK COMMANDS
   /plan         Decompose work into issues
   /implement    Execute a single issue
   /crank        Autonomous epic execution
-  /validate   Full close-out and learnings
+  /validate   Produce an immutable acceptance verdict
 ══════════════════════════════════════════════════════════════
 ```
 
@@ -234,7 +234,7 @@ Evaluate context top-to-bottom. Use the FIRST matching condition:
 | 1 | RPI run in-progress + phase=research | "Continue research: `/research` or `/plan` if ready" |
 | 2 | RPI run in-progress + phase=plan | "Review plan: `/pre-mortem` to validate before coding" |
 | 3 | RPI run in-progress + phase=implement | "Resume implementation: `/implement <next-issue-id>`" |
-| 4 | RPI run in-progress + phase=validate | "Complete cycle: `/validate` to extract learnings and close out" |
+| 4 | RPI run in-progress + phase=validate | "Produce proof with `/validate`, then pass its immutable verdict to `/learn` and return control to the orchestrator" |
 | 5 | Evolve cycle in-progress | "Continue autonomous improvements: `/evolve --resume`" |
 | 6 | In-progress issues exist | "Continue work: `/implement <issue-id>`" |
 | 8 | Ready issues available | "Pick next issue: `/implement <first-ready-id>`" |
