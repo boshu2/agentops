@@ -54,6 +54,7 @@ ao quick-start [flags]
   -h, --help       help for quick-start
       --minimal    Minimal setup (just directories)
       --no-beads   Skip beads initialization
+      --verbose    Full step-by-step long form (default is a one-screen diet)
 ```
 
 ---

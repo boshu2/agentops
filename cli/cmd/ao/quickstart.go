@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -29,16 +30,27 @@ This command:
      'ao doctor'), and prints the exact 'ao verify' command to run next
 
 Examples:
-  ao quick-start              # Full setup with beads
+  ao quick-start              # One-screen setup, tailored to this environment
   ao quick-start --no-beads   # Skip beads initialization
-  ao quick-start --minimal    # Just .agents/ structure`,
+  ao quick-start --minimal    # Just .agents/ structure
+  ao quick-start --verbose    # Full step-by-step long form`,
 	RunE: runQuickstart,
 }
 
 var (
-	noBeads bool
-	minimal bool
+	noBeads           bool
+	minimal           bool
+	quickstartVerbose bool
 )
+
+// quickstartNextSkill is the single next action the diet output ends on: the
+// skill that shapes the user's first capability. It is a skill path (always
+// resolvable), never a removed cobra command — /rpi is a tombstone in the
+// journey guards, so /plan is the canonical single Next.
+const quickstartNextSkill = "/plan"
+
+// quickstartDocsLink is the one docs pointer the diet output prints.
+const quickstartDocsLink = "docs/first-value-path.md"
 
 type quickstartResult struct {
 	Path      string                     `json:"path"`
@@ -58,6 +70,7 @@ func init() {
 	rootCmd.AddCommand(quickstartCmd)
 	quickstartCmd.Flags().BoolVar(&noBeads, "no-beads", false, "Skip beads initialization")
 	quickstartCmd.Flags().BoolVar(&minimal, "minimal", false, "Minimal setup (just directories)")
+	quickstartCmd.Flags().BoolVar(&quickstartVerbose, "verbose", false, "Full step-by-step long form (default is a one-screen diet)")
 }
 
 // quickstartBeadsStep handles step 3: beads initialization or skip.
@@ -66,14 +79,26 @@ func quickstartBeadsStep(cwd string) error {
 }
 
 func quickstartBeadsStepWithApp(cwd string, app *App) error {
+	return quickstartBeadsStepVerbose(cwd, app, true)
+}
+
+// quickstartBeadsStepVerbose runs the beads init/skip side effects. When
+// verbose is false (the diet default) the STEP divider chatter is suppressed;
+// the substantive tracker readiness is reported by the readiness checklist
+// instead.
+func quickstartBeadsStepVerbose(cwd string, app *App, verbose bool) error {
 	if !noBeads {
-		fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
+		if verbose {
+			fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
+		}
 		if err := initBeadsWithApp(cwd, app); err != nil {
 			return fmt.Errorf("tracker initialization failed: %w", err)
 		}
 	} else {
-		fmt.Println("\n━━━ STEP 3: Skipping beads (--no-beads) ━━━")
-		fmt.Println("  → Issues will be tracked in .agents/tasks.json instead")
+		if verbose {
+			fmt.Println("\n━━━ STEP 3: Skipping beads (--no-beads) ━━━")
+			fmt.Println("  → Issues will be tracked in .agents/tasks.json instead")
+		}
 		createTasksFile(cwd)
 	}
 	return nil
@@ -111,7 +136,10 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 		return runQuickstartDryRun(cwd, opts)
 	}
 
-	if !jsonMode {
+	// The multi-line ASCII banner is long-form only. The diet default opens on
+	// a single completion header printed once the work is done (a fresh install
+	// should read as one screen, not three).
+	if !jsonMode && quickstartVerbose {
 		fmt.Println(`
 ╔══════════════════════════════════════════════════════════════════╗
 ║                 AGENTOPS QUICK START                            ║
@@ -143,7 +171,7 @@ func runQuickstartDryRun(cwd string, opts lifecycle.ReadinessOptions) error {
 }
 
 func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool) error {
-	if !jsonMode {
+	if !jsonMode && quickstartVerbose {
 		fmt.Println("━━━ STEP 1: Creating .agents/ structure ━━━")
 	}
 	if err := createQuickstartDirs(cwd); err != nil {
@@ -165,14 +193,20 @@ func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode 
 		})
 	}
 	fmt.Println("\n✓ Minimal setup complete!")
-	printReadinessSummary(report)
-	showNextSteps(false)
-	printFirstVerdictStep(firstVerdict)
+	if quickstartVerbose {
+		printReadinessSummary(report)
+		showNextSteps(false)
+		printFirstVerdictStep(firstVerdict)
+		return nil
+	}
+	printQuickstartDietBody(cwd, []createdItem{
+		{Name: ".agents/", Note: "agent workspace (dirs + storage)"},
+	}, report, firstVerdict)
 	return nil
 }
 
 func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool, app *App) error {
-	if !jsonMode {
+	if !jsonMode && quickstartVerbose {
 		fmt.Println("━━━ STEP 1: Applying core repo seed ━━━")
 	}
 	claudePath := filepath.Join(cwd, "CLAUDE.md")
@@ -187,7 +221,7 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 	if err := setupGitProtection(cwd, isGitRepository(cwd)); err != nil {
 		return err
 	}
-	if !jsonMode {
+	if !jsonMode && quickstartVerbose {
 		fmt.Println("  ✓ Core readiness seed applied")
 		fmt.Println("\n━━━ STEP 2: Creating starter knowledge pack ━━━")
 	}
@@ -209,7 +243,10 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 			FirstVerdict: firstVerdict,
 		})
 	}
-	return finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
+	if quickstartVerbose {
+		return finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
+	}
+	return finalizeQuickstartDiet(cwd, claudeAlreadyExisted, report, firstVerdict, app)
 }
 
 func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
@@ -238,9 +275,173 @@ func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, r
 
 	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
 	printReadinessSummary(report)
-	showNextSteps(!noBeads)
+	showNextSteps(beadsReadinessStatus(cwd, noBeads) == "ready")
 	printFirstVerdictStep(firstVerdict)
 	return nil
+}
+
+// createdItem is one line in the diet "Created:" summary — the artifact name
+// and a short note (template files are marked "template — edit me").
+type createdItem struct {
+	Name string
+	Note string
+}
+
+// finalizeQuickstartDiet renders the one-screen default output: a completion
+// header, a created-files summary, a readiness checklist, the environment-
+// tailored golden paths, exactly one Next action, and the tightened first-
+// verdict close. Long form lives behind --verbose (finalizeQuickstartFull).
+func finalizeQuickstartDiet(cwd string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
+	if err := quickstartBeadsStepVerbose(cwd, app, false); err != nil {
+		return err
+	}
+	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
+	claudeNote := "project instructions (+ AgentOps section)"
+	if claudeAlreadyExisted {
+		claudeNote = "AgentOps section appended"
+	}
+	printQuickstartDietBody(cwd, []createdItem{
+		{Name: ".agents/", Note: "agent workspace (dirs + storage)"},
+		{Name: "GOALS.md", Note: "template — edit me"},
+		{Name: "CLAUDE.md", Note: claudeNote},
+		{Name: ".agents/patterns/", Note: "3 starter patterns"},
+	}, report, firstVerdict)
+	return nil
+}
+
+// printQuickstartDietBody prints the shared one-screen body (created summary,
+// readiness checklist, golden paths, single Next action, first verdict). The
+// caller prints its own completion header first.
+func printQuickstartDietBody(cwd string, created []createdItem, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo) {
+	fmt.Printf("Project: %s\n\n", cwd)
+	printCreatedSummary(created)
+	printReadinessChecklist(report)
+	// Tracker paths render only when a ledger actually exists on disk — the
+	// --no-beads flag default says nothing about whether init ran (--minimal
+	// skips it), and a resolvable br binary with no ledger makes `br ready`
+	// a dead command, not a golden path.
+	renderGoldenPaths(beadsReadinessStatus(cwd, noBeads) == "ready")
+	fmt.Printf("\nNext: run %s to shape your first capability  ·  %s\n", quickstartNextSkill, quickstartDocsLink)
+	printFirstVerdictStep(firstVerdict)
+}
+
+func printCreatedSummary(items []createdItem) {
+	if len(items) == 0 {
+		return
+	}
+	fmt.Println("Created:")
+	for _, it := range items {
+		fmt.Printf("  %-18s %s\n", it.Name, it.Note)
+	}
+	fmt.Println()
+}
+
+// readinessLayerLabel is the short human label for a readiness layer in the
+// diet checklist.
+func readinessLayerLabel(layer lifecycle.ReadinessLayer) string {
+	switch layer {
+	case lifecycle.LayerCore:
+		return "core scaffolding"
+	case lifecycle.LayerGoals:
+		return "GOALS.md"
+	case lifecycle.LayerInstructions:
+		return "CLAUDE.md AgentOps section"
+	case lifecycle.LayerTracking:
+		return "beads tracker"
+	case lifecycle.LayerProduct:
+		return "PRODUCT.md"
+	default:
+		return string(layer)
+	}
+}
+
+func printReadinessChecklist(report *lifecycle.ReadinessReport) {
+	fmt.Println("Readiness:")
+	for _, layer := range []lifecycle.ReadinessLayer{
+		lifecycle.LayerCore,
+		lifecycle.LayerGoals,
+		lifecycle.LayerInstructions,
+		lifecycle.LayerTracking,
+		lifecycle.LayerProduct,
+	} {
+		present, total, action := readinessLayerStatus(report, layer)
+		if total == 0 {
+			continue
+		}
+		if present >= total {
+			fmt.Printf("  [x] %s\n", readinessLayerLabel(layer))
+		} else {
+			fmt.Printf("  [ ] %s — %s\n", readinessLayerLabel(layer), action)
+		}
+	}
+	fmt.Println()
+}
+
+// goldenPath is one environment-tailored "run this" path. It is printed only
+// when its Binary resolves on PATH (skill paths carry an empty Binary and are
+// always fine). When an absent tool has an Enable hint, at most one short line
+// is printed instead of the full path.
+type goldenPath struct {
+	Run           string // the run-this command, e.g. "br ready"
+	Binary        string // binary that must resolve on PATH; "" = always shown
+	Desc          string
+	RequiresBeads bool   // only participate when tracking is enabled
+	Enable        string // one-line enable hint when Binary is absent; "" = omit silently
+}
+
+// quickstartGoldenPaths is the environment-tailored path catalog. Each entry
+// is filtered by exec.LookPath at render time, so a fresh install only ever
+// sees the paths that actually work in its shell.
+func quickstartGoldenPaths() []goldenPath {
+	return []goldenPath{
+		{
+			Run:           "br ready",
+			Binary:        "br",
+			Desc:          "find unblocked tracked work",
+			RequiresBeads: true,
+			Enable:        "br not found — install beads_rust to track work: https://github.com/Dicklesworthstone/beads_rust",
+		},
+		{Run: "gt log", Binary: "gt", Desc: "inspect your stacked branches"},
+		{Run: `codex exec "<task>"`, Binary: "codex", Desc: "dispatch a Codex worker"},
+		{Run: `agy -p "<task>"`, Binary: "agy", Desc: "run an AGY (Gemini) review"},
+	}
+}
+
+// binaryResolves reports whether name is an executable on the current PATH.
+func binaryResolves(name string) bool {
+	if name == "" {
+		return true
+	}
+	_, err := exec.LookPath(name)
+	return err == nil
+}
+
+// renderGoldenPaths prints only the golden paths whose first command resolves
+// in this environment; absent tools collapse to at most one enable line.
+func renderGoldenPaths(hasBeads bool) {
+	var runLines, enableLines []string
+	for _, p := range quickstartGoldenPaths() {
+		if p.RequiresBeads && !hasBeads {
+			continue
+		}
+		if binaryResolves(p.Binary) {
+			runLines = append(runLines, fmt.Sprintf("  $ %-20s %s", p.Run, p.Desc))
+			continue
+		}
+		if p.Enable != "" {
+			enableLines = append(enableLines, "  · "+p.Enable)
+		}
+	}
+	if len(runLines) == 0 && len(enableLines) == 0 {
+		return
+	}
+	fmt.Println("Paths that work in this environment:")
+	for _, l := range runLines {
+		fmt.Println(l)
+	}
+	for _, l := range enableLines {
+		fmt.Println(l)
+	}
 }
 
 func outputQuickstartResult(result quickstartResult) error {
@@ -268,7 +469,7 @@ func createQuickstartDirs(cwd string) error {
 		if err := os.MkdirAll(path, 0o700); err != nil {
 			return fmt.Errorf("failed to create %s: %w", dir, err)
 		}
-		if GetOutput() != "json" {
+		if quickstartVerbose && GetOutput() != "json" {
 			fmt.Printf("  ✓ %s/\n", filepath.ToSlash(filepath.Join(".agents", dir)))
 		}
 	}
@@ -324,6 +525,9 @@ func beadsReadinessStatus(cwd string, disabled bool) string {
 		return "disabled"
 	}
 	if _, err := os.Stat(filepath.Join(cwd, ".beads")); err == nil {
+		return "ready"
+	}
+	if _, err := os.Stat(filepath.Join(cwd, "_beads")); err == nil {
 		return "ready"
 	}
 	if GetOutput() == "json" {
@@ -439,7 +643,7 @@ Pre-mortem caught 6 critical issues before implementation:
 		if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 			return err
 		}
-		if GetOutput() != "json" {
+		if quickstartVerbose && GetOutput() != "json" {
 			fmt.Printf("  ✓ %s\n", path)
 		}
 	}
@@ -517,7 +721,7 @@ func createTasksFile(cwd string) {
 	// success after the write actually lands.
 	if err := os.WriteFile(tasksPath, []byte(content), 0600); err != nil {
 		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", tasksPath, err)
-	} else if GetOutput() != "json" {
+	} else if quickstartVerbose && GetOutput() != "json" {
 		fmt.Println("  ✓ Created .agents/tasks.json (beads-optional mode)")
 	}
 }
