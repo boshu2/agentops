@@ -204,17 +204,45 @@ verify_v2_git_freeze() {
   done
 }
 
+is_terminal_family_lineage() {
+  jq -e '
+    .migration_state == "migrated"
+    and (.accepted_sha | type == "string" and test("^[0-9a-f]{40}$"))
+  ' "$1" >/dev/null
+}
+
 verify_tracked_family_lineages() {
-  local lineage family rel intro snapshot
+  local lineage family rel candidate seal snapshot
   [[ "$BASELINE_ROOT" == "$CLI/testdata/compatibility-baseline" ]] || return 0
   while IFS= read -r lineage; do
     family="$(basename "$(dirname "$lineage")")"
     rel="cli/testdata/compatibility-baseline/families/$family/lineage.json"
-    intro="$(git -C "$ROOT" log --diff-filter=A --format=%H HEAD -- "$rel" | tail -n 1)"
-    test -n "$intro" || { printf 'family lineage is not committed: %s\n' "$family" >&2; return 1; }
-    snapshot="$TMP/lineage-$family.json"
-    git -C "$ROOT" show "$intro:$rel" >"$snapshot"
-    cmp -s "$snapshot" "$lineage" || { printf 'frozen family lineage mutated: %s\n' "$family" >&2; return 1; }
+    seal=""
+    while IFS= read -r candidate; do
+      snapshot="$TMP/lineage-$family-$candidate.json"
+      git -C "$ROOT" show "$candidate:$rel" >"$snapshot" 2>/dev/null || continue
+      if is_terminal_family_lineage "$snapshot"; then
+        seal="$candidate"
+        break
+      fi
+    done < <(git -C "$ROOT" log --reverse --format=%H HEAD -- "$rel")
+
+    if [[ -z "$seal" ]]; then
+      jq -e '
+        .migration_state == "migrating"
+        and ((has("accepted_sha") | not) or .accepted_sha == null)
+      ' "$lineage" >/dev/null || {
+        printf 'family lineage has no committed terminal seal: %s\n' "$family" >&2
+        return 1
+      }
+      continue
+    fi
+
+    snapshot="$TMP/lineage-$family-$seal.json"
+    cmp -s "$snapshot" "$lineage" || {
+      printf 'frozen family lineage mutated after terminal seal %s: %s\n' "$seal" "$family" >&2
+      return 1
+    }
   done < <(find "$BASELINE_ROOT/families" -mindepth 2 -maxdepth 2 -name lineage.json -type f 2>/dev/null | sort)
 }
 
