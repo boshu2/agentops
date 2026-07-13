@@ -52,15 +52,15 @@ Four product layers (public framing):
 
 | Dimension | Size |
 |-----------|------|
-| Go source files | 1635 (`git ls-files '*.go'`) |
+| Go source files | 1643 (`git ls-files '*.go'`) |
 | Active skills | 63 (`git ls-files skills | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | Codex skill twins | 62 (`git ls-files skills-codex | awk -F/ 'NF == 3 && $3 == "SKILL.md"'`) |
 | CLI top-level commands | 32 default / 89 with `flywheel legacy` (`go run [-tags profile] ./cmd/ao --help`) |
-| Gate checks | 104 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
-| Shell scripts | 375 (`git ls-files scripts | awk '/\.sh$/'`) |
-| Bats test files | 295 (`git ls-files tests | awk '/\.bats$/'`) |
+| Gate checks | 83 (`rg -c 'ID:' cli/internal/gates/checks/seed.go`) |
+| Shell scripts | 329 (`git ls-files scripts | awk '/\.sh$/'`) |
+| Bats test files | 240 (`git ls-files tests | awk '/\.bats$/'`) |
 | Claude workflows | 4 (`git ls-files .claude/workflows | awk '/\.js$/'`) |
-| Registry capabilities | 106 (`jq '.capabilities | length' registry.json`) |
+| Registry capabilities | 98 (`jq '.capabilities | length' registry.json`) |
 
 ---
 

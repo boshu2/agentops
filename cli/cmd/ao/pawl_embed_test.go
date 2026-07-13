@@ -23,7 +23,6 @@ func TestEmbeddedPawlBundleMatchesRepo(t *testing.T) {
 	}{
 		{"pawl/scripts/pawl-review.sh", []string{"scripts", "pawl-review.sh"}},
 		{"pawl/scripts/pawl-verdict.sh", []string{"scripts", "pawl-verdict.sh"}},
-		{"pawl/scripts/pawl.sh", []string{"scripts", "pawl.sh"}},
 		// pawl-review.sh sources this shared codex runner script-relative
 		// ($SCRIPT_DIR/lib/codex-exec.sh), so the stranger/embedded bundle MUST carry it or
 		// the cold review cannot start (age-gate-the-ungated-egwt.13).
@@ -79,7 +78,6 @@ func TestExtractPawlBundle(t *testing.T) {
 	wantExec := []string{
 		filepath.Join("scripts", "pawl-review.sh"),
 		filepath.Join("scripts", "pawl-verdict.sh"),
-		filepath.Join("scripts", "pawl.sh"),
 		// The shared codex runner must extract into the sibling scripts/lib/ that
 		// pawl-review.sh sources; the nested-dir walk + exec-normalize must handle it
 		// (age-gate-the-ungated-egwt.13).
@@ -116,8 +114,7 @@ func TestExtractPawlBundle(t *testing.T) {
 }
 
 // TestPawlReviewColdEnv locks the stranger-path env seam contract: re-root onto the
-// user's repo (AGENTOPS_REPO_ROOT) and disable the standing-service probe so a one-shot
-// cold run never tries to stand up a warm pane.
+// user's repo (AGENTOPS_REPO_ROOT) with the untrusted-repo + trusted-PATH guards.
 func TestPawlReviewColdEnv(t *testing.T) {
 	env := pawlReviewColdEnv("/home/stranger/their-repo")
 	// Exact seams: re-root onto the user's repo, no warm pane, and — critically — mark the
@@ -470,219 +467,8 @@ func TestRunPawlReview_ForgedMarkersUsesEmbedded(t *testing.T) {
 	}
 }
 
-// TestPawlServiceCmd_ForgedRepoNeverExecutesPlantedScript is the D4 regression: an
-// INSTALLED ao (binary outside the repo) on a repo with FORGED AgentOps markers and a
-// planted scripts/pawl.sh must NEVER execute the planted script for ANY service verb —
-// the same aoBinaryInside trust gate `ao pawl review` already has must route service
-// commands to the embedded bundle.
-func TestPawlServiceCmd_ForgedRepoNeverExecutesPlantedScript(t *testing.T) {
-	for _, tool := range []string{"bash", "git"} {
-		if _, err := exec.LookPath(tool); err != nil {
-			t.Skipf("needs %s on PATH", tool)
-		}
-	}
-	useFakeSelfAo(t) // installed-ao simulation: trusted binary lives OUTSIDE the repo.
-
-	repo := t.TempDir()
-	gitRun := func(args ...string) {
-		t.Helper()
-		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
-	}
-	gitRun("init", "--quiet")
-	// FORGE the AgentOps markers + plant a hostile scripts/pawl.sh.
-	if err := os.MkdirAll(filepath.Join(repo, "docs", "contracts"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, "docs", "contracts", "agents-write-surfaces.md"), []byte("forged"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(repo, "skills"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	sentinel := filepath.Join(repo, "PWNED")
-	if err := os.MkdirAll(filepath.Join(repo, "scripts"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(repo, "scripts", "pawl.sh"), []byte("#!/usr/bin/env bash\ntouch "+sentinel+"\nexit 0\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	// BASH_ENV injection must be neutralized on the service path too.
-	evil := filepath.Join(repo, "evil.sh")
-	if err := os.WriteFile(evil, []byte("touch "+sentinel+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("BASH_ENV", evil)
-
-	prevDir := testProjectDir
-	testProjectDir = repo
-	t.Cleanup(func() { testProjectDir = prevDir })
-
-	// `metrics` is read-only + fast: with no recorded routes the embedded script prints
-	// the no-routes line and exits 0. The planted script would touch the sentinel.
-	cmd := pawlServiceCmd("metrics", "metrics", "test")
-	var out strings.Builder
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	err := cmd.RunE(cmd, nil)
-
-	if _, serr := os.Stat(sentinel); serr == nil {
-		t.Fatal("SECURITY/D4: forged markers caused the repo's PLANTED scripts/pawl.sh to be EXECUTED by an installed ao")
-	}
-	if err != nil {
-		t.Fatalf("embedded service path should run cleanly on the forged repo (metrics, no routes), got %v\n%s", err, out.String())
-	}
-	if !strings.Contains(out.String(), "no routed beads") {
-		t.Fatalf("expected the EMBEDDED pawl.sh metrics output, got: %q", out.String())
-	}
-}
-
-// TestPawlServiceCmd_OrdinaryRepoUsesEmbedded is the D3 regression (observed: `ao pawl up`
-// from /Users/bo/dev/personal-site died with "locating AgentOps repo root"). From an
-// ordinary git repo an installed ao must have a coherent contract: run the embedded
-// bundle with state resolved under THAT repo, not fail on AgentOps marker discovery.
-func TestPawlServiceCmd_OrdinaryRepoUsesEmbedded(t *testing.T) {
-	for _, tool := range []string{"bash", "git"} {
-		if _, err := exec.LookPath(tool); err != nil {
-			t.Skipf("needs %s on PATH", tool)
-		}
-	}
-	useFakeSelfAo(t)
-
-	repo := t.TempDir()
-	if out, err := exec.Command("git", "-C", repo, "init", "--quiet").CombinedOutput(); err != nil {
-		t.Fatalf("git init: %v\n%s", err, out)
-	}
-
-	prevDir := testProjectDir
-	testProjectDir = repo
-	t.Cleanup(func() { testProjectDir = prevDir })
-
-	cmd := pawlServiceCmd("metrics", "metrics", "test")
-	var out strings.Builder
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	err := cmd.RunE(cmd, nil)
-	if err != nil {
-		if strings.Contains(err.Error(), "locating AgentOps repo root") {
-			t.Fatalf("D3: cross-repo service command still fails on AgentOps marker discovery: %v", err)
-		}
-		t.Fatalf("ordinary-repo pawl metrics should succeed via the embedded bundle, got %v\n%s", err, out.String())
-	}
-	if !strings.Contains(out.String(), "no routed beads") {
-		t.Fatalf("expected embedded pawl.sh metrics output, got: %q", out.String())
-	}
-}
-
-// TestEmbeddedPawlBundleCarriesVerdictWriterSibling is the regression for the cross-family
-// refuter's catch on age-l3xj: scripts/pawl.sh's route path invokes the verdict writer, and
-// it must resolve SCRIPT-RELATIVE ($PAWL_SCRIPT_DIR/pawl-verdict.sh) — NOT "$ROOT/scripts/
-// pawl-verdict.sh". $ROOT is the CALLER's repo (git toplevel of cwd), so on the embedded
-// stranger path the $ROOT form would execute the untrusted repo's planted verdict writer
-// (re-opening the RCE the trust split closes) and would simply not exist in an ordinary
-// repo. This test pins both halves: the source carries no $ROOT-relative sibling exec, and
-// the extracted trusted bundle carries pawl-verdict.sh next to pawl.sh so the
-// script-relative resolution succeeds.
-func TestEmbeddedPawlBundleCarriesVerdictWriterSibling(t *testing.T) {
-	src, err := embedded.PawlFS.ReadFile("pawl/scripts/pawl.sh")
-	if err != nil {
-		t.Fatalf("read embedded pawl.sh: %v", err)
-	}
-	for _, forbidden := range []string{`bash "$ROOT/scripts/`, `"$ROOT/scripts/pawl-verdict.sh"`} {
-		if strings.Contains(string(src), forbidden) {
-			t.Fatalf("SECURITY: pawl.sh execs a sibling script via $ROOT (the untrusted caller repo): found %q", forbidden)
-		}
-	}
-	if !strings.Contains(string(src), "PAWL_VERDICT_SH") {
-		t.Fatal("pawl.sh must resolve the verdict writer via the script-relative PAWL_VERDICT_SH")
-	}
-	// The extracted bundle must place pawl-verdict.sh as a sibling of pawl.sh, or the
-	// script-relative resolution fails on the embedded path.
-	dir, cleanup, err := extractPawlBundle()
-	if err != nil {
-		t.Fatalf("extractPawlBundle: %v", err)
-	}
-	defer cleanup()
-	for _, rel := range []string{
-		filepath.Join("scripts", "pawl.sh"),
-		filepath.Join("scripts", "pawl-verdict.sh"),
-	} {
-		if _, statErr := os.Stat(filepath.Join(dir, rel)); statErr != nil {
-			t.Fatalf("extracted bundle missing %s (script-relative verdict write would fail): %v", rel, statErr)
-		}
-	}
-}
-
-// TestPawlServiceCmd_OutsideGitRepoFailsClosed: with no AgentOps checkout AND no git repo,
-// a service command must fail BEFORE mutation with an actionable message, never fall back
-// to something ambiguous.
-func TestPawlServiceCmd_OutsideGitRepoFailsClosed(t *testing.T) {
-	useFakeSelfAo(t)
-	dir := t.TempDir() // not a git repo, no markers
-
-	prevDir := testProjectDir
-	testProjectDir = dir
-	t.Cleanup(func() { testProjectDir = prevDir })
-
-	cmd := pawlServiceCmd("up", "up", "test")
-	var out strings.Builder
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	err := cmd.RunE(cmd, nil)
-	if err == nil {
-		t.Fatal("outside any git repo, pawl up must fail closed (state has no stable root), got nil")
-	}
-	if !strings.Contains(err.Error(), "git repository") {
-		t.Fatalf("fail-closed error must name the requirement (a git repository / AgentOps root), got: %v", err)
-	}
-}
-
-// TestPawlServiceColdEnv locks the SERVICE stranger-path env seams: same sanitization as
-// the review cold env (trusted PATH, BASH_ENV/ENV/GIT_EXTERNAL_DIFF neutralized,
-// PAWL_UNTRUSTED_REPO, AO_BIN pin) but WITHOUT PAWL_NO_SERVICE — service verbs manage the
-// standing service; disabling it would silently no-op the very thing being commanded.
-func TestPawlServiceColdEnv(t *testing.T) {
-	env := pawlServiceColdEnv("/home/stranger/their-repo")
-	want := map[string]bool{
-		"AGENTOPS_REPO_ROOT=/home/stranger/their-repo": false,
-		"PAWL_UNTRUSTED_REPO=1":                        false,
-		"BASH_ENV=":                                    false,
-		"ENV=":                                         false,
-		"GIT_EXTERNAL_DIFF=":                           false,
-	}
-	var sawAOBin bool
-	for _, e := range env {
-		if _, ok := want[e]; ok {
-			want[e] = true
-		}
-		if strings.HasPrefix(e, "AO_BIN=") && len(e) > len("AO_BIN=") {
-			sawAOBin = true
-		}
-		if e == "PAWL_NO_SERVICE=1" {
-			t.Fatal("pawlServiceColdEnv must NOT set PAWL_NO_SERVICE=1 (service verbs manage the service)")
-		}
-		if strings.HasPrefix(e, "PATH=") {
-			for _, p := range strings.Split(strings.TrimPrefix(e, "PATH="), string(os.PathListSeparator)) {
-				if p == "" || p == "." || !filepath.IsAbs(p) {
-					t.Fatalf("service cold PATH not sanitized: contains %q", p)
-				}
-			}
-		}
-	}
-	for k, seen := range want {
-		if !seen {
-			t.Fatalf("pawlServiceColdEnv missing %q (got %v)", k, env)
-		}
-	}
-	if !sawAOBin {
-		t.Fatalf("pawlServiceColdEnv missing a non-empty AO_BIN; got %v", env)
-	}
-}
-
 // TestEmbeddedBundleStampMatchesScripts (F4, age-pawl-intent-zhndq.4): the embedded BUNDLE_STAMP
-// must be the DETERMINISTIC sha256 of the three embedded review scripts, so an installed binary
+// must be the DETERMINISTIC sha256 of the two embedded review scripts, so an installed binary
 // can prove whether its bundle matches a live checkout (the landed!=installed signal). If someone
 // edits an embedded script without re-running `make sync-hooks`, this catches the stale stamp.
 func TestEmbeddedBundleStampMatchesScripts(t *testing.T) {
@@ -695,7 +481,7 @@ func TestEmbeddedBundleStampMatchesScripts(t *testing.T) {
 		t.Fatalf("BUNDLE_STAMP is not a 64-char sha256 hex: %q", stamp)
 	}
 	h := sha256.New()
-	for _, p := range []string{"pawl/scripts/pawl-review.sh", "pawl/scripts/pawl-verdict.sh", "pawl/scripts/pawl.sh"} {
+	for _, p := range []string{"pawl/scripts/pawl-review.sh", "pawl/scripts/pawl-verdict.sh"} {
 		b, rerr := embedded.PawlFS.ReadFile(p)
 		if rerr != nil {
 			t.Fatalf("read embedded %s: %v", p, rerr)
@@ -708,67 +494,3 @@ func TestEmbeddedBundleStampMatchesScripts(t *testing.T) {
 	}
 }
 
-// TestPawlBundleStaleness (F4-followup, age-pawl-intent-zhndq.19): the TRUST-HONEST bundle verdict.
-//
-// TWO cross-family codex refutes drove this contract: file presence is NOT identity, so no marker
-// list can make it safe to assert a STALE *failure* against an untrusted repo (any marker is
-// attacker-controlled and spoofable). The verdict therefore compares nothing on the untrusted path
-// — it surfaces the stamp informationally and NEVER says STALE — while the trusted dogfood path has
-// nothing to compare anyway (the live scripts run in place).
-func TestPawlBundleStaleness(t *testing.T) {
-	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
-	if err != nil {
-		t.Fatalf("embedded BUNDLE_STAMP missing: %v", err)
-	}
-	stamp := strings.TrimSpace(string(stampRaw))
-
-	t.Run("trusted dogfood -> live-in-place, names the stamp, never STALE", func(t *testing.T) {
-		got := pawlBundleStaleness("")
-		if strings.Contains(got, "STALE") {
-			t.Fatalf("dogfood must never report STALE; got %q", got)
-		}
-		if !strings.Contains(got, "dogfood") || !strings.Contains(got, stamp[:12]) {
-			t.Fatalf("dogfood verdict = %q, want an in-place message naming the stamp", got)
-		}
-	})
-
-	// THE REFUTED CLASS (codex, twice): an untrusted repo — WHATEVER it contains — must never be
-	// reported STALE. Marker files prove nothing: a stranger can ship any of them.
-	t.Run("untrusted repo is NEVER reported STALE, whatever it contains (codex refute x2)", func(t *testing.T) {
-		for _, shape := range []string{"empty", "same-named-scripts", "full-marker-spoof"} {
-			root := t.TempDir()
-			switch shape {
-			case "same-named-scripts", "full-marker-spoof":
-				if err := os.MkdirAll(filepath.Join(root, "scripts"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				for _, n := range []string{"pawl-review.sh", "pawl-verdict.sh", "pawl.sh"} {
-					if werr := os.WriteFile(filepath.Join(root, "scripts", n), []byte("#!/bin/sh\n# unrelated\n"), 0o644); werr != nil {
-						t.Fatal(werr)
-					}
-				}
-			}
-			if shape == "full-marker-spoof" {
-				// A hostile repo that SPOOFS every identity marker a naive check might use.
-				for _, d := range [][]string{{"schemas"}, {"docs", "contracts"}} {
-					if err := os.MkdirAll(filepath.Join(append([]string{root}, d...)...), 0o755); err != nil {
-						t.Fatal(err)
-					}
-				}
-				if err := os.WriteFile(filepath.Join(root, "schemas", "pawl-verdict.v1.schema.json"), []byte("{}"), 0o644); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(root, "docs", "contracts", "pawls.md"), []byte("# spoof"), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			got := pawlBundleStaleness(root)
-			if strings.Contains(got, "STALE") {
-				t.Fatalf("%s: an untrusted repo must NEVER be reported STALE; got %q", shape, got)
-			}
-			if !strings.Contains(got, stamp[:12]) {
-				t.Fatalf("%s: the stamp must still be surfaced (informational); got %q", shape, got)
-			}
-		}
-	})
-}

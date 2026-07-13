@@ -209,19 +209,6 @@ assert_json_match \
   "$CITATIONS_PATH" \
   "select(.artifact_path == $ARTIFACT_JSON and .citation_type == \"applied\" and .feedback_given == true)"
 
-e2e_log_phase nightly
-log "Phase 6: run nightly dream cycle proof against the isolated corpus"
-NIGHTLY_DIR="$WORK_DIR/nightly"
-mkdir -p "$NIGHTLY_DIR"
-bash "$REPO_ROOT/scripts/nightly-dream-cycle.sh" \
-  --ao "$AO_BIN" \
-  --repo-root "$REPO_DIR" \
-  --output-dir "$NIGHTLY_DIR" >/dev/null
-assert_file_exists "nightly retrieval report exists" "$NIGHTLY_DIR/retrieval-bench.json"
-assert_file_exists "nightly summary exists" "$NIGHTLY_DIR/summary.json"
-assert_json_match "nightly summary exposes retrieval_live" "$NIGHTLY_DIR/summary.json" '.retrieval_live != null'
-assert_json_match "nightly retrieval report has coverage" "$NIGHTLY_DIR/retrieval-bench.json" '.coverage >= 0'
-
 e2e_log_phase "complete"
 e2e_log_summary
 log "FLYWHEEL PROOF: PASS ($PASS_COUNT checks) — sidecar: $SIDECAR_LOG"

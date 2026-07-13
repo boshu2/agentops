@@ -6,7 +6,7 @@
 # "ready to push". PAWL_EDGE_FAIL_OPEN=1 restores exit 0 (warn-and-continue). This proves the
 # do_write(7) -> pawl-review exit-6 propagation through the real cold path.
 #
-# Harness mirrors pawl-review.bats/pawl-require-warm.bats: codex is a PATH stub; AO_BIN is a
+# Harness mirrors pawl-review.bats: codex is a PATH stub; AO_BIN is a
 # shim that FAILS on `provenance emit-verdict`; everything runs in a temp repo.
 
 setup() {

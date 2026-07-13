@@ -7,7 +7,7 @@
 # deleted the daemon package; in that state there is no daemon route surface to
 # bypass, so this gate passes with an explicit no-surface message.
 #
-# CI gate: this script must exit 0. Wired into scripts/pre-push-gate.sh.
+# CI gate: this script must exit 0. Wired into the Go gate registry (seed.go).
 #
 # Heuristic: every mux.HandleFunc callsite in cli/internal/daemon/ that lives
 # outside auth.go fails the gate. auth.go is the single allowed home for

@@ -19,7 +19,7 @@
 #   1  one or more gates fail (each failure prints diagnostic + final summary)
 #   2  argument or environment error
 #
-# Pairs with scripts/pre-push-gate.sh: that script runs --fast, this one runs
+# Pairs with `ao gate check --fast`: that path runs changed-scope, this one runs
 # the deterministic-only surface. Run both before push when changes touch
 # skills/, schemas/, registry-input paths, or codex-mirrored skills.
 

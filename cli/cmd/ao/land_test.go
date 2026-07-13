@@ -22,7 +22,6 @@ type landTestHarness struct {
 	built        bool
 	reexeced     bool
 	reexecFresh  string
-	warmed       bool
 	prepared     bool
 	reviewedBase string
 	reviewAOBIN  string // AO_BIN as seen by the review seam (proves Step-2 pin)
@@ -67,7 +66,6 @@ func newLandHarness(t *testing.T) *landTestHarness {
 	prevBuild := landBuildFreshBinary
 	prevPrepare := landPrepareReviewBase
 	prevReexec := landReexec
-	prevWarm := landEnsureWarmService
 	prevReview := landRunReview
 	prevScript := landRunScript
 	t.Cleanup(func() {
@@ -76,7 +74,6 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		landBuildFreshBinary = prevBuild
 		landPrepareReviewBase = prevPrepare
 		landReexec = prevReexec
-		landEnsureWarmService = prevWarm
 		landRunReview = prevReview
 		landRunScript = prevScript
 	})
@@ -105,7 +102,6 @@ func newLandHarness(t *testing.T) *landTestHarness {
 		h.reexecFresh = freshBin
 		return 0, nil
 	}
-	landEnsureWarmService = func(_ *cobra.Command, _, _ string) { h.warmed = true }
 	landRunReview = func(_ *cobra.Command, bead, reviewedBase string) error {
 		h.reviewedBd = bead
 		h.reviewedBase = reviewedBase
@@ -146,9 +142,6 @@ func TestLand_ConfirmHandoffToPawlLand(t *testing.T) {
 	}
 	if h.reexeced {
 		t.Error("Step 1: must NOT re-exec when already running the fresh binary")
-	}
-	if !h.warmed {
-		t.Error("Step 2: warm-service liveness was not attempted")
 	}
 	if h.reviewedBd != "age-test" {
 		t.Errorf("Step 3: review ran for %q, want age-test", h.reviewedBd)

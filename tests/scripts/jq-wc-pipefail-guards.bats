@@ -7,7 +7,6 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    EVOLVE="$REPO_ROOT/scripts/evolve-capture-daily-learning.sh"
     MATURITY="$REPO_ROOT/scripts/bootstrap-maturity.sh"
 
     TMP_DIR="$(mktemp -d)"
@@ -36,55 +35,6 @@ EOF
     [ "$status" -eq 0 ]
     # The final summary is only reached if the script ran to completion.
     [[ "$output" == *"Bootstrap maturity complete:"* ]]
-}
-
-# --- evolve-capture-daily-learning.sh --------------------------------------
-
-@test "evolve-capture-daily-learning.sh: malformed cycle-history line does not abort" {
-    EVODIR="$TMP_DIR/repo"
-    mkdir -p "$EVODIR/.agents/evolve" "$EVODIR/.agents/learnings" "$EVODIR/scripts"
-    # Copy the script into a throwaway repo so REPO_ROOT resolves there and
-    # the script writes only inside $TMP_DIR.
-    cp "$EVOLVE" "$EVODIR/scripts/evolve-capture-daily-learning.sh"
-
-    DATE="2026-05-28"
-    # cycle-history.jsonl: one valid object, then a malformed line. The
-    # PRODUCTIVE/SCOUTS/IDLE/REGRESSED counts run jq -r over this and pipe to
-    # wc -l; jq exits non-zero on the malformed line.
-    cat > "$EVODIR/.agents/evolve/cycle-history.jsonl" <<EOF
-{"started_at":"${DATE}T01:00:00Z","cycle":1,"result":"improved","title":"good"}
-not valid json here
-EOF
-
-    run bash "$EVODIR/scripts/evolve-capture-daily-learning.sh" "$DATE"
-    # Without the guard, set -e aborts at the first jq|wc line and the
-    # consolidated file is never written.
-    [ "$status" -eq 0 ]
-    [ -f "$EVODIR/.agents/learnings/${DATE}-evolve-loop-learnings.md" ]
-}
-
-@test "evolve-capture-daily-learning.sh: counts default to 0 when jq fails on every line" {
-    EVODIR="$TMP_DIR/repo2"
-    mkdir -p "$EVODIR/.agents/evolve" "$EVODIR/.agents/learnings" "$EVODIR/scripts"
-    cp "$EVOLVE" "$EVODIR/scripts/evolve-capture-daily-learning.sh"
-
-    DATE="2026-05-28"
-    # Entirely malformed history → jq fails; the guarded substitution must
-    # yield 0 for every count, and the script must still complete.
-    cat > "$EVODIR/.agents/evolve/cycle-history.jsonl" <<'EOF'
-totally not json
-also not json
-EOF
-
-    run bash "$EVODIR/scripts/evolve-capture-daily-learning.sh" "$DATE"
-    [ "$status" -eq 0 ]
-
-    OUT="$EVODIR/.agents/learnings/${DATE}-evolve-loop-learnings.md"
-    [ -f "$OUT" ]
-    # The Counts table must render 0 for the derived metrics rather than a
-    # blank/crashed value.
-    run grep -E '^\| Productive \(commit landed\) \| 0 \|' "$OUT"
-    [ "$status" -eq 0 ]
 }
 
 # Direct test of the guarded jq|wc expression shape used in lines 59-62.

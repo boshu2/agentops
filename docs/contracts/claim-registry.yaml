@@ -107,7 +107,6 @@ claims:
       - GOALS.md
     evidence:
       - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
-      - scripts/nightly-dream-cycle.sh
   AOP-CLAIM-GOALS-EVAL-WORKBENCH:
     tier: PILOT
     surfaces:

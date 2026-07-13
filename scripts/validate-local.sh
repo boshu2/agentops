@@ -124,7 +124,12 @@ echo "════════════════════════�
 echo ""
 
 echo "── Shared Local Gate ──"
-if "$REPO_ROOT/scripts/pre-push-gate.sh" --scope "$SCOPE"; then
+ao_bin="${AO_BIN:-}"
+[[ -z "$ao_bin" && -x "$REPO_ROOT/cli/bin/ao" ]] && ao_bin="$REPO_ROOT/cli/bin/ao"
+[[ -z "$ao_bin" ]] && ao_bin="$(command -v ao 2>/dev/null || true)"
+if [[ -z "$ao_bin" ]]; then
+    fail "ao not resolvable — build cli/bin/ao or set AO_BIN"
+elif "$ao_bin" gate check --fast --scope "$SCOPE"; then
     pass "Shared local gate passed"
 else
     fail "Shared local gate failed"

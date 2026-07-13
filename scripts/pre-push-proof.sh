@@ -19,9 +19,9 @@ usage() {
     cat <<'EOF'
 Usage: scripts/pre-push-proof.sh {write|check} [--scope auto|upstream|staged|worktree|head] [--mode fast]
 
-Records or checks a local validation proof for scripts/pre-push-gate.sh.
-The proof is intentionally local under .agents/validation and is not a
-substitute for CI.
+Records or checks a local validation proof for the cockpit pre-push gate
+(scripts/hooks/pre-push.local → ao gate check). The proof is intentionally
+local under .agents/validation and is not a substitute for CI.
 EOF
 }
 
@@ -125,7 +125,7 @@ changed_hash() {
 
 gate_hash() {
     local file
-    for file in scripts/pre-push-gate.sh scripts/pre-push-proof.sh .githooks/pre-push; do
+    for file in scripts/hooks/pre-push.local scripts/pre-push-proof.sh .githooks/pre-push; do
         [[ -f "$file" ]] || continue
         checksum_file "$file"
     done | hash_stdin

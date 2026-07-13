@@ -22,7 +22,7 @@ setup() {
 }
 
 @test "path filter is skipped on release tags" {
-    run bash -c "awk '/dorny\\/paths-filter@v4/{p=NR} p && NR>=p && NR<=p+4' '$WORKFLOW_PATH' | grep -F \"if: steps.release.outputs.release != 'true'\""
+    run bash -c "awk '/dorny\\/paths-filter@/{p=NR} p && NR>=p && NR<=p+4' '$WORKFLOW_PATH' | grep -F \"if: steps.release.outputs.release != 'true'\""
     [ "$status" -eq 0 ]
 }
 

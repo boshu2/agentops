@@ -136,7 +136,7 @@ def suggest(token):
 
 # A line that DESCRIBES a command's removal (negation / past-tense) is documenting
 # the retirement, not prescribing the dead command — not an offender. Mirrors the
-# REMOVAL_LANG exemption in check-docs-no-retired-tech.sh.
+# REMOVAL_LANG exemption for retired-tech wording.
 _REMOVAL_LANG = re.compile(
     r"no `ao|removed|retired|deleted|deprecat|superseded|no longer|is gone|are gone|"
     r"not a (?:selectable|valid)|deprecation pointer|gets? a deprecation",

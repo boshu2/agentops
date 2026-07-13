@@ -7,8 +7,6 @@
 # Output: docs/releases/flywheel-compounding-snapshot.json (tracked).
 # Optional envelope overrides: SNAPSHOT_GIT_SHA, SNAPSHOT_GIT_BRANCH.
 #
-# Pair: scripts/check-flywheel-compounding-snapshot.sh (CI gate that
-# validates this artifact). Companion bead: soc-45sg.1 (G1).
 
 set -euo pipefail
 

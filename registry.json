@@ -8,7 +8,7 @@
     "eval_files": 55,
     "cli_commands": 30,
     "workflows": 4,
-    "capabilities": 107
+    "capabilities": 98
   },
   "surfaces": {
     "skills": [
@@ -750,6 +750,7 @@
         "bounded_context": "",
         "driven_by_skills": [
           "council",
+          "ntm",
           "pawl-review"
         ]
       },
@@ -919,10 +920,10 @@
     ]
   },
   "capability_summary": {
-    "total": 107,
+    "total": 98,
     "skills": 63,
     "cli_commands": 30,
-    "gates": 14,
+    "gates": 5,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
@@ -1991,11 +1992,8 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao pawl doctor",
-        "ao pawl health",
-        "ao pawl reap",
-        "ao pawl review",
-        "ao pawl up"
+        "ao pawl",
+        "ao pawl review"
       ],
       "path": "skills/ntm/",
       "references": 16
@@ -3226,16 +3224,14 @@
       "status": "active",
       "driven_by_skills": [
         "council",
+        "ntm",
         "pawl-review"
       ],
       "flags": [
         "--config",
         "--dry-run",
-        "--dual",
         "--json",
-        "--models",
         "--output",
-        "--tri",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -3507,15 +3503,6 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:skill-gates",
-      "name": "skill-gates",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
       "sku": "gate:correctness",
       "name": "correctness",
       "type": "gate",
@@ -3525,80 +3512,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:lint",
-      "name": "lint",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
       "sku": "gate:security",
       "name": "security",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skills-integrity",
-      "name": "skills-integrity",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:contracts-sync",
-      "name": "contracts-sync",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:codex-parity",
-      "name": "codex-parity",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:doctrine-proof",
-      "name": "doctrine-proof",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:eval",
-      "name": "eval",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-eval",
-      "name": "skill-eval",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:process-hygiene",
-      "name": "process-hygiene",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",

@@ -1162,7 +1162,7 @@ do_write() {
       --domain)         domain="${2:-}"; shift 2 ;;
       --reason)         reason="${2:-}"; shift 2 ;;
       # Verification-economics meter (age-verification-economics-ebec.1): the caller
-      # (pawl-review.sh / pawl.sh route) passes the review wall-clock; tokens are
+      # (pawl-review.sh) passes the review wall-clock; tokens are
       # estimated below from refuter evidence sizes. Optional — absent => no cost
       # object, byte-identical verdict for legacy callers.
       --wall-seconds)   wall_seconds="${2:-}"; shift 2 ;;

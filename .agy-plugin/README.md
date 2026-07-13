@@ -24,7 +24,7 @@ Contents:
 Validate before install:
 
 ```bash
-bash scripts/validate-agy-plugin.sh
+agy plugin validate .agy-plugin
 ```
 
 Install locally:

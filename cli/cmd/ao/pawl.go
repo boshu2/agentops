@@ -24,22 +24,14 @@ INDEPENDENT cross-family verdict (never the author, never the same model).
 
 'ao pawl review' is the FRONT DOOR — it works in any git repo with just this binary
 plus one reviewer CLI (codex or agy) on PATH: no NTM, no tmux, no config. On
-CONFIRMED it writes the commit-bound verdict the push-to-main gate enforces.
-
-The remaining verbs (up/down/reap/health/doctor/smoke/route/metrics) operate the
-OPTIONAL standing warm service — operator machinery that requires the NTM swarm
-substrate. You never need them to use the membrane.`,
+CONFIRMED it writes the commit-bound verdict the push-to-main gate enforces.`,
 	Args: cobra.NoArgs,
 }
 
-// pawl help groups (age-hk5zg.2 / S2): `review` is the user front door; the warm
-// standing-service verbs are operator-only and require NTM. The group split keeps a
-// user from reading `up` as a prerequisite for using the membrane.
+// pawl help groups: `review` is the user front door (no NTM/tmux required).
 const (
-	pawlUserGroupID        = "pawl-user"
-	pawlUserGroupTitle     = "Use the membrane (the front door — needs no NTM, no setup):"
-	pawlOperatorGroupID    = "pawl-operator"
-	pawlOperatorGroupTitle = "Operate the standing warm service (operator-only; requires the NTM swarm substrate):"
+	pawlUserGroupID    = "pawl-user"
+	pawlUserGroupTitle = "Use the membrane (the front door — needs no NTM, no setup):"
 )
 
 // pawlReviewExitError carries scripts/pawl-review.sh's exit code so it propagates
@@ -53,7 +45,6 @@ func (e *pawlReviewExitError) Error() string { return "" }
 func (e *pawlReviewExitError) ExitCode() int { return e.code }
 
 const defaultPawlReviewScript = "scripts/pawl-review.sh"
-const defaultPawlServiceScript = "scripts/pawl.sh"
 
 var pawlReviewCmd = &cobra.Command{
 	Use:   "review <bead-id> [--scope head|staged|upstream] [--base <sha>] [--converge] [--strict] [--author-family <fam>] [--context <s>] [--smoke <cmd>]",
@@ -74,7 +65,7 @@ the same branch delta that the guarded push would introduce.
 --strict (age-rk3r.13): the OPT-IN two-family cold quorum for the highest-irreversibility
 doors — TWO DISTINCT strict-eligible cold families must BOTH CONFIRMED, and strict REFUSES
 to degrade to one (an outage HOLDs, exit 5, never a single-family pass). It DOUBLES review
-cost (opt-in only) and is the portable cold analogue of the warm tri-family duel. Today no
+cost (opt-in only) and is the portable cold two-family quorum. Today no
 second strict-eligible cold family exists yet (agy A7-benched; no cold claude adapter — LAW
 0 forbids the Claude headless print path), so --strict prints an honest UNAVAILABLE and
 exits 5 rather than faking a pass; the machinery is built and flipping one eligibility list
@@ -86,75 +77,13 @@ turns real strict on. See 'ao verify --help' for the full posture.`,
 
 func init() {
 	rootCmd.AddCommand(pawlCmd)
-	// age-hk5zg.2: group the surface so `review` reads as the front door and the warm
-	// verbs read as operator-only (requires NTM) — grouping/labeling only, every verb
-	// keeps its name and behavior.
 	pawlCmd.AddGroup(&cobra.Group{ID: pawlUserGroupID, Title: pawlUserGroupTitle})
-	pawlCmd.AddGroup(&cobra.Group{ID: pawlOperatorGroupID, Title: pawlOperatorGroupTitle})
 	pawlReviewCmd.GroupID = pawlUserGroupID
 	pawlCmd.AddCommand(pawlReviewCmd)
-	// ml8: surface the standing pawl-service (scripts/pawl.sh) on the ao CLI so the bead
-	// intent ("ao pawl up/route/metrics") is the real command, not "bash scripts/pawl.sh".
-	addPawlOperatorCmd := func(sub, use, short string) {
-		c := pawlServiceCmd(sub, use, short)
-		c.GroupID = pawlOperatorGroupID
-		pawlCmd.AddCommand(c)
-	}
-	addPawlOperatorCmd("up", "up [--dual|--tri|--models a,b,c]", "Stand up the standing pawl-service — adaptive: probe installed families (claude/codex/agy) and form the strongest membrane; pin with --dual/--tri/--models. Readiness-gated, idempotent")
-	addPawlOperatorCmd("down", "down", "Tear down the standing pawl-service (no orphan panes)")
-	addPawlOperatorCmd("reap", "reap", "Tear down the standing pawl-service iff idle > PAWL_IDLE_TTL (substrate/cron schedules it; no-op otherwise)")
-	addPawlOperatorCmd("health", "health [--json]", "Per-pane liveness/readiness of the standing pawl-service + the membrane tier")
-	addPawlOperatorCmd("doctor", "doctor [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Read-only standing pawl preflight: assert swarm binary (ntm-first), session, pane cwd/model, trust prompts, readiness, and evidence policy")
-	addPawlOperatorCmd("smoke", "smoke [--json] [--expected-cwd PATH] [--expected-claude-model MODEL] [--expected-codex-model MODEL]", "Alias for pawl doctor: non-mutating readiness smoke before routing real reviews")
-	addPawlOperatorCmd("route", "route <bead> <packet> [pr]", "Route a review packet to the warm cross-family panel; require tier-appropriate agreement, record the verdict")
-	addPawlOperatorCmd("metrics", "metrics [--json]", "p50/p95 route latency + agreement-rate SLOs over the recorded routes")
 }
 
-// defaultPawlLabel mirrors scripts/pawl.sh's LABEL default.
-const defaultPawlLabel = "pawl-service"
 
-// pawlPlannedSession derives the session a real `pawl` run would target, EXACTLY as
-// scripts/pawl.sh does: PAWL_SESSION if set, else ${PROJECT}--${LABEL} where PROJECT is
-// PAWL_PROJECT or the basename of the resolved repo (git toplevel of the cwd, or the cwd
-// itself), and LABEL is PAWL_LABEL or "pawl-service". The dry-run planner MUST report this
-// (a refuter catch: hardcoding "agentops--pawl-service" made the plan misreport the target
-// from any other repo, since the script now derives <repo>--pawl-service). Pure reads only —
-// env + a .git walk — no mutation, and it never fails (falls back to the cwd basename).
-func pawlPlannedSession() string {
-	if s := os.Getenv("PAWL_SESSION"); s != "" {
-		return s
-	}
-	label := os.Getenv("PAWL_LABEL")
-	if label == "" {
-		label = defaultPawlLabel
-	}
-	project := os.Getenv("PAWL_PROJECT")
-	if project == "" {
-		root := ""
-		if d, err := resolveProjectDir(); err == nil {
-			root = d
-			if tl, terr := gitToplevel(d); terr == nil {
-				root = tl
-			}
-		}
-		project = filepath.Base(root)
-	}
-	return project + "--" + label
-}
-
-// pawlServiceMutating names the service verbs that mutate substrate state (tmux/NTM
-// spawn/kill/send, account rotation, state/verdict/metric/lock writes). Under global
-// --dry-run these NEVER execute the service script (D1). The read-only verbs —
-// health/doctor/smoke/metrics — may inspect real state under --dry-run but are marked
-// with PAWL_DRY_RUN=1 so even prompt-clearing key sends are suppressed script-side.
-var pawlServiceMutating = map[string]bool{"up": true, "down": true, "reap": true, "route": true}
-
-// pawlServiceReadOnly names the verbs whose script accepts --json; the global --json
-// flag is forwarded to them so `ao --json pawl health` and `ao pawl health --json`
-// mean the same thing.
-var pawlServiceReadOnly = map[string]bool{"health": true, "doctor": true, "smoke": true, "metrics": true}
-
-// pawlDryRunDoc is the single JSON document a dry-run mutating pawl command emits (D2):
+// pawlDryRunDoc is the single JSON document a dry-run pawl command emits (D2):
 // exactly one parseable object, never interleaved human log lines.
 type pawlDryRunDoc struct {
 	Action       string   `json:"action"`
@@ -166,97 +95,11 @@ type pawlDryRunDoc struct {
 	PlannedSteps []string `json:"planned_steps"`
 }
 
-// pawlPinnedFamilies mirrors scripts/pawl.sh parse_pin for PLANNING only: it derives the
-// family set + tier a real `up` would pin from --dual/--tri/--models, or reports
-// "adaptive" when the real run would probe installed CLIs. Unknown tokens are dropped
-// (the real run fail-fasts on them; the plan only reports intent).
-func pawlPinnedFamilies(args []string) (families, tier string) {
-	pin := ""
-	for i := 0; i < len(args); i++ {
-		switch {
-		case args[i] == "--dual":
-			pin = "cc,cod"
-		case args[i] == "--tri":
-			pin = "cc,cod,agy"
-		case args[i] == "--models" && i+1 < len(args):
-			pin = args[i+1]
-			i++
-		case strings.HasPrefix(args[i], "--models="):
-			pin = strings.TrimPrefix(args[i], "--models=")
-		}
-	}
-	if pin == "" {
-		return "adaptive", "adaptive"
-	}
-	seen := map[string]bool{}
-	for _, tok := range strings.Split(pin, ",") {
-		switch strings.ToLower(strings.TrimSpace(tok)) {
-		case "cc", "claude", "opus", "sonnet":
-			seen["cc"] = true
-		case "cod", "codex", "gpt", "openai":
-			seen["cod"] = true
-		case "agy", "gemini", "antigravity":
-			seen["agy"] = true
-		}
-	}
-	var fams []string
-	for _, f := range []string{"cc", "cod", "agy"} {
-		if seen[f] {
-			fams = append(fams, f)
-		}
-	}
-	switch {
-	case len(fams) >= 2:
-		tier = "multi"
-	case len(fams) == 1:
-		tier = "fresh"
-	default:
-		tier = "adaptive"
-	}
-	return strings.Join(fams, " "), tier
-}
-
-// pawlDryRunPlan builds the planned-action report for a mutating verb under --dry-run.
-// It performs pure reads only (env, args) — no script execution, no bundle extraction,
-// no state writes of any kind.
+// pawlDryRunPlan builds the planned-action report for `review` under --dry-run.
+// Pure reads only — no script execution, no bundle extraction, no state writes.
 func pawlDryRunPlan(sub string, args []string) pawlDryRunDoc {
-	session := pawlPlannedSession()
-	doc := pawlDryRunDoc{Action: "pawl " + sub, DryRun: true, Mutated: false, Session: session}
-	switch sub {
-	case "up":
-		doc.Families, doc.Tier = pawlPinnedFamilies(args)
-		doc.PlannedSteps = []string{
-			"probe installed families (claude/codex/agy)",
-			// The swarm binary is resolved by the ntm-first seam in scripts/pawl.sh
-			// (PAWL_SWARM_BIN -> ntm -> atm; `ao pawl doctor` reports which won), so the
-			// planned step must NOT hardcode "atm" — that contradicted doctor's own output
-			// (age-pawl-intent-zhndq.16).
-			"swarm spawn session " + session + " with the enabled panes (ntm-first seam; see `ao pawl doctor` swarm-bin)",
-			"gate readiness per pane (idempotent if the session already exists)",
-			"write session.json (atomic)",
-		}
-	case "down":
-		doc.PlannedSteps = []string{
-			"acquire the route lease (refuse exit 3 if a route is in progress)",
-			"kill session " + session,
-			"remove session.json",
-			"release the route lease",
-		}
-	case "reap":
-		doc.PlannedSteps = []string{
-			"read the session idle clock",
-			"tear down " + session + " iff idle > PAWL_IDLE_TTL (via down, lease-serialized)",
-		}
-	case "route":
-		doc.PlannedSteps = []string{
-			"validate the bead id (path/flag containment)",
-			"acquire the exclusive route lease (fail closed if held)",
-			"write the per-route evidence packet",
-			"send to the enabled panes",
-			"poll verdicts to tier-appropriate agreement",
-			"append the metrics row",
-		}
-	case "review":
+	doc := pawlDryRunDoc{Action: "pawl " + sub, DryRun: true, Mutated: false}
+	if sub == "review" {
 		doc.Families, doc.Tier = "cod", "fresh"
 		doc.PlannedSteps = []string{
 			"resolve the trusted pawl-review script (live checkout or embedded bundle)",
@@ -269,16 +112,9 @@ func pawlDryRunPlan(sub string, args []string) pawlDryRunDoc {
 
 // stripPawlPassthroughFlags scans the raw leaf args for the GLOBAL --dry-run/--json
 // tokens and removes them. Root cause of D1: pawl leaves set DisableFlagParsing, so
-// cobra never parses inherited persistent flags placed before OR after the subcommand —
-// `ao --dry-run --json pawl up` reached RunE with ["--dry-run","--json"] still in args,
-// the dryRun/jsonFlag globals stayed false, and the script executed for real (route even
-// tried "--dry-run" as its bead id). The leaf must extract them itself and OR with the
-// globals (covering both `ao --dry-run pawl up` and `ao pawl up --dry-run`).
-// It accepts BOTH the bare form (`--dry-run`) and cobra's `--flag=value` form
-// (`--dry-run=true`, `--json=false`) — a refuter catch: matching only the bare token let
-// `ao --dry-run=true pawl up` fall through to a real spawn, and `pawl route` consumed the
-// flag as its bead id. An unparseable value (`--dry-run=maybe`) fails CLOSED (treated as
-// set) rather than silently executing the mutation.
+// cobra never parses inherited persistent flags placed before OR after the subcommand.
+// The leaf must extract them itself and OR with the globals. Accepts both the bare form
+// (`--dry-run`) and cobra's `--flag=value` form. An unparseable value fails CLOSED.
 func stripPawlPassthroughFlags(args []string) (rest []string, sawDry, sawJSON bool) {
 	boolVal := func(v string) bool {
 		b, err := strconv.ParseBool(v)
@@ -311,79 +147,7 @@ func stripPawlPassthroughFlags(args []string) (rest []string, sawDry, sawJSON bo
 
 // emitPawlDryRunPlan reports the plan: with --json exactly ONE JSON object (D2), else
 // human "DRY-RUN … would:" lines. This is the entire dry-run execution — nothing runs.
-// pawlDryRunValidate mirrors the real command's pre-mutation argument checks, so a dry-run
-// reports the EXACT planned action — including "this would fail" — rather than a bogus plan
-// (refuter catch: `--dry-run pawl route` with no bead/packet, or `up --models nope`, reported
-// a successful plan while the real command exits non-zero). Returns an error that propagates
-// as the same non-zero exit the real command would produce.
-func pawlDryRunValidate(sub string, args []string) error {
-	switch sub {
-	case "route":
-		// scripts/pawl.sh cmd_route does NOT parse flags: $1 is the bead and $2 the packet
-		// LITERALLY (a leading-dash arg is a bead that _valid_route_id then rejects). So validate
-		// POSITIONALLY — args[0]/args[1] as-is — never skipping dash-prefixed args (refuter catch:
-		// skipping them let `route --bogus age-x packet.md` pass while the real command rejects
-		// bead=`--bogus`). --dry-run/--json were already stripped upstream.
-		if len(args) < 2 {
-			return fmt.Errorf("route needs <bead> and <packet-file> (got %d arg(s))", len(args))
-		}
-		if !validPawlRouteID(args[0]) {
-			return fmt.Errorf("invalid bead id %q — allowed: [A-Za-z0-9._-], 1-64 chars, leading alphanumeric", args[0])
-		}
-	case "up":
-		// A --models/--dual/--tri pin must name only known families (the real up fail-fasts).
-		pin := ""
-		for i := 0; i < len(args); i++ {
-			switch {
-			case args[i] == "--models" && i+1 < len(args):
-				pin = args[i+1]
-				i++
-			case strings.HasPrefix(args[i], "--models="):
-				pin = strings.TrimPrefix(args[i], "--models=")
-			}
-		}
-		if pin != "" {
-			for _, tok := range strings.Split(pin, ",") {
-				t := strings.ToLower(strings.TrimSpace(tok))
-				if t == "" {
-					continue
-				}
-				switch t {
-				case "cc", "claude", "opus", "sonnet", "cod", "codex", "gpt", "openai", "agy", "gemini", "antigravity":
-				default:
-					return fmt.Errorf("unknown model %q (use cc/cod/agy, dual, or tri)", tok)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-// validPawlRouteID mirrors scripts/pawl.sh _valid_route_id: [A-Za-z0-9._-], 1-64 chars,
-// leading alphanumeric.
-func validPawlRouteID(s string) bool {
-	if len(s) == 0 || len(s) > 64 {
-		return false
-	}
-	if (s[0] < 'A' || s[0] > 'Z') && (s[0] < 'a' || s[0] > 'z') && (s[0] < '0' || s[0] > '9') {
-		return false
-	}
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		ok := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-'
-		if !ok {
-			return false
-		}
-	}
-	return true
-}
-
 func emitPawlDryRunPlan(cmd *cobra.Command, sub string, args []string, jsonOut bool) error {
-	if err := pawlDryRunValidate(sub, args); err != nil {
-		// Match the real command: a validation failure is an error, not a "successful" plan.
-		cmd.SilenceUsage = true
-		return fmt.Errorf("ao pawl %s (dry-run): %w", sub, err)
-	}
 	doc := pawlDryRunPlan(sub, args)
 	if jsonOut {
 		b, err := json.Marshal(doc)
@@ -399,109 +163,6 @@ func emitPawlDryRunPlan(cmd *cobra.Command, sub string, args []string, jsonOut b
 		fmt.Fprintf(cmd.OutOrStdout(), "  would: %s\n", s)
 	}
 	return nil
-}
-
-// pawlServiceColdEnv is the stranger-path env overlay for SERVICE verbs. Identical
-// sanitization to pawlReviewColdEnv (trusted PATH, shell-startup + git diff-helper
-// injection neutralized, untrusted-repo guard, AO_BIN pin) EXCEPT it does not set
-// PAWL_NO_SERVICE — service verbs manage the standing service; disabling it would
-// silently no-op the very thing being commanded.
-func pawlServiceColdEnv(userRoot string) []string {
-	env := []string{
-		"AGENTOPS_REPO_ROOT=" + userRoot,
-		"PAWL_UNTRUSTED_REPO=1",
-		"PATH=" + trustedPATH(userRoot),
-		"BASH_ENV=",
-		"ENV=",
-		"GIT_EXTERNAL_DIFF=",
-	}
-	if self, err := pawlSelfBinary(); err == nil && self != "" {
-		env = append(env, "AO_BIN="+self)
-	}
-	return env
-}
-
-// resolveTrustedPawlScript is the ONE trust split every pawl entry point uses (D4):
-// the LIVE repo script only when the running ao binary physically lives inside a
-// genuine AgentOps checkout (dogfood — forge-proof, unlike marker files); otherwise
-// the EMBEDDED bundle extracted to a temp dir, run against the user's own git repo
-// with the sanitized coldEnv seams — never executing a script from an untrusted repo.
-// Outside any git repo it fails closed before mutation, naming the requirement (D3).
-func resolveTrustedPawlScript(scriptRel, verb string, coldEnv func(string) []string) (script, dir, untrustedRoot string, extraEnv []string, cleanup func(), err error) {
-	cleanup = func() {}
-	if repoRoot, rerr := resolveAgentsRepoRoot(); rerr == nil && aoBinaryInside(repoRoot) {
-		script = filepath.Join(repoRoot, scriptRel)
-		if _, statErr := os.Stat(script); statErr != nil {
-			return "", "", "", nil, cleanup, fmt.Errorf("%s not found at %s: %w", filepath.Base(scriptRel), script, statErr)
-		}
-		return script, repoRoot, "", nil, cleanup, nil
-	}
-	startDir, derr := resolveProjectDir()
-	if derr != nil {
-		return "", "", "", nil, cleanup, derr
-	}
-	userRoot, terr := gitToplevel(startDir)
-	if terr != nil {
-		return "", "", "", nil, cleanup, fmt.Errorf("%s must run inside a git repository (state resolves under that repo's .agents/pawl; a genuine AgentOps checkout running its own cli/bin/ao uses the live scripts): %w", verb, terr)
-	}
-	cacheDir, bcleanup, xerr := extractPawlBundle()
-	if xerr != nil {
-		return "", "", "", nil, cleanup, fmt.Errorf("preparing embedded pawl scripts: %w", xerr)
-	}
-	script = filepath.Join(cacheDir, "scripts", filepath.Base(scriptRel))
-	return script, userRoot, userRoot, coldEnv(userRoot), bcleanup, nil
-}
-
-// pawlServiceCmd returns a cobra command that forwards `ao pawl <sub> [args]` to the
-// TRUSTED scripts/pawl.sh — live checkout or embedded bundle, the same trust split as
-// `ao pawl review` (D4) — propagating the script's exit code (ml8). Global --dry-run on
-// a mutating verb plans and reports without executing anything (D1/D2).
-func pawlServiceCmd(sub, use, short string) *cobra.Command {
-	return &cobra.Command{
-		Use:                use,
-		Short:              short,
-		DisableFlagParsing: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			for _, a := range args {
-				if a == "-h" || a == "--help" {
-					return cmd.Help()
-				}
-			}
-			// DisableFlagParsing means the global --dry-run/--json arrive as raw args —
-			// extract them here and OR with the parsed globals (D1 root cause).
-			rest, sawDry, sawJSON := stripPawlPassthroughFlags(args)
-			dry := GetDryRun() || sawDry
-			jsonOut := jsonFlag || sawJSON
-			if dry && pawlServiceMutating[sub] {
-				return emitPawlDryRunPlan(cmd, sub, rest, jsonOut)
-			}
-			script, dir, untrustedRoot, extraEnv, cleanup, err := resolveTrustedPawlScript(defaultPawlServiceScript, "ao pawl "+sub, pawlServiceColdEnv)
-			if err != nil {
-				return err
-			}
-			defer cleanup()
-			if dry {
-				// Read-only verb inspecting real state under --dry-run: suppress even
-				// prompt-clearing key sends script-side.
-				extraEnv = append(extraEnv, "PAWL_DRY_RUN=1")
-			}
-			if jsonOut && pawlServiceReadOnly[sub] {
-				rest = append(rest, "--json")
-			}
-			// F4-followup (age-pawl-intent-zhndq.19): the TRUST-AWARE bundle-staleness verdict.
-			// Only Go can compute this safely: the shell doctor row must NOT read $ROOT/scripts (on
-			// the embedded/stranger path $ROOT is the UNTRUSTED caller repo — pawl.sh is forbidden
-			// from touching it). Go owns the trust decision, so it may compare the embedded
-			// BUNDLE_STAMP against the live scripts of a repo it has ALREADY established is a
-			// trusted agentops checkout, and hand the shell a ready-made verdict to display.
-			if sub == "doctor" {
-				if v := pawlBundleStaleness(untrustedRoot); v != "" {
-					extraEnv = append(extraEnv, "PAWL_BUNDLE_STATUS="+v)
-				}
-			}
-			return runForwardedPawlScript(cmd, script, dir, untrustedRoot, append([]string{sub}, rest...), extraEnv)
-		},
-	}
 }
 
 func runPawlReview(cmd *cobra.Command, args []string) error {
@@ -597,8 +258,7 @@ func trustedLookPath(name, excludeRoot string) (string, error) {
 // runPawlReviewEmbedded runs the embedded pawl scripts against the user's own git
 // repository. It extracts the scripts/ + schemas/ sibling bundle from the binary to a
 // temp dir and points the scripts at the user's repo via the existing env seams
-// (AGENTOPS_REPO_ROOT for git ops + verdict/yield dir; PAWL_NO_SERVICE so a cold
-// stranger run never tries to stand up a warm review pane).
+// (AGENTOPS_REPO_ROOT for git ops + verdict/yield dir).
 //
 // cwd is the user's repo so the read-only codex refuter can READ the changed files there
 // (large diffs elide added lines and require reading the files); the bare-binary RCE class
@@ -624,8 +284,7 @@ func runPawlReviewEmbedded(cmd *cobra.Command, args []string) error {
 }
 
 // pawlReviewColdEnv is the env overlay for the stranger (embedded) path. It re-roots the
-// scripts onto the user's repo (git ops, verdict + yield ledger writes) and disables the
-// standing-service probe so a one-shot cold run never spins up a warm pane. EDGE 2: the
+// scripts onto the user's repo (git ops, verdict + yield ledger writes). EDGE 2: the
 // schema is resolved script-relative from the extracted bundle, so no override is needed
 // for it — only the user-repo seams.
 //
@@ -795,44 +454,4 @@ func resolvePawlVerdictScript() (script, dir string, extraEnv []string, cleanup 
 	}
 	script = filepath.Join(cacheDir, "scripts", filepath.Base(defaultPawlVerdictScript))
 	return script, userRoot, pawlReviewColdEnv(userRoot), bcleanup, nil
-}
-
-// pawlBundleStaleness returns a human-readable bundle-provenance verdict for `ao pawl doctor`, or
-// "" when there is nothing to say (F4-followup, age-pawl-intent-zhndq.19).
-//
-// THE TRUST RULE (two cross-family codex refutes taught this): a STALE *failure* must NEVER be
-// asserted against a repo we do not trust. File presence is not identity — ANY marker set
-// (scripts/pawl-*.sh, a schema, a contract doc) is attacker-controlled and can be spoofed, so a
-// stranger repo could be hashed and falsely reported STALE, failing doctor against a tree we know
-// nothing about. There is no marker list that fixes this, only a trust boundary.
-//
-// So the comparison runs ONLY where trust is already established — the untrustedRoot seam is EMPTY
-// exactly when the running ao binary physically lives inside the resolved checkout (aoBinaryInside),
-// which is the ONE trust decision the whole pawl surface is built on. In that case there is nothing
-// to warn about anyway (the LIVE scripts run in place). On the embedded/installed path we therefore
-// report the stamp for the operator's own comparison and NEVER a STALE failure.
-//
-// This is not a weaker feature — it is the honest one: the stamp is still surfaced (so
-// landed!=installed is diagnosable), while doctor cannot be weaponized into failing on a repo whose
-// contents we cannot trust.
-func pawlBundleStaleness(untrustedRoot string) string {
-	stampRaw, err := embedded.PawlFS.ReadFile("pawl/BUNDLE_STAMP")
-	if err != nil {
-		return "" // no stamp embedded (old binary) — say nothing rather than guess
-	}
-	stamp := strings.TrimSpace(string(stampRaw))
-	if len(stamp) != 64 {
-		return ""
-	}
-	if untrustedRoot == "" {
-		// TRUSTED dogfood path: the LIVE scripts run in place, so the embedded copy is not in play
-		// and cannot be stale-relative-to-anything. Nothing to compare, nothing to warn.
-		return "in-checkout dogfood (live scripts run in place; embedded stamp " + stamp[:12] + " unused)"
-	}
-	// UNTRUSTED/installed path: surface the stamp so the operator can diagnose landed!=installed
-	// themselves (compare against `git -C <agentops> log` / a rebuild), but assert NO verdict about
-	// a repo we do not trust. Informational only — never a doctor failure.
-	return "installed-binary path: embedded pawl bundle stamp " + stamp[:12] +
-		" (informational only — no staleness verdict is asserted against a repo this binary does not " +
-		"trust; if this ao predates your agentops checkout, rebuild: cd cli && make build)"
 }

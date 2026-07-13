@@ -9,7 +9,7 @@
 #   - greps a provided log without running anything (passive mode, --log).
 #
 # Active mode is the post-merge use case (run on main HEAD after a fix lands).
-# Passive mode is the in-gate use case (called from pre-push-gate's tee'd log
+# Passive mode is the in-gate use case (called from a tee'd gate log
 # at the end of a run, so no recursion).
 #
 # Usage:
@@ -39,8 +39,8 @@ Required positional (after options):
   <claim>   Literal output line to search for (substring match, fgrep).
 
 Options:
-  --fast            Pass --fast to scripts/pre-push-gate.sh (default: full).
-  --gate <cmd>      Use <cmd> instead of pre-push-gate.sh (e.g., a bats run).
+  --fast            Pass --fast to ao gate check (default: --full).
+  --gate <cmd>      Use <cmd> instead of ao gate check (e.g., a bats run).
   --log <file>      Passive mode: skip running anything; grep <file>.
   -h, --help        Show this help.
 
@@ -153,9 +153,9 @@ fi
 # Active mode — run the gate
 if [[ -z "$gate_cmd" ]]; then
     if $mode_fast; then
-        gate_cmd="scripts/pre-push-gate.sh --fast"
+        gate_cmd="ao gate check --fast --scope head"
     else
-        gate_cmd="scripts/pre-push-gate.sh"
+        gate_cmd="ao gate check --full"
     fi
 fi
 

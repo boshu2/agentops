@@ -6,7 +6,7 @@
 # CODEX_EXEC_MISSING=2 DEEP in lib/codex-exec.sh — after the amend-guard / deterministic
 # battery / smoke / packet build — with no guidance. These tests lock:
 #   1. codex absent (default reviewer) -> exit 2 EARLY, message NAMES codex + the three
-#      actionable options (install it / REVIEWER=agy / ao pawl up), NO review artifacts.
+#      actionable options (install it / REVIEWER=agy), NO review artifacts.
 #   2. REVIEWER=agy + agy absent -> the SAME shape naming agy.
 #   3. the preflight never blocks the failover chain: with ANY usable reviewer reachable
 #      the run proceeds into the chain loop (the loop still owns failover/degradation).
@@ -61,10 +61,9 @@ _assert_no_review_artifacts() {
   [[ "$output" == *"MISSING DEPENDENCY"* ]]
   [[ "$output" == *"cold reviewer for this run is 'codex'"* ]]
   [[ "$output" == *"early user-readiness preflight"* ]]
-  # Actionable: all three escape hatches are offered by name.
+  # Actionable: escape hatches are offered by name.
   [[ "$output" == *"install the 'codex' CLI"* ]]
   [[ "$output" == *"REVIEWER=agy"* ]]
-  [[ "$output" == *"ao pawl up"* ]]
   # Precondition semantics preserved (exit 2 is never a review result).
   [[ "$output" == *"not a REFUTE"* ]]
   _assert_no_review_artifacts
@@ -79,7 +78,6 @@ _assert_no_review_artifacts() {
   [[ "$output" == *"install the 'agy' CLI"* ]]
   # The agy-flavored option set points BACK at the codex default instead of at itself.
   [[ "$output" == *"unset REVIEWER"* ]]
-  [[ "$output" == *"ao pawl up"* ]]
   _assert_no_review_artifacts
 }
 

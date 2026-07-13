@@ -69,7 +69,6 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `overnight` | rolling | scripts, skills | overnight-run-state | Overnight run state and morning packets |
 | `packets` | rolling | cli | context-packet-cache | Source manifests and promoted packets feeding the context-explain surface |
 | `patterns` | persistent | cli, skills | promoted-pattern | Promoted pattern artifacts |
-| `pawl` | persistent | scripts | service-state | Standing cross-family pawl-service session state (pane map + readiness, `session.json`) written by `scripts/pawl.sh up` and read by `route`/`health`/`down`; see `age-standing-pawl-service-ml8` |
 | `pawl-evidence` | rolling | scripts | decision-record | Independent reviewer evidence written through `pawl-review` adapters and read by the pawl gate, which fail-closes if evidence is missing, empty, outside its directory, or stale |
 | `pawl-review` | rolling | scripts | decision-record | Adversarial-review LINEAGE (`<bead>.adversarial.json`: the reviewed diff-hash + outcome) written by `scripts/pawl-review.sh` so `--converge` (the calibrated real-safety bar) can fail-closed unless a prior adversarial run covered the identical diff — preventing a skip of the adversarial pass (council C, age-cwo.8) |
 | `pawl-verdicts` | persistent | scripts, skills | decision-record | Machine-checkable pawl verdicts (schema `pawl-verdict.v1`) bound by `ao pawl` after `pawl-review` hands off lane evidence; fail-closed: no CONFIRMED verdict, no land |
@@ -153,7 +152,6 @@ orchestration
 overnight
 packets
 patterns
-pawl
 pawl-evidence
 pawl-review
 pawl-verdicts

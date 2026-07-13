@@ -33,7 +33,7 @@ echo "== test-validate-local =="
 assert_contains 'install-dev-hooks\.sh' "validate-local references repo hook bootstrap"
 assert_contains 'core\.hooksPath' "validate-local warns when core.hooksPath is not .githooks"
 assert_contains 'Manual Local Validation' "validate-local describes itself as manual validation"
-assert_contains 'pre-push-gate\.sh' "validate-local wraps the shared push gate"
+assert_contains 'gate check' "validate-local wraps the Go push gate"
 assert_contains 'agentops-validate-local\.lock' "validate-local serializes concurrent runs"
 
 TMP_DIR="$(mktemp -d)"
@@ -41,12 +41,19 @@ FAKE_REPO="$TMP_DIR/repo"
 mkdir -p "$FAKE_REPO/scripts"
 cp "$SCRIPT" "$FAKE_REPO/scripts/validate-local.sh"
 chmod +x "$FAKE_REPO/scripts/validate-local.sh"
-cat > "$FAKE_REPO/scripts/pre-push-gate.sh" <<'EOF'
+cat > "$FAKE_REPO/scripts/ao" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-sleep 5
+# Fake ao for lock serialization test — sleep so the lock is held.
+if [[ "${1:-}" == "gate" ]]; then
+  sleep 5
+  exit 0
+fi
+exit 0
 EOF
-chmod +x "$FAKE_REPO/scripts/pre-push-gate.sh"
+chmod +x "$FAKE_REPO/scripts/ao"
+mkdir -p "$FAKE_REPO/cli/bin"
+ln -sf ../../scripts/ao "$FAKE_REPO/cli/bin/ao"
 
 git -C "$TMP_DIR" init repo >/dev/null 2>&1
 git -C "$FAKE_REPO" config core.hooksPath .githooks

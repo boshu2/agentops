@@ -24,14 +24,14 @@ setup() {
   # A realistic large diff: a removed line + a context line, then 200 ADDED lines (to be elided).
   added="$(printf '+added line %s\n' $(seq 1 200))"
   diff="$(printf 'diff --git a/x b/x\n@@ -1,2 +1,200 @@\n-removed old line\n context kept\n%s' "$added")"
-  run build_review_body "$diff" 10 "STATBLOCK-xyz" "scripts/pawl.sh
+  run build_review_body "$diff" 10 "STATBLOCK-xyz" "scripts/pawl-review.sh
 tests/scripts/pawl.bats" "/abs/repo"
   [ "$status" -eq 0 ]
   # switched to read-files: note + stat + the absolute file paths
   [[ "$output" == *"NOT inlined"* ]]
   [[ "$output" == *"READ THE CHANGED FILES DIRECTLY"* ]]
   [[ "$output" == *"STATBLOCK-xyz"* ]]
-  [[ "$output" == *"/abs/repo/scripts/pawl.sh"* ]]
+  [[ "$output" == *"/abs/repo/scripts/pawl-review.sh"* ]]
   [[ "$output" == *"/abs/repo/tests/scripts/pawl.bats"* ]]
   # DELETIONS + structure are PRESERVED (cannot be recovered by reading the current file)
   [[ "$output" == *"-removed old line"* ]]

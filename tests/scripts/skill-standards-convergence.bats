@@ -925,7 +925,7 @@ BATS
 
 @test "L0: local and CI release waists invoke the canonical deep audit" {
   grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
-    "$REPO_ROOT/scripts/pre-push-gate.sh"
+    "$REPO_ROOT/scripts/regen-changed-scope.sh"
   grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
-    "$REPO_ROOT/.github/workflows/validate.yml"
+    "$REPO_ROOT/cli/internal/gates/checks/seed.go"
 }

@@ -72,10 +72,10 @@ FAKE
   grep -Fq "eval scenario-ab --control-only" "$AO_LOG"
 }
 
-@test "validate workflow wires applied-OOD headroom and pre-push does not" {
+@test "validate workflow still mentions applied-OOD headroom (path filter / coverage)" {
   run grep -F "scripts/check-applied-ood-headroom.sh" "$REPO_ROOT/.github/workflows/validate.yml"
   [ "$status" -eq 0 ]
 
-  run grep -F "scripts/check-applied-ood-headroom.sh" "$REPO_ROOT/scripts/pre-push-gate.sh"
+  run grep -F "scripts/check-applied-ood-headroom.sh" "$REPO_ROOT/scripts/hooks/pre-push.local"
   [ "$status" -ne 0 ]
 }

@@ -27,7 +27,6 @@ The tracked `.githooks/` directory is legacy `bd` hook plumbing. It is inert for
 | Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Backstop telemetry for routine `main`; authoritative blocking gate for release tags, PRs, and manual validation; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
-| Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
 | Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
 | Label PRs | `labeler.yml` | PR opened/synced/reopened | Auto-label PRs by changed paths |
 

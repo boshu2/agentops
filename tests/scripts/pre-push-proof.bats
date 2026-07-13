@@ -4,9 +4,9 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     TMP_DIR="$(mktemp -d)"
     FAKE_REPO="$TMP_DIR/repo"
-    mkdir -p "$FAKE_REPO/scripts" "$FAKE_REPO/.githooks"
+    mkdir -p "$FAKE_REPO/scripts/hooks" "$FAKE_REPO/.githooks"
     /bin/cp "$REPO_ROOT/scripts/pre-push-proof.sh" "$FAKE_REPO/scripts/pre-push-proof.sh"
-    /bin/cp "$REPO_ROOT/scripts/pre-push-gate.sh" "$FAKE_REPO/scripts/pre-push-gate.sh"
+    /bin/cp "$REPO_ROOT/scripts/hooks/pre-push.local" "$FAKE_REPO/scripts/hooks/pre-push.local"
     /bin/cp "$REPO_ROOT/.githooks/pre-push" "$FAKE_REPO/.githooks/pre-push"
     chmod +x "$FAKE_REPO/scripts/pre-push-proof.sh"
     cd "$FAKE_REPO"
@@ -14,7 +14,7 @@ setup() {
     git config user.email test@example.com
     git config user.name Test
     touch README.md
-    git add README.md scripts/pre-push-proof.sh scripts/pre-push-gate.sh .githooks/pre-push
+    git add README.md scripts/pre-push-proof.sh scripts/hooks/pre-push.local .githooks/pre-push
     git commit --quiet -m "initial"
 }
 
@@ -44,7 +44,7 @@ teardown() {
 @test "pre-push-proof invalidates after gate script changes" {
     "$FAKE_REPO/scripts/pre-push-proof.sh" write --scope worktree --mode fast >/dev/null
 
-    echo "# changed" >> "$FAKE_REPO/scripts/pre-push-gate.sh"
+    echo "# changed" >> "$FAKE_REPO/scripts/hooks/pre-push.local"
 
     run "$FAKE_REPO/scripts/pre-push-proof.sh" check --scope worktree --mode fast
     [ "$status" -eq 1 ]
