@@ -1,0 +1,8 @@
+role=crank
+proof=immutable
+delivery=caller-owned
+git=none
+tracker=none
+verdict_mutation=none
+git_queue=none
+llm_verdict=none

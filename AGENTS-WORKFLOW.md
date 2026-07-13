@@ -4,7 +4,15 @@
 
 ## Workflow
 
-**Every change to `main` cites a bead and passes the cockpit gate before it lands. As of ag-qidx (2026-06-07) the model is PUSH-TO-MAIN: branch protection is OFF, and the pre-push gate is the pre-merge wall. Current authority is the Go gate: the hook builds `ao` from source and runs `ao gate check --fast`; the legacy bash route is an escape hatch only via `AGENTOPS_GATE_BASH=1`. Run the Go gate before every push; rebase-on-reject (git serializes concurrent pushers); on a red `main`, fix forward. The unit of a change is still one *coherent arc* — a closable bead (or small-epic slice) with a single rollback semantic.** This SUPERSEDES the prior PR-per-change model **and** the `local-pre-push-gate-retirement.md` ADR (the old Actions-only authority decision is reversed — the local gate is now load-bearing). Rationale: `.agents/plans/2026-06-07-ao-gate-architecture.md` + the two pre-mortems — the GitHub PR serialization was self-inflicted and bought ~nothing for this solo+own-swarm repo, while the 20-slot free-plan CI was the bottleneck. Historical: the retired PR flow derived from `.agents/council/sdlc-shape-2026-05-17/DUEL.md`; the `gh-merge-chain` update-branch dance it required (`soc-1lp1`) is exactly what push-to-main removes.
+**This repository currently chooses direct push to `main` after deterministic
+checks. That is a repository delivery policy, not an AgentOps lifecycle rule.**
+The Go gate (`ao gate check --fast`) is the local deterministic check for this
+repo; another repository may choose a PR or user-owned CI. Discovery, Crank,
+Validate, and Learn end at evidence and receipts. Delivery may consume that
+immutable proof but does not require another LLM landing verdict, and AgentOps
+does not own a global Git queue. Keep each change a coherent, independently
+revertible bead arc; on remote rejection, update against the moving target and
+retry the repository-selected delivery command.
 
 **Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of one shipped arc; session-scope governs the *count* of consecutive arcs. **Default: 2-4 arcs per autonomous session.** At >=5 shipped or in-flight arcs in one session, **stop and run a post-mortem before continuing**. The old PR-count signal is now interpreted as arc count because the repo no longer uses PRs as the normal landing path. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; items #5-#6 each fixed fallout from #1-3. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (council-gated, cannot be bypassed; `skills/evolve/references/postmortem-checkpoint.md`). That checkpoint is a **re-plan point, not just stop/continue** — it may refactor, reorder, drop, or add to the *remaining* arcs from what the session taught (`/rpi`'s [Agile Re-Plan Loop](skills/rpi/references/agile-replan-loop.md); `--auto` pivots without an operator prompt). (soc-waxr, ag-o5xp)
 
@@ -15,7 +23,11 @@
 1. **Claim.** `BEADS_DIR="$(ao beads dir)" br ready --json` → pick a bead → `BEADS_DIR="$(ao beads dir)" br update <id> --claim --json`. **No bead, no push.** If the work is genuinely new, `BEADS_DIR="$(ao beads dir)" br create "Title" -t task -p 2 --body "..." --json` first (deps: `--deps blocks:<id>` or `BEADS_DIR="$(ao beads dir)" br dep add <child> <parent>`).
 2. **Scope.** Read the live bead body with `BEADS_DIR="$(ao beads dir)" br show <id> --json` before editing. Its acceptance is the contract: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
 3. **Ship.** `git worktree add wt-<bead-id> -b <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout (canonical-root rules: [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)). Implement, commit the bead's code as HEAD. Run `ao gate check --fast --scope head` to fail fast before you land.
-4. **Land.** **`ao land <bead>` is the canonical land verb** — one command does the whole trusted land. It builds a fresh in-checkout `ao`, pins it for preflight, runs the commit-bound pawl review, and hands off to atomic land machinery. Reviewer-lane execution and evidence rules live in [`pawl-review`](skills/pawl-review/SKILL.md); `ao pawl` alone applies diversity and binds the verdict. On **REFUTED / NO-VERDICT it stops and exits non-zero — no land**. Push-to-main is refused without a CONFIRMED verdict. GitHub Actions are not part of the routine landing path. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
+4. **Deliver.** Run the repository-selected deterministic adapter. In this repo,
+   fetch current `main`, integrate if needed, rerun the scoped deterministic
+   check when the payload changes, and `git push origin HEAD:main`. Other repos
+   may open a PR or use their own CI. Close tracker state only after separately
+   confirming the selected delivery succeeded.
 
 ### Branch + Direct-Main Shape
 
@@ -24,12 +36,17 @@
 | Branch | `<type>/<bead-id>-<scenario-token>-<short-slug>` · ≤80 chars · `<scenario-token>` = full slug if it fits, else `<slug-prefix>-<hash8>` |
 | Commit title | `<type>(<scope>): <subject> (<bead-id>)` |
 | Required evidence | bead id in commit message or close reason · local gate output path or summary · bounded context when relevant |
-| Land | `ao land <bead>` (canonical) — fresh in-checkout binary → trusted pawl review (auto-bind on CONFIRM) → atomic `pawl-land.sh` (rebase-on-reject, single push) · no force-push · no deletes |
-| Gate | cockpit pre-push gate (blocking, in the hook) + optional/manual Actions backstop. No PR review (PR flow retired — ag-qidx) |
+| Delivery | Repository-selected adapter. This repo uses ordinary direct push; PR and user-owned CI remain valid elsewhere. |
+| Gate | Deterministic repository checks. AgentOps lifecycle proof is not a Git authorization token. |
 
 ### Multi-agent discipline (shared checkout)
 
-The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `git worktree add <name> -b <branch>` for every change. Cross-bead merge serialization: git itself (rebase-on-reject serializes concurrent pushers) plus Agent Mail coordination (`am` reservations / build slots) when multiple lanes are landing — `bd merge-slot` is retired with bd. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
+The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use
+`git worktree add <name> -b <branch>` for every change. Git's remote update is
+the serialization point for direct push; an operator may add repository-owned
+coordination, but AgentOps does not create a global merge queue. Foreign
+uncommitted files are quarantined: identify the owner, attach them to a bead,
+and move them into a worktree.
 
 ### Provenance
 
@@ -156,13 +173,15 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds. For **user-facing CLI changes**, also run the installed-binary smoke (`cd cli && make build && cd .. && bash scripts/preflight-uat-binary.sh`) so the closeout proves the installed `ao` matches the build — not the stale product path — before declaring it usable.
 3. **Update issue status** - Close finished work, update in-progress items
-4. **LAND + PUSH TO REMOTE** - a reviewed bead lands with **`ao land <bead>`** (fresh in-checkout binary → trusted pawl review with auto-bound verdict → atomic `pawl-land.sh` push through the gate); that is the code-landing path, not a bare `git push`. Then sync the tracker (its own PRIVATE repo, never this public one) and push any residual:
+4. **DELIVER WITH REPOSITORY POLICY** - this repo uses a deterministic gate and
+   direct push. A Validate proof may be cited, but no additional LLM verdict is
+   required. Then sync the private tracker independently:
    ```bash
-   ao land <bead>                                     # land the reviewed bead's arc (verdict auto-bound, single push)
-   git pull --rebase
+   ao gate check --fast --scope head
+   git fetch origin main
+   git push origin HEAD:main
    BEADS_DIR="$(ao beads dir)" br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
    git -C "$(ao beads dir)" add -A && git -C "$(ao beads dir)" commit -m "tracker: <summary>" && git -C "$(ao beads dir)" push  # if tracker changes are pending
-   git push                                            # any residual non-bead commits (docs, tooling) not already landed by ao land
    git status  # MUST show "up to date with origin"
    ```
 5. **Clean up** - Clear stashes, prune remote branches, and validate worktree disposition
@@ -219,11 +238,10 @@ BEADS_DIR="$(ao beads dir)" br update <id> --claim --json
 BEADS_DIR="$(ao beads dir)" br update <id> --priority 1 --json
 ```
 
-**Complete work** (preferred: `ao done` stamps the close with the commit-bound verdict, refusing when none exists — "no verdict = not done" made mechanical):
+**Complete tracker work after repository delivery is independently confirmed:**
 
 ```bash
-ao done <id> -r "Completed"                    # verifies a bound verdict for HEAD (or --sha), then closes
-BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json   # raw close (no verdict check)
+BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json
 ```
 
 ### Issue Types
@@ -249,7 +267,8 @@ BEADS_DIR="$(ao beads dir)" br close <id> --reason "Completed" --json   # raw cl
 3. **Work on it**: Implement, test, document
 4. **Discover new work?** Create linked issue:
    - `BEADS_DIR="$(ao beads dir)" br create "Found bug" --body "Details about what was found" -p 1 --deps discovered-from:<parent-id> --json`
-5. **Complete**: `ao done <id> -r "Done"` (verdict-stamped close; falls back to `BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done"` when no verdict applies)
+5. **Complete**: after the repository-selected delivery succeeds,
+   `BEADS_DIR="$(ao beads dir)" br close <id> --reason "Done" --json`
 
 ### Quality
 - Use `br update <id> --acceptance-criteria "..."` and `--design "..."` to fill structured fields

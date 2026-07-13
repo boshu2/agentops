@@ -1,22 +1,24 @@
-# Executable spec for the /push skill — atomic test-commit-push (driving-adapter).
-# /push runs the applicable test suites BEFORE committing and pushing, so a failure is caught
-# locally instead of reaching the remote. Hexagon: driving-adapter; consumes git-changes;
-# produces git-changes. (soc-qk4b)
+# Executable spec for the optional /push driving adapter.
 
-Feature: Push runs an atomic test-commit-push
-  As the validate-commit-push step
-  I want the applicable tests run before any commit reaches the remote
-  So that a broken change is caught locally, not on origin
+Feature: Push follows repository-selected delivery
+  As a repository operator
+  I want delivery to use deterministic checks and my repository policy
+  So that AgentOps proof does not become a Git control plane
 
-  Scenario: the applicable test suites run before committing
-    When /push runs
-    Then it detects the project type (Go, Python, ...) and runs the matching test suites first
+  Scenario: repository policy selects the adapter
+    Given a repository chooses direct push, a PR, or user-owned CI
+    When /push prepares delivery
+    Then it uses the repository-selected delivery path
+    And it does not create an AgentOps Git queue
 
-  Scenario: a test failure blocks the push
-    When a test suite fails
-    Then /push does not commit or push
-    And the failure is surfaced locally before it can reach the remote
+  Scenario: deterministic failure stops delivery
+    Given the repository declares deterministic checks
+    When any required check fails
+    Then /push does not deliver the payload
+    And it reports the failing command and exit status
 
-  Scenario: a clean run commits and pushes
-    When all applicable tests pass
-    Then /push commits the change and pushes it to the remote
+  Scenario: lifecycle proof remains immutable
+    Given Validate has emitted immutable proof
+    When delivery consumes or cites that proof
+    Then /push does not require another LLM verdict
+    And it does not rewrite proof, close a tracker, or complete the lifecycle

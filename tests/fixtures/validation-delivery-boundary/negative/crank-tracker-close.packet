@@ -1,0 +1,8 @@
+role=crank
+proof=immutable
+delivery=none
+git=none
+tracker=close
+verdict_mutation=none
+git_queue=none
+llm_verdict=none

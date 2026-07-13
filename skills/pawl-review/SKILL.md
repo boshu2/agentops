@@ -32,6 +32,7 @@ context:
   intel_scope: topic
 metadata:
   tier: judgment
+  graph_root: true
   dependencies: [codex-exec, agy-native]
 output_contract: review-lane-result.v1 plus contained nonempty reviewer evidence; no panel verdict
 ---
