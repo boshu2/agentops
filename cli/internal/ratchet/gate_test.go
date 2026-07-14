@@ -23,6 +23,9 @@ func TestRatchetGateUsesResolvedTrackerContext(t *testing.T) {
 	}
 	logPath := filepath.Join(t.TempDir(), "tracker.log")
 	t.Setenv("TRACKER_LOG", logPath)
+	// Clear ambient BEADS_DIR so ResolveLedger uses the temp root's natural
+	// _beads path (inherited session/direnv BEADS_DIR must not hijack).
+	t.Setenv("BEADS_DIR", "")
 	prependFakeCommand(t, "br", `
 printf 'cwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-}" "$*" > "$TRACKER_LOG"
 exit 23
