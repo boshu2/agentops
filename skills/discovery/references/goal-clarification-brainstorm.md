@@ -172,7 +172,11 @@ Generate the **next best 10** (each with rationale) for a ranked portfolio of **
 
 ### Steps 4-5 — Operationalize + refine (handed to `/discovery`)
 
-Carry the ranked 15 (with how/perceive/implement notes + rubric scores + red-team findings) forward. `/discovery` operationalizes them into self-documenting `br` beads (deps + explicit test tasks) and refines 4-5x in plan space. See [references/bead-operationalization.md](./bead-operationalization.md).
+Carry the ranked 15 (with how/perceive/implement notes + rubric scores + red-team
+findings) forward. `/discovery` operationalizes them into self-documenting `br`
+beads with behavior-matched evidence, then runs one complete plan-space pass. A
+second pass occurs only after a material graph or acceptance change. See
+[references/bead-operationalization.md](./bead-operationalization.md).
 
 ### Output
 
@@ -250,4 +254,4 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 - [references/idea-rubric.md](./idea-rubric.md) — Ten-dimension evaluation rubric (robust/reliable/performant/intuitive/user-friendly/ergonomic/useful/compelling/accretive/pragmatic) + winnowing rounds (ag-yw0)
 
-- [references/bead-operationalization.md](./bead-operationalization.md) — Operationalize the ranked portfolio into self-documenting `br` beads (deps + test tasks) and refine 4-5x in plan space (ag-yw0)
+- [references/bead-operationalization.md](./bead-operationalization.md) — Operationalize the ranked portfolio into self-documenting `br` beads with behavior-matched evidence; refine once, and repeat only after material graph change (ag-yw0)

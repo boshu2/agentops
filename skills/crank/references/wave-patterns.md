@@ -35,58 +35,23 @@ parallel model only when the plan explicitly proves two or more disjoint lanes.
 
 ## Explicit parallel wave model
 
-### Beads Mode
-
-```
-Wave N: bd ready → [issue-1, issue-2, issue-3]
-        ↓
-        TaskCreate for each issue
-        ↓
-        /swarm → spawns 3 fresh-context agents
-                  ↓         ↓         ↓
-               DONE      DONE      BLOCKED
-                                     ↓
-                               (record as remaining work)
-        ↓
-        bd update --status closed for completed
-        ↓
-        deterministic wave acceptance
-        ↓
-        Crank PARTIAL / DONE / BLOCKED + evidence
-        ↓
-        orchestrator compares the remaining work with the admitted plan
-             ↓ unchanged                         ↓ materially changed
-        admit Wave N+1                    Discovery → Premortem
-             ↓
-        at 3 waves or 90 minutes: freeze → Validate → Learn
-```
-
-### TaskList Mode
-
-```
-Wave N: TaskList() → [task-1, task-2, task-3] (pending, unblocked)
-        ↓
-        /swarm → spawns 3 fresh-context agents
-                  ↓         ↓         ↓
-               DONE      DONE      BLOCKED
-                                     ↓
-                               (record as remaining work)
-        ↓
-        deterministic wave acceptance
-        ↓
-        Crank PARTIAL / DONE / BLOCKED + evidence
-        ↓
-        orchestrator compares the remaining work with the admitted plan
-             ↓ unchanged                         ↓ materially changed
-        admit Wave N+1                    Discovery → Premortem
-             ↓
-        at 3 waves or 90 minutes: freeze → Validate → Learn
+```text
+Wave N in one leaf → [disjoint lane A, disjoint lane B]
+        → explicitly admitted isolated writers
+        → lead integrates in declared order
+        → targeted deterministic acceptance
+        → canonical checkpoint + remaining-plan facts
+        → materially changed: Discovery → Premortem
+        → unchanged and below boundary: admit Wave N+1
+        → leaf complete: freeze → Validate → Learn
+        → soft boundary while incomplete: PARTIAL resume evidence, stop
 ```
 
 Crank never directs Wave N to Wave N+1. Every wave terminates at its evidence
 handoff. The orchestrator may start the next admitted wave without per-wave
-Validate or Learn. Semantic validation and Learn run once after the bounded
-tranche freezes.
+Validate or Learn. Semantic validation and Learn run once only after the leaf is
+complete and the bounded tranche freezes. An incomplete soft boundary does not
+authorize them.
 
 ## Spec-First Wave Model (--test-first)
 

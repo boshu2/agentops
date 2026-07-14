@@ -143,8 +143,10 @@ The command surface is:
 ## Pull-flow boundary
 
 The goal remains aggregate demand. One behavioral leaf occupies WIP and is the
-bounded tranche. After at most three waves or 90 minutes, freeze once, Validate
-once, Learn once, and hand the same leaf candidate to repository delivery. Exact
-remote verification and its report release the WIP slot; only then may another
-leaf begin. The governor controls admission and recovery only; it does not become
-a planner, implementer, semantic judge, tracker, or delivery adapter.
+bounded tranche. A completed leaf freezes once, Validates once, Learns once, and
+hands the same candidate to repository delivery. If three waves or 90 minutes
+arrives while the leaf is incomplete, persist `PARTIAL` resume evidence and stop
+without proof, Learn, or delivery authorization. Exact remote verification and
+the report release the WIP slot; only then may another leaf begin. The governor
+controls admission and recovery only; it does not become a planner, implementer,
+semantic judge, tracker, or delivery adapter.

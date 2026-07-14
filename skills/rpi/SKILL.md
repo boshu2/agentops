@@ -155,10 +155,11 @@ Enter at the routed phase and run every phase after it.
 2. **Crank tranche:** after each durable `authorized:true` admission, invoke
    `/crank` for one ready wave and read the actual diff for scope and claim match.
    If targeted checks are green and the bound plan inputs are unchanged, admit
-   the next sequential wave without Validate or Learn. Stop adding work at
-   three waves, 90 minutes, objective completion, scope/risk drift, or failed
-   acceptance. A soft tranche boundary is `PARTIAL`/resume evidence, not HOLD or
-   ANDON.
+   the next sequential wave without Validate or Learn. A completed leaf proceeds
+   to freeze. At three waves or 90 minutes with work incomplete, persist
+   `PARTIAL` resume evidence and stop without proof authorization. Scope/risk
+   drift or failed acceptance returns to the appropriate repair/replan move. A
+   soft tranche boundary is not HOLD or ANDON.
 3. **Freeze and Validate once:** commit the complete tranche, pin one candidate
    identity, and consume exact-input deterministic receipts. After one durable
    `semantic-review` charge, invoke one fresh independent `/validate`. Missing,
