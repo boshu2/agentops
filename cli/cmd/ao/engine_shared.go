@@ -3,7 +3,6 @@ package main
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	"fmt"
 	"os"
@@ -16,41 +15,8 @@ import (
 	"github.com/boshu2/agentops/cli/internal/adapters/workspace_git"
 	"github.com/boshu2/agentops/cli/internal/ports"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
-	"github.com/boshu2/agentops/cli/internal/runtimecmd"
 	"github.com/boshu2/agentops/cli/internal/worktree"
 )
-
-// lookFn is the type for exec.LookPath-compatible functions. It is an injectable
-// dependency point for runtime/binary availability checks (tmux, tracker CLI).
-type lookFn func(file string) (string, error)
-
-func effectiveBDCommand(command string) string {
-	return cmp.Or(strings.TrimSpace(command), "bd")
-}
-
-func splitRuntimeCommand(command string) (string, []string) {
-	return runtimecmd.Split(command)
-}
-
-// defaultLookPath returns exec.LookPath if fn is nil.
-func defaultLookPath(fn lookFn) lookFn {
-	if fn != nil {
-		return fn
-	}
-	return exec.LookPath
-}
-
-// cleanEnvNoClaude builds a clean env without CLAUDECODE to avoid nesting guard.
-func cleanEnvNoClaude() []string {
-	var env []string
-	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, "CLAUDECODE=") || strings.HasPrefix(e, "CLAUDE_CODE_") {
-			continue
-		}
-		env = append(env, e)
-	}
-	return env
-}
 
 func uniqueStringsPreserveOrder(items []string) []string {
 	return cliRPI.UniqueStringsPreserveOrder(items)
