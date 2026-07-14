@@ -34,6 +34,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,6 +49,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/wiki"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
@@ -68,7 +70,7 @@ var yieldReportNow = time.Now
 // yieldReportListBeadsByStatus is the beads seam: list the tracker's issues
 // with one status, decoded from the canonical (br-shaped) {issues:[...]} JSON.
 // A package-level var so tests stub the tracker without spawning processes.
-var yieldReportListBeadsByStatus = listReportBeadsByStatus
+var yieldReportListBeadsByStatus = listReportBeadsByStatusContext
 
 var yieldReportCmd = &cobra.Command{
 	Use:   "report [--since <RFC3339|duration>] [--json]",
@@ -183,9 +185,9 @@ type yieldReportAndonRow struct {
 
 // yieldReportDoc is the full --json struct.
 type yieldReportDoc struct {
-	Since       string                `json:"since"`
-	GeneratedAt string                `json:"generated_at"`
-	Yield       yieldReportYield      `json:"yield"`
+	Since       string           `json:"since"`
+	GeneratedAt string           `json:"generated_at"`
+	Yield       yieldReportYield `json:"yield"`
 	// FrontierSHA is the VERIFIED FRONTIER: the highest origin/main commit
 	// whose walked ancestors ALL satisfy RESOLVED (age-fdae; "" when no
 	// walked commit qualifies or the frontier is unavailable).
@@ -218,7 +220,7 @@ func runYieldReport(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	doc := buildYieldReport(ledger, root, since, now)
+	doc := buildYieldReport(cmd.Context(), ledger, root, since, now)
 	if yieldReportJSON {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
@@ -251,7 +253,7 @@ func parseReportSince(raw string, now time.Time) (time.Time, error) {
 // buildYieldReport assembles the full report document from the ledger and the
 // tracker. Tracker failures degrade to BeadsError; the ledger sections always
 // compute.
-func buildYieldReport(ledger *yieldledger.Ledger, root string, since, now time.Time) yieldReportDoc {
+func buildYieldReport(ctx context.Context, ledger *yieldledger.Ledger, root string, since, now time.Time) yieldReportDoc {
 	doc := yieldReportDoc{
 		Since:       since.Format(time.RFC3339),
 		GeneratedAt: now.Format(time.RFC3339),
@@ -268,7 +270,7 @@ func buildYieldReport(ledger *yieldledger.Ledger, root string, since, now time.T
 	doc.FrontierSHA = frontierSHA
 	doc.Pending = pending
 
-	beads, beadsErr := fetchReportBeads(root)
+	beads, beadsErr := fetchReportBeads(ctx, root)
 	if beadsErr != nil {
 		doc.BeadsError = beadsErr.Error()
 	}
@@ -347,10 +349,10 @@ var reportBeadStatuses = []string{"closed", "blocked", "open", "in_progress"}
 // fetchReportBeads queries the tracker once per status of interest. The first
 // failure aborts the fetch and is returned for honest reporting (no partial
 // silent results); whatever was fetched before the failure is still returned.
-func fetchReportBeads(root string) (map[string][]reportBead, error) {
+func fetchReportBeads(ctx context.Context, root string) (map[string][]reportBead, error) {
 	out := make(map[string][]reportBead, len(reportBeadStatuses))
 	for _, status := range reportBeadStatuses {
-		rows, err := yieldReportListBeadsByStatus(root, status)
+		rows, err := yieldReportListBeadsByStatus(ctx, root, status)
 		if err != nil {
 			return out, fmt.Errorf("beads list --status %s: %w", status, err)
 		}
@@ -927,21 +929,21 @@ func truncateReportText(s string, max int) string {
 // --status <status>`, reshapes a bd payload to the canonical br
 // {issues:[...]} envelope, and decodes the rows.
 func listReportBeadsByStatus(cwd, status string) ([]reportBead, error) {
+	return listReportBeadsByStatusContext(context.Background(), cwd, status)
+}
+
+func listReportBeadsByStatusContext(ctx context.Context, cwd, status string) ([]reportBead, error) {
 	res, err := resolveTracker(cwd, os.Environ())
 	if err != nil {
 		return nil, err
 	}
 	args := []string{"list", "--json", "--status", status}
-	c := exec.Command(res.Binary, args...) // #nosec G204 -- res.Binary is resolved by resolveTracker (bd|br); args are a fixed read-only list query.
-	c.Env = beadsExecChildEnv(res, cwd)
-	c.Dir = beadsExecChildDir(res, cwd)
 	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		var exitErr *exec.ExitError
+	command := (trackerexec.Factory{}).Command(ctx, res, args, trackerexec.Streams{Stdout: &stdout, Stderr: &stderr})
+	if err := command.Run(); err != nil {
+		var exitErr *trackerexec.ExitError
 		if msg := strings.TrimSpace(stderr.String()); msg != "" && errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("%s list --json --status %s: %s", res.Tracker, status, msg)
+			return nil, fmt.Errorf("%s list --json --status %s: %s: %w", res.Tracker, status, msg, err)
 		}
 		return nil, fmt.Errorf("%s list --json --status %s: %w", res.Tracker, status, err)
 	}
