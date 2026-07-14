@@ -54,9 +54,9 @@ type materializeResult struct {
 	itemIndex  int
 }
 
-// materializeProvenance is serialized into the description footer. br does not
-// have bd's legacy --metadata flag, so provenance must ride the durable issue
-// body until the real graph edge is added by `ao provenance add`.
+// materializeProvenance is serialized into the description footer. The shared
+// tracker create contract has no portable metadata flag, so provenance rides
+// the durable issue body until `ao provenance add` creates a real graph edge.
 type materializeProvenance struct {
 	MaterializedFrom string                `json:"materialized_from"`
 	SourceEpic       string                `json:"source_epic,omitempty"`
@@ -92,7 +92,7 @@ func Run(opts Options) error {
 	}
 
 	if !opts.DryRun && opts.TrackerAvailable != nil && !opts.TrackerAvailable() {
-		fmt.Fprintln(errOut, "WARN: br not on PATH — skipping materialize (graceful degradation)")
+		fmt.Fprintln(errOut, "WARN: selected tracker not available — skipping materialize (graceful degradation)")
 		return nil
 	}
 
@@ -190,7 +190,7 @@ func materializeOne(c materializeCandidate, materializedBy string, dryRun bool, 
 		entryIndex: c.EntryIndex,
 		itemIndex:  c.ItemIndex,
 	}
-	args, err := buildBRCreateArgs(c, materializedBy)
+	args, err := buildTrackerCreateArgs(c, materializedBy)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
@@ -237,9 +237,9 @@ func verifyCreatedBeadID(execTracker func(args ...string) ([]byte, error), beadI
 	return nil
 }
 
-// buildBRCreateArgs assembles the `br create` argv for a candidate, including
-// a durable provenance footer in the description.
-func buildBRCreateArgs(c materializeCandidate, materializedBy string) ([]string, error) {
+// buildTrackerCreateArgs assembles the tracker create argv for a candidate,
+// including a durable provenance footer in the description.
+func buildTrackerCreateArgs(c materializeCandidate, materializedBy string) ([]string, error) {
 	desc, err := materializeDescription(c, materializedBy)
 	if err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func materializeDescription(c materializeCandidate, materializedBy string) (stri
 }
 
 // materializeProvenanceFooter renders a human-readable provenance footer so the
-// origin is visible in `br show`.
+// origin is visible in tracker show output.
 func materializeProvenanceFooter(c materializeCandidate, materializedBy, provJSON string) string {
 	epic := c.SourceEpic
 	if epic == "" {
@@ -287,8 +287,8 @@ func materializeProvenanceFooter(c materializeCandidate, materializedBy, provJSO
 	)
 }
 
-// MapNextWorkTypeToBeadType maps a next-work item type onto a br issue type.
-// br accepts bug|feature|task|epic|chore|decision; next-work's finer-grained
+// MapNextWorkTypeToBeadType maps a next-work item type onto a tracker issue type.
+// Trackers accept bug|feature|task|epic|chore|decision; next-work's finer-grained
 // process categories collapse to task.
 func MapNextWorkTypeToBeadType(t string) string {
 	switch t {
@@ -305,7 +305,7 @@ func MapNextWorkTypeToBeadType(t string) string {
 	}
 }
 
-// MapSeverityToPriority maps next-work severity onto a br priority string.
+// MapSeverityToPriority maps next-work severity onto a tracker priority string.
 // P0 is reserved for operator-critical work, so high maps to P1.
 func MapSeverityToPriority(severity string) string {
 	switch severity {

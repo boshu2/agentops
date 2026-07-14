@@ -337,6 +337,45 @@ func TestNextWorkMaterialize_DryRunDoesNotMutate(t *testing.T) {
 	}
 }
 
+func TestNextWorkMaterialize_UnavailableSelectedTrackerDegradesGracefully(t *testing.T) {
+	item := rpi.NextWorkItem{
+		Title: "Candidate item", Type: "task", Severity: "medium",
+		Source: "retro-learning", Description: "Improve.",
+	}
+	path := writeMaterializeQueue(t, batchLine(t, "ag-9jle", item))
+
+	var calls [][]string
+	var out, errOut bytes.Buffer
+	err := Run(Options{
+		File:             path,
+		MaterializedBy:   DefaultMaterializedBy,
+		Out:              &out,
+		ErrOut:           &errOut,
+		TrackerAvailable: func() bool { return false },
+		ExecTracker: func(args ...string) ([]byte, error) {
+			calls = append(calls, args)
+			return nil, fmt.Errorf("tracker must not run")
+		},
+	})
+	if err != nil {
+		t.Fatalf("unavailable selected tracker: %v", err)
+	}
+	if len(calls) != 0 {
+		t.Fatalf("unavailable selected tracker made calls: %v", calls)
+	}
+	warning := errOut.String()
+	if !strings.Contains(warning, "selected tracker not available") {
+		t.Fatalf("warning = %q, want backend-neutral selected-tracker warning", warning)
+	}
+	if strings.Contains(warning, "br not on PATH") || strings.Contains(warning, "bd not on PATH") {
+		t.Fatalf("warning hard-codes a tracker backend: %q", warning)
+	}
+	items := readQueueItems(t, path)
+	if len(items) != 1 || items[0].BeadID != "" {
+		t.Fatalf("unavailable tracker must not stamp bead_id, got %+v", items)
+	}
+}
+
 func TestNextWorkMaterialize_SourceEpicFilter(t *testing.T) {
 	a := rpi.NextWorkItem{Title: "From epic A", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "A."}
 	b := rpi.NextWorkItem{Title: "From epic B", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "B."}
