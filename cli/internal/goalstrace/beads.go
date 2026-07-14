@@ -1,12 +1,14 @@
 package goalstrace
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -66,32 +68,66 @@ type BeadQuerier interface {
 	Beads() ([]beadRecord, error)
 }
 
-// execBeadQuerier queries beads via the real `bd` CLI. It is read-only:
-// `bd list --json` never mutates the tracker.
-type execBeadQuerier struct{}
-
-// NewExecBeadQuerier returns a BeadQuerier backed by the `bd` binary on PATH.
-func NewExecBeadQuerier() BeadQuerier {
-	return execBeadQuerier{}
+// ExecBeadQuerierOptions carries the caller-owned process context into the
+// canonical tracker resolver and executor. The zero value preserves the
+// historical background/current-directory behavior.
+type ExecBeadQuerierOptions struct {
+	Context context.Context
+	WorkDir string
 }
 
-// Available reports whether the bd binary is reachable via PATH.
-func (execBeadQuerier) Available() bool {
-	_, err := trackerresolve.Resolve("", os.Environ())
-	return err == nil
+// execBeadQuerier queries beads through the selected br or bd backend. It
+// caches one canonical resolution so availability and both list attempts use
+// the same binary, work directory, ledger, and child environment.
+type execBeadQuerier struct {
+	ctx        context.Context
+	resolution trackerresolve.Resolution
+	resolveErr error
+}
+
+// NewExecBeadQuerier returns a tracker-backed BeadQuerier. Its optional typed
+// configuration keeps existing no-argument callers source compatible.
+func NewExecBeadQuerier(options ...ExecBeadQuerierOptions) BeadQuerier {
+	var config ExecBeadQuerierOptions
+	if len(options) > 0 {
+		config = options[0]
+	}
+	if config.Context == nil {
+		config.Context = context.Background()
+	}
+	resolution, err := trackerresolve.Resolve(config.WorkDir, os.Environ())
+	return &execBeadQuerier{ctx: config.Context, resolution: resolution, resolveErr: err}
+}
+
+// Available reports whether the selected tracker resolved successfully.
+func (q *execBeadQuerier) Available() bool {
+	return q.resolveErr == nil
 }
 
 // Beads runs `bd list --json --all` and parses the result. Both an array and
 // a {"issues": [...]} envelope are accepted since bd output has varied.
-func (execBeadQuerier) Beads() ([]beadRecord, error) {
-	resolution, err := trackerresolve.Resolve("", os.Environ())
-	if err != nil {
-		return nil, err
+func (q *execBeadQuerier) Beads() ([]beadRecord, error) {
+	if q.resolveErr != nil {
+		return nil, q.resolveErr
 	}
-	out, err := exec.Command(resolution.Binary, "list", "--json", "--all").Output() // #nosec G204 -- selected br|bd binary.
+	factory := trackerexec.Factory{}
+	out, err := factory.Command(
+		q.ctx,
+		q.resolution,
+		[]string{"list", "--json", "--all"},
+		trackerexec.Streams{},
+	).Output()
 	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, err
+		}
 		// Retry without --all for older tracker versions, never on another backend.
-		out, err = exec.Command(resolution.Binary, "list", "--json").Output() // #nosec G204 -- selected br|bd binary.
+		out, err = factory.Command(
+			q.ctx,
+			q.resolution,
+			[]string{"list", "--json"},
+			trackerexec.Streams{},
+		).Output()
 		if err != nil {
 			return nil, err
 		}

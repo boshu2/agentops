@@ -1,6 +1,7 @@
 package goalstrace
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -10,6 +11,9 @@ import (
 
 // Options configures a walk.
 type Options struct {
+	// Context controls tracker subprocess lifetime. A nil context preserves the
+	// historical background-execution behavior for direct and embedded callers.
+	Context context.Context
 	// ProjectRoot is the repository root the walker resolves all paths against.
 	ProjectRoot string
 	// GoalsPath optionally overrides the GOALS.md location; empty uses the
@@ -218,7 +222,10 @@ func walkScenarioResults(b *builder, root string) {
 func walkBeadEdges(b *builder, opts Options) map[string]bool {
 	q := opts.Beads
 	if q == nil {
-		q = NewExecBeadQuerier()
+		q = NewExecBeadQuerier(ExecBeadQuerierOptions{
+			Context: opts.Context,
+			WorkDir: opts.ProjectRoot,
+		})
 	}
 	if !q.Available() {
 		b.addDiag("bd not available; scenario_claimed_by_bead edges skipped (graceful degradation)")

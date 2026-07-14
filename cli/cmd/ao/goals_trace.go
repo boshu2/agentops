@@ -57,7 +57,7 @@ func runGoalsTrace(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("ao goals trace: --from and --orphans are mutually exclusive")
 	}
 	root := traceProjectRoot()
-	graph, err := goalstrace.Walk(goalstrace.Options{ProjectRoot: root})
+	graph, err := goalstrace.Walk(goalstrace.Options{Context: cmd.Context(), ProjectRoot: root})
 	if err != nil {
 		return fmt.Errorf("building trace graph: %w", err)
 	}
