@@ -36,7 +36,7 @@ jobs:
           # the script degrades to tip-only when the base is unavailable.
           fetch-depth: 0
 
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: cli/go.mod
           cache-dependency-path: cli/go.sum
