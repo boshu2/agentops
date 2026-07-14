@@ -62,6 +62,27 @@ proof.
 The portable freezer, runner, and receipt verifier is
 `python3 skills/validate/scripts/validation-request.py freeze|run|check-receipt --help`.
 
+## Run-budget admission
+
+A factual `READY` receipt is necessary but not sufficient to dispatch the fresh
+validator. Before dispatch, Validate must consume one `semantic-review`
+admission from RPI's existing persistent governor with the same run ID and all
+four explicit meters. The adapter is:
+
+`python3 skills/validate/scripts/validation-budget.py admit|check-receipt --help`.
+
+Only its schema-valid `AUTHORIZED` receipt permits `VALIDATE_SINGLE_FRESH`.
+A mandatory factual `FAIL`, any `ERROR` or `UNKNOWN`, missing or malformed
+factual proof, a missing meter, missing/corrupt run state, or governor refusal
+produces `NONAUTHORIZING` evidence. Diagnostic and release `FAIL` remain
+nonbinding under the factual receipt contract; when S1/S8 emit an aggregate
+`READY` receipt, the budget adapter does not reclassify its lanes. A hard-ceiling
+refusal preserves the governor's typed `ANDON` reason and
+`helper_allowed:false`; Validate does not purchase recovery after the ceiling.
+The adapter writes proof of the governor admission and recorded charge, not
+another durable controller. It has no local attempt, retry, phase-budget,
+helper, or escalation state.
+
 ## Modes
 
 | Mode | Judge shape | Purpose |
@@ -85,15 +106,18 @@ an existing mode. The folded `vibe` trigger maps to `--mode=post-impl`.
 2. **Run deterministic checks.** Execute the frozen selected commands that
    directly prove the acceptance examples. A red mandatory command stops judge
    spend and is attributed against the exact base before any REPAIR handoff.
-3. **Run fresh-context judgment.** Give the judge only the pinned artifact,
+3. **Admit semantic review.** Bind the factual receipt to the persistent run,
+   submit all four measured charges to the sole governor, and require a durable
+   `AUTHORIZED` receipt before dispatch.
+4. **Run fresh-context judgment.** Give the judge only the pinned artifact,
    acceptance contract, required commands, standards, and output path. The
    judge reruns evidence rather than trusting producer summaries.
-4. **Consolidate fail-closed.** PASS needs complete proof. WARN discloses a
+5. **Consolidate fail-closed.** PASS needs complete proof. WARN discloses a
    nonblocking concern. FAIL records any blocker, stale artifact, counterfeit
    independence, malformed evidence, or mandatory red check.
-5. **Write immutable outputs.** Emit `result.json` and one markdown verdict.
+6. **Write immutable outputs.** Emit `result.json` and one markdown verdict.
    Each structured observation contains `kind`, `summary`, and `evidence_ref`.
-6. **Return proof to the caller.** Report verdict, findings, observations,
+7. **Return proof to the caller.** Report verdict, findings, observations,
    `not_checked`, artifact identity, and one suggested owner/action. Stop.
 
 Detailed mode and evidence rules live in
@@ -123,6 +147,8 @@ defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 - [ ] Base, candidate/tree, subtrees, changed surfaces, dependencies, registry,
       toolchain, author, and validator route are frozen and still match.
 - [ ] Mandatory commands were rerun by the validator.
+- [ ] The same run durably recorded one semantic-review admission and all four
+      charges before validator dispatch.
 - [ ] Independent PASS has different author and judge identities.
 - [ ] Findings, observations, and coverage gaps cite evidence.
 - [ ] Machine and markdown verdicts agree.

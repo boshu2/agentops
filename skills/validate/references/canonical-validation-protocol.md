@@ -119,6 +119,35 @@ skill count, changed-file count, or any other inventory count never selects
 rigor or validator count. Risk and explicit mode selection are separate policy
 inputs outside this request foundation.
 
+### Persistent run-budget admission
+
+`VALIDATE_SINGLE_FRESH` is a proposed transition until the persistent RPI run
+governor durably admits it. Validate passes the frozen request, its factual
+receipt, the unchanged run ID, and explicit reviewer-token, elapsed-time,
+review-context, and deterministic-execution charges to
+`validation-budget.py admit`. The adapter first verifies the factual receipt
+against its request, then calls the `.17` governor's `semantic-review` port. It
+does not initialize run state or reinterpret its counters.
+
+The returned `schemas/validation-budget-receipt.v1.schema.json` artifact binds
+request and factual-receipt digests to the requested charge and the governor's
+admission ID, usage, disposition, reason, and helper fact. Only
+`status:AUTHORIZED`, `validator_dispatch_allowed:true`, and
+`next_action:VALIDATE_SINGLE_FRESH` authorize dispatch. A mandatory factual
+`FAIL`, any `ERROR` or `UNKNOWN`, missing proof, or an unavailable meter stops
+before the governor or judge. Diagnostic and release `FAIL` stay nonbinding:
+the adapter consumes the aggregate S1/S8 authority fields and never duplicates
+their lane classifier. Missing/corrupt state and governor refusal remain
+nonauthorizing. A genuinely spent hard ceiling retains the typed
+`hard-ceiling:<meter>` result and `helper_allowed:false`. An absent factual file
+records availability `absent` with no invented digest; invalid JSON records
+availability `invalid_json` plus the raw-file digest. Both produce a
+schema-valid `NONAUTHORIZING` receipt without calling the governor.
+
+This receipt is evidence about the one governor, not local budget state.
+Validate creates no counter, helper allowance, or escalation transition and
+cannot convert any refusal into WARN or PASS.
+
 ### Deterministic and semantic boundary
 
 Factual registry entries declare exactly one `proof_kind`: `syntax`, `schema`,
@@ -143,6 +172,7 @@ The closed wire formats are:
 - `schemas/validation-gate-registry.v1.schema.json`
 - `schemas/validation-request.v1.schema.json`
 - `schemas/validation-receipt.v1.schema.json`
+- `schemas/validation-budget-receipt.v1.schema.json`
 
 The validator reruns cited commands on the actual artifact. It does not accept
 the author's evidence file as proof. Every count, timing, commit, and pass rate
