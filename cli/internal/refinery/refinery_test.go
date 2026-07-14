@@ -2,11 +2,87 @@ package refinery
 
 import (
 	"context"
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
+
+func TestRefineryUsesResolvedTrackerContext(t *testing.T) {
+	for _, trackerKind := range []string{"br", "bd"} {
+		t.Run(trackerKind, func(t *testing.T) {
+			root := t.TempDir()
+			ambient := t.TempDir()
+			binDir := t.TempDir()
+			logPath := filepath.Join(t.TempDir(), "tracker.log")
+			foreignLedger := filepath.Join(t.TempDir(), "foreign-ledger")
+			tracker := filepath.Join(binDir, trackerKind)
+			script := `#!/bin/sh
+printf 'cwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-}" "$*" > "$TRACKER_LOG"
+exit 23
+`
+			if err := os.WriteFile(tracker, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("AGENTOPS_TRACKER", trackerKind)
+			t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("TRACKER_LOG", logPath)
+			t.Setenv("BEADS_DIR", foreignLedger)
+			t.Chdir(ambient)
+
+			filer := &bdBeadFiler{repoRoot: root}
+			_, err := filer.FileFixBead(context.Background(), "abcdef123456", []string{"go.build"})
+			var exitErr *trackerexec.ExitError
+			if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+				t.Errorf("tracker error = %T %v, want typed exit 23", err, err)
+			}
+			logData, readErr := os.ReadFile(logPath)
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			canonicalRoot, err := filepath.EvalSymlinks(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			beadsDir := ""
+			if trackerKind == "br" {
+				beadsDir = foreignLedger
+			}
+			want := "cwd=" + canonicalRoot + " beads=" + beadsDir + " args=create fix: main abcdef12 poisoned — deterministic gate failure (go.build) --type task --labels refinery,blocking --json\n"
+			if got := string(logData); got != want {
+				t.Errorf("resolved tracker context = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestRefineryTrackerHonorsCallerCancellation(t *testing.T) {
+	root := t.TempDir()
+	binDir := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "launched")
+	tracker := filepath.Join(binDir, "br")
+	script := "#!/bin/sh\nprintf launched > \"$TRACKER_MARKER\"\nprintf '{\"id\":\"unexpected\"}\\n'\n"
+	if err := os.WriteFile(tracker, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TRACKER_MARKER", marker)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := (&bdBeadFiler{repoRoot: root}).FileFixBead(ctx, "abcdef123456", []string{"go.build"})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("FileFixBead error = %T %v, want context.Canceled", err, err)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("pre-canceled context launched tracker: %v", err)
+	}
+}
 
 // ---- fakes ----
 
