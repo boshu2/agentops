@@ -2,8 +2,8 @@
 
 > The fourth and fifth steps of the generate-winnow methodology
 > (`ideation-mode.md`): turn a ranked portfolio of ideas into a comprehensive,
-> granular, self-documenting set of `br` beads, then refine them 4-5x in "plan
-> space" before any implementation begins.
+> granular, self-documenting set of `br` beads, then run one complete plan-space
+> refinement. Repeat once only after a material graph or acceptance change.
 >
 > This is primarily a `/discovery` responsibility on the open-ended path, but it
 > consumes ideation-mode output and uses the same `br`/`bv` discipline.
@@ -60,32 +60,22 @@ br dep add <impl-id> <epic-id>      # impl depends on epic
 br dep add <test-id> <impl-id>      # tests depend on implementation
 ```
 
-### Explicit test tasks (mandatory, with detailed logging)
+### Test strategy
 
-Every feature gets companion test beads — unit AND e2e — with detailed logging
-so we can confirm everything works after implementation:
+Each behavioral leaf names the lowest test level that proves its acceptance.
+Create a separate test bead only when the test harness is independently
+deliverable work. E2e coverage is required only for behavior that crosses a real
+system boundary; detailed logging is evidence-driven, not a fixed template:
 
 ```bash
-br create "Unit tests for <component>" -p 2 -t task --description "
+br create "Acceptance tests for <component>" -p 2 -t task --description "
 ## Coverage Requirements
 - Core behavior
 - Error handling for invalid input
 - Edge cases (empty, unicode, concurrent)
 
 ## Logging
-- Log inputs and outputs
-- Log timing for performance tracking
-"
-
-br create "E2E tests for <component>" -p 2 -t task --description "
-## Scenarios
-- Happy path
-- Error path
-- Integration with existing surfaces
-
-## Logging
-- Full command and response capture
-- Timing and resource usage
+- Capture only evidence needed to diagnose a failed acceptance claim
 "
 ```
 

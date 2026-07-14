@@ -66,8 +66,10 @@ true:
 
 A material plan-input change returns to Discovery and receives one fresh
 Premortem. A failed introduced acceptance check is `REPAIR` or `REPLAN`, never an
-automatic ANDON. At the three-wave/90-minute boundary, or when the leaf is
-complete, freeze one candidate for one final Validate and Learn transaction.
+automatic ANDON. When the leaf is complete, freeze one candidate for one final
+Validate and Learn transaction. When three waves or 90 minutes arrives first
+and the leaf is incomplete, persist `PARTIAL` resume evidence and stop; the soft
+boundary does not authorize proof, Learn, or delivery.
 
 ## 4. Optional cleanup
 
