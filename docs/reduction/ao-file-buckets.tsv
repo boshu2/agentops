@@ -596,8 +596,6 @@ cli/cmd/ao/tick.go	KEEP	self-contained AO image surface: loop, mind, local Themi
 cli/cmd/ao/tick_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,os,path/...,testing
 cli/cmd/ao/trace.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	encoding/...,fmt,github.com/...,internal/provenance,internal/storage,os,path/...
 cli/cmd/ao/trace_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,internal/provenance,internal/storage,os,path/...,strings,testing,time
-cli/cmd/ao/tracker_health.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	context,encoding/...,fmt,os/...,strings,time
-cli/cmd/ao/tracker_health_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,os,path/...,strings,testing
 cli/cmd/ao/turn_verify.go	KEEP	public compatibility wrapper for `ao turn verify`; evaluator moved to the local assurance adapter boundary	github.com/...,internal/adapters
 cli/cmd/ao/uat_smoke_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,os,path/...,slices,strings,testing
 cli/cmd/ao/validate.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,fmt,github.com/...,internal/ratchet,io,os,strings,time

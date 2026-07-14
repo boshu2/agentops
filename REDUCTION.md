@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 468 |
+| KEEP | 467 |
 | RELOCATE | 106 |
 | ARCHIVE | 0 |
-| RESEARCH | 39 |
-| Total | 613 |
+| RESEARCH | 38 |
+| Total | 611 |
 
 Validation command:
 
