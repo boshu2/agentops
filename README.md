@@ -94,7 +94,7 @@ The rest is below the fold for anyone who wants the detail.
 
 Skills are the front door. Every skill is one move (or a wrapper) in the operating loop; flows compose them.
 
-**Maps:** [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md) · [Router](docs/SKILLS.md) · [SKILL-ROUTER](docs/SKILL-ROUTER.md)
+**Maps:** [Intent → Validated Code](docs/architecture/intent-to-validated-code.md) · [Skills Matrix](docs/skills-matrix.md) · [Router](docs/SKILLS.md) · [SKILL-ROUTER](docs/SKILL-ROUTER.md) · [Root documentation authority](docs/contracts/agents-documentation-authority.yaml)
 
 | Skill | Loop role |
 |---|---|

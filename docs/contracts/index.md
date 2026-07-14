@@ -6,6 +6,12 @@ skills, the runtime, and external integrations.
 
 <div class="grid cards" markdown>
 
+-   :material-file-tree: **[Root Documentation Authority](agents-documentation-authority.yaml)**
+
+    ---
+
+    Machine-checked root-document owners, dispositions, and literal consumers.
+
 -   :material-play-box: **[Repo Execution Profile](repo-execution-profile.md)**
 
     ---
