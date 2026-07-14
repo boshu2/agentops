@@ -8,11 +8,17 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/yieldledger"
 )
 
@@ -31,7 +37,7 @@ func setYieldReportState(t *testing.T, root string) {
 	origSince, origJSON := yieldReportSince, yieldReportJSON
 	yieldReportSince, yieldReportJSON = "", false
 	origList := yieldReportListBeadsByStatus
-	yieldReportListBeadsByStatus = func(cwd, status string) ([]reportBead, error) {
+	yieldReportListBeadsByStatus = func(_ context.Context, cwd, status string) ([]reportBead, error) {
 		return nil, nil
 	}
 	origNow := yieldReportNow
@@ -51,7 +57,7 @@ func setYieldReportState(t *testing.T, root string) {
 // setYieldReportState.
 func stubReportBeads(t *testing.T, byStatus map[string][]reportBead) {
 	t.Helper()
-	yieldReportListBeadsByStatus = func(cwd, status string) ([]reportBead, error) {
+	yieldReportListBeadsByStatus = func(_ context.Context, cwd, status string) ([]reportBead, error) {
 		return byStatus[status], nil
 	}
 }
@@ -95,6 +101,97 @@ func decodeReport(t *testing.T) yieldReportDoc {
 		t.Fatalf("unmarshal report JSON: %v\noutput:\n%s", err, out)
 	}
 	return doc
+}
+
+func TestYieldReportUsesCallerContextAndResolvedTrackerCommand(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	ledger := filepath.Join(root, "ledger")
+	if err := os.Mkdir(ledger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tracker := filepath.Join(root, "tracker")
+	trackerBody := `#!/bin/sh
+printf 'cwd=%s beads=%s argc=%s arg1=<%s> arg2=<%s> arg3=<%s> arg4=<%s>\n' \
+  "$PWD" "${BEADS_DIR-unset}" "$#" "$1" "$2" "$3" "$4" >> "$YIELD_TRACKER_LOG"
+printf 'tracker-stdout\n'
+printf 'tracker-stderr\n' >&2
+exit 23
+`
+	if err := os.WriteFile(tracker, []byte(trackerBody), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	originalLookPath := trackerLookPath
+	trackerLookPath = func(name string) (string, error) {
+		if name == trackerBR || name == trackerBD {
+			return tracker, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+	t.Setenv("HOME", t.TempDir())
+
+	for _, testCase := range []struct {
+		name      string
+		tracker   string
+		wantBeads string
+	}{
+		{name: "br", tracker: trackerBR, wantBeads: ledger},
+		{name: "bd", tracker: trackerBD, wantBeads: "unset"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			logPath := filepath.Join(root, testCase.name+".log")
+			t.Setenv("AGENTOPS_TRACKER", testCase.tracker)
+			t.Setenv("BEADS_DIR", ledger)
+			t.Setenv("YIELD_TRACKER_LOG", logPath)
+			_, queryErr := listReportBeadsByStatus(root, "open")
+			var sharedExit *trackerexec.ExitError
+			if !errors.As(queryErr, &sharedExit) || sharedExit.ExitCode() != 23 {
+				t.Fatalf("tracker query error = %T %v, want shared *trackerexec.ExitError(23)", queryErr, queryErr)
+			}
+			if !strings.Contains(queryErr.Error(), "tracker-stderr") {
+				t.Fatalf("tracker query error = %q, want child stderr", queryErr)
+			}
+			logBody, err := os.ReadFile(logPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantLog := "cwd=" + root + " beads=" + testCase.wantBeads +
+				" argc=4 arg1=<list> arg2=<--json> arg3=<--status> arg4=<open>\n"
+			if got := string(logBody); got != wantLog {
+				t.Fatalf("resolved tracker log = %q, want %q", got, wantLog)
+			}
+		})
+	}
+
+	cancelLog := filepath.Join(root, "canceled.log")
+	t.Setenv("AGENTOPS_TRACKER", trackerBR)
+	t.Setenv("BEADS_DIR", ledger)
+	t.Setenv("YIELD_TRACKER_LOG", cancelLog)
+	originalProjectDir := testProjectDir
+	originalSince, originalJSON := yieldReportSince, yieldReportJSON
+	originalNow := yieldReportNow
+	testProjectDir = root
+	yieldReportSince, yieldReportJSON = "", false
+	yieldReportNow = func() time.Time { return reportTestNow }
+	t.Cleanup(func() {
+		testProjectDir = originalProjectDir
+		yieldReportSince, yieldReportJSON = originalSince, originalJSON
+		yieldReportNow = originalNow
+		yieldReportCmd.SetContext(context.Background())
+		yieldReportCmd.SetOut(nil)
+		yieldReportCmd.SetErr(nil)
+	})
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	yieldReportCmd.SetContext(canceled)
+	var output bytes.Buffer
+	yieldReportCmd.SetOut(&output)
+	if err := runYieldReport(yieldReportCmd, nil); err != nil {
+		t.Fatalf("runYieldReport with canceled context: %v", err)
+	}
+	if _, err := os.Stat(cancelLog); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("canceled caller context launched tracker child: stat error %v", err)
+	}
 }
 
 // TestRunYieldReport_VerdictCountsSinceCutoff seeds verdicts inside and outside
