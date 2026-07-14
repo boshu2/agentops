@@ -39,6 +39,9 @@ Across all contracts in the wave:
 ## Gate Rule
 
 If any required item fails:
-1. Re-run SPEC worker(s) for affected issue(s).
-2. Re-run this checklist across the full wave.
-3. Do NOT proceed to TEST WAVE until all required checks pass.
+1. Preserve the failed checks, affected issue IDs, and SPEC evidence, then return
+   them to the RPI orchestrator.
+2. Before any later SPEC worker action, the orchestrator records a new canonical
+   disposition and obtains a durable RPI admission.
+3. Re-run this checklist across the full wave after the admitted SPEC work.
+4. Do NOT proceed to TEST WAVE until all required checks pass.

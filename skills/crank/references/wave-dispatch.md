@@ -7,7 +7,7 @@ For each spec-eligible issue (feature/bug/task):
 2. Worker receives: issue description, plan boundaries, contract template (`skills/crank/references/contract-template.md`), codebase access (read-only)
 3. Worker generates: `.agents/specs/contract-<issue-id>.md`
 4. **Validation:** files_exist + content_check for `## Invariants` AND `## Test Cases`
-5. **Wave 1 spec consistency checklist (MANDATORY):** run `skills/crank/references/wave1-spec-consistency-checklist.md` across all contracts in this wave. If any item fails, re-run SPEC workers for affected issues and do NOT proceed to TEST WAVE.
+5. **Wave 1 spec consistency checklist (MANDATORY):** run `skills/crank/references/wave1-spec-consistency-checklist.md` across all contracts in this wave. If any item fails, preserve the failed-item and affected-issue evidence, return it to the RPI orchestrator, and do NOT proceed to TEST WAVE. Any later SPEC work requires a new canonical orchestrator disposition and durable RPI admission before worker dispatch.
 6. Lead commits all specs after validation
 
 For BLOCKED recovery and full worker prompt, read `skills/crank/references/test-first-mode.md`.

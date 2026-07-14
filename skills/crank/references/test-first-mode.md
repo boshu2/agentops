@@ -48,9 +48,12 @@ cat skills/crank/references/wave1-spec-consistency-checklist.md
 ```
 
 If any checklist item fails:
-1. Re-run SPEC worker(s) for affected issue(s)
-2. Re-validate the full SPEC wave
-3. Do not start TEST WAVE until checklist passes
+1. Preserve the failed checklist items, affected issues, and SPEC evidence.
+2. Return `BLOCKED` evidence to the RPI orchestrator without another worker action.
+3. Before any later SPEC work, the orchestrator records a new canonical
+   disposition and obtains a durable RPI admission.
+4. Re-validate the full SPEC wave after that admitted work.
+5. Do not start TEST WAVE until the checklist passes.
 
 ### SPEC WAVE BLOCKED Recovery
 
