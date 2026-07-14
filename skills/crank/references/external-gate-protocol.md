@@ -25,14 +25,13 @@ Workers MUST NOT declare their own work complete. Every wave completion requires
 
 **Minimum for wave completion:** L0 + L1 + L2 must pass. L3 recommended.
 
-## Governor-backed back-pressure
+## Evidence-backed back-pressure
 
 When a gate fails, preserve the result and return it at the wave boundary.
 Crank does not increment a local failure allowance or dispatch another
-approach. The orchestrator decides whether the evidence calls for repair,
-re-plan, or a stuckness breaker, and every later action requires a durable
-governor admission. A safe commit from a prior passing gate remains a rollback
-point, not permission to retry.
+approach. The orchestrator decides whether the evidence calls for `REPAIR`,
+`REPLAN`, `HOLD`, or `ANDON`. A safe commit from a prior passing gate remains a
+rollback point, not permission to retry.
 
 ## Wave Validation Sequence
 
@@ -42,7 +41,7 @@ Worker completes issue
   → Gate passes? → Mark issue DONE, proceed to next
   → Gate fails? → Preserve command, exit status, output, and attempted approach
     → Return BLOCKED/PARTIAL evidence to RPI
-    → RPI classifies the next move through the persistent governor
+    → RPI records the next move in one evidence-bound disposition
 ```
 
 ## Anti-Patterns
@@ -52,4 +51,4 @@ Worker completes issue
 - ❌ Wave advances without any gate execution
 - ✅ Orchestrator runs `make test` after worker signals completion
 - ✅ Each issue has a specific gate command in its acceptance criteria
-- ✅ Failed gates produce evidence visible to the orchestrator and governor
+- ✅ Failed gates produce evidence visible to the orchestrator

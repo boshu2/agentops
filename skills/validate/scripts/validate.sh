@@ -5,13 +5,11 @@ skill_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo_root="$(cd "$skill_dir/../.." && pwd)"
 schema="$repo_root/schemas/verdict.v1.schema.json"
 request_checker="$skill_dir/scripts/validation-request.py"
-budget_checker="$skill_dir/scripts/validation-budget.py"
 request_schemas=(
   "$repo_root/schemas/validation-candidate.v1.schema.json"
   "$repo_root/schemas/validation-gate-registry.v1.schema.json"
   "$repo_root/schemas/validation-request.v1.schema.json"
   "$repo_root/schemas/validation-receipt.v1.schema.json"
-  "$repo_root/schemas/validation-budget-receipt.v1.schema.json"
 )
 
 grep -q '^name: validate$' "$skill_dir/SKILL.md"
@@ -22,14 +20,15 @@ grep -Fq 'vibe` trigger maps to `--mode=post-impl`' "$skill_dir/SKILL.md"
 grep -Fq 'Inventory size is never a rigor or validator-count' "$skill_dir/SKILL.md"
 grep -Fq 'A diagnostic or release FAIL remains nonbinding to semantic validation' "$skill_dir/SKILL.md"
 grep -Fq 'there is no automatic crash recovery.' "$skill_dir/SKILL.md"
-grep -Fq 'Only its schema-valid `AUTHORIZED` receipt permits `VALIDATE_SINGLE_FRESH`.' "$skill_dir/SKILL.md"
-grep -Fq 'The adapter writes proof of the governor admission and recorded charge' "$skill_dir/SKILL.md"
+grep -Fq 'permit `VALIDATE_SINGLE_FRESH`' "$skill_dir/SKILL.md"
+grep -Fq 'Validate does not meter, reserve, or authorize semantic work through a second adapter.' "$skill_dir/SKILL.md"
 grep -Fq 'Diagnostic and release `FAIL` remain' "$skill_dir/SKILL.md"
 grep -q '^Feature: Validate emits immutable proof only$' "$skill_dir/references/validate.feature"
-grep -q '^  Scenario: Consume the persistent run budget before validator dispatch$' "$skill_dir/references/validate.feature"
+grep -q '^  Scenario: Factual readiness permits one fresh validator$' "$skill_dir/references/validate.feature"
 
 PYTHONDONTWRITEBYTECODE=1 python3 "$request_checker" --help >/dev/null
-PYTHONDONTWRITEBYTECODE=1 python3 "$budget_checker" --help >/dev/null
+test ! -e "$skill_dir/scripts/validation-budget.py"
+test ! -e "$repo_root/schemas/validation-budget-receipt.v1.schema.json"
 SCHEMAS="$(IFS=:; echo "${request_schemas[*]}")" python3 - <<'PY'
 import json
 import os

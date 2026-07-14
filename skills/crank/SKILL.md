@@ -51,9 +51,9 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 - Parallelize only disjoint write scopes and serialize shared derived surfaces to prevent workers from invalidating one another's base.
 - Return unresolved wave evidence to the orchestrator instead of choosing a
   cross-phase retry or re-plan inside Crank.
-- Require a durable `authorized:true` admission from RPI's persistent
-  [run governor](../rpi/references/pull-flow-governor.md) before dispatch.
-  Crank owns no wave, retry, attempt, cost, disposition, or helper counter.
+- Execute only the accepted leaf and wave selected by RPI. Crank owns no wave,
+  retry, attempt, cost, disposition, or helper counter. It returns evidence to
+  the orchestrator's [run disposition contract](../rpi/references/pull-flow-governor.md).
 
 ## Loop position
 
@@ -96,12 +96,12 @@ Read `references/team-coordination.md` for the full per-wave execution model, `r
 | `--no-scope-check` | off | Skip scope-completion check before DONE marker (Step 8.7) |
 | `--skip-audit` | off | Skip bd-audit pre-flight gate (Step 3a.2) |
 
-## Shared Run Governor
+## Orchestrator boundary
 
-RPI owns the only admissions and hard-cost governor. The default bounded tranche admits
-at most three Crank waves, persisted across fresh invocations. Crank reports
-measured usage and requests admission; it never initializes or resets the run.
-Missing/corrupt state, missing meters, or a refused admission stops dispatch.
+RPI selects one accepted tranche and pulls at most three routine waves before a
+soft return boundary. Crank executes the selected wave and returns targeted
+facts. It never initializes lifecycle control state, meters work, or authorizes
+the next wave.
 
 ## Completion Enforcement (The Sisyphus Rule)
 
@@ -118,7 +118,7 @@ an epic, tracker, or delivery workflow.
 When a task fails during wave execution, report whether the evidence suggests
 a transient repair, decomposition, or blocked path, but do not act on a private
 counter. The orchestrator classifies it as `NOTE`, `REPAIR`, `REPLAN`, `HOLD`,
-or `ANDON` through the shared governor. `references/failure-recovery.md`
+or `ANDON` through the shared disposition contract. `references/failure-recovery.md`
 supplies evidence taxonomy only; any older numeric retry/helper text there is
 non-authorizing.
 
@@ -137,14 +137,14 @@ Given `/crank [epic-id | .agents/rpi/execution-packet.json | plan-file.md | "des
 
 Read [references/execution-preflight.md](references/execution-preflight.md) for
 the minimum readiness packet: exact leaf, bound plan/Premortem, failing proof,
-write scope, isolation, test-first classification, and persistent governor.
+write scope, isolation, test-first classification, and stable run ID.
 
 The Branch Isolation Gate (Step 1.5) has its own dedicated contract — see [references/branch-isolation.md](references/branch-isolation.md) for when crank must create or refuse an isolation branch.
 
 ### Wave dispatch (Step 3b → Step 4)
 
-Read [references/wave-dispatch.md](references/wave-dispatch.md) for atomic
-admission, the direct single-writer route, minimum worker metadata, test-first
+Read [references/wave-dispatch.md](references/wave-dispatch.md) for the selected
+wave identity, direct single-writer route, minimum worker metadata, test-first
 flow, and the explicit disjoint-lane threshold for parallel dispatch.
 
 ### Wave completion (Step 5 → Step 8.7)
@@ -155,7 +155,7 @@ Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github
 
 ### Step 9: Report Completion
 
-Report the epic ID/title, slices attempted, run admission ID, persisted usage,
+Report the epic ID/title, slices attempted, base and checkpoint identity,
 acceptance evidence, and remaining work. End with exactly one completion marker:
 `DONE` only when every selected slice is accepted, `PARTIAL` while selected or
 later work remains, or `BLOCKED` with the surviving reason and issue count.
@@ -175,16 +175,16 @@ do not authorize or perform Git delivery.
 ## The FIRE Loop
 
 Crank runs FIRE (Find → Ignite → Reap → Escalate → Return) for one wave. RPI may
-invoke another admitted wave after targeted acceptance and a remaining-plan
+invoke another selected wave after targeted acceptance and a remaining-plan
 decision; Validate and Learn run once at the tranche boundary. Read `references/wave-patterns.md` for the parallel-wave
 and acceptance details.
 
 ## Key Rules
 
 - Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
-- Use the selected execution backend for the admitted wave, preserve fresh
+- Use the selected execution backend for the selected wave, preserve fresh
   per-issue context, and refuse to dispatch past unresolved conflicts or a
-  governor refusal.
+  dispatch-packet mismatch.
 - Per-wave deterministic acceptance stays lightweight; the resulting wave
   evidence is handed to RPI, not directly to Validate and not interpreted as a
   re-plan inside Crank.
@@ -238,8 +238,8 @@ Common failure modes: no ready issues, repeated wave gate failures, missing file
 
 ## Execution ownership
 
-The current leaf owner is the routine implementer. Crank keeps deterministic
-admission, targeted acceptance, and remaining-plan classification in the visible
+The current leaf owner is the routine implementer. Crank keeps wave selection,
+targeted acceptance, and remaining-plan facts in the visible
 orchestrator context. It does not spawn a worker for bookkeeping or a Swarm for
 one write scope. A fresh context is required later for semantic Validate, not
 for every mechanical step. See [references/isolation-contract.md](references/isolation-contract.md)

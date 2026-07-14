@@ -32,16 +32,16 @@ check "Learn is the only post-verdict handoff" "grep -Fq 'Learn is the only post
 check "only orchestrator invokes Premortem" "grep -Fq 'Only the orchestrator may invoke Premortem' '$SKILL_DIR/SKILL.md'"
 check "re-plan contract handles all dispositions" "grep -Fq 'material_change' '$SKILL_DIR/references/agile-replan-loop.md' && grep -Fq 'no_change' '$SKILL_DIR/references/agile-replan-loop.md' && grep -Fq 'terminal' '$SKILL_DIR/references/agile-replan-loop.md'"
 check "execution packet validator exists" "[ -x '$SKILL_DIR/scripts/validate-execution-packet.py' ]"
-check "persistent run governor exists" "[ -x '$SKILL_DIR/scripts/run-governor.py' ]"
-check "run governor schema is valid JSON" "jq empty '$SKILL_DIR/schemas/run-governor.schema.json'"
-check "run governor checker compiles" "python3 -m py_compile '$SKILL_DIR/scripts/run-governor.py'"
-check "RPI routes Crank and Validate through persistent governor" "grep -q 'Crank and Validate request admission' '$SKILL_DIR/SKILL.md' && grep -q 'authorized:true' '$SKILL_DIR/SKILL.md'"
+check "run disposition schema is valid JSON" "jq empty '$SKILL_DIR/schemas/run-disposition.schema.json'"
+check "run disposition contract is closed" "jq -e '.additionalProperties == false and (.properties.disposition.enum == [\"NOTE\",\"REPAIR\",\"REPLAN\",\"HOLD\",\"ANDON\"])' '$SKILL_DIR/schemas/run-disposition.schema.json' >/dev/null"
+check "legacy run controller is absent" "[ ! -e '$SKILL_DIR/scripts/run-governor.py' ] && [ ! -e '$SKILL_DIR/schemas/run-governor.schema.json' ]"
+check "RPI routes Crank and Validate evidence to one disposition" "grep -q 'Crank and Validate return evidence' '$SKILL_DIR/SKILL.md' && grep -q 'run-disposition record' '$SKILL_DIR/SKILL.md'"
 check "RPI declares canonical disposition language" "grep -q 'NOTE.*REPAIR.*REPLAN.*HOLD.*ANDON' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/pull-flow-governor.md'"
 check "RPI has no private three-attempt controller" "! grep -q '3 total attempts before' '$SKILL_DIR/SKILL.md'"
 check "RPI authoritative references have no private phase controller" \
   "! rg -q -i '$phase_control_pattern' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references'"
-check "RPI protects HOLD and ANDON behind explicit authority ports" \
-  "grep -q 'can neither create nor clear.*HOLD' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'break.*helper.*human' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'subparsers.add_parser(\"human\")' '$SKILL_DIR/scripts/run-governor.py'"
+check "RPI keeps HOLD and ANDON out of phase-local controllers" \
+  "grep -q 'exactly one bounded fresh-context' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'does not track helper eligibility or history' '$SKILL_DIR/references/pull-flow-governor.md'"
 check "incomplete tranche stops without terminal proof" \
   "grep -q 'At three waves or 90 minutes with work incomplete' '$SKILL_DIR/SKILL.md' && grep -q 'PARTIAL.*resume evidence' '$SKILL_DIR/SKILL.md' && grep -q 'stop without proof authorization' '$SKILL_DIR/SKILL.md'"
 check "critical constraints precede the core contract" "test \"\$(grep -n '^## Critical Constraints$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\" -lt \"\$(grep -n '^## Core Contract$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\""

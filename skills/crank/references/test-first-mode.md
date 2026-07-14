@@ -51,8 +51,8 @@ If any checklist item fails:
 1. Preserve the failed checklist items, affected issues, and SPEC evidence.
 2. Return `BLOCKED` evidence to the RPI orchestrator without another worker action.
 3. Before any later SPEC work, the orchestrator records a new canonical
-   disposition and obtains a durable RPI admission.
-4. Re-validate the full SPEC wave after that admitted work.
+   disposition and selects the next action.
+4. Re-validate the full SPEC wave after that repair work.
 5. Do not start TEST WAVE until the checklist passes.
 
 ### SPEC WAVE BLOCKED Recovery
@@ -66,8 +66,8 @@ If a spec worker writes `BLOCKED` instead of a contract:
    ```
 3. Return the reason, missing context, and attempted prompt as `BLOCKED`
    evidence. Crank does not re-dispatch or invoke a helper.
-4. The RPI orchestrator classifies the next action and obtains a durable
-   governor admission before any new SPEC work.
+4. The RPI orchestrator classifies and selects the next action before any new
+   SPEC work.
 
 ## TEST WAVE
 
@@ -143,8 +143,7 @@ fi
    meant to prove.
 2. Return `BLOCKED` evidence without re-spawning a test writer or silently
    falling back to implementation.
-3. A later TEST action must come from an explicit orchestrator decision and a
-   durable governor admission.
+3. A later TEST action must come from an explicit orchestrator decision.
 
 ## Test Framework Detection
 

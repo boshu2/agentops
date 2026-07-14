@@ -1,37 +1,22 @@
 # Wave Dispatch
 
-Dispatch one admitted wave of one behavioral leaf. The direct single-writer path
-is default; parallelism is an explicit optimization for disjoint lanes.
+Dispatch one selected wave of one accepted behavioral leaf. The direct
+single-writer path is default; parallelism is an explicit optimization for
+disjoint lanes.
 
-## 1. Atomically admit the wave
+## 1. Pin the selected wave
 
-RPI owns the one persistent run governor. Crank receives its stable identity and
-measured charges and must obtain a durable admission before mutation:
+Before mutation, record:
 
 ```bash
-: "${RPI_RUN_ID:?RPI run id is required}"
-: "${RPI_GOVERNOR_STATE_DIR:?persistent governor state dir is required}"
-: "${RPI_REVIEWER_TOKENS:?reviewer-token meter is required}"
-: "${RPI_ELAPSED_SECONDS:?elapsed-time meter is required}"
-: "${RPI_REVIEW_CONTEXTS:?review-context meter is required}"
-: "${RPI_DETERMINISTIC_EXECUTIONS:?deterministic-execution meter is required}"
-
-ADMISSION_JSON="$(python3 skills/rpi/scripts/run-governor.py admit \
-  --state-dir "$RPI_GOVERNOR_STATE_DIR" \
-  --run-id "$RPI_RUN_ID" \
-  --action crank-wave \
-  --reviewer-tokens "$RPI_REVIEWER_TOKENS" \
-  --elapsed-seconds "$RPI_ELAPSED_SECONDS" \
-  --review-contexts "$RPI_REVIEW_CONTEXTS" \
-  --deterministic-executions "$RPI_DETERMINISTIC_EXECUTIONS")" || exit 1
-
-test "$(jq -r '.authorized' <<<"$ADMISSION_JSON")" = true || exit 1
-RPI_ADMISSION_ID="$(jq -r '.admissions[-1].id' <<<"$ADMISSION_JSON")"
+: "${RPI_RUN_ID:?RPI run id is required for evidence correlation}"
 WAVE_START_SHA="$(git rev-parse HEAD)"
 ```
 
-Do not reset the run, create a local counter, or turn a soft tranche boundary
-into HOLD/ANDON.
+The dispatch packet must bind leaf and wave identity, accepted plan and
+Premortem, write scope, next failing acceptance proof, rollback, and base SHA.
+Missing or mismatched input returns `BLOCKED` evidence. Crank does not choose a
+different objective or create control state around dispatch.
 
 ## 2. Build the minimum worker packet
 
@@ -62,7 +47,7 @@ For test-first work:
 These may be distinct waves inside the same leaf. They do not each receive
 Validate or Learn.
 
-## 4. Parallel dispatch only when admitted
+## 4. Parallel dispatch only for proven disjoint lanes
 
 Use `/swarm` or another runtime-native multi-worker transport only when at least
 two lanes have disjoint source and generated write scopes, explicit owners,
@@ -76,3 +61,4 @@ After the lead integrates the wave, run the targeted acceptance once and follow
 [wave-completion.md](wave-completion.md). Return canonical checkpoint identity,
 introduced/base-attributed failures, material plan deltas, and remaining work.
 Crank does not invoke Validate, Learn, Premortem, delivery, or tracker closeout.
+Only RPI records the next disposition.

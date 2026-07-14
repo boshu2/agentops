@@ -36,8 +36,7 @@ for field in \
   acceptance_verdict \
   commit_strategy \
   mutations_this_wave \
-  total_mutations \
-  mutation_budget; do
+  total_mutations; do
   jq -e --arg field "$field" 'has($field)' "$checkpoint" >/dev/null \
     || fail "checkpoint missing required field: $field"
 done
@@ -56,9 +55,20 @@ jq -e '
   (.acceptance_verdict as $v | ["PASS", "WARN", "FAIL"] | index($v) != null) and
   (.commit_strategy | type == "string" and length > 0) and
   (.mutations_this_wave | type == "number" and . >= 0 and . == floor) and
-  (.total_mutations | type == "number" and . >= 0 and . == floor) and
-  (.mutation_budget | type == "object")
+  (.total_mutations | type == "number" and . >= 0 and . == floor)
 ' "$checkpoint" >/dev/null || fail "checkpoint has invalid field types or values"
+
+if jq -e '
+  [.. | objects | keys[]] as $keys
+  | any($keys[]; . == "mutation_budget"
+      or . == "mutation_limits"
+      or . == "limits"
+      or . == "usage"
+      or . == "used"
+      or . == "limit")
+' "$checkpoint" >/dev/null; then
+  fail "checkpoint contains retired mutation-control state"
+fi
 
 timestamp_epoch="$(jq -er '.timestamp | fromdateiso8601' "$checkpoint" 2>/dev/null)" \
   || fail "timestamp is not valid ISO-8601 UTC: $(jq -r '.timestamp' "$checkpoint" 2>/dev/null || echo '<unreadable>')"

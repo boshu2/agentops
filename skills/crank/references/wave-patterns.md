@@ -6,9 +6,9 @@ Crank follows FIRE for each wave:
 
 | Phase | Beads Mode | TaskList Mode |
 |-------|-----------|--------------|
-| **FIND** | Resolve the admitted leaf and next wave | Resolve the admitted task and next wave |
+| **FIND** | Resolve the accepted leaf and selected wave | Resolve the accepted task and selected wave |
 | **IGNITE** | One direct `/implement` worker by default | One direct implementer by default |
-| **REAP** | Collect the direct result; Swarm only for admitted disjoint lanes | Same |
+| **REAP** | Collect the direct result; Swarm only for proven disjoint lanes | Same |
 | **CHECK** | Deterministic wave acceptance → PASS/FAIL evidence | Same |
 | **ESCALATE** | Return blocked evidence to the orchestrator | Same |
 
@@ -22,11 +22,11 @@ Crank follows FIRE for each wave:
 ## Routine single-writer model
 
 ```text
-Wave N: admitted leaf + exact next failing proof
+Wave N: accepted leaf + exact next failing proof
         → one direct implementer
         → targeted deterministic acceptance
         → canonical checkpoint + remaining-plan facts
-        → orchestrator admits the next unchanged wave or freezes the tranche
+        → orchestrator pulls the next unchanged wave or freezes the tranche
 ```
 
 This is the default. Do not spawn an agent merely to satisfy a workflow shape;
@@ -37,18 +37,18 @@ parallel model only when the plan explicitly proves two or more disjoint lanes.
 
 ```text
 Wave N in one leaf → [disjoint lane A, disjoint lane B]
-        → explicitly admitted isolated writers
+        → explicitly selected isolated writers
         → lead integrates in declared order
         → targeted deterministic acceptance
         → canonical checkpoint + remaining-plan facts
         → materially changed: Discovery → Premortem
-        → unchanged and below boundary: admit Wave N+1
+        → unchanged and below boundary: pull Wave N+1
         → leaf complete: freeze → Validate → Learn
         → soft boundary while incomplete: PARTIAL resume evidence, stop
 ```
 
 Crank never directs Wave N to Wave N+1. Every wave terminates at its evidence
-handoff. The orchestrator may start the next admitted wave without per-wave
+handoff. The orchestrator may start the next selected wave without per-wave
 Validate or Learn. Semantic validation and Learn run once only after the leaf is
 complete and the bounded tranche freezes. An incomplete soft boundary does not
 authorize them.
@@ -107,7 +107,7 @@ When the RED gate detects unexpected test passes:
 1. **Identify cause:** Tests that pass against current code validate existing behavior, not new requirements from the contract
 2. **Preserve evidence:** Record the unexpected-pass list and affected contract invariants
 3. **Return:** Stop the TEST action and return `BLOCKED` evidence to RPI
-4. **Re-enter explicitly:** Only an orchestrator decision plus a new durable admission may dispatch another TEST action
+4. **Re-enter explicitly:** Only an orchestrator decision may dispatch another TEST action
 
 ```bash
 # RED gate failure tracking
@@ -157,7 +157,7 @@ But do NOT read implementation details of the specific feature being specified.
 
 3. **Validate worker result evidence (FAIL-CLOSED):**
 
-   Read the direct worker result, or each admitted parallel-lane result, and
+   Read the direct worker result, or each selected parallel-lane result, and
    validate its declared schema.
 
    Required evidence policy for IMPL/REFACTOR acceptance:
@@ -192,7 +192,7 @@ But do NOT read implementation details of the specific feature being specified.
 
    | Verdict | Action |
    |---------|--------|
-   | **PASS** | Record targeted facts and return them to RPI; it may admit another unchanged wave or freeze a completed leaf. |
+   | **PASS** | Record targeted facts and return them to RPI; it may pull another unchanged wave or freeze a completed leaf. |
    | **WARN** | Record nonblocking caveats and return them to RPI; do not create an inline fix wave. |
    | **FAIL** | Record blockers and return BLOCKED evidence. The orchestrator owns any helper, retry, or re-plan. |
 

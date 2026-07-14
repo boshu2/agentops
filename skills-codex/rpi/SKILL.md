@@ -15,8 +15,7 @@ ao codex ensure-start 2>/dev/null || true
 
 The CLI records startup once per thread and skips duplicates automatically.
 
-> Quick ref: `$discovery` + `$premortem` -> `$crank` for a bounded tranche ->
-> one `$validate` -> one `$learn`, then report.
+> Quick ref: `$discovery` + `$premortem` -> `$crank` for a bounded tranche -> one `$validate` -> one `$learn`, then report.
 
 **Execute this workflow. Do not only describe it.** RPI is autonomous unless `--interactive` is set. The user touchpoint is after Learn returns control to the orchestrator or after a real blocked state exhausts retries. Read [autonomous-execution.md](references/autonomous-execution.md) for the full autonomy contract.
 
@@ -46,10 +45,10 @@ The CLI records startup once per thread and skips duplicates automatically.
 - An initial introduced acceptance defect may receive one consolidated repair.
   Evidence of a second distinct repair need must be classified `REPLAN` and
   re-sliced through Discovery instead of starting another review loop.
-- RPI owns the one persistent [run governor](references/pull-flow-governor.md);
-  Crank and Validate request admission through it, and phases create no private
-  state. `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the canonical
-  dispositions; the reference owns meters, breakers, helpers, and hard ceilings.
+- RPI owns the one [run disposition contract](references/pull-flow-governor.md),
+  not an execution controller. `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON`
+  are the canonical dispositions. Crank and Validate return evidence; they do
+  not reserve work, maintain counters, grant helpers, or authorize dispatch.
 
 ## Loop position
 
@@ -102,24 +101,24 @@ contract: [phase-data-contracts.md](references/phase-data-contracts.md).
    - `full`: `--deep`, complex-operation keyword, 2+ scope keywords, or >120 chars
 5. Log `RPI mode: rpi-phased (complexity: <level>)`.
 
-Track lifecycle state as `rpi_state`: `goal` (string), `epic_id` (null until discovered), `phase` (discovery|crank|validate|learn), `complexity` (fast|standard|full), `test_first` (true unless `--no-test-first`), `run_id`, and `verdicts` ({}). Admissions, charges, breaker state, and helper use live only in the persistent run governor.
+Track lifecycle state as `rpi_state`: `goal` (string), `epic_id` (null until discovered), `phase` (discovery|crank|validate|learn), `complexity` (fast|standard|full), `test_first` (true unless `--no-test-first`), `run_id`, and `verdicts` ({}). When evidence changes the next move, write one immutable run-disposition record bound to the objective and evidence. Do not add phase counters, reservations, or helper state.
 
 ## Phase DAG
 
 Enter at the routed phase and run every phase after it.
 
 1. **Discovery:** invoke `$discovery <goal> [--interactive] --complexity=<level>`. On DONE, read the current or archived execution packet and preserve its objective spine; on BLOCKED, return evidence without treating the label as a retry decision.
-2. **Crank tranche:** after each durable `authorized:true` admission, invoke
-   `$crank` for one ready wave and read the actual diff for scope and claim match.
-   If targeted checks are green and the bound plan inputs are unchanged, admit
-   the next sequential wave without Validate or Learn. A completed leaf proceeds
+2. **Crank tranche:** invoke `$crank` for one ready wave and read the actual diff
+   for scope and claim match. If targeted checks are green and the bound plan
+   inputs are unchanged, the orchestrator may pull the next sequential wave
+   without Validate or Learn. A completed leaf proceeds
    to freeze. At three waves or 90 minutes with work incomplete, persist
    `PARTIAL` resume evidence and stop without proof authorization. Scope/risk
    drift or failed acceptance returns to the appropriate repair/replan move. A
    soft tranche boundary is not HOLD or ANDON.
 3. **Freeze and Validate once:** commit the complete tranche, pin one candidate
-   identity, and consume exact-input deterministic receipts. After one durable
-   `semantic-review` charge, invoke one fresh independent `$validate`. Missing,
+   identity, and consume exact-input deterministic receipts. Invoke one fresh
+   independent `$validate`. Missing,
    stale, suspicious, or invalidated facts are rerun; unchanged facts are not.
 4. **Repair closure:** one introduced blocker set may receive one consolidated
    repair batch. Refreeze, rerun invalidated facts, and re-review only affected
@@ -139,9 +138,9 @@ The orchestrator, not Validate or Learn, owns retry and re-plan decisions.
 Every final tranche verdict becomes one Learn receipt; its plan impact selects
 the next-tranche branch. Intermediate wave facts go directly to the
 orchestrator's remaining-plan decision and never impersonate a semantic verdict.
-The [persistent pull-flow governor](references/pull-flow-governor.md)
-canonically defines every admission, disposition, breaker, helper, hard-ceiling,
-and protected-state transition used by that decision.
+The [run disposition contract](references/pull-flow-governor.md) defines the
+five evidence classifications and their legal next moves. It records decisions;
+it does not run another state machine around the work.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
@@ -174,15 +173,16 @@ Routine work uses one fresh validator; deeper review is explicit. Learn stays bo
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
 | `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
-| `--loop` | off | Admit additional sequential waves inside the current bounded tranche; never exceeds the run-wide wave/time ceiling |
-| `--run-id=<id>` | required for dispatch | Resume the persistent run state across invocations |
-| `--max-waves=<n>` | 3 | Declare the run-wide Crank admission ceiling at initialization |
-| `--max-elapsed-seconds=<n>` | 5400 | Routine tranche ceiling (90 minutes); stop before it is spent and preserve resume state |
+| `--loop` | off | Pull additional sequential waves inside the current bounded tranche |
+| `--run-id=<id>` | generated if absent | Correlate receipts for one lifecycle objective |
+| `--max-waves=<n>` | 3 | Soft tranche boundary; preserve resume evidence instead of escalating |
+| `--max-elapsed-seconds=<n>` | 5400 | Soft 90-minute tranche boundary; preserve resume evidence instead of escalating |
 | `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
-| `--dry-run` | off | Report only; never creates an admission receipt |
+| `--dry-run` | off | Report the selected moves without mutating work |
 
-Other hard ceilings are declared once in the run governor, not repeated as phase budgets.
+These are orchestration defaults, not authorization or phase-local retry
+budgets. Hard external ceilings are facts supplied by the runtime or operator.
 
 ## Examples
 
@@ -200,13 +200,13 @@ Other hard ceilings are declared once in the run governor, not repeated as phase
 - [ ] No per-wave Validate or Learn ran before the bounded tranche froze.
 - [ ] One final independent verdict routes through Learn before the next-tranche decision.
 - [ ] The execution packet passes its validator before Report or downstream handoff.
-- [ ] One governor owns admissions, ceilings, retries, and helpers.
+- [ ] One closed disposition record binds each next-move decision to evidence.
 
 ## Troubleshooting
 
-- Classify failures through the governor; repair invalid packets locally, and use direct checks when an optional executor fails. See [troubleshooting.md](references/troubleshooting.md).
+- Classify failures with the five run dispositions; repair invalid packets locally, and use direct checks when an optional executor fails. See [troubleshooting.md](references/troubleshooting.md).
 
 ## Reference Documents
 
-- Core: [agile re-plan](references/agile-replan-loop.md), [governor](references/pull-flow-governor.md), [phase data](references/phase-data-contracts.md), [compression](references/orchestrator-compression-anti-pattern.md), and [executable feature](references/rpi.feature).
-- Operation: [autonomy](references/autonomous-execution.md), [context windows](references/context-windowing.md), [Discovery artifact mode](references/discovery-artifact-mode.md), [phase budgets](references/phase-budgets.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [Codex executor](references/codex-executor.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md), [examples](references/examples.md), [recovery](references/error-handling.md), and [report](references/report-template.md).
+- Core: [agile re-plan](references/agile-replan-loop.md), [run dispositions](references/pull-flow-governor.md), [phase data](references/phase-data-contracts.md), [compression](references/orchestrator-compression-anti-pattern.md), and [executable feature](references/rpi.feature).
+- Operation: [autonomy](references/autonomous-execution.md), [context windows](references/context-windowing.md), [Discovery artifact mode](references/discovery-artifact-mode.md), [bounded tranches](references/phase-budgets.md), [repair and escalation](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [Codex executor](references/codex-executor.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md), [examples](references/examples.md), [recovery](references/error-handling.md), and [report](references/report-template.md).

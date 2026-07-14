@@ -45,6 +45,15 @@ Phase receipt rule:
 - receipts are an audit index, not proof by themselves; transcript or runtime invocation trace remains the stronger evidence when available
 - `.agents/rpi/phase-{1,2,3,4}-summary*.md`, when required by an older consumer, contains only status, canonical artifact reference/digest, and next action; it never restates findings or analysis
 
+Run disposition rule:
+- a next-move decision is a standalone immutable document conforming to
+  `skills/rpi/schemas/run-disposition.schema.json`;
+- it binds the stable run ID, objective identity/digest, one of
+  `NOTE|REPAIR|REPLAN|HOLD|ANDON`, reason, and evidence digests;
+- phase receipts may cite the disposition but do not copy it or grow counters,
+  reservations, cost state, or helper state; and
+- the orchestrator owns the decision. Phase skills only return evidence.
+
 Receipt shape (JSON artifacts use canonical skill slugs without sigils):
 
 ```json

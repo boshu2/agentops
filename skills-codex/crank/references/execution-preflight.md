@@ -1,6 +1,6 @@
 # Execution Preflight
 
-Preflight proves that one wave of the admitted behavioral leaf is ready. It does
+Preflight proves that one wave of the accepted behavioral leaf is ready. It does
 not bootstrap an orchestration substrate, search for work outside the leaf, or
 create bookkeeping artifacts by habit.
 
@@ -10,15 +10,15 @@ create bookkeeping artifacts by habit.
 - accepted plan and bound Premortem verdict;
 - next failing acceptance proof;
 - declared write scope, dependencies, risk class, and rollback;
-- stable `RPI_RUN_ID` and `RPI_GOVERNOR_STATE_DIR`; and
+- stable `run_id` for evidence correlation; and
 - repository isolation required by local policy.
 
 Missing or mismatched inputs return `BLOCKED` evidence to RPI. Crank does not
-repair the packet, initialize another governor, or select a different objective.
+repair the packet, create lifecycle control state, or select a different objective.
 
 ## Routine route
 
-1. Resolve the admitted leaf through the repository's tracker adapter. If no
+1. Resolve the accepted leaf through the repository's tracker adapter. If no
    tracker exists, use the supplied packet/description without inventing state.
 2. Confirm the branch/worktree is isolated and the declared paths match the
    next wave.
@@ -28,7 +28,7 @@ repair the packet, initialize another governor, or select a different objective.
 4. Select one direct implementer. The current writer may execute the wave. Do
    not start NTM, ATM, Swarm, a council, or another agent merely because it is
    available.
-5. Admit parallel dispatch only when the plan names at least two disjoint write
+5. Use parallel dispatch only when the plan names at least two disjoint write
    scopes with separate owners, integration order, and discard paths.
 6. Load only directly relevant prior evidence already cited by the plan or a
    concrete current failure. Broad lookup, metrics, ratchet, and archive scans
@@ -44,6 +44,6 @@ not mandatory when a lower level proves the contract.
 ## Output
 
 Return a compact dispatch packet with leaf, wave, write scope, acceptance command,
-`metadata.issue_type`, validation metadata, author/owner, base SHA, and governor
-state references. Wave admission itself occurs atomically in
-[wave-dispatch.md](wave-dispatch.md); preflight creates no second counter.
+`metadata.issue_type`, validation metadata, author/owner, base SHA, and stable
+run ID. [wave-dispatch.md](wave-dispatch.md) owns the execution handoff;
+preflight creates no counter or authorization state.
