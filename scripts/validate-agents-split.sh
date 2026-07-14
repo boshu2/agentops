@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
 # validate-agents-split.sh
 #
-# Enforces the tiered AGENTS.md split (soc-vuu6.3):
+# Enforces the lean AGENTS.md orientation contract after the root sibling
+# cutover (docs authority migrate-then-delete for AGENTS-*).
 #   - AGENTS.md exists and is <=250 lines (orientation only)
-#   - AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md exist
-#   - AGENTS.md contains a pointer link to each sibling
-#   - Each sibling links back to AGENTS.md for orientation
+#   - AGENTS.md contains pointer links to the four detail owners
+#   - Each owner exists and links back to AGENTS.md
 #
-# Why: AGENTS.md was 580 lines / ~15K tokens before the split (every session
-# paid the cold-start cost). The split saves cost for routine sessions while
-# keeping the operational detail one hop away. This gate keeps the split
-# contract honest as the docs evolve.
-#
-# Sibling pattern: matches scripts/check-finding-registry.sh shape —
-# explicit gate with summary + nonzero exit on first contract breach.
+# Owners (former AGENTS-WORKFLOW/CI/CODEX/RUNTIME siblings):
+#   docs/agent-workflow-reference.md
+#   docs/CI-CD.md
+#   docs/contracts/codex-skill-api.md
+#   docs/contracts/repo-execution-profile.md
 #
 # Exit codes:
-#   0 — split contract satisfied
-#   1 — contract broken (one or more checks failed)
+#   0 — contract satisfied
+#   1 — contract broken
 #   2 — usage / setup error
 
 set -euo pipefail
@@ -26,7 +24,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 readonly LIMIT=250
-readonly SIBLINGS=(AGENTS-WORKFLOW.md AGENTS-CI.md AGENTS-CODEX.md AGENTS-RUNTIME.md)
+readonly OWNERS=(
+  docs/agent-workflow-reference.md
+  docs/CI-CD.md
+  docs/contracts/codex-skill-api.md
+  docs/contracts/repo-execution-profile.md
+)
 
 declare -i checks=0
 declare -i failed=0
@@ -53,35 +56,43 @@ if [ "$lines" -gt "$LIMIT" ]; then
   fail "AGENTS.md is $lines lines, exceeds $LIMIT-line orientation budget"
 fi
 
-# 3. Each sibling exists
-for sib in "${SIBLINGS[@]}"; do
+# 3. Each owner exists
+for owner in "${OWNERS[@]}"; do
   checks=$((checks + 1))
-  if [ ! -f "$sib" ]; then
-    fail "missing sibling: $sib"
+  if [ ! -f "$owner" ]; then
+    fail "missing owner: $owner"
   fi
 done
 
-# 4. AGENTS.md links to each sibling
-for sib in "${SIBLINGS[@]}"; do
+# 4. AGENTS.md links to each owner (path substring is enough)
+for owner in "${OWNERS[@]}"; do
   checks=$((checks + 1))
-  if ! grep -q "$sib" AGENTS.md; then
-    fail "AGENTS.md does not link to $sib"
+  if ! grep -q "$owner" AGENTS.md; then
+    fail "AGENTS.md does not link to $owner"
   fi
 done
 
-# 5. Each sibling back-links to AGENTS.md
-for sib in "${SIBLINGS[@]}"; do
-  [ -f "$sib" ] || continue
+# 5. Each owner back-links to AGENTS.md
+for owner in "${OWNERS[@]}"; do
+  [ -f "$owner" ] || continue
   checks=$((checks + 1))
-  if ! grep -q "AGENTS.md" "$sib"; then
-    fail "$sib does not back-link to AGENTS.md"
+  if ! grep -q "AGENTS.md" "$owner"; then
+    fail "$owner does not back-link to AGENTS.md"
+  fi
+done
+
+# 6. Root AGENTS-* siblings must be gone
+for sib in AGENTS-WORKFLOW.md AGENTS-CI.md AGENTS-CODEX.md AGENTS-RUNTIME.md; do
+  checks=$((checks + 1))
+  if [ -e "$sib" ]; then
+    fail "legacy root sibling still present: $sib (migrate content to owners and delete)"
   fi
 done
 
 echo "validate-agents-split: scanned $checks checks"
 
 if [ "$failed" -eq 0 ]; then
-  echo "PASS — AGENTS.md ($lines lines) + 4 siblings, links bidirectional."
+  echo "PASS — AGENTS.md ($lines lines) + 4 detail owners, links bidirectional; no root siblings."
   exit 0
 fi
 

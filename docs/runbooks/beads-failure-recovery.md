@@ -88,7 +88,7 @@ problem is elsewhere (look at the actual gate output).
   citing the original work (commit shas) in the bead notes. If a JSONL export from the branch
   exists, `bd import` the missing lines.
 - **Prevent:** in Dolt server mode writes go to the server, not the branch — but **verify** at
-  Landing-the-Plane time (`AGENTS-WORKFLOW.md` session completion): `git push` AND bead state
+  Landing-the-Plane time (`docs/agent-workflow-reference.md` session completion): `git push` AND bead state
   confirmed on the server are both required before a session ends.
 
 ### FM4 — Merge-eaten closes (the reopen-eater)

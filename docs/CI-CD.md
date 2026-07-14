@@ -1,5 +1,7 @@
 # CI/CD Architecture
 
+Operating contract: [`AGENTS.md`](../AGENTS.md).
+
 AgentOps produces candidate-bound deterministic evidence and one immutable
 fresh-context Validate verdict. It does not choose or control Git delivery.
 Repositories own delivery policy for local and cloud agents. A repository may
@@ -10,6 +12,25 @@ Release tag pushes run a full, non-path-filtered deterministic repository CI
 suite for the exact tagged SHA. That suite does not create or replace
 Validate's semantic verdict. Releases are automated through GoReleaser with
 SBOM generation and SLSA provenance attestation.
+
+## Actions Backstop
+
+AgentOps validation and repository delivery are separate transitions. A local or
+cloud agent freezes one candidate, runs deterministic evidence, obtains one
+fresh-context Validate verdict, and records Learn before the repository's own
+delivery policy begins. Direct push, a PR, external CI, and release automation
+are all valid repository adapters; none creates or upgrades the semantic
+verdict. `.github/workflows/validate.yml` remains useful for explicit workflow
+dispatch, external collaboration, and `v*` release tags. Release tag pushes
+force every path-filtered release lane on, and the summary fails if any release
+lane is skipped unexpectedly. PR-only evidence jobs are allowlisted on tag
+pushes because tag events have no PR body; other skipped jobs are not treated as
+release verdicts.
+
+Blocking policy for optional Actions runs (must match the validate summary
+failset): every job except those marked non-blocking / advisory below,
+including the seven `validate-codex-*` jobs and `validate-headless-runtime-skills`
+(split from the former aggregated `codex-runtime-sections` job, soc-ltp2).
 
 ## Product and Delivery Boundary
 
@@ -119,7 +140,7 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the rollup target for any required check on tags/PRs/manual dispatch — only `summary` needs to be required, not every individual job. Whether `summary` is required is repository policy. It never substitutes for or changes the author-distinct semantic verdict.
 
-Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
+Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, and `swarm-evidence`. `executable-spec-link-integrity` is blocking on the `ao goals scenarios --lint` link check (soc-x7y9f); only its inner `ao goals trace --orphans` step stays warn-only. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
 
 For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
 For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
@@ -131,18 +152,22 @@ skipped is not treated as passed for releases.
 
 ## Blocking vs Soft Gates
 
-### Soft Gates (continue-on-error: true)
+### Soft Gates / Advisory Job Triage SLAs (continue-on-error: true)
 
-These jobs run but their failure does **not** block merges. Advisory jobs carry an `(advisory)` suffix in the GitHub check name; `executable-spec-link-integrity` is named `(warn-only, F1.6)`. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
+Advisory and warn-only jobs can run in optional Actions contexts, but their
+failure does not rewrite an already recorded semantic verdict. Most surface a
+`(advisory)` suffix on the GitHub check name. Keep this table in sync with the
+validate summary failset via `scripts/validate-ci-policy-parity.sh`. When a job
+has been red longer than its SLA, follow the escalation rule.
 
-| Job | Triage SLA | Reason |
-|-----|------------|--------|
-| `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
-| `factory-claim-ledger-strict` | 14d | Advisory claim-ledger drift observation for Wave 1E promotion evidence |
-| `practice-citations` | 14d | Advisory strict walk for missing or invalid `practices: [slug,...]` citations |
-| `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
-| `swarm-evidence` | none (info-only) | Advisory -- validates swarm evidence artifact shape; missing/malformed swarm artifacts are informational, not blocking (item 34) |
-| `executable-spec-link-integrity` | none (warn-only) | Warn-only directive/scenario link lint and orphan/gap trace until the F1.6 promotion criterion is met |
+| Job | Triage SLA | Escalation rule |
+|-----|------------|-----------------|
+| `doctor-check` | 30d | Open a `br` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` change lands. Runs as an advisory step inside the consolidated `correctness` job, not a standalone GitHub job. |
+| `factory-claim-ledger-strict` | 14d | Advisory claim-ledger drift observation for Wave 1E promotion evidence. |
+| `practice-citations` | 14d | Advisory strict walk for missing or invalid `practices: [slug,...]` citations. |
+| `check-test-staleness` | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
+| `swarm-evidence` | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
+| `executable-spec-link-integrity` (inner `trace --orphans` step) | none (warn-only) | Job is blocking (soc-x7y9f) on `ao goals scenarios --lint`; only the inner `ao goals trace --orphans` whole-chain audit stays warn-only. Read the trace for orphan-chain defects (tracked under soc-gqhrz); no merge impact from that step. |
 
 ### Retrieval-bench ratchet (nightly)
 
@@ -150,17 +175,52 @@ The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is a **
 
 - **Promotion criterion:** `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**.
 - **Baseline source:** pinned fallback `baseline_p_at_5 = 0.30` in this section. Do not store the baseline under repo-root `.agents/`; that tree is local runtime state and is blocked by `scripts/check-no-tracked-agents.sh`.
-- **Future durable source:** if the ratchet needs a machine-readable baseline, add it outside `.agents/` and update this section plus AGENTS.md in the same PR.
+- **Future durable source:** if the ratchet needs a machine-readable baseline, add it outside `.agents/` and update this section in the same change.
 - **Observation window:** intentionally observational. The 14-consecutive-nightly counter is not yet wired into automation; track manually until a separate bead promotes the gate. This avoids accidental promotion during corpus quarantine windows (`f-2026-04-30-002`).
 
-When the window closes green and the gate is promoted, update both this section and the AGENTS.md advisory table. Until then, retrieval-bench red is informational; do not block release on it.
+When the window closes green and the gate is promoted, update this section. Until then, retrieval-bench red is informational; do not block release on it.
 
-Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, and 39 are tracked in root `AGENTS.md` §DEFERRED CI Hardening, including the promotion triggers that would move each item back to FIX scope.
+### DEFERRED CI Hardening
+
+These CI 1-40 items are intentionally not being hardened in this wave. Revisit only when the named promotion trigger fires.
+
+| Item | Current handling | Rationale | Promotion trigger |
+|---|---|---|---|
+| **1 — go-build error** | DEFER | Compilation breakage is developer hygiene; `cd cli && make build && make test` already exists in the local checklist. | Promote to FIX if a merged `main` commit reaches CI with the same build-class failure twice in 30 days despite focused local evidence. |
+| **7 — cli-integration cascade** | DEDUPE/DEFER | Failures cascade from build/test root causes, primarily items 1 and 4. | Promote to FIX if `cli-integration` fails independently after items 1 and 4 are green for two consecutive affected runs. |
+| **13 — contract-compatibility** | DEFER | The gate is doing its job; failures indicate real schema or catalog drift. | Promote to FIX if the same false-positive contract failure repeats twice in a quarter. |
+| **14 — smoke-test Python 3.14** | DEFER | Rare flake; workflow pinning already narrows the surface. | Promote to FIX if the Python 3.14 smoke failure appears in two separate PRs or nightlies within 30 days. |
+| **21 — GoReleaser publish failure** | DEFER | Release publish failures are covered by the `pre-tag-ci-validation` pattern and release discipline. | Promote to FIX if a publish failure recurs on two consecutive release attempts with the same root cause. |
+| **22 — doc-release blocks publish** | DEDUPE/DEFER | Cascade from item 12 doc-release drift, covered by the repository's deterministic gate. | Promote to FIX if publish is blocked by doc-release after item 12's exact-input gate has passed on the release branch. |
+| **23 — markdownlint** | DEFER | Rare and cheap to repair locally. | Promote to FIX if markdownlint failures occur more than twice in a quarter or block a release branch. |
+| **24 — shellcheck** | DEFER | Rare and cheap to repair locally. | Promote to FIX if shellcheck failures occur more than twice in a quarter or block a release branch. |
+| **27 — plugin-load-test manifest** | DEFER | Low failure rate; gate catches real manifest/plugin-structure drift. | Promote to FIX if plugin-load-test reports a false positive twice in a quarter. |
+| **30 — memrl-health degraded** | DEFER | Rare health signal; investigate when it actually fires. | Promote to FIX if `memrl-health` fires more than once per quarter. |
+| **39 — nightly Static Validation** | DEFER | Nightly-only signal; bundle with future nightly stabilization if the pattern persists. | Promote to FIX if static validation fails in 3 of 10 consecutive nightlies outside a known knowledge-cycle quarantine. |
 
 ### Blocking Gates (all others)
 
 Every other job is blocking for workflows that the repository configures to
 require `summary`. If any fails, `summary` exits non-zero.
+
+## CI Jobs and What They Check
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **go-gate-shadow** | Required Go-gate authority lane (`ao gate check --full`); runs the single Go registry with GitHub annotations, JSON evidence, workflow coverage, and `--require-workflow-parity` so blocking validate.yml scripts cannot drift outside the Go gate contract | A blocking Go-gate check failure, a workflow coverage parity gap for a non-deferred blocking script, or an inability to produce/upload the `ao-gate-shadow-report` JSON artifact |
+| **correctness** | `ao` builds (Linux + native Windows smoke via matrix); Go tests pass with `-race`/coverage floor; embedded lib/skills in sync; Go complexity budget; CLI + v2.18 integration; release smoke; JSON-flag consistency; bats; Python smoke; advisory `ao doctor` dead-reference check | Build/test failure, race, coverage-floor regression, embedded drift, a function exceeding cyclomatic complexity 25, integration/smoke/bats/JSON-flag breakage, or Windows-smoke regression |
+| **security** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`); unified security toolchain gate (`scripts/security-gate.sh --mode quick`) — gosec, golangci-lint, gitleaks, trivy, semgrep — blocking on any CRITICAL/HIGH finding | Hardcoded API keys/passwords in non-test files, a dangerous pattern, or a CRITICAL/HIGH security/quality finding |
+
+### Nightly Workflow Jobs
+
+`.github/workflows/nightly.yml` runs at 06:00 UTC daily and on `workflow_dispatch`.
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **cli-tests** | Go CLI tests with `-race` and coverage | Test regression in `cli/internal/**` |
+| **static-validation** | Smoke, doc-release, and hooks/docs parity gates | Skill/doc drift absent from the candidate receipt |
+| **retrieval-bench** | Synthetic + live corpus retrieval precision/coverage gates | P@3 < 0.67 or live coverage < 0.80 |
+| **security-toolchain** | Full `security-gate.sh` (semgrep, gosec, gitleaks, trivy, hadolint) | Scanner findings or toolchain install flake |
 
 ## What Breaks CI
 

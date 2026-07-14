@@ -29,8 +29,9 @@ for path in negatives:
         raise SystemExit(f"negative mortem naming fixture is not negative: {path.relative_to(repo)}")
 
 entrypoints = [
-    "AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md",
-    "AGENTS-RUNTIME.md", "README.md", "PRODUCT.md", "GOALS.md",
+    "AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md",
+    "docs/contracts/codex-skill-api.md", "docs/contracts/repo-execution-profile.md",
+    "README.md", "PRODUCT.md", "GOALS.md",
     "docs/3.0.md", "docs/ARCHITECTURE.md", "docs/SKILL-ROUTER.md",
     "docs/cdlc.md", "docs/newcomer-guide.md", "docs/documentation-index.md",
     "docs/first-value-path.md", "docs/how-it-works.md",

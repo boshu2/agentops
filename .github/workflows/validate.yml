@@ -135,18 +135,18 @@ jobs:
               - 'docs/strategic-direction.md'
               - 'docs/standards/shell-script-standards.md'
               - 'skills/security/**'
-              # AGENTS tiered-split siblings (ag-g9ex): scripts/validate-agents-split.sh
-              # validates AGENTS.md AND these four siblings (size cap, existence,
-              # bidirectional links). The gate triggers on contracts (added with
-              # this list), so a sibling-only edit re-runs the split gate that
-              # guards it — without these globs an AGENTS-WORKFLOW.md-only edit
-              # would skip its own gate (the #634 class). The guard test
-              # tests/scripts/test-pathfilter-gate-coverage.bats asserts every
-              # AGENTS*.md the split script reads is covered by the contracts filter.
-              - 'AGENTS-WORKFLOW.md'
-              - 'AGENTS-CI.md'
-              - 'AGENTS-CODEX.md'
-              - 'AGENTS-RUNTIME.md'
+              # AGENTS detail owners (post sibling cutover): scripts/validate-agents-split.sh
+              # validates AGENTS.md AND these four owner docs (existence, bidirectional
+              # links). The gate triggers on contracts (added with this list), so an
+              # owner-only edit re-runs the split gate that guards it — without these
+              # globs a docs/agent-workflow-reference.md-only edit would skip its own
+              # gate (the #634 class). The guard test
+              # tests/scripts/test-pathfilter-gate-coverage.bats asserts every owner
+              # path the split script reads is covered by the contracts filter.
+              - 'docs/agent-workflow-reference.md'
+              - 'docs/CI-CD.md'
+              - 'docs/contracts/codex-skill-api.md'
+              - 'docs/contracts/repo-execution-profile.md'
             goals:
               # correctness/doctrine gates that police GOALS.md + the executable
               # spec scenarios (ag-n4m7): a GOALS.md-only or scenario-only edit

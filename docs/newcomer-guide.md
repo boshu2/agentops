@@ -144,7 +144,7 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 - Run the focused deterministic checks selected by your changed surface and
   bind them to the frozen candidate. Your repository—not AgentOps—decides
   whether to use direct push, a PR, a hook, or external CI.
-- Use a **git worktree** per bead when the canonical checkout is shared — see `AGENTS-RUNTIME.md`.
+- Use a **git worktree** per bead when the canonical checkout is shared — see `docs/contracts/repo-execution-profile.md`.
 - Trust runtime files over narrative docs when there is a mismatch.
 - Keep changes small, freeze one candidate, and retain exact-input evidence.
 - Treat `.agents/` as a first-class part of the system behavior.

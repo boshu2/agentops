@@ -236,3 +236,21 @@ the loop, grant write authority, or become mandatory startup infrastructure.
 
 The CLI may provide deterministic transaction and recovery mechanics. Agents own
 intent, implementation, and semantic judgment; repositories own delivery policy.
+
+## Dynamo map (optional framing)
+
+The same loop as a measured dynamo. Useful when reading yield-ledger and pawl
+signals; not a second subsystem.
+
+| Term | Meaning | Organ | Signal |
+|---|---|---|---|
+| Rotor | Fungible workers that return evidence | Dispatch, worktrees, bead claims | Attempted work, usage, rework |
+| Field | Operating loop + pawl + ratchet | `docs/contracts/pawls.md`, gates, accepted-bead policy | Accept, reject, hold, return |
+| Current | Only evidence-backed accepted work | Merge/accept events, bead state | `yieldledger.EventAccept` |
+| Self-excitation | Corpus delta becomes positive | Measured under `ag-8p8o`; unproven until published | Gauge `C` (pending until measured) |
+| Sensors | Durable operational events | `cli/internal/yieldledger`, `.agents/yield/` | `accept`, `gate-verdict`, `usage` |
+| Structural gate | Author ≠ judge; fail-closed launch | Separation of duties + explicit approval | No self-approval |
+
+Loop sketch: goal + acceptance → fungible worker → evidence-backed claim →
+fresh-context pawl → accepted current → yield sensors → corpus assay → next
+rotation. `C` stays measured, never asserted.

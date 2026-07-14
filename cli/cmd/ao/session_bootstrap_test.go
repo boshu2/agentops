@@ -25,8 +25,8 @@ func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
 	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-CI.md"), "# c")
+	mustWriteFile(t, filepath.Join(dir, "docs", "agent-workflow-reference.md"), "# w")
+	mustWriteFile(t, filepath.Join(dir, "docs", "CI-CD.md"), "# c")
 
 	got := computeBootstrapStatus(context.Background(), dir, true /*noMail*/)
 
@@ -34,7 +34,7 @@ func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
 		t.Fatalf("AgentsMDRead: want true, got false")
 	}
 	if len(got.AgentsSiblingsRead) != 2 {
-		t.Fatalf("AgentsSiblingsRead: want [WORKFLOW, CI] (2 entries), got %v", got.AgentsSiblingsRead)
+		t.Fatalf("AgentsSiblingsRead: want [workflow-ref, CI-CD] (2 entries), got %v", got.AgentsSiblingsRead)
 	}
 	if got.OnboardPhase != "skipped:not-implemented" {
 		// onboard subcommand may exist if registered; allow both shapes
@@ -133,15 +133,15 @@ func TestSessionBootstrap_AgentsMDMissing(t *testing.T) {
 func TestSessionBootstrap_PartialSplit(t *testing.T) {
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-RUNTIME.md"), "# r")
-	// Intentionally omit AGENTS-WORKFLOW.md, AGENTS-CI.md, AGENTS-CODEX.md
+	mustWriteFile(t, filepath.Join(dir, "docs", "contracts", "repo-execution-profile.md"), "# r")
+	// Intentionally omit workflow-ref, CI-CD, codex-skill-api owners
 
 	got := computeBootstrapStatus(context.Background(), dir, true)
 
 	if !got.AgentsMDRead {
 		t.Fatalf("AgentsMDRead: want true, got false")
 	}
-	want := []string{"AGENTS-RUNTIME.md"}
+	want := []string{"docs/contracts/repo-execution-profile.md"}
 	if !equalStringSlices(got.AgentsSiblingsRead, want) {
 		t.Fatalf("AgentsSiblingsRead: want %v, got %v", want, got.AgentsSiblingsRead)
 	}
@@ -178,7 +178,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 	t.Setenv("BEADS_DIR", "")
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# A")
-	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
+	mustWriteFile(t, filepath.Join(dir, "docs", "agent-workflow-reference.md"), "# w")
 	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "human.md"),
 		"Canon Human", "established", "", "0.8", "1.0", "human bootstrap canon memory should be visible")
 
@@ -214,7 +214,7 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 func TestSessionBootstrap_JSONRoundTripsStatus(t *testing.T) {
 	s := SessionBootstrapStatus{
 		AgentsMDRead:                true,
-		AgentsSiblingsRead:          []string{"AGENTS-WORKFLOW.md"},
+		AgentsSiblingsRead:          []string{"docs/agent-workflow-reference.md"},
 		OnboardPhase:                "skipped:not-implemented",
 		Runtime:                     "test",
 		StartedAt:                   "2026-05-20T00:00:00Z",

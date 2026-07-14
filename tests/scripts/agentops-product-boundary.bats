@@ -4,7 +4,6 @@ setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   ACTIVE_AUTHORITY=(
     AGENTS.md
-    AGENTS-CI.md
     PROGRAM.md
     PRODUCT.md
     GOALS.md

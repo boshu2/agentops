@@ -76,7 +76,7 @@ var (
 	evalPaths         = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
 	contextMapPaths   = []string{"skills/**", "docs/contracts/context-map.md"}
 	swarmPaths        = []string{".agents/swarm/**", "schemas/swarm-*"}
-	agentsDocPaths    = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
+	agentsDocPaths    = []string{"AGENTS.md", "docs/agent-workflow-reference.md", "docs/CI-CD.md", "docs/contracts/codex-skill-api.md", "docs/contracts/repo-execution-profile.md", ".github/workflows/validate.yml"}
 	corpusPaths       = []string{".agents/**", "docs/canon/**", "canon/**"}
 	cliContractPaths  = []string{"cli/**", "docs/cli-surface.*", "scripts/check-cli-contract.sh", "scripts/check-docs-cli-snippets.sh", "scripts/generate-cli-reference.sh", "tests/cli_contract_gate.bats", "tests/cli_quality_zero_debt.bats"}
 	registryPaths     = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}

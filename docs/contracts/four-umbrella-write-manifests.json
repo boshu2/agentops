@@ -361,7 +361,7 @@
         "cli/embedded/skills/crank/**",
         "cli/embedded/skills/rpi/**",
         "cli/embedded/skills/push/**",
-        "AGENTS-WORKFLOW.md",
+        "docs/agent-workflow-reference.md",
         "scripts/check-validation-delivery-boundary.sh",
         "scripts/pre-push-gate.sh",
         "tests/fixtures/validation-delivery-boundary/**",
