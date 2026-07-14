@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "f55928be825fae09d60a9ad7729dcd1bfd6c8ddc053f45824f8a8129936d5a07",
+  "codex_override_catalog_hash": "3095b9173bf179acce06a71f88314195f1170baee9c0dd29a496c0469f3510c5",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -135,8 +135,8 @@
           ],
           "required_markers": [
             "In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.",
-            "Prefer direct Codex session-agent orchestration for disjoint workers; preserve the source skill's one-wave boundary.",
-            "End after one wave. RPI routes evidence through `$validate`, `$learn`, and the orchestrator before another `$crank` invocation."
+            "Use the current leaf owner for one write scope; use Codex subagents only for at least two explicitly admitted disjoint lanes.",
+            "End after one wave and return targeted evidence to RPI. RPI may admit another unchanged wave without `$validate` or `$learn`; those run once only after the leaf is complete and frozen."
           ]
         }
       },
@@ -401,16 +401,13 @@
             "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
             "Keep a single lifecycle objective spine across discovery, crank, validation, and learning. Never replace it with a child issue ID or one ready slice from `br ready`, `br show`, or `.agents/rpi/next-work.jsonl`.",
             "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
-            "If `$crank` returns `<promise>PARTIAL</promise>`, treat it as one completed wave: run `$validate` on that wave, pass the immutable verdict to `$learn`, and let the lead orchestrator consume `plan_impact` before deciding whether to invoke `$crank` again.",
+            "If `$crank` returns `<promise>PARTIAL</promise>`, compare the remaining work with the bound plan. Admit another unchanged wave below the three-wave and 90-minute boundary; at an incomplete soft boundary persist resume evidence and stop without `$validate`, `$learn`, or delivery.",
             "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
-            "Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary so `$discovery`, `$crank`, `$validate`, and `$learn` delegation is auditable from disk.",
-            "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
-            "Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.",
-            "Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.",
+            "Keep one ordered receipt index in `.agents/rpi/execution-packet.json` that points to canonical Discovery, Crank, Validate, and Learn artifacts; legacy phase summaries are optional link-only projections.",
             "Enforce `Validate -> Learn -> orchestrator`. Only the lead orchestrator may invoke `$discovery` to change the remaining plan and then `$premortem` on that exact changed plan.",
             "claim, release, and consume semantics exactly",
             "claim before work, consume on success, release on failure or interruption",
-            "Do not silently loop after a partial wave. Preserve the objective, route the wave through Validate and Learn, and make the next orchestrator decision explicit. Do not count runtime-only artifact flips or corpus-state flywheel movement as successful code improvement without a tracked source change or explicit operator request. Do not invoke Dream/overnight from RPI; use Dream evidence only as input, and keep code-mutating work in the RPI lifecycle."
+            "Do not silently loop after a partial wave. Preserve the objective and make the remaining-plan decision explicit; per-wave Validate, Learn, delivery, and duplicate summaries are forbidden."
           ]
         }
       },
@@ -687,8 +684,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "7b329fbb1d9d0777c7a24b1b7b4c5c612adddc2659f97237cfd6c5f398fea675",
-      "generated_hash": "804fb791cba23e2b5ebc050fce94526066fcd8fb59bd392f7967a6d2b32ff887"
+      "source_hash": "b7d13847a7646c18ceaa66fb9dc2d4b42bad4c9fde81afc1d5f76dc5133c21ff",
+      "generated_hash": "dacbc75e5c7933ec24506317211d444b81ec8e3432c3d8b95b112e0967f883d4"
     },
     {
       "name": "dcg",
@@ -699,8 +696,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "fab004d4a3ae2cce237038c2d87180b7a294bd5cbd51757d142496066849d391",
-      "generated_hash": "739d54568ca391f0c93e9857e48b367398e0781977f199b4fca495e70c1a77b5"
+      "source_hash": "e2507eb4c5f7e7c266a7b16c5adfad3b2fa1383293a9c9e91d4c5c146ed5f297",
+      "generated_hash": "469ab3c8d07b5bc280c700d0166d4481cc953fbf0b18bc72d98e17333efac497"
     },
     {
       "name": "doc",
@@ -771,8 +768,8 @@
     {
       "name": "learn",
       "source_skill": "skills/learn",
-      "source_hash": "58a0809ad126a7df99ea8676448ad1c52f356751d2785efe9cbc33e091b73522",
-      "generated_hash": "41b384b308d9473d9d22dd308b0f3f839424a4046016e19bc862085c054a18a5"
+      "source_hash": "48d47c513ef5aabd2437ca50564dba33a31017b01e689c5f17f5f7b2fac21dc4",
+      "generated_hash": "12f2e234b9ae68729056d502838dae92be8c8b6afa1fc9669c98cd9a0f3ad872"
     },
     {
       "name": "ms",
@@ -819,8 +816,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "52c0c238bbbdc081ab2b0b022486444e9cf18fea8ec96649cc7e21811d05ea6c",
-      "generated_hash": "dad5c3fd7bbd2c6a5d4cbc678a4e77790bc088e79bcd174824d5f4d423d8905b"
+      "source_hash": "18fbacb6f1fc51dd7c0cd1852196f05615fb6f0e1a4b529a038ee5d3dc2a8fa2",
+      "generated_hash": "ce512a3befd53218432bd1d5a6eb9a115822ebbfe59dc4e8a26a3857c8828f39"
     },
     {
       "name": "product",
@@ -873,8 +870,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "2624ff386ed57eae302ad284bf35ae556d83f6dbc5923864651a23d72a4b727f",
-      "generated_hash": "0896bd24d0d46ab87c9f6e0c3a6f3bc54f335ce5f0837a59fccaf850ba741992"
+      "source_hash": "2d220bfab678297df07a37051d8cf3601f765632c845cf7f63043a8d5be2905f",
+      "generated_hash": "f6b1a88de3b65a27818af0f0f2bccff6bbf23121b8aa8f3e112fdf10f13426f0"
     },
     {
       "name": "sbh",
@@ -903,8 +900,8 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "d5b17d472014eb291265ebe8c5936edf7bebf713be26d0ef6fa821ca72a80de1",
-      "generated_hash": "9d6c7a340a0491735177092ec7c7f3f730583a8eb6fdb3940554c210fbdefbbd"
+      "source_hash": "e548beb13b9979fec13c1dffec5ffd6cc208d27d745d19faba8c6ef38214e904",
+      "generated_hash": "22529f4e267c2e2f609acc69f3b54d46f35cd263855debec580e755cdc93a623"
     },
     {
       "name": "skill-builder",
@@ -951,8 +948,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "fb5f64d987c9e44128f1089096f705bbb1c1ff2b371aaeddaa18a09fb4b086d6",
-      "generated_hash": "5b2fe6677d13c9c11b5b7a088ffc8bb8675f368fddb3e54b4cdff648fa63031e"
+      "source_hash": "667f546d02950e25f67b087ed48f458b7b31eb8fe01e1cfd9a71f3d6d527d0c5",
+      "generated_hash": "960e0c7ee1a082cb00d4d67990c095041329898773dfeeb8a9514251854420e4"
     },
     {
       "name": "workflow-builder",

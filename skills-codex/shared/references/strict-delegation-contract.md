@@ -8,47 +8,59 @@ receipt semantics never originate in a projection-only copy.
 
 ## The Contract
 
-Top-level orchestrator skills delegate to their declared sub-skills via `Skill(skill="<name>", ...)` — **as separate tool invocations**, one per phase/step. Each sub-skill owns its artifact, its gate, and its retry policy. Inlining the work breaks that ownership chain.
+Strict delegation preserves **typed responsibility and authority**, not a quota
+of model calls or Markdown files. Discovery owns intent and tranche shape;
+Crank owns implementation and targeted wave evidence; Validate owns independent
+semantic proof; Learn owns deterministic post-verdict bookkeeping. The
+orchestrator owns ordering, retry/re-plan, and delivery handoff.
 
-There is no `--full` flag because strict delegation is always on.
+Use the runtime's native skill invocation when available. A thin phase runner or
+subagent may transport a responsibility when the runtime lacks that boundary.
+Only Premortem and Validate require fresh independent context; Learn must not
+spawn another model merely to copy a verdict into bookkeeping.
 
 ## Phase-Isolated Transport
 
 Strict delegation names the contract. Transport isolation names where that
 contract runs.
 
-For high-cost lifecycle phases, the desired runtime shape is:
+For high-cost or independence-sensitive phases, the desired runtime shape is:
 
 1. The visible orchestrator keeps the lifecycle objective, phase order, and
    retry policy.
 2. A phase runner receives only the phase skill name, the bounded handoff
    artifact, and the minimum objective context.
-3. The runner executes the declared skill contract (`/discovery`, `/crank`, or
-   `/validate`) in an isolated phase context.
+3. The runner executes one declared skill contract in the cheapest context that
+   preserves its authority. Validate and Premortem are fresh; deterministic
+   Learn may run in the orchestrator context.
 4. The orchestrator receives only artifact path, verdict, and next action.
 
-This is not a compression escape. It is strict delegation over an isolated
-transport. The forbidden move is replacing the skill contract with direct agent
-work.
+The forbidden move is erasing a responsibility or letting the producer self-issue
+the independent verdict. Sharing a context for deterministic bookkeeping is not
+compression.
 
 ## Anti-Pattern: Compression
 
-Do not inline phase work, compress multiple phases into one pass, substitute
-direct `Agent()` work for a skill contract, or skip mandatory phases. Typical
-rationalizations to reject:
+Do not erase typed responsibilities, let one role acquire another role's
+authority, or skip independent semantic proof. Typical rationalizations to reject:
 
-- *"I'll compress the three phases into one pass."*
+- *"The tests passed, so the producer can issue the semantic verdict."*
 - *"Let me do discovery inline — I already know what to do."*
 - *"Nested `Skill()` calls waste context; I'll spawn an `Agent()` instead."*
 - *"The implementation is validated by tests passing; skipping `/validate`."*
-- *"The plan looks good, skipping pre-mortem to save time."*
+- *"The plan looks good, skipping premortem to save time."*
 - *"I'll just spawn 3 judges directly — it's what `/validate` does anyway."*
-- *"Post-mortem is just writing a summary, I'll do it inline."*
+- *"Learn can reinterpret or upgrade the validator's verdict."*
 
-### Pre-Mortem Anti-Rationalization Clause
+The opposite failure is **delegation theater**: spawning a fresh model for
+deterministic bookkeeping, rerunning exact-input checks at every boundary,
+requiring four hand-written phase summaries, or forcing Validate/Learn between
+unchanged low-risk waves. Those acts add cost without adding independence.
 
-The following do **NOT** count as a pre-mortem and **MUST NOT** be used to skip
-the delegated `/pre-mortem` pass:
+### Premortem Anti-Rationalization Clause
+
+The following do **NOT** count as a premortem and **MUST NOT** be used to skip
+the delegated `/premortem` pass:
 
 1. **An inline risk or "honest risk" section the author wrote.** The author's
    own risk assessment is autocorrelated with the plan — the same blind spots
@@ -59,14 +71,17 @@ the delegated `/pre-mortem` pass:
    that premise. Different artifact, different failure modes.
 3. **"A related council already ran."** A council on a sibling plan, a prior
    version of the plan, or a different artifact in the same epic does not
-   transfer. Pre-mortem is plan-specific.
+   transfer. Premortem is plan-specific.
 
-**Pre-mortem = DELEGATED + INDEPENDENT (author ≠ reviewer) + fresh-context on
-THIS plan.** All three conditions must hold. An inline section satisfies none;
-a prior-premise adversarial pass satisfies at most one (independent) but not
-the other two (not this plan, not delegated).
+**Premortem = INDEPENDENT (author != reviewer) + fresh-context + bound to THIS
+plan version and risk class.** Reuse that verdict while acceptance, dependencies,
+write scope, and risk are unchanged. An inline author section satisfies none; a
+prior-premise adversarial pass is not bound to this plan.
 
-All of these are contract violations. A live compression was observed 2026-04-19 (see [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md)). The compression "worked" mechanically (strict build passed, 2-judge inline vibe PASSed) but the knowledge flywheel never turned — no forged learnings, no post-mortem artifact, no structured council verdict. Contract strength depends on actual `Skill()` invocations, not self-certification.
+All of these are contract violations. A live compression was observed 2026-04-19
+(see [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md)).
+Its lesson is separation of authority and evidence—not a permanent requirement
+for duplicate artifacts or a fixed count of invocations.
 
 ## `Agent()` vs `Skill()`
 
@@ -74,11 +89,9 @@ These are **not interchangeable**:
 
 | Call | When to use |
 |------|-------------|
-| `Skill(skill="<name>", ...)` | Invoking a declared skill with its full contract. Required for phase delegation. |
-| `Agent(subagent_type="...", ...)` | Spawning a sub-agent for parallel independent work **within a skill's step** (e.g., `/research` dispatching parallel Explore agents is fine). |
+| `Skill(skill="<name>", ...)` | Invoking a declared skill contract when the runtime exposes native skill calls. |
+| `Agent(subagent_type="...", ...)` | Fresh-context transport for an independent skill role, or parallel work inside a skill when explicitly admitted. |
 | Phase runner | Runtime transport that executes one declared skill contract in an isolated context and returns only the bounded phase artifact. |
-
-If you're tempted to call `Agent()` in place of a `Skill()` invocation, you're compressing. Stop.
 
 If a runtime lacks a native `Skill()`-fork boundary, a phase runner may use a
 subagent, daemon job, or process wrapper as transport. That wrapper must be
@@ -87,85 +100,80 @@ artifact, and return a compact result. It must not perform the phase directly.
 
 ## Supported Compression Escapes
 
-These flags scale *gate depth* or *scope*, **never skip phases**. They are the only supported shortcuts:
+These flags scale gate depth or scope. They never waive the four typed
+responsibilities or the fresh semantic-verdict boundary:
 
 ### `/rpi`
-- `--quick` / `--fast-path` — force fast complexity (inline `--quick` gates inside sub-skills; still runs all three phases)
-- `--from=<phase>` — resume from a specific phase when earlier artifacts already exist
-- `--skip-pre-mortem` / `--no-retro` / `--no-forge` — skip specific sub-skills inside a phase
-- `--no-budget` — disable phase time budgets
+- `--quick` / `--fast-path` — narrow research and deterministic scope; one
+  fresh Premortem and one fresh Validate still bind the plan and candidate.
+- `--from=<phase>` — resume only when earlier canonical artifacts still match
+  their exact inputs.
 
 ### `/discovery`
-- `--quick` — passed through to `/pre-mortem` for fast inline gate
+- `--quick` — passes a smaller claim packet to one fresh Premortem judge.
 - `--skip-brainstorm` — skip STEP 1 when the goal is specific (>50 chars, no vague keywords)
 - `--interactive` / `--auto` — control human-gate behavior in research and plan
 - `--no-scaffold` — skip STEP 4.5 scaffold auto-invocation (canonical name; `--no-lifecycle` is a deprecated alias through v2.40.0)
 
 ### `/validate`
-- `--quick` — fast inline gates inside sub-skills (vibe, post-mortem)
-- `--no-retro` / `--no-forge` — skip specific sub-skills
-- `--no-lifecycle` — skip STEP 1.7 lifecycle checks (test, deps, review, perf)
-- `--no-behavioral` — skip STEP 1.8 holdout scenarios
-- `--allow-critical-deps` — allow shipping despite CVSS ≥ 9.0 findings
+- `--quick` — narrow the claim set and reuse exact-input factual receipts; the
+  accountable validator remains fresh and distinct from the author.
+- Surface-specific exclusions reduce scope only when recorded in `not_checked`;
+  they never turn missing mandatory evidence into PASS.
 
 **If tempted to shortcut outside this list: stop and delegate.**
 
 ## Positive Pattern: What Correct Delegation Looks Like
 
-A correct `/rpi` invocation shows three distinct `Skill()` tool calls at phase boundaries:
+A correct `/rpi` invocation preserves the four typed transitions while paying
+proof cost once per bounded tranche:
 
 ```
 Skill(skill="discovery", args="<goal> --auto")      # Phase 1
   → <promise>DONE</promise>
   → reads .agents/rpi/execution-packet.json
-Skill(skill="crank", args="<packet-path> [--test-first]")   # Phase 2
-  → <promise>DONE</promise>
-  → reads .agents/rpi/phase-2-summary-*.md
+Skill(skill="crank", args="<packet-path> [--test-first]")   # 1-3 admitted waves
+  → canonical wave evidence; targeted facts only
+  → another Crank wave may run when the Premortem-bound plan is unchanged
 Skill(skill="validate", args="--complexity=<level> [--strict-surfaces]")   # Phase 3
+  → one fresh independent verdict on the frozen tranche
+  → writes canonical result.json
+Skill(skill="learn", args="<validate-verdict-path>")   # Phase 4
   → <promise>DONE</promise>
-  → writes .agents/rpi/phase-3-summary-*.md
+  → writes canonical learn-receipt.json without another judge
 ```
 
-Anything less is compressed.
+Exact-input deterministic receipts are reused. One consolidated repair may
+receive affected-claim closure; a second distinct repair need returns REPLAN.
 
 When phase-isolated transport is available, the transcript may show a phase
-runner instead of raw inline skill execution. The acceptance rule is still the
-same: the delegated phase contract must run, emit its completion marker, and
-write the expected phase summary file.
-
-The phase artifact should also carry a `## Skill Receipts` section, and the
-execution packet should carry cumulative `skills_loaded` / `phase_receipts`
-entries. These receipts are not a substitute for delegated invocation evidence;
-they are the disk-backed audit index that lets later validation detect a missing
-phase after chat or runtime traces are unavailable.
+runner. The execution packet carries one ordered receipt index pointing at the
+canonical artifact for each responsibility. It is not copied into every child
+artifact, and legacy phase summaries are link-only projections.
 
 ## Detection for Reviewers
 
 When auditing a session that claims to have run `/rpi`, check the transcript for:
 
-1. **Three delegated phase contracts** at phase boundaries (`Skill()` directly,
-   or a phase runner whose sole job is to execute the named skill contract).
-2. **Three `<promise>DONE</promise>` markers**, each from the delegated sub-skill.
-3. **Three phase summary files** in `.agents/rpi/phase-{1,2,3}-summary-*.md`.
-4. **Phase artifact receipts** in the execution packet or phase summaries:
-   `skills_loaded` names the orchestrator and phase skill, and
-   `phase_receipts` names phase, skill, status/verdict, and artifact path.
+1. Discovery evidence binds the admitted tranche plan and Premortem verdict.
+2. Crank evidence covers each admitted wave with targeted deterministic facts.
+3. One frozen tranche has one fresh author-not-equal-validator semantic verdict.
+4. One Learn receipt binds that verdict without changing it.
+5. The execution packet's ordered receipt index resolves each canonical artifact.
 
-Missing any of items 1-3 = compression. Missing item 4 = an unauditable handoff
-gap; treat it as non-compliant until the artifact is corrected or runtime trace
-evidence is attached.
+Missing a typed transition or independent verdict is non-compliant. Missing a
+duplicate Markdown summary is not.
 
 ## Enforcement Layers (defense in depth)
 
 1. **This contract document** — read before / during orchestrator invocation.
 2. **Loud text in each orchestrator's SKILL.md** — anti-pattern section with explicit examples.
 3. **Durable learning** at `docs/learnings/orchestrator-compression-anti-pattern.md` — surfaced through the orchestrator skill contracts.
-4. **Phase artifact receipts** — file-backed `skills_loaded` / `phase_receipts`
-   records that validation and review can inspect without relying on memory.
+4. **One receipt index** — file-backed `phase_receipts` references canonical
+   artifacts without duplicating their analysis.
 5. **Optional future**: runtime hook that inspects the skill invocation trace,
    cross-checks it against phase receipts, and blocks downstream work when
    phases were skipped. Not implemented; deferred to a follow-up initiative.
 
-Contract strength alone is not enforcement. Layer 1 (this doc) + Layer 2
-(SKILL.md sections) + Layer 3 (flywheel injection) + Layer 4 (artifact receipts)
-together give durable coverage.
+Contract strength alone is not enforcement. These layers preserve authority and
+evidence while rejecting invocation-count and artifact-count theater.

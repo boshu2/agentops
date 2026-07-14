@@ -25,9 +25,10 @@ python3 skills/rpi/scripts/run-governor.py init \
   --max-deterministic-executions "$RPI_MAX_DETERMINISTIC_EXECUTIONS"
 ```
 
-Three is the default wave ceiling. The token, elapsed-time, review-context,
-and deterministic-execution ceilings are always declared; the governor does
-not invent them. Missing or invalid ceilings are non-authorizing.
+Three waves or 90 minutes, whichever comes first, is the routine bounded
+tranche ceiling. The token, elapsed-time, review-context, and
+deterministic-execution ceilings are always declared; the governor does not
+invent them. Missing or invalid ceilings are non-authorizing.
 
 ## Admit before dispatch
 
@@ -61,10 +62,12 @@ control input returns nonzero with `authorized:false` and a neutral `NOTE`
 response; it does not mutate the run or manufacture `ANDON`. A meter blocks an
 action only when that action has a positive projected charge and the resulting
 usage would exceed its ceiling. Saturating the wave meter therefore blocks
-another Crank wave but not a zero-wave semantic review. A genuinely exceeded
-wave, time, token, context, deterministic-execution, cost, or quota ceiling
-sets `ANDON` and `helper.allowed:false`; a spent ceiling never buys recovery
-work.
+another Crank wave but not a zero-wave semantic review. A caller must stop
+admitting new waves before a soft tranche ceiling is spent, persist resume
+state, and return `PARTIAL`; that boundary is neither HOLD nor ANDON. A
+genuinely exceeded hard wave, time, token, context, deterministic-execution,
+cost, or quota ceiling sets `ANDON` and `helper.allowed:false`; a spent ceiling
+never buys recovery work.
 
 ## One disposition language
 
@@ -82,6 +85,28 @@ Only these run dispositions exist:
 `REPLAN`. `UNSTUCK` and `ESCALATE` are helper results, not dispositions.
 `UNSTUCK` must name a new approach and resumes as `REPAIR`. `ESCALATE` becomes
 `ANDON`.
+
+## Bounded tranche and receipt reuse
+
+One behavioral leaf is the bounded tranche and the implementation, acceptance,
+semantic-proof, and delivery unit. One writer mutates it through one to three
+sequential low-risk waves. Every wave receives targeted deterministic acceptance,
+and the Premortem-bound acceptance, dependencies, write scope, and risk class
+must remain unchanged. No second writer or second leaf is implicit.
+
+Intermediate leaf edits occur before freeze and do not invalidate a verdict
+because no semantic verdict exists yet. At the tranche boundary, freeze the
+complete candidate once. Any edit after freeze invalidates the semantic verdict.
+
+An exact-input deterministic receipt is reusable when candidate/tree inputs,
+command and mode, registry/toolchain identity, and relevant environment match.
+Reuse has zero deterministic-execution charge. Missing, stale, suspicious, or
+invalidated receipts are rerun fail-closed. Validation may verify receipt identity;
+it must not rerun the same broad suite by habit.
+
+One initial semantic blocker set may receive one consolidated repair batch and
+one affected-claim closure. A second distinct repair need is `REPLAN`; phases do
+not create another local review loop.
 
 ## Breaker and helper rules
 
@@ -117,9 +142,11 @@ The command surface is:
 
 ## Pull-flow boundary
 
-The goal remains aggregate demand. One behavioral leaf occupies WIP. A frozen
-candidate is judged without mutation. Learn records the immutable verdict and
-plan impact. Repository delivery verifies the exact remote identity and emits
-the tranche report before another leaf is claimed. The governor controls
-admission and recovery only; it does not become a planner, implementer,
+The goal remains aggregate demand. One behavioral leaf occupies WIP and is the
+bounded tranche. A completed leaf freezes once, Validates once, Learns once, and
+hands the same candidate to repository delivery. If three waves or 90 minutes
+arrives while the leaf is incomplete, persist `PARTIAL` resume evidence and stop
+without proof, Learn, or delivery authorization. Exact remote verification and
+the report release the WIP slot; only then may another leaf begin. The governor
+controls admission and recovery only; it does not become a planner, implementer,
 semantic judge, tracker, or delivery adapter.

@@ -1,8 +1,8 @@
 # Planning Rule: Re-Validate Inherited Scope Estimates
 
-**Applies to:** `/plan`, `/pre-mortem`, `/discovery`, any skill that consumes a bead description, prior plan, handoff doc, or scope estimate produced by an earlier session.
+**Applies to:** `/plan`, `/premortem`, `/discovery`, any skill that consumes a bead description, prior plan, handoff doc, or scope estimate produced by an earlier session.
 
-**Status:** Active rule. Violations should be called out in pre-mortem gates.
+**Status:** Active rule. Violations should be called out in premortem gates.
 
 ## The rule
 
@@ -30,7 +30,7 @@ Scope estimates inflate in deferral handoffs. A description written hours before
 2. **Run `ao beads verify <id>`** if the input is a bead ID — it mechanically checks each citation against HEAD and reports stale references. (If this command doesn't exist in your session, grep manually.)
 3. **Run `/council --evidence validate "verify this scope estimate: <description>"`** on the description. Each judge must return concrete `test_assertions` that either confirm or refute the cited infrastructure.
 4. **Re-state the scope based on HEAD, not the description.** Include the delta: "Description said 395 LOC; HEAD says ~300 LOC because [X] already exists at [file:line]."
-5. **Proceed only if scope is unchanged or smaller.** If the HEAD-validated scope is materially larger than the description, defer to a new pre-mortem — the original framing was under-estimating and the new framing may need different resources.
+5. **Proceed only if scope is unchanged or smaller.** If the HEAD-validated scope is materially larger than the description, defer to a new premortem — the original framing was under-estimating and the new framing may need different resources.
 
 ## Concrete case (2026-04-11, na-h61)
 
@@ -53,4 +53,4 @@ A common trap: believing the description and starting to read code, trusting tha
 
 - `skills/council/SKILL.md` — `--evidence` flag and the falsifiable-assertion schema
 - `skills/plan/SKILL.md` — loads this rule during scope decomposition
-- `skills/pre-mortem/SKILL.md` — loads this rule when the input is a handoff or deferred bead
+- `skills/premortem/SKILL.md` — loads this rule when the input is a handoff or deferred bead

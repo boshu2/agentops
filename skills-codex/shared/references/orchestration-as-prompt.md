@@ -15,7 +15,7 @@ Orchestration logic embedded in SKILL.md prompts rather than in Go/Python code. 
 
 | Use Code For | Use Prompt For |
 |---|---|
-| Hard constraints (`MAX_EPIC_WAVES = 50`) | Judgment calls ("is this research sufficient?") |
+| Hard constraints (three waves or 90 minutes per tranche) | Judgment calls ("did the plan materially change?") |
 | File I/O, git operations, CLI wrappers | Workflow sequencing and phase transitions |
 | Schema validation, JSON parsing | Quality assessment and retry decisions |
 | Timeout enforcement, kill switches | Scope decisions and prioritization |
@@ -26,11 +26,19 @@ Orchestration logic embedded in SKILL.md prompts rather than in Go/Python code. 
 
 ### Completion Markers (crank)
 
-The Sisyphus Rule in `skills/crank/SKILL.md` uses prompt-embedded markers to enforce completion semantics. After each wave, the LLM must emit one of `<promise>DONE</promise>`, `<promise>BLOCKED</promise>`, or `<promise>PARTIAL</promise>`. The retry logic (max 3 attempts, escalation on repeated BLOCKED) lives entirely in the prompt. Code only enforces the hard wave cap (`MAX_EPIC_WAVES = 50`).
+The Sisyphus Rule in `skills/crank/SKILL.md` uses prompt-embedded markers to
+describe one wave's evidence state: `<promise>DONE</promise>`,
+`<promise>BLOCKED</promise>`, or `<promise>PARTIAL</promise>`. These markers do
+not own retries or escalation. RPI's single run governor owns tranche admission,
+the three-wave/90-minute boundary, and HOLD/helper transitions.
 
 ### Wave Orchestration (crank + swarm)
 
-`skills/crank/SKILL.md` defines the full wave loop — identify ready work, bridge tracker state into the current runtime's execution queue, invoke `/swarm`, verify results, and loop until the epic closes. The LLM decides wave composition, conflict resolution strategy (serialize vs isolate), and when to stop. `skills/swarm/SKILL.md` defines runtime-native spawn selection where the LLM chooses the available multi-agent backend, or inline fallback, from capability detection rather than hardcoded tool names.
+`skills/crank/SKILL.md` defines one wave — identify ready work, execute one
+direct writer by default, and return targeted evidence. RPI may admit another
+unchanged wave, but freezes after at most three waves or 90 minutes. `/swarm`
+is an explicit optimization for two or more disjoint write scopes, not the
+default cost of doing work.
 
 ### Work Selection Ladder (evolve)
 
@@ -38,7 +46,10 @@ The Sisyphus Rule in `skills/crank/SKILL.md` uses prompt-embedded markers to enf
 
 ### Phase Routing (rpi)
 
-`skills/rpi/SKILL.md` classifies work complexity (fast/standard/full) using keyword matching and goal length — logic that could be code but benefits from LLM flexibility when edge cases arise. The three-phase rule (discovery, implementation, validation) and the validation-to-crank retry loop are prompt-orchestrated. The LLM decides whether to re-enter crank with findings context or escalate to manual intervention.
+`skills/rpi/SKILL.md` keeps four authority boundaries: Discovery/Premortem shape
+and admit the plan, Crank produces a bounded tranche, Validate judges one frozen
+candidate, and Learn records the minimal plan impact. The orchestrator chooses
+REPAIR or REPLAN; a failed check never escalates merely because a counter moved.
 
 ### Backend Selection (swarm)
 
@@ -49,7 +60,9 @@ The Sisyphus Rule in `skills/crank/SKILL.md` uses prompt-embedded markers to enf
 - **Timing/timeout logic in prompts.** LLMs cannot reliably track wall-clock time. Use code for timeouts, kill switches, and stall detection.
 - **Binary validation in prompts.** If the answer is strictly pass/fail (test suite, schema check, lint), run it in code. Prompts add ambiguity where none is needed.
 - **Secrets or credentials in prompt-based orchestration.** Prompts are logged, cached, and visible in transcripts. Keep credentials in environment variables and code-level injection.
-- **Unbounded loops without code-level caps.** Always pair prompt-level "loop until done" with a hard code-level limit (e.g., `MAX_EPIC_WAVES = 50`). The LLM may misjudge completion.
+- **Unbounded loops.** Persist one run-level boundary and stop a routine tranche
+  after three waves or 90 minutes. Return remaining work instead of multiplying
+  private phase retries.
 - **Complex arithmetic or counting.** LLMs make arithmetic errors. Use code for counters, SHA comparisons, and numeric thresholds.
 
 ## Origin

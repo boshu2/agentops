@@ -14,10 +14,10 @@ Then read local files in `references/` and `scripts/` when needed.
 ## Codex Execution Profile
 
 1. In Codex hookless mode, run `ao codex ensure-start` before the first wave; the CLI records startup once per thread and skips duplicates automatically.
-2. Prefer direct Codex session-agent orchestration for disjoint workers; preserve the source skill's one-wave boundary.
+2. Use the current leaf owner for one write scope; use Codex subagents only for at least two explicitly admitted disjoint lanes.
 
 ## Guardrails
 
-1. End after one wave. RPI routes evidence through `$validate`, `$learn`, and the orchestrator before another `$crank` invocation.
+1. End after one wave and return targeted evidence to RPI. RPI may admit another unchanged wave without `$validate` or `$learn`; those run once only after the leaf is complete and frozen.
 
 <!-- END AGENTOPS OPERATOR CONTRACT -->

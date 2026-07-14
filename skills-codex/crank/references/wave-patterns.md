@@ -6,9 +6,9 @@ Crank follows FIRE for each wave:
 
 | Phase | Beads Mode | TaskList Mode |
 |-------|-----------|--------------|
-| **FIND** | `bd ready` — get unblocked beads issues | `TaskList()` → pending, unblocked |
-| **IGNITE** | TaskCreate from beads + `/swarm` | `/swarm` (tasks already in TaskList) |
-| **REAP** | Swarm results + `bd update --status closed` | Swarm results (TaskUpdate by workers) |
+| **FIND** | Resolve the admitted leaf and next wave | Resolve the admitted task and next wave |
+| **IGNITE** | One direct `/implement` worker by default | One direct implementer by default |
+| **REAP** | Collect the direct result; Swarm only for admitted disjoint lanes | Same |
 | **CHECK** | Deterministic wave acceptance → PASS/FAIL evidence | Same |
 | **ESCALATE** | Return blocked evidence to the orchestrator | Same |
 
@@ -19,56 +19,39 @@ Crank follows FIRE for each wave:
 | **SPEC** | Generate contracts per issue → `.agents/specs/contract-<id>.md` |
 | **TEST** | Generate failing tests from contracts → RED gate (all must fail) |
 
-## Parallel Wave Model
+## Routine single-writer model
 
-### Beads Mode
-
-```
-Wave N: bd ready → [issue-1, issue-2, issue-3]
-        ↓
-        TaskCreate for each issue
-        ↓
-        /swarm → spawns 3 fresh-context agents
-                  ↓         ↓         ↓
-               DONE      DONE      BLOCKED
-                                     ↓
-                               (record as remaining work)
-        ↓
-        bd update --status closed for completed
-        ↓
-        deterministic wave acceptance
-        ↓
-        Crank PARTIAL / DONE / BLOCKED + evidence
-        ↓
-        Validate → Learn → orchestrator
-                               ↓
-        orchestrator may invoke Wave N+1; a changed plan first goes
-        through Discovery → Premortem
+```text
+Wave N: admitted leaf + exact next failing proof
+        → one direct implementer
+        → targeted deterministic acceptance
+        → canonical checkpoint + remaining-plan facts
+        → orchestrator admits the next unchanged wave or freezes the tranche
 ```
 
-### TaskList Mode
+This is the default. Do not spawn an agent merely to satisfy a workflow shape;
+the current implementer may execute the wave when it owns the leaf. Use the
+parallel model only when the plan explicitly proves two or more disjoint lanes.
 
-```
-Wave N: TaskList() → [task-1, task-2, task-3] (pending, unblocked)
-        ↓
-        /swarm → spawns 3 fresh-context agents
-                  ↓         ↓         ↓
-               DONE      DONE      BLOCKED
-                                     ↓
-                               (record as remaining work)
-        ↓
-        deterministic wave acceptance
-        ↓
-        Crank PARTIAL / DONE / BLOCKED + evidence
-        ↓
-        Validate → Learn → orchestrator
-                               ↓
-        orchestrator may invoke Wave N+1; a changed plan first goes
-        through Discovery → Premortem
+## Explicit parallel wave model
+
+```text
+Wave N in one leaf → [disjoint lane A, disjoint lane B]
+        → explicitly admitted isolated writers
+        → lead integrates in declared order
+        → targeted deterministic acceptance
+        → canonical checkpoint + remaining-plan facts
+        → materially changed: Discovery → Premortem
+        → unchanged and below boundary: admit Wave N+1
+        → leaf complete: freeze → Validate → Learn
+        → soft boundary while incomplete: PARTIAL resume evidence, stop
 ```
 
 Crank never directs Wave N to Wave N+1. Every wave terminates at its evidence
-handoff; only the orchestrator can start another wave after Validate and Learn.
+handoff. The orchestrator may start the next admitted wave without per-wave
+Validate or Learn. Semantic validation and Learn run once only after the leaf is
+complete and the bounded tranche freezes. An incomplete soft boundary does not
+authorize them.
 
 ## Spec-First Wave Model (--test-first)
 
@@ -157,7 +140,7 @@ But do NOT read implementation details of the specific feature being specified.
 > sufficient. Independent judgment belongs to the downstream Validate umbrella,
 > not duplicate inline judges inside Crank.
 
-**After closing all beads in a wave, before advancing to the next wave:**
+**After one implementation wave, before returning to RPI:**
 
 **Note:** SPEC WAVE has its own validation (contract completeness check) and TEST WAVE has the RED gate. The Wave Acceptance Check applies only to IMPL and REFACTOR waves.
 
@@ -167,19 +150,19 @@ But do NOT read implementation details of the specific feature being specified.
    WAVE_DIFF=$(git diff $WAVE_START_SHA HEAD)
    ```
 
-2. **Load acceptance criteria** for all issues closed in this wave:
+2. **Load the current leaf's affected acceptance criteria:**
    ```bash
-   # For each closed issue in the wave:
-   bd show <issue-id>  # extract ACCEPTANCE CRITERIA section
+   ao beads exec show <leaf-id>  # extract affected acceptance criteria
    ```
 
 3. **Validate worker result evidence (FAIL-CLOSED):**
 
-   For each issue closed in the wave, read `.agents/swarm/results/<issue-id>.json` and validate against:
-   `docs/contracts/swarm-worker-result.schema.json`.
+   Read the direct worker result, or each admitted parallel-lane result, and
+   validate its declared schema.
 
    Required evidence policy for IMPL/REFACTOR acceptance:
-   - `full_suite` evidence is mandatory for every completed implementation issue.
+   - targeted evidence for the affected acceptance is mandatory for every wave;
+     `full_suite` is reserved for the final post-repair candidate.
    - `red_green` evidence is mandatory for issues that ran through TEST WAVE (`--test-first` path).
    - Every check listed in `evidence.required_checks` must exist in `evidence.checks` and have `verdict: PASS`.
 
@@ -205,18 +188,16 @@ But do NOT read implementation details of the specific feature being specified.
    - If Step 3.5 flags an out-of-scope or claim-mismatched diff → **FAIL**
    - Otherwise → **PASS**
 
-5. **Hand off verdict and evidence:**
+5. **Return verdict and evidence to RPI:**
 
    | Verdict | Action |
    |---------|--------|
-   | **PASS** | Record verdict and return wave evidence for Validate. Do not advance inside Crank. |
-   | **WARN** | Record caveats and return wave evidence for Validate. Do not create an inline fix wave. |
+   | **PASS** | Record targeted facts and return them to RPI; it may admit another unchanged wave or freeze a completed leaf. |
+   | **WARN** | Record nonblocking caveats and return them to RPI; do not create an inline fix wave. |
    | **FAIL** | Record blockers and return BLOCKED evidence. The orchestrator owns any helper, retry, or re-plan. |
 
-   ```bash
-   # Record verdict in epic notes
-   bd update <epic-id> --append-notes "CRANK_ACCEPT: wave=$wave verdict=<PASS|WARN|FAIL> at $(date -Iseconds)"
-   ```
+   Validate and Learn do not run here. They run once after the leaf is complete
+   and frozen; an incomplete soft boundary persists resume evidence only.
 
 ## CI-Policy Parity Gate
 

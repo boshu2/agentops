@@ -1,8 +1,9 @@
-# Mandatory Council Checks
+# Risk-Selected Plan Checks
 
 > Extracted from premortem/SKILL.md on 2026-04-11.
 >
-> These checks run during or alongside the council validation step. Steps 2.4–2.8 are documented here to keep SKILL.md within its line budget.
+> The routine fresh judge runs only checks applicable to the named plan risks.
+> A council is optional depth for a named one-way door, not the default carrier.
 
 ## Step 2.3: Authority/consumer manifest (migration-shaped plans)
 
@@ -44,15 +45,14 @@ For each phase (Hour 1, 2, 4, 6+), identify:
 Report temporal findings in a separate "Timeline Risks" section.
 ```
 
-**Auto-triggered** (even without `--deep`) when the plan has 5+ files or 3+ sequential dependencies.
-
-**Retro history correlation:** When `.agents/retro/index.jsonl` has 2+ entries, load the last 5 retros and check for recurring timeline-phase failures. Auto-escalate severity for phases that caused issues in prior retros.
+File count and dependency count never auto-trigger temporal or council depth.
+Use it for `--deep`, explicit `--temporal`, or a named cutover/ordering risk.
 
 Temporal findings appear in the report as a `## Timeline Risks` table. See [temporal-interrogation.md](temporal-interrogation.md) for the full framework.
 
-Between waves, use the bounded remaining-plan mode from that reference: inspect
-only incomplete slices, the just-completed leaf's effect on ordering/scope, and
-new evidence. Do not replay the full hour-by-hour simulation for completed work.
+Between waves, reuse the bound verdict while plan inputs are unchanged. A
+materially changed plan may use the bounded mode from that reference; do not
+replay completed work.
 
 ## Step 2.5: Error & Rescue Map (Mandatory for plans with external calls)
 

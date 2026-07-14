@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/rpi",
   "layout": "modular",
-  "source_hash": "2624ff386ed57eae302ad284bf35ae556d83f6dbc5923864651a23d72a4b727f",
-  "generated_hash": "0896bd24d0d46ab87c9f6e0c3a6f3bc54f335ce5f0837a59fccaf850ba741992"
+  "source_hash": "2d220bfab678297df07a37051d8cf3601f765632c845cf7f63043a8d5be2905f",
+  "generated_hash": "f6b1a88de3b65a27818af0f0f2bccff6bbf23121b8aa8f3e112fdf10f13426f0"
 }
