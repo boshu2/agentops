@@ -3,6 +3,7 @@ package close
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,10 +11,13 @@ import (
 	"strings"
 
 	closeapp "github.com/boshu2/agentops/cli/internal/close"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 type Tracker struct{}
+
+func NewTracker() Tracker { return Tracker{} }
 
 type trackerRecord struct {
 	ID     string `json:"id"`
@@ -36,9 +40,13 @@ func (Tracker) Resolve(_ context.Context, snapshot closeapp.Snapshot) (closeapp.
 func (Tracker) Status(ctx context.Context, resolution closeapp.Resolution, id string) (bool, error) {
 	queries := [][]string{{"show", id, "--json"}, {"list", "--all", "--json"}}
 	querySucceeded := false
+	var lastOutput []byte
+	var lastCode int
+	var lastError error
 	for _, args := range queries {
 		out, code, err := runTracker(ctx, resolution, args...)
 		if err != nil || code != 0 {
+			lastOutput, lastCode, lastError = out, code, err
 			continue
 		}
 		querySucceeded = true
@@ -51,7 +59,7 @@ func (Tracker) Status(ctx context.Context, resolution closeapp.Resolution, id st
 	if querySucceeded {
 		return false, fmt.Errorf("issue %s not found", id)
 	}
-	return false, fmt.Errorf("tracker status query failed")
+	return false, effectError("tracker status query", lastCode, lastOutput, lastError)
 }
 
 func (Tracker) Close(ctx context.Context, resolution closeapp.Resolution, id, reason string) error {
@@ -75,10 +83,24 @@ func (Tracker) Sync(ctx context.Context, resolution closeapp.Resolution) error {
 }
 
 func runTracker(ctx context.Context, resolution closeapp.Resolution, args ...string) ([]byte, int, error) {
-	command := exec.CommandContext(ctx, resolution.Binary, args...) // #nosec G204 -- tracker resolution constrains the binary to br|bd.
-	command.Dir = resolution.WorkDir
-	command.Env = append([]string(nil), resolution.ChildEnv...)
-	return combined(command)
+	command := (trackerexec.Factory{}).Command(
+		ctx,
+		trackerresolve.Resolution{
+			Tracker: resolution.Backend, Binary: resolution.Binary, LedgerDir: resolution.LedgerDir,
+			RepoRoot: resolution.RepoRoot, WorkDir: resolution.WorkDir, ChildEnv: resolution.ChildEnv,
+		},
+		args,
+		trackerexec.Streams{},
+	)
+	out, err := command.CombinedOutput()
+	if err == nil {
+		return out, 0, nil
+	}
+	var exit *trackerexec.ExitError
+	if errors.As(err, &exit) {
+		return out, exit.ExitCode(), err
+	}
+	return out, 127, err
 }
 
 func parseRecords(out []byte) []trackerRecord {
@@ -143,5 +165,9 @@ func effectError(operation string, code int, out []byte, cause error) error {
 	if detail == "" {
 		detail = "unknown failure"
 	}
-	return fmt.Errorf("%s (child exit %d): %s", operation, code, detail)
+	message := fmt.Sprintf("%s (child exit %d): %s", operation, code, detail)
+	if cause != nil {
+		return fmt.Errorf("%s: %w", message, cause)
+	}
+	return errors.New(message)
 }

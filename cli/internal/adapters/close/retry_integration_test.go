@@ -92,7 +92,7 @@ esac
 		"AGENTOPS_TRACKER=br", "BEADS_DIR="+ledger,
 		"CLOSE_TEST_STATE="+stateFile, "CLOSE_TEST_SYNC_COUNT="+syncCount, "CLOSE_TEST_CLOSE_LOG="+closeLog,
 	)
-	service := closeapp.NewService(StaticRuntime{WorkDir: dir, Env: env}, Tracker{}, Repository{})
+	service := closeapp.NewService(StaticRuntime{WorkDir: dir, Env: env}, NewTracker(), Repository{})
 	request := closeapp.Request{
 		ID: "age-retry", Message: "finish close", Evidence: "proof.md", Paths: []string{"docs/result.md"}, Mode: closeapp.ModeEnsure,
 	}

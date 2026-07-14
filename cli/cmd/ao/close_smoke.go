@@ -35,7 +35,7 @@ esac
 		"PATH="+fakebin+string(os.PathListSeparator)+envValue(env, "PATH"),
 		"TICK_SMOKE_FAKE_GIT_LOG="+fakeGitLog,
 	)
-	service := newCloseService(closeadapter.StaticRuntime{WorkDir: rt.workDir, Env: env})
+	service := newCloseService(closeadapter.StaticRuntime{WorkDir: rt.workDir, Env: env}, closeadapter.NewTracker())
 	_, err := service.Execute(context.Background(), closeapp.Request{
 		ID: "cp-smoke", Message: "smoke close should not commit", Evidence: evidence, Mode: closeapp.ModeStrict,
 	})

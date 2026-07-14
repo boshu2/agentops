@@ -8,11 +8,11 @@ import (
 	closecommands "github.com/boshu2/agentops/cli/internal/commands/close"
 )
 
-func newCloseService(runtime closeapp.Runtime) *closeapp.Service {
-	return closeapp.NewService(runtime, closeadapter.Tracker{}, closeadapter.Repository{})
+func newCloseService(runtime closeapp.Runtime, tracker closeapp.Tracker) *closeapp.Service {
+	return closeapp.NewService(runtime, tracker, closeadapter.Repository{})
 }
 
-var closeModule = closecommands.NewModule(newCloseService(closeadapter.SystemRuntime{}))
+var closeModule = closecommands.NewModule(newCloseService(closeadapter.SystemRuntime{}, closeadapter.NewTracker()))
 
 func init() {
 	command := closeModule.Command()
