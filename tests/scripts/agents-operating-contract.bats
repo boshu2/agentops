@@ -24,12 +24,9 @@
     "NOTE, REPAIR, REPLAN, HOLD, or ANDON" \
     "skills/rpi/references/pull-flow-governor.md" \
     "docs/contracts/repo-execution-profile.md" \
+    "docs/contracts/agents-documentation-authority.yaml" \
     "docs/architecture/operating-loop.md" \
-    "docs/agent-workflow-reference.md" \
-    "AGENTS-WORKFLOW.md" \
-    "AGENTS-CI.md" \
-    "AGENTS-CODEX.md" \
-    "AGENTS-RUNTIME.md"; do
+    "docs/agent-workflow-reference.md"; do
     if ! grep -Fq -- "$required" "$contract"; then
       failures+=("missing complete-loop route: $required")
     fi

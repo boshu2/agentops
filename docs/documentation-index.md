@@ -300,6 +300,7 @@ Bridge / framing docs:
 - [PR Creation From Linked Worktrees](runbooks/pr-creation-from-linked-worktrees.md) — Root-cause + verified fix for linked-worktree PR branch inference issues; retained as historical PR-flow guidance
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
+- [Root Documentation Authority (yaml)](contracts/agents-documentation-authority.yaml) — Canonical root-document inventory, owner/disposition graph, and exact literal-consumer proof
 - [Mortem Naming Migration](contracts/mortem-naming-migration.md) — Canonical `premortem`/`postmortem` identities, permanent legacy reads, and the schema-v3/S8 writer cutover boundary
 - [Four-Umbrella Write Manifests](contracts/four-umbrella-write-manifests.json) — Per-slice write ownership and frozen S1 base for the validation-loop refactor
 - [Four-Umbrella Examples](contracts/four-umbrella-examples.md) — Executable request, execution-packet, Learn-receipt, and plan-impact examples

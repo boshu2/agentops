@@ -1,0 +1,28 @@
+schema_version: agentops-documentation-authority.v1
+status: active
+scope:
+  root_markdown_count: 3
+  reference_excludes: []
+documents:
+  - path: A.md
+    tracked: true
+    class: contract
+    disposition: retain
+    owner: A.md
+    proof: factual fixture
+    references:
+      phase_policy: {inventory: exact, pre-cutover: exact, cutover: exact}
+      consumers: [consumer.txt]
+  - path: B.md
+    tracked: true
+    class: owner
+    disposition: retain
+    owner: B.md
+    proof: factual fixture
+  - path: generated.md
+    tracked: false
+    presence: optional-generated
+    class: generated
+    disposition: preserve
+    owner: A.md
+    proof: factual fixture

@@ -110,7 +110,7 @@ and the operating-loop state table; RPI-specific transitions are in the
 | Codex skill artifact change | `docs/contracts/codex-skill-api.md`, `skills-codex-overrides/catalog.json`, and [`AGENTS-CODEX.md`](AGENTS-CODEX.md) | Parity ownership and compatibility detail |
 | CI, gate, or release task | `docs/CI-CD.md`, `docs/contracts/ci-jobs.yaml`, `docs/runbooks/release-process.md`, and [`AGENTS-CI.md`](AGENTS-CI.md) | Current authority and release-only procedure |
 | Runtime or controller policy | `docs/contracts/repo-execution-profile.md`, `PROGRAM.md`, and [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md) | Machine-consumed execution policy and compatibility detail |
-| Documentation ownership or deletion | `docs/documentation-index.md` | Current catalog; ownership migration requires explicit consumer proof |
+| Documentation ownership or deletion | `docs/contracts/agents-documentation-authority.yaml`, then `docs/documentation-index.md` | Machine-checked root owner/consumer graph, then the human-facing catalog |
 
 Root roles are distinct: `README.md` is the public entry; `PRODUCT.md` is product
 intent; `GOALS.md` is executable fitness; `PROGRAM.md` is controller policy;

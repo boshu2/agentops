@@ -92,6 +92,8 @@ require_text() {
     "| **Learn** | Records one minimal consequence before optional Postmortem |"
   require_text docs/documentation-index.md \
     "Council is optional validator composition inside Premortem or Validate; it is"
+  require_text AGENTS.md \
+    "docs/contracts/agents-documentation-authority.yaml"
 }
 
 @test "negative fixture rejects a model verdict as a Git delivery gate" {
