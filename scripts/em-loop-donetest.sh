@@ -82,7 +82,7 @@ MODE="$(python3 -c "import json;print(json.load(open('$IDX'))['constraints'][0][
 [ "$MODE" = "warn" ] || fail shadow "derived shadow must be warn-only, got '$MODE'"
 CHECK="$PROJ/.agents/premortem-checks/$CID.md"
 [ -s "$CHECK" ] || fail shadow "canonical premortem check not written"
-ok "2. SHADOW: replayed positives + negative controls -> warn-only shadow $CID"
+ok "2. COMPILE: escape -> draft constraint $CID (warn-only shadow from replayed positives + negative controls)"
 
 # constraint_verdict prints PASS, WARN, or FAIL for constraints.enforce. It
 # CAPTURES the gate output (|| true) because `ao gate check` legitimately exits
@@ -106,7 +106,7 @@ WRITE_BAD
   && fail activation-guard "activation without cited precision evidence succeeded"
 STATUS="$(python3 -c "import json;print(json.load(open('$IDX'))['constraints'][0]['status'])" 2>/dev/null)"
 [ "$STATUS" = "shadow" ] || fail activation-guard "failed activation changed status to '$STATUS'"
-ok "3. MEASURE: shadow hit WARNs; missing precision cannot activate"
+ok "3. MEASURE: shadow hit WARNs; the activate guard rejects missing precision (a draft gates nothing)"
 
 # 4. ACTIVATE — replace the candidate with cited shadow precision, then activate.
 ACTIVATE_OUT="$("$AO" membrane derive-checks --run "$RUN" --force --detector-evidence "$READY" 2>&1)" \

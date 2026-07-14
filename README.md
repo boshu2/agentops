@@ -117,7 +117,7 @@ Supporting control plane behind the skills (bookkeeping, retrieval, release gate
 ao quick-start            # set up AgentOps in a repo
 ao doctor                 # check skills, reviewers, ledger health
 ao gate check --fast      # optional deterministic release check before you push
-ao verify                 # deterministic support check; skills own completion
+ao verify my-first-change # deterministic support check; skills own completion
 ao provenance show <sha>  # recorded verdict trail
 ao skills graph           # inspect the generated skill dependency graph
 

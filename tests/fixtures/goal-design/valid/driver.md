@@ -32,7 +32,7 @@ small_batch_gate:
   split_required_if:
     - "CLI scaffolding is mixed into artifact validation."
 route_back_rules:
-  validation_fails: "Patch the artifact contract before filing work."
+  validation_fails: "On a retry-limit breaker trip, HOLD and take one bounded helper pass — a fresh-context, cross-family, or council helper — to get unstuck before you escalate to a human."
   bead_closes_with_new_signal: "Use the close verdict to choose or revise the next candidate."
   candidate_stale: "Re-read the named canonical docs and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md, update the driver, and revalidate."
@@ -53,3 +53,7 @@ artifact_validation:
 - Intent artifact: `.agents/goal-design/valid-packet/intent.md`
 - Intent digest: `416bdb45f717067c1a09a846b3f357ca98de64bd0fb3e873a7af4ee3429846f7`
 - Last validation verdict: none
+
+## Escalation ladder
+
+On a breaker trip, HOLD and take one bounded helper pass — a fresh-context, cross-family, or council helper — to get unstuck first. Escalate to a human only after that single helper pass fails to clear the block.

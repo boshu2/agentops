@@ -59,7 +59,8 @@ func TestCommandDelegatesAndRendersYAML(t *testing.T) {
 
 func TestModuleOwnsFreshCommandsAndExplicitContract(t *testing.T) {
 	module := NewModule(&recordingBuilder{}, nil)
-	if module.Command() == module.Command() {
+	first, second := module.Command(), module.Command()
+	if first == second {
 		t.Fatal("Command returned shared Cobra state")
 	}
 	contract := module.Contract()

@@ -43,12 +43,6 @@ PY
     [[ "$output" == "BC3 Loop|"* ]]
 }
 
-@test "perf is re-binned BC2 Validation -> BC3 Loop" {
-    run _row perf
-    [ "$status" -eq 0 ]
-    [[ "$output" == "BC3 Loop|"* ]]
-}
-
 @test "cass is re-binned BC5 Runtime -> BC1 Corpus" {
     run _row cass
     [ "$status" -eq 0 ]

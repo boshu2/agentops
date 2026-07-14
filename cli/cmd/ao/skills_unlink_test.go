@@ -242,3 +242,32 @@ func TestUnlinkAllDests_ResilientAcrossDests(t *testing.T) {
 		t.Fatalf("good dest was skipped after the earlier failure (link still present): %v", err)
 	}
 }
+
+// renderUnlinkResult is the human-facing per-dest summary: the ERROR line must
+// promise the sweep continued, and dry-run must never claim removals happened.
+// (Paired with the resilient unlinkAllDests contract above; added alongside the
+// semgrep-suppression annotation on that call site.)
+func TestRenderUnlinkResult_ErrorDryRunAndForeignLines(t *testing.T) {
+	var errBuf strings.Builder
+	renderUnlinkResult(&errBuf, skillUnlinkResult{Dest: "/d1", Err: "boom"})
+	out := errBuf.String()
+	if !strings.Contains(out, "ERROR: boom") || !strings.Contains(out, "other runtimes still attempted") {
+		t.Errorf("error rendering must name the error and the continued sweep, got:\n%s", out)
+	}
+	if strings.Contains(out, "removed:") {
+		t.Errorf("error rendering must not print removal counts, got:\n%s", out)
+	}
+
+	var dryBuf strings.Builder
+	renderUnlinkResult(&dryBuf, skillUnlinkResult{Dest: "/d2", DryRun: true, Removed: []string{"alpha"}, Foreign: []string{"gamma"}})
+	out = dryBuf.String()
+	if !strings.Contains(out, "would remove (dry-run): 1") {
+		t.Errorf("dry-run rendering must label removals as not performed, got:\n%s", out)
+	}
+	if !strings.Contains(out, "? alpha") {
+		t.Errorf("dry-run removal mark must be '?', got:\n%s", out)
+	}
+	if !strings.Contains(out, ". gamma (not AgentOps-owned — kept)") {
+		t.Errorf("foreign line must state the keep guarantee, got:\n%s", out)
+	}
+}

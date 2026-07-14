@@ -108,7 +108,8 @@ resolve_source_root() {
   info "Downloading AgentOps bundle ($INSTALL_REF)"
   curl -fsSL "$archive_url" -o "$archive_file"
   tar -xzf "$archive_file" -C "$TMP_DIR"
-  find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -1
+  # `-print -quit` (not `| head -1`): SIGPIPE-safe under `set -o pipefail`.
+  find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit
 }
 
 while [ "$#" -gt 0 ]; do
@@ -201,7 +202,10 @@ selftest_agy() {
   local problems=0
 
   local sentinel
-  sentinel="$(find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | head -1)"
+  # `-print -quit` (not `| head -1`): SIGPIPE-safe under `set -o pipefail` — find
+  # stops after the first hit rather than writing into a head()-closed pipe once
+  # its output exceeds one stdio flush (the long-path × many-skills case).
+  sentinel="$(find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print -quit 2>/dev/null)"
   if [ -z "$sentinel" ] || [ ! -r "$sentinel" ]; then
     printf 'FAIL: self-test: no readable sentinel SKILL.md under %s/skills\n' "$PLUGIN_DIR" >&2
     problems=$((problems + 1))

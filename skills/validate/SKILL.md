@@ -52,6 +52,12 @@ output_contract: schemas/verdict.v1.schema.json
   Validate does not perform the action, retry, re-plan, or choose escalation.
 - Use runtime-native fresh context. Additional judges are optional depth, not a
   substitute for one accountable validator.
+- When a repeated FAIL trips a breaker, the orchestrator does not page the
+  operator first: it dispatches exactly one bounded fresh-context (or
+  cross-family) **helper** pass. HELPER-UNSTUCK means the helper cleared the
+  blocker and the proof is resumed on an explicit orchestrator decision;
+  HELPER-ESCALATE reaches a human only when that single helper pass also fails
+  (or the class is a refusal/judgment/spent-ceiling skip).
 
 ## Frozen request boundary
 

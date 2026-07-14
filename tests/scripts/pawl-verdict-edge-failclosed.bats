@@ -41,7 +41,10 @@ EOF
 teardown() { cd "$ORIG_DIR" 2>/dev/null || true; rm -rf "$TMP"; }
 
 run_write() {
-  env -u GIT_PREFIX -u GIT_DIR -u PAWL_PREPUSH -u PAWL_AUTOBIND -u AGENTOPS_REPO_ROOT -u AO_BIN "$@" \
+  # -u PAWL_EDGE_FAIL_OPEN: this file asserts the STRICT fail-closed default, so
+  # strip any ambient fail-open the CI harness sets suite-wide (a per-test
+  # PAWL_EDGE_FAIL_OPEN=1 in "$@" is applied after -u, so it still wins).
+  env -u GIT_PREFIX -u GIT_DIR -u PAWL_PREPUSH -u PAWL_AUTOBIND -u AGENTOPS_REPO_ROOT -u AO_BIN -u PAWL_EDGE_FAIL_OPEN "$@" \
     bash "$SCRIPT" write age-fc-test 0 \
     --disposition CONFIRMED --head "$SHA" --author-context author-ctx \
     --refuter claude:CONFIRMED:refuter-ctx --dir "$VDIR"

@@ -63,6 +63,10 @@ STUB
   VFILE="$AGENTOPS_PAWL_VERDICT_DIR/age-e2e.json"
   export SPAWN_MARK="$TMP/cold-spawned"
   export PAWL_NO_SERVICE=1
+  # CASE 1 asserts the STRICT fail-closed edge-unbound exit (status 6). Strip any
+  # ambient PAWL_EDGE_FAIL_OPEN the CI bats harness sets suite-wide (wave 1),
+  # which would otherwise restore warn-and-continue (exit 0) and break the assert.
+  unset PAWL_EDGE_FAIL_OPEN
 }
 teardown() { cd "$ORIG_DIR"; rm -rf "$TMP"; }
 

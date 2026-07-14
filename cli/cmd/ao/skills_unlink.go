@@ -197,7 +197,7 @@ func unlinkAllDests(srcDir string, dests []string, dryRun bool) ([]skillUnlinkRe
 	results := make([]skillUnlinkResult, 0, len(dests))
 	anyErr := false
 	for _, dest := range dests {
-		res, err := unlinkOwnedSkills(srcDir, dest, dryRun)
+		res, err := unlinkOwnedSkills(srcDir, dest, dryRun) // nosemgrep -- res is a value struct (never nil); setting res.Err on error cannot nil-deref.
 		if err != nil {
 			res.Err = err.Error()
 			anyErr = true

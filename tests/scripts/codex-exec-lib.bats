@@ -15,9 +15,14 @@ setup() {
   export TMPDIR="$TMP"
   # Require a timeout binary for the STALL/timeout cases (the lib degrades to
   # no-timeout when neither exists, so the kill-based assertions can't hold).
+  # NOTE: keep this a single `if` so setup's terminal exit status is always 0.
+  # A bare `command -v gtimeout ... && HAVE_TIMEOUT=1` as the last setup line
+  # returns non-zero on Linux CI (gtimeout is a macOS/coreutils name only),
+  # which bats treats as a setup FAILURE and errors every test in the file.
   HAVE_TIMEOUT=0
-  command -v timeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
-  command -v gtimeout >/dev/null 2>&1 && HAVE_TIMEOUT=1
+  if command -v timeout >/dev/null 2>&1 || command -v gtimeout >/dev/null 2>&1; then
+    HAVE_TIMEOUT=1
+  fi
 }
 
 teardown() { rm -rf "$TMP"; }

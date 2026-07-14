@@ -23,7 +23,10 @@ setup() {
   BEFORE="$(wc -l < "$REAL_LEDGER" 2>/dev/null || echo 0)"
 }
 
-teardown() { [ -n "${WORK:-}" ] && rm -rf "$WORK"; }
+# return 0 so a SKIP (WORK never set, `[ -n "" ]` is false) does not leave
+# teardown with a non-zero terminal status — bats would otherwise mark the
+# cleanly-skipped test `not ok` (the CI "teardown failed" errors on ao-less runners).
+teardown() { [ -n "${WORK:-}" ] && rm -rf "$WORK"; return 0; }
 
 @test "directive-16 done-test: the unattended loop closes end-to-end (PASS)" {
   run "$HARNESS" --workdir "$WORK" --evidence-out "$WORK/evidence.md"

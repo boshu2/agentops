@@ -186,6 +186,7 @@ graph LR
   codex_exec --> account_rotation
   codex_exec --> ntm
   council --> agy_native
+  council --> pawl_review
   council --> standards
   crank --> agent_native
   crank --> automation_shape_routing
@@ -268,7 +269,7 @@ graph LR
 |---|---|
 | Explicit graph roots | `beads-br`, `bootstrap`, `converge`, `council`, `crank`, `discovery`, `evolve`, `goal-design`, `handoff`, `implement`, `pawl-review`, `plan`, `pr-prep`, `premortem`, `push`, `reality-check`, `release`, `rpi`, `security`, `status`, `using-gc`, `validate` |
 | User-invocable skills | `agent-native`, `bootstrap`, `codebase-recon`, `crank`, `discovery`, `dueling-idea-genies`, `evolve`, `idea-genie`, `learn`, `pattern-mining`, `pawl-review`, `postmortem`, `push`, `release`, `rpi`, `using-gc`, `validate` |
-| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `pawl-review`, `pr-prep`, `reality-check`, `release`, `security`, `status`, `using-gc` |
+| Zero-inbound skills | `bootstrap`, `converge`, `evolve`, `goal-design`, `handoff`, `pr-prep`, `reality-check`, `release`, `security`, `status`, `using-gc` |
 | Dangling targets | _(none)_ |
 | Dependency cycles | _(none)_ |
 | Unreachable non-roots | _(none)_ |

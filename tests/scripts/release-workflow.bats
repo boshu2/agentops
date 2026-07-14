@@ -43,11 +43,12 @@ line_of() {
 }
 
 @test "release evidence is uploaded after publish from pre-publish artifact" {
-    # Version-agnostic — dependabot bumps these majors over time. Assert
-    # presence + the canonical artifact name + the publish step is wired.
-    run grep -Eq 'actions/upload-artifact@v[0-9]+' "$WORKFLOW"
+    # Version- and pin-style-agnostic. The fleet is SHA-pinned (sec/age-9838),
+    # so refs read `@<sha> # vN`; match either a SHA pin or a bare vN tag so the
+    # assertion survives both dependabot major bumps and the SHA-pin convention.
+    run grep -Eq 'actions/upload-artifact@([0-9a-f]{7,}|v[0-9]+)' "$WORKFLOW"
     [ "$status" -eq 0 ]
-    run grep -Eq 'actions/download-artifact@v[0-9]+' "$WORKFLOW"
+    run grep -Eq 'actions/download-artifact@([0-9a-f]{7,}|v[0-9]+)' "$WORKFLOW"
     [ "$status" -eq 0 ]
     run grep -Fq 'pre-publish-release-evidence' "$WORKFLOW"
     [ "$status" -eq 0 ]

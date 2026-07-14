@@ -310,3 +310,32 @@ func TestLinkAllDests_ResilientAcrossDests(t *testing.T) {
 		t.Fatalf("good dest was skipped after the earlier failure: %v", err)
 	}
 }
+
+// renderLinkResult is the human-facing per-dest summary: the ERROR line must
+// promise the fan-out continued, and dry-run must never claim links were made.
+// (Paired with the resilient linkAllDests contract above; added alongside the
+// semgrep-suppression annotation on that call site.)
+func TestRenderLinkResult_ErrorDryRunAndConflictLines(t *testing.T) {
+	var errBuf strings.Builder
+	renderLinkResult(&errBuf, skillLinkResult{Dest: "/d1", Err: "boom"})
+	out := errBuf.String()
+	if !strings.Contains(out, "ERROR: boom") || !strings.Contains(out, "other runtimes still attempted") {
+		t.Errorf("error rendering must name the error and the continued fan-out, got:\n%s", out)
+	}
+	if strings.Contains(out, "linked:") {
+		t.Errorf("error rendering must not print link counts, got:\n%s", out)
+	}
+
+	var dryBuf strings.Builder
+	renderLinkResult(&dryBuf, skillLinkResult{Dest: "/d2", DryRun: true, Linked: []string{"alpha"}, Conflicts: []string{"gamma"}})
+	out = dryBuf.String()
+	if !strings.Contains(out, "missing (dry-run, not linked): 1") {
+		t.Errorf("dry-run rendering must label links as not created, got:\n%s", out)
+	}
+	if !strings.Contains(out, "? alpha") {
+		t.Errorf("dry-run link mark must be '?', got:\n%s", out)
+	}
+	if !strings.Contains(out, "! gamma (real dir — foreign corpus, not clobbered)") {
+		t.Errorf("conflict line must state the non-clobber guarantee, got:\n%s", out)
+	}
+}

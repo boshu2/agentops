@@ -65,6 +65,7 @@ That is it. One command. Every step below is idempotent — existing artifacts a
 
 - **ao** (optional) — AgentOps CLI. Required only for optional hook activation (Step 6). Bootstrap skips hooks gracefully when missing.
 - **br** (optional, recommended) — beads_rust CLI (local-first issue tracking). Bootstrap probes for `br` in Step 0.5 and, when missing, recommends installing it. Bootstrap never installs `br` on the user's behalf.
+- **bd** (optional) — the beads CLI. AgentOps supports **both** trackers; a project may run on `bd` instead of `br`. Bootstrap probes for `bd` in Step 0.5 and, when neither tracker is present, points the user at `scripts/install-bd.sh` with a copy-paste command. Bootstrap never installs `bd` on the user's behalf.
 
 ## Flags
 
@@ -89,6 +90,7 @@ HAS_AGENTS=$([[ -d .agents ]] && echo true || echo false)
 HAS_HOOKS=$(grep -q "agentops" .claude/settings.json 2>/dev/null && echo true || echo false)
 HAS_AO=$(command -v ao >/dev/null && echo true || echo false)
 HAS_BR=$(command -v br >/dev/null && echo true || echo false)
+HAS_BD=$(command -v bd >/dev/null && echo true || echo false)
 ```
 
 Classify the repo:
@@ -108,6 +110,12 @@ If the repo is **complete** and `--force` is not set: report "Repo is fully boot
 If `HAS_BR` is true: skip. Report "br: present."
 
 If `HAS_BR` is false: report **"br: not installed (recommended). Install beads_rust to get local-first issue tracking."** and continue. Bootstrap does NOT run the installer — `br` is optional, the user decides.
+
+AgentOps supports **both** trackers, so if the project runs on `bd` instead:
+
+If `HAS_BD` is true: skip. Report "bd: present."
+
+If `HAS_BD` is false **and** `HAS_BR` is false: report **"no tracker installed. For `bd`, install with: `bash scripts/install-bd.sh`"** and continue. Bootstrap does NOT run the installer — the tracker is optional, the user decides. If `scripts/install-bd.sh` is absent at the repo root, drop the install hint and report "bd: not installed. See https://github.com/steveyegge/beads".
 
 ### Step 1: GOALS.md
 

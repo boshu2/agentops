@@ -37,7 +37,8 @@ func (fake *fakeUseCases) Check(context.Context, string, bool) (claimproof.Repor
 func TestModuleBuildsFreshTreeAndDelegates(t *testing.T) {
 	fake := &fakeUseCases{}
 	module := NewModule(fake, func() string { return "json" })
-	if module.Command() == module.Command() {
+	first, second := module.Command(), module.Command()
+	if first == second {
 		t.Fatal("Command returned shared Cobra state")
 	}
 	command := module.Command()
