@@ -21,6 +21,7 @@ package beads
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -503,8 +504,16 @@ type AcceptanceRepository interface {
 	ShowAcceptance([]string) ([]byte, error)
 }
 
+type AcceptanceContextRepository interface {
+	ShowAcceptanceContext(context.Context, []string) ([]byte, error)
+}
+
 type AcceptanceUseCases interface {
 	VerifyAcceptance([]string) ([]AcceptanceResult, bool, error)
+}
+
+type AcceptanceContextUseCases interface {
+	VerifyAcceptanceContext(context.Context, []string) ([]AcceptanceResult, bool, error)
 }
 
 type AcceptanceService struct {
@@ -512,10 +521,20 @@ type AcceptanceService struct {
 }
 
 func (service AcceptanceService) VerifyAcceptance(ids []string) ([]AcceptanceResult, bool, error) {
+	return service.VerifyAcceptanceContext(context.Background(), ids)
+}
+
+func (service AcceptanceService) VerifyAcceptanceContext(ctx context.Context, ids []string) ([]AcceptanceResult, bool, error) {
 	if service.Repository == nil {
 		return nil, false, fmt.Errorf("beads acceptance repository is not configured")
 	}
-	out, err := service.Repository.ShowAcceptance(ids)
+	var out []byte
+	var err error
+	if contextual, ok := service.Repository.(AcceptanceContextRepository); ok {
+		out, err = contextual.ShowAcceptanceContext(ctx, ids)
+	} else {
+		out, err = service.Repository.ShowAcceptance(ids)
+	}
 	if err != nil {
 		return nil, false, fmt.Errorf("br show %v: %w", ids, err)
 	}

@@ -16,6 +16,10 @@ func NewAcceptanceRepository(tracker *Tracker) AcceptanceRepository {
 }
 
 func (repository AcceptanceRepository) ShowAcceptance(ids []string) ([]byte, error) {
+	return repository.ShowAcceptanceContext(context.Background(), ids)
+}
+
+func (repository AcceptanceRepository) ShowAcceptanceContext(ctx context.Context, ids []string) ([]byte, error) {
 	if repository.tracker == nil {
 		return nil, fmt.Errorf("beads acceptance tracker is not configured")
 	}
@@ -27,7 +31,8 @@ func (repository AcceptanceRepository) ShowAcceptance(ids []string) ([]byte, err
 		return nil, fmt.Errorf("verify-acceptance requires the BR acceptance wire; selected tracker is %s", resolved.Tracker)
 	}
 	args := append([]string{"show", "--format", "json"}, ids...)
-	return repository.tracker.Output(context.Background(), args...)
+	return repository.tracker.Output(ctx, args...)
 }
 
 var _ beadsapp.AcceptanceRepository = AcceptanceRepository{}
+var _ beadsapp.AcceptanceContextRepository = AcceptanceRepository{}

@@ -189,7 +189,13 @@ func (module Module) runAudit(command *cobra.Command, options Options) error {
 	if module.hygiene == nil {
 		return fmt.Errorf("beads hygiene use cases are not configured")
 	}
-	report, err := module.hygiene.Audit(options.AutoClose)
+	var report *beadsapp.AuditReport
+	var err error
+	if contextual, ok := module.hygiene.(beadsapp.HygieneContextUseCases); ok {
+		report, err = contextual.AuditContext(command.Context(), options.AutoClose)
+	} else {
+		report, err = module.hygiene.Audit(options.AutoClose)
+	}
 	if err != nil {
 		return err
 	}
@@ -251,7 +257,13 @@ func (module Module) runCluster(command *cobra.Command, options Options) error {
 	if module.hygiene == nil {
 		return fmt.Errorf("beads hygiene use cases are not configured")
 	}
-	report, err := module.hygiene.Cluster(options.Apply)
+	var report *beadsapp.ClusterReport
+	var err error
+	if contextual, ok := module.hygiene.(beadsapp.HygieneContextUseCases); ok {
+		report, err = contextual.ClusterContext(command.Context(), options.Apply)
+	} else {
+		report, err = module.hygiene.Cluster(options.Apply)
+	}
 	if err != nil {
 		return err
 	}
@@ -543,7 +555,13 @@ func (module Module) runScenarioExtract(command *cobra.Command, args []string, o
 		_, err := fmt.Fprintln(command.ErrOrStderr(), "warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
 		return err
 	}
-	extraction, err := module.scenario.PrepareScenarios(args[0], options.Force)
+	var extraction beadsapp.ScenarioExtraction
+	var err error
+	if contextual, ok := module.scenario.(beadsapp.ScenarioContextUseCases); ok {
+		extraction, err = contextual.PrepareScenariosContext(command.Context(), args[0], options.Force)
+	} else {
+		extraction, err = module.scenario.PrepareScenarios(args[0], options.Force)
+	}
 	if err != nil {
 		return err
 	}
@@ -561,8 +579,14 @@ func (module Module) runScenarioExtract(command *cobra.Command, args []string, o
 			_, err := fmt.Fprintf(command.ErrOrStderr(), "aborted; %s left unchanged\n", args[0])
 			return err
 		}
-		if err := module.scenario.ApplyScenarios(extraction); err != nil {
-			return err
+		var applyErr error
+		if contextual, ok := module.scenario.(beadsapp.ScenarioContextUseCases); ok {
+			applyErr = contextual.ApplyScenariosContext(command.Context(), extraction)
+		} else {
+			applyErr = module.scenario.ApplyScenarios(extraction)
+		}
+		if applyErr != nil {
+			return applyErr
 		}
 		_, err := fmt.Fprintf(command.OutOrStdout(), "%s updated with %d scenario(s)\n", args[0], len(extraction.Scenarios))
 		return err
@@ -585,7 +609,13 @@ func (module Module) runScenarioValidation(command *cobra.Command, args []string
 		_, err := fmt.Fprintln(command.ErrOrStderr(), "warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
 		return err
 	}
-	result, err := module.scenario.ValidateScenarios(args[0])
+	var result beadsapp.ScenarioValidation
+	var err error
+	if contextual, ok := module.scenario.(beadsapp.ScenarioContextUseCases); ok {
+		result, err = contextual.ValidateScenariosContext(command.Context(), args[0])
+	} else {
+		result, err = module.scenario.ValidateScenarios(args[0])
+	}
 	if err != nil {
 		if options.JSON {
 			_ = encodeJSON(command, result)
@@ -717,7 +747,14 @@ func (module Module) runAcceptance(command *cobra.Command, ids []string, options
 	if module.acceptance == nil {
 		return fmt.Errorf("beads acceptance use cases are not configured")
 	}
-	results, nonPass, err := module.acceptance.VerifyAcceptance(ids)
+	var results []beadsapp.AcceptanceResult
+	var nonPass bool
+	var err error
+	if contextual, ok := module.acceptance.(beadsapp.AcceptanceContextUseCases); ok {
+		results, nonPass, err = contextual.VerifyAcceptanceContext(command.Context(), ids)
+	} else {
+		results, nonPass, err = module.acceptance.VerifyAcceptance(ids)
+	}
 	if err != nil {
 		return err
 	}

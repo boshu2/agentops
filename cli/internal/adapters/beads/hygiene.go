@@ -30,7 +30,11 @@ func (repository *HygieneRepository) Available() bool {
 }
 
 func (repository *HygieneRepository) List(status string) ([]beadsapp.BeadRecord, error) {
-	raw, err := repository.tracker.Output(context.Background(), "list", "--status", status, "--json")
+	return repository.ListContext(context.Background(), status)
+}
+
+func (repository *HygieneRepository) ListContext(ctx context.Context, status string) ([]beadsapp.BeadRecord, error) {
+	raw, err := repository.tracker.Output(ctx, "list", "--status", status, "--json")
 	if err != nil {
 		return nil, fmt.Errorf("bd list --status %s --json: %w", status, err)
 	}
@@ -38,7 +42,11 @@ func (repository *HygieneRepository) List(status string) ([]beadsapp.BeadRecord,
 }
 
 func (repository *HygieneRepository) Show(id string) (beadsapp.BeadRecord, error) {
-	raw, err := repository.tracker.Output(context.Background(), "show", id, "--json")
+	return repository.ShowContext(context.Background(), id)
+}
+
+func (repository *HygieneRepository) ShowContext(ctx context.Context, id string) (beadsapp.BeadRecord, error) {
+	raw, err := repository.tracker.Output(ctx, "show", id, "--json")
 	if err != nil {
 		return beadsapp.BeadRecord{}, err
 	}
@@ -46,14 +54,22 @@ func (repository *HygieneRepository) Show(id string) (beadsapp.BeadRecord, error
 }
 
 func (repository *HygieneRepository) Close(id, note string) error {
-	if _, err := repository.tracker.Output(context.Background(), "update", id, "--status", "closed", "--append-notes", note); err != nil {
+	return repository.CloseContext(context.Background(), id, note)
+}
+
+func (repository *HygieneRepository) CloseContext(ctx context.Context, id, note string) error {
+	if _, err := repository.tracker.Output(ctx, "update", id, "--status", "closed", "--append-notes", note); err != nil {
 		return fmt.Errorf("auto-close bead %s: %w", id, err)
 	}
 	return nil
 }
 
 func (repository *HygieneRepository) Reparent(id, parent string) error {
-	_, err := repository.tracker.Output(context.Background(), "update", id, "--parent", parent)
+	return repository.ReparentContext(context.Background(), id, parent)
+}
+
+func (repository *HygieneRepository) ReparentContext(ctx context.Context, id, parent string) error {
+	_, err := repository.tracker.Output(ctx, "update", id, "--parent", parent)
 	return err
 }
 
@@ -142,3 +158,4 @@ func buildHygieneIndex() map[string]string {
 }
 
 var _ beadsapp.HygieneRepository = (*HygieneRepository)(nil)
+var _ beadsapp.HygieneContextRepository = (*HygieneRepository)(nil)
