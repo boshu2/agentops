@@ -30,10 +30,10 @@ Feature: Crank executes one conflict-free epic wave
     And Crank does not invoke Discovery, Validate, Learn, Premortem, or a silent retry
 
   Scenario: Intermediate waves avoid semantic round trips
-    Given the admitted tranche has fewer than three waves and remains under 90 minutes
+    Given the accepted tranche has fewer than three waves and remains under 90 minutes
     And the bound plan inputs and risk are unchanged
     When targeted wave acceptance passes
-    Then RPI may admit the next sequential Crank wave
+    Then RPI may pull the next sequential Crank wave
     And Validate and Learn wait until the tranche freezes
 
   Scenario: Orchestrator's own diff-read flags an out-of-boundary slice at acceptance
@@ -50,8 +50,8 @@ Feature: Crank executes one conflict-free epic wave
       or <promise>PARTIAL</promise>
     And it never claims completion without one
 
-  Scenario: The persistent governor bounds wave dispatch
-    Given a stable RPI run with declared run-wide ceilings
-    When /crank requests another wave admission
-    Then it dispatches only after the governor durably returns authorized true
-    And a refused admission returns BLOCKED evidence without resetting counters
+  Scenario: Crank returns evidence without controlling the next wave
+    Given RPI selected one accepted wave of the current leaf
+    When /crank completes or blocks that wave
+    Then it returns targeted evidence and exact checkpoint identity
+    And only the orchestrator records NOTE, REPAIR, REPLAN, HOLD, or ANDON

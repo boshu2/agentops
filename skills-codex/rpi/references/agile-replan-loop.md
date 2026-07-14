@@ -8,8 +8,8 @@ makes `--auto` *autonomous* rather than *blind*.
 
 Crank returns targeted deterministic evidence directly to the orchestrator.
 When acceptance, dependencies, write scope, and risk remain unchanged, the
-accepted Premortem verdict remains valid and the next sequential wave may be
-admitted. A material change routes through Discovery and one new Premortem.
+accepted Premortem verdict remains valid and the orchestrator may pull the next
+sequential wave. A material change routes through Discovery and one new Premortem.
 Validate and Learn do not run between unchanged waves.
 
 ## At the frozen tranche boundary
@@ -46,12 +46,12 @@ repair and affected-claim closure. A second distinct repair need forces
 
 ## Bounds (so agility ≠ thrash)
 
-Re-planning uses the same persistent run governor as every other action.
-Projected token/time charges require admission, while max-attempts,
-oscillation, and no-progress evidence use the governor's protected breaker
-path. No phase or session-local checkpoint creates a second allowance. The
-operator is touched only at the terminal objective or an `ANDON` backed by the
-governor — never just to approve a pivot.
+Re-planning is an orchestrator decision backed by one immutable
+[run-disposition record](pull-flow-governor.md). Max-attempts, oscillation, and
+no-progress are evidence for `HOLD`, not proof that a human is required. No
+phase or session-local checkpoint owns an allowance or retry counter. The
+operator is touched only at the terminal objective or an evidence-backed
+`ANDON` — never just to approve a pivot.
 
 ## Anti-patterns this rule kills
 

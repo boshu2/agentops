@@ -55,7 +55,7 @@ Anything less is compressed.
 | --- | --- |
 | "I know what discovery would say." | Delegation produces a written artifact future sessions can read. |
 | "Nested `Skill()` wastes context." | Context is cheaper than losing the artifact chain. |
-| "The sub-skill is just instructions I can follow inline." | The sub-skill owns an artifact and gate; the RPI governor owns cross-phase control. |
+| "The sub-skill is just instructions I can follow inline." | The sub-skill owns an artifact and gate; the RPI orchestrator owns cross-phase decisions. |
 | "This is a small task, full RPI is overkill." | Use `--fast-path`; it still delegates. |
 | "The user wants speed." | Time-box gates with `--quick`; do not skip phases. |
 

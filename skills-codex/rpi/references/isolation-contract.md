@@ -1,7 +1,8 @@
 # Loop Responsibility And Isolation Contract
 
 RPI preserves typed authority without turning every phase into a new model call.
-The visible orchestrator keeps the lifecycle objective and one run governor.
+The visible orchestrator keeps the lifecycle objective and records each
+next-move disposition against evidence.
 
 ## Required boundaries
 

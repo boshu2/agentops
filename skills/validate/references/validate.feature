@@ -17,33 +17,31 @@ Feature: Validate emits immutable proof only
     And it emits one canonical result.json for the tranche
     And no intermediate wave received Validate or Learn
 
-  Scenario: Consume the persistent run budget before validator dispatch
+  Scenario: Factual readiness permits one fresh validator
     Given a request-bound factual receipt is READY
-    And the persistent run exposes all four required meters
-    When Validate requests one semantic-review admission for that same run ID
-    Then the governor records the charge before validator dispatch
-    And only typed AUTHORIZED evidence permits VALIDATE_SINGLE_FRESH
-
-  Scenario: Fail closed when proof or a required meter is unavailable
-    Given mandatory factual proof is FAIL, ERROR, UNKNOWN, missing, or malformed
-    Or a required run meter is unavailable
+    And the candidate, acceptance, author, and judge identities still match
     When Validate prepares semantic review
-    Then it emits typed NONAUTHORIZING evidence
+    Then it dispatches VALIDATE_SINGLE_FRESH without a second work controller
+    And the author and judge identities differ
+
+  Scenario: Fail closed when proof is unavailable
+    Given mandatory factual proof is FAIL, ERROR, UNKNOWN, missing, or malformed
+    When Validate prepares semantic review
+    Then it returns the factual evidence to the caller
     And it does not dispatch a validator or create local recovery state
 
   Scenario: Preserve the factual lane classifier
     Given diagnostic or release proof is FAIL
     And the S1 S8 aggregate factual receipt is READY
     When Validate prepares semantic review
-    Then the budget adapter does not reclassify that nonbinding lane
-    And one governor admission remains eligible
+    Then Validate does not reclassify that nonbinding lane
+    And semantic judgment remains eligible
 
-  Scenario: A spent hard ceiling buys no helper
-    Given a semantic-review charge would exceed a declared run ceiling
-    When Validate requests admission
-    Then it preserves the governor's typed hard-ceiling evidence
-    And helper allowed is false
-    And validator dispatch is forbidden
+  Scenario: External runtime limits remain caller evidence
+    Given the runtime cannot dispatch a judge because a hard external limit is spent
+    When Validate returns control
+    Then it reports the limit without creating cost or helper state
+    And the caller owns the next disposition
 
   Scenario: Validate stops after proof
     Given a schema-valid immutable verdict

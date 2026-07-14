@@ -101,8 +101,8 @@ bd comments add <issue> "EXPLICIT: The test_auth_flow test fails because X. Fix 
 gt sling <issue> <rig>
 ```
 
-**Control boundary**: return the validation evidence to RPI. The persistent
-governor owns any no-progress/oscillation breaker and helper eligibility.
+**Control boundary**: return the validation evidence to RPI. The orchestrator
+classifies any no-progress or oscillation evidence as `HOLD` when appropriate.
 
 ---
 
@@ -267,7 +267,7 @@ gc session peek <agent> --lines 50 | grep -i "timeout\|429\|500\|network\|connec
 # (manual or via status page)
 
 # Step 3: If rate limited, preserve the service response and retry-after hint
-# Return the evidence; any later dispatch requires a governor admission
+# Return the evidence; the orchestrator decides whether and how to continue
 
 # Step 4: If outage, pause affected issues
 bd update <issue> --labels=WAITING_EXTERNAL
@@ -336,7 +336,7 @@ does not count crashes or self-authorize re-dispatch.
 
 ## Escalation Evidence
 
-When Crank cannot complete an admitted action, return one evidence packet:
+When Crank cannot complete the selected action, return one evidence packet:
 
 ```bash
 # Write the detailed failure report into the wave evidence packet
@@ -346,7 +346,7 @@ cat <<'EOF'
 **Issue**: <issue-id>
 **Epic**: <epic-id>
 **Failure Type**: <type>
-**Admitted action**: <admission-id>
+**Selected action**: <leaf-and-wave-id>
 **Approach**: <what ran>
 **Failure**: <reason and evidence reference>
 **Blocker class candidate**: <class or none>
@@ -356,7 +356,7 @@ cat <<'EOF'
 EOF
 
 # Return the packet to RPI without mailing, invoking a helper, or dispatching
-# another worker. The governor owns any protected transition.
+# another worker. The orchestrator owns the next disposition.
 ```
 
 ## Post-Failure Analysis

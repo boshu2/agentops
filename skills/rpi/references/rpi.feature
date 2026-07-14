@@ -16,7 +16,7 @@ Feature: RPI runs one turn's lifecycle without skipping moves
   @covered-by:tests/e2e/rpi-phased-domain.sh
   Scenario: Typed responsibilities run in order without duplicate theater
     When /rpi executes
-    Then Discovery shapes one bounded tranche and Crank runs one to three admitted waves
+    Then Discovery shapes one bounded tranche and Crank runs one to three waves
     And one frozen tranche runs Validate, then Learn, in order
     And no typed responsibility or independent verdict is skipped
     But four handwritten phase summaries are not required
@@ -29,7 +29,7 @@ Feature: RPI runs one turn's lifecycle without skipping moves
 
   @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Intermediate waves do not pay semantic proof cost
-    Given a bounded tranche has another admitted low-risk wave
+    Given a bounded tranche has another low-risk wave
     And acceptance, dependencies, write scope, and risk are unchanged
     When the prior wave passes targeted deterministic acceptance
     Then RPI may invoke Crank for the next sequential wave
@@ -74,3 +74,11 @@ Feature: RPI runs one turn's lifecycle without skipping moves
     When the tranche completes three waves or reaches 90 minutes
     Then RPI stops pulling new work and records exact resume state
     And the boundary is PARTIAL rather than HOLD, ANDON, or proof authorization
+
+  @covered-by:tests/scripts/rpi-run-disposition.bats
+  Scenario: Evidence selects one next move without a phase controller
+    Given a wave, check, or review returned evidence for the current objective
+    When the orchestrator records the next move
+    Then the record is NOTE, REPAIR, REPLAN, HOLD, or ANDON
+    And it binds the objective and evidence digests
+    But it contains no counter, reservation, cost state, or helper state

@@ -71,11 +71,7 @@ write_checkpoint() {
   "acceptance_verdict": "PASS",
   "commit_strategy": "wave-batch",
   "mutations_this_wave": 0,
-  "total_mutations": 0,
-  "mutation_budget": {
-    "task_added": {"used": 0, "limit": 5},
-    "task_reordered": {"used": 0, "limit": 3}
-  }
+  "total_mutations": 0
 }
 EOF
 }
@@ -95,6 +91,19 @@ run_expect_success "valid checkpoint passes" bash "$VALIDATOR" "$valid" "$tmp"
 run_expect_failure "non-resolving git_sha fails" bash "$VALIDATOR" "$bad_sha" "$tmp"
 run_expect_failure "invalid timestamp fails" bash "$VALIDATOR" "$bad_time" "$tmp"
 run_expect_failure "missing required field fails" bash "$VALIDATOR" "$missing_field" "$tmp"
+
+for controller_field in mutation_budget mutation_limits limits usage; do
+  controller_fixture="$tmp/controller-$controller_field.json"
+  jq --arg field "$controller_field" '.[$field] = {"used": 1, "limit": 3}' \
+    "$valid" > "$controller_fixture"
+  run_expect_failure "retired $controller_field state fails" \
+    bash "$VALIDATOR" "$controller_fixture" "$tmp"
+done
+
+nested_controller="$tmp/nested-controller.json"
+jq '.mutation_metadata = {"used": 1, "limit": 3}' "$valid" > "$nested_controller"
+run_expect_failure "nested mutation-control state fails" \
+  bash "$VALIDATOR" "$nested_controller" "$tmp"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

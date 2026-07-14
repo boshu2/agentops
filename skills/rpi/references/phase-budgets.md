@@ -1,29 +1,26 @@
-# Phase Budget Migration
+# Bounded Tranches Without Phase Controllers
 
 Historical RPI implementations assigned independent time boxes, attempt
-allowances, and wave caps to individual phases. Those controls are retired.
-They could reset in a fresh process, disagree across references, and spend work
-without a durable admission.
+allowances, review meters, and wave caps to individual phases. Those controls
+are retired. They duplicated state machines, multiplied retries, and turned a
+soft flow boundary into permission to work.
 
-The sole live contract is the persistent
-[pull-flow governor](pull-flow-governor.md):
+The live contract is deliberately smaller:
 
-- initialization declares run-wide wave, reviewer-token, elapsed-time,
-  review-context, and deterministic-execution ceilings;
-- every Crank or Validate dispatch reports all projected charges, including
-  explicit zeroes;
-- the governor validates and persists an admission before dispatch;
-- fresh processes resume the same counters;
-- a meter refuses only an action with a positive projected charge that would
-  exceed the declared ceiling;
-- phase results return evidence to the orchestrator and never increment a
-  private attempt, retry, helper, or wave allowance.
+- one leaf is active per writer;
+- a routine tranche pulls one to three low-risk waves;
+- each intermediate wave runs only targeted deterministic checks;
+- three waves or 90 minutes is a soft return boundary with exact resume state;
+- the frozen tranche receives one independent Validate and one Learn pass; and
+- the orchestrator records `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, or `ANDON` from
+  evidence using the [run disposition contract](pull-flow-governor.md).
 
-Complexity may still scale the depth of Discovery, Premortem, and Validate. It
-does not create a second controller. A timeout or repeated result is evidence
-for `REPAIR`, `REPLAN`, or a breaker request; the persistent governor alone
-decides whether the run continues, enters `HOLD`, or reaches `ANDON`.
+These defaults control WIP and feedback cadence. They do not authorize
+execution, accumulate cost state, or create a retry allowance. A runtime or
+operator may impose a real time, cost, or quota ceiling; RPI treats that ceiling
+as external evidence rather than implementing another meter.
 
-There is no phase-specific budget flag or disable-budget escape. Operators who
-need different ceilings initialize a new run with explicit run-wide values;
-an existing run state is never silently replaced.
+Complexity may scale the depth of Discovery, Premortem, and Validate. It does
+not add controllers. A timeout or repeated result is evidence for `REPAIR`,
+`REPLAN`, or `HOLD`. Only an evidence-backed human-only decision or genuinely
+spent hard external ceiling becomes `ANDON`.

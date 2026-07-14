@@ -2,7 +2,7 @@
 
 Crank classifies failure evidence and returns it at the wave boundary. It does
 not own a retry allowance, wave cap, task budget, disposition transition, or
-helper consultation. RPI's persistent governor is the sole controller.
+helper consultation. RPI alone records the evidence-bound disposition.
 
 ## Validation failure handling
 
@@ -13,15 +13,15 @@ When swarm validation fails:
 2. Record the attempted approach and any safe rollback point.
 3. Return `BLOCKED` or `PARTIAL` evidence to the orchestrator without changing
    terminal tracker state or dispatching another worker.
-4. Let the orchestrator classify `REPAIR`, `REPLAN`, or breaker evidence and
-   request any later action through the persistent governor.
+4. Let the orchestrator classify `REPAIR`, `REPLAN`, `HOLD`, or `ANDON` and
+   choose any later action.
 
-## Admission refusal
+## Invalid dispatch packet
 
-Every wave begins with a durable `crank-wave` admission. If the governor
-refuses, Crank stops before dispatch and returns the refusal receipt. Crank must
-not infer remaining budget, initialize a replacement run, or translate the
-refusal into a helper request.
+If the selected wave lacks accepted plan identity, write scope, acceptance, or
+rollback, Crank stops before mutation and returns the mismatch. Crank must not
+repair the packet, select different work, or translate the mismatch into a
+helper request.
 
 ## Pre-flight: issues exist
 
@@ -49,7 +49,7 @@ unresolved findings for Validate. Per-wave deterministic checks do not replace
 the independent verdict. The verdict flows through Learn before the
 orchestrator chooses another action.
 
-When a fresh-context helper is warranted, the governor first enters `HOLD` with
+When a fresh-context helper is warranted, the orchestrator records `HOLD` with
 the matching blocker class. Crank does not invoke the helper itself and does
 not mark human-only state. It simply preserves enough evidence for the
-authority-bearing RPI command to act.
+RPI orchestrator to act.
