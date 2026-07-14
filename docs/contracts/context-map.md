@@ -417,7 +417,6 @@ graph LR
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
 | `learn` | consumes | validate |
-| `learn` | produces | .agents/rpi/phase-4-summary.md |
 | `learn` | produces | learn-receipt.json |
 | `ntm` | consumes | task-intent |
 | `ntm` | produces | agent-worker-transcript |

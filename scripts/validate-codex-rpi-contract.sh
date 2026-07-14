@@ -24,6 +24,16 @@ require_contains() {
   fi
 }
 
+require_not_contains() {
+  local file needle="$2" message="$3"
+  file="$(resolve_skill_path "$1")"
+  [[ -n "$file" ]] || return 0
+  if grep -Fq -- "$needle" "$file"; then
+    printf 'FAIL: %s\n  forbidden: %s\n  file: %s\n' "$message" "$needle" "$file" >&2
+    failures=$((failures + 1))
+  fi
+}
+
 require_absent() {
   local path="$1" message="$2"
   if [[ -e "$path" ]]; then
@@ -40,7 +50,7 @@ require_contains skills-codex/rpi/SKILL.md 'Learn is the only post-verdict hando
   'RPI must route every verdict through Learn'
 require_contains skills-codex/rpi/SKILL.md 'Only the orchestrator may invoke Premortem' \
   'RPI must keep Premortem control with the orchestrator'
-require_contains skills-codex/rpi/SKILL.md '$crank .agents/rpi/execution-packet.json' \
+require_contains skills-codex/rpi/prompt.md '$crank .agents/rpi/execution-packet.json' \
   'RPI must preserve the no-beads execution-packet handoff'
 require_contains skills-codex/rpi/references/phase-data-contracts.md 'discovery, crank, validate, learn' \
   'RPI must require four ordered receipts'
@@ -69,14 +79,20 @@ require_contains skills-codex/premortem/SKILL.md 'explicit orchestrator request'
 require_contains skills-codex/evolve/SKILL.md 'Validate -> Learn -> orchestrator' \
   'Evolve must preserve the four-umbrella cycle'
 
-require_contains skills-codex/rpi/prompt.md 'Record phase receipts in `.agents/rpi/execution-packet.json` and each phase summary' \
-  'RPI generated prompt must preserve receipt enforcement'
-require_contains skills-codex/crank/prompt.md 'End after one wave.' \
+require_contains skills-codex/rpi/prompt.md 'Keep one ordered receipt index in `.agents/rpi/execution-packet.json`' \
+  'RPI generated prompt must preserve canonical receipt enforcement'
+require_contains skills-codex/crank/prompt.md 'End after one wave and return targeted evidence to RPI.' \
   'Crank generated prompt must preserve the one-wave boundary'
 require_contains skills-codex/evolve/prompt.md 'Drive the lead cycle in-session through the skills' \
   'Evolve generated prompt must preserve in-session skill orchestration'
 require_contains skills-codex/premortem/prompt.md 'Between waves, accept only a changed plan' \
   'Premortem generated prompt must preserve the orchestrator boundary'
+require_not_contains skills-codex/crank/prompt.md 'run `$validate` on that wave' \
+  'Crank must not force semantic validation between unchanged waves'
+require_not_contains skills-codex/rpi/prompt.md 'and each phase summary' \
+  'RPI must not require duplicate receipt prose'
+require_not_contains skills-codex/rpi/prompt.md 'before another `$crank` invocation' \
+  'RPI must not force Validate and Learn between unchanged waves'
 
 for skill in rpi crank evolve premortem; do
   require_absent "skills-codex-overrides/$skill" \

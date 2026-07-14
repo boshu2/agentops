@@ -68,6 +68,7 @@ Feature: RPI runs one turn's lifecycle without skipping moves
     And the execution packet indexes canonical Crank evidence, Validate result.json, and learn-receipt.json
     And any legacy phase summary is a link-only compatibility projection
 
+  @covered-by:skills/rpi/scripts/validate.sh
   Scenario: The bounded tranche stops before runaway execution
     Given an automatic goal has more aggregate demand
     When the tranche completes three waves or reaches 90 minutes

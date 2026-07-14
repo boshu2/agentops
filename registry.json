@@ -1928,7 +1928,6 @@
         "validate"
       ],
       "produces": [
-        ".agents/rpi/phase-4-summary.md",
         "learn-receipt.json"
       ],
       "drives_commands": [],

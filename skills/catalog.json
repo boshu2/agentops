@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-14T06:49:18Z",
+  "generated_at": "2026-07-14T12:44:19Z",
   "skill_count": 63,
   "skills": [
     {
@@ -835,7 +835,6 @@
         "validate"
       ],
       "produces": [
-        ".agents/rpi/phase-4-summary.md",
         "learn-receipt.json"
       ],
       "dependencies": [

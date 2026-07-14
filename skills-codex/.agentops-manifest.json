@@ -696,8 +696,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "e2507eb4c5f7e7c266a7b16c5adfad3b2fa1383293a9c9e91d4c5c146ed5f297",
-      "generated_hash": "469ab3c8d07b5bc280c700d0166d4481cc953fbf0b18bc72d98e17333efac497"
+      "source_hash": "584042bc2bd6d2a68f9170447d8ef530ad3db7a25315aa9ee6f2ae2d74b2892d",
+      "generated_hash": "8cdf0715d1445e4b2b4d7742ad0ae37287e4886ae809b697683847337a1c7a51"
     },
     {
       "name": "doc",
@@ -870,8 +870,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "2d220bfab678297df07a37051d8cf3601f765632c845cf7f63043a8d5be2905f",
-      "generated_hash": "f6b1a88de3b65a27818af0f0f2bccff6bbf23121b8aa8f3e112fdf10f13426f0"
+      "source_hash": "84cd992fcdc9577c86e15cd72efb581357267b98d52f6cb77293b42fe95625b5",
+      "generated_hash": "dc7acf9307e214ee29ecd94c54e0eb448a2fce1ce360c7775549a9e3b264ba1e"
     },
     {
       "name": "sbh",

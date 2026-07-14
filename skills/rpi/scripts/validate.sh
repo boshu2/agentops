@@ -15,7 +15,7 @@ check "references/ has at least 3 files" "[ \$(ls '$SKILL_DIR/references/' | wc 
 check "SKILL.md mentions research phase" "grep -qi 'research' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions plan phase" "grep -qiE '/plan|plan' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions Premortem phase" "grep -qi 'premortem' '$SKILL_DIR/SKILL.md'"
-check "SKILL.md mentions crank phase" "grep -qi '/crank' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md mentions crank phase" "grep -qiE '[/\$]crank' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions Learn phase" "grep -qiE '[/\$]learn' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions Validate phase" "grep -qi '/validate' '$SKILL_DIR/SKILL.md'"
 check "SKILL.md mentions immutable verdict handoff" "grep -qi 'immutable.*verdict' '$SKILL_DIR/SKILL.md'"
@@ -42,6 +42,8 @@ check "RPI authoritative references have no private phase controller" \
   "! rg -q -i '$phase_control_pattern' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references'"
 check "RPI protects HOLD and ANDON behind explicit authority ports" \
   "grep -q 'can neither create nor clear.*HOLD' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'break.*helper.*human' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'subparsers.add_parser(\"human\")' '$SKILL_DIR/scripts/run-governor.py'"
+check "incomplete tranche stops without terminal proof" \
+  "grep -q 'At three waves or 90 minutes with work incomplete' '$SKILL_DIR/SKILL.md' && grep -q 'PARTIAL.*resume evidence' '$SKILL_DIR/SKILL.md' && grep -q 'stop without proof authorization' '$SKILL_DIR/SKILL.md'"
 check "critical constraints precede the core contract" "test \"\$(grep -n '^## Critical Constraints$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\" -lt \"\$(grep -n '^## Core Contract$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\""
 
 packet_fixture="$(mktemp)"
