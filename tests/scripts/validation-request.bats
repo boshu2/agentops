@@ -79,6 +79,7 @@ GATE
       gates: [{
         id: "fact",
         lane: "mandatory",
+        proof_kind: "executable_assertion",
         argv: ["bash", "scripts/factual-gate.sh", $count, "--json"],
         backing: [{path: $backing_path, sha256: $backing_sha}]
       }]
@@ -153,6 +154,7 @@ add_nonbinding_gate() {
     .gates += [{
       id: $gate_id,
       lane: $lane,
+      proof_kind: "executable_assertion",
       argv: ["bash", "scripts/factual-gate.sh", $count, $status_file, "--json"],
       backing: [{path: "scripts/factual-gate.sh", sha256: $backing_sha}]
     }]
@@ -182,6 +184,7 @@ check_bad_receipt() {
     (.candidate.semantic_id | length) == 64 and
     (.candidate.changed_surfaces | length) >= 1 and
     .validator.route == "single_fresh" and
+    .selected_gates[0].proof_kind == "executable_assertion" and
     (.validator | has("inventory_count") | not)
   ' "$REQUEST"
 
@@ -192,6 +195,7 @@ check_bad_receipt() {
     .disposition == "READY" and
     .next_action == "VALIDATE_SINGLE_FRESH" and
     (.gate_executions | length) == 1 and
+    .gate_executions[0].proof_kind == "executable_assertion" and
     .gate_executions[0].candidate.status == "PASS"
   ' "$RECEIPT"
   [ "$(wc -l <"$COUNT_FILE" | tr -d ' ')" -eq 1 ]
@@ -214,6 +218,7 @@ check_bad_receipt() {
     .gates += [{
       id: "fact-two",
       lane: "mandatory",
+      proof_kind: "schema",
       argv: ["bash", "scripts/factual-gate.sh", $count, "--json"],
       backing: [{path: "scripts/factual-gate.sh", sha256: $backing_sha}]
     }]
@@ -231,7 +236,10 @@ check_bad_receipt() {
   run_request
 
   [ "$status" -eq 0 ]
-  jq -e '.gate_executions | map(.id) == ["fact", "fact-two"]' "$RECEIPT"
+  jq -e '
+    (.gate_executions | map(.id)) == ["fact", "fact-two"] and
+    (.gate_executions | map(.proof_kind)) == ["executable_assertion", "schema"]
+  ' "$RECEIPT"
   [ "$(wc -l <"$COUNT_FILE" | tr -d ' ')" -eq 2 ]
 }
 
@@ -283,7 +291,11 @@ check_bad_receipt() {
   run_request
 
   [ "$status" -eq 1 ]
-  jq -e '.model_spend_allowed == false and .preflight_errors[0].code == "missing_registry_backing"' "$RECEIPT"
+  jq -e '
+    .model_spend_allowed == false and
+    .preflight_errors[0].code == "missing_registry_backing" and
+    .preflight_errors[0].defect_class == "registry_integrity"
+  ' "$RECEIPT"
   [ ! -s "$COUNT_FILE" ]
 }
 
@@ -686,13 +698,31 @@ check_bad_receipt() {
   [ "$status" -eq 1 ]
 }
 
+@test "receipt rejects a proof kind that differs from the frozen registry" {
+  seed_repo PASS PASS
+  freeze_request
+  [ "$status" -eq 0 ]
+  run_request
+  [ "$status" -eq 0 ]
+  jq '.gate_executions[0].proof_kind = "schema"' "$RECEIPT" >"$BAD_RECEIPT"
+
+  check_bad_receipt
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"gate executions do not exactly match selected gates"* ]]
+}
+
 @test "receipt rejects contradictory READY preflight evidence" {
   seed_repo PASS PASS
   freeze_request
   [ "$status" -eq 0 ]
   run_request
   [ "$status" -eq 0 ]
-  jq '.preflight_errors = [{code: "stale_claim_dependency", detail: "claim.txt"}]' \
+  jq '.preflight_errors = [{
+    code: "stale_claim_dependency",
+    defect_class: "evidence_integrity",
+    detail: "claim.txt"
+  }]' \
     "$RECEIPT" >"$BAD_RECEIPT"
 
   check_bad_receipt

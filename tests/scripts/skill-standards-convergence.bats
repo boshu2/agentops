@@ -870,7 +870,7 @@ PY
   [[ "$output" == *'repo-runtime'* ]]
 }
 
-@test "L2: changed-scope rejects shallow-green evidence when deep audit is non-PASS" {
+@test "L2: changed-scope keeps semantic skill scoring off the deterministic gate" {
   local scratch="$BATS_TEST_TMPDIR/release-waist-root"
   local scan_root="$BATS_TEST_TMPDIR/release-waist-scan"
   local shallow_bats="$BATS_TEST_TMPDIR/shallow-count.bats"
@@ -879,6 +879,20 @@ PY
   prepare_builder_root "$scratch"
   write_conforming_skill "$scratch/skills/shallow-green" shallow-green \
     "'Shallow checks pass. Triggers: \"shallow green\".'" incomplete
+  cat >>"$scratch/docs/contracts/skill-dispositions.yaml" <<'YAML'
+  - skill:            shallow-green
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/shallow-green/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Fixture proves semantic scoring stays out of deterministic changed-scope checks."
+YAML
   mkdir -p "$scan_root"
   cp -R "$scratch/skills/shallow-green" "$scan_root/shallow-green"
 
@@ -903,13 +917,13 @@ BATS
 
   run bash "$scratch/scripts/regen-changed-scope.sh" --check \
     --file skills/shallow-green/SKILL.md
-  [[ "$status" -ne 0 ]]
-  [[ "$output" == *'changed skill deep conformance'* ]]
-  [[ "$output" == *'output-spec-explicit'* ]]
-  [[ "$output" == *'bash skills/heal-skill/scripts/audit.sh --strict skills/shallow-green'* ]]
+  [[ "$status" -eq 0 ]]
+  [[ "$output" == *'changed skill structural integrity'* ]]
+  [[ "$output" == *'All clean. No findings.'* ]]
+  [[ "$output" != *'output-spec-explicit'* ]]
 }
 
-@test "L2: changed-scope does not deep-audit redirect-only runtime packages" {
+@test "L2: changed-scope does not inspect redirect-only runtime packages" {
   local scratch="$BATS_TEST_TMPDIR/redirect-scope-root"
 
   prepare_builder_root "$scratch"
@@ -917,15 +931,15 @@ BATS
   run bash "$scratch/scripts/regen-changed-scope.sh" --list \
     --file skills/pre-mortem/SKILL.md
   [[ "$status" -eq 0 ]]
-  [[ "$output" != *'changed skill deep conformance'* ]]
-  [[ "$output" != *'audit.sh --strict skills/pre-mortem'* ]]
+  [[ "$output" != *'changed skill structural integrity'* ]]
+  [[ "$output" != *'heal.sh --check --strict skills/pre-mortem'* ]]
   [[ "$output" == *'codex'* ]]
   [[ "$output" == *'registry'* ]]
 }
 
-@test "L0: local and CI release waists invoke the canonical deep audit" {
-  grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
+@test "L0: changed-scope release waist invokes structural integrity, not prose scoring" {
+  grep -Fq 'skills/heal-skill/scripts/heal.sh --check --strict' \
     "$REPO_ROOT/scripts/regen-changed-scope.sh"
-  grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
-    "$REPO_ROOT/cli/internal/gates/checks/seed.go"
+  ! grep -Fq 'skills/heal-skill/scripts/audit.sh --strict' \
+    "$REPO_ROOT/scripts/regen-changed-scope.sh"
 }

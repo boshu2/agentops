@@ -141,9 +141,19 @@
     "preflightError": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["code", "detail"],
+      "required": ["code", "defect_class", "detail"],
       "properties": {
         "code": { "type": "string", "minLength": 1 },
+        "defect_class": {
+          "enum": [
+            "candidate_integrity",
+            "evidence_integrity",
+            "registry_integrity",
+            "toolchain_integrity",
+            "validator_integrity",
+            "request_integrity"
+          ]
+        },
         "detail": { "type": "string", "minLength": 1 }
       }
     },
@@ -161,10 +171,21 @@
     "gateExecution": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "lane", "candidate", "attribution"],
+      "required": ["id", "lane", "proof_kind", "candidate", "attribution"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "lane": { "enum": ["mandatory", "diagnostic", "release"] },
+        "proof_kind": {
+          "enum": [
+            "syntax",
+            "schema",
+            "identity",
+            "paths",
+            "generated_drift",
+            "executable_assertion",
+            "evidence_integrity"
+          ]
+        },
         "candidate": { "$ref": "#/$defs/factualResult" },
         "baseline": { "$ref": "#/$defs/factualResult" },
         "attribution": { "enum": ["not_applicable", "candidate_introduced", "pre_existing"] }

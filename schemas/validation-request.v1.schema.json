@@ -72,10 +72,21 @@
     "selectedGate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "lane", "entry_sha256"],
+      "required": ["id", "lane", "proof_kind", "entry_sha256"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "lane": { "enum": ["mandatory", "diagnostic", "release"] },
+        "proof_kind": {
+          "enum": [
+            "syntax",
+            "schema",
+            "identity",
+            "paths",
+            "generated_drift",
+            "executable_assertion",
+            "evidence_integrity"
+          ]
+        },
         "entry_sha256": { "$ref": "#/$defs/digest" }
       }
     },
