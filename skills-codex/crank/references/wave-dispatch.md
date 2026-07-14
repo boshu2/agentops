@@ -39,7 +39,7 @@ For RED Gate enforcement and retry logic, read `skills/crank/references/test-fir
 
 ```bash
 if command -v ao &>/dev/null; then
-    ao context assemble --task='<epic title>: wave $wave'
+    ao context assemble --task='<epic title>: admission $RPI_ADMISSION_ID'
 fi
 ```
 
@@ -94,22 +94,38 @@ Conflicts: 0
 
 **If conflicts > 0:** Do NOT invoke `/swarm`. Resolve by serializing conflicting tasks into sub-waves or merging task scope before proceeding.
 
-**BEFORE each wave:**
+**BEFORE each wave, atomically admit it:**
 ```bash
-wave=$((wave + 1))
-WAVE_START_SHA=$(git rev-parse HEAD)
+: "${RPI_RUN_ID:?RPI run id is required}"
+: "${RPI_GOVERNOR_STATE_DIR:?persistent governor state dir is required}"
+: "${RPI_REVIEWER_TOKENS:?reviewer-token meter is required}"
+: "${RPI_ELAPSED_SECONDS:?elapsed-time meter is required}"
+: "${RPI_REVIEW_CONTEXTS:?review-context meter is required}"
+: "${RPI_DETERMINISTIC_EXECUTIONS:?deterministic-execution meter is required}"
 
-if [[ "$TRACKING_MODE" == "beads" ]]; then
-    bd update <epic-id> --append-notes "CRANK_WAVE: $wave at $(date -Iseconds)" 2>/dev/null
-fi
-
-# CHECK GLOBAL LIMIT
-if [[ $wave -ge 50 ]]; then
+ADMISSION_JSON="$(python3 skills/rpi/scripts/run-governor.py admit \
+  --state-dir "$RPI_GOVERNOR_STATE_DIR" \
+  --run-id "$RPI_RUN_ID" \
+  --action crank-wave \
+  --reviewer-tokens "$RPI_REVIEWER_TOKENS" \
+  --elapsed-seconds "$RPI_ELAPSED_SECONDS" \
+  --review-contexts "$RPI_REVIEW_CONTEXTS" \
+  --deterministic-executions "$RPI_DETERMINISTIC_EXECUTIONS")" || {
+    printf '%s\n' "$ADMISSION_JSON"
     echo "<promise>BLOCKED</promise>"
-    echo "Global wave limit (50) reached."
-    # STOP - do not continue
-fi
+    exit 1
+  }
+
+test "$(jq -r '.authorized' <<<"$ADMISSION_JSON")" = true || exit 1
+RPI_ADMISSION_ID="$(jq -r '.admissions[-1].id' <<<"$ADMISSION_JSON")"
+WAVE_START_SHA="$(git rev-parse HEAD)"
 ```
+
+The governor fsyncs and atomically replaces the run state before returning the
+receipt. Only then may Crank dispatch. Fresh invocations reuse the same run ID
+and state directory, so the default three admissions cannot reset. Missing or
+corrupt state, a missing meter, or any hard-ceiling refusal fails closed; Crank
+must not create a local fallback counter or helper.
 
 **Pre-Spawn: Spec Consistency Gate**
 

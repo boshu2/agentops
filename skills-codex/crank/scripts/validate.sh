@@ -18,6 +18,9 @@ check "wave checkpoint validator exists" "[ -x '$SKILL_DIR/scripts/validate-wave
 check "skill runs wave checkpoint validator" "grep -rqs 'validate-wave-checkpoint.sh' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/'"
 check "No phantom bd cook refs" "! grep -q 'bd cook' '$SKILL_DIR/SKILL.md'"
 check "No phantom gt convoy refs" "! grep -q 'gt convoy' '$SKILL_DIR/SKILL.md'"
+check "Crank consumes persistent RPI governor" "grep -q 'pull-flow-governor.md' '$SKILL_DIR/SKILL.md' && grep -q 'run-governor.py admit' '$SKILL_DIR/references/wave-dispatch.md'"
+check "Crank has no phase-local wave counter" "! grep -Eq 'MAX_EPIC_WAVES|wave=0|wave=\\$\\(\\(wave|RPI_MAX_WAVES' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/execution-preflight.md' '$SKILL_DIR/references/wave-dispatch.md'"
+check "Crank has no private retry/helper multiplier" "! grep -Eq 'Budget: 2 per task|3 total attempts before' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/execution-preflight.md' '$SKILL_DIR/references/wave-dispatch.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

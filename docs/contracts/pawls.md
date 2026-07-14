@@ -179,6 +179,14 @@ human if it survives — never loop forever.
 
 ## Escalation — the circuit-breaker model
 
+The canonical run-level controller is the RPI
+[persistent pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
+Pawl review supplies door-specific evidence to that controller; it does not
+own a second retry, budget, helper, or disposition state machine. The only run
+dispositions are `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON`.
+`CONFIRMED`/`REFUTED` remain review outcomes, and `UNSTUCK`/`ESCALATE` remain
+helper outcomes. They are not additional dispositions.
+
 **The human is NOT needed at a pawl by default.** A pawl fires the pawl gate
 ([`/pawl-review`](../../skills/pawl-review/SKILL.md)) **autonomously — model reviews model.**
 The loop self-corrects; the human is the exception a *circuit breaker* trips into, not the checkpoint.
@@ -186,20 +194,26 @@ The loop self-corrects; the human is the exception a *circuit breaker* trips int
 The model has three layers: a **default auto-redo loop**, a set of **tunable circuit breakers** that bound it, and a **bounded helper pass** that sits between a breaker trip and the human — a stuck context consults a fresh one before it consults the operator.
 
 - **PASS (CONFIRMED)** → proceed through the door. No human.
-- **FAIL (REFUTED) → AUTO-REJECT → AUTO-REDO (the default path, no human).** A REFUTED verdict means the gate *rejected*; the loop **automatically** sends the work back to be re-done with the findings and **re-gates** it. This is continuous self-correction: the loop redoes on REFUTED **on its own**, with no human in the loop. A plain REFUTED is *never* an escalation — it is the ordinary, expected path, and most FAILs converge here.
-- **A CIRCUIT-BREAKER trip stops the auto-redo loop — but its first stop is the HELPER, not the human.** The breakers are **plural and operator-tunable** — they bound the auto-redo loop so it can't burn forever:
+- **FAIL (REFUTED) → `REPAIR` or `REPLAN` (the default path, no human).** A
+  REFUTED review outcome means the door remains closed. The orchestrator
+  classifies the complete evidence as a local repair or an invalidated plan and
+  requests a new admission for any further work. A plain REFUTED is never an
+  escalation and never a disposition of its own.
+- **A CIRCUIT-BREAKER trip enters `HOLD`; its first stop is the helper, not the human.** Breaker thresholds and charges live in the persistent run governor:
   1. **max-attempts** — N re-work/re-gate cycles still REFUTED (default 3, tunable).
   2. **time budget** — wall-clock with no productive forward progress (the evolve loop's existing 60-min "no productive work" breaker; tunable).
   3. **cost / quota budget** — paid API spend or usage-quota ceiling for the loop (tunable).
   4. **oscillation / no-forward-progress** — the *same* failure repeating (the evolve oscillation quarantine: a target with 3+ improved→fail transitions; tunable threshold). Also covers reviewer deadlock — refuters contradicting and staying contradicted is a no-forward-progress signal.
   5. **explicit judgment flag** — a reviewer explicitly raises a value / irreversibility judgment that models should not make alone (an immediate, hard breaker).
 
-  These are the **same governor** the autonomous loop already runs: the evolve circuit breakers (time-based + oscillation quarantine, Step 1 / [`scripts/evolve/halt-check.sh`](../../scripts/evolve/halt-check.sh)). The pawl gate *references and extends* that mechanism as its escalation governor; thresholds are configurable (e.g. `EVOLVE_KILL_TTL_DAYS`, `--max-cycles`, max-attempts) rather than hard-coded.
+  These are inputs to the same persistent RPI governor used by Crank and
+  Validate. Pawl review may report them; it may not extend them with private
+  thresholds or counters.
 
 - **THE HELPER PASS — one bounded consult before the operator.** Breakers 1 and 4 are *stuck states*, and breaker 2's default form — wall-clock with **no productive forward progress** — is a *stall signal*, not a spent ceiling. Stuckness is usually model-adjudicable: the context that ground to a halt is in a rut a fresh one is not in. On those trips the loop takes **exactly one helper pass** — hand the blocker statement, the evidence, and what was tried to a **fresh context, a cross-family model (`codex exec`), or a [`/council`](../../skills/council/SKILL.md) panel** — which returns **UNSTUCK** (a concrete next action; the loop resumes with it, breaker counters reset for the *new* approach) or **ESCALATE** (it confirms the blocker needs a human). The helper is an *advisor, never a second driver*: it reasons about the blocker and returns a recommendation; it does not take over the work or own the loop. Bounds, so the helper cannot become its own grinder: **one pass per distinct blocker class** — a blocker class that survives its helper pass goes to the human, never to a second pass. A budget trip takes the pass only while its governing ceiling still has room (breaker 3's spend/quota ceiling, or a breaker-2 trip that is a hard operator deadline rather than the stall detector); a *spent* ceiling skips the helper entirely (next bullet).
-- **ESCALATE to a human — only past the helper, or on the classes that skip it.** Breaker 5 (explicit judgment flag), the refusal lane (money, legal, irreversible-external), and a **spent hard ceiling** — breaker 3's cost/quota ceiling, or a hard time deadline, with no room left — go **straight to the human; the helper is skipped**: no model consult can own those, and a spent ceiling buys no consults. Everything else reaches the human only when its helper pass failed to unstick it or the helper itself returned ESCALATE.
+- **`ANDON` reaches the operator only past the helper, or on classes that skip it.** Breaker 5 (explicit judgment flag), the refusal lane (money, legal, irreversible-external), and a **spent hard ceiling** — cost/quota exhaustion or a hard time deadline with no room left — skip the helper: no model consult can own those, and a spent ceiling buys no consults. Everything else reaches `ANDON` only when its one helper pass failed to unstick it or returned the `ESCALATE` helper outcome.
 
-**REFUTED → auto-redo (loop, no human). Breaker-trip → HOLD + helper pass; human only past the helper.** The verdict disposition is set accordingly: a plain REFUTED carries `disposition: REFUTED` and the loop re-works; the disposition is flipped to **`ESCALATE` / `HOLD` only when a breaker trips**, never on plain REFUTED. When a breaker trips the action does **not** proceed: the merge/push is **held**, not landed, not retried-into-landing, while the helper pass runs; it is surfaced for a human when the pass fails to unstick it, the helper returns ESCALATE, or the class skips the helper. A helper UNSTUCK never opens the door — it only resumes the *work*, and the hold lifts solely by re-earning a `CONFIRMED` verdict through the gate. Non-convergence **never auto-lands** — fail-closed is the whole point. The enforcing merge path (`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) records the `ESCALATE`/`HOLD` disposition and exits **5 (HOLD: no merge, no close)**; only a `CONFIRMED` pawl verdict opens the door. (A bare `REFUTED` verdict also exits 5 at the merge path — the merge is correctly refused — but the *loop's* response to REFUTED is auto-redo, not human escalation; the merge-path HOLD is just fail-closed enforcement while the redo happens.)
+**REFUTED evidence → `REPAIR`/`REPLAN`; breaker trip → `HOLD` + one helper; operator only at `ANDON`.** When a breaker trips the action does not proceed: the merge/push remains held while the one helper pass runs. A helper `UNSTUCK` result names a new approach and returns the run to `REPAIR`; it never opens the door. A helper `ESCALATE` result becomes `ANDON`. The hold lifts only after a new admitted candidate earns `CONFIRMED`. Non-convergence never auto-lands. Door-specific exit codes and legacy pawl artifacts remain enforcement details, not a second run disposition language.
 
 This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl and auto-redoes on REFUTED; pulling a human in is the exception that fires only when a tunable circuit breaker trips **and the helper pass could not resolve it** (or the class skips the helper) — and until the human acts, the pawl **holds**.
 

@@ -51,6 +51,9 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 - Parallelize only disjoint write scopes and serialize shared derived surfaces to prevent workers from invalidating one another's base.
 - Return unresolved wave evidence to the orchestrator instead of choosing a
   cross-phase retry or re-plan inside Crank.
+- Require a durable `authorized:true` admission from RPI's persistent
+  [run governor](../rpi/references/pull-flow-governor.md) before dispatch.
+  Crank owns no wave, retry, attempt, cost, disposition, or helper counter.
 
 ## Loop position
 
@@ -89,11 +92,12 @@ Read `references/team-coordination.md` for the full per-wave execution model, `r
 | `--no-scope-check` | off | Skip scope-completion check before DONE marker (Step 8.7) |
 | `--skip-audit` | off | Skip bd-audit pre-flight gate (Step 3a.2) |
 
-## Global Limits
+## Shared Run Governor
 
-**MAX_EPIC_WAVES = 50** (hard limit across entire epic)
-
-This prevents infinite loops on circular dependencies or cascading failures. Typical epics use 5–10 waves max.
+RPI owns the only admissions and hard-cost governor. The default run admits
+exactly three Crank waves, persisted across fresh invocations. Crank reports
+measured usage and requests admission; it never initializes or resets the run.
+Missing/corrupt state, missing meters, or a refused admission stops dispatch.
 
 ## Completion Enforcement (The Sisyphus Rule)
 
@@ -105,9 +109,14 @@ Not done until you emit an explicit completion marker after each wave:
 Never claim completion without one of these markers. The marker does not close
 an epic, tracker, or delivery workflow.
 
-## Node Repair Operator
+## Failure Evidence
 
-When a task fails during wave execution, classify as **RETRY** (transient — re-add with adjustment, max 2), **DECOMPOSE** (too complex — split into sub-issues, terminal), or **PRUNE** (blocked — one bounded helper pass, then escalate what survives). Budget: 2 per task. Read `references/failure-recovery.md` for classification signals and recovery commands.
+When a task fails during wave execution, report whether the evidence suggests
+a transient repair, decomposition, or blocked path, but do not act on a private
+counter. The orchestrator classifies it as `NOTE`, `REPAIR`, `REPLAN`, `HOLD`,
+or `ANDON` through the shared governor. `references/failure-recovery.md`
+supplies evidence taxonomy only; any older numeric retry/helper text there is
+non-authorizing.
 
 **Mutation logging on failure classification:**
 - **DECOMPOSE:** Log `task_removed` for the original task, then `task_added` for each new sub-task.
@@ -122,13 +131,13 @@ Given `/crank [epic-id | .agents/rpi/execution-packet.json | plan-file.md | "des
 
 ### Preflight (Recovery hooks → Step 3a.3)
 
-Read [references/execution-preflight.md](references/execution-preflight.md) when you need recovery-hook setup, effort/tier mapping, knowledge-context loading (Step 0), tracking-mode detection (0.5), gc-pool detection (0.6), epic identification (Step 1), branch isolation (1.5), wave-counter / mutation-trail / shared-task-notes initialization (1a–1a.2), test-first classification (1b), epic details (Step 2), ready-issue listing (Step 3), and the four pre-flight checks (3a, 3a.1 premortem, 3a.2 bd-audit, 3a.3 changed-string grep).
+Read [references/execution-preflight.md](references/execution-preflight.md) when you need recovery-hook setup, effort/tier mapping, knowledge-context loading (Step 0), tracking-mode detection (0.5), epic identification (Step 1), branch isolation (1.5), persistent-run admission / mutation-trail / shared-task-notes initialization (1a–1a.2), test-first classification (1b), epic details (Step 2), ready-issue listing (Step 3), and the four pre-flight checks (3a, 3a.1 premortem, 3a.2 bd-audit, 3a.3 changed-string grep).
 
 The Branch Isolation Gate (Step 1.5) has its own dedicated contract — see [references/branch-isolation.md](references/branch-isolation.md) for when crank must create or refuse an isolation branch.
 
 ### Wave dispatch (Step 3b → Step 4)
 
-Read [references/wave-dispatch.md](references/wave-dispatch.md) when you need SPEC WAVE / TEST WAVE / RED Gate flow (Steps 3b–3c), context-briefing assembly (3b.1), shared-notes injection (3b.2), parallel-wave isolation (3b.3), or Step 4 wave execution detail — GREEN mode, issue-typing + file manifests, grep-for-existing-functions, validation metadata policy, acceptance-criteria injection, language-standards injection, file-ownership table, wave-counter / 50-cap gate, spec-consistency gate, cross-cutting constraint injection, gc-pool dispatch, and cross-cutting validation.
+Read [references/wave-dispatch.md](references/wave-dispatch.md) when you need SPEC WAVE / TEST WAVE / RED Gate flow (Steps 3b–3c), context-briefing assembly (3b.1), shared-notes injection (3b.2), parallel-wave isolation (3b.3), or Step 4 wave execution detail — GREEN mode, issue-typing + file manifests, grep-for-existing-functions, validation metadata policy, acceptance-criteria injection, language-standards injection, file-ownership table, atomic governor admission, spec-consistency gate, cross-cutting constraint injection, backend dispatch, and cross-cutting validation.
 
 ### Wave completion (Step 5 → Step 8.7)
 
@@ -138,7 +147,10 @@ Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github
 
 ### Step 9: Report Completion
 
-Report the epic ID/title, slices attempted, iterations used of 50, acceptance evidence, and remaining work. End with exactly one completion marker: `DONE` only when every selected slice is accepted, `PARTIAL` while selected or later work remains, or `BLOCKED` with the surviving reason and issue count. The structured fields are defined below in Output Specification.
+Report the epic ID/title, slices attempted, run admission ID, persisted usage,
+acceptance evidence, and remaining work. End with exactly one completion marker:
+`DONE` only when every selected slice is accepted, `PARTIAL` while selected or
+later work remains, or `BLOCKED` with the surviving reason and issue count.
 
 ## Delivery boundary
 
@@ -162,8 +174,9 @@ and acceptance details.
 ## Key Rules
 
 - Auto-detect tracking (`br` first, TaskList fallback) and use the provided epic or plan input directly.
-- Use `/swarm` for the selected wave, preserve fresh per-issue context, and
-  refuse to continue past unresolved conflicts or the 50-wave cap.
+- Use the selected execution backend for the admitted wave, preserve fresh
+  per-issue context, and refuse to dispatch past unresolved conflicts or a
+  governor refusal.
 - Per-wave deterministic acceptance stays lightweight; the resulting wave
   evidence is handed to Validate rather than interpreted as a re-plan inside
   Crank.

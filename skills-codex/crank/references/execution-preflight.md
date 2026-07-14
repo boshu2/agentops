@@ -36,8 +36,8 @@ fi
 | **Find work** | `bd ready` | `TaskList()` → pending, unblocked |
 | **Get details** | `bd show <id>` | `TaskGet(taskId)` |
 | **Mark complete** | `bd update <id> --status closed` | `TaskUpdate(taskId, status="completed")` |
-| **Track retries** | `bd comments add` | Task description update |
-| **Epic tracking** | `bd update <epic-id> --append-notes` | In-memory wave counter |
+| **Record failure evidence** | `bd comments add` | Task description update |
+| **Run admission** | Persistent RPI governor state | Persistent RPI governor state |
 
 ### Step 0.6: Select Dispatch Backend (NTM > runtime-native > beads floor)
 
@@ -88,17 +88,17 @@ If input is a description string:
 
 Before wave-1 commit, refuse to crank on `main`/`master`. Cut `crank/<epic-id>` to prevent parallel-session reset clobbers. See [branch-isolation.md](branch-isolation.md) for the gate script and override flag.
 
-### Step 1a: Initialize Wave Counter
+### Step 1a: Load The Persistent Run Governor
 
-**Beads mode:**
-```bash
-# Initialize crank tracking in epic notes
-bd update <epic-id> --append-notes "CRANK_START: wave=0 at $(date -Iseconds)" 2>/dev/null
-```
+RPI initializes one run before any phase dispatch. Crank receives the stable
+`RPI_RUN_ID` and `RPI_GOVERNOR_STATE_DIR`; it never initializes or resets
+either. Before selecting a dispatch backend, require both values and require
+the existing run state to pass the governor's fail-closed validation. The same
+state is resumed in beads and TaskList modes and across fresh processes.
 
-**TaskList mode:** Track wave counter in memory only. No external state needed.
-
-Track in memory: `wave=0`
+The actual charge is recorded by the atomic admission in
+[wave-dispatch.md](wave-dispatch.md). Preflight must not add a second counter in
+epic notes, task descriptions, memory, or checkpoint files.
 
 ### Step 1a.1: Initialize Plan Mutation Audit Trail
 
@@ -107,7 +107,9 @@ mkdir -p .agents/rpi
 : > .agents/rpi/plan-mutations.jsonl
 ```
 
-Initialize the `log_plan_mutation` helper and budget counters. See [plan-mutations.md](plan-mutations.md) for the full JSONL schema, helper function, budget limits, and mutation types.
+Initialize the `log_plan_mutation` helper for audit evidence only. See
+[plan-mutations.md](plan-mutations.md) for its JSONL schema and mutation types;
+mutation logging does not authorize dispatch or create a budget.
 
 ### Step 1a.2: Initialize Shared Task Notes
 
@@ -196,9 +198,11 @@ Also verify: epic has at least 1 child issue total. An epic with 0 children mean
 
 Do NOT proceed with empty issue list - this produces false "epic complete" status.
 
-### Step 3a.1: Pre-flight Check - Pre-Mortem Required (3+ issues)
+### Step 3a.1: Pre-flight Check - Premortem Required (3+ issues)
 
-If the epic has 3+ child issues, look for a pre-mortem report in `.agents/council/*pre-mortem*`. If none found, emit `<promise>BLOCKED</promise>` and stop — run `/pre-mortem` first. Pre-mortems have positive ROI for 3+ issue epics; cost (~2 min) is negligible.
+If the epic has 3+ child issues, look for its Premortem report. If none exists,
+emit `<promise>BLOCKED</promise>` and stop — run `/premortem` first. Premortems
+have positive ROI for 3+ issue epics; cost (~2 min) is negligible.
 
 ### Step 3a.2: Pre-flight Check - Bead Audit (Stale/Fixed/Consolidatable)
 

@@ -687,8 +687,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "735480096e58a637aac88dc093e1fba6edea5b680a40d07c126ccdcf666a5697",
-      "generated_hash": "3b0bad2e05fd6c0e4e60c2336cc9c89ff43533503bcc41b0e3fc61d4bfdb998a"
+      "source_hash": "f95fb9c43884f957c7ccc511a6af9ad1cd4b417d2a55b31cba6cd0f559dc1e46",
+      "generated_hash": "696c20edc52b03cb8467a17d722c796b6da8c7a70589006c4c475e4230bb9ab0"
     },
     {
       "name": "dcg",
@@ -873,8 +873,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "de60528bd3214f06b3fa40fc5e91712adfa0e55d5b90abb63702fd8e66f93e37",
-      "generated_hash": "3dffbaa14c010467ace76a81dd9e1a3e22af8e09cea317ab511e89e8c9e56104"
+      "source_hash": "ded85f4d16a88420b15ffc47d742290558769fbd7882eb36f4ea03a89b1fde67",
+      "generated_hash": "fd4de4e026db7e20468b13ecc6971264b90ffd6a50719d7a7ddddca321d96b9c"
     },
     {
       "name": "sbh",
