@@ -64,6 +64,58 @@ assert_corrupt_state_refused() {
   [ "$before" = "$after" ]
 }
 
+scan_private_worker_redispatch() {
+  python3 - "$@" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+action = re.compile(r"\bre-(?:run(?:ning)?|spawn(?:ing)?|dispatch(?:ing)?)\b", re.I)
+worker = re.compile(r"\b(?:spec\s+)?(?:worker(?:s|\(s\))?|writer|agent)\b", re.I)
+negated = re.compile(
+    r"\b(?:do not|does not|must not|never|without)\b.*"
+    r"\bre-(?:run(?:ning)?|spawn(?:ing)?|dispatch(?:ing)?)\b",
+    re.I,
+)
+
+
+def source_files(arguments):
+    for argument in arguments:
+        path = Path(argument)
+        if path.is_dir():
+            yield from sorted(
+                candidate
+                for candidate in path.rglob("*")
+                if candidate.is_file()
+                and (candidate.suffix in {".md", ".feature"} or candidate.name == "SKILL.md")
+            )
+        elif path.is_file():
+            yield path
+
+
+for path in source_files(sys.argv[1:]):
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not action.search(line) or not worker.search(line):
+            continue
+        lowered = line.lower()
+        if negated.search(line):
+            continue
+        if ("historical" in lowered or "anti-pattern" in lowered) and any(
+            quote in line for quote in ('"', "'", "`")
+        ):
+            continue
+        if (
+            "preserve" in lowered
+            and "return" in lowered
+            and "disposition" in lowered
+            and "admission" in lowered
+            and ("only after" in lowered or "before later" in lowered)
+        ):
+            continue
+        print(f"{path}:{number}:{line.strip()}")
+PY
+}
+
 @test "fresh processes resume one run and admit exactly three default waves" {
   run init_run run-resume
   [ "$status" -eq 0 ]
@@ -389,4 +441,35 @@ assert_corrupt_state_refused() {
     "$REPO_ROOT/skills/rpi/references" \
     "$REPO_ROOT/skills/crank/references"
   [ "$status" -eq 1 ]
+}
+
+@test "authoritative references reject private worker redispatch" {
+  fixture="$BATS_TEST_TMPDIR/private-worker-redispatch.txt"
+  printf '%s\n' \
+    'Re-run SPEC workers for affected issues.' \
+    'Re-spawn the failed worker.' \
+    'Re-dispatch the worker after validation failure.' \
+    'Historical anti-pattern: "Re-spawn the failed worker."' \
+    'Re-run the deterministic validation command inside the current admission.' \
+    'Preserve and return the evidence; re-dispatch a worker only after a new orchestrator disposition and durable RPI admission.' \
+    >"$fixture"
+
+  run scan_private_worker_redispatch "$fixture"
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$output" | sed '/^$/d' | wc -l | tr -d ' ')" -eq 3 ]
+  [[ "$output" == *'Re-run SPEC workers for affected issues.'* ]]
+  [[ "$output" == *'Re-spawn the failed worker.'* ]]
+  [[ "$output" == *'Re-dispatch the worker after validation failure.'* ]]
+  [[ "$output" != *'Historical anti-pattern:'* ]]
+  [[ "$output" != *'deterministic validation command'* ]]
+  [[ "$output" != *'Preserve and return the evidence'* ]]
+
+  run scan_private_worker_redispatch \
+    "$REPO_ROOT/skills/crank/SKILL.md" \
+    "$REPO_ROOT/skills/crank/references"
+  [ "$status" -eq 0 ]
+  if [ -n "$output" ]; then
+    printf '%s\n' "$output" >&3
+  fi
+  [ -z "$output" ]
 }
