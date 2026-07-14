@@ -939,17 +939,17 @@ dispositions:
     supersedes:       null
     rationale:        "Original evidence-grounded opportunity portfolio with adaptive saturation; discovery retains BDD persistence."
   - skill:            dueling-idea-genies
-    domain:           "BC2 Validation"
+    domain:           "BC3 Loop"
     hexagonal_role:   domain
     disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
     parity_policy:    required
-    capability_class: validation
+    capability_class: planning
     path:             skills/dueling-idea-genies/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Original sealed idea challenge packet; ao plan-pawl remains the decision owner."
+    rationale:        "Sealed advisory idea challenge for Plan; never a readiness verdict or Premortem substitute."
   - skill:            codebase-recon
     domain:           "BC1 Corpus"
     hexagonal_role:   supporting

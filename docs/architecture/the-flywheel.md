@@ -25,14 +25,14 @@ commands "run *this loop* toward X, and park what needs me." The operating loop 
 ```
 goal (bounded: done-condition + scope + andon policy)
   → /rpi  ── the outer driver
-      → DISCOVERY loop   — re-plans until the plan survives the PREMORTEM loop
+      → DISCOVERY        — shapes one exact plan
+      → PREMORTEM        — one author-distinct PASS/FAIL plan verdict
       → CRANK loop       — iterates small waves until each is complete
       → VALIDATE         — emits a verdict; on FAIL, routes back to DISCOVERY
 ```
 
 1. **/rpi** — the outer driver; the goal is its input.
-2. **Discovery loop** — iterates (with the inner premortem adversarial loop) until the plan
-   is sound. Decomposes the goal into a DAG of **small vertical slices**. It is also the
+2. **Discovery** — decomposes the goal into a DAG of **small vertical slices** and freezes one exact plan. It is also the
    **re-plan engine**, re-invoked whenever a slice teaches something (not only at the start).
 3. **Crank loop** — runs the slices in small batches until each wave is complete.
 4. **Validate** — **does not loop.** It is a *sensor*: it emits a verdict + a reason. On FAIL,
@@ -47,32 +47,25 @@ human?) needs context validate does not have. Fusing judgment and control makes 
 the same separation the operating loop already draws between deterministic gates and the
 orchestrator.
 
-So the loop belongs to the **driver**, at three timescales, and conflating them is the trap:
+So the loop belongs to the **driver**, and conflating it with skill-local state is the trap:
 - **Crank waves** — innermost (re-implement until the wave's tests pass).
 - **/rpi's re-plan engine** — the mid loop (validate FAIL → discovery re-shapes → re-crank).
   This is where the *validate → discovery* feedback edge lives.
 - **The goal / Stop-hook** — the outermost governor; human-set.
 
-The breaker is the **andon**, and it is **three-tier, not binary** (auto vs escalate). A
-one-way-door decision routes by a *policy* to the cheapest tier that can safely own it:
+The driver owns one shared disposition vocabulary:
 
-| Tier | For | Machinery (built) |
+| Disposition | Meaning | Response |
 |---|---|---|
-| **Auto** | routine, deterministically checkable | AUTO-REDO on REFUTED; the gates |
-| **Helper** | model-adjudicable one-way doors — architecture forks, scoring, plan shape — **and breaker-tripped stuck states** (N failed rounds, oscillation, scope creep): stuckness is model-adjudicable too; the context that ground to a halt is in a rut a fresh one is not in | [`/council`](../../skills/council/SKILL.md) (multi-judge consensus) + `ao plan-pawl decide` (deterministic PASS/REDO/BLOCKED — the windshield, no model gets the last word) + [`converge`](../../skills/converge/SKILL.md) (fix→re-judge to agreement or hard-BLOCK); for stuck states, one bounded helper pass — a fresh context or cross-family model (`codex exec`) gets the blocker + what was tried, returns UNSTUCK or ESCALATE. An advisor, never a second driver |
-| **Human** | genuine human-judgment (the refusal lane: money, legal, hiring, irreversible external), an explicit judgment flag, an exhausted budget — plus any blocker that survived its one helper pass | `ESCALATE`/`HOLD`; the refusal lane |
+| **NOTE** | cosmetic, pre-existing, theoretical, or out of scope | record; never block |
+| **REPAIR** | introduced, verifiable acceptance defect | repair the current artifact |
+| **REPLAN** | evidence invalidates the approach | return to Discovery |
+| **HOLD** | safe automatic mutation cannot continue | pause and preserve evidence |
+| **ANDON** | human authority is genuinely required | notify the operator |
 
-"Keep going until it passes" without a breaker grinds forever on an unpassable goal — and a
-Stop-hook that *blocks stopping* is exactly the mechanism that would. So the primary re-do
-loop is bounded (`ao plan-pawl decide` PASS/REDO/**BLOCKED**; `converge` → hard-BLOCK); the
-Stop-hook sits outside as governor; the human is the ultimate breaker.
-
-**The tiers all exist; the load-bearing piece is the *router* — a per-goal policy** mapping a
-one-way-door *class* to a *tier* (`{arch fork → helper, stuck → helper, external/money/
-irreversible → me, routine → auto}`). The goal-crafting skill carries that policy; it is
-*not* a flat "escalate to me." The full ladder — breaker trip → one bounded helper pass →
-human only if it survives — is the contract in
-[`pawls.md` §Escalation](../contracts/pawls.md#escalation-the-circuit-breaker-model).
+Premortem and Validate are sensors. Neither counts attempts, owns helper
+consultations, nor notifies the operator. The orchestrator alone chooses the
+next transition.
 
 ## Small batches and the flywheel property
 
@@ -148,7 +141,7 @@ a defect class *before* it reaches the pawl. Detail + honest status:
 |---|---|---|
 | The operating loop (moves + gates) | **landed** | [operating-loop.md](operating-loop.md), the pawl membrane |
 | Discovery as re-plan engine | **landed** (wave-boundary + per-close) | discovery skill; the per-close trigger landed via crank's close checkpoint (`age-cysr`) |
-| Validate = sensor / bounded driver loop / andon | **partly landed** | `ao plan-pawl decide`, `converge`; the full wiring is a model |
+| Premortem and Validate = immutable sensors | **landed** | exact-plan and exact-candidate verdict contracts; orchestrator owns transitions |
 | Catch → producer (shift-left) | **partly landed** | ADR-0014 + `ao membrane digest` (`age-xbmf`); injection (S2) not yet closed |
 | Small-batch-by-Gherkin enforcement | **specced** | `age-74yi` |
 | Goal-crafting skill | **specced** | `age-znst` |

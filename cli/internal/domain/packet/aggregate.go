@@ -1,6 +1,10 @@
 // Package packet defines the canonical ExecutionPacket aggregate root.
 package packet
 
+// CurrentExecutionPacketSchemaVersion is the only version emitted by current
+// persistent writers.
+const CurrentExecutionPacketSchemaVersion = 3
+
 // ExecutionPacket is the domain-canonical rich work packet. It mirrors
 // schemas/execution-packet.schema.json and is the persisted form used by the
 // packet repository. Legacy slim packets are migrated at the storage boundary.
@@ -30,8 +34,7 @@ type ExecutionPacket struct {
 	Routing                 map[string]ExecutionPacketRouting     `json:"routing,omitempty"`
 	Spec                    *ExecutionPacketSpec                  `json:"spec,omitempty"`
 	Complexity              Complexity                            `json:"complexity,omitempty"`
-	PreMortemVerdict        ExecutionPacketVerdict                `json:"pre_mortem_verdict,omitempty"`
-	DefaultVerdict          ExecutionPacketVerdict                `json:"default_verdict,omitempty"`
+	PremortemVerdict        ExecutionPacketVerdict                `json:"premortem_verdict,omitempty"`
 	TestLevels              *ExecutionPacketTestLevels            `json:"test_levels,omitempty"`
 	RankedPacketPath        string                                `json:"ranked_packet_path,omitempty"`
 	DiscoveryTimestamp      string                                `json:"discovery_timestamp,omitempty"`
@@ -106,41 +109,13 @@ const (
 	ExecutionPacketModelGemini ExecutionPacketModelFamily = "gemini"
 )
 
-// ExecutionPacketVerdict is the packet verdict vocabulary. The packet defaults
-// to FAIL when no explicit verdict is present.
+// ExecutionPacketVerdict is the canonical binary Premortem verdict vocabulary.
 type ExecutionPacketVerdict string
 
 const (
 	ExecutionPacketVerdictPass ExecutionPacketVerdict = "PASS"
-	ExecutionPacketVerdictWarn ExecutionPacketVerdict = "WARN"
 	ExecutionPacketVerdictFail ExecutionPacketVerdict = "FAIL"
-
-	DefaultExecutionPacketVerdict = ExecutionPacketVerdictFail
 )
-
-// Back-compat aliases for the former slim aggregate names.
-type Verdict = ExecutionPacketVerdict
-
-const (
-	VerdictPass    = ExecutionPacketVerdictPass
-	VerdictWarn    = ExecutionPacketVerdictWarn
-	VerdictFail    = ExecutionPacketVerdictFail
-	DefaultVerdict = DefaultExecutionPacketVerdict
-)
-
-// EffectiveVerdict is the canonical packet verdict read. It is the last-line
-// fail-closed guard for packets that bypass schema validation (legacy or
-// on-disk packets the schema enum never vetted): anything that is not exactly
-// PASS, WARN, or FAIL — absent, empty, or malformed — resolves to the
-// fail-closed default rather than passing an unvetted value through.
-func (p ExecutionPacket) EffectiveVerdict() ExecutionPacketVerdict {
-	switch p.DefaultVerdict {
-	case ExecutionPacketVerdictPass, ExecutionPacketVerdictWarn, ExecutionPacketVerdictFail:
-		return p.DefaultVerdict
-	default:
-		return DefaultExecutionPacketVerdict
-	}
-}
 
 // ExecutionPacketRouting records the typed implementer/reviewer assignment for
 // a bead or slice. The packet stores these values keyed by bead ID.
@@ -211,14 +186,10 @@ type ExecutionPacketBoundary struct {
 // ExecutionPacketArtifacts links the compact packet to larger durable
 // artifacts.
 type ExecutionPacketArtifacts struct {
-	ResearchPath         string   `json:"research_path,omitempty"`
-	PlanPath             string   `json:"plan_path,omitempty"`
-	PreMortemPath        string   `json:"pre_mortem_path,omitempty"`
-	RankedPacketPath     string   `json:"ranked_packet_path,omitempty"`
-	PerspectivePlanPaths []string `json:"perspective_plan_paths,omitempty"`
-	SynthesisPacketPath  string   `json:"synthesis_packet_path,omitempty"`
-	FableApprovalPath    string   `json:"fable_approval_path,omitempty"`
-	ApprovalEdgePath     string   `json:"approval_edge_path,omitempty"`
+	ResearchPath     string `json:"research_path,omitempty"`
+	PlanPath         string `json:"plan_path,omitempty"`
+	PremortemPath    string `json:"premortem_path,omitempty"`
+	RankedPacketPath string `json:"ranked_packet_path,omitempty"`
 }
 
 // ExecutionPacketTestLevels records the test pyramid levels selected for the

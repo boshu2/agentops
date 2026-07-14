@@ -1,6 +1,6 @@
 # discovery
 
-Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
+Create dense execution packets from intent, research, one exact plan, and its Premortem verdict. Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
 
 ## Instructions
 

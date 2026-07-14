@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "CLI scaffolding is mixed into artifact validation."
 route_back_rules:
-  validation_fails: "Patch the artifact contract before filing work."
+  checker_fails: "Patch the artifact contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to choose or revise the next candidate."
   candidate_stale: "Re-read the named canonical docs and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md, update the driver, and revalidate."
@@ -41,7 +41,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh .agents/goal-design/valid-packet"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: stale-driver-digest

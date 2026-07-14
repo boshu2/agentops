@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -14,30 +12,6 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
-
-type legacyV2WriterFixture struct {
-	SchemaVersion int               `json:"schema_version"`
-	PacketFields  map[string]string `json:"packet_fields"`
-	RuntimePaths  []string          `json:"runtime_paths"`
-	RatchetSteps  []string          `json:"ratchet_steps"`
-}
-
-func loadLegacyV2WriterFixture(t *testing.T) legacyV2WriterFixture {
-	t.Helper()
-	root := os.Getenv("MORTEM_COMPAT_FIXTURES_DIR")
-	if root == "" {
-		root = filepath.Join("..", "..", "..", "tests", "fixtures", "mortem-compatibility")
-	}
-	data, err := os.ReadFile(filepath.Join(root, "writer-legacy-v2.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var fixture legacyV2WriterFixture
-	if err := json.Unmarshal(data, &fixture); err != nil {
-		t.Fatalf("parse writer fixture: %v", err)
-	}
-	return fixture
-}
 
 func TestProductionFindingCompiler_PremortemAliasesWriteOneCanonicalArtifact(t *testing.T) {
 	out, err := newProductionFindingCompiler().Compile(context.Background(), ports.FindingArtifact{
@@ -58,10 +32,9 @@ func TestProductionFindingCompiler_PremortemAliasesWriteOneCanonicalArtifact(t *
 	}
 }
 
-func TestMortemCompatibilityFixture_LegacyV2WriterMatchesProductionRatchet(t *testing.T) {
-	fixture := loadLegacyV2WriterFixture(t)
+func TestCanonicalMortemRatchetStepsRemainRegistered(t *testing.T) {
 	steps := ratchet.AllSteps()
-	for _, want := range fixture.RatchetSteps {
+	for _, want := range []string{"premortem", "postmortem"} {
 		found := false
 		for _, step := range steps {
 			found = found || string(step) == want

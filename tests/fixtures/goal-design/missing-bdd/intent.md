@@ -22,7 +22,6 @@ evidence_for_done:
   first_failing_proof: "tests/scripts/check-goal-design-packet.bats"
   validation_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/missing-bdd"
   evidence_path: "tests/fixtures/goal-design/"
-  independent_gate: validate
 inputs_to_recheck:
   repo_paths:
     - "AGENTS.md"
@@ -33,6 +32,6 @@ inputs_to_recheck:
   stale_assumptions:
     - "The .agents write-surface rules may move."
 hard_rules:
-  - "Require independent validation before use."
+  - "Require the deterministic packet checker before use."
 ---
 # Goal Design Intent: missing-bdd

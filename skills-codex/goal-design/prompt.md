@@ -1,6 +1,6 @@
 # goal-design
 
-Create validated goal-design packets. Triggers: "goal prompt", "goal-design packet", "turn this goal into loop-ready work".
+Create deterministic goal-design packets. Triggers: "goal prompt", "goal-design packet", "turn this goal into loop-ready work".
 
 ## Instructions
 

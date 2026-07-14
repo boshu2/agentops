@@ -81,7 +81,7 @@ Disposition meanings:
 | `discovery` | BC3 Loop | domain | update | Creates execution packets; add explicit loop-shape SELF-TEST. |
 | `doc` | BC4 Factory | supporting | update | Documentation factory adapter; keep tied to doc-release gates. |
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
-| `dueling-idea-genies` | BC2 Validation | domain | keep | Original sealed idea challenge packet; ao plan-pawl remains the decision owner.. |
+| `dueling-idea-genies` | BC3 Loop | domain | keep | Sealed advisory idea challenge for Plan; never a readiness verdict or Premortem substitute.. |
 | `evolve` | BC3 Loop | domain | refactor | Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper). Demoted to experimental (heavy rpi chain, no measured uplift).. |
 | `gc-membrane` | BC6 Orchestration | supporting | keep | gc adoption (age-gc-integrate-8aom.1): JIT reference for the agentops-membrane pack — the fail-closed close door; loaded by using-gc.. |
 | `goal-design` | BC3 Loop | driving-adapter | keep | Creates checked intent/driver packets before discovery or planning; separates per-objective intent from GOALS.md fitness management. |

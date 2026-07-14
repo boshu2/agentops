@@ -12,9 +12,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `behavior-first-planning` — Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute the next ready epic wave and return evidence before any between-wave decision. Triggers: "crank an epic", "execute the next wave", "drive the bead wave plan".
-- `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
+- `discovery` — Create dense execution packets from intent, research, one exact plan, and its Premortem verdict. Triggers: "run discovery", "shape intent as BDD", "scope a feature into an execution packet".
 - `domain` — Ubiquitous language for human-AI software building — canonical definitions (vertical slice, tracer bullet, primitive) loaded JIT when a term needs pinning. Triggers: "domain", "canonical vocabulary for human-ai software", "domain skill".
-- `dueling-idea-genies` — Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".
+- `dueling-idea-genies` — Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this idea", "compare independent proposals", "stress-test a one-way door".
 - `evolve` — Run autonomous improvement loops. Triggers: "evolve", "improve everything", "autonomous improvement".
 - `goals` — Maintain AgentOps goals. Triggers: "goals", "maintain agentops goals.", "goals skill".
 - `idea-genie` — Generate an evidence-grounded opportunity portfolio for an open-ended product or engineering question. Triggers: "generate ideas from repository evidence", "what should we build next", "find supported opportunities".
@@ -22,7 +22,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `operationalize` — >-
 - `plan` — Decompose goals into issue plans. Triggers: "plan", "decompose goals into issue plans.", "plan skill".
 - `postmortem` — Test an explicit retrospective causal question against evidence and counterfactuals after Validate and Learn. Triggers: "postmortem", "causal retrospective", "test a retrospective hypothesis".
-- `premortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
+- `premortem` — Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.
 - `product` — Create or refine PRODUCT.md. Triggers: "product", "create or refine product.md.", "product skill".
 - `reality-check` — >-
 - `rpi` — Run Discovery, Crank, Validate, and Learn as four ordered, independently receipted umbrellas. Triggers: "run rpi", "research-plan-implement one turn", "drive a turn through the operating loop".
@@ -35,7 +35,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bootstrap` — Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
 - `codex-exec` — |-
 - `converge` — Drive a fix -> re-run-judge-panel loop to terminal agreement or a hard BLOCK via the Go ao converge command. Triggers: "converge", "drive a fix re-run-judge-panel loop", "converge skill".
-- `goal-design` — Create validated goal-design packets. Triggers: "goal prompt", "goal-design packet", "turn this goal into loop-ready work".
+- `goal-design` — Create deterministic goal-design packets. Triggers: "goal prompt", "goal-design packet", "turn this goal into loop-ready work".
 - `implement` — Implement one tracked issue. Triggers: "implement", "implement one tracked issue.", "implement skill".
 - `pawl-review` — Run one fresh, read-only, nonce-bound reviewer lane and hand its evidence to ao pawl without deciding the panel verdict. Triggers: "run a pawl reviewer", "fresh-context review lane", "collect independent review evidence".
 - `pr-prep` — Prepare PR commits and body. Triggers: "pr-prep", "pr prep", "prepare pr commits and body.".
@@ -203,13 +203,11 @@ graph LR
   discovery --> shared
   doc --> council
   doc --> standards
-  dueling_idea_genies --> council
   dueling_idea_genies --> idea_genie
   evolve --> postmortem
   evolve --> push
   evolve --> rpi
   goal_design --> discovery
-  goal_design --> validate
   idea_genie --> research
   implement --> beads_br
   implement --> rch
@@ -294,7 +292,6 @@ graph LR
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
-  dueling-idea-genies -- "customer-of" --> council
   dueling-idea-genies -- "customer-of" --> idea-genie
   dueling-idea-genies -- "supplier-to" --> plan
   evolve -- "customer-of" --> rpi
@@ -440,8 +437,7 @@ graph LR
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
 | `premortem` | consumes | standards |
-| `premortem` | produces | result.json |
-| `premortem` | produces | verdict.json |
+| `premortem` | produces | premortem-plan-verdict.v1 |
 | `product` | produces | result.json |
 | `push` | consumes | git-changes |
 | `push` | produces | git-changes |

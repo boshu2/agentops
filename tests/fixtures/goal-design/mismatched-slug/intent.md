@@ -33,7 +33,6 @@ evidence_for_done:
   first_failing_proof: "tests/scripts/check-goal-design-packet.bats"
   validation_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/mismatched-slug"
   evidence_path: "tests/fixtures/goal-design/mismatched-slug"
-  independent_gate: validate
 inputs_to_recheck:
   repo_paths:
     - "scripts/check-goal-design-packet.sh"

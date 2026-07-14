@@ -7,7 +7,7 @@ created_at: "2026-07-09T10:15:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/not-this-packet/intent.md"
-  sha256: "3f983c204ae4c51ce0bcc3a65637ffb568944290c1b1eaad884920925ff67726"
+  sha256: "049a2ee5acd47944013a826862f75b52a280c13a28db746cdf090fac05c338ce"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "The change starts adding CLI behavior."
 route_back_rules:
-  validation_fails: "Patch the packet contract before filing work."
+  checker_fails: "Patch the packet contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to revise the next candidate."
   candidate_stale: "Re-read the contract and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md and revalidate."
@@ -41,7 +41,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/misleading-intent-path"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: misleading-intent-path

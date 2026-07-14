@@ -5,7 +5,7 @@ their boundary; none converts its own result into a cross-phase retry.
 
 ## Premortem repair
 
-Premortem judges a plan. WARN or FAIL returns that plan to its author for one
+Premortem judges a plan. FAIL returns that plan to its author for one
 consolidated repair and narrow recheck. Between waves, reuse the bound verdict
 while plan inputs and risk are unchanged; only an exact materially changed plan
 from the orchestrator receives a new Premortem. Validate and Learn cannot invoke

@@ -7,7 +7,7 @@ created_at: "2026-07-09T10:35:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/unknown-behavior-label/intent.md"
-  sha256: "0a1cc0fffe12ccc8550ab7ab8b8daa365ed9d867d3059ad99feb664c3096cd1e"
+  sha256: "83c5de7385bc865f35f2b9afeee510992b441e05ad0346da142c2cd43e2d28e4"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "The change starts adding CLI behavior."
 route_back_rules:
-  validation_fails: "Patch the packet contract before filing work."
+  checker_fails: "Patch the packet contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to revise the next candidate."
   candidate_stale: "Re-read the contract and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md and revalidate."
@@ -41,7 +41,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/unknown-behavior-label"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: unknown-behavior-label

@@ -7,7 +7,6 @@ fixtures="$repo_root/tests/fixtures/mortem-name-migration"
 python3 - "$repo_root" "$fixtures" <<'PY'
 from __future__ import annotations
 
-import json
 import pathlib
 import re
 import sys
@@ -19,7 +18,6 @@ stale = re.compile(r"pre[-_ ]mortem|post[-_ ]mortem", re.IGNORECASE)
 positive = fixtures / "positive/canonical.md"
 negatives = [
     fixtures / "negative/stale-explicit-request.md",
-    fixtures / "negative/stale-current-packet.json",
 ]
 for path in [positive, *negatives]:
     if not path.is_file():
@@ -96,23 +94,8 @@ for name, target in (
     if f"redirect_to: {target}" not in body or "implementation: false" not in body:
         violations.append(f"non-pointer legacy skill tree: {pointer.relative_to(repo)}")
 
-writer = repo / "tests/fixtures/mortem-compatibility/writer-canonical-v3.json"
-try:
-    packet = json.loads(writer.read_text(encoding="utf-8"))
-except Exception as exc:
-    violations.append(f"invalid canonical writer fixture: {exc}")
-else:
-    expected = {
-        "schema_version": 3,
-        "packet_fields": {"premortem_verdict": "PASS"},
-        "runtime_paths": [".agents/premortem-checks/current.md"],
-        "ratchet_steps": ["premortem", "postmortem"],
-    }
-    if packet != expected:
-        violations.append(f"canonical writer fixture drifted: {packet!r}")
-
 if violations:
     raise SystemExit("mortem naming migration violations:\n" + "\n".join(violations))
 PY
 
-echo "mortem name migration: PASS (canonical active surfaces; explicit legacy readback only)"
+echo "mortem name migration: PASS (canonical packet fields; explicit skill and directory redirects only)"

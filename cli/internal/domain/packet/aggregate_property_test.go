@@ -2,11 +2,9 @@ package packet
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -86,33 +84,5 @@ func TestExecutionPacket_ValidateJSONRejectsAdditionalProperties(t *testing.T) {
 	err := ValidateJSON(data)
 	if !errors.Is(err, ErrSchemaViolation) {
 		t.Fatalf("ValidateJSON() error = %v, want errors.Is ErrSchemaViolation", err)
-	}
-}
-
-func TestExecutionPacket_EffectiveVerdictFailsClosedWhenAbsent(t *testing.T) {
-	p := validBase()
-
-	if got := p.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictFail)
-	}
-}
-
-func TestExecutionPacket_DefaultVerdictRoundTripsAndResolves(t *testing.T) {
-	original := validBase()
-	original.DefaultVerdict = ExecutionPacketVerdictPass
-
-	data, err := json.Marshal(original)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-	var decoded ExecutionPacket
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	if !reflect.DeepEqual(decoded, original) {
-		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
-	}
-	if got := decoded.EffectiveVerdict(); got != ExecutionPacketVerdictPass {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictPass)
 	}
 }

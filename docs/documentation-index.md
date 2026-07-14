@@ -66,7 +66,6 @@ Bridge / framing docs:
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Codex Task Packet Contract](contracts/codex-task-packet.md) — Non-mutating Codex dispatch packet, auth guard, sandbox, stdin, timeout, resume, and run-receipt contract
-- [Codex Fanout Approval Packet](contracts/codex-fanout-approval-packet.md) — PerspectivePlan, SynthesisPacket, and ApprovalEdge contract for Fable-gated Codex discovery before bead creation
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
@@ -332,7 +331,7 @@ Bridge / framing docs:
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [AO / MTO Seam](contracts/ao-mto-seam.md) — Reduction contract separating the lean AO image from the outer MTO factory and routing RELOCATE surfaces through MTO, vendor-adapter, or defer-load-bearing seams
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
-- [Goal Design Artifacts](contracts/goal-design-artifacts.md) — Two-artifact contract for `.agents/goal-design/<slug>/intent.md` and `driver.md`, including schemas, digest integrity, validation, lifecycle, and route-back rules
+- [Goal Design Artifacts](contracts/goal-design-artifacts.md) — Two-artifact deterministic intent contract for `.agents/goal-design/<slug>/intent.md` and `driver.md`; exact-plan semantic readiness belongs to Premortem
 - [CI Path-Filter / Gate-Target Coverage Audit](contracts/ci-pathfilter-coverage-audit.md) — Repo-wide audit (ag-g9ex) of the invariant "a CI gate that reads a file must be triggered by a path-filter covering that file" (the #634/#638 class). Findings table for every file-reading gate in `validate.yml`, the two gaps fixed (AGENTS tiered-split siblings; wiring-closure GOALS.md de-wire), and the `--admin` self-merge governance policy. Guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`.
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children

@@ -35,8 +35,9 @@ Feature: Behavior-first planning produces beads with runnable done-criteria
     And a bead whose acceptance is prose or an unrun test is rejected by the gate
     And the gate confirms coverage-complete and cycle-free before any tracker write
 
-  Scenario: An independent reviewer gates the tracker write
+  Scenario: Deterministic planning evidence feeds the sole readiness verdict
     Given a proposed bead set that is not yet in the tracker
-    When the closing validation runs
-    Then an independent fresh-context reviewer scores crank-readiness
-    And the beads are written only on a clearing verdict, never on a self-grade
+    When the closing planning proof runs
+    Then it reports runnable acceptance tests, complete scenario coverage, and a cycle-free graph
+    And the exact plan remains outside the tracker until Premortem returns PASS
+    And that exact-plan Premortem PASS alone authorizes the tracker write

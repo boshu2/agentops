@@ -10,8 +10,9 @@ import (
 )
 
 // TestCouncilVerdictHeadingContract verifies that skills which still emit a
-// council verdict contain the exact compatibility heading. Postmortem is
-// intentionally absent: it now emits causal claims, not an acceptance verdict.
+// council verdict contain the exact compatibility heading. Premortem and
+// Postmortem are intentionally absent: Premortem emits its binary JSON contract,
+// while Postmortem emits causal claims rather than an acceptance verdict.
 //
 // The regex in rpi_phased_processing.go is:
 //
@@ -50,7 +51,6 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 	skillsDir := filepath.Join(repoRoot, "skills")
 
 	wrapperSkills := []string{
-		"premortem",
 		"vibe",
 	}
 

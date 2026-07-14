@@ -2,7 +2,6 @@ package storage_fs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -11,14 +10,6 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/domain/packet"
 )
-
-func mortemCompatibilityFixtureDir(t *testing.T) string {
-	t.Helper()
-	if root := os.Getenv("MORTEM_COMPAT_FIXTURES_DIR"); root != "" {
-		return root
-	}
-	return filepath.Join("..", "..", "..", "..", "tests", "fixtures", "mortem-compatibility")
-}
 
 func validPacket() packet.ExecutionPacket {
 	return packet.ExecutionPacket{
@@ -30,7 +21,6 @@ func validPacket() packet.ExecutionPacket {
 		ContractSurfaces: []string{"schemas/execution-packet.schema.json"},
 		TrackerMode:      "beads",
 		Complexity:       packet.ComplexityStandard,
-		DefaultVerdict:   packet.ExecutionPacketVerdictFail,
 		TestLevels: &packet.ExecutionPacketTestLevels{
 			Required:    []packet.TestLevel{packet.L1, packet.L2},
 			Recommended: []packet.TestLevel{packet.L3},
@@ -67,56 +57,6 @@ func TestRepo_RoundTripPersistsAndLoads(t *testing.T) {
 	}
 	if !reflect.DeepEqual(latest, p) {
 		t.Fatalf("LoadLatest: got %+v, want %+v", latest, p)
-	}
-}
-
-func TestRepo_LoadConsumesLegacyMortemReadbackFixtures(t *testing.T) {
-	for _, fixture := range []string{"v1-old-only.json", "v2-old-only.json"} {
-		t.Run(fixture, func(t *testing.T) {
-			fragment, err := os.ReadFile(filepath.Join(mortemCompatibilityFixtureDir(t), "legacy-readback", fixture))
-			if err != nil {
-				t.Fatalf("read legacy readback fixture: %v", err)
-			}
-			var fixtureFields map[string]json.RawMessage
-			if err := json.Unmarshal(fragment, &fixtureFields); err != nil {
-				t.Fatalf("parse legacy readback fixture: %v", err)
-			}
-
-			base, err := json.Marshal(validPacket())
-			if err != nil {
-				t.Fatal(err)
-			}
-			var persisted map[string]json.RawMessage
-			if err := json.Unmarshal(base, &persisted); err != nil {
-				t.Fatal(err)
-			}
-			for key, value := range fixtureFields {
-				if key != "required" {
-					persisted[key] = value
-				}
-			}
-			data, err := json.Marshal(persisted)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			root := t.TempDir()
-			runID := "legacy-mortem-readback"
-			archive := filepath.Join(root, ".agents", "rpi", "runs", runID, "execution-packet.json")
-			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(archive, data, 0o644); err != nil {
-				t.Fatal(err)
-			}
-			loaded, err := (&Repo{Root: root}).Load(context.Background(), runID)
-			if err != nil {
-				t.Fatalf("production Repo.Load rejected %s bytes: %v", fixture, err)
-			}
-			if loaded.PreMortemVerdict != packet.ExecutionPacketVerdictPass {
-				t.Fatalf("PreMortemVerdict = %q, want PASS from %s", loaded.PreMortemVerdict, fixture)
-			}
-		})
 	}
 }
 
@@ -162,7 +102,7 @@ func TestRepo_LoadRejectsRichSchemaViolation(t *testing.T) {
 		"objective": "reject invalid persisted packet",
 		"contract_surfaces": ["schemas/execution-packet.schema.json"],
 		"tracker_mode": "beads",
-		"default_verdict": "MAYBE"
+		"premortem_verdict": "WARN"
 	}`)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatalf("write packet: %v", err)
@@ -171,35 +111,6 @@ func TestRepo_LoadRejectsRichSchemaViolation(t *testing.T) {
 	_, err := r.Load(ctx, runID)
 	if !errors.Is(err, packet.ErrSchemaViolation) {
 		t.Fatalf("Load: got %v, want errors.Is(err, ErrSchemaViolation)", err)
-	}
-}
-
-func TestRepo_LoadResolvesMissingDefaultVerdictFailClosed(t *testing.T) {
-	tmp := t.TempDir()
-	r := &Repo{Root: tmp}
-	ctx := context.Background()
-	runID := "run-fail-closed"
-	dir := filepath.Join(tmp, ".agents/rpi/runs", runID)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	path := filepath.Join(dir, "execution-packet.json")
-	data := []byte(`{
-		"schema_version": 2,
-		"objective": "load path resolves absent default verdict",
-		"contract_surfaces": ["schemas/execution-packet.schema.json"],
-		"tracker_mode": "beads"
-	}`)
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatalf("write packet: %v", err)
-	}
-
-	loaded, err := r.Load(ctx, runID)
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
-	if got := loaded.DefaultVerdict; got != packet.ExecutionPacketVerdictFail {
-		t.Fatalf("loaded DefaultVerdict = %q, want fail-closed %q", got, packet.ExecutionPacketVerdictFail)
 	}
 }
 
@@ -241,9 +152,6 @@ func TestRepo_LoadMigratesLegacySlimPacket(t *testing.T) {
 	}
 	if loaded.TestLevels == nil || !reflect.DeepEqual(loaded.TestLevels.Required, []packet.TestLevel{packet.L1, packet.L2}) {
 		t.Fatalf("TestLevels = %#v, want migrated required legacy levels", loaded.TestLevels)
-	}
-	if loaded.DefaultVerdict != packet.ExecutionPacketVerdictFail {
-		t.Fatalf("DefaultVerdict = %q, want fail-closed FAIL", loaded.DefaultVerdict)
 	}
 }
 

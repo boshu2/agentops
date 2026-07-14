@@ -12,7 +12,7 @@ intent_ref:
 loop_routing:
   delivery: "<how this becomes issue, bead, or MR-ready work>"
   rpi: "<candidate beads: one behavior, one proof, one tick>"
-  promotion: "<what validated signals can steer product or council decisions>"
+  promotion: "<what evidence can steer product decisions>"
   knowledge: "<what gets captured, promoted, or compiled after close>"
 candidate_beads:
   - id: B1
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "<split trigger>"
 route_back_rules:
-  validation_fails: "<where to route>"
+  checker_fails: "<where to route>"
   bead_closes_with_new_signal: "<how to choose or change the next candidate>"
   candidate_stale: "<how to recheck or discard>"
   promotion_contradicts_intent: "<how to rescope>"
@@ -41,8 +41,6 @@ execution_mode:
     workflow: "<deterministic structured DAG condition>"
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh .agents/goal-design/<slug>"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: <slug>
 
@@ -50,7 +48,6 @@ artifact_validation:
 
 - Intent artifact: `.agents/goal-design/<slug>/intent.md`
 - Intent digest: `<sha256>`
-- Last validation verdict: `<PASS/WARN/FAIL or none>`
 
 ## Loop Routing
 
@@ -58,7 +55,7 @@ artifact_validation:
 | --- | --- |
 | Delivery | <how this becomes issue, bead, or MR-ready work> |
 | RPI | <candidate beads: one behavior, one proof, one tick> |
-| Promotion | <what validated signals can steer product or council decisions> |
+| Promotion | <what evidence can steer product decisions> |
 | Knowledge | <what gets captured, promoted, or compiled after close> |
 
 ## Candidate Beads
@@ -77,7 +74,7 @@ artifact_validation:
 
 ## Route-Back Rules
 
-- If validation fails: `<where to route>`
+- If the packet checker fails: `<where to route>`
 - If a bead closes but reveals a better next step: `<how to choose or change the next candidate>`
 - If a candidate becomes stale: `<how to recheck or discard>`
 - If promotion or knowledge contradicts the original intent: `<how to rescope>`
@@ -88,8 +85,6 @@ artifact_validation:
 - Escalate to NTM/ATM only when attach, steer, durability, or cross-model debate is required.
 - Escalate to Workflow only for deterministic structured DAGs.
 
-## Artifact Validation
+## Packet Check
 
 - Checker command: `scripts/check-goal-design-packet.sh .agents/goal-design/<slug>`
-- Independent validator: `validate`
-- Required verdict before use: `PASS`

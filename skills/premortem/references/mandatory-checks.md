@@ -72,11 +72,13 @@ Include in the council packet as `context.error_map`:
 - For LLM/AI calls: map malformed response, empty response, hallucinated JSON, and refusal as separate failure modes
 - Each GAP (unrescued error) is a finding with severity=significant
 
-See [error-rescue-map-template.md](error-rescue-map-template.md) for the full template with worked examples.
-
 ## Step 2.6: Council FAIL Pattern Check (Mandatory)
 
-Evaluate the plan against the top 8 council FAIL patterns (see [council-fail-patterns.md](council-fail-patterns.md)): missing mechanical verification, self-assessment, context rot, propagation blindness, plan oscillation, dead infrastructure activation, missing rollback map, and four-surface closure gap. Each pattern violation is a finding with severity based on the calibration table in the reference.
+Evaluate the plan against these eight failure patterns: missing mechanical
+verification, self-assessment, context rot, propagation blindness, plan
+oscillation, dead infrastructure activation, missing rollback map, and
+four-surface closure gap. Report only concrete, evidence-bound violations that
+meet Premortem's blocker contract.
 
 Add to each judge's prompt:
 
@@ -147,70 +149,31 @@ When the plan introduces a regex, glob, or grep pattern that classifies inputs i
 
 **Auto-triggered** when any plan issue mentions: a goal gate scanning `scripts/**`, `docs/**`, or any glob; a regex assigned to a variable; a `grep -E` invocation in a new gate or lint script; an orchestrator that filters which files to dispatch; a search filter that decides which records to surface.
 
-See [scope-predicate-positive-negative-cases.md](scope-predicate-positive-negative-cases.md) for the full rationale, the C3 incident that motivated this check, and the pseudocode-fix template.
+## Steps 2.10–2.11: Independent exact-plan adjudication
 
-## Steps 2.9–2.11: Independent adjudication and plan-pawl
+### No self-grading
 
-Council modes compose as follows: `--quick` keeps reversible work light while
-retaining the blind-judge floor; `--deep` adds missing-requirements,
-feasibility, scope, and specification-completeness perspectives; `--mixed`
-supplies distinct model families; `--explorers=3` adds codebase investigation;
-and `--debate` compares plausible approaches adversarially. An explicit
-`--preset=<name>` overrides the automatic `plan-review` preset.
+The plan author cannot emit the readiness verdict. Record `author_id` and a
+distinct, context-isolated `judge_id`; reject the artifact when they are equal.
+One blind fresh-context judge satisfies the independence floor. Optional
+`author_model` and `judge_model` metadata may record model names and families,
+but family never changes whether the verdict is valid.
 
-### No-self-grading
+### One immutable verdict
 
-The plan author cannot emit its acceptance verdict. Record `author_id` and a
-distinct, context-isolated `judge_id`; refuse PASS when they are equal. A blind
-sub-agent satisfies the independence floor. `--deep` and `--mixed` satisfy it
-only when their judges are context-isolated.
+Bind `premortem-plan-verdict.v1` to the repository-relative plan path and its
+current SHA-256. Any edit invalidates it. Emit only:
 
-`--allow-self` is an explicit no-subagent fallback, default OFF. It stamps the
-verdict self-graded; `ao turn verify <bead>` reports the waiver and does not
-claim independent validation.
+- `PASS` with `blockers_complete: true` and an empty blocker list; or
+- `FAIL` with `blockers_complete: true` and every concrete blocker in one list.
 
-For a strategy, experiment, or one-way door, also record `author_family` and a
-different `judge_family`. Use `--mixed` or another available distinct-family
-interactive judge. A same-family review does not satisfy this rule.
+Each blocker must identify the failed claim and cite at least one evidence
+path. Do not split one review into per-check verdicts, accept conditional
+readiness, or turn notes into blockers.
 
-### Pre-registered decision rule
+### Ownership boundary
 
-Before judges deliberate on a strategy, experiment, or one-way door, record
-`decision_rule:` in the council packet. It must name the evidence that changes
-the decision, the mechanical threshold or CI gate that kills the claim, and the
-redirect after a negative result. "If the judges FAIL" is tautological; "try
-harder" is not a redirect. Missing kill conditions make an irreversible plan
-unfalsifiable and therefore FAIL.
-
-### Plan-pawl equivalence
-
-There are two delivery forms of the same plan-shape gate:
-
-- `/premortem --mixed` judges the plan artifact through council.
-- Discovery STEP 3.5 calls `ao plan-pawl decide` so two distinct-family judge
-  panes duel over the `SynthesisPacket`.
-
-The discovery duel is the premortem verdict for fanout-class discovery. Do not
-run a second council. Before accepting either form, require `judge_id !=
-author_id`, distinct families for a strategy/experiment/one-way door,
-`decision_rule:` recorded before deliberation, and a separate acceptance-test
-layer because a plan-shape verdict cannot prove runtime behavior.
-
-### Pawl-first disposition
-
-PASS proceeds. WARN, FAIL, or REFUTED is an ordinary result: feed its findings
-back into the plan, repair, and rerun the same gate. Do not surface the andon or
-request a helper merely because the pawl rejected an attempt.
-
-Raise the andon and route at most one helper only when a breaker prevents the
-gate from producing a trustworthy result—for example missing authority, a
-required trust domain still unavailable after retry, or an invariant that
-cannot be satisfied within scope.
-
-### Breaker State Machine
-
-- **Ordinary rejection — `WARN|FAIL|REFUTED -> AUTO-REDO`:** repair the plan and rerun the pawl; plain rejection never enters HOLD and never consumes the helper lane.
-- **Breaker — `BREAKER -> HOLD -> ONE-HELPER`:** pause automation in HOLD and route exactly one bounded helper consultation.
-- **Recovered — `HELPER-UNSTUCK -> AUTO-REDO`:** leave HOLD, resume the automatic repair path, and re-earn an independent verdict before proceeding.
-- **Helper escalation — `HELPER-ESCALATE -> HUMAN`:** stop automation and surface the helper's escalation to the human operator.
-- **Direct human lane — `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`:** stop automation and route directly to the human operator with the helper skipped.
+Premortem owns plan judgment only. It does not count attempts, manage repair
+cycles, allocate time or model budgets, consult escalation helpers, implement
+changes, close tracker work, or decide delivery. Return the immutable verdict
+to the orchestrator, which chooses the next transition.

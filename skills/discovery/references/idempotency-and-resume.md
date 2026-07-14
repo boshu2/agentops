@@ -13,7 +13,7 @@ receipt index:
 - reuse the bound Premortem verdict while its exact inputs match; and
 - create one fresh Premortem only for a materially changed plan.
 
-Do not run history search, research, plan, council, or artifact generation merely
+Do not run history search, research, plan, Premortem, or artifact generation merely
 because `/discovery` was invoked again. Do not create a duplicate epic when an
 open tracker item already represents the same accepted behavior.
 
@@ -26,12 +26,12 @@ Retro, Forge, Vibe, or a council. Learn consumes the one final verdict once.
 
 ## RPI
 
-RPI persists its one run governor and execution packet across invocations.
+RPI persists its run disposition and execution packet across invocations.
 `--from=<phase>` is legal only when all earlier canonical receipts resolve and
 still match their inputs. Legacy phase summaries are optional link-only
 projections and are never resume authority.
 
-At an incomplete three-wave/90-minute soft boundary, persist the current leaf,
-next failing proof, plan/Premortem identities, wave receipts, and remaining
-governor budget. Resume the same leaf; do not freeze, Validate, Learn, deliver, or
+At an incomplete three-wave boundary, persist the current leaf, next failing
+proof, plan/Premortem identities, and wave receipts. Resume the same leaf; do
+not freeze, Validate, Learn, deliver, or
 pull another leaf merely because the boundary was reached.

@@ -20,6 +20,13 @@ Feature: Discovery hands dense intent to planning
     Then it writes a JSON execution packet on disk for the next loop phase
     And the packet carries the goal, research, and design artifact references
 
+  Scenario: Discovery admits one exact-plan Premortem verdict
+    Given Plan has frozen the final plan path and digest
+    When one fresh-context judge reviews it
+    Then the verdict is PASS or FAIL and binds the live plan SHA-256
+    And the author and judge identities differ
+    And Discovery creates no alternate approval or retry state
+
   Scenario: Between-wave discovery requires an orchestrator request
     Given Learn emitted a cited material_change plan impact
     When the orchestrator requests a re-plan
@@ -73,6 +80,6 @@ Feature: Discovery hands dense intent to planning
   Scenario: Discovery shapes one bounded proof tranche
     Given aggregate demand contains more than three low-risk waves
     When Discovery compiles the execution packet
-    Then the active tranche contains at most three sequential waves and a 90 minute ceiling
+    Then the active tranche contains at most three sequential waves
     And remaining aggregate demand stays outside active WIP
     And the packet requires one final Validate and Learn transaction

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Create and maintain goal-design packets.
+"""Create and maintain deterministic goal-design packets.
 
-The checker owns validation. This helper owns the boring but failure-prone
+The checker owns packet conformance. This helper owns the boring but failure-prone
 authoring mechanics: writing the two packet files, computing the intent digest,
 and refreshing driver references after intent edits.
 """
@@ -112,7 +112,6 @@ def intent_data(args: argparse.Namespace) -> dict[str, Any]:
             "first_failing_proof": args.first_failing_proof,
             "validation_command": f"scripts/check-goal-design-packet.sh .agents/goal-design/{args.slug}",
             "evidence_path": str(Path(args.output_root) / args.slug),
-            "independent_gate": "validate",
         },
         "inputs_to_recheck": {
             "repo_paths": args.repo_path,
@@ -123,7 +122,7 @@ def intent_data(args: argparse.Namespace) -> dict[str, Any]:
         "hard_rules": [
             "Keep behavior slices small.",
             "Refresh driver intent_ref.sha256 after every intent.md edit.",
-            "Run the checker and independent validation before the packet drives work.",
+            "Run the deterministic checker before the packet drives work.",
         ],
     }
 
@@ -162,10 +161,10 @@ def driver_data(args: argparse.Namespace, digest: str) -> dict[str, Any]:
             "schema_version": 1,
         },
         "loop_routing": {
-            "delivery": "File or update one bead only after the packet validates.",
+            "delivery": "File or update one bead only after the packet checker passes.",
             "rpi": "Run one inner tick over one behavior and one first failing proof.",
-            "promotion": "Promote only evidence-backed changes after validation.",
-            "knowledge": "Capture checker or validator misses as future guardrails.",
+            "promotion": "Promote only checker-clean packet changes.",
+            "knowledge": "Capture repeated checker misses as future guardrails.",
         },
         "candidate_beads": [
             {
@@ -187,22 +186,20 @@ def driver_data(args: argparse.Namespace, digest: str) -> dict[str, Any]:
             ],
         },
         "route_back_rules": {
-            "validation_fails": "Patch the packet contract or artifacts before filing work. After 3 failed rounds or an oscillation, take ONE bounded helper pass (fresh context, cross-family model, or council) before any human escalation.",
+            "checker_fails": "Repair the packet contract or artifacts, refresh the digest, and rerun the deterministic checker.",
             "bead_closes_with_new_signal": "Use the close verdict to choose or revise the next candidate.",
-            "candidate_stale": "Re-read the named inputs, refresh the digest, and revalidate.",
-            "promotion_contradicts_intent": "Revise intent.md, refresh driver.md, and revalidate. Route the fork to the helper tier (council); escalate to human only if it survives the pass or is refusal-lane.",
+            "candidate_stale": "Re-read the named inputs, refresh the digest, and rerun the checker.",
+            "promotion_contradicts_intent": "Revise intent.md, refresh driver.md, and return the changed packet to Discovery or Plan.",
         },
         "execution_mode": {
             "default": "single-agent",
             "escalations": {
-                "ntm_atm": "Only when durability, attach, or cross-model debate is required.",
+                "ntm_atm": "Only when the operator explicitly requests managed session infrastructure.",
                 "workflow": "Only for deterministic structured DAG needs.",
             },
         },
         "artifact_validation": {
             "checker_command": f"scripts/check-goal-design-packet.sh .agents/goal-design/{args.slug}",
-            "independent_validator": "validate",
-            "required_verdict": "PASS",
         },
     }
 
@@ -215,29 +212,16 @@ def driver_body(args: argparse.Namespace, digest: str) -> str:
 
 - Intent artifact: `{intent_ref}`
 - Intent digest: `{digest}`
-- Last validation verdict: none
-
 ## Candidate Beads
 
 | Candidate | Behavior | Bounded context | First failing proof | Write scope | Close signal |
 | --- | --- | --- | --- | --- | --- |
 | B1 | {args.behavior} | {args.bounded_context} | {args.first_failing_proof} | {', '.join(args.write_scope)} | {args.close_signal} |
 
-## Andon Router (class -> tier)
+## Packet Boundary
 
-| One-way-door class | Tier | Machinery (reuse, never rebuild) |
-| --- | --- | --- |
-| Gate / validation failure | **auto** | AUTO-REDO + `ao gate check --fast --scope head` |
-| Architecture fork / plan-shape one-way door | **helper** | `/council` + `ao plan-pawl decide` (PASS/REDO/BLOCKED) + `/converge` |
-| Stuck: 3 failed validation rounds, oscillation, or a scope-creep flag | **helper** | one bounded helper pass - hand the blocker, the evidence, and what was tried to a fresh context or cross-family model (`codex exec`, `/council`); it returns UNSTUCK (a concrete next action) or ESCALATE. An advisor, never a second driver: it does not take over the work |
-| Money / legal / irreversible-external (the refusal lane), an explicit judgment flag, or an exhausted time/cost budget | **human** | ESCALATE / HOLD - hand back to the operator; the helper is skipped |
-| TODO: goal-specific rows (write-scope escapes, domain forks) - edit deliberately before dispatch | - | - |
-
-Implicit final rows: a breaker trip routes to ONE bounded helper pass first;
-**human** only when the blocker survives that pass, the helper itself returns
-ESCALATE, or the class is refusal-lane / explicit-judgment / budget-exhausted.
-Never a second helper pass on the same blocker class - stop and ask, never
-guess through it.
+This packet owns intent shape and deterministic conformance only. Discovery and
+Plan may refine its slices. Premortem later judges the exact final plan.
 """
 
 
@@ -313,7 +297,7 @@ def command_refresh_digest(args: argparse.Namespace) -> int:
     return 0
 
 
-def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[str, Any], draft: bool) -> str:
+def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[str, Any]) -> str:
     # Goal-API workers often run in fresh worktrees where gitignored .agents/
     # does not exist; absolute paths keep the packet reachable from anywhere.
     packet_dir = packet_dir.absolute()
@@ -323,8 +307,6 @@ def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[
     bead_id = str(first.get("id", "B1"))
     behavior = str(first.get("behavior", "")).strip()
     lines: list[str] = []
-    if draft:
-        lines.append("[DRAFT PACKET - NOT VALIDATED. Preview only; validate before dispatch.]")
     lines += [
         f"Execute the goal-design packet at {packet_dir}.",
         "",
@@ -337,12 +319,8 @@ def dispatch_prompt_text(packet_dir: Path, intent: dict[str, Any], driver: dict[
         "Rules: write ONLY within the candidate's write_scope; respect the intent's non_goals.",
         "Done means the driver's first_failing_proof command exits 0 AND its close_signal",
         "holds - run the proof verbatim; no proof, not done.",
-        "When blocked, follow the driver's andon router (auto -> helper -> human):",
-        "a breaker trip gets ONE bounded helper pass (fresh context, cross-family model,",
-        "or council) before the operator; escalate to human only when the blocker",
-        "survives that pass or the class is refusal-lane / explicit-judgment /",
-        "budget-exhausted (those classes skip the helper - no consult on a spent ceiling).",
-        "Stop and hand back rather than guess past a breaker.",
+        "This packet is checker-clean intent, not a semantic readiness verdict.",
+        "Discovery and Plan shape the work; Premortem judges the exact final plan.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -370,15 +348,7 @@ def command_prompt(args: argparse.Namespace) -> int:
 
     intent, _ = split_frontmatter(intent_path)
     driver, _ = split_frontmatter(driver_path)
-    statuses = {str(intent.get("status", "draft")), str(driver.get("status", "draft"))}
-    draft = statuses != {"validated"}
-    if draft and not args.allow_draft:
-        fail(
-            f"packet is not validated (statuses: {sorted(statuses)}); run the checker "
-            "plus independent validation first, or pass --allow-draft for a preview"
-        )
-
-    prompt = dispatch_prompt_text(packet_dir, intent, driver, draft)
+    prompt = dispatch_prompt_text(packet_dir, intent, driver)
     if len(prompt) > args.max_chars:
         fail(
             f"dispatch prompt is {len(prompt)} chars, over the max-chars budget of "
@@ -386,86 +356,6 @@ def command_prompt(args: argparse.Namespace) -> int:
             "the packet's objective or behavior text"
         )
     print(prompt, end="")
-    return 0
-
-
-VERDICT_RE = re.compile(r"^(PASS|WARN)\b")
-
-
-def command_mark_validated(args: argparse.Namespace) -> int:
-    verdict = args.verdict.strip()
-    if not VERDICT_RE.match(verdict):
-        fail(
-            "verdict must start with PASS or WARN (a FAIL or empty verdict cannot "
-            "mark a packet validated); rerun the independent validator first"
-        )
-    packet_dir = Path(args.packet_dir)
-    intent_path = packet_dir / "intent.md"
-    driver_path = packet_dir / "driver.md"
-    if not intent_path.is_file() or not driver_path.is_file():
-        fail(f"packet must contain intent.md and driver.md: {packet_dir}", 2)
-
-    original_intent = intent_path.read_bytes()
-    original_driver = driver_path.read_bytes()
-
-    # Parse BOTH files and render the stamped content fully in memory BEFORE
-    # any write: a malformed driver must fail here, while the packet is still
-    # byte-identical to its pre-transition state.
-    intent, intent_body_text = split_frontmatter(intent_path)
-    driver, body = split_frontmatter(driver_path)
-    slug = str(intent.get("slug", ""))
-    validate_slug(slug)
-
-    statuses = {str(intent.get("status", "draft")), str(driver.get("status", "draft"))}
-    if "closed" in statuses:
-        fail(
-            f"packet is closed (statuses: {sorted(statuses)}); closed is terminal — "
-            "mark-validated must not reopen it; author a replacement packet instead"
-        )
-
-    intent["status"] = "validated"
-    new_intent_text = render_markdown(intent, intent_body_text)
-    digest = hashlib.sha256(new_intent_text.encode("utf-8")).hexdigest()
-    intent_ref = canonical_intent_ref(slug)
-
-    driver["status"] = "validated"
-    driver.setdefault("intent_ref", {})
-    driver["intent_ref"]["path"] = intent_ref
-    driver["intent_ref"]["sha256"] = digest
-    driver["intent_ref"]["schema_version"] = 1
-    body = replace_or_append(
-        body,
-        r"(- Intent digest: `)[^`]+(`)",
-        rf"\g<1>{digest}\2",
-        f"- Intent digest: `{digest}`",
-    )
-    body = replace_or_append(
-        body,
-        r"^- Last validation verdict: .*$",
-        f"- Last validation verdict: {verdict}",
-        f"- Last validation verdict: {verdict}",
-    )
-    new_driver_text = render_markdown(driver, body)
-
-    # The transition is checker-gated with NO opt-out: a packet may carry
-    # status validated only if the checker accepts the exact stamped bytes.
-    # ANY failure past this point — a write error or a checker rejection —
-    # restores the originals so a broken packet is never left certified.
-    try:
-        intent_path.write_text(new_intent_text, encoding="utf-8")
-        driver_path.write_text(new_driver_text, encoding="utf-8")
-        checker_rc = run_checker(packet_dir)
-    except BaseException:
-        intent_path.write_bytes(original_intent)
-        driver_path.write_bytes(original_driver)
-        raise
-    if checker_rc != 0:
-        intent_path.write_bytes(original_intent)
-        driver_path.write_bytes(original_driver)
-        fail(
-            f"checker rejected the stamped packet; {packet_dir} restored to its "
-            "pre-transition state — repair the packet, then rerun mark-validated"
-        )
     return 0
 
 
@@ -512,9 +402,9 @@ def command_close(args: argparse.Namespace) -> int:
     intent_status = str(intent.get("status", "draft"))
     driver_status = str(driver.get("status", "draft"))
     statuses = {intent_status, driver_status}
-    if statuses - {"draft", "validated"}:
+    if statuses != {"draft"}:
         fail(
-            f"close is legal only from draft or validated (statuses: {sorted(statuses)}); "
+            f"close is legal only from checker-clean draft (statuses: {sorted(statuses)}); "
             "a closed or superseded packet is terminal"
         )
 
@@ -566,7 +456,7 @@ def command_close(args: argparse.Namespace) -> int:
     body += "\n" + "\n".join(stamp_lines) + "\n"
     new_driver_text = render_markdown(driver, body)
 
-    # Same no-opt-out transactional shape as mark-validated: a packet may carry
+    # Fail closed: a packet may carry
     # status closed only if the checker accepts the exact stamped bytes. ANY
     # failure past this point restores the originals.
     try:
@@ -604,7 +494,7 @@ def parser() -> argparse.ArgumentParser:
     new.add_argument("slug")
     new.add_argument("--output-root", default=".agents/goal-design")
     new.add_argument("--objective", required=True)
-    new.add_argument("--why", default="This goal should drive validated loop work.")
+    new.add_argument("--why", default="This goal should drive checker-clean loop work.")
     new.add_argument("--feature", default=None)
     new.add_argument("--scenario-id", default="S1")
     new.add_argument("--scenario-name", default=None)
@@ -618,7 +508,7 @@ def parser() -> argparse.ArgumentParser:
     new.add_argument("--first-failing-proof", default="Define the first failing proof before implementation.")
     new.add_argument("--behavior", default=None)
     new.add_argument("--write-scope", action="append", default=None)
-    new.add_argument("--close-signal", default="Checker and independent validator pass.")
+    new.add_argument("--close-signal", default="Goal-design packet checker passes.")
     new.add_argument("--repo-path", action="append", default=None)
     new.add_argument("--prior-artifact", action="append", default=None)
     new.add_argument("--live-surface", action="append", default=None)
@@ -636,14 +526,6 @@ def parser() -> argparse.ArgumentParser:
     check = sub.add_parser("check", help="Run the packet checker.")
     check.add_argument("packet_dir")
     check.set_defaults(func=command_check)
-
-    mark = sub.add_parser(
-        "mark-validated",
-        help="Record an independent validation verdict: flip status, stamp the driver, refresh the digest, re-check.",
-    )
-    mark.add_argument("packet_dir")
-    mark.add_argument("--verdict", required=True)
-    mark.set_defaults(func=command_mark_validated)
 
     close = sub.add_parser(
         "close",
@@ -665,7 +547,6 @@ def parser() -> argparse.ArgumentParser:
         help="Emit a small dispatch prompt pointing a goal-API worker (codex/claude goals) at the packet.",
     )
     prompt.add_argument("packet_dir")
-    prompt.add_argument("--allow-draft", action="store_true")
     prompt.add_argument("--max-chars", type=int, default=4000)
     prompt.set_defaults(func=command_prompt)
 

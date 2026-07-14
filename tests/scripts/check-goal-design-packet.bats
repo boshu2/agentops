@@ -35,6 +35,7 @@ for path in sys.argv[1:]:
     Draft202012Validator.check_schema(schema)
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["additionalProperties"] is False
+    assert "validated" not in schema["properties"]["status"]["enum"]
 PY
     [ "$status" -eq 0 ]
 }
@@ -77,11 +78,11 @@ PY
     [[ "$output" == *"driver intent_ref.sha256 is stale"* ]]
 }
 
-@test "self-grading language fails" {
+@test "checker accepts a packet without semantic validator state" {
     if [ "$HAVE_SCHEMA_DEPS" -eq 0 ]; then skip "python3 yaml/jsonschema unavailable"; fi
     run "$SCRIPT" "$FIX/self-grading-language"
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"self-grading"* ]]
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"goal-design packet valid"* ]]
 }
 
 @test "driver slug must match intent slug" {

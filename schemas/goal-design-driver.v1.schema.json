@@ -43,7 +43,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "validated", "superseded", "closed"]
+      "enum": ["draft", "superseded", "closed"]
     },
     "intent_ref": {
       "type": "object",
@@ -155,13 +155,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "validation_fails",
+        "checker_fails",
         "bead_closes_with_new_signal",
         "candidate_stale",
         "promotion_contradicts_intent"
       ],
       "properties": {
-        "validation_fails": {
+        "checker_fails": {
           "$ref": "#/$defs/non_empty_string"
         },
         "bead_closes_with_new_signal": {
@@ -202,17 +202,10 @@
     "artifact_validation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["checker_command", "independent_validator", "required_verdict"],
+      "required": ["checker_command"],
       "properties": {
         "checker_command": {
           "$ref": "#/$defs/non_empty_string"
-        },
-        "independent_validator": {
-          "$ref": "#/$defs/non_empty_string"
-        },
-        "required_verdict": {
-          "type": "string",
-          "enum": ["PASS"]
         }
       }
     }

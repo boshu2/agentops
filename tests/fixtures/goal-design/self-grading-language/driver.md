@@ -7,7 +7,7 @@ created_at: "2026-07-09T09:05:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/valid-packet/intent.md"
-  sha256: "35963f3584cd932028b533d1d529cc88a19faf6c556029d71ba46e6458f363dc"
+  sha256: "dfefb2a95ce7ad9fbf1ead6ad5598579c3da28513ad005d30fe270544ed5472f"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "CLI scaffolding is mixed into artifact validation."
 route_back_rules:
-  validation_fails: "Patch the artifact contract before filing work."
+  checker_fails: "Patch the artifact contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to choose or revise the next candidate."
   candidate_stale: "Re-read the named canonical docs and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md, update the driver, and revalidate."
@@ -41,8 +41,6 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh .agents/goal-design/valid-packet"
-  independent_validator: self
-  required_verdict: PASS
 ---
 # Goal Design Driver: self-grading-language
 

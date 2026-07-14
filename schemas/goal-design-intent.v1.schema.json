@@ -44,7 +44,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "validated", "superseded", "closed"]
+      "enum": ["draft", "superseded", "closed"]
     },
     "objective": {
       "$ref": "#/$defs/non_empty_string"
@@ -134,8 +134,7 @@
       "required": [
         "first_failing_proof",
         "validation_command",
-        "evidence_path",
-        "independent_gate"
+        "evidence_path"
       ],
       "properties": {
         "first_failing_proof": {
@@ -145,9 +144,6 @@
           "$ref": "#/$defs/non_empty_string"
         },
         "evidence_path": {
-          "$ref": "#/$defs/non_empty_string"
-        },
-        "independent_gate": {
           "$ref": "#/$defs/non_empty_string"
         }
       }
