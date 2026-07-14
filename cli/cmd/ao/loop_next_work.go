@@ -9,9 +9,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/evolve/ladder"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 	"github.com/spf13/cobra"
 )
 
@@ -89,7 +91,11 @@ func runLoopNextWork(cmd *cobra.Command, _ []string) error {
 
 	br := evolveNextWorkRunnerOverride
 	if br == nil {
-		br = ladder.ExecBeadRunner{BinaryPath: evolveNextWorkBDBinary}
+		resolution, err := resolveEvolveNextWorkTracker(cwd)
+		if err != nil {
+			return fmt.Errorf("resolve next-work tracker: %w", err)
+		}
+		br = ladder.ExecBeadRunner{Resolution: resolution}
 	}
 	gr := evolveNextWorkGrepOverride
 	if gr == nil {
@@ -112,6 +118,31 @@ func runLoopNextWork(cmd *cobra.Command, _ []string) error {
 	}
 
 	return writeNextWorkRecommendation(cmd.OutOrStdout(), rec, evolveNextWorkJSON)
+}
+
+func resolveEvolveNextWorkTracker(cwd string) (trackerresolve.Resolution, error) {
+	env := os.Environ()
+	if evolveNextWorkBDBinary == "" {
+		return resolveTracker(cwd, env)
+	}
+
+	// --bd-binary is an explicit compatibility override. Force canonical BD
+	// resolution so the selected executable can never inherit BR ledger/env
+	// semantics from an ambient selection.
+	forced := make([]string, 0, len(env)+1)
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "AGENTOPS_TRACKER=") {
+			continue
+		}
+		forced = append(forced, entry)
+	}
+	forced = append(forced, "AGENTOPS_TRACKER="+trackerresolve.BD)
+	return trackerresolve.ResolveWithLookPath(cwd, forced, func(name string) (string, error) {
+		if name == trackerresolve.BD {
+			return evolveNextWorkBDBinary, nil
+		}
+		return trackerLookPath(name)
+	})
 }
 
 // appendNextWorkDecision writes one row to the per-cycle decision log.

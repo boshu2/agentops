@@ -26,6 +26,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // Bead is the trimmed projection of `bd ready --json` / `bd show --json` that
@@ -408,10 +411,10 @@ func surfaceArea(b Bead) int {
 	return len(seen)
 }
 
-// ExecBeadRunner is the production BeadRunner that shells out to `bd`.
+// ExecBeadRunner is the production BeadRunner backed by one canonical tracker
+// resolution. Selection and ledger discovery belong to its composition root.
 type ExecBeadRunner struct {
-	// BinaryPath optionally pins the bd binary; empty resolves via $PATH.
-	BinaryPath string
+	Resolution trackerresolve.Resolution
 }
 
 // Ready returns all ready beads.
@@ -426,28 +429,18 @@ func (e ExecBeadRunner) ReadyByType(ctx context.Context, issueType string) ([]Be
 
 func (e ExecBeadRunner) runReady(ctx context.Context, extra []string) ([]Bead, error) {
 	args := append([]string{"ready", "--json"}, extra...)
-	bin := e.BinaryPath
-	if bin == "" {
-		bin = "bd"
-	}
-	cmd := exec.CommandContext(ctx, bin, args...)
-	out, err := cmd.Output()
+	out, err := e.output(ctx, args...)
 	if err != nil {
-		return nil, fmt.Errorf("bd ready: %w", err)
+		return nil, fmt.Errorf("%s ready: %w", e.trackerName(), err)
 	}
 	return decodeBeadList(out)
 }
 
 // Show returns the full Bead detail for id.
 func (e ExecBeadRunner) Show(ctx context.Context, id string) (Bead, error) {
-	bin := e.BinaryPath
-	if bin == "" {
-		bin = "bd"
-	}
-	cmd := exec.CommandContext(ctx, bin, "show", id, "--json")
-	out, err := cmd.Output()
+	out, err := e.output(ctx, "show", id, "--json")
 	if err != nil {
-		return Bead{}, fmt.Errorf("bd show %s: %w", id, err)
+		return Bead{}, fmt.Errorf("%s show %s: %w", e.trackerName(), id, err)
 	}
 	var b Bead
 	if err := json.Unmarshal(out, &b); err != nil {
@@ -458,17 +451,31 @@ func (e ExecBeadRunner) Show(ctx context.Context, id string) (Bead, error) {
 
 // InProgress returns beads whose status is "in_progress".
 func (e ExecBeadRunner) InProgress(ctx context.Context) ([]Bead, error) {
-	bin := e.BinaryPath
-	if bin == "" {
-		bin = "bd"
-	}
-	cmd := exec.CommandContext(ctx, bin, "list", "--status=in_progress", "--json")
-	out, err := cmd.Output()
+	out, err := e.output(ctx, "list", "--status=in_progress", "--json")
 	if err != nil {
 		// Some bd versions use different status names; treat missing as empty.
 		return nil, nil
 	}
 	return decodeBeadList(out)
+}
+
+func (e ExecBeadRunner) output(ctx context.Context, args ...string) ([]byte, error) {
+	if e.Resolution.Binary == "" {
+		return nil, fmt.Errorf("tracker resolution has empty binary")
+	}
+	return (trackerexec.Factory{}).Command(
+		ctx,
+		e.Resolution,
+		args,
+		trackerexec.Streams{},
+	).Output()
+}
+
+func (e ExecBeadRunner) trackerName() string {
+	if e.Resolution.Tracker != "" {
+		return e.Resolution.Tracker
+	}
+	return "tracker"
 }
 
 func decodeBeadList(out []byte) ([]Bead, error) {
