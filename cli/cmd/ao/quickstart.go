@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -106,7 +108,7 @@ func quickstartBeadsStep(cwd string) error {
 }
 
 func quickstartBeadsStepWithApp(cwd string, app *App) error {
-	return quickstartBeadsStepVerbose(cwd, app, true)
+	return quickstartBeadsStepVerboseContext(context.Background(), cwd, app, true)
 }
 
 // quickstartBeadsStepVerbose runs the beads init/skip side effects. When
@@ -114,11 +116,15 @@ func quickstartBeadsStepWithApp(cwd string, app *App) error {
 // the substantive tracker readiness is reported by the readiness checklist
 // instead.
 func quickstartBeadsStepVerbose(cwd string, app *App, verbose bool) error {
+	return quickstartBeadsStepVerboseContext(context.Background(), cwd, app, verbose)
+}
+
+func quickstartBeadsStepVerboseContext(ctx context.Context, cwd string, app *App, verbose bool) error {
 	if !noBeads {
 		if verbose {
 			fmt.Println("\n━━━ STEP 3: Beads initialization ━━━")
 		}
-		if err := initBeadsWithApp(cwd, app); err != nil {
+		if err := initBeadsWithContext(ctx, cwd, app); err != nil {
 			return fmt.Errorf("tracker initialization failed: %w", err)
 		}
 	} else {
@@ -179,7 +185,7 @@ func runQuickstart(cmd *cobra.Command, args []string) error {
 		return runQuickstartMinimal(cwd, opts, jsonMode)
 	}
 
-	return runQuickstartFull(cwd, opts, jsonMode, AppFromContext(cmd.Context()))
+	return runQuickstartFull(cmd.Context(), cwd, opts, jsonMode, AppFromContext(cmd.Context()))
 }
 
 func runQuickstartDryRun(cwd string, opts lifecycle.ReadinessOptions) error {
@@ -233,7 +239,7 @@ func runQuickstartMinimal(cwd string, opts lifecycle.ReadinessOptions, jsonMode 
 	return nil
 }
 
-func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode bool, app *App) error {
+func runQuickstartFull(ctx context.Context, cwd string, opts lifecycle.ReadinessOptions, jsonMode bool, app *App) error {
 	// Snapshot readiness BEFORE any write, so the idempotent re-run summary
 	// reflects what was already true on disk, not the post-seed state.
 	preReport, err := lifecycle.InspectRepoReadiness(cwd, opts)
@@ -286,15 +292,15 @@ func runQuickstartFull(cwd string, opts lifecycle.ReadinessOptions, jsonMode boo
 		})
 	}
 	if quickstartVerbose {
-		return finalizeQuickstartFull(cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
+		return finalizeQuickstartFull(ctx, cwd, claudePath, claudeAlreadyExisted, report, firstVerdict, app)
 	}
 	if alreadySetUp {
-		if err := quickstartBeadsStepVerbose(cwd, app, false); err != nil {
+		if err := quickstartBeadsStepVerboseContext(ctx, cwd, app, false); err != nil {
 			return err
 		}
 		return finalizeQuickstartRerun(cwd, report, firstVerdict)
 	}
-	return finalizeQuickstartDiet(cwd, claudeAlreadyExisted, report, firstVerdict, app)
+	return finalizeQuickstartDiet(ctx, cwd, claudeAlreadyExisted, report, firstVerdict, app)
 }
 
 // finalizeQuickstartRerun renders the idempotent re-run summary: quick-start
@@ -323,8 +329,8 @@ func ensureProjectClaudeMd(cwd, claudePath string) (bool, error) {
 	return true, nil
 }
 
-func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
-	if err := quickstartBeadsStepWithApp(cwd, app); err != nil {
+func finalizeQuickstartFull(ctx context.Context, cwd, claudePath string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
+	if err := quickstartBeadsStepVerboseContext(ctx, cwd, app, true); err != nil {
 		return err
 	}
 	fmt.Println("\n━━━ STEP 4: Project configuration ━━━")
@@ -355,8 +361,8 @@ type createdItem struct {
 // header, a created-files summary, a readiness checklist, the environment-
 // tailored golden paths, exactly one Next action, and the tightened first-
 // verdict close. Long form lives behind --verbose (finalizeQuickstartFull).
-func finalizeQuickstartDiet(cwd string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
-	if err := quickstartBeadsStepVerbose(cwd, app, false); err != nil {
+func finalizeQuickstartDiet(ctx context.Context, cwd string, claudeAlreadyExisted bool, report *lifecycle.ReadinessReport, firstVerdict *firstVerdictInfo, app *App) error {
+	if err := quickstartBeadsStepVerboseContext(ctx, cwd, app, false); err != nil {
 		return err
 	}
 	fmt.Println("\n━━━ SETUP COMPLETE ━━━")
@@ -871,15 +877,14 @@ func initBeads(cwd string) error {
 }
 
 func initBeadsWithApp(cwd string, app *App) error {
+	return initBeadsWithContext(context.Background(), cwd, app)
+}
+
+func initBeadsWithContext(ctx context.Context, cwd string, _ *App) error {
 	resolution, err := resolveTracker(cwd, os.Environ())
 	if err != nil {
 		return err
 	}
-	binary, err := app.LookPath(resolution.Tracker)
-	if err != nil {
-		return fmt.Errorf("selected tracker %s command not found: %w", resolution.Tracker, err)
-	}
-	resolution.Binary = binary
 
 	// Check if already initialized
 	if _, err := os.Stat(resolution.LedgerDir); err == nil {
@@ -910,11 +915,15 @@ func initBeadsWithApp(cwd string, app *App) error {
 
 	// Run the selected tracker. Availability and execution use the same resolved
 	// backend so an explicit bd selection can never be preflighted as br.
-	cmd := app.ExecCommand(resolution.Binary, "init", "--prefix", prefix) // #nosec G204 -- selected br|bd binary.
-	cmd.Dir = cwd
+	cmd := (trackerexec.Factory{}).Command(
+		ctx,
+		resolution,
+		[]string{"init", "--prefix", prefix},
+		trackerexec.Streams{},
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s init failed: %s", resolution.Tracker, string(output))
+		return fmt.Errorf("%s init failed: %s: %w", resolution.Tracker, strings.TrimSpace(string(output)), err)
 	}
 
 	fmt.Printf("  ✓ %s tracker initialized with prefix '%s'\n", resolution.Tracker, prefix)

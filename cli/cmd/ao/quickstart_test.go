@@ -2,13 +2,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -473,6 +476,109 @@ func TestQuickstart_selectedTrackerUnavailableFailsClosed(t *testing.T) {
 	if !strings.Contains(err.Error(), "bd") {
 		t.Fatalf("quick-start error = %q, want selected backend bd named", err)
 	}
+}
+
+func TestQuickStartUsesResolvedTrackerContext(t *testing.T) {
+	for _, tracker := range []string{"br", "bd"} {
+		t.Run(tracker+" process context and typed exit", func(t *testing.T) {
+			root := t.TempDir()
+			binDir := t.TempDir()
+			tracePath := filepath.Join(t.TempDir(), "tracker.trace")
+			stub := "#!/bin/sh\n" +
+				"printf 'pwd=%s\\nbeads=%s\\nargv=%s\\n' \"$PWD\" \"${BEADS_DIR-<unset>}\" \"$*\" > \"$TRACKER_TRACE\"\n" +
+				"exit 23\n"
+			if err := os.WriteFile(filepath.Join(binDir, tracker), []byte(stub), 0o755); err != nil {
+				t.Fatal(err)
+			}
+
+			t.Setenv("AGENTOPS_TRACKER", tracker)
+			t.Setenv("TRACKER_TRACE", tracePath)
+			t.Setenv("BEADS_DIR", filepath.Join(t.TempDir(), "ambient-ledger"))
+			t.Setenv("HOME", t.TempDir())
+			t.Setenv("PATH", binDir)
+			originalLookPath := trackerLookPath
+			trackerLookPath = exec.LookPath
+			t.Cleanup(func() { trackerLookPath = originalLookPath })
+			resolution, resolveErr := resolveTracker(root, os.Environ())
+			if resolveErr != nil {
+				t.Fatalf("resolve tracker: %v", resolveErr)
+			}
+			wantWorkDir, evalErr := filepath.EvalSymlinks(resolution.WorkDir)
+			if evalErr != nil {
+				t.Fatalf("resolve physical work dir: %v", evalErr)
+			}
+			wantBeads := "<unset>"
+			for _, entry := range resolution.ChildEnv {
+				if strings.HasPrefix(entry, "BEADS_DIR=") {
+					wantBeads = strings.TrimPrefix(entry, "BEADS_DIR=")
+				}
+			}
+
+			err := initBeadsWithApp(root, NewApp())
+			var exitErr *trackerexec.ExitError
+			if !errors.As(err, &exitErr) {
+				t.Fatalf("initBeadsWithApp error = %T %v, want typed tracker exit", err, err)
+			}
+			if exitErr.ExitCode() != 23 {
+				t.Fatalf("exit code = %d, want 23", exitErr.ExitCode())
+			}
+
+			data, readErr := os.ReadFile(tracePath)
+			if readErr != nil {
+				t.Fatalf("read tracker trace: %v", readErr)
+			}
+			trace := string(data)
+			if !strings.Contains(trace, "pwd="+wantWorkDir+"\n") {
+				t.Fatalf("tracker trace = %q, want work dir %q", trace, wantWorkDir)
+			}
+			if !strings.Contains(trace, "beads="+wantBeads+"\n") {
+				t.Fatalf("tracker trace = %q, want BEADS_DIR %q", trace, wantBeads)
+			}
+			if !strings.Contains(trace, "argv=init --prefix ") {
+				t.Fatalf("tracker trace = %q, want init argv", trace)
+			}
+		})
+	}
+
+	t.Run("live Cobra cancellation prevents launch", func(t *testing.T) {
+		root := t.TempDir()
+		binDir := t.TempDir()
+		tracePath := filepath.Join(t.TempDir(), "launched")
+		for name, stub := range map[string]string{
+			"br":    "#!/bin/sh\nprintf launched > \"$TRACKER_TRACE\"\n",
+			"codex": "#!/bin/sh\necho fake 1.0\n",
+		} {
+			if err := os.WriteFile(filepath.Join(binDir, name), []byte(stub), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		chdirTo(t, root)
+		t.Setenv("AGENTOPS_TRACKER", "br")
+		t.Setenv("TRACKER_TRACE", tracePath)
+		t.Setenv("HOME", t.TempDir())
+		t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
+		originalLookPath := trackerLookPath
+		trackerLookPath = exec.LookPath
+		t.Cleanup(func() { trackerLookPath = originalLookPath })
+		oldMinimal, oldNoBeads, oldVerbose, oldDryRun, oldOutput := minimal, noBeads, quickstartVerbose, dryRun, output
+		minimal, noBeads, quickstartVerbose, dryRun, output = false, false, false, false, "table"
+		t.Cleanup(func() {
+			minimal, noBeads, quickstartVerbose, dryRun, output = oldMinimal, oldNoBeads, oldVerbose, oldDryRun, oldOutput
+		})
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		cmd := &cobra.Command{}
+		cmd.SetContext(ctx)
+		err := runQuickstart(cmd, nil)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("runQuickstart error = %T %v, want context cancellation", err, err)
+		}
+		if _, statErr := os.Stat(tracePath); !os.IsNotExist(statErr) {
+			t.Fatalf("pre-canceled quick-start launched tracker: %v", statErr)
+		}
+	})
 }
 
 // --- quickstartClaudeMdStep tests ---
