@@ -41,6 +41,10 @@ through the owning command.
 
 ## Ordered operating loop
 
+Discovery, Crank, Validate, and Learn are the four lifecycle umbrellas.
+Premortem is a Discovery strategy; Postmortem is optional after Learn. The
+context that authors a candidate cannot issue its binding verdict.
+
 1. **Orient.** Read the request, this contract, `git status`, and the smallest
    triggered canonical sources. Identify authority, current state, and risk.
 2. **Shape acceptance.** State the behavior as testable Given/When/Then examples,
@@ -69,8 +73,9 @@ through the owning command.
    chooses repair or re-plan. Deliver the same candidate through repository policy,
    verify the remote SHA, and emit the tranche report that releases the tranche slot.
    `/postmortem` and compounding stay off the critical path unless learning
-   invalidates the candidate. For this repo, `ao land <bead>` is the terminal
-   delivery transition.
+   invalidates the candidate. Delivery is repository-owned: local and cloud
+   agents may use direct push, a PR, external CI, or another declared adapter.
+   AgentOps records delivery evidence; it does not control the Git transition.
 
 The orchestrator classifies evidence as NOTE, REPAIR, REPLAN, HOLD, or ANDON.
 Ordinary REFUTED or a failed check is REPAIR/REPLAN and returns to the earliest
@@ -79,8 +84,8 @@ phase-local retry multipliers are forbidden. Max-attempts, oscillation, or
 no-progress enters HOLD and gets exactly one bounded fresh-context helper.
 UNSTUCK resumes with a new approach; only helper ESCALATE, human-only judgment,
 or a genuinely spent hard time, cost, or quota ceiling raises ANDON. A retry count
-alone is never a spent budget. General breaker authority:
-[`docs/contracts/pawls.md`](docs/contracts/pawls.md); RPI-specific transitions:
+alone is never a spent budget. General disposition authority is this contract
+and the operating-loop state table; RPI-specific transitions are in the
 [`skills/rpi/references/pull-flow-governor.md`](skills/rpi/references/pull-flow-governor.md).
 
 ## Concurrency boundary
@@ -98,7 +103,7 @@ alone is never a spent budget. General breaker authority:
 | Trigger | Canonical owner to read | Purpose |
 |---|---|---|
 | Planning, implementation, validation, or repair | [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) | Legal transitions and proof loop |
-| Bead, worktree, landing, or provenance operation | [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md) and [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) | Repo-specific mechanics and compatibility detail |
+| Bead, worktree, delivery, or provenance operation | [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md) and [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) | Repo-specific mechanics and transitional detail |
 | CLI command or flag | `cli/cmd/ao/` then `cli/docs/COMMANDS.md` | Executable and generated command truth |
 | Bounded context, port, or adapter change | `docs/architecture/component-map.md` and `docs/architecture/ports-and-adapters.md` | DDD/hexagonal boundaries |
 | Skill behavior or inventory change | `skills/<slug>/SKILL.md`, `docs/SKILL-ROUTER.md` | Skill contract and selection |

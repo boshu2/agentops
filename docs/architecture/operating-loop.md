@@ -53,7 +53,8 @@ triggered by the work. Resolve these questions before mutation:
 - What exact behavior is requested, and what is explicitly outside scope?
 - Which bounded context and source owner control it?
 - What state already exists locally, in the tracker, and on the target remote?
-- Which action is the next reversible move, and which later action is a pawl?
+- Which action is the next reversible move, and which later action requires
+  explicit repository or operator authority?
 
 Acceptance is executable shared language, not a prose aspiration. Record:
 
@@ -129,6 +130,9 @@ overlap/mapping proof is green.
 
 ## 5. Prove facts, then judge meaning once
 
+A verdict is immutable evidence from fresh context. The author may supply facts
+and claims, but cannot issue that verdict or mutate it after review.
+
 Deterministic checks prove facts such as syntax, schema, identity, paths, drift,
 tests, and evidence integrity. Select the cheapest checks that cover the changed
 surface, run each selected fact once for an exact input, and retain its receipt.
@@ -176,9 +180,9 @@ One run-level governor owns attempts, time, token/cost, and helper consumption.
 Phase-local retry multipliers are forbidden. Max-attempts, oscillation, or
 no-progress enters HOLD and receives exactly one helper consultation. `UNSTUCK`
 resumes with a new approach; helper `ESCALATE`, human-only judgment, or a genuinely
-spent hard ceiling raises ANDON. The static pawl boundary is
-[`docs/contracts/pawls.md`](../contracts/pawls.md); RPI's durable transitions are
-the [pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
+spent hard ceiling raises ANDON. The state table above owns disposition; RPI's
+durable transitions are the
+[pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
 
 ## 7. Learn, deliver, verify, and report
 

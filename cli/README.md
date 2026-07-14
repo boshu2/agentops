@@ -1,13 +1,8 @@
 # ao — AgentOps CLI
 
-`ao` is the local verification membrane and durable bookkeeper for agent work.
-It turns a committed change into an independently checked verdict and records
-that verdict in a hash-chained provenance ledger: no verdict means not done.
-
-The default binary intentionally exposes the membrane/bookkeeper spine from
-[ADR-0012](../docs/adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md).
-Experimental corpus/flywheel commands are restorable with the `flywheel` build
-tag; retired factory/orchestration commands are restorable with `legacy`.
+`ao` is the deterministic transaction kernel and evidence recorder beneath the
+AgentOps operating loop. Agents own intent, implementation, and semantic
+judgment. Repositories own Git delivery.
 
 ## Install
 
@@ -15,59 +10,49 @@ tag; retired factory/orchestration commands are restorable with `legacy`.
 go install github.com/boshu2/agentops/cli/cmd/ao@latest
 ```
 
-## One live path
+## Current executable truth
 
-From a repository root:
-
-```bash
-ao quick-start
-ao session bootstrap
-ao beads tracker
-ao beads ready
-git add .
-git commit -m "fix: first validated change"
-ao verify my-first-change
-ao gate check --fast --scope head
-```
-
-`ao quick-start` creates the local readiness seed. `ao session bootstrap`
-orients the agent. `ao beads tracker` reports the selected BR/BD backend, and
-all tracker consumers use that same selection. `ao verify` obtains and records
-the first independent verdict. The gate is the final pre-push windshield.
-
-## Default surfaces
-
-| Surface | Purpose |
-|---|---|
-| `ao capabilities` | Recursive, versioned machine contract for the live command tree |
-| `ao quick-start` | Seed a repository and print the one live first-verdict path |
-| `ao beads` | Resolve and operate through the selected tracker |
-| `ao pawl` / `ao verify` | Independent review and commit-bound verdict |
-| `ao gate` / `ao validate` | Deterministic release checks and verdict-as-exit-code validation |
-| `ao provenance` | Append, inspect, export, and verify the hash-chained ledger |
-| `ao session` | Session bootstrap and closeout bookkeeping |
-| `ao goals` / `ao claim` | Intent, fitness, ownership, and evidence bindings |
-| `ao skills` | Inspect the checked-in skill contracts |
-
-Machine consumers should begin with `ao capabilities`. Global output formats
-are closed to `table`, `json`, and `yaml`; a leaf-local flag with the same name
-retains its local meaning.
-
-## Build variants
+The command tree is mid-cut. Inspect the binary you actually have rather than
+assuming a profile or narrative list:
 
 ```bash
-go build ./cmd/ao
-go build -tags flywheel ./cmd/ao
-go build -tags legacy ./cmd/ao
-go build -tags 'flywheel legacy' ./cmd/ao
+ao capabilities
+ao robot-docs
+ao --help
 ```
 
-Run `../scripts/verify-buildtags.sh` from this directory's parent to prove all
-variants compile and that the default executable membership remains focused.
+The generated [command reference](docs/COMMANDS.md) follows executable source
+and is not hand-maintained in an authority-doc change.
 
-## Reference
+## Final boundary
 
-- [Generated CLI reference](docs/COMMANDS.md)
-- [ADR-0012](../docs/adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md)
+The direct-cut program converges on one profile-free command tree. Its lifecycle
+transactions are:
+
+- pull one ready work leaf;
+- freeze exact candidate identity;
+- run or reuse exact-input deterministic evidence;
+- record a PASS or FAIL supplied by an external fresh-context validator;
+- record one Learn receipt;
+- record repository-owned delivery and remote identity; and
+- close the report and tracker leaf after verification.
+
+These transactions do not ask a model to judge work and do not push, merge,
+queue, or select CI policy. Local and cloud agents use the same ports.
+
+K5, K7, and K9 own deletion of the old verdict-driving, delivery, and retired
+gate implementations. Exact `CLI.<source>` leaves own the remaining command
+dispositions. F4 removes alternate build profiles. D2 regenerates this command
+surface only after executable ownership is final.
+
+## Development
+
+During the cut, use the focused test named by the owning leaf. Do not add new
+profile membership, `init()` registration, package-global command ownership,
+compatibility aliases, or dormant scaffolds.
+
+## References
+
 - [Operating loop](../docs/architecture/operating-loop.md)
-- [Pawl contract](../docs/contracts/pawls.md)
+- [Go CLI architecture guide](../docs/architecture/go-cli-architecture-guide.md)
+- [Direct-cut ADR](../docs/adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md)

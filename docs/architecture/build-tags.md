@@ -1,64 +1,49 @@
-# Build tags: archiving the satellites (ADR-0012)
+# Build Tags During the Direct Cut
 
-> How AgentOps keeps the unproven corpus/flywheel and RPI/factory satellites
-> **buildable but omitted by default**. Decision: [ADR-0012](../adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md).
-> The satellites are **archived, not deleted**, because the ADR-0004/0009/0011
-> revival conditions require the code to stay compilable.
+> Current executable truth and deletion ownership for the transitional command
+> profiles introduced by [ADR-0012](../adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md).
 
-## The two tags
+## Current state
 
-| Tag | Archives | Bead |
-|-----|----------|------|
-| `flywheel` | corpus/flywheel commands + packages (forge, compile, wiki, harvest, mine, pool, maturity, refinery, flywheel, dedup, defrag, curate, ratchet, …) | `…m1wg.13` |
-| `legacy` | RPI/factory commands (orchestrate, codex lifecycle, tick, autodev, evolve, loop, turn, harness, operator) | `…m1wg.14` |
+The current tree still compiles `flywheel`, `legacy`, and combined variants.
+That fact is transitional, not a product contract. New code must not add a tag,
+profile membership, restoration command, tagged fallback, or profile-specific
+behavior.
 
-The **default** `go build ./...` (and the shipped `ao`) compile **neither**. They are the spine.
-
-## How to build each variant
+Until F4 executes, the existing diagnostic commands remain useful for proving
+the inventory that must disappear:
 
 ```bash
-make build                    # spine — archived sets omitted (default)
-make build-flywheel           # restore BOTH (-tags "flywheel legacy")
-AGENTOPS_LEGACY=1 make build  # restore the legacy (RPI/factory) set only
-cd cli && go build -tags flywheel ./...          # flywheel only
-cd cli && go build -tags "flywheel legacy" ./... # both
+make verify-buildtags
+AO_DUMP_REGISTERED_CMDS=1 go -C cli test -tags=flywheel,legacy \
+  ./cmd/ao -run '^TestDumpRegisteredTopLevelCommands$' -count=1 -v
 ```
 
-Introspect a binary: `ao buildtags` prints `spine` (default) or the tags it was built with.
+These commands describe the old tree; they do not authorize consumers to depend
+on it.
 
-## How to archive a command behind a tag
+## Cut ownership
 
-Build tags are **file-level** in Go. To archive a command:
+The exact CLI disposition manifest assigns every currently compiled top-level
+root to one leaf. That leaf retains behavior under a final owner or deletes it
+with its unique tests, docs, fixtures, and dependencies. K5, K7, and K9 own the
+four roots coupled to verdict, delivery, and retired gate behavior. Other roots
+belong to their exact `CLI.<source>` leaves.
 
-1. Put the command's definition + its `init()` registration (the `rootCmd.AddCommand(...)`
-   call) in a file carrying the tag constraint as the **first line**, followed by a blank line:
+After those leaves finish, F4 deletes:
 
-   ```go
-   //go:build flywheel
+- the `flywheel`, `legacy`, and combined profile constants;
+- build-tag-only command owners and tagged fallbacks;
+- profile selection and default-root pruning;
+- build-profile scripts, fixtures, and compatibility tests; and
+- documentation that teaches restoration.
 
-   package main
-   // … the cobra command var + func init(){ rootCmd.AddCommand(fooCmd) } …
-   ```
+D2 then regenerates the command reference and other declared projections once
+from the single final executable source.
 
-   With the tag absent, the file is not compiled, so the command is neither built
-   nor registered — it simply isn't in the spine binary.
+## Admission rule
 
-2. **Self-containment is the rule.** Any symbol the archived command references
-   (helper funcs, vars, packages) must also be tag-gated, or the spine build
-   breaks with "undefined". Move shared helpers that the spine still needs into an
-   untagged file; move helpers only the archived command uses into the tagged file.
-   If a spine file references an archived symbol, provide a `//go:build !flywheel`
-   stub.
-
-3. Whole packages (e.g. `internal/wiki`, `internal/pool`, `internal/ratchet`) are
-   archived by tagging every file in the package, or by ensuring the only importers
-   are themselves tag-gated.
-
-4. Retag the disposition ledger and regenerate: `make regen-all`, then `make regen-check`.
-
-## Verifying the mechanism
-
-`make verify-buildtags` (→ `scripts/verify-buildtags.sh`) compiles the spine,
-`flywheel`, `legacy`, and combined variants and asserts `ao buildtags` reports
-each correctly. The default build must omit the tagged sets; the tags must restore
-them. The `cmd/ao/buildtags*.go` files are the mechanism's anchor and self-test.
+A command-cut leaf is not ready until its checked authority-and-consumer
+manifest is complete and disjoint. The old owner and its replacement or last
+consumer must share one writer, one candidate, one acceptance check, and one
+rollback. No intermediate dual runtime is admitted.

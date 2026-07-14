@@ -4,12 +4,28 @@
 
 ## Actions Backstop
 
-Routine changes land by local gate plus direct push to `main`. GitHub Actions are optional/manual or release-tag backstops, not the release authority for normal AgentOps work. `.github/workflows/validate.yml` remains useful for explicit workflow dispatch, PRs from external collaboration, merge-queue experiments, and `v*` release tags. Release tag pushes force every path-filtered release lane on, and the summary fails if any release lane is skipped unexpectedly. PR-only evidence jobs are allowlisted on tag pushes because tag events have no PR body; other skipped jobs are not treated as release verdicts. **Run checks locally before pushing.** The local Go gate with workflow coverage is the parity guard that prevents blocking workflow scripts from drifting outside the local contract.
+AgentOps validation and repository delivery are separate transitions. A local or
+cloud agent freezes one candidate, runs deterministic evidence, obtains one
+fresh-context Validate verdict, and records Learn before the repository's own
+delivery policy begins. Direct push, a PR, external CI, and release automation
+are all valid repository adapters; none creates or upgrades the semantic
+verdict. `.github/workflows/validate.yml` remains useful for explicit workflow
+dispatch, external collaboration, and `v*` release tags. Release tag pushes
+force every path-filtered release lane on, and the summary fails if any release
+lane is skipped unexpectedly. PR-only evidence jobs are allowlisted on tag
+pushes because tag events have no PR body; other skipped jobs are not treated as
+release verdicts.
 Blocking policy list for optional Actions runs (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
 
-Advisory and warn-only jobs can run in optional Actions contexts, but their failure does NOT block a locally validated direct-main landing. Most surface a `(advisory)` suffix on the GitHub check name. (`executable-spec-link-integrity` was promoted to blocking in soc-x7y9f; only its inner `ao goals trace --orphans` step remains warn-only inside the now-required job.) Each listed job has a triage SLA or explicit info-only handling — when the job has been red for longer than its SLA, follow the escalation rule.
+Advisory and warn-only jobs can run in optional Actions contexts, but their
+failure does not rewrite an already recorded semantic verdict. Most surface a
+`(advisory)` suffix on the GitHub check name. (`executable-spec-link-integrity`
+was promoted to blocking in soc-x7y9f; only its inner `ao goals trace --orphans`
+step remains warn-only inside the now-required job.) Each listed job has a
+triage SLA or explicit info-only handling — when the job has been red for longer
+than its SLA, follow the escalation rule.
 
 | Job | Triage SLA | Escalation rule |
 |---|---|---|
@@ -26,12 +42,12 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 
 | Item | Current handling | Rationale | Promotion trigger |
 |---|---|---|---|
-| **1 — go-build error** | DEFER | Compilation breakage is developer hygiene; `cd cli && make build && make test` already exists in the local checklist. | Promote to FIX if a merged `main` commit reaches CI with the same build-class failure twice in 30 days despite local pre-push guidance. |
+| **1 — go-build error** | DEFER | Compilation breakage is developer hygiene; `cd cli && make build && make test` already exists in the local checklist. | Promote to FIX if a merged `main` commit reaches CI with the same build-class failure twice in 30 days despite focused local evidence. |
 | **7 — cli-integration cascade** | DEDUPE/DEFER | Failures cascade from build/test root causes, primarily items 1 and 4. | Promote to FIX if `cli-integration` fails independently after items 1 and 4 are green for two consecutive affected runs. |
 | **13 — contract-compatibility** | DEFER | The gate is doing its job; failures indicate real schema or catalog drift. | Promote to FIX if the same false-positive contract failure repeats twice in a quarter. |
 | **14 — smoke-test Python 3.14** | DEFER | Rare flake; workflow pinning already narrows the surface. | Promote to FIX if the Python 3.14 smoke failure appears in two separate PRs or nightlies within 30 days. |
 | **21 — GoReleaser publish failure** | DEFER | Release publish failures are covered by the `pre-tag-ci-validation` pattern and release discipline. | Promote to FIX if a publish failure recurs on two consecutive release attempts with the same root cause. |
-| **22 — doc-release blocks publish** | DEDUPE/DEFER | This is a cascade from item 12 doc-release drift, now covered by pre-push gating. | Promote to FIX if publish is blocked by doc-release after item 12's local gate has passed on the release branch. |
+| **22 — doc-release blocks publish** | DEDUPE/DEFER | This is a cascade from item 12 doc-release drift, covered by the repository's deterministic gate. | Promote to FIX if publish is blocked by doc-release after item 12's exact-input gate has passed on the release branch. |
 | **23 — markdownlint** | DEFER | Rare and cheap to repair locally. | Promote to FIX if markdownlint failures occur more than twice in a quarter or block a release branch. |
 | **24 — shellcheck** | DEFER | Rare and cheap to repair locally. | Promote to FIX if shellcheck failures occur more than twice in a quarter or block a release branch. |
 | **27 — plugin-load-test manifest** | DEFER | Low failure rate and the gate catches real manifest/plugin-structure drift. | Promote to FIX if plugin-load-test reports a false positive twice in a quarter. |
@@ -54,7 +70,6 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
 | **cli-tests** | Go CLI tests with `-race` and coverage | Test regression in `cli/internal/**` |
-| **static-validation** | Smoke, doc-release, and hooks/docs parity gates | Skill/doc drift slipping past pre-push |
+| **static-validation** | Smoke, doc-release, and hooks/docs parity gates | Skill/doc drift absent from the candidate receipt |
 | **retrieval-bench** | Synthetic + live corpus retrieval precision/coverage gates | P@3 < 0.67 or live coverage < 0.80 |
 | **security-toolchain** | Full `security-gate.sh` (semgrep, gosec, gitleaks, trivy, hadolint) | Scanner findings or toolchain install flake |
-

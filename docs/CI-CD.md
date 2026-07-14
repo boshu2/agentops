@@ -1,30 +1,38 @@
 # CI/CD Architecture
 
-AgentOps uses a local push-as-CI gate for routine direct-main work. The release authority for a normal `main` push is the installed local cockpit gate: `.git/hooks/pre-push` chains to `scripts/hooks/pre-push.local`, builds a fresh `ao`, runs the full `go test ./... -race -shuffle=on -count=1` suite for pushes to `main`, then serializes the mutable `ao gate check --fast` and head-bound pawl checks. GitHub Actions remain useful telemetry and a tag/PR/manual backstop; they are not the routine release gate for direct-main pushes.
+AgentOps produces candidate-bound deterministic evidence and one immutable
+fresh-context Validate verdict. It does not choose or control Git delivery.
+Repositories own delivery policy for local and cloud agents. A repository may
+use direct push, a PR, hosted CI, or another adapter, and may select its own
+deterministic checks at that boundary without running another semantic review.
 
-Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+Release tag pushes run a full, non-path-filtered deterministic repository CI
+suite for the exact tagged SHA. That suite does not create or replace
+Validate's semantic verdict. Releases are automated through GoReleaser with
+SBOM generation and SLSA provenance attestation.
 
-## Live Main-Push Path
+## Product and Delivery Boundary
 
 ```text
-git push origin HEAD:main
-  -> .git/hooks/pre-push
-  -> scripts/hooks/pre-push.local
-  -> go build ./...
-  -> go test ./... -race -shuffle=on -count=1
-  -> acquire host-local lock for mutable gate/provenance/pawl surfaces
-  -> ao gate check --fast
-  -> scripts/check-pawl-pre-push.sh
-  -> remote main fast-forward
+Discovery -> Crank -> frozen candidate
+  -> deterministic evidence for the exact candidate
+  -> one fresh-context Validate verdict
+  -> one Learn receipt
+  -> repository-selected delivery adapter
+  -> exact remote identity record
 ```
 
-The tracked `.githooks/` directory is legacy `bd` hook plumbing. It is inert for the current AgentOps cockpit gate: Git uses `.git/hooks` unless `core.hooksPath` says otherwise, and `scripts/install-pre-push-gate.sh` installs/chains the live gate in the shared `.git/hooks` directory.
+Hooks and CI jobs are repository adapters, not AgentOps lifecycle authority. A
+fast deterministic hook is allowed when a repository wants one. Model review,
+tracker closure, delivery queues, and full validation do not belong in that
+hook. Exact-input receipts may be reused only when candidate, command, registry,
+toolchain, and environment identities match.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Backstop telemetry for routine `main`; authoritative blocking gate for release tags, PRs, and manual validation; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
+| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Repository CI policy and telemetry; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Stale Issues | `stale.yml` | Weekly Monday 9am UTC | Auto-mark/close inactive issues and PRs |
@@ -109,7 +117,7 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ### The `summary` Aggregator Pattern
 
-The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the rollup target for any required check on tags/PRs/manual dispatch — only `summary` needs to be required, not every individual job. Note: under the push-to-main model (ag-qidx) branch protection is **off**, so on routine `main` pushes the authoritative release gate is the local pre-push Go gate (`ao gate check`); `validate.yml`/`summary` is a CI backstop on tags, PRs, and manual dispatch, not a required main-push gate.
+The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the rollup target for any required check on tags/PRs/manual dispatch — only `summary` needs to be required, not every individual job. Whether `summary` is required is repository policy. It never substitutes for or changes the author-distinct semantic verdict.
 
 Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
 
@@ -151,7 +159,8 @@ Deferred CI hardening decisions for items 1, 7, 13, 14, 21, 22, 23, 24, 27, 30, 
 
 ### Blocking Gates (all others)
 
-Every other job is blocking. If any of these fail, `summary` exits non-zero and the PR/push is rejected.
+Every other job is blocking for workflows that the repository configures to
+require `summary`. If any fails, `summary` exits non-zero.
 
 ## What Breaks CI
 
@@ -173,7 +182,7 @@ Consolidated checklist of rules enforced by the pipeline:
 
 ### scripts/ci-local-release.sh
 
-The local CI gate mirrors the remote pipeline and runs in 7 phases:
+The local CI bundle can reproduce the remote deterministic pipeline in 7 phases:
 
 | Phase | Description | Parallelism |
 |-------|-------------|-------------|
@@ -200,9 +209,10 @@ scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavail
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
 When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with SIL/VIL pass and HIL pass or waiver.
 
-### Minimum Checks Before Any Push
+### Minimum Focused Checks
 
-From CLAUDE.md -- the bare minimum before pushing:
+Select the commands that cover the changed surface and record them against the
+exact candidate. Repository policy may run broader checks before delivery:
 
 ```bash
 bash skills/heal-skill/scripts/heal.sh --strict   # Skill integrity
@@ -238,24 +248,20 @@ One CI check is intentionally **not** wired into the local gate:
 |--------|--------|
 | `validate-learning-coherence.sh` | Fails on pre-existing frontmatter-only learning files; needs repo cleanup before local enforcement |
 
-## Hookless by default - local gate is the release authority
+## Hookless by default
 
-AgentOps 3.0 ships **zero runtime hooks by default**. Repository contributors can
-opt into the local cockpit gate by running `scripts/install-pre-push-gate.sh`,
-which installs the current gate into the shared `.git/hooks` directory for the
-main checkout and linked worktrees. What a session hook used to enforce
-implicitly is now enforced by explicit local commands and this installed
-pre-push chain, primarily `ao gate check --fast`, the push-to-main full race
-suite, and the pawl pre-push check. GitHub Actions remain available as manual,
-PR, and release-tag backstops, but they are not the routine release authority.
-The workflow is guided by skills plus the `ao` CLI; context flows through explicit
-channels (`ao inject` / context packets through ports), not hook side effects.
+AgentOps 3.0 ships **zero runtime hooks by default**. Explicit commands produce
+the candidate's evidence before Validate. A consumer repository may install a
+small deterministic hook or rely on external CI, but that adapter owns only its
+repository policy. It must not invoke a model, mutate the semantic verdict,
+close tracker work, or replay an unchanged full suite. The workflow is guided by
+skills plus the `ao` CLI; context flows through explicit channels, not hook side
+effects.
 
-If you want a bounded gate of your own (block a dangerous operation, bootstrap a
-session, run a parity check), author it with the `hooks-authoring` skill. Do not
-infer live gate behavior from tracked `.githooks/`; use `git config --get
-core.hooksPath` and `scripts/install-pre-push-gate.sh` to inspect or refresh the
-actual hook chain.
+If you want a bounded deterministic hook of your own, author it with the
+`hooks-authoring` skill and keep its authority in the repository that installs
+it. Do not infer live behavior from tracked examples; inspect the repository's
+actual Git and CI configuration.
 
 ## Security Gate
 

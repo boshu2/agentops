@@ -6,8 +6,9 @@ Run bounded autonomous improvement cycles for AgentOps without relying on
 session-only prompt policy. Each cycle is one turn of the
 [operating loop](docs/architecture/operating-loop.md): shape BDD-shaped intent,
 slice it vertically through behavior, write the first failing test, implement the
-smallest change that flips it green, prove acceptance against the bead, push when
-the slice is ready to land, and ratchet evidence and learnings. The loop is the
+smallest change that flips it green, freeze one candidate, prove facts once,
+obtain one immutable fresh-context verdict, and Learn once. Repository-owned
+delivery follows as a separate local or cloud transition. The loop is the
 primitive — no artifact is produced unless it advances behavior toward acceptance.
 
 ## Mutable Scope
@@ -59,16 +60,15 @@ One bead-backed vertical slice, shaped per the operating loop:
 
 Per slice: claim or create the bead, write the first failing test, make the
 smallest change that flips it green, refactor under green as a separate commit,
-record evidence into the bead, run the relevant local gates, update/close the
-bead, commit, rebase, push, and verify the remote gate when the slice is intended
-to land. A slice that touches `cli/internal/domain/` must preserve the
+run targeted deterministic checks, commit and freeze the complete candidate,
+obtain one author-distinct Validate verdict, and record Learn. The repository's
+delivery adapter then publishes or merges the same candidate and records remote
+identity. A slice that touches `cli/internal/domain/` must preserve the
 no-import-from-`internal/*` invariant; a slice that touches a port writes its
 first failing test against the port interface, not an adapter internal.
 
 ## Validation Commands
 
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go run -tags legacy ./cmd/ao autodev validate --file ../PROGRAM.md --json` — the `autodev` command surface is archived behind the `legacy` build tag; the shipped spine binary does not carry it
-- `cd cli && env -u AGENTOPS_RPI_RUNTIME go test -tags legacy ./cmd/ao ./internal/autodev`
 - `cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./internal/domain/... ./internal/ports/... ./internal/adapters/...`
 - `env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict`
 - `bash scripts/check-worktree-disposition.sh`
@@ -138,9 +138,10 @@ two or more slices.
   is still untouched; every rollback path is reachable. Activity logs do not close
   beads — acceptance evidence does.
 - The active bead is closed or updated with concrete remaining blockers.
-- The relevant validation bundle is green, including the fast pre-push gate for
-  landed changes.
-- The worktree is clean, pushed, and up to date with origin for landed changes.
+- The selected deterministic bundle is green for the exact frozen candidate and
+  one independent Validate verdict is recorded.
+- Learn is recorded once; if delivery is requested, the repository adapter has
+  verified the exact remote identity.
 - Every foreign worktree is marked merged, preserved, exported, or deleted.
 - Evidence is recorded in the bead and `.agents/ratchet/`; learnings are promoted
   only if they cleared the promotion ratchet bar.

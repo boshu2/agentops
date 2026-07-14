@@ -4,14 +4,17 @@ If you're new to this repository, this guide gives you a practical mental model,
 
 ## What this repo is
 
-AgentOps is the **operational layer for coding agents**: a skills + CLI system that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. AgentOps 3.0 is hookless by default; this repo uses the local cockpit gate as routine release authority, with CI as an optional/manual backstop.
+AgentOps is the **operational layer for coding agents**: a skills + CLI system
+that provides bookkeeping, validation, primitives, and flows so sessions
+compound instead of restarting from zero. AgentOps 3.0 is hookless by default;
+the consumer repository owns its Git and CI delivery policy.
 
 At a high level:
 
 1. Shape behavior through Discovery (`/discovery`, `/plan`, and `/premortem` when risk warrants it)
 2. Execute small vertical slices through Crank (`/implement` or `/crank`)
 3. Judge each completed slice through fresh-context `/validate`
-4. Route catches and plan impact through `/learn`, with `/postmortem` as the terminal-review compatibility entry point
+4. Route catches and plan impact through `/learn`, with `/postmortem` available afterward for an explicit causal question
 
 See also:
 
@@ -30,7 +33,7 @@ Think in four layers:
 1. **Product/docs layer** — `docs/` + selected repo-root entrypoints such as `README.md`, `CHANGELOG.md`, `GOALS.md`, and `PRODUCT.md`
 2. **Skills layer** — `skills/`, checked-in `skills-codex/`, and `skills-codex-overrides/` (`SKILL.md` contracts + per-skill scripts/references + Codex-only tailoring)
 3. **CLI layer** — `cli/` (`cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`)
-4. **Validation layer** — `scripts/`, `tests/`, the local cockpit gate, and `.github/workflows/validate.yml` as an optional/manual backstop
+4. **Evidence layer** — deterministic `scripts/` and `tests/`, immutable Validate verdicts, and repository-selected CI
 
 ## Source-of-truth precedence
 
@@ -83,7 +86,8 @@ The normal explicit request sequence is:
 
 Validation completion and Git delivery are separate. Your repository may use a
 direct push, a PR, its own CI, or another delivery adapter after AgentOps has
-recorded the verdict.
+recorded the immutable fresh-context verdict and Learn receipt. This is the
+same for a local agent and a cloud agent.
 
 ### 3) Issue tracking uses br, not bd
 
@@ -98,7 +102,10 @@ Do not use `bd` or Dolt for **this repo's** tracking — `br` is AgentOps' own t
 
 ### 4) Hooks are opt-in, not a default
 
-AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session boundaries. This repo uses the local cockpit gate as the routine gate, while CI (`.github/workflows/validate.yml`) is an optional/manual backstop. If you want a bounded local gate of your own, author one with the `hooks-authoring` skill — AgentOps does not ship one.
+AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session
+boundaries. If a repository wants a bounded deterministic hook, its owner can
+author one with the `hooks-authoring` skill. It remains repository delivery
+policy and cannot perform semantic validation.
 
 ### 5) CLI docs are generated, not hand-maintained
 
@@ -134,10 +141,12 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 
 ## Practical tips
 
-- Run the local gate before pushing: `ao gate check --fast --scope head` (Go registry; smart routing checks only what changed). Legacy bash escape hatch: `AGENTOPS_GATE_BASH=1` → `scripts/pre-push-gate.sh --fast`.
+- Run the focused deterministic checks selected by your changed surface and
+  bind them to the frozen candidate. Your repository—not AgentOps—decides
+  whether to use direct push, a PR, a hook, or external CI.
 - Use a **git worktree** per bead when the canonical checkout is shared — see `AGENTS-RUNTIME.md`.
 - Trust runtime files over narrative docs when there is a mismatch.
-- Keep changes small and verify with local gates before pushing.
+- Keep changes small, freeze one candidate, and retain exact-input evidence.
 - Treat `.agents/` as a first-class part of the system behavior.
 - Treat Codex as a first-class runtime: when a skill change affects Codex UX or execution style, inspect `skills-codex-overrides/`, update `skills-codex-overrides/catalog.json` if treatment changes, update the checked-in `skills-codex/` copy when needed, and run the Codex validation scripts.
 - If you touch command surfaces or skill contracts, expect related parity checks to fail until updated.

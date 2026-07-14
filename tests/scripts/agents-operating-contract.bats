@@ -19,8 +19,10 @@
     "**Build.**" \
     "**Freeze and prove.**" \
     "**Learn, deliver, verify, report.**" \
+    "Discovery, Crank, Validate, and Learn are the four lifecycle umbrellas." \
+    "Delivery is repository-owned" \
     "NOTE, REPAIR, REPLAN, HOLD, or ANDON" \
-    "docs/contracts/pawls.md" \
+    "skills/rpi/references/pull-flow-governor.md" \
     "docs/contracts/repo-execution-profile.md" \
     "docs/architecture/operating-loop.md" \
     "docs/agent-workflow-reference.md" \

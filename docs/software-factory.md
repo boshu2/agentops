@@ -1,122 +1,77 @@
 # Software Factory Surface
 
-Publicly, AgentOps is the operational layer for coding agents. This document
-names the operator surface and software-factory mechanics beneath that public
-story so users do not have to infer them from skills, hooks, CLI commands, and
-internal artifacts.
+AgentOps is a software-factory operating contract for coding agents. It turns
+accepted intent into independently judged evidence while keeping runtimes,
+trackers, and repository delivery replaceable.
 
-## Thesis
+## Four umbrellas
 
-AgentOps gives coding agents four things by default:
+| Umbrella | Factory role | Output |
+|---|---|---|
+| Discovery | Orchestrator shapes behavior and consumes Premortem when needed | accepted plan and tranche packet |
+| Crank | One writer implements one bounded tranche | frozen candidate and deterministic receipts |
+| Validate | A fresh author-distinct context judges the complete claim set once | immutable PASS or FAIL verdict |
+| Learn | The orchestrator records the smallest useful consequence | no-change, plan-impact, or terminal receipt |
 
-- bookkeeping
-- validation
-- primitives
-- flows
+Postmortem is optional after Learn and answers an explicit causal question. It
+is not a fifth lifecycle gate.
 
-This page explains the operator surface beneath that promise. Internally,
-AgentOps is best understood as a **software-factory control plane**.
+## Roles and runtime variants
 
-The environment carries:
+The role split is orchestrator, implementer, and validator. One model can fill
+all three roles only through separate contexts; the candidate's author cannot
+be its validator. One fresh validator is the default. A council or multiple
+model families are explicit higher-rigor strategies.
 
-- bounded briefing and context assembly
-- tracked planning and scoped execution
-- validation gates and ratchet checkpoints
-- bookkeeping and flywheel closure between sessions
-- isolated work lanes for long-running or parallel work
+Native Codex, another local agent, NTM-managed panes, managed agents, and cloud
+workers all run the same loop. Runtime adapters may provide process durability,
+mailboxes, or isolation; they do not change role authority or lifecycle state.
 
-The workers remain replaceable. The environment carries continuity.
+## CLI boundary
 
-This follows the repo's stateful-environment/stateless-agents theory and its
-own lifecycle/flywheel contracts: briefings and runtime state are the operator
-surface; packets, chunks, topics, and builders are substrate.
+The final `ao` CLI is a deterministic transaction kernel and flight recorder.
+It may pull one tracked leaf, freeze candidate identity, run factual checks,
+record an external verdict, reduce Learn bookkeeping, record delivery facts,
+and close a report after remote verification. It does not decide intent, drive
+a model, issue semantic judgment, choose Git policy, or operate a merge queue.
 
-## Runtime Variants
+The current executable still contains transitional commands and build profiles.
+They are removed through exact same-owner K, CLI, and F leaves; this document
+does not treat those leftovers as product variants.
 
-AgentOps 3.0 is **hookless**: the factory runs identically on every runtime
-(Claude Code, Codex, Cursor, OpenCode) because it does not depend on any
-harness-specific hook surface. Workflow is guided by skills + the `ao` CLI, and
-The local pre-push Go gate (`ao gate check`) is the routine release authority (CI is a backstop). The operator lane is the same everywhere:
+## Repository-owned delivery
 
-```bash
-/rpi "fix auth startup"            # in-session, any harness
-# the RPI CLI engine was removed in 3.0 -- the /rpi skill above is the live in-session path, driving the seven-move operating loop
-```
+After Validate and Learn, the consumer repository chooses direct push, a PR,
+hosted CI, a dedicated merger, or another adapter. The choice is identical for
+local and cloud agents. Delivery consumes proof but cannot upgrade it. AgentOps
+records the adapter, target, result, and remote identity.
 
-What used to be hook responsibilities are now explicit, pulled surfaces:
+## Concurrency
 
-| Concern | Hookless surface |
-|---------|------------------|
-| Startup context | `ao knowledge brief` / `ao context assemble` (pulled, not injected on every event) |
-| Validation gates | CI (`.github/workflows/validate.yml`) + skill-level checks run in-band |
-| Code quality | `cd cli && make test`, `go vet`, complexity budget — enforced by CI |
-| Flywheel closure | `ao flywheel close-loop` / `/retro` / `/curate --mode=forge` at session close |
-| Execution discipline | Execution-packet `next_action` + skill instructions |
+One writer and one active leaf are the default. An explicitly requested swarm
+may parallelize read-only research. Concurrent write lanes require separate
+worktrees, independently checked disjoint manifests, one owner per lane, and a
+lead-owned integration order.
 
-Both lanes run **in session** because people use Codex or they use Claude
-Code — neither relies on hooks. Running the same loop **out of session**
-(always-on, scheduled, unattended) is a separate concern AgentOps delegates to
-an orchestration substrate; the reference is NTM + MCP + managed-agents. AgentOps 3.0 ships
-no daemon, scheduler, or overnight runner of its own — those surfaces were
-deleted (see [AgentOps 3.0 north star](3.0.md)).
+## Learning boundary
 
-## Surface Map
+Learn runs once in the orchestrator's existing context. A repeated defect may
+become a proposed check only after two distinct objectives plus runnable
+positives, negative controls, shadow evidence, an owner, rollback, and expiry.
+Pattern mining and promotion stay off the tranche critical path.
 
-| Layer | Purpose | Primary surfaces |
-|------|---------|------------------|
-| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi` (drives the seven-move operating loop; the old RPI CLI engine was removed in 3.0), NTM + MCP Agent Mail substrate for out-of-session runs |
-| Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
-| Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents) — not an AgentOps surface |
-| Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
-| Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/curate --mode=forge` |
-| Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |
-| Substrate | Retrieval, provenance, packetization, and promotion machinery | `.agents/packets/`, `.agents/topics/`, `.agents/briefings/`, `.agents/findings/`, builder logic |
-
-## Enforcement — No Hooks Required
-
-AgentOps 3.0 ships **zero hooks**. The factory's design rules are enforced by
-explicit, pulled surfaces rather than automatic lifecycle scripts:
-
-- **Validation gates** — CI (`.github/workflows/validate.yml`) is the
-  authoritative gate; skills run their own checks in-band before claiming work
-  complete.
-- **Ratchet checkpoints** — `ao flywheel close-loop` / `/retro` / `/curate --mode=forge`
-  persist learnings at session close.
-- **Execution discipline** — execution-packet `next_action` and skill
-  instructions keep the agent producing artifacts instead of stalling.
-- **Code quality** — `cd cli && make test`, `go vet`, and the complexity budget
-  are enforced by CI on every push.
-
-Operators who *want* runtime hooks can author their own with the
-`hooks-authoring` skill — they are opt-in and not part of the default product
-surface.
-
-## Why This Surface Exists
-
-The factory framing matters because the repo already has the hard parts:
-
-- RPI provides the conveyor belt.
-- Context packets and briefings provide bounded work orders.
-- The flywheel provides bookkeeping and closure between sessions.
-- Codex lifecycle commands provide explicit runtime boundaries where hooks do
-  not exist.
-
-Without an explicit operator lane, users see a powerful collection of
-primitives. With it, they see one product surface.
-
-## Design Rules
+## Design rules
 
 <!-- agentops:claim:AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS -->
 - Prefer briefings over giant startup dumps.
 - Keep substrate and operator surfaces distinct.
 - Let external validation outrank self-report.
 - Treat thin topics as discovery-only until evidence improves.
-- Keep `compile` scoped to hygiene, not full operator-surface activation.
+- Keep deterministic mechanisms separate from semantic judgment.
 
-## Related Docs
+## Related docs
 
-- [How It Works](how-it-works.md)
+- [Operating Loop](architecture/operating-loop.md)
+- [Agent Workflow Reference](agent-workflow-reference.md)
+- [Go CLI Architecture Guide](architecture/go-cli-architecture-guide.md)
 - [Context Packet](context-packet.md)
-- [Knowledge Flywheel](knowledge-flywheel.md)
-- [Session Lifecycle](workflows/session-lifecycle.md)
-- [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)
