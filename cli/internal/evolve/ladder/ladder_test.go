@@ -4,9 +4,14 @@ package ladder
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 // fakeBeadRunner is a test double implementing BeadRunner.
@@ -42,6 +47,130 @@ func (f *fakeBeadRunner) Show(ctx context.Context, id string) (Bead, error) {
 
 func (f *fakeBeadRunner) InProgress(ctx context.Context) ([]Bead, error) {
 	return f.InProgressList, f.InProgressErr
+}
+
+func TestEvolveNextWorkBDUsesResolvedTrackerContext(t *testing.T) {
+	for _, tracker := range []string{trackerresolve.BR, trackerresolve.BD} {
+		t.Run(tracker+" canonical process context and argv", func(t *testing.T) {
+			root := t.TempDir()
+			binary := filepath.Join(t.TempDir(), tracker)
+			tracePath := filepath.Join(t.TempDir(), "trace")
+			script := `#!/bin/sh
+printf 'pwd=%s|beads=%s|argv=%s\n' "$PWD" "${BEADS_DIR-<unset>}" "$*" >> "$TRACKER_TRACE"
+case "${1:-}" in
+  show) printf '{"id":"ag-1"}\n' ;;
+  *) printf '[]\n' ;;
+esac
+`
+			if err := os.WriteFile(binary, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			env := []string{
+				"AGENTOPS_TRACKER=" + tracker,
+				"BEADS_DIR=" + filepath.Join(t.TempDir(), "ambient-ledger"),
+				"TRACKER_TRACE=" + tracePath,
+			}
+			resolution, err := trackerresolve.ResolveWithLookPath(root, env, func(string) (string, error) {
+				return binary, nil
+			})
+			if err != nil {
+				t.Fatalf("resolve tracker: %v", err)
+			}
+			runner := ExecBeadRunner{Resolution: resolution}
+			if _, err := runner.Ready(context.Background()); err != nil {
+				t.Fatalf("Ready: %v", err)
+			}
+			if _, err := runner.ReadyByType(context.Background(), "bug"); err != nil {
+				t.Fatalf("ReadyByType: %v", err)
+			}
+			if _, err := runner.Show(context.Background(), "ag-1"); err != nil {
+				t.Fatalf("Show: %v", err)
+			}
+			if _, err := runner.InProgress(context.Background()); err != nil {
+				t.Fatalf("InProgress: %v", err)
+			}
+
+			physicalWorkDir, err := filepath.EvalSymlinks(resolution.WorkDir)
+			if err != nil {
+				t.Fatalf("physical work dir: %v", err)
+			}
+			wantBeads := "<unset>"
+			for _, entry := range resolution.ChildEnv {
+				if strings.HasPrefix(entry, "BEADS_DIR=") {
+					wantBeads = strings.TrimPrefix(entry, "BEADS_DIR=")
+				}
+			}
+			data, err := os.ReadFile(tracePath)
+			if err != nil {
+				t.Fatalf("read trace: %v", err)
+			}
+			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+			wantArgv := []string{
+				"ready --json",
+				"ready --json --type=bug",
+				"show ag-1 --json",
+				"list --status=in_progress --json",
+			}
+			if len(lines) != len(wantArgv) {
+				t.Fatalf("trace lines = %q, want %d", lines, len(wantArgv))
+			}
+			for i, argv := range wantArgv {
+				want := "pwd=" + physicalWorkDir + "|beads=" + wantBeads + "|argv=" + argv
+				if lines[i] != want {
+					t.Fatalf("trace[%d] = %q, want %q", i, lines[i], want)
+				}
+			}
+		})
+	}
+
+	t.Run("typed exit", func(t *testing.T) {
+		binary := filepath.Join(t.TempDir(), "bd")
+		if err := os.WriteFile(binary, []byte("#!/bin/sh\nexit 23\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		resolution, err := trackerresolve.ResolveWithLookPath(
+			t.TempDir(),
+			[]string{"AGENTOPS_TRACKER=bd"},
+			func(string) (string, error) { return binary, nil },
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = (ExecBeadRunner{Resolution: resolution}).Ready(context.Background())
+		var exitErr *trackerexec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatalf("Ready error = %T %v, want typed tracker exit", err, err)
+		}
+		if exitErr.ExitCode() != 23 {
+			t.Fatalf("exit code = %d, want 23", exitErr.ExitCode())
+		}
+	})
+
+	t.Run("pre-canceled context prevents launch", func(t *testing.T) {
+		launchPath := filepath.Join(t.TempDir(), "launched")
+		binary := filepath.Join(t.TempDir(), "br")
+		script := "#!/bin/sh\nprintf launched > \"$LAUNCH_PATH\"\nprintf '[]\\n'\n"
+		if err := os.WriteFile(binary, []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		resolution, err := trackerresolve.ResolveWithLookPath(
+			t.TempDir(),
+			[]string{"AGENTOPS_TRACKER=br", "LAUNCH_PATH=" + launchPath},
+			func(string) (string, error) { return binary, nil },
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		_, err = (ExecBeadRunner{Resolution: resolution}).Ready(ctx)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Ready error = %T %v, want context cancellation", err, err)
+		}
+		if _, statErr := os.Stat(launchPath); !os.IsNotExist(statErr) {
+			t.Fatalf("pre-canceled runner launched tracker: %v", statErr)
+		}
+	})
 }
 
 // fakeGrep returns canned hits per pattern.

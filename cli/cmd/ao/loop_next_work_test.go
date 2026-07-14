@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/evolve/ladder"
+	"github.com/spf13/cobra"
 )
 
 // fakeBeadRunner is a test double implementing ladder.BeadRunner.
@@ -62,6 +64,105 @@ func withFakeNextWorkRunners(t *testing.T, br ladder.BeadRunner, gr ladder.GrepR
 		evolveNextWorkRunnerOverride = prevBR
 		evolveNextWorkGrepOverride = prevGR
 	})
+}
+
+func TestLoopNextWorkUsesResolvedTrackerContext(t *testing.T) {
+	root := t.TempDir()
+	chdirTo(t, root)
+	binDir := t.TempDir()
+	tracePath := filepath.Join(t.TempDir(), "tracker.trace")
+	script := `#!/bin/sh
+printf 'binary=%s|pwd=%s|beads=%s|argv=%s\n' "${0##*/}" "$(pwd -P)" "${BEADS_DIR-<unset>}" "$*" >> "$TRACKER_TRACE"
+printf '[{"id":"ag-1","title":"small change","description":"change cli/x.go acceptance: then","issue_type":"task","status":"ready"}]\n'
+`
+	for _, tracker := range []string{"br", "bd"} {
+		if err := os.WriteFile(filepath.Join(binDir, tracker), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	ambientLedger := filepath.Join(t.TempDir(), "ambient-ledger")
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("BEADS_DIR", ambientLedger)
+	t.Setenv("TRACKER_TRACE", tracePath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
+	oldLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = oldLookPath })
+
+	oldMode := evolveNextWorkMode
+	oldInclude := evolveNextWorkIncludeOperator
+	oldJSON := evolveNextWorkJSON
+	oldBinary := evolveNextWorkBDBinary
+	oldRunner := evolveNextWorkRunnerOverride
+	oldGrep := evolveNextWorkGrepOverride
+	oldClock := evolveNextWorkClock
+	evolveNextWorkMode = loopModeBurst
+	evolveNextWorkIncludeOperator = false
+	evolveNextWorkJSON = true
+	evolveNextWorkBDBinary = ""
+	evolveNextWorkRunnerOverride = nil
+	evolveNextWorkGrepOverride = fakeGrep{}
+	evolveNextWorkClock = func() time.Time { return time.Unix(1_700_000_000, 0).UTC() }
+	t.Cleanup(func() {
+		evolveNextWorkMode = oldMode
+		evolveNextWorkIncludeOperator = oldInclude
+		evolveNextWorkJSON = oldJSON
+		evolveNextWorkBDBinary = oldBinary
+		evolveNextWorkRunnerOverride = oldRunner
+		evolveNextWorkGrepOverride = oldGrep
+		evolveNextWorkClock = oldClock
+	})
+
+	run := func(ctx context.Context) error {
+		cmd := &cobra.Command{}
+		cmd.SetContext(ctx)
+		var output strings.Builder
+		cmd.SetOut(&output)
+		cmd.SetErr(&output)
+		return runLoopNextWork(cmd, nil)
+	}
+	physicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run(context.Background()); err != nil {
+		t.Fatalf("run with selected BR: %v", err)
+	}
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read BR trace: %v", err)
+	}
+	wantBR := "binary=br|pwd=" + physicalRoot + "|beads=" + ambientLedger + "|argv=ready --json"
+	if got := strings.TrimSpace(string(data)); got != wantBR {
+		t.Fatalf("BR trace = %q, want %q", got, wantBR)
+	}
+
+	if err := os.Remove(tracePath); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := run(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("pre-canceled run error = %T %v, want context cancellation", err, err)
+	}
+	if _, err := os.Stat(tracePath); !os.IsNotExist(err) {
+		t.Fatalf("pre-canceled run launched tracker: %v", err)
+	}
+
+	evolveNextWorkBDBinary = filepath.Join(binDir, "bd")
+	if err := run(context.Background()); err != nil {
+		t.Fatalf("run with --bd-binary override: %v", err)
+	}
+	data, err = os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read BD trace: %v", err)
+	}
+	wantBD := "binary=bd|pwd=" + physicalRoot + "|beads=<unset>|argv=ready --json"
+	if got := strings.TrimSpace(string(data)); got != wantBD {
+		t.Fatalf("BD override trace = %q, want %q", got, wantBD)
+	}
 }
 
 // withFixedNextWorkClock pins the timestamp clock.
