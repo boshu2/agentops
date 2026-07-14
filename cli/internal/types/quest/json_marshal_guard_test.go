@@ -53,6 +53,11 @@ func findSwallowedJSONMarshalErrors(root string, logf func(string, ...any)) ([]s
 	var sites []swallowSite
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			// Sibling packages under go test ./... may create/delete temp
+			// dirs while we walk; treat disappearance as skip, not fail.
+			if os.IsNotExist(err) {
+				return nil
+			}
 			return err
 		}
 		if d.IsDir() {

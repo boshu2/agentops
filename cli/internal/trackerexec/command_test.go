@@ -16,7 +16,13 @@ func TestResolvedCommandAppliesContextWorkDirChildEnvAndStreams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	helperDir, err := os.MkdirTemp(filepath.Join(moduleRoot, "internal"), "trackerexec-contract-")
+	// Park under internal/testdata so go run stays inside the module, but
+	// the quest json-marshal AST walk skips testdata (and ENOENT mid-walk).
+	testdata := filepath.Join(moduleRoot, "internal", "testdata")
+	if err := os.MkdirAll(testdata, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	helperDir, err := os.MkdirTemp(testdata, "trackerexec-contract-")
 	if err != nil {
 		t.Fatal(err)
 	}
