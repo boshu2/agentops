@@ -1,14 +1,114 @@
 package tracker_bd
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
+
+type trackerBDCommandContext interface {
+	CommandContext(context.Context, []string, trackerexec.Streams) *trackerexec.ResolvedCommand
+}
+
+func TestTrackerBDDelegatesProcessConstructionToTrackerexec(t *testing.T) {
+	root := t.TempDir()
+	workDir := filepath.Join(root, "work")
+	if err := os.Mkdir(workDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workDir, err := filepath.EvalSymlinks(workDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updatedWorkDir := filepath.Join(root, "updated-work")
+	if err := os.Mkdir(updatedWorkDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	updatedWorkDir, err = filepath.EvalSymlinks(updatedWorkDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(root, "bd")
+	contents := "#!/bin/sh\n" +
+		"IFS= read -r input\n" +
+		"printf 'cwd=%s\\nmarker=%s\\nargc=%s\\narg1=%s\\narg2=%s\\nstdin=%s\\n' \"$PWD\" \"$MARKER\" \"$#\" \"$1\" \"$2\" \"$input\"\n" +
+		"printf 'stderr=%s\\n' \"$ERR_MARKER\" >&2\n" +
+		"exit 23\n"
+	if err := os.WriteFile(script, []byte(contents), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	resolution := trackerresolve.Resolution{
+		Tracker:  trackerresolve.BD,
+		Binary:   script,
+		WorkDir:  workDir,
+		ChildEnv: []string{"MARKER=canonical", "ERR_MARKER=canonical-error"},
+	}
+	adapter, err := NewResolved(resolution)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commandContext, ok := any(adapter).(trackerBDCommandContext)
+	if !ok {
+		t.Fatal("Adapter.CommandContext does not expose trackerexec's argument and stream contract")
+	}
+	adapter.WorkDir = updatedWorkDir
+	var stdout, stderr bytes.Buffer
+	command := commandContext.CommandContext(
+		context.Background(),
+		[]string{"ready", "--json"},
+		trackerexec.Streams{Stdin: strings.NewReader("input-value\n"), Stdout: &stdout, Stderr: &stderr},
+	)
+	resolution.ChildEnv[0] = "MARKER=mutated-after-construction"
+	err = command.Run()
+	wantOutput := "cwd=" + updatedWorkDir + "\nmarker=canonical\nargc=2\narg1=ready\narg2=--json\nstdin=input-value\n"
+	if stdout.String() != wantOutput {
+		t.Fatalf("tracker_bd command stdout = %q, want %q", stdout.String(), wantOutput)
+	}
+	if stderr.String() != "stderr=canonical-error\n" {
+		t.Fatalf("tracker_bd command stderr = %q, want %q", stderr.String(), "stderr=canonical-error\n")
+	}
+	var exit *trackerexec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 23 {
+		t.Fatalf("tracker_bd command exit mapping = %T %v, want *trackerexec.ExitError(23)", err, err)
+	}
+
+	marker := filepath.Join(root, "canceled-command-ran")
+	cancelScript := filepath.Join(root, "cancel-bd")
+	if err := os.WriteFile(cancelScript, []byte("#!/bin/sh\nprintf ran > \"$1\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cancelAdapter, err := NewResolved(trackerresolve.Resolution{
+		Tracker:  trackerresolve.BD,
+		Binary:   cancelScript,
+		WorkDir:  workDir,
+		ChildEnv: []string{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cancelCommandContext, ok := any(cancelAdapter).(trackerBDCommandContext)
+	if !ok {
+		t.Fatal("Adapter.CommandContext does not expose trackerexec's argument and stream contract")
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := cancelCommandContext.CommandContext(canceled, []string{marker}, trackerexec.Streams{}).Run(); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled tracker_bd command error = %T %v, want context.Canceled", err, err)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("canceled tracker_bd command launched child: stat error %v", err)
+	}
+}
 
 func TestNew_Mode(t *testing.T) {
 	a := New("/tmp/repo")
@@ -17,26 +117,6 @@ func TestNew_Mode(t *testing.T) {
 	}
 	if got := a.Mode(); got != "beads" {
 		t.Errorf("Mode() = %q, want %q", got, "beads")
-	}
-}
-
-func TestTrackerBDResolvedContextUsesCanonicalChildEnvironment(t *testing.T) {
-	resolution := trackerresolve.Resolution{
-		Tracker:  trackerresolve.BD,
-		Binary:   "/fake/bd",
-		WorkDir:  "/repo",
-		ChildEnv: []string{"HOME=/home/test"},
-	}
-	adapter, err := NewResolved(resolution)
-	if err != nil {
-		t.Fatal(err)
-	}
-	command := adapter.commandContext(context.Background(), "ready", "--json")
-	if command.Path != "/fake/bd" || command.Dir != "/repo" {
-		t.Fatalf("command path/dir = %q/%q", command.Path, command.Dir)
-	}
-	if !reflect.DeepEqual(command.Env, resolution.ChildEnv) {
-		t.Fatalf("command env = %v, want %v", command.Env, resolution.ChildEnv)
 	}
 }
 

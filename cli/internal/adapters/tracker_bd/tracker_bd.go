@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -67,6 +68,18 @@ var _ ports.IssueTracker = (*Adapter)(nil)
 
 // Mode reports the backend identity.
 func (a *Adapter) Mode() string { return "beads" }
+
+// CommandContext delegates process construction to the shared trackerexec
+// factory using the adapter's canonical tracker resolution.
+func (a *Adapter) CommandContext(
+	ctx context.Context,
+	args []string,
+	streams trackerexec.Streams,
+) *trackerexec.ResolvedCommand {
+	resolution := a.resolution
+	resolution.WorkDir = a.WorkDir
+	return (trackerexec.Factory{}).Command(ctx, resolution, args, streams)
+}
 
 // bdIssue mirrors the subset of `bd … --json` fields the port exposes. JSON tags
 // match bd's snake_case output.
@@ -289,7 +302,7 @@ func (a *Adapter) CreateIssue(ctx context.Context, epicID, title, body string) (
 // run invokes bd with args, returning stdout. The working directory is
 // a.WorkDir when set. On failure it surfaces bd's stderr in the wrapped error.
 func (a *Adapter) run(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := a.commandContext(ctx, args...)
+	cmd := a.CommandContext(ctx, args, trackerexec.Streams{})
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -299,13 +312,4 @@ func (a *Adapter) run(ctx context.Context, args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("tracker_bd: bd %s: %w", strings.Join(args, " "), err)
 	}
 	return out, nil
-}
-
-func (a *Adapter) commandContext(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, a.resolution.Binary, args...) // #nosec G204 -- binary is constrained by trackerresolve to bd.
-	if a.WorkDir != "" {
-		cmd.Dir = a.WorkDir
-	}
-	cmd.Env = append([]string(nil), a.resolution.ChildEnv...)
-	return cmd
 }
