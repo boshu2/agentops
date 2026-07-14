@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -151,7 +152,7 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 
 	// --collect: populate state
 	if handoffCollect {
-		artifact.State = collectHandoffState(cwd)
+		artifact.State = collectHandoffStateContext(cmd.Context(), cwd)
 		// Populate the continuation pointer from the captured state so a
 		// rehydrating agent knows the next action (ag-8c00a). Don't clobber an
 		// explicitly-passed continuation.
@@ -207,6 +208,10 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 
 // collectHandoffState gathers git and bead state for the handoff artifact.
 func collectHandoffState(cwd string) *handoffState {
+	return collectHandoffStateContext(context.Background(), cwd)
+}
+
+func collectHandoffStateContext(ctx context.Context, cwd string) *handoffState {
 	state := &handoffState{}
 
 	// Git branch
@@ -219,17 +224,17 @@ func collectHandoffState(cwd string) *handoffState {
 	state.ModifiedFiles = modified
 	state.GitDirty = len(modified) > 0
 
-	// Active bead — via br (bd is RETIRED, 2026-06-11; the old `bd current`
-	// silently returned empty since the migration). The claimed/active bead is
-	// the in-progress one in the br ledger. (ag-8c00a)
-	inProgress := runBeadsTracker(cwd, 1500*time.Millisecond, "list", "--status", "in_progress", "--json")
-	if bead := parseInProgressBeadID(inProgress); bead != "" {
-		state.ActiveBead = bead
-	}
+	resolution, resolutionErr := resolveTracker(cwd, os.Environ())
+	if resolutionErr == nil {
+		// The claimed/active bead is the most recently updated in-progress item.
+		inProgress := runResolvedBeadsTracker(ctx, resolution, 1500*time.Millisecond, "list", "--status", "in_progress", "--json")
+		if bead := parseInProgressBeadID(inProgress); bead != "" {
+			state.ActiveBead = bead
+		}
 
-	// Open ready beads count — via br ready --json.
-	readyOut := runBeadsTracker(cwd, 1500*time.Millisecond, "ready", "--json")
-	state.OpenBeadsCount = parseReadyCount(readyOut)
+		readyOut := runResolvedBeadsTracker(ctx, resolution, 1500*time.Millisecond, "ready", "--json")
+		state.OpenBeadsCount = parseReadyCount(readyOut)
+	}
 
 	// Held Agent Mail file reservations — so a rehydrating agent restores its
 	// lock landscape. Best-effort; empty when AM is absent.
@@ -253,18 +258,32 @@ func collectHandoffState(cwd string) *handoffState {
 	return state
 }
 
-// runBeadsTracker runs `br <args>` with the BEADS_DIR env wired (matching the
-// rest of the CLI's br invocation), bounded by timeout, returning trimmed
-// stdout (empty on any error so callers degrade gracefully).
+// runBeadsTracker preserves the background-compatible adapter used by callers
+// that do not own a live Cobra context.
 func runBeadsTracker(cwd string, timeout time.Duration, args ...string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	c := beadsTrackerCommandContextInDir(ctx, cwd, args...)
-	out, err := c.Output()
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return ""
+	}
+	return runResolvedBeadsTracker(context.Background(), resolution, timeout, args...)
+}
+
+func runResolvedBeadsTracker(ctx context.Context, resolution trackerResolution, timeout time.Duration, args ...string) string {
+	out, err := execHandoffTracker(ctx, resolution, timeout, args...)
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+var execHandoffTracker = func(ctx context.Context, resolution trackerResolution, timeout time.Duration, args ...string) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	command := (trackerexec.Factory{}).Command(ctx, resolution, args, trackerexec.Streams{})
+	return command.Output()
 }
 
 // brIssue is the subset of `br list/ready --json` we read.

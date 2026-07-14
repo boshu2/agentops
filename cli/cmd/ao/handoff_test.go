@@ -2,14 +2,165 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/quality"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/spf13/cobra"
 )
+
+func TestHandoffPropagatesCommandContext(t *testing.T) {
+	root := t.TempDir()
+	if output, err := exec.Command("git", "init", "-q", root).CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, output)
+	}
+	nested := filepath.Join(root, "nested")
+	if err := os.Mkdir(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	chdirTo(t, nested)
+	binDir := t.TempDir()
+	tracePath := filepath.Join(t.TempDir(), "tracker.trace")
+	stub := `#!/bin/sh
+printf 'binary=%s|pwd=%s|beads=%s|argv=%s\n' "${0##*/}" "$(pwd -P)" "${BEADS_DIR-<unset>}" "$*" >> "$TRACKER_TRACE"
+case "$1" in
+  list) printf '[{"id":"age-active","status":"in_progress","updated_at":"2026-07-14T11:00:00Z"}]\n' ;;
+  ready) printf '[{"id":"age-ready"}]\n' ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(binDir, "br"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
+	t.Setenv("TRACKER_TRACE", tracePath)
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("BEADS_DIR", filepath.Join(root, "_beads"))
+
+	origGoal, origCollect := handoffGoal, handoffCollect
+	origRPIPhase, origEpicID, origRunID := handoffRPIPhase, handoffEpicID, handoffRunID
+	origDryRun, origNoKill := handoffDryRun, handoffNoKill
+	origResolve := resolveTracker
+	resolveCalls := 0
+	resolveTracker = func(cwd string, env []string) (trackerResolution, error) {
+		resolveCalls++
+		return origResolve(cwd, env)
+	}
+	handoffGoal = ""
+	handoffCollect = true
+	handoffRPIPhase = 0
+	handoffEpicID = ""
+	handoffRunID = ""
+	handoffDryRun = true
+	handoffNoKill = true
+	t.Cleanup(func() {
+		handoffGoal, handoffCollect = origGoal, origCollect
+		handoffRPIPhase, handoffEpicID, handoffRunID = origRPIPhase, origEpicID, origRunID
+		handoffDryRun, handoffNoKill = origDryRun, origNoKill
+		resolveTracker = origResolve
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+	if err := runHandoff(cmd, []string{"preserve caller context"}); err != nil {
+		t.Fatalf("run handoff: %v", err)
+	}
+	if _, err := os.Stat(tracePath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("pre-canceled handoff launched tracker: %v", err)
+	}
+
+	cmd = &cobra.Command{}
+	cmd.SetContext(context.Background())
+	if err := runHandoff(cmd, []string{"preserve caller context"}); err != nil {
+		t.Fatalf("run BR handoff: %v", err)
+	}
+	physicalNested, err := filepath.EvalSymlinks(nested)
+	if err != nil {
+		t.Fatal(err)
+	}
+	physicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	brPrefix := "binary=br|pwd=" + physicalNested + "|beads=" + filepath.Join(root, "_beads") + "|argv="
+	if len(lines) != 2 || lines[0] != brPrefix+"list --status in_progress --json" || lines[1] != brPrefix+"ready --json" {
+		t.Fatalf("BR tracker trace = %q, want one canonical list/ready pair", lines)
+	}
+
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(tracePath); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	if err := runHandoff(cmd, []string{"preserve caller context"}); err != nil {
+		t.Fatalf("run BD handoff: %v", err)
+	}
+	data, err = os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines = strings.Split(strings.TrimSpace(string(data)), "\n")
+	bdPrefix := "binary=bd|pwd=" + physicalRoot + "|beads=<unset>|argv="
+	if len(lines) != 2 || lines[0] != bdPrefix+"list --status in_progress --json" || lines[1] != bdPrefix+"ready --json" {
+		t.Fatalf("BD tracker trace = %q, want one canonical list/ready pair", lines)
+	}
+
+	if err := os.Remove(tracePath); err != nil {
+		t.Fatal(err)
+	}
+	directCmd := &cobra.Command{}
+	if err := runHandoff(directCmd, []string{"context-less direct RunE"}); err != nil {
+		t.Fatalf("direct RunE with nil context: %v", err)
+	}
+	data, err = os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines = strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 2 || lines[0] != bdPrefix+"list --status in_progress --json" || lines[1] != bdPrefix+"ready --json" {
+		t.Fatalf("direct RunE trace = %q, want canonical list/ready", lines)
+	}
+	if resolveCalls != 4 {
+		t.Fatalf("tracker resolutions after four collections = %d, want one per collection", resolveCalls)
+	}
+
+	exitStub := "#!/bin/sh\nexit 23\n"
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(exitStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	resolution, err := resolveTracker(nested, os.Environ())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = execHandoffTracker(context.Background(), resolution, 1500*time.Millisecond, "ready", "--json")
+	var exitErr *trackerexec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+		t.Fatalf("tracker error = %T %v, want *trackerexec.ExitError(23)", err, err)
+	}
+	state := collectHandoffStateContext(context.Background(), nested)
+	if state.ActiveBead != "" || state.OpenBeadsCount != 0 {
+		t.Fatalf("failed tracker must degrade to empty state, got %+v", state)
+	}
+	if resolveCalls != 6 {
+		t.Fatalf("tracker resolutions including typed-exit and degraded collection = %d, want 6", resolveCalls)
+	}
+}
 
 func TestRunHandoff_WritesArtifact(t *testing.T) {
 	dir := t.TempDir()
