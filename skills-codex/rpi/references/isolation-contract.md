@@ -1,88 +1,68 @@
-# Phase Skill Isolation Contract
+# Loop Responsibility And Isolation Contract
 
-How RPI keeps phase skills (`/discovery`, `/crank`, `/validate`, `/learn`) from
-compressing each other's work into one agent context while preserving strict
-delegation and operator visibility.
+RPI preserves typed authority without turning every phase into a new model call.
+The visible orchestrator keeps the lifecycle objective and one run governor.
 
-## Declaration vs enforcement
+## Required boundaries
 
-**Declaration.** [`PRODUCT.md`](../../../PRODUCT.md) operational principle #5
-(two-tier execution) declares that phase skills own their own phase artifacts,
-gates, and internal mechanics. `/rpi` owns the lifecycle objective, phase order,
-and persistent governor; phases own no cross-phase retry or helper policy.
-
-**Enforcement.** This document plus
-[`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh)
-enforce the authored contract by detecting compression patterns in phase-skill
-SKILL.md bodies. Runtime isolation is a separate transport concern: when a
-runtime supports phase-isolated transport, the orchestrator gives a phase runner
-only the lifecycle objective, the bounded execution packet path, and the phase
-skill name. The runner executes that declared phase contract and returns only
-the phase artifact, verdict, and next action.
-
-**Important distinction.** A subagent, daemon job, or spawned process may be a
-transport for a declared skill contract. It must not become a replacement for
-the skill. "Run `/discovery` in an isolated phase context" preserves strict
-delegation. "Skip `/discovery` and have an agent research/plan directly" is
-compression.
-
-The companion [`shared/references/strict-delegation-contract.md`](../../shared/references/strict-delegation-contract.md) gives the human-readable rationale and the canonical anti-pattern catalogue. Read this file for the mechanical contract; read that one for the philosophy.
-
-## Four levers
-
-These are the four mechanical levers available to keep phase contexts bounded.
-They are listed in increasing strength, with the recommended posture last.
-
-| Lever | Description | Mechanical strength |
+| Responsibility | Context rule | Authority |
 |---|---|---|
-| A | Text contract in SKILL.md and this reference | Weak - relies on agent compliance |
-| B | Static lint via `scripts/check-skill-isolation.sh` | Medium - catches authored compression |
-| C | Artifact-only handoff via `.agents/rpi/execution-packet.json` and phase summaries | Strong - limits what crosses phases |
-| D | Phase-isolated skill transport | Strongest - phase context can die after the artifact returns |
+| Discovery | visible orchestrator or thin skill runner | shape the leaf plan and acceptance |
+| Premortem | fresh context, author != judge | admit the exact plan |
+| Crank | visible leaf owner by default | implement 1–3 waves and return targeted facts |
+| Validate | fresh context, author != judge | judge one frozen candidate |
+| Learn | visible orchestrator | copy immutable observations into one receipt |
 
-**Recommended posture: D with A-C always on.** Layered enforcement keeps the
-contract durable when any single lever weakens. Text drifts, lint only sees
-source files, artifact handoffs can be overstuffed, and transport can be
-implemented incorrectly. Together they preserve the narrow waist: phase skill
-contract in, bounded artifact out.
+Fresh context is load-bearing for independent semantic judgment. It is not
+required for deterministic bookkeeping, orchestration, or a direct single-writer
+implementation wave.
 
-## Compression patterns (what NOT to do)
+## Artifact boundary
 
-The lint script (`scripts/check-skill-isolation.sh`) flags the following patterns inside phase-skill SKILL.md bodies (`skills/{rpi,discovery,crank,validation}/SKILL.md`):
+The execution packet carries one ordered receipt index pointing to:
 
-1. **Cross-phase first-person verbs.** Phrases like `I will research`, `I will plan`, `I will crank`, `I will validate` (case-insensitive). A phase skill should not describe itself as doing another phase's work.
-2. **Inline research vocabulary.** Phrases like `let me grep`, `let me read`, `let me search`, `I'll grep`, `I'll read`, `I'll search` (case-insensitive). These signal that the agent intends to inline research-phase work into the current context instead of delegating.
-3. **Phase-skill calling another phase skill.** A `Skill(skill="research")`, `Skill(skill="plan")`, `Skill(skill="crank")`, or `Skill(skill="validate")` callsite inside a phase-skill SKILL.md, **except** for the legitimate orchestration patterns:
-   - `/rpi` legitimately orchestrates `discovery`, `crank`, `validate`, and `learn` (this is its core contract). It should NOT call `research` or `plan` directly — those are discovery's sub-skills.
-   - `/discovery` legitimately orchestrates `research` and `plan`. It should NOT call `crank` or `validation` — those are downstream phases.
-   - `/crank` should NOT call `research`, `plan`, `crank`, or `validation` — phase 2 is sealed.
-   - `/validate` should NOT call `research`, `plan`, `crank`, or `validation` — phase 3 is sealed.
+1. Discovery packet and bound Premortem verdict;
+2. canonical Crank wave checkpoints;
+3. canonical Validate `result.json`; and
+4. canonical `learn-receipt.json`.
 
-### False-positive guard
+Raw reasoning does not cross roles. Neither do four hand-written phase summaries.
+A legacy summary is a link-only compatibility projection and never proof that a
+fresh context existed.
 
-Citations and reference reads are not compression. The lint explicitly excludes:
+## Optional isolated transport
 
-- Markdown reference links: `See [research](../research/SKILL.md)` (lines beginning with `See [`).
-- Reference document reads: `Read references/foo.md` (lines beginning with `Read ` followed by a path).
-- Lines inside fenced code blocks (between triple-backtick fences) — code fences may legitimately quote a `Skill(...)` call as an example without invoking it.
+A runtime may use a subagent, process, or phase runner when a responsibility
+requires fresh context or when the user explicitly requests delegation. The
+transport loads the declared skill, receives only the bounded handoff, and returns
+artifact identity plus next action. It must not replace the skill's contract.
 
-When the lint script needs to evolve, prefer narrowing the trigger over widening the guard — silencing a real compression pattern with an over-broad allowlist defeats the purpose.
+Do not isolate all four responsibilities by default. That multiplies context and
+token cost without improving the two semantic independence boundaries.
 
-## Mechanical enforcement
+## Compression and theater
 
-Three surfaces, layered:
+Invalid compression:
 
-1. **Lint.** [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) walks `skills/{rpi,discovery,crank,validation}/SKILL.md` (or any path passed positionally) and exits non-zero on the first compression pattern. Run with `-q` / `--quiet` to suppress diagnostic output and rely on exit code only. The script ships a `--self-test` mode that injects a known violation into a tmpdir and asserts the lint catches it.
-2. **Artifact handoff.** [`phase-data-contracts.md`](phase-data-contracts.md) defines the bounded files that may cross phase boundaries. Discovery hands Crank an execution packet, Crank hands Validate a phase summary and changed surfaces, Validate hands Learn an immutable verdict, and Learn hands RPI a bounded observation receipt. Raw reasoning does not cross phases.
-3. **Phase-isolated skill transport.** When the runtime can isolate phase execution, RPI should run each phase contract in a fresh phase context and keep the main orchestrator visible. The transport may be a daemon job, a process runner, or a subagent wrapper, but its contract is the same: load the declared phase skill, execute it against the bounded handoff, write the expected artifact, and return only artifact path, verdict, and next action.
+- the plan author self-issues Premortem PASS;
+- the implementation author self-issues Validate PASS;
+- Crank silently changes the admitted plan; or
+- Learn changes the immutable verdict or controls retry/delivery.
+
+Invalid theater:
+
+- fresh models for deterministic Learn/bookkeeping;
+- per-wave Validate/Learn on an unchanged plan;
+- repeated exact-input deterministic checks;
+- fixed counts of phase runners or Markdown summaries; or
+- Swarm/NTM startup for one direct write scope.
+
+`scripts/check-skill-isolation.sh` catches authored cross-role compression in
+entrypoint `SKILL.md` files. It supplements semantic review; it does not prove
+runtime invocation counts.
 
 Cross-references:
-- [`PRODUCT.md`](../../../PRODUCT.md) — declaration (operational principle #5)
-- [`shared/references/strict-delegation-contract.md`](../../shared/references/strict-delegation-contract.md) — companion contract with rationale and anti-pattern examples
-- [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh) — current mechanical enforcement
-- [`phase-data-contracts.md`](phase-data-contracts.md) — artifact-only phase handoff contract
 
-## See also
-
-- [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md) — the 2026-04-19 live compression that motivated the layered enforcement approach
-- [`skills/rpi/references/phase-data-contracts.md`](phase-data-contracts.md) — how phases pass data via filesystem artifacts (the contract isolation depends on)
+- [strict delegation](../../shared/references/strict-delegation-contract.md)
+- [phase data](phase-data-contracts.md)
+- [operating loop](../../../docs/architecture/operating-loop.md)

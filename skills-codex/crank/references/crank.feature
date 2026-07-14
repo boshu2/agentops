@@ -1,6 +1,6 @@
 # Executable spec for the /crank skill — wave execution (BC3 Loop, Move 5).
 # /crank consumes a slice-validation plan and executes one ready wave under a
-# wave-validity hard gate. It dispatches /swarm + /implement, runs deterministic
+# wave-validity hard gate. It uses one direct implementer by default, runs deterministic
 # FIRE acceptance, and returns evidence before any between-wave decision.
 # Hexagon: domain; consumes: beads, implement, swarm; produces: wave evidence.
 
@@ -24,11 +24,17 @@ Feature: Crank executes one conflict-free epic wave
     Then /crank executes Find → Ignite → Reap → Vibe → Escalate
     And it returns DONE, PARTIAL, or BLOCKED evidence before another wave starts
 
-  @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Wave evidence exits Crank before any re-plan
     When a wave reaches its acceptance verdict
-    Then Crank hands the wave evidence to Validate
-    And Crank does not invoke Discovery, Learn, Premortem, or a silent retry
+    Then Crank hands canonical wave evidence to RPI
+    And Crank does not invoke Discovery, Validate, Learn, Premortem, or a silent retry
+
+  Scenario: Intermediate waves avoid semantic round trips
+    Given the admitted tranche has fewer than three waves and remains under 90 minutes
+    And the bound plan inputs and risk are unchanged
+    When targeted wave acceptance passes
+    Then RPI may admit the next sequential Crank wave
+    And Validate and Learn wait until the tranche freezes
 
   Scenario: Orchestrator's own diff-read flags an out-of-boundary slice at acceptance
     Given a slice whose evidence JSON claims PASS and a green <promise>DONE</promise>

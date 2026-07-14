@@ -78,7 +78,9 @@ If ao returns prior plan review findings, include them as context for the counci
 
 ## Step 1b: Check for Product Context
 
-**Skip if `--quick` as a separate pre-processing phase.** In quick mode, the same product context is still loaded inline during review. In non-quick modes, add the dedicated product perspective.
+Quick mode does not create a separate product-review phase. Include product
+context in the fresh judge's bounded packet only when the plan changes product
+behavior or cites `PRODUCT.md`. Deep modes may add a dedicated perspective.
 
 ```bash
 if [ -f PRODUCT.md ]; then
@@ -86,10 +88,12 @@ if [ -f PRODUCT.md ]; then
 fi
 ```
 
-When `PRODUCT.md` exists in the project root AND the user did NOT pass an explicit `--preset` override:
+When `PRODUCT.md` is relevant to the plan and the user did not pass an explicit
+`--preset` override:
 
 1. Read `PRODUCT.md` content and include in the council packet via `context.files`
-2. In `--quick` mode, keep the review inline and require the reviewer to assess user-value, adoption-barriers, and competitive-position directly from `PRODUCT.md`.
+2. In `--quick` mode, the one fresh judge assesses only the product claims in
+   the bounded packet.
 3. In non-quick modes, add a single consolidated `product` perspective to the council invocation:
    ```
    /council --preset=plan-review --perspectives="product" validate <plan-path>
@@ -97,8 +101,8 @@ When `PRODUCT.md` exists in the project root AND the user did NOT pass an explic
    This yields 3 judges total (2 plan-review + 1 product). The product judge covers user-value, adoption-barriers, and competitive-position in a single review.
 4. With `--deep`: 5 judges (4 plan-review + 1 product).
 
-When `PRODUCT.md` exists BUT the user passed an explicit `--preset`: skip product auto-include (user's explicit preset takes precedence).
+When the user passed an explicit `--preset`, it takes precedence.
 
-When `PRODUCT.md` does not exist: proceed unchanged.
+When product context is absent or irrelevant, proceed without it.
 
 > **Tip:** Create `PRODUCT.md` from `docs/PRODUCT-TEMPLATE.md` to enable product-aware plan validation.

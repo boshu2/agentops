@@ -19,12 +19,15 @@ After all phases complete, summarize the entire lifecycle to the user.
 | Learn | <DONE/BLOCKED/PARTIAL> |
 
 **Artifacts:**
-- Discovery: .agents/rpi/phase-1-summary.md
-- Crank: .agents/rpi/phase-2-summary.md
-- Validate: .agents/rpi/phase-3-summary.md
-- Learn: .agents/rpi/phase-4-summary.md
+- Discovery: .agents/rpi/execution-packet.json
+- Crank: <canonical tranche/wave evidence paths from the packet>
+- Validate: <canonical result.json path + digest>
+- Learn: <canonical learn-receipt.json path + digest>
 - Next Work: .agents/rpi/next-work.jsonl
 ```
+
+Legacy phase summaries may be listed only as link-only compatibility
+projections. Do not restate their findings in this report.
 
 ## Learn Section
 

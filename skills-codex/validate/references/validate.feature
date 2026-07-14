@@ -9,6 +9,14 @@ Feature: Validate emits immutable proof only
     Then it emits PASS, WARN, or FAIL with findings and structured observations
     And every observation cites evidence
 
+  Scenario: One bounded tranche receives one semantic review
+    Given one to three low-risk waves passed targeted deterministic acceptance
+    And their complete tranche is frozen at one exact candidate SHA
+    When Validate verifies exact-input receipts and dispatches the fresh judge
+    Then it reruns only missing, stale, suspicious, or invalidated facts
+    And it emits one canonical result.json for the tranche
+    And no intermediate wave received Validate or Learn
+
   Scenario: Consume the persistent run budget before validator dispatch
     Given a request-bound factual receipt is READY
     And the persistent run exposes all four required meters

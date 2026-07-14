@@ -211,5 +211,5 @@ Skills that chain to other skills (e.g., `$rpi` calls `$research`, `$validate` c
 - [references/cli-command-failures-2026-02-26.md](references/cli-command-failures-2026-02-26.md)
 - [references/ralph-loop-contract.md](references/ralph-loop-contract.md)
 - [references/orchestration-as-prompt.md](references/orchestration-as-prompt.md)
-- [references/stale-scope-validation.md](references/stale-scope-validation.md) — planning rule loaded by plan + pre-mortem: re-validate inherited scope against HEAD before acting on deferred beads or handoff docs.
+- [references/stale-scope-validation.md](references/stale-scope-validation.md) — planning rule loaded by plan + premortem: re-validate inherited scope against HEAD before acting on deferred beads or handoff docs.
 - [references/strict-delegation-contract.md](references/strict-delegation-contract.md) — canonical contract loaded by $rpi, $discovery, $validate: strict sub-skill delegation is the default for top-level orchestrators.

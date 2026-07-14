@@ -1,58 +1,37 @@
-# Idempotency and Resume Behavior
+# Idempotency And Resume
 
-## /discovery
+Resume consumes exact-input artifacts; it does not replay phases by habit.
 
-`/discovery` is **idempotent at the step level** — re-running it with the same goal will not duplicate artifacts if prior outputs exist.
+## Discovery
 
-### Step-Level Idempotency
+For the same objective, inspect the canonical execution packet and its ordered
+receipt index:
 
-| Step | Behavior on Re-run |
-|------|--------------------|
-| Brainstorm | **Skipped** if `.agentsbrainstorm/*<goal-slug>*` exists |
-| History search | **Always runs** — ao search is read-only |
-| Research | **Runs again** — research output appends, does not overwrite |
-| Plan | **Runs again** — creates new epic if none open, reuses if open epic matches goal |
-| Premortem | **Runs again** — council always produces a fresh verdict |
+- reuse brainstorm/research/plan artifacts whose objective, acceptance, base,
+  dependencies, write scope, and risk still match;
+- rerun only the earliest step invalidated by new evidence;
+- reuse the bound Premortem verdict while its exact inputs match; and
+- create one fresh Premortem only for a materially changed plan.
 
-### Resume via `/rpi --from=discovery`
+Do not run history search, research, plan, council, or artifact generation merely
+because `/discovery` was invoked again. Do not create a duplicate epic when an
+open tracker item already represents the same accepted behavior.
 
-When `/rpi --from=discovery` is invoked:
-- Discovery runs from Step 1 (brainstorm) regardless of prior progress
-- Step-level skip logic prevents duplicate brainstorm artifacts
-- A new premortem verdict is always produced (council is not cached)
+## Validate
 
-### Epic Deduplication
+A final Validate verdict is immutable and exact-candidate-bound. Resume may
+reuse exact-input factual receipts, but a changed candidate needs affected-claim
+closure and a new final binding. It does not automatically rerun Postmortem,
+Retro, Forge, Vibe, or a council. Learn consumes the one final verdict once.
 
-If `ao beads exec list --type epic --status open` returns an epic matching the current goal, `/plan` reuses it rather than creating a duplicate. This prevents epic proliferation on re-runs.
+## RPI
 
-## /validate
+RPI persists its one run governor and execution packet across invocations.
+`--from=<phase>` is legal only when all earlier canonical receipts resolve and
+still match their inputs. Legacy phase summaries are optional link-only
+projections and are never resume authority.
 
-`/validate` is **NOT idempotent** — each run produces a new immutable verdict.
-That verdict must pass through Learn before the orchestrator chooses any retry
-or re-plan.
-
-### Re-run Behavior
-
-| Step | Behavior on Re-run |
-|------|--------------------|
-| Vibe | **Runs again** — produces new council report |
-| Postmortem | **Runs again** — produces new retrospective |
-| Retro | **Runs again** — may capture duplicate learnings |
-| Forge | **Runs again** — transcript mining is append-only |
-
-### Resume via `/rpi --from=validation`
-
-When `/rpi --from=validation` is invoked:
-- Reads existing `execution-packet.json` for context
-- Does NOT require Phase 1 or Phase 2 to have run in the current session
-- Requires epic-id as argument (or reads from execution-packet)
-
-## /rpi
-
-The `/rpi` orchestrator itself is **stateless** — it does not persist cross-session state. Phase transitions use filesystem artifacts:
-
-- `execution-packet.json` — discovery → crank handoff
-- `phase-*-summary-*.md` — phase completion records
-- `phased-state.json` — complexity and cycle tracking (written but not required for resume)
-
-To resume a partially completed RPI cycle, use `--from=<phase>` with the appropriate epic-id.
+At an incomplete three-wave/90-minute soft boundary, persist the current leaf,
+next failing proof, plan/Premortem identities, wave receipts, and remaining
+governor budget. Resume the same leaf; do not freeze, Validate, Learn, deliver, or
+pull another leaf merely because the boundary was reached.

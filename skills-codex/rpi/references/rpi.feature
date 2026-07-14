@@ -1,8 +1,8 @@
 # Executable spec for the /rpi skill — one turn's lifecycle executor (BC3 Loop).
-# /rpi runs Discovery → Crank → Validate → Learn as strict, non-compressing
-# umbrellas that preserve the lifecycle objective end to end: phases never
-# skip, validation is never bypassed, and context density survives every phase
-# handoff. Hexagon: supporting; consumes: crank, discovery, domain, learn, validate;
+# /rpi preserves the Discovery → Crank → Validate → Learn authority boundaries
+# while batching cheap waves into one bounded proof transaction. Validation is
+# never bypassed, and context density survives each canonical handoff. Hexagon:
+# supporting; consumes: crank, discovery, domain, learn, validate;
 # produces: .agents/rpi/*.md. (soc-qk4b.2)
 
 Feature: RPI runs one turn's lifecycle without skipping moves
@@ -14,30 +14,33 @@ Feature: RPI runs one turn's lifecycle without skipping moves
     Given a goal, bead, or execution packet entering the rpi lifecycle
 
   @covered-by:tests/e2e/rpi-phased-domain.sh
-  Scenario: Phases run in order and never compress
+  Scenario: Typed responsibilities run in order without duplicate theater
     When /rpi executes
-    Then it runs Discovery, then Crank, then Validate, then Learn in order
-    And no phase is skipped or merged into another (strict delegation is on by default)
+    Then Discovery shapes one bounded tranche and Crank runs one to three admitted waves
+    And one frozen tranche runs Validate, then Learn, in order
+    And no typed responsibility or independent verdict is skipped
+    But four handwritten phase summaries are not required
 
   @covered-by:tests/e2e/rpi-phased-domain.sh
   Scenario: Validation cannot be skipped
-    When /rpi reaches the end of Crank
-    Then Validate runs before Learn and before the turn is considered done
+    When /rpi reaches the frozen tranche boundary
+    Then one fresh Validate runs before Learn and before the turn is considered done
     And the lifecycle objective is preserved, not silently dropped at a phase boundary
 
   @covered-by:scripts/validate-workflow-contract.sh
-  Scenario: A material verdict changes the remaining plan before Premortem
-    Given work remains and Learn reports material_change
-    When the orchestrator consumes the Learn receipt
-    Then it changes the remaining plan through Discovery
-    And it runs Premortem on that changed plan before the next Crank wave
+  Scenario: Intermediate waves do not pay semantic proof cost
+    Given a bounded tranche has another admitted low-risk wave
+    And acceptance, dependencies, write scope, and risk are unchanged
+    When the prior wave passes targeted deterministic acceptance
+    Then RPI may invoke Crank for the next sequential wave
+    And it runs no per-wave Validate, Learn, delivery, or duplicate summary
 
   @covered-by:scripts/validate-workflow-contract.sh
-  Scenario: No material delta permits an explicit no-op decision
-    Given work remains and Learn reports no_change
-    When the orchestrator consumes the Learn receipt
-    Then it may retry, continue, stop, or escalate without fabricating a learning
-    And it does not invoke Premortem
+  Scenario: Material plan change earns one new Premortem
+    Given an intermediate wave changes acceptance, dependencies, write scope, or risk
+    When the orchestrator classifies the evidence
+    Then it returns REPLAN through Discovery
+    And one fresh Premortem judges the changed plan before more work
 
   @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Terminal work skips Premortem
@@ -59,7 +62,14 @@ Feature: RPI runs one turn's lifecycle without skipping moves
     And anything else is omitted or linked, not pasted wholesale
 
   @covered-by:tests/e2e/rpi-phased-domain.sh
-  Scenario: Autonomous run produces durable phase artifacts
+  Scenario: Autonomous run produces canonical evidence without duplicate prose
     Given /rpi --auto
     Then the full lifecycle runs without per-phase human approval
-    And it writes phase artifacts under .agents/rpi/*.md
+    And the execution packet indexes canonical Crank evidence, Validate result.json, and learn-receipt.json
+    And any legacy phase summary is a link-only compatibility projection
+
+  Scenario: The bounded tranche stops before runaway execution
+    Given an automatic goal has more aggregate demand
+    When the tranche completes three waves or reaches 90 minutes
+    Then RPI stops pulling new work and records exact resume state
+    And the boundary is PARTIAL rather than HOLD, ANDON, or proof authorization

@@ -53,20 +53,23 @@ Report temporal findings in a separate "Timeline Risks" section.
 
 - **Always for `--deep` reviews** — temporal interrogation is included automatically
 - **On request** via `--temporal` flag for quick reviews
-- **Auto-triggered** when plan has 5+ files or 3+ sequential dependencies
+- **For a named temporal risk** such as a migration cutover, expiring credential,
+  irreversible sequence, or coordination window. File and dependency counts do
+  not select depth by themselves.
 
 ## Between-wave bounded mode
 
-After every admitted Crank wave that leaves remaining work, the orchestrator
-passes the remaining-plan snapshot plus the latest Validate/Learn evidence.
-Interrogate only:
+Do not run temporal interrogation after every wave. Reuse the bound Premortem
+while acceptance, dependencies, write scope, and risk remain unchanged. When a
+wave materially changes one of those inputs, the orchestrator sends the changed
+plan for one fresh Premortem and interrogates only:
 
-1. the next leaf and its exact first failing proof;
-2. write-scope or dependency changes caused by the completed leaf;
-3. new risks or invalidated assumptions cited by Validate/Learn; and
+1. the next wave and its exact first failing proof;
+2. write-scope or dependency changes caused by the completed wave;
+3. new risks or invalidated assumptions in the wave evidence; and
 4. whether the next leaf still has one owner and a safe discard path.
 
-Do not resimulate completed leaves or rerun their deterministic/semantic proof.
+Do not resimulate completed waves or rerun their deterministic/semantic proof.
 Emit one bounded PASS/WARN/FAIL artifact. A first repair may be consolidated;
 a second distinct repair need returns `REPLAN` to the RPI orchestrator.
 
@@ -85,16 +88,8 @@ Temporal findings appear in the premortem report as:
 | Hour 6+ | Migration script not tested on staging data | Rollback needed post-deploy | Run migration on staging clone first |
 ```
 
-## Retro History Correlation
+## Optional history correlation for deep mode
 
-When `.agents/retro/index.jsonl` exists with 2+ entries, load the last 5 retros and check for recurring timeline-phase failures. If a phase (e.g., Hour 4 integration) has caused issues in 2+ prior retros, auto-escalate its severity in the current review.
-
-```bash
-if [ -f .agents/retro/index.jsonl ]; then
-  RETRO_COUNT=$(wc -l < .agents/retro/index.jsonl)
-  if [ "$RETRO_COUNT" -ge 2 ]; then
-    echo "Retro history available — checking for recurring timeline risks"
-    tail -5 .agents/retro/index.jsonl | jq -r '.footguns[]?' 2>/dev/null
-  fi
-fi
-```
+In `--deep` mode only, a cited, directly relevant prior failure may inform the
+review. Do not scan a broad history index on the routine path, and never
+auto-escalate severity solely from recurrence counts.

@@ -1,55 +1,42 @@
 # Team Coordination
 
-Crank executes exactly one ready wave and returns evidence. Trackers are inputs
-to wave selection and identifiers in the result; tracker closeout and repository
-delivery remain caller-owned after Validate and Learn return.
+Crank executes one ready wave of one leaf and returns canonical evidence. The
+leaf owner is the direct implementer by default. Trackers identify the work;
+Crank does not close them or deliver the repository.
 
-## Beads Mode
+## Direct route
 
-1. Read the current wave's ready issues without changing their terminal state.
-2. Create one runtime task per issue and preserve its issue identifier.
-3. Copy declared dependencies into the runtime task graph.
-4. Invoke `/swarm` once for the bounded wave.
+1. Resolve the admitted leaf and exact next failing proof.
+2. Give the current owner the bounded write scope, acceptance, and rollback.
+3. Implement one wave.
+4. Have the lead run targeted deterministic acceptance and commit the accepted
+   wave.
+5. Return the canonical checkpoint and remaining-plan facts to RPI.
 
-Example runtime task:
+Do not create a runtime task, spawn an agent, or invoke Swarm merely to preserve
+a workflow shape.
 
-```text
-TaskCreate(
-  subject="<issue-id>: <issue-title>",
-  description="Implement <issue-id> using /implement. Return acceptance evidence.",
-  activeForm="Implementing <issue-id>"
-)
-```
+## Explicit parallel route
 
-## TaskList Mode
+Use `/swarm` only when the admitted plan proves at least two lanes have disjoint
+source and generated write scopes, separate owners, integration order, and
+discard paths. Each writer uses its own worktree. Any shared migration, schema,
+contract, CLI, registry, or generated surface serializes the lanes.
 
-Use the already-created pending, unblocked tasks and invoke `/swarm` once. The
-same evidence and one-wave return boundary applies.
+## Evidence
 
-## Collect Wave Evidence
+For each direct or admitted parallel result, record:
 
-For every worker result, record:
+- leaf/wave and owner identity;
+- acceptance command, exit status, and exact-input receipt;
+- changed files and integrated SHA;
+- accepted, failed, or blocked status; and
+- whether acceptance, dependencies, write scope, or risk changed.
 
-- issue or task identifier;
-- acceptance command and exit status;
-- changed-file boundary and result artifact;
-- worker status: accepted, failed, or blocked;
-- remaining-work summary.
+`DONE`, `PARTIAL`, and `BLOCKED` describe only the Crank wave. They do not mean
+the leaf is validated, learned, delivered, or tracker-terminal.
 
-Do not translate accepted worker evidence into a tracker close, push, merge,
-queue submission, or delivery verdict. Those are separate caller decisions.
-Crank may report the tracker mutations that appear appropriate, but it does not
-apply them.
-
-## Return One Wave
-
-- `DONE`: every slice in this wave has accepted implementation evidence.
-- `PARTIAL`: some slices returned evidence and work remains.
-- `BLOCKED`: no safe wave result can be produced within the bounded recovery.
-
-These markers describe only this Crank invocation. They do not mean that an epic
-is closed, a tracker is terminal, or work reached a repository destination.
-
-The mandatory next handoff is the evidence packet to Validate. Validate returns
-immutable proof to Learn; the orchestrator alone decides whether to continue,
-retry, update tracking, or select a repository delivery mechanism.
+RPI may admit another unchanged wave directly. A material plan change returns to
+Discovery/Premortem. A completed leaf freezes for one Validate/Learn transaction;
+an incomplete three-wave/90-minute soft boundary writes resume evidence and
+stops without proof authorization.

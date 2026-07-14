@@ -1,7 +1,7 @@
 # Executable spec for the /premortem skill — pre-implementation plan gate (domain role).
 # /premortem stress-tests a plan BEFORE work starts: it returns a PASS/WARN/FAIL verdict on
 # the plan and on the wave-validity rows, so a bad plan is sent back to /plan rather than
-# executed. It runs inline (--quick) by default; --deep/--mixed widen the council. Hexagon:
+# executed. Quick mode uses one fresh judge; --deep/--mixed widen the council. Hexagon:
 # domain; consumes standards; produces result.json + verdict.json. (soc-qk4b)
 
 Feature: Pre-mortem stress-tests a plan before implementation
@@ -20,14 +20,21 @@ Feature: Pre-mortem stress-tests a plan before implementation
     And a wave may run parallel only if every row is conflict-free
     And a FAIL sends the plan back to /plan to re-slice (or run sequential)
 
-  Scenario: Between-wave Premortem receives an orchestrator-owned changed plan
-    Given Validate has handed its verdict to Learn
-    And the orchestrator accepted a material plan impact and changed the plan
+  Scenario: Between-wave Premortem runs only for a materially changed plan
+    Given targeted wave evidence changed acceptance, dependencies, write scope, or risk
+    And the orchestrator wrote the changed plan
     When Premortem runs before the next wave
     Then it judges that exact changed plan
     And Validate and Learn did not invoke Premortem directly
 
-  Scenario: quick mode is the inline default
+  Scenario: unchanged plan inputs reuse the bound verdict
+    Given the accepted plan digest, acceptance, dependencies, write scope, and risk are unchanged
+    When another tranche wave is considered
+    Then the existing Premortem verdict is reused
+    And no new judge, council, report, or registry write is created
+
+  Scenario: quick mode uses one fresh judge by default
     When /premortem runs without --deep/--mixed/--debate
-    Then it runs inline (--quick) as a single-agent structured review, no council spawning
+    Then it runs exactly one fresh-context judge distinct from the author
+    And it does not start a council
     And --deep/--mixed/--debate widen the council fan-out
