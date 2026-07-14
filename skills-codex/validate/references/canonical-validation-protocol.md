@@ -119,6 +119,24 @@ skill count, changed-file count, or any other inventory count never selects
 rigor or validator count. Risk and explicit mode selection are separate policy
 inputs outside this request foundation.
 
+### Deterministic and semantic boundary
+
+Factual registry entries declare exactly one `proof_kind`: `syntax`, `schema`,
+`identity`, `paths`, `generated_drift`, `executable_assertion`, or
+`evidence_integrity`. The request and receipt retain that kind so consumers can
+audit what the command was allowed to prove. A registry entry cannot declare
+semantic prose quality, usefulness, preferred wording, or reviewer judgment as
+machine proof.
+
+Missing or stale gate registration, entry identity, or backing is a typed
+`registry_integrity` defect and stops before execution. It is not evidence that
+the candidate failed. Deterministic gates may still verify that a semantic
+verdict is present, schema-valid, independently authored, and bound to the
+candidate; only the independent reviewer decides whether its reasoning is
+correct.
+An advisory semantic observation never becomes deterministic authority. It
+never blocks delivery by being promoted into a strict prose score.
+
 The closed wire formats are:
 
 - `schemas/validation-candidate.v1.schema.json`

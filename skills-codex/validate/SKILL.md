@@ -52,6 +52,13 @@ though it retains baseline attribution. Green mandatory proof routes to one
 fresh validator by default. Inventory size is never a rigor or validator-count
 signal.
 
+Every factual registry entry declares one closed `proof_kind`: syntax, schema,
+identity, paths, generated drift, executable assertion, or evidence integrity.
+Semantic prose scores and exact-wording preferences are reviewer evidence, not
+factual gate kinds. Missing backing is a typed `registry_integrity` defect;
+neither that defect nor a semantic observation may be mislabeled as candidate
+proof.
+
 The portable freezer, runner, and receipt verifier is
 `python3 skills/validate/scripts/validation-request.py freeze|run|check-receipt --help`.
 

@@ -19,3 +19,11 @@ Feature: Validate emits immutable proof only
     Given the author and validator identities are equal
     When the verdict would otherwise be PASS
     Then independence is waived and the verdict cannot satisfy independent proof
+
+  Scenario: Factual proof does not impersonate semantic judgment
+    Given a frozen factual-gate registry and a pinned candidate
+    When deterministic pre-validation runs
+    Then each gate proves one declared factual proof kind
+    And missing backing is classified as registry integrity
+    And prose quality and exact wording remain independent-review evidence
+    And no advisory semantic observation becomes a blocking deterministic gate

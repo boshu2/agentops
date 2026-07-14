@@ -28,10 +28,21 @@
     "gate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "lane", "argv", "backing"],
+      "required": ["id", "lane", "proof_kind", "argv", "backing"],
       "properties": {
         "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
         "lane": { "enum": ["mandatory", "diagnostic", "release"] },
+        "proof_kind": {
+          "enum": [
+            "syntax",
+            "schema",
+            "identity",
+            "paths",
+            "generated_drift",
+            "executable_assertion",
+            "evidence_integrity"
+          ]
+        },
         "argv": {
           "type": "array",
           "minItems": 1,

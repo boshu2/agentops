@@ -243,15 +243,18 @@ add_step() {
 }
 
 if [[ "${#SOURCE_SKILLS[@]}" -gt 0 ]]; then
-  audit_cmd=""
+  integrity_cmd=""
   for source_skill in "${SOURCE_SKILLS[@]}"; do
     printf -v source_target '%q' "skills/$source_skill"
-    if [[ -n "$audit_cmd" ]]; then
-      audit_cmd+=" && "
+    if [[ -n "$integrity_cmd" ]]; then
+      integrity_cmd+=" && "
     fi
-    audit_cmd+="bash skills/heal-skill/scripts/audit.sh --strict $source_target"
+    integrity_cmd+="bash skills/heal-skill/scripts/heal.sh --check --strict $source_target"
   done
-  add_step "changed skill deep conformance|$audit_cmd|$audit_cmd"
+  # Changed-scope release proof owns structural package integrity only. Content
+  # quality and trigger usefulness are semantic evidence for the independent
+  # validator; they must not become a blocking keyword or prose-score gate.
+  add_step "changed skill structural integrity|$integrity_cmd|$integrity_cmd"
 fi
 
 if $NEED_CONTEXT_MAP; then

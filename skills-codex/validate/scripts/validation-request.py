@@ -351,6 +351,37 @@ def semantic_id(
     return digest_bytes(canonical_bytes(identity))
 
 
+def defect_class(code: str) -> str:
+    """Name the owning integrity boundary for a fail-closed preflight defect."""
+    if code in {
+        "missing_gate_registry",
+        "invalid_gate_registry",
+        "unknown_gate",
+        "duplicate_gate",
+        "gate_not_factual_json",
+        "registry_entry_changed",
+        "missing_registry_backing",
+        "missing_mandatory_gate",
+    }:
+        return "registry_integrity"
+    if code in {"candidate_mutated", "base_not_ancestor"}:
+        return "candidate_integrity"
+    if code in {
+        "missing_acceptance",
+        "missing_claim_dependency",
+        "stale_claim_dependency",
+        "missing_evidence",
+        "claim_dependency_digest_mismatch",
+        "semantic_identity_changed",
+    }:
+        return "evidence_integrity"
+    if code == "missing_toolchain":
+        return "toolchain_integrity"
+    if code in {"validator_not_independent", "invalid_validator_route"}:
+        return "validator_integrity"
+    return "request_integrity"
+
+
 def validate_registry(value: Any) -> dict[str, dict[str, Any]]:
     validate_schema("validation-gate-registry.v1.schema.json", value)
     by_id: dict[str, dict[str, Any]] = {}
@@ -455,6 +486,7 @@ def freeze(repo: Path, spec_path: Path, output: Path) -> int:
             {
                 "id": gate_id,
                 "lane": entry["lane"],
+                "proof_kind": entry["proof_kind"],
                 "entry_sha256": digest_bytes(canonical_bytes(entry)),
             }
         )
@@ -649,7 +681,13 @@ def blocked_receipt(
         "request_sha256": request_digest,
         "candidate": request["candidate"],
         "validator_route": request["validator"]["route"],
-        "preflight_errors": [{"code": error.code, "detail": error.detail}],
+        "preflight_errors": [
+            {
+                "code": error.code,
+                "defect_class": defect_class(error.code),
+                "detail": error.detail,
+            }
+        ],
         "gate_executions": [],
         "model_spend_allowed": False,
         "disposition": "BLOCK",
@@ -688,8 +726,13 @@ def validate_receipt_invariants(
             )
         return
 
-    expected_gates = [(item["id"], item["lane"]) for item in request["selected_gates"]]
-    actual_gates = [(item["id"], item["lane"]) for item in executions]
+    expected_gates = [
+        (item["id"], item["lane"], item["proof_kind"])
+        for item in request["selected_gates"]
+    ]
+    actual_gates = [
+        (item["id"], item["lane"], item["proof_kind"]) for item in executions
+    ]
     if actual_gates != expected_gates:
         raise RequestError(
             "receipt_invariant", "gate executions do not exactly match selected gates"
@@ -811,6 +854,7 @@ def execute(repo: Path, request_path: Path, output: Path) -> int:
                     raise RequestError("unknown_gate", selected["id"])
                 if (
                     entry["lane"] != selected["lane"]
+                    or entry["proof_kind"] != selected["proof_kind"]
                     or digest_bytes(canonical_bytes(entry)) != selected["entry_sha256"]
                 ):
                     raise RequestError("registry_entry_changed", selected["id"])
@@ -886,6 +930,7 @@ def execute(repo: Path, request_path: Path, output: Path) -> int:
         execution: dict[str, Any] = {
             "id": selected["id"],
             "lane": selected["lane"],
+            "proof_kind": selected["proof_kind"],
             "candidate": candidate_result,
             "attribution": "not_applicable",
         }
