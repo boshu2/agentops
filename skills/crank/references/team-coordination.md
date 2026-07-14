@@ -2,7 +2,7 @@
 
 Crank executes one ready wave of one leaf and returns canonical evidence. The
 leaf owner is the direct implementer by default. Trackers identify the work;
-Crank does not close them or deliver the repository.
+Crank does not close them or deliver the repository. Crank may report the tracker mutations that appear appropriate, but it does not perform caller-owned closeout.
 
 ## Direct route
 
