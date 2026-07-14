@@ -1,0 +1,119 @@
+# Fresh-install conformance — the integration net over the fresh-user
+# onboarding path (bead age-wl5vm / FU1).
+#
+# A fresh-install UX audit (2026-07-13) found five independent staleness
+# classes (phantom quick-start commands, stale tarball README, stale in-repo
+# formula, a pristine-install doctor warning wall, an installer skill-count
+# mismatch) sharing one root cause: no CI job ever installed from published
+# artifacts into a clean HOME and exercised first-run. Sibling beads fixed all
+# five at the unit level; this workflow is the integration net that keeps the
+# class from regrowing by consuming the product the way a new user does.
+#
+# Two jobs:
+#   tree-conformance    — builds ao from the tree and exercises first-run on
+#                         ubuntu + macos. Runs on push-to-main (paths-filtered),
+#                         nightly, and manual dispatch.
+#   release-conformance — downloads the PUBLISHED release binary and exercises
+#                         it. Runs on release publish, or manual dispatch with a
+#                         tag. Degrades to a loud SKIP (never a silent pass) when
+#                         the asset is unreachable.
+
+name: fresh-install-conformance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/install*'
+      - 'scripts/fresh-install-conformance.sh'
+      - 'cli/**'
+      - 'skills-codex/**'
+      - '.github/workflows/fresh-install-conformance.yml'
+  schedule:
+    # Nightly at 08:15 UTC (late evening Pacific) — a periodic drift detector.
+    - cron: '15 8 * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to exercise in release mode (e.g. v3.2.0). Leave empty to run tree mode only.'
+        required: false
+        default: ''
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel a main/tag/scheduled run (free-plan concurrency hygiene); only
+  # coalesce duplicate manual reruns onto the same ref.
+  group: fresh-install-conformance-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  tree-conformance:
+    # Runs for push / schedule / manual dispatch. A pure release-publish event
+    # skips it (the release job exercises the published binary instead).
+    if: github.event_name != 'release'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Go (tree mode builds ao from source)
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Run fresh-install conformance (tree mode)
+        run: bash scripts/fresh-install-conformance.sh
+
+  release-conformance:
+    # Runs when a release is published, or on manual dispatch with a tag.
+    if: >-
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          # Pin the tree to the SAME revision as the downloaded binary:
+          # release event → the published tag; manual dispatch → the input
+          # tag. Without this, dispatching an old tag would pair its binary
+          # with main's installer/bundle — a mismatched certification.
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
+
+      - name: Resolve published release asset URL
+        id: asset
+        env:
+          # release event → the published tag; manual dispatch → the input tag.
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          case "$(uname -s)" in
+            Linux)  goos=linux ;;
+            Darwin) goos=darwin ;;
+            *)      echo "::error::unsupported OS $(uname -s)"; exit 1 ;;
+          esac
+          case "$(uname -m)" in
+            x86_64|amd64)  goarch=amd64 ;;
+            arm64|aarch64) goarch=arm64 ;;
+            *)             echo "::error::unsupported arch $(uname -m)"; exit 1 ;;
+          esac
+          asset="ao-${goos}-${goarch}.tar.gz"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${asset}"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Resolved release asset: $url"
+
+      - name: Run fresh-install conformance (release mode)
+        run: bash scripts/fresh-install-conformance.sh --release-tarball "${{ steps.asset.outputs.url }}" --require-asset
