@@ -1,6 +1,7 @@
 package ratchet
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,7 +9,112 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
+
+func TestRatchetGateUsesResolvedTrackerContext(t *testing.T) {
+	restrictSearchOrder(t)
+
+	root := t.TempDir()
+	ambient := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(t.TempDir(), "tracker.log")
+	t.Setenv("TRACKER_LOG", logPath)
+	prependFakeCommand(t, "br", `
+printf 'cwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-}" "$*" > "$TRACKER_LOG"
+exit 23
+`)
+	chdirTemp(t, ambient)
+
+	checker, err := NewGateChecker(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = checker.findEpic("open")
+	var exitErr *trackerexec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+		t.Errorf("tracker error = %T %v, want typed exit 23", err, err)
+	}
+	logData, readErr := os.ReadFile(logPath)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	canonicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "cwd=" + canonicalRoot + " beads=" + filepath.Join(root, "_beads") + " args=list --type epic --status open\n"
+	if got := string(logData); got != want {
+		t.Errorf("resolved tracker context = %q, want %q", got, want)
+	}
+}
+
+func TestRatchetGateUsesBDResolvedContext(t *testing.T) {
+	restrictSearchOrder(t)
+
+	root := t.TempDir()
+	ambient := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(t.TempDir(), "tracker.log")
+	t.Setenv("TRACKER_LOG", logPath)
+	t.Setenv("BEADS_DIR", filepath.Join(t.TempDir(), "foreign-ledger"))
+	prependFakeCommand(t, "bd", `
+printf 'cwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-}" "$*" > "$TRACKER_LOG"
+printf 'epic-bd Canonical context\n'
+`)
+	chdirTemp(t, ambient)
+
+	checker, err := NewGateChecker(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := checker.findEpic("open")
+	if err != nil || id != "epic-bd" {
+		t.Fatalf("findEpic = %q, %v", id, err)
+	}
+	logData, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "cwd=" + canonicalRoot + " beads= args=list --type epic --status open\n"
+	if got := string(logData); got != want {
+		t.Fatalf("bd resolved tracker context = %q, want %q", got, want)
+	}
+}
+
+func TestRatchetGateDistinguishesCallerCancellation(t *testing.T) {
+	restrictSearchOrder(t)
+
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(t.TempDir(), "launched")
+	t.Setenv("TRACKER_MARKER", marker)
+	prependFakeCommand(t, "br", `printf launched > "$TRACKER_MARKER"`)
+	checker, err := NewGateChecker(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = checker.CheckContext(ctx, StepImplement, TrackerStreams{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("CheckContext error = %T %v, want context.Canceled", err, err)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("pre-canceled context launched tracker: %v", err)
+	}
+}
 
 func TestBdCLITimeout(t *testing.T) {
 	// Verify the timeout constant is set correctly

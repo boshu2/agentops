@@ -2,13 +2,79 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
+
+func TestRunRatchetCheckUsesCallerContextAndStreams(t *testing.T) {
+	t.Run("pre-canceled context does not launch tracker", func(t *testing.T) {
+		resetCommandState(t)
+		root := t.TempDir()
+		setupAgentsDir(t, root)
+		t.Chdir(root)
+		marker := filepath.Join(t.TempDir(), "launched")
+		installRatchetTracker(t, "br", `printf launched > "$TRACKER_MARKER"`)
+		t.Setenv("TRACKER_MARKER", marker)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		cmd := newTraceTestCmd(&bytes.Buffer{})
+		cmd.SetContext(ctx)
+		err := runRatchetCheck(cmd, []string{"implement"})
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("runRatchetCheck error = %T %v, want context.Canceled", err, err)
+		}
+		if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("pre-canceled command launched tracker: %v", err)
+		}
+	})
+
+	t.Run("stdin and stderr reach tracker while stdout is parsed", func(t *testing.T) {
+		resetCommandState(t)
+		root := t.TempDir()
+		setupAgentsDir(t, root)
+		t.Chdir(root)
+		installRatchetTracker(t, "br", `
+IFS= read -r input
+printf 'tracker-stderr:%s\n' "$input" >&2
+printf 'epic-stream Stream proof\n'
+`)
+
+		var stdout, stderr bytes.Buffer
+		cmd := newTraceTestCmd(&stdout)
+		cmd.SetIn(strings.NewReader("caller-input\n"))
+		cmd.SetErr(&stderr)
+		if err := runRatchetCheck(cmd, []string{"implement"}); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(stderr.String(), "tracker-stderr:caller-input") {
+			t.Fatalf("tracker stderr = %q", stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "GATE PASSED") || !strings.Contains(stdout.String(), "epic-stream") {
+			t.Fatalf("command output = %q", stdout.String())
+		}
+	})
+}
+
+func installRatchetTracker(t *testing.T, name, body string) {
+	t.Helper()
+	binDir := t.TempDir()
+	tracker := filepath.Join(binDir, name)
+	script := "#!/bin/sh\nset -eu\n" + body + "\n"
+	if err := os.WriteFile(tracker, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("AGENTOPS_TRACKER", name)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
 
 func TestRunRatchetCheck_UnknownStep(t *testing.T) {
 	err := checkStepParse("nonexistent-step")
