@@ -214,9 +214,10 @@ jobs:
       - name: Install gate dependencies
         run: |
           sudo apt-get update
-          # bats: the full gate's check-cli-contract.sh shells out to it and
-          # fails closed (exit 127) when absent.
-          sudo apt-get install -y jq shellcheck bats
+          # bats + ripgrep: the full gate's check-cli-contract.sh shells out to
+          # both (bats runs tests/cli_contract_gate.bats, whose tests `run rg`
+          # and assert exit 1 — an absent rg exits 127 and fails them).
+          sudo apt-get install -y jq shellcheck bats ripgrep
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
           pip install jsonschema pyyaml
@@ -304,7 +305,12 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          fetch-depth: 2
+          # fetch-depth: 0 so origin/main resolves (same rationale as the
+          # go-gate-shadow checkout, age-ipbr): bats suites that exercise the
+          # frontdoor-admission guard (reconcile-pr, disposition-schema) fail
+          # CLOSED with "cannot resolve admission base 'origin/main'" on a
+          # shallow single-ref checkout.
+          fetch-depth: 0
 
       # ── bats runs FIRST, on the pristine checkout, before the Go build/test
       # steps below. The Go test phase shares this working tree and a cli/ test
