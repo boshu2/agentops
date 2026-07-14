@@ -10,6 +10,7 @@ import (
 
 	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
 
 const originLedger = "origin/main:" + provenancegraph.LedgerRelativePath
@@ -70,11 +71,15 @@ func (ledger Ledger) Read(context.Context) ([]doneapp.Edge, error) {
 }
 
 type Tracker struct {
-	Run func(context.Context, ...string) ([]byte, error)
+	Command func(context.Context, ...string) *trackerexec.ResolvedCommand
+}
+
+func NewTracker(command func(context.Context, ...string) *trackerexec.ResolvedCommand) Tracker {
+	return Tracker{Command: command}
 }
 
 func (tracker Tracker) Close(ctx context.Context, id, reason string) (string, error) {
-	output, err := tracker.Run(ctx, "close", id, "-r", reason)
+	output, err := tracker.Command(ctx, "close", id, "-r", reason).CombinedOutput()
 	return string(output), err
 }
 

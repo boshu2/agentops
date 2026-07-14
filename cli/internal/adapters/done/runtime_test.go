@@ -3,11 +3,15 @@ package done
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	doneapp "github.com/boshu2/agentops/cli/internal/done"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
 func TestRepositoryMapsGitAndFailsClosed(t *testing.T) {
@@ -61,13 +65,20 @@ func TestLedgerAndTrackerMapPorts(t *testing.T) {
 	if err != nil || len(edges) != 1 || edges[0].FromID != "v" {
 		t.Fatalf("edges=%+v err=%v", edges, err)
 	}
+	trackerScript := filepath.Join(t.TempDir(), "tracker")
+	if err := os.WriteFile(trackerScript, []byte("#!/bin/sh\nprintf '%s\\n' \"$*\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workDir := t.TempDir()
 	var got []string
-	tracker := Tracker{Run: func(_ context.Context, args ...string) ([]byte, error) {
+	tracker := NewTracker(func(ctx context.Context, args ...string) *trackerexec.ResolvedCommand {
 		got = append([]string(nil), args...)
-		return []byte("closed\n"), nil
-	}}
+		return (trackerexec.Factory{}).Command(ctx, trackerresolve.Resolution{
+			Tracker: trackerresolve.BR, Binary: trackerScript, WorkDir: workDir, ChildEnv: []string{},
+		}, args, trackerexec.Streams{})
+	})
 	output, err := tracker.Close(context.Background(), "age-1", "Done [verdict:abcdef0:CONFIRMED]")
-	if err != nil || output != "closed\n" || strings.Join(got, " ") != "close age-1 -r Done [verdict:abcdef0:CONFIRMED]" {
+	if err != nil || output != "close age-1 -r Done [verdict:abcdef0:CONFIRMED]\n" || strings.Join(got, " ") != "close age-1 -r Done [verdict:abcdef0:CONFIRMED]" {
 		t.Fatalf("output=%q args=%v err=%v", output, got, err)
 	}
 	var _ doneapp.RepositoryPort = Repository{}

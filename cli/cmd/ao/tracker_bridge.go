@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -42,7 +43,7 @@ var resolveBeadsDir = func(cwd string, env []string) beadsDirResolution {
 	return trackerresolve.ResolveLedger(cwd, env, trackerresolve.BR)
 }
 
-func beadsTrackerCommandContext(ctx context.Context, args ...string) *exec.Cmd {
+func beadsTrackerCommandContext(ctx context.Context, args ...string) *trackerexec.ResolvedCommand {
 	cwd, err := os.Getwd()
 	if err != nil || cwd == "" {
 		cwd = "."
@@ -50,17 +51,14 @@ func beadsTrackerCommandContext(ctx context.Context, args ...string) *exec.Cmd {
 	return beadsTrackerCommandContextInDir(ctx, cwd, args...)
 }
 
-func beadsTrackerCommandContextInDir(ctx context.Context, cwd string, args ...string) *exec.Cmd {
+func beadsTrackerCommandContextInDir(ctx context.Context, cwd string, args ...string) *trackerexec.ResolvedCommand {
 	resolution, err := resolveTracker(cwd, os.Environ())
 	if err != nil {
-		command := exec.CommandContext(ctx, "__agentops_tracker_resolution_failed__", args...)
-		command.Dir = cwd
-		return command
+		resolution = trackerresolve.Resolution{
+			Binary: "__agentops_tracker_resolution_failed__", WorkDir: cwd,
+		}
 	}
-	command := exec.CommandContext(ctx, resolution.Binary, args...) // #nosec G204 -- binary is constrained to the selected br|bd tracker.
-	command.Dir = resolution.WorkDir
-	command.Env = append([]string(nil), resolution.ChildEnv...)
-	return command
+	return (trackerexec.Factory{}).Command(ctx, resolution, args, trackerexec.Streams{})
 }
 
 func beadsTrackerEnvForDir(cwd string) []string {

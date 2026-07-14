@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-
 	doneadapter "github.com/boshu2/agentops/cli/internal/adapters/done"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
 	donecommands "github.com/boshu2/agentops/cli/internal/commands/done"
@@ -10,9 +8,7 @@ import (
 )
 
 func newDoneService() doneapp.Service {
-	tracker := doneadapter.Tracker{Run: func(ctx context.Context, args ...string) ([]byte, error) {
-		return beadsTrackerCommandContext(ctx, args...).CombinedOutput()
-	}}
+	tracker := doneadapter.NewTracker(beadsTrackerCommandContext)
 	return doneapp.NewService(doneadapter.SystemRepository(), doneadapter.SystemLedger(resolveLedgerPath()), tracker)
 }
 

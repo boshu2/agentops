@@ -43,18 +43,25 @@ func TestBeadsTrackerCommandContextInDirSetsCanonicalBeadsDir(t *testing.T) {
 	if err := os.Mkdir(canonical, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	cmd := beadsTrackerCommandContextInDir(context.Background(), lane, "ready", "--json")
-	found := ""
-	for _, entry := range cmd.Env {
-		if strings.HasPrefix(entry, "BEADS_DIR=") {
-			found = strings.TrimPrefix(entry, "BEADS_DIR=")
+	script := filepath.Join(root, "tracker")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf 'cwd=%s\\nbeads=%s\\nargs=%s\\n' \"$PWD\" \"${BEADS_DIR-unset}\" \"$*\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	originalLookPath := trackerLookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+	trackerLookPath = func(name string) (string, error) {
+		if name == trackerBR {
+			return script, nil
 		}
+		return "", exec.ErrNotFound
 	}
-	if found != canonical {
-		t.Fatalf("BEADS_DIR in command env = %q, want %q", found, canonical)
+	output, err := beadsTrackerCommandContextInDir(context.Background(), lane, "ready", "--json").Output()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if cmd.Dir != lane {
-		t.Fatalf("cmd.Dir = %q, want linked worktree %q", cmd.Dir, lane)
+	want := "cwd=" + lane + "\nbeads=" + canonical + "\nargs=ready --json\n"
+	if string(output) != want {
+		t.Fatalf("tracker output = %q, want %q", output, want)
 	}
 }
 
