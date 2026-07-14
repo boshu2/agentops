@@ -1,6 +1,10 @@
 package main
 
 import (
+	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,5 +38,36 @@ func TestClaimBindCommandDelegatesThroughModule(t *testing.T) {
 	}
 	if !strings.Contains(out, `bound claim="AOP-X" path="p.md" level=PG2`) {
 		t.Fatalf("claim bind output = %q", out)
+	}
+}
+
+func TestClaimModuleInjectsCanonicalTrackerLookup(t *testing.T) {
+	root := t.TempDir()
+	script := filepath.Join(root, "br")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf 'args:%s\\n' \"$*\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := trackerLookPath
+	trackerLookPath = func(name string) (string, error) {
+		if name == "br" {
+			return script, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	t.Cleanup(func() { trackerLookPath = original })
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	t.Setenv("PATH", "")
+	t.Setenv("BEADS_DIR", filepath.Join(root, "_beads"))
+
+	out, err := executeCommand("claim", "age-module")
+	if err != nil {
+		var exit interface{ ExitCode() int }
+		if errors.As(err, &exit) {
+			t.Fatalf("claim module tracker lookup exited %d: %v", exit.ExitCode(), err)
+		}
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "args:update age-module --claim") {
+		t.Fatalf("claim module output = %q", out)
 	}
 }

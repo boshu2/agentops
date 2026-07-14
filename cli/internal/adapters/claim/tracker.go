@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	claimapp "github.com/boshu2/agentops/cli/internal/claim"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -50,27 +51,24 @@ func (tracker Tracker) Claim(ctx context.Context, id string, streams claimapp.St
 	if err != nil {
 		return tracker.exitError(127, strings.TrimSpace(err.Error()))
 	}
-	command := exec.CommandContext(ctx, resolution.Binary, "update", id, "--claim") // #nosec G204 -- tracker resolver constrains the binary to br|bd.
-	command.Dir = cwd
-	if resolution.Tracker == trackerresolve.BR {
-		if _, present := trackerresolve.BeadsDirValue(environment); !present {
-			environment = append(environment, "BEADS_DIR="+resolution.LedgerDir)
-		}
-	}
-	command.Env = environment
-	output, runErr := command.CombinedOutput()
-	if len(output) > 0 && streams.Stdout != nil {
-		_, _ = streams.Stdout.Write(output)
-	}
+	command := (trackerexec.Factory{}).Command(
+		ctx,
+		resolution,
+		[]string{"update", id, "--claim"},
+		trackerexec.Streams{Stdin: streams.Stdin, Stdout: streams.Stdout, Stderr: streams.Stderr},
+	)
+	runErr := command.Run()
 	if runErr == nil {
 		return nil
 	}
-	code := 127
-	var processExit *exec.ExitError
-	if errors.As(runErr, &processExit) {
-		code = processExit.ExitCode()
+	if errors.Is(runErr, context.Canceled) || errors.Is(runErr, context.DeadlineExceeded) {
+		return runErr
 	}
-	return tracker.exitError(code, strings.TrimSpace(runErr.Error()))
+	var processExit *trackerexec.ExitError
+	if errors.As(runErr, &processExit) {
+		return tracker.exitError(processExit.ExitCode(), strings.TrimSpace(runErr.Error()))
+	}
+	return tracker.exitError(127, strings.TrimSpace(runErr.Error()))
 }
 
 var _ claimapp.TrackerClaimer = Tracker{}
