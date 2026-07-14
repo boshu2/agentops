@@ -234,22 +234,29 @@ func configValue(cwd string, env []string) (configSelection, error) {
 			continue
 		}
 		seen[path] = struct{}{}
+		if _, err := os.Lstat(path); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return configSelection{}, fmt.Errorf("read tracker configuration %q: %w", path, err)
+		}
 		data, err := os.ReadFile(path) // #nosec G304 -- fixed config path under cwd/repo/home.
 		if err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return configSelection{}, fmt.Errorf("read tracker configuration %q: %w", path, err)
-			}
-			continue
+			return configSelection{}, fmt.Errorf("read tracker configuration %q: %w", path, err)
 		}
-		var value struct {
-			Tracker string `yaml:"tracker"`
-		}
-		if err := yaml.Unmarshal(data, &value); err != nil {
+		var values map[string]yaml.Node
+		if err := yaml.Unmarshal(data, &values); err != nil {
 			return configSelection{}, fmt.Errorf("parse tracker configuration %q: %w", path, err)
 		}
-		if strings.TrimSpace(value.Tracker) != "" {
-			return configSelection{value: value.Tracker, path: path}, nil
+		tracker, present := values["tracker"]
+		if !present {
+			continue
 		}
+		var value string
+		if err := tracker.Decode(&value); err != nil {
+			return configSelection{}, fmt.Errorf("parse tracker configuration %q: %w", path, err)
+		}
+		return configSelection{value: value, path: path}, nil
 	}
 	return configSelection{}, nil
 }

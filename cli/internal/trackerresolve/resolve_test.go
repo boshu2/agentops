@@ -45,15 +45,22 @@ func TestResolveMalformedExplicitConfigFailsClosed(t *testing.T) {
 
 func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing.T) {
 	tests := []struct {
-		name        string
-		config      string
-		configIsDir bool
-		wantTracker string
-		wantSource  string
-		wantErr     []string
+		name           string
+		config         string
+		configIsDir    bool
+		configDangling bool
+		wantTracker    string
+		wantSource     string
+		wantErr        []string
 	}{
 		{
 			name:        "absent falls back to binary discovery",
+			wantTracker: BR,
+			wantSource:  SourceBinary,
+		},
+		{
+			name:        "missing tracker key falls back to binary discovery",
+			config:      "output: json\n",
 			wantTracker: BR,
 			wantSource:  SourceBinary,
 		},
@@ -64,9 +71,29 @@ func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing
 			wantSource:  SourceConfig,
 		},
 		{
+			name:    "empty tracker value fails closed",
+			config:  "tracker: \"\"\n",
+			wantErr: []string{"tracker key in", "unknown tracker"},
+		},
+		{
+			name:    "whitespace tracker value fails closed",
+			config:  "tracker: \"   \"\n",
+			wantErr: []string{"tracker key in", "unknown tracker"},
+		},
+		{
+			name:    "null tracker value fails closed",
+			config:  "tracker: null\n",
+			wantErr: []string{"tracker key in", "unknown tracker"},
+		},
+		{
 			name:        "unreadable fails closed",
 			configIsDir: true,
 			wantErr:     []string{"read tracker configuration"},
+		},
+		{
+			name:           "dangling symlink fails closed",
+			configDangling: true,
+			wantErr:        []string{"read tracker configuration"},
 		},
 		{
 			name:    "malformed fails closed",
@@ -85,16 +112,23 @@ func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing
 			cwd := t.TempDir()
 			home := t.TempDir()
 			configPath := filepath.Join(cwd, ".agentops", "config.yaml")
-			if test.config != "" || test.configIsDir {
+			if test.config != "" || test.configIsDir || test.configDangling {
 				if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 					t.Fatal(err)
 				}
-				if test.configIsDir {
+				switch {
+				case test.configIsDir:
 					if err := os.Mkdir(configPath, 0o755); err != nil {
 						t.Fatal(err)
 					}
-				} else if err := os.WriteFile(configPath, []byte(test.config), 0o644); err != nil {
-					t.Fatal(err)
+				case test.configDangling:
+					if err := os.Symlink(filepath.Join(cwd, "missing-config.yaml"), configPath); err != nil {
+						t.Fatal(err)
+					}
+				default:
+					if err := os.WriteFile(configPath, []byte(test.config), 0o644); err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 
