@@ -17,6 +17,38 @@ func TestGoCLIArchitectureInducedFixtures(t *testing.T) {
 	}
 }
 
+func TestSemanticEscapeClassifierPositiveAndNegativeFixtures(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join("..", "..", ".."))
+	positive := []string{
+		"cli/internal/adapters/claim/tracker.go",
+		"cli/internal/commands/beads/module.go",
+		"cli/cmd/ao/root.go",
+	}
+	negative := []string{
+		"cli/internal/adapters/worktreeconfig/worktree_config.go",
+		"cli/internal/context/run.go",
+		"cli/internal/adapters/tracker_br/tracker_br_test.go",
+	}
+	for _, path := range positive {
+		source, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if classes := ClassifySemanticEscapes(path, source); len(classes) == 0 {
+			t.Errorf("positive fixture %s was not classified", path)
+		}
+	}
+	for _, path := range negative {
+		source, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if classes := ClassifySemanticEscapes(path, source); len(classes) != 0 {
+			t.Errorf("negative fixture %s classified as %v", path, classes)
+		}
+	}
+}
+
 func TestGoCLIArchitectureFamilyOwnershipAndScope(t *testing.T) {
 	root := t.TempDir()
 	runFixtureGit(t, root, "init")

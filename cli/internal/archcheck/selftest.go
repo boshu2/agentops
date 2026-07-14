@@ -19,6 +19,8 @@ func SelfTest() error {
 		{"network", `package demo; import "net/http"; func run(){ _, _ = http.Get("https://example.invalid") }`, RuleNetwork},
 		{"tracker", `package demo; import "github.com/boshu2/agentops/cli/internal/trackerresolve"; var _ = trackerresolve.BR`, RuleTracker},
 		{"clock", `package demo; import "time"; func run(){ _ = time.Now() }`, RuleClock},
+		{"context-background", `package demo; import "context"; func run(){ _ = context.Background() }`, RuleContext},
+		{"context-todo", `package demo; import ctx "context"; func run(){ _ = ctx.TODO() }`, RuleContext},
 		{"service-bag", `package demo; type Dependencies struct { Any any }`, RuleServiceBag},
 		{"composition", `package demo; import "github.com/boshu2/agentops/cli/internal/composition"; var _ = composition.Build`, RuleCompositionImport},
 		{"concrete-adapter", `package demo; import "github.com/boshu2/agentops/cli/internal/adapters/tracker_br"; var _ = tracker_br.New`, RuleConcreteAdapter},

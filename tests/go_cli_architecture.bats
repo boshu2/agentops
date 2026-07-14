@@ -5,6 +5,11 @@ setup() {
   CHECKER="$REPO_ROOT/scripts/check-go-cli-architecture.sh"
 }
 
+run_architecture_fixture() {
+  local fixture="$REPO_ROOT/tests/fixtures/go-cli-architecture/$1"
+  run bash -c "cd '$REPO_ROOT/cli' && go run ./internal/archcheck/cmd --root '$fixture'"
+}
+
 @test "architecture checker induced fixtures cover every forbidden boundary" {
   run "$CHECKER" --self-test
   [ "$status" -eq 0 ]
@@ -61,6 +66,60 @@ GO
   run bash -c "cd '$REPO_ROOT/cli' && go run ./internal/archcheck/cmd --root '$fixture'"
   [ "$status" -eq 1 ]
   [[ "$output" == *"context"* ]]
+}
+
+@test "semantic seal rejects divergent tracker execution" {
+  run_architecture_fixture "tracker-execution/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.tracker-execution"* ]]
+
+  run_architecture_fixture "tracker-execution/valid"
+  [ "$status" -eq 0 ]
+}
+
+@test "semantic seal rejects undeclared universal effects" {
+  run_architecture_fixture "effects/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.effects"* ]]
+
+  run_architecture_fixture "effects/valid"
+  [ "$status" -eq 0 ]
+}
+
+@test "semantic seal rejects untruthful structured output" {
+  run_architecture_fixture "output/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.output"* ]]
+
+  run_architecture_fixture "output/valid"
+  [ "$status" -eq 0 ]
+}
+
+@test "semantic seal rejects a missing recursive runnable contract" {
+  run_architecture_fixture "recursive-contracts/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.recursive-contracts"* ]]
+
+  run_architecture_fixture "recursive-contracts/valid"
+  [ "$status" -eq 0 ]
+}
+
+@test "semantic seal rejects stale generated evidence" {
+  run_architecture_fixture "generated-evidence/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.generated-evidence"* ]]
+
+  run_architecture_fixture "generated-evidence/valid"
+  [ "$status" -eq 0 ]
+}
+
+@test "semantic seal rejects evidence not bound to the candidate" {
+  run_architecture_fixture "evidence-binding/mutated"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"semantic.evidence-binding"* ]]
+
+  run_architecture_fixture "evidence-binding/valid"
+  [ "$status" -eq 0 ]
 }
 
 @test "architecture checker ignores comments strings tests and adapter effects" {
