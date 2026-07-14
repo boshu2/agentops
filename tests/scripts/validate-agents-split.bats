@@ -1,11 +1,9 @@
 #!/usr/bin/env bats
 #
 # tests/scripts/validate-agents-split.bats
-# Regression coverage for scripts/validate-agents-split.sh (soc-vuu6.3).
-#
-# Sibling pattern: matches tests/scripts/validate-sovereignty-proof-citations.bats —
-# script copied into a throwaway repo, fixtures synthesized per case, each
-# case exercises one branch of the split-contract checks.
+# Regression coverage for scripts/validate-agents-split.sh after the root
+# AGENTS-* sibling cutover: AGENTS.md must stay lean and point at the four
+# detail owners under docs/.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -14,7 +12,8 @@ setup() {
     TMP_DIR="$(mktemp -d)"
     WORK_REPO="$TMP_DIR/repo"
 
-    mkdir -p "$WORK_REPO/scripts"
+    mkdir -p "$WORK_REPO/scripts" \
+        "$WORK_REPO/docs/contracts"
     cp "$SCRIPT" "$WORK_REPO/scripts/validate-agents-split.sh"
     chmod +x "$WORK_REPO/scripts/validate-agents-split.sh"
 }
@@ -28,30 +27,34 @@ write_valid_split() {
         echo "# Agent Instructions"
         echo ""
         echo "Links:"
-        echo "- [AGENTS-WORKFLOW.md](AGENTS-WORKFLOW.md)"
-        echo "- [AGENTS-CI.md](AGENTS-CI.md)"
-        echo "- [AGENTS-CODEX.md](AGENTS-CODEX.md)"
-        echo "- [AGENTS-RUNTIME.md](AGENTS-RUNTIME.md)"
+        echo "- [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md)"
+        echo "- [docs/CI-CD.md](docs/CI-CD.md)"
+        echo "- [docs/contracts/codex-skill-api.md](docs/contracts/codex-skill-api.md)"
+        echo "- [docs/contracts/repo-execution-profile.md](docs/contracts/repo-execution-profile.md)"
     } > "$WORK_REPO/AGENTS.md"
-    for sib in AGENTS-WORKFLOW.md AGENTS-CI.md AGENTS-CODEX.md AGENTS-RUNTIME.md; do
-        printf '# %s\n\nBack-link: [AGENTS.md](AGENTS.md)\n' "$sib" > "$WORK_REPO/$sib"
-    done
+
+    printf '# workflow\n\nBack-link: [AGENTS.md](../AGENTS.md)\n' \
+        > "$WORK_REPO/docs/agent-workflow-reference.md"
+    printf '# ci\n\nBack-link: [AGENTS.md](../AGENTS.md)\n' \
+        > "$WORK_REPO/docs/CI-CD.md"
+    printf '# codex\n\nBack-link: [AGENTS.md](../../AGENTS.md)\n' \
+        > "$WORK_REPO/docs/contracts/codex-skill-api.md"
+    printf '# runtime\n\nBack-link: [AGENTS.md](../../AGENTS.md)\n' \
+        > "$WORK_REPO/docs/contracts/repo-execution-profile.md"
 }
 
-@test "passes when all 5 files exist with bidirectional links and AGENTS.md <=250 lines" {
+@test "passes when AGENTS.md <=250 lines and four owners link bidirectionally" {
     write_valid_split
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"PASS"* ]]
-    [[ "$output" == *"14 checks"* ]]
+    [[ "$output" == *"18 checks"* ]]
 }
 
 @test "fails when AGENTS.md is missing" {
-    # Don't create AGENTS.md
-    for sib in AGENTS-WORKFLOW.md AGENTS-CI.md AGENTS-CODEX.md AGENTS-RUNTIME.md; do
-        printf '# %s\n\n[AGENTS.md](AGENTS.md)\n' "$sib" > "$WORK_REPO/$sib"
-    done
+    write_valid_split
+    rm "$WORK_REPO/AGENTS.md"
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 1 ]
@@ -60,7 +63,6 @@ write_valid_split() {
 
 @test "fails when AGENTS.md exceeds 250 lines" {
     write_valid_split
-    # Append 300 lines to AGENTS.md
     for _ in $(seq 1 300); do
         echo "filler line" >> "$WORK_REPO/AGENTS.md"
     done
@@ -71,45 +73,52 @@ write_valid_split() {
     [[ "$output" == *"exceeds 250-line"* ]]
 }
 
-@test "fails when a sibling file is missing" {
+@test "fails when an owner file is missing" {
     write_valid_split
-    rm "$WORK_REPO/AGENTS-CI.md"
+    rm "$WORK_REPO/docs/CI-CD.md"
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"* ]]
-    [[ "$output" == *"missing sibling"* ]]
-    [[ "$output" == *"AGENTS-CI.md"* ]]
+    [[ "$output" == *"missing owner"* ]]
+    [[ "$output" == *"docs/CI-CD.md"* ]]
 }
 
-@test "fails when AGENTS.md does not link to a sibling" {
+@test "fails when AGENTS.md does not link to an owner" {
     write_valid_split
-    # Rewrite AGENTS.md without the AGENTS-CODEX.md link
     {
         echo "# Agent Instructions"
-        echo "- [AGENTS-WORKFLOW.md](AGENTS-WORKFLOW.md)"
-        echo "- [AGENTS-CI.md](AGENTS-CI.md)"
-        echo "- [AGENTS-RUNTIME.md](AGENTS-RUNTIME.md)"
+        echo "- [docs/agent-workflow-reference.md](docs/agent-workflow-reference.md)"
+        echo "- [docs/CI-CD.md](docs/CI-CD.md)"
+        echo "- [docs/contracts/repo-execution-profile.md](docs/contracts/repo-execution-profile.md)"
     } > "$WORK_REPO/AGENTS.md"
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 1 ]
-    [[ "$output" == *"does not link to AGENTS-CODEX.md"* ]]
+    [[ "$output" == *"does not link to docs/contracts/codex-skill-api.md"* ]]
 }
 
-@test "fails when a sibling does not back-link to AGENTS.md" {
+@test "fails when an owner does not back-link to AGENTS.md" {
     write_valid_split
-    # Rewrite a sibling without the back-link
-    printf '# AGENTS-CI.md\n\nNo back-link here.\n' > "$WORK_REPO/AGENTS-CI.md"
+    printf '# ci\n\nNo back-link here.\n' > "$WORK_REPO/docs/CI-CD.md"
 
     run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"does not back-link to AGENTS.md"* ]]
 }
 
+@test "fails when a legacy root sibling is still present" {
+    write_valid_split
+    printf '# leftover\n' > "$WORK_REPO/AGENTS-CI.md"
+
+    run bash -c "cd '$WORK_REPO' && bash scripts/validate-agents-split.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"legacy root sibling still present"* ]]
+    [[ "$output" == *"AGENTS-CI.md"* ]]
+}
+
 @test "treats AGENTS.md at exactly the 250-line limit as passing" {
     write_valid_split
-    # Pad to exactly 250 lines
     current=$(wc -l < "$WORK_REPO/AGENTS.md")
     needed=$((250 - current))
     for _ in $(seq 1 "$needed"); do

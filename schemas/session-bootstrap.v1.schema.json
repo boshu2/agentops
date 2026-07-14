@@ -34,14 +34,14 @@
     },
     "agents_siblings_read": {
       "type": "array",
-      "description": "Post-soc-vuu6.3 tiered-split siblings that were detected at the repo root. Empty when no siblings exist (pre-split repo or non-AgentOps project).",
+      "description": "Detail-owner docs (former root AGENTS-* siblings) that were detected relative to the repo root. Empty when no owners exist (incomplete checkout or non-AgentOps project).",
       "items": {
         "type": "string",
         "enum": [
-          "AGENTS-WORKFLOW.md",
-          "AGENTS-CI.md",
-          "AGENTS-CODEX.md",
-          "AGENTS-RUNTIME.md"
+          "docs/agent-workflow-reference.md",
+          "docs/CI-CD.md",
+          "docs/contracts/codex-skill-api.md",
+          "docs/contracts/repo-execution-profile.md"
         ]
       }
     },

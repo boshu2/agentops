@@ -3,7 +3,8 @@
 # loop closes. Wires the REAL organs (yieldledger emit + gauge) on a synthetic
 # bead with a deterministic STUB worker: NO LLM, NO metered compute, no network.
 #
-# The loop (per SYSTEM.md): dispatch -> produce -> gate -> accept -> sense -> tune
+# The loop (per docs/architecture/operating-loop.md dynamo map):
+# dispatch -> produce -> gate -> accept -> sense -> tune
 #   dispatch/produce : stub worker (deterministic) — the real controller is ag-v1xk
 #   gate             : a cross-family gate-verdict event (author!=judge, fresh-context)
 #   accept           : a terminal-accept event bound to the gate verdict

@@ -1,4 +1,4 @@
-# CI jobs manifest — source of truth for the AGENTS-CI.md "### CI Jobs and What
+# CI jobs manifest — source of truth for the docs/CI-CD.md "## CI Jobs and What
 # They Check" table (rendered by scripts/generate-ci-jobs-table.sh) and parity-
 # gated by scripts/validate-ci-policy-parity.sh.
 #

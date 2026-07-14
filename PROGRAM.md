@@ -9,7 +9,7 @@ slice it vertically through behavior, write the first failing test, implement th
 smallest change that flips it green, freeze one candidate, prove facts once,
 obtain one immutable fresh-context verdict, and Learn once. Repository-owned
 delivery follows as a separate local or cloud transition. The loop is the
-primitive — no artifact is produced unless it advances behavior toward acceptance.
+primitive: no artifact is produced unless it advances behavior toward acceptance.
 
 ## Mutable Scope
 
@@ -50,7 +50,7 @@ primitive — no artifact is produced unless it advances behavior toward accepta
 One bead-backed vertical slice, shaped per the operating loop:
 
 - The slice maps to exactly one Given/When/Then row of the bead's acceptance
-  examples — a behavior, not a layer. "Refactor then feature" is two slices.
+  examples: one behavior through the stack. "Refactor then feature" is two slices.
 - It touches one bounded context per the
   [context map](docs/contracts/context-map.md). A slice that crosses contexts is
   two slices.
@@ -83,7 +83,7 @@ first failing test against the port interface, not an adapter internal.
   Nightly PR/run evidence before selecting the slice, and separate code-driven
   failures from runtime-artifact-only or corpus-state-only movement.
 - Write the first failing test before the implementation change. Code with no
-  failing test has no acceptance surface — it has no defined "done".
+  failing test has no acceptance surface; it has no defined "done".
 - Keep a slice only when it maps to one Given/When/Then row, touches one bounded
   context, the changed files are inside mutable scope, the acceptance examples
   pass, and the applicable validation commands pass.
@@ -128,7 +128,7 @@ user edits conflict with the current slice.
 
 Stop and re-slice instead of proceeding when the work cannot be expressed as a
 single Given/When/Then row, when it crosses a bounded-context boundary, or when
-its first failing test cannot be named — these are signs the slice is actually
+its first failing test cannot be named: these are signs the slice is actually
 two or more slices.
 
 ## Stop Conditions
@@ -136,7 +136,7 @@ two or more slices.
 - `ao autodev validate --json` reports `valid: true` for this contract.
 - Every Given/When/Then in the active bead maps to a passing test; every non-goal
   is still untouched; every rollback path is reachable. Activity logs do not close
-  beads — acceptance evidence does.
+  beads; acceptance evidence does.
 - The active bead is closed or updated with concrete remaining blockers.
 - The selected deterministic bundle is green for the exact frozen candidate and
   one independent Validate verdict is recorded.

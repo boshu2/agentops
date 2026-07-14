@@ -5,9 +5,10 @@
 // guarantee: no two agents in a swarm start with different orientation.
 //
 // Substeps (all fail-open):
-//   1. Confirm AGENTS.md (and post-vuu6.3 siblings AGENTS-WORKFLOW.md,
-//      AGENTS-CI.md, AGENTS-CODEX.md, AGENTS-RUNTIME.md) exist and are
-//      readable. Read by the agent itself, not pre-loaded into the report.
+//   1. Confirm AGENTS.md (and detail owners docs/agent-workflow-reference.md,
+//      docs/CI-CD.md, docs/contracts/codex-skill-api.md,
+//      docs/contracts/repo-execution-profile.md) exist and are readable.
+//      Read by the agent itself, not pre-loaded into the report.
 //   2. Run `ao onboard --auto` if it exists (soc-vuu6.9 — currently a P3
 //      stub). Falls back to phase="skipped:not-implemented" if absent.
 //   3. Resolve the live br ledger directory and call `br ready --json` with
@@ -124,13 +125,14 @@ type SessionBootstrapMemoryItem struct {
 	Tokens   int     `json:"tokens"`
 }
 
-// agentsMDSiblings are the post-vuu6.3 split files. Reported individually so
-// callers can detect partial splits or operator-customized tier layouts.
+// agentsMDSiblings are the detail-owner docs that replaced the root AGENTS-*
+// tiered siblings. Reported individually so callers can detect partial
+// layouts or missing owners.
 var agentsMDSiblings = []string{
-	"AGENTS-WORKFLOW.md",
-	"AGENTS-CI.md",
-	"AGENTS-CODEX.md",
-	"AGENTS-RUNTIME.md",
+	"docs/agent-workflow-reference.md",
+	"docs/CI-CD.md",
+	"docs/contracts/codex-skill-api.md",
+	"docs/contracts/repo-execution-profile.md",
 }
 
 const sessionBootstrapMemoryTokenBudget = 1200

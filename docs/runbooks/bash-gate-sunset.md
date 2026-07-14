@@ -43,7 +43,7 @@ The bash gate (`scripts/pre-push-gate.sh` + the `AGENTOPS_GATE_BASH=1` branch in
    gate's ~2210 LOC is a first-class deletion target, not silent cruft removal.
 
 **When all four hold, the action is:** delete `scripts/pre-push-gate.sh`, remove the
-`AGENTOPS_GATE_BASH` branch from `scripts/hooks/pre-push.local`, keep `AGENTS-WORKFLOW.md` aligned
+`AGENTOPS_GATE_BASH` branch from `scripts/hooks/pre-push.local`, keep `docs/agent-workflow-reference.md` aligned
 with the Go-gate authority model, and record the deletion in the
 retirement ledger. That work executes under **cp-v8m.6**; do not partially retire (a deleted script
 with a live hatch is a broken hatch, and a removed hatch with a live script is dead code).

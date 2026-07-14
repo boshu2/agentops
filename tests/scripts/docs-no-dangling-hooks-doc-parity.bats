@@ -14,7 +14,7 @@ setup() {
 
 @test "operational docs do not reference deleted validate-hooks-doc-parity.sh" {
     cd "$REPO_ROOT"
-    run grep -rn --include='*.md' 'validate-hooks-doc-parity' docs AGENTS-WORKFLOW.md
+    run grep -rn --include='*.md' 'validate-hooks-doc-parity' docs
     filtered="$(printf '%s\n' "$output" | grep -Ev '^docs/(CHANGELOG\.md|releases/)' | grep -v '^$' || true)"
     if [ -n "$filtered" ]; then
         echo "Dangling references to deleted scripts/validate-hooks-doc-parity.sh in operational docs:"

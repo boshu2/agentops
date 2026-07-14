@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# generate-ci-jobs-table.sh — render AGENTS-CI.md "### CI Jobs and What They Check"
+# generate-ci-jobs-table.sh — render docs/CI-CD.md "## CI Jobs and What They Check"
 # table from .github/workflows/validate.yml + docs/contracts/ci-jobs.yaml.
 #
-# soc-3oij: AGENTS CI table generator. Eliminates hand-edit drift — adding a
+# soc-3oij: CI jobs table generator. Eliminates hand-edit drift — adding a
 # new validate-* job goes through scripts/add-validate-job.sh (soc-3oij meta-fix,
 # PR #315) which writes the workflow row; the manifest gets a matching entry;
-# this generator renders the AGENTS table.
+# this generator renders the CI-CD table.
 #
 # Modes:
 #   (default)    Render table to stdout
-#   --check      Render, diff against AGENTS-CI.md section, exit 1 if drift
+#   --check      Render, diff against docs/CI-CD.md section, exit 1 if drift
 #   --write      Render and rewrite the section in-place
 #
 # Inputs:
-#   AGENTS_PATH=$REPO_ROOT/AGENTS-CI.md
+#   AGENTS_PATH=$REPO_ROOT/docs/CI-CD.md
 #   WORKFLOW_PATH=$REPO_ROOT/.github/workflows/validate.yml
 #   MANIFEST_PATH=$REPO_ROOT/docs/contracts/ci-jobs.yaml
 
@@ -22,7 +22,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-AGENTS_PATH="${AGENTS_PATH:-${CI_POLICY_PARITY_AGENTS_PATH:-$REPO_ROOT/AGENTS-CI.md}}"
+AGENTS_PATH="${AGENTS_PATH:-${CI_POLICY_PARITY_AGENTS_PATH:-$REPO_ROOT/docs/CI-CD.md}}"
 WORKFLOW_PATH="${WORKFLOW_PATH:-${CI_POLICY_PARITY_WORKFLOW_PATH:-$REPO_ROOT/.github/workflows/validate.yml}}"
 MANIFEST_PATH="${MANIFEST_PATH:-${CI_POLICY_PARITY_MANIFEST_PATH:-$REPO_ROOT/docs/contracts/ci-jobs.yaml}}"
 
@@ -125,11 +125,12 @@ for job in needs:
 PYEOF
 }
 
-# Find AGENTS-CI.md table boundaries: section header → next ### or EOF.
+# Find CI jobs table boundaries: section header → next ### or EOF.
+# Accept ## (docs/CI-CD.md) or ### (legacy fixture / AGENTS-era heading).
 extract_agents_section() {
     awk '
         BEGIN { in_section=0 }
-        /^### CI Jobs and What They Check$/ { in_section=1; next }
+        /^(##|###) CI Jobs and What They Check$/ { in_section=1; next }
         in_section && /^### / { in_section=0 }
         in_section { print }
     ' "$AGENTS_PATH"
@@ -171,8 +172,8 @@ case "$MODE" in
         trap 'rm -f "$TMP_GEN" "$TMP_NEW"' EXIT
 
         render_table > "$TMP_GEN"
-        # Walk AGENTS-CI.md replacing the section content between
-        # "### CI Jobs and What They Check" and the next "### " header.
+        # Walk the target doc replacing the section content between
+        # "##|### CI Jobs and What They Check" and the next "### " header.
         awk -v gen_file="$TMP_GEN" '
             BEGIN {
                 while ((getline line < gen_file) > 0) {
@@ -182,7 +183,7 @@ case "$MODE" in
                 in_section = 0
                 emitted = 0
             }
-            /^### CI Jobs and What They Check$/ {
+            /^(##|###) CI Jobs and What They Check$/ {
                 print
                 print ""
                 for (i = 1; i <= n; i++) print gen[i]
