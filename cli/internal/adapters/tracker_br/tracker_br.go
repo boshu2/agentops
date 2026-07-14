@@ -5,8 +5,8 @@ package tracker_br
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -24,9 +24,10 @@ func New(resolution trackerresolve.Resolution) (*Adapter, error) {
 	return &Adapter{resolution: resolution}, nil
 }
 
-func (adapter *Adapter) CommandContext(ctx context.Context, args ...string) *exec.Cmd {
-	command := exec.CommandContext(ctx, adapter.resolution.Binary, args...) // #nosec G204 -- binary is constrained by trackerresolve to br.
-	command.Dir = adapter.resolution.WorkDir
-	command.Env = append([]string(nil), adapter.resolution.ChildEnv...)
-	return command
+func (adapter *Adapter) CommandContext(
+	ctx context.Context,
+	args []string,
+	streams trackerexec.Streams,
+) *trackerexec.ResolvedCommand {
+	return (trackerexec.Factory{}).Command(ctx, adapter.resolution, args, streams)
 }
