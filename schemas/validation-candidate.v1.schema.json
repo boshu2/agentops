@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/validation-candidate.v1.schema.json",
+  "title": "Frozen validation candidate identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "semantic_id",
+    "delivery_sha",
+    "base_sha",
+    "tree_sha",
+    "subtrees",
+    "changed_surfaces",
+    "owned_paths"
+  ],
+  "properties": {
+    "semantic_id": { "$ref": "#/$defs/digest" },
+    "delivery_sha": { "$ref": "#/$defs/gitOid" },
+    "base_sha": { "$ref": "#/$defs/gitOid" },
+    "tree_sha": { "$ref": "#/$defs/gitOid" },
+    "subtrees": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/subtree" },
+      "uniqueItems": true
+    },
+    "changed_surfaces": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/changedSurface" },
+      "uniqueItems": true
+    },
+    "owned_paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ownedPath" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gitOid": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" },
+    "subtree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "tree_sha"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "tree_sha": { "$ref": "#/$defs/gitOid" }
+      }
+    },
+    "changedSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "status": { "type": "string", "pattern": "^[ACDMRTUXB][0-9]*$" }
+      }
+    },
+    "ownedPath": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "blob_oid"],
+          "properties": {
+            "path": { "$ref": "#/$defs/path" },
+            "blob_oid": { "$ref": "#/$defs/gitOid" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "deleted"],
+          "properties": {
+            "path": { "$ref": "#/$defs/path" },
+            "deleted": { "const": true }
+          }
+        }
+      ]
+    }
+  }
+}

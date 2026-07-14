@@ -66,6 +66,66 @@ mutates the branch from the judge lane.
 
 ## Evidence discipline
 
+### Deterministic request admission
+
+Validation admission is a two-step portable protocol:
+
+1. `validation-request.py freeze` accepts an explicit base and candidate and
+   derives the candidate commit/tree, subtree trees, changed surfaces, and
+   owned blob/deletion identities from Git. The subtree set is nonempty and
+   unique; declared owned paths must exactly equal every changed-surface path,
+   including deletions. It hashes acceptance, evidence, resolvable
+   repository-relative claim references, the factual-gate registry, toolchain
+   files, and the selected registry entries into a closed request. Both claim
+   references and their digest projection are retained. The semantic identity
+   is the SHA-256 of canonical JSON containing complete owned paths, acceptance
+   digest, claim-dependency digests, and evidence-dependency digests.
+2. `validation-request.py run` rechecks every frozen identity, atomically and
+   durably reserves a canonical Git-common-dir run claim keyed by request ID and
+   canonical-JSON request digest, then separately reserves the caller's receipt path. Changing
+   `--output` cannot replay the request. It invokes every selected gate at most
+   once at the candidate with its declared argument vector. Gate stdout must be
+   one JSON object with status `PASS`, `FAIL`, `ERROR`, or `UNKNOWN`. The runner
+   records output digests and facts; it does not interpret arbitrary prose as a
+   factual result.
+3. `validation-request.py check-receipt` binds a completed receipt back to its
+   request and rejects missing gate executions, missing mandatory proof,
+   contradictory authority, or attribution that does not match the exact-base
+   result. The receipt schema carries the same fail-closed invariants so a
+   portable consumer cannot authorize from a shape-only READY object.
+
+Preflight fails closed before any gate or judge when the candidate moved, the
+explicit base is not an ancestor, a claim reference or evidence file is absent
+or stale, the registry is malformed, a selected entry changed,
+backing/toolchain files are missing or stale, no mandatory lane is selected,
+the author and validator identities match, or the route is not one fresh
+validator. ERROR and UNKNOWN in any lane and mandatory FAIL forbid model spend.
+For FAIL in any lane, the runner executes the same gate once more in a detached
+worktree at the exact base and retains attribution. Only mandatory baseline
+PASS promotes global REPAIR; only mandatory baseline FAIL promotes global NOTE.
+Diagnostic and release FAIL remain nonbinding and release authorization stays
+with its later owner. An inconclusive baseline blocks globally.
+
+The exclusive canonical request claim is the durable at-most-once boundary.
+Concurrent invocations, alternate receipt paths, completed claims, empty
+reservations, and stale reservations all refuse without another gate. A crash
+may leave HOLD evidence; the runner never claims automatic recovery or deletes
+the claim. Final blocked or complete receipts replace their receipt-path
+reservation atomically only after wire invariants validate, then the canonical
+claim records the receipt digest and disposition.
+
+The default green transition is `VALIDATE_SINGLE_FRESH`. Repository size,
+skill count, changed-file count, or any other inventory count never selects
+rigor or validator count. Risk and explicit mode selection are separate policy
+inputs outside this request foundation.
+
+The closed wire formats are:
+
+- `schemas/validation-candidate.v1.schema.json`
+- `schemas/validation-gate-registry.v1.schema.json`
+- `schemas/validation-request.v1.schema.json`
+- `schemas/validation-receipt.v1.schema.json`
+
 The validator reruns cited commands on the actual artifact. It does not accept
 the author's evidence file as proof. Every count, timing, commit, and pass rate
 is pasted from captured output. Uncited figures fail until measured.

@@ -53,6 +53,33 @@ output_contract: schemas/verdict.v1.schema.json
 - Use runtime-native fresh context. Additional judges are optional depth, not a
   substitute for one accountable validator.
 
+## Frozen request boundary
+
+Before any judge or model spend, freeze the explicit base, candidate commit and
+tree, a nonempty subtree set, the complete changed-surface set as owned blobs or
+deletions, acceptance, resolvable claim references plus their digests, evidence,
+factual-gate registry, toolchain, author, and validator route. Never infer the
+base from the current branch or an upstream name, and never accept an omitted or
+extra owned path.
+
+Atomically reserve a canonical request identity, keyed by request ID plus the
+canonical-JSON request digest in the Git common directory, before reserving the caller's
+receipt path and before the first factual gate. The same request cannot run
+again by choosing another output. Run each selected gate at most once at the
+candidate in its declared JSON mode. A concurrent caller or stale reservation
+refuses and stays in HOLD; there is no automatic crash recovery. A stale or
+mutated candidate, missing/stale claim or evidence, invalid registry entry,
+missing registry backing, ERROR, UNKNOWN, or mandatory FAIL stops before judge spend. A FAIL is eligible for
+REPAIR only after the same gate is rerun at the frozen exact base and passes
+there; a failure at both commits is pre-existing evidence returned to the
+caller. A diagnostic or release FAIL remains nonbinding to semantic validation,
+though it retains baseline attribution. Green mandatory proof routes to one
+fresh validator by default. Inventory size is never a rigor or validator-count
+signal.
+
+The portable freezer, runner, and receipt verifier is
+`python3 skills/validate/scripts/validation-request.py freeze|run|check-receipt --help`.
+
 ## Modes
 
 | Mode | Judge shape | Purpose |
@@ -73,9 +100,9 @@ an existing mode. The folded `vibe` trigger maps to `--mode=post-impl`.
 
 1. **Pin subject and acceptance.** Record artifact path, commit/digest, author
    identity, mode, required checks, and declared coverage exclusions.
-2. **Run deterministic checks.** Execute the smallest commands that directly
-   prove the acceptance examples. A red mandatory command is a FAIL; do not
-   spend judge effort rediscovering it.
+2. **Run deterministic checks.** Execute the frozen selected commands that
+   directly prove the acceptance examples. A red mandatory command stops judge
+   spend and is attributed against the exact base before any REPAIR handoff.
 3. **Run fresh-context judgment.** Give the judge only the pinned artifact,
    acceptance contract, required commands, standards, and output path. The
    judge reruns evidence rather than trusting producer summaries.
@@ -111,6 +138,8 @@ defined in [quick-mode-vibe.md](references/quick-mode-vibe.md).
 ## Quality Checklist
 
 - [ ] Subject identity and acceptance are pinned.
+- [ ] Base, candidate/tree, subtrees, changed surfaces, dependencies, registry,
+      toolchain, author, and validator route are frozen and still match.
 - [ ] Mandatory commands were rerun by the validator.
 - [ ] Independent PASS has different author and judge identities.
 - [ ] Findings, observations, and coverage gaps cite evidence.
