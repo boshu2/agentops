@@ -16,6 +16,7 @@ import (
 	"time"
 
 	contextbudget "github.com/boshu2/agentops/cli/internal/context"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -176,7 +177,7 @@ func runContextStatus(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	statuses, err := collectTrackedSessionStatuses(cwd, time.Duration(contextWatchdogMinute)*time.Minute)
+	statuses, err := collectTrackedSessionStatusesContext(cmd.Context(), cwd, time.Duration(contextWatchdogMinute)*time.Minute)
 	if err != nil {
 		return err
 	}
@@ -226,7 +227,7 @@ func runContextGuard(cmd *cobra.Command, args []string) error {
 	}
 	maxTokens, watchdog, agentName := resolveGuardOptions()
 
-	status, usage, err := collectSessionStatus(cwd, sessionID, strings.TrimSpace(contextPrompt), maxTokens, watchdog, agentName)
+	status, usage, err := collectSessionStatus(cmd.Context(), cwd, sessionID, strings.TrimSpace(contextPrompt), maxTokens, watchdog, agentName)
 	if err != nil {
 		return err
 	}
@@ -241,7 +242,7 @@ func runContextGuard(cmd *cobra.Command, args []string) error {
 		Session:     status,
 		HookMessage: hookMessageForStatus(status),
 	}
-	if err := applyHandoffIfCritical(cwd, status, usage, &result); err != nil {
+	if err := applyHandoffIfCritical(cmd.Context(), cwd, status, usage, &result); err != nil {
 		return err
 	}
 
@@ -307,11 +308,11 @@ func resolveGuardOptions() (maxTokens int, watchdog time.Duration, agentName str
 }
 
 // applyHandoffIfCritical writes a handoff file when the session is critical and the flag is set.
-func applyHandoffIfCritical(cwd string, status contextSessionStatus, usage transcriptUsage, result *contextGuardResult) error {
+func applyHandoffIfCritical(ctx context.Context, cwd string, status contextSessionStatus, usage transcriptUsage, result *contextGuardResult) error {
 	if !contextWriteHandoff || status.Status != string(contextbudget.StatusCritical) {
 		return nil
 	}
-	handoffPath, markerPath, hErr := ensureCriticalHandoff(cwd, status, usage)
+	handoffPath, markerPath, hErr := ensureCriticalHandoff(ctx, cwd, status, usage)
 	if hErr != nil {
 		return fmt.Errorf("write critical handoff: %w", hErr)
 	}
@@ -324,6 +325,10 @@ func applyHandoffIfCritical(cwd string, status contextSessionStatus, usage trans
 }
 
 func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contextSessionStatus, error) {
+	return collectTrackedSessionStatusesContext(context.Background(), cwd, watchdog)
+}
+
+func collectTrackedSessionStatusesContext(ctx context.Context, cwd string, watchdog time.Duration) ([]contextSessionStatus, error) {
 	budgetGlob := filepath.Join(cwd, ".agents", "ao", "context", "budget-*.json")
 	files, err := filepath.Glob(budgetGlob)
 	if err != nil {
@@ -336,7 +341,7 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 
 	statuses := make([]contextSessionStatus, 0, len(files))
 	for _, path := range files {
-		status, ok := collectOneTrackedStatus(cwd, path, watchdog)
+		status, ok := collectOneTrackedStatusContext(ctx, cwd, path, watchdog)
 		if !ok {
 			continue
 		}
@@ -348,6 +353,10 @@ func collectTrackedSessionStatuses(cwd string, watchdog time.Duration) ([]contex
 }
 
 func collectOneTrackedStatus(cwd, path string, watchdog time.Duration) (contextSessionStatus, bool) {
+	return collectOneTrackedStatusContext(context.Background(), cwd, path, watchdog)
+}
+
+func collectOneTrackedStatusContext(ctx context.Context, cwd, path string, watchdog time.Duration) (contextSessionStatus, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return contextSessionStatus{}, false
@@ -356,7 +365,7 @@ func collectOneTrackedStatus(cwd, path string, watchdog time.Duration) (contextS
 	if err := json.Unmarshal(data, &b); err != nil || strings.TrimSpace(b.SessionID) == "" {
 		return contextSessionStatus{}, false
 	}
-	status, _, err := collectSessionStatus(cwd, b.SessionID, "", b.MaxTokens, watchdog, "")
+	status, _, err := collectSessionStatus(ctx, cwd, b.SessionID, "", b.MaxTokens, watchdog, "")
 	if err != nil {
 		status = staleBudgetFallbackStatus(b, watchdog)
 	}
@@ -408,7 +417,7 @@ func compareSessionStatuses(a, b contextSessionStatus) int {
 	return cmp.Compare(a.SessionID, b.SessionID)
 }
 
-func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog time.Duration, agentName string) (contextSessionStatus, transcriptUsage, error) {
+func collectSessionStatus(ctx context.Context, cwd, sessionID, prompt string, maxTokens int, watchdog time.Duration, agentName string) (contextSessionStatus, transcriptUsage, error) {
 	transcriptPath, err := findTranscriptBySessionID(sessionID)
 	if err != nil {
 		return contextSessionStatus{}, transcriptUsage{}, fmt.Errorf("find transcript for session %s: %w", sessionID, err)
@@ -456,7 +465,7 @@ func collectSessionStatus(cwd, sessionID, prompt string, maxTokens int, watchdog
 		IsStale:          isStale,
 		Action:           actionForStatus(string(tracker.GetStatus()), isStale),
 	}
-	applyContextAssignment(&status, resolveContextAssignment(cwd, status.LastTask, agentName))
+	applyContextAssignment(&status, resolveContextAssignment(ctx, cwd, status.LastTask, agentName))
 	mergePersistedAssignment(cwd, &status)
 	return status, usage, nil
 }
@@ -471,7 +480,7 @@ func persistBudget(cwd string, status contextSessionStatus) error {
 	return tracker.Save(cwd)
 }
 
-func ensureCriticalHandoff(cwd string, status contextSessionStatus, usage transcriptUsage) (string, string, error) {
+func ensureCriticalHandoff(ctx context.Context, cwd string, status contextSessionStatus, usage transcriptUsage) (string, string, error) {
 	existingPath, existingMarker, found, err := findPendingHandoffForSession(cwd, status.SessionID)
 	if err == nil && found {
 		return existingPath, existingMarker, nil
@@ -490,7 +499,10 @@ func ensureCriticalHandoff(cwd string, status contextSessionStatus, usage transc
 	markerPath := filepath.Join(pendingDir, base+".json")
 
 	changedFiles := gitChangedFiles(cwd, 20)
-	activeBead := cmp.Or(strings.TrimSpace(runCommand(cwd, 1200*time.Millisecond, "bd", "current")), "none")
+	activeBead := "none"
+	if current, currentErr := currentTrackerItem(ctx, cwd); currentErr == nil {
+		activeBead = cmp.Or(current, "none")
+	}
 	status.LastTask = cmp.Or(status.LastTask, "none recorded")
 
 	md := renderHandoffMarkdown(now, status, usage, activeBead, changedFiles)
@@ -641,13 +653,15 @@ func hookMessageForStatus(status contextSessionStatus) string {
 	}
 }
 
-func resolveContextAssignment(cwd, task, agentName string) contextAssignment {
+func resolveContextAssignment(ctx context.Context, cwd, task, agentName string) contextAssignment {
 	assignment := contextAssignment{
 		AgentName: strings.TrimSpace(agentName),
 	}
 	assignment.IssueID = extractIssueID(task)
 	if assignment.IssueID == "" {
-		assignment.IssueID = extractIssueID(runCommand(cwd, 1200*time.Millisecond, "bd", "current"))
+		if current, err := currentTrackerItem(ctx, cwd); err == nil {
+			assignment.IssueID = extractIssueID(current)
+		}
 	}
 	if assignment.AgentName != "" {
 		teamName, member, ok := findTeamMemberByName(assignment.AgentName)
@@ -886,6 +900,28 @@ func gitChangedFiles(cwd string, limit int) []string {
 
 func runCommand(cwd string, timeout time.Duration, name string, args ...string) string {
 	return contextbudget.RunCommand(cwd, timeout, name, args...)
+}
+
+func currentTrackerItem(ctx context.Context, cwd string) (string, error) {
+	resolution, err := resolveTracker(cwd, os.Environ())
+	if err != nil {
+		return "", err
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	trackerCtx, cancel := context.WithTimeout(ctx, 1200*time.Millisecond)
+	defer cancel()
+	output, err := (trackerexec.Factory{}).Command(
+		trackerCtx,
+		resolution,
+		[]string{"current"},
+		trackerexec.Streams{},
+	).Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 func contextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {

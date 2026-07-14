@@ -2,7 +2,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -14,7 +16,118 @@ import (
 	"github.com/spf13/cobra"
 
 	contextbudget "github.com/boshu2/agentops/cli/internal/context"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
+
+func TestContextUsesResolvedTrackerContext(t *testing.T) {
+	root := t.TempDir()
+	chdirTo(t, root)
+	home := t.TempDir()
+	binDir := t.TempDir()
+	tracePath := filepath.Join(t.TempDir(), "tracker.trace")
+	stub := `#!/bin/sh
+printf 'binary=%s|pwd=%s|beads=%s|argv=%s\n' "${0##*/}" "$(pwd -P)" "${BEADS_DIR-<unset>}" "$*" >> "$TRACKER_TRACE"
+printf 'age-context-1\n'
+`
+	for _, tracker := range []string{"br", "bd"} {
+		if err := os.WriteFile(filepath.Join(binDir, tracker), []byte(stub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sessionID := "context-resolved-tracker"
+	transcript := filepath.Join(home, ".claude", "projects", "test", "conversations", sessionID+".jsonl")
+	if err := os.MkdirAll(filepath.Dir(transcript), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeTranscriptLines(t, transcript, []map[string]any{{
+		"type": "user", "timestamp": time.Now().UTC().Format(time.RFC3339),
+		"message": map[string]any{"role": "user", "content": "continue current work"},
+	}})
+
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
+	t.Setenv("TRACKER_TRACE", tracePath)
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	ambientLedger := filepath.Join(t.TempDir(), "ambient-ledger")
+	t.Setenv("BEADS_DIR", ambientLedger)
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	oldSessionID, oldPrompt := contextSessionID, contextPrompt
+	oldMaxTokens, oldWatchdog := contextMaxTokens, contextWatchdogMinute
+	oldWriteHandoff, oldAutoRestart := contextWriteHandoff, contextAutoRestart
+	contextSessionID = sessionID
+	contextPrompt = "continue current work"
+	contextMaxTokens = contextbudget.DefaultMaxTokens
+	contextWatchdogMinute = defaultWatchdogMinutes
+	contextWriteHandoff = false
+	contextAutoRestart = false
+	t.Cleanup(func() {
+		contextSessionID, contextPrompt = oldSessionID, oldPrompt
+		contextMaxTokens, contextWatchdogMinute = oldMaxTokens, oldWatchdog
+		contextWriteHandoff, contextAutoRestart = oldWriteHandoff, oldAutoRestart
+	})
+
+	run := func(ctx context.Context) error {
+		cmd := &cobra.Command{}
+		cmd.SetContext(ctx)
+		return runContextGuard(cmd, nil)
+	}
+	if err := run(context.Background()); err != nil {
+		t.Fatalf("run context guard: %v", err)
+	}
+	physicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read tracker trace: %v", err)
+	}
+	want := "binary=br|pwd=" + physicalRoot + "|beads=" + ambientLedger + "|argv=current"
+	if got := strings.TrimSpace(string(data)); got != want {
+		t.Fatalf("tracker trace = %q, want %q", got, want)
+	}
+
+	if err := os.Remove(tracePath); err != nil {
+		t.Fatal(err)
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := run(canceled); err != nil {
+		t.Fatalf("pre-canceled optional tracker telemetry returned error: %v", err)
+	}
+	if _, err := os.Stat(tracePath); !os.IsNotExist(err) {
+		t.Fatalf("pre-canceled context launched tracker: %v", err)
+	}
+
+	t.Setenv("AGENTOPS_TRACKER", "bd")
+	if _, err := currentTrackerItem(context.Background(), root); err != nil {
+		t.Fatalf("run resolved BD current: %v", err)
+	}
+	data, err = os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read BD tracker trace: %v", err)
+	}
+	want = "binary=bd|pwd=" + physicalRoot + "|beads=<unset>|argv=current"
+	if got := strings.TrimSpace(string(data)); got != want {
+		t.Fatalf("BD tracker trace = %q, want %q", got, want)
+	}
+
+	exitStub := `#!/bin/sh
+exit 23
+`
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(exitStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, err = currentTrackerItem(context.Background(), root)
+	var exitErr *trackerexec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+		t.Fatalf("tracker error = %T %v, want *trackerexec.ExitError(23)", err, err)
+	}
+}
 
 func TestReadSessionTailParsesUsageAndTask(t *testing.T) {
 	tmp := t.TempDir()
@@ -106,7 +219,7 @@ func TestCollectSessionStatusPromptOverrideAndCritical(t *testing.T) {
 	}
 	writeTranscriptLines(t, transcript, lines)
 
-	status, usage, err := collectSessionStatus(cwd, sessionID, "new high-priority task", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
+	status, usage, err := collectSessionStatus(context.Background(), cwd, sessionID, "new high-priority task", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
 	if err != nil {
 		t.Fatalf("collectSessionStatus: %v", err)
 	}
@@ -167,7 +280,7 @@ func TestCollectSessionStatusStaleWatchdogAction(t *testing.T) {
 	}
 	writeTranscriptLines(t, transcript, lines)
 
-	status, _, err := collectSessionStatus(cwd, sessionID, "", contextbudget.DefaultMaxTokens, 10*time.Minute, "")
+	status, _, err := collectSessionStatus(context.Background(), cwd, sessionID, "", contextbudget.DefaultMaxTokens, 10*time.Minute, "")
 	if err != nil {
 		t.Fatalf("collectSessionStatus: %v", err)
 	}
@@ -229,7 +342,7 @@ func TestCollectSessionStatusResolvesAssignmentFromTeamConfig(t *testing.T) {
 	}
 	writeTranscriptLines(t, transcript, lines)
 
-	status, _, err := collectSessionStatus(cwd, sessionID, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "worker-7")
+	status, _, err := collectSessionStatus(context.Background(), cwd, sessionID, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "worker-7")
 	if err != nil {
 		t.Fatalf("collectSessionStatus: %v", err)
 	}
@@ -352,7 +465,7 @@ func TestEnsureCriticalHandoffWritesMarkerAndDeduplicates(t *testing.T) {
 		Timestamp:               time.Now().UTC(),
 	}
 
-	handoff1, marker1, err := ensureCriticalHandoff(cwd, status, usage)
+	handoff1, marker1, err := ensureCriticalHandoff(context.Background(), cwd, status, usage)
 	if err != nil {
 		t.Fatalf("ensureCriticalHandoff first call: %v", err)
 	}
@@ -360,7 +473,7 @@ func TestEnsureCriticalHandoffWritesMarkerAndDeduplicates(t *testing.T) {
 		t.Fatalf("expected non-empty handoff and marker paths, got %q / %q", handoff1, marker1)
 	}
 
-	handoff2, marker2, err := ensureCriticalHandoff(cwd, status, usage)
+	handoff2, marker2, err := ensureCriticalHandoff(context.Background(), cwd, status, usage)
 	if err != nil {
 		t.Fatalf("ensureCriticalHandoff second call: %v", err)
 	}
@@ -399,7 +512,7 @@ func TestEnsureCriticalHandoffEmitsRehydratableArtifact(t *testing.T) {
 	}
 	usage := transcriptUsage{Model: "claude-opus", Timestamp: time.Now().UTC()}
 
-	if _, _, err := ensureCriticalHandoff(cwd, status, usage); err != nil {
+	if _, _, err := ensureCriticalHandoff(context.Background(), cwd, status, usage); err != nil {
 		t.Fatalf("ensureCriticalHandoff: %v", err)
 	}
 
@@ -428,7 +541,7 @@ func TestEnsureCriticalHandoffEmitsRehydratableArtifact(t *testing.T) {
 
 	// Idempotency: a second CRITICAL for the same session must not produce a
 	// second structured artifact.
-	if _, _, err := ensureCriticalHandoff(cwd, status, usage); err != nil {
+	if _, _, err := ensureCriticalHandoff(context.Background(), cwd, status, usage); err != nil {
 		t.Fatalf("ensureCriticalHandoff second call: %v", err)
 	}
 	structured, err := filepath.Glob(filepath.Join(cwd, ".agents", "handoff", "handoff-*.json"))
@@ -633,7 +746,7 @@ func TestApplyHandoffIfCritical(t *testing.T) {
 		usage := transcriptUsage{}
 		result := &contextGuardResult{}
 
-		err := applyHandoffIfCritical(cwd, status, usage, result)
+		err := applyHandoffIfCritical(context.Background(), cwd, status, usage, result)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -651,7 +764,7 @@ func TestApplyHandoffIfCritical(t *testing.T) {
 		usage := transcriptUsage{}
 		result := &contextGuardResult{}
 
-		err := applyHandoffIfCritical(cwd, status, usage, result)
+		err := applyHandoffIfCritical(context.Background(), cwd, status, usage, result)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -683,7 +796,7 @@ func TestApplyHandoffIfCritical(t *testing.T) {
 			HookMessage: "initial message",
 		}
 
-		err := applyHandoffIfCritical(cwd, status, usage, result)
+		err := applyHandoffIfCritical(context.Background(), cwd, status, usage, result)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1369,7 +1482,7 @@ func TestReadFileTail(t *testing.T) {
 func TestCollectTrackedSessionStatuses(t *testing.T) {
 	t.Run("returns nil when no budget files", func(t *testing.T) {
 		dir := t.TempDir()
-		statuses, err := collectTrackedSessionStatuses(dir, 20*time.Minute)
+		statuses, err := collectTrackedSessionStatusesContext(context.Background(), dir, 20*time.Minute)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1436,7 +1549,7 @@ func TestCollectTrackedSessionStatuses(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		statuses, err := collectTrackedSessionStatuses(dir, 20*time.Minute)
+		statuses, err := collectTrackedSessionStatusesContext(context.Background(), dir, 20*time.Minute)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -2196,19 +2309,19 @@ func TestExtractIssueID_Variants(t *testing.T) {
 
 func TestResolveContextAssignment_Variants(t *testing.T) {
 	t.Run("no agent", func(t *testing.T) {
-		a := resolveContextAssignment(t.TempDir(), "task", "")
+		a := resolveContextAssignment(context.Background(), t.TempDir(), "task", "")
 		if a.AgentName != "" {
 			t.Errorf("name=%q", a.AgentName)
 		}
 	})
 	t.Run("issue in task", func(t *testing.T) {
-		if a := resolveContextAssignment(t.TempDir(), "ag-xyz feature", ""); a.IssueID != "ag-xyz" {
+		if a := resolveContextAssignment(context.Background(), t.TempDir(), "ag-xyz feature", ""); a.IssueID != "ag-xyz" {
 			t.Errorf("issue=%q", a.IssueID)
 		}
 	})
 	t.Run("agent no team", func(t *testing.T) {
 		t.Setenv("HOME", t.TempDir())
-		a := resolveContextAssignment(t.TempDir(), "task", "some-agent")
+		a := resolveContextAssignment(context.Background(), t.TempDir(), "task", "some-agent")
 		if a.AgentRole != "agent" {
 			t.Errorf("role=%q", a.AgentRole)
 		}
@@ -2285,7 +2398,7 @@ func TestCollectSessionStatus_ZeroUsageFallback(t *testing.T) {
 		{"type": "user", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "a task with no usage data"}},
 		{"type": "assistant", "timestamp": time.Now().UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}},
 	})
-	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
+	s, _, err := collectSessionStatus(context.Background(), dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2304,7 +2417,7 @@ func TestCollectSessionStatus_Stale(t *testing.T) {
 		{"type": "user", "timestamp": time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339), "message": map[string]any{"role": "user", "content": "old"}},
 		{"type": "assistant", "timestamp": time.Now().Add(-2 * time.Hour).UTC().Format(time.RFC3339), "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 1000, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 1000}}},
 	})
-	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
+	s, _, err := collectSessionStatus(context.Background(), dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2323,7 +2436,7 @@ func TestCollectSessionStatus_ZeroTimestamp(t *testing.T) {
 		{"type": "user", "message": map[string]any{"role": "user", "content": "task"}},
 		{"type": "assistant", "message": map[string]any{"role": "assistant", "model": "s", "usage": map[string]any{"input_tokens": 1000, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 1000}}},
 	})
-	s, _, err := collectSessionStatus(dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
+	s, _, err := collectSessionStatus(context.Background(), dir, sid, "", contextbudget.DefaultMaxTokens, 20*time.Minute, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2494,11 +2607,11 @@ func TestCollectOneTrackedStatus_Extra(t *testing.T) {
 	cd := filepath.Join(dir, ".agents", "ao", "context")
 	os.MkdirAll(cd, 0755)
 	os.WriteFile(filepath.Join(cd, "budget-bad.json"), []byte("{bad}"), 0644)
-	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-bad.json"), 20*time.Minute); ok {
+	if _, ok := collectOneTrackedStatusContext(context.Background(), dir, filepath.Join(cd, "budget-bad.json"), 20*time.Minute); ok {
 		t.Error("ok for bad json")
 	}
 	os.WriteFile(filepath.Join(cd, "budget-es.json"), []byte(`{"session_id":"  "}`), 0644)
-	if _, ok := collectOneTrackedStatus(dir, filepath.Join(cd, "budget-es.json"), 20*time.Minute); ok {
+	if _, ok := collectOneTrackedStatusContext(context.Background(), dir, filepath.Join(cd, "budget-es.json"), 20*time.Minute); ok {
 		t.Error("ok for empty sid")
 	}
 }
@@ -2666,7 +2779,7 @@ func TestEnsureCriticalHandoff_ExistingHandoff(t *testing.T) {
 	marker := handoffMarker{SessionID: "existing-ho", HandoffFile: "existing-handoff.md"}
 	data, _ := json.Marshal(marker)
 	os.WriteFile(filepath.Join(pd, "existing.json"), data, 0644)
-	hp, mp, err := ensureCriticalHandoff(dir, contextSessionStatus{SessionID: "existing-ho"}, transcriptUsage{})
+	hp, mp, err := ensureCriticalHandoff(context.Background(), dir, contextSessionStatus{SessionID: "existing-ho"}, transcriptUsage{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2681,7 +2794,7 @@ func TestEnsureCriticalHandoff_ExistingHandoff(t *testing.T) {
 func TestEnsureCriticalHandoff_NewHandoff(t *testing.T) {
 	dir := t.TempDir()
 	status := contextSessionStatus{SessionID: "new-ho-test", Status: string(contextbudget.StatusCritical), UsagePercent: 0.95, RemainingPercent: 0.05, Readiness: contextReadinessCritical, LastTask: "critical task"}
-	hp, mp, err := ensureCriticalHandoff(dir, status, transcriptUsage{InputTokens: 190000})
+	hp, mp, err := ensureCriticalHandoff(context.Background(), dir, status, transcriptUsage{InputTokens: 190000})
 	if err != nil {
 		t.Fatal(err)
 	}
