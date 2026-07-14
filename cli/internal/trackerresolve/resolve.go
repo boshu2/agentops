@@ -3,6 +3,7 @@
 package trackerresolve
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -68,10 +69,14 @@ func ResolveWithLookPath(cwd string, env []string, look LookPath) (Resolution, e
 		}
 		return finish(kind, SourceEnv, cwd, env, look), nil
 	}
-	if raw, ok := configValue(cwd, env); ok {
-		kind, err := normalize(raw)
+	config, err := configValue(cwd, env)
+	if err != nil {
+		return Resolution{}, err
+	}
+	if config.path != "" {
+		kind, err := normalize(config.value)
 		if err != nil {
-			return Resolution{}, fmt.Errorf("tracker key in .agentops/config.yaml: %w", err)
+			return Resolution{}, fmt.Errorf("tracker key in %q: %w", config.path, err)
 		}
 		return finish(kind, SourceConfig, cwd, env, look), nil
 	}
@@ -208,7 +213,12 @@ func normalize(raw string) (string, error) {
 	}
 }
 
-func configValue(cwd string, env []string) (string, bool) {
+type configSelection struct {
+	value string
+	path  string
+}
+
+func configValue(cwd string, env []string) (configSelection, error) {
 	workspace := resolveWorkspace(cwd)
 	paths := []string{filepath.Join(cwd, ".agentops", "config.yaml")}
 	if workspace.repoRoot != cwd {
@@ -226,16 +236,22 @@ func configValue(cwd string, env []string) (string, bool) {
 		seen[path] = struct{}{}
 		data, err := os.ReadFile(path) // #nosec G304 -- fixed config path under cwd/repo/home.
 		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return configSelection{}, fmt.Errorf("read tracker configuration %q: %w", path, err)
+			}
 			continue
 		}
 		var value struct {
 			Tracker string `yaml:"tracker"`
 		}
-		if yaml.Unmarshal(data, &value) == nil && strings.TrimSpace(value.Tracker) != "" {
-			return value.Tracker, true
+		if err := yaml.Unmarshal(data, &value); err != nil {
+			return configSelection{}, fmt.Errorf("parse tracker configuration %q: %w", path, err)
+		}
+		if strings.TrimSpace(value.Tracker) != "" {
+			return configSelection{value: value.Tracker, path: path}, nil
 		}
 	}
-	return "", false
+	return configSelection{}, nil
 }
 
 func envValue(env []string, key string) (string, bool) {
