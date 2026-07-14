@@ -140,7 +140,7 @@ But do NOT read implementation details of the specific feature being specified.
 > sufficient. Independent judgment belongs to the downstream Validate umbrella,
 > not duplicate inline judges inside Crank.
 
-**After closing all beads in a wave, before advancing to the next wave:**
+**After one implementation wave, before returning to RPI:**
 
 **Note:** SPEC WAVE has its own validation (contract completeness check) and TEST WAVE has the RED gate. The Wave Acceptance Check applies only to IMPL and REFACTOR waves.
 
@@ -150,19 +150,19 @@ But do NOT read implementation details of the specific feature being specified.
    WAVE_DIFF=$(git diff $WAVE_START_SHA HEAD)
    ```
 
-2. **Load acceptance criteria** for all issues closed in this wave:
+2. **Load the current leaf's affected acceptance criteria:**
    ```bash
-   # For each closed issue in the wave:
-   bd show <issue-id>  # extract ACCEPTANCE CRITERIA section
+   ao beads exec show <leaf-id>  # extract affected acceptance criteria
    ```
 
 3. **Validate worker result evidence (FAIL-CLOSED):**
 
-   For each issue closed in the wave, read `.agents/swarm/results/<issue-id>.json` and validate against:
-   `docs/contracts/swarm-worker-result.schema.json`.
+   Read the direct worker result, or each admitted parallel-lane result, and
+   validate its declared schema.
 
    Required evidence policy for IMPL/REFACTOR acceptance:
-   - `full_suite` evidence is mandatory for every completed implementation issue.
+   - targeted evidence for the affected acceptance is mandatory for every wave;
+     `full_suite` is reserved for the final post-repair candidate.
    - `red_green` evidence is mandatory for issues that ran through TEST WAVE (`--test-first` path).
    - Every check listed in `evidence.required_checks` must exist in `evidence.checks` and have `verdict: PASS`.
 
@@ -188,18 +188,16 @@ But do NOT read implementation details of the specific feature being specified.
    - If Step 3.5 flags an out-of-scope or claim-mismatched diff → **FAIL**
    - Otherwise → **PASS**
 
-5. **Hand off verdict and evidence:**
+5. **Return verdict and evidence to RPI:**
 
    | Verdict | Action |
    |---------|--------|
-   | **PASS** | Record verdict and return wave evidence for Validate. Do not advance inside Crank. |
-   | **WARN** | Record caveats and return wave evidence for Validate. Do not create an inline fix wave. |
+   | **PASS** | Record targeted facts and return them to RPI; it may admit another unchanged wave or freeze a completed leaf. |
+   | **WARN** | Record nonblocking caveats and return them to RPI; do not create an inline fix wave. |
    | **FAIL** | Record blockers and return BLOCKED evidence. The orchestrator owns any helper, retry, or re-plan. |
 
-   ```bash
-   # Record verdict in epic notes
-   bd update <epic-id> --append-notes "CRANK_ACCEPT: wave=$wave verdict=<PASS|WARN|FAIL> at $(date -Iseconds)"
-   ```
+   Validate and Learn do not run here. They run once after the leaf is complete
+   and frozen; an incomplete soft boundary persists resume evidence only.
 
 ## CI-Policy Parity Gate
 
