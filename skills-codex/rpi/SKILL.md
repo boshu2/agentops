@@ -29,19 +29,10 @@ The CLI records startup once per thread and skips duplicates automatically.
 - `terminal` closes the tick; no remaining work means no re-plan and no Premortem.
 - RPI ends at the four receipts and its report. It does not push Git refs, operate a Git queue, close tracker state through delivery, or require another LLM landing verdict. Repository-selected delivery is a separate adapter.
 - Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
-- RPI owns the one persistent [run governor](references/pull-flow-governor.md).
-  Crank and Validate request admission through it before dispatch; no phase may
-  create a private wave, retry, attempt, cost, or helper counter.
-- `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the only run
-  dispositions. Review `REFUTED` evidence becomes `REPAIR` or `REPLAN`;
-  helper `UNSTUCK`/`ESCALATE` results become `REPAIR`/`ANDON`.
-- Missing or corrupt run state, missing meters, and malformed control input
-  refuse authorization without mutating state or manufacturing `ANDON`. A
-  positive projected charge that exceeds a hard time, cost, or quota ceiling
-  reaches `ANDON` without a helper.
-- Generic transitions may record only `NOTE`, `REPAIR`, or `REPLAN`; only the
-  explicit breaker, helper, and human-authority ports may enter or leave
-  `HOLD`/`ANDON`, and human authority cannot clear a hard ceiling.
+- RPI owns the one persistent [run governor](references/pull-flow-governor.md);
+  Crank and Validate request admission through it, and phases create no private
+  state. `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the canonical
+  dispositions; the reference owns meters, breakers, helpers, and hard ceilings.
 
 ## Loop position
 
@@ -94,56 +85,20 @@ Track lifecycle state as `rpi_state`: `goal` (string), `epic_id` (null until dis
 
 Enter at the routed phase and run every phase after it.
 
-1. **Discovery:** invoke `$discovery <goal> [--interactive] --complexity=<level>` directly or through phase-isolated skill transport. On DONE, read `.agents/rpi/execution-packet.json` or the run archive and preserve its objective spine. On BLOCKED, return evidence to the orchestrator; never stop or retry on the label alone.
-2. **Crank:** request one `crank-wave` admission from the persistent governor,
-   and invoke `$crank <epic-id>` only after the receipt is durably recorded
-   with `authorized:true`; otherwise invoke `$crank
-   .agents/rpi/execution-packet.json` under the same rule. Pass `--test-first`
-   or `--no-test-first` through. DONE, PARTIAL, and BLOCKED all return evidence
-   to the orchestrator; none creates an automatic retry or phase-local attempt.
-   **Before accepting a slice/wave the orchestrator reads the actual diff itself** for scope and claim match, distinct from delegated judges. `$crank` enforces this as anti-green-washing Step 3.5 of [Wave Acceptance](../crank/references/wave-patterns.md#wave-acceptance-check).
-3. **Validate:** request `semantic-review` admission through the same persistent
-   governor with declared reviewer-token, elapsed-time, review-context, and
-   deterministic-execution charges. Only a durably recorded
-   `authorized:true` receipt permits dispatch. Then invoke `$validate
-   <epic-id> --complexity=<level>` when an epic exists; otherwise invoke
-   `$validate --complexity=<level>`, directly or through phase-isolated
-   transport. Add `--strict-surfaces` with `--quality`. Preserve the immutable
-   PASS/WARN/FAIL verdict and hand it to Learn; Validate does not retry, mutate
-   the plan, invoke Premortem, or own a budget.
-4. **Learn:** invoke `$learn` with the immutable Validate verdict and evidence reference. Record a file-backed `.agents/rpi/phase-4-summary.md` receipt with status `DONE`, `PARTIAL`, or `BLOCKED`. Learn binds observations to the verdict and emits `remaining_work` plus `plan_impact`; it cannot change the verdict, mutate the plan, invoke Premortem, or operate delivery state.
-5. **Orchestrator decision (the loop's hinge).** Consume the Learn receipt:
-   - remaining work + `material_change`: invoke Discovery for a bounded
-     re-plan, persist the changed plan, then invoke Premortem on that exact
-     changed plan before Crank continues;
-   - remaining work + `no_change`: explicitly retry, continue, stop, or
-     escalate without inventing a plan delta;
-   - no remaining work + `terminal`: close the tick and proceed to Report.
-   This preserves the legal `Validate -> Learn -> orchestrator` sequence and
-   prevents direct `validate -> premortem` or `learn -> premortem` routing.
-6. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
-   status using [references/report-template.md](references/report-template.md).
-   With `--loop`, apply the Learn disposition only after the persistent
-   governor records the next admission or protected stop. With `--spawn-next`,
-   read `.agents/rpi/next-work.jsonl` and suggest the next command without
-   invoking it. Before emitting the report, apply the Context Density Rule:
-   every line should carry intent, boundary, evidence, decision, constraint,
-   or next action.
+1. **Discovery:** invoke `$discovery <goal> [--interactive] --complexity=<level>`. On DONE, read the current or archived execution packet and preserve its objective spine; on BLOCKED, return evidence without treating the label as a retry decision.
+2. **Crank:** after the governor durably records `authorized:true`, invoke `$crank <epic-id>` or `$crank .agents/rpi/execution-packet.json`; pass the test-first choice through. Every completion marker returns evidence to the orchestrator, which reads the actual diff for scope and claim match under [Wave Acceptance](../crank/references/wave-patterns.md#wave-acceptance-check).
+3. **Validate:** after a durably authorized `semantic-review` charge, invoke `$validate <epic-id> --complexity=<level>` or standalone `$validate --complexity=<level>`; add `--strict-surfaces` with `--quality`. Preserve its immutable verdict for Learn; Validate owns no retry, plan mutation, Premortem, or budget.
+4. **Learn:** invoke `$learn` with that verdict and evidence, record `.agents/rpi/phase-4-summary.md`, and consume only its `remaining_work` and `plan_impact`; Learn cannot change the verdict, plan, or delivery state.
+5. **Orchestrator decision:** `material_change` with remaining work routes through bounded Discovery and Premortem on the changed plan; `no_change` requires an explicit continue/retry/stop/escalate decision; `terminal` proceeds to Report. No phase bypasses `Validate -> Learn -> orchestrator`.
+6. **Report:** use [references/report-template.md](references/report-template.md), apply any loop disposition only after the governor records the next admission or protected stop, and only suggest `next-work.jsonl` entries. Apply the Context Density Rule to every line.
 
 ## Orchestrator Decision State Machine
 
 The orchestrator, not Validate or Learn, owns retry and re-plan decisions.
-Every verdict first becomes a Learn receipt. A material plan impact with work
-remaining routes to Discovery, then the changed plan through Premortem. A
-`no_change` result makes the next action explicit without manufacturing a
-learning. A `terminal` result closes the tick without Premortem.
-
-The [persistent pull-flow governor](references/pull-flow-governor.md) is the
-sole controller for those decisions. Max-attempts, oscillation, and no-progress
-enter `HOLD` and receive one helper consultation per blocker class. `UNSTUCK`
-must supply a new approach and resumes as `REPAIR`; helper `ESCALATE` or
-human-only judgment reaches `ANDON`. A genuinely spent hard ceiling skips the
-helper. A failed check or retry count alone is not a spent ceiling.
+Every verdict first becomes a Learn receipt; its plan impact selects the branch
+above. The [persistent pull-flow governor](references/pull-flow-governor.md)
+canonically defines every admission, disposition, breaker, helper, hard-ceiling,
+and protected-state transition used by that decision.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
