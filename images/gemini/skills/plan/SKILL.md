@@ -88,8 +88,9 @@ into acceptance; carry non-goals, rollback, and hard rules into boundaries.
    `.agents/findings/registry.jsonl`. Every plan includes `Applied findings:`
    with IDs or `none` and explains how retrieved rules changed the plan.
 3. **Choose strategic review.** For multi-session work with a contested
-   operator default, recommend `dueling-idea-genies` and an `idea-challenge.v1`
-   packet to `ao plan-pawl decide`; keep this advisory.
+   operator default, recommend `dueling-idea-genies` and consume its
+   `idea-challenge.v1` packet as advisory input. Plan may accept, reject, or
+   combine it; the packet never decides readiness.
 4. **Explore only as needed.** Inspect the codebase or use a bounded Explore
    agent for file inventory, exact symbols/signatures, reuse points with
    `file:line`, tests, imports, and conventions.
@@ -118,9 +119,10 @@ into acceptance; carry non-goals, rollback, and hard rules into boundaries.
     and `blocks` edges. Run the scenario admission and post-creation validation
     gates from [task-creation.md](references/task-creation.md). If br is absent,
     keep the markdown plan as the durable handoff.
-12. **Approve and report.** Unless `--auto`, request approval before declaring
-    completion. Report plan path, issue count/IDs, waves, and next route through
-    `/premortem` then `/crank`. Record `ao ratchet record plan` when available.
+12. **Freeze and report.** Unless `--auto`, request operator confirmation before
+    declaring planning complete. Report plan path and SHA-256, issue count/IDs,
+    waves, and the next route through one exact-plan `/premortem` verdict, then
+    `/crank`. Record `ao ratchet record plan` when available.
 
 ## Required Plan Sections
 
@@ -146,7 +148,8 @@ references below; load only the modules required by the selected complexity.
   YAML `acceptance_criteria`, issue IDs, dependency edges, and file matrices.
 - **Validation command:** run `bash skills/plan/scripts/validate.sh`, relevant
   scenario/validation admission checks, and verify every cited symbol/path.
-- **Downstream handoff:** consumed by `/premortem`, `/crank`, `/implement`, and
+- **Downstream handoff:** the exact path and SHA-256 go first to `/premortem`;
+  after its binary PASS, the plan is consumed by `/crank`, `/implement`, and
   future agents without relying on chat-only context.
 
 Report:

@@ -7,7 +7,7 @@ created_at: "2026-07-09T10:05:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/mismatched-slug/intent.md"
-  sha256: "525101add8f953f622ca152a95f5e87b18d58a720bf8e93474d61dd0bd728a0e"
+  sha256: "101fa4099f556739dd4b03703c30a76ec5a2bc291e682040bd97f3985b05a383"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "The change starts adding CLI behavior."
 route_back_rules:
-  validation_fails: "Patch the packet contract before filing work."
+  checker_fails: "Patch the packet contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to revise the next candidate."
   candidate_stale: "Re-read the contract and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md and revalidate."
@@ -41,7 +41,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/mismatched-slug"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: other-slug

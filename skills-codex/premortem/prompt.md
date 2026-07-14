@@ -1,6 +1,6 @@
 # premortem
 
-Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
+Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.
 
 ## Instructions
 

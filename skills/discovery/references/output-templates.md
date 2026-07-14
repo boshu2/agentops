@@ -1,145 +1,86 @@
 # Discovery Output Templates
 
-## Execution Packet
+## Execution packet
 
-Write the current packet to:
-
-- `.agents/rpi/execution-packet.json` as the latest alias
-- `.agents/rpi/runs/<run-id>/execution-packet.json` as the per-run archive when `run_id` exists
-
-When no `epic_id` exists, this execution packet becomes the file-backed discovery-to-implementation handoff; the next phase invokes `/crank .agents/rpi/execution-packet.json` instead of inventing an epic.
+Write the latest packet to `.agents/rpi/execution-packet.json` and, when a run
+ID exists, archive the same bytes under `.agents/rpi/runs/<run-id>/`.
 
 ```json
 {
-  "schema_version": 1,
-  "run_id": "<run-id or omitted>",
+  "schema_version": 3,
+  "run_id": "<run-id>",
+  "packet_state": "prospective",
   "objective": "<goal>",
+  "skills_loaded": [
+    {"name": "rpi", "reason": "run orchestrator"},
+    {"name": "discovery", "reason": "intent and plan shaping"}
+  ],
+  "phase_receipts": [
+    {"phase": "discovery", "skill": "discovery", "status": "DONE", "artifact": ".agents/rpi/discovery-receipt.json"},
+    {"phase": "crank", "skill": "crank", "status": "pending"},
+    {"phase": "validate", "skill": "validate", "status": "not_checked"},
+    {"phase": "learn", "skill": "learn", "status": "not_checked"}
+  ],
   "density": {
-    "intent": "<behavior or capability>",
+    "intent": "<observable behavior>",
     "boundary": {
       "bounded_context": "<context>",
-      "non_goals": ["<explicit non-goal>"],
-      "write_scope": ["<path or surface>"]
+      "non_goals": ["<non-goal>"],
+      "write_scope": ["<path>"]
     },
-    "evidence": ["<acceptance example, test, gate, or verdict>"],
-    "decision": "<why this slice/plan shape was chosen>",
-    "constraint": ["<safety, runtime, token, or process limit>"],
-    "next_action": "<exact /crank command or block reason>"
+    "evidence": ["<acceptance or deterministic receipt>"],
+    "decision": "<why this plan shape was chosen>",
+    "constraint": ["<hard constraint>"],
+    "next_action": "<exact Crank command or block reason>"
   },
   "artifacts": {
     "research_path": ".agents/research/<topic>.md",
     "plan_path": ".agents/plans/<plan>.md",
-    "premortem_path": ".agents/council/<premortem>.md",
-    "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-    "perspective_plan_paths": [
-      ".agents/discovery/<run-id>/perspective-product.md",
-      ".agents/discovery/<run-id>/perspective-architecture.md",
-      ".agents/discovery/<run-id>/perspective-operations.md"
-    ],
-    "synthesis_packet_path": ".agents/discovery/<run-id>/synthesis-packet.yaml",
-    "fable_approval_path": ".agents/council/<date>-fable-approval-<slug>.md",
-    "approval_edge_path": ".agents/discovery/<run-id>/approval-edge.yaml"
+    "premortem_path": ".agents/council/<premortem>.json"
   },
-  "approval_edge": {
-    "kind": "ApprovalEdge",
-    "source_packet": ".agents/discovery/<run-id>/synthesis-packet.yaml",
-    "capture_path": ".agents/council/ntm-captures/<target>_<stamp>.txt",
-    "verdict_artifact": ".agents/council/<date>-fable-approval-<slug>.md",
-    "verdict": "PASS|WARN",
-    "accepted_risks": []
-  },
-  "epic_id": "<epic-id or omitted>",
-  "plan_path": ".agents/plans/<plan-file>.md",
-  "contract_surfaces": ["docs/contracts/repo-execution-profile.md"],
-  "validation_commands": ["<from repo profile or defaults>"],
-  "validation_lanes": [
-    {
-      "name": "<stable lane id>",
-      "command": "<validation command>",
-      "read_only": true,
-      "writes_artifacts": false,
-      "isolated_agents_home": true,
-      "release_only": false,
-      "mutation_escape_hatch": null,
-      "cost_class": "standard",
-      "auto_select": "default",
-      "timeout_seconds": 180
-    }
+  "premortem_verdict": "PASS",
+  "discovery_artifacts": [
+    ".agents/goal-design/<slug>",
+    ".agents/research/<topic>.md",
+    ".agents/ideas/<run-id>/idea-challenge.json",
+    ".agents/plans/<plan>.md",
+    ".agents/council/<premortem>.json"
   ],
+  "epic_id": "<epic-id>",
   "tracker_mode": "<beads|tasklist>",
-  "tracker_health": {
-    "healthy": true,
-    "mode": "<beads|tasklist>",
-    "reason": "<probe summary>"
-  },
-  "done_criteria": ["<from repo profile or defaults>"],
-  "complexity": "<fast|standard|full>",
-  "premortem_verdict": "<PASS|WARN>",
   "test_levels": {
     "required": ["L0", "L1"],
     "recommended": ["L2"],
-    "rationale": "<why these levels apply>"
+    "rationale": "<why>"
   },
-  "ranked_packet_path": ".agents/rpi/ranked-packet.json",
-  "discovery_timestamp": "<ISO-8601>"
+  "issues": [
+    {"id": "<leaf-id>", "title": "<one behavior>", "wave": 1, "blocked_by": []}
+  ]
 }
 ```
 
-The `density` block is the phase boundary. Raw research, raw plan prose, and
-raw council deliberation stay in the referenced artifacts.
+Omit absent optional artifacts instead of inventing placeholders. Raw research,
+plan prose, idea deliberation, and judge deliberation stay in their linked
+artifacts.
 
-## acceptance_criteria — per-epic + per-bead
+## Acceptance criteria
 
-The packet carries criteria at two slots — `epic_criteria` (array, one entry per epic-level acceptance statement) and `bead_criteria` (object keyed by bead ID, value is an array per bead). Both slots are typed by `#/$defs/Criterion` in [`schemas/execution-packet.schema.json`](../../../schemas/execution-packet.schema.json) — that schema is the canonical machine-readable form. Discovery STEP 6 lifts the YAML fences from the plan and serializes them into the packet; do not redefine the shape here.
+The packet carries `epic_criteria` and `bead_criteria` using the canonical
+`schemas/execution-packet.schema.json#/$defs/Criterion` shape. Lift the fenced
+YAML from Plan without redefining it. Crank and Validate consume these slots.
 
-Source YAML (lifted verbatim from epic + bead bodies emitted by `/plan`):
+## Compatibility summary
 
-```yaml
-acceptance_criteria:
-  - id: ac-<scope>.<n>
-    description: "<one-line measurable statement>"
-    check_type: test_pass | command_exit_zero | file_exists | grep_match | manual | council_judge | custom_rubric
-    check_command: "<shell command or script path>"
-    evidence_path: "<glob>"
-    evidence_required: true | false
-    weight: 0.0-1.0
-    optional: true | false
-    agent_judge: "<council:name>"  # REQUIRED only when check_type == custom_rubric
-```
-
-Packet-side JSON shape (excerpt):
-
-```json
-{
-  "epic_criteria": [
-    { "id": "ac-e1.1", "description": "...", "check_type": "file_exists", "evidence_required": true, "weight": 1.0, "optional": false }
-  ],
-  "bead_criteria": {
-    "soc-bcrn.1.2": [
-      { "id": "ac-bcrn.1.2.1", "description": "...", "check_type": "grep_match", "evidence_required": true, "weight": 1.0, "optional": false }
-    ]
-  }
-}
-```
-
-`/crank` and `/validate` read these slots; v1 packets without them fall back to the legacy `done_criteria` array.
-
-## Compatibility Phase Summary
-
-The execution packet is canonical. Write
-`.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md` only for a consumer that
-still requires the legacy path, and keep it as a link-only projection:
+Only when an existing consumer requires it, write a link-only phase summary:
 
 ```markdown
 # Phase 1 Summary: Discovery
 
-- **Canonical packet:** <execution-packet path and digest>
-- **Premortem:** <verdict path and digest>
+- **Canonical packet:** <path and digest>
+- **Plan:** <path and digest>
+- **Premortem:** <JSON verdict path and digest>
 - **Status:** DONE
 ```
 
-## Optional Telemetry
-
-Telemetry must not create a second source of truth or block the handoff. Emit it
-only when the repository already has a configured sink; never make a checkpoint
-commit solely to prove that Discovery ran.
+Telemetry is optional and never blocks the handoff or becomes a second source
+of truth.

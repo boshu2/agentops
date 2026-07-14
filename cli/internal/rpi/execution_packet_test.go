@@ -28,7 +28,7 @@ func TestExecutionPacketLoopDensityTypesRoundTrip(t *testing.T) {
 		Artifacts: ExecutionPacketArtifacts{
 			ResearchPath:     ".agents/research/topic.md",
 			PlanPath:         ".agents/plans/topic.md",
-			PreMortemPath:    ".agents/council/pre-mortem-topic.md",
+			PremortemPath:    ".agents/council/premortem-topic.json",
 			RankedPacketPath: ".agents/rpi/ranked-packet.json",
 		},
 		TestLevels: ExecutionPacketTestLevels{
@@ -66,7 +66,6 @@ func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
 				Rationale:   "separate implementation and review families",
 			},
 		},
-		DefaultVerdict: DefaultExecutionPacketVerdict,
 		Spec: &ExecutionPacketSpec{
 			TestPath: "cli/cmd/ao/execution_packet_schema_test.go",
 			RedTest:  "TestExecutionPacketSchemaValidatesTypedWorkPacketFields",
@@ -83,21 +82,5 @@ func TestExecutionPacketTypedWorkPacketFieldsRoundTrip(t *testing.T) {
 	}
 	if !reflect.DeepEqual(original, decoded) {
 		t.Fatalf("round-trip mismatch:\noriginal=%#v\ndecoded =%#v", original, decoded)
-	}
-}
-
-func TestExecutionPacketEffectiveVerdictFailsClosedWhenAbsent(t *testing.T) {
-	packet := ExecutionPacket{}
-
-	if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictFail {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictFail)
-	}
-}
-
-func TestExecutionPacketEffectiveVerdictHonorsExplicitPass(t *testing.T) {
-	packet := ExecutionPacket{DefaultVerdict: ExecutionPacketVerdictPass}
-
-	if got := packet.EffectiveVerdict(); got != ExecutionPacketVerdictPass {
-		t.Fatalf("EffectiveVerdict() = %q, want %q", got, ExecutionPacketVerdictPass)
 	}
 }

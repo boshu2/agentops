@@ -2,7 +2,9 @@
 
 > The sixth view of the loop ([loop-map.md](loop-map.md)): **why it converges and why it self-improves.** The [operating loop](operating-loop.md) names the seven moves and states (principle 7) that *the map is fixed and the route is re-routed*; this doc specifies the control system that makes re-routing **terminate** and the map **improve** — the layer principle 7 only gestures at. Composes with, does not duplicate, the seven moves. Cross-links: the membrane reframe ([ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [PRODUCT.md](../../PRODUCT.md) "validation membrane"), the self-improving-membrane epic `age-cwo`, the admission gates ([pawls.md](../contracts/pawls.md)), and the **structure sibling** [the-agent-factory.md](the-agent-factory.md) — this doc is the *behavior* (how the citizens converge + self-improve), that doc is the *citizens* (the control-plane primitives + adapter taxonomy).
 >
-> **Discipline of this doc:** mechanism, not vocabulary. Every principle below changes a real rule in the controller; anything that doesn't is cut. Local-first, no cloud.
+> **Discipline of this doc:** mechanism, not vocabulary. The run-level
+> orchestrator owns transitions; individual skills emit artifacts and verdicts,
+> not private controllers. Local-first, no cloud.
 
 ## 1. The membrane is a closed-loop control system, not a DAG
 
@@ -25,16 +27,19 @@ Keep them on separate clocks. The fast loop never edits a gate; the slow loop ne
 
 ## 3. Fast-loop contract (stability — convergence within a run)
 
-- **Terminate on a GROUNDED VERDICT, not a counter.** The loop stops because move 6 produced a deterministic pass against ground truth — not because a counter ran out. The attempt-cap + wall-clock is the **backstop** that catches a thrash the verdict missed, never the primary terminator.
+- **Terminate on evidence, not ceremony.** Deterministic checks prove facts;
+  one fresh independent verdict judges the frozen semantic claim. A counter is
+  neither proof nor a reason to duplicate the gate.
 - **Guard against degeneration-of-thought** — the failure where an agent repeats the same flawed reasoning each retry and converges *stable-but-wrong* (confident, consistent, incorrect):
   1. The verdict must hit **deterministic ground truth** (the windshield — operating-loop move 6: a real test, a real gate, a real `ao provenance verify`). A model grading itself converges on confident-wrong; that is not a verdict.
-  2. Each retry **carries WHY the last attempt failed** (injected critique). A retry without the prior failure re-derives the same dead end.
-- **Oscillation usually comes from the GATE, not the work.** A *stochastic* gate (an LLM judge with no fixed rubric) will pass → fail → pass the same unchanged artifact and *cause* the flap. **Gates must be deterministic** (or a fixed-rubric quorum, not a free-form judge). This is non-negotiable: a non-deterministic gate makes convergence impossible no matter how good the bounding primitives are.
-- **Bounding primitives — the minimal set that bites** (do not import the whole catalogue):
-  - **Contraction + ratchet + fixpoint** (the termination guarantee): each route-back round must **shrink the open-defect count** or it escalates; a **passed gate freezes and cannot reopen** (the ratchet); **no-diff between two rounds → done**. This is what makes the traversable system provably terminate rather than wander.
-  - **Flap damping** (the direct anti-oscillation primitive, BGP-style): each route-back to a stage accrues a per-stage penalty that **decays on clean passes**; crossing a suppress-limit → **freeze the stage and escalate**, do not route to it again.
-  - **Restart-intensity-in-window** (OTP supervision): N route-backs to the same stage inside a window → **escalate to a broader scope** (re-plan the remaining waves / stronger model / human), do not retry the same stage again.
-  - **Retry budget** (run-level, not per-stage): cap total route-backs as a fraction of forward progress for the whole run; budget spent → **ship-or-abort**, surfaced to the operator.
+  2. A repair carries the complete blocker evidence forward. Repeating the same
+     objective without changing the approach is not progress.
+- **Oscillation usually comes from reviewing a moving artifact.** Freeze the
+  exact plan or candidate, bind its digest, and return one complete blocker set.
+  Any edit creates a new artifact identity.
+- **One governor.** The orchestrator classifies results as NOTE, REPAIR, REPLAN,
+  HOLD, or ANDON. Skills do not own attempt maps, retry multipliers, helper
+  quotas, or operator notification.
 
 ## 4. Slow-loop contract (the self-improving membrane — improvement across runs)
 
@@ -50,16 +55,16 @@ Importing all ten control-theory patterns would be vocabulary-instead-of-mechani
 
 | # | Mechanism | Loop | Current AgentOps state |
 |---|---|---|---|
-| 1 | **Circuit breaker + no-delta-stop** | fast (stability) | **Mostly exists** — 3-attempt cap + circuit-breaker escalation ([pawls.md](../contracts/pawls.md) §Escalation), dry/no-delta stop. Gap: the cap should be the *backstop*, the grounded verdict the *terminator*. |
+| 1 | **Exact-input proof + one run disposition** | fast (stability) | **Landed** — frozen artifact identities, author-distinct semantic verdicts, and orchestrator-owned NOTE/REPAIR/REPLAN/HOLD/ANDON disposition. |
 | 2 | **Escape → shift-left check** | slow (engine) | **Open** — `age-cwo` (escape-tracking → finding → one-altitude-earlier gate); the postmortem→finding-compiler shape exists, the escape→gate closure does not. |
-| 3 | **SPC governor** (special-cause-only, two-sided fitness, error budget) | slow (setpoint) | **Built** (`age-wy3`). `cli/internal/governor`: the error-budget burn-rate (`ao governor budget`, ship-vs-harden — SPC.1) and the special-cause noise-band + two-sided-fitness gate + `DetectFalseAlarms` (`ao governor noise-band` — SPC.2). The governor is the canonical SLOW-loop owner; it does NOT merge the fast/outer breakers (different timescales by design — `planpawl/decide.go` is the fast loop, `scripts/evolve/halt-check.sh` the evolve outer loop). The coherence wire (SPC.3): `halt-check.sh` consults `ao governor budget`, so a burned budget halts the evolve cycle (`governor_budget_burned`). `rpi_loop_supervisor.go` was deleted by ADR-0009/soc-2rtm0; the old "3 scattered breakers" framing is obsolete. |
+| 3 | **SPC governor** (special-cause-only, two-sided fitness, error budget) | slow (setpoint) | **Built** (`age-wy3`) for across-run learning economics. It does not decide a plan verdict or create phase-local control state. |
 
 ## 6. Conformance contract
 
 A Workflow script or skill is **loop-model-compliant** iff:
 
 1. **Gates are deterministic.** Every promotion decision hits ground truth (a test, a gate, a fixed-rubric quorum) — never a free-form LLM self-grade. (A stochastic gate is the #1 cause of non-convergence.)
-2. **The fast loop terminates on a grounded verdict, with the attempt-cap/wall-clock as backstop only.** Not a bare counter.
+2. **The fast loop terminates on evidence and one orchestrator disposition.** Not a bare counter or a skill-local retry ladder.
 3. **No self-modification inside a run.** No gate is added, removed, or re-tuned while a goal is in flight. Map fixed within a run.
 4. **Escapes route to the slow loop.** A defect caught downstream emits an escape record that feeds escape→shift-left, governed by SPC — it is not silently fixed in place and forgotten.
 5. **The orchestrator gates and routes; it never reasons about the work.** The orchestrator's only jobs are: read the verdict, apply the bounding primitives, route to the next altitude (or escalate). The moment an orchestrator starts *doing* the work it is supposed to *gate*, the membrane has a conflict of interest and the control system is broken.

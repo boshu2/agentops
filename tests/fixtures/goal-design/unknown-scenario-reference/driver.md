@@ -7,7 +7,7 @@ created_at: "2026-07-09T10:25:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/unknown-scenario-reference/intent.md"
-  sha256: "76a7a385072e8869a0c8463bcf30ebe8a2e64edac6bd06328ac5a5d438623225"
+  sha256: "fdd3b26bec6eaff166b9dff59bc71e7d1f05846342a7899f5c1693c911d4c2e5"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -30,7 +30,7 @@ small_batch_gate:
   split_required_if:
     - "The change starts adding CLI behavior."
 route_back_rules:
-  validation_fails: "Patch the packet contract before filing work."
+  checker_fails: "Patch the packet contract before filing work."
   bead_closes_with_new_signal: "Use the close verdict to revise the next candidate."
   candidate_stale: "Re-read the contract and regenerate the driver digest."
   promotion_contradicts_intent: "Revise intent.md and revalidate."
@@ -41,7 +41,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh tests/fixtures/goal-design/unknown-scenario-reference"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: unknown-scenario-reference

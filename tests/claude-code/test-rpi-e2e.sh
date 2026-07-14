@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test: RPI E2E Workflow
-# Comprehensive test for full Research -> Plan -> Pre-mortem -> Crank -> Vibe -> Post-Mortem pipeline
+# Comprehensive test for Research -> Plan -> Premortem -> Crank -> Validate -> Learn
 # Verifies artifacts created at each phase and gates enforced
 #
 # This test validates:
@@ -370,80 +370,43 @@ ISSUE2
 }
 
 # ============================================================================
-# Phase 3: Pre-mortem Skill Tests
+# Phase 3: Premortem Skill Tests
 # ============================================================================
 
 test_premortem_artifacts() {
-    log "Testing Pre-mortem Phase artifacts..."
+    log "Testing exact-plan Premortem artifact..."
 
     cd "$TEST_PROJECT"
 
-    # Simulate pre-mortem council output
     mkdir -p .agents/council
-    cat > .agents/council/$(date +%Y-%m-%d)-pre-mortem-calculator.md << 'PREMORTEM'
----
-schema_version: 1
-type: pre-mortem
----
-
-# Pre-mortem: Calculator Improvements
-
-**Date:** $(date +%Y-%m-%d)
-**Plan:** .agents/plans/*-calculator-improvements.md
-
-## Council Verdict
-
-**Result:** PASS (0 critical, 1 advisory)
-
-## Judge Verdicts
-
-| Judge | Verdict | Confidence |
-|-------|---------|------------|
-| Correctness | PASS | high |
-| Architecture | PASS | high |
-| Error-Paths | PASS | medium |
-
-## Findings
-
-### CRITICAL
-(none)
-
-### ADVISORY
-1. Consider edge cases for very large numbers (overflow)
-
-## Recommendation
-
-Plan is ready to implement. No blocking issues found.
+    local plan_file plan_sha premortem_file
+    plan_file=$(find .agents/plans -name '*calculator-improvements.md' -type f | head -1)
+    plan_sha=$(sha256sum "$plan_file" | awk '{print $1}')
+    premortem_file=.agents/council/$(date +%Y-%m-%d)-premortem-calculator.json
+    cat > "$premortem_file" << PREMORTEM
+{
+  "schema_version": "premortem-plan-verdict.v1",
+  "plan": {"path": "$plan_file", "sha256": "$plan_sha"},
+  "author_id": "planner-context",
+  "judge_id": "fresh-judge-context",
+  "verdict": "PASS",
+  "blockers_complete": true,
+  "blockers": []
+}
 PREMORTEM
 
-    git add . && git commit -q -m "Pre-mortem validation of calculator improvements"
+    git add . && git commit -q -m "Premortem validation of calculator improvements"
 
-    # Check pre-mortem artifact exists
-    local premortem_count
-    premortem_count=$(find .agents/council -name "*pre-mortem*" -type f 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$premortem_count" -ge 1 ]]; then
-        log_pass "Pre-mortem artifact created (.agents/council/*pre-mortem*.md)"
+    if "$REPO_ROOT/skills/premortem/scripts/validate-output.sh" "$premortem_file" "$TEST_PROJECT" >/dev/null; then
+        log_pass "Premortem exact-plan verdict validates"
     else
-        log_fail "No pre-mortem artifact found"
+        log_fail "Premortem exact-plan verdict is invalid"
     fi
 
-    # Check pre-mortem has council verdict
-    local premortem_file
-    premortem_file=$(find .agents/council -name "*pre-mortem*" -type f | head -1)
-
-    if [[ -n "$premortem_file" ]]; then
-        if grep -q "Council Verdict" "$premortem_file"; then
-            log_pass "Pre-mortem has council verdict"
-        else
-            log_fail "Pre-mortem missing council verdict"
-        fi
-
-        if grep -q "Judge Verdicts" "$premortem_file"; then
-            log_pass "Pre-mortem has judge verdicts table"
-        else
-            log_fail "Pre-mortem missing judge verdicts"
-        fi
+    if jq -e '.verdict == "PASS" and .blockers_complete == true and (.blockers | length == 0) and (.author_id != .judge_id)' "$premortem_file" >/dev/null; then
+        log_pass "Premortem is binary, complete, and author-distinct"
+    else
+        log_fail "Premortem verdict contract is incomplete"
     fi
 
     cd "$SCRIPT_DIR"
@@ -1173,120 +1136,17 @@ PROMISE_CHAIN
     cd "$SCRIPT_DIR"
 }
 
-test_gate_retry_logic() {
-    log "Testing Gate retry logic..."
+test_single_verdict_contract() {
+    log "Testing single Premortem verdict contract..."
 
     cd "$TEST_PROJECT"
 
-    # Simulate pre-mortem FAIL → retry → PASS sequence
-    mkdir -p .agents/council
-    cat > .agents/council/test-premortem-attempt-1.md << 'PM_FAIL'
-# Pre-mortem: Attempt 1
-
-## Council Verdict
-
-**Result:** FAIL (1 critical)
-
-## Findings
-
-### CRITICAL
-1. FINDING: Missing error handling in divide-by-zero path
-   FIX: Add guard clause before division
-   REF: src/calculator.py:28
-PM_FAIL
-
-    cat > .agents/council/test-premortem-attempt-2.md << 'PM_PASS'
-# Pre-mortem: Attempt 2
-
-## Council Verdict
-
-**Result:** PASS (0 critical)
-
-## Findings
-
-### ADVISORY
-1. FINDING: Consider logging division operations
-   FIX: Add optional logging parameter
-   REF: src/calculator.py:28
-PM_PASS
-
-    # Check retry produces multiple attempts
-    local attempt_count
-    attempt_count=$(find .agents/council -name "test-premortem-attempt-*" -type f 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$attempt_count" -ge 2 ]]; then
-        log_pass "Pre-mortem retry produces multiple attempt artifacts ($attempt_count)"
+    local verdict
+    verdict=$(find .agents/council -name '*premortem-calculator.json' -type f | head -1)
+    if jq -e 'keys | all(. != "attempt" and . != "attempts" and . != "budget" and . != "helper")' "$verdict" >/dev/null; then
+        log_pass "Premortem artifact carries no local controller state"
     else
-        log_fail "Pre-mortem retry missing attempt artifacts"
-    fi
-
-    # Simulate vibe FAIL → retry → PASS with structured findings
-    cat > .agents/council/test-vibe-attempt-1.md << 'VIBE_FAIL'
-# Vibe Report: Attempt 1
-
-**Grade:** D
-
-## Gate Decision
-[x] BLOCK
-
-## Findings
-
-### CRITICAL
-1. FINDING: SQL injection in user input handling
-   FIX: Use parameterized queries
-   REF: src/db.py:15
-VIBE_FAIL
-
-    cat > .agents/council/test-vibe-attempt-2.md << 'VIBE_PASS'
-# Vibe Report: Attempt 2
-
-**Grade:** B
-
-## Gate Decision
-[x] PASS
-
-## Findings
-
-### MEDIUM
-1. FINDING: Variable naming could be clearer
-   FIX: Rename 'x' to 'user_count'
-   REF: src/db.py:22
-VIBE_PASS
-
-    # Check vibe retry attempts exist
-    local vibe_attempt_count
-    vibe_attempt_count=$(find .agents/council -name "test-vibe-attempt-*" -type f 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$vibe_attempt_count" -ge 2 ]]; then
-        log_pass "Vibe retry produces multiple attempt artifacts ($vibe_attempt_count)"
-    else
-        log_fail "Vibe retry missing attempt artifacts"
-    fi
-
-    # Check structured findings format (FINDING/FIX/REF)
-    local findings_format_count
-    findings_format_count=$(grep -l 'FINDING:' .agents/council/test-*-attempt-*.md 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$findings_format_count" -ge 2 ]]; then
-        log_pass "Structured findings format (FINDING/FIX/REF) used across attempts"
-    else
-        log_fail "Structured findings format missing"
-    fi
-
-    # Simulate max 3 attempts cap in chain
-    cat >> .agents/ao/chain.jsonl << 'RETRY_CHAIN'
-{"step":"pre-mortem","status":"blocked","attempt":1,"reason":"1 critical finding","time":"2026-02-03T12:10:00Z"}
-{"step":"pre-mortem","status":"blocked","attempt":2,"reason":"1 critical finding","time":"2026-02-03T12:20:00Z"}
-{"step":"pre-mortem","status":"completed","attempt":3,"reason":"all findings resolved","time":"2026-02-03T12:30:00Z"}
-RETRY_CHAIN
-
-    local max_attempt
-    max_attempt=$(grep '"step":"pre-mortem"' .agents/ao/chain.jsonl | grep -o '"attempt":[0-9]*' | sed 's/"attempt"://' | sort -n | tail -1)
-
-    if [[ "$max_attempt" -le 3 ]]; then
-        log_pass "Gate retry capped at max 3 attempts (highest: $max_attempt)"
-    else
-        log_fail "Gate retry exceeded max 3 attempts ($max_attempt)"
+        log_fail "Premortem artifact leaked controller state"
     fi
 
     cd "$SCRIPT_DIR"
@@ -1448,7 +1308,7 @@ main() {
     echo ""
     echo -e "${BLUE}════════════════════════════════════════════════════════${NC}"
     echo -e "${BLUE}  RPI E2E Test Suite${NC}"
-    echo -e "${BLUE}  Research -> Plan -> Pre-mortem -> Crank -> Vibe -> Post-Mortem${NC}"
+    echo -e "${BLUE}  Research -> Plan -> Premortem -> Crank -> Validate -> Learn${NC}"
     echo -e "${BLUE}════════════════════════════════════════════════════════${NC}"
     echo ""
 
@@ -1465,7 +1325,7 @@ main() {
     test_plan_artifacts
 
     echo ""
-    echo "Phase 3: Pre-mortem"
+    echo "Phase 3: Premortem"
     echo "───────────────────"
     test_premortem_artifacts
 
@@ -1492,7 +1352,7 @@ main() {
     test_phase_summaries
     test_complexity_scaling
     test_promise_tag_parsing
-    test_gate_retry_logic
+    test_single_verdict_contract
 
     echo ""
     echo "Knowledge Flywheel"

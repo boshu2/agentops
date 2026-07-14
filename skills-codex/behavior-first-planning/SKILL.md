@@ -12,7 +12,7 @@ description: Behavior-first planning discipline — intent
 
 ## Constraints
 
-- Do not create tracker beads before the manifest passes coverage, cycle, runnable-test, and independent-review gates because an unvalidated DAG pollutes the shared work surface.
+- Do not create tracker beads before the manifest passes its deterministic coverage, cycle, and runnable-test checks and the exact plan has a Premortem PASS, because an unproved DAG pollutes the shared work surface.
 - Do not accept prose-only or harness-error "tests" as red; each acceptance command must resolve to one real unignored test and fail for the intended missing behavior.
 - Keep one frozen scenario per slice because combining behaviors hides partial completion and defeats the vertical acceptance boundary.
 - Goal and epic parents are aggregate demand, never writer WIP; tracker creation
@@ -83,13 +83,14 @@ A bead failing any check is **rejected**, not written. Only the gate-passed set 
 
 **Batch size — one behavior per slice (mechanical).** A slice bead delivers **exactly one** behavior = **one** Gherkin scenario; a slice carrying two or more is a batch, not a slice, and must be split. Enforce it mechanically, don't eyeball it: `bash scripts/check-slice-batch-size.sh <bead-id>` reads the bead body and FAILs on >1 scenario (naming the count and the scenarios to split), PASSes on exactly one, and WARNs on zero (advisory — a scenario-less task bead is not hard-blocked while this discipline is new). Run it at plan time before a slice becomes a bead, and again at **crank** time on any slice that *grew* — surfaced extra behavior becomes a follow-up bead, never absorbed into the current slice.
 
-## The closing gate — validate BEFORE the tracker write
+## The closing gate — prove the manifest, then run Premortem
 
-Behavior-first planning is **not done when the beads are drafted — it is done when an independent reviewer confirms them.** Before writing anything to the tracker:
+Behavior-first planning owns deterministic proof that the proposed bead DAG is runnable, coverage-complete, and cycle-free. It does not emit a semantic verdict. Before writing anything to the tracker:
 
 - Produce a manifest of the proposed (not-yet-tracked) bead set.
-- Have an **independent, fresh-context reviewer** (cross-family where possible — the author never grades their own plan) score crank-readiness against the frozen behaviors and spot-run ≥2 acceptance commands.
-- Write to the tracker **only** on a clearing verdict AND coverage-complete AND cycle-free AND the mechanical drift-guard green. Otherwise repair the manifest and re-validate; do not pollute the tracker with un-cleared beads.
+- Run the coverage, cycle, runnable-test, and mechanical drift checks against that exact manifest.
+- Freeze the exact plan and obtain its one binary Premortem verdict. Premortem alone decides tracker readiness; Behavior First Planning contributes deterministic evidence and makes no semantic decision.
+- Write to the tracker only when the deterministic checks are green and the exact-plan Premortem verdict is `PASS`. Otherwise repair the manifest or plan and repeat the earliest invalidated check.
 
 Use `br` from the main checkout (never a worktree — it forks the bead DB), each bead self-contained with an explicit **ACCEPTANCE** section, deps wired per the manifest, overlap-checked against existing open beads.
 
@@ -103,18 +104,19 @@ The skill dogfoods its own rule: its behavior is pinned by an executable spec, [
 
 - Duplicate the *lighter* single-BDD-intent shape phase of the `operating-loop` — this is the **full** Gherkin → executed-red → acceptance-gated-DAG discipline, used when beads must be genuinely crank-ready.
 - Write a bead whose acceptance is prose, "see spec", or an unrun test.
-- Grade your own plan — the closing gate requires an independent reviewer.
+- Turn deterministic manifest evidence into a semantic readiness verdict;
+  the exact-plan Premortem boundary owns that judgment.
 
 ## Output Specification
 
 - **Path:** write `behaviors.md`, `acceptance-tests/`, `acceptance-tests.md`, and `spec.md` in the planning workspace; tracker mutations happen only after the closing gate.
 - **Filename:** the proposed bead-set manifest is `bead-manifest.json`; acceptance test files follow the target repository's native test filename convention.
 - **Format:** `behaviors.md` is frozen Gherkin, `acceptance-tests.md` maps scenario IDs to commands and paths, and `bead-manifest.json` is JSON with bead IDs, `scenario_ref`, `acceptance_test`, and dependency arrays.
-- **Exit code:** validate with the project test collector/list command, `bash scripts/check-slice-batch-size.sh <bead-id>`, a cycle check, and the independent closing verdict; any nonzero check blocks tracker writes.
-- **Downstream handoff:** consumed by `$plan`, `$implement`, or `$crank` only after the manifest is coverage-complete, cycle-free, independently cleared, and its executed-red evidence is attached.
+- **Exit code:** check with the project test collector/list command, `bash scripts/check-slice-batch-size.sh <bead-id>`, and a cycle check; any nonzero check blocks the Premortem handoff and tracker writes.
+- **Downstream handoff:** Plan consumes the deterministic manifest and freezes the exact plan; `$implement` or `$crank` consumes it only after the exact-plan Premortem `PASS` and attached executed-red evidence.
 
 ## Quality Checklist
 
 - Every frozen scenario has happy, edge, and applicable failure-path coverage and maps to at least one bead.
 - Every bead maps to exactly one scenario and carries an invocable acceptance test that was observed red for the intended reason.
-- The proposed DAG is cycle-free, overlap-checked, and independently reviewed before any tracker mutation.
+- The proposed DAG is cycle-free and overlap-checked before its exact-plan Premortem verdict; only that `PASS` permits tracker mutation.

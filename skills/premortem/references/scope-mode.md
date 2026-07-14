@@ -20,9 +20,11 @@ Before running council, determine the review posture. Three modes:
 
 ## Critical Rule
 
-Once mode is selected, COMMIT to it in the council packet. Do not silently drift. Include `scope_mode: <expansion|hold|reduction>` in the council packet context.
+Once mode is selected, commit to it in the judge input. Do not silently drift.
+Scope mode focuses the review; it never changes the binary verdict schema or
+authorizes conditional readiness.
 
-## Mode-Specific Council Instructions
+## Mode-Specific Judge Instructions
 
 - **EXPANSION:** Add to judge prompt: "What would make this 10x more ambitious for 2x the effort? What's the platonic ideal? List 3 delight opportunities."
 - **HOLD SCOPE:** Add to judge prompt: "The plan's scope is accepted. Your job: find every failure mode, test every edge case, ensure observability. Do not argue for less work."

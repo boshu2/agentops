@@ -18,7 +18,7 @@ copy_mortem_compatibility_fixtures() {
 
 run_checker_with_fixture_override() {
   run env MORTEM_COMPAT_FIXTURES_DIR="$CORRUPT_FIXTURES" \
-    "$REPO_ROOT/scripts/check-mortem-compatibility.sh" --writer=legacy-v2
+    "$REPO_ROOT/scripts/check-mortem-compatibility.sh"
 }
 
 assert_historical_redirect() {
@@ -132,7 +132,7 @@ assert_runtime_pointer() {
   [[ "$status" -eq 0 ]]
 }
 
-@test "mortem compatibility checker owns every accepted conflict and legacy-readback fixture" {
+@test "mortem compatibility checker owns canonical packet and non-packet redirects" {
   local checker="$REPO_ROOT/scripts/check-mortem-compatibility.sh"
   [[ -x "$checker" ]] || {
     echo "missing executable compatibility checker: scripts/check-mortem-compatibility.sh" >&2
@@ -140,26 +140,12 @@ assert_runtime_pointer() {
   }
 
   assert_paths_exist \
-    tests/fixtures/mortem-compatibility/v1-old-only.json \
-    tests/fixtures/mortem-compatibility/v2-old-only.json \
-    tests/fixtures/mortem-compatibility/v3-new-only.json \
-    tests/fixtures/mortem-compatibility/both-equal.json \
-    tests/fixtures/mortem-compatibility/both-conflicting.json \
-    tests/fixtures/mortem-compatibility/neither-optional.json \
-    tests/fixtures/mortem-compatibility/neither-required.json \
-    tests/fixtures/mortem-compatibility/v1-new-only-invalid.json \
-    tests/fixtures/mortem-compatibility/v2-new-only-invalid.json \
-    tests/fixtures/mortem-compatibility/v3-old-only-invalid.json \
-    tests/fixtures/mortem-compatibility/unknown-version.json \
     tests/fixtures/mortem-compatibility/legacy-directory/pre-mortem-check.json \
     tests/fixtures/mortem-compatibility/directory-conflict/pre-mortem-check.json \
     tests/fixtures/mortem-compatibility/directory-conflict/premortem-check.json \
-    tests/fixtures/mortem-compatibility/explicit-skill-redirect.yaml \
-    tests/fixtures/mortem-compatibility/legacy-readback/v1-old-only.json \
-    tests/fixtures/mortem-compatibility/legacy-readback/v2-old-only.json \
-    tests/fixtures/mortem-compatibility/writer-legacy-v2.json
+    tests/fixtures/mortem-compatibility/explicit-skill-redirect.yaml
 
-  run "$checker" --writer=legacy-v2
+  run "$checker"
   [[ "$status" -eq 0 ]]
 }
 
@@ -170,32 +156,9 @@ assert_runtime_pointer() {
   ! grep -q 'writer-v1\.json' "$checker"
   grep -q 'go test ./internal/domain/packet' "$checker"
   grep -q 'go test ./cmd/ao' "$checker"
-  grep -q 'TestExecutionPacketDecodeJSON_MortemSchemaOwnership' "$checker"
-  grep -q 'TestExecutionPacketPublishedSchema_MortemOwnership' "$checker"
+  grep -q 'TestExecutionPacketPremortemContract' "$checker"
+  grep -q 'TestRepo_PremortemContract' "$checker"
   grep -q 'TestPremortemDirectoryReader_' "$checker"
-  grep -q -- '--writer=legacy-v2' "$checker"
-  grep -q -- '--writer=canonical-v3' "$checker"
-  grep -q -- '--legacy-readback' "$checker"
-}
-
-@test "mortem compatibility checker rejects corrupt packet fixture bytes" {
-  copy_mortem_compatibility_fixtures
-  printf '{invalid packet json\n' >"$CORRUPT_FIXTURES/v2-old-only.json"
-
-  run_checker_with_fixture_override
-  [[ "$status" -ne 0 ]]
-  [[ "$output" == *"v2-old-only.json"* ]]
-  [[ "$output" == *"JSON"* || "$output" == *"json"* ]]
-}
-
-@test "mortem compatibility checker rejects corrupt legacy-readback fixture bytes" {
-  copy_mortem_compatibility_fixtures
-  printf '{invalid legacy readback json\n' >"$CORRUPT_FIXTURES/legacy-readback/v2-old-only.json"
-
-  run_checker_with_fixture_override
-  [[ "$status" -ne 0 ]]
-  [[ "$output" == *"legacy-readback/v2-old-only.json"* ]]
-  [[ "$output" == *"JSON"* || "$output" == *"json"* ]]
 }
 
 @test "mortem compatibility checker rejects corrupt legacy-directory fixture bytes through production reader" {
@@ -206,17 +169,6 @@ assert_runtime_pointer() {
   run_checker_with_fixture_override
   [[ "$status" -ne 0 ]]
   [[ "$output" == *"legacy-directory/pre-mortem-check.json"* ]]
-}
-
-@test "mortem compatibility checker rejects corrupt legacy-v2 writer contract bytes" {
-  copy_mortem_compatibility_fixtures
-  printf '%s\n' '{"schema_version":3,"packet_fields":{"premortem_verdict":"PASS"},"runtime_paths":[".agents/premortem-checks/current.md"]}' \
-    >"$CORRUPT_FIXTURES/writer-legacy-v2.json"
-
-  run_checker_with_fixture_override
-  [[ "$status" -ne 0 ]]
-  [[ "$output" == *"writer-legacy-v2.json"* ]]
-  [[ "$output" == *"schema_version"* || "$output" == *"legacy-v2"* ]]
 }
 
 @test "mortem compatibility checker rejects a directory-conflict fixture made equal" {

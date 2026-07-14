@@ -43,48 +43,6 @@ def resolve_artifact(repo_root: Path, value: object, label: str) -> Path:
     return resolved
 
 
-def validate_versioned_alias(
-    container: dict[str, object],
-    version: int,
-    legacy_key: str,
-    canonical_key: str,
-    prefix: str = "",
-    allow_equal_dual: bool = True,
-) -> None:
-    legacy_present = legacy_key in container
-    canonical_present = canonical_key in container
-    if legacy_present and canonical_present:
-        if not allow_equal_dual or container[legacy_key] != container[canonical_key]:
-            fail(
-                "conflicting execution packet fields "
-                f"{prefix}{legacy_key} and {prefix}{canonical_key}"
-            )
-        return
-    if version < 3 and canonical_present:
-        fail(f"schema_version {version} does not own field {prefix}{canonical_key}")
-    if version == 3 and legacy_present:
-        fail(f"schema_version {version} does not own field {prefix}{legacy_key}")
-
-
-def validate_mortem_aliases(packet: dict[str, object]) -> None:
-    version = packet.get("schema_version")
-    if not isinstance(version, int) or isinstance(version, bool) or version not in {1, 2, 3}:
-        return  # The published schema owns the base type/range diagnostic.
-    validate_versioned_alias(
-        packet, version, "pre_mortem_verdict", "premortem_verdict"
-    )
-    artifacts = packet.get("artifacts")
-    if isinstance(artifacts, dict):
-        validate_versioned_alias(
-            artifacts,
-            version,
-            "pre_mortem_path",
-            "premortem_path",
-            "artifacts.",
-            False,
-        )
-
-
 def validate_receipts(packet: dict[str, object], repo_root: Path) -> None:
     loaded = packet.get("skills_loaded")
     if not isinstance(loaded, list) or not loaded:
@@ -167,7 +125,6 @@ def main() -> int:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         if not isinstance(packet, dict):
             fail("execution packet must be a JSON object")
-        validate_mortem_aliases(packet)
         validate_receipts(packet, repo_root)
         Draft202012Validator(schema, format_checker=FormatChecker()).validate(packet)
     except (OSError, json.JSONDecodeError, ValueError) as exc:

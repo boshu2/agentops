@@ -1,8 +1,8 @@
 # Executable spec for the /premortem skill — pre-implementation plan gate (domain role).
-# /premortem stress-tests a plan BEFORE work starts: it returns a PASS/WARN/FAIL verdict on
+# /premortem stress-tests a plan BEFORE work starts: it returns a PASS/FAIL verdict on
 # the plan and on the wave-validity rows, so a bad plan is sent back to /plan rather than
 # executed. Quick mode uses one fresh judge; --deep/--mixed widen the council. Hexagon:
-# domain; consumes standards; produces result.json + verdict.json. (soc-qk4b)
+# domain; consumes standards; produces premortem-plan-verdict.v1. (soc-qk4b)
 
 Feature: Pre-mortem stress-tests a plan before implementation
   As the pre-flight gate between slice-planning and TDD
@@ -11,8 +11,9 @@ Feature: Pre-mortem stress-tests a plan before implementation
 
   Scenario: a plan is reviewed and gets a verdict before work starts
     When /premortem runs on a plan or spec
-    Then it returns a PASS/WARN/FAIL verdict on the plan's failure modes
-    And the verdict is written to verdict.json (council schema)
+    Then it returns a PASS or FAIL verdict on the plan's failure modes
+    And the verdict binds the exact plan path and SHA-256
+    And author_id differs from judge_id
 
   Scenario: wave-validity gates parallelism
     When the plan proposes a parallel wave
@@ -37,4 +38,11 @@ Feature: Pre-mortem stress-tests a plan before implementation
     When /premortem runs without --deep/--mixed/--debate
     Then it runs exactly one fresh-context judge distinct from the author
     And it does not start a council
-    And --deep/--mixed/--debate widen the council fan-out
+    And optional council fan-out cannot substitute for the exact-plan verdict
+
+  Scenario: a failure reports every blocker once
+    Given the plan has concrete readiness defects
+    When the fresh judge returns FAIL
+    Then blockers_complete is true
+    And the blocker list is nonempty and evidence-bound
+    And Premortem owns no retry, budget, helper, or delivery state

@@ -7,7 +7,7 @@ created_at: "2026-07-09T09:05:00-04:00"
 status: draft
 intent_ref:
   path: ".agents/goal-design/valid-packet/intent.md"
-  sha256: "35963f3584cd932028b533d1d529cc88a19faf6c556029d71ba46e6458f363dc"
+  sha256: "dfefb2a95ce7ad9fbf1ead6ad5598579c3da28513ad005d30fe270544ed5472f"
   schema_version: 1
 loop_routing:
   delivery: "File one bead only after the packet validates."
@@ -36,7 +36,5 @@ execution_mode:
     workflow: "Only for later deterministic structured DAGs."
 artifact_validation:
   checker_command: "scripts/check-goal-design-packet.sh .agents/goal-design/valid-packet"
-  independent_validator: validate
-  required_verdict: PASS
 ---
 # Goal Design Driver: missing-route-back-rules

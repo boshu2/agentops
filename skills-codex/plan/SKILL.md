@@ -85,11 +85,11 @@ For a checker-clean packet:
    to `.agents/findings/registry.jsonl`. Treat active findings as hard
    planning context. Record applied finding IDs in the plan with an
    `Applied findings:` line, even when the value is `none`.
-4. **Recommend a strategic duel when warranted.** If the plan spans more than
+4. **Recommend a strategic challenge when warranted.** If the plan spans more than
    one execution session and has at least one contested operator-default
-   decision, recommend `$dueling-idea-genies` and hand its `idea-challenge.v1`
-   packet to `ao plan-pawl decide` before decomposition. Keep it
-   advisory, not mandatory. Skip it for single-session or non-contested plans.
+   decision, recommend `$dueling-idea-genies` and consume its
+   `idea-challenge.v1` packet as advisory Plan input. It never decides
+   readiness. Skip it for single-session or non-contested plans.
    Evidence from the 2026-05-17 Mt Olympus run: roughly 22 min wall-clock,
    3/5 operator defaults flipped, and one already-shipped adapter bug surfaced.
 5. **Explore only as needed.** If prior research does not provide enough file
@@ -104,7 +104,7 @@ For a checker-clean packet:
    Inventory facts are symbols too (2026-07-02, showcase kernel R10): any
    count, file list, or "X is empty/absent" claim gets the same verification,
    and consumers re-verify at the moment of use (`ls`/`jq`/`grep` cost
-   seconds) — three of nine duel round-1 findings were plan facts stale
+   seconds) — three of nine independent review findings were plan facts stale
    within the hour they were written. Search the skill/CLI corpus for each
    major capability before scoping it as new: `ms search "<capability>"` (fast
    path when available — `command -v ms`, or the `mcp__ms__search` tool is
@@ -150,8 +150,9 @@ For a checker-clean packet:
 11. **Create tracking tasks.** Prefer br issues with validation blocks and
     dependency edges. If br is missing, leave the markdown plan as the durable
     handoff.
-12. **Approval gate.** Skip only with `--auto`; otherwise ask whether to
-    proceed, revise, or return to research.
+12. **Freeze and report.** Skip the human prompt only with `--auto`; otherwise
+    ask whether to proceed, revise, or return to research. Record the exact plan
+    path and SHA-256 for Premortem.
 
 ## Required Plan Sections
 
@@ -197,7 +198,9 @@ for the canonical shape.
 - **Filename:** the filename convention is ISO date plus stable goal slug.
 - **Format:** Markdown with Gherkin, fenced YAML criteria, issue IDs, dependencies, and file matrices.
 - **Validation command:** run `bash skills/plan/scripts/validate.sh` plus admission and symbol checks.
-- **Downstream handoff:** consumed by `$premortem`, `$crank`, `$implement`, and future Codex sessions.
+- **Downstream handoff:** the exact plan path and SHA-256 go first to
+  `$premortem`; after its binary PASS, `$crank`, `$implement`, and future Codex
+  sessions may consume it.
 
 ## Quality Rubric
 

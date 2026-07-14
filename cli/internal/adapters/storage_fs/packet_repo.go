@@ -67,7 +67,6 @@ func (r *Repo) Save(_ context.Context, runID string, p packet.ExecutionPacket) e
 	if p.SchemaVersion == 1 || p.SchemaVersion == 2 {
 		p.SchemaVersion = packet.CurrentExecutionPacketSchemaVersion
 	}
-	p.DefaultVerdict = p.EffectiveVerdict()
 	if err := p.Validate(); err != nil {
 		return err
 	}

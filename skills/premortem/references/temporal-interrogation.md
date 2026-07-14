@@ -70,8 +70,9 @@ plan for one fresh Premortem and interrogates only:
 4. whether the next leaf still has one owner and a safe discard path.
 
 Do not resimulate completed waves or rerun their deterministic/semantic proof.
-Emit one bounded PASS/WARN/FAIL artifact. A first repair may be consolidated;
-a second distinct repair need returns `REPLAN` to the RPI orchestrator.
+Emit one bounded PASS/FAIL artifact for the exact changed plan. Premortem does
+not own the repair count or next transition; the orchestrator reads the complete
+blocker set and decides whether to repair or replan.
 
 ## Report Integration
 

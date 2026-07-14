@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "id": "agentops-core.planning-premortem-gates",
-  "name": "AgentOps Planning Pre-Mortem Gates Canary",
-  "description": "Offline public canary for planning and premortem failure-prevention gates: plan/premortem validators, compiled finding carry-forward, tuning defaults, next-work parity, mandatory review checks, and Codex runtime command parity.",
+  "name": "AgentOps Planning and Premortem Direct-Cut Canary",
+  "description": "Offline canary for deterministic Goal Design, advisory idea challenge, exact-plan Premortem, and source/Codex parity.",
   "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "plan", "premortem", "council", "finding-registry", "next-work", "codex"],
+  "tags": ["canary", "offline", "plan", "premortem", "discovery"],
   "allowed_runtimes": ["shell", "static"],
   "environment": {
     "offline_required": true,
@@ -22,56 +22,66 @@
       {"name": "correctness", "weight": 2, "threshold": 1, "critical": true},
       {"name": "process_adherence", "weight": 2, "threshold": 1, "critical": true},
       {"name": "runtime_compatibility", "weight": 1, "threshold": 1, "critical": true},
-      {"name": "learning_closure", "weight": 1, "threshold": 1},
       {"name": "artifact_quality", "weight": 1, "threshold": 1},
       {"name": "safety", "weight": 1, "threshold": 1}
     ]
   },
-  "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.planning-premortem-gates.baseline.json", "blocking_gate": "none"},
+  "baseline_policy": {
+    "mode": "compare",
+    "baseline_path": ".agents/evals/baselines/agentops-core.planning-premortem-gates.baseline.json",
+    "blocking_gate": "none"
+  },
   "cases": [
     {
-      "id": "plan-premortem-validators",
-      "title": "Plan/premortem validators pass",
+      "id": "planning-skill-validators",
+      "title": "Planning skill validators pass",
       "kind": "command",
-      "objective": "Keep shared and Codex plan/premortem skill validators healthy.",
+      "objective": "Keep Discovery, Plan, Premortem, Goal Design, and Dueling Idea Genies contracts healthy.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/plan/scripts/validate.sh && bash skills-codex/plan/scripts/validate.sh && bash skills/premortem/scripts/validate.sh && bash skills-codex/premortem/scripts/validate.sh"
+        "shell": "bash skills/discovery/scripts/validate.sh && bash skills/plan/scripts/validate.sh && bash skills/premortem/scripts/validate.sh && bash skills/goal-design/scripts/validate.sh"
       },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 19 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "Results: 18 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "SKILL.md mentions council delegation"}
-      ],
-      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "expectations": [{"type": "exit_code", "value": 0}],
+      "dimensions": ["correctness", "process_adherence"],
       "critical": true
     },
     {
-      "id": "finding-registry-flow-prevention",
-      "title": "Finding registry flow carries prevention into plan and premortem",
+      "id": "exact-plan-verdict",
+      "title": "Exact-plan verdict direct cut",
       "kind": "command",
-      "objective": "Protect compiled planning rules, premortem checks, known_risks injection, dedup_key writes, and compiler refresh behavior across plan, premortem, vibe, and postmortem.",
+      "objective": "Prove digest binding, author/judge separation, binary verdicts, and legacy planning-authority removal.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash tests/skills/test-finding-registry-flow.sh"
+        "shell": "bats tests/scripts/premortem-plan-verdict-direct-cut.bats"
       },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 20 passed, 0 failed"}
-      ],
-      "dimensions": ["learning_closure", "process_adherence", "correctness"],
+      "expectations": [{"type": "exit_code", "value": 0}],
+      "dimensions": ["correctness", "safety", "artifact_quality"],
       "critical": true
     },
     {
-      "id": "planning-tuning-defaults",
-      "title": "Council, premortem, vibe, and RPI tuning defaults stay aligned",
+      "id": "goal-design-deterministic-packet",
+      "title": "Goal Design remains deterministic",
       "kind": "command",
-      "objective": "Keep model choices, judge counts, quick/deep behavior, RPI complexity scaling, retry limits, and output paths aligned for planning and validation gates.",
+      "objective": "Keep packet schemas, digest identity, prompt handoff, and helper behavior deterministic without a semantic transition.",
+      "runtime": "shell",
+      "timeout_seconds": 120,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bats tests/scripts/check-goal-design-packet.bats tests/scripts/goal-design-packet.bats"
+      },
+      "expectations": [{"type": "exit_code", "value": 0}],
+      "dimensions": ["correctness", "process_adherence"],
+      "critical": true
+    },
+    {
+      "id": "planning-review-defaults",
+      "title": "Planning review defaults stay lean",
+      "kind": "command",
+      "objective": "Keep one fresh binary Premortem, advisory-only Dueling, and no Discovery phase controller.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
@@ -82,64 +92,21 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "OVERALL: PASS"}
       ],
-      "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
+      "dimensions": ["correctness", "runtime_compatibility"],
       "critical": true
     },
     {
-      "id": "next-work-contract-parity",
-      "title": "Next-work contract parity gate protects RPI follow-up queues",
-      "kind": "command",
-      "objective": "Ensure the next-work schema, postmortem examples, RPI runtime ranking, legacy enum handling, and generated Codex artifacts stay in sync.",
-      "runtime": "shell",
-      "timeout_seconds": 120,
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash tests/scripts/test-next-work-contract-parity.sh"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 13 PASS, 0 FAIL"}
-      ],
-      "dimensions": ["correctness", "learning_closure", "process_adherence"],
-      "critical": true
-    },
-    {
-      "id": "premortem-mandatory-review-contracts",
-      "title": "Pre-mortem mandatory checks and report contracts remain explicit",
+      "id": "premortem-schema-contract",
+      "title": "Premortem schema is strict and binary",
       "kind": "artifact_check",
-      "objective": "Lock the review contract that catches bad plans before implementation: stale scope, temporal risks, rescue maps, fail patterns, test pyramid gaps, bounded input validation, verdict headings, and reusable findings.",
+      "objective": "Lock the minimal plan-verdict boundary.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "ao beads verify <bead-id>"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "scope_mode: <expansion|hold|reduction>"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "TEMPORAL INTERROGATION"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "Error & Rescue Map"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "COUNCIL FAIL PATTERN CHECK"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "TEST PYRAMID CHECK"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/mandatory-checks.md", "value": "bounded set of valid values"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "## Council Verdict: PASS / WARN / FAIL"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "dedup_key"},
-        {"type": "artifact_contains", "target": "../../skills/premortem/references/write-premortem-output.md", "value": "finding-compiler.sh"}
+        {"type": "artifact_contains", "target": "../../skills/premortem/schemas/plan-verdict.schema.json", "value": "premortem-plan-verdict.v1"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "author_id != judge_id"},
+        {"type": "artifact_contains", "target": "../../skills/premortem/SKILL.md", "value": "complete nonempty blocker set"},
+        {"type": "artifact_contains", "target": "../../skills/dueling-idea-genies/SKILL.md", "value": "advisory evidence for Plan"}
       ],
-      "dimensions": ["process_adherence", "safety", "artifact_quality"],
-      "critical": true
-    },
-    {
-      "id": "plan-premortem-codex-runtime-contracts",
-      "title": "Plan and premortem Codex artifacts preserve runtime-specific command semantics",
-      "kind": "artifact_check",
-      "objective": "Ensure Codex planning and premortem artifacts use dollar-skill commands, preserve companion-file scope, and validate council delegation without relying on slash-command path coincidences.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/premortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
-        {"type": "artifact_contains", "target": "../../skills-codex/premortem/scripts/validate.sh", "value": "(/|\\\\$)council"},
-        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "$council --quick validate <plan-path>"},
-        {"type": "artifact_contains", "target": "../../skills-codex/premortem/SKILL.md", "value": "$premortem --deep .agents/plans/2026-02-05-migration-plan.md"},
-        {"type": "artifact_contains", "target": "../../skills-codex/premortem/prompt.md", "value": "Lead with the verdict"},
-        {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "Generated Artifact Companion Scope"},
-        {"type": "artifact_contains", "target": "../../skills-codex/plan/SKILL.md", "value": "refresh-codex-artifacts.sh --scope worktree"},
-        {"type": "artifact_contains", "target": "../../skills/plan/SKILL.md", "value": "Applied findings:"},
-        {"type": "artifact_contains", "target": "../../skills/shared/references/stale-scope-validation.md", "value": "verify that the cited infrastructure"}
-      ],
-      "dimensions": ["runtime_compatibility", "process_adherence", "artifact_quality"],
+      "dimensions": ["artifact_quality", "safety"],
       "critical": true
     }
   ]

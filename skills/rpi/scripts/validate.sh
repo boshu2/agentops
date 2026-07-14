@@ -82,46 +82,17 @@ jq '.skills_loaded += [{name:"crank", reason:"future-phase"}]' \
   "$invalid_packet_fixture" >"$future_packet_fixture"
 check "execution packet validator rejects unrun prospective skill loads" \
   "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$future_packet_fixture' 2>&1 | grep -q 'prospective skills_loaded must omit unrun phase skill: crank'"
-jq '.schema_version = 3
-    | .pre_mortem_verdict = "PASS"
-    | .premortem_verdict = "FAIL"' \
+jq '.schema_version = 3 | .premortem_verdict = "PASS"' \
   "$packet_fixture" >"$invalid_packet_fixture"
-if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
-  echo "FAIL: execution packet validator rejects conflicting mortem verdict aliases"
-  FAIL=$((FAIL + 1))
-else
-  echo "PASS: execution packet validator rejects conflicting mortem verdict aliases"
-  PASS=$((PASS + 1))
-fi
-jq '.schema_version = 3
-    | .pre_mortem_verdict = "PASS"
-    | .premortem_verdict = "PASS"
-    | .artifacts = {"pre_mortem_path":"legacy.md","premortem_path":"canonical.md"}' \
-  "$packet_fixture" >"$invalid_packet_fixture"
-if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
-  echo "FAIL: execution packet validator rejects conflicting mortem artifact aliases"
-  FAIL=$((FAIL + 1))
-else
-  echo "PASS: execution packet validator rejects conflicting mortem artifact aliases"
-  PASS=$((PASS + 1))
-fi
-jq '.schema_version = 3
-    | .pre_mortem_verdict = "PASS"
-    | .premortem_verdict = "PASS"
-    | del(.artifacts)' \
-  "$packet_fixture" >"$invalid_packet_fixture"
-check "execution packet validator accepts equal mortem verdict transition aliases" \
+check "execution packet validator accepts one canonical Premortem PASS" \
   "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$invalid_packet_fixture' >/dev/null"
-jq '.schema_version = 3
-    | .pre_mortem_verdict = "PASS"
-    | .premortem_verdict = "PASS"
-    | .artifacts = {"pre_mortem_path":"same.md","premortem_path":"same.md"}' \
+jq '.schema_version = 3 | .premortem_verdict = "WARN"' \
   "$packet_fixture" >"$invalid_packet_fixture"
 if python3 "$SKILL_DIR/scripts/validate-execution-packet.py" "$invalid_packet_fixture" >/dev/null 2>&1; then
-  echo "FAIL: execution packet validator rejects dual mortem artifact aliases even when equal"
+  echo "FAIL: execution packet validator rejects Premortem WARN"
   FAIL=$((FAIL + 1))
 else
-  echo "PASS: execution packet validator rejects dual mortem artifact aliases even when equal"
+  echo "PASS: execution packet validator rejects Premortem WARN"
   PASS=$((PASS + 1))
 fi
 printf '%s\n' '{"schema_version":1,"objective":"prove fail closed","skills_loaded":[{"name":"rpi","reason":"orchestrator"}],"phase_receipts":[]}' >"$invalid_packet_fixture"

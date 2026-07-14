@@ -1,6 +1,6 @@
 # dueling-idea-genies
 
-Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this irreversible idea", "compare independent proposals", "stress-test a one-way door".
+Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: "challenge this idea", "compare independent proposals", "stress-test a one-way door".
 
 ## Instructions
 

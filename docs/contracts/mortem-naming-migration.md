@@ -9,26 +9,23 @@ Legacy ratchet inputs and explicit skill requests using `pre-mortem`,
 old skill request follows exactly one historical `merged-into` edge to the
 canonical live tree; no executable legacy skill tree remains.
 
-## Staged persisted-data migration
+## Execution-packet direct cut
 
-S1 through S7 kept execution-packet writers on schema v2 `pre_mortem_*` fields
-and the executable compiler writer on `.agents/pre-mortem-checks/`. Schema v1 and v2 own the legacy packet keys; schema v3
-owns `premortem_*`. S8 switches current writers to schema v3 and canonical
-directories while retaining legacy readback. Equal old and new verdicts
-are accepted only as a transition representation and normalize once. Artifact
-path aliases never coexist: Draft 2020-12 cannot prove equality between arbitrary
-string properties, so accepting both would let schema-only consumers certify
-conflicting targets. Conflicting values, wrong-version ownership, and unknown versions fail closed
-and identify the offending keys/version. Neither key remains valid when the
-calling contract makes the mortem verdict optional. For directory reads, canonical
+Every supported execution-packet schema version uses only
+`premortem_verdict` and `artifacts.premortem_path`. The verdict is binary:
+`PASS` or `FAIL`. Removed packet keys are rejected as unknown properties; there
+is no packet alias reader, writer mode, normalization pass, or legacy-readback
+fixture. This keeps one plan-readiness fact in the canonical aggregate.
+
+Non-packet compatibility remains separate. For directory reads, canonical
 content is considered first and legacy content fills only a missing ID;
-different content for the same ID is an error naming both paths.
+different content for the same ID is an error naming both paths. Explicit old
+skill requests still follow their permanent redirect pointers.
 
 `.agents/pre-mortems/` is not an executable producer or reader in the current
 repository; premortem reports are written under `.agents/council/`. It is
 therefore not part of the staged runtime-writer cutover contract.
 
-Legacy readback, conflict, optional-absence, redirect, and both writer-era
-fixtures are enforced by `scripts/check-mortem-compatibility.sh`. The current
-cutover gate is `--writer=canonical-v3 --legacy-readback`; the legacy-v2 mode
-remains available to prove compatibility with the preceding writer contract.
+Directory conflict and explicit-skill redirect fixtures are enforced by
+`scripts/check-mortem-compatibility.sh`. Canonical packet behavior is enforced
+directly by the root schema and Go packet/storage contract tests.

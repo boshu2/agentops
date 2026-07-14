@@ -31,10 +31,7 @@ const (
 	ExecutionPacketModelGemini = packet.ExecutionPacketModelGemini
 
 	ExecutionPacketVerdictPass = packet.ExecutionPacketVerdictPass
-	ExecutionPacketVerdictWarn = packet.ExecutionPacketVerdictWarn
 	ExecutionPacketVerdictFail = packet.ExecutionPacketVerdictFail
-
-	DefaultExecutionPacketVerdict = packet.DefaultExecutionPacketVerdict
 
 	L0 = packet.L0
 	L1 = packet.L1

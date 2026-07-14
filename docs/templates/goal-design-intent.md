@@ -33,7 +33,6 @@ evidence_for_done:
   first_failing_proof: "<test, gate, or command expected to fail first>"
   validation_command: "scripts/check-goal-design-packet.sh .agents/goal-design/<slug>"
   evidence_path: "<path or glob>"
-  independent_gate: validate
 inputs_to_recheck:
   repo_paths:
     - "<path>"
@@ -46,7 +45,7 @@ inputs_to_recheck:
 hard_rules:
   - "Keep behavior slices small."
   - "Do not rely on stale claims without verification."
-  - "Do not self-certify acceptance."
+  - "Do not bypass the deterministic packet checker."
 ---
 # Goal Design Intent: <slug>
 
@@ -86,7 +85,6 @@ Feature: <capability>
 - First failing proof: `<test, gate, or command>`
 - Validation command: `scripts/check-goal-design-packet.sh .agents/goal-design/<slug>`
 - Evidence path: `<path or glob>`
-- Required independent gate: `validate`
 
 ## Inputs To Recheck
 

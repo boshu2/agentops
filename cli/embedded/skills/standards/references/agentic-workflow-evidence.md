@@ -86,11 +86,10 @@ tooling weight to task size.**
 - **Corrects test-shape zeal:** `test-pyramid.md`'s bug-finding levels (mutation ≥80%, BF1–BF9) must
   be throttled to task stakes. On small fully-specified changes, saturating coverage/mutation is the
   thoroughness tax, not rigor.
-- **Reinforces the cost law** ("quorum only at one-way doors; cheap at generation" — spend the second
-  agent at the gate verdict, not at every generation step). AgentOps' verification membrane is
-  *not* the split-authorship pattern this study penalizes: the membrane spends its independent
-  cross-family review at the **close-door gate on stakes** (no verdict = not done), not as a
-  standing second author on every behavior. The finding is external support for keeping it there.
+- **Reinforces the cost law:** keep generation single-agent by default and spend
+  one fresh independent context at the semantic verdict boundary, not as a
+  standing second author on every behavior. Model family may be recorded, but
+  the tested invariant is context/role separation rather than vendor diversity.
 
 ---
 **Source:** Adapted from Bryan Finster, "Agentic Workflows: Do Agents Work?" (bryanfinster.substack.com, 2026). Pattern-only, no verbatim text.

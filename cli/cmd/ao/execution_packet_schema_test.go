@@ -21,30 +21,11 @@ func TestExecutionPacketSchemaValidatesTypedWorkPacketFields(t *testing.T) {
 	}
 }
 
-func TestExecutionPacketDefaultVerdictResolvesFailClosed(t *testing.T) {
+func TestExecutionPacketSchemaAcceptsPacketWithoutOptionalTypedFields(t *testing.T) {
 	schema := compileExecutionPacketSchemaForTest(t)
-
-	packet := validExecutionPacketFixture()
-	delete(packet, "default_verdict")
-	if err := validateExecutionPacketFixture(schema, packet); err != nil {
-		t.Fatalf("execution packet without default_verdict should remain valid: %v", err)
-	}
-	if got := unmarshalExecutionPacketForTest(t, packet).EffectiveVerdict(); got != cliRPI.ExecutionPacketVerdictFail {
-		t.Fatalf("missing default_verdict resolved to %q, want %q", got, cliRPI.ExecutionPacketVerdictFail)
-	}
-
-	explicitPacket := validExecutionPacketFixture()
-	explicitPacket["default_verdict"] = "PASS"
-	if err := validateExecutionPacketFixture(schema, explicitPacket); err != nil {
-		t.Fatalf("execution packet with explicit PASS default_verdict should validate: %v", err)
-	}
-	if got := unmarshalExecutionPacketForTest(t, explicitPacket).EffectiveVerdict(); got != cliRPI.ExecutionPacketVerdictPass {
-		t.Fatalf("explicit default_verdict resolved to %q, want %q", got, cliRPI.ExecutionPacketVerdictPass)
-	}
 
 	legacyPacket := validExecutionPacketFixture()
 	delete(legacyPacket, "routing")
-	delete(legacyPacket, "default_verdict")
 	delete(legacyPacket, "spec")
 	if err := validateExecutionPacketFixture(schema, legacyPacket); err != nil {
 		t.Fatalf("legacy execution packet without new typed fields should remain valid: %v", err)
@@ -133,7 +114,7 @@ func TestExecutionPacketLiveFixtureRoundTripsLossless(t *testing.T) {
 	}
 	// Preservation, not just revalidation: the PERSISTED FORM must be a fixpoint.
 	// The first load normalizes once (json null -> absent for nullable fields,
-	// empty arrays omitted, default_verdict resolved fail-closed); every save
+	// empty arrays omitted); every save
 	// thereafter must be byte-identical, so repeated Load->Save can never
 	// progressively drift a packet on disk.
 	pkt2, err := packet.DecodeJSON(out)
@@ -146,19 +127,6 @@ func TestExecutionPacketLiveFixtureRoundTripsLossless(t *testing.T) {
 	}
 	if !bytes.Equal(out, out2) {
 		t.Fatalf("Load->Save is not a fixpoint — repeated saves drift the persisted bytes:\n first=%s\n second=%s", out, out2)
-	}
-}
-
-// TestExecutionPacketEffectiveVerdictFailsClosedOnMalformed closes the verdict
-// resolver's malformed-value path in the cmd/ao layer (previously only covered in
-// internal/rpi). A junk default_verdict must resolve fail-closed to FAIL, not pass.
-func TestExecutionPacketEffectiveVerdictFailsClosedOnMalformed(t *testing.T) {
-	for _, bad := range []string{"MAYBE", "pass", " FAIL", "ok", ""} {
-		packet := validExecutionPacketFixture()
-		packet["default_verdict"] = bad
-		if got := unmarshalExecutionPacketForTest(t, packet).EffectiveVerdict(); got != cliRPI.ExecutionPacketVerdictFail {
-			t.Fatalf("malformed default_verdict %q resolved to %q, want fail-closed %q", bad, got, cliRPI.ExecutionPacketVerdictFail)
-		}
 	}
 }
 
@@ -378,7 +346,7 @@ func validExecutionPacketFixture() map[string]any {
 			"agentops-dhk.1": []any{
 				map[string]any{
 					"id":                "ac-agentops-dhk.1",
-					"description":       "Execution packets carry typed workpacket routing, default verdict, and red-test spec metadata.",
+					"description":       "Execution packets carry typed workpacket routing and red-test spec metadata.",
 					"check_type":        "test_pass",
 					"check_command":     "go test ./cmd/ao -run TestExecutionPacketSchema -count=1",
 					"evidence_required": true,
@@ -394,7 +362,6 @@ func validExecutionPacketFixture() map[string]any {
 				"rationale":   "Keep implementation and review on distinct rostered model families.",
 			},
 		},
-		"default_verdict": "FAIL",
 		"spec": map[string]any{
 			"test_path": "cli/cmd/ao/execution_packet_schema_test.go",
 			"red_test":  "TestExecutionPacketSchemaValidatesTypedWorkPacketFields",

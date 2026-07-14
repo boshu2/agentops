@@ -46,13 +46,20 @@ Verdict rules (hard-won — apply them, do not skip):
 
 Discipline that makes the map trustworthy:
 
-- **Validated cross-family, not self-report.** Get facts on *how* they implement each capability from their code, cross-checked by an independent (cross-family) reader — never from their README or one model's summary.
+- **Independently checked, not self-report.** Get facts on *how* they implement
+  each capability from code, cross-checked by a fresh reader — never from a
+  README or one context's summary. Model family is optional metadata, not a
+  trust requirement.
 - **Probe the real state, don't argue from stale.** Re-verify our side against the live tree before calling something a gap; every "X is missing" carries the search that proved it.
 - **The steal is the pattern, not the platform.** Their robustness is usually one idea (unification, a gate, a reconcile loop). Steal the idea; leave the scaffolding.
 
-## Route one-way-door adoptions into the duel
+## Route one-way-door adoptions into planning
 
-If adopting a steal is a **one-way door** (an architecture fork, a new bounded context, a migration), do not decide it here. Hand the steal-map to **`$discovery`** (its mixed-model fanout duel) or **`$council`** — ≥3 opposed theses + a cross-family voice winnow to the smallest first slice. This skill produces the *map*; the duel picks the *route*.
+If adopting a steal is a **one-way door** (an architecture fork, a new bounded
+context, or a migration), do not decide it here. Hand the steal-map to
+`$discovery` and `$plan`. Dueling Idea Genies may challenge the choice as
+advisory evidence. Premortem alone decides whether the exact final plan is
+ready.
 
 ## Invocation Contract
 
@@ -108,8 +115,8 @@ Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.
     [[ "$sbom" == 0 ]]
   fi
   ```
-- **Downstream handoff:** give the validated `steal-map.md` to `$discovery` or
-  `$council` only for one-way-door candidates; ordinary `have`, `park`, and
+- **Downstream handoff:** give the validated `steal-map.md` to `$discovery` for
+  one-way-door candidates; ordinary `have`, `park`, and
   `reject` decisions remain evidence-backed terminal rows.
 
 ## Reproducibility + fixtures
@@ -148,14 +155,15 @@ Must show: feature inventory generated, registry generated, registry validator e
 
 - [ ] Every steal-map row cites teardown evidence **and** our matching surface (or "none").
 - [ ] Verdicts use the full set — `have`/`gap`/`steal`/`park`/`reject` — not everything marked "steal".
-- [ ] Facts on *how* they implement come from their code, cross-checked cross-family — not a README.
-- [ ] One-way-door adoptions are routed to `$discovery` or `$council`, not decided here.
+- [ ] Facts on *how* they implement come from code and a fresh independent check — not a README.
+- [ ] One-way-door adoptions are routed to Discovery and Plan, not decided here.
 - [ ] Secret-scan gate passed over all outputs; no proprietary source/prompts reproduced.
 
 ## See Also
 
-- [discovery](../discovery/SKILL.md) — mixed-model fanout duel; route one-way-door steals here
-- [council](../council/SKILL.md) — multi-judge fork decision for irreversible adoptions
+- [discovery](../discovery/SKILL.md) — shape one-way-door steals into exact plans
+- [dueling-idea-genies](../dueling-idea-genies/SKILL.md) — optional advisory challenge
+- [premortem](../premortem/SKILL.md) — binary readiness verdict on the exact plan
 - [research](../research/SKILL.md) — general exploration; this is its external-system specialization
 
 ## Reference Documents

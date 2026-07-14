@@ -43,18 +43,17 @@ assert_rejects() {
 }
 
 # B2.1
-@test "dueling-idea-genies emits a sealed challenge packet for plan-pawl" {
+@test "dueling-idea-genies emits sealed advisory evidence for Plan" {
   v="$REPO_ROOT/skills/dueling-idea-genies/scripts/validate-output.sh"
-  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1"},{"id":"P2","context_id":"c2"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}}],"disagreements":["port ownership"],"refutations":[{"claim":"P1","attempt":"existing seam","result":"survived"}],"handoff":{"owner":"ao plan-pawl decide","artifact_dir":".agents/duel/run-1"}}'
+  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1"},{"id":"P2","context_id":"c2"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}}],"disagreements":["port ownership"],"refutations":[{"claim":"P1","attempt":"existing seam","result":"survived"}],"handoff":{"owner":"plan","artifact_dir":".agents/ideas/run-1"}}'
   assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":false,"perspectives":[{"id":"P1","context_id":"same"},{"id":"P2","context_id":"same"}],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"self-score"}}'
-  run go -C "$REPO_ROOT/cli" test ./internal/planpawl
-  [ "$status" -eq 0 ]
+  assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"one-way","sealed_generation":true,"perspectives":[{"id":"P1","context_id":"c1"},{"id":"P2","context_id":"c2"}],"cross_reviews":[{"reviewer":"P1","subject":"P2","dimensions":{"evidence":"WARN"}}],"disagreements":["x"],"refutations":[{"claim":"P1","attempt":"x","result":"survived"}],"handoff":{"owner":"plan","artifact_dir":".agents/ideas/run-1"},"readiness":"PASS"}'
 }
 
 # B2.2
 @test "dueling-idea-genies routes reversible choices without NTM ceremony" {
   v="$REPO_ROOT/skills/dueling-idea-genies/scripts/validate-output.sh"
-  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":false,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"idea-genie","route":"single-fresh-context"},"requires_ntm":false}'
+  assert_accepts "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":false,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"plan","artifact_dir":".agents/ideas/run-2","route":"single-fresh-context"},"requires_ntm":false}'
   assert_rejects "$v" '{"schema_version":"idea-challenge.v1","door_class":"two-way","sealed_generation":true,"perspectives":[],"cross_reviews":[],"disagreements":[],"refutations":[],"handoff":{"owner":"ntm"},"requires_ntm":true}'
 }
 

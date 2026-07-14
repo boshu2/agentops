@@ -14,7 +14,7 @@ untracked runtime output.
 | Artifact | Schema | Purpose |
 | --- | --- | --- |
 | `.agents/goal-design/<slug>/intent.md` | `schemas/goal-design-intent.v1.schema.json` | Human-shaped source of truth: objective, why, domain terms, BDD behavior, boundaries, evidence, stale inputs, and hard rules. |
-| `.agents/goal-design/<slug>/driver.md` | `schemas/goal-design-driver.v1.schema.json` | Loop-driving contract: intent digest, four-loop routing, candidate beads, small-batch gate, route-back rules, execution mode, and validation policy. |
+| `.agents/goal-design/<slug>/driver.md` | `schemas/goal-design-driver.v1.schema.json` | Loop-driving contract: intent digest, four-loop routing, candidate beads, small-batch gate, route-back rules, execution mode, and deterministic packet-check policy. |
 
 Both files are markdown for human review, with required YAML frontmatter for
 machine validation. The body should render the same concepts for operators, but
@@ -38,9 +38,8 @@ repo-root `.agents/` packet.
 - `scripts/check-goal-design-packet.sh` extracts both frontmatter blocks,
   validates them against the versioned schemas, checks digest integrity, and
   verifies cross-file identity.
-- `/validate` or an equivalent independent validator reads a checker-clean
-  packet before it can file beads, dispatch NTM/Workflow execution, or drive
-  implementation work.
+- Discovery and Plan may consume a checker-clean packet as intent input. Goal
+  Design does not decide whether the final plan is ready to implement.
 - Follow-on planning or skill work may read `driver.md` candidate beads, but a
   candidate list is never a fixed waterfall plan.
 
@@ -57,11 +56,11 @@ A packet is valid only when all of these are true:
 5. Each `candidate_beads[].behavior` references at least one declared BDD
    scenario by scenario id, such as `S1`, or by the scenario `name`; unknown
    scenario ids are invalid.
-6. The driver names independent validation and does not contain self-grading
-   language.
+6. The driver names the deterministic packet checker and carries no semantic
+   readiness state.
 7. Candidate beads name one behavior, one bounded context, one write scope, one
    first failing proof, and one close signal.
-8. Route-back rules say how validation failures, closed-bead evidence, stale
+8. Route-back rules say how checker failures, closed-bead evidence, stale
    candidates, and contradictory promotion signals change the next decision.
 
 Run:
@@ -70,16 +69,15 @@ Run:
 scripts/check-goal-design-packet.sh .agents/goal-design/<slug>
 ```
 
-The checker has no authority to mark the packet done by itself. It proves the
-contract is structurally usable; an independent `validate` verdict is still the
-required close signal before the packet drives work.
+The checker proves only that the intent packet is structurally usable. The
+packet remains `draft` while Discovery and Plan consume it; Premortem later
+judges the exact final plan.
 
 ## Lifecycle
 
 | State | Meaning | Allowed next move |
 | --- | --- | --- |
-| `draft` | Human or skill-authored packet exists but has not passed the checker and independent validation. | Patch artifacts and rerun the checker. |
-| `validated` | Checker passes and an independent validator has recorded `PASS`. | File the first candidate bead or dispatch one loop tick. |
+| `draft` | Human or skill-authored packet exists. A checker-clean draft may feed Discovery and Plan. | Patch artifacts, rerun the checker, or close it once every candidate is dispositioned. |
 | `superseded` | Closed-bead evidence or stale inputs made this packet outdated. | Create or revise a replacement packet with a new driver digest. |
 | `closed` | Terminal. Every candidate bead is accounted for by an evidence-bound disposition, stamped in the driver body alongside the prior status. | None. New work needs a new packet. |
 
@@ -94,7 +92,7 @@ scripts/goal-design-packet.py close .agents/goal-design/<slug> \
   --candidate "B1=closed:<evidence>" --candidate "B2=dropped:<reason>"
 ```
 
-`close` is legal only from `draft` or `validated`. Every `candidate_beads[].id`
+`close` is legal only from `draft`. Every `candidate_beads[].id`
 in the driver frontmatter must carry exactly one disposition —
 `closed:<evidence>`, `dropped:<reason>`, or `superseded:<by>` — otherwise the
 command exits non-zero and leaves both artifacts byte-identical. On success both
@@ -109,5 +107,4 @@ evidence-bound disposition (shipped-with-evidence, dropped-with-reason, or
 superseded-by); `superseded` = the packet as a whole was replaced by a successor
 packet without candidate accounting.
 
-`closed` is terminal: `mark-validated` refuses a closed packet rather than
-silently reopening it, and `close` refuses a closed or superseded packet.
+`closed` is terminal: `close` refuses a closed or superseded packet.

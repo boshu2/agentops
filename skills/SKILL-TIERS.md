@@ -298,7 +298,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **pr-prep** | validate | optional |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
 | **discovery** | research, plan, premortem, shared | research+plan+premortem required, shared optional |
-| **goal-design** | validate, discovery, plan | validate required after checker; discovery/plan consume checked packets |
+| **goal-design** | discovery, plan | discovery/plan consume checker-clean packets |
 | **rpi** | discovery, crank, validate | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
 | **release** | - | - (standalone) |

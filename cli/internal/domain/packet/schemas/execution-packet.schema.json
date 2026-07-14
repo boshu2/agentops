@@ -2,65 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/execution-packet.schema.json",
   "title": "RPI Execution Packet",
-  "description": "Per-run execution packet for the four-umbrella loop. Current writers emit schema v3 canonical mortem names; readers retain v1/v2 compatibility.",
+  "description": "Per-run execution packet for the four-umbrella loop. Premortem readiness has one canonical binary verdict.",
   "practices": ["design-by-contract", "pragmatic-programmer"],
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "objective"
-  ],
-  "allOf": [
-    {
-      "if": {
-        "properties": {"schema_version": {"enum": [1, 2]}},
-        "required": ["schema_version"]
-      },
-      "then": {
-        "dependentRequired": {"premortem_verdict": ["pre_mortem_verdict"]},
-        "properties": {
-          "artifacts": {
-            "dependentRequired": {"premortem_path": ["pre_mortem_path"]}
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {"schema_version": {"const": 3}},
-        "required": ["schema_version"]
-      },
-      "then": {
-        "dependentRequired": {"pre_mortem_verdict": ["premortem_verdict"]},
-        "properties": {
-          "artifacts": {
-            "dependentRequired": {"pre_mortem_path": ["premortem_path"]}
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "required": ["pre_mortem_verdict", "premortem_verdict"]
-      },
-      "then": {
-        "oneOf": [
-          {"properties": {"pre_mortem_verdict": {"const": "PASS"}, "premortem_verdict": {"const": "PASS"}}},
-          {"properties": {"pre_mortem_verdict": {"const": "WARN"}, "premortem_verdict": {"const": "WARN"}}},
-          {"properties": {"pre_mortem_verdict": {"const": "FAIL"}, "premortem_verdict": {"const": "FAIL"}}}
-        ]
-      }
-    },
-    {
-      "not": {
-        "required": ["artifacts"],
-        "properties": {
-          "artifacts": {
-            "required": ["pre_mortem_path", "premortem_path"]
-          }
-        }
-      }
-    }
   ],
   "properties": {
     "schema_version": {
@@ -70,6 +18,11 @@
     "objective": {
       "type": "string",
       "minLength": 1
+    },
+    "packet_state": {
+      "type": "string",
+      "enum": ["prospective", "terminal"],
+      "description": "Prospective is an honest Discovery handoff with later phases pending/not_checked. Terminal requires successful receipts and evidence for every phase. Omitted retains legacy terminal behavior."
     },
     "skills_loaded": {
       "type": "array",
@@ -171,19 +124,9 @@
       "type": "string",
       "enum": ["fast", "standard", "full"]
     },
-    "pre_mortem_verdict": {
-      "type": "string",
-      "enum": ["PASS", "WARN", "FAIL"]
-    },
     "premortem_verdict": {
       "type": "string",
-      "enum": ["PASS", "WARN", "FAIL"]
-    },
-    "default_verdict": {
-      "type": "string",
-      "enum": ["PASS", "WARN", "FAIL"],
-      "default": "FAIL",
-      "description": "Fail-closed verdict applied when a criterion or reviewer has not produced an explicit verdict."
+      "enum": ["PASS", "FAIL"]
     },
     "test_levels": {
       "$ref": "#/$defs/TestLevels"
@@ -326,14 +269,24 @@
     "PhaseReceipt": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["phase", "skill", "status", "artifact"],
+      "required": ["phase", "skill", "status"],
       "properties": {
         "phase": {"type": "string", "enum": ["discovery", "crank", "validate", "learn"]},
         "skill": {"type": "string", "minLength": 1},
-        "status": {"type": "string", "enum": ["DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED"]},
+        "status": {"type": "string", "enum": ["DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED", "pending", "not_checked"]},
         "artifact": {"type": "string", "minLength": 1},
         "next_action": {"type": "string"}
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"enum": ["pending", "not_checked"]}},
+            "required": ["status"]
+          },
+          "then": {"not": {"required": ["artifact"]}},
+          "else": {"required": ["artifact"]}
+        }
+      ]
     },
     "AutodevProgram": {
       "type": "object",
@@ -453,26 +406,10 @@
         "plan_path": {
           "type": "string"
         },
-        "pre_mortem_path": {
-          "type": "string"
-        },
         "premortem_path": {
           "type": "string"
         },
         "ranked_packet_path": {
-          "type": ["string", "null"]
-        },
-        "perspective_plan_paths": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "synthesis_packet_path": {
-          "type": ["string", "null"]
-        },
-        "fable_approval_path": {
-          "type": ["string", "null"]
-        },
-        "approval_edge_path": {
           "type": ["string", "null"]
         }
       }

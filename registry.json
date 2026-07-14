@@ -346,7 +346,7 @@
         "path": "skills/premortem/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 6
       },
       {
         "name": "validate",
@@ -410,7 +410,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 15
+        "reference_count": 12
       },
       {
         "name": "heal-skill",
@@ -739,9 +739,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Self-improving membrane: turn escapes into membrane checks",
         "bounded_context": "",
-        "driven_by_skills": [
-          "premortem"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao pawl",
@@ -1507,7 +1505,7 @@
       "hex_role": "domain",
       "tier": "meta",
       "capability_class": "planning",
-      "purpose": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing). Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
+      "purpose": "Create dense execution packets from intent, research, one exact plan, and its Premortem verdict. Triggers: \"run discovery\", \"shape intent as BDD\", \"scope a feature into an execution packet\".",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -1530,11 +1528,10 @@
         "execution-packet.json"
       ],
       "drives_commands": [
-        "ao beads exec",
-        "ao plan-pawl decide"
+        "ao beads exec"
       ],
       "path": "skills/discovery/",
-      "references": 15
+      "references": 12
     },
     {
       "sku": "skill:doc",
@@ -1603,11 +1600,11 @@
       "name": "dueling-idea-genies",
       "type": "skill",
       "kind": "skill",
-      "bounded_context": "BC2",
+      "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "execution",
-      "capability_class": "validation",
-      "purpose": "Challenge a contested one-way-door idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this irreversible idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
+      "capability_class": "planning",
+      "purpose": "Challenge a consequential idea with sealed independent perspectives, cross-review, and preserved dissent. Triggers: \"challenge this idea\", \"compare independent proposals\", \"stress-test a one-way door\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1625,9 +1622,7 @@
       "produces": [
         "idea-challenge.v1"
       ],
-      "drives_commands": [
-        "ao plan-pawl decide"
-      ],
+      "drives_commands": [],
       "path": "skills/dueling-idea-genies/",
       "references": 0
     },
@@ -1706,7 +1701,7 @@
       "hex_role": "driving-adapter",
       "tier": "execution",
       "capability_class": "planning",
-      "purpose": "Create validated goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
+      "purpose": "Create deterministic goal-design packets. Triggers: \"goal prompt\", \"goal-design packet\", \"turn this goal into loop-ready work\".",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
@@ -1725,10 +1720,7 @@
         ".agents/goal-design/<slug>/intent.md",
         ".agents/goal-design/<slug>/driver.md"
       ],
-      "drives_commands": [
-        "ao gate check",
-        "ao plan-pawl decide"
-      ],
+      "drives_commands": [],
       "path": "skills/goal-design/",
       "references": 0
     },
@@ -2124,8 +2116,7 @@
       ],
       "drives_commands": [
         "ao beads exec",
-        "ao beads verify",
-        "ao plan-pawl decide"
+        "ao beads verify"
       ],
       "path": "skills/plan/",
       "references": 15
@@ -2200,7 +2191,7 @@
       "hex_role": "domain",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
+      "purpose": "Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.",
       "status": "active",
       "disposition": "update",
       "runtime_targets": [
@@ -2215,17 +2206,11 @@
         "standards"
       ],
       "produces": [
-        "result.json",
-        "verdict.json"
+        "premortem-plan-verdict.v1"
       ],
-      "drives_commands": [
-        "ao beads verify",
-        "ao membrane",
-        "ao membrane digest",
-        "ao plan-pawl decide"
-      ],
+      "drives_commands": [],
       "path": "skills/premortem/",
-      "references": 14
+      "references": 6
     },
     {
       "sku": "skill:product",
@@ -3202,9 +3187,7 @@
       "bounded_context": "",
       "purpose": "Self-improving membrane: turn escapes into membrane checks",
       "status": "active",
-      "driven_by_skills": [
-        "premortem"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
