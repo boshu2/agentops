@@ -44,7 +44,6 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `decisions` | persistent | operators, skills | decision-record | Durable decision records and review artifacts not owned by a single active skill |
 | `defrag` | rolling | cli, scripts | maintenance-run-state | Defrag run state and dry-run reports |
 | `duel` | rolling | cli | legacy-planpawl-state | CLI-only legacy planpawl state pending K9 direct deletion; active skills do not read or write it |
-| `ideas` | rolling | skills, operators | advisory-planning-artifact | Optional `idea-portfolio.v1` and `idea-challenge.v1` evidence consumed by Plan; never readiness authority |
 | `evidence` | persistent | scripts, skills, operators, tests | validation-artifact | Local goal and bead acceptance receipts, descendant revalidation evidence, and deterministic command outputs consumed by fail-closed integration checkers |
 | `evals` | persistent | cli, scripts | eval-evidence | Eval run outputs, promoted baselines, and suite execution state |
 | `evidence` | rolling | scripts, skills | proof-evidence | Scoped implementation and per-wave proof artifacts, including four-umbrella base receipts and overlap inputs bound to the manifest and slice under review |
@@ -136,7 +135,6 @@ evidence
 findings
 git
 goal-design
-ideas
 handoffs
 harvest
 holdout

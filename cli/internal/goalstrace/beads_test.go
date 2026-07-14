@@ -47,7 +47,12 @@ printf '[]\n'
 				t.Fatal(err)
 			}
 			logLine := string(logData)
-			if !strings.Contains(logLine, "cwd="+root+" ") || !strings.Contains(logLine, "argc=3 args=list --json --all") {
+			wantCwd := root
+			if resolved, err := filepath.EvalSymlinks(root); err == nil {
+				wantCwd = resolved
+			}
+			if (!strings.Contains(logLine, "cwd="+root+" ") && !strings.Contains(logLine, "cwd="+wantCwd+" ")) ||
+				!strings.Contains(logLine, "argc=3 args=list --json --all") {
 				t.Fatalf("resolved process context = %q", logLine)
 			}
 			if trackerKind == "br" && !strings.Contains(logLine, "beads="+ledger+" ") {
