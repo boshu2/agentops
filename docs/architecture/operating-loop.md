@@ -1,250 +1,227 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane). RPI naming (`/rpi` skill vs the now-removed `ao rpi` CLI — removed in 3.0, use the operating loop — vs this loop): [codebase-overview — RPI terminology](codebase-overview.md#rpi-terminology).
+> Canonical transition model for AgentOps work. The root
+> [`AGENTS.md`](../../AGENTS.md) is the compact always-loaded router; this file
+> owns the detailed proof loop. Repository-specific bead, worktree, candidate,
+> landing, and report mechanics live in the
+> [Agent Workflow Reference](../agent-workflow-reference.md).
 
-AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
+AgentOps is not a CI server or a Git workflow. It is an operating contract for
+turning intent into independently judged evidence. A consumer repository keeps
+its own test, delivery, and CI policy. AgentOps supplies the role separation and
+artifacts that make an agent's “done” claim inspectable.
+
+## Roles and trust boundary
+
+| Role | Owns | Cannot authorize |
+|---|---|---|
+| Orchestrator | acceptance, leaf selection, scope, evidence classification, next transition | a worker's unreviewed completion claim |
+| Implementer | one bounded behavior, its RED/GREEN evidence, and the candidate it authors | the binding semantic verdict on that candidate |
+| Validator | one frozen candidate, its declared claims, deterministic receipts, and one complete blocker set | repair, delivery, or a verdict on mutable work |
+
+One model may fill all three roles across separate contexts. The invariant is
+fresh, independent context at the verdict boundary: `author_id != validator_id`.
+A council or mixed-model panel is an optional higher-rigor validator strategy,
+not the default and not a second lifecycle.
+
+## State flow
 
 ```text
-BDD-shaped intent issue
-  → vertical slices (each one a behavior, not a layer)
-  → TDD per slice (first failing test, then implementation)
-  → conflict-free parallel wave (only if write scopes do not collide)
-  → integrated bead completion (acceptance examples pass)
-  → evidence + learning capture (under the promotion ratchet)
+READY DEMAND
+  → ACTIVE LEAF
+  → WAVE PROVED
+  → FROZEN CANDIDATE
+  → VALIDATED CANDIDATE
+  → LEARNED CANDIDATE
+  → DELIVERED
+  → REMOTE VERIFIED
+  → REPORTED / CLOSED LEAF
 ```
 
-## The narrow-waist micro-cycle (canonical — every loop skill cites this)
+A goal or epic is aggregate demand. It never occupies WIP. The leaf is the unit
+of WIP, implementation, proof, delivery, and learning. One writer holds at most
+one active leaf and does not pull another until the current leaf is remotely
+verified and reported.
 
-The 3.0 narrow waist ([3.0 → four load-bearing practices](../3.0.md#the-four-load-bearing-practices-the-narrow-waist)) executes, per slice, as **one** repeatable micro-cycle. This is the canonical statement of the shape; every operating-loop skill reinforces the SAME sequence rather than restating it:
+## 1. Orient and shape acceptance
 
-```text
-small batch          one behavior per slice — never a big-batch bundle           [S1]
-  → BDD              the behavior written as Gherkin (Given/When/Then)            [S2]
-  → ATDD             its acceptance test authored + run RED before code          [S3]
-  → green            smallest implementation that flips the test green           (S3→S4)
-  → refactor         refactor-UNDER-green as its own step; NEVER change a test   [S4]
-  → membrane         an independent verdict binds the slice's acceptance test    [S5]
-  → mine back        by-products of inference + lessons ratchet into the NEXT    [S6]
-                     loop (a gate catch → a check; an escape → a new gate)
-```
+Read the request, repository contract, status, and only the canonical sources
+triggered by the work. Resolve these questions before mutation:
 
-Authoritative source per stage (cite these, don't restate): **S1 small batch + S4 refactor-after-green** — [`agentic-workflow-evidence.md`](../../skills/standards/references/agentic-workflow-evidence.md) findings #1–#2, #6 (refactor-after-green is the load-bearing quality move; test-first *ordering* alone contributed nothing measurable — the acceptance test as *contract* is what matters, not its position); **S2/S3 BDD→ATDD** — [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) (no runnable acceptance test, no bead); **S4 test-shape + thoroughness-to-stakes** — [`test-pyramid.md`](../../skills/standards/references/test-pyramid.md); **S5 membrane** — [`/validate`](../../skills/validate/SKILL.md), with `/council` as an optional judging strategy (`no verdict = not done`); **S6 ratchet** — [`/learn`](../../skills/learn/SKILL.md), move 7 below, and the [3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules).
+- What authority permits the change?
+- What exact behavior is requested, and what is explicitly outside scope?
+- Which bounded context and source owner control it?
+- What state already exists locally, in the tracker, and on the target remote?
+- Which action is the next reversible move, and which later action is a pawl?
 
-> **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane (S5) has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (S6: escape → new check → re-measure) is the compounding that has a deterministic gradient.
+Acceptance is executable shared language, not a prose aspiration. Record:
 
-The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md). Promote changes there first, then update this doc.
+- one capability name;
+- Given/When/Then for the normal path and at least one edge;
+- the first runnable acceptance check;
+- exact writable paths and read-only consumers;
+- non-goals and rollback;
+- deterministic evidence and independent judgment required for done.
 
-## Governing principles
+Use `/discovery` when acceptance or authority is missing, `/plan` to form
+reviewable vertical slices, and `/premortem` to judge an accepted plan before
+expensive or irreversible work. Premortem judges the plan, never the finished
+implementation.
 
-1. **The loop is the primitive, not the documents.** If an artifact does not advance behavior toward acceptance, enable parallel work, preserve human authority, or become a reusable gate, it is token drag.
-2. **Behavior is the unit of work, not a layer.** A slice cuts vertically through whatever layers are needed to demonstrate one Given/When/Then.
-3. **The first failing test is the slice's contract.** Code without a failing test has no acceptance surface; an agent has no way to know when it is done.
-4. **Parallelism is explicit ownership.** Waves are valid only when the conflict-free check below passes. Default to sequential.
-5. **Less process, more executable shared language.** The promotion ratchet kills artifacts that do not change future behavior.
-6. **Context crosses boundaries as artifacts.** RPI keeps orchestration visible,
-   but phase execution should cross through bounded packets and summaries, not
-   raw accumulated chat context.
-7. **The map is fixed; the route is re-routed.** This loop is a deterministic
-   role-topology — its stages, legal transitions, and gates do not change per
-   goal (the map). The path a given goal takes through it is dynamic and
-   recalculated on failure (the route). Because the worker is stochastic, you
-   trust the map and the gates, not the agent: the gate at move 6 is the
-   *windshield* — deterministic ground-truth that catches a confident
-   hallucination (a road that was never there) which re-routing alone cannot.
-   See [3.0 → the navigator model](../3.0.md#why-a-loop-and-not-a-pipeline-the-navigator-model).
-   **Why the re-routing terminates, and how the map itself improves between
-   runs without oscillating, is specified in the [Control-Loop Model](control-loop-model.md)**
-   (two timescales + the governor): the map is fixed *within* a run; the slow
-   loop tunes it *across* runs, governed so it doesn't thrash.
-8. **Single-agent-first; orchestration is opt-in escalation.** The default
-   execution shape is one capable agent working in-session with good
-   bookkeeping. Multi-agent orchestration — parallel waves, persistent NTM workers, Agent
-   Mail coordination — is an *escalation you reach for*, never a substrate you
-   start from. **Escalation trigger (observable):** escalate only when you are
-   creating **two or more active lanes** — independent read/review lanes whose
-   outputs a lead will merge, or independent implementation slices with
-   **disjoint write scopes**. When ≥2 lanes/panes share the repo, Agent Mail
-   registration and file reservations are mandatory before writes. With only
-   one active writer, stay single-agent and use normal bookkeeping.
-   **NTM and Agent Mail are separate adapters on different axes.**
-   Persistent NTM workers answer a **durability/wall-clock** need —
-   work must outlive your session or run unattended. AM (coordination) answers a
-   **contention** need — ≥2 writers can touch the same path. You reach for either
-   alone: Agent Mail without NTM is common for in-session lanes; NTM without
-   Agent Mail is valid for one writer or a file-disjoint queue. **Asymmetry
-   guardrail:** the de-mandate removes the single-writer *session-start tax*, not
-   the *collision guard* — the `≥2-writers → reserve` reflex stays non-negotiable
-   (an unneeded AM call costs one command; a missing one silently clobbers a
-   shared file). Portable lifecycle: [`agent-native`](../../skills/agent-native/SKILL.md);
-   pane mechanics: [`ntm`](../../skills/ntm/SKILL.md).
-   (Shape routing detail: [`automation-shape-routing`](../../skills/automation-shape-routing/SKILL.md)
-   — "shape 0" is the default front door; `AGENTOPS_ORCHESTRATION=off` pins the
-   beads floor.)
+## 2. Pull one leaf and isolate it
 
-## The seven moves
+Before tracked work intended to land, claim one ready BDD-shaped leaf and bind it
+to one writer and one worktree. The leaf packet records:
 
-### 1. Shape intent as BDD
+- admitted remote base;
+- one behavior and its acceptance examples;
+- exact write scope and read-only consumers;
+- first RED or honest pre-change baseline;
+- prerequisites and concurrency conflicts;
+- rollback and proof boundary.
 
-The intent issue is not ready until the acceptance examples are testable. Required surface:
+A missing path discovered during implementation is not implicit permission to
+expand scope. If a read-only consumer must change, or the behavior cannot be
+completed inside the accepted write set, return `REPLAN` before editing it.
 
-- Feature / capability name
-- Given / When / Then examples (one happy path + at least one edge)
-- Domain terms used (anchored to the repo's ubiquitous-language register; for AgentOps that is [`skills/domain/references/`](../../skills/domain/references/) and [`skills/standards/references/architecture-terms.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/architecture-terms.md))
-- Component and bounded-context route per the [Component Map](component-map.md); generated skill-role context per the [context map](../contracts/context-map.md)
-- Non-goals
-- Rollback / containment path
-- Evidence needed for completion (test names, snapshot keys, eval suites, council verdicts)
+## 3. Build one vertical behavior
 
-Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skills that produce this artifact: `/discovery`, `/product`, `/plan`.
+For behavior-changing work:
 
-### 2. Track as a bead when it leaves the head
+1. Author the named acceptance check.
+2. Run it against the admitted base.
+3. Confirm RED is caused by the missing behavior, not a missing harness, syntax,
+   setup, unrelated baseline failure, or arbitrary threshold.
+4. Make the smallest coherent change that turns it green.
+5. Refactor under green without changing the acceptance check.
 
-A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `beads-br` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR="$(ao beads dir)" br ...`).
+Docs-only, pure relocation, and accepted `--no-test-first` work use an honest
+pre-change baseline plus a negative fixture when needed to prove the detector.
+Every failure considered for `REPAIR` is first attributed to the candidate; a
+base-reproduced failure is NOTE unless the leaf explicitly owns it.
 
-### 3. Slice vertically through behavior
+A Crank tick is bounded implementation, not an unlimited retry controller. It
+runs only checks selected from the changed behavior and authority surface. At the
+end of a bounded wave, new evidence receives a bounded Premortem of the remaining
+plan before another wave is admitted. The Premortem may proceed, reorder, narrow,
+or return `REPLAN`; it does not semantically review the unfinished diff.
 
-A good slice maps to one Given/When/Then row, has a nameable first failing test, has a review-in-one-pass write scope, and touches one bounded context. "Refactor then feature" is two slices. Skill: `/plan` produces the slice list.
+## 4. Freeze the candidate
 
-### 4. TDD per slice
+The complete intended leaf is committed before binding review. Its candidate
+receipt pins at least:
 
-Per slice, in order:
+- admitted base SHA;
+- candidate SHA and tree;
+- owned paths with blob identities or explicit deletions;
+- acceptance and claim identities;
+- selected deterministic commands and receipts;
+- relevant registry/toolchain identities;
+- author identity and clean-worktree state.
 
-1. First failing test — must fail for the *right reason* (missing behavior, not syntax).
-2. Smallest change that flips it to green.
-3. Refactor under green. Refactor is its own commit.
-4. Record evidence into the bead.
+The receipt is immutable evidence, not a mutable status document. Any candidate
+edit invalidates the frozen identity and every verdict that consumed it. Base-only
+movement may reuse semantic judgment only when owned blobs, deletions, acceptance,
+claim dependencies, and evidence dependencies remain identical and explicit
+overlap/mapping proof is green.
 
-Skill: `/implement` operates on one slice at a time.
+## 5. Prove facts, then judge meaning once
 
-**Step 3 is the load-bearing move, and one behavior per cycle is the batch.** A controlled study of
-agent-run workflows (Finster 2026 — see the `standards` skill's `agentic-workflow-evidence` reference)
-found that stripping refactor-under-green out of TDD erased its entire quality advantage, while
-test-first *ordering* alone contributed nothing measurable, and small batches (one behavior per
-cycle) beat all-at-once across the board. Two invariants follow: refactor after **every** green
-(not deferred to one final pass — deferred-refactor workflows were the worst-performing cluster),
-and **never let a refactor step change a test** (a test change during refactor means behavior
-changed — that is a new slice, not a refactor). The repo keeps the first failing test as the
-default because it is the slice's contract and its regression guard; code-first / test-after
-(`--no-tdd`) is a defensible cost-efficient variant on fully-specified small tasks *as long as*
-those two invariants hold.
+Deterministic checks prove facts such as syntax, schema, identity, paths, drift,
+tests, and evidence integrity. Select the cheapest checks that cover the changed
+surface, run each selected fact once for an exact input, and retain its receipt.
+Scripts do not score prose usefulness or substitute for engineering judgment.
 
-### 5. Group into a wave only when write scopes do not collide
+One validator in fresh context receives the frozen identity, acceptance claims,
+changed surface, and factual receipts. It returns:
 
-Wave validity is a hard gate, applied row by row:
+- exact candidate and base identities;
+- claim-by-claim citations;
+- one complete blocker set, not serial discoveries;
+- PASS or FAIL;
+- NOTE, REPAIR, or REPLAN disposition for each finding.
 
-| Check | Pass means |
-|------|-----------|
-| Distinct write scopes | Each slice's modified-files set is disjoint |
-| Distinct test targets | Tests run independently; no shared fixture mutation |
-| No shared migration | At most one slice per migration / schema / generated file |
-| No shared CLI surface | At most one slice per command's flags or arguments |
-| Integration order declared | Merge order is named if it matters |
-| Owner per slice | One agent or one human per slice — no joint ownership |
-| Discard path per slice | Every slice has a rollback or drop-and-re-plan exit |
+Routine work uses one independent validator. Add a council or multiple model
+families only for an explicitly named high-blast-radius or irreversible decision.
+Green deterministic checks without the independent verdict are not done.
 
-Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; `/crank`, `/swarm`, `/evolve` execute it.
+After one consolidated repair batch, refreeze and re-review only original
+findings, changed claims, named interaction risks, and invalidated evidence. A
+second distinct repair need is evidence that acceptance, slicing, or approach is
+wrong and returns to `REPLAN`; it does not buy another whole-diff review loop.
 
-### 6. Close the bead by proving its acceptance
+## 6. Govern evidence without turning every failure into an andon
 
-Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. `/validate` obtains a verdict from fresh context that did not create the work; `/council` is an optional higher-rigor judging strategy. The authoring context cannot validate its own slice.
+| Disposition | Meaning | Next legal move |
+|---|---|---|
+| `NOTE` | cosmetic, pre-existing, theoretical, or outside acceptance | record if useful; never block |
+| `REPAIR` | introduced, concrete, verifiable acceptance/correctness/safety/contract defect | one consolidated local repair |
+| `REPLAN` | evidence invalidates the slice, acceptance, dependency graph, or approach | return to the earliest invalidated planning move |
+| `HOLD` | mutation cannot safely continue automatically and no hard ceiling is spent | pause mutation; one bounded fresh-context helper |
+| `ANDON` | human authority is required, or a declared hard time/cost/quota ceiling is spent | stop and ask for the smallest operator decision |
 
-Validation completion and Git delivery are separate transitions. After proof is
-recorded, the consuming repository chooses direct push, PR, merge queue, hosted
-CI, or an optional AgentOps delivery adapter. No landing tool creates or
-upgrades the validation verdict, and no validation skill operates Git.
+A finding blocks only when it is introduced or newly reachable in the candidate,
+concrete and verifiable, and breaks acceptance, correctness, safety, or a claimed
+contract. WARN, PARTIAL, reviewer disagreement, generated drift, ordinary test
+failure, or retry count alone is not ANDON.
 
-When a cycle is logged, the CycleTrace can carry the closeout join explicitly:
-`bead_id`, `acceptance_examples`, `validation_commands`, and
-`closeout_verdict`. That join is the reviewer path from a bead's Gherkin
-example to the test, gate, or eval that proved it.
+One run-level governor owns attempts, time, token/cost, and helper consumption.
+Phase-local retry multipliers are forbidden. Max-attempts, oscillation, or
+no-progress enters HOLD and receives exactly one helper consultation. `UNSTUCK`
+resumes with a new approach; helper `ESCALATE`, human-only judgment, or a genuinely
+spent hard ceiling raises ANDON. The static pawl boundary is
+[`docs/contracts/pawls.md`](../contracts/pawls.md); RPI's durable transitions are
+the [pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
 
-### 7. Capture evidence and learning, then ratchet
+## 7. Learn, deliver, verify, and report
 
-Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant validation artifacts; learnings only if they cleared the promotion bar (next section). Skill: `/learn` (primary). `/postmortem` is optional and answers a specific retrospective causal question after Validate and Learn; it is not the general learning umbrella.
+`/learn` consumes the immutable Validate verdict and writes the smallest honest
+receipt: no change, material plan impact, or terminal. It may copy candidate,
+verdict, finding, and recurrence identities; it may not change the verdict,
+candidate, delivery authority, or plan. The orchestrator alone consumes
+`plan_impact` and chooses the next move.
 
-**S6 is not "write a learning" — it is "make the NEXT loop consume it."** A by-product of inference or a lesson learned is durable only when it lands as something a later move will *read* (the 3.0 rule "knowledge becomes constraints"). Route by class: a **membrane escape** (CONFIRMED-but-later-wrong) compiles into a mechanical gate/check (the escape→check ratchet); a **judgment lesson** compiles into a `/plan` planning-rule, a `/premortem` check, or — when a gate caught a defect a green test missed — a new dimension appended to `docs/gate/findings-ledger.md`, which is exactly the ledger [`behavior-first-planning`](../../skills/behavior-first-planning/SKILL.md) reads to ratchet its Standing Review Dimensions. If nothing downstream reads the artifact, S6 did not happen — it is a landfill entry, not a ratchet ([3.0 ratchet rules](../3.0.md#what-makes-the-loop-compound-instead-of-repeat-the-ratchet-rules)). The corpus-flywheel skills `/curate`, `/flywheel`, and `/compile` are retired; mechanical surfaces live on the CLI (`ao compile`, `ao flywheel status`) and Learn owns the primary bookkeeping handoff.
-
-### The loop closes here: re-plan on evidence, not just on failure
-
-Move 7 feeds **back into move 1** — this is where the route gets re-routed (principle 7). The sharpening principle 7 leaves implicit: re-routing is triggered by **evidence, not only by failure.** A wave that *succeeds* still teaches something the plan didn't know, and that evidence may **refactor, insert, drop, reorder, or re-scope the *remaining* waves** before the next one runs. The wave plan is a hypothesis; each wave is the experiment that tests it. Under `--auto` the orchestrator executes those pivots itself — it is not gated on a wave *failing* first, and it does not run the initial wave-list to the letter. Two failure modes this kills: **retry-not-replan** (re-cranking a failed wave forever instead of asking whether the *remaining plan* should change) and **waterfall** (executing the pre-written wave list because "that was the plan"). Bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-arc postmortem checkpoint; the operator is surfaced only at the terminal objective or a breaker trip that survives its bounded helper pass — never just to approve a pivot. The orchestrator that owns this across a turn is `/rpi`; full mechanics: [Agile Re-Plan Loop](../../skills/rpi/references/agile-replan-loop.md).
-
-## The promotion ratchet
-
-Do not run full ceremony for every observation. Promote progressively:
-
-| Trigger | Goes to |
-|---------|---------|
-| Noticed once | Stays in the handoff. Dies when the handoff ages out. |
-| Repeats twice across sessions or beads | `.agents/learnings/<slug>.md` |
-| Changes future agent behavior | Update a SKILL.md or a template under `docs/templates/` |
-| Must never regress | Add a validation gate (warn-only first, then blocking) |
-| Becomes core doctrine | Promote into PRODUCT.md / GOALS.md / docs/cdlc.md |
-
-The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only happens when capture meets pruning.
-
-**R3 self-enforcement (no learning without a constraint).** The "Must never regress → add a validation gate" rung used to be prose only — a learning could be promoted to a durable maturity tier without ever compiling into a gate/test/rule. `scripts/check-ratchet-r3-constraint.sh` enforces it against the live (gitignored) `.agents/learnings/` corpus: any durable-tier learning (`candidate`/`established`/`canonical`/`stable`/`promoted`) that cites no constraint — a `scripts/`/`.github/workflows/` gate, a `_test.go`/`tests/` reference, a `skills/**/SKILL.md` step, or a `constraint:`/`enforced_by:` frontmatter field — is flagged. Warn-only by default; `--strict` (or `RATCHET_R3_BLOCKING=true`) makes it blocking, mirroring the same warn-then-fail ladder. A CI path-filter gate is intentionally *not* used because the learnings corpus is gitignored (dead-by-design, like the retired learning-coherence job); the script's own correctness is gated by `tests/scripts/check-ratchet-r3-constraint.bats`.
-
-## Skill → loop-move map
-
-Expanded tables (every skill, P/S/O by move): [Skills Matrix](../skills-matrix.md).
-Narrative full flow: [Intent → Validated Code](intent-to-validated-code.md).
-
-| Loop move | Primary skills | Produces |
-|-----------|----------------|----------|
-| Shape intent | `discovery`, `product`, `plan` | BDD intent issue with acceptance examples |
-| Track as bead | `beads-br` | Bead with slice list + acceptance contract |
-| Slice + wave plan | `plan`, `behavior-first-planning` | Slice list + wave grouping + ownership map |
-| Pre-flight check | `premortem`, `council` | Verdict on plan + wave validity |
-| TDD per slice | `implement` | First failing test → green → refactor |
-| Wave execution | `crank`, `swarm`, `evolve` | Parallel slices with explicit ownership |
-| Slice validation | `validate`, `council` | Acceptance proof plus independent lane evidence |
-| Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
+| Transition | Owner | Authority |
+|---|---|---|
 | Capture | `learn` | Immutable-verdict observations + plan impact for the orchestrator |
-| Optional causal analysis | `postmortem` | Tested retrospective hypotheses |
-| Compound | `pattern-mining`, `operationalize` | Earned patterns → rules → weakest durable mechanism |
-| One full tick | `rpi` | Discovery → Crank → Validate → Learn over one bead |
 
-## How the loop composes with the architectural seams
+Pattern mining and promotion are off the critical path. A repeated finding earns
+a durable check only when it has a named owner, a future consumer, a runnable
+activation/holdout example, and rollback or expiry. `/postmortem` is optional and
+answers an explicit causal question after Validate and Learn; it is not another
+validation pass.
 
-The loop is operational discipline. The architectural seams are structural. They are orthogonal and they compose:
+Validation completion and Git delivery are separate transitions.
+Delivery consumes the exact candidate, PASS verdict, Learn receipt, and
+repository policy; it does not create or upgrade semantic proof. Base movement
+triggers only the identity, overlap, mapping, and integration evidence it
+invalidates. After delivery, verify the exact remote ref and emit a report
+containing landed identity, remote verification, closed leaf, goal status, next
+ready leaf, and residual risk. Only that report releases the WIP slot.
+Repo-specific commands are in the
+[Agent Workflow Reference](../agent-workflow-reference.md).
 
-- **Bounded contexts** ([Component Map](component-map.md), generated [context map](../contracts/context-map.md)) — every slice declares which bounded context it touches. A slice that crosses contexts is two slices.
-- **Ports** (`cli/internal/ports/`) — the first failing test for a slice that touches a port can be written against the port interface before any adapter exists.
-- **Adapters** (`cli/internal/adapters/`) — adapter changes are slices like any other. The first failing test calls the adapter through the port; the port stays stable.
-- **Domain purity** ([ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md)) — slices that change `cli/internal/domain/` must keep the no-import-from-internal/* invariant. The wave check treats domain-purity as a shared concern: at most one slice per wave touches domain types.
+## Concurrency and software-factory roles
 
-## Failure modes the loop prevents
+One capable agent plus the local shell is the default. Multiple lanes are useful
+only when the operator requests delegation and outputs have independent owners.
+Read-only implementer/validator separation may use separate contexts without
+multiple writers. Concurrent writers require disjoint paths, separate worktrees,
+and explicit integration ownership; a potentially shared path is serialized or
+reserved before mutation.
 
-| Failure mode | Loop move that prevents it |
-|--------------|----------------------------|
-| Agent writes code with no contract | Move 4: first failing test before implementation |
-| Two agents stomp on the same file in parallel | Move 5: wave-validity write-scope check |
-| Bead closes with "looks good" instead of evidence | Move 6: every Given/When/Then maps to a passing test |
-| `.agents/` accumulates one-off observations forever | Move 7 + promotion rule: most observations die at handoff |
-| A "refactor + feature" PR mixes contracts | Move 3: refactor and feature are two slices |
-| Layer-by-layer waterfall reappears under "phases" | Move 3 + move 1: slices are vertical and BDD-shaped |
+NTM, Agent Mail, Gas City, and councils are optional adapters for durability,
+coordination, factory-shaped roles, or higher-rigor judgment. They do not change
+the loop, grant write authority, or become mandatory startup infrastructure.
 
-## What this doctrine deliberately does NOT do
+## What the loop deliberately does not own
 
-- Does not introduce a new `skills/cdlc/` skill — the spine is doc-shaped, referenced by every process skill.
-- Does not introduce new practice slugs — the loop is a composition of `bdd-gherkin` + `tdd` + `ddd-bounded-context` + `hexagonal-architecture` + `agile-manifesto` + `pragmatic-programmer` + `continuous-delivery`.
-- Does not couple AgentOps to any consumer's domain vocabulary — bounded contexts are named by the consuming repo.
-- Does not require new tooling — `br` and existing validation gates carry the load.
-- Does not enforce parallelism — parallel waves are an optimization unlocked by the conflict-free check, not a default.
+- the consumer repository's CI provider, PR policy, or merge queue;
+- a second tracker or database of duplicate tracker truth;
+- automatic agent-runtime startup or a daemon;
+- semantic judgment in the CLI;
+- full validation in a push hook;
+- cumulative final-program review of already validated leaves.
 
-## See also
-
-- [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md) — doctrine source (promote changes here first)
-- [Component Map](component-map.md) — product/component routing and trim/defer posture
-- [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
-- [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
-- [Effective Feedback Compute](../doctrine/effective-feedback-compute.md) — *why* moves 6 (prove acceptance) and 7 (ratchet) are load-bearing: harness success scales with useful feedback (I·V·R·M), not raw spend
-- [Control-Loop Model](control-loop-model.md) — *why* the loop converges and self-improves: the two-timescale control system (fast=convergence, slow=governed improvement) + the conformance contract every Workflow/skill must satisfy
-- [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
-- [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
-- [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside
-- [Context Map](../contracts/context-map.md) — bounded contexts and skill roles
-- [`docs/templates/intent-issue.md`](../templates/intent-issue.md) — BDD intent issue template
-- [`docs/templates/slice-validation.md`](../templates/slice-validation.md) — per-slice validation plan template
-- [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — practice slug registry
-- [`GOALS.md`](https://github.com/boshu2/agentops/blob/main/GOALS.md) Directive #12 — fitness gate that enforces this loop for non-trivial work
+The CLI may provide deterministic transaction and recovery mechanics. Agents own
+intent, implementation, and semantic judgment; repositories own delivery policy.
