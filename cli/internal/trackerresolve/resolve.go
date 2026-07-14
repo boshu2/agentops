@@ -252,6 +252,13 @@ func configValue(cwd string, env []string) (configSelection, error) {
 		if !present {
 			continue
 		}
+		if tracker.Kind != yaml.ScalarNode || tracker.Tag != "!!str" {
+			return configSelection{}, fmt.Errorf(
+				"parse tracker configuration %q: tracker must be a YAML string scalar "+
+					"(expected kind=%d tag=%q, got kind=%d tag=%q)",
+				path, yaml.ScalarNode, "!!str", tracker.Kind, tracker.Tag,
+			)
+		}
 		var value string
 		if err := tracker.Decode(&value); err != nil {
 			return configSelection{}, fmt.Errorf("parse tracker configuration %q: %w", path, err)
