@@ -30,6 +30,12 @@ check "Learn is the only post-verdict handoff" "grep -Fq 'Learn is the only post
 check "only orchestrator invokes Premortem" "grep -Fq 'Only the orchestrator may invoke Premortem' '$SKILL_DIR/SKILL.md'"
 check "re-plan contract handles all dispositions" "grep -Fq 'material_change' '$SKILL_DIR/references/agile-replan-loop.md' && grep -Fq 'no_change' '$SKILL_DIR/references/agile-replan-loop.md' && grep -Fq 'terminal' '$SKILL_DIR/references/agile-replan-loop.md'"
 check "execution packet validator exists" "[ -x '$SKILL_DIR/scripts/validate-execution-packet.py' ]"
+check "persistent run governor exists" "[ -x '$SKILL_DIR/scripts/run-governor.py' ]"
+check "run governor schema is valid JSON" "jq empty '$SKILL_DIR/schemas/run-governor.schema.json'"
+check "run governor checker compiles" "python3 -m py_compile '$SKILL_DIR/scripts/run-governor.py'"
+check "RPI routes Crank and Validate through persistent governor" "grep -q 'Crank and Validate request admission' '$SKILL_DIR/SKILL.md' && grep -q 'authorized:true' '$SKILL_DIR/SKILL.md'"
+check "RPI declares canonical disposition language" "grep -q 'NOTE.*REPAIR.*REPLAN.*HOLD.*ANDON' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/pull-flow-governor.md'"
+check "RPI has no private three-attempt controller" "! grep -q '3 total attempts before' '$SKILL_DIR/SKILL.md'"
 check "critical constraints precede the core contract" "test \"\$(grep -n '^## Critical Constraints$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\" -lt \"\$(grep -n '^## Core Contract$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\""
 
 packet_fixture="$(mktemp)"

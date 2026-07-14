@@ -67,6 +67,14 @@ output_contract: .agents/rpi/YYYY-MM-DD-*.md
 - `terminal` closes the tick; no remaining work means no re-plan and no Premortem.
 - RPI ends at the four receipts and its report. It does not push Git refs, operate a Git queue, close tracker state through delivery, or require another LLM landing verdict. Repository-selected delivery is a separate adapter.
 - Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
+- RPI owns the one persistent [run governor](references/pull-flow-governor.md).
+  Crank and Validate request admission through it before dispatch; no phase may
+  create a private wave, retry, attempt, cost, or helper counter.
+- `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the only run
+  dispositions. Review `REFUTED` evidence becomes `REPAIR` or `REPLAN`;
+  helper `UNSTUCK`/`ESCALATE` results become `REPAIR`/`ANDON`.
+- Missing or corrupt run state and missing meters fail closed. A genuinely
+  spent hard time, cost, or quota ceiling reaches `ANDON` without a helper.
 
 ## Loop position
 
@@ -90,7 +98,7 @@ RPI delegates via `Skill(skill="discovery", ...)`, `Skill(skill="crank", ...)`, 
 
 When phase isolation exists, keep `/rpi` visible and pass phase skill name plus bounded handoff in, then artifact/verdict/next action out. The transport may be a process or subagent wrapper, but it must execute the declared phase contract rather than doing phase work directly.
 
-RPI owns one lifecycle objective. Preserve the discovered `epic_id` or original goal and packet objective; a child bead or ready slice is context, not a replacement. `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
+RPI owns one lifecycle objective. Preserve the discovered `epic_id` or original goal and packet objective; a child bead or ready slice is context, not a replacement. `<promise>PARTIAL</promise>` from `/crank` is evidence for the orchestrator, not an automatic retry.
 
 ## Phase Receipt Contract
 
@@ -113,16 +121,29 @@ RPI cannot rely on memory or a final narrative to prove delegated skills ran. Ev
    - `full`: `--deep`, complex-operation keyword, 2+ scope keywords, or >120 chars
 5. Log `RPI mode: rpi-phased (complexity: <level>)`.
 
-Track state as `rpi_state`: `goal` (string), `epic_id` (null until discovered), `phase` (discovery|crank|validate|learn), `complexity` (fast|standard|full), `test_first` (true unless `--no-test-first`), `cycle` (from 1), and `verdicts` ({}).
+Track lifecycle state as `rpi_state`: `goal` (string), `epic_id` (null until discovered), `phase` (discovery|crank|validate|learn), `complexity` (fast|standard|full), `test_first` (true unless `--no-test-first`), `run_id`, and `verdicts` ({}). Admissions, charges, breaker state, and helper use live only in the persistent run governor.
 
 ## Phase DAG
 
 Enter at the routed phase and run every phase after it.
 
 1. **Discovery:** invoke `/discovery <goal> [--interactive] --complexity=<level>` directly or through phase-isolated skill transport. On DONE, read `.agents/rpi/execution-packet.json` or the run archive and preserve its objective spine. On BLOCKED, return evidence to the orchestrator; never stop or retry on the label alone.
-2. **Crank:** invoke `/crank <epic-id>` when the packet has `epic_id`; otherwise invoke `/crank .agents/rpi/execution-packet.json`, directly or through phase-isolated skill transport. Pass `--test-first` or `--no-test-first` through. On DONE, record `ao ratchet record implement 2>/dev/null || true`; on PARTIAL, auto-redo the same objective; on BLOCKED, use bounded recovery and 3 total attempts before `EXHAUSTED-BUDGET`.
+2. **Crank:** request one `crank-wave` admission from the persistent governor,
+   and invoke `/crank <epic-id>` only after the receipt is durably recorded
+   with `authorized:true`; otherwise invoke `/crank
+   .agents/rpi/execution-packet.json` under the same rule. Pass `--test-first`
+   or `--no-test-first` through. DONE, PARTIAL, and BLOCKED all return evidence
+   to the orchestrator; none creates an automatic retry or phase-local attempt.
    **Before accepting a slice/wave the orchestrator reads the actual diff itself** for scope and claim match, distinct from delegated judges. `/crank` enforces this as anti-green-washing Step 3.5 of [Wave Acceptance](../crank/references/wave-patterns.md#wave-acceptance-check).
-3. **Validate:** invoke `/validate <epic-id> --complexity=<level>` when an epic exists; otherwise invoke `/validate --complexity=<level>`, directly or through phase-isolated transport. Add `--strict-surfaces` with `--quality`. Preserve the immutable PASS/WARN/FAIL verdict and hand it to Learn; Validate does not retry, mutate the plan, or invoke Premortem.
+3. **Validate:** request `semantic-review` admission through the same persistent
+   governor with declared reviewer-token, elapsed-time, review-context, and
+   deterministic-execution charges. Only a durably recorded
+   `authorized:true` receipt permits dispatch. Then invoke `/validate
+   <epic-id> --complexity=<level>` when an epic exists; otherwise invoke
+   `/validate --complexity=<level>`, directly or through phase-isolated
+   transport. Add `--strict-surfaces` with `--quality`. Preserve the immutable
+   PASS/WARN/FAIL verdict and hand it to Learn; Validate does not retry, mutate
+   the plan, invoke Premortem, or own a budget.
 4. **Learn:** invoke `/learn` with the immutable Validate verdict and evidence reference. Record a file-backed `.agents/rpi/phase-4-summary.md` receipt with status `DONE`, `PARTIAL`, or `BLOCKED`. Learn binds observations to the verdict and emits `remaining_work` plus `plan_impact`; it cannot change the verdict, mutate the plan, invoke Premortem, or operate delivery state.
 5. **Orchestrator decision (the loop's hinge).** Consume the Learn receipt:
    - remaining work + `material_change`: invoke Discovery for a bounded
@@ -148,6 +169,13 @@ Every verdict first becomes a Learn receipt. A material plan impact with work
 remaining routes to Discovery, then the changed plan through Premortem. A
 `no_change` result makes the next action explicit without manufacturing a
 learning. A `terminal` result closes the tick without Premortem.
+
+The [persistent pull-flow governor](references/pull-flow-governor.md) is the
+sole controller for those decisions. Max-attempts, oscillation, and no-progress
+enter `HOLD` and receive one helper consultation per blocker class. `UNSTUCK`
+must supply a new approach and resumes as `REPAIR`; helper `ESCALATE` or
+human-only judgment reaches `ANDON`. A genuinely spent hard ceiling skips the
+helper. A failed check or retry count alone is not a spent ceiling.
 
 ## Agile Re-Plan Loop (the anti-waterfall rule)
 
@@ -184,12 +212,18 @@ belongs to the target repository, outside this lifecycle. Read
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
 | `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
-| `--loop --max-cycles=<n>` | off / 3 | Repeat only after an explicit orchestrator decision |
+| `--loop` | off | Repeat only after an explicit orchestrator decision and a recorded governor admission |
+| `--run-id=<id>` | required for dispatch | Resume the persistent run state across invocations |
+| `--max-waves=<n>` | 3 | Declare the run-wide Crank admission ceiling at initialization |
+| `--max-reviewer-tokens=<n>` | required | Declare the hard reviewer-token ceiling |
+| `--max-elapsed-seconds=<n>` | required | Declare the hard elapsed-time ceiling |
+| `--max-review-contexts=<n>` | required | Declare the hard review-context ceiling |
+| `--max-deterministic-executions=<n>` | required | Declare the hard deterministic-execution ceiling |
 | `--spawn-next` | off | Surface follow-up work after reporting |
 | `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
 | `--quality` | off | Make validation strict surfaces blocking |
-| `--dry-run` / `--no-budget` | off | Report only, or disable phase budgets |
+| `--dry-run` | off | Report only; never creates an admission receipt |
 
 ## Examples
 
@@ -210,7 +244,7 @@ implementation evidence, validate appends the immutable acceptance verdict,
 Learn records post-verdict observations plus plan impact, the orchestrator owns
 any plan mutation and Premortem transition, and Report emits the human-readable
 roll-up.
-**Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` means retry Phase 2 on the same objective.
+**Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` requires a canonical orchestrator disposition and never implies a retry.
 
 ## Quality Checklist
 
@@ -219,12 +253,14 @@ roll-up.
 - [ ] Every verdict routes through Learn before the orchestrator decides the next action.
 - [ ] Premortem receives only an orchestrator-owned changed plan while work remains.
 - [ ] The execution packet passes its validator before Report or downstream handoff.
+- [ ] Every dispatch has a durable admission in the same run state.
+- [ ] No phase-local wave, retry, attempt, cost, or helper counter exists.
 
 ## Troubleshooting
 
 | Problem | Response |
 |---------|----------|
-| Phase returns BLOCKED | Return evidence to the orchestrator; stop only on an explicit terminal transition |
+| Phase returns BLOCKED | Classify through the governor; ordinary repair stays autonomous, while a real breaker enters HOLD |
 | Packet validation fails | Repair the packet or receipts, then rerun the validator before handoff |
 | External executor fails | Use direct local checks; raise a breaker only for a reproducible capability stop |
 
@@ -235,6 +271,6 @@ roll-up.
 ## Reference Documents
 
 - Core loop: [agile re-plan](references/agile-replan-loop.md), [executable feature](references/rpi.feature), [compression anti-pattern](references/orchestrator-compression-anti-pattern.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md).
-- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [phase budgets](references/phase-budgets.md), [examples](references/examples.md).
+- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [persistent pull-flow governor](references/pull-flow-governor.md), [examples](references/examples.md). The older [phase budgets](references/phase-budgets.md) reference is migration evidence only; private counters in it are non-authorizing.
 - Recovery: [error handling](references/error-handling.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [troubleshooting](references/troubleshooting.md), [Codex executor](references/codex-executor.md).
 - Contracts: [autonomous execution](references/autonomous-execution.md), [phase data](references/phase-data-contracts.md), [report template](references/report-template.md).

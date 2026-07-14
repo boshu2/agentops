@@ -124,7 +124,7 @@ When the RED gate detects unexpected test passes:
 1. **Identify cause:** Tests that pass against current code validate existing behavior, not new requirements from the contract
 2. **Retry:** Re-spawn test writer with the unexpected-pass list and "must fail" constraint (max 2 retries)
 3. **Escalate:** After 2 retries, mark the issue as BLOCKER and fall back to standard IMPL (no TDD for that issue)
-4. **Log:** Record RED gate failure in wave checkpoint for post-mortem analysis
+4. **Log:** Record RED gate failure in wave checkpoint for postmortem analysis
 
 ```bash
 # RED gate failure tracking
