@@ -4,8 +4,20 @@
 # shellcheck disable=SC1007,SC1091
 . "$(CDPATH= cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/preamble.sh"
 
-if [[ $# -ne 1 || "$1" != "--self-test" ]]; then
-  echo "usage: scripts/check-go-cli-semantic-seals.sh --self-test" >&2
+mode="${1:-}"
+shift || true
+
+if [[ "$mode" == "--production" ]]; then
+  [[ $# -eq 2 && "$1" == "--candidate-sha" ]] || {
+    echo "usage: scripts/check-go-cli-semantic-seals.sh --production --candidate-sha <sha>" >&2
+    exit 2
+  }
+  cd "$REPO_ROOT/cli" || exit 1
+  exec go run ./internal/archcheck/cmd --semantic-production-gate --candidate-sha "$2"
+fi
+
+if [[ "$mode" != "--self-test" || $# -ne 0 ]]; then
+  echo "usage: scripts/check-go-cli-semantic-seals.sh --self-test | --production --candidate-sha <sha>" >&2
   exit 2
 fi
 
@@ -31,11 +43,15 @@ cd "$REPO_ROOT/cli" || exit 1
 for index in "${!classes[@]}"; do
   class="${classes[$index]}"
   fixture="$REPO_ROOT/tests/fixtures/go-cli-architecture/$class"
-  if ! "${checker[@]}" --root "$fixture/valid"; then
+  extra=()
+  if [[ "$class" == "evidence-binding" ]]; then
+    extra=(--candidate-sha aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
+  fi
+  if ! "${checker[@]}" --root "$fixture/valid" "${extra[@]}"; then
     printf 'go-cli semantic seals FAIL: valid %s fixture was rejected\n' "$class" >&2
     exit 1
   fi
-  if output="$("${checker[@]}" --root "$fixture/mutated" 2>&1)"; then
+  if output="$("${checker[@]}" --root "$fixture/mutated" "${extra[@]}" 2>&1)"; then
     printf 'go-cli semantic seals FAIL: mutated %s fixture was accepted\n' "$class" >&2
     exit 1
   fi
@@ -46,7 +62,7 @@ for index in "${!classes[@]}"; do
   fi
 done
 
-if ! "$REPO_ROOT/scripts/check-go-cli-architecture.sh" --self-test >/dev/null; then
+if ! "${checker[@]}" --self-test >/dev/null; then
   echo "go-cli semantic seals FAIL: context self-test was rejected" >&2
   exit 1
 fi

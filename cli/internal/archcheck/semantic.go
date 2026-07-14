@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const semanticSealFilename = "semantic-seal.json"
@@ -29,9 +30,11 @@ type semanticSealManifest struct {
 }
 
 type semanticGenerated struct {
-	Source string `json:"source"`
-	Path   string `json:"path"`
-	SHA256 string `json:"sha256"`
+	Source       string `json:"source"`
+	SourceSHA256 string `json:"source_sha256"`
+	Generator    string `json:"generator"`
+	Path         string `json:"path"`
+	SHA256       string `json:"sha256"`
 }
 
 type semanticEvidence struct {
@@ -64,7 +67,7 @@ func filterAcceptedSemanticDebt(root string, violations []Violation) []Violation
 	return filtered
 }
 
-func checkSemanticSeal(root string) ([]Violation, error) {
+func checkSemanticSeal(root, expectedCandidate string) ([]Violation, error) {
 	manifestPath := filepath.Join(root, semanticSealFilename)
 	data, err := os.ReadFile(manifestPath)
 	if os.IsNotExist(err) {
@@ -84,7 +87,7 @@ func checkSemanticSeal(root string) ([]Violation, error) {
 		return checkGeneratedEvidence(root, manifest), nil
 	}
 	if manifest.Class == "evidence-binding" {
-		return checkEvidenceBinding(root, manifest), nil
+		return checkEvidenceBinding(root, manifest, expectedCandidate), nil
 	}
 
 	var violations []Violation
@@ -129,12 +132,15 @@ func checkSemanticSeal(root string) ([]Violation, error) {
 	return violations, nil
 }
 
-func checkEvidenceBinding(root string, manifest semanticSealManifest) []Violation {
+func checkEvidenceBinding(root string, manifest semanticSealManifest, expectedCandidate string) []Violation {
 	invalid := func(path, message string) []Violation {
 		return []Violation{{Rule: RuleEvidenceBinding, Path: path, Message: message}}
 	}
-	if !validHexDigest(manifest.CandidateSHA, 40) || manifest.Evidence == nil || !validHexDigest(manifest.Evidence.SHA256, 64) {
+	if !validHexDigest(expectedCandidate, 40) || !validHexDigest(manifest.CandidateSHA, 40) || manifest.Evidence == nil || !validHexDigest(manifest.Evidence.SHA256, 64) {
 		return invalid(semanticSealFilename, "candidate SHA and evidence digest must be complete lowercase hex digests")
+	}
+	if manifest.CandidateSHA != expectedCandidate {
+		return invalid(semanticSealFilename, "evidence manifest is not bound to the externally supplied candidate")
 	}
 	if filepath.IsAbs(manifest.Evidence.Path) || !filepath.IsLocal(manifest.Evidence.Path) {
 		return invalid(semanticSealFilename, "evidence path must be repository-relative")
@@ -183,6 +189,100 @@ func digestBytes(data []byte) string {
 	return fmt.Sprintf("%x", sha256.Sum256(data))
 }
 
+// SemanticProductionGate executes one adversarial canary for every semantic
+// rule registered in the production architecture gate. It deliberately does
+// not depend on a fixture-root semantic-seal manifest.
+func SemanticProductionGate(expectedCandidate string) ([]Rule, error) {
+	if !validHexDigest(expectedCandidate, 40) {
+		return nil, fmt.Errorf("externally resolved candidate SHA is required")
+	}
+	type canary struct {
+		rule Rule
+		run  func() ([]Violation, error)
+	}
+	canaries := []canary{
+		{RuleContext, func() ([]Violation, error) {
+			return CheckSource("cli/internal/commands/probe/module.go", []byte(`package probe; import "context"; func run(){ _ = context.Background() }`))
+		}},
+		{RuleTrackerExecution, func() ([]Violation, error) {
+			return checkTrackerExecutionSource("tracker.go", []byte(`package probe; import ("context"; "os/exec"); type resolution struct { Binary, WorkDir string; ChildEnv []string }; func launch(ctx context.Context, resolved resolution) error { command := exec.CommandContext(context.Background(), resolved.Binary); command.Dir = resolved.WorkDir; command.Env = resolved.ChildEnv; return command.Run() }`))
+		}},
+		{RuleEffects, func() ([]Violation, error) {
+			return checkUniversalEffectsSource("root.go", []byte(`package probe; import ("os"; "github.com/spf13/cobra"); func prepare(*cobra.Command, []string) error { _, err := os.Getwd(); return err }; var root = &cobra.Command{PersistentPreRunE: prepare}`))
+		}},
+		{RuleOutput, func() ([]Violation, error) {
+			return checkOutputSource("module.go", []byte(`package probe; import ("encoding/json"; "github.com/spf13/cobra"; "github.com/boshu2/agentops/cli/internal/clicontract"); func contract() clicontract.CommandContract { return clicontract.CommandContract{Output: clicontract.OutputStructured} }; func command() *cobra.Command { return &cobra.Command{RunE: func(command *cobra.Command, _ []string) error { return json.NewEncoder(command.OutOrStdout()).Encode(true) }} }`))
+		}},
+		{RuleRecursiveContracts, func() ([]Violation, error) {
+			return checkRecursiveContractsSource("module.go", []byte(`package probe; import ("github.com/spf13/cobra"; "github.com/boshu2/agentops/cli/internal/clicontract"); func command() *cobra.Command { root := &cobra.Command{RunE: run}; child := &cobra.Command{RunE: run}; root.AddCommand(child); _ = clicontract.Attach(root, clicontract.CommandContract{}); _ = clicontract.Attach(root, clicontract.CommandContract{}); return root }; func run(*cobra.Command, []string) error { return nil }`))
+		}},
+	}
+	for _, canary := range canaries {
+		violations, err := canary.run()
+		if err != nil {
+			return nil, err
+		}
+		if !violationsContainRule(violations, canary.rule) {
+			return nil, fmt.Errorf("%s canary escaped", canary.rule)
+		}
+	}
+
+	root, err := os.MkdirTemp("", "agentops-semantic-gate-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(root)
+	changedSource := []byte("changed source\n")
+	generated := []byte("generated from source\n")
+	if err := os.WriteFile(filepath.Join(root, "source.txt"), changedSource, 0o600); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(root, "generated.txt"), generated, 0o600); err != nil {
+		return nil, err
+	}
+	generatedViolations := checkGeneratedEvidence(root, semanticSealManifest{
+		Sources: []string{"source.txt"},
+		Generated: []semanticGenerated{{
+			Source: "source.txt", SourceSHA256: digestBytes([]byte("source\n")), Generator: "archcheck.prefix-generated-from.v1",
+			Path: "generated.txt", SHA256: digestBytes(generated),
+		}},
+	})
+	if !violationsContainRule(generatedViolations, RuleGeneratedEvidence) {
+		return nil, fmt.Errorf("%s canary escaped", RuleGeneratedEvidence)
+	}
+
+	fabricatedCandidate := strings.Repeat("a", 40)
+	if fabricatedCandidate == expectedCandidate {
+		fabricatedCandidate = strings.Repeat("b", 40)
+	}
+	evidenceDocument := semanticEvidenceDocument{SchemaVersion: 1, Class: "evidence-binding", CandidateSHA: fabricatedCandidate, SourceDigests: map[string]string{"source.txt": digestBytes(changedSource)}}
+	evidenceData, err := json.Marshal(evidenceDocument)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(root, "evidence.json"), evidenceData, 0o600); err != nil {
+		return nil, err
+	}
+	evidenceViolations := checkEvidenceBinding(root, semanticSealManifest{
+		Class: "evidence-binding", Sources: []string{"source.txt"}, CandidateSHA: fabricatedCandidate,
+		Evidence: &semanticEvidence{Path: "evidence.json", SHA256: digestBytes(evidenceData)},
+	}, expectedCandidate)
+	if !violationsContainRule(evidenceViolations, RuleEvidenceBinding) {
+		return nil, fmt.Errorf("%s canary escaped", RuleEvidenceBinding)
+	}
+
+	return []Rule{RuleContext, RuleTrackerExecution, RuleEffects, RuleOutput, RuleRecursiveContracts, RuleGeneratedEvidence, RuleEvidenceBinding}, nil
+}
+
+func violationsContainRule(violations []Violation, rule Rule) bool {
+	for _, violation := range violations {
+		if violation.Rule == rule {
+			return true
+		}
+	}
+	return false
+}
+
 func checkGeneratedEvidence(root string, manifest semanticSealManifest) []Violation {
 	declaredSources := make(map[string]bool, len(manifest.Sources))
 	for _, source := range manifest.Sources {
@@ -197,8 +297,17 @@ func checkGeneratedEvidence(root string, manifest semanticSealManifest) []Violat
 			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: semanticSealFilename, Message: "generated evidence must name a declared local source and local output"})
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(generated.Source))); err != nil {
+		sourceData, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(generated.Source)))
+		if err != nil {
 			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: generated.Source, Message: "generated evidence source is missing"})
+			continue
+		}
+		if !validHexDigest(generated.SourceSHA256, 64) || digestBytes(sourceData) != generated.SourceSHA256 {
+			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: generated.Source, Message: "generated evidence source digest mismatch"})
+			continue
+		}
+		if generated.Generator != "archcheck.prefix-generated-from.v1" {
+			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: semanticSealFilename, Message: "generated evidence must declare a supported deterministic generator"})
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(generated.Path)))
@@ -209,6 +318,11 @@ func checkGeneratedEvidence(root string, manifest semanticSealManifest) []Violat
 		actual := digestBytes(data)
 		if actual != generated.SHA256 {
 			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: generated.Path, Message: fmt.Sprintf("generated evidence digest mismatch: want %s got %s", generated.SHA256, actual)})
+			continue
+		}
+		expected := []byte("generated from " + strings.TrimSuffix(string(sourceData), "\n") + "\n")
+		if string(data) != string(expected) {
+			violations = append(violations, Violation{Rule: RuleGeneratedEvidence, Path: generated.Path, Message: "generated evidence does not equal deterministic generator recomputation"})
 		}
 	}
 	return violations
@@ -221,48 +335,112 @@ func checkRecursiveContractsSource(path string, source []byte) ([]Violation, err
 		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
 	}
 	aliases := sourceImportAliases(file)
-	runnable := 0
-	attached := 0
+	type commandNode struct {
+		node     ast.Node
+		runnable bool
+	}
+	commands := map[string]commandNode{}
+	edges := map[string][]string{}
+	attachments := map[string]int{}
+	roots := map[string]bool{}
 	ast.Inspect(file, func(node ast.Node) bool {
-		literal, ok := node.(*ast.CompositeLit)
-		if ok {
-			selector, selectorOK := literal.Type.(*ast.SelectorExpr)
-			if !selectorOK {
-				return true
+		if assignment, ok := node.(*ast.AssignStmt); ok && len(assignment.Lhs) == 1 && len(assignment.Rhs) == 1 {
+			name, nameOK := assignment.Lhs[0].(*ast.Ident)
+			literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
+			if nameOK && literalOK {
+				commands[name.Name] = commandNode{node: literal, runnable: cobraCommandRunnable(literal)}
 			}
-			ident, identOK := selector.X.(*ast.Ident)
-			if identOK && aliases[ident.Name] == "github.com/spf13/cobra" && selector.Sel.Name == "Command" {
-				for _, element := range literal.Elts {
-					field, fieldOK := element.(*ast.KeyValueExpr)
-					if !fieldOK {
-						continue
+		}
+		call, ok := node.(*ast.CallExpr)
+		if ok {
+			selector, selectorOK := call.Fun.(*ast.SelectorExpr)
+			if selectorOK && selector.Sel.Name == "AddCommand" {
+				parent, parentOK := selector.X.(*ast.Ident)
+				if parentOK {
+					for _, argument := range call.Args {
+						if child, childOK := argument.(*ast.Ident); childOK {
+							edges[parent.Name] = append(edges[parent.Name], child.Name)
+						}
 					}
-					key, keyOK := field.Key.(*ast.Ident)
-					if keyOK && (key.Name == "Run" || key.Name == "RunE") {
-						runnable++
-						break
+				}
+			}
+			if selectorOK && selector.Sel.Name == "Attach" {
+				pkg, pkgOK := selector.X.(*ast.Ident)
+				if pkgOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && len(call.Args) > 0 {
+					if command, commandOK := call.Args[0].(*ast.Ident); commandOK {
+						attachments[command.Name]++
 					}
 				}
 			}
 		}
-		call, ok := node.(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok || selector.Sel.Name != "Attach" {
-			return true
-		}
-		ident, ok := selector.X.(*ast.Ident)
-		if ok && aliases[ident.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" {
-			attached++
+		if statement, ok := node.(*ast.ReturnStmt); ok {
+			for _, result := range statement.Results {
+				if root, rootOK := result.(*ast.Ident); rootOK {
+					if _, commandOK := commands[root.Name]; commandOK {
+						roots[root.Name] = true
+					}
+				}
+			}
 		}
 		return true
 	})
-	if runnable != attached {
-		return []Violation{{Rule: RuleRecursiveContracts, Path: path, Message: fmt.Sprintf("every runnable Cobra node needs exactly one attached contract: runnable=%d attached=%d", runnable, attached)}}, nil
+	reachable := map[string]bool{}
+	var visit func(string)
+	visit = func(name string) {
+		if reachable[name] {
+			return
+		}
+		reachable[name] = true
+		for _, child := range edges[name] {
+			visit(child)
+		}
 	}
-	return nil, nil
+	for root := range roots {
+		visit(root)
+	}
+	var violations []Violation
+	for name, command := range commands {
+		if !reachable[name] {
+			if attachments[name] > 0 {
+				violations = append(violations, Violation{Rule: RuleRecursiveContracts, Path: path, Line: fset.Position(command.node.Pos()).Line, Message: fmt.Sprintf("contract attached to unreachable command %s", name)})
+			}
+			continue
+		}
+		if command.runnable && attachments[name] != 1 {
+			violations = append(violations, Violation{Rule: RuleRecursiveContracts, Path: path, Line: fset.Position(command.node.Pos()).Line, Message: fmt.Sprintf("reachable runnable %s needs exactly one attached contract: got %d", name, attachments[name])})
+		}
+	}
+	return violations, nil
+}
+
+func cobraCommandLiteral(expression ast.Expr, aliases map[string]string) (*ast.CompositeLit, bool) {
+	if unary, ok := expression.(*ast.UnaryExpr); ok {
+		expression = unary.X
+	}
+	literal, ok := expression.(*ast.CompositeLit)
+	if !ok {
+		return nil, false
+	}
+	selector, ok := literal.Type.(*ast.SelectorExpr)
+	if !ok || selector.Sel.Name != "Command" {
+		return nil, false
+	}
+	pkg, ok := selector.X.(*ast.Ident)
+	return literal, ok && aliases[pkg.Name] == "github.com/spf13/cobra"
+}
+
+func cobraCommandRunnable(literal *ast.CompositeLit) bool {
+	for _, element := range literal.Elts {
+		field, ok := element.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		key, ok := field.Key.(*ast.Ident)
+		if ok && (key.Name == "Run" || key.Name == "RunE") {
+			return true
+		}
+	}
+	return false
 }
 
 func checkOutputSource(path string, source []byte) ([]Violation, error) {
@@ -272,15 +450,65 @@ func checkOutputSource(path string, source []byte) ([]Violation, error) {
 		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
 	}
 	aliases := sourceImportAliases(file)
+	structuredFunctions := map[string]bool{}
 	structured := false
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Body == nil {
+			continue
+		}
+		found := false
+		ast.Inspect(function.Body, func(node ast.Node) bool {
+			selector, ok := node.(*ast.SelectorExpr)
+			if !ok || selector.Sel.Name != "OutputStructured" {
+				return true
+			}
+			pkg, ok := selector.X.(*ast.Ident)
+			if ok && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" {
+				found = true
+			}
+			return true
+		})
+		if found {
+			structured = true
+			structuredFunctions[function.Name.Name] = true
+		}
+	}
+	runnables := map[string]ast.Node{}
+	structuredAttachments := map[string]int{}
 	ast.Inspect(file, func(node ast.Node) bool {
-		selector, ok := node.(*ast.SelectorExpr)
-		if !ok || selector.Sel.Name != "OutputStructured" {
+		if assignment, ok := node.(*ast.AssignStmt); ok && len(assignment.Lhs) == 1 && len(assignment.Rhs) == 1 {
+			name, nameOK := assignment.Lhs[0].(*ast.Ident)
+			literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
+			if nameOK && literalOK && cobraCommandRunnable(literal) {
+				runnables[name.Name] = literal
+			}
+		}
+		if statement, ok := node.(*ast.ReturnStmt); ok {
+			for _, result := range statement.Results {
+				literal, literalOK := cobraCommandLiteral(result, aliases)
+				if literalOK && cobraCommandRunnable(literal) {
+					runnables[fmt.Sprintf("@%d", fset.Position(literal.Pos()).Line)] = literal
+				}
+			}
+		}
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
 			return true
 		}
-		ident, ok := selector.X.(*ast.Ident)
-		if ok && aliases[ident.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" {
-			structured = true
+		selector, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok || selector.Sel.Name != "Attach" || len(call.Args) < 2 {
+			return true
+		}
+		pkg, pkgOK := selector.X.(*ast.Ident)
+		command, commandOK := call.Args[0].(*ast.Ident)
+		contractCall, callOK := call.Args[1].(*ast.CallExpr)
+		if !callOK {
+			return true
+		}
+		contractName, nameOK := contractCall.Fun.(*ast.Ident)
+		if pkgOK && commandOK && nameOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && structuredFunctions[contractName.Name] {
+			structuredAttachments[command.Name]++
 		}
 		return true
 	})
@@ -288,6 +516,11 @@ func checkOutputSource(path string, source []byte) ([]Violation, error) {
 		return nil, nil
 	}
 	var violations []Violation
+	for name, node := range runnables {
+		if structuredAttachments[name] != 1 {
+			violations = append(violations, Violation{Rule: RuleOutput, Path: path, Line: fset.Position(node.Pos()).Line, Message: fmt.Sprintf("structured output contract must be attached exactly once to runnable %s", name)})
+		}
+	}
 	ast.Inspect(file, func(node ast.Node) bool {
 		call, ok := node.(*ast.CallExpr)
 		if !ok {
@@ -313,6 +546,12 @@ func checkUniversalEffectsSource(path string, source []byte) ([]Violation, error
 		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
 	}
 	aliases := sourceImportAliases(file)
+	functions := map[string]*ast.BlockStmt{}
+	for _, declaration := range file.Decls {
+		if function, ok := declaration.(*ast.FuncDecl); ok && function.Body != nil {
+			functions[function.Name.Name] = function.Body
+		}
+	}
 	var violations []Violation
 	ast.Inspect(file, func(node ast.Node) bool {
 		field, ok := node.(*ast.KeyValueExpr)
@@ -323,12 +562,18 @@ func checkUniversalEffectsSource(path string, source []byte) ([]Violation, error
 		if !ok || key.Name != "PersistentPreRun" && key.Name != "PersistentPreRunE" {
 			return true
 		}
-		function, ok := field.Value.(*ast.FuncLit)
-		if !ok {
+		var body *ast.BlockStmt
+		switch value := field.Value.(type) {
+		case *ast.FuncLit:
+			body = value.Body
+		case *ast.Ident:
+			body = functions[value.Name]
+		}
+		if body == nil {
 			return true
 		}
 		hasEffect := false
-		ast.Inspect(function.Body, func(child ast.Node) bool {
+		ast.Inspect(body, func(child ast.Node) bool {
 			selector, ok := child.(*ast.SelectorExpr)
 			if !ok {
 				return true
@@ -358,6 +603,7 @@ func checkTrackerExecutionSource(path string, source []byte) ([]Violation, error
 	if err != nil {
 		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
 	}
+	aliases := sourceImportAliases(file)
 	execAliases := map[string]bool{}
 	for _, spec := range file.Imports {
 		if spec.Path.Value != `"os/exec"` {
@@ -372,51 +618,92 @@ func checkTrackerExecutionSource(path string, source []byte) ([]Violation, error
 	type launchState struct {
 		node         ast.Node
 		contextAware bool
+		resolvedName string
 		workDir      bool
 		childEnv     bool
 	}
 	launches := map[string]*launchState{}
-	ast.Inspect(file, func(node ast.Node) bool {
-		assignment, ok := node.(*ast.AssignStmt)
-		if !ok || len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
-			return true
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Body == nil {
+			continue
 		}
-		if name, ok := assignment.Lhs[0].(*ast.Ident); ok {
-			call, ok := assignment.Rhs[0].(*ast.CallExpr)
+		contextParams := map[string]bool{}
+		if function.Type.Params != nil {
+			for _, field := range function.Type.Params.List {
+				selector, selectorOK := field.Type.(*ast.SelectorExpr)
+				if !selectorOK {
+					continue
+				}
+				pkg, pkgOK := selector.X.(*ast.Ident)
+				if !pkgOK || selector.Sel.Name != "Context" || aliases[pkg.Name] != "context" {
+					continue
+				}
+				for _, name := range field.Names {
+					contextParams[name.Name] = true
+				}
+			}
+		}
+		ast.Inspect(function.Body, func(node ast.Node) bool {
+			assignment, ok := node.(*ast.AssignStmt)
+			if !ok || len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
+				return true
+			}
+			if name, ok := assignment.Lhs[0].(*ast.Ident); ok {
+				call, ok := assignment.Rhs[0].(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+				selector, ok := call.Fun.(*ast.SelectorExpr)
+				if !ok {
+					return true
+				}
+				alias, aliasOK := selector.X.(*ast.Ident)
+				if !aliasOK || !execAliases[alias.Name] {
+					return true
+				}
+				state := &launchState{node: call}
+				if selector.Sel.Name == "CommandContext" && len(call.Args) >= 2 {
+					caller, callerOK := call.Args[0].(*ast.Ident)
+					binary, binaryOK := call.Args[1].(*ast.SelectorExpr)
+					if !binaryOK {
+						launches[name.Name] = state
+						return true
+					}
+					resolved, resolvedOK := binary.X.(*ast.Ident)
+					if callerOK && contextParams[caller.Name] && resolvedOK && binary.Sel.Name == "Binary" {
+						state.contextAware = true
+						state.resolvedName = resolved.Name
+					}
+				}
+				launches[name.Name] = state
+				return true
+			}
+			left, ok := assignment.Lhs[0].(*ast.SelectorExpr)
 			if !ok {
 				return true
 			}
-			selector, ok := call.Fun.(*ast.SelectorExpr)
+			name, ok := left.X.(*ast.Ident)
+			if !ok || launches[name.Name] == nil {
+				return true
+			}
+			right, ok := assignment.Rhs[0].(*ast.SelectorExpr)
 			if !ok {
 				return true
 			}
-			alias, aliasOK := selector.X.(*ast.Ident)
-			if !aliasOK || !execAliases[alias.Name] {
+			resolved, resolvedOK := right.X.(*ast.Ident)
+			if !resolvedOK || resolved.Name != launches[name.Name].resolvedName {
 				return true
 			}
-			launches[name.Name] = &launchState{node: call, contextAware: selector.Sel.Name == "CommandContext"}
+			switch {
+			case left.Sel.Name == "Dir" && right.Sel.Name == "WorkDir":
+				launches[name.Name].workDir = true
+			case left.Sel.Name == "Env" && right.Sel.Name == "ChildEnv":
+				launches[name.Name].childEnv = true
+			}
 			return true
-		}
-		left, ok := assignment.Lhs[0].(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		name, ok := left.X.(*ast.Ident)
-		if !ok || launches[name.Name] == nil {
-			return true
-		}
-		right, ok := assignment.Rhs[0].(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		switch {
-		case left.Sel.Name == "Dir" && right.Sel.Name == "WorkDir":
-			launches[name.Name].workDir = true
-		case left.Sel.Name == "Env" && right.Sel.Name == "ChildEnv":
-			launches[name.Name].childEnv = true
-		}
-		return true
-	})
+		})
+	}
 	if len(launches) == 0 {
 		return []Violation{{Rule: RuleTrackerExecution, Path: path, Message: "tracker adapter has no context-aware process launch"}}, nil
 	}
