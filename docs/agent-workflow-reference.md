@@ -1,99 +1,195 @@
-# Agent Workflow Reference (on-demand)
+# Agent Workflow Reference
 
-> **Not auto-loaded.** This is the deep-detail sidecar for `CLAUDE.md`. The root
-> `CLAUDE.md` is a thin router; the CI-validation detail, release-pipeline
-> detail, key-scripts table, and agent-goals command surface live here so they
-> don't cost context on every session. Read this when you're actually touching
-> CI, the release pipeline, or `GOALS.md` — not before.
->
-> See also the tiered `AGENTS-*.md` split (`AGENTS-WORKFLOW.md`, `AGENTS-CI.md`,
-> `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md`) which owns the AGENTS-side scope detail.
+> Repository-specific mechanics for the canonical
+> [Operating Loop](architecture/operating-loop.md). Read this only for bead,
+> worktree, candidate, delivery, provenance, or closeout operations. The compact
+> [`AGENTS.md`](../AGENTS.md) defines the legal transitions; this file explains
+> how this repository performs them.
 
-## Building the CLI
+AgentOps validation ends at evidence. Git delivery is a separate repository
+transition that consumes that evidence. A direct push, pull request, external CI
+pipeline, or another repository's merge queue may replace the delivery adapter
+without changing the operating loop.
 
-```bash
-cd cli && make build        # Build ao binary to cli/bin/ao
-cd cli && make test         # Run tests
-cd cli && make lint         # Run linter
-cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
-```
+## Resolve the live repository state
 
-## Key Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `make regen-all` | **One-command finalizer** — regenerates *every* derived artifact (skill counts, skill-domain-map, `registry.json`, context-map, embedded skills, CLI reference, cli-surface inventory, codex hashes) after adding a skill/command. Run this instead of hunting the generators one CI round at a time (`ag-jima`, ex-PR #598). |
-| `make regen-check` | The no-write companion: runs the matching drift validators (the same gates `contracts-sync` enforces). Green here ⇒ those gates pass in CI. |
-| `scripts/ship.sh` | One-knob ship loop — detects inventory changes, runs regen sweep, opens PR |
-| `scripts/ci-local-release.sh` | Local release validation gate (run before tagging) |
-| `scripts/sync-skill-counts.sh` | Sync skill counts across docs after adding/removing skills |
-| `scripts/generate-cli-reference.sh` | Regenerate CLI docs after changing commands/flags |
-| `scripts/regen-codex-hashes.sh` | Regenerate hashes after changing skills-codex/ files |
-| `scripts/verify-gate-claim.sh` | AP#7 mechanical enforcement — verify `Evidence:` claims against gate logs |
-
-## Local Validation
-
-Routine AgentOps changes land by local validation plus direct push to `main`. `ao gate check --fast --scope head` is the Go-owned cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. The legacy bash gate remains available only through the documented `AGENTOPS_GATE_BASH=1` fallback while its backing scripts still serve CI. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
-
-### Quick Local Sanity Checks (per-tool, not omnibus)
+Before a tracked mutation:
 
 ```bash
-cd cli && make build && make test         # If you changed Go code
-make regen-all && make regen-check        # If you ADDED/REMOVED a skill or `ao` command (then commit the regenerated files)
-cd cli && make sync-hooks                 # If you changed lib/ or skills/standards/references/
-scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
-bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
-
-# If you touched docs/ and need the mkdocs strict check locally:
-# (system mkdocs ≤1.1.2 cannot parse the modern mkdocs.yml — needs material plugins)
-python3 -m venv .venv-mkdocs && .venv-mkdocs/bin/pip install -r requirements-docs.txt && .venv-mkdocs/bin/mkdocs build --strict
+git status --short
+git fetch origin main
+git rev-parse origin/main
+BEADS_DIR="$(ao beads dir --require)" && export BEADS_DIR
+br show <bead-id>
 ```
 
-Run only the per-tool checks for the surfaces you actually touched. Push, let CI run, fix any failures. The 30-90s CI feedback loop replaced the 10-20s local omnibus gate intentionally — the per-incident drift cost dominates the per-push wait.
+Record the exact remote-main SHA used for admission. A moving remote is normal;
+it is not a reason to restart semantic work. It becomes relevant only when the
+candidate is mapped or delivered.
 
-### Rules That Break CI
+The private `br` ledger is repository tracking truth. It lives outside linked
+worktrees and must be resolved explicitly. Never add `_beads/`, `.beads/`, or
+repo-root `.agents/` runtime artifacts to the public repository. `bd`/Dolt may be
+used by a Gas City substrate, but it is not this repository's tracker.
 
-**No symlinks.** Ever. The plugin-load-test rejects all symlinks in the repo. If you need the same reference file in multiple skills, **copy** it.
+## Pull exactly one leaf
 
-**Skill counts must be synced.** Adding or removing a skill directory requires:
+Claim one ready BDD-shaped leaf only after its prerequisites, admitted base,
+acceptance, first RED or baseline, exact write scope, read-only consumers,
+rollback, and proof boundary are known.
 
 ```bash
-scripts/sync-skill-counts.sh
+br update <bead-id> --claim
+git worktree add /absolute/path/to/worktree -b codex/<bead-id> origin/main
 ```
 
-This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md. Forgetting this fails the doc-release-gate. `make regen-all` runs this **plus** every other derived-artifact generator, so prefer it when adding a skill rather than remembering each script individually.
+The branch name is descriptive provenance, not authority. Confirm the worktree's
+HEAD equals the admitted base before editing. One writer owns one active leaf.
+Goal and epic records remain aggregate demand and do not occupy WIP.
 
-**Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it or a `Read` instruction referencing it. Use `heal.sh --strict` to check.
+If another active lane may touch an owned path, stop before mutation. Concurrent
+writers require disjoint scopes and separate worktrees; otherwise serialize the
+leaves. In an explicitly coordinated workflow, reserve a potentially shared path
+before either writer edits it.
 
-**Codex skills are manually maintained.** Edit `skills-codex/<name>/SKILL.md` directly or add overrides in `skills-codex-overrides/<name>/`. Audit drift with `bash scripts/audit-codex-parity.sh --skill <name>`.
+## Build within the admitted scope
 
-**Embedded lib/skills must stay in sync.** After editing `lib/` or `skills/standards/references/`: run `cd cli && make sync-hooks`.
+Create and run the named acceptance check first. Preserve the output that proves
+right-reason RED against the admitted base, then make the smallest change that
+turns it green. Run focused checks selected from the changed package, document,
+contract, or script surface.
 
-**CLI docs must stay in sync.** After changing commands/flags: run `scripts/generate-cli-reference.sh`.
+Before each commit and before handoff:
 
-**Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`.
+```bash
+git status --short
+git diff --check
+git diff --name-only
+git diff --cached --name-only
+```
 
-**Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15).
+Every changed path must belong to the leaf. A read-only consumer that needs an
+edit returns the leaf to Plan; it is not appended during Crank. Generated outputs
+are writable only when the leaf names their source owner and regeneration command.
 
-**No TODOs in SKILL.md.** Use `br` issue tracking (`BEADS_DIR="$(ao beads dir)" br`) instead.
+## Commit and freeze one candidate
 
-**No secrets in code.** CI greps for hardcoded passwords, API keys, tokens in non-test files.
+Commit the complete intended leaf once its focused deterministic checks pass.
+Freeze a candidate receipt containing:
 
-## Testing Rules
+- bead ID and admitted base SHA;
+- candidate commit SHA and tree SHA;
+- clean/dirty status;
+- exact owned path list and blob/deletion identities;
+- acceptance claims and commands;
+- deterministic results and relevant tool/registry identities;
+- author identity.
 
-See `.claude/rules/go.md` and `.claude/rules/python.md` for language-specific testing conventions. Key rules: L2 integration tests first, L1 unit tests always. No coverage-padding. No `cov*_test.go` naming.
+Example identity capture:
 
-## Release Pipeline
+```bash
+candidate_sha="$(git rev-parse HEAD)"
+candidate_tree="$(git rev-parse HEAD^{tree})"
+git status --porcelain=v1
+git diff --name-status <admitted-base>..."$candidate_sha"
+```
 
-Tag triggers GoReleaser + GitHub Actions: `git tag v2.X.0 && git push origin v2.X.0`. **Always run `scripts/ci-local-release.sh` before tagging.** Retag with `scripts/retag-release.sh v2.X.0`.
+The receipt is immutable. Do not amend or repair the frozen candidate in place.
+Any source edit produces a new candidate identity and invalidates the prior
+semantic verdict. Local ignored receipts are evidence, not source authority.
 
-For iterative pre-tag work, use `scripts/ci-local-release.sh --quick` (alias `--sanity`) — the fast code-correctness subset (current-platform build + test + version consistency + release smoke + cheap doc/snippet/shellcheck gates) that skips the slow release-rehearsal lane (SBOM, multi-platform cross-build, vuln scan, eval/HIL/readiness). Run the full gate (no flag) once before the actual tag.
+## Hand the exact candidate to Validate
 
-## Agent Goals
+Run the leaf's declared deterministic commands once for the frozen input. Then a
+fresh validator whose identity differs from the author reviews:
 
-GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:
-- `ao goals measure` — fitness gate checks
-- `ao goals measure --directives` — list strategic directives as JSON
-- `ao goals steer add/remove/prioritize` — manage directives
-- `ao goals init` — bootstrap GOALS.md interactively
-- `ao goals migrate --to-md` — convert GOALS.yaml → GOALS.md
+- admitted base and candidate/tree identities;
+- exact owned paths;
+- acceptance claims and non-goals;
+- RED/GREEN and deterministic receipts;
+- rollback and relevant read-only consumers.
+
+The validator writes one candidate-bound closure with claim citations, a complete
+blocker set, PASS/FAIL, and NOTE/REPAIR/REPLAN dispositions. It does not edit the
+candidate. `REPAIR` returns one consolidated batch to the author; `REPLAN` returns
+to the earliest invalidated plan move. After a repair, refreeze before any new
+verdict.
+
+## Record Learn before delivery
+
+`/learn` consumes the immutable Validate closure and digest. Its minimal receipt
+records candidate validity, remaining work, and `plan_impact`. It neither repairs
+the candidate nor grants Git authority. If Learn reports material plan impact, the
+orchestrator decides whether that invalidates the candidate before delivery.
+
+## Deliver through the repository adapter
+
+For AgentOps itself, the terminal delivery command is:
+
+```bash
+ao land <bead-id>
+```
+
+Delivery must consume the same candidate, PASS verdict, and terminal Learn
+receipt. It may check remote divergence, proof freshness, mapping/overlap, local
+policy, and push outcome; it must not recreate semantic validation or rerun an
+unchanged full deterministic suite merely because delivery began.
+
+If `origin/main` moved, compare the candidate's owned blobs/deletions and declared
+dependencies with the new base. Byte-identical owned semantics plus green
+overlap/mapping evidence may reuse the verdict. A changed owned blob, acceptance
+claim, proof dependency, or ambiguous overlap invalidates the affected proof and
+returns to the earliest invalidated move.
+
+Do not close the bead because a local merge or push command exited zero. Verify
+the exact remote identity:
+
+```bash
+git ls-remote origin refs/heads/main
+git merge-base --is-ancestor <delivered-sha> origin/main
+```
+
+Repository policy may use another target ref or delivery adapter; record that ref
+and apply the same exact-identity rule.
+
+## Report, then release WIP
+
+The terminal tranche report includes:
+
+- `LANDED` candidate/delivery identity;
+- `REMOTE VERIFIED` ref and SHA;
+- `CLOSED LEAF` tracker result;
+- goal/epic status without treating it as WIP;
+- next ready leaf, if any;
+- residual risk and explicitly unchecked scope.
+
+Only after remote verification and that report may the tracker leaf close and the
+writer pull another leaf. Tracker state follows repository evidence; it does not
+substitute for it.
+
+## Rollback and recovery
+
+Before consumers land, discard a failed candidate back to its admitted base and
+retain RED/verdict receipts only as non-authoritative evidence. After consumers
+land, prefer a compatible roll-forward. A coordinated revert follows declared
+reverse dependencies; never revert a provider alone while consumers still depend
+on it.
+
+After interruption, reconstruct state from repository HEAD/status, the live bead,
+candidate and verdict receipts, Learn, delivery evidence, and remote ref—not from
+chat memory. Report one legal next action. Do not bootstrap an orchestration
+substrate merely to recover a normal local leaf.
+
+## Routed detail retained during documentation migration
+
+The tiered siblings remain read-only compatibility consumers until their migration
+leaf proves zero live consumers:
+
+- [`AGENTS-WORKFLOW.md`](../AGENTS-WORKFLOW.md) — legacy expanded workflow detail;
+- [`AGENTS-CI.md`](../AGENTS-CI.md) — CI and release backstops;
+- [`AGENTS-CODEX.md`](../AGENTS-CODEX.md) — Codex artifact parity;
+- [`AGENTS-RUNTIME.md`](../AGENTS-RUNTIME.md) — worktree and runtime constraints.
+
+For executable command truth, inspect `cli/cmd/ao/` and generated
+`cli/docs/COMMANDS.md`. For gate/release policy, use `docs/CI-CD.md`,
+`docs/contracts/ci-jobs.yaml`, and `docs/runbooks/release-process.md`.
