@@ -46,6 +46,7 @@ check "critical constraints precede the core contract" "test \"\$(grep -n '^## C
 
 packet_fixture="$(mktemp)"
 invalid_packet_fixture="$(mktemp)"
+future_packet_fixture="$(mktemp)"
 REPO_ROOT="$(cd "$SKILL_DIR/../.." && pwd)"
 artifact_dir="$REPO_ROOT/.agents/rpi"
 discovery_artifact="$artifact_dir/validate-fixture-$$-discovery.md"
@@ -57,10 +58,28 @@ printf 'discovery evidence\n' >"$discovery_artifact"
 printf 'implementation evidence\n' >"$implementation_artifact"
 printf 'validation evidence\n' >"$validation_artifact"
 printf 'learn evidence\n' >"$learn_artifact"
-trap 'rm -f "$packet_fixture" "$invalid_packet_fixture" "$discovery_artifact" "$implementation_artifact" "$validation_artifact" "$learn_artifact"' EXIT
+trap 'rm -f "$packet_fixture" "$invalid_packet_fixture" "$future_packet_fixture" "$discovery_artifact" "$implementation_artifact" "$validation_artifact" "$learn_artifact"' EXIT
 
-printf '%s\n' "{\"schema_version\":1,\"objective\":\"prove four umbrellas\",\"skills_loaded\":[{\"name\":\"rpi\",\"reason\":\"orchestrator\"},{\"name\":\"discovery\",\"reason\":\"phase-1\"},{\"name\":\"crank\",\"reason\":\"phase-2\"},{\"name\":\"validate\",\"reason\":\"phase-3\"},{\"name\":\"learn\",\"reason\":\"phase-4\"}],\"phase_receipts\":[{\"phase\":\"discovery\",\"skill\":\"discovery\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$discovery_artifact")\"},{\"phase\":\"crank\",\"skill\":\"crank\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$implementation_artifact")\"},{\"phase\":\"validate\",\"skill\":\"validate\",\"status\":\"PASS\",\"artifact\":\".agents/rpi/$(basename "$validation_artifact")\"},{\"phase\":\"learn\",\"skill\":\"learn\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$learn_artifact")\"}]}" >"$packet_fixture"
+printf '%s\n' "{\"schema_version\":1,\"packet_state\":\"terminal\",\"objective\":\"prove four umbrellas\",\"skills_loaded\":[{\"name\":\"rpi\",\"reason\":\"orchestrator\"},{\"name\":\"discovery\",\"reason\":\"phase-1\"},{\"name\":\"crank\",\"reason\":\"phase-2\"},{\"name\":\"validate\",\"reason\":\"phase-3\"},{\"name\":\"learn\",\"reason\":\"phase-4\"}],\"phase_receipts\":[{\"phase\":\"discovery\",\"skill\":\"discovery\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$discovery_artifact")\"},{\"phase\":\"crank\",\"skill\":\"crank\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$implementation_artifact")\"},{\"phase\":\"validate\",\"skill\":\"validate\",\"status\":\"PASS\",\"artifact\":\".agents/rpi/$(basename "$validation_artifact")\"},{\"phase\":\"learn\",\"skill\":\"learn\",\"status\":\"DONE\",\"artifact\":\".agents/rpi/$(basename "$learn_artifact")\"}]}" >"$packet_fixture"
 check "execution packet validator accepts core schema plus receipts" "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$packet_fixture' >/dev/null"
+jq --arg artifact ".agents/rpi/$(basename "$discovery_artifact")" '{
+  schema_version: 3,
+  packet_state: "prospective",
+  objective: "honest Discovery handoff",
+  skills_loaded: [.skills_loaded[] | select(.name == "rpi" or .name == "discovery")],
+  phase_receipts: [
+    {phase:"discovery", skill:"discovery", status:"DONE", artifact:$artifact},
+    {phase:"crank", skill:"crank", status:"pending"},
+    {phase:"validate", skill:"validate", status:"not_checked"},
+    {phase:"learn", skill:"learn", status:"not_checked"}
+  ]
+}' "$packet_fixture" >"$invalid_packet_fixture"
+check "execution packet validator accepts honest prospective receipts" \
+  "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$invalid_packet_fixture' | grep -q 'valid prospective execution packet'"
+jq '.skills_loaded += [{name:"crank", reason:"future-phase"}]' \
+  "$invalid_packet_fixture" >"$future_packet_fixture"
+check "execution packet validator rejects unrun prospective skill loads" \
+  "python3 '$SKILL_DIR/scripts/validate-execution-packet.py' '$future_packet_fixture' 2>&1 | grep -q 'prospective skills_loaded must omit unrun phase skill: crank'"
 jq '.schema_version = 3
     | .pre_mortem_verdict = "PASS"
     | .premortem_verdict = "FAIL"' \

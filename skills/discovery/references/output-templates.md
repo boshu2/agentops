@@ -135,7 +135,7 @@ Write to `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md`:
 - **Epic:** <epic-id>
 - **Issues:** <count>
 - **Complexity:** <fast|standard|full>
-- **Premortem:** <PASS|WARN> (attempt <N>/3)
+- **Premortem:** <PASS|WARN> at <artifact>; repair/REPLAN disposition remains orchestrator-owned
 - **Brainstorm:** <used|skipped>
 - **History search:** <findings count or skipped>
 - **Density:** intent, boundary, evidence, decision, constraint, next action

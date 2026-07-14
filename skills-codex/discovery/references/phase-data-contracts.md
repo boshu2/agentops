@@ -10,8 +10,19 @@ How each consolidated phase passes data to the next. Artifacts are filesystem-ba
 | Validation → Learn | Immutable verdict + structured observations | `.agents/rpi/phase-3-summary.md` plus the verdict artifact | Learn binds the verdict digest and emits `remaining_work` plus `plan_impact` |
 | Learn → Orchestrator | `material_change`, `no_change`, or `terminal` plan impact | `.agents/rpi/phase-4-summary.md` plus the Learn receipt | Only an explicit orchestrator re-plan request may return to Discovery; only an orchestrator-owned changed plan may then enter Premortem |
 
+Discovery writes an honest prospective packet. Set `packet_state` to
+`prospective`; record Discovery as `DONE` with the real phase-1 artifact, Crank
+as `pending`, and Validate/Learn as `not_checked`, with no artifact field on an
+unrun phase. A prospective packet must never fabricate terminal phase success.
+RPI changes `packet_state` to `terminal` only when all four successful receipts
+and their nonempty artifacts exist.
+At the prospective boundary, `skills_loaded` lists only RPI and Discovery, the
+contexts that actually ran. Pending Crank and not-checked Validate/Learn are
+receipt placeholders, not fabricated skill-load evidence.
+
 Execution packet v1 should remain additive. Recommended fields:
 - `schema_version`
+- `packet_state` (`prospective` at Discovery handoff; `terminal` only after Learn)
 - `run_id`
 - `objective`
 - `density.intent`

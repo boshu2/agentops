@@ -4,6 +4,22 @@
 >
 > These checks run during or alongside the council validation step. Steps 2.4–2.8 are documented here to keep SKILL.md within its line budget.
 
+## Step 2.3: Authority/consumer manifest (migration-shaped plans)
+
+When a plan renames, deletes, moves, migrates, or transfers ownership, require
+the complete manifest defined by
+[`plan/references/authority-consumer-manifest.md`](../../plan/references/authority-consumer-manifest.md).
+Run its checker against the repository state the plan will consume.
+
+- `incomplete` is FAIL: do not dispatch or infer missing consumers.
+- `shared` is a valid inventory but the affected slices must serialize or merge.
+- `disjoint` may retain a parallel proposal only when the remaining wave-validity
+  rows also pass.
+
+For a between-wave review, compare the manifest's observed paths with the
+prior accepted snapshot. A new path invalidates the plan and returns to Plan;
+it is not patched into a worker prompt after admission.
+
 ## Step 2.4: Temporal Interrogation (`--deep` and `--temporal`)
 
 **Included automatically with `--deep`.** Also available via `--temporal` flag for quick reviews.
@@ -33,6 +49,10 @@ Report temporal findings in a separate "Timeline Risks" section.
 **Retro history correlation:** When `.agents/retro/index.jsonl` has 2+ entries, load the last 5 retros and check for recurring timeline-phase failures. Auto-escalate severity for phases that caused issues in prior retros.
 
 Temporal findings appear in the report as a `## Timeline Risks` table. See [temporal-interrogation.md](temporal-interrogation.md) for the full framework.
+
+Between waves, use the bounded remaining-plan mode from that reference: inspect
+only incomplete slices, the just-completed leaf's effect on ordering/scope, and
+new evidence. Do not replay the full hour-by-hour simulation for completed work.
 
 ## Step 2.5: Error & Rescue Map (Mandatory for plans with external calls)
 

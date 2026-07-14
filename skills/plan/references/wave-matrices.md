@@ -23,6 +23,15 @@ If any file appears in 2+ same-wave issues, either:
 
 **Why:** Issue-level dependency graphs miss shared-file conflicts. In context-orchestration-leverage, two tracks both modified `rpi_phased_handoff.go` and required an unplanned Wave 2a/2b split. A file-conflict matrix would have caught this during planning.
 
+## Migration authority/consumer gate
+
+For a migration, rename, deletion, or ownership transfer, the matrix is a
+projection of the checked [authority/consumer manifest](authority-consumer-manifest.md),
+not an author guess. Run its checker before computing waves. `disjoint` may be
+proposed for parallel execution; `shared` is complete but must serialize;
+`incomplete` fails closed and returns to inventory. Re-check the observed path
+set when the plan is consumed because a new consumer invalidates the matrix.
+
 ## Cross-Wave Shared File Registry (Mandatory)
 
 After computing waves, build a **cross-wave file registry** listing every file that appears in issues across different waves. These files are collision risks because later-wave worktrees are created from a base SHA that may not include earlier-wave changes.

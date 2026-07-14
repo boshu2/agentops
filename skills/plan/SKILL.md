@@ -57,6 +57,13 @@ non-trivial plan must be durable and self-contained.
   implement, and `--auto` skips approval only when explicitly selected.
 - **Why: avoid false novelty.** Search existing skills and the `ao` surface
   before scoping a new capability; record hits as reuse, not new work.
+- **Why: keep WIP pullable.** Goal and epic parents are aggregate demand, never writer WIP; keep one active leaf per writer and release it only after its terminal report.
+- **Why: make propagation finite.** A migration, rename, deletion, or ownership
+  transfer requires a command-bound [authority/consumer manifest](references/authority-consumer-manifest.md)
+  covering executable authorities, symbols, consumers, tests, generated
+  companions, runtime projections, evidence, and rollback before a slice is
+  admitted. The checker consumes independently captured inventory output as
+  data; it never executes a command string from the manifest.
 
 ## Inputs and Boundary
 
@@ -89,13 +96,17 @@ into acceptance; carry non-goals, rollback, and hard rules into boundaries.
 5. **Baseline mechanically.** Record commands and counts for files, LOC,
    sections, tests, fixtures, schemas, and size limits. Search `ms search`
    when available, otherwise `skills/**/SKILL.md`, `docs/SKILLS.md`, and `ao`.
+   For a migration-shaped objective, write and check the authority/consumer
+   manifest now; an incomplete inventory fails closed.
 6. **Scale detail.** Minimal for 1-2 simple issues, Standard for 3-6, Deep for
    7+, broad refactors, full complexity, or `--deep`.
 7. **Decompose by behavior.** Give each issue a title, scenario, owned files,
    dependencies, test levels proportional to risk, and mechanical conformance
    checks. Custom rubrics name their `agent_judge`.
-8. **Compute waves.** Topologically group independent issues. Serialize shared
-   writes and read/write conflicts. Include tests, docs, schemas, fixtures,
+8. **Compute waves.** Topologically group independent issues. Pull only one
+   vertical leaf into each writer's WIP slot. For migrations, use the checked
+   manifest result: only `disjoint` may be proposed as parallel, while `shared`
+   or `incomplete` is serialized. Include tests, docs, schemas, fixtures,
    runtime copies, Codex companions, parity manifests, and hash markers.
 9. **Build matrices.** Produce the file dependency matrix, file-conflict
    matrix, cross-wave shared-file registry, owner and discard path per slice.
@@ -190,6 +201,7 @@ the approval prompt, and hand off to the next loop move.
 - [plan-document-template.md](references/plan-document-template.md) — canonical artifact
 - [task-creation.md](references/task-creation.md) — br creation and admission gates
 - [wave-matrices.md](references/wave-matrices.md) — ownership and conflict matrices
+- [authority-consumer-manifest.md](references/authority-consumer-manifest.md) — checked propagation inventory and disjoint/shared/incomplete classification
 - [planning-rules.md](references/planning-rules.md) — PR-001 through PR-011
 - [plan-mutations.md](references/plan-mutations.md)
 - [complexity-estimation.md](references/complexity-estimation.md)

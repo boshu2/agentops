@@ -20,6 +20,13 @@ Codex session execute without chat-only context.
 - **Why: keep acceptance executable.** Put Gherkin above fenced YAML criteria with runnable checks.
 - **Why: prevent rediscovery.** Cite and verify real paths, symbols, tests, counts, and reuse points.
 - **Why: preserve intent.** Keep WHAT and HOW separated; planning does not implement.
+- **Why: keep WIP pullable.** Goal and epic parents are aggregate demand, never writer WIP; keep one active leaf per writer and release it only after its terminal report.
+- **Why: make propagation finite.** A migration, rename, deletion, or ownership
+  transfer requires a command-bound [authority/consumer manifest](references/authority-consumer-manifest.md)
+  covering executable authorities, symbols, consumers, tests, generated
+  companions, runtime projections, evidence, and rollback before a slice is
+  admitted. The checker consumes independently captured inventory output as
+  data; it never executes a command string from the manifest.
 
 ## Inputs And Flags
 
@@ -92,6 +99,8 @@ For a checker-clean packet:
 6. **Baseline audit.** Mechanically count the current state before making
    quantitative claims: files, sections, LOC, tests, fixtures, schemas, and
    any SKILL.md files near size limits. Record commands and results.
+   For a migration-shaped objective, write and check the authority/consumer
+   manifest now; an incomplete inventory fails closed.
    Inventory facts are symbols too (2026-07-02, showcase kernel R10): any
    count, file list, or "X is empty/absent" claim gets the same verification,
    and consumers re-verify at the moment of use (`ls`/`jq`/`grep` cost
@@ -126,9 +135,11 @@ For a checker-clean packet:
    Non-trivial plans and bead bodies should include the `hexagon:`
    boundary block: inbound port, bounded context, adapters, context packet, and
    done state.
-9. **Compute waves.** Group independent issues by dependency. Serialize or
-   merge same-file writes. Include generated artifacts, docs, schemas, fixtures,
-   Codex companions, manifests, and hash markers in ownership.
+9. **Compute waves.** Group independent issues by dependency. Pull only one
+   vertical leaf into each writer's WIP slot. For migrations, use the checked
+   manifest result: only `disjoint` may be proposed as parallel, while `shared`
+   or `incomplete` is serialized. Include generated artifacts, docs, schemas,
+   fixtures, Codex companions, manifests, and hash markers in ownership.
    Generated Artifact Companion Scope is mandatory: list every touched file,
    including tests, docs, schemas, fixtures, runtime copies, parity manifests, hash markers,
    and generated Codex artifacts. If skill behavior or runtime UX
@@ -186,7 +197,7 @@ for the canonical shape.
 - **Filename:** the filename convention is ISO date plus stable goal slug.
 - **Format:** Markdown with Gherkin, fenced YAML criteria, issue IDs, dependencies, and file matrices.
 - **Validation command:** run `bash skills/plan/scripts/validate.sh` plus admission and symbol checks.
-- **Downstream handoff:** consumed by `$pre-mortem`, `$crank`, `$implement`, and future Codex sessions.
+- **Downstream handoff:** consumed by `$premortem`, `$crank`, `$implement`, and future Codex sessions.
 
 ## Quality Rubric
 
@@ -227,6 +238,7 @@ Read [references/examples.md](references/examples.md) for full examples.
 - [references/plan-document-template.md](references/plan-document-template.md)
 - [references/plan-mutations.md](references/plan-mutations.md)
 - [references/plan-to-beads-workflow.md](references/plan-to-beads-workflow.md)
+- [references/authority-consumer-manifest.md](references/authority-consumer-manifest.md)
 - [references/planning-rules.md](references/planning-rules.md)
 - [references/pre-decomposition.md](references/pre-decomposition.md)
 - [references/sdd-patterns.md](references/sdd-patterns.md)

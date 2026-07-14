@@ -12,6 +12,7 @@ How each consolidated phase passes data to the next. Artifacts are filesystem-ba
 
 Execution packet v1 should remain additive. Recommended fields:
 - `schema_version`
+- `packet_state` (`prospective` before all phases complete; `terminal` only after Learn)
 - `run_id`
 - `objective`
 - `epic_id` (optional when the tracker cannot mint an epic)
@@ -34,9 +35,12 @@ Execution packet retention rule:
 
 Phase receipt rule:
 - every phase boundary artifact records `skills_loaded`
-- `.agents/rpi/execution-packet.json` carries exactly four ordered completion receipts: discovery, crank, validate, learn
+- `.agents/rpi/execution-packet.json` carries exactly four ordered receipts: discovery, crank, validate, learn
 - `phase_receipts[].status` must match the delegated skill's completion marker or verdict (`DONE`, `PARTIAL`, `BLOCKED`, `FAIL`, or `PASS/WARN/FAIL` as emitted)
-- before Report or downstream handoff, the ordered receipts must be successful: discovery `DONE`, crank `DONE`, validate `PASS`, and learn `DONE`; retry history belongs in phase evidence rather than extra completion receipts
+- a `prospective` Discovery handoff records discovery `DONE` with its real artifact, crank `pending`, and validate/learn `not_checked`; pending/not-checked receipts omit `artifact`
+- prospective `skills_loaded` names only RPI and Discovery; unrun receipt placeholders do not claim future skill loads
+- a `prospective` packet cannot claim successful downstream receipts
+- before Report, `packet_state` is `terminal` and the ordered receipts must be successful: discovery `DONE`, crank `DONE`, validate `PASS`, and learn `DONE`, each with an existing nonempty artifact; retry history belongs in phase evidence rather than extra receipts
 - receipts are an audit index, not proof by themselves; transcript or runtime invocation trace remains the stronger evidence when available
 
 Receipt shape (JSON artifacts use canonical skill slugs without sigils):

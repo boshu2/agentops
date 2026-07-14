@@ -108,6 +108,9 @@ def validate_receipts(packet: dict[str, object], repo_root: Path) -> None:
         ("validate", "validate", "PASS"),
         ("learn", "learn", "DONE"),
     ]
+    packet_state = packet.get("packet_state", "terminal")
+    if packet_state not in {"prospective", "terminal"}:
+        fail("packet_state must be prospective or terminal")
     if len(receipts) != len(required):
         fail("phase_receipts must contain discovery, crank, validate, learn in order")
     for index, (receipt, expected) in enumerate(zip(receipts, required)):
@@ -122,14 +125,33 @@ def validate_receipts(packet: dict[str, object], repo_root: Path) -> None:
                 f"phase_receipts[{index}] must be phase {expected_phase} "
                 f"with skill {expected_skill}"
             )
-        if skill not in loaded_names:
-            fail(f"phase_receipts[{index}].skill is absent from skills_loaded")
-        if status != expected_status:
+        if packet_state == "terminal":
+            if skill not in loaded_names:
+                fail(f"phase_receipts[{index}].skill is absent from skills_loaded")
+            if status != expected_status:
+                fail(
+                    "terminal phase_receipts must be successful; "
+                    f"phase_receipts[{index}].status {status}, want {expected_status}"
+                )
+            resolve_artifact(repo_root, receipt.get("artifact"), f"phase_receipts[{index}].artifact")
+            continue
+
+        prospective_statuses = ["DONE", "pending", "not_checked", "not_checked"]
+        expected_prospective = prospective_statuses[index]
+        if status != expected_prospective:
             fail(
-                f"phase_receipts[{index}].status {status} is not successful; "
-                f"want {expected_status}"
+                "prospective phase_receipts must record only Discovery success; "
+                f"phase_receipts[{index}].status {status}, want {expected_prospective}"
             )
-        resolve_artifact(repo_root, receipt.get("artifact"), f"phase_receipts[{index}].artifact")
+        if index == 0:
+            if skill not in loaded_names:
+                fail(f"phase_receipts[{index}].skill is absent from skills_loaded")
+            resolve_artifact(repo_root, receipt.get("artifact"), f"phase_receipts[{index}].artifact")
+        else:
+            if skill in loaded_names:
+                fail(f"prospective skills_loaded must omit unrun phase skill: {skill}")
+            if "artifact" in receipt:
+                fail(f"prospective phase_receipts[{index}] must omit artifact for an unrun phase")
 
 
 def main() -> int:
@@ -155,7 +177,8 @@ def main() -> int:
         print(f"invalid execution packet: {exc}", file=sys.stderr)
         return 1
 
-    print(f"valid execution packet: {packet_path}")
+    packet_state = packet.get("packet_state", "terminal")
+    print(f"valid {packet_state} execution packet: {packet_path}")
     return 0
 
 
