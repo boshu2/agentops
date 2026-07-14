@@ -5,7 +5,6 @@ package beads
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -375,7 +374,7 @@ func (module Module) runExec(command *cobra.Command, args []string) error {
 	if module.executor == nil {
 		return fmt.Errorf("beads tracker executor is not configured")
 	}
-	err := module.executor.Execute(context.Background(), args, beadsapp.ExecStreams{
+	err := module.executor.Execute(command.Context(), args, beadsapp.ExecStreams{
 		Stdin: command.InOrStdin(), Stdout: command.OutOrStdout(), Stderr: command.ErrOrStderr(),
 	})
 	var exitError interface{ ExitCode() int }
@@ -390,7 +389,7 @@ func (module Module) runVerify(command *cobra.Command, args []string, options Op
 	if module.knowledge == nil {
 		return fmt.Errorf("beads knowledge use cases are not configured")
 	}
-	report, err := module.knowledge.Verify(context.Background(), args[0])
+	report, err := module.knowledge.Verify(command.Context(), args[0])
 	if err != nil {
 		return err
 	}
@@ -440,7 +439,7 @@ func (module Module) runLint(command *cobra.Command, options Options) error {
 		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping lint (graceful degradation)")
 		return err
 	}
-	report, err := module.knowledge.Lint(context.Background(), options.Status)
+	report, err := module.knowledge.Lint(command.Context(), options.Status)
 	if err != nil {
 		return err
 	}
@@ -482,7 +481,7 @@ func (module Module) runHarvest(command *cobra.Command, args []string, options O
 		_, err := fmt.Fprintln(command.ErrOrStderr(), "WARN: bd not on PATH — skipping harvest (graceful degradation)")
 		return err
 	}
-	result, err := module.knowledge.Harvest(context.Background(), args[0], options.OutputDirectory, options.DryRun)
+	result, err := module.knowledge.Harvest(command.Context(), args[0], options.OutputDirectory, options.DryRun)
 	if err != nil {
 		return err
 	}
@@ -626,7 +625,7 @@ func (module Module) runStale(command *cobra.Command, options Options) error {
 	if module.recovery == nil {
 		return fmt.Errorf("beads recovery use cases are not configured")
 	}
-	events, err := module.recovery.StaleClaims(context.Background(), options.ThresholdHours)
+	events, err := module.recovery.StaleClaims(command.Context(), options.ThresholdHours)
 	if err != nil {
 		return err
 	}
@@ -653,7 +652,7 @@ func (module Module) runResume(command *cobra.Command, args []string, options Op
 	if module.recovery == nil {
 		return fmt.Errorf("beads recovery use cases are not configured")
 	}
-	result, err := module.recovery.Resume(context.Background(), args[0], beadsapp.ResumeOptions{Agent: options.Agent, Ledger: options.Ledger})
+	result, err := module.recovery.Resume(command.Context(), args[0], beadsapp.ResumeOptions{Agent: options.Agent, Ledger: options.Ledger})
 	if err != nil {
 		return err
 	}
