@@ -7,11 +7,83 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
+
+func TestReconcileUsesResolvedTrackerContext(t *testing.T) {
+	repo := t.TempDir()
+	if output, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatalf("initialize git repository: %v: %s", err, output)
+	}
+	nested := filepath.Join(repo, "nested")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	binDir := t.TempDir()
+	tracePath := filepath.Join(t.TempDir(), "tracker.trace")
+	stub := `#!/bin/sh
+printf 'binary=%s|pwd=%s|beads=%s|dolt=%s|argv=%s\n' "${0##*/}" "$(pwd -P)" "${BEADS_DIR-<unset>}" "${BEADS_DOLT_AUTO_START-<unset>}" "$*" > "$TRACKER_TRACE"
+printf '[]\n'
+`
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
+	t.Setenv("TRACKER_TRACE", tracePath)
+	t.Setenv("AGENTOPS_TRACKER", "br")
+	ambientLedger := filepath.Join(t.TempDir(), "ambient-ledger")
+	t.Setenv("BEADS_DIR", ambientLedger)
+	t.Setenv("BEADS_DOLT_AUTO_START", "1")
+	originalLookPath := trackerLookPath
+	trackerLookPath = exec.LookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+
+	if _, err := defaultReconcileRunInDir(context.Background(), nested, "bd", "list", "--limit", "1", "--json"); err != nil {
+		t.Fatalf("run reconcile BD query: %v", err)
+	}
+	physicalRepo, err := filepath.EvalSymlinks(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		t.Fatalf("read tracker trace: %v", err)
+	}
+	want := "binary=bd|pwd=" + physicalRepo + "|beads=<unset>|dolt=0|argv=list --limit 1 --json"
+	if got := strings.TrimSpace(string(data)); got != want {
+		t.Fatalf("tracker trace = %q, want %q", got, want)
+	}
+
+	if err := os.Remove(tracePath); err != nil {
+		t.Fatal(err)
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := defaultReconcileRunInDir(canceled, nested, "bd", "ready", "-n", "20", "--json"); !errors.Is(err, context.Canceled) {
+		t.Fatalf("pre-canceled run error = %T %v, want context cancellation", err, err)
+	}
+	if _, err := os.Stat(tracePath); !os.IsNotExist(err) {
+		t.Fatalf("pre-canceled context launched tracker: %v", err)
+	}
+
+	exitStub := `#!/bin/sh
+exit 23
+`
+	if err := os.WriteFile(filepath.Join(binDir, "bd"), []byte(exitStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, err = defaultReconcileRunInDir(context.Background(), nested, "bd", "list", "--json")
+	var exitErr *trackerexec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+		t.Fatalf("tracker error = %T %v, want *trackerexec.ExitError(23)", err, err)
+	}
+}
 
 func TestReconcileFindsReleaseTagFailureAndOpenReleaseBeads(t *testing.T) {
 	tmp := t.TempDir()

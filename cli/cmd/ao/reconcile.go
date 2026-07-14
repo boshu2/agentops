@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -286,14 +287,14 @@ func newDefaultReconcileRunner(cwd string) reconcileRunner {
 func defaultReconcileRunInDir(ctx context.Context, cwd, name string, args ...string) ([]byte, error) {
 	runCtx, cancel := context.WithTimeout(ctx, reconcileTimeout)
 	defer cancel()
+	if name == trackerBD {
+		return defaultReconcileTrackerRun(runCtx, cwd, args...)
+	}
 	cmd := exec.CommandContext(runCtx, name, args...)
 	if cwd != "" {
 		cmd.Dir = cwd
 	}
 	cmd.Env = os.Environ()
-	if name == "bd" {
-		cmd.Env = withEnvOverride(cmd.Env, "BEADS_DOLT_AUTO_START", "0")
-	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -303,6 +304,30 @@ func defaultReconcileRunInDir(ctx context.Context, cwd, name string, args ...str
 			return stdout.Bytes(), fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, detail)
 		}
 		return stdout.Bytes(), fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
+	}
+	return stdout.Bytes(), nil
+}
+
+func defaultReconcileTrackerRun(ctx context.Context, cwd string, args ...string) ([]byte, error) {
+	env := withEnvOverride(os.Environ(), "AGENTOPS_TRACKER", trackerBD)
+	env = withEnvOverride(env, "BEADS_DOLT_AUTO_START", "0")
+	resolution, err := resolveTracker(cwd, env)
+	if err != nil {
+		return nil, fmt.Errorf("resolve reconcile bd tracker: %w", err)
+	}
+	var stdout, stderr bytes.Buffer
+	command := (trackerexec.Factory{}).Command(
+		ctx,
+		resolution,
+		args,
+		trackerexec.Streams{Stdout: &stdout, Stderr: &stderr},
+	)
+	if err := command.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail != "" {
+			return stdout.Bytes(), fmt.Errorf("bd %s: %w: %s", strings.Join(args, " "), err, detail)
+		}
+		return stdout.Bytes(), fmt.Errorf("bd %s: %w", strings.Join(args, " "), err)
 	}
 	return stdout.Bytes(), nil
 }
