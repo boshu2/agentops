@@ -5,8 +5,19 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 failures=0
 
+# ag-2vz5v: resolve skill paths through the dispositions ledger so folds/cuts
+# auto-retarget. Identity fallback keeps hermetic test copies self-contained.
+if [[ -f "$repo_root/scripts/lib/resolve-skill-path.sh" ]]; then
+  # shellcheck source=lib/resolve-skill-path.sh
+  source "$repo_root/scripts/lib/resolve-skill-path.sh"
+else
+  resolve_skill_path() { printf '%s\n' "$1"; }
+fi
+
 require_contains() {
-  local file="$1" needle="$2" message="$3"
+  local file needle="$2" message="$3"
+  file="$(resolve_skill_path "$1")"
+  [[ -n "$file" ]] || return 0 # cut slug: resolver warned; skip visibly
   if ! grep -Fq -- "$needle" "$file"; then
     printf 'FAIL: %s\n  missing: %s\n  file: %s\n' "$message" "$needle" "$file" >&2
     failures=$((failures + 1))
@@ -76,8 +87,11 @@ for validator in \
   skills-codex/rpi/scripts/validate.sh \
   skills-codex/crank/scripts/validate.sh \
   skills-codex/learn/scripts/validate.sh; do
-  if ! bash "$validator" >/dev/null; then
-    printf 'FAIL: Codex validator rejected contract: %s\n' "$validator" >&2
+  resolved="$(resolve_skill_path "$validator")"
+  [[ -n "$resolved" ]] || continue # cut slug: resolver warned; skip visibly
+  [[ -f "$resolved" ]] || continue # fold target may not ship a validator
+  if ! bash "$resolved" >/dev/null; then
+    printf 'FAIL: Codex validator rejected contract: %s\n' "$resolved" >&2
     failures=$((failures + 1))
   fi
 done
@@ -87,4 +101,4 @@ if [[ $failures -ne 0 ]]; then
   exit 1
 fi
 
-echo 'Codex four-umbrella contract: PASS'
+echo 'Codex four-umbrella contract validation passed.'

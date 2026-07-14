@@ -21,19 +21,19 @@ setup() {
 # require_ao echoes a path to a usable `ao` binary, or skips. The authoritative
 # full check is the validate-skill-body-refs CI job (which always builds ao);
 # this bats job has no Go setup, so ao-dependent cases skip when toolchain absent.
+# The binary MUST carry the archived surfaces (-tags "flywheel legacy") to
+# mirror validate-skill-body-refs.sh's own build: skills may legitimately
+# reference archived-but-revivable commands, and an untagged binary (however
+# cli/bin/ao happened to be built last) falsely flags them as stale.
 require_ao() {
-    if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then
-        echo "$REPO_ROOT/cli/bin/ao"
-        return
-    fi
     if command -v go >/dev/null 2>&1; then
         local bin="$BATS_TEST_TMPDIR/ao"
-        if ( cd "$REPO_ROOT/cli" && go build -o "$bin" ./cmd/ao ) >/dev/null 2>&1; then
+        if ( cd "$REPO_ROOT/cli" && go build -tags "flywheel legacy" -o "$bin" ./cmd/ao ) >/dev/null 2>&1; then
             echo "$bin"
             return
         fi
     fi
-    skip "no ao binary and no Go toolchain to build one (covered by validate-skill-body-refs CI job)"
+    skip "no Go toolchain to build a tagged ao (covered by validate-skill-body-refs CI job)"
 }
 
 # write_skill <fixture-root> <skill-name> <body-line>

@@ -48,3 +48,16 @@ persistent governor. `HOLD` carries the matching blocker class and is the only
 state that authorizes a helper; `UNSTUCK` returns a new approach as `REPAIR`,
 and `ESCALATE` reaches `ANDON`. Explicit judgment or a positive projected
 charge that exceeds a hard ceiling reaches `ANDON` without a helper.
+
+The rung is a three-state machine (auto -> helper -> human), never a jump
+straight to the operator:
+
+- `HOLD -> ONE-HELPER` — a tripped breaker holds the bead and dispatches exactly
+  one bounded fresh-context (or cross-family) helper pass with the blocker,
+  evidence, and attempt history.
+- `HELPER-UNSTUCK -> AUTO-REDO` — if the helper clears the blocker, control
+  returns to an explicit orchestrator decision and the proof is re-run
+  automatically; no human is paged.
+- `HELPER-ESCALATE -> HUMAN` — only when that single helper pass also fails (or
+  the class is a refusal/judgment/spent-ceiling skip) does the bead reach the
+  operator.

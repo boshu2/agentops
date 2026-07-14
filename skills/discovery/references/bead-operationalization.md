@@ -31,7 +31,7 @@ goals, intentions, and thought process that produced the idea.
 ### Bead structure
 
 ```bash
-ao beads exec create "Epic: <Feature Name>" -p 1 -t epic --description "
+br create "Epic: <Feature Name>" -p 1 -t epic --description "
 ## Background
 [Why this feature matters; which ideation idea(s) it came from]
 
@@ -51,13 +51,13 @@ ao beads exec create "Epic: <Feature Name>" -p 1 -t epic --description "
 
 ```bash
 # Create the epic, then tasks under it
-ao beads exec create "Design <component> interface" -p 1 -t task --description "..."
-ao beads exec create "Implement <component> logic"  -p 2 -t task --description "..."
-ao beads exec create "Tests for <component>"         -p 2 -t task --description "..."
+br create "Design <component> interface" -p 1 -t task --description "..."
+br create "Implement <component> logic"  -p 2 -t task --description "..."
+br create "Tests for <component>"         -p 2 -t task --description "..."
 
 # Wire dependencies (child depends on parent)
-ao beads exec dep add <impl-id> <epic-id>      # impl depends on epic
-ao beads exec dep add <test-id> <impl-id>      # tests depend on implementation
+br dep add <impl-id> <epic-id>      # impl depends on epic
+br dep add <test-id> <impl-id>      # tests depend on implementation
 ```
 
 ### Explicit test tasks (mandatory, with detailed logging)
@@ -66,7 +66,7 @@ Every feature gets companion test beads — unit AND e2e — with detailed loggi
 so we can confirm everything works after implementation:
 
 ```bash
-ao beads exec create "Unit tests for <component>" -p 2 -t task --description "
+br create "Unit tests for <component>" -p 2 -t task --description "
 ## Coverage Requirements
 - Core behavior
 - Error handling for invalid input
@@ -77,7 +77,7 @@ ao beads exec create "Unit tests for <component>" -p 2 -t task --description "
 - Log timing for performance tracking
 "
 
-ao beads exec create "E2E tests for <component>" -p 2 -t task --description "
+br create "E2E tests for <component>" -p 2 -t task --description "
 ## Scenarios
 - Happy path
 - Error path
@@ -94,7 +94,7 @@ ao beads exec create "E2E tests for <component>" -p 2 -t task --description "
 Compare against existing beads so ideas enhance rather than duplicate:
 
 ```bash
-ao beads exec list --json | jq '.issues[]?.title'
+br list --json | jq '.issues[]?.title'
 ```
 
 | Overlap type | Action |
@@ -133,7 +133,7 @@ Suggested per-pass focus:
 
 ```bash
 br dep cycles --json     # dependency cycles MUST be empty
-ao beads exec ready --json | jq 'length'   # confirm actionable work exists
+br ready --json | jq 'length'   # confirm actionable work exists
 br lint                  # hygiene: orphans, missing fields
 ```
 

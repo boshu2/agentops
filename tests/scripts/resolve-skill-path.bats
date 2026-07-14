@@ -146,15 +146,22 @@ setup_rpi_fake_repo() {
     /bin/cp "$LIB" "$FAKE_REPO/scripts/lib/"
     chmod +x "$FAKE_REPO/scripts/validate-codex-rpi-contract.sh"
     mkdir -p "$FAKE_REPO/skills-codex" "$FAKE_REPO/skills-codex-overrides/research"
-    # Padding dirs for the fake repo — the fold under test is on `rpi`. Only copy
-    # slugs that still exist (autodev/inject were retired and the `evolve` codex
-    # override was removed; `/bin/cp` of a missing path aborts setup, erroring
-    # both tests in CI). `research` is a currently-present codex skill + override.
-    for slug in rpi crank discovery validate research; do
+    # Padding dirs for the fake repo — the fold under test is on `rpi`. Copy every
+    # slug the four-umbrella contract validator now touches so the fold is the ONLY
+    # variable between the control (fails) and retarget (passes) cases. The
+    # contract grew past rpi+crank (learn/evolve/premortem checks + the rpi Python
+    # sub-validator) — the fixture tracks it. `research` is a currently-present
+    # codex skill + override; the rpi/crank/evolve/premortem overrides stay absent
+    # (require_absent), which the real repo already satisfies.
+    for slug in rpi crank learn evolve premortem discovery validate research; do
         /bin/cp -R "$REPO_ROOT/skills-codex/$slug" "$FAKE_REPO/skills-codex/$slug"
     done
     /bin/cp "$REPO_ROOT/skills-codex-overrides/research/prompt.md" \
         "$FAKE_REPO/skills-codex-overrides/research/prompt.md"
+    # rpi's validate-execution-packet.py resolves the repo root by walking up for
+    # schemas/execution-packet.schema.json — provide it at the fake-repo root.
+    mkdir -p "$FAKE_REPO/schemas"
+    /bin/cp "$REPO_ROOT/schemas/execution-packet.schema.json" "$FAKE_REPO/schemas/"
     # Simulate a fold: rpi's dir moved to its merge target, path now absent.
     mv "$FAKE_REPO/skills-codex/rpi" "$FAKE_REPO/skills-codex/rpi-target"
     RPI_LEDGER="$TMP_DIR/rpi-ledger.yaml"

@@ -30,6 +30,7 @@ metadata:
   dependencies:
   - standards
   - agy-native
+  - pawl-review
   replaces: judge
 output_contract: skills/council/schemas/verdict.json
 ---

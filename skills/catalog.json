@@ -1,6 +1,6 @@
 {
   "schema_version": "2",
-  "generated_at": "2026-07-13T22:54:10Z",
+  "generated_at": "2026-07-14T00:43:31Z",
   "skill_count": 63,
   "skills": [
     {
@@ -413,7 +413,8 @@
       ],
       "dependencies": [
         "standards",
-        "agy-native"
+        "agy-native",
+        "pawl-review"
       ],
       "practices": [
         "llm-eval-harness",
