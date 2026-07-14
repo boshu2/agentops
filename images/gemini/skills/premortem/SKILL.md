@@ -42,10 +42,12 @@ output_contract: skills/council/schemas/verdict.json
 - **Use an independent judge.** The author must not grade their own plan, because shared assumptions make self-review autocorrelated; one-way doors additionally require a different model family.
 - **Pre-register kill conditions for irreversible work.** A strategy, experiment, or one-way-door plan must say what evidence changes the decision before deliberation, because an unfalsifiable review is ceremony.
 - **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED is repair evidence: revise the plan and rerun automatically. Raise the andon and route one helper only for a true breaker such as missing authority, unavailable required trust domain after retry, or an impossible invariant.
+- **Bound the repair loop.** Apply one consolidated repair to the exact plan; a second distinct acceptance repair returns `REPLAN` for re-slicing, while the RPI governor owns disposition and breaker/helper state.
+- Every admitted Crank wave with remaining work must end with exactly one bounded Premortem of the orchestrator-owned remaining-plan snapshot after Validate and Learn.
 
 ## Loop position
 
-Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing. Between waves, Premortem accepts only a changed plan from an explicit orchestrator request; Validate and Learn cannot invoke it directly.
+Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing. Between waves, Premortem accepts only a changed plan from an explicit orchestrator request: the orchestrator-owned remaining-plan snapshot after `Validate -> Learn`, where completion of the prior leaf is the plan delta even when Learn reports `no_change`. Validate and Learn cannot invoke Premortem directly. Review only remaining slices, new evidence, and invalidated assumptions; do not re-review completed candidate proof.
 
 Run `/council validate` on a plan or spec to get multi-model judgment before committing to implementation.
 
@@ -129,6 +131,8 @@ Run `/council --quick validate <plan-path>` for reversible work. Use `/council -
 ### Steps 2.4–2.8: Mandatory Council Checks
 
 Five mandatory checks run during council validation — temporal interrogation, error-&-rescue map, council FAIL pattern check, test pyramid coverage, and input validation for enum-like fields. Each has auto-trigger conditions and judge-prompt snippets. Full step text and check tables in [references/mandatory-checks.md](references/mandatory-checks.md).
+
+Migration-shaped plans also require the checked authority/consumer manifest gate in that reference. Missing or `incomplete` inventories fail; `shared` scopes serialize; only `disjoint` may retain a parallel claim.
 
 When a plan introduces a regex, grep, glob, or similar scope predicate, also apply [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md): require positive and negative examples before approval.
 

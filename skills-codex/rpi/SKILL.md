@@ -24,11 +24,18 @@ The CLI records startup once per thread and skips duplicates automatically.
 ## Critical Constraints
 
 - `Validate -> Learn -> orchestrator` is the only legal post-execution transition because the immutable verdict must reach Learn before any plan or control decision. Learn is the only post-verdict handoff; Validate never jumps to Crank, Discovery, Premortem, retry, or delivery.
-- Only the orchestrator may invoke Premortem, and only after it has accepted a material Learn result, changed the remaining plan, and still has work to do, to prevent phase skills from silently taking over loop control.
-- `no_change` is valid; the orchestrator may retry, continue, stop, or escalate without fabricating a lesson or plan mutation.
+- Only the orchestrator may invoke Premortem, after it has accepted Learn and written the remaining-plan snapshot. Completion of the prior leaf is a real plan delta even when Learn reports `no_change`.
+- Every admitted Crank wave with remaining work must end with exactly one bounded Premortem before another wave is requested.
+- `no_change` is valid; the orchestrator may retry, continue, stop, or escalate without fabricating a lesson. A continue/retry still receives the bounded remaining-plan Premortem above.
 - `terminal` closes the tick because no remaining work means no re-plan or Premortem.
 - RPI ends at the four receipts and its report. It does not push Git refs, operate a Git queue, close tracker state through delivery, or require another LLM landing verdict. Repository-selected delivery is a separate adapter.
 - Preserve one objective, acceptance surface, and evidence chain across every retry. **Why:** narrowing to a convenient child task can manufacture green while the requested behavior remains incomplete.
+- Keep one active leaf per writer. Goal and epic parents are aggregate demand;
+  they never occupy WIP, and the next leaf is not pulled until the current leaf
+  is terminally reported.
+- An initial introduced acceptance defect may receive one consolidated repair.
+  Evidence of a second distinct repair need must be classified `REPLAN` and
+  re-sliced through Discovery instead of starting another review loop.
 - RPI owns the one persistent [run governor](references/pull-flow-governor.md);
   Crank and Validate request admission through it, and phases create no private
   state. `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the canonical
@@ -38,7 +45,7 @@ The CLI records startup once per thread and skips duplicates automatically.
 
 `$rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → per-slice [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this) (**acceptance test RED → green → refactor-under-green**) → conflict-free wave → acceptance proof → Learn receipt → orchestrator decision. It delegates each move to the skill that owns it (`$discovery`, `$premortem`, `$crank`, `$validate`, `$learn`) and enforces these loop-level invariants:
 
-- **Agile, not waterfall — the plan is a hypothesis.** Every wave closes with a **re-plan, not just a retry** (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
+- **Agile, not waterfall — the plan is a hypothesis.** Every nonterminal wave closes with one bounded Premortem of the remaining plan; a material or second-repair delta re-slices through Discovery (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
 - **No move-skipping.** Intermediate slices use cheap deterministic checks; scoped or final Validate produces the independent verdict, then Learn records plan impact before the orchestrator selects another move.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `$crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path. `$crank` runs **refactor-under-green as its own step after green** — the load-bearing quality move — and a refactor must never change a test (S4; test-first *ordering* alone is not the quality lever).
 - **Acceptance examples close the bead, not activity.** Every validation verdict routes through Learn; only the orchestrator may choose to re-crank the same objective. DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
@@ -89,7 +96,7 @@ Enter at the routed phase and run every phase after it.
 2. **Crank:** after the governor durably records `authorized:true`, invoke `$crank <epic-id>` or `$crank .agents/rpi/execution-packet.json`; pass the test-first choice through. Every completion marker returns evidence to the orchestrator, which reads the actual diff for scope and claim match under [Wave Acceptance](../crank/references/wave-patterns.md#wave-acceptance-check).
 3. **Validate:** after a durably authorized `semantic-review` charge, invoke `$validate <epic-id> --complexity=<level>` or standalone `$validate --complexity=<level>`; add `--strict-surfaces` with `--quality`. Preserve its immutable verdict for Learn; Validate owns no retry, plan mutation, Premortem, or budget.
 4. **Learn:** invoke `$learn` with that verdict and evidence, record `.agents/rpi/phase-4-summary.md`, and consume only its `remaining_work` and `plan_impact`; Learn cannot change the verdict, plan, or delivery state.
-5. **Orchestrator decision:** `material_change` with remaining work routes through bounded Discovery and Premortem on the changed plan; `no_change` requires an explicit continue/retry/stop/escalate decision; `terminal` proceeds to Report. No phase bypasses `Validate -> Learn -> orchestrator`.
+5. **Orchestrator decision:** with remaining work, write the current remaining-plan snapshot. `material_change` or a second distinct repair need routes through bounded Discovery for re-slicing; `no_change` requires an explicit continue/retry/stop/escalate decision. Before any next Crank admission, invoke exactly one bounded Premortem on that snapshot. `terminal` proceeds to Report. No phase bypasses `Validate -> Learn -> orchestrator`.
 6. **Report:** use [references/report-template.md](references/report-template.md), apply any loop disposition only after the governor records the next admission or protected stop, and only suggest `next-work.jsonl` entries. Apply the Context Density Rule to every line.
 
 ## Orchestrator Decision State Machine
@@ -105,10 +112,10 @@ and protected-state transition used by that decision.
 The initial plan is a **hypothesis**; each wave is an experiment. Its evidence
 flows through `Validate -> Learn -> orchestrator`. Learn reports whether the
 remaining plan has a material impact; it does not apply one. When the impact is
-material, the orchestrator invokes Discovery to change the remaining plan and
-sends that changed plan through Premortem before the next Crank wave. With
-`no_change`, the orchestrator makes an explicit continue/retry/stop/escalate
-decision. With `terminal`, it closes the tick. Anti-patterns: **waterfall**,
+material, the orchestrator invokes Discovery to change the remaining plan.
+With `no_change`, it makes an explicit continue/retry/stop/escalate decision.
+Either nonterminal branch writes the remaining-plan snapshot and runs one
+bounded Premortem before the next Crank wave. With `terminal`, it closes the tick. Anti-patterns: **waterfall**,
 **retry-not-replan**, **validate-to-premortem**, and **permission-seeking**.
 **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
 
@@ -174,7 +181,7 @@ roll-up.
 - [ ] The same objective and acceptance examples survive every phase and retry.
 - [ ] Each phase has a disk-backed receipt, evidence path, and explicit verdict.
 - [ ] Every verdict routes through Learn before the orchestrator decides the next action.
-- [ ] Premortem receives only an orchestrator-owned changed plan while work remains.
+- [ ] Premortem receives only an orchestrator-owned remaining-plan snapshot after Learn while work remains.
 - [ ] The execution packet passes its validator before Report or downstream handoff.
 - [ ] Every dispatch has a durable admission in the same run state.
 - [ ] No phase-local wave, retry, attempt, cost, or helper counter exists.

@@ -194,7 +194,7 @@
         "path": "skills/plan/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 15
       },
       {
         "name": "push",
@@ -2129,7 +2129,7 @@
         "ao plan-pawl decide"
       ],
       "path": "skills/plan/",
-      "references": 14
+      "references": 15
     },
     {
       "sku": "skill:postmortem",

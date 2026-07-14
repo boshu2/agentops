@@ -25,11 +25,18 @@ The orchestrator then applies the matching transition:
    - **reorder** waves as the critical path shifts,
    - **re-scope / re-prioritize / re-sequence** beads,
    - **escalate** (circuit-breaker) when the evidence invalidates the objective itself.
-   Persist the mutated plan so the next wave reads the current plan, then run
-   Premortem on that exact changed plan before proceeding.
+   Persist the mutated plan so the next wave reads the current plan.
 2. **No change** — explicitly retry, continue, stop, or escalate. Do not
-   fabricate a learning or invoke Premortem.
+   fabricate a learning or a material mutation.
 3. **Terminal** — close the tick. Do not re-plan or invoke Premortem.
+
+For either nonterminal branch, completion of the prior leaf updates the
+remaining-plan snapshot. Before requesting another Crank wave, the orchestrator
+runs exactly one bounded Premortem over the next leaf, changed ordering/scope,
+and new evidence; completed candidate proof is not replayed. A first introduced
+acceptance defect may receive one consolidated repair. A second distinct repair
+need forces `REPLAN` and re-slicing through Discovery instead of another review
+loop.
 
 ## Bounds (so agility ≠ thrash)
 

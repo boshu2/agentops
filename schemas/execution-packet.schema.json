@@ -71,6 +71,11 @@
       "type": "string",
       "minLength": 1
     },
+    "packet_state": {
+      "type": "string",
+      "enum": ["prospective", "terminal"],
+      "description": "Prospective is an honest Discovery handoff with later phases pending/not_checked. Terminal requires successful receipts and evidence for every phase. Omitted retains legacy terminal behavior."
+    },
     "skills_loaded": {
       "type": "array",
       "items": {"$ref": "#/$defs/SkillLoad"}
@@ -326,14 +331,24 @@
     "PhaseReceipt": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["phase", "skill", "status", "artifact"],
+      "required": ["phase", "skill", "status"],
       "properties": {
         "phase": {"type": "string", "enum": ["discovery", "crank", "validate", "learn"]},
         "skill": {"type": "string", "minLength": 1},
-        "status": {"type": "string", "enum": ["DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED"]},
+        "status": {"type": "string", "enum": ["DONE", "PARTIAL", "BLOCKED", "PASS", "WARN", "FAIL", "REFUTED", "pending", "not_checked"]},
         "artifact": {"type": "string", "minLength": 1},
         "next_action": {"type": "string"}
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"enum": ["pending", "not_checked"]}},
+            "required": ["status"]
+          },
+          "then": {"not": {"required": ["artifact"]}},
+          "else": {"required": ["artifact"]}
+        }
+      ]
     },
     "AutodevProgram": {
       "type": "object",

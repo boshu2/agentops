@@ -20,19 +20,19 @@ The CLI records startup once per thread and skips duplicates automatically.
 brainstorm (goal-vs-implementation clarification) + design (product-fit pressure test) — trigger detail in the Folded-In section below.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
-
 ## Constraints
-
 - Delegate research and plan separately; delegate premortem only for MVP-slice mode because the fanout duel is already its premortem verdict.
 - Prove a capability is absent before scoping new construction to prevent duplicate machinery and false net-new estimates.
 - Route only fanout/one-way-door decisions through the duel; keep routine MVP slices inside the bounded quick path.
-- After three MVP premortem failures, run exactly one bounded plan-pawl helper round; resume on `UNSTUCK` and ask the human only on `ESCALATE`.
-
+- Preserve one active leaf per writer in every handoff; the goal and epic remain aggregate demand rather than occupying WIP.
+- An initial introduced acceptance defect may produce one consolidated repair; evidence of a second distinct repair need routes `REPLAN` through RPI's persistent governor and re-slices instead of starting a Discovery-local review/helper loop.
+- Migration-shaped plans carry Plan's complete checked authority/consumer manifest: only `disjoint` may be proposed as parallel; `shared` and `incomplete` serialize.
 > **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3 (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
 > packet for `$crank` and `$validate`. It is also the **re-plan engine** for `$rpi`'s
 > [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): after the initial plan,
 > it runs only from an explicit orchestrator re-plan request carrying a cited Learn plan-impact packet. **Seed slice candidates small:** one Given/When/Then behavior each, refactor candidates kept separate from feature candidates — small batches + refactor-after-green are the load-bearing quality moves, not test-first ordering (Finster 2026, `skills/standards/references/agentic-workflow-evidence.md`); binding decomposition discipline is `$plan` (PR-010/PR-011).
+> A Discovery handoff is prospective: only Discovery is complete; Crank is `pending`, and Validate/Learn are `not_checked` until they run. `skills_loaded` names only the orchestrating RPI and Discovery contexts that actually ran.
 
 ## Folded-In Trigger Surface (brainstorm, design)
 
@@ -205,7 +205,7 @@ $discovery --complexity=full "migrate to v2 API"   # force full council ceremony
 
 ```
 <promise>DONE</promise>      # Discovery complete AND persisted: beads mode requires a resolvable epic_id plus Gherkin-bearing child slices; tasklist mode requires .agents/rpi/tasklist.md with epic, slice, and Given/When/Then markers.
-<promise>BLOCKED</promise>   # Report the actual class: fanout/hard gates may block directly; an ordinary MVP breaker blocks only after its bounded helper returns ESCALATE.
+<promise>BLOCKED</promise>   # Report the actual class and return it to the RPI governor; Discovery owns no retry/helper controller.
 ```
 
 ## Troubleshooting

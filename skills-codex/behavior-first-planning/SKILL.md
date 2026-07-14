@@ -15,6 +15,12 @@ description: Behavior-first planning discipline — intent
 - Do not create tracker beads before the manifest passes coverage, cycle, runnable-test, and independent-review gates because an unvalidated DAG pollutes the shared work surface.
 - Do not accept prose-only or harness-error "tests" as red; each acceptance command must resolve to one real unignored test and fail for the intended missing behavior.
 - Keep one frozen scenario per slice because combining behaviors hides partial completion and defeats the vertical acceptance boundary.
+- Goal and epic parents are aggregate demand, never writer WIP; tracker creation
+  preserves one behavior per leaf so an orchestrator can keep one active leaf
+  per writer instead of treating the whole DAG as work in progress.
+- For migration-shaped behavior, the proposed bead set carries Plan's checked
+  authority/consumer manifest; incomplete or shared scopes cannot become a
+  parallel wave.
 
 ## Why this exists — the 3/10 problem
 

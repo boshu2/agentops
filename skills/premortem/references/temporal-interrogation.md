@@ -55,6 +55,21 @@ Report temporal findings in a separate "Timeline Risks" section.
 - **On request** via `--temporal` flag for quick reviews
 - **Auto-triggered** when plan has 5+ files or 3+ sequential dependencies
 
+## Between-wave bounded mode
+
+After every admitted Crank wave that leaves remaining work, the orchestrator
+passes the remaining-plan snapshot plus the latest Validate/Learn evidence.
+Interrogate only:
+
+1. the next leaf and its exact first failing proof;
+2. write-scope or dependency changes caused by the completed leaf;
+3. new risks or invalidated assumptions cited by Validate/Learn; and
+4. whether the next leaf still has one owner and a safe discard path.
+
+Do not resimulate completed leaves or rerun their deterministic/semantic proof.
+Emit one bounded PASS/WARN/FAIL artifact. A first repair may be consolidated;
+a second distinct repair need returns `REPLAN` to the RPI orchestrator.
+
 ## Report Integration
 
 Temporal findings appear in the premortem report as:

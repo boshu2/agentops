@@ -633,8 +633,8 @@
     {
       "name": "behavior-first-planning",
       "source_skill": "skills/behavior-first-planning",
-      "source_hash": "1eec429eaf8eb9e029c067d49965541337eab656d796edf0552a2f73df997a38",
-      "generated_hash": "0bb34758486478e052b352083f0bd564087ec06c932b3b4ed5376898c5957c59"
+      "source_hash": "8b866456a24ec80e2159fadc5985917f0567785e4583025a405a92d2022ff8ee",
+      "generated_hash": "a0989298707f276641f951c8fea909daafff33ae77af1b44b09df1411cfb7b2c"
     },
     {
       "name": "bootstrap",
@@ -699,8 +699,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "b6bc0683d542ebb9bdaa8909be2bfcb8df484e9b6546de81e63cd227a837bd25",
-      "generated_hash": "b120f2bbc74ba2285b8fad41f45bb6170141b2d4c90ec6937282069472fed598"
+      "source_hash": "fab004d4a3ae2cce237038c2d87180b7a294bd5cbd51757d142496066849d391",
+      "generated_hash": "739d54568ca391f0c93e9857e48b367398e0781977f199b4fca495e70c1a77b5"
     },
     {
       "name": "doc",
@@ -801,8 +801,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "25e9f917fc7e738818e57c5304b8b1a6633d7b68215689e158adf12a18519579",
-      "generated_hash": "a00b26374e4fb38e0db9a0c7bcd17a361030ebaabc42d72062902156d3162fe5"
+      "source_hash": "ab1c673c96b3837cbf2421d172bc1912d037c0f9fb02ebd5107f6fc55f92b4b6",
+      "generated_hash": "d509f076335980b7b20b55ebd9d2ac983531c4bc5c4330e658bcdbd7bad80cf4"
     },
     {
       "name": "postmortem",
@@ -819,8 +819,8 @@
     {
       "name": "premortem",
       "source_skill": "skills/premortem",
-      "source_hash": "927ca8cda370a56eab8b22e96f159b029c590c735abc2f38bdda9d325e4a34dc",
-      "generated_hash": "01a632c3fc3a9fef5f1bb5f085cb303ab41fddbab33a5d9cc24c14711bd138d4"
+      "source_hash": "52c0c238bbbdc081ab2b0b022486444e9cf18fea8ec96649cc7e21811d05ea6c",
+      "generated_hash": "dad5c3fd7bbd2c6a5d4cbc678a4e77790bc088e79bcd174824d5f4d423d8905b"
     },
     {
       "name": "product",
@@ -874,7 +874,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "2624ff386ed57eae302ad284bf35ae556d83f6dbc5923864651a23d72a4b727f",
-      "generated_hash": "0c53f830471da3e9cf98652ff1de5bdf494b11eaa2e84835f01c97812700b69c"
+      "generated_hash": "0896bd24d0d46ab87c9f6e0c3a6f3bc54f335ce5f0837a59fccaf850ba741992"
     },
     {
       "name": "sbh",
