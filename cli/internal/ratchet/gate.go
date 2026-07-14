@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -58,6 +59,10 @@ type GateChecker struct {
 	locator *Locator
 }
 
+// TrackerStreams are the caller-owned streams supplied to tracker subprocesses.
+// Tracker stdout remains reserved for the query result that GateChecker parses.
+type TrackerStreams = trackerexec.Streams
+
 // NewGateChecker creates a new gate checker.
 func NewGateChecker(startDir string) (*GateChecker, error) {
 	locator, err := NewLocator(startDir)
@@ -77,6 +82,25 @@ func (g *GateChecker) Check(step Step) (*GateResult, error) {
 		Passed:  false,
 		Message: fmt.Sprintf("Unknown step: %s", step),
 	}, nil
+}
+
+// CheckContext preserves the caller's cancellation and tracker streams for
+// gates that query br or bd. Check remains the source-compatible background
+// wrapper for existing callers.
+func (g *GateChecker) CheckContext(ctx context.Context, step Step, streams TrackerStreams) (*GateResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	switch step {
+	case StepImplement:
+		return g.checkImplementGateContext(ctx, streams)
+	case StepCrank:
+		return g.checkCrankGateContext(ctx, streams)
+	case StepPostMortem:
+		return g.checkPostMortemGateContext(ctx, streams)
+	default:
+		return g.Check(step)
+	}
 }
 
 // checkResearchGate - No gate (chaos phase, always passes).
@@ -147,11 +171,21 @@ func (g *GateChecker) checkPlanGate() (*GateResult, error) {
 
 // checkImplementGate - Requires open or in_progress epic via bd CLI.
 func (g *GateChecker) checkImplementGate() (*GateResult, error) {
+	return g.checkImplementGateContext(context.Background(), TrackerStreams{})
+}
+
+func (g *GateChecker) checkImplementGateContext(ctx context.Context, streams TrackerStreams) (*GateResult, error) {
 	// Try to find an open epic
-	epicID, err := g.findEpic("open")
+	epicID, err := g.findEpicContext(ctx, "open", streams)
+	if isCallerContextError(err) {
+		return nil, err
+	}
 	if err != nil || epicID == "" {
 		// Also try in_progress
-		epicID, _ = g.findEpic("in_progress")
+		epicID, err = g.findEpicContext(ctx, "in_progress", streams)
+		if isCallerContextError(err) {
+			return nil, err
+		}
 	}
 
 	if epicID != "" {
@@ -173,7 +207,11 @@ func (g *GateChecker) checkImplementGate() (*GateResult, error) {
 
 // checkCrankGate uses the implement gate requirements but preserves crank identity.
 func (g *GateChecker) checkCrankGate() (*GateResult, error) {
-	result, err := g.checkImplementGate()
+	return g.checkCrankGateContext(context.Background(), TrackerStreams{})
+}
+
+func (g *GateChecker) checkCrankGateContext(ctx context.Context, streams TrackerStreams) (*GateResult, error) {
+	result, err := g.checkImplementGateContext(ctx, streams)
 	if result != nil {
 		result.Step = StepCrank
 	}
@@ -203,8 +241,15 @@ func (g *GateChecker) checkVibeGate() (*GateResult, error) {
 
 // checkPostMortemGate - Requires recently closed epic.
 func (g *GateChecker) checkPostMortemGate() (*GateResult, error) {
+	return g.checkPostMortemGateContext(context.Background(), TrackerStreams{})
+}
+
+func (g *GateChecker) checkPostMortemGateContext(ctx context.Context, streams TrackerStreams) (*GateResult, error) {
 	// Look for a closed epic
-	epicID, err := g.findEpic("closed")
+	epicID, err := g.findEpicContext(ctx, "closed", streams)
+	if isCallerContextError(err) {
+		return nil, err
+	}
 	if err == nil && epicID != "" {
 		return &GateResult{
 			Step:     StepPostMortem,
@@ -242,8 +287,15 @@ func parseFirstEpicID(out []byte) string {
 
 // findEpic uses bd CLI to find an epic with the given status.
 func (g *GateChecker) findEpic(status string) (string, error) {
+	return g.findEpicContext(context.Background(), status, TrackerStreams{})
+}
+
+func (g *GateChecker) findEpicContext(ctx context.Context, status string, streams TrackerStreams) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	// Create context with 5s timeout
-	ctx, cancel := context.WithTimeout(context.Background(), BdCLITimeout)
+	commandCtx, cancel := context.WithTimeout(ctx, BdCLITimeout)
 	defer cancel()
 
 	// Call bd list --type epic --status <status>
@@ -251,11 +303,20 @@ func (g *GateChecker) findEpic(status string) (string, error) {
 	if resolveErr != nil {
 		return "", resolveErr
 	}
-	cmd := exec.CommandContext(ctx, resolution.Binary, "list", "--type", "epic", "--status", status) // #nosec G204 -- selected br|bd binary.
+	// The query result is parsed here, so child stdout cannot be caller-owned.
+	streams.Stdout = nil
+	cmd := (trackerexec.Factory{}).Command(
+		commandCtx,
+		resolution,
+		[]string{"list", "--type", "epic", "--status", status},
+		streams,
+	)
 	out, err := cmd.Output()
 	if err != nil {
-		// Check if the error was due to context timeout
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		if commandCtx.Err() == context.DeadlineExceeded {
 			return "", ErrBdCLITimeout
 		}
 		return "", err
@@ -266,6 +327,10 @@ func (g *GateChecker) findEpic(status string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no epic found with status %s", status)
+}
+
+func isCallerContextError(err error) bool {
+	return err == context.Canceled || err == context.DeadlineExceeded
 }
 
 // checkGitChanges returns true if there are uncommitted changes.
