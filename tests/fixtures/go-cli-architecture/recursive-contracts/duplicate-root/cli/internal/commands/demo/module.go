@@ -10,7 +10,7 @@ func command() *cobra.Command {
 	child := &cobra.Command{Use: "child", RunE: run}
 	root.AddCommand(child)
 	_ = clicontract.Attach(root, clicontract.CommandContract{})
-	_ = clicontract.Attach(child, clicontract.CommandContract{})
+	_ = clicontract.Attach(root, clicontract.CommandContract{})
 	return root
 }
 

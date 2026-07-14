@@ -1,8 +1,8 @@
 package demo
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
+	"github.com/spf13/cobra"
 )
 
 func command() *cobra.Command {

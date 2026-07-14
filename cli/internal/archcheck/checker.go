@@ -63,10 +63,11 @@ func (v Violation) String() string {
 }
 
 type Options struct {
-	Root        string
-	Family      string
-	AllMigrated bool
-	VerifyScope string
+	Root         string
+	Family       string
+	AllMigrated  bool
+	VerifyScope  string
+	CandidateSHA string
 }
 
 // ClassifySemanticEscapes identifies production files that still own one of
@@ -155,7 +156,7 @@ func Check(options Options) ([]Violation, error) {
 		}
 		violations = append(violations, familyViolations...)
 	}
-	semanticViolations, err := checkSemanticSeal(root)
+	semanticViolations, err := checkSemanticSeal(root, options.CandidateSHA)
 	if err != nil {
 		return nil, err
 	}
