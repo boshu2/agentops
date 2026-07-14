@@ -33,7 +33,7 @@ func tickClose(rt tickRuntime, id, message, evidence string, paths []string) err
 
 func runCloseTestShim(rt tickRuntime, request closeapp.Request) error {
 	env := append(os.Environ(), rt.env...)
-	service := newCloseService(closeadapter.StaticRuntime{WorkDir: rt.workDir, Env: env})
+	service := newCloseService(closeadapter.StaticRuntime{WorkDir: rt.workDir, Env: env}, closeadapter.NewTracker())
 	result, err := service.Execute(context.Background(), request)
 	if err != nil {
 		if failure, ok := err.(*closeapp.Failure); ok && failure.Message != "" {
