@@ -25,6 +25,101 @@ func TestResolveSelectedTrackerDoesNotFallback(t *testing.T) {
 	}
 }
 
+func TestResolveMalformedExplicitConfigFailsClosed(t *testing.T) {
+	cwd := t.TempDir()
+	home := t.TempDir()
+	configDir := filepath.Join(cwd, ".agentops")
+	if err := os.Mkdir(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(configDir, "config.yaml")
+	if err := os.WriteFile(configPath, []byte("tracker: [\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := ResolveWithLookPath(cwd, []string{"HOME=" + home}, fakeLookPath(true, true))
+	if err == nil {
+		t.Fatalf("ResolveWithLookPath() error = nil, want malformed explicit config %q to fail closed", configPath)
+	}
+}
+
+func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      string
+		configIsDir bool
+		wantTracker string
+		wantSource  string
+		wantErr     []string
+	}{
+		{
+			name:        "absent falls back to binary discovery",
+			wantTracker: BR,
+			wantSource:  SourceBinary,
+		},
+		{
+			name:        "valid selects configured backend",
+			config:      "tracker: bd\n",
+			wantTracker: BD,
+			wantSource:  SourceConfig,
+		},
+		{
+			name:        "unreadable fails closed",
+			configIsDir: true,
+			wantErr:     []string{"read tracker configuration"},
+		},
+		{
+			name:    "malformed fails closed",
+			config:  "tracker: [\n",
+			wantErr: []string{"parse tracker configuration"},
+		},
+		{
+			name:    "invalid backend fails closed",
+			config:  "tracker: fossil\n",
+			wantErr: []string{"tracker key in", `unknown tracker "fossil"`},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cwd := t.TempDir()
+			home := t.TempDir()
+			configPath := filepath.Join(cwd, ".agentops", "config.yaml")
+			if test.config != "" || test.configIsDir {
+				if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if test.configIsDir {
+					if err := os.Mkdir(configPath, 0o755); err != nil {
+						t.Fatal(err)
+					}
+				} else if err := os.WriteFile(configPath, []byte(test.config), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			got, err := ResolveWithLookPath(cwd, []string{"HOME=" + home}, fakeLookPath(true, true))
+			if len(test.wantErr) > 0 {
+				if err == nil {
+					t.Fatalf("ResolveWithLookPath() error = nil, want error containing %q", test.wantErr)
+				}
+				for _, part := range append([]string{configPath}, test.wantErr...) {
+					if !strings.Contains(err.Error(), part) {
+						t.Errorf("ResolveWithLookPath() error = %q, want substring %q", err, part)
+					}
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Tracker != test.wantTracker || got.Source != test.wantSource {
+				t.Fatalf("ResolveWithLookPath() = %+v, want tracker=%q source=%q", got, test.wantTracker, test.wantSource)
+			}
+		})
+	}
+}
+
 func TestResolveBeadsDirLinkedWorktreeUsesGitCommonDir(t *testing.T) {
 	root := initTrackerRepo(t)
 	lane := filepath.Join(t.TempDir(), "lane")
