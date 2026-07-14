@@ -34,14 +34,17 @@
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
-## Four Product Layers
+## Four Lifecycle Umbrellas
 
-| Layer | What it does | Key surfaces |
-|-------|-------------|-------------|
-| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, postmortems |
-| **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
-| **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/premortem`, `/postmortem` |
-| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/postmortem --quick`, `/curate --mode=forge`, `ao lookup`, `.agents/` |
+| Umbrella | What it does | Key surfaces |
+|----------|--------------|--------------|
+| **Discovery** | Shapes accepted behavior and consumes Premortem as its plan stress-test | `/discovery`, `/plan`, `/premortem` |
+| **Crank** | Implements one bounded tranche and freezes one exact candidate | `/crank`, `/implement` |
+| **Validate** | Binding judgment umbrella: one author-distinct fresh context judges a frozen candidate once | `/validate` |
+| **Learn** | Records one minimal consequence before optional Postmortem | `/learn`, optional `/postmortem` |
+
+Council is optional validator composition inside Premortem or Validate; it is
+not a parallel lifecycle gate.
 
 Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
@@ -54,7 +57,7 @@ Bridge / framing docs:
 
 - [Codebase Overview](architecture/codebase-overview.md) — Consolidated repo map: bounded contexts, directory ownership, active CLI waist, registries, gates, knowledge flywheel, footguns, reading order
 - [Understanding the AgentOps Go CLI](architecture/go-cli-architecture-guide.md) — Source-pinned architecture and code-reading guide for the transitional Go CLI, including pure/effectful command traces, tracker/config policy, testing, known debt, and a worked capstone
-- [Go CLI Production-Readiness Audit](audits/2026-07-12-go-cli-production-readiness.md) — Evidence-backed audit of the strangler program, proof gaps, tracker/context semantics, recursive contracts, CLI output conformance, integration risk, and goal-design inputs
+- [Go CLI Production-Readiness Audit](audits/2026-07-12-go-cli-production-readiness.md) — Evidence-backed audit of the superseded incremental migration, proof gaps, tracker/context semantics, recursive contracts, CLI output conformance, integration risk, and goal-design inputs
 - [Postmortem: Go CLI Goal Stall and Tracker-Layer Confusion](learnings/2026-07-12-go-cli-goal-stall-tracker-layer-confusion.md) — Why the run stopped before helper adjudication, why durable `br` decomposition mattered, and the exact boundary between this repo's beads_rust ledger and Gas City's `bd`/Dolt substrate store
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
@@ -83,7 +86,7 @@ Bridge / framing docs:
 - [ADR-0009: Delete the Daemon — AgentOps Is In-Session Only](adr/ADR-0009-daemon-deletion-in-session-only.md) — Why the standalone daemon/scheduler/overnight-runner was deleted (not deprecated): AgentOps is a Gas City reference config with no core to protect, the in-session loop is the zero-dependency sovereignty floor, always-on opts into Gas City; names the rejected deprecate-keep-standalone alternative and the e2e-proof GC dispatch gap
 - [ADR-0010: E6 Session-Log Miner Is Build-Native](adr/ADR-0010-e6-session-log-miner-build-native.md) — The E6.0 spike decision (cross-family): build the session-JSONL→typed-PROV-O miner native over `cli/internal/parser` + the ASSAY `--mine-cmd` slot; cass/`cm` stay adopted for search/memory only (neither owns the provenance graph). Steals cass's incremental-index discipline; no langchain core dep; scopes `ao provenance mine-session` (E6.1/`...6.2`)
 - [ADR-0011: Escape-Corpus Compounding Unproven — Structural Data-Starvation](adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md) — The self-improvement *mechanism* is proven e2e (escape→check→block), but "the escape-corpus *compounds*" is demoted to an unproven hypothesis: a competent membrane catches at review, so it self-starves its own escape supply (self-improvement anti-correlated with membrane quality). Records revival conditions; the proven claim — independent verification, no verdict = not done — is unchanged
-- [ADR-0012: Focus the Surface on Membrane + Bookkeeper; Archive the Satellites](adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md) — Re-headline the public surface on the two proven cores (validation membrane + hash-chained bookkeeper); archive the unproven corpus/flywheel (behind `//go:build flywheel`) and RPI/factory (behind `legacy`) satellites rather than delete them, because the ADR-0004/0009/0011 revival conditions require the code to stay buildable; targets a ~22-command / ~15-skill spine
+- [ADR-0012: Directly Cut the Unproven Satellite Surface](adr/ADR-0012-focus-surface-on-membrane-bookkeeper-archive-satellites.md) — Give every current command one keep/merge/replace/delete owner; install retained behavior and delete the former owner, tests, fixtures, and unique dependencies in the same candidate, then remove alternate build profiles
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -300,8 +303,8 @@ Bridge / framing docs:
 - [Mortem Naming Migration](contracts/mortem-naming-migration.md) — Canonical `premortem`/`postmortem` identities, permanent legacy reads, and the schema-v3/S8 writer cutover boundary
 - [Four-Umbrella Write Manifests](contracts/four-umbrella-write-manifests.json) — Per-slice write ownership and frozen S1 base for the validation-loop refactor
 - [Four-Umbrella Examples](contracts/four-umbrella-examples.md) — Executable request, execution-packet, Learn-receipt, and plan-impact examples
-- [Pawls — the one-way doors](contracts/pawls.md) — The ratchet's static map: the short list of irreversible actions (mutate-shared-trunk · delete · external-send/shared-state-mutation · schema/contract change · credential/authority change · spend) where the cross-family gate fires; everything else runs as ungated chaos
-- [Operating Discipline (D1–D16)](doctrine/operating-discipline.md) — The general, substrate-neutral fleet-operating rules (admission-first · author≠judge · fail-closed · evidence-bound · single-writer · typed transitions) folded from the mt-olympus triangulated kernel; each rule marked embodied-in-gate (cited to pawls.md / pawl-verdict.sh / reconcile-pr.sh), advisory doctrine, or dropped-as-cathedral
+- [Retired one-way-door contract](contracts/pawls.md) — Tombstone for the removed second lifecycle; K9 owns deletion after checked consumer closure, and the file has no active validation, escalation, or Git authority
+- [Operating Discipline (D1–D16)](doctrine/operating-discipline.md) — The lean, substrate-neutral factory rules: one admitted leaf, one writer, deterministic facts, one immutable fresh-context verdict, one Learn receipt, and repository-owned delivery
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
 - [Corpus Learning Seam](contracts/corpus-learning-seam.md) — Field-level public/private boundary for learning records (epic ag-k7tq9 S3): the `sensitivity` + `publishable` promote-gate fields, what crosses the seam (the abstracted lesson) vs what never does (evidence/provenance/source_session), and the `ao corpus classify` migration; cites the cross-family council verdict
 - [bd remember Migration Manifest](contracts/bd-remember-migration-manifest.md) — Lineage-preserving manifest contract for classifying `bd remember` notes into bead-scoped, pull-learning, or discard dispositions before migration
@@ -310,7 +313,7 @@ Bridge / framing docs:
 - [CI Jobs Manifest (yaml)](contracts/ci-jobs.yaml) — Canonical reason+failure for every validate.yml CI job; AGENTS.md `### CI Jobs and What They Check` table is rendered from this yaml + workflow `summary.needs` via `scripts/generate-ci-jobs-table.sh` (golden-file gate enforced by `validate-ci-policy-parity`, soc-3oij)
 - [Scenario → Test Linkage](contracts/scenario-test-linkage.md) — Every Gherkin scenario in `skills/*/references/*.feature` must declare its covering test via a `@covered-by:<test-path>` tag or be allowlisted as doc-only in `scripts/.scenario-linkage-allow`; gate is `scripts/check-scenario-test-linkage.sh` / `validate-scenario-test-linkage` (sibling to executable-spec-link-integrity; links scenarios→tests, soc-63xfx)
 - [@claude Bot Delegation](contracts/claude-bot-delegation.md) — Operational runbook for the `@claude` GitHub App: permissions, triggers, status decoding, gotchas, when to delegate
-- [Local Pre-Push Gate Retirement](contracts/local-pre-push-gate-retirement.md) — Historical ADR superseded by the local cockpit gate posture; retained for lineage, not current release authority
+- [Local Push-Gate Experiments](contracts/local-pre-push-gate-retirement.md) — Superseded historical ADR; active policy keeps semantic validation out of Git hooks and lets the consumer repository own delivery
 - [Skill Dispositions (yaml)](contracts/skill-dispositions.yaml) — Canonical per-skill domain/disposition/rationale data; source-of-truth for `agentops-skill-domain-map.md`. Hand-edits to the .md forbidden — edit yaml and run `scripts/generate-skill-domain-map.sh` (golden-file gate, soc-zxia.3)
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill-Flow Connectivity](contracts/skill-flow.md) — Closed `consumes` vocabulary + cross-layer connectivity model (`consumes`/`context_rel`/`metadata.dependencies`); gate `scripts/validate-skill-flow.sh` (`validate-skill-flow`) fails on unresolved tokens or un-allowlisted orphans; standalone leaves in `scripts/skill-flow-standalone.txt`
@@ -335,7 +338,7 @@ Bridge / framing docs:
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
 - [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
 - [Orchestration Ports](contracts/orchestration-ports.md) — `OrchestrationPort` dual-runtime selection seam: the 3-category model (Claude Workflow / NTM swarm / plain skill), the NTM → Claude-native → beads-floor degradation ladder, `AGENTOPS_ORCHESTRATION=off` opt-out, capability detection via `ntm --robot-capabilities`, output-contract parity (`orchestration-result.v1`), and the two-ladders distinction. Paired schemas `schemas/orchestration-backend.v1.schema.json` + `schemas/orchestration-result.v1.schema.json`.
-- [Orchestration Profiles (yaml)](contracts/orchestration-profiles.yaml) — SOT for portable NTM worker and pawl-review role profiles plus structured spawn arguments
+- [Orchestration Profiles (yaml)](contracts/orchestration-profiles.yaml) — SOT for portable NTM worker and reviewer role profiles plus structured spawn arguments
 - [Orchestration Tools (yaml)](contracts/orchestration-tools.yaml) — Tool matrix contract for `ao orchestrate tools`; drift-gated via `scripts/check-orchestration-contracts.sh`
 - [Orchestration Instrument Schema](https://github.com/boshu2/agentops/blob/main/schemas/orchestration-instrument.v1.schema.json) — JSON schema for `ao orchestrate` preflight/verify/tools/route/status JSON output (`orchestration-instrument.v1`)
 - [Orchestration Backend Selection Contract](contracts/orchestration-backend.md) — wire shape of one `OrchestrationPort` selection decision (chosen/reason/considered/opt_out/pin); pairs `schemas/orchestration-backend.v1.schema.json` for structural-floor validation.

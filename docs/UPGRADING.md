@@ -23,9 +23,31 @@ The "Action required" callout distinguishes hard breakages (must fix before runn
 
 ---
 
+## Direct-cut transition
+
+AgentOps now has four lifecycle umbrellas: Discovery, Crank, Validate, and
+Learn. Premortem belongs to Discovery; Postmortem is optional after Learn. A
+candidate receives one immutable verdict from fresh context, then the consumer
+repository decides how local or cloud delivery works.
+
+The `flywheel` and `legacy` build profiles described in older sections are
+transitional executable state. Do not add new dependencies on them. The final
+profile cut removes old owners directly after their retained behavior has an
+explicit disposition; no compatibility profile remains.
+
+**Action required:** remove automation that expects AgentOps to merge, push,
+queue, or run semantic review from a Git hook. Retain your repository's own CI
+or delivery policy and consume AgentOps candidate, verdict, Learn, and delivery
+receipts as evidence.
+
+---
+
 ## Upgrading to 3.2.x
 
-3.2 continues the 3.0 narrowing: the last CLI-orchestration verbs are removed, and the corpus/factory satellites move behind build tags so the default surface stays small. The satellites are **archived, not deleted** — each restore command below rebuilds them.
+3.2 introduced build-tag profiles while removing the last CLI-orchestration
+verbs. That profile decision is superseded by the direct-cut transition above;
+the restore commands below document executable history and do not promise
+retention.
 
 ### `ao rpi` / `ao evolve` command surface removed
 
@@ -81,7 +103,9 @@ full map: [MIGRATION.md](MIGRATION.md)
 
 Every runtime hook was deleted (ADR-0002) after an A/B showed the injected-context delta was zero.
 
-**Action required:** rely on hookless skills + the `ao` CLI, and install the local pre-push gate (`scripts/install-pre-push-gate.sh`) — the gate, not a hook, enforces the bar before a push. `--with-hooks` remains as an opt-in for anyone who still wants them.
+**Action required:** rely on hookless skills + the `ao` CLI. Configure any
+deterministic hook, PR check, or external CI in the consumer repository; it is
+delivery policy, not AgentOps validation.
 
 ### `agentopsd` daemon, `ao schedule`, and `ao overnight` deleted
 
@@ -216,8 +240,8 @@ See [`CHANGELOG.md`](CHANGELOG.md) directly. No hard breakages were introduced i
 ao --version
 ao doctor
 
-# Re-run any local gates touched by the upgrade
-scripts/pre-push-gate.sh --fast
+# Run deterministic checks selected by the repository
+ao gate check --fast --scope head
 ```
 
 If `ao doctor` reports drift between installed skills and your repo copy, re-run the install script from [Getting Started](getting-started/index.md#install).

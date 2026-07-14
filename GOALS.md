@@ -1,6 +1,6 @@
 # Goals
 
-**AgentOps is the validation apparatus for stochastic agentic code work** — the membrane, map, evidence record, and learning loop that answer: *is this code right, and is this agent output proven enough to trust farther?* It drives a goal through four explicit umbrellas: Discovery shapes behavior, Crank executes small slices, Validate gives completed work to a fresh context that did not create it, and Learn routes the result into the next experiment. Deterministic tests remain ground truth; one fresh sub-agent is the default independent judge, while mixed-model councils are an optional rigor tier. Validation produces a verdict and proof record. Git delivery remains the repository's policy.
+**AgentOps is the validation apparatus for stochastic agentic code work** — the boundary, map, evidence record, and learning loop that answer: *is this code right, and is this agent output proven enough to trust farther?* It drives a goal through four explicit umbrellas: Discovery shapes behavior, Crank executes small slices, Validate gives completed work to a fresh context that did not create it, and Learn routes the result into the next experiment. Deterministic tests remain ground truth; one fresh sub-agent is the default independent judge, while mixed-model councils are an optional rigor tier. Validation produces a verdict and proof record. Git delivery remains the repository's policy.
 
 > Canonical 3.0 + navigator architecture: [docs/3.0.md](docs/3.0.md); product framing: [PRODUCT.md](PRODUCT.md); component routing and trim/defer posture: [docs/architecture/component-map.md](docs/architecture/component-map.md). The directives below are measured against them.
 
@@ -20,15 +20,15 @@ The self-hosting line is this: **AgentOps is done-enough when the navigator driv
 
 The prioritization rule this destination creates — and the reason it *drives* the repo: **an epic is pursued only if it advances a route milestone toward autonomous-goal→verified-done; everything else is deferred, not abandoned.** The routing source for that rule is [docs/architecture/component-map.md](docs/architecture/component-map.md): new work is KEEP only if it advances route-critical ledger/tracker truth, validation/release health, measured corpus proof, the governed factory front door, or runtime proof for the core loop; otherwise it is DEFER/TRIM until the route earns it. That rule is what turns 100+ undifferentiated epics into a route. Every North Star below is a *property* the navigator needs to reach the destination; every Directive is a *paving stone on the route*.
 
-## One self-contained factory, delivery outside the membrane
+## One self-contained factory, repository-owned delivery
 
 The destination is reached by AgentOps itself: one self-contained factory with
-its own validation membrane, navigator loop, corpus/flywheel, and CDLC. The
+its own validation boundary, navigator loop, corpus/flywheel, and CDLC. The
 trust boundary is between stochastic production and an explicit,
 acceptance-bound verdict from fresh context. It is not a merge boundary.
 
 - **AgentOps produces, senses, judges, and learns.** It drives work, emits deterministic evidence (**SENSOR**), obtains an independent verdict through Validate (**JUDGE**), and mines evidence into proposed improvements through Learn (**ASSAY**).
-- **Repositories deliver.** Direct push, PR, merge queue, hosted CI, and release policy are adapters outside domain completion. Pawl remains available only as an opt-in high-assurance delivery adapter.
+- **Repositories deliver.** Direct push, PR, merge queue, hosted CI, and release policy are adapters outside domain completion for both local and cloud agents. AgentOps records delivery evidence but never owns the Git transition.
 
 The factory runs the core loop on **two axes**:
 
@@ -40,10 +40,10 @@ The trust comes from **separation of duties** inside the one factory: stochastic
 ## North Stars
 
 <!-- agentops:claim:AOP-CLAIM-GOALS-DREAM-VALIDATED -->
-- **The verification membrane is the product.** Nothing an agent generates is trusted until an independent verifier — never the authoring context; a fresh same-family agent is sufficient by default — proves it against an explicit acceptance contract. Mixed families and councils raise rigor when risk warrants them. It cannot *guarantee* stochastic output — it records bounded assurance.
-- **Beneath the membrane, the corpus compounds.** A versioned, provenance-tracked context corpus makes each session measurably better than the last — fewer tokens, fewer failures, a rollback path. The knowledge flywheel is the compounding *layer under* the membrane — measured, not asserted; not the headline.
+- **The validation boundary is the product.** Nothing an agent generates is trusted until an independent verifier — never the authoring context; a fresh same-family agent is sufficient by default — proves it against an explicit acceptance contract. Mixed families and councils raise rigor when risk warrants them. It cannot *guarantee* stochastic output — it records bounded assurance.
+- **Beneath the validation boundary, the corpus compounds.** A versioned, provenance-tracked context corpus makes each session measurably better than the last — fewer tokens, fewer failures, a rollback path. The knowledge flywheel is the compounding *layer under* the boundary — measured, not asserted; not the headline.
 - **Independent verification is table stakes; sovereignty is the differentiator.** Fresh context with author≠validator is the price of entry, not a moat. What is durable is ownership: your proof and corpus, in your formats, in your repo, portable across whichever model wins next quarter. The candidate quality moat — a measurable corpus delta — remains unproven and must stay on the ruler.
-- **Compute is fungible; rigor is risk-routed.** One fresh validator is the default membrane. Cross-family judges and councils are optional strategies for higher-risk work, not mandatory infrastructure or a universal quorum.
+- **Compute is fungible; rigor is risk-routed.** One fresh validator is the default boundary. Cross-family judges and councils are optional strategies for higher-risk work, not mandatory infrastructure or a universal quorum.
 - Skills work identically across Claude Code, Codex CLI, Cursor, and OpenCode.
 - The wiki maintains itself: every session contributes to `.agents/` by default, and knowledge captured in one session is retrieved and applied in the next — including autonomously between sessions (dream cycle), not just on-demand.
 - A new user goes from install to first validated flow in under 5 minutes.
@@ -145,7 +145,7 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 The existing eval suites are CI canaries (contract checks). None answers "did this skill change make agents better?" Ship a behavioral eval system with a known-good workbench project, task definitions with golden solutions, and scoring scripts that measure correctness, safety, and process adherence. The eval engine already supports A/B comparison via `--baseline-mode=both` and statistical verdict — the gap is eval content, not infrastructure.
 
 <!-- agentops:claim:AOP-CLAIM-GOALS-EVAL-WORKBENCH -->
-**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). `--two-pass` mode added to pre-push head gate for local skill-delta validation. Remaining gap: expanding eval-skill-delta from structural-only to a default blocking gate with full skill-on vs skill-off execution across the workbench.
+**Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). The former local head gate carried a `--two-pass` experiment; that delivery wiring is not current authority. Remaining gap: expanding eval-skill-delta from structural-only to a repository-selected blocking gate with full skill-on vs skill-off execution across the workbench.
 
 **Directive ID:** d-measure-skill-value-through-real-task-evaluation
 **Steer:** increase (behavioral eval tasks with scoring scripts)
@@ -157,7 +157,7 @@ Non-trivial work must run through the [operating loop](docs/architecture/operati
 
 A bead is "non-trivial" when it crosses sessions, agents, files, or bounded contexts — the threshold under which the loop is overhead. Trivial one-shot work (typo fix, dep bump, doc nudge) is exempt. Everything else must, before implementation begins: name a route from the [Component Map](docs/architecture/component-map.md) and the generated [context map](docs/contracts/context-map.md); carry at least one Given/When/Then acceptance example; decompose into vertical slices with one nameable first-failing-test per slice; mark its wave plan parallel only after the wave-validity check passes; close only when every acceptance example maps to a passing test.
 
-This directive starts in **warn-only** posture. The gate is `scripts/check-loop-shape.sh`: it currently inspects legacy `bd` JSON (open + in_progress beads, or a `--json` fixture) and warns when a bead tagged non-trivial lacks a Gherkin block (Given/When/Then) or a slice candidate. Reconcile that live path to `br` before any strict-mode flip. It runs always-warn in `scripts/pre-push-gate.sh` and never blocks a push; `--strict` (or `AGENTOPS_LOOP_SHAPE_STRICT=1`) exits non-zero on offenders, reserved for the flip to blocking once the corpus-wide pass rate is stable. Regression coverage: `bash scripts/check-loop-shape.sh --self-test`.
+This directive starts in **warn-only** posture. The gate is `scripts/check-loop-shape.sh`: it currently inspects legacy `bd` JSON (open + in_progress beads, or a `--json` fixture) and warns when a bead tagged non-trivial lacks a Gherkin block (Given/When/Then) or a slice candidate. Reconcile that live path to `br` before any strict-mode flip. It never blocks repository delivery; `--strict` (or `AGENTOPS_LOOP_SHAPE_STRICT=1`) exits non-zero on offenders, reserved for the flip to blocking once the corpus-wide pass rate is stable. Regression coverage: `bash scripts/check-loop-shape.sh --self-test`.
 
 Waterfall-shaped speculative plans fail this directive when they create context bulk before proof. The acceptable unit is atomic: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
@@ -213,9 +213,9 @@ It is a stay-removed OUTCOME guard, not a code-size metric (GOALS.md "## Anti St
 
 Route milestones (the paving stones, in dependency order — each carries an honest status, not a claim):
 
-1. **Position signal** — the navigator must know where it is. The SDLC provenance ledger exists and is tamper-evident (`ag-8jf97`, landed `479891017`). The bead→commit **land emitter is now wired + live** (`ao provenance emit-landed`, `ag-62jrm` landed `e17d68b9e`): the pre-push gate feeds the ledger on every landing — non-blocking and self-terminating. The **gate-verdict + claude-code-review-verdict emitters remain** (`ag-cm8nd`), so the signal feeds on *landings* but not yet on *verdicts*. *Status: feeding on landings; verdict emitters pending.*
+1. **Position signal** — the navigator must know where it is. The SDLC provenance ledger exists and is tamper-evident (`ag-8jf97`, shipped `479891017`). The old bead-to-commit emitter (`ag-62jrm`, shipped `e17d68b9e`) is historical input to the new delivery receipt. Verdict recording remains the route-critical signal. *Status: historical delivery evidence exists; final verdict and delivery recorders are pending.*
 2. **Resilience / the role state-machine** — the navigator must recover without a human: mechanical failures fix-forward, substantive ones re-scope with the failure as the new acceptance, blockers pull the andon (stop-the-line). `ship-beads` builds but cannot self-merge yet. *Status: build half works, recovery half is a stub.*
-3. **The membrane** — "done" must be *verified*, not merely asserted: Validate binds an acceptance-grounded verdict from a fresh context, and deterministic tests provide the windshield that catches a hallucinated done. A fresh same-family validator is sufficient by default; mixed families are opt-in. Delivery adapters may consume the proof but do not create it. *Status: four-umbrella membrane live; provenance windshield poured.*
+3. **The validation boundary** — "done" must be *verified*, not merely asserted: Validate binds an acceptance-grounded verdict from a fresh context, and deterministic tests provide the windshield that catches a hallucinated done. A fresh same-family validator is sufficient by default; mixed families are opt-in. Delivery adapters may consume the proof but do not create it. *Status: four-umbrella boundary live; provenance windshield poured.*
 4. **Self-improvement** — each drive must measurably improve the next: SENSOR (the ledger) → ASSAY (bounded periodic miners over it) → GATE (suggestions re-enter the same front door). *Status: designed; sensor floor just poured; miners + tick unbuilt.*
 5. **Governance front-door** — nothing new is born ungoverned: the kind-unified factory admits a skill / workflow / loop only with a bounded context + role + runnable acceptance (epic `ag-3fp54`; S0 schema landed `692f420ac`). *Status: schema landed; front-door unbuilt.*
 
@@ -227,7 +227,7 @@ The drive is unattended-end-to-end only when all five hold at once. Until then, 
 
 ### 17. Verification economics — hold the escape SLO at minimum token cost
 
-The membrane's guarantee (no verdict = not done) is priced, not free. This directive makes
+The validation boundary's guarantee (no verdict = not done) is priced, not free. This directive makes
 **discrimination per token** a measured fitness axis (assessment:
 [docs/audits/verification-economics.md](docs/audits/verification-economics.md); epic
 `age-verification-economics-ebec`). The ruler, in dependency order: **TPVD** (tokens per
@@ -235,7 +235,7 @@ verified done), **VOR** (verification overhead ratio = verify spend ÷ produce s
 **CPCD** (cost per caught defect), and an explicit **escape SLO** with an error budget
 (current evidence: 0 escapes across the verdict corpus; rule-of-three CI bounds the true
 rate ≤ ~2%). Spend to the budget, not to zero: when the budget sits untouched at current
-spend, the membrane is over-provisioned — move a lane one tier cheaper and watch the meter.
+spend, the boundary is over-provisioned — move a lane one tier cheaper and watch the meter.
 
 Honesty rules (binding): thresholds are set FROM measured meter data (two weeks minimum),
 never invented; claims stay inside the confidence interval the sample supports; the meter
@@ -247,8 +247,9 @@ instrument, never on a threshold, until the ruler earns thresholds from data. Ph
 numbers — act on data, not on the assessment.
 
 **Progress:** report instrument + warn-only gate landed 2026-07-06 (`b0149df9a`, bead `.2`;
-live: 322 verdict edges, 2.8% refute rate). Benched-family stall tax removed from the default
-pawl route 2026-07-07 (`335300b17`, bead `.7`, council-decided) — ~3.5 min/land recovered.
+live: 322 verdict edges, 2.8% refute rate). Benched-family stall tax was removed
+from the former review route on 2026-07-07 (`335300b17`, bead `.7`) — about 3.5
+minutes per delivery recovered.
 Meter (`.1`) and data-derived thresholds pending.
 
 **Directive ID:** d-verification-economics-escape-slo-at-minimum-cost
@@ -257,7 +258,7 @@ Meter (`.1`) and data-derived thresholds pending.
 
 ## Three-Gap Contract Proof Surface
 
-AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
+AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in candidate, repository CI, or release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
 
 | Gap | What fails without it | Currently enforcing | Roadmap (declared, not yet enforced) |
 |-----|-----------------------|---------------------|---------------------------------------|
@@ -320,7 +321,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | flywheel-lifecycle | `timeout 30 bash scripts/check-flywheel-lifecycle.sh` | 6 | Knowledge lifecycle traces capture → index → inject → retrieval |  |
 | eval-workbench-verify | `timeout 60 bash scripts/check-eval-workbench.sh` | 6 | Behavioral eval workbench golden state, task scoring, and suite structure verified |  |
 | state-path-resolver-coverage | `bash scripts/check-paths-resolver-coverage.sh` | 3 | Tracks executable-code sites that still hardcode `.agents/` paths instead of sourcing the canonical resolver (lib/ao-paths.sh / cli/internal/paths from soc-irg1.1). Warn-only initially per warn-then-fail-ratchet pattern; flip to blocking is a separate follow-up issue under epic soc-irg1 after 2 weeks of baseline data. See `.agents/patterns/2026-05-01-state-path-resolver.md`. | warn-only |
-| executable-spec-link-integrity | `ao goals scenarios --lint && ao goals trace --orphans` | 4 | Directive↔scenario link lint and whole-chain orphan/gap audit (F1.6, soc-58nt.1.9). Warn-only until two consecutive clean CI runs on main; promote to blocking by removing `continue-on-error: true` from the `executable-spec-link-integrity` CI job and replacing warn with fail in pre-push check 38. | warn-only |
+| executable-spec-link-integrity | `ao goals scenarios --lint && ao goals trace --orphans` | 4 | Directive↔scenario link lint and whole-chain orphan/gap audit (F1.6, soc-58nt.1.9). Warn-only until two consecutive clean CI runs on main; promotion belongs to the repository CI policy and is a separate reviewed change. | warn-only |
 | no-apparatus-regrowth | `bash scripts/check-no-apparatus-regrowth.sh` | 5 | Anti-regeneration (Directive D15): teardown-removed apparatus stays removed. Reads the committed `scripts/removed-apparatus.txt` manifest and FAILS only when a surface the teardown (epic ag-097) explicitly removed comes BACK. Stay-removed OUTCOME guard, NOT a size/line/file/job metric — legitimate new growth is fine; only regrowth of the listed surfaces fails. Future teardown waves append the deleted path to the manifest in the same change. |  |
 | door9-no-api-print | `CP="${CONTROL_PLANE_ROOT:-/Users/bo/dev/control-plane}"; if [ -x "$CP/bin/no-api-print-scan.sh" ]; then ( cd "$CP" && bash bin/no-api-print-scan.sh ); else echo "door9-no-api-print: SKIP (control-plane absent at $CP — set CONTROL_PLANE_ROOT)"; fi` | 6 | LAW 0 as fitness: no `claude -p` / `claude --print` (forbidden API-print) invocations across tracked control-plane files. Runs the control-plane door-9 scanner (`bin/no-api-print-scan.sh`) from the control-plane root (the scanner is cwd-sensitive — it scans `git ls-files`). Cross-repo: resolves `$CONTROL_PLANE_ROOT` (default `/Users/bo/dev/control-plane`); SKIPs cleanly with a notice when the control-plane root is absent. Measured 2026-06-10: CLEAN over 218 tracked files. | cross-repo |
 | image-conformance | `CP="${CONTROL_PLANE_ROOT:-/Users/bo/dev/control-plane}"; if [ -x "$CP/bin/image-conformance.sh" ]; then ( cd "$CP" && bash bin/image-conformance.sh --built-only ); else echo "image-conformance: SKIP (control-plane absent at $CP — set CONTROL_PLANE_ROOT)"; fi` | 5 | Agent-image bundles conform: every built image (claude-control-plane / claude-worker / codex-worker / agy-worker) has a complete bundle, SSOT-valid manifest, role-correct duties + dcg-pack, and a green verify.sh. Runs the control-plane conformance matrix `--built-only` **from the control-plane root** (the per-image verify.sh has cwd-sensitive checks — e.g. the worker Rust build-farm-redirect check only resolves from the repo root, so the gate must `cd` there to run RELIABLY per the three-gap honesty rule). Cross-repo: resolves `$CONTROL_PLANE_ROOT`; SKIPs cleanly when absent. Measured 2026-06-10 from the CP root: 28/28 PASS. | cross-repo |

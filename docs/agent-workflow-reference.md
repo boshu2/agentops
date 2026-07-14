@@ -1,8 +1,8 @@
 # Agent Workflow Reference
 
-> Repository-specific mechanics for the canonical
+> Repository-specific evidence mechanics for the canonical
 > [Operating Loop](architecture/operating-loop.md). Read this only for bead,
-> worktree, candidate, delivery, provenance, or closeout operations. The compact
+> worktree, candidate, delivery record, provenance, or closeout operations. The compact
 > [`AGENTS.md`](../AGENTS.md) defines the legal transitions; this file explains
 > how this repository performs them.
 
@@ -124,16 +124,14 @@ orchestrator decides whether that invalidates the candidate before delivery.
 
 ## Deliver through the repository adapter
 
-For AgentOps itself, the terminal delivery command is:
-
-```bash
-ao land <bead-id>
-```
-
-Delivery must consume the same candidate, PASS verdict, and terminal Learn
-receipt. It may check remote divergence, proof freshness, mapping/overlap, local
-policy, and push outcome; it must not recreate semantic validation or rerun an
-unchanged full deterministic suite merely because delivery began.
+Delivery must consume the same candidate, PASS verdict, and Learn receipt. The
+repository—not AgentOps—selects the adapter: direct push, pull request, hosted
+CI, a dedicated merger, or a cloud-agent callback are all valid. AgentOps may
+record the selected adapter, target ref, and resulting identity, but it does not
+perform or authorize the Git mutation. Delivery may check remote divergence,
+proof freshness, mapping/overlap, and repository policy; it must not recreate
+semantic validation or rerun an unchanged full deterministic suite merely
+because delivery began.
 
 If `origin/main` moved, compare the candidate's owned blobs/deletions and declared
 dependencies with the new base. Byte-identical owned semantics plus green
@@ -141,8 +139,9 @@ overlap/mapping evidence may reuse the verdict. A changed owned blob, acceptance
 claim, proof dependency, or ambiguous overlap invalidates the affected proof and
 returns to the earliest invalidated move.
 
-Do not close the bead because a local merge or push command exited zero. Verify
-the exact remote identity:
+Do not close the bead because a repository merge or push command exited zero.
+The repository adapter verifies the exact remote identity and supplies that
+evidence to the report:
 
 ```bash
 git ls-remote origin refs/heads/main

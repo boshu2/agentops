@@ -6,7 +6,7 @@ last_reviewed: 2026-06-14
 
 ## Mission
 
-**AgentOps is autonomous code validation for agentic software development.** It answers the questions that matter before you trust an agent's work: **is this code right, and is this agent output proven enough to receive more autonomy?** The mechanism is an SDLC control-plane shape around a repo-local corpus: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The product is the loop that produces validated output with proof — it catches the agent saying done when it isn't. **What is proven is the membrane and the record:** independent, fresh-context verification (no verdict = not done) plus a durable, hash-chained provenance ledger that binds every verdict to the work. The durable differentiator is **sovereignty** — that record lives in your repo and outlives any model or vendor. Whether the accumulated corpus *compounds* into a quality edge — the knowledge corpus and the escape-corpus alike — is a named, unproven hypothesis still being measured ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)), not the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
+**AgentOps is autonomous code validation for agentic software development.** It answers the questions that matter before you trust an agent's work: **is this code right, and is this agent output proven enough to receive more autonomy?** The mechanism is an SDLC control-plane shape around a repo-local corpus: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The product is the loop that produces validated output with proof — it catches the agent saying done when it isn't. **What is proven is the validation boundary and the record:** independent, fresh-context verification (no verdict = not done) plus a durable, hash-chained provenance ledger that binds every verdict to the work. The durable differentiator is **sovereignty** — that record lives in your repo and outlives any model or vendor. Whether the accumulated corpus *compounds* into a quality edge — the knowledge corpus and the escape-corpus alike — is a named, unproven hypothesis still being measured ([ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md), [ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md)), not the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
 > The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). The component and trim/defer routing map that keeps that thesis from sprawling lives in [docs/architecture/component-map.md](docs/architecture/component-map.md). This file is consistent with both.
 
@@ -27,13 +27,14 @@ Validation is deliberately independent from Git delivery. AgentOps does not
 decide whether a repository uses direct pushes, PRs, merge queues, hosted CI,
 or a custom release pipeline. The `ao` CLI supplies deterministic checks and
 optional delivery adapters; those adapters never define domain completion.
-The older Pawl/landing machinery remains an optional high-assurance adapter and
-lineage surface, not the universal route through Validate.
+Legacy review-gated Git machinery is retired product authority. AgentOps records
+proof and delivery facts; each repository chooses and operates its own delivery
+adapter for local and cloud agents.
 
 **Independent verification is table stakes, not the moat.** What AgentOps
-positions on is the sovereign proof record: the membrane verifies independently
+positions on is the sovereign proof record: the validation boundary verifies independently
 and the provenance ledger records the verdict in the operator's repo across any
-model or vendor. The membrane's self-improvement from an escape corpus and the
+model or vendor. The boundary's self-improvement from an escape corpus and the
 broader corpus-delta bet remain measured hypotheses, not product claims
 ([ADR-0011](docs/adr/ADR-0011-escape-corpus-compounding-unproven-structural-starvation.md),
 [ADR-0004](docs/adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)).
@@ -283,7 +284,9 @@ Full profile: [docs/assurance-profile.md](docs/assurance-profile.md).
 - **Local-first control.** The corpus lives in `.agents/` beside the code. AgentOps requires no product telemetry, and operators choose which model runtimes, networks, and subscriptions touch the repo.
 - **Context as a boundary.** Research, planning, implementation, and validation receive different context. Workers get fresh windows. Validators get evidence packets instead of the implementer's accumulated chat.
 - **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, postmortems, handoffs, and substrate/job outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
-- **Policy gates over advice.** Pre-push checks, CI gates, security scans, goal fitness gates, and premortems encode process as executable constraints instead of relying on the agent to remember a runbook.
+- **Executable evidence over advice.** Candidate-bound checks, repository CI,
+  security scans, goal fitness gates, and premortems encode process as
+  executable constraints instead of relying on the agent to remember a runbook.
 - **Variable autonomy.** The same factory can run interactive, supervised, or substrate-scheduled loops. High-risk environments can keep humans in the loop for planning, validation, release, and promotion while still using agents for bounded work.
 - **Constrained-network fit.** The design favors repo-local state, explicit artifacts, no required cloud control plane, and operator-owned or substrate-owned scheduling. Formal deployment into classified, export-controlled, or safety-critical environments still requires the local authority's security controls, model approvals, supply-chain process, and accreditation work.
 

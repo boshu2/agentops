@@ -2,24 +2,29 @@
 
 AgentOps is a validation gate that proves an agent's work is actually done, plus a provenance record of that proof kept in your own repo. It runs **in your session**, on your machine, against your own subscription — **hookless**: no runtime hooks to install, no daemon to run, no service to babysit.
 
-This is the living map from every AgentOps surface that was removed or retired to what you use instead. If a command you relied on is gone, find its row below: it names the replacement and, where the old surface still exists behind a build tag, the exact command to bring it back. For 3.0-era detail see [MIGRATION-3.0.md](MIGRATION-3.0.md); for version-keyed breaking changes see [UPGRADING.md](UPGRADING.md).
+This is the living map from every AgentOps surface that was removed or retired
+to what you use instead. Compatibility profiles that still compile are
+transitional executable truth, not a product promise: the direct-cut program
+deletes each old owner in the same leaf that installs its replacement or proves
+its final consumer gone. For 3.0-era detail see [MIGRATION-3.0.md](MIGRATION-3.0.md);
+for version-keyed breaking changes see [UPGRADING.md](UPGRADING.md).
 
 ## If you used X, use Y now
 
 | You used | Use instead | Notes (why + restore path) |
 |---|---|---|
 | `bd` / Dolt tracker | `br` + `bv` — `BEADS_DIR="$(ao beads dir)" br <cmd>` for tracking, `bv --robot-insights` for triage | The old tracker was a single-host server with no offline lane. `br` is offline and git-JSONL-backed. Your old `.beads/` is preserved but non-authoritative. |
-| Runtime hooks (the 2.x hook bundle) | Hookless skills + the `ao` CLI + the installed local pre-push gate (`scripts/install-pre-push-gate.sh`) | Hooks were deleted (ADR-0002) after an A/B showed the injected-context delta was zero. `--with-hooks` remains as an opt-in for anyone who still wants them. The gate — not a hook — is what enforces the bar before a push. |
+| Runtime hooks (the 2.x hook bundle) | Hookless skills + the `ao` CLI + repository-selected deterministic checks | Hooks were deleted (ADR-0002) after an A/B showed the injected-context delta was zero. A consumer repository may choose its own small hook or external CI; AgentOps does not require either. |
 | `agentopsd` daemon (`ao daemon`) · `ao schedule` · `ao plans` · `ao watch` · `ao overnight` · `ao cron` | An external substrate you choose: **NTM** (a local tmux swarm) + `ao mcp serve` (MCP tool surface) + `ao agent` (managed agents) | AgentOps ships no always-on runtime (ADR-0009 — "delete, not deprecate"). Out-of-session scheduling belongs to whatever substrate you run. `ao plans` and `ao watch` drove the daemon's cron lane and are gone with it — no build tag restores any of these verbs. The `ao cron` shim was removed at `b242136ac` under ADR-0012. |
 | `ao rpi` · `ao evolve` command surface | The in-session operating loop + the `/rpi` skill (one turn over the loop) | `ao rpi` was deleted outright at `f61c5f0e7` (3.2); `ao evolve` earlier (#724). No build tag brings the verbs back — what `AGENTOPS_LEGACY=1 make build` restores is the archived RPI/factory machinery in the next row (`ao loop`, `ao orchestrate`, `ao operator`, …), not these verbs. |
 | `ao recall` · `ao memory ingest-claude` | `cass` (search your past agent sessions) + `cm` (procedural memory) | Removed at `9d5be0b9e` (3.2). AgentOps consumes these tools instead of shipping its own memory store. Session-log → provenance mining stays native (ADR-0010); only recall/memory moved out. |
-| Corpus / flywheel commands (`corpus`, `curate`, `defrag`, `harvest`, `mind`, `refinery`) | `make build-flywheel` to restore them; consume knowledge via `cass` + `cm` | Archived behind `//go:build flywheel` (ADR-0012), not deleted — the code stays buildable because its revival conditions require it. A default (`spine`) build simply omits them. |
-| RPI / factory commands (`autodev`, `codex`, `loop*`, `orchestrate*`, `operator*`, `tick`, `turn_verify`, `harness`) | The operating loop + an external substrate; restore the old commands with `AGENTOPS_LEGACY=1 make build` | Archived behind `//go:build legacy` (ADR-0012). Same reasoning as the flywheel set: focus the default surface, keep the satellites buildable. |
+| Corpus / flywheel commands (`corpus`, `curate`, `defrag`, `harvest`, `mind`, `refinery`) | The retained `corpus` surface plus `cass` + `cm` | The current tagged profile is transitional and is deleted by the profile-cut leaf after each command receives an exact keep/merge/delete disposition. Do not add new consumers to it. |
+| RPI / factory commands (`autodev`, `codex`, `loop*`, `orchestrate*`, `operator*`, `tick`, `turn_verify`, `harness`) | The operating loop + an external substrate | The current tagged profile is transitional and is deleted by the profile-cut leaf. No compatibility profile is part of the final product. |
 | `ao factory` | The factory *is* the loop — `crank`/`swarm` in-session, or substrate-driven dispatch (NTM / managed-agents) out-of-session | Deleted outright with its contract corpus (see [MIGRATION-3.0.md](MIGRATION-3.0.md)); it is **not** part of the legacy build-tag set above — no build tag brings it back. |
 | In-repo Gas City substrate (`runtime=gc`, `city.toml`, `packs/agentops`) | The external Gas City project, if you want a managed workspace | The in-repo bridge was pruned (`ag-124p`, #679); ADR-0009 re-narrated the substrate to NTM + MCP + managed-agents. `runtime=gc` is no longer a selectable mode. An AgentOps pack for Gas City is planned, not shipped (see below). |
-| PR-per-change flow | **push-to-main** + the local pre-push gate | Retired `ag-qidx` (2026-06-07). Branch protection is off; run the gate locally (`ao gate check --fast --scope head`) and push the coherent arc straight to `main`. `validate.yml` is a tag/PR/manual backstop, not routine authority. |
+| One prescribed Git flow | The repository's own delivery policy | Direct push, PRs, hosted CI, and dedicated mergers are equivalent delivery adapters to AgentOps. All consume the same candidate, deterministic evidence, fresh-context verdict, and Learn receipt. |
 | `acfs` skill | The individual wrapper skills — `ntm`, `cass`, `beads-br`, `beads-bv`, `agent-mail`, `dcg` — plus the upstream ACFS installer directly | The umbrella skill was cut 2026-07-02 at `aae1a3af9` (skill catalog 70→63). The wrappers cover each tool; the installer bundles the whole stack (see next section). |
-| Mount Olympus daemon | Parked — the in-repo pawl gate is the gate | Olympus was a high-assurance multi-tenant take that was parked, not shipped. The routine release authority is the local cockpit / pawl gate in this repo. |
+| Mount Olympus daemon | External orchestration, only when selected by the operator | Olympus was a high-assurance multi-tenant take that was parked, not shipped. It has no authority in the AgentOps validation or delivery loop. |
 
 ## The stack we recommend (and use ourselves)
 

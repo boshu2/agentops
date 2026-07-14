@@ -3,7 +3,7 @@
 **Audience:** Developers who have completed Go 101 and want to reason about the code, not merely invoke it.
 **Validated:** 2026-07-12 against `goal/go-cli-clean-architecture-repair` at `a07bc8f44675e74fad2b0703c66cd370baf26354`.
 
-> **Current status:** The CLI is in a compatibility-first strangler migration. Ten command families are sealed as migrated, `goals` remains migrating, and the tested `cliapp.BuildRoot` target does not yet construct the production root. Revalidate the current-status and debt sections when either cutover lands.
+> **Current status:** The CLI is executing an exact direct cut. The production root still uses global registration and profile pruning, while each current root now has one keep/merge/replace/delete owner. No new compatibility route or dormant owner is admitted.
 
 Related references: [Codebase Overview](codebase-overview.md) · [Go CLI Production-Readiness Audit](../audits/2026-07-12-go-cli-production-readiness.md) · [Ports and Adapters](ports-and-adapters.md) · [Operating Loop](operating-loop.md) · [Generated CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md)
 
@@ -15,12 +15,12 @@ You should be able to:
 2. Explain the difference between Cobra presentation, application policy, a port, and an adapter.
 3. Read a command module and identify what belongs there and what does not.
 4. Understand the Go idioms used for dependency injection, errors, contexts, I/O, interfaces, and deterministic behavior.
-5. Distinguish the intended clean architecture from the still-live strangler scaffolding.
+5. Distinguish the intended clean architecture from the transitional owners scheduled for direct deletion.
 6. Add or review a command without copying transitional mistakes.
 
 ## 1. The Honest One-Paragraph Mental Model
 
-`ao` is one Go executable built around Cobra. Today, the live executable is still assembled in the large `package main` under `cli/cmd/ao`: many files register commands through `init()`, a root pre-run negotiates global behavior, and build profiles prune the assembled tree. The refactor is strangling that shape one top-level command family at a time. A migrated family has an explicit module under `cli/internal/commands/<family>`, application policy in an internal package, concrete effects under `cli/internal/adapters`, a tiny composition owner in `cmd/ao`, an explicit machine contract, and compatibility tests that prove the public CLI did not change. Eleven families have modules; `gate` is fully cut over; `goals` is currently a dormant replacement being built beside one live legacy owner.
+`ao` is one Go executable built around Cobra. Today, the live executable is still assembled in the large `package main` under `cli/cmd/ao`: many files register commands through `init()`, a root pre-run negotiates global behavior, and build profiles prune the assembled tree. Some explicit modules, application services, adapters, and machine contracts already exist, but dormant replacements and compatibility fixtures are transitional debt rather than the migration strategy. The direct-cut program assigns every current root one keep/merge/replace/delete owner, then removes the old owner and unique consumers in that same candidate.
 
 That paragraph contains two architectures:
 
@@ -58,7 +58,7 @@ cli/
 │   ├── root.go                live root, global flags, pre-run, exit mapping
 │   ├── *_module.go            composition for some migrated families
 │   ├── *_composition.go       composition for other migrated families
-│   └── hundreds of legacy command files still being strangled
+│   └── legacy command files assigned to exact direct-cut owners
 ├── internal/
 │   ├── cliapp/                target profile/module/root assembly contract
 │   ├── clicontract/           explicit machine-readable command metadata
@@ -155,7 +155,15 @@ type Module interface {
 
 At this commit, production has **no non-test call** to `cliapp.BuildRoot` or `ParseProfile`. The target assembly contract is proven by unit tests but is not yet the executable bootstrap.
 
-That is the clearest example of strangler scaffolding versus live cutover.
+That is the clearest gap between the tested target and live production. The
+cutover leaf must install explicit composition and delete the global/pruning
+owner atomically.
+
+Deletion work is intentionally outside this authority-doc tranche:
+
+- CLI implementation deletion is owned by K5, K7, K9, and the exact CLI leaves.
+- Build-profile deletion is owned by F4.
+- Generated command-reference deletion or regeneration is owned by D2.
 
 ## 6. The Target Command Pipeline
 
@@ -263,14 +271,15 @@ The replacement module already owns:
 
 `TestGoalsCompositionBuildsDormantExecutableModule` executes the replacement's `validate` command and proves root ownership remains exactly one (`goals_composition_test.go:10`).
 
-This is the strangler pattern:
+This dormant replacement is transitional debt, not the final migration pattern.
+The direct-cut leaf must instead own the full consumer surface:
 
 ```text
-freeze old observable behavior
-  → build executable replacement off the live path
-  → move vertical use cases one group at a time
-  → test replacement and old compatibility together
-  → atomically register new owner and delete old owner
+freeze observable behavior and all consumers
+  → finish the retained behavior under the final owner
+  → atomically register that owner and delete the old owner, dormant copies,
+    compatibility fixtures, and unique dependencies
+  → prove the final owner and old-surface absence
 ```
 
 The placeholder `futureCommand` returns `use case not configured` (`commands/goals/module.go:428`). It is scaffolding, not delivered behavior. Do not register the replacement root until those placeholders are replaced.
@@ -545,20 +554,21 @@ Files beginning with `//go:build flywheel`, `legacy`, `windows`, `linux`, or neg
 
 **Variance:** highly structured subsystems centralize renderers on the result type; smaller commands keep renderer functions in the command package.
 
-### Pattern 5: Compatibility-First Strangler Slice
+### Pattern 5: Same-Owner Direct Cut
 
 **Instances:** beads, capabilities, claim, close, config, council-gate, doctor, done, eval, gate, goals.
 
 **Invariant:**
 
-1. freeze compiled behavior and owner scope;
-2. build module/service/adapter slices;
-3. keep exactly one live owner;
-4. cut over atomically;
-5. run family plus cumulative compatibility;
-6. seal lineage at the accepted SHA.
+1. freeze compiled behavior and the complete authority/consumer scope;
+2. implement the retained behavior under its final module/service/adapter owner;
+3. delete the former root, owner, tests, fixtures, and unique dependencies in
+   the same candidate;
+4. prove one live owner and the old-root absence;
+5. seal lineage at the accepted SHA.
 
-**Variance:** small families cut over in one slice; large families use multiple vertical child slices; goals uses a dormant executable module before cutover.
+**Variance:** a large family may need multiple behavioral leaves, but no leaf
+lands an empty scaffold, dual runtime, alias, or restoration profile.
 
 ## 14. Testing Strategy
 
@@ -607,7 +617,7 @@ This catches what unit tests miss: exact user-visible behavior of the built exec
 5. **Dormant goals placeholders deliberately error.** They are command-shape scaffolding, not completed behavior.
 6. **Some family contracts describe only the root container.** For example, `beads` declares `EffectPure` despite effectful children; do not assume top-level metadata fully represents descendants.
 7. **Narrative text contains historical tracker wording.** Executable `trackerresolve` supports both `br` and `bd`; this repo itself tracks with `br`.
-8. **Direct effects remain in `cmd/ao`.** The strangler is incomplete by measurement, not merely by style preference.
+8. **Direct effects remain in `cmd/ao`.** The direct cut is incomplete by measurement, not merely by style preference.
 9. **`capabilities` YAML behavior and help text disagree.** The command help says output is always JSON, but `ao --output yaml capabilities` takes a live YAML branch. Because `Document` fields currently carry only `json` tags, that YAML uses keys such as `schemaversion` rather than the JSON contract's `schema_version`. Treat JSON as the stable wire contract until this is deliberately reconciled.
 10. **The `beads` command help is still one-sided despite a dual-tracker implementation.** The family description says it complements `bd`, while `beads dir` says it prints the live `br` ledger; the actual resolver and directory service deliberately support either `br` or `bd`. Treat `beads tracker --json` and the typed `trackerresolve` policy as authoritative over those stale help strings.
 11. **The default compiled binary prunes its own hidden `buildtags` introspection command.** `buildtags.go` and its test describe a default result of `spine (...)`, but package test binaries skip `pruneToDefaultSpine`, while the real untagged binary removes `buildtags` because it is absent from `defaultSpineCommands`. A `flywheel legacy` build exposes the command and reports both tags; the default binary currently returns `unknown command`. This is a compiled-black-box coverage gap, not merely stale prose.
@@ -753,7 +763,7 @@ func (m Module) checkCommand() *cobra.Command {
 | driven adapter | inside-out integration, such as filesystem or tracker |
 | contract | explicit machine declaration of command behavior |
 | profile | default/flywheel/legacy/combined compiled command membership |
-| strangler | replace a legacy system incrementally while behavior stays live |
+| direct cut | install retained behavior and delete its old owner in one candidate |
 | dormant module | executable replacement built and tested but not registered |
 | typed error | error value whose methods carry machine meaning such as exit code |
 | fixture | frozen test input/output representing public behavior |
@@ -784,7 +794,7 @@ func (m Module) checkCommand() *cobra.Command {
 | gate registry/orchestrator/report | [`registry.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/gates/registry.go), [`orchestrator.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/gates/orchestrator.go), [`report.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/gates/report.go) |
 | tracker selection/worktree policy | [`trackerresolve/resolve.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/trackerresolve/resolve.go) |
 | typed close policy | [`done/service.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/done/service.go), [`close/service.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/close/service.go) |
-| active strangler example | [`goals.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/goals.go), [`commands/goals/module.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/commands/goals/module.go) |
+| transitional dual-owner debt | [`goals.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/goals.go), [`commands/goals/module.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/commands/goals/module.go) |
 | compatibility fixtures | [`families/`](https://github.com/boshu2/agentops/tree/main/cli/testdata/compatibility-baseline/families) |
 | architecture fitness | [`archcheck/checker.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/archcheck/checker.go), [`check-go-cli-architecture.sh`](https://github.com/boshu2/agentops/blob/main/scripts/check-go-cli-architecture.sh) |
 
@@ -859,8 +869,9 @@ Answer these before running anything:
    chatter is kept out of stdout-as-data.
 7. A local `REFUTED` disposition does not confirm the close. If origin does not
    provide a matching confirmed verdict and the force flag is false, the service
-   returns `RefusalError` before calling the tracker. The message names `ao
-   verify`, `ao pawl review`, the trivial waiver, and the explicit escape hatch.
+   returns `RefusalError` before calling the tracker. This is legacy behavior
+   assigned to the verdict and retired-review deletion leaves; do not use it as
+   the design for a new command.
 8. With no disposition and `CommitProvenanceOnly(...) == true`, the service uses
    `waived-trivial`, stamps `[verdict:abcdef0:waived-trivial]`, and closes.
 9. With no confirmed/trivial route and `ForceNoVerdict == true`, it uses
@@ -908,7 +919,7 @@ without reading help output:
 | Explain the current architecture honestly | Sections 1-6 distinguish the live global/init/prune bootstrap from the tested-but-unused `cliapp.BuildRoot` target and trace the intended command pipeline. |
 | Explain how commands work | Section 7 traces pure `capabilities`, effectful `gate run`, orchestrated `gate check`, and dormant `goals`; Sections 8-11 cover gate policy, contracts/profiles, tracker/worktree resolution, and config precedence. |
 | Explain Go idioms at a Go-101 graduate level | Section 12 covers consumer-side interfaces, constructor injection, method assertions, context, error wrapping, result/error separation, closure flags, injected I/O, receiver choice, defensive copies, sorting, build tags, and `init()`. |
-| Extract repository patterns rather than invent them | Section 13 derives five patterns from at least three concrete command families each: fresh modules, service/port/adapter chains, typed exits, multi-renderers, and compatibility-first strangler slices. |
+| Extract repository patterns rather than invent them | Section 13 derives five patterns from at least three concrete command families each: fresh modules, service/port/adapter chains, typed exits, multi-renderers, and same-owner direct cuts. |
 | Teach verification and safe change-making | Sections 14-17 explain the test pyramid, non-cargo-cult debt, a seven-question reading workflow, and the ideal post-cutover command recipe. |
 | Make the learner active rather than a passive user | Sections 16, 18-19, and 23 provide code-reading questions, implementation exercises, worked keys, and a complete `ao done` capstone with a stated mastery standard. |
 | Apply codebase archaeology | The guide is pinned to source `a07bc8f4`, traces `main` to adapters, distinguishes executable truth from narrative, compares the target base, and records compiled/runtime discrepancies rather than hiding them. |
