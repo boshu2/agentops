@@ -57,19 +57,14 @@ If any checklist item fails:
 If a spec worker writes `BLOCKED` instead of a contract:
 
 1. **Read the BLOCKED reason** from the worker output
-2. **Add context to the issue:**
+2. **Preserve context in the issue evidence:**
    ```bash
-   bd comments add <issue-id> "SPEC BLOCKED: <reason>. Retrying with additional context..." 2>/dev/null
+   bd comments add <issue-id> "SPEC BLOCKED: <reason>. Returning to the orchestrator." 2>/dev/null
    ```
-3. **Retry once** with enriched prompt (include the BLOCKED reason + additional codebase context)
-4. **If still BLOCKED after 2 attempts**, take one bounded helper pass (a
-   fresh context or cross-family model gets the reason + what was tried;
-   resume on UNSTUCK); escalate only if the blocker survives it:
-   ```bash
-   bd update <issue-id> --labels BLOCKER 2>/dev/null
-   bd comments add <issue-id> "ESCALATED: Spec generation failed 2x. Reason: <reason>. Helper pass: <ESCALATE|skipped>. Human review required." 2>/dev/null
-   ```
-   Remove the issue from spec-eligible list and continue with remaining issues. Do NOT block the entire wave.
+3. Return the reason, missing context, and attempted prompt as `BLOCKED`
+   evidence. Crank does not re-dispatch or invoke a helper.
+4. The RPI orchestrator classifies the next action and obtains a durable
+   governor admission before any new SPEC work.
 
 ## TEST WAVE
 
@@ -137,13 +132,16 @@ fi
 | Condition | Action |
 |-----------|--------|
 | All new tests FAIL | PASS — proceed to IMPL wave |
-| Some tests pass, some fail | Retry: re-generate passing tests with explicit "must fail" constraint |
-| All new tests PASS | BLOCKED — tests validate existing behavior, not new requirements. Escalate to human. |
+| Some tests pass, some fail | BLOCKED — preserve the unexpected-pass subset and return it to RPI |
+| All new tests PASS | BLOCKED — tests validate existing behavior, not new requirements; return evidence to RPI |
 
-**On retry (max 2 attempts):**
-1. Add the unexpected-pass context to the worker prompt
-2. Re-spawn test writer with: "These tests passed unexpectedly: <list>. They must fail against current code. Rewrite them to test NEW behavior described in the contract."
-3. If still passing after 2 retries, mark issue as BLOCKER and skip to standard IMPL
+**On unexpected passes:**
+1. Preserve the unexpected-pass list and the contract invariant each test was
+   meant to prove.
+2. Return `BLOCKED` evidence without re-spawning a test writer or silently
+   falling back to implementation.
+3. A later TEST action must come from an explicit orchestrator decision and a
+   durable governor admission.
 
 ## Test Framework Detection
 

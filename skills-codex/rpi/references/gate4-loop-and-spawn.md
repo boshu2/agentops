@@ -4,7 +4,8 @@
 
 **Default behavior:** `/rpi` ends after Learn and the orchestrator decision.
 
-**Enable loop:** pass `--loop` (and optionally `--max-cycles=<n>`).
+**Enable loop:** pass `--loop` with the same stable run ID and persistent
+governor state.
 
 **Loop goal:** make retry, continue, stop, escalate, re-plan, and close explicit.
 
@@ -19,8 +20,9 @@ immutable Validate verdict.
    - `no_change` with remaining work: the orchestrator explicitly retries,
      continues, stops, or escalates;
    - `terminal`: close without another Premortem or `/rpi` invocation.
-4. Enforce `--max-cycles` and oscillation bounds on orchestrator decisions, not
-   inside Validate or Learn.
+4. Request the next action through the persistent governor. It owns admissions,
+   hard ceilings, oscillation/no-progress breakers, and helper eligibility;
+   Validate and Learn own none of those controls.
 
 ## Spawn Next Work (Optional) -- Learn Evidence to Queue Next RPI
 

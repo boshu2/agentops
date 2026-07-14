@@ -12,9 +12,10 @@ invoke Premortem.
 
 ## Crank recovery
 
-Crank may retry a transient worker operation inside the same wave within its
-declared task budget. At the wave boundary it emits DONE, PARTIAL, or BLOCKED
-plus evidence to the orchestrator. It does not invoke Discovery, Learn, or
+Crank preserves transient worker failure evidence and returns DONE, PARTIAL,
+or BLOCKED at the wave boundary. It owns no retry allowance or task budget; a
+later action requires an explicit orchestrator decision and durable admission
+from the persistent governor. Crank does not invoke Discovery, Learn, or
 Premortem.
 
 ## Post-verdict decision
@@ -41,8 +42,9 @@ the ordered completion packet still carries one receipt per umbrella.
 
 ## Stuckness and escalation
 
-An attempt cap or oscillation is a stuckness signal, not proof that human
-authority is required. The orchestrator may request one bounded fresh-context
-helper with the blocker, evidence, and attempts. UNSTUCK returns to an explicit
-orchestrator decision. ESCALATE reaches the operator. Refusal, explicit
-judgment, or a genuinely spent hard time/cost/quota ceiling may skip the helper.
+Max-attempts, oscillation, and no-progress evidence are stuckness signals, not
+proof that human authority is required. The orchestrator submits them to the
+persistent governor. `HOLD` carries the matching blocker class and is the only
+state that authorizes a helper; `UNSTUCK` returns a new approach as `REPAIR`,
+and `ESCALATE` reaches `ANDON`. Explicit judgment or a positive projected
+charge that exceeds a hard ceiling reaches `ANDON` without a helper.

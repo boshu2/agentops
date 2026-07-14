@@ -25,14 +25,14 @@ Workers MUST NOT declare their own work complete. Every wave completion requires
 
 **Minimum for wave completion:** L0 + L1 + L2 must pass. L3 recommended.
 
-## Ralph Loop Back-Pressure
+## Governor-backed back-pressure
 
-When a gate fails 3+ times consecutively on the same issue:
-
-1. **STOP** — do not retry the same approach
-2. **Escalate** — mark the issue as BLOCKED
-3. **Diagnose** — read the error, check assumptions
-4. **Rollback** if needed — auto-commits from prior passing gates provide rollback points
+When a gate fails, preserve the result and return it at the wave boundary.
+Crank does not increment a local failure allowance or dispatch another
+approach. The orchestrator decides whether the evidence calls for repair,
+re-plan, or a stuckness breaker, and every later action requires a durable
+governor admission. A safe commit from a prior passing gate remains a rollback
+point, not permission to retry.
 
 ## Wave Validation Sequence
 
@@ -40,9 +40,9 @@ When a gate fails 3+ times consecutively on the same issue:
 Worker completes issue
   → Orchestrator runs gate command (NOT worker self-report)
   → Gate passes? → Mark issue DONE, proceed to next
-  → Gate fails? → Increment failure counter
-    → 3+ failures? → BLOCK issue, move to next or escalate (helper pass first — failure-recovery.md)
-    → < 3 failures? → Worker retries with error context
+  → Gate fails? → Preserve command, exit status, output, and attempted approach
+    → Return BLOCKED/PARTIAL evidence to RPI
+    → RPI classifies the next move through the persistent governor
 ```
 
 ## Anti-Patterns
@@ -52,4 +52,4 @@ Worker completes issue
 - ❌ Wave advances without any gate execution
 - ✅ Orchestrator runs `make test` after worker signals completion
 - ✅ Each issue has a specific gate command in its acceptance criteria
-- ✅ Failed gates increment a counter visible to the orchestrator
+- ✅ Failed gates produce evidence visible to the orchestrator and governor

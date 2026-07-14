@@ -17,8 +17,10 @@ from typing import Any, Iterator
 
 SCHEMA_VERSION = 1
 DISPOSITIONS = {"NOTE", "REPAIR", "REPLAN", "HOLD", "ANDON"}
+ORDINARY_DISPOSITIONS = {"NOTE", "REPAIR", "REPLAN"}
 STUCK_BREAKERS = {"max-attempts", "oscillation", "no-progress"}
 HARD_BREAKERS = {"human-judgment"}
+ACTIONS = {"crank-wave", "semantic-review", "deterministic-proof"}
 LIMIT_KEYS = (
     "waves",
     "reviewer_tokens",
@@ -26,6 +28,23 @@ LIMIT_KEYS = (
     "review_contexts",
     "deterministic_executions",
 )
+TOP_LEVEL_KEYS = {
+    "schema_version",
+    "run_id",
+    "limits",
+    "usage",
+    "disposition",
+    "reason",
+    "authorized",
+    "admissions",
+    "helper",
+    "helper_history",
+}
+ADMISSION_KEYS = {"id", "sequence", "action", "charge", "status"}
+HELPER_REQUIRED_KEYS = {"allowed"}
+HELPER_OPTIONAL_KEYS = {"blocker_class", "result", "new_approach"}
+HELPER_HISTORY_REQUIRED_KEYS = {"result"}
+HELPER_HISTORY_OPTIONAL_KEYS = {"new_approach"}
 RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
@@ -43,7 +62,7 @@ def emit(payload: dict[str, Any]) -> None:
 def refusal(reason: str, *, helper_allowed: bool = False) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
-        "disposition": "ANDON",
+        "disposition": "NOTE",
         "reason": reason,
         "authorized": False,
         "helper": {"allowed": helper_allowed},
@@ -74,39 +93,154 @@ def locked(path: Path) -> Iterator[None]:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
-def require_counter(value: Any, name: str, *, positive: bool = False) -> int:
+def corrupt() -> None:
+    raise GovernorError("corrupt-state")
+
+
+def require_exact_keys(
+    value: Any,
+    required: set[str],
+    optional: set[str] | None = None,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        corrupt()
+    allowed = required | (optional or set())
+    if not required.issubset(value) or not set(value).issubset(allowed):
+        corrupt()
+    return value
+
+
+def require_nonempty_string(value: Any) -> str:
+    if not isinstance(value, str) or not value:
+        corrupt()
+    return value
+
+
+def require_counter(value: Any, *, positive: bool = False) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
-        raise GovernorError(f"invalid-state:{name}")
+        corrupt()
     if value < (1 if positive else 0):
-        raise GovernorError(f"invalid-state:{name}")
+        corrupt()
     return value
 
 
 def validate_state(state: Any, expected_run_id: str) -> dict[str, Any]:
-    if not isinstance(state, dict):
-        raise GovernorError("corrupt-state")
-    if state.get("schema_version") != SCHEMA_VERSION:
-        raise GovernorError("corrupt-state")
+    state = require_exact_keys(state, TOP_LEVEL_KEYS)
+    schema_version = state.get("schema_version")
+    if (
+        isinstance(schema_version, bool)
+        or not isinstance(schema_version, int)
+        or schema_version != SCHEMA_VERSION
+    ):
+        corrupt()
     if state.get("run_id") != expected_run_id:
         raise GovernorError("state-identity-mismatch")
+    if not RUN_ID_RE.fullmatch(expected_run_id):
+        corrupt()
     if state.get("disposition") not in DISPOSITIONS:
-        raise GovernorError("corrupt-state")
-    limits = state.get("limits")
-    usage = state.get("usage")
-    if not isinstance(limits, dict) or not isinstance(usage, dict):
-        raise GovernorError("corrupt-state")
+        corrupt()
+    require_nonempty_string(state.get("reason"))
+    if not isinstance(state.get("authorized"), bool):
+        corrupt()
+
+    meter_keys = set(LIMIT_KEYS)
+    limits = require_exact_keys(state.get("limits"), meter_keys)
+    usage = require_exact_keys(state.get("usage"), meter_keys)
     for key in LIMIT_KEYS:
-        require_counter(limits.get(key), f"limits.{key}", positive=True)
-        require_counter(usage.get(key), f"usage.{key}")
+        require_counter(limits.get(key), positive=True)
+        require_counter(usage.get(key))
         if usage[key] > limits[key]:
-            raise GovernorError("corrupt-state")
-    if not isinstance(state.get("admissions"), list):
-        raise GovernorError("corrupt-state")
-    if not isinstance(state.get("helper_history"), dict):
-        raise GovernorError("corrupt-state")
-    helper = state.get("helper")
-    if not isinstance(helper, dict) or not isinstance(helper.get("allowed"), bool):
-        raise GovernorError("corrupt-state")
+            corrupt()
+
+    admissions = state.get("admissions")
+    if not isinstance(admissions, list):
+        corrupt()
+    calculated_usage = {key: 0 for key in LIMIT_KEYS}
+    for expected_sequence, admission_value in enumerate(admissions, start=1):
+        admission = require_exact_keys(admission_value, ADMISSION_KEYS)
+        sequence = require_counter(admission.get("sequence"), positive=True)
+        if sequence != expected_sequence:
+            corrupt()
+        if admission.get("id") != f"{expected_run_id}:{expected_sequence}":
+            corrupt()
+        if admission.get("action") not in ACTIONS:
+            corrupt()
+        if admission.get("status") != "recorded":
+            corrupt()
+        charge = require_exact_keys(admission.get("charge"), meter_keys)
+        for key in LIMIT_KEYS:
+            calculated_usage[key] += require_counter(charge.get(key))
+        expected_wave_charge = 1 if admission["action"] == "crank-wave" else 0
+        if charge["waves"] != expected_wave_charge:
+            corrupt()
+    if calculated_usage != usage:
+        corrupt()
+
+    helper = require_exact_keys(
+        state.get("helper"), HELPER_REQUIRED_KEYS, HELPER_OPTIONAL_KEYS
+    )
+    if not isinstance(helper.get("allowed"), bool):
+        corrupt()
+    if "blocker_class" in helper:
+        require_nonempty_string(helper["blocker_class"])
+    if "result" in helper and helper["result"] not in {"UNSTUCK", "ESCALATE"}:
+        corrupt()
+    if "new_approach" in helper:
+        require_nonempty_string(helper["new_approach"])
+    if helper.get("result") == "UNSTUCK" and "new_approach" not in helper:
+        corrupt()
+
+    helper_history = state.get("helper_history")
+    if not isinstance(helper_history, dict):
+        corrupt()
+    for blocker_class, record_value in helper_history.items():
+        require_nonempty_string(blocker_class)
+        record = require_exact_keys(
+            record_value,
+            HELPER_HISTORY_REQUIRED_KEYS,
+            HELPER_HISTORY_OPTIONAL_KEYS,
+        )
+        if record.get("result") not in {"UNSTUCK", "ESCALATE"}:
+            corrupt()
+        if "new_approach" in record:
+            require_nonempty_string(record["new_approach"])
+        if record["result"] == "UNSTUCK" and "new_approach" not in record:
+            corrupt()
+
+    disposition = state["disposition"]
+    if disposition == "HOLD":
+        blocker_class = helper.get("blocker_class")
+        if (
+            state["reason"] not in STUCK_BREAKERS
+            or helper["allowed"] is not True
+            or not blocker_class
+            or blocker_class in helper_history
+        ):
+            corrupt()
+    elif helper["allowed"] is not False:
+        corrupt()
+
+    if state["authorized"] and (
+        disposition != "NOTE"
+        or state["reason"] != "admitted-before-dispatch"
+        or not admissions
+    ):
+        corrupt()
+    if not state["authorized"] and state["reason"] == "admitted-before-dispatch":
+        corrupt()
+    if state["reason"].startswith("hard-ceiling:") and disposition != "ANDON":
+        corrupt()
+    if "result" in helper:
+        blocker_class = helper.get("blocker_class")
+        if not blocker_class or helper_history.get(blocker_class) != {
+            key: helper[key]
+            for key in ("result", "new_approach")
+            if key in helper
+        }:
+            corrupt()
+        expected_disposition = "REPAIR" if helper["result"] == "UNSTUCK" else "ANDON"
+        if disposition != expected_disposition:
+            corrupt()
     return state
 
 
@@ -179,6 +313,7 @@ def command_init(args: argparse.Namespace) -> int:
         if path.exists():
             raise GovernorError("state-already-exists")
         state = initial_state(args, run_id)
+        validate_state(state, run_id)
         atomic_write(path, state)
     emit(state)
     return 0
@@ -202,22 +337,21 @@ def admission_charge(args: argparse.Namespace) -> dict[str, int]:
 
 def command_admit(args: argparse.Namespace) -> int:
     run_id = require_run_id(args.run_id)
-    if args.action not in {"crank-wave", "semantic-review", "deterministic-proof"}:
+    if args.action not in ACTIONS:
         raise GovernorError("invalid-action")
     charge = admission_charge(args)
     path = state_path(args.state_dir, run_id)
     with locked(path):
         state = load_state(path, run_id)
         if state["disposition"] in {"HOLD", "ANDON"}:
-            state["authorized"] = False
             emit(state)
             return 4
         exceeded = next(
             (
                 key
                 for key in LIMIT_KEYS
-                if state["usage"][key] >= state["limits"][key]
-                or state["usage"][key] + charge[key] > state["limits"][key]
+                if charge[key] > 0
+                and state["usage"][key] + charge[key] > state["limits"][key]
             ),
             None,
         )
@@ -226,6 +360,7 @@ def command_admit(args: argparse.Namespace) -> int:
             state["reason"] = f"hard-ceiling:{exceeded}"
             state["authorized"] = False
             state["helper"] = {"allowed": False}
+            validate_state(state, run_id)
             atomic_write(path, state)
             emit(state)
             return 3
@@ -246,6 +381,7 @@ def command_admit(args: argparse.Namespace) -> int:
         state["reason"] = "admitted-before-dispatch"
         state["authorized"] = True
         state["helper"] = {"allowed": False}
+        validate_state(state, run_id)
         atomic_write(path, state)
     emit(state)
     return 0
@@ -263,14 +399,16 @@ def mutate_state(args: argparse.Namespace, mutation: Any) -> tuple[dict[str, Any
 
 
 def command_transition(args: argparse.Namespace) -> int:
-    if args.disposition not in DISPOSITIONS:
+    if args.disposition not in ORDINARY_DISPOSITIONS:
         raise GovernorError("invalid-disposition")
 
     def transition(state: dict[str, Any]) -> int:
+        if state["disposition"] in {"HOLD", "ANDON"}:
+            raise GovernorError("protected-disposition")
         state["disposition"] = args.disposition
         state["reason"] = args.reason or "explicit-transition"
         state["authorized"] = False
-        state["helper"] = {"allowed": args.disposition == "HOLD"}
+        state["helper"] = {"allowed": False}
         return 0
 
     state, exit_code = mutate_state(args, transition)
@@ -285,6 +423,8 @@ def command_break(args: argparse.Namespace) -> int:
         raise GovernorError("missing-blocker-class")
 
     def trip(state: dict[str, Any]) -> int:
+        if state["disposition"] in {"HOLD", "ANDON"}:
+            raise GovernorError("protected-disposition")
         if args.kind in HARD_BREAKERS:
             state["disposition"] = "ANDON"
             state["reason"] = args.kind
@@ -319,6 +459,8 @@ def command_helper(args: argparse.Namespace) -> int:
         raise GovernorError("invalid-helper-result")
     if not args.blocker_class:
         raise GovernorError("missing-blocker-class")
+    if args.result == "UNSTUCK" and not args.new_approach:
+        raise GovernorError("missing-new-approach")
 
     def consult(state: dict[str, Any]) -> int:
         helper = state["helper"]
@@ -329,23 +471,7 @@ def command_helper(args: argparse.Namespace) -> int:
             or helper.get("blocker_class") != args.blocker_class
         )
         if already_used or wrong_hold:
-            state["disposition"] = "ANDON"
-            state["reason"] = "helper-not-authorized"
-            state["authorized"] = False
-            state["helper"] = {
-                "allowed": False,
-                "blocker_class": args.blocker_class,
-            }
-            return 4
-        if args.result == "UNSTUCK" and not args.new_approach:
-            state["disposition"] = "ANDON"
-            state["reason"] = "missing-new-approach"
-            state["authorized"] = False
-            state["helper"] = {
-                "allowed": False,
-                "blocker_class": args.blocker_class,
-            }
-            return 4
+            raise GovernorError("helper-not-authorized", exit_code=4)
 
         record = {"result": args.result}
         if args.new_approach:
@@ -366,6 +492,28 @@ def command_helper(args: argparse.Namespace) -> int:
         return 0
 
     state, exit_code = mutate_state(args, consult)
+    emit(state)
+    return exit_code
+
+
+def command_human(args: argparse.Namespace) -> int:
+    if args.disposition not in ORDINARY_DISPOSITIONS:
+        raise GovernorError("invalid-disposition")
+    if not args.reason:
+        raise GovernorError("missing-human-reason")
+
+    def authorize(state: dict[str, Any]) -> int:
+        if state["disposition"] != "ANDON":
+            raise GovernorError("human-authority-not-required")
+        if state["reason"].startswith("hard-ceiling:"):
+            raise GovernorError("spent-hard-ceiling")
+        state["disposition"] = args.disposition
+        state["reason"] = f"human-authority:{args.reason}"
+        state["authorized"] = False
+        state["helper"] = {"allowed": False}
+        return 0
+
+    state, exit_code = mutate_state(args, authorize)
     emit(state)
     return exit_code
 
@@ -414,6 +562,12 @@ def build_parser() -> argparse.ArgumentParser:
     helper.add_argument("--result")
     helper.add_argument("--new-approach")
     helper.set_defaults(handler=command_helper)
+
+    human = subparsers.add_parser("human")
+    state_args(human)
+    human.add_argument("--disposition")
+    human.add_argument("--reason")
+    human.set_defaults(handler=command_human)
     return parser
 
 

@@ -3,8 +3,8 @@
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | "No ready issues found for this epic" | Epic has no child issues or all blocked | Run `/plan <epic-id>` first to decompose epic into issues. Check dependencies with `bd show <id>`. |
-| "Global wave limit (50) reached" | Excessive retries or circular dependencies | Review failed waves in `.agents/crank/wave-N-checkpoint.json`. Fix blocking issues manually or break circular deps with `bd dep remove`. |
+| Governor refuses a wave admission | Run-wide wave or hard-cost ceiling, protected state, or invalid state | Return the refusal receipt; do not reset counters or dispatch another wave. |
 | Wave vibe gate fails repeatedly | Workers producing non-conforming code | Check `.agents/council/YYYY-MM-DD-vibe-wave-N.md` for specific findings. Add cross-cutting constraints to task metadata or refine worker prompts. |
 | Workers report completion but files missing | Permission errors or workers writing to wrong paths | Check `.agents/swarm/<team>/worker-N-output.json` for file paths. Verify write permissions with `ls -ld`. |
-| RED Gate passes (tests don't fail) | Test wave workers wrote implementation code | Re-run TEST WAVE with explicit "no implementation code access" in worker prompts. Tests must fail before GREEN waves start. |
+| RED Gate passes (tests don't fail) | Test wave workers wrote implementation code | Return the unexpected-pass evidence to RPI. Another TEST action requires an admitted orchestrator decision. |
 | TaskList mode can't find epic ID | bd CLI required for beads epic tracking | Provide plan file path (`.md`) or task description string instead of epic ID. Or install bd CLI with `brew install bd`. |

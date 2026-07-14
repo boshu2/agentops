@@ -35,8 +35,13 @@ The CLI records startup once per thread and skips duplicates automatically.
 - `NOTE`, `REPAIR`, `REPLAN`, `HOLD`, and `ANDON` are the only run
   dispositions. Review `REFUTED` evidence becomes `REPAIR` or `REPLAN`;
   helper `UNSTUCK`/`ESCALATE` results become `REPAIR`/`ANDON`.
-- Missing or corrupt run state and missing meters fail closed. A genuinely
-  spent hard time, cost, or quota ceiling reaches `ANDON` without a helper.
+- Missing or corrupt run state, missing meters, and malformed control input
+  refuse authorization without mutating state or manufacturing `ANDON`. A
+  positive projected charge that exceeds a hard time, cost, or quota ceiling
+  reaches `ANDON` without a helper.
+- Generic transitions may record only `NOTE`, `REPAIR`, or `REPLAN`; only the
+  explicit breaker, helper, and human-authority ports may enter or leave
+  `HOLD`/`ANDON`, and human authority cannot clear a hard ceiling.
 
 ## Loop position
 
@@ -118,11 +123,12 @@ Enter at the routed phase and run every phase after it.
    prevents direct `validate -> premortem` or `learn -> premortem` routing.
 6. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
    status using [references/report-template.md](references/report-template.md).
-   With `--loop`, apply the Learn disposition while `cycle < max_cycles`. With
-   `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
-   command without invoking it. Before emitting the report, apply the Context
-   Density Rule: every line should carry intent, boundary, evidence, decision,
-   constraint, or next action.
+   With `--loop`, apply the Learn disposition only after the persistent
+   governor records the next admission or protected stop. With `--spawn-next`,
+   read `.agents/rpi/next-work.jsonl` and suggest the next command without
+   invoking it. Before emitting the report, apply the Context Density Rule:
+   every line should carry intent, boundary, evidence, decision, constraint,
+   or next action.
 
 ## Orchestrator Decision State Machine
 
@@ -233,6 +239,6 @@ roll-up.
 ## Reference Documents
 
 - Core loop: [agile re-plan](references/agile-replan-loop.md), [executable feature](references/rpi.feature), [compression anti-pattern](references/orchestrator-compression-anti-pattern.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md).
-- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [persistent pull-flow governor](references/pull-flow-governor.md), [examples](references/examples.md). The older [phase budgets](references/phase-budgets.md) reference is migration evidence only; private counters in it are non-authorizing.
+- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [persistent pull-flow governor](references/pull-flow-governor.md), [examples](references/examples.md), and the [phase-budget migration](references/phase-budgets.md) into that sole governor.
 - Recovery: [error handling](references/error-handling.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [troubleshooting](references/troubleshooting.md), [Codex executor](references/codex-executor.md).
 - Contracts: [autonomous execution](references/autonomous-execution.md), [phase data](references/phase-data-contracts.md), [report template](references/report-template.md).
