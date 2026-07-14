@@ -65,8 +65,20 @@ func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing
 			wantSource:  SourceBinary,
 		},
 		{
-			name:        "valid selects configured backend",
+			name:        "valid plain string selects configured backend",
 			config:      "tracker: bd\n",
+			wantTracker: BD,
+			wantSource:  SourceConfig,
+		},
+		{
+			name:        "valid quoted string selects configured backend",
+			config:      "tracker: \"br\"\n",
+			wantTracker: BR,
+			wantSource:  SourceConfig,
+		},
+		{
+			name:        "valid explicit string tag selects configured backend",
+			config:      "tracker: !!str bd\n",
 			wantTracker: BD,
 			wantSource:  SourceConfig,
 		},
@@ -83,7 +95,42 @@ func TestResolveAbsentValidUnreadableMalformedInvalidConfigPrecedence(t *testing
 		{
 			name:    "null tracker value fails closed",
 			config:  "tracker: null\n",
-			wantErr: []string{"tracker key in", "unknown tracker"},
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!null"`},
+		},
+		{
+			name:    "empty plain tracker value fails closed",
+			config:  "tracker:\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!null"`},
+		},
+		{
+			name:    "numeric tracker value fails closed",
+			config:  "tracker: 1\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!int"`},
+		},
+		{
+			name:    "boolean tracker value fails closed",
+			config:  "tracker: true\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!bool"`},
+		},
+		{
+			name:    "binary tracker value fails closed before coercion",
+			config:  "tracker: !!binary YnI=\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!binary"`},
+		},
+		{
+			name:    "custom tagged tracker value fails closed",
+			config:  "tracker: !custom br\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!custom"`},
+		},
+		{
+			name:    "sequence tracker value fails closed",
+			config:  "tracker: [br]\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!seq"`},
+		},
+		{
+			name:    "mapping tracker value fails closed",
+			config:  "tracker: {backend: br}\n",
+			wantErr: []string{"parse tracker configuration", "tracker must be a YAML string scalar", `tag="!!map"`},
 		},
 		{
 			name:        "unreadable fails closed",
