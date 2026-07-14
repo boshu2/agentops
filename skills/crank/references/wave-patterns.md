@@ -6,9 +6,9 @@ Crank follows FIRE for each wave:
 
 | Phase | Beads Mode | TaskList Mode |
 |-------|-----------|--------------|
-| **FIND** | `bd ready` — get unblocked beads issues | `TaskList()` → pending, unblocked |
-| **IGNITE** | TaskCreate from beads + `/swarm` | `/swarm` (tasks already in TaskList) |
-| **REAP** | Swarm results + `bd update --status closed` | Swarm results (TaskUpdate by workers) |
+| **FIND** | Resolve the admitted leaf and next wave | Resolve the admitted task and next wave |
+| **IGNITE** | One direct `/implement` worker by default | One direct implementer by default |
+| **REAP** | Collect the direct result; Swarm only for admitted disjoint lanes | Same |
 | **CHECK** | Deterministic wave acceptance → PASS/FAIL evidence | Same |
 | **ESCALATE** | Return blocked evidence to the orchestrator | Same |
 
@@ -19,7 +19,21 @@ Crank follows FIRE for each wave:
 | **SPEC** | Generate contracts per issue → `.agents/specs/contract-<id>.md` |
 | **TEST** | Generate failing tests from contracts → RED gate (all must fail) |
 
-## Parallel Wave Model
+## Routine single-writer model
+
+```text
+Wave N: admitted leaf + exact next failing proof
+        → one direct implementer
+        → targeted deterministic acceptance
+        → canonical checkpoint + remaining-plan facts
+        → orchestrator admits the next unchanged wave or freezes the tranche
+```
+
+This is the default. Do not spawn an agent merely to satisfy a workflow shape;
+the current implementer may execute the wave when it owns the leaf. Use the
+parallel model only when the plan explicitly proves two or more disjoint lanes.
+
+## Explicit parallel wave model
 
 ### Beads Mode
 
@@ -40,10 +54,11 @@ Wave N: bd ready → [issue-1, issue-2, issue-3]
         ↓
         Crank PARTIAL / DONE / BLOCKED + evidence
         ↓
-        Validate → Learn → orchestrator
-                               ↓
-        orchestrator may invoke Wave N+1; a changed plan first goes
-        through Discovery → Premortem
+        orchestrator compares the remaining work with the admitted plan
+             ↓ unchanged                         ↓ materially changed
+        admit Wave N+1                    Discovery → Premortem
+             ↓
+        at 3 waves or 90 minutes: freeze → Validate → Learn
 ```
 
 ### TaskList Mode
@@ -61,14 +76,17 @@ Wave N: TaskList() → [task-1, task-2, task-3] (pending, unblocked)
         ↓
         Crank PARTIAL / DONE / BLOCKED + evidence
         ↓
-        Validate → Learn → orchestrator
-                               ↓
-        orchestrator may invoke Wave N+1; a changed plan first goes
-        through Discovery → Premortem
+        orchestrator compares the remaining work with the admitted plan
+             ↓ unchanged                         ↓ materially changed
+        admit Wave N+1                    Discovery → Premortem
+             ↓
+        at 3 waves or 90 minutes: freeze → Validate → Learn
 ```
 
 Crank never directs Wave N to Wave N+1. Every wave terminates at its evidence
-handoff; only the orchestrator can start another wave after Validate and Learn.
+handoff. The orchestrator may start the next admitted wave without per-wave
+Validate or Learn. Semantic validation and Learn run once after the bounded
+tranche freezes.
 
 ## Spec-First Wave Model (--test-first)
 

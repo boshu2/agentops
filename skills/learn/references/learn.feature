@@ -9,6 +9,13 @@ Feature: Learn bookkeeps an immutable verdict
     Then it preserves the verdict reference and digest
     And it emits a schema-valid Learn receipt
 
+  Scenario: Learn runs once without another model
+    Given one immutable final tranche verdict and its digest
+    When Learn performs deterministic bookkeeping in the orchestrator context
+    Then it dispatches no model, reviewer, or council
+    And it emits one canonical learn-receipt.json
+    And any phase summary is a link-only compatibility projection
+
   Scenario: Learn cannot mutate proof
     Given an immutable PASS, WARN, or FAIL verdict
     When Learn records an observation disposition

@@ -4,11 +4,19 @@ The initial plan/wave-sequence is a **hypothesis**. Each wave is an experiment
 that produces evidence; that evidence re-plans the remaining waves. This is what
 makes `--auto` *autonomous* rather than *blind*.
 
-## At every wave boundary (and after the validation phase)
+## At every wave boundary
 
-The mandatory route is `Validate -> Learn -> orchestrator`. Validate produces
-proof and structured observations. Learn binds those observations to the
-immutable verdict and emits exactly one plan-impact disposition:
+Crank returns targeted deterministic evidence directly to the orchestrator.
+When acceptance, dependencies, write scope, and risk remain unchanged, the
+accepted Premortem verdict remains valid and the next sequential wave may be
+admitted. A material change routes through Discovery and one new Premortem.
+Validate and Learn do not run between unchanged waves.
+
+## At the frozen tranche boundary
+
+The mandatory route is `Validate -> Learn -> orchestrator` once. Validate
+produces proof and structured observations. Learn binds those observations to
+the immutable verdict and emits exactly one plan-impact disposition:
 
 - `material_change` when cited evidence invalidates or changes a remaining-plan
   assumption;
@@ -30,13 +38,11 @@ The orchestrator then applies the matching transition:
    fabricate a learning or a material mutation.
 3. **Terminal** — close the tick. Do not re-plan or invoke Premortem.
 
-For either nonterminal branch, completion of the prior leaf updates the
-remaining-plan snapshot. Before requesting another Crank wave, the orchestrator
-runs exactly one bounded Premortem over the next leaf, changed ordering/scope,
-and new evidence; completed candidate proof is not replayed. A first introduced
-acceptance defect may receive one consolidated repair. A second distinct repair
-need forces `REPLAN` and re-slicing through Discovery instead of another review
-loop.
+Before tranche freeze, leaf completion updates the remaining-plan snapshot but
+does not by itself invalidate Premortem. Material plan-input change does. After
+freeze, a first introduced acceptance defect may receive one consolidated
+repair and affected-claim closure. A second distinct repair need forces
+`REPLAN` and re-slicing through Discovery instead of another review loop.
 
 ## Bounds (so agility ≠ thrash)
 
@@ -55,7 +61,8 @@ governor — never just to approve a pivot.
 
 ## How the phase skills feed this loop
 
-`/crank` emits wave evidence to `/validate`; `/validate` hands its immutable
-verdict to `/learn`; `/learn` returns plan impact to the orchestrator. Only the
-orchestrator selects `/discovery` as the re-plan engine and sends a changed plan
-through `/premortem`. No phase swallows a finding into a silent retry.
+`/crank` emits wave evidence to the orchestrator. At the bounded tranche
+boundary, `/validate` hands one immutable verdict to `/learn`; `/learn` returns
+plan impact to the orchestrator. Only the orchestrator selects `/discovery` as
+the re-plan engine and sends a materially changed plan through `/premortem`. No
+phase swallows a finding into a silent retry.

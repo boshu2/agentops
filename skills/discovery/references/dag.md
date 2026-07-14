@@ -183,8 +183,9 @@ The research artifact is the source of detail. Discovery extracts only:
 architecture forks, one-way doors, contract/coordination changes (the `plan-pawl`
 row in [`docs/contracts/pawls.md`](../../../docs/contracts/pawls.md)). For an **MVP
 vertical slice** (cheap, reversible work), SKIP this step — gating it is the
-waterfall `pawls.md` forbids; the slice gets only the inline `--quick` premortem
-at STEP 5.
+waterfall `pawls.md` forbids. Admit the bounded tranche with one fresh-context
+`/premortem --quick` at STEP 5; reuse that verdict while its plan digest,
+acceptance, dependency set, write scope, and risk class remain unchanged.
 
 The plan-pawl is the `multi-model` pawl applied to the PLAN artifact instead of a
 code diff. It SUBSUMES the two redundant cross-family-review gates discovery used to
@@ -305,7 +306,7 @@ premortem.
 cross-family verdict IS the premortem verdict. Do not run a second council; skip
 to STEP 6.
 
-**MVP-slice class** (the STEP 3.5 duel was skipped): invoke the inline `--quick`
+**MVP-slice class** (the STEP 3.5 duel was skipped): invoke one fresh-context `--quick`
 premortem against the exact plan artifact:
 
 ```text
@@ -331,15 +332,21 @@ Write:
 
 - `.agents/rpi/execution-packet.json`
 - `.agents/rpi/runs/<run-id>/execution-packet.json` when `run_id` exists
-- `.agents/rpi/phase-1-summary-YYYY-MM-DD-<slug>.md`
+- optional `.agents/rpi/phase-1-summary-YYYY-MM-DD-<slug>.md` as a link-only
+  compatibility projection
 
-The packet is the narrow waist. At Discovery handoff it sets
+The packet is the narrow waist and canonical Discovery artifact. At Discovery handoff it sets
 `packet_state:"prospective"`, records Discovery `DONE` with its real artifact,
 Crank `pending`, and Validate/Learn `not_checked`; incomplete phases have no
 artifact path. It contains the six density fields, artifact
 paths, criteria, validation lanes, tracker state, test levels, complexity, and
 next action. It does not contain raw research, raw plan prose, or raw council
 deliberation.
+
+Routine packets admit one bounded proof tranche: at most three sequential
+low-risk waves in one bounded context and a 90-minute ceiling. Each wave has
+targeted deterministic acceptance; the packet schedules one freeze, Validate,
+and Learn transaction after the tranche, never between unchanged waves.
 
 Carry the state's `known_risks` (STEP 2 catch-digest matches) into the packet
 through its `risks` array — the schema
