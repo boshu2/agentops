@@ -100,11 +100,6 @@ output_contract: .agents/rpi/YYYY-MM-DD-*.md
 - **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
 - **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
 
-### Folded triggers (ag-s43tg): `operating-loop-skill` + `operating-loop-workflow` route here
-
-- **operating-loop-skill** — driving one bead end-to-end through claim, work, independent validation, closeout, and persistence: `/rpi <bead-id>` runs that exact arc.
-- **operating-loop-workflow** — installing or running the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration: `/rpi` is the in-session orchestrator of the same seven moves.
-
 ## Core Contract
 
 RPI preserves four typed responsibilities: Discovery shapes the tranche, Crank
@@ -208,10 +203,7 @@ schemas and archive paths.
 ## Complexity-Scaled Review
 
 Complexity scales the depth of Premortem and Validate, never the phase order.
-Routine work defaults to one fresh independent validator; deep or mixed review
-is explicit. Learn remains bounded bookkeeping at every depth. Delivery policy
-belongs to the target repository, outside this lifecycle. Read
-[references/complexity-scaling.md](references/complexity-scaling.md).
+Routine work uses one fresh validator; deeper review is explicit. Learn stays bounded and delivery remains a repository adapter. See [complexity scaling](references/complexity-scaling.md).
 
 ## Flags
 
@@ -223,63 +215,36 @@ belongs to the target repository, outside this lifecycle. Read
 | `--loop` | off | Admit additional sequential waves inside the current bounded tranche; never exceeds the run-wide wave/time ceiling |
 | `--run-id=<id>` | required for dispatch | Resume the persistent run state across invocations |
 | `--max-waves=<n>` | 3 | Declare the run-wide Crank admission ceiling at initialization |
-| `--max-reviewer-tokens=<n>` | required | Declare the hard reviewer-token ceiling |
 | `--max-elapsed-seconds=<n>` | 5400 | Routine tranche ceiling (90 minutes); stop before it is spent and preserve resume state |
-| `--max-review-contexts=<n>` | required | Declare the hard review-context ceiling |
-| `--max-deterministic-executions=<n>` | required | Declare the hard deterministic-execution ceiling |
-| `--spawn-next` | off | Surface follow-up work after reporting |
 | `--test-first` / `--no-test-first` | on / off | Enable or explicitly opt out of TDD ordering |
 | `--fast-path` / `--deep` | auto | Force fast or full complexity |
-| `--quality` | off | Make validation strict surfaces blocking |
 | `--dry-run` | off | Report only; never creates an admission receipt |
+
+Other hard ceilings are declared once in the run governor, not repeated as phase budgets.
 
 ## Examples
 
-- `/rpi "add user authentication"` — discovery → implementation → validation → report.
-- `/rpi --from=implementation ag-23k` — resolve the bead scope, run implementation + validation.
-- `/rpi --deep "refactor payment module"` — full council gates across the lifecycle.
-
-Read [references/examples.md](references/examples.md) for resume, interactive, loop, and artifact-mode examples.
+**User says:** `/rpi "add user authentication"` for a new goal, or `/rpi --from=implementation ag-23k` for an already-shaped leaf.
 
 ## Output Specification
 
-**Artifact directory:** `.agents/rpi/`.
-**Filename convention:** mutable `execution-packet.json`, immutable `runs/<run-id>/execution-packet.json`, canonical Crank evidence, Validate `result.json`, Learn `learn-receipt.json`, and optional link-only compatibility summaries.
-**Serialization/schema format:** packet JSON matches `schemas/execution-packet.schema.json` plus the ordered receipt index in [phase-data-contracts](references/phase-data-contracts.md); the final report follows the markdown [report template](references/report-template.md).
-**Validator command:** `python3 skills/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
-**Downstream handoff:** discovery creates the packet, crank updates
-implementation evidence, validate appends the immutable acceptance verdict,
-Learn records post-verdict observations plus plan impact, the orchestrator owns
-any plan mutation and Premortem transition, and Report emits the human-readable
-roll-up.
-**Exit signal:** the per-phase verdict roll-up; `<promise>PARTIAL</promise>` from `/crank` requires a canonical orchestrator disposition and never implies a retry.
+- Canonical state: `.agents/rpi/execution-packet.json` plus immutable per-run artifacts and one ordered receipt index.
+- Schema: `schemas/execution-packet.schema.json`; validate with `python3 skills/rpi/scripts/validate-execution-packet.py .agents/rpi/execution-packet.json`.
+- Handoff: Discovery shapes, Crank records targeted evidence, Validate writes the immutable verdict, Learn records plan impact, and the orchestrator reports.
+- `<promise>PARTIAL</promise>` preserves resume state; it never implies retry or terminal proof.
 
 ## Quality Checklist
 
-- [ ] The same objective and acceptance examples survive every phase and retry.
-- [ ] Each typed responsibility has one canonical disk-backed artifact and receipt index entry.
 - [ ] No per-wave Validate or Learn ran before the bounded tranche froze.
 - [ ] One final independent verdict routes through Learn before the next-tranche decision.
-- [ ] Premortem was reused for unchanged plan inputs and rerun only after material change.
 - [ ] The execution packet passes its validator before Report or downstream handoff.
-- [ ] Every dispatch has a durable admission in the same run state.
-- [ ] No phase-local wave, retry, attempt, cost, or helper counter exists.
+- [ ] One governor owns admissions, ceilings, retries, and helpers.
 
 ## Troubleshooting
 
-| Problem | Response |
-|---------|----------|
-| Phase returns BLOCKED | Classify through the governor; ordinary repair stays autonomous, while a real breaker enters HOLD |
-| Packet validation fails | Repair the packet or receipts, then rerun the validator before handoff |
-| External executor fails | Use direct local checks; raise a breaker only for a reproducible capability stop |
-
-## Related skills
-
-- [`/agent-native`](../agent-native/SKILL.md) + [`/ntm`](../ntm/SKILL.md) — portable out-of-session workers and NTM pane mechanics for whole `/rpi` loops.
+- Classify failures through the governor; repair invalid packets locally, and use direct checks when an optional executor fails. See [troubleshooting.md](references/troubleshooting.md).
 
 ## Reference Documents
 
-- Core loop: [agile re-plan](references/agile-replan-loop.md), [executable feature](references/rpi.feature), [compression anti-pattern](references/orchestrator-compression-anti-pattern.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md).
-- Modes: [context windowing](references/context-windowing.md), [discovery artifact](references/discovery-artifact-mode.md), [persistent pull-flow governor](references/pull-flow-governor.md), [examples](references/examples.md), and the [phase-budget migration](references/phase-budgets.md) into that sole governor.
-- Recovery: [error handling](references/error-handling.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [troubleshooting](references/troubleshooting.md), [Codex executor](references/codex-executor.md).
-- Contracts: [autonomous execution](references/autonomous-execution.md), [phase data](references/phase-data-contracts.md), [report template](references/report-template.md).
+- Core: [agile re-plan](references/agile-replan-loop.md), [governor](references/pull-flow-governor.md), [phase data](references/phase-data-contracts.md), [compression](references/orchestrator-compression-anti-pattern.md), and [executable feature](references/rpi.feature).
+- Operation: [autonomy](references/autonomous-execution.md), [context windows](references/context-windowing.md), [Discovery artifact mode](references/discovery-artifact-mode.md), [phase budgets](references/phase-budgets.md), [gate retry](references/gate-retry-logic.md), [loop/spawn](references/gate4-loop-and-spawn.md), [Codex executor](references/codex-executor.md), [installed-version warning](references/installed-plugin-version-not-repo-head.md), [examples](references/examples.md), [recovery](references/error-handling.md), and [report](references/report-template.md).

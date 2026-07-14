@@ -183,30 +183,18 @@ and the acceptance-criteria YAML contract.
 | `--skip-brainstorm` | auto | Skip STEP 1 brainstorm when goal is already specific |
 | `--ideate` | auto | Force the open-ended generate-winnow path, operationalize into self-documenting `br` beads, then run one complete refinement pass (a second only after material graph change). |
 | `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
-| `--no-budget` | off | Disable phase time budgets |
 | `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |
 | `--duel` | auto | Run the plan-pawl cross-family duel at STEP 3.5. Auto-on for fanout class and `--complexity=full`; opt-in elsewhere. Subsumes the single-judge fanout approval + premortem council. |
 | `--no-duel` | off | Skip the duel (routine tranche): one fresh-context `--quick` premortem at STEP 5. |
-| `--duel-rounds=<N>` | 3 | Max duel rounds before the max-attempts breaker trips (`ao plan-pawl decide --max-rounds`). |
 
 ## Quick Start
 
-```bash
-$discovery "add user authentication"              # full discovery
-$discovery --interactive "refactor payment module" # human gates in research + plan
-$discovery --skip-brainstorm "fix login bug"       # skip brainstorm for specific goals
-$discovery --complexity=full "migrate to v2 API"   # force full council ceremony
-```
+Use `$discovery "add user authentication"` normally; add `--interactive`, `--skip-brainstorm`, or `--complexity=full` only when their explicit behavior is needed.
 
 ## Output Specification
 
-- **Path:** child artifacts under `.agents/research/`, `.agents/plans/`, and `.agents/council/`; dense packets and summaries under `.agents/rpi/`; load-bearing slices in the resolved tracker.
-- **Filename:** canonical `execution-packet.json` for latest/per-run packets;
-  any `phase-1-summary-*.md` required by an older consumer is a link-only
-  projection. Preserve child artifact names returned by their skills.
-- **Format:** compact markdown summary to stdout plus schema-valid JSON packet containing density fields, artifact links, acceptance examples, constraints, optional epic ID, tracker mode, and next action.
-- **Exit code:** run `bash skills/discovery/scripts/validate.sh` and require zero; for beads require `ao beads exec show <epic_id>` to resolve Gherkin slices, while tasklist mode requires `.agents/rpi/tasklist.md` with epic, slice, and Given/When/Then markers.
-- **Downstream handoff:** pass the dense packet and mode-appropriate tracker evidence to `$crank` and `$validate`; raw child output remains linked in its own artifact.
+- Write one schema-valid `execution-packet.json` with density fields, artifact links, acceptance, constraints, tracker mode, and next action; link child artifacts instead of copying them.
+- Require `bash skills/discovery/scripts/validate.sh` to pass, then hand the packet and tracker evidence to `$crank`; `$validate` consumes the completed frozen tranche later.
 
 ## Quality Checklist
 
@@ -216,10 +204,7 @@ $discovery --complexity=full "migrate to v2 API"   # force full council ceremony
 
 ## Completion Markers
 
-```
-<promise>DONE</promise>      # Discovery complete AND persisted: beads mode requires a resolvable epic_id plus Gherkin-bearing child slices; tasklist mode requires .agents/rpi/tasklist.md with epic, slice, and Given/When/Then markers.
-<promise>BLOCKED</promise>   # Report the actual class and return it to the RPI governor; Discovery owns no retry/helper controller.
-```
+`<promise>DONE</promise>` requires persisted Gherkin slices; `<promise>BLOCKED</promise>` reports evidence to the RPI governor and creates no local retry controller.
 
 ## Troubleshooting
 
@@ -227,15 +212,6 @@ Read `references/troubleshooting.md` for common problems and solutions.
 
 ## Reference Documents
 
-- [references/goal-clarification-brainstorm.md](references/goal-clarification-brainstorm.md) — absorbed brainstorm body (four-phase clarification + ideation funnel)
-- [references/idea-rubric.md](references/idea-rubric.md) — absorbed brainstorm idea rubric
-- [references/brainstorm.feature](references/brainstorm.feature) — absorbed brainstorm executable spec
-- [references/red-team-checklist.md](references/red-team-checklist.md) — absorbed brainstorm red-team checklist
-- [references/dag.md](references/dag.md) — executable workflow, state shape, gate detail, per-step detail, acceptance-criteria YAML contract
-- [references/complexity-auto-detect.md](references/complexity-auto-detect.md) — precedence contract for keyword vs issue-count classification
-- [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run safety and resume behavior
-- [references/phase-budgets.md](references/phase-budgets.md) — time budgets per complexity level
-- [references/troubleshooting.md](references/troubleshooting.md) — common problems and solutions
-- [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
-- [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
-**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [premortem](../premortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)
+- Workflow: [DAG](references/dag.md), [complexity routing](references/complexity-auto-detect.md), [resume](references/idempotency-and-resume.md), [phase budgets](references/phase-budgets.md), [phase data](references/phase-data-contracts.md), and [output templates](references/output-templates.md).
+- Shaping: [goal clarification](references/goal-clarification-brainstorm.md), [idea rubric](references/idea-rubric.md), [brainstorm feature](references/brainstorm.feature), and [red team](references/red-team-checklist.md).
+- See also: [research](../research/SKILL.md), [plan](../plan/SKILL.md), [premortem](../premortem/SKILL.md), [crank](../crank/SKILL.md), and [rpi](../rpi/SKILL.md).
