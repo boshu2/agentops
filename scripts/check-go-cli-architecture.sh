@@ -33,7 +33,7 @@ check_retired_source_references() {
 
 check_retired_source_references || exit 1
 
-candidate_sha="$(git -C "$REPO_ROOT" rev-parse HEAD^{commit})" || exit 1
+candidate_sha="$(git -C "$REPO_ROOT" rev-parse 'HEAD^{commit}')" || exit 1
 "$REPO_ROOT/scripts/check-go-cli-semantic-seals.sh" --production --candidate-sha "$candidate_sha" || exit 1
 
 args=(--root "$REPO_ROOT" --candidate-sha "$candidate_sha")
