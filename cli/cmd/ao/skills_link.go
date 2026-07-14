@@ -245,7 +245,7 @@ func linkAllDests(srcDir string, dests []string, dryRun bool) ([]skillLinkResult
 	results := make([]skillLinkResult, 0, len(dests))
 	anyErr := false
 	for _, dest := range dests {
-		res, err := linkMissingSkills(srcDir, dest, dryRun)
+		res, err := linkMissingSkills(srcDir, dest, dryRun) // nosemgrep -- res is a value struct (never nil); setting res.Err on error cannot nil-deref.
 		if err != nil {
 			res.Err = err.Error()
 			anyErr = true

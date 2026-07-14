@@ -45,7 +45,7 @@ func BuildInventory(root, family string) (Inventory, error) {
 	cmdRoot := filepath.Join(root, "cli", "cmd", "ao")
 	ownerSet := map[string]bool{}
 	symbolSet := map[string]bool{}
-	effectSet := map[Rule]bool{}
+	effectSet := map[Rule]bool{} // nosemgrep -- populated via the sets struct inside scanInventoryOwner (sets.effects[...]=true) before the range below; not empty.
 	candidateSet := map[string]bool{}
 	sets := inventorySets{
 		owners:     ownerSet,

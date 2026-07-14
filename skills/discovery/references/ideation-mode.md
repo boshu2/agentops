@@ -32,9 +32,9 @@ and don't duplicate existing work.
 
 ```bash
 cat AGENTS.md                # or CLAUDE.md — project rules + constraints
-ao beads exec list --json              # open work — avoid duplicating
-ao beads exec list --status closed --json   # closed work — lessons learned, don't re-propose
-ao beads exec ready --json             # what is actionable right now
+br list --json              # open work — avoid duplicating
+br list --status closed --json   # closed work — lessons learned, don't re-propose
+br ready --json             # what is actionable right now
 ```
 
 Checklist before generating:

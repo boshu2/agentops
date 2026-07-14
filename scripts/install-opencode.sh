@@ -150,7 +150,11 @@ if [ ! -e "$PLUGIN_DST" ]; then
   report_problem "plugin entry $PLUGIN_DST is missing or dangling"
 fi
 # (c) one sentinel skill is readable through the link.
-SENTINEL=$(find -L "$SKILLS_DST" -name "SKILL.md" -maxdepth 2 2>/dev/null | head -1)
+# `-print -quit` (not `| head -1`): find stops after the first hit so it never
+# writes into a head()-closed pipe. Under `set -o pipefail`, `find … | head -1`
+# SIGPIPEs (141) once the linked skills' long paths exceed one stdio flush, which
+# under `set -e` silently killed the installer after "Skills linked" (CI 996).
+SENTINEL=$(find -L "$SKILLS_DST" -maxdepth 2 -name "SKILL.md" -print -quit 2>/dev/null)
 if [ -z "$SENTINEL" ] || [ ! -r "$SENTINEL" ]; then
   report_problem "no readable sentinel SKILL.md under $SKILLS_DST"
 fi

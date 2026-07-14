@@ -275,7 +275,7 @@ assert_runtime_pointer() {
       .path == "skills/pre-mortem/" or .path == "skills/post-mortem/" or
       .path == "skills/pre_mortem/" or .path == "skills/post_mortem/"
     )] | length) == 0 and
-    .capability_summary.skills == 62 and
+    .capability_summary.skills == 63 and
     .capability_summary.skills == (.surfaces.skills | length) and
     .capability_summary.total == (.capabilities | length) and
     .capability_summary.total == (
@@ -346,6 +346,52 @@ JSON
     tests/fixtures/four-umbrella-wave-drift/upstream-overlap.json \
     tests/fixtures/four-umbrella-wave-drift/out-of-manifest.json
 
-  run "$checker" --phase=verify S1
+  # The happy-path verify must run in a HERMETIC sandbox, not against the live
+  # repo. The S1 wave's frozen base is now hundreds of commits behind HEAD (the
+  # wave is long complete), so `verify S1` on the live tree always reports
+  # out-of-manifest drift, and CI's shallow (fetch-depth: 2) checkout cannot even
+  # resolve the frozen base object ("slice base SHA is unavailable"). A repo where
+  # HEAD == base == origin/main with a clean tree exercises the SAME checker path
+  # — manifest + receipt validation, fixture ownership, empty base..HEAD diff,
+  # empty upstream overlap — and legitimately passes (exit 0). The out-of-manifest
+  # REJECT direction is covered by the sibling "S1 drift guard rejects a committed
+  # out-of-manifest path" test.
+  local sandbox="$BATS_TEST_TMPDIR/clean-verify"
+  local remote="$BATS_TEST_TMPDIR/clean-verify.git"
+  mkdir -p "$sandbox/scripts" "$sandbox/docs/contracts" "$sandbox/tests/fixtures"
+  git init --bare "$remote" >/dev/null
+  git -C "$sandbox" init -b main >/dev/null
+  git -C "$sandbox" config user.name "S1 verify test"
+  git -C "$sandbox" config user.email "s1-verify@example.invalid"
+
+  cp "$REPO_ROOT/scripts/check-four-umbrella-wave-drift.sh" "$sandbox/scripts/"
+  cp "$REPO_ROOT/scripts/check-file-manifest-overlap.sh" "$sandbox/scripts/"
+  cp -R "$DRIFT_FIXTURES" "$sandbox/tests/fixtures/four-umbrella-wave-drift"
+  cat >"$sandbox/docs/contracts/four-umbrella-write-manifests.json" <<'JSON'
+{
+  "schema_version": 1,
+  "s1_frozen_base_sha": "0000000000000000000000000000000000000000",
+  "slices": {"S1": {"paths": ["skills/premortem/**"]}}
+}
+JSON
+  printf '.agents/\n' >"$sandbox/.gitignore"
+  git -C "$sandbox" add .
+  git -C "$sandbox" commit -m "base" >/dev/null
+  git -C "$sandbox" remote add origin "$remote"
+  git -C "$sandbox" push -u origin main >/dev/null
+
+  local base digest
+  base="$(git -C "$sandbox" rev-parse HEAD)"
+  # Digest with the SAME algorithm the checker uses (python hashlib sha256 of the
+  # manifest bytes), so the receipt validates and this stays portable off Linux.
+  digest="$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' \
+    "$sandbox/docs/contracts/four-umbrella-write-manifests.json")"
+  mkdir -p "$sandbox/.agents/evidence/four-umbrella"
+  printf '{"schema_version":1,"slice":"S1","base_sha":"%s","manifest_sha256":"%s"}\n' \
+    "$base" "$digest" >"$sandbox/.agents/evidence/four-umbrella/s1-base.json"
+
+  # HEAD == base == origin/main, tree clean, no out-of-manifest changes -> PASS.
+  run bash -c 'cd "$1" && bash scripts/check-four-umbrella-wave-drift.sh --phase=verify S1' _ "$sandbox"
   [[ "$status" -eq 0 ]]
+  [[ "$output" == *"four-umbrella wave drift: PASS"* ]]
 }

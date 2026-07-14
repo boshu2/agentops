@@ -28,7 +28,6 @@ Feature: Evolve runs a goal-driven compounding loop
     Then it ships a single bounded slice via /rpi, gated by build + test + lint
     And it reverts the slice rather than landing red
 
-  @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Cycle feedback respects the four umbrellas
     When an RPI cycle reaches validation
     Then evidence flows from Validate to Learn to the orchestrator

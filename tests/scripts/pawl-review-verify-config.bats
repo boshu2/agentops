@@ -32,6 +32,13 @@ setup() {
   SCRIPT="$REPO_ROOT/scripts/pawl-review.sh"
   HOOK="$REPO_ROOT/scripts/lib/verify-config.sh"
   AO="$AO_BIN_BUILT"
+  # The e2e tests run the REAL pawl-review.sh with the real ao; its preflight
+  # `ao gate check --fast` runs against the throwaway reviewed repo and fails
+  # there (unrelated gates go red on a 2-commit temp repo). These tests exercise
+  # the review_timeout config reaching the cold exec, not the preflight, so opt
+  # out of it (the documented PAWL_NO_PREFLIGHT=1 escape). Harmless to the HOOK
+  # unit tests, which never invoke pawl-review.sh.
+  export PAWL_NO_PREFLIGHT=1
   TMP="$(mktemp -d)"
   ORIG_DIR="$PWD"
   BIN="$TMP/bin"; mkdir -p "$BIN"

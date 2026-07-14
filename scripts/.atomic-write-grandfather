@@ -14,7 +14,6 @@
 # Regenerate with:  bash scripts/check-atomic-write-ratchet.sh --regenerate
 # (regenerate at LAND time, after the final rebase; hand-audit the list.)
 cli/cmd/ao/corpus_snapshot.go
-cli/cmd/ao/eval_outcomes_ingest.go
 cli/cmd/ao/handoff.go
 cli/cmd/ao/live_status.go
 cli/cmd/ao/loop_blocked.go

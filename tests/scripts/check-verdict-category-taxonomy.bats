@@ -32,6 +32,7 @@ _verdict_with_category() {
   "findings": [
     {"severity": "critical", "description": "step 3 consumes an artifact no prior step produced", "location": "plan:step3"$catfield}
   ],
+  "observations": [],
   "not_checked": [],
   "validated_at": "2026-06-05T00:00:00Z",
   "validator_session": "sess-judge-1",

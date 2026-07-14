@@ -23,6 +23,12 @@ func (executor *Executor) Execute(ctx context.Context, args []string, streams be
 	if executor == nil || executor.tracker == nil {
 		return fmt.Errorf("beads tracker executor is not configured")
 	}
+	// A cobra command invoked outside Execute (direct RunE calls in tests or
+	// embedding) carries a nil context; exec.CommandContext panics on nil.
+	// Background preserves the no-cancellation semantics such callers had.
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	resolution, err := executor.tracker.Resolve()
 	if err != nil {
 		return err

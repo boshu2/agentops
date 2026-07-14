@@ -78,3 +78,9 @@ beads-bv                         # tracker-triage primitive; lost its only incom
 converge                         # thin memo over the `ao converge` command (driving-adapter); no peer skill edge by design, like status
 using-gc                         # gc-substrate operator skill; drives the external gc CLI, no peer skill edge by design
 gc-membrane                      # JIT close-door reference loaded by using-gc via Read; no frontmatter edge by design
+
+# --- name-compatibility pointers (redirect_to a canonical skill; pure aliases with no pipeline role) ---
+pre-mortem                       # compatibility pointer → premortem; redirect-only, no peer skill edge by design
+pre_mortem                       # compatibility pointer → premortem; redirect-only, no peer skill edge by design
+post-mortem                      # compatibility pointer → postmortem; redirect-only, no peer skill edge by design
+post_mortem                      # compatibility pointer → postmortem; redirect-only, no peer skill edge by design

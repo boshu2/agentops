@@ -95,7 +95,7 @@ setup() {
   for file in \
     "$REPO/skills/validate/SKILL.md" \
     "$REPO/skills-codex/validate/SKILL.md" \
-    "$REPO/skills-codex-overrides/crank/references/failure-recovery.md" \
+    "$REPO/skills-codex/crank/references/failure-recovery.md" \
     "$REPO/images/gemini/skills/discovery/SKILL.md" \
     "$REPO/docs/brownian-ratchet.md"; do
     run grep -Ei 'fresh-context|fresh context|cross-family|helper' "$file"
@@ -107,7 +107,7 @@ setup() {
   done
 
   run grep -F 'After 3 failures, escalate:' \
-    "$REPO/skills-codex-overrides/crank/references/failure-recovery.md"
+    "$REPO/skills-codex/crank/references/failure-recovery.md"
   [ "$status" -ne 0 ]
   run grep -F 'failed 3x, manual intervention needed' \
     "$REPO/images/gemini/skills/discovery/SKILL.md"

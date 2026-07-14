@@ -15,11 +15,6 @@ import (
 
 const semanticSealFilename = "semantic-seal.json"
 
-const (
-	beadsContextDebtPath   = "cli/internal/commands/beads/module.go"
-	beadsContextDebtSHA256 = "b12905e003a327ccff1b31ff6f077c0e69bffe4956c00435cf29dcefd1ac6dae"
-)
-
 type semanticSealManifest struct {
 	SchemaVersion int                 `json:"schema_version"`
 	Class         string              `json:"class"`
@@ -47,24 +42,6 @@ type semanticEvidenceDocument struct {
 	Class         string            `json:"class"`
 	CandidateSHA  string            `json:"candidate_sha"`
 	SourceDigests map[string]string `json:"source_digests"`
-}
-
-func filterAcceptedSemanticDebt(root string, violations []Violation) []Violation {
-	if _, err := os.Stat(filepath.Join(root, ".git")); err != nil {
-		return violations
-	}
-	source, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(beadsContextDebtPath)))
-	if err != nil || digestBytes(source) != beadsContextDebtSHA256 {
-		return violations
-	}
-	filtered := violations[:0]
-	for _, violation := range violations {
-		if violation.Rule == RuleContext && violation.Path == beadsContextDebtPath {
-			continue
-		}
-		filtered = append(filtered, violation)
-	}
-	return filtered
 }
 
 func checkSemanticSeal(root, expectedCandidate string) ([]Violation, error) {
@@ -231,7 +208,7 @@ func SemanticProductionGate(expectedCandidate string) ([]Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(root)
+	defer func() { _ = os.RemoveAll(root) }()
 	changedSource := []byte("changed source\n")
 	generated := []byte("generated from source\n")
 	if err := os.WriteFile(filepath.Join(root, "source.txt"), changedSource, 0o600); err != nil {
@@ -328,6 +305,71 @@ func checkGeneratedEvidence(root string, manifest semanticSealManifest) []Violat
 	return violations
 }
 
+// recursiveCommandNode is a discovered cobra command literal plus whether it is runnable.
+type recursiveCommandNode struct {
+	node     ast.Node
+	runnable bool
+}
+
+// collectCommandDefinition records a cobra command literal assigned to an identifier.
+func collectCommandDefinition(node ast.Node, aliases map[string]string, commands map[string]recursiveCommandNode) {
+	assignment, ok := node.(*ast.AssignStmt)
+	if !ok || len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
+		return
+	}
+	name, nameOK := assignment.Lhs[0].(*ast.Ident)
+	literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
+	if nameOK && literalOK {
+		commands[name.Name] = recursiveCommandNode{node: literal, runnable: cobraCommandRunnable(literal)}
+	}
+}
+
+// collectCommandGraphEdges records AddCommand parent→child edges and clicontract attachment counts.
+func collectCommandGraphEdges(node ast.Node, aliases map[string]string, edges map[string][]string, attachments map[string]int) {
+	call, ok := node.(*ast.CallExpr)
+	if !ok {
+		return
+	}
+	selector, selectorOK := call.Fun.(*ast.SelectorExpr)
+	if !selectorOK {
+		return
+	}
+	if selector.Sel.Name == "AddCommand" {
+		if parent, parentOK := selector.X.(*ast.Ident); parentOK {
+			for _, argument := range call.Args {
+				if child, childOK := argument.(*ast.Ident); childOK {
+					edges[parent.Name] = append(edges[parent.Name], child.Name)
+				}
+			}
+		}
+	}
+	if selector.Sel.Name == "Attach" {
+		pkg, pkgOK := selector.X.(*ast.Ident)
+		if pkgOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && len(call.Args) > 0 {
+			if command, commandOK := call.Args[0].(*ast.Ident); commandOK {
+				attachments[command.Name]++
+			}
+		}
+	}
+}
+
+// collectCommandRoots records identifiers returned as command roots.
+func collectCommandRoots(node ast.Node, commands map[string]recursiveCommandNode, roots map[string]bool) {
+	statement, ok := node.(*ast.ReturnStmt)
+	if !ok {
+		return
+	}
+	for _, result := range statement.Results {
+		root, rootOK := result.(*ast.Ident)
+		if !rootOK {
+			continue
+		}
+		if _, commandOK := commands[root.Name]; commandOK {
+			roots[root.Name] = true
+		}
+	}
+}
+
 func checkRecursiveContractsSource(path string, source []byte) ([]Violation, error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, source, 0)
@@ -335,53 +377,14 @@ func checkRecursiveContractsSource(path string, source []byte) ([]Violation, err
 		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
 	}
 	aliases := sourceImportAliases(file)
-	type commandNode struct {
-		node     ast.Node
-		runnable bool
-	}
-	commands := map[string]commandNode{}
+	commands := map[string]recursiveCommandNode{}
 	edges := map[string][]string{}
 	attachments := map[string]int{}
 	roots := map[string]bool{}
 	ast.Inspect(file, func(node ast.Node) bool {
-		if assignment, ok := node.(*ast.AssignStmt); ok && len(assignment.Lhs) == 1 && len(assignment.Rhs) == 1 {
-			name, nameOK := assignment.Lhs[0].(*ast.Ident)
-			literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
-			if nameOK && literalOK {
-				commands[name.Name] = commandNode{node: literal, runnable: cobraCommandRunnable(literal)}
-			}
-		}
-		call, ok := node.(*ast.CallExpr)
-		if ok {
-			selector, selectorOK := call.Fun.(*ast.SelectorExpr)
-			if selectorOK && selector.Sel.Name == "AddCommand" {
-				parent, parentOK := selector.X.(*ast.Ident)
-				if parentOK {
-					for _, argument := range call.Args {
-						if child, childOK := argument.(*ast.Ident); childOK {
-							edges[parent.Name] = append(edges[parent.Name], child.Name)
-						}
-					}
-				}
-			}
-			if selectorOK && selector.Sel.Name == "Attach" {
-				pkg, pkgOK := selector.X.(*ast.Ident)
-				if pkgOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && len(call.Args) > 0 {
-					if command, commandOK := call.Args[0].(*ast.Ident); commandOK {
-						attachments[command.Name]++
-					}
-				}
-			}
-		}
-		if statement, ok := node.(*ast.ReturnStmt); ok {
-			for _, result := range statement.Results {
-				if root, rootOK := result.(*ast.Ident); rootOK {
-					if _, commandOK := commands[root.Name]; commandOK {
-						roots[root.Name] = true
-					}
-				}
-			}
-		}
+		collectCommandDefinition(node, aliases, commands)
+		collectCommandGraphEdges(node, aliases, edges, attachments)
+		collectCommandRoots(node, commands, roots)
 		return true
 	})
 	reachable := map[string]bool{}
@@ -443,13 +446,9 @@ func cobraCommandRunnable(literal *ast.CompositeLit) bool {
 	return false
 }
 
-func checkOutputSource(path string, source []byte) ([]Violation, error) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, path, source, 0)
-	if err != nil {
-		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
-	}
-	aliases := sourceImportAliases(file)
+// collectStructuredFunctions reports the functions that call clicontract.OutputStructured
+// and whether any structured contract exists at all.
+func collectStructuredFunctions(file *ast.File, aliases map[string]string) (map[string]bool, bool) {
 	structuredFunctions := map[string]bool{}
 	structured := false
 	for _, declaration := range file.Decls {
@@ -474,53 +473,52 @@ func checkOutputSource(path string, source []byte) ([]Violation, error) {
 			structuredFunctions[function.Name.Name] = true
 		}
 	}
-	runnables := map[string]ast.Node{}
-	structuredAttachments := map[string]int{}
-	ast.Inspect(file, func(node ast.Node) bool {
-		if assignment, ok := node.(*ast.AssignStmt); ok && len(assignment.Lhs) == 1 && len(assignment.Rhs) == 1 {
-			name, nameOK := assignment.Lhs[0].(*ast.Ident)
-			literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
-			if nameOK && literalOK && cobraCommandRunnable(literal) {
-				runnables[name.Name] = literal
-			}
-		}
-		if statement, ok := node.(*ast.ReturnStmt); ok {
-			for _, result := range statement.Results {
-				literal, literalOK := cobraCommandLiteral(result, aliases)
-				if literalOK && cobraCommandRunnable(literal) {
-					runnables[fmt.Sprintf("@%d", fset.Position(literal.Pos()).Line)] = literal
-				}
-			}
-		}
-		call, ok := node.(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok || selector.Sel.Name != "Attach" || len(call.Args) < 2 {
-			return true
-		}
-		pkg, pkgOK := selector.X.(*ast.Ident)
-		command, commandOK := call.Args[0].(*ast.Ident)
-		contractCall, callOK := call.Args[1].(*ast.CallExpr)
-		if !callOK {
-			return true
-		}
-		contractName, nameOK := contractCall.Fun.(*ast.Ident)
-		if pkgOK && commandOK && nameOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && structuredFunctions[contractName.Name] {
-			structuredAttachments[command.Name]++
-		}
-		return true
-	})
-	if !structured {
-		return nil, nil
-	}
-	var violations []Violation
-	for name, node := range runnables {
-		if structuredAttachments[name] != 1 {
-			violations = append(violations, Violation{Rule: RuleOutput, Path: path, Line: fset.Position(node.Pos()).Line, Message: fmt.Sprintf("structured output contract must be attached exactly once to runnable %s", name)})
+	return structuredFunctions, structured
+}
+
+// collectOutputRunnable records runnable cobra commands defined by assignment or returned inline.
+func collectOutputRunnable(node ast.Node, aliases map[string]string, fset *token.FileSet, runnables map[string]ast.Node) {
+	if assignment, ok := node.(*ast.AssignStmt); ok && len(assignment.Lhs) == 1 && len(assignment.Rhs) == 1 {
+		name, nameOK := assignment.Lhs[0].(*ast.Ident)
+		literal, literalOK := cobraCommandLiteral(assignment.Rhs[0], aliases)
+		if nameOK && literalOK && cobraCommandRunnable(literal) {
+			runnables[name.Name] = literal
 		}
 	}
+	if statement, ok := node.(*ast.ReturnStmt); ok {
+		for _, result := range statement.Results {
+			literal, literalOK := cobraCommandLiteral(result, aliases)
+			if literalOK && cobraCommandRunnable(literal) {
+				runnables[fmt.Sprintf("@%d", fset.Position(literal.Pos()).Line)] = literal
+			}
+		}
+	}
+}
+
+// collectStructuredAttachment counts clicontract.Attach calls that bind a structured contract.
+func collectStructuredAttachment(node ast.Node, aliases map[string]string, structuredFunctions map[string]bool, structuredAttachments map[string]int) {
+	call, ok := node.(*ast.CallExpr)
+	if !ok {
+		return
+	}
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok || selector.Sel.Name != "Attach" || len(call.Args) < 2 {
+		return
+	}
+	pkg, pkgOK := selector.X.(*ast.Ident)
+	command, commandOK := call.Args[0].(*ast.Ident)
+	contractCall, callOK := call.Args[1].(*ast.CallExpr)
+	if !callOK {
+		return
+	}
+	contractName, nameOK := contractCall.Fun.(*ast.Ident)
+	if pkgOK && commandOK && nameOK && aliases[pkg.Name] == "github.com/boshu2/agentops/cli/internal/clicontract" && structuredFunctions[contractName.Name] {
+		structuredAttachments[command.Name]++
+	}
+}
+
+// appendHumanTextViolations flags fmt.Fprint* human-text formatting under a structured contract.
+func appendHumanTextViolations(file *ast.File, aliases map[string]string, fset *token.FileSet, path string, violations []Violation) []Violation {
 	ast.Inspect(file, func(node ast.Node) bool {
 		call, ok := node.(*ast.CallExpr)
 		if !ok {
@@ -536,6 +534,34 @@ func checkOutputSource(path string, source []byte) ([]Violation, error) {
 		}
 		return true
 	})
+	return violations
+}
+
+func checkOutputSource(path string, source []byte) ([]Violation, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, path, source, 0)
+	if err != nil {
+		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
+	}
+	aliases := sourceImportAliases(file)
+	structuredFunctions, structured := collectStructuredFunctions(file, aliases)
+	runnables := map[string]ast.Node{}
+	structuredAttachments := map[string]int{}
+	ast.Inspect(file, func(node ast.Node) bool {
+		collectOutputRunnable(node, aliases, fset, runnables)
+		collectStructuredAttachment(node, aliases, structuredFunctions, structuredAttachments)
+		return true
+	})
+	if !structured {
+		return nil, nil
+	}
+	var violations []Violation
+	for name, node := range runnables {
+		if structuredAttachments[name] != 1 {
+			violations = append(violations, Violation{Rule: RuleOutput, Path: path, Line: fset.Position(node.Pos()).Line, Message: fmt.Sprintf("structured output contract must be attached exactly once to runnable %s", name)})
+		}
+	}
+	violations = appendHumanTextViolations(file, aliases, fset, path, violations)
 	return violations, nil
 }
 
@@ -597,13 +623,17 @@ func checkUniversalEffectsSource(path string, source []byte) ([]Violation, error
 	return violations, nil
 }
 
-func checkTrackerExecutionSource(path string, source []byte) ([]Violation, error) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, path, source, 0)
-	if err != nil {
-		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
-	}
-	aliases := sourceImportAliases(file)
+// trackerLaunchState tracks a discovered exec launch and the guarantees it satisfies.
+type trackerLaunchState struct {
+	node         ast.Node
+	contextAware bool
+	resolvedName string
+	workDir      bool
+	childEnv     bool
+}
+
+// collectExecAliases returns the local aliases under which "os/exec" is imported.
+func collectExecAliases(file *ast.File) map[string]bool {
 	execAliases := map[string]bool{}
 	for _, spec := range file.Imports {
 		if spec.Path.Value != `"os/exec"` {
@@ -615,92 +645,114 @@ func checkTrackerExecutionSource(path string, source []byte) ([]Violation, error
 		}
 		execAliases[name] = true
 	}
-	type launchState struct {
-		node         ast.Node
-		contextAware bool
-		resolvedName string
-		workDir      bool
-		childEnv     bool
+	return execAliases
+}
+
+// collectContextParams returns the parameter names of type context.Context on a function.
+func collectContextParams(function *ast.FuncDecl, aliases map[string]string) map[string]bool {
+	contextParams := map[string]bool{}
+	if function.Type.Params == nil {
+		return contextParams
 	}
-	launches := map[string]*launchState{}
+	for _, field := range function.Type.Params.List {
+		selector, selectorOK := field.Type.(*ast.SelectorExpr)
+		if !selectorOK {
+			continue
+		}
+		pkg, pkgOK := selector.X.(*ast.Ident)
+		if !pkgOK || selector.Sel.Name != "Context" || aliases[pkg.Name] != "context" {
+			continue
+		}
+		for _, name := range field.Names {
+			contextParams[name.Name] = true
+		}
+	}
+	return contextParams
+}
+
+// recordTrackerLaunch registers an exec launch assigned to name, capturing whether it is
+// context-aware and the identifier that resolved the binary.
+func recordTrackerLaunch(name *ast.Ident, assignment *ast.AssignStmt, execAliases map[string]bool, contextParams map[string]bool, launches map[string]*trackerLaunchState) {
+	call, ok := assignment.Rhs[0].(*ast.CallExpr)
+	if !ok {
+		return
+	}
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	alias, aliasOK := selector.X.(*ast.Ident)
+	if !aliasOK || !execAliases[alias.Name] {
+		return
+	}
+	state := &trackerLaunchState{node: call}
+	if selector.Sel.Name == "CommandContext" && len(call.Args) >= 2 {
+		caller, callerOK := call.Args[0].(*ast.Ident)
+		binary, binaryOK := call.Args[1].(*ast.SelectorExpr)
+		if !binaryOK {
+			launches[name.Name] = state
+			return
+		}
+		resolved, resolvedOK := binary.X.(*ast.Ident)
+		if callerOK && contextParams[caller.Name] && resolvedOK && binary.Sel.Name == "Binary" {
+			state.contextAware = true
+			state.resolvedName = resolved.Name
+		}
+	}
+	launches[name.Name] = state
+}
+
+// applyTrackerLaunchField applies a Dir=WorkDir / Env=ChildEnv field assignment to a launch.
+func applyTrackerLaunchField(assignment *ast.AssignStmt, launches map[string]*trackerLaunchState) {
+	left, ok := assignment.Lhs[0].(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	name, ok := left.X.(*ast.Ident)
+	if !ok || launches[name.Name] == nil {
+		return
+	}
+	right, ok := assignment.Rhs[0].(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	resolved, resolvedOK := right.X.(*ast.Ident)
+	if !resolvedOK || resolved.Name != launches[name.Name].resolvedName {
+		return
+	}
+	switch {
+	case left.Sel.Name == "Dir" && right.Sel.Name == "WorkDir":
+		launches[name.Name].workDir = true
+	case left.Sel.Name == "Env" && right.Sel.Name == "ChildEnv":
+		launches[name.Name].childEnv = true
+	}
+}
+
+func checkTrackerExecutionSource(path string, source []byte) ([]Violation, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, path, source, 0)
+	if err != nil {
+		return nil, fmt.Errorf("parse semantic source %s: %w", path, err)
+	}
+	aliases := sourceImportAliases(file)
+	execAliases := collectExecAliases(file)
+	launches := map[string]*trackerLaunchState{}
 	for _, declaration := range file.Decls {
 		function, ok := declaration.(*ast.FuncDecl)
 		if !ok || function.Body == nil {
 			continue
 		}
-		contextParams := map[string]bool{}
-		if function.Type.Params != nil {
-			for _, field := range function.Type.Params.List {
-				selector, selectorOK := field.Type.(*ast.SelectorExpr)
-				if !selectorOK {
-					continue
-				}
-				pkg, pkgOK := selector.X.(*ast.Ident)
-				if !pkgOK || selector.Sel.Name != "Context" || aliases[pkg.Name] != "context" {
-					continue
-				}
-				for _, name := range field.Names {
-					contextParams[name.Name] = true
-				}
-			}
-		}
+		contextParams := collectContextParams(function, aliases)
 		ast.Inspect(function.Body, func(node ast.Node) bool {
 			assignment, ok := node.(*ast.AssignStmt)
 			if !ok || len(assignment.Lhs) != 1 || len(assignment.Rhs) != 1 {
 				return true
 			}
 			if name, ok := assignment.Lhs[0].(*ast.Ident); ok {
-				call, ok := assignment.Rhs[0].(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-				selector, ok := call.Fun.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-				alias, aliasOK := selector.X.(*ast.Ident)
-				if !aliasOK || !execAliases[alias.Name] {
-					return true
-				}
-				state := &launchState{node: call}
-				if selector.Sel.Name == "CommandContext" && len(call.Args) >= 2 {
-					caller, callerOK := call.Args[0].(*ast.Ident)
-					binary, binaryOK := call.Args[1].(*ast.SelectorExpr)
-					if !binaryOK {
-						launches[name.Name] = state
-						return true
-					}
-					resolved, resolvedOK := binary.X.(*ast.Ident)
-					if callerOK && contextParams[caller.Name] && resolvedOK && binary.Sel.Name == "Binary" {
-						state.contextAware = true
-						state.resolvedName = resolved.Name
-					}
-				}
-				launches[name.Name] = state
+				recordTrackerLaunch(name, assignment, execAliases, contextParams, launches)
 				return true
 			}
-			left, ok := assignment.Lhs[0].(*ast.SelectorExpr)
-			if !ok {
-				return true
-			}
-			name, ok := left.X.(*ast.Ident)
-			if !ok || launches[name.Name] == nil {
-				return true
-			}
-			right, ok := assignment.Rhs[0].(*ast.SelectorExpr)
-			if !ok {
-				return true
-			}
-			resolved, resolvedOK := right.X.(*ast.Ident)
-			if !resolvedOK || resolved.Name != launches[name.Name].resolvedName {
-				return true
-			}
-			switch {
-			case left.Sel.Name == "Dir" && right.Sel.Name == "WorkDir":
-				launches[name.Name].workDir = true
-			case left.Sel.Name == "Env" && right.Sel.Name == "ChildEnv":
-				launches[name.Name].childEnv = true
-			}
+			applyTrackerLaunchField(assignment, launches)
 			return true
 		})
 	}

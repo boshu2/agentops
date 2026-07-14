@@ -8,9 +8,14 @@
 # deliberate doctor parity, NOT strict package_count enforcement — a legacy
 # manifest without package_count that is otherwise consistent is doctor-green
 # and must be verifier-green too), and the recorded install-metadata
-# skill_count. When BOTH package_count and skills[] are present they must also
-# agree with each other (internal consistency). The historical bug this guards
-# against was a 66-vs-62 drift between a disk count and a stale manifest.
+# skill_count. package_count and skills[] are NOT required to agree: package_count
+# inventories every installable dir (incl. the 4 compatibility pointer twins)
+# while skills[] lists only canonical implementation rows, so on the real bundle
+# they are legitimately 66 vs 62 (see scripts/validate-codex-generated-manifest.sh
+# and installer-selftest.bats, which enforce disk==package_count, never
+# package_count==len(skills[])). The historical bug this guards against was a
+# 66-vs-62 drift between a disk count and a stale manifest — caught by the
+# manifest-count-vs-disk assertion, not by any package_count/skills[] equality.
 #
 # This script deliberately lives OUTSIDE install-codex.ps1 rather than adding an
 # in-script selftest: it re-derives every number from the files the installer
@@ -56,10 +61,19 @@ function Get-ManifestSkillCount {
   $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
   $hasCount = ($manifest.PSObject.Properties.Name -contains "package_count" -and $manifest.package_count -gt 0)
   $hasSkills = ($manifest.PSObject.Properties.Name -contains "skills")
-  if ($hasCount -and $hasSkills -and ([int]$manifest.package_count -ne @($manifest.skills).Count)) {
-    Fail ("Manifest is internally inconsistent: package_count=" + $manifest.package_count +
-      " but skills[] has " + @($manifest.skills).Count + " entries: $ManifestPath")
-  }
+  # package_count and skills[] are DELIBERATELY different counts and must not be
+  # forced equal: package_count inventories every installable skill directory
+  # (incl. the compatibility pointer twins pre-mortem/post-mortem/pre_mortem/
+  # post_mortem), while skills[] lists only canonical implementation rows. On the
+  # real bundle that is 66 vs 62. This split is the authoritative contract —
+  # enforced by scripts/validate-codex-generated-manifest.sh (package_count ==
+  # all installable dirs; len(skills[]) == dirs minus the 4 pointers), by the
+  # generator scripts/codex-sync.sh, by cli/internal/quality/skills_codex.go
+  # (doctor reads package_count when present), and by the bash installer selftest
+  # (installer-selftest.bats asserts disk==package_count only, NOT
+  # package_count==len(skills[])). The real 66-vs-62 bug this leg guards against
+  # is a STALE manifest whose package_count is missing/wrong, caught below by the
+  # manifest-count-vs-disk assertion — not by any internal equality check.
   if ($hasCount) {
     return [int]$manifest.package_count
   }

@@ -71,9 +71,11 @@ teardown() {
 
 # run_write [VAR=val ...] — invoke `pawl-verdict.sh write` hermetically:
 # hook/pre-push markers and repo-root overrides are UNSET unless a test
-# re-adds them (env applies -u first, then the NAME=VALUE args).
+# re-adds them (env applies -u first, then the NAME=VALUE args). PAWL_EDGE_FAIL_OPEN
+# is stripped too so the emit-failure cases here assert the strict default even
+# when the CI harness sets it suite-wide.
 run_write() {
-  env -u GIT_PREFIX -u GIT_DIR -u PAWL_PREPUSH -u PAWL_AUTOBIND -u AGENTOPS_REPO_ROOT -u AO_BIN "$@" \
+  env -u GIT_PREFIX -u GIT_DIR -u PAWL_PREPUSH -u PAWL_AUTOBIND -u AGENTOPS_REPO_ROOT -u AO_BIN -u PAWL_EDGE_FAIL_OPEN "$@" \
     bash "$SCRIPT" write age-autobind-test 0 \
     --disposition CONFIRMED --head "$SHA" \
     --author-context author-ctx \

@@ -108,7 +108,7 @@ Selection is a ladder re-read from the TOP after every productive cycle — neve
 git fetch origin && git status -sb              # survey guard — never `git pull --rebase` here
 mkdir -p .agents/evolve
 ao corpus inject --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
-bash scripts/evolve-update-session-state.sh 2>/dev/null || true  # refresh idle_streak + mode_repeat_streak
+# session state (idle_streak + mode_repeat_streak in .agents/evolve/session-state.json) is refreshed inline by the loop
 ```
 
 Recover cycle state from disk (survives compaction): `CYCLE`, `IDLE_STREAK`, `GENERATOR_EMPTY_STREAK`, `LAST_SELECTED_SOURCE`, `CLAIMED_WORK_REF` from `.agents/evolve/session-state.json`; the canonical cycle ledger is `cycle-history.jsonl` (both **local-only** — the nested `.agents/.gitignore` denies all paths, so record durable milestones in commit messages too). **Prior-failure injection (mandatory):** read the last 3 `cycle-history.jsonl` entries; for any `gate` containing `FAIL|BLOCKED`, extract failure keywords and grep `.agents/learnings/` before selecting work — without this the loop re-derives the same lessons each cycle. Detail: `references/cycle-history.md`, `references/convergence-mechanics.md`.
@@ -147,7 +147,7 @@ fi
 
 ### Step 2: Measure fitness
 
-Skip if `--beads-only`. Run `scripts/evolve-measure-fitness.sh` → `.agents/evolve/fitness-latest.json`. Full measurement, baseline capture, and post-cycle regression detection: `references/fitness-scoring.md`.
+Skip if `--beads-only`. Run `ao goals measure` → `.agents/evolve/fitness-latest.json`. Full measurement, baseline capture, and post-cycle regression detection: `references/fitness-scoring.md`.
 
 ### Step 3: Select work
 
@@ -175,7 +175,7 @@ Sync binaries and generated surfaces before the gate: Go CLI changes require bui
 
 ### Step 6: Log cycle + commit
 
-**PRODUCTIVE** (improved / regressed / harvested): log via `scripts/evolve-log-cycle.sh`, commit real changes. **IDLE** (nothing found even after generators): log `--result "unchanged"`; no git add, no commit. Record the XP/BDD/TDD trace via `--trace-json` when a cycle worked a product or goal-backed gap (goal hypothesis → gap → Gherkin → failing proof → red/green → refactor → validation → ratchet → goal reshape); trivial one-shot cycles record a `trace.exemption_reason`. Trace completeness is advisory, never a gate. See `references/cycle-history.md`, `references/quality-mode.md`.
+**PRODUCTIVE** (improved / regressed / harvested): append the cycle record to `.agents/evolve/cycle-history.jsonl`, commit real changes. **IDLE** (nothing found even after generators): append a record with `result: "unchanged"`; no git add, no commit. Record the XP/BDD/TDD trace in the cycle record's `trace` field when a cycle worked a product or goal-backed gap (goal hypothesis → gap → Gherkin → failing proof → red/green → refactor → validation → ratchet → goal reshape); trivial one-shot cycles record a `trace.exemption_reason`. Trace completeness is advisory, never a gate. See `references/cycle-history.md`, `references/quality-mode.md`.
 
 ### Step 7: Optional deterministic delivery
 
@@ -200,7 +200,7 @@ Release-shaped branches must follow [the release teardown contract](references/t
 - **Path:** emit the cycle summary to stdout; append `.agents/evolve/cycle-history.jsonl`; write `.agents/evolve/{fitness-latest.json,session-state.json}` and control files `{STOP,DORMANT,HANDOFF}`.
 - **Filename:** cycle history is `cycle-history.jsonl`; current fitness and resumable state use the fixed filenames above.
 - **Format:** stdout is Markdown; state and fitness use JSON; cycle history uses JSONL following `references/cycle-history.md`.
-- **Validation command:** run repo/profile tests, `bash scripts/check-wiring-closure.sh`, and `ao gate check --fast --scope head`; if delivery is selected, also require `bash skills/push/scripts/validate.sh`.
+- **Validation command:** run repo/profile tests and `ao gate check --fast --scope head` (which subsumes wiring closure); if delivery is selected, also require `bash skills/push/scripts/validate.sh`.
 - **Downstream handoff:** return cycle counts, fitness delta, result, stop reason, changed paths, immutable Validate verdict, and any deterministic delivery result; the next cycle consumes persisted state and unconsumed work.
 
 ## Quality Checklist
@@ -229,7 +229,7 @@ The trim moved procedure to references/, but these invariants stay inline — th
 
 - **Continuous values, not booleans:** every fitness metric reports a continuous value against a threshold (value/threshold), never a bare pass/fail.
 - **Oscillation sweep (always-on, Step 0):** Pre-populate quarantine list from `ao compile`'s oscillation report before selecting a goal.
-- **Wiring pre-flight (Step 5):** `if bash scripts/check-wiring-closure.sh; then proceed; else fix wiring first; fi` — never ship a cycle over broken wiring.
+- **Wiring pre-flight (Step 5):** `if ao gate check --fast --scope head; then proceed; else fix wiring first; fi` — never ship a cycle over broken wiring (wiring closure folded into the gate after the always.wiring-closure meta-gate was retired).
 - **The CLI is required for fitness measurement** — `ao goals measure` is the instrument; prose self-grades are not fitness.
 - **Harvested-first selection order:** Harvested `.agents/rpi/next-work.jsonl` work outranks generated candidates; drain the harvest before generating.
 - **Generator ladder (when the harvest is dry):** Testing improvements → Validation tightening and bug-hunt passes → Concrete feature suggestions.

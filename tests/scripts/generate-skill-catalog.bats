@@ -64,7 +64,7 @@ produces: []
 context_rel: []"
   run_gen --stdout
   [ "$status" -eq 0 ]
-  echo "$output" | jq -e '.schema_version == "1"' >/dev/null
+  echo "$output" | jq -e '.schema_version == "2"' >/dev/null
   echo "$output" | jq -e '.skill_count == 1' >/dev/null
   echo "$output" | jq -e '.skills | length == 1' >/dev/null
   echo "$output" | jq -e '.generated_at | startswith("20")' >/dev/null

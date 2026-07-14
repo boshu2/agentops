@@ -20,7 +20,6 @@ Feature: Discovery hands dense intent to planning
     Then it writes a JSON execution packet on disk for the next loop phase
     And the packet carries the goal, research, and design artifact references
 
-  @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Between-wave discovery requires an orchestrator request
     Given Learn emitted a cited material_change plan impact
     When the orchestrator requests a re-plan

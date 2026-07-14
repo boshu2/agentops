@@ -20,7 +20,6 @@ Feature: Pre-mortem stress-tests a plan before implementation
     And a wave may run parallel only if every row is conflict-free
     And a FAIL sends the plan back to /plan to re-slice (or run sequential)
 
-  @covered-by:scripts/validate-workflow-contract.sh
   Scenario: Between-wave Premortem receives an orchestrator-owned changed plan
     Given Validate has handed its verdict to Learn
     And the orchestrator accepted a material plan impact and changed the plan

@@ -21,13 +21,16 @@ func TestSemanticEscapeClassifierPositiveAndNegativeFixtures(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join("..", "..", ".."))
 	positive := []string{
 		"cli/internal/adapters/claim/tracker.go",
-		"cli/internal/commands/beads/module.go",
 		"cli/cmd/ao/root.go",
 	}
 	negative := []string{
 		"cli/internal/adapters/worktreeconfig/worktree_config.go",
 		"cli/internal/context/run.go",
 		"cli/internal/adapters/tracker_br/tracker_br_test.go",
+		// The beads module's context debt was paid (bb35feb0e routed tracker
+		// launches through trackerexec with cancellation propagated); pin the
+		// clean state so the debt cannot silently return.
+		"cli/internal/commands/beads/module.go",
 	}
 	for _, path := range positive {
 		source, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(path)))

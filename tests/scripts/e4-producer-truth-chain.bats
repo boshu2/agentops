@@ -28,6 +28,11 @@ setup_file() {
 }
 
 setup() {
+  # This suite asserts the STRICT verdict->ledger EDGE contract (line 83 requires
+  # the PROV ledger to actually gain the edge). Strip any ambient
+  # PAWL_EDGE_FAIL_OPEN the CI bats harness sets suite-wide (wave 1), so a broken
+  # emit is a hard failure here rather than a silent warn-and-continue.
+  unset PAWL_EDGE_FAIL_OPEN
   WORK="$BATS_TEST_TMPDIR/proj"
   mkdir -p "$WORK"
   ( cd "$WORK" && git init -q && git config user.email t@t && git config user.name t \
@@ -76,7 +81,11 @@ print('%s %s' % (ti,to))
   # ── SILVER -> PROVENANCE: a CONFIRMED verdict emits a verdict->commit edge ──
   HEAD_SHA="$(git -C "$WORK" rev-parse HEAD)"
   EV="$WORK/evidence.txt"; printf 'reviewer ran\n' > "$EV"
-  ( cd "$WORK" && bash "$REPO_ROOT/scripts/pawl-verdict.sh" write ag-e4 0 \
+  # AO_BIN pins the trusted ao binary for the verdict->ledger edge emit. In CI
+  # `ao` is NOT on PATH, so without this pin pawl-verdict.sh finds no trusted ao
+  # and the edge never binds ("no trusted ao binary found"). $AO is the built
+  # binary resolved in setup_file (test already skipped above if empty).
+  ( cd "$WORK" && AO_BIN="$AO" bash "$REPO_ROOT/scripts/pawl-verdict.sh" write ag-e4 0 \
       --disposition CONFIRMED --head "$HEAD_SHA" \
       --author-context e4-author --author-family claude --mode fresh-context \
       --refuter codex:CONFIRMED:e4-refuter:"$EV" --dir "$WORK/verdicts" ) >/dev/null

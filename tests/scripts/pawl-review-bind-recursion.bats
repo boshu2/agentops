@@ -83,7 +83,11 @@ _add_trivial_bind_commit() {
   git add README.md
   git commit --quiet -m "feat(y): sneaky change #trivial"
   TIP_SHA="$(git rev-parse HEAD)"
-  run bash "$SCRIPT" age-rev-test
+  # This case tests the WALK-BACK waiver (a #trivial tip touching non-provenance
+  # files is not walked back). pawl-review's newer, orthogonal PAWL-AMEND-GUARD
+  # hard-refuses that exact commit shape *before* the walk-back logic runs, so
+  # opt it out here to exercise the waiver path this test is about.
+  run env PAWL_NO_AMEND_GUARD=1 bash "$SCRIPT" age-rev-test
   [ "$status" -eq 0 ]
   [[ "$output" != *"walked back"* ]]
   [ "$(jq -r .head_sha "$VFILE")" = "$TIP_SHA" ]

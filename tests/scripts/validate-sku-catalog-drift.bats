@@ -42,7 +42,7 @@ import os, sys
 sys.path.insert(0, os.path.join(os.environ["REPO_ROOT"], "scripts", "lib"))
 import sku_extract
 valid, _ = sku_extract.scan_command_tree(os.environ["AO_BIN"])
-assert sku_extract.resolve_command_path("ao inject --context x", valid) == ("inject",)
+assert sku_extract.resolve_command_path("ao status --json", valid) == ("status",)
 assert sku_extract.resolve_command_path("ao schedule", valid) is None
 if ("goals", "measure") in valid:
     assert sku_extract.resolve_command_path("ao goals measure", valid) == ("goals", "measure")
@@ -84,7 +84,7 @@ cat = {"capabilities": [
 fails = sku_catalog.check_linkage_integrity(cat, valid)
 assert len(fails) == 1 and "ao schedule" in fails[0], fails
 cat2 = {"capabilities": [
-    {"sku": "skill:ok", "type": "skill", "drives_commands": ["ao inject"]},
+    {"sku": "skill:ok", "type": "skill", "drives_commands": ["ao status"]},
 ]}
 assert sku_catalog.check_linkage_integrity(cat2, valid) == []
 print("ok")

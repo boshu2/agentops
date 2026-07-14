@@ -41,6 +41,10 @@ STUB
   export AGENTOPS_PAWL_VERDICT_DIR="$TMP/verdicts"; mkdir -p "$AGENTOPS_PAWL_VERDICT_DIR"
   VFILE="$AGENTOPS_PAWL_VERDICT_DIR/age-eu-test.json"
   export PAWL_NO_SERVICE=1
+  # This file asserts the STRICT fail-closed edge-unbound exit. Strip any
+  # ambient PAWL_EDGE_FAIL_OPEN the CI harness sets suite-wide; the one test
+  # that wants warn-and-continue sets it inline on its own `env` invocation.
+  unset PAWL_EDGE_FAIL_OPEN
 }
 teardown() { cd "$ORIG_DIR"; rm -rf "$TMP"; }
 

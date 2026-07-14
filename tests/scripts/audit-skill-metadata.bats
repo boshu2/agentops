@@ -138,23 +138,17 @@ mkskill() {
     # Neither ever existed as a skill dir; both are intentional self/cross-refs
     # to absorbed triggers, so they are tolerated known-danglers, not rot.
     #
-    # >>> WHEN THE FOLDED-TRIGGER EDGES ARE REPOINTED/REMOVED: update to 0 <<<
-    # (at which point this becomes the clean-tree pin).
-    EXPECTED_UNRESOLVED=2
+    # 2026-07-13 drain landed: both folded-trigger edges were repointed/removed,
+    # so this is now the clean-tree pin the 2026-06-23 note anticipated. Any
+    # unresolved edge from here on is fresh rot and must surface here.
+    EXPECTED_UNRESOLVED=0
     run bash "$SCRIPT" --skills-root "$REPO_ROOT/skills"
     [ "$status" -eq 0 ]
     # Anchor the count with its stable preceding text ("checked, ") so the glob
-    # cannot match on a LEADING digit: a bare *"2 unresolved..."* substring is
-    # also contained in "12 unresolved...", so 10 new rot edges (count 12) would
-    # fail open. "checked, 2 unresolved" does not appear in "checked, 12 unresolved".
+    # cannot match on a LEADING digit: a bare *"0 unresolved..."* substring is
+    # also contained in "10 unresolved...", so 10 new rot edges would fail open.
+    # "checked, 0 unresolved" does not appear in "checked, 10 unresolved".
     [[ "$output" == *"checked, ${EXPECTED_UNRESOLVED} unresolved context_rel.with edge(s)"* ]]
-
-    # Pin the EXACT tolerated edges by IDENTITY, not just the count: a count-only
-    # pin would pass even if a NEW dangling edge replaced one folded-trigger edge
-    # (count stays 2), masking fresh rot. Assert both known folded-trigger
-    # danglers are the ones present, so any substitution surfaces here too.
-    [[ "$output" == *"codex-exec/SKILL.md: context_rel.with -> 'codex-sandbox-evidence'"* ]]
-    [[ "$output" == *"workflow-builder/SKILL.md: context_rel.with -> 'operating-loop-workflow'"* ]]
 }
 
 @test "unknown flag exits 2" {
