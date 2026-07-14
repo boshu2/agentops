@@ -31,6 +31,12 @@ func (Factory) Command(
 	args []string,
 	streams Streams,
 ) *ResolvedCommand {
+	// A cobra command invoked outside Execute (direct RunE calls in tests or
+	// embedding) carries a nil context; exec.CommandContext panics on nil.
+	// Background preserves the no-cancellation semantics such callers had.
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	command := exec.CommandContext(ctx, resolution.Binary, args...) // #nosec G204 -- trackerresolve constrains the binary to br|bd.
 	command.Dir = resolution.WorkDir
 	if resolution.ChildEnv != nil {

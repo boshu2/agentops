@@ -15,11 +15,6 @@ import (
 
 const semanticSealFilename = "semantic-seal.json"
 
-const (
-	beadsContextDebtPath   = "cli/internal/commands/beads/module.go"
-	beadsContextDebtSHA256 = "b12905e003a327ccff1b31ff6f077c0e69bffe4956c00435cf29dcefd1ac6dae"
-)
-
 type semanticSealManifest struct {
 	SchemaVersion int                 `json:"schema_version"`
 	Class         string              `json:"class"`
@@ -47,24 +42,6 @@ type semanticEvidenceDocument struct {
 	Class         string            `json:"class"`
 	CandidateSHA  string            `json:"candidate_sha"`
 	SourceDigests map[string]string `json:"source_digests"`
-}
-
-func filterAcceptedSemanticDebt(root string, violations []Violation) []Violation {
-	if _, err := os.Stat(filepath.Join(root, ".git")); err != nil {
-		return violations
-	}
-	source, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(beadsContextDebtPath)))
-	if err != nil || digestBytes(source) != beadsContextDebtSHA256 {
-		return violations
-	}
-	filtered := violations[:0]
-	for _, violation := range violations {
-		if violation.Rule == RuleContext && violation.Path == beadsContextDebtPath {
-			continue
-		}
-		filtered = append(filtered, violation)
-	}
-	return filtered
 }
 
 func checkSemanticSeal(root, expectedCandidate string) ([]Violation, error) {

@@ -161,7 +161,7 @@ func Check(options Options) ([]Violation, error) {
 		return nil, err
 	}
 	violations = append(violations, semanticViolations...)
-	violations = filterAcceptedSemanticDebt(root, violations)
+
 	violations = dedupe(violations)
 	sortViolations(violations)
 	return violations, nil
