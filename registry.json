@@ -426,7 +426,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 18
+        "reference_count": 19
       },
       {
         "name": "skill-builder",
@@ -2501,7 +2501,7 @@
         "ao beads exec"
       ],
       "path": "skills/rpi/",
-      "references": 18
+      "references": 19
     },
     {
       "sku": "skill:sbh",

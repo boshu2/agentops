@@ -9,6 +9,52 @@ fail() {
   exit 1
 }
 
+crank_reference_targets() {
+  local source_file="$1"
+  grep -Eo '\]\([^)]*references/[A-Za-z0-9._/-]+\.md(#[^)]*)?\)' "$source_file" |
+    sed -E 's/^\]\(//; s/\)$//; s/#.*$//' |
+    sort -u || true
+}
+
+resolve_markdown_target() {
+  local source_file="$1" target="$2"
+  python3 - "$source_file" "$target" <<'PY'
+from pathlib import Path
+import sys
+
+source = Path(sys.argv[1]).resolve()
+print((source.parent / sys.argv[2]).resolve())
+PY
+}
+
+check_crank_references() {
+  local repo_root="$1" source_file="$2" target resolved relative
+  repo_root="$(cd "$repo_root" && pwd -P)"
+
+  while IFS= read -r target; do
+    [[ -n "$target" ]] || continue
+    resolved="$(resolve_markdown_target "$source_file" "$target")"
+    case "$resolved" in
+      "$repo_root"/*) ;;
+      *) fail "Crank reference escapes repository: $target" ;;
+    esac
+    [[ -f "$resolved" ]] || fail "Crank links missing reference: $target"
+    relative="${resolved#"$repo_root"/}"
+    if grep -Eqi 'bd[[:space:]]+close|br[[:space:]]+close|merge[[:space:]]+queue|push[[:space:]]+lands|pawl-review|pawl-land|ao[[:space:]]+land' "$resolved"; then
+      fail "reachable Crank reference retains delivery/tracker authority: $relative"
+    fi
+  done < <(crank_reference_targets "$source_file")
+}
+
+if [[ "${1:-}" == "--check-crank-references" ]]; then
+  [[ $# -eq 3 ]] || fail 'usage: --check-crank-references <repo-root> <source-file>'
+  check_crank_references "$2" "$3"
+  echo 'validation-delivery boundary references: PASS'
+  exit 0
+fi
+
+[[ $# -eq 0 ]] || fail "unknown argument: $1"
+
 lifecycle=(
   "$ROOT/skills/validate/SKILL.md"
   "$ROOT/skills/learn/SKILL.md"
@@ -41,14 +87,7 @@ grep -Fq 'Push cannot change the verdict, close tracker state, or complete the l
 # contracts. Scan every reference directly consumed by Crank for imperative
 # landing/close machinery. Historical files may remain on disk, but they cannot
 # stay connected to the active execution contract.
-while IFS= read -r ref; do
-  [[ -n "$ref" ]] || continue
-  file="$ROOT/skills/crank/$ref"
-  [[ -f "$file" ]] || fail "Crank links missing reference: $ref"
-  if grep -Eqi 'bd[[:space:]]+close|br[[:space:]]+close|merge[[:space:]]+queue|push[[:space:]]+lands|pawl-review|pawl-land|ao[[:space:]]+land' "$file"; then
-    fail "reachable Crank reference retains delivery/tracker authority: skills/crank/$ref"
-  fi
-done < <(grep -Eo 'references/[A-Za-z0-9._/-]+\.md' "$ROOT/skills/crank/SKILL.md" | sort -u)
+check_crank_references "$ROOT" "$ROOT/skills/crank/SKILL.md"
 
 grep -Fq 'Crank may report the tracker mutations that appear appropriate, but it does not' \
   "$ROOT/skills/crank/references/team-coordination.md" ||
