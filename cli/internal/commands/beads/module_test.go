@@ -12,6 +12,7 @@ import (
 	"time"
 
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
+	"github.com/boshu2/agentops/cli/internal/epicstatus"
 	"github.com/boshu2/agentops/cli/internal/scenarios"
 )
 
@@ -150,6 +151,182 @@ func (fake *fakeTrackerPorts) AppendEvent(path string, event any) error {
 func (fake *fakeTrackerPorts) ReadFile(path string) ([]byte, error) {
 	fake.calls = append(fake.calls, "read:"+path)
 	return fake.readOutput, nil
+}
+
+type handlerCancellationObservation struct {
+	name    string
+	ctx     context.Context
+	streams beadsapp.ExecStreams
+}
+
+type handlerCancellationProbe struct {
+	started chan handlerCancellationObservation
+	release chan struct{}
+}
+
+func (probe *handlerCancellationProbe) block(name string, ctx context.Context, streams beadsapp.ExecStreams) error {
+	probe.started <- handlerCancellationObservation{name: name, ctx: ctx, streams: streams}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-probe.release:
+		return errors.New("handler released before context cancellation")
+	}
+}
+
+type blockingTrackerExecutor struct {
+	probe *handlerCancellationProbe
+}
+
+func (executor blockingTrackerExecutor) Execute(ctx context.Context, _ []string, streams beadsapp.ExecStreams) error {
+	_, _ = streams.Stdout.Write([]byte("stdout before cancellation\n"))
+	_, _ = streams.Stderr.Write([]byte("stderr before cancellation\n"))
+	return executor.probe.block("exec", ctx, streams)
+}
+
+type blockingKnowledgeUseCases struct {
+	probe *handlerCancellationProbe
+}
+
+func (blockingKnowledgeUseCases) Available() bool { return true }
+func (useCases blockingKnowledgeUseCases) Verify(ctx context.Context, _ string) (*beadsapp.VerifyReport, error) {
+	return nil, useCases.probe.block("verify", ctx, beadsapp.ExecStreams{})
+}
+func (useCases blockingKnowledgeUseCases) Lint(ctx context.Context, _ string) (*beadsapp.LintReport, error) {
+	return nil, useCases.probe.block("lint", ctx, beadsapp.ExecStreams{})
+}
+func (useCases blockingKnowledgeUseCases) Harvest(ctx context.Context, _, _ string, _ bool) (beadsapp.HarvestResult, error) {
+	return beadsapp.HarvestResult{}, useCases.probe.block("harvest", ctx, beadsapp.ExecStreams{})
+}
+
+type blockingRecoveryUseCases struct {
+	probe *handlerCancellationProbe
+}
+
+func (useCases blockingRecoveryUseCases) StaleClaims(ctx context.Context, _ float64) ([]beadsapp.StaleEvent, error) {
+	return nil, useCases.probe.block("stale-claims", ctx, beadsapp.ExecStreams{})
+}
+func (useCases blockingRecoveryUseCases) Resume(ctx context.Context, _ string, _ beadsapp.ResumeOptions) (beadsapp.ResumeResult, error) {
+	return beadsapp.ResumeResult{}, useCases.probe.block("resume", ctx, beadsapp.ExecStreams{})
+}
+func (blockingRecoveryUseCases) EpicStatus(string) (epicstatus.Result, error) {
+	return epicstatus.Result{}, nil
+}
+
+func TestHandlersPropagateCommandCancellation(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   []string
+		module func(*handlerCancellationProbe) Module
+	}{
+		{
+			name: "exec",
+			args: []string{"exec", "list"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, blockingTrackerExecutor{probe: probe}, nil, nil, nil, nil, nil, nil)
+			},
+		},
+		{
+			name: "verify",
+			args: []string{"verify", "age-x"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, nil, nil, nil, blockingKnowledgeUseCases{probe: probe}, nil, nil, nil)
+			},
+		},
+		{
+			name: "lint",
+			args: []string{"lint"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, nil, nil, nil, blockingKnowledgeUseCases{probe: probe}, nil, nil, nil)
+			},
+		},
+		{
+			name: "harvest",
+			args: []string{"harvest", "age-x"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, nil, nil, nil, blockingKnowledgeUseCases{probe: probe}, nil, nil, nil)
+			},
+		},
+		{
+			name: "stale-claims",
+			args: []string{"stale-claims"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, nil, nil, blockingRecoveryUseCases{probe: probe}, nil, nil, nil, nil)
+			},
+		},
+		{
+			name: "resume",
+			args: []string{"resume", "age-x"},
+			module: func(probe *handlerCancellationProbe) Module {
+				return NewModule(nil, nil, nil, blockingRecoveryUseCases{probe: probe}, nil, nil, nil, nil)
+			},
+		},
+	}
+
+	type commandContextKey struct{}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			probe := &handlerCancellationProbe{
+				started: make(chan handlerCancellationObservation, 1),
+				release: make(chan struct{}),
+			}
+			root := test.module(probe).Command()
+			var stdout, stderr bytes.Buffer
+			stdin := strings.NewReader("stdin payload")
+			root.SetIn(stdin)
+			root.SetOut(&stdout)
+			root.SetErr(&stderr)
+			root.SetArgs(test.args)
+
+			ctx, cancel := context.WithCancel(context.WithValue(context.Background(), commandContextKey{}, test.name))
+			done := make(chan error, 1)
+			go func() {
+				done <- root.ExecuteContext(ctx)
+			}()
+
+			var observation handlerCancellationObservation
+			select {
+			case observation = <-probe.started:
+			case <-time.After(2 * time.Second):
+				cancel()
+				t.Fatal("handler did not enter its blocking operation")
+			}
+			if observation.name != test.name {
+				t.Errorf("operation = %q, want %q", observation.name, test.name)
+			}
+			if got := observation.ctx.Value(commandContextKey{}); got != test.name {
+				t.Errorf("context marker = %v, want %q", got, test.name)
+			}
+			if observation.ctx.Done() != ctx.Done() {
+				t.Error("operation did not receive the Cobra command context")
+			}
+			if test.name == "exec" {
+				if observation.streams.Stdin != stdin || observation.streams.Stdout != &stdout || observation.streams.Stderr != &stderr {
+					t.Error("exec streams were not preserved")
+				}
+			}
+
+			cancel()
+			select {
+			case err := <-done:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("ExecuteContext() error = %v, want context.Canceled", err)
+				}
+			case <-time.After(2 * time.Second):
+				close(probe.release)
+				<-done
+				t.Fatal("handler did not return promptly after command cancellation")
+			}
+			if test.name == "exec" {
+				if got := stdout.String(); !strings.Contains(got, "stdout before cancellation\n") {
+					t.Errorf("stdout = %q", got)
+				}
+				if got := stderr.String(); !strings.Contains(got, "stderr before cancellation\n") {
+					t.Errorf("stderr = %q", got)
+				}
+			}
+		})
+	}
 }
 
 func TestModuleOwnsDirectoryTrackerAndExecHandlers(t *testing.T) {
