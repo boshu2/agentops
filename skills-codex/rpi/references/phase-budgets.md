@@ -1,109 +1,29 @@
-# Phase Budgets Reference
+# Phase Budget Migration
 
-Time budgets for each RPI phase, scaled by complexity level. Prevents sessions from stalling in research or planning without producing actionable artifacts.
+Historical RPI implementations assigned independent time boxes, attempt
+allowances, and wave caps to individual phases. Those controls are retired.
+They could reset in a fresh process, disagree across references, and spend work
+without a durable admission.
 
-## Budget Tables
+The sole live contract is the persistent
+[pull-flow governor](pull-flow-governor.md):
 
-### Fast Complexity
+- initialization declares run-wide wave, reviewer-token, elapsed-time,
+  review-context, and deterministic-execution ceilings;
+- every Crank or Validate dispatch reports all projected charges, including
+  explicit zeroes;
+- the governor validates and persists an admission before dispatch;
+- fresh processes resume the same counters;
+- a meter refuses only an action with a positive projected charge that would
+  exceed the declared ceiling;
+- phase results return evidence to the orchestrator and never increment a
+  private attempt, retry, helper, or wave allowance.
 
-| Phase | Budget | Rationale |
-|-------|--------|-----------|
-| Research | 3 min | Quick keyword search + 2-3 file reads |
-| Plan | 2 min | Single epic, 1-3 issues, no deep decomposition |
-| Premortem | 1 min | Inline check, no council spawn |
-| Implementation | unlimited | Crank wave limits apply (MAX_EPIC_WAVES=50) |
-| Validation | 2 min | One focused fresh-context verdict |
-| Learn | 1 min | Bind observations and emit plan impact |
+Complexity may still scale the depth of Discovery, Premortem, and Validate. It
+does not create a second controller. A timeout or repeated result is evidence
+for `REPAIR`, `REPLAN`, or a breaker request; the persistent governor alone
+decides whether the run continues, enters `HOLD`, or reaches `ANDON`.
 
-### Standard Complexity
-
-| Phase | Budget | Rationale |
-|-------|--------|-----------|
-| Research | 5 min | Explore agent + knowledge lookup + file analysis |
-| Plan | 5 min | Epic decomposition, 3-6 issues with dependencies |
-| Premortem | 3 min | Quick council (2 judges) |
-| Implementation | unlimited | Crank wave limits apply |
-| Validation | 5 min | Focused independent acceptance verdict |
-| Learn | 1 min | Bind observations and emit plan impact |
-
-### Full Complexity
-
-| Phase | Budget | Rationale |
-|-------|--------|-----------|
-| Research | 10 min | Deep exploration, multiple Explore agents, cross-file analysis |
-| Plan | 10 min | Complex decomposition, 7+ issues, multi-wave dependency graph |
-| Premortem | 5 min | Full council (3+ judges), deep risk analysis |
-| Implementation | unlimited | Crank wave limits apply |
-| Validation | 10 min | Explicit deep or mixed acceptance review |
-| Learn | 2 min | Bind observations and emit plan impact |
-
-## Why Implementation Is Always Unlimited
-
-Implementation (crank) has its own backpressure mechanisms:
-- MAX_EPIC_WAVES = 50 (hard limit)
-- Per-wave acceptance checks (Step 5.5)
-- Per-task validation contracts
-- Retry limits on blocked/partial status
-
-Adding a time budget on top of these would create competing constraints that are hard to reason about. The wave limit is a better control than wall-clock time for implementation work.
-
-## Worked Examples
-
-### Example 1: Research Phase Expires
-
-```
-RPI mode: rpi-phased (complexity: standard)
-Phase: research (budget: 300s)
-
-[0:00]  /research "add user authentication"
-[1:30]  Explore agent returns relevant files
-[3:00]  Knowledge lookup finds 2 prior learnings
-[4:45]  Reading auth middleware patterns...
-[5:00]  BUDGET EXPIRED — research phase time-boxed at 300s
-
-Writing [TIME-BOXED] marker to .agents/rpi/phase-1-summary-*.md
-Auto-transitioning to plan phase with partial research artifacts.
-
-Note: Research produced file list + 2 learnings. Plan phase proceeds
-with available context. This is NOT a retry — attempt counter stays at 0.
-```
-
-### Example 2: Budget Expiry vs Premortem Repair
-
-```
-Phase: premortem (budget: 180s, attempt: 1/3)
-
-[0:00]  /premortem spawns council
-[2:30]  Council returns verdict: FAIL (3 critical risks)
-[2:30]  Verdict is FAIL → plan author repairs before another Premortem
-
-[2:30]  Re-running /plan with findings context...
-[4:00]  /premortem attempt 2 spawns council
-[5:00]  BUDGET EXPIRED at 300s (cumulative across retries)
-
-Writing [TIME-BOXED] marker. Auto-transitioning to implementation.
-Premortem verdict was FAIL but budget expired — proceed with WARN.
-Attempt counter: 2/3 (budget expiry does NOT count as attempt 3).
-```
-
-### Example 3: Custom Budget Override
-
-```bash
-/rpi --budget=research:180,plan:120 "quick API endpoint"
-
-# Result: research gets 3 min, plan gets 2 min
-# Other phases use complexity-derived defaults
-# Implementation remains unlimited
-```
-
-## Interaction with Other Controls
-
-| Control | Scope | Relationship to Budgets |
-|---------|-------|------------------------|
-| Repair attempts (3) | Premortem/implementation | Orthogonal — budget expiry is not a retry |
-| `--fast-path` | All phases | Sets fast budgets regardless of classification |
-| `--deep` | All phases | Sets full budgets regardless of classification |
-| `--no-budget` | All phases | Disables budgets entirely |
-| `--budget=<spec>` | Named phases | Overrides specific phase budgets |
-| Crank wave limit | Implementation | Separate backpressure mechanism |
-| Council timeout | Within phase | Council has its own per-judge timeout |
+There is no phase-specific budget flag or disable-budget escape. Operators who
+need different ceilings initialize a new run with explicit run-wide values;
+an existing run state is never silently replaced.

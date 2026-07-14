@@ -5,6 +5,8 @@ PASS=0; FAIL=0
 
 check() { if bash -c "$2"; then echo "PASS: $1"; PASS=$((PASS + 1)); else echo "FAIL: $1"; FAIL=$((FAIL + 1)); fi; }
 
+phase_control_pattern='MAX_EPIC_WAVES|wave=0|wave=\$\(\(wave|\$wave -ge 50|global wave limit \(50\)|max budget per task: 2|retry once|max 2|max 3 total attempts|--max-cycles|3 validation failures|3\+ failures|after 3 failures|max 2 attempts|after 2 attempts|max 2 retries|after 2 retries|Retry \$RETRY_COUNT/2|Premortem failed 3x|retry limit|MAX_RETRIES|Attempts: 3/3|attempt: 1/3|Attempt counter: 2/3|--budget='
+
 check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"
 check "SKILL.md has name: rpi" "grep -q '^name: rpi' '$SKILL_DIR/SKILL.md'"
@@ -36,6 +38,10 @@ check "run governor checker compiles" "python3 -m py_compile '$SKILL_DIR/scripts
 check "RPI routes Crank and Validate through persistent governor" "grep -q 'Crank and Validate request admission' '$SKILL_DIR/SKILL.md' && grep -q 'authorized:true' '$SKILL_DIR/SKILL.md'"
 check "RPI declares canonical disposition language" "grep -q 'NOTE.*REPAIR.*REPLAN.*HOLD.*ANDON' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references/pull-flow-governor.md'"
 check "RPI has no private three-attempt controller" "! grep -q '3 total attempts before' '$SKILL_DIR/SKILL.md'"
+check "RPI authoritative references have no private phase controller" \
+  "! rg -q -i '$phase_control_pattern' '$SKILL_DIR/SKILL.md' '$SKILL_DIR/references'"
+check "RPI protects HOLD and ANDON behind explicit authority ports" \
+  "grep -q 'can neither create nor clear.*HOLD' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'break.*helper.*human' '$SKILL_DIR/references/pull-flow-governor.md' && grep -q 'subparsers.add_parser(\"human\")' '$SKILL_DIR/scripts/run-governor.py'"
 check "critical constraints precede the core contract" "test \"\$(grep -n '^## Critical Constraints$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\" -lt \"\$(grep -n '^## Core Contract$' '$SKILL_DIR/SKILL.md' | head -1 | cut -d: -f1)\""
 
 packet_fixture="$(mktemp)"

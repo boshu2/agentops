@@ -122,14 +122,14 @@ After TEST WAVE, the lead runs the test suite. ALL new tests must FAIL:
 When the RED gate detects unexpected test passes:
 
 1. **Identify cause:** Tests that pass against current code validate existing behavior, not new requirements from the contract
-2. **Retry:** Re-spawn test writer with the unexpected-pass list and "must fail" constraint (max 2 retries)
-3. **Escalate:** After 2 retries, mark the issue as BLOCKER and fall back to standard IMPL (no TDD for that issue)
-4. **Log:** Record RED gate failure in wave checkpoint for postmortem analysis
+2. **Preserve evidence:** Record the unexpected-pass list and affected contract invariants
+3. **Return:** Stop the TEST action and return `BLOCKED` evidence to RPI
+4. **Re-enter explicitly:** Only an orchestrator decision plus a new durable admission may dispatch another TEST action
 
 ```bash
 # RED gate failure tracking
 if [[ ${#UNEXPECTED_PASSES[@]} -gt 0 ]]; then
-    bd comments add <issue-id> "RED GATE: ${#UNEXPECTED_PASSES[@]} tests passed unexpectedly. Retry $RETRY_COUNT/2." 2>/dev/null
+    bd comments add <issue-id> "RED GATE: ${#UNEXPECTED_PASSES[@]} tests passed unexpectedly. Returned to RPI." 2>/dev/null
 fi
 ```
 

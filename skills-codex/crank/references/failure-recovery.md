@@ -1,133 +1,55 @@
-# Failure Recovery
+# Failure Recovery Evidence
 
-## Validation Failure Handling
+Crank classifies failure evidence and returns it at the wave boundary. It does
+not own a retry allowance, wave cap, task budget, disposition transition, or
+helper consultation. RPI's persistent governor is the sole controller.
 
-**On swarm validation failure:**
+## Validation failure handling
 
-1. Preserve the failed issue identifier and evidence in the wave result.
-2. Return the proposed adjustment to the orchestrator; do not mutate tracker
-   terminal state from Crank.
-3. After 3 failures, take one bounded helper pass — hand the blocker, the
-   evidence, and what was tried to a fresh context or cross-family model
-   (`codex exec`, `/council`); resume on UNSTUCK. Escalate only what survives
-   it (never a second pass on the same blocker class):
-   ```bash
-   bd update <issue-id> --labels BLOCKER 2>/dev/null
-   bd comments add <issue-id> "ESCALATED: 3 validation failures. Helper pass: <ESCALATE|skipped>. Human review required." 2>/dev/null
-   ```
+When swarm validation fails:
 
-## Wave Limit Enforcement
+1. Preserve the failed issue identifier, runnable check, exit status, and
+   smallest useful output in the wave result.
+2. Record the attempted approach and any safe rollback point.
+3. Return `BLOCKED` or `PARTIAL` evidence to the orchestrator without changing
+   terminal tracker state or dispatching another worker.
+4. Let the orchestrator classify `REPAIR`, `REPLAN`, or breaker evidence and
+   request any later action through the persistent governor.
 
-```bash
-# CHECK GLOBAL LIMIT before each wave
-if [[ $wave -ge 50 ]]; then
-    echo "<promise>BLOCKED</promise>"
-    echo "Global wave limit (50) reached. Remaining issues:"
-    # Beads mode: bd children <epic-id> --status open
-    # TaskList mode: TaskList() → pending tasks
-    # STOP - do not continue
-fi
-```
+## Admission refusal
 
-## Pre-flight Check: Issues Exist
+Every wave begins with a durable `crank-wave` admission. If the governor
+refuses, Crank stops before dispatch and returns the refusal receipt. Crank must
+not infer remaining budget, initialize a replacement run, or translate the
+refusal into a helper request.
 
-**Verify there are issues to work on:**
+## Pre-flight: issues exist
 
-**If 0 ready issues found (beads mode) or 0 pending unblocked tasks (TaskList mode):**
-```
-STOP and return error:
-  "No ready issues found for this epic. Either:
-   - All issues are blocked (check dependencies)
-   - Epic has no child issues (run /plan first)
-   - All issues already completed"
-```
+Verify that beads mode has ready issues or TaskList mode has pending unblocked
+tasks. An empty ready set is evidence, not proof of epic completion. Report
+whether all children are complete, dependency-blocked, or absent, then return
+to the orchestrator.
 
-Also verify: epic has at least 1 child issue total. An epic with 0 children means /plan was not run.
+## Evidence taxonomy
 
-Do NOT proceed with empty issue list - this produces false "epic complete" status.
+| Signal | Proposed classification | Evidence to return |
+|--------|-------------------------|--------------------|
+| Transient transport or service error | `REPAIR` candidate | Error, affected action, and safe replay boundary |
+| Partial completion or conflicting write scope | `REPLAN` candidate | Completed scope, remaining scope, and collision |
+| Missing API, impossible contract, or external dependency | Breaker candidate | Blocker class, failed assumption, and required authority |
+| Repeated unchanged outcome | No-progress or oscillation candidate | Approach history and identical result signature |
 
-## Final Evidence Handoff
+These are proposals only. Crank never turns a proposed classification into a
+run disposition.
 
-When all issues complete, Crank assembles the wave checkpoints and acceptance
-roll-up for one final Validate invocation by the caller/orchestrator. Per-wave
-checks do not substitute for that independent verdict. Crank itself does not
-invoke Validate, Learn, Discovery, or Premortem.
+## Final evidence handoff
 
-Wave checkpoint verdicts may advise the caller about validation depth, but
-never authorize a skip:
+Assemble wave checkpoints, changed-file attribution, acceptance commands, and
+unresolved findings for Validate. Per-wave deterministic checks do not replace
+the independent verdict. The verdict flows through Learn before the
+orchestrator chooses another action.
 
-```bash
-# Check wave checkpoint verdicts — clean waves scale the gate down, never skip it
-ALL_PASS=true
-for checkpoint in .agents/crank/wave-*-checkpoint.json; do
-    verdict=$(jq -r '.acceptance_verdict // "UNKNOWN"' "$checkpoint" 2>/dev/null)
-    if [[ "$verdict" != "PASS" ]]; then
-        ALL_PASS=false
-        break
-    fi
-done
-```
-
-**If all waves passed:** suggest the default one fresh independent Validate
-judge. **If any wave had WARN, FAIL, or missing evidence:** include those facts
-in the Validate packet; deeper review remains an explicit caller choice.
-
-Changed files remain part of the handoff:
-
-```bash
-# Get list of changed files from recent commits
-git diff --name-only HEAD~10 2>/dev/null | sort -u
-```
-
-The resulting Validate verdict must flow to Learn and then the orchestrator.
-No direct retry occurs in this reference.
-
-## Node Repair Operator
-
-Structured recovery replaces simple retry logic. When a task fails:
-
-### Step 1: Classify
-
-Read the failure output and classify:
-
-| Signal | Classification |
-|--------|---------------|
-| "timeout", "connection refused", "EAGAIN", test passed on retry | RETRY |
-| Partial completion, >3 files changed, merge conflict mid-task | DECOMPOSE |
-| "blocked by", "spec impossible", "missing API", external dep | PRUNE |
-
-### Step 2: Execute Recovery
-
-**RETRY:** Return a proposed retry adjustment with the failure evidence. Only
-the orchestrator may place it into a later wave or update its tracker record.
-
-**DECOMPOSE:** Return a proposed split with acceptance and write scopes for each
-candidate slice. Do not create or close tracker records inside Crank.
-
-**PRUNE:** Take one bounded helper pass, then return only what survives it.
-Hand the blocker, the evidence, and what was tried to a fresh context or
-cross-family model (`codex exec`, `/council`); on UNSTUCK resume with its next
-action; on ESCALATE (or a refusal-lane / explicit-judgment class, which skips
-the helper) mark the wave evidence for human judgment. The orchestrator owns any
-tracker change.
-Never a second helper pass on the same blocker class.
-
-### Step 3: Budget Check
-
-| Action | Cost | Running Total |
-|--------|------|--------------|
-| RETRY | 1 | +1 |
-| DECOMPOSE | 2 | terminal (no further repair) |
-| PRUNE | 0 | terminal (escalated) |
-
-Max budget per task: 2. Exhausted budget → auto-PRUNE.
-
-## Escalation
-
-When issues cannot be resolved automatically:
-- Take one bounded helper pass per blocker class first (fresh context,
-  cross-family model, or `/council` — [pawls.md §Escalation](../../../docs/contracts/pawls.md#escalation-the-circuit-breaker-model));
-  refusal-lane / explicit-judgment classes skip it
-- Mark what survives with BLOCKER label (beads mode)
-- Output `<promise>BLOCKED</promise>` with reason
-- List remaining issues for human review
+When a fresh-context helper is warranted, the governor first enters `HOLD` with
+the matching blocker class. Crank does not invoke the helper itself and does
+not mark human-only state. It simply preserves enough evidence for the
+authority-bearing RPI command to act.

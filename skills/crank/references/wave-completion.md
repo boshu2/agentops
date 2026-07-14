@@ -2,7 +2,7 @@
 
 **External Gate Enforcement:** After each worker completes, the orchestrator (not the worker) runs the gate command. Workers must not declare their own completion. See `external-gate-protocol.md`. Swarm executes per-task validation (see `skills/shared/validation-contract.md`); crank trusts swarm validation and focuses on beads sync.
 
-**For verification details, retry logic, and failure escalation, read `skills/crank/references/team-coordination.md` and `skills/crank/references/failure-recovery.md`.**
+**For verification details and failure evidence, read `skills/crank/references/team-coordination.md` and `skills/crank/references/failure-recovery.md`.**
 
 ### Step 5.5: Wave Acceptance Check (MANDATORY)
 
@@ -17,7 +17,7 @@ read, verdict handoff, and CI-policy parity), read
 
 ### Step 5.7: Wave Checkpoint
 
-After each wave completes (post-vibe-gate, pre-next-wave), write `.agents/crank/wave-${wave}-checkpoint.json` with fields: `schema_version`, `wave`, `timestamp`, `tasks_completed`, `tasks_failed`, `files_changed`, `git_sha`, `acceptance_verdict` (from Step 5.5), `commit_strategy`, `mutations_this_wave`, `total_mutations`, `mutation_budget` (task_added limit 5, task_reordered limit 3), and `criterion_verdicts` (per-criterion roll-up — see below). On retry of the same wave, the file is overwritten.
+After each wave completes (post-vibe-gate, pre-next-wave), write `.agents/crank/wave-${wave}-checkpoint.json` with fields: `schema_version`, `wave`, `timestamp`, `tasks_completed`, `tasks_failed`, `files_changed`, `git_sha`, `acceptance_verdict` (from Step 5.5), `commit_strategy`, `mutations_this_wave`, `total_mutations`, `mutation_budget` (task_added limit 5, task_reordered limit 3), and `criterion_verdicts` (per-criterion roll-up — see below). A separately admitted re-execution of the same wave replaces the checkpoint with its newer evidence.
 
 **Per-criterion verdicts:** When the wave's beads carried an `acceptance_criteria` block (see Step 4 acceptance-criteria injection), record one verdict per criterion id:
 
@@ -67,7 +67,7 @@ wave exists. Do not loop to Step 4. The wave evidence must pass through
 Validate and Learn before the orchestrator may invoke Crank again. If no work
 remains, proceed to the final evidence summary.
 
-**For detailed check/retry logic, read `skills/crank/references/team-coordination.md`.**
+**For detailed check and return-boundary logic, read `skills/crank/references/team-coordination.md`.**
 
 ### Step 6.5: De-Sloppify Pass (Optional)
 

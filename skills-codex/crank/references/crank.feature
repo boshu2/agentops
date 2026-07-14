@@ -44,7 +44,8 @@ Feature: Crank executes one conflict-free epic wave
       or <promise>PARTIAL</promise>
     And it never claims completion without one
 
-  Scenario: The global wave cap bounds the run
-    Given cascading failures or circular dependencies
-    Then /crank halts at MAX_EPIC_WAVES (50) rather than looping unbounded
-    And reports BLOCKED with the reason
+  Scenario: The persistent governor bounds wave dispatch
+    Given a stable RPI run with declared run-wide ceilings
+    When /crank requests another wave admission
+    Then it dispatches only after the governor durably returns authorized true
+    And a refused admission returns BLOCKED evidence without resetting counters

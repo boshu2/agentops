@@ -8,8 +8,8 @@ delegation and operator visibility.
 
 **Declaration.** [`PRODUCT.md`](../../../PRODUCT.md) operational principle #5
 (two-tier execution) declares that phase skills own their own phase artifacts,
-gates, and retry policies. `/rpi` owns the lifecycle objective and phase order,
-not the internals of discovery, implementation, validation, or learning.
+gates, and internal mechanics. `/rpi` owns the lifecycle objective, phase order,
+and persistent governor; phases own no cross-phase retry or helper policy.
 
 **Enforcement.** This document plus
 [`scripts/check-skill-isolation.sh`](../../../scripts/check-skill-isolation.sh)

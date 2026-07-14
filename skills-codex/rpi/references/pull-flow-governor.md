@@ -48,12 +48,20 @@ python3 skills/rpi/scripts/run-governor.py admit \
 The command takes an exclusive per-run lock, validates the complete prior
 state, checks the projected charge, appends the admission, fsyncs a temporary
 file, atomically replaces the run state, fsyncs the directory, and only then
-returns `authorized:true`. Dispatch is illegal without that durable receipt.
-Concurrent or fresh-process callers therefore cannot oversubscribe the run.
+returns `authorized:true`. Complete validation means every declared schema
+constraint plus semantic consistency: exact object keys, types, admission
+sequence and identity, action-to-wave charge, accumulated usage, helper
+history, protected-disposition metadata, and authorization state. Dispatch is
+illegal without that durable receipt. Concurrent or fresh-process callers
+therefore cannot oversubscribe the run.
 
 All four meters are mandatory on every request, including explicit zeroes.
-Missing state, corrupt state, a missing meter, an unknown action, or an
-exceeded ceiling returns nonzero with `authorized:false`. A genuinely spent
+Missing state, corrupt state, a missing meter, an unknown action, or malformed
+control input returns nonzero with `authorized:false` and a neutral `NOTE`
+response; it does not mutate the run or manufacture `ANDON`. A meter blocks an
+action only when that action has a positive projected charge and the resulting
+usage would exceed its ceiling. Saturating the wave meter therefore blocks
+another Crank wave but not a zero-wave semantic review. A genuinely exceeded
 wave, time, token, context, deterministic-execution, cost, or quota ceiling
 sets `ANDON` and `helper.allowed:false`; a spent ceiling never buys recovery
 work.
@@ -78,22 +86,34 @@ Only these run dispositions exist:
 ## Breaker and helper rules
 
 Max-attempts, oscillation, and no-progress are stuckness signals. They enter
-`HOLD` and authorize exactly one bounded fresh-context helper consultation per
-blocker class. The helper advises; it does not dispatch, mutate, validate, or
-authorize delivery. A second consultation for the same blocker class fails
-closed as `ANDON`.
+`HOLD` with matching reason, blocker class, and `helper.allowed:true`, and
+authorize exactly one bounded fresh-context helper consultation per blocker
+class. The helper advises; it does not dispatch, validate, or authorize
+delivery. `UNSTUCK` plus a nonempty new approach is the explicit exit to
+`REPAIR`; `ESCALATE` is the explicit exit to `ANDON`. A malformed, mismatched,
+or repeated helper request is refused without changing the protected state. If
+the same blocker trips again after its helper was consumed, the breaker enters
+`ANDON`.
 
-Human-only judgment reaches `ANDON` directly. So does a genuinely spent hard
-time, cost, or quota ceiling. An ordinary failed check, a review refutation, or
-a retry count by itself never reaches `HOLD` or `ANDON`.
+Human-only judgment reaches `ANDON` directly. An explicit `human` command with
+a reason may move an operator-owned stop to `NOTE`, `REPAIR`, or `REPLAN`; the
+generic transition command cannot do so. Human authority cannot clear an
+exceeded hard ceiling. An ordinary failed check, a review refutation, or a
+retry count by itself never reaches `HOLD` or `ANDON`.
+
+Generic `transition` records only `NOTE`, `REPAIR`, or `REPLAN`, and only when
+the current state is not protected. It can neither create nor clear `HOLD` or
+`ANDON`; `break`, `helper`, and `human` are the explicit authority-bearing
+ports for those transitions.
 
 The command surface is:
 
 - `init` — create the one run state; refuses replacement.
 - `admit` — atomically charge and record work before dispatch.
-- `transition` — record one canonical orchestrator disposition.
+- `transition` — record an ordinary `NOTE`, `REPAIR`, or `REPLAN` disposition.
 - `break` — classify stuckness as `HOLD` or human-only work as `ANDON`.
 - `helper` — consume the one helper as `UNSTUCK` or `ESCALATE`.
+- `human` — explicitly release a non-ceiling `ANDON` under operator authority.
 
 ## Pull-flow boundary
 

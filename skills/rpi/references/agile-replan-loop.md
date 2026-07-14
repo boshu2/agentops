@@ -33,13 +33,12 @@ The orchestrator then applies the matching transition:
 
 ## Bounds (so agility ≠ thrash)
 
-Re-planning shares the run's circuit breakers — token/time budget, the attempt
-cap, and **oscillation detection** (if the plan flips the same decision back and
-forth across waves, stop and surface it). Honor the autonomous-session scope
-(CLAUDE.md): at ≥5 ships in one session, the postmortem checkpoint is mandatory
-and may itself end the session. The operator is touched only at the terminal
-objective or a breaker trip that survives its bounded helper pass — never just
-to approve a pivot.
+Re-planning uses the same persistent run governor as every other action.
+Projected token/time charges require admission, while max-attempts,
+oscillation, and no-progress evidence use the governor's protected breaker
+path. No phase or session-local checkpoint creates a second allowance. The
+operator is touched only at the terminal objective or an `ANDON` backed by the
+governor — never just to approve a pivot.
 
 ## Anti-patterns this rule kills
 

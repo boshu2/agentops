@@ -54,7 +54,8 @@ gt polecat nuke <rig>/<name> --force
 gt sling <issue> <rig>
 ```
 
-**Escalation trigger**: 3 consecutive nudge failures
+**Control boundary**: return the stuck-agent evidence to RPI. Crank does not
+count nudges or create a breaker.
 
 ---
 
@@ -100,7 +101,8 @@ bd comments add <issue> "EXPLICIT: The test_auth_flow test fails because X. Fix 
 gt sling <issue> <rig>
 ```
 
-**Escalation trigger**: 3 validation failures (one bounded helper pass first; human insight only for what survives it)
+**Control boundary**: return the validation evidence to RPI. The persistent
+governor owns any no-progress/oscillation breaker and helper eligibility.
 
 ---
 
@@ -186,7 +188,8 @@ gt sling <issue> <rig>
 # The new polecat reads the comment and continues from there
 ```
 
-**Escalation trigger**: 2 context limit failures (may need issue decomposition)
+**Control boundary**: return context-limit evidence and a proposed
+decomposition; Crank owns no local threshold.
 
 ---
 
@@ -230,7 +233,8 @@ git -C ./polecats/<polecat> reset --hard origin/main
 gt sling <issue> <rig>
 ```
 
-**Escalation trigger**: 2 conflict failures on same files (architectural issue)
+**Control boundary**: return the conflicting paths and proposed serialization
+or decomposition to the orchestrator.
 
 ---
 
@@ -262,8 +266,8 @@ gc session peek <agent> --lines 50 | grep -i "timeout\|429\|500\|network\|connec
 # Step 2: Check service status
 # (manual or via status page)
 
-# Step 3: If rate limit, apply backoff
-# Wait BACKOFF_BASE * 2^attempt before retry
+# Step 3: If rate limited, preserve the service response and retry-after hint
+# Return the evidence; any later dispatch requires a governor admission
 
 # Step 4: If outage, pause affected issues
 bd update <issue> --labels=WAITING_EXTERNAL
@@ -313,67 +317,46 @@ bd comments add <issue> "Previous polecat crashed. No partial work recovered."
 gt sling <issue> <rig>
 ```
 
-**Escalation trigger**: 2 crashes (may indicate systemic issue)
+**Control boundary**: return crash evidence and recovered state to RPI; Crank
+does not count crashes or self-authorize re-dispatch.
 
 ---
 
 ## Failure Handling Matrix
 
-| Failure Type | Detection Cost | Auto-Recovery | Retry Limit | Escalation Action |
-|--------------|----------------|---------------|-------------|-------------------|
-| Polecat Stuck | ~200 tokens | Nudge, nuke | 3 | BLOCKER + mail |
-| Validation Fail | ~150 tokens | Hints | 3 | BLOCKER + mail |
-| Dependency Deadlock | ~100 tokens | Remove dep | 1 | Immediate mail |
-| Context Limit | ~50 tokens | Checkpoint, re-sling | 2 | Decompose issue |
-| Git Conflict | ~100 tokens | Auto-resolve | 2 | BLOCKER + mail |
-| External Service | ~50 tokens | Backoff | 5 | WAITING label |
-| Polecat Crash | ~50 tokens | Clean re-sling | 2 | Check system |
+| Failure Type | Detection evidence | Proposed next move |
+|--------------|--------------------|--------------------|
+| Worker stuck | Last output and process state | Repair or no-progress breaker candidate |
+| Validation fail | Command, exit status, and focused output | Repair candidate |
+| Dependency deadlock | Dependency cycle | Re-plan candidate |
+| Context limit | Checkpoint and unfinished scope | Decomposition candidate |
+| Git conflict | Conflicting paths and owners | Serialize or re-plan candidate |
+| External service | Service response and retry-after hint | Wait/repair candidate |
+| Worker crash | Exit state and recovered files | Repair or systemic-breaker candidate |
 
-## Escalation Protocol
+## Escalation Evidence
 
-When MAX_RETRIES exhausted:
+When Crank cannot complete an admitted action, return one evidence packet:
 
 ```bash
-# 1. Mark issue as BLOCKER
-bd update <issue> --labels=BLOCKER
-
-# 2. Add detailed failure report
-bd comments add <issue> "$(cat <<'EOF'
-## AUTO-ESCALATION REPORT
+# Write the detailed failure report into the wave evidence packet
+cat <<'EOF'
+## BLOCKED ACTION REPORT
 
 **Issue**: <issue-id>
 **Epic**: <epic-id>
 **Failure Type**: <type>
-**Attempts**: 3/3
-
-### Attempt 1
-- Polecat: <name>
-- Duration: <time>
-- Failure: <reason>
-
-### Attempt 2
-- Polecat: <name>
-- Duration: <time>
-- Failure: <reason>
-
-### Attempt 3
-- Polecat: <name>
-- Duration: <time>
-- Failure: <reason>
-
-### Helper pass
-<ESCALATE with the helper's reasoning | skipped: refusal-lane / explicit-judgment>
+**Admitted action**: <admission-id>
+**Approach**: <what ran>
+**Failure**: <reason and evidence reference>
+**Blocker class candidate**: <class or none>
 
 ### Recommendation
 <what human should investigate>
 EOF
-)"
 
-# 3. Mail human (--human, not mayor/ since we ARE mayor)
-gt mail send --human -s "BLOCKER: <issue> - <failure-type>" -m "See issue for details"
-
-# 4. Continue epic (don't halt for one blocker)
-# Other issues can still proceed
+# Return the packet to RPI without mailing, invoking a helper, or dispatching
+# another worker. The governor owns any protected transition.
 ```
 
 ## Post-Failure Analysis
@@ -381,11 +364,11 @@ gt mail send --human -s "BLOCKER: <issue> - <failure-type>" -m "See issue for de
 After epic completion (or major milestone), analyze failures:
 
 ```bash
-# List all issues that required retries
+# List issues that returned blocked or waiting evidence
 bd list --parent=<epic> --has-label=BLOCKER
 bd list --parent=<epic> --has-label=WAITING_EXTERNAL
 
-# Check retry patterns
+# Check recurring failure signatures
 # (requires custom tooling or log analysis)
 
 # Feed into retrospective

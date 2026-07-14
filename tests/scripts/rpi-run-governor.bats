@@ -32,6 +32,38 @@ admit_zero_cost_wave() {
     --deterministic-executions 0
 }
 
+admit_zero_cost_review() {
+  local run_id="$1"
+  python3 "$GOVERNOR" admit \
+    --state-dir "$STATE_DIR" \
+    --run-id "$run_id" \
+    --action semantic-review \
+    --reviewer-tokens 0 \
+    --elapsed-seconds 0 \
+    --review-contexts 0 \
+    --deterministic-executions 0
+}
+
+assert_corrupt_state_refused() {
+  local run_id="$1"
+  local filter="$2"
+  local state_file="$STATE_DIR/$run_id.json"
+  local altered="$BATS_TEST_TMPDIR/$run_id.altered.json"
+
+  init_run "$run_id" >/dev/null
+  jq "$filter" "$state_file" >"$altered"
+  mv "$altered" "$state_file"
+  before="$(shasum -a 256 "$state_file" | awk '{print $1}')"
+
+  run admit_zero_cost_wave "$run_id"
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.reason' <<<"$output")" = "corrupt-state" ]
+  after="$(shasum -a 256 "$state_file" | awk '{print $1}')"
+  [ "$before" = "$after" ]
+}
+
 @test "fresh processes resume one run and admit exactly three default waves" {
   run init_run run-resume
   [ "$status" -eq 0 ]
@@ -123,6 +155,14 @@ admit_zero_cost_wave() {
       --action semantic-review \
       --reviewer-tokens 0 --elapsed-seconds 0 \
       --review-contexts 0 --deterministic-executions 0
+    [ "$status" -eq 0 ]
+
+    run python3 "$GOVERNOR" admit \
+      --state-dir "$STATE_DIR" --run-id "$spent_id" \
+      --action semantic-review \
+      --reviewer-tokens 0 --elapsed-seconds 0 \
+      --review-contexts 0 --deterministic-executions 0 \
+      "$option" 1
     [ "$status" -ne 0 ]
     [ "$(jq -r '.reason' <<<"$output")" = "hard-ceiling:${usage_key}" ]
     [ "$(jq -r '.helper.allowed' <<<"$output")" = "false" ]
@@ -132,12 +172,14 @@ admit_zero_cost_wave() {
 @test "missing state corrupt state and missing meters are non-authorizing" {
   run admit_zero_cost_wave missing-run
   [ "$status" -ne 0 ]
-  [ "$(jq -r '.disposition' <<<"$output")" = "ANDON" ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
 
   printf '{broken\n' >"$STATE_DIR/corrupt-run.json"
   run admit_zero_cost_wave corrupt-run
   [ "$status" -ne 0 ]
-  [ "$(jq -r '.disposition' <<<"$output")" = "ANDON" ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
 
   init_run missing-meter >/dev/null
   run python3 "$GOVERNOR" admit \
@@ -148,17 +190,43 @@ admit_zero_cost_wave() {
     --elapsed-seconds 1 \
     --review-contexts 1
   [ "$status" -ne 0 ]
-  [ "$(jq -r '.disposition' <<<"$output")" = "ANDON" ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
   [ "$(jq -r '.reason' <<<"$output")" = "missing-meter" ]
+}
+
+@test "persisted state is fully schema-conformant and semantically consistent before authorization" {
+  assert_corrupt_state_refused corrupt-top-level '.unexpected = true'
+  assert_corrupt_state_refused corrupt-authorized '.authorized = "true"'
+  assert_corrupt_state_refused corrupt-admission '.admissions = [{"bogus":true}]'
+  assert_corrupt_state_refused corrupt-history '.helper_history = {"stuck":{"result":"BOGUS"}}'
+  assert_corrupt_state_refused corrupt-schema '.reason = ""'
+  assert_corrupt_state_refused corrupt-schema-version '.schema_version = true'
+  assert_corrupt_state_refused corrupt-nested '.limits.unexpected = 1'
+  assert_corrupt_state_refused corrupt-usage '.usage.reviewer_tokens = 1'
+  assert_corrupt_state_refused corrupt-authorization-reason '.reason = "admitted-before-dispatch"'
+  assert_corrupt_state_refused corrupt-sequence \
+    '.admissions = [{"id":"corrupt-sequence:2","sequence":2,"action":"crank-wave","charge":{"waves":1,"reviewer_tokens":0,"elapsed_seconds":0,"review_contexts":0,"deterministic_executions":0},"status":"recorded"}] | .usage.waves = 1'
+  assert_corrupt_state_refused corrupt-bool-sequence \
+    '.admissions = [{"id":"corrupt-bool-sequence:1","sequence":true,"action":"crank-wave","charge":{"waves":1,"reviewer_tokens":0,"elapsed_seconds":0,"review_contexts":0,"deterministic_executions":0},"status":"recorded"}] | .usage.waves = 1'
 }
 
 @test "only canonical dispositions are accepted" {
   init_run run-dispositions >/dev/null
-  for disposition in NOTE REPAIR REPLAN HOLD ANDON; do
+  for disposition in NOTE REPAIR REPLAN; do
     run python3 "$GOVERNOR" transition \
       --state-dir "$STATE_DIR" --run-id run-dispositions \
       --disposition "$disposition" --reason test
     [ "$status" -eq 0 ]
+  done
+
+  for disposition in HOLD ANDON; do
+    run python3 "$GOVERNOR" transition \
+      --state-dir "$STATE_DIR" --run-id run-dispositions \
+      --disposition "$disposition" --reason illegal
+    [ "$status" -ne 0 ]
+    [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+    [ "$(jq -r '.disposition' "$STATE_DIR/run-dispositions.json")" = "REPLAN" ]
   done
 
   run python3 "$GOVERNOR" transition \
@@ -192,8 +260,97 @@ admit_zero_cost_wave() {
       --blocker-class repeated-failure --result UNSTUCK \
       --new-approach "try again"
     [ "$status" -ne 0 ]
-    [ "$(jq -r '.disposition' <<<"$output")" = "ANDON" ]
+    [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+    [ "$(jq -r '.disposition' "$STATE_DIR/$run_id.json")" = "REPAIR" ]
   done
+}
+
+@test "generic transitions cannot bypass HOLD or ANDON and explicit authorities own exits" {
+  init_run protected-hold >/dev/null
+  python3 "$GOVERNOR" break \
+    --state-dir "$STATE_DIR" --run-id protected-hold \
+    --kind max-attempts --blocker-class same-failure >/dev/null
+  [ "$(jq -r '.helper.blocker_class' "$STATE_DIR/protected-hold.json")" = "same-failure" ]
+
+  run python3 "$GOVERNOR" transition \
+    --state-dir "$STATE_DIR" --run-id protected-hold \
+    --disposition NOTE --reason bypass
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.disposition' "$STATE_DIR/protected-hold.json")" = "HOLD" ]
+  [ "$(jq -r '.helper.allowed' "$STATE_DIR/protected-hold.json")" = "true" ]
+  [ "$(jq -r '.helper.blocker_class' "$STATE_DIR/protected-hold.json")" = "same-failure" ]
+
+  run python3 "$GOVERNOR" helper \
+    --state-dir "$STATE_DIR" --run-id protected-hold \
+    --blocker-class same-failure --result UNSTUCK \
+    --new-approach "use a different implementation boundary"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "REPAIR" ]
+
+  init_run protected-andon >/dev/null
+  python3 "$GOVERNOR" break \
+    --state-dir "$STATE_DIR" --run-id protected-andon \
+    --kind human-judgment --blocker-class operator-choice >/dev/null
+  run python3 "$GOVERNOR" transition \
+    --state-dir "$STATE_DIR" --run-id protected-andon \
+    --disposition REPAIR --reason bypass
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.disposition' "$STATE_DIR/protected-andon.json")" = "ANDON" ]
+
+  run python3 "$GOVERNOR" human \
+    --state-dir "$STATE_DIR" --run-id protected-andon \
+    --disposition REPAIR --reason "operator supplied authority"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "REPAIR" ]
+  run admit_zero_cost_review protected-andon
+  [ "$status" -eq 0 ]
+}
+
+@test "malformed control input and malformed HOLD metadata refuse without manufacturing ANDON" {
+  init_run malformed-control >/dev/null
+  run python3 "$GOVERNOR" break \
+    --state-dir "$STATE_DIR" --run-id malformed-control \
+    --kind max-attempts
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.disposition' "$STATE_DIR/malformed-control.json")" = "NOTE" ]
+
+  python3 "$GOVERNOR" break \
+    --state-dir "$STATE_DIR" --run-id malformed-control \
+    --kind max-attempts --blocker-class repair-loop >/dev/null
+  run python3 "$GOVERNOR" helper \
+    --state-dir "$STATE_DIR" --run-id malformed-control \
+    --blocker-class repair-loop --result UNSTUCK
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.disposition' "$STATE_DIR/malformed-control.json")" = "HOLD" ]
+
+  init_run malformed-hold >/dev/null
+  jq '.disposition = "HOLD" | .reason = "max-attempts" | .helper = {"allowed":true}' \
+    "$STATE_DIR/malformed-hold.json" >"$BATS_TEST_TMPDIR/malformed-hold.json"
+  mv "$BATS_TEST_TMPDIR/malformed-hold.json" "$STATE_DIR/malformed-hold.json"
+  run admit_zero_cost_wave malformed-hold
+  [ "$status" -ne 0 ]
+  [ "$(jq -r '.disposition' <<<"$output")" = "NOTE" ]
+  [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
+}
+
+@test "three admitted Crank waves do not block a zero-wave semantic review" {
+  init_run validate-after-three >/dev/null
+  admit_zero_cost_wave validate-after-three >/dev/null
+  admit_zero_cost_wave validate-after-three >/dev/null
+  admit_zero_cost_wave validate-after-three >/dev/null
+
+  run python3 "$GOVERNOR" admit \
+    --state-dir "$STATE_DIR" --run-id validate-after-three \
+    --action semantic-review \
+    --reviewer-tokens 1 --elapsed-seconds 1 \
+    --review-contexts 1 --deterministic-executions 1
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.usage.waves' <<<"$output")" -eq 3 ]
+  [ "$(jq -r '.admissions[-1].charge.waves' <<<"$output")" -eq 0 ]
+  [ "$(jq -r '.admissions[-1].action' <<<"$output")" = "semantic-review" ]
 }
 
 @test "helper ESCALATE and human-only judgment reach ANDON" {
@@ -224,12 +381,12 @@ admit_zero_cost_wave() {
   [ "$(jq -r '.authorized' <<<"$output")" = "false" ]
 }
 
-@test "Crank and RPI contracts contain no phase-local wave retry or helper multiplier" {
-  run rg -n \
-    'MAX_EPIC_WAVES|wave=0|wave=\$\(\(wave|Budget: 2 per task|3 total attempts before|RPI_MAX_WAVES' \
+@test "all authoritative Crank and RPI references contain no private phase controller" {
+  run rg -n -i \
+    'MAX_EPIC_WAVES|wave=0|wave=\$\(\(wave|\$wave -ge 50|global wave limit \(50\)|max budget per task: 2|retry once|max 2|max 3 total attempts|--max-cycles|3 validation failures|3\+ failures|after 3 failures|max 2 attempts|after 2 attempts|max 2 retries|after 2 retries|Retry \$RETRY_COUNT/2|Premortem failed 3x|retry limit|MAX_RETRIES|Attempts: 3/3|attempt: 1/3|Attempt counter: 2/3|--budget=' \
     "$REPO_ROOT/skills/rpi/SKILL.md" \
     "$REPO_ROOT/skills/crank/SKILL.md" \
-    "$REPO_ROOT/skills/crank/references/execution-preflight.md" \
-    "$REPO_ROOT/skills/crank/references/wave-dispatch.md"
+    "$REPO_ROOT/skills/rpi/references" \
+    "$REPO_ROOT/skills/crank/references"
   [ "$status" -eq 1 ]
 }
