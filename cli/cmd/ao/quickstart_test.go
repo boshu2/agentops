@@ -557,6 +557,9 @@ func TestQuickStartUsesResolvedTrackerContext(t *testing.T) {
 		t.Setenv("AGENTOPS_TRACKER", "br")
 		t.Setenv("TRACKER_TRACE", tracePath)
 		t.Setenv("HOME", t.TempDir())
+		// Clear ambient BEADS_DIR so quickstart cannot treat an inherited
+		// session ledger as already-initialized and skip the cancel path.
+		t.Setenv("BEADS_DIR", "")
 		t.Setenv("PATH", binDir+string(os.PathListSeparator)+"/usr/bin"+string(os.PathListSeparator)+"/bin")
 		originalLookPath := trackerLookPath
 		trackerLookPath = exec.LookPath
