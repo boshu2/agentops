@@ -2,6 +2,8 @@
 package main
 
 import (
+	"os"
+
 	claimadapter "github.com/boshu2/agentops/cli/internal/adapters/claim"
 	claimapp "github.com/boshu2/agentops/cli/internal/claim"
 	"github.com/boshu2/agentops/cli/internal/clicontract"
@@ -10,9 +12,14 @@ import (
 
 func init() {
 	service := claimapp.NewService(
-		claimadapter.NewTracker(func(code int, message string) error {
-			return &tickExitError{code: code, msg: message}
-		}),
+		claimadapter.NewTrackerWith(
+			os.Getwd,
+			os.Environ,
+			func(name string) (string, error) { return trackerLookPath(name) },
+			func(code int, message string) error {
+				return &tickExitError{code: code, msg: message}
+			},
+		),
 		claimadapter.NewEvidenceStore(repoRootOrCwd),
 		claimadapter.NewProof(repoRootOrCwd),
 	)
