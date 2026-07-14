@@ -4,6 +4,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 	verdictparse "github.com/boshu2/agentops/cli/internal/verdict"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +37,7 @@ func (e *tickExitError) ExitCode() int { return e.code }
 
 type tickRuntime struct {
 	workDir string
+	ctx     context.Context
 	stdin   io.Reader
 	stdout  io.Writer
 	stderr  io.Writer
@@ -51,6 +55,7 @@ func newTickRuntime(cmd *cobra.Command) tickRuntime {
 	}
 	return tickRuntime{
 		workDir: cwd,
+		ctx:     cmd.Context(),
 		stdin:   cmd.InOrStdin(),
 		stdout:  cmd.OutOrStdout(),
 		stderr:  cmd.ErrOrStderr(),
@@ -91,15 +96,13 @@ func (rt tickRuntime) runTracker(args ...string) ([]byte, int, error) {
 	return rt.runResolvedTracker(resolution, args...)
 }
 
-func (rt tickRuntime) runResolvedTracker(resolution trackerResolution, args ...string) ([]byte, int, error) {
-	command := exec.Command(resolution.Binary, args...) // #nosec G204 -- resolution constrains the executable to br|bd.
-	command.Dir = resolution.WorkDir
-	command.Env = append([]string(nil), resolution.ChildEnv...)
+func (rt tickRuntime) runResolvedTracker(resolution trackerresolve.Resolution, args ...string) ([]byte, int, error) {
+	command := (trackerexec.Factory{}).Command(rt.ctx, resolution, args, trackerexec.Streams{Stdin: rt.stdin})
 	out, err := command.CombinedOutput()
 	if err == nil {
 		return out, 0, nil
 	}
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	if exitErr, ok := err.(*trackerexec.ExitError); ok {
 		return out, exitErr.ExitCode(), err
 	}
 	return out, 127, err
@@ -213,13 +216,13 @@ func tickReady(rt tickRuntime) error {
 	if err != nil {
 		return err
 	}
-	readyOut, code, err := rt.run(resolution.Binary, "ready", "--json")
+	readyOut, code, err := rt.runResolvedTracker(resolution, "ready", "--json")
 	if err != nil || code != 0 {
 		return &tickExitError{code: code, msg: resolution.Tracker + " ready --json failed"}
 	}
 	ready := tickParseBeads(readyOut)
 
-	allOut, code, err := rt.run(resolution.Binary, "list", "--all", "--json")
+	allOut, code, err := rt.runResolvedTracker(resolution, "list", "--all", "--json")
 	if err != nil || code != 0 {
 		return &tickExitError{code: code, msg: resolution.Tracker + " list --all --json failed"}
 	}

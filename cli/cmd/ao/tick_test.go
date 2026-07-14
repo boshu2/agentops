@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,6 +12,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
+	"github.com/spf13/cobra"
 )
 
 func TestEvalChaosFixturesCarryIndependentContextIDs(t *testing.T) {
@@ -670,6 +675,94 @@ printf '%s\n' "${BEADS_DIR:-missing}"
 	}
 	if got := strings.TrimSpace(string(out)); got != ledger {
 		t.Fatalf("resolved absolute BR saw BEADS_DIR=%q, want %q", got, ledger)
+	}
+}
+
+func TestTickUsesCallerContextAndResolvedTrackerCommand(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	workDir := filepath.Join(root, "nested")
+	if err := os.Mkdir(workDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ledger := filepath.Join(root, "ledger")
+	script := filepath.Join(root, "tracker")
+	scriptBody := `#!/bin/sh
+IFS= read -r input
+printf 'cwd=%s beads=%s argc=%s arg1=<%s> arg2=<%s> arg3=<%s> stdin=<%s>\n' \
+  "$PWD" "${BEADS_DIR-unset}" "$#" "$1" "$2" "$3" "$input" >> "$TICK_TRACKER_LOG"
+printf 'tracker-stdout stdin=<%s>\n' "$input"
+printf 'tracker-stderr\n' >&2
+exit 23
+`
+	if err := os.WriteFile(script, []byte(scriptBody), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	originalLookPath := trackerLookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+	trackerLookPath = func(name string) (string, error) {
+		if name == trackerBR || name == trackerBD {
+			return script, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	t.Setenv("HOME", t.TempDir())
+
+	for _, testCase := range []struct {
+		name      string
+		tracker   string
+		wantDir   string
+		wantBeads string
+	}{
+		{name: "br", tracker: trackerBR, wantDir: workDir, wantBeads: ledger},
+		{name: "bd", tracker: trackerBD, wantDir: root, wantBeads: "unset"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			logPath := filepath.Join(root, testCase.name+".log")
+			t.Setenv("AGENTOPS_TRACKER", testCase.tracker)
+			t.Setenv("BEADS_DIR", ledger)
+			t.Setenv("TICK_TRACKER_LOG", logPath)
+
+			command := &cobra.Command{Use: "tick-test"}
+			command.SetContext(context.Background())
+			command.SetIn(strings.NewReader("caller-stdin\n"))
+			runtime := newTickRuntime(command)
+			runtime.workDir = workDir
+			output, code, runErr := runtime.runTracker("ready", "--json", "arg with space")
+			var sharedExit *trackerexec.ExitError
+			if !errors.As(runErr, &sharedExit) || sharedExit.ExitCode() != 23 || code != 23 {
+				t.Fatalf("tracker error = %T %v code=%d, want *trackerexec.ExitError(23)", runErr, runErr, code)
+			}
+			if got, want := string(output), "tracker-stdout stdin=<caller-stdin>\ntracker-stderr\n"; got != want {
+				t.Fatalf("tracker combined streams = %q, want %q", got, want)
+			}
+			logBody, err := os.ReadFile(logPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantLog := "cwd=" + testCase.wantDir + " beads=" + testCase.wantBeads +
+				" argc=3 arg1=<ready> arg2=<--json> arg3=<arg with space> stdin=<caller-stdin>\n"
+			if got := string(logBody); got != wantLog {
+				t.Fatalf("tracker resolved command log = %q, want %q", got, wantLog)
+			}
+		})
+	}
+
+	cancelLog := filepath.Join(root, "canceled.log")
+	t.Setenv("AGENTOPS_TRACKER", trackerBR)
+	t.Setenv("BEADS_DIR", ledger)
+	t.Setenv("TICK_TRACKER_LOG", cancelLog)
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	command := &cobra.Command{Use: "tick-test-canceled"}
+	command.SetContext(canceled)
+	runtime := newTickRuntime(command)
+	runtime.workDir = workDir
+	_, _, cancelErr := runtime.runTracker("ready")
+	if !errors.Is(cancelErr, context.Canceled) {
+		t.Fatalf("canceled tracker error = %T %v, want context.Canceled", cancelErr, cancelErr)
+	}
+	if _, err := os.Stat(cancelLog); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("canceled caller context launched tracker child: stat error %v", err)
 	}
 }
 
