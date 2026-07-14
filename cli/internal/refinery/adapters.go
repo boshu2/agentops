@@ -11,6 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -87,14 +88,15 @@ func (b *bdBeadFiler) FileFixBead(ctx context.Context, sha string, checks []stri
 	if err != nil {
 		return "", err
 	}
-	out, err := run(ctx, b.repoRoot, resolution.Binary, "create", title, "--type", "task", "--labels", "refinery,blocking", "--json")
+	args := []string{"create", title, "--type", "task", "--labels", "refinery,blocking", "--json"}
+	out, err := (trackerexec.Factory{}).Command(ctx, resolution, args, trackerexec.Streams{}).Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s %s: %w", resolution.Binary, strings.Join(args, " "), err)
 	}
 	var parsed struct {
 		ID string `json:"id"`
 	}
-	if jerr := json.Unmarshal([]byte(out), &parsed); jerr != nil {
+	if jerr := json.Unmarshal(out, &parsed); jerr != nil {
 		return "", nil // bead may have been created; ID just unparsed
 	}
 	return parsed.ID, nil
