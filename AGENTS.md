@@ -48,8 +48,10 @@ through the owning command.
 3. **Pull one leaf and isolate it.** A goal or epic is aggregate demand, not WIP.
    Read-only work and a one-response local or ignored artifact need no bead or
    worktree. Before a tracked edit intended to land, claim/create one BDD-shaped
-   `br` leaf and work in its linked worktree. One writer owns one active leaf;
-   never claim the next leaf before this one is remotely verified and reported.
+   `br` leaf and work in its linked worktree. One writer owns one active leaf,
+   and that leaf is the bounded tranche. It may take one to three sequential
+   implementation waves, but no second leaf is claimed before the current leaf
+   is remotely verified and reported.
    Never add `_beads/` or repo-root `.agents/` to the public parent repository.
 4. **Slice.** Change one vertical behavior in one bounded context. Name the first
    failing acceptance test and keep the diff reviewable in one pass.
@@ -57,14 +59,15 @@ through the owning command.
    for the right reason, make the smallest change that turns it green, then
    refactor without changing the test. Docs-only, pure-refactor, or explicitly
    accepted `--no-test-first` work records an honest pre-change baseline instead.
-6. **Freeze and prove.** Commit the complete intended leaf, pin its candidate SHA,
-   tree and subtree identities, changed surfaces, acceptance, and deterministic
-   receipts, then obtain one independent evidence-bound verdict. Any edit
-   invalidates the exact candidate. Green checks without the verdict are not done.
-7. **Learn, deliver, verify, report.** Pass the immutable verdict to `/learn` for
+6. **Freeze and prove.** At the tranche boundary, commit the complete intended
+   candidate once; pin its SHA, tree and subtree identities, changed surfaces,
+   acceptance, and deterministic receipts; then obtain one independent
+   evidence-bound verdict. Intermediate waves do not receive Validate or Learn.
+   Any post-freeze edit invalidates the exact candidate.
+7. **Learn, deliver, verify, report.** Pass the immutable tranche verdict once to `/learn` for
    the minimal `no_change | plan_impact | terminal` receipt; the orchestrator alone
    chooses repair or re-plan. Deliver the same candidate through repository policy,
-   verify the remote SHA, and emit the tranche report that releases the WIP slot.
+   verify the remote SHA, and emit the tranche report that releases the tranche slot.
    `/postmortem` and compounding stay off the critical path unless learning
    invalidates the candidate. For this repo, `ao land <bead>` is the terminal
    delivery transition.

@@ -1,29 +1,32 @@
 # Complexity Scaling
 
-Automatic complexity detection determines the level of validation ceremony applied to each RPI cycle.
+Risk classification determines validation depth; inventory size does not create
+ceremony by itself.
 
 ## Classification Table
 
-| Level | Issue Count | Wave Count | Ceremony |
-|-------|------------|------------|----------|
-| **low** | ≤2 | 1 | quick Premortem plus one fresh independent Validate judge |
-| **medium** | 3-6 | 1-2 | quick Premortem plus one fresh independent Validate judge |
-| **high** | 7+ OR 3+ waves | any | deep or mixed Premortem/Validate when explicitly selected |
+| Level | Risk shape | Review depth |
+|-------|------------|--------------|
+| **routine** | Reversible, one owner, bounded rollback | one quick fresh Premortem + one quick fresh Validate |
+| **elevated** | Cross-boundary behavior with concrete named risk | one fresh judge with the affected specialist claims |
+| **high** | Irreversible, safety/security critical, or genuinely contested | explicit deep, mixed, or council review |
 
-> **Design rationale (2026-02-18):** `--quick` (inline single-agent structured review) catches the same class of bugs as full multi-judge council at ~10% of the token cost. The value of multi-judge consensus scales with stakes, not linearly with issue count. Medium-complexity epics (3-6 issues) don't benefit enough from multi-agent spawning to justify the 5-10x cost multiplier. Full council is reserved for high-stakes work where cross-model disagreement has real ROI.
+> `--quick` still means author != judge. Multi-judge consensus scales with
+> stakes and disagreement, not file, issue, or wave count.
 
 ## Detection
 
-Complexity is auto-detected after plan completes (Phase 2) by examining:
-- Issue count: `br children <epic-id> | wc -l`
-- Wave count: derived from dependency depth
+Classify after planning from reversibility, blast radius, authority, safety,
+security, and decision contestability. Record the named trigger for any depth
+above routine.
 
 ## Flag Precedence (explicit always wins)
 
 | Flag | Effect |
 |------|--------|
-| `--fast-path` | Forces `low` regardless of auto-detection |
-| `--deep` (passed to /rpi) | Forces `high` regardless of auto-detection |
-| No flag | Auto-detect from epic structure |
+| `--fast-path` | Narrows claims and deterministic scope; does not waive fresh judges |
+| `--deep` (passed to /rpi) | Requests high-depth review |
+| No flag | Use the named-risk classification above |
 
-Existing mandatory Premortem doctrine (3+ issues) still applies regardless of complexity level. Learn and the orchestrator transition do not change with depth.
+Premortem and Validate independence apply at every depth. Learn and the
+orchestrator transition do not change with depth.

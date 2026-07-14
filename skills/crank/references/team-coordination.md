@@ -3,6 +3,8 @@
 Crank executes exactly one ready wave and returns evidence. Trackers are inputs
 to wave selection and identifiers in the result; tracker closeout and repository
 delivery remain caller-owned after Validate and Learn return.
+For a multi-wave bounded tranche, those final phases run after the tranche
+freezes, not between unchanged waves.
 
 ## Beads Mode
 

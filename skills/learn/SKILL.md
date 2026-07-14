@@ -9,7 +9,6 @@ hexagonal_role: domain
 consumes:
 - validate
 produces:
-- .agents/rpi/phase-4-summary.md
 - learn-receipt.json
 context_rel:
 - kind: customer-of
@@ -17,7 +16,7 @@ context_rel:
 skill_api_version: 1
 user-invocable: true
 context:
-  window: fork
+  window: inherit
   intent:
     mode: task
   sections:
@@ -26,7 +25,7 @@ context:
   intel_scope: full
 metadata:
   graph_root: false
-  tier: judgment
+  tier: execution
   dependencies:
   - validate
 output_contract: skills/learn/schemas/learn-receipt.schema.json
@@ -57,10 +56,14 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
   may request that specialization; the caller decides whether to invoke it.
 - Emit observations plus one Learn receipt. Do not operate proof, repository,
   tracker, delivery, or Premortem authority.
+- Run once per frozen tranche in the orchestrator's existing context. Learn is
+  deterministic bookkeeping and never dispatches another model, reviewer, or
+  council.
 - Emit a `plan_impact` packet for the orchestrator. Learn does not mutate the
   plan and does not invoke Premortem.
-- `DONE` requires a schema-valid receipt and phase summary. Unreadable proof is
-  `BLOCKED`; incomplete bookkeeping is `PARTIAL`.
+- `DONE` requires one schema-valid canonical receipt. Unreadable proof is
+  `BLOCKED`; incomplete bookkeeping is `PARTIAL`. A legacy phase summary is a
+  generated link-only compatibility projection, not a second narrative.
 
 ## Workflow
 
@@ -85,7 +88,9 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
    transition.
 5. If an explicit retrospective causal question exists, emit a Postmortem
    request as `next_action`; do not perform the retrospective inline.
-6. Write `learn-receipt.json` and `.agents/rpi/phase-4-summary.md`.
+6. Write canonical `learn-receipt.json`. When an existing consumer still
+   requires `.agents/rpi/phase-4-summary.md`, generate only status, receipt path,
+   digest, and next action from the JSON.
 7. Append the ordered RPI completion receipt:
 
 ```json
@@ -93,16 +98,17 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
   "phase": "learn",
   "skill": "learn",
   "status": "DONE",
-  "artifact": ".agents/rpi/phase-4-summary.md"
+  "artifact": "learn-receipt.json"
 }
 ```
 
 ## Output Specification
 
 - **Artifact directory:** the invocation root plus `.agents/rpi/`.
-- **Filename convention:** `learn-receipt.json` and `phase-4-summary.md`.
+- **Filename convention:** `learn-receipt.json`; optional `phase-4-summary.md`
+  is a link-only compatibility projection.
 - **Serialization/schema format:** JSON follows
-  [learn-receipt.schema.json](schemas/learn-receipt.schema.json); summary is Markdown.
+  [learn-receipt.schema.json](schemas/learn-receipt.schema.json).
 - **Recurrence contract:**
   [producer-defect-register.md](../../docs/contracts/producer-defect-register.md).
 - **Validator command:** `bash skills/learn/scripts/validate.sh`.
@@ -116,7 +122,8 @@ output_contract: skills/learn/schemas/learn-receipt.schema.json
 - [ ] The receipt binds the immutable verdict reference and digest.
 - [ ] Every observation is copied without semantic mutation.
 - [ ] Every disposition remains bookkeeping rather than promotion.
-- [ ] The phase summary and receipt pass the validator command.
+- [ ] The canonical receipt passes the validator command; any compatibility
+  summary contains no duplicated analysis.
 
 Executable behavior is in [learn.feature](references/learn.feature). The
 post-verdict ownership map is in

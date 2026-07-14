@@ -5,10 +5,11 @@ How each consolidated phase passes data to the next. Artifacts are filesystem-ba
 | Transition | Output | Extraction | Input to Next |
 |------------|--------|------------|---------------|
 | → Discovery | Goal string + repo execution profile contract | Goal from the `/rpi` invocation; repo policy from `docs/contracts/repo-execution-profile.md`, `repo-execution-profile.schema.json`, and `repo-execution-profile.json` when present | `repo_profile` state is loaded before research/planning begins, including validation lane mutation metadata |
-| Discovery → Crank | Epic execution context or file-backed objective + discovery summary + `execution_packet` | `phased-state.json` + `.agents/rpi/phase-1-summary.md` + `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive) | `/crank <epic-id>` when `epic_id` exists; otherwise `/crank .agents/rpi/execution-packet.json` with repo policy, contract surfaces, validation bundle, and `validation_lanes` already normalized |
-| Crank → Validate | Completed/partial crank status + implementation summary + `execution_packet` | `ao beads exec children <epic-id>` or file-backed implementation state + `.agents/rpi/phase-2-summary.md` + `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive) | `/validate <epic-id>` when `epic_id` exists; otherwise standalone `/validate` with the same repo execution profile fields, validation lanes, and done criteria |
-| Validate → Learn | Immutable validation verdict + evidence references + `execution_packet` | `.agents/rpi/phase-3-summary.md` plus the schema-valid verdict artifact | `/learn` with the verdict reference; Learn may emit observations but cannot mutate proof or delivery state |
-| Learn → Orchestrator | Learn receipt + bounded observations + `remaining_work` + `plan_impact` | `.agents/rpi/phase-4-summary.md` + latest Learn receipt | `material_change` lets the orchestrator change the remaining plan through Discovery and Premortem; `no_change` requires an explicit retry/continue/stop/escalate decision; `terminal` closes the tick |
+| Discovery → Crank tranche | Admitted tranche plan + `execution_packet` + bound Premortem verdict | `.agents/rpi/execution-packet.json` (latest alias) or `.agents/rpi/runs/<run-id>/execution-packet.json` (run archive) | `/crank <epic-id>` or `/crank <packet>` for one of at most three admitted waves |
+| Crank wave → Orchestrator | Canonical targeted wave evidence + remaining-plan facts | `.agents/swarm/results/<wave>.json` referenced from the execution packet | Reuse the bound Premortem and admit the next unchanged low-risk wave, or REPLAN; do not invoke Validate/Learn per wave |
+| Frozen tranche → Validate | Exact candidate identity + claim map + verified deterministic receipts | execution packet plus canonical Crank evidence | one fresh `/validate` after the tranche freezes |
+| Validate → Learn | Immutable schema-valid `result.json` | verdict path and digest | `/learn` once; Learn may emit observations but cannot mutate proof or delivery state |
+| Learn → Orchestrator | Canonical `learn-receipt.json` with bounded observations, `remaining_work`, and `plan_impact` | receipt path and digest | choose the next tranche, stop, or deliver; optional phase summaries are link-only projections |
 
 Execution packet v1 should remain additive. Recommended fields:
 - `schema_version`
@@ -34,14 +35,15 @@ Execution packet retention rule:
 - `.agents/rpi/runs/<run-id>/execution-packet.json` is the durable per-run packet archive when `run_id` exists
 
 Phase receipt rule:
-- every phase boundary artifact records `skills_loaded`
-- `.agents/rpi/execution-packet.json` carries exactly four ordered receipts: discovery, crank, validate, learn
+- `.agents/rpi/execution-packet.json` carries one ordered index with four typed responsibility receipts: discovery, crank, validate, learn
+- each entry points at its canonical artifact; child artifacts do not repeat `skills_loaded` or the full receipt list
 - `phase_receipts[].status` must match the delegated skill's completion marker or verdict (`DONE`, `PARTIAL`, `BLOCKED`, `FAIL`, or `PASS/WARN/FAIL` as emitted)
 - a `prospective` Discovery handoff records discovery `DONE` with its real artifact, crank `pending`, and validate/learn `not_checked`; pending/not-checked receipts omit `artifact`
 - prospective `skills_loaded` names only RPI and Discovery; unrun receipt placeholders do not claim future skill loads
 - a `prospective` packet cannot claim successful downstream receipts
-- before Report, `packet_state` is `terminal` and the ordered receipts must be successful: discovery `DONE`, crank `DONE`, validate `PASS`, and learn `DONE`, each with an existing nonempty artifact; retry history belongs in phase evidence rather than extra receipts
+- before Report, `packet_state` is `terminal` and the ordered receipts must be successful: discovery `DONE`, crank `DONE`, validate `PASS`, and learn `DONE`, each with an existing nonempty canonical artifact; retry history belongs in phase evidence rather than extra receipts
 - receipts are an audit index, not proof by themselves; transcript or runtime invocation trace remains the stronger evidence when available
+- `.agents/rpi/phase-{1,2,3,4}-summary*.md`, when required by an older consumer, contains only status, canonical artifact reference/digest, and next action; it never restates findings or analysis
 
 Receipt shape (JSON artifacts use canonical skill slugs without sigils):
 
@@ -59,31 +61,32 @@ Receipt shape (JSON artifacts use canonical skill slugs without sigils):
       "phase": "discovery",
       "skill": "discovery",
       "status": "DONE",
-      "artifact": ".agents/rpi/phase-1-summary.md"
+      "artifact": ".agents/rpi/execution-packet.json"
     },
     {
       "phase": "crank",
       "skill": "crank",
       "status": "DONE",
-      "artifact": ".agents/rpi/phase-2-summary.md"
+      "artifact": ".agents/swarm/results/tranche.json"
     },
     {
       "phase": "validate",
       "skill": "validate",
       "status": "PASS",
-      "artifact": ".agents/rpi/phase-3-summary.md"
+      "artifact": ".agents/council/result.json"
     },
     {
       "phase": "learn",
       "skill": "learn",
       "status": "DONE",
-      "artifact": ".agents/rpi/phase-4-summary.md"
+      "artifact": ".agents/rpi/learn-receipt.json"
     }
   ]
 }
 ```
 
-Markdown phase summaries include a `## Skill Receipts` section with one bullet per loaded skill, the phase it served, and the artifact/verdict it produced.
+Compatibility Markdown summaries are generated views of these entries; they do
+not carry another `## Skill Receipts` copy or a second analysis.
 
 Validation lane selection rule:
 - implementation and fast closeout phases prefer lanes where `read_only=true`, `writes_artifacts=false`, `release_only=false`, `cost_class` is `cheap` or `standard`, and `auto_select` is `default` or matches the changed surface

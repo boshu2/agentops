@@ -34,7 +34,8 @@ output_contract: skills/council/schemas/verdict.json
 # Premortem Skill
 
 > **Purpose:** Is this plan/spec good enough to implement?
-> **Mandatory doctrine for 3+ issue epics.** Run premortem before `/crank` on epics with 3+ child issues — operating doctrine, not a hook (AgentOps 3.0 is hookless). 6/6 consecutive positive ROI. Bypass: `--skip-premortem` flag or `AGENTOPS_SKIP_PREMORTEM_GATE=1`.
+> **Admission rule:** one fresh-context Premortem binds the plan before Crank.
+> Quick mode narrows claims; it never lets the plan author grade their own work.
 
 ## Constraints
 
@@ -43,19 +44,26 @@ output_contract: skills/council/schemas/verdict.json
 - **Pre-register kill conditions for irreversible work.** A strategy, experiment, or one-way-door plan must say what evidence changes the decision before deliberation, because an unfalsifiable review is ceremony.
 - **Consult the pawl before raising the andon.** WARN, FAIL, or REFUTED is repair evidence: revise the plan and rerun automatically. Raise the andon and route one helper only for a true breaker such as missing authority, unavailable required trust domain after retry, or an impossible invariant.
 - **Bound the repair loop.** Apply one consolidated repair to the exact plan; a second distinct acceptance repair returns `REPLAN` for re-slicing, while the RPI governor owns disposition and breaker/helper state.
-- Every admitted Crank wave with remaining work must end with exactly one bounded Premortem of the orchestrator-owned remaining-plan snapshot after Validate and Learn.
+- Bind the verdict to a plan digest plus acceptance, dependency shape, write
+  scope, and risk class. Reuse it across intermediate waves while those inputs
+  remain unchanged. Mechanical packet inconsistencies are local `REPAIR`; only
+  material plan/risk change requires another independent Premortem.
+  That repeat requires an explicit orchestrator request carrying the changed plan;
+  no downstream phase may silently manufacture the request.
 
 ## Loop position
 
-Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing. Between waves, Premortem accepts only a changed plan from an explicit orchestrator request: the orchestrator-owned remaining-plan snapshot after `Validate -> Learn`, where completion of the prior leaf is the plan delta even when Learn reports `no_change`. Validate and Learn cannot invoke Premortem directly. Review only remaining slices, new evidence, and invalidated assumptions; do not re-review completed candidate proof.
+Pre-flight check between moves **3 (slice plan)** and **4 (TDD per slice)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces a PASS/WARN/FAIL verdict on the plan AND on the wave-validity rows (distinct write scopes, no shared migration/contract/CLI surface, owner per slice, discard path per slice). A wave can only be claimed parallel if premortem confirms every conflict-free row. FAIL on wave-validity → run slices sequential or send the plan back to `/plan` for re-slicing. Between waves, the orchestrator reuses the bound verdict when inputs are identical. Only an explicit material change returns the exact changed plan for one new review. Validate and Learn cannot invoke Premortem directly.
 
-Run `/council validate` on a plan or spec to get multi-model judgment before committing to implementation.
+Run `/council validate` only when a named one-way door or explicitly contested
+decision earns multi-model judgment. Routine reversible work uses one concise
+fresh-context judge.
 
 ## Quick Start
 
 ```bash
-/premortem                                         # validates most recent plan (inline, no spawning)
-/premortem path/to/PLAN.md                         # validates specific plan (inline)
+/premortem                                         # one fresh judge on the most recent plan
+/premortem path/to/PLAN.md                         # one fresh judge on this plan
 /premortem --deep path/to/SPEC.md                  # 4 judges (thorough review, spawns agents)
 /premortem --mixed path/to/PLAN.md                 # cross-vendor (Claude + Codex)
 /premortem --preset=architecture path/to/PLAN.md   # architecture-focused review
@@ -65,92 +73,61 @@ Run `/council validate` on a plan or spec to get multi-model judgment before com
 
 ## Execution Steps
 
-### Step 0: Bead-Input Pre-Flight (Mandatory)
+### Steps 0-1: Resolve one current plan
 
-When the input to `/premortem` is a bead ID (matches pattern `[a-z]{2,6}-[0-9a-z.]+`) AND complexity is "full" OR the bead is older than 7 days OR the bead description was filed by a prior session, automatically run `ao beads verify <bead-id>` as the very first action. If verify reports any STALE citations, present them to the user and ask for scope re-validation before proceeding. This implements the shared stale-scope validation rule.
+Use the supplied path or latest plan/spec. For a full, older-than-seven-day, or
+prior-session bead, run `ao beads verify <id>` first and stop on stale citations.
 
-### Step 1: Find the Plan/Spec
+### Step 1.4: Retrieve matched compiled prevention once
 
-**If path provided:** Use it directly.
-
-**If no path:** Find most recent plan:
-```bash
-ls -lt .agents/plans/ 2>/dev/null | head -3
-ls -lt .agents/specs/ 2>/dev/null | head -3
-```
-
-Use the most recent file. If nothing found, ask user.
-
-### Step 1.4: Retrieve Prior Learnings & Compiled Prevention (Mandatory)
-
-Run `ao lookup` for the plan's domain, then load compiled checks from `.agents/premortem-checks/*.md` (fall back to `.agents/findings/registry.jsonl`). Include matched entries in the council packet as `known_risks` and record `ao metrics cite` influence. Full contract (fail-open rules, section-evidence handling, ranking heuristics, citation lifecycle) in [references/compiled-prevention.md](references/compiled-prevention.md). This file also contains Step 1a (flywheel search, skipped under `--quick`) and Step 1b (PRODUCT.md auto-include).
+Routine quick mode reads only directly matched compiled checks from
+`.agents/premortem-checks/*.md` (fall back to
+`.agents/findings/registry.jsonl`) and carries them as `known_risks`. It does not
+run a broad flywheel search, metrics write, or registry mutation. Deep modes may
+run `ao lookup` for the plan's domain. Full fail-open and ranking rules live in
+[references/compiled-prevention.md](references/compiled-prevention.md).
 
 Fail-open reader behavior is mandatory: missing or empty compiled prevention inputs skip silently; malformed line -> warn and ignore that line; unreadable file -> warn once and continue without findings.
 
-### Step 1a: Flywheel Search (Skip if --quick)
-
-Run the flywheel search from [references/compiled-prevention.md](references/compiled-prevention.md) unless `--quick` is active.
-
-### Step 1b: PRODUCT.md Context (Skip if --quick)
-
-When `PRODUCT.md` exists and full council mode is active, add one product judge: 3 judges total (2 plan-review + 1 product).
-
 ### Step 1.5: Fast Path (--quick mode)
 
-**By default, premortem runs inline (`--quick`)** — single-agent structured review, no spawning. This catches real implementation issues at ~10% of full council cost (proven in ag-nsx: 3 actionable bugs found inline that would have caused runtime failures).
+**By default, premortem runs `--quick` with exactly one fresh-context judge
+distinct from the plan author.** It emits one complete blocker set and no
+council fan-out. The orchestrator may repair packet wording locally and request
+one narrow recheck; a second distinct acceptance repair is `REPLAN`.
 
-In `--quick` mode, skip Steps 1a and 1b as standalone pre-processing phases. If `PRODUCT.md` exists, Step 1b's product context is still loaded inline during the quick review. `--deep`, `--mixed`, `--debate`, and `--explorers` add the dedicated product perspective and wider council fan-out.
+In `--quick` mode, skip Steps 1a and 1b as standalone pre-processing phases.
+Load only product constraints directly implicated by acceptance. `--deep`,
+`--mixed`, `--debate`, and `--explorers` require a named irreversible or
+high-blast-radius reason before they add council fan-out.
 
 To escalate to full multi-judge council, use `--deep` (4 judges) or `--mixed` (cross-vendor).
 
-### Step 1.5.1: Reversibility self-check — size the gate to the stakes (Mandatory)
+### Steps 1.5.1-1.7: Size and focus the gate
 
-Before selecting gate depth, **state the plan's blast radius and reversibility in one sentence.** If the plan is
-reversible (content recoverable, deletion non-destructive, no shared schema/CLI/contract/migration surface), **say so and
-default to the lightest gate** — inline `--quick` plus a single blind sub-agent for the no-self-grading floor (Step 2.9).
-Escalate to `--deep` / `--mixed` / full council **only on a named irreversible surface** — a one-way door per the
-[blast-radius rule](../../docs/contracts/pawls.md#the-blast-radius-rule-the-list-is-examples-not-the-boundary)
-(schema migration, public API, architecture fork, security posture, deletion, mutate-shared-trunk). This is the de-escalation
-dual of Step 2.10's escalation rule: 2.10 says *add* rigor for one-way doors; this says *notice and drop* rigor when the op
-is reversible. Running a cross-family duel on a reversible doc/refactor is the waterfall the ratchet exists to avoid.
+State reversibility and blast radius in one sentence, select
+`scope_mode: expansion|hold|reduction`, and load only applicable patterns from
+[scope-mode.md](references/scope-mode.md) and
+[council-fail-patterns.md](references/council-fail-patterns.md). One fresh judge
+is the reversible default; deep/mixed council requires a named one-way door.
 
-### Step 1.6: Scope Mode Selection
+### Step 2: Run one independent judgment
 
-Determine review posture — EXPANSION, HOLD SCOPE, or REDUCTION — and commit `scope_mode: <expansion|hold|reduction>` in the council packet. Auto-detection rules and mode-specific judge prompts are in [references/scope-mode.md](references/scope-mode.md).
-
-### Step 1.7: Load Council FAIL Patterns (Mandatory)
-
-Read [references/council-fail-patterns.md](references/council-fail-patterns.md) for the top 8 council FAIL patterns to check against. These patterns are derived from 124 analyzed FAIL verdicts across 946 council sessions. They apply to both `--quick` and `--deep` modes.
-
-### Step 2: Run Council Validation
-
-Run `/council --quick validate <plan-path>` for reversible work. Use `/council --deep --preset=plan-review validate <plan-path>` for high-stakes work, `/council --mixed --preset=plan-review validate <plan-path>` when cross-family judgment is required, `--explorers=3` for codebase investigation, and `/premortem --debate` for adversarial comparison. An explicit `/premortem --preset=architecture` overrides automatic plan-review routing. Mode composition and judge roles are in [references/mandatory-checks.md](references/mandatory-checks.md#steps-2911-independent-adjudication-and-plan-pawl).
+For reversible work, dispatch one runtime-native fresh judge directly against
+the bound plan packet; do not start `/council`. Use `/council --deep
+--preset=plan-review`, `/council --mixed --preset=plan-review`, explorers, or
+debate only for a named one-way door, contested judgment, or explicit operator
+request. Mode composition and judge roles are in
+[references/mandatory-checks.md](references/mandatory-checks.md#steps-2911-independent-adjudication-and-plan-pawl).
 
 **Checkpoint:** before deliberation, confirm the packet records `scope_mode`, blast radius/reversibility, `author_id`, a distinct `judge_id`, and any required pre-registered `decision_rule`. Do not emit PASS while an invariant is missing.
 
-### Steps 2.4–2.8: Mandatory Council Checks
+### Steps 2.4–2.8: Check the plan once
 
-Five mandatory checks run during council validation — temporal interrogation, error-&-rescue map, council FAIL pattern check, test pyramid coverage, and input validation for enum-like fields. Each has auto-trigger conditions and judge-prompt snippets. Full step text and check tables in [references/mandatory-checks.md](references/mandatory-checks.md).
-
-Migration-shaped plans also require the checked authority/consumer manifest gate in that reference. Missing or `incomplete` inventories fail; `shared` scopes serialize; only `disjoint` may retain a parallel claim.
-
-When a plan introduces a regex, grep, glob, or similar scope predicate, also apply [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md): require positive and negative examples before approval.
-
-**Narrow-waist slice checks (S1/S3/S4 — FAIL the plan if any fails).** The plan feeds the [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this); confirm each slice can run it:
-- **One behavior per slice (S1):** reject any slice that bundles ≥2 Given/When/Then behaviors — send back to `/plan` for re-slicing.
-- **ATDD-red gate (S3):** each slice must name a runnable acceptance test authored to fail RED before implementation; a slice with no failing acceptance test is FAIL (no test = no contract).
-- **Refactor-separated (S4):** flag any slice that mixes a refactor with a feature, or whose refactor step changes a test — refactor-under-green is its own slice.
-
-**Re-baseline against what exists (mandatory when the plan proposes NEW
-construction).** A plan that says "build X" / "X is missing" / "the unbuilt
-arm" must prove X does not already exist — `grep`/read the codebase for the
-capability, the command, the function, the table — *before* the effort estimate
-is accepted. The dominant scoping failure is estimating new construction for
-machinery that is already built (and only needs integration), which inflates
-effort 2× and risks a duplicate/competing implementation. Judge prompt: "For
-each 'build/add/missing' claim, was the absence verified by a search, or
-assumed? Name the search." Treat an unverified "it's missing" as a WARN at
-minimum; FAIL if the plan's effort/sequencing depends on it.
+Apply the triggered temporal, rescue, test-shape, input, migration-manifest,
+scope-predicate, one-behavior, RED-proof, refactor-separation, and existing-
+capability checks from [mandatory-checks.md](references/mandatory-checks.md).
+Return one complete blocker set; do not write one report per checklist row.
 
 ### Steps 2.9–2.11: Independent adjudication and plan-pawl
 
@@ -164,11 +141,20 @@ Apply the no-self-grading rule, cross-family rule for one-way doors, pre-registe
 | WARN | Review concerns | Address warnings or accept risk |
 | FAIL | Not ready | Fix issues before implementing |
 
-### Step 4: Write Premortem Output
+### Step 4: Write one Premortem verdict
 
-Write to `.agents/council/YYYY-MM-DD-premortem-<topic>.md` using the full template (frontmatter, verdict table, pseudocode-fix format, decision gate) in [references/write-premortem-output.md](references/write-premortem-output.md). That reference also contains Step 4.5 (persist reusable findings to `.agents/findings/registry.jsonl`) and Step 4.6 (copy pseudocode fixes verbatim into plan issues so workers do not reimplement them from scratch).
+The canonical output is one schema-valid verdict record bound to the plan
+digest and review inputs. While legacy consumers still require it, write a
+concise `.agents/council/YYYY-MM-DD-premortem-<topic>.md` projection containing
+identity, verdict, complete blockers, and next action. Use the full report
+template in [references/write-premortem-output.md](references/write-premortem-output.md)
+only for deep/contested work; routine quick mode does not create a second
+analysis, pseudocode dossier, or plan-copy.
 
-When Step 4.5 writes reusable findings, include `dedup_key`; do not invoke a repository hook or activate a constraint. `ao membrane digest` refreshes the canonical recurring-catch advisory sink. Mechanical candidates use explicit `ao membrane derive-checks --detector-evidence <json>` replay and remain warn-only shadows until separately measured.
+Only a genuinely reusable finding takes the off-path Step 4.5 route. When it
+does, include `dedup_key`; do not invoke a repository hook or activate a
+constraint. `ao membrane digest` refreshes the canonical recurring-catch
+advisory sink. Routine PASS and packet repair create no registry entry.
 
 The generated report must preserve this exact heading because downstream validators and ledger readers extract verdicts with a regex anchored to it:
 
@@ -178,14 +164,17 @@ The generated report must preserve this exact heading because downstream validat
 
 - **Artifact path:** `.agents/council/`.
 - **Filename convention:** `YYYY-MM-DD-premortem-<topic>.md`.
-- **Serialization/schema format:** Markdown report using [references/write-premortem-output.md](references/write-premortem-output.md), with council verdict data conforming to `skills/council/schemas/verdict.json`.
+- **Serialization/schema format:** canonical verdict data conforms to
+  `skills/council/schemas/verdict.json`; routine Markdown is a concise
+  compatibility projection, while deep mode may use
+  [references/write-premortem-output.md](references/write-premortem-output.md).
 - **Validator command:** `bash skills/premortem/scripts/validate.sh && grep -Eq '^## Council Verdict: (PASS|WARN|FAIL)$' .agents/council/YYYY-MM-DD-premortem-<topic>.md`.
 - **Downstream handoff:** PASS proceeds to `/implement`; WARN or FAIL returns the plan to its author for repair and automatic re-review. Only a breaker raises the andon or routes one helper.
 
-### Step 5: Record Ratchet Progress
+### Step 5: Record ratchet progress off the critical path
 
 ```bash
-ao ratchet record premortem 2>/dev/null || true
+ao ratchet record premortem 2>/dev/null || true # only when a reusable finding exists
 ```
 
 ### Step 6: Report to User
@@ -218,7 +207,9 @@ Tell the user:
 
 ## Examples
 
-See [references/examples.md](references/examples.md) for worked examples (default inline, `--mixed` cross-vendor, auto-find recent, `--deep` high-stakes) and the troubleshooting table (timeouts, FAIL on valid plans, missing product perspectives, gate-blocking, spec-completeness warnings, mandatory-for-epics enforcement).
+See [references/examples.md](references/examples.md) for worked examples (one
+fresh judge by default, explicit `--mixed`, auto-find recent, and `--deep`
+high-stakes) plus focused troubleshooting.
 
 ## Troubleshooting
 
@@ -233,7 +224,7 @@ Use the structured troubleshooting table in [references/examples.md](references/
 
 ## Reference Documents
 
-- [references/premortem.feature](references/premortem.feature) — Executable spec: plan PASS/WARN/FAIL verdict before work, wave-validity gates parallelism, --quick inline default (soc-qk4b)
+- [references/premortem.feature](references/premortem.feature) — Executable spec: plan PASS/WARN/FAIL verdict before work, wave-validity gates parallelism, one fresh --quick judge (soc-qk4b)
 - [references/compiled-prevention.md](references/compiled-prevention.md)
 - [references/scope-mode.md](references/scope-mode.md)
 - [references/mandatory-checks.md](references/mandatory-checks.md)

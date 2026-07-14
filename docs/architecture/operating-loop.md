@@ -28,9 +28,9 @@ not the default and not a second lifecycle.
 
 ```text
 READY DEMAND
-  → ACTIVE LEAF
-  → WAVE PROVED
-  → FROZEN CANDIDATE
+  → ACTIVE TRANCHE (one active leaf at a time)
+  → 1-3 WAVE CHECKPOINTS
+  → FROZEN TRANCHE CANDIDATE
   → VALIDATED CANDIDATE
   → LEARNED CANDIDATE
   → DELIVERED
@@ -38,10 +38,11 @@ READY DEMAND
   → REPORTED / CLOSED LEAF
 ```
 
-A goal or epic is aggregate demand. It never occupies WIP. The leaf is the unit
-of WIP, implementation, proof, delivery, and learning. One writer holds at most
-one active leaf and does not pull another until the current leaf is remotely
-verified and reported.
+A goal or epic is aggregate demand. It never occupies WIP. One behavioral leaf
+is the bounded tranche and remains the unit of implementation, proof, learning,
+and delivery. It may take one to three sequential low-risk implementation waves,
+with targeted acceptance after each. One writer holds one active leaf, and no
+second leaf starts until the current leaf is remotely verified and reported.
 
 ## 1. Orient and shape acceptance
 
@@ -101,14 +102,15 @@ Every failure considered for `REPAIR` is first attributed to the candidate; a
 base-reproduced failure is NOTE unless the leaf explicitly owns it.
 
 A Crank tick is bounded implementation, not an unlimited retry controller. It
-runs only checks selected from the changed behavior and authority surface. At the
-end of a bounded wave, new evidence receives a bounded Premortem of the remaining
-plan before another wave is admitted. The Premortem may proceed, reorder, narrow,
-or return `REPLAN`; it does not semantically review the unfinished diff.
+runs only checks selected from the changed behavior and authority surface. At a
+wave boundary, the orchestrator reuses the accepted Premortem while plan inputs
+and risk remain unchanged; material change receives one fresh Premortem before
+another wave. Validate and Learn never sit between unchanged low-risk waves.
 
-## 4. Freeze the candidate
+## 4. Freeze the tranche candidate
 
-The complete intended leaf is committed before binding review. Its candidate
+After at most three waves or 90 minutes, the complete intended tranche is
+committed before binding review. Its candidate
 receipt pins at least:
 
 - admitted base SHA;
@@ -132,7 +134,7 @@ tests, and evidence integrity. Select the cheapest checks that cover the changed
 surface, run each selected fact once for an exact input, and retain its receipt.
 Scripts do not score prose usefulness or substitute for engineering judgment.
 
-One validator in fresh context receives the frozen identity, acceptance claims,
+One validator in fresh context receives the frozen tranche identity, acceptance claims,
 changed surface, and factual receipts. It returns:
 
 - exact candidate and base identities;
@@ -149,6 +151,11 @@ After one consolidated repair batch, refreeze and re-review only original
 findings, changed claims, named interaction risks, and invalidated evidence. A
 second distinct repair need is evidence that acceptance, slicing, or approach is
 wrong and returns to `REPLAN`; it does not buy another whole-diff review loop.
+
+After semantic repair and affected-claim closure, run the repository's full
+deterministic terminal gate once on the final exact candidate. Persist its
+exact-input receipt so delivery or pre-push may reuse it instead of rerunning the
+same suite. Only then seal the final Validate result and hand it to Learn.
 
 ## 6. Govern evidence without turning every failure into an andon
 
@@ -175,7 +182,7 @@ the [pull-flow governor](../../skills/rpi/references/pull-flow-governor.md).
 
 ## 7. Learn, deliver, verify, and report
 
-`/learn` consumes the immutable Validate verdict and writes the smallest honest
+`/learn` runs once per tranche, consumes the immutable Validate verdict, and writes the smallest honest
 receipt: no change, material plan impact, or terminal. It may copy candidate,
 verdict, finding, and recurrence identities; it may not change the verdict,
 candidate, delivery authority, or plan. The orchestrator alone consumes

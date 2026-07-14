@@ -66,6 +66,13 @@ Feature: Discovery hands dense intent to planning
   Scenario: Discovery refines beads in plan space before crank
     Given operationalized beads exist
     When the refine step runs
-    Then it makes 4-5 refinement passes re-reading AGENTS.md each pass
+    Then it makes one complete refinement pass and a second only after material graph change
     And it does not oversimplify or lose features or functionality
     And it validates no dependency cycles before handing the packet to /crank
+
+  Scenario: Discovery shapes one bounded proof tranche
+    Given aggregate demand contains more than three low-risk waves
+    When Discovery compiles the execution packet
+    Then the active tranche contains at most three sequential waves and a 90 minute ceiling
+    And remaining aggregate demand stays outside active WIP
+    And the packet requires one final Validate and Learn transaction

@@ -5,20 +5,21 @@ their boundary; none converts its own result into a cross-phase retry.
 
 ## Premortem repair
 
-Premortem judges a plan. WARN or FAIL returns that plan to its author for a
-bounded repair and another Premortem. Between waves, the input must be an exact
-changed plan from an explicit orchestrator request. Validate and Learn cannot
-invoke Premortem.
+Premortem judges a plan. WARN or FAIL returns that plan to its author for one
+consolidated repair and narrow recheck. Between waves, reuse the bound verdict
+while plan inputs and risk are unchanged; only an exact materially changed plan
+from the orchestrator receives a new Premortem. Validate and Learn cannot invoke
+Premortem.
 
 ## Crank recovery
 
 Crank preserves transient worker failure evidence and returns DONE, PARTIAL,
 or BLOCKED at the wave boundary. It owns no retry allowance or task budget; a
 later action requires an explicit orchestrator decision and durable admission
-from the persistent governor. Crank does not invoke Discovery, Learn, or
-Premortem.
+from the persistent governor. An unchanged admitted wave does not route through
+Validate or Learn. Crank invokes no other umbrella.
 
-## Post-verdict decision
+## Final tranche post-verdict decision
 
 The required sequence is `Validate -> Learn -> orchestrator`:
 

@@ -12,7 +12,8 @@ governor state.
 **Loop decision input:** the latest schema-valid Learn receipt, bound to its
 immutable Validate verdict.
 
-1. Read `.agents/rpi/phase-4-summary.md` and the referenced Learn receipt.
+1. Read the canonical Learn receipt referenced by the execution packet. A
+   phase-4 summary, if present, is only a link-only compatibility projection.
 2. Verify the receipt's verdict digest and `plan_impact` disposition.
 3. Apply the disposition:
    - `material_change` with remaining work: the orchestrator invokes Discovery,

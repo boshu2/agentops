@@ -103,31 +103,30 @@ br list --json | jq '.issues[]?.title'
 | Complementary | Merge into the existing bead |
 | Conflicts | Note explicitly; flag an architectural decision in the bead body or handoff |
 
-## Step 5 — Refine in plan space (4-5 passes)
+## Step 5 — Refine in plan space
 
 It is far easier and faster to operate in **plan space** before implementing.
-Run **4-5 refinement passes** over the bead set. Each pass:
+Run one complete refinement pass over the bead set. Run one additional pass only
+when the first pass materially changes the dependency graph, acceptance, or
+bounded-context boundaries:
 
-1. **Re-read AGENTS.md / CLAUDE.md** so the project's rules are fresh (especially
-   after any context compaction).
+1. **Re-read AGENTS.md / CLAUDE.md** after context compaction or when scope moved;
+   do not reread unchanged instructions as a ritual.
 2. Check every bead carefully: Does it make sense? Is it optimal? Could anything
    change to make the system work better for users? Revise in place.
 3. **DO NOT OVERSIMPLIFY.** Resist the urge to collapse complexity — complexity
    usually exists for a reason.
 4. **DO NOT LOSE FEATURES OR FUNCTIONALITY.** Every capability in the portfolio
    must survive the refinement.
-5. Ensure comprehensive unit tests AND e2e test scripts with detailed logging are
-   part of the bead set.
+5. Match the test level to the changed surface. Require e2e coverage only when
+   the behavior crosses a real system boundary.
 
-Suggested per-pass focus:
+Required pass focus:
 
 | Pass | Focus |
 |------|-------|
-| 1 | Structural issues, missing tasks |
-| 2 | Dependency sanity, cycle detection |
-| 3 | Test coverage gaps |
-| 4 | Comment quality, self-documentation completeness |
-| 5 | Final optimization |
+| 1 | Structure, dependency sanity, acceptance, test level, and actionable leaves |
+| 2 (conditional) | Re-check only the graph or contract surfaces changed by pass 1 |
 
 ### Validation between passes
 
@@ -145,9 +144,9 @@ br lint                  # hygiene: orphans, missing fields
 
 | Don't | Do |
 |-------|-----|
-| Single-pass beads | 4-5 passes — the first draft is never optimal |
+| Repeated fixed-count passes | One complete pass; a second only after a material graph or contract change |
 | Beads that need the markdown plan | Self-documenting beads — what/why/how/risks/success |
-| Omit tests | Explicit unit + e2e test beads with detailed logging |
+| Omit tests | Explicit tests at the lowest level that proves the behavior |
 | Oversimplify on refinement | Preserve complexity that exists for a reason |
 | Lose features when refining | Every portfolio capability survives |
 | `bd`/Dolt | `br`/`bv` — this is AgentOps |

@@ -19,7 +19,7 @@ context_rel:
 skill_api_version: 1
 user-invocable: true
 context:
-  window: fork
+  window: inherit
   intent:
     mode: task
   sections:
@@ -40,8 +40,8 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 ---
 # Crank Skill
 
-> **Quick Ref:** Execute the next ready wave with runtime-native workers. Output:
-> wave evidence + phase-2 handoff for Validate.
+> **Quick Ref:** Execute the next ready wave, run targeted acceptance once, and
+> return canonical wave evidence to RPI's bounded tranche.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -57,13 +57,15 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 
 ## Loop position
 
-Move **5 (wave execution)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md); produces wave-by-wave slice completion via `/swarm` + `/implement`. Each slice runs the canonical [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this): its acceptance test authored RED before code is the slice contract, and **refactor-under-green is its own wave, never optional** (`references/wave-patterns.md`) — a refactor wave must change no test. Hard gate at wave start: every row of the wave-validity check must pass (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Any failed row → run those slices sequential, not parallel. **Coupled-chain rule:** two slices that both regenerate a shared *derived* surface (`cli-command-surface` / `registry.json` / `context-map` / codex manifest) collide even with disjoint source files — run them as a sequential chain, each link based on the exact accepted prior link. Parallelism is explicit ownership, not swarm chaos.
+Move **5 (wave execution)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [slice validation plan](../../docs/templates/slice-validation.md) and uses one direct `/implement` worker for the routine wave. Each slice runs the canonical [narrow-waist micro-cycle](../../docs/architecture/operating-loop.md#the-narrow-waist-micro-cycle-canonical--every-loop-skill-cites-this): its acceptance test authored RED before code is the slice contract, and **refactor-under-green is its own wave, never optional** (`references/wave-patterns.md`) — a refactor wave must change no test. Admit `/swarm` only when the plan has at least two explicitly owned, disjoint write scopes; any shared migration, contract, CLI, or generated surface makes the work sequential. Parallelism is explicit ownership, not swarm chaos.
 
 Under RPI, one Crank invocation ends at one accepted wave. PARTIAL means work
-remains and returns through Validate and Learn before another wave. Standalone
-callers fulfill the same orchestrator contract rather than looping silently.
+remains in the admitted bounded tranche and returns to the orchestrator for a
+remaining-plan check. When plan inputs and risk are unchanged, the next wave may
+run without Validate or Learn. The tranche freezes and pays semantic proof cost
+once after at most three waves or 90 minutes.
 
-**Feed the orchestrator's decision loop — do not swallow findings into a silent retry.** Crank hands wave evidence to Validate and stops at its phase boundary. It does not invoke Discovery, Learn, or Premortem. Validate produces the immutable verdict, Learn classifies plan impact, and only the orchestrator may retry or change the remaining waves.
+**Feed the orchestrator's decision loop — do not swallow findings into a silent retry.** Crank hands canonical wave evidence to RPI and stops. Crank does not invoke Discovery, Learn, or Premortem; it also does not invoke Validate. RPI may admit another unchanged low-risk wave or close the tranche. Only after freeze does the orchestrator send the accumulated wave evidence to Validate, then Learn.
 
 **CLI dependencies:** br (read tracker-ready work via `BEADS_DIR="$(ao beads dir)" br`), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If br is unavailable, use TaskList for wave selection. If ao is unavailable, skip knowledge injection/extraction. Tracker terminal updates remain caller-owned.
 
@@ -72,8 +74,10 @@ For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared
 ## Architecture: Crank + Swarm
 
 Crank owns within-wave execution and evidence collection. RPI owns between-wave
-transitions. Swarm owns runtime-native worker spawning, fresh-context isolation,
-per-wave execution, and cleanup. In beads mode Crank gets the next wave from
+transitions and the one proof transaction. One direct implementer is the routine
+default. Swarm is admitted only when at least two disjoint lanes have explicit
+owners and independent write scopes; it then owns runtime-native worker spawning,
+fresh-context isolation, per-wave execution, and cleanup. In beads mode Crank gets the next wave from
 `ao beads exec ready`, bridges issues into worker tasks, verifies results, and
 returns proposed tracker changes without applying terminal updates. TaskList
 mode uses the same one-wave boundary.
@@ -94,8 +98,8 @@ Read `references/team-coordination.md` for the full per-wave execution model, `r
 
 ## Shared Run Governor
 
-RPI owns the only admissions and hard-cost governor. The default run admits
-exactly three Crank waves, persisted across fresh invocations. Crank reports
+RPI owns the only admissions and hard-cost governor. The default bounded tranche admits
+at most three Crank waves, persisted across fresh invocations. Crank reports
 measured usage and requests admission; it never initializes or resets the run.
 Missing/corrupt state, missing meters, or a refused admission stops dispatch.
 
@@ -131,17 +135,21 @@ Given `/crank [epic-id | .agents/rpi/execution-packet.json | plan-file.md | "des
 
 ### Preflight (Recovery hooks → Step 3a.3)
 
-Read [references/execution-preflight.md](references/execution-preflight.md) when you need recovery-hook setup, effort/tier mapping, knowledge-context loading (Step 0), tracking-mode detection (0.5), epic identification (Step 1), branch isolation (1.5), persistent-run admission / mutation-trail / shared-task-notes initialization (1a–1a.2), test-first classification (1b), epic details (Step 2), ready-issue listing (Step 3), and the four pre-flight checks (3a, 3a.1 premortem, 3a.2 bd-audit, 3a.3 changed-string grep).
+Read [references/execution-preflight.md](references/execution-preflight.md) for
+the minimum readiness packet: exact leaf, bound plan/Premortem, failing proof,
+write scope, isolation, test-first classification, and persistent governor.
 
 The Branch Isolation Gate (Step 1.5) has its own dedicated contract — see [references/branch-isolation.md](references/branch-isolation.md) for when crank must create or refuse an isolation branch.
 
 ### Wave dispatch (Step 3b → Step 4)
 
-Read [references/wave-dispatch.md](references/wave-dispatch.md) when you need SPEC WAVE / TEST WAVE / RED Gate flow (Steps 3b–3c), context-briefing assembly (3b.1), shared-notes injection (3b.2), parallel-wave isolation (3b.3), or Step 4 wave execution detail — GREEN mode, issue-typing + file manifests, grep-for-existing-functions, validation metadata policy, acceptance-criteria injection, language-standards injection, file-ownership table, atomic governor admission, spec-consistency gate, cross-cutting constraint injection, backend dispatch, and cross-cutting validation.
+Read [references/wave-dispatch.md](references/wave-dispatch.md) for atomic
+admission, the direct single-writer route, minimum worker metadata, test-first
+flow, and the explicit disjoint-lane threshold for parallel dispatch.
 
 ### Wave completion (Step 5 → Step 8.7)
 
-Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), validation-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work loop (Step 6), de-sloppify pass (6.5), pre-validation lifecycle checks (6.9), final batched validation (Step 7), phase-2 summary (Step 8), learnings extraction (8.5), shared-notes archive (8.6), and the scope-completion pre-close gate (8.7).
+Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), validation-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work decision (Step 6), or the scope-completion gate (8.7). Intermediate waves skip broad pre-validation lifecycle suites and final validation; RPI runs those once after tranche freeze. Legacy phase-2 summaries are link-only projections of canonical wave evidence.
 
 Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github/workflows/*.yml`, run `bash scripts/validate-ci-policy-parity.sh`; any non-zero exit fails wave acceptance and surfaces the generated drift report. See [references/wave-patterns.md](references/wave-patterns.md) "CI-Policy Parity Gate" for the worked example and trigger pattern.
 
@@ -167,8 +175,8 @@ do not authorize or perform Git delivery.
 ## The FIRE Loop
 
 Crank runs FIRE (Find → Ignite → Reap → Escalate → Return) for one wave. RPI may
-invoke another Crank wave only after Validate, Learn, and an explicit
-orchestrator decision. Read `references/wave-patterns.md` for the parallel-wave
+invoke another admitted wave after targeted acceptance and a remaining-plan
+decision; Validate and Learn run once at the tranche boundary. Read `references/wave-patterns.md` for the parallel-wave
 and acceptance details.
 
 ## Key Rules
@@ -178,8 +186,8 @@ and acceptance details.
   per-issue context, and refuse to dispatch past unresolved conflicts or a
   governor refusal.
 - Per-wave deterministic acceptance stays lightweight; the resulting wave
-  evidence is handed to Validate rather than interpreted as a re-plan inside
-  Crank.
+  evidence is handed to RPI, not directly to Validate and not interpreted as a
+  re-plan inside Crank.
 - Load relevant prior evidence at the start, emit current evidence at the end,
   and always return `DONE`, `BLOCKED`, or `PARTIAL`.
 
@@ -205,13 +213,13 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 
 ## Output Specification
 
-- **Path:** slice changes plus wave evidence under `.agents/swarm/results/`; tracker identifiers are read-only context in the handoff.
+- **Path:** slice changes plus canonical wave evidence under `.agents/swarm/results/`; tracker identifiers are read-only context in the handoff.
 - **Filename:** preserve each worker's declared result filename; the final response is emitted to stdout and does not invent a second evidence file.
 - **Format:** markdown progress/closeout summary with epic ID/title, issue count, iterations, validation result, flywheel status, and per-slice [slice-validation](../../docs/templates/slice-validation.md) roll-ups.
 - **Exit code:** run `bash skills/crank/scripts/validate.sh` and require zero; the semantic exit signal is `<promise>DONE</promise>` only when all slices are accepted, `PARTIAL` while work remains, or `BLOCKED` after bounded recovery.
-- **Downstream handoff:** pass slice changes and their evidence to Validate.
-  Validate hands an immutable verdict to Learn, which returns plan impact to
-  the orchestrator; Crank does not choose that transition.
+- **Downstream handoff:** pass wave evidence to RPI's bounded tranche. RPI alone
+  decides whether to admit another unchanged wave or freeze once for Validate;
+  Crank does not choose that transition.
 
 ## Quality Checklist
 
@@ -228,15 +236,15 @@ Common failure modes: no ready issues, repeated wave gate failures, missing file
 
 ---
 
-## Inline Work Policy
+## Execution ownership
 
-Most `/crank` steps delegate worker execution via `/swarm` or `Skill()`. A small number of steps are **orchestrator-owned** by design — these are inline gates, scans, and bookkeeping that must stay in the orchestrator's context to make a downstream decision. Orchestrator-owned steps are marked with a `*(orchestrator-owned: …)*` admonition in the body (see STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7).
-
-**Do NOT convert orchestrator-owned steps into `Skill()` or `/swarm` delegations** — they are intentionally inline. Every other step (SPEC wave, TEST wave, IMPL wave, validation, lifecycle checks) should delegate via the documented `Skill(...)` call or `/swarm` invocation.
-
-If unsure whether a step is orchestrator-owned or delegatable, the default is **delegate**. Only steps marked with the admonition above are exempt.
-
-Crank runs as an isolated phase-2 execution context — discovery and validation are sealed off from this skill. See [references/isolation-contract.md](references/isolation-contract.md) for the four-lever enforcement model and the compression patterns `scripts/check-skill-isolation.sh` flags. See [references/best-practices.md](references/best-practices.md) for the lifecycle principle + anti-pattern citation table (cite by number; do not duplicate body content).
+The current leaf owner is the routine implementer. Crank keeps deterministic
+admission, targeted acceptance, and remaining-plan classification in the visible
+orchestrator context. It does not spawn a worker for bookkeeping or a Swarm for
+one write scope. A fresh context is required later for semantic Validate, not
+for every mechanical step. See [references/isolation-contract.md](references/isolation-contract.md)
+for authority separation and [references/best-practices.md](references/best-practices.md)
+for lifecycle principles.
 
 ## Related skills
 

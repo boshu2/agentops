@@ -8,8 +8,9 @@ This reference carries the detailed mode, target, and evidence rules for the
 - Default: one independent fresh-context judge; PASS requires that judge to
   return PASS. Additional judges are an explicit depth or council choice, not
   part of the default validation contract.
-- `--quick`: inline structured review. It may guide work but is stamped
-  `waived`, never independently validated.
+- `--quick`: one fresh independent judge on a narrower claim set, consuming
+  verified exact-input deterministic receipts. Quick changes depth, not
+  author-versus-judge independence.
 - `--deep`: four perspectives—missing requirements, feasibility, scope, and
   specification completeness. PASS uses the declared majority rule, with any
   unresolved blocker still failing closed.
@@ -29,7 +30,7 @@ mode rather than growing the public surface.
 
 | Target | Required checks |
 |---|---|
-| default plan | temporal interrogation, error/rescue map, FAIL patterns, test pyramid, enum/input validation |
+| default plan | acceptance, feasibility, rollback, and only the checks selected by named risks |
 | scenario | holdout scenario and falsifying edge |
 | fitness | each GOALS.md gate against current measured state |
 | ratchet | current checkpoint, evidence, and legal next transition |

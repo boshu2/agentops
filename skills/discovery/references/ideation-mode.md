@@ -82,12 +82,12 @@ This step belongs to `/discovery` on the open-ended path (see
 rationale-bearing list of 15 ideas with how/perceive/implement notes and rubric
 scores. Hand that forward — do not lose the rationale.
 
-### Step 5 — Refine in plan space (4-5 passes)
+### Step 5 — Refine in plan space
 
 Also a `/discovery` responsibility (see `bead-operationalization.md`): re-read
-AGENTS.md each pass, check every bead for sense and optimality, and resist
-oversimplification. "It's a lot easier and faster to operate in plan space
-before we start implementing."
+AGENTS.md after compaction or a scope change, then make one complete pass over
+the beads. Repeat only if that pass materially changes the graph or acceptance.
+Resist oversimplification while avoiding fixed-count review theater.
 
 ## Output of ideation mode
 

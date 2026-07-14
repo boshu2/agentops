@@ -124,30 +124,22 @@ Packet-side JSON shape (excerpt):
 
 `/crank` and `/validate` read these slots; v1 packets without them fall back to the legacy `done_criteria` array.
 
-## Phase Summary
+## Compatibility Phase Summary
 
-Write to `.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md`:
+The execution packet is canonical. Write
+`.agents/rpi/phase-1-summary-YYYY-MM-DD-<goal-slug>.md` only for a consumer that
+still requires the legacy path, and keep it as a link-only projection:
 
 ```markdown
 # Phase 1 Summary: Discovery
 
-- **Goal:** <goal>
-- **Epic:** <epic-id>
-- **Issues:** <count>
-- **Complexity:** <fast|standard|full>
-- **Premortem:** <PASS|WARN> at <artifact>; repair/REPLAN disposition remains orchestrator-owned
-- **Brainstorm:** <used|skipped>
-- **History search:** <findings count or skipped>
-- **Density:** intent, boundary, evidence, decision, constraint, next action
-  all present
+- **Canonical packet:** <execution-packet path and digest>
+- **Premortem:** <verdict path and digest>
 - **Status:** DONE
-- **Timestamp:** <ISO-8601>
 ```
 
-## Ratchet and Telemetry
+## Optional Telemetry
 
-```bash
-ao ratchet record discovery 2>/dev/null || true
-bash scripts/checkpoint-commit.sh rpi "phase-1" "discovery complete" 2>/dev/null || true
-bash scripts/log-telemetry.sh rpi phase-complete phase=1 phase_name=discovery 2>/dev/null || true
-```
+Telemetry must not create a second source of truth or block the handoff. Emit it
+only when the repository already has a configured sink; never make a checkpoint
+commit solely to prove that Discovery ran.
