@@ -1,9 +1,82 @@
 package goalstrace
 
 import (
+	"context"
+	"errors"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 )
+
+func TestExecBeadQuerierUsesResolvedTrackerCommand(t *testing.T) {
+	for _, trackerKind := range []string{"br", "bd"} {
+		t.Run(trackerKind, func(t *testing.T) {
+			root := t.TempDir()
+			binDir := t.TempDir()
+			logPath := filepath.Join(t.TempDir(), "query.log")
+			ledger := filepath.Join(t.TempDir(), "ledger")
+			tracker := filepath.Join(binDir, trackerKind)
+			script := `#!/bin/sh
+printf 'cwd=%s beads=%s argc=%s args=%s\n' "$PWD" "${BEADS_DIR-}" "$#" "$*" >> "$QUERY_LOG"
+if [ "${TRACKER_FAIL-}" = yes ]; then exit 23; fi
+printf '[]\n'
+`
+			if err := os.WriteFile(tracker, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("AGENTOPS_TRACKER", trackerKind)
+			t.Setenv("BEADS_DIR", ledger)
+			t.Setenv("QUERY_LOG", logPath)
+
+			querier := NewExecBeadQuerier(ExecBeadQuerierOptions{
+				Context: context.Background(),
+				WorkDir: root,
+			})
+			if !querier.Available() {
+				t.Fatal("resolved fixture tracker reported unavailable")
+			}
+			if _, err := querier.Beads(); err != nil {
+				t.Fatalf("Beads: %v", err)
+			}
+			logData, err := os.ReadFile(logPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			logLine := string(logData)
+			if !strings.Contains(logLine, "cwd="+root+" ") || !strings.Contains(logLine, "argc=3 args=list --json --all") {
+				t.Fatalf("resolved process context = %q", logLine)
+			}
+			if trackerKind == "br" && !strings.Contains(logLine, "beads="+ledger+" ") {
+				t.Fatalf("br child did not receive canonical BEADS_DIR: %q", logLine)
+			}
+			if trackerKind == "bd" && !strings.Contains(logLine, "beads= ") {
+				t.Fatalf("bd child inherited BEADS_DIR: %q", logLine)
+			}
+
+			t.Setenv("TRACKER_FAIL", "yes")
+			logPath = filepath.Join(t.TempDir(), "failed-query.log")
+			t.Setenv("QUERY_LOG", logPath)
+			failing := NewExecBeadQuerier(ExecBeadQuerierOptions{Context: context.Background(), WorkDir: root})
+			_, err = failing.Beads()
+			var exitErr *trackerexec.ExitError
+			if !errors.As(err, &exitErr) || exitErr.ExitCode() != 23 {
+				t.Fatalf("tracker error = %T %v, want typed exit 23", err, err)
+			}
+			logData, err = os.ReadFile(logPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			failedLog := string(logData)
+			if !strings.Contains(failedLog, "args=list --json --all") || !strings.Contains(failedLog, "args=list --json\n") {
+				t.Fatalf("fallback argv not preserved on one resolution: %q", failedLog)
+			}
+		})
+	}
+}
 
 // TestClaimedScenarios_HeuristicDoesNotMatchEnglishAutoWords verifies that
 // plain English compound words with an "auto-" prefix (auto-merge, auto-update,
