@@ -876,7 +876,17 @@ run_govulncheck() {
 
         echo "== govulncheck: $module_dir ==" >> "$output_file"
         module_rc=0
-        (cd "$module_dir" && govulncheck ./... > "$module_out" 2> "$module_stderr") || module_rc=$?
+        # GOTOOLCHAIN=auto: scan the stdlib version the module DECLARES it ships
+        # with (go.mod `toolchain` directive), not whatever `go` happens to sit on
+        # PATH. CI's actions/setup-go pins a fixed go-version and sets
+        # GOTOOLCHAIN=local, which makes govulncheck scan an older stdlib than the
+        # repo actually builds against (go.mod declares a newer, patched toolchain).
+        # That skew made CI report standard-library CVEs (GO-2026-4970/5037/5039/5856)
+        # already fixed in the declared toolchain while local (GOTOOLCHAIN=auto)
+        # scanned clean. Forcing `auto` here aligns the scan with the shipped
+        # toolchain so local == CI. This is NOT a suppression: a genuinely unfixed
+        # stdlib CVE (no fix in the declared toolchain) still blocks.
+        (cd "$module_dir" && GOTOOLCHAIN=auto govulncheck ./... > "$module_out" 2> "$module_stderr") || module_rc=$?
 
         cat "$module_out" >> "$output_file"
         echo "" >> "$output_file"

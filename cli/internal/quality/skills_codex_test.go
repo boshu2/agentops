@@ -72,7 +72,11 @@ func writeInstallMeta(t *testing.T, home, root, version, hash string, count int)
 func TestCheckSkillsReportsInstallGuidanceWhenEmpty(t *testing.T) {
 	setHome(t, t.TempDir())
 	check := CheckSkills()
-	if check.Status != "warn" || !strings.Contains(check.Detail, "install.sh") {
+	// The empty-home hint is platform-specific: POSIX points at install.sh,
+	// Windows at install-codex.ps1 (pluginInstallHint switches on GOOS). Assert
+	// against the production hint itself so the test is platform-independent —
+	// a literal "install.sh" substring silently fails on the Windows runners.
+	if check.Status != "warn" || !strings.Contains(check.Detail, pluginInstallHint()) {
 		t.Fatalf("check = %+v", check)
 	}
 }

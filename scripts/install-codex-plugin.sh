@@ -351,7 +351,13 @@ selftest_codex_plugin() {
   fi
 
   # (c) at least one sentinel skill file is readable.
-  sentinel="$(find "$PLUGIN_SKILLS_DST" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | head -1)"
+  # `-print -quit` (not `| head -1`): find stops itself after the first hit, so it
+  # never writes into a pipe head() has already closed. With `set -o pipefail`,
+  # `find … | head -1` SIGPIPEs (exit 141) once find's output exceeds one stdio
+  # flush (~4KB) — which the long installed-cache paths × 66 skills now do — and
+  # under `set -e` that killed the whole installer silently right after the last
+  # info() line (the CI 992/994/998/848 regression). This form is SIGPIPE-free.
+  sentinel="$(find "$PLUGIN_SKILLS_DST" -mindepth 2 -maxdepth 2 -name SKILL.md -print -quit 2>/dev/null)"
   if [[ -z "$sentinel" || ! -r "$sentinel" ]]; then
     problems+=("no readable sentinel SKILL.md under ${PLUGIN_SKILLS_DST}")
   fi
