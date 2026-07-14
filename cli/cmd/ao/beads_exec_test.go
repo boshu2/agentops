@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -9,6 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	beadsadapter "github.com/boshu2/agentops/cli/internal/adapters/beads"
+	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +45,101 @@ func newBeadsExecCmd(out, errbuf *strings.Builder) *cobra.Command {
 	c.SetErr(errbuf)
 	c.SetIn(strings.NewReader(""))
 	return c
+}
+
+func TestBeadsProductionPathsUseSharedResolvedCommand(t *testing.T) {
+	root := makeGitRepoForTracker(t)
+	workDir := filepath.Join(root, "nested")
+	if err := os.Mkdir(workDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ledger := filepath.Join(root, "ledger")
+	script := filepath.Join(root, "tracker")
+	scriptBody := `#!/bin/sh
+printf 'cwd=%s beads=%s args=%s\n' "$PWD" "${BEADS_DIR-unset}" "$*" >> "$BEADS_PRODUCTION_LOG"
+printf 'tracker-stdout\n'
+printf 'tracker-stderr\n' >&2
+exit 23
+`
+	if err := os.WriteFile(script, []byte(scriptBody), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	originalLookPath := trackerLookPath
+	t.Cleanup(func() { trackerLookPath = originalLookPath })
+	trackerLookPath = func(name string) (string, error) {
+		if name == trackerBR || name == trackerBD {
+			return script, nil
+		}
+		return "", exec.ErrNotFound
+	}
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(workDir)
+
+	for _, testCase := range []struct {
+		name      string
+		tracker   string
+		wantDir   string
+		wantBeads string
+	}{
+		{name: "br", tracker: trackerBR, wantDir: workDir, wantBeads: ledger},
+		{name: "bd", tracker: trackerBD, wantDir: root, wantBeads: "unset"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			logPath := filepath.Join(root, testCase.name+".log")
+			t.Setenv("AGENTOPS_TRACKER", testCase.tracker)
+			t.Setenv("BEADS_DIR", ledger)
+			t.Setenv("BEADS_PRODUCTION_LOG", logPath)
+
+			tracker := currentBeadsTracker()
+			output, outputErr := tracker.Output(context.Background(), "ready", "--json")
+			var sharedExit *trackerexec.ExitError
+			if !errors.As(outputErr, &sharedExit) || sharedExit.ExitCode() != 23 {
+				t.Fatalf("tracker output error = %T %v, want shared *trackerexec.ExitError(23)", outputErr, outputErr)
+			}
+			if string(output) != "tracker-stdout\n" {
+				t.Fatalf("tracker output = %q, want captured stdout", output)
+			}
+
+			var stdout, stderr bytes.Buffer
+			executeErr := beadsadapter.NewExecutor(tracker).Execute(
+				context.Background(),
+				[]string{"close", "age-x", "-r", "done"},
+				beadsapp.ExecStreams{Stdout: &stdout, Stderr: &stderr},
+			)
+			var familyExit *beadsapp.ExitError
+			if !errors.As(executeErr, &familyExit) || familyExit.ExitCode() != 23 {
+				t.Fatalf("executor error = %T %v, want beads ExitError(23)", executeErr, executeErr)
+			}
+			if stdout.String() != "tracker-stdout\n" || stderr.String() != "tracker-stderr\n" {
+				t.Fatalf("executor streams = stdout %q stderr %q", stdout.String(), stderr.String())
+			}
+			logBody, err := os.ReadFile(logPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantContext := "cwd=" + testCase.wantDir + " beads=" + testCase.wantBeads
+			if !strings.Contains(string(logBody), wantContext+" args=ready --json") ||
+				!strings.Contains(string(logBody), wantContext+" args=close age-x -r done") {
+				t.Fatalf("tracker log = %q, want canonical context and exact argv", logBody)
+			}
+		})
+	}
+
+	cancelLog := filepath.Join(root, "canceled.log")
+	t.Setenv("AGENTOPS_TRACKER", trackerBR)
+	t.Setenv("BEADS_DIR", ledger)
+	t.Setenv("BEADS_PRODUCTION_LOG", cancelLog)
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	cancelErr := beadsadapter.NewExecutor(currentBeadsTracker()).Execute(
+		canceled, []string{"ready"}, beadsapp.ExecStreams{},
+	)
+	if !errors.Is(cancelErr, context.Canceled) {
+		t.Fatalf("canceled executor error = %T %v, want context.Canceled", cancelErr, cancelErr)
+	}
+	if _, err := os.Stat(cancelLog); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("canceled executor launched tracker child: stat error %v", err)
+	}
 }
 
 // TestRunBeadsExec_BRForwardsWithBeadsDir: in a _beads repo, `ao beads exec

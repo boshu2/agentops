@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	beadsapp "github.com/boshu2/agentops/cli/internal/beads"
+	"github.com/boshu2/agentops/cli/internal/trackerexec"
 	"github.com/boshu2/agentops/cli/internal/trackerresolve"
 )
 
@@ -28,14 +29,22 @@ func NewTrackerWith(workingDirectory func() (string, error), environment func() 
 }
 
 func (tracker *Tracker) Resolve() (beadsapp.TrackerResolution, error) {
+	resolved, err := tracker.resolve()
+	if err != nil {
+		return beadsapp.TrackerResolution{}, err
+	}
+	return appResolution(resolved), nil
+}
+
+func (tracker *Tracker) resolve() (trackerresolve.Resolution, error) {
 	cwd, env, err := tracker.context()
 	if err != nil {
-		return beadsapp.TrackerResolution{}, err
+		return trackerresolve.Resolution{}, err
 	}
-	resolved, err := trackerresolve.ResolveWithLookPath(cwd, env, tracker.lookPath)
-	if err != nil {
-		return beadsapp.TrackerResolution{}, err
-	}
+	return trackerresolve.ResolveWithLookPath(cwd, env, tracker.lookPath)
+}
+
+func appResolution(resolved trackerresolve.Resolution) beadsapp.TrackerResolution {
 	return beadsapp.TrackerResolution{
 		Tracker:   resolved.Tracker,
 		Binary:    resolved.Binary,
@@ -43,7 +52,7 @@ func (tracker *Tracker) Resolve() (beadsapp.TrackerResolution, error) {
 		Source:    resolved.Source,
 		WorkDir:   resolved.WorkDir,
 		ChildEnv:  append([]string(nil), resolved.ChildEnv...),
-	}, nil
+	}
 }
 
 func (tracker *Tracker) BRLedger() (beadsapp.LedgerResolution, error) {
@@ -87,14 +96,11 @@ func (tracker *Tracker) Available() bool {
 }
 
 func (tracker *Tracker) Output(ctx context.Context, args ...string) ([]byte, error) {
-	resolved, err := tracker.Resolve()
+	resolved, err := tracker.resolve()
 	if err != nil {
 		return nil, err
 	}
-	command := exec.CommandContext(ctx, resolved.Binary, args...) // #nosec G204 -- trackerresolve constrains the binary to br|bd.
-	command.Dir = resolved.WorkDir
-	command.Env = append([]string(nil), resolved.ChildEnv...)
-	return command.Output()
+	return (trackerexec.Factory{}).Command(ctx, resolved, args, trackerexec.Streams{}).Output()
 }
 
 func (tracker *Tracker) ListInProgress(ctx context.Context) ([]byte, error) {
@@ -122,7 +128,7 @@ func (tracker *Tracker) Show(ctx context.Context, beadID string) (beadsapp.Stale
 }
 
 func (tracker *Tracker) Claim(ctx context.Context, beadID, agent string) error {
-	resolved, err := tracker.Resolve()
+	resolved, err := tracker.resolve()
 	if err != nil {
 		return err
 	}
@@ -130,10 +136,7 @@ func (tracker *Tracker) Claim(ctx context.Context, beadID, agent string) error {
 	if agent != "" {
 		args = append(args, "--actor", agent)
 	}
-	command := exec.CommandContext(ctx, resolved.Binary, args...) // #nosec G204 -- trackerresolve constrains the binary to br|bd.
-	command.Dir = resolved.WorkDir
-	command.Env = append([]string(nil), resolved.ChildEnv...)
-	output, err := command.CombinedOutput()
+	output, err := (trackerexec.Factory{}).Command(ctx, resolved, args, trackerexec.Streams{}).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("br update --claim failed: %w: %s", err, string(output))
 	}

@@ -20,7 +20,11 @@ func (repository ScenarioRepository) Available() bool {
 }
 
 func (repository ScenarioRepository) FetchScenarioBead(id string) (beadsapp.FetchedBead, error) {
-	raw, err := repository.tracker.Output(context.Background(), "show", id, "--json")
+	return repository.FetchScenarioBeadContext(context.Background(), id)
+}
+
+func (repository ScenarioRepository) FetchScenarioBeadContext(ctx context.Context, id string) (beadsapp.FetchedBead, error) {
+	raw, err := repository.tracker.Output(ctx, "show", id, "--json")
 	if err != nil {
 		return beadsapp.FetchedBead{}, fmt.Errorf("bd show %s --json: %w", id, err)
 	}
@@ -28,8 +32,13 @@ func (repository ScenarioRepository) FetchScenarioBead(id string) (beadsapp.Fetc
 }
 
 func (repository ScenarioRepository) UpdateDescription(id, description string) error {
-	_, err := repository.tracker.Output(context.Background(), "update", id, "--description", description)
+	return repository.UpdateDescriptionContext(context.Background(), id, description)
+}
+
+func (repository ScenarioRepository) UpdateDescriptionContext(ctx context.Context, id, description string) error {
+	_, err := repository.tracker.Output(ctx, "update", id, "--description", description)
 	return err
 }
 
 var _ beadsapp.ScenarioRepository = ScenarioRepository{}
+var _ beadsapp.ScenarioContextRepository = ScenarioRepository{}

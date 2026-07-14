@@ -2,6 +2,7 @@ package beads
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -34,11 +35,22 @@ type ScenarioRepository interface {
 	UpdateDescription(string, string) error
 }
 
+type ScenarioContextRepository interface {
+	FetchScenarioBeadContext(context.Context, string) (FetchedBead, error)
+	UpdateDescriptionContext(context.Context, string, string) error
+}
+
 type ScenarioUseCases interface {
 	Available() bool
 	PrepareScenarios(string, bool) (ScenarioExtraction, error)
 	ApplyScenarios(ScenarioExtraction) error
 	ValidateScenarios(string) (ScenarioValidation, error)
+}
+
+type ScenarioContextUseCases interface {
+	PrepareScenariosContext(context.Context, string, bool) (ScenarioExtraction, error)
+	ApplyScenariosContext(context.Context, ScenarioExtraction) error
+	ValidateScenariosContext(context.Context, string) (ScenarioValidation, error)
 }
 
 type ScenarioService struct {
@@ -50,7 +62,11 @@ func (service ScenarioService) Available() bool {
 }
 
 func (service ScenarioService) PrepareScenarios(id string, force bool) (ScenarioExtraction, error) {
-	bead, err := service.Repository.FetchScenarioBead(id)
+	return service.PrepareScenariosContext(context.Background(), id, force)
+}
+
+func (service ScenarioService) PrepareScenariosContext(ctx context.Context, id string, force bool) (ScenarioExtraction, error) {
+	bead, err := service.fetchScenarioBead(ctx, id)
 	if err != nil {
 		return ScenarioExtraction{}, fmt.Errorf("fetch acceptance for %s: %w (inspect with 'bd show %s --json')", id, err, id)
 	}
@@ -67,16 +83,24 @@ func (service ScenarioService) PrepareScenarios(id string, force bool) (Scenario
 }
 
 func (service ScenarioService) ApplyScenarios(extraction ScenarioExtraction) error {
+	return service.ApplyScenariosContext(context.Background(), extraction)
+}
+
+func (service ScenarioService) ApplyScenariosContext(ctx context.Context, extraction ScenarioExtraction) error {
 	rendered := scenarios.Render(extraction.Scenarios)
 	description := ComposeDescriptionWithScenarios(extraction.Bead.Description, rendered)
-	if err := service.Repository.UpdateDescription(extraction.BeadID, description); err != nil {
+	if err := service.updateDescription(ctx, extraction.BeadID, description); err != nil {
 		return fmt.Errorf("write '## Scenarios' into %s: %w (inspect with 'bd show %s')", extraction.BeadID, err, extraction.BeadID)
 	}
 	return nil
 }
 
 func (service ScenarioService) ValidateScenarios(id string) (ScenarioValidation, error) {
-	bead, err := service.Repository.FetchScenarioBead(id)
+	return service.ValidateScenariosContext(context.Background(), id)
+}
+
+func (service ScenarioService) ValidateScenariosContext(ctx context.Context, id string) (ScenarioValidation, error) {
+	bead, err := service.fetchScenarioBead(ctx, id)
 	if err != nil {
 		return ScenarioValidation{}, fmt.Errorf("fetch bead %s: %w (inspect with 'bd show %s --json')", id, err, id)
 	}
@@ -89,6 +113,20 @@ func (service ScenarioService) ValidateScenarios(id string) (ScenarioValidation,
 		return ScenarioValidation{BeadID: id, Error: err.Error()}, fmt.Errorf("validate scenarios for %s: %w; fix the block or regenerate it with 'ao beads scenarios extract %s --force'", id, err, id)
 	}
 	return ScenarioValidation{BeadID: id, Valid: true, Scenarios: parsed}, nil
+}
+
+func (service ScenarioService) fetchScenarioBead(ctx context.Context, id string) (FetchedBead, error) {
+	if contextual, ok := service.Repository.(ScenarioContextRepository); ok {
+		return contextual.FetchScenarioBeadContext(ctx, id)
+	}
+	return service.Repository.FetchScenarioBead(id)
+}
+
+func (service ScenarioService) updateDescription(ctx context.Context, id, description string) error {
+	if contextual, ok := service.Repository.(ScenarioContextRepository); ok {
+		return contextual.UpdateDescriptionContext(ctx, id, description)
+	}
+	return service.Repository.UpdateDescription(id, description)
 }
 
 func ParseScenarioBead(out []byte) (FetchedBead, error) {

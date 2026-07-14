@@ -1,6 +1,7 @@
 package beads
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -65,6 +66,13 @@ type HygieneRepository interface {
 	Reparent(string, string) error
 }
 
+type HygieneContextRepository interface {
+	ListContext(context.Context, string) ([]BeadRecord, error)
+	ShowContext(context.Context, string) (BeadRecord, error)
+	CloseContext(context.Context, string, string) error
+	ReparentContext(context.Context, string, string) error
+}
+
 type AuditFinding struct {
 	ID       string `json:"id"`
 	Title    string `json:"title"`
@@ -126,22 +134,31 @@ type HygieneUseCases interface {
 	Cluster(bool) (*ClusterReport, error)
 }
 
+type HygieneContextUseCases interface {
+	AuditContext(context.Context, bool) (*AuditReport, error)
+	ClusterContext(context.Context, bool) (*ClusterReport, error)
+}
+
 type HygieneService struct {
 	Repository HygieneRepository
 }
 
 func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
+	return service.AuditContext(context.Background(), autoClose)
+}
+
+func (service HygieneService) AuditContext(ctx context.Context, autoClose bool) (*AuditReport, error) {
 	report := &AuditReport{LikelyFixed: []AuditFinding{}, LikelyStale: []AuditFinding{}, Consolidatable: []AuditConsolidation{}}
 	if service.Repository == nil || !service.Repository.Available() {
 		report.Error = "bd CLI not found"
 		return report, nil
 	}
 	report.BDAvailable = true
-	open, err := service.Repository.List("open")
+	open, err := service.list(ctx, "open")
 	if err != nil {
 		return nil, err
 	}
-	inProgress, err := service.Repository.List("in_progress")
+	inProgress, err := service.list(ctx, "in_progress")
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +174,7 @@ func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
 		if evidence := GrepCommitsForID(commits, record.ID); evidence != "" {
 			report.LikelyFixed = append(report.LikelyFixed, AuditFinding{ID: record.ID, Title: record.DisplayTitle(), Reason: "commit_match", Evidence: evidence})
 			if autoClose {
-				if closeErr := service.Repository.Close(record.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence); closeErr != nil {
+				if closeErr := service.close(ctx, record.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence); closeErr != nil {
 					report.Warnings = append(report.Warnings, closeErr.Error())
 				}
 			}
@@ -168,7 +185,7 @@ func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
 			if evidence := FileChangesSinceCommits(commits, record.CreatedAt, paths); evidence != "" {
 				report.LikelyFixed = append(report.LikelyFixed, AuditFinding{ID: record.ID, Title: record.DisplayTitle(), Reason: "file_modified_since_creation", Evidence: evidence})
 				if autoClose {
-					if closeErr := service.Repository.Close(record.ID, "Auto-closed by ao beads audit: mentioned files modified since creation."); closeErr != nil {
+					if closeErr := service.close(ctx, record.ID, "Auto-closed by ao beads audit: mentioned files modified since creation."); closeErr != nil {
 						report.Warnings = append(report.Warnings, closeErr.Error())
 					}
 				}
@@ -217,18 +234,22 @@ func (service HygieneService) Audit(autoClose bool) (*AuditReport, error) {
 }
 
 func (service HygieneService) Cluster(apply bool) (*ClusterReport, error) {
+	return service.ClusterContext(context.Background(), apply)
+}
+
+func (service HygieneService) ClusterContext(ctx context.Context, apply bool) (*ClusterReport, error) {
 	report := &ClusterReport{Clusters: []BeadCluster{}, Unclustered: []ClusterBead{}}
 	if service.Repository == nil || !service.Repository.Available() {
 		report.Error = "bd CLI not found"
 		return report, nil
 	}
 	report.BDAvailable = true
-	records, err := service.Repository.List("open")
+	records, err := service.list(ctx, "open")
 	if err != nil {
 		return nil, err
 	}
 	for index, record := range records {
-		if enriched, showErr := service.Repository.Show(record.ID); showErr == nil && enriched.ID != "" {
+		if enriched, showErr := service.show(ctx, record.ID); showErr == nil && enriched.ID != "" {
 			if enriched.Title == "" {
 				enriched.Title = record.Title
 			}
@@ -249,7 +270,7 @@ func (service HygieneService) Cluster(apply bool) (*ClusterReport, error) {
 				if bead.ID == cluster.Representative {
 					continue
 				}
-				if err := service.Repository.Reparent(bead.ID, cluster.Representative); err != nil {
+				if err := service.reparent(ctx, bead.ID, cluster.Representative); err != nil {
 					report.ApplyErrors = append(report.ApplyErrors, fmt.Sprintf("%s -> %s: %v", bead.ID, cluster.Representative, err))
 				} else {
 					report.Applied++
@@ -258,6 +279,34 @@ func (service HygieneService) Cluster(apply bool) (*ClusterReport, error) {
 		}
 	}
 	return report, nil
+}
+
+func (service HygieneService) list(ctx context.Context, status string) ([]BeadRecord, error) {
+	if contextual, ok := service.Repository.(HygieneContextRepository); ok {
+		return contextual.ListContext(ctx, status)
+	}
+	return service.Repository.List(status)
+}
+
+func (service HygieneService) show(ctx context.Context, id string) (BeadRecord, error) {
+	if contextual, ok := service.Repository.(HygieneContextRepository); ok {
+		return contextual.ShowContext(ctx, id)
+	}
+	return service.Repository.Show(id)
+}
+
+func (service HygieneService) close(ctx context.Context, id, note string) error {
+	if contextual, ok := service.Repository.(HygieneContextRepository); ok {
+		return contextual.CloseContext(ctx, id, note)
+	}
+	return service.Repository.Close(id, note)
+}
+
+func (service HygieneService) reparent(ctx context.Context, id, parent string) error {
+	if contextual, ok := service.Repository.(HygieneContextRepository); ok {
+		return contextual.ReparentContext(ctx, id, parent)
+	}
+	return service.Repository.Reparent(id, parent)
 }
 
 func ParseBDRecordList(raw []byte) ([]BeadRecord, error) {
