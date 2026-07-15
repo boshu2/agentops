@@ -18,10 +18,12 @@ self-contained context document for an agent improving the RPI loop.
 - Branch: `main`
 - HEAD: `baaa9e22dadc423d7b7bb73c043112ecfca425cb`
 - Worktree: dirty, containing multiple intentional candidate sets.
-- `ao packet` exists in the dirty source checkout but not in the pinned HEAD.
-- Installed executable: `v3.2.0-229-g4b3188438`; it rejects `ao packet`.
+- The packet command family exists in the dirty source checkout but not in the
+  pinned HEAD.
+- Installed executable: `v3.2.0-229-g4b3188438`; it has no packet command
+  family.
 - Dirty source executable observed through `go run`:
-  `v3.2.0-725-gbaaa9e22d-dirty`; it contains `ao packet`.
+  `v3.2.0-725-gbaaa9e22d-dirty`; it contains the packet command family.
 
 Inspect current state before editing. Do not clean, reset, or overwrite the
 mixed worktree while consuming this handoff.
@@ -259,7 +261,7 @@ Candidate-to-verdict elapsed time was 8m27s.
 - No validator for `NOT_PLANNED` or `NOT_BUILT`.
 - Exact Plan, acceptance, and subject identity across phases.
 - A failed or malformed observation remains visible evidence.
-- No semantic judgment inside `ao packet`.
+- No semantic judgment inside deterministic packet tooling.
 - No Git requirement for semantic completion.
 - No automatic repair, retry, continuation, delivery, or release.
 - Durable `PASS | FAIL | NOT_PROVEN`, then report and stop.
@@ -299,7 +301,7 @@ Move packet commands through the standard module/profile boundary and declare
 stable IDs, argument policies, outputs, effects, and exit classes. The
 release-coherence gate depends on those facts being accurate.
 
-### P0 — Offline `ao packet validate`
+### P0 — Offline packet schema validation
 
 Add schema validation for PlanPacket, CandidatePacket, subject manifests,
 RevisionPacket, and verdicts using embedded schemas and a bundled local
