@@ -43,9 +43,11 @@ setup() {
     [[ "$output" == *"already installed"* ]] || [[ "$output" == *"skipping"* ]]
 }
 
-@test "skills/bootstrap/SKILL.md wires install-bd.sh" {
+@test "bootstrap skill keeps bd install out of scope (install-bd.sh is the owner)" {
+    # Cathedral cut: bootstrap no longer installs runtimes; install-bd.sh owns beads.
     run grep -q "install-bd.sh" "$REPO_ROOT/skills/bootstrap/SKILL.md"
+    [ "$status" -ne 0 ]
+    run grep -q "installing or invoking \`ao\`, \`br\`, \`bd\`" "$REPO_ROOT/skills/bootstrap/SKILL.md"
     [ "$status" -eq 0 ]
-    run grep -q "command -v bd" "$REPO_ROOT/skills/bootstrap/SKILL.md"
-    [ "$status" -eq 0 ]
+    [ -x "$SCRIPT" ]
 }

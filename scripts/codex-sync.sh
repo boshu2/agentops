@@ -3,7 +3,9 @@
 #
 # A parity_only twin is a SELF-CONTAINED runtime artifact derived from its
 # source skill. The Codex runtime ships skills-codex/ ONLY (never skills/ source
-# — see install-codex-plugin.sh + plugin.json "skills": "./skills-codex"), so a
+# Codex may still consume a generated skills-codex projection for archive/
+# marketplace artifacts. Live installs use `ao skills link` into runtime skill
+# roots — not a plugin-cache installer.
 # twin must carry its own body + references; a bare pointer to skills/<name>
 # would dangle at runtime (docs/contracts/codex-skill-api.md). The generated twin is therefore:
 #   - SKILL.md: slim (name + description) frontmatter + the source body

@@ -70,6 +70,12 @@ ao skills link --dry-run
 ao skills link
 ```
 
+The 3.x curl installers (`scripts/install.sh`, `install-claude.sh`,
+`install-codex.sh`, `install-agy.sh`, `install-opencode.sh`, and
+`install-codex.ps1`) are tombstones: they refuse to install and print this
+path. Internal helpers (`install-codex-plugin.sh`,
+`install-codex-native-skills.sh`) were deleted.
+
 Remove a 3.x runtime plugin through that runtime before linking the checkout:
 
 - Claude Code: `claude plugin uninstall agentops@agentops-marketplace`, then

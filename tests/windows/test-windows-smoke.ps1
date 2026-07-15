@@ -135,7 +135,12 @@ function Remove-IfExists {
 
 Write-Step "Checking PowerShell installer syntax"
 Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-ao.ps1')
-Test-PowerShellSyntax (Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1')
+$codexTombstone = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1'
+Test-PowerShellSyntax $codexTombstone
+$tombstoneText = Get-Content -Raw -LiteralPath $codexTombstone
+if ($tombstoneText -notmatch 'removed in 4' -or $tombstoneText -notmatch 'ao skills link') {
+  throw "install-codex.ps1 must remain an AgentOps 4 tombstone pointing at ao skills link"
+}
 
 # ---------------------------------------------------------------------------
 # 2. Install ao release binary into a temp directory
@@ -160,37 +165,12 @@ finally {
 }
 
 # ---------------------------------------------------------------------------
-# 3. Install Codex plugin into a temp CODEX_HOME
+# 3. Build local ao, link skills, and check Windows doctor hints
 # ---------------------------------------------------------------------------
 
-Write-Step "Installing Codex plugin into a temp CODEX_HOME"
-$codexHome = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("agentops-codex-smoke-" + [Guid]::NewGuid().ToString("N"))
-try {
-  $installCodexScript = Join-PathSegments -Base $RepoRoot -Segments 'scripts', 'install-codex.ps1'
-  Invoke-NestedScript -ScriptPath $installCodexScript -ScriptArgs @('-RepoRoot', $RepoRoot, '-CodexHome', $codexHome)
-  if ($LASTEXITCODE -ne 0) {
-    throw "install-codex.ps1 failed"
-  }
-  $pluginRoot = Join-PathSegments -Base $codexHome -Segments 'plugins', 'cache', 'agentops-marketplace', 'agentops', 'local'
-  $skillsRoot = Join-PathSegments -Base $pluginRoot -Segments 'skills-codex'
-  $metadata = Join-PathSegments -Base $codexHome -Segments '.agentops-codex-install.json'
-  if (-not (Test-Path -LiteralPath $skillsRoot)) {
-    throw "Codex skills root missing after install: $skillsRoot"
-  }
-  if (-not (Test-Path -LiteralPath $metadata)) {
-    throw "Codex install metadata missing after install: $metadata"
-  }
-}
-finally {
-  Remove-IfExists -Path $codexHome
-}
-
-# ---------------------------------------------------------------------------
-# 4. Build local ao and check Windows doctor hints
-# ---------------------------------------------------------------------------
-
-Write-Step "Building local ao and checking Windows doctor hints"
+Write-Step "Building local ao, linking skills, and checking Windows doctor hints"
 $builtAO = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("ao-windows-smoke-" + [Guid]::NewGuid().ToString("N") + ".exe")
+$linkHome = Join-PathSegments -Base ([System.IO.Path]::GetTempPath()) -Segments ("agentops-link-home-" + [Guid]::NewGuid().ToString("N"))
 try {
   $cliDir = Join-PathSegments -Base $RepoRoot -Segments 'cli'
   $aoCmdPkg = Join-PathSegments -Base '.' -Segments 'cmd', 'ao'
@@ -205,28 +185,50 @@ try {
     throw "go build failed"
   }
 
-  # The Windows install hints live in the legacy check table, which the plain
-  # `ao doctor` still emits — `ao doctor --json` is now the engine Report and
-  # carries findings, not those hints. `ao doctor` exits 0 (healthy) or 1
-  # (findings present); both are valid diagnostic outcomes, only a higher code
-  # is a real failure.
+  New-Item -ItemType Directory -Force -Path $linkHome | Out-Null
+  $prevHome = $env:HOME
+  $prevUserProfile = $env:USERPROFILE
+  try {
+    $env:HOME = $linkHome
+    $env:USERPROFILE = $linkHome
+    Push-Location -LiteralPath $RepoRoot
+    try {
+      & $builtAO skills link
+      if ($LASTEXITCODE -ne 0) {
+        throw "ao skills link failed"
+      }
+    }
+    finally {
+      Pop-Location
+    }
+    $agentsSkills = Join-PathSegments -Base $linkHome -Segments '.agents', 'skills'
+    if (-not (Test-Path -LiteralPath $agentsSkills)) {
+      throw "ao skills link did not create $agentsSkills"
+    }
+  }
+  finally {
+    if ($null -ne $prevHome) { $env:HOME = $prevHome } else { Remove-Item Env:HOME -ErrorAction SilentlyContinue }
+    if ($null -ne $prevUserProfile) { $env:USERPROFILE = $prevUserProfile }
+  }
+
   $doctorText = (& $builtAO doctor 2>&1) -join "`n"
   if ($LASTEXITCODE -gt 1) {
     throw "ao doctor failed (exit $LASTEXITCODE)"
   }
-  if ($doctorText -notmatch 'install-codex\.ps1') {
-    throw "doctor output did not include the Windows Codex installer hint"
+  if ($doctorText -notmatch 'ao skills link') {
+    throw "doctor output did not include the ao skills link install hint"
   }
-  if ($doctorText -notmatch 'Windows release|WSL/Homebrew') {
+  if ($doctorText -notmatch 'Windows release|WSL/Homebrew|install-ao\.ps1') {
     throw "doctor output did not include Windows dependency guidance"
   }
 }
 finally {
   Remove-IfExists -Path $builtAO
+  Remove-IfExists -Path $linkHome
 }
 
 # ---------------------------------------------------------------------------
-# 5. Focused Windows-sensitive Go tests
+# 4. Focused Windows-sensitive Go tests
 # ---------------------------------------------------------------------------
 
 Write-Step "Running focused Windows-sensitive Go tests"

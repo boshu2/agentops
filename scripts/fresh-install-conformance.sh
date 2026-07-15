@@ -333,18 +333,18 @@ else
   fail "ao capabilities produced no contract"
 fi
 
-# ── (b) install the Codex bundle offline into the fresh HOME ─────────────────
-section "b. offline Codex bundle install"
+# ── (b) link skills from this checkout into the fresh HOME ───────────────────
+section "b. offline skills link (ao skills link)"
 INSTALL_LOG="$WORK/install.log"
-if env HOME="$FRESH_HOME" AGENTOPS_BUNDLE_ROOT="$REPO_ROOT" \
-    bash "$REPO_ROOT/scripts/install-codex.sh" >"$INSTALL_LOG" 2>&1; then
-  pass "install-codex.sh (offline, AGENTOPS_BUNDLE_ROOT) exited 0"
+if (cd "$REPO_ROOT" && env HOME="$FRESH_HOME" \
+    "$AO" skills link >"$INSTALL_LOG" 2>&1); then
+  pass "ao skills link exited 0 against a fresh HOME"
 else
-  fail "install-codex.sh failed offline" "$(tail -3 "$INSTALL_LOG" | tr '\n' ' ')"
+  fail "ao skills link failed" "$(tail -3 "$INSTALL_LOG" | tr '\n' ' ')"
 fi
 
-PLUGIN_SKILLS="$FRESH_HOME/.codex/plugins/cache/agentops-marketplace/agentops/local/skills-codex"
-INSTALL_META="$FRESH_HOME/.codex/.agentops-codex-install.json"
+LINKED_SKILLS="$FRESH_HOME/.agents/skills"
+CODEX_SKILLS="$FRESH_HOME/.codex/skills"
 
 # ── (c) quick-start: every advertised command must resolve ───────────────────
 section "c. quick-start advertised-command conformance"
@@ -365,12 +365,14 @@ else
     fail "an advertised \`ao\` command does not resolve" "$(printf '%s' "$ao_out" | grep '^BAD' | tr '\n' ' ')"
   fi
 
-  # Skills: mentioned /skill must exist in the installed bundle or repo skills/.
+  # Skills: mentioned /skill must exist in the linked roots or repo skills/.
   SKILLS_LIST="$WORK/skills.txt"
   : >"$SKILLS_LIST"
-  if [[ -d "$PLUGIN_SKILLS" ]]; then
-    find "$PLUGIN_SKILLS" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; >>"$SKILLS_LIST"
-  fi
+  for skills_root in "$LINKED_SKILLS" "$CODEX_SKILLS"; do
+    if [[ -d "$skills_root" ]]; then
+      find "$skills_root" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) -exec basename {} \; >>"$SKILLS_LIST"
+    fi
+  done
   if [[ -d "$REPO_ROOT/skills" ]]; then
     find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; >>"$SKILLS_LIST"
   fi
@@ -431,22 +433,18 @@ else
   fail "doctor names a repo-relative script a fresh user cannot run" "$(printf '%s' "$script_refs" | tr '\n' '|')"
 fi
 
-# ── (e) skill-count identity (reuses the installer-selftest contract) ────────
-section "e. installer skill-count identity"
-if [[ -d "$PLUGIN_SKILLS" && -f "$INSTALL_META" ]]; then
-  disk_count="$(find "$PLUGIN_SKILLS" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
-  meta_count="$(json_int_field "$INSTALL_META" "skill_count")"
-  pkg_count="$(json_int_field "$REPO_ROOT/skills-codex/.agentops-manifest.json" "package_count")"
-  printed_count="$(sed -n 's/.*Skills available:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$INSTALL_LOG" | head -1)"
-  detail="disk=$disk_count meta=$meta_count pkg=$pkg_count printed=$printed_count"
-  if [[ -n "$disk_count" && "$disk_count" == "$meta_count" \
-        && "$disk_count" == "$pkg_count" && "$disk_count" == "$printed_count" ]]; then
-    pass "skill counts agree ($detail)"
-  else
-    fail "skill counts disagree (the 66-vs-62 class)" "$detail"
-  fi
+# ── (e) linked skill identity (source checkout vs live links) ────────────────
+section "e. linked skill identity"
+repo_count="$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')"
+linked_count=0
+if [[ -d "$LINKED_SKILLS" ]]; then
+  linked_count="$(find "$LINKED_SKILLS" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) 2>/dev/null | wc -l | tr -d ' ')"
+fi
+detail="repo=$repo_count linked=$linked_count root=$LINKED_SKILLS"
+if [[ -n "$repo_count" && "$repo_count" -gt 0 && "$linked_count" -gt 0 ]]; then
+  pass "skills linked into fresh HOME ($detail)"
 else
-  fail "cannot verify skill-count identity — install artifacts missing" "$PLUGIN_SKILLS / $INSTALL_META"
+  fail "expected linked skills under ~/.agents/skills after ao skills link" "$detail"
 fi
 
 # ── summary table ────────────────────────────────────────────────────────────

@@ -106,6 +106,7 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "INSTALL_SCRIPTS=("},
         {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-codex.sh"},
+        {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "ao skills link"},
         {"type": "artifact_contains", "target": "../../tests/install/test-install-smoke.sh", "value": "scripts/install-opencode.sh"},
         {"type": "artifact_contains", "target": "../../docs/CONTRIBUTING.md", "value": "Runtime reliability: hooks, install paths, and lifecycle behavior"}
       ],
