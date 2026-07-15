@@ -1,6 +1,6 @@
 # validate
 
-Independently remeasure a bounded artifact and emit one immutable, evidence-bound verdict. Triggers: "validate", "independently validate", "vibe".
+Freshly and independently judge one exact CandidatePacket, persist verdict.v2, and stop. Triggers: "validate", "independently validate", "vibe".
 
 ## Instructions
 

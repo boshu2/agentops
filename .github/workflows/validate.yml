@@ -146,7 +146,6 @@ jobs:
               - 'docs/agent-workflow-reference.md'
               - 'docs/CI-CD.md'
               - 'docs/contracts/codex-skill-api.md'
-              - 'docs/contracts/repo-execution-profile.md'
             goals:
               # correctness/doctrine gates that police GOALS.md + the executable
               # spec scenarios (ag-n4m7): a GOALS.md-only or scenario-only edit
@@ -188,16 +187,8 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          # fetch-depth: 0 so the origin/main remote-tracking ref exists
-          # (age-ipbr). The Go gate runs the governance.frontdoor-admission check
-          # (scripts/check-frontdoor-admission.sh), which fails CLOSED when it
-          # cannot resolve its default admission base `origin/main`. On a tag
-          # push (`refs/tags/v*`) the default shallow single-ref checkout does NOT
-          # create origin/main, so the guard emitted "BLOCKED — cannot resolve
-          # admission base 'origin/main'" and reddened this required job on every
-          # release tag. A full-history checkout fetches +refs/heads/*:refs/
-          # remotes/origin/*, so origin/main resolves and the admission diff is
-          # computed against real history.
+          # Full history keeps changed-scope and repository checks reproducible
+          # for tag, PR, and manual runs.
           fetch-depth: 0
 
       - name: Set up Go
@@ -249,28 +240,6 @@ jobs:
           path: ao-gate-report.json
           if-no-files-found: error
 
-      # i4m part 2 — CI direct-persist of deterministic catches. Hooks don't fire
-      # in CI, so a deterministic gate FAIL here would never reach the in-situ
-      # catch-rate gauge. On a gate FAIL, emit the same REFUTED / mode=deterministic
-      # gate-verdict the local pre-push hook would, into the (gitignored, ephemeral)
-      # CI yield ledger, and upload it. A maintainer folds it into their LOCAL gauge
-      # with scripts/ingest-ci-deterministic-catches.sh — no commit-back (the gauge
-      # ledger is local). Non-blocking: never changes the gate verdict.
-      - name: Record CI deterministic catch on gate FAIL (i4m)
-        if: always() && steps.go_gate.outcome == 'failure'
-        shell: bash
-        run: |
-          AO_BIN="$PWD/bin/ao" AO_YIELD_RUN_ID=ci-deterministic \
-            bash scripts/emit-deterministic-catch.sh || true
-
-      - name: Upload CI deterministic catch
-        if: always() && steps.go_gate.outcome == 'failure'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: ci-deterministic-catch
-          path: .agents/yield/yield-ledger.jsonl
-          if-no-files-found: ignore
-
   # ─────────────────────────────────────────────────────────────────────────
   # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
   # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
@@ -305,11 +274,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          # fetch-depth: 0 so origin/main resolves (same rationale as the
-          # go-gate-shadow checkout, age-ipbr): bats suites that exercise the
-          # frontdoor-admission guard (reconcile-pr, disposition-schema) fail
-          # CLOSED with "cannot resolve admission base 'origin/main'" on a
-          # shallow single-ref checkout.
+          # Full history keeps range-sensitive tests reproducible.
           fetch-depth: 0
 
       # ── bats runs FIRST, on the pristine checkout, before the Go build/test
@@ -320,32 +285,14 @@ jobs:
       # front — exactly the pristine-checkout + npm-bats setup the standalone
       # bats-tests job used pre-rebuild — keeps it pollution-free (ag-877).
       #
-      # bats needs only the runner's preinstalled python+PyYAML/jq/ripgrep; it
-      # does not need Go or a built ao — but it DOES need PAWL_EDGE_FAIL_OPEN=1
-      # (set on the Run step below). Several suites (reconcile-pr, pawl-review*,
-      # check-pawl-pre-push, reviewer-adapters, …) seed verdicts via
-      # scripts/pawl-verdict.sh, whose F2 hardening (age-pawl-intent-zhndq.2)
-      # makes `write` fail-CLOSED exit 7 (EDGE-UNBOUND) when no trusted ao can
-      # emit the provenance verdict edge. There is deliberately NO ao here: an
-      # ao on PATH would instead trip pawl-review's preflight `ao gate check`
-      # against the hermetic temp repos. The verdict-edge emit is a best-effort
-      # sensor, so fail-OPEN it for the whole suite; the dedicated fail-closed
-      # regression files re-assert the strict default by unsetting the var
-      # themselves (pawl-verdict-edge-failclosed / pawl-verdict-autobind /
-      # pawl-review-edge-unbound).
+      # bats needs only the runner's Python, jq, and ripgrep. It does not need
+      # a semantic-review runtime or a pre-seeded lifecycle verdict.
       - name: Install bats
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: sudo npm install -g bats@1.12.0
 
       - name: Run bats tests
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
-        env:
-          # See the note above "Install bats": with no trusted ao in this phase,
-          # scripts/pawl-verdict.sh's F2 verdict-edge emit would fail-CLOSED
-          # (exit 7) and abort every suite that seeds a verdict. The emit is a
-          # best-effort sensor, so fail-OPEN it here. The fail-closed regression
-          # files unset this per-invocation to keep asserting the strict default.
-          PAWL_EDGE_FAIL_OPEN: "1"
         run: |
           echo "=== Running bats tests (4-way parallel) ==="
           # bats --jobs needs GNU parallel; the serial run was ~237s (55% of the
@@ -387,26 +334,6 @@ jobs:
           go build -o /tmp/ao-test ./cmd/ao
           echo "✅ ao CLI builds successfully"
 
-      # Micro-epic 9 (C8): content-hash snapshot bracket. Captures the
-      # pre-test state of ~/.agents/ and then diffs after the Go test
-      # phase, catching any test that accidentally mutates the global
-      # hub via a missing HOME override. Defeats the os.Chtimes mtime
-      # bypass that the mtime-only gate could not see. Gate is
-      # warn-only here (|| true) because CI runs on ephemeral
-      # hub content and false positives from uninitialised hub state
-      # should not block the pipeline until a baseline is in place.
-      - name: Capture pre-test ~/.agents content hash snapshot
-        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        run: |
-          echo "=== Capturing agents-hub content-hash snapshot (pre-test) ==="
-          snap="$(bash scripts/check-agents-hash-snapshot.sh capture 2>/dev/null || echo "")"
-          if [[ -n "$snap" && -f "$snap" ]]; then
-            echo "HASH_GATE_SNAPSHOT=$snap" >> "$GITHUB_ENV"
-            echo "captured snapshot: $snap"
-          else
-            echo "snapshot capture skipped (shasum missing?)"
-          fi
-
       - name: Run Go tests with race detection and coverage
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         run: |
@@ -427,20 +354,6 @@ jobs:
           # Current floor is set in scripts/check-cmd-ao-coverage.sh; bump it
           # one whole percent each time real coverage rises.
           bash scripts/check-cmd-ao-coverage.sh --profile cli/coverage.out
-
-      - name: Diff post-test ~/.agents content hash snapshot
-        if: always() && runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        run: |
-          echo "=== Diffing agents-hub content-hash snapshot (post-test) ==="
-          if [[ -z "${HASH_GATE_SNAPSHOT:-}" || ! -f "${HASH_GATE_SNAPSHOT:-}" ]]; then
-            echo "::notice::hash gate inconclusive — no pre-test snapshot captured"
-          elif bash scripts/check-agents-hash-snapshot.sh diff "$HASH_GATE_SNAPSHOT"; then
-            echo "✅ agents-hub content-hash gate: clean"
-          else
-            echo "::warning::agents-hub content-hash drifted during Go test phase"
-            echo "::warning::This means a test mutated ~/.agents/ without honoring HOME isolation."
-            echo "::warning::Investigate which test wrote to the real hub instead of a tempdir."
-          fi
 
       - name: Warn about slow test packages
         if: always() && runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')

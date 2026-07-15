@@ -147,27 +147,24 @@ FAKE
 }
 
 # ===========================================================================
-# Adapter 3 = local-mlx (EVAL-ONLY, flag-gated per the 2026-06-23 ruling).
+# Adapter 3 = local-mlx (caller-selected local runtime).
 # ===========================================================================
 
-@test "local-mlx (prod, no opt-in): HARD-REFUSES naming the ruling -> REFUSED (126)" {
-  # No PAWL_EVAL_ADAPTERS_OK — a prod invocation. Must refuse BEFORE any run.
-  stub_success some-mlx-bin   # present, but must never be reached
+@test "local-mlx: caller selection runs exactly once" {
+  stub_success some-mlx-bin
   run bash -c '
     . "'"$LIB"'"
     REVIEWER=local-mlx REVIEWER_BIN="some-mlx-bin" CODEX_EXEC_PROMPT_ARG="review" codex_exec_guarded
   '
-  [ "$status" -eq 126 ]
-  [[ "$output" == *"REFUSED"* ]]
-  [[ "$output" == *"2026-06-23"* ]]
-  [[ "$output" == *"EVAL"* ]]
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"VERDICT: CONFIRMED"* ]]
 }
 
-@test "local-mlx (opted-in, success): PAWL_EVAL_ADAPTERS_OK=1 -> exit 0" {
+@test "local-mlx success exits 0" {
   stub_success mlx-stub
   run bash -c '
     . "'"$LIB"'"
-    PAWL_EVAL_ADAPTERS_OK=1 REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
+    REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
       CODEX_EXEC_PROMPT_ARG="review this" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
   '
   [ "$status" -eq 0 ]
@@ -179,7 +176,7 @@ FAKE
   stub_hang mlx-stub
   run bash -c '
     . "'"$LIB"'"
-    PAWL_EVAL_ADAPTERS_OK=1 REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
+    REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
       CODEX_EXEC_PROMPT_ARG="review this" CODEX_EXEC_TIMEOUT=1 codex_exec_guarded
   '
   [ "$status" -eq 124 ]
@@ -189,7 +186,7 @@ FAKE
   stub_echo mlx-stub
   run bash -c '
     . "'"$LIB"'"
-    PAWL_EVAL_ADAPTERS_OK=1 REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
+    REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
       CODEX_EXEC_PROMPT_ARG="a fairly long review packet with no verdict token in it at all" \
       CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
   '
@@ -199,7 +196,7 @@ FAKE
 @test "local-mlx (opted-in, missing): bin absent -> MISSING (2)" {
   run bash -c '
     . "'"$LIB"'"
-    PAWL_EVAL_ADAPTERS_OK=1 REVIEWER=local-mlx REVIEWER_BIN="mlx-nonexistent-xyz" \
+    REVIEWER=local-mlx REVIEWER_BIN="mlx-nonexistent-xyz" \
       CODEX_EXEC_PROMPT_ARG="x" codex_exec_guarded
   '
   [ "$status" -eq 2 ]
@@ -228,20 +225,16 @@ FAKE
   [[ "$output" == *"the answer is 42"* ]]
 }
 
-@test "adapter contract fields resolve per reviewer (bin + marker + eval-only)" {
+@test "adapter contract fields resolve per reviewer (bin + marker)" {
   run bash -c '
     . "'"$LIB"'"
     echo "bin=$(reviewer_adapter_bin codex) marker=$(reviewer_adapter_marker codex)"
     echo "bin=$(reviewer_adapter_bin agy) marker=$(reviewer_adapter_marker agy)"
-    reviewer_adapter_is_eval_only local-mlx && echo "mlx=eval-only"
-    reviewer_adapter_is_eval_only codex || echo "codex=prod"
     echo "norm=$(reviewer_normalize GEMINI)"
   '
   [ "$status" -eq 0 ]
   [[ "$output" == *"bin=codex marker=tokens used"* ]]
   [[ "$output" == *"bin=agy marker=VERDICT:"* ]]
-  [[ "$output" == *"mlx=eval-only"* ]]
-  [[ "$output" == *"codex=prod"* ]]
   [[ "$output" == *"norm=agy"* ]]
 }
 
@@ -293,7 +286,7 @@ FAKE
   } > "$pkt"
   run bash -c '
     . "'"$LIB"'"
-    PAWL_EVAL_ADAPTERS_OK=1 REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
+    REVIEWER=local-mlx REVIEWER_BIN="mlx-stub" \
       CODEX_EXEC_PROMPT_FILE="'"$pkt"'" CODEX_EXEC_TIMEOUT=10 codex_exec_guarded
   '
   [ "$status" -eq 125 ]

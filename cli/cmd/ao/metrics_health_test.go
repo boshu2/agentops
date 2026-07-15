@@ -438,11 +438,13 @@ func TestMetricsHealth_EscapeVelocity_Positive(t *testing.T) {
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "x.md"),
 			SessionID:    "s" + string(rune('1'+i)),
 			CitedAt:      now.Add(-time.Duration(i) * time.Hour),
+			CitationType: types.CitationTypeHelpful,
 		})
 		citations = append(citations, types.CitationEvent{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "y.md"),
 			SessionID:    "s" + string(rune('1'+i)),
 			CitedAt:      now.Add(-time.Duration(i) * time.Hour),
+			CitationType: types.CitationTypeHelpful,
 		})
 	}
 	writeHealthCitations(t, dir, citations)

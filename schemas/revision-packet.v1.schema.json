@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/revision-packet.v1.schema.json",
+  "title": "RevisionPacket v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "prior_verdict_digest", "prior_subject_manifest_digest", "current_subject_manifest_digest", "acceptance_digest", "responses", "reusable_exact_input_evidence", "author_context_id"],
+  "properties": {
+    "schema_version": {"const": "revision-packet.v1"},
+    "prior_verdict_digest": {"$ref": "#/$defs/digest"},
+    "prior_subject_manifest_digest": {"$ref": "#/$defs/digest"},
+    "current_subject_manifest_digest": {"$ref": "#/$defs/digest"},
+    "acceptance_digest": {"$ref": "#/$defs/digest"},
+    "responses": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "reusable_exact_input_evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "author_context_id": {"type": "string", "minLength": 1}
+  },
+  "$defs": {"digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

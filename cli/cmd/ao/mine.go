@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
-	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 var (
-	mineSourcesFlag   string
-	mineSince         string
-	mineOutputDir     string
-	mineQuiet         bool
-	mineEmitWorkItems bool
+	mineSourcesFlag string
+	mineSince       string
+	mineOutputDir   string
+	mineQuiet       bool
 )
 
 var mineCmd = &cobra.Command{
@@ -55,8 +54,6 @@ func init() {
 	mineCmd.Flags().StringVar(&mineOutputDir, "output-dir", ".agents/mine",
 		"Directory for mine output JSON")
 	mineCmd.Flags().BoolVar(&mineQuiet, "quiet", false, "Suppress progress output")
-	mineCmd.Flags().BoolVar(&mineEmitWorkItems, "emit-work-items", false,
-		"Append actionable mine findings to .agents/rpi/next-work.jsonl for evolve to pick up")
 }
 
 // ---------------------------------------------------------------------------
@@ -113,13 +110,12 @@ func runMine(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := minePkg.RunOpts{
-		Sources:       sources,
-		Window:        window,
-		OutputDir:     mineOutputDir,
-		EmitWorkItems: mineEmitWorkItems,
-		Quiet:         mineQuiet,
-		ErrOut:        cmd.ErrOrStderr(),
-		MineEventsFn:  mineEvents,
+		Sources:      sources,
+		Window:       window,
+		OutputDir:    mineOutputDir,
+		Quiet:        mineQuiet,
+		ErrOut:       cmd.ErrOrStderr(),
+		MineEventsFn: mineEvents,
 	}
 
 	report, err := minePkg.Run(cwd, opts)
@@ -191,34 +187,6 @@ func encodeMineDryRunJSON(w io.Writer, sources []string, window time.Duration) e
 	return enc.Encode(payload)
 }
 
-// collectMineWorkItems builds work items from a mine report.
-func collectMineWorkItems(r *MineReport) []mineWorkItemEmit {
-	return minePkg.CollectMineWorkItems(r)
-}
-
-// loadExistingMineIDs scans a JSONL file for unconsumed compile-mine item IDs.
-func loadExistingMineIDs(path string) (map[string]bool, error) {
-	return minePkg.LoadExistingMineIDs(path)
-}
-
-// writeMineWorkItems appends one JSONL line per work item to the given path.
-func writeMineWorkItems(path string, items []mineWorkItemEmit, ts string) error {
-	return minePkg.WriteWorkItems(path, items, ts)
-}
-
-// emitMineWorkItems translates mine findings into next-work.jsonl entries for evolve.
-// Orphaned research files map to severity:medium; code hotspots map to severity:high.
-// Dedup: item-level — each item gets a stable ID; only new items are emitted.
-func emitMineWorkItems(cwd string, r *MineReport) error {
-	return minePkg.EmitWorkItems(cwd, r)
-}
-
-// mineWorkItemEmit is a single work item within a next-work.jsonl entry.
-type mineWorkItemEmit = minePkg.WorkItemEmit
-
-// mineWorkItemID generates a stable ID from the item's identifying fields.
-func mineWorkItemID(item mineWorkItemEmit) string { return minePkg.WorkItemID(item) }
-
 // printMineSummary prints a human-readable summary of the mine report.
 func printMineSummary(w io.Writer, r *MineReport) {
 	fmt.Fprintln(w, "Mine complete.")
@@ -252,13 +220,17 @@ func printMineSummary(w io.Writer, r *MineReport) {
 	}
 }
 
-// mineEvents scans RPI C2 event streams for patterns. This helper stays
-// in cmd/ao because it depends on cmd/ao-internal helpers
-// (loadRPIC2Events, RPIC2Event); run discovery comes from internal/rpi
-// (cliRPI.ScanRegistryRuns). It is wired into mine.Run via RunOpts.MineEventsFn.
+// mineEvents scans historical event streams as inert evidence. It discovers
+// files directly and never imports or invokes the removed RPI controller.
 func mineEvents(cwd string, window time.Duration) (*EventsFindings, error) {
-	runs := cliRPI.ScanRegistryRuns(cwd)
-	if len(runs) == 0 {
+	entries, err := os.ReadDir(filepath.Join(cwd, ".agents", "rpi", "runs"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &EventsFindings{}, nil
+		}
+		return nil, err
+	}
+	if len(entries) == 0 {
 		return &EventsFindings{}, nil
 	}
 
@@ -267,27 +239,31 @@ func mineEvents(cwd string, window time.Duration) (*EventsFindings, error) {
 		EventTypeCounts: make(map[string]int),
 	}
 
-	for _, run := range runs {
-		if run.StartedAt != "" {
-			t, err := time.Parse(time.RFC3339, run.StartedAt)
-			if err == nil && t.Before(cutoff) {
-				continue
-			}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
 		}
-
-		events, err := loadRPIC2Events(cwd, run.RunID)
+		runID := entry.Name()
+		events, err := loadRPIC2Events(cwd, runID)
 		if err != nil || len(events) == 0 {
 			continue
 		}
 
-		findings.RunsScanned++
+		includedRun := false
 		for _, ev := range events {
+			if ts, parseErr := time.Parse(time.RFC3339, ev.Timestamp); parseErr == nil && ts.Before(cutoff) {
+				continue
+			}
+			if !includedRun {
+				findings.RunsScanned++
+				includedRun = true
+			}
 			findings.TotalEvents++
 			findings.EventTypeCounts[ev.Type]++
 
 			if ev.Type == "error" {
 				findings.ErrorEvents = append(findings.ErrorEvents, EventErrorSummary{
-					RunID:     ev.RunID,
+					RunID:     runID,
 					Message:   ev.Message,
 					Timestamp: ev.Timestamp,
 				})
@@ -304,7 +280,7 @@ func mineEvents(cwd string, window time.Duration) (*EventsFindings, error) {
 					}
 				}
 				findings.GateVerdicts = append(findings.GateVerdicts, GateVerdictSummary{
-					RunID:   ev.RunID,
+					RunID:   runID,
 					Phase:   ev.Phase,
 					Type:    ev.Type,
 					Verdict: verdict,

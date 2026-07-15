@@ -1,21 +1,37 @@
 ---
 name: doc
-description: 'Generate docs from repo truth. Triggers: "doc", "generate repo docs", "validate documentation".'
+description: Generate and validate repo docs, READMEs
 ---
-
 # Doc Skill
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-Generate and validate documentation for any project.
+Generate and validate documentation for any project. `--mode` selects the artifact family — the default mode handles code/API docs and code-maps; `--mode=readme` generates a gold-standard README; `--mode=oss` scaffolds and audits the open-source doc pack.
 
 ## Constraints
 
-- Ground every documentation claim in inspected repository evidence, because plausible but stale prose is a documentation defect.
-- For OSS scaffold requests, create missing docs only by default; never update or overwrite an existing doc unless the user explicitly confirms, because it may encode policy or project history. Treat `refresh` as a separate opt-in path and confirm its target writes with the user before proceeding.
-- Report unresolved gaps explicitly, because generated prose is not proof of documentation coverage.
+- Ground every documentation claim in the current repository, because plausible but stale prose is a documentation defect.
+- In OSS scaffold mode, create missing docs only by default; never update or overwrite an existing doc unless the user explicitly confirms, because these files may contain operator-owned policy and project history. Treat `refresh` as a separate opt-in path and confirm its target writes with the user before proceeding.
+- Keep mode boundaries explicit and run the selected mode's validation, because default, README, and OSS outputs have different completion criteria.
 
-## Execution Steps
+## Modes
+
+| `--mode` | Artifact | Read first |
+|----------|----------|-----------|
+| *(default)* | API docs, code-maps, doc coverage/validate | this file |
+| `readme` | Gold-standard README (interview → generate → council-validate) | [references/readme-craft.md](references/readme-craft.md) |
+| `oss` | OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md, audit + scaffold) | [references/oss-pack.md](references/oss-pack.md) |
+
+**Mode routing (absorbed skills):**
+
+| You typed | Runs |
+|-----------|------|
+| "readme", "rewrite the README", "validate the README" | `$doc --mode=readme [...]` |
+| "oss docs", "scaffold contributing", "audit OSS docs" | `$doc --mode=oss [...]` |
+
+When invoked with `--mode=readme` or `--mode=oss`, read the corresponding reference above and follow its workflow verbatim. The default-mode steps below apply only when no mode (or the implied code-docs mode) is selected.
+
+## Execution Steps (default mode — code/API docs)
 
 Default mode is deliberately thin — a frontier model runs it correctly with no payload. Given `$doc [command] [target]`:
 
@@ -27,21 +43,30 @@ Full step-by-step detail — grep recipes, function/class + code-map templates, 
 
 ## Output Specification
 
-- **Path:** write the default report to the artifact directory `.agents/doc/`; OSS scaffold mode creates missing repository docs only by default. The separate OSS `refresh` path may update an existing doc only after explicit user confirmation.
-- **Filename:** reports use the filename convention `YYYY-MM-DD-<target>.md`; repository documentation keeps its canonical filename.
-- **Format:** outputs are Markdown; the report schema records coverage percentage, generated artifacts, gaps, and validation issues.
-- **Validation command:** validate the skill contract with `bash skills-codex/doc/scripts/validate.sh`, then run the relevant repository documentation checks before completion.
-- **Downstream handoff:** return changed paths, validation results, coverage or remaining gaps, and blocked decisions; these results are consumed by the requesting workflow and verification membrane.
+- **Path:** default-mode reports go to the artifact directory `.agents/doc/`; README mode updates the repository `README.md`; OSS scaffold mode creates missing root documentation only by default. The separate OSS `refresh` path may update an existing doc only after explicit user confirmation.
+- **Filename:** default reports use the filename convention `YYYY-MM-DD-<target>.md`; README and OSS filenames follow their mode references.
+- **Format:** outputs are Markdown; the default report schema records coverage percentage, generated artifacts, gaps, and validation issues.
+- **Validation command:** validate the skill contract with `bash skills/doc/scripts/validate.sh`, then run the mode-specific validation required by its reference before reporting completion.
+- **Downstream handoff:** return changed paths, validation results, coverage or remaining gaps, and any blocked decision; these results are consumed by the requesting workflow and the verification membrane.
 
 ## Quality Checklist
 
-- Every factual claim cites inspected code, configuration, or existing documentation.
-- Generated prose preserves useful project-specific detail and avoids unsupported boilerplate.
-- Completion reports name the validators run and disclose unresolved gaps.
+- Every factual claim is traceable to inspected code, configuration, or existing documentation.
+- Generated documentation follows the selected mode's templates and preserves useful existing depth.
+- Completion reports name the validators run and disclose unresolved gaps rather than implying full coverage.
 
 ## Reference Documents
 
-- [references/default-mode.md](references/default-mode.md) — default mode (code/API docs): the full Steps 1-7 detail — grep recipes, function/class + code-map templates, report skeleton, worked examples, troubleshooting
+- [references/default-mode.md](references/default-mode.md) — default mode (code/API docs): the full Steps 1-7 detail — grep recipes, function/class + code-map templates, report skeleton, worked examples, troubleshooting (moved out of SKILL.md in the generic-craft trim)
+- [references/doc.feature](references/doc.feature) — Executable spec: detect project type, generate type-appropriate docs from the repo, validate existing docs against source (soc-qk4b)
+- [references/readme.feature](references/readme.feature) — Executable spec (`--mode=readme`): mode detection, problem-first lead, trust block near install, collapse-don't-delete depth, the council gate, anti-pattern detection (soc-qk4b)
+- [references/oss-docs.feature](references/oss-docs.feature) — Executable spec (`--mode=oss`): audit existing/missing OSS docs, scaffold missing without overwrite, project-type-tailored (soc-qk4b)
+
+- [references/readme-craft.md](references/readme-craft.md) — `--mode=readme`: the 8 gold-standard README patterns, interview, generation structure, council validation, anti-pattern table
+- [references/oss-pack.md](references/oss-pack.md) — `--mode=oss`: audit + scaffold the OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md), project-type templates
+- [references/oss-documentation-tiers.md](references/oss-documentation-tiers.md) — OSS doc tier definitions (core/standard/enhanced)
+- [references/oss-project-types.md](references/oss-project-types.md) — Per-type OSS scaffolding templates (cli/operator/service/library/helm)
+- [references/oss-beads-patterns.md](references/oss-beads-patterns.md) — AGENTS.md beads-tracker patterns for OSS projects
 - [references/generation-templates.md](references/generation-templates.md)
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)
@@ -61,5 +86,5 @@ $doc --mode=oss         # full OSS doc pack
 
 | Problem | Fix |
 |---------|-----|
-| Default mode feels heavyweight | Read references/default-mode.md — or ask the model directly for simple docs |
-| README mode verdict fails | Re-run with the council findings addressed (see the readme-mode references above) |
+| Default mode feels heavyweight | Read [references/default-mode.md](references/default-mode.md) — or just ask the model directly for simple docs |
+| README mode verdict fails | Re-run with the council findings addressed (see the readme-mode references listed above) |

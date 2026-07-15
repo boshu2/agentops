@@ -1,1 +1,0 @@
-{"source_epic":"e1","timestamp":"2026-07-02T00:00:00Z","items":[{"title":"item with numeric consumed_note","type":"task","severity":"high","source":"council-finding","description":"d","consumed":true,"consumed_note":42}],"consumed":false,"claim_status":"available","claimed_by":null,"claimed_at":null,"consumed_by":null,"consumed_at":null}

@@ -41,8 +41,8 @@ func TestProductionCitationAdapter_FunctionCitationFresh(t *testing.T) {
 	if v.Status != ports.CitationStatusFresh {
 		t.Fatalf("Status = %q, want FRESH (reason: %s)", v.Status, v.Reason)
 	}
-	if !strings.Contains(v.Reason, "defined at") {
-		t.Fatalf("Reason = %q, want substring 'defined at'", v.Reason)
+	if !strings.Contains(v.Reason, "found in") {
+		t.Fatalf("Reason = %q, want substring 'found in'", v.Reason)
 	}
 }
 
@@ -65,8 +65,8 @@ func TestProductionCitationAdapter_SymbolCitationStale(t *testing.T) {
 	if v.Status != ports.CitationStatusStale {
 		t.Fatalf("Status = %q, want STALE (reason: %s)", v.Status, v.Reason)
 	}
-	if !strings.Contains(v.Reason, "zero references") {
-		t.Fatalf("Reason = %q, want substring 'zero references'", v.Reason)
+	if !strings.Contains(v.Reason, "not found") {
+		t.Fatalf("Reason = %q, want substring 'not found'", v.Reason)
 	}
 }
 

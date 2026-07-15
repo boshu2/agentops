@@ -31,11 +31,10 @@ Operational escape velocity: σρ > δ/100 → Knowledge compounds
 
 Commands:
   status   Show comprehensive flywheel health
-  gate     Check release readiness against closure, retrieval, and rho gates
+  compare  Compare read-only metric namespaces
 
 Examples:
   ao flywheel status
-  ao flywheel gate
   ao flywheel status --json`,
 }
 
@@ -204,20 +203,6 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("compute metrics: %w", err)
 	}
 	metricNamespace := canonicalMetricNamespace(flywheelStatusNamespace)
-	scorecard, err := loadStigmergicScorecard(cwd)
-	if err != nil {
-		return fmt.Errorf("load stigmergic scorecard: %w", err)
-	}
-	metrics.StigmergicScorecard = &types.StigmergicScorecard{
-		PromotedFindings:       scorecard.PromotedFindings,
-		PlanningRules:          scorecard.PlanningRules,
-		PreMortemChecks:        scorecard.PreMortemChecks,
-		QueueEntries:           scorecard.QueueEntries,
-		UnconsumedBatches:      scorecard.UnconsumedBatches,
-		UnconsumedItems:        scorecard.UnconsumedItems,
-		HighSeverityUnconsumed: scorecard.HighSeverityUnconsumed,
-	}
-
 	// Always compute golden signals — they provide the honest health assessment.
 	populateGoldenSignals(cwd, metricsDays, metrics)
 

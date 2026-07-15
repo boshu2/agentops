@@ -1,7 +1,0 @@
-role=validate
-proof=immutable
-delivery=ao-land
-git=push
-tracker=close
-verdict_mutation=none
-llm_verdict=required

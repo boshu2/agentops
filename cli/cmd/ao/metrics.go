@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )

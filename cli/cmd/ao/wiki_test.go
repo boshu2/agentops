@@ -225,18 +225,10 @@ func TestWikiCommand_IsRegisteredAndExperimental(t *testing.T) {
 	if !strings.Contains(strings.ToLower(cmd.Short), "experimental") {
 		t.Fatalf("expected wiki short help to mark surface experimental, got: %q", cmd.Short)
 	}
-	want := []string{"index", "search", "inject", "lint", "promote", "query", "doctor"}
+	want := []string{"index", "search", "lint", "promote", "query", "doctor"}
 	for _, sub := range want {
 		if _, _, err := rootCmd.Find([]string{"wiki", sub}); err != nil {
 			t.Fatalf("expected wiki subcommand %q to be registered: %v", sub, err)
 		}
-	}
-}
-
-func TestLegacyInjectCommand_StillRegistered(t *testing.T) {
-	// Strangler invariant: the wiki group is accretive — the legacy inject
-	// command must remain registered and untouched.
-	if _, _, err := rootCmd.Find([]string{"inject"}); err != nil {
-		t.Fatalf("legacy inject command must remain registered: %v", err)
 	}
 }

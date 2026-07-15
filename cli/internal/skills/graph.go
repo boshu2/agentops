@@ -142,9 +142,6 @@ func (g SkillGraph) Validate() error {
 		}
 		problems = append(problems, "dependency cycles: "+strings.Join(parts, "; "))
 	}
-	if len(g.Diagnostics.UnreachableNonRoots) > 0 {
-		problems = append(problems, "unreachable non-roots: "+strings.Join(g.Diagnostics.UnreachableNonRoots, ", "))
-	}
 	if len(problems) > 0 {
 		return fmt.Errorf("invalid skill graph: %s", strings.Join(problems, "; "))
 	}

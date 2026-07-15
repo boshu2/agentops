@@ -54,7 +54,6 @@ WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/pre-land-
 WARNING -  Doc file 'contracts/pawls.md' contains a link '../../skills/scope/SKILL.md', but the target '../skills/scope/SKILL.md' is not found among documentation files.
 WARNING -  Doc file 'doctrine/lineage-and-theory.md' contains a link '../../PRODUCT.md#strategic-bet', but the target '../PRODUCT.md' is not found among documentation files.
 WARNING -  Doc file 'doctrine/lineage-and-theory.md' contains a link '../../PRODUCT.md', but the target '../PRODUCT.md' is not found among documentation files.
-WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../schemas/pawl-verdict.v1.schema.json', but the target '../schemas/pawl-verdict.v1.schema.json' is not found among documentation files.
 WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../scripts/pawl-verdict.sh', but the target '../scripts/pawl-verdict.sh' is not found among documentation files.
 WARNING -  Doc file 'doctrine/operating-discipline.md' contains a link '../../scripts/reconcile-pr.sh', but the target '../scripts/reconcile-pr.sh' is not found among documentation files.
 WARNING -  Doc file 'evals/harvest-2026-06-22-escape-series-for-e5.md' contains a link '../../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md', but the target '../evals/membrane/harvest-2026-06-22/derived-check-rfd-nested-schema.md' is not found among documentation files.

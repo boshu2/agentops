@@ -1,6 +1,6 @@
 ---
 name: test
-description: 'Generate tests and coverage plans. Triggers: "$test", "coverage gaps", "TDD cycle".'
+description: Generate tests and coverage plans.
 ---
 # Test Skill
 
@@ -38,13 +38,11 @@ Default to `generate`. Flags: `--mode`, `--scope`, `--min-coverage`, and
 
 ### 1. Bind tests to behavior
 
-When a bead or `.feature` file has scenarios, work forward from each
-Given/When/Then. Read bead scenarios with `ao beads exec show <bead-id>`, name
-one covering test after the behavior, and add
+When a caller-supplied `.feature` file has scenarios, work forward from each
+Given/When/Then. Name one covering test after the behavior, and add
 `@covered-by:<test-path>[::<TestName>]` above the scenario. Prove the mapping:
 
 ```bash
-bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --run
 bash scripts/check-bead-scenario-coverage.sh skills/<skill>/references/<name>.feature --run
 ```
 
@@ -132,8 +130,7 @@ structural gaps and a test architecture; do not generate code in this mode.
   text/profile formats, and JSON where the coverage tool supports it.
 - **Validator command:** run the focused test, relevant suite, coverage command,
   and `bash scripts/check-bead-scenario-coverage.sh ... --run` when scenarios exist.
-- **Downstream handoff:** consumed by `$implement`, `$validate`, `/review`, the
-  bead-acceptance pawl, and `$post-mortem` evidence harvesting.
+- **Downstream use:** factual evidence that a caller may supply to Validate.
 
 ## Quality Rubric
 

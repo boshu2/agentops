@@ -10,23 +10,23 @@ func TestClassifyPathToBC(t *testing.T) {
 		path string
 		want string
 	}{
-		{"cli/internal/yieldledger/escape.go", BC2Validation},
+		{"cli/internal/gates/escape.go", BC2Validation},
 		{"cli/internal/gates/run.go", BC2Validation},
-		{"scripts/pawl-verdict.sh", ""},                          // prefix-only: scripts/ is a mixed bag -> no signal
-		{"scripts/check-go-command-test-pair.sh", ""},            // unclassified -> no signal
-		{"scripts/evolve/halt-check.sh", BC3Loop},                // clean prefix scripts/evolve/ -> BC3
-		{"tests/scripts/foo.bats", BC2Validation},                // clean prefix
+		{"scripts/custom-review.sh", ""},              // prefix-only: scripts/ is a mixed bag -> no signal
+		{"scripts/check-go-command-test-pair.sh", ""}, // unclassified -> no signal
+		{"_beads/history.jsonl", BC3Loop},             // historical tracker artifact
+		{"tests/scripts/foo.bats", BC2Validation},     // clean prefix
 		{".agents/yield/yield-ledger.jsonl", BC1Corpus},
 		{"cli/internal/wiki/locator.go", BC1Corpus},
 		{"_beads/issues.jsonl", BC3Loop},
-		{"cli/internal/rpi/handoff.go", BC3Loop},
+		{"_beads/handoff.jsonl", BC3Loop},
 		{"skills/discovery/SKILL.md", BC4Factory},
 		{"cli/internal/orchestration/shape.go", BC6Orchestration},
 		{"cli/internal/swarm/x.go", BC6Orchestration},
 		{"cli/cmd/ao/membrane.go", BC5Runtime}, // runtime adapter (broad, last)
-		{"cli/internal/worktree/sibling.go", BC5Runtime},
-		{"README.md", ""},                  // unclassified -> no signal
-		{"docs/architecture/foo.md", ""},   // unclassified
+		{"cli/internal/runtimecmd/sibling.go", BC5Runtime},
+		{"README.md", ""},                // unclassified -> no signal
+		{"docs/architecture/foo.md", ""}, // unclassified
 	}
 	for _, c := range cases {
 		if got := ClassifyPathToBC(c.path); got != c.want {
@@ -35,22 +35,22 @@ func TestClassifyPathToBC(t *testing.T) {
 	}
 }
 
-// Regression (cross-family pawl 2026-06-22): a bare "gate"/"pawl" substring rule
+// Regression: a bare "gate" substring rule
 // misclassified Go files that merely CONTAIN the substring — "aggreGATE",
 // "naviGATE", "planPAWL" outside its package. The contains rules are now scoped to
 // scripts/, so these classify by their real prefix (or not at all), never BC2.
 func TestClassifyPathToBC_NoUnanchoredSubstringFalsePositives(t *testing.T) {
 	cases := []struct{ path, want string }{
-		{"cli/internal/search/aggregate.go", BC1Corpus},   // "aggreGATE" -> BC1 via search prefix, NOT BC2
-		{"cli/internal/rpi/navigate.go", BC3Loop},          // "naviGATE" -> BC3 via rpi prefix, NOT BC2
-		{"cli/internal/wiki/propagate.go", BC1Corpus},      // "propaGATE" -> BC1, NOT BC2
-		{"cli/cmd/ao/delegate.go", BC5Runtime},             // "deleGATE" -> BC5, NOT BC2
-		{"docs/mitigate-plan.md", ""},                      // "mitiGATE" in an unclassified path -> still ""
+		{"cli/internal/search/aggregate.go", BC1Corpus}, // "aggreGATE" -> BC1 via search prefix, NOT BC2
+		{"_beads/navigate.jsonl", BC3Loop},              // historical BC3 prefix, NOT BC2
+		{"cli/internal/wiki/propagate.go", BC1Corpus},   // "propaGATE" -> BC1, NOT BC2
+		{"cli/cmd/ao/delegate.go", BC5Runtime},          // "deleGATE" -> BC5, NOT BC2
+		{"docs/mitigate-plan.md", ""},                   // "mitiGATE" in an unclassified path -> still ""
 		// prefix-only means even a scripts/ path containing "gate"/"pawl" is NOT
 		// force-classified — no substring matching exists to create a false signal:
 		{"scripts/run-gate.sh", ""},
 		{"scripts/aggregate-data.sh", ""}, // "gate" substring, but no clean prefix -> no false BC2
-		{"scripts/pawl-verdict.sh", ""},
+		{"scripts/custom-review.sh", ""},
 	}
 	for _, c := range cases {
 		if got := ClassifyPathToBC(c.path); got != c.want {
@@ -61,18 +61,18 @@ func TestClassifyPathToBC_NoUnanchoredSubstringFalsePositives(t *testing.T) {
 
 func TestClassifyPathToBC_SpecificBeforeBroadRuntime(t *testing.T) {
 	// A validation package under cli/internal must NOT be swallowed by the broad
-	// cli/cmd/ao runtime rule (which is intentionally last). yieldledger is BC2.
-	if got := ClassifyPathToBC("cli/internal/yieldledger/writer.go"); got != BC2Validation {
-		t.Fatalf("yieldledger must classify BC2 (specific before broad), got %q", got)
+	// cli/cmd/ao runtime rule (which is intentionally last). gates is BC2.
+	if got := ClassifyPathToBC("cli/internal/gates/writer.go"); got != BC2Validation {
+		t.Fatalf("gates must classify BC2 (specific before broad), got %q", got)
 	}
 }
 
 func TestChangedFilesDomains_DistinctSetInBCOrder(t *testing.T) {
 	got := ChangedFilesDomains([]string{
-		"cli/cmd/ao/membrane.go",            // BC5
-		"cli/internal/yieldledger/escape.go", // BC2
-		"cli/internal/yieldledger/writer.go", // BC2 (dup)
-		"README.md",                          // unclassified -> dropped
+		"cli/cmd/ao/membrane.go",       // BC5
+		"cli/internal/gates/escape.go", // BC2
+		"cli/internal/gates/writer.go", // BC2 (dup)
+		"README.md",                    // unclassified -> dropped
 	})
 	want := []string{BC2Validation, BC5Runtime} // sorted BC2 < BC5, distinct
 	if !reflect.DeepEqual(got, want) {
@@ -84,7 +84,7 @@ func TestChangedFilesDomains_DoesNotCollapseToDominant(t *testing.T) {
 	// The whole point: preserve the cross-domain spread. Two BCs in, two BCs out —
 	// even when one BC has more files (dominant-only would hide the minority).
 	got := ChangedFilesDomains([]string{
-		"cli/internal/yieldledger/a.go", "cli/internal/yieldledger/b.go", "cli/internal/gates/c.go", // 3x BC2
+		"cli/internal/gates/a.go", "cli/internal/gates/b.go", "cli/internal/safety/c.go", // 3x BC2
 		"cli/internal/swarm/d.go", // 1x BC6 (the minority signal that must survive)
 	})
 	want := []string{BC2Validation, BC6Orchestration}
@@ -110,7 +110,7 @@ func TestBuild_MismatchWhenIntentNotInChanged(t *testing.T) {
 func TestBuild_NoMismatchWhenIntentAmongChanged(t *testing.T) {
 	// Intended BC2 and the code DID change in BC2 (plus BC5) -> intent is satisfied,
 	// no mismatch even though the change also spilled into BC5.
-	r := Build(BC2Validation, []string{"cli/internal/yieldledger/x.go", "cli/cmd/ao/y.go"}, BC2Validation)
+	r := Build(BC2Validation, []string{"cli/internal/gates/x.go", "cli/cmd/ao/y.go"}, BC2Validation)
 	if r.Mismatch {
 		t.Fatalf("intent BC2 IS among changed -> no mismatch; got %+v", r)
 	}

@@ -1,6 +1,5 @@
 ---
 name: security
-spine: true
 description: 'Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates. Triggers: "security", "run repository security scans for", "security skill".'
 practices:
 - supply-chain-integrity
@@ -24,6 +23,10 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [security]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   graph_root: true
   tier: product
   dependencies: []
@@ -41,9 +44,8 @@ Use this skill for deterministic pre-merge/release validation, scheduled checks,
 - Keep collection read-only by default; do not exfiltrate secrets, execute destructive payloads, or mutate policy/baselines to manufacture green. **Why:** the assessment must not become the incident or erase its evidence.
 - Treat missing/error scanners as a coverage gap, never a clean finding; use `--require-tools` when complete tool coverage is required. **Why:** absent evidence is not evidence of absence.
 - Use the current agent and local shell; do not start another runtime or orchestration substrate unless explicitly requested. **Why:** repository scanning is a bounded operation, not permission to fan out.
-- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, reproduce and classify the finding, remediate only when authorized, then rerun the same gate. **Why:** a negative verdict is loop evidence, not a human andon by itself.
-- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold promotion and use one bounded local-shell helper to inspect the scanner, artifact, or authorization boundary. **Why:** one recovery pass can distinguish tooling failure from a real security stop.
-- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** target authorization, risk acceptance, suppression/baseline judgment, or exhausted recovery requires accountable human ownership.
+- Run the selected scan once and report findings plus coverage gaps. Remediation,
+  risk acceptance, reruns, and promotion are caller decisions.
 
 ## Security Surfaces
 
@@ -98,7 +100,9 @@ Scheduled automation runs the full gate against the intended branch and retains 
 
 **Validator command:** with `OUT=<security-gate-run-dir>`, run `jq -e '(.mode|type)=="string" and (.mode|length)>0 and (.run_id|type)=="string" and (.run_id|length)>0 and (.output_dir|type)=="string" and (.output_dir|length)>0 and .gate_status=="PASS" and (.missing_tool_count|type)=="number" and (.require_tools|type)=="boolean" and (.toolchain|type)=="object"' "$OUT/security-gate-summary.json" >/dev/null`.
 
-**Downstream handoff:** pass the artifact path, command/exit code, mode, gate status, missing-tool coverage, ranked findings, authorization boundary, owner, and next action to validation/release; negative verdicts re-enter through the pawl.
+**Output:** report the artifact path, command/exit code, mode, gate status,
+missing-tool coverage, ranked findings, and authorization boundary. Do not add
+an owner, next action, approval, release, or retry decision.
 
 ## Quality Checklist
 
@@ -108,7 +112,7 @@ Scheduled automation runs the full gate against the intended branch and retains 
 - [ ] Artifacts contain no newly exposed secrets or unredacted sensitive payloads.
 - [ ] Required gate and output validator both pass before promotion is declared safe.
 - [ ] Suppressions, policy changes, baselines, and risk acceptance require explicit judgment.
-- [ ] WARN/FAIL/REFUTED consulted the pawl before any human andon.
+- [ ] The report stops after evidence and contains no continuation decision.
 
 ## Validation
 

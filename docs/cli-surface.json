@@ -9,144 +9,32 @@
   ],
   "commands": [
     {
-      "category": "public-stateful-fixture-needed",
-      "command": "beads audit",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Requires a beads database fixture; auto-close mode mutates issue state."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "beads cluster",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Requires a beads database fixture; apply mode mutates issue parents."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads dir",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads epic-status",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads exec",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads harvest",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads lint",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads resume",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads scenarios extract",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads scenarios validate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads stale-claims",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads tracker",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads verify",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "beads verify-acceptance",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
       "category": "public-tested",
       "command": "capabilities",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "claim bind",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "claim check",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "claim list",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Reads claim-evidence stores and needs an isolated claim fixture."
+      "reason": "Covered by capability contract tests."
     },
     {
-      "category": "public-tested",
-      "command": "close",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "claim",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed work ownership."
+    },
+    {
+      "category": "deprecated",
+      "command": "close",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "One-release failure stub for removed closure control."
     },
     {
       "category": "public-tested",
       "command": "completion",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Framework completion root; subcommand generation has focused tests."
+      "reason": "Framework completion root has focused generation tests."
     },
     {
       "category": "public-tested",
@@ -160,7 +48,7 @@
       "command": "constraint activate",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by constraint list smoke behavior."
+      "reason": "Covered through constraint list behavior."
     },
     {
       "category": "public-tested",
@@ -181,280 +69,98 @@
       "command": "constraint retire",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by constraint list smoke behavior."
+      "reason": "Covered through constraint list behavior."
     },
     {
       "category": "public-tested",
       "command": "constraint review",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by constraint list smoke behavior."
+      "reason": "Covered through constraint list behavior."
     },
     {
-      "category": "public-tested",
-      "command": "council-gate",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "converge",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed retry convergence."
+    },
+    {
+      "category": "deprecated",
+      "command": "crank",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "One-release failure stub for removed factory controller."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor capabilities",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Inspects local installation capabilities and needs a controlled home/repo fixture."
+      "reason": "Inspects local installation state."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor diff",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Compares local installation state and needs a controlled home/repo fixture."
+      "reason": "Compares local installation state."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor explain",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Explains doctor findings from local state and needs a controlled findings fixture."
+      "reason": "Requires controlled findings."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor fix",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Mutates local installation state and needs an isolated repair fixture."
+      "reason": "Mutates local installation state."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor gc",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Prunes local doctor artifacts and needs an isolated artifact fixture."
+      "reason": "Prunes local doctor artifacts."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor health",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Inspects local health state and needs a controlled home/repo fixture."
+      "reason": "Inspects local health state."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor ls",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Lists local doctor-managed artifacts and needs a controlled home/repo fixture."
+      "reason": "Lists local doctor artifacts."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor robot-docs",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Generates robot docs from local state and needs a controlled output fixture."
+      "reason": "Generates docs from local installation state."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "doctor undo",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Reverts doctor fixes and needs an isolated undo fixture."
+      "reason": "Reverts a doctor repair fixture."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "done",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval baseline",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval baseline-audit",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval bench",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval chaos",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval cleanup",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval compare",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval coverage",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval outcomes compile",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Holdout-safe rubric projection; core logic unit-tested (eval_outcomes_test.go compileOutcomesRubric); CLI smoke needs an input.json fixture (follow-up)."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval outcomes ingest",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up)."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval run",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario add",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario evaluate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario init",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario list",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario validate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario-ab",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scenario-moat",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval scorecard",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval session-outcome",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval suite n-required",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Computes eval-suite thresholds and needs a representative suite fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval suite verdict",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Projects eval-suite verdicts and needs a representative suite fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval task add",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Mutates eval task manifests and needs a disposable eval fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval task list",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Reads eval task manifests and needs a representative eval fixture."
-    },
-    {
-      "category": "public-tested",
-      "command": "eval task run",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "eval task show",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Reads eval task manifests and needs a representative eval fixture."
-    },
-    {
-      "category": "public-tested",
-      "command": "gate approve",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by gate command tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "gate bulk-approve",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by gate command tests."
+      "reason": "One-release failure stub for removed closure control."
     },
     {
       "category": "public-tested",
@@ -464,46 +170,25 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "gate pending",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by gate command tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "gate reject",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by gate command tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "gate run",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
       "category": "public-stateful-fixture-needed",
       "command": "goals add",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Writes GOALS.md and needs an isolated goal fixture."
+      "reason": "Writes GOALS.md and needs an isolated fixture."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "goals drift",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Requires two goal snapshots to compare."
+      "reason": "Requires two goal snapshots."
     },
     {
       "category": "public-tested",
       "command": "goals export",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered through goals measure snapshot behavior."
+      "reason": "Covered through goals snapshot behavior."
     },
     {
       "category": "public-tested",
@@ -517,7 +202,7 @@
       "command": "goals init",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Initializes GOALS.md and may prompt in an existing repo."
+      "reason": "Initializes GOALS.md and may prompt."
     },
     {
       "category": "public-tested",
@@ -531,21 +216,21 @@
       "command": "goals meta",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered through goals measure behavior."
+      "reason": "Covered through goals measurement behavior."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "goals migrate",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Migrates GOALS.md format and needs a disposable fixture."
+      "reason": "Migrates GOALS.md and needs a disposable fixture."
     },
     {
       "category": "public-stateful-fixture-needed",
       "command": "goals prune",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Removes stale goal entries and needs a disposable fixture."
+      "reason": "Removes goal entries and needs a disposable fixture."
     },
     {
       "category": "public-tested",
@@ -562,41 +247,6 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals steer add",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Writes GOALS.md and needs an isolated goal fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals steer apply",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Mutates GOALS.md from steering recommendations and needs an isolated goal fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals steer prioritize",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Writes GOALS.md and needs an isolated goal fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals steer recommend",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Reads goal history and needs a representative goal fixture."
-    },
-    {
-      "category": "public-stateful-fixture-needed",
-      "command": "goals steer remove",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Writes GOALS.md and needs an isolated goal fixture."
-    },
-    {
       "category": "public-tested",
       "command": "goals trace",
       "coverage_status": "covered",
@@ -611,18 +261,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "governor budget",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "governor",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "governor noise-band",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed retry control."
     },
     {
       "category": "internal-hidden",
@@ -639,67 +282,39 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "land",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed delivery control."
     },
     {
-      "category": "public-tested",
-      "command": "membrane calibrate",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "membrane",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed admission behavior."
     },
     {
-      "category": "public-tested",
-      "command": "membrane catch",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "next-work",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed work selection."
     },
     {
-      "category": "public-tested",
-      "command": "membrane derive-checks",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "pawl",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed admission control."
     },
     {
-      "category": "public-tested",
-      "command": "membrane digest",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "plan-pawl",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "membrane recall",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "membrane triage",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "pawl review",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "plan-pawl decide",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed plan admission."
     },
     {
       "category": "public-tested",
@@ -710,28 +325,7 @@
     },
     {
       "category": "public-tested",
-      "command": "provenance emit-landed",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "provenance emit-verdict",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "provenance export",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "provenance ledger-reader-version",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -759,17 +353,10 @@
     },
     {
       "category": "public-tested",
-      "command": "provenance reconcile",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "provenance show",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by generic provenance read tests."
     },
     {
       "category": "public-tested",
@@ -793,18 +380,18 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "ready",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "reconcile",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed lifecycle reconciliation."
     },
     {
       "category": "public-tested",
       "command": "robot-docs",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by generated documentation tests."
     },
     {
       "category": "public-tested",
@@ -815,17 +402,10 @@
     },
     {
       "category": "public-tested",
-      "command": "session close",
+      "command": "session handoff",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by session close tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session handoff",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by handoff artifact tests."
     },
     {
       "category": "public-tested",
@@ -837,51 +417,9 @@
     {
       "category": "public-tested",
       "command": "session rehydrate",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state admit",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state candidate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state doctor",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state review-request",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state validate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "session state verify",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by rehydrate artifact tests."
     },
     {
       "category": "public-tested",
@@ -955,17 +493,17 @@
     },
     {
       "category": "public-tested",
-      "command": "skills retire",
+      "command": "skills unlink",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
-      "command": "skills unlink",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "state",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed lifecycle admission."
     },
     {
       "category": "public-tested",
@@ -975,39 +513,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-tested",
+      "category": "deprecated",
       "command": "validate",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "verdict-gate",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "verify init",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "verify receipts",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "verify stats",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed semantic CLI validation."
     },
     {
       "category": "public-tested",
@@ -1017,32 +527,18 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "public-stateful-fixture-needed",
-      "command": "yield emit",
+      "category": "deprecated",
+      "command": "worktree",
       "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm)."
+      "reason": "One-release failure stub for removed Git mutation."
     },
     {
-      "category": "public-tested",
-      "command": "yield gauge",
-      "coverage_status": "covered",
+      "category": "deprecated",
+      "command": "yield",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "yield report",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "yield tokens",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "One-release failure stub for removed throughput control."
     }
   ],
   "generated_by": "scripts/check-cmdao-surface-parity.sh --write-surface",

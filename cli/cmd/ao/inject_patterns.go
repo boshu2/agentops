@@ -20,7 +20,6 @@ func enrichPatternFreshness(p *pattern, file string, now time.Time) {
 func patternMatchesQuery(p pattern, queryLower string) bool {
 	return search.PatternMatchesQuery(p, queryLower)
 }
-
 // collectPatterns finds patterns from .agents/patterns/ and optionally ~/.agents/patterns/.
 // Global patterns receive a post-scoring weight penalty (globalWeight, default 0.8).
 func collectPatterns(cwd, query string, limit int, globalDir string, globalWeight float64) ([]pattern, error) {

@@ -148,20 +148,7 @@ func loadFlywheelBrief(cwd string) *flywheelBrief {
 }
 
 func loadStatusFlywheelBrief(cwd string) (*flywheelBrief, error) {
-	scorecard, err := loadStigmergicScorecard(cwd)
-	if err != nil {
-		return nil, fmt.Errorf("load stigmergic scorecard: %w", err)
-	}
-	brief := loadFlywheelBrief(cwd)
-	if brief == nil {
-		return nil, nil
-	}
-	brief.PromotedFindings = scorecard.PromotedFindings
-	brief.PlanningRules = scorecard.PlanningRules
-	brief.PreMortemChecks = scorecard.PreMortemChecks
-	brief.UnconsumedItems = scorecard.UnconsumedItems
-	brief.HighSeverityUnconsumed = scorecard.HighSeverityUnconsumed
-	return brief, nil
+	return loadFlywheelBrief(cwd), nil
 }
 
 func computeStatusFlywheelBrief(ctx context.Context, cwd string) *flywheelBrief {

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/subject-manifest.v1.schema.json",
+  "title": "subject-manifest.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "declared_roots", "exclusions", "entries", "canonical_manifest_digest"],
+  "properties": {
+    "schema_version": {"const": "subject-manifest.v1"},
+    "declared_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
+    "exclusions": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "base_manifest_digest": {"$ref": "#/$defs/digest"},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "kind", "executable"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "kind": {"enum": ["file", "symlink", "deletion"]},
+          "executable": {"type": "boolean"},
+          "digest": {"$ref": "#/$defs/digest"}
+        },
+        "allOf": [
+          {"if": {"properties": {"kind": {"enum": ["file", "symlink"]}}}, "then": {"required": ["digest"]}},
+          {"if": {"properties": {"kind": {"const": "deletion"}}}, "then": {"not": {"required": ["digest"]}}}
+        ]
+      }
+    },
+    "canonical_manifest_digest": {"$ref": "#/$defs/digest"},
+    "git_metadata": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+  }
+}

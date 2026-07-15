@@ -372,6 +372,8 @@ def scan_skill(skill_md: Path, profile: dict | None = None) -> SkillScan | None:
             raise ProfileError(f"profile configuration loader missing: {_PROFILE_IMPORT_ERROR}")
         profile = load_profile(REPO_ROOT, os.environ.get("SKILL_CONFORMANCE_PROFILE_ID"))
     frontmatter, _body = split_frontmatter(text)
+    if re.search(r"^implementation:\s*false\s*$", frontmatter, re.MULTILINE):
+        return None
     name = parse_field(frontmatter, "name") or skill_md.parent.name
     description = description_block(frontmatter)
     forms = detect_trigger(text, profile)

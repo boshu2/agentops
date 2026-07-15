@@ -1,2 +1,0 @@
-description = "LAW 0: no resolved claude/agy provider may carry a live print_args (headless `claude -p` / `--print` sinks structurally forbidden)"
-run = "run.sh"

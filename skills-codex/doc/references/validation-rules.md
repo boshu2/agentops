@@ -18,7 +18,7 @@
 Use Python validator for fast, exhaustive checking:
 
 ```bash
-python3 ~/.codex/scripts/doc-validate.py docs/
+python3 ~/.claude/scripts/doc-validate.py docs/
 ```
 
 ### Checks Performed
@@ -142,7 +142,7 @@ Auto-create tracking issues for gaps:
 
 ```bash
 # Prefer beads
-br create --title "docs: create code-map for $FEATURE" \
+bd create --title "docs: create code-map for $FEATURE" \
           --type task --priority P1
 
 # Fallback to GitHub
@@ -203,7 +203,7 @@ diff <(grep "Status:" docs/code-map/services/*.md) <(cat docs/agents/catalog.md)
 
 ### --verify-claims Flag
 
-When running `$doc coverage --verify-claims`:
+When running `/doc coverage --verify-claims`:
 
 1. Extract all "Status: X" claims from docs
 2. Query deployment state (oc get pods, oc get agents)

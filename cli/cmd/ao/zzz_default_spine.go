@@ -11,17 +11,21 @@ import (
 // archive tags restore the complete registered tree; an untagged production
 // build removes satellite registrations so those paths cannot execute.
 var defaultSpineCommands = map[string]struct{}{
-	"beads": {}, "capabilities": {}, "claim": {}, "close": {},
-	"config": {}, "constraint": {}, "council-gate": {}, "doctor": {}, "done": {},
-	"eval": {}, "gate": {}, "goals": {}, "governor": {},
-	"init": {}, "land": {}, "membrane": {}, "pawl": {},
-	"plan-pawl": {}, "provenance": {}, "quick-start": {}, "ready": {},
+	"capabilities": {}, "config": {}, "constraint": {}, "doctor": {},
+	"gate": {}, "goals": {},
+	"init": {}, "provenance": {}, "quick-start": {},
 	"robot-docs": {}, "session": {}, "skills": {}, "status": {},
-	"validate": {}, "verdict-gate": {}, "verify": {}, "version": {},
-	"yield": {},
+	"version": {},
+	// One-release inert tombstones. These names do not restore lifecycle code.
+	"pawl": {}, "plan-pawl": {}, "land": {}, "done": {}, "close": {},
+	"governor": {}, "yield": {}, "claim": {}, "next-work": {}, "state": {},
+	"worktree": {}, "validate": {}, "converge": {}, "reconcile": {},
+	"membrane": {}, "crank": {},
 }
 
 func init() {
+	installRemovedCommandTombstones(rootCmd)
+
 	// The package test binary deliberately retains every registration so focused
 	// tests for archived commands remain runnable without compiling the suite
 	// repeatedly under every tag. Production/default binaries take the boundary.

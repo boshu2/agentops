@@ -1,4 +1,0 @@
-scope = "city"
-provider = "codex"
-option_defaults = { permission_mode = "plan" }
-append_fragments = ["law0", "breaker-escalation", "sentinel"]

@@ -57,7 +57,7 @@ Discipline that makes the map trustworthy:
 
 If adopting a steal is a **one-way door** (an architecture fork, a new bounded
 context, or a migration), do not decide it here. Hand the steal-map to
-`$discovery` and `$plan`. Dueling Idea Genies may challenge the choice as
+`$plan`. Dueling Idea Genies may challenge the choice as
 advisory evidence. Premortem alone decides whether the exact final plan is
 ready.
 
@@ -115,7 +115,7 @@ Phase-1 teardown under `output_dir/`: `feature-inventory.md`, `feature-registry.
     [[ "$sbom" == 0 ]]
   fi
   ```
-- **Downstream handoff:** give the validated `steal-map.md` to `$discovery` for
+- **Downstream handoff:** give the validated `steal-map.md` to `$plan` for
   one-way-door candidates; ordinary `have`, `park`, and
   `reject` decisions remain evidence-backed terminal rows.
 
@@ -135,7 +135,7 @@ Must show: feature inventory generated, registry generated, registry validator e
 
 ### Reverse-engineer an OSS CLI (repo mode) → steal-map
 
-`$reverse-engineer cc-sdd --mode=repo --upstream-repo="https://github.com/gotalab/cc-sdd.git" --upstream-ref=v1.0.0` → clones pinned, scans surface, writes inventory/registry/specs, then you map each feature onto our surfaces (have/gap/steal/park/reject) in `steal-map.md` and route one-way-door steals to `$discovery`.
+`$reverse-engineer cc-sdd --mode=repo --upstream-repo="https://github.com/gotalab/cc-sdd.git" --upstream-ref=v1.0.0` → clones pinned, scans surface, writes inventory/registry/specs, then you map each feature onto our surfaces (have/gap/steal/park/reject) in `steal-map.md` and route selected steals to `$plan`.
 
 ### Binary analysis with security audit
 
@@ -161,7 +161,7 @@ Must show: feature inventory generated, registry generated, registry validator e
 
 ## See Also
 
-- [discovery](../discovery/SKILL.md) — shape one-way-door steals into exact plans
+- [plan](../plan/SKILL.md) — shape selected steals into exact PlanPackets
 - [dueling-idea-genies](../dueling-idea-genies/SKILL.md) — optional advisory challenge
 - [premortem](../premortem/SKILL.md) — binary readiness verdict on the exact plan
 - [research](../research/SKILL.md) — general exploration; this is its external-system specialization

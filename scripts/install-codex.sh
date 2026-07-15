@@ -97,7 +97,7 @@ fi
 
 [ -f "$SRC_ROOT/scripts/install-codex-plugin.sh" ] || fail "Native Codex installer not found in bundle"
 
-# skills-codex/ is pre-built in the bundle (manually maintained, no sync needed)
+# skills-codex/ is a generated projection shipped in the bundle.
 
 BUNDLE_VERSION="$INSTALL_REF"
 if [[ -f "$SRC_ROOT/.codex-plugin/plugin.json" ]]; then

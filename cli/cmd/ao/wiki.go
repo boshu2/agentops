@@ -80,19 +80,6 @@ the index; pass --reindex to rebuild it inline before searching.`,
 	SilenceUsage: true,
 }
 
-// wikiInjectCmd is the strangler alias entry for context injection.
-var wikiInjectCmd = &cobra.Command{
-	Use:   "inject",
-	Short: "Assemble just-in-time context (experimental; see ao inject)",
-	Long: `Assemble just-in-time .agents/ context.
-
-This is the experimental wiki-surface entry point for context injection. The
-canonical, fully-flagged implementation is the legacy ao inject command, which
-remains supported and behavior-identical. ao wiki inject delegates to it.`,
-	RunE:         runWikiInject,
-	SilenceUsage: true,
-}
-
 // wikiLintCmd runs the pipeline LINT stage.
 var wikiLintCmd = &cobra.Command{
 	Use:   "lint",
@@ -153,7 +140,6 @@ func init() {
 
 	wikiCmd.AddCommand(wikiIndexCmd)
 	wikiCmd.AddCommand(wikiSearchCmd)
-	wikiCmd.AddCommand(wikiInjectCmd)
 	wikiCmd.AddCommand(wikiLintCmd)
 	wikiCmd.AddCommand(wikiQueryCmd)
 	wikiCmd.AddCommand(wikiPromoteCmd)
@@ -356,14 +342,6 @@ func wikiQueryTerms(query string) []string {
 		terms = append(terms, t)
 	}
 	return terms
-}
-
-// runWikiInject delegates context injection to the legacy ao inject command,
-// preserving its behavior exactly. The wiki surface does not reimplement the
-// inject ranker — it routes to the canonical implementation.
-func runWikiInject(cmd *cobra.Command, args []string) error {
-	injectCmd.SetContext(cmd.Context())
-	return runInject(injectCmd, args)
 }
 
 // runWikiStage runs a single WikiPipeline stage against the resolved vault and

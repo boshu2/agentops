@@ -179,6 +179,15 @@ type CodeFindings struct {
 	Skipped  bool                `json:"skipped,omitempty"`
 }
 
+// ComplexityHotspot is factual source evidence; it is never promoted into
+// work or scheduling state by the mining package.
+type ComplexityHotspot struct {
+	File        string `json:"file"`
+	Func        string `json:"func"`
+	Complexity  int    `json:"complexity"`
+	RecentEdits int    `json:"recent_edits"`
+}
+
 // EventsFindings holds signal extracted from RPI C2 event streams.
 type EventsFindings struct {
 	RunsScanned     int                  `json:"runs_scanned"`
@@ -231,10 +240,6 @@ type RunOpts struct {
 	// unless DryRun is true.
 	OutputDir string
 
-	// EmitWorkItems, when true, appends actionable mine findings to
-	// .agents/rpi/next-work.jsonl for evolve to pick up.
-	EmitWorkItems bool
-
 	// Quiet suppresses soft-fail warning output. Hard errors are still
 	// returned.
 	Quiet bool
@@ -265,7 +270,7 @@ type RunOpts struct {
 //  1. Run each requested source (git, agents, code, events), logging
 //     per-source failures to ErrOut as warnings.
 //  2. Write the dated + latest JSON report to OutputDir (unless DryRun).
-//  3. Optionally emit actionable work items to .agents/rpi/next-work.jsonl.
+//  3. Return the read-only evidence report to the caller.
 //
 // Source failures are soft: the Report is returned with whatever
 // findings succeeded. Hard failures (writing the report, emitting work
@@ -297,12 +302,6 @@ func Run(cwd string, opts RunOpts) (*Report, error) {
 
 	if err := writeReport(opts.OutputDir, report); err != nil {
 		return report, err
-	}
-
-	if opts.EmitWorkItems {
-		if err := EmitWorkItems(cwd, report); err != nil && !opts.Quiet && opts.ErrOut != nil {
-			fmt.Fprintf(opts.ErrOut, "warning: emit-work-items: %v\n", err)
-		}
 	}
 
 	return report, nil
@@ -370,6 +369,25 @@ func writeReport(dir string, r *Report) error {
 	}
 	dateStr := r.Timestamp.Format("2006-01-02-15")
 	return WriteMineReportJSON(dir, data, dateStr)
+}
+
+// WriteMineReportJSON writes the factual report to a dated file and a latest
+// projection. It does not create work, recommendations, or lifecycle state.
+func WriteMineReportJSON(dir string, data []byte, dateStr string) error {
+	if strings.TrimSpace(dir) == "" {
+		return fmt.Errorf("output directory must not be empty")
+	}
+	dir = filepath.Clean(dir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create mine output dir: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, dateStr+".json"), data, 0o644); err != nil {
+		return fmt.Errorf("write dated report: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "latest.json"), data, 0o644); err != nil {
+		return fmt.Errorf("write latest report: %w", err)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -570,53 +588,4 @@ func CountRecentEditsContext(ctx context.Context, cwd, file string, window time.
 		return 0
 	}
 	return len(lines)
-}
-
-// ---------------------------------------------------------------------------
-// Work item emission — moved from cmd/ao/mine.go
-// ---------------------------------------------------------------------------
-
-// CollectMineWorkItems builds actionable work items from a Report
-// (complexity hotspots + orphaned research).
-func CollectMineWorkItems(r *Report) []WorkItemEmit {
-	var items []WorkItemEmit
-	if r.Code != nil {
-		items = append(items, CollectWorkItemsFromHotspots(r.Code.Hotspots)...)
-	}
-	if r.Agents != nil {
-		items = append(items, CollectWorkItemsFromOrphans(r.Agents.OrphanedResearch)...)
-	}
-	return items
-}
-
-// EmitWorkItems translates mine findings into next-work.jsonl entries
-// for evolve to pick up. Orphaned research files map to severity:medium;
-// code hotspots map to severity:high. Dedup is item-level — each item
-// gets a stable ID, only new items are emitted.
-func EmitWorkItems(cwd string, r *Report) error {
-	items := CollectMineWorkItems(r)
-	if len(items) == 0 {
-		return nil // nothing to emit
-	}
-
-	nextWorkPath := filepath.Join(cwd, ".agents", "rpi", "next-work.jsonl")
-	if err := os.MkdirAll(filepath.Dir(nextWorkPath), 0o750); err != nil {
-		return fmt.Errorf("ensure next-work dir: %w", err)
-	}
-
-	existingIDs, err := LoadExistingMineIDs(nextWorkPath)
-	if err != nil {
-		return fmt.Errorf("load existing mine IDs: %w", err)
-	}
-	var newItems []WorkItemEmit
-	for _, item := range items {
-		if !existingIDs[item.ID] {
-			newItems = append(newItems, item)
-		}
-	}
-	if len(newItems) == 0 {
-		return nil // all items already present
-	}
-
-	return WriteWorkItems(nextWorkPath, newItems, r.Timestamp.UTC().Format(time.RFC3339))
 }

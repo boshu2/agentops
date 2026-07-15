@@ -20,6 +20,10 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [scaffold]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
   dependencies:
   - standards
@@ -38,10 +42,8 @@ Stamp real project, component, or CI boilerplate plus its executable verificatio
 - Snapshot `git status`, resolve the target root, and declare the exact write scope before generation. **Why:** scaffold must not absorb unrelated user changes or write outside the requested boundary.
 - Require explicit authorization before `--force`, overwriting, deleting, or replacing any existing path; stop on overlap with pre-existing edits. **Why:** generated convenience never outranks user-owned work.
 - Use the current agent and local shell; do not start alternate runtimes or orchestration substrates unless the user explicitly requested them. **Why:** scaffolding is a bounded write operation, not automatic permission to fan out.
-- Run the target's build, behavioral test, and lint contract; commit only generated paths after they pass. Never push. **Why:** a tree is not a usable scaffold until its executable acceptance surface is green and reviewable.
-- `WARN|FAIL|REFUTED -> AUTO-REDO`: consult the pawl, repair generated output, and rerun the failed validator on the same requested scaffold. **Why:** validator findings are loop evidence, not an andon by themselves.
-- `BREAKER -> HOLD -> ONE-HELPER`; `HELPER-UNSTUCK -> AUTO-REDO`. Hold writes and use one bounded local-shell helper to inspect path conflicts, permissions, or missing toolchains. **Why:** one recovery pass can restore progress without masking a true boundary stop.
-- `HELPER-ESCALATE -> HUMAN`; `REFUSAL-LANE|EXPLICIT-JUDGMENT|EXHAUSTED-BUDGET -> HUMAN`. **Why:** only an unresolved overwrite decision, unavailable authority, explicit judgment, or exhausted recovery earns the human andon.
+- Run the target's build, behavioral test, and lint contract once and report the
+  exact results. Git, repair, reruns, escalation, and delivery belong to the caller.
 
 ## Modes
 
@@ -56,7 +58,10 @@ Parse the invocation: `domain` first-positional → Domain-Slice; `component` �
 
 ## Generic scaffolding (project / component / CI)
 
-**A frontier model needs no template for standard project trees, best-practice config, or GitHub-Actions / GitLab-CI YAML — ask it directly.** State the language, type, and name; it produces an idiomatic go/python/node/rust/react tree with real (not placeholder) files, a passing test, and CI, then verifies build/test/lint and makes the `bootstrap(<name>): …` commit. The four-step spine is **gather → generate → verify → commit** (do not push).
+**A frontier model needs no template for standard project trees, best-practice
+config, or CI YAML.** State the language, type, and name; it produces an
+idiomatic tree with real files and a behavioral test, then reports the selected
+build/test/lint results. The caller owns version-control actions.
 
 The canonical tree shapes, `.editorconfig`/pre-commit/CI YAML skeletons, verification-command table, per-mode component layouts, and the error-recovery + output-summary blocks the skill historically stamped are preserved verbatim in **[references/generic-templates.md](references/generic-templates.md)** — consult it only when you want those exact shapes. For installer scripts, agent-facing tool servers, MCP surfaces, or Rust CLI storage scaffolds, apply [references/agent-facing-tool-scaffolds.md](references/agent-facing-tool-scaffolds.md) before writing files.
 
@@ -104,9 +109,13 @@ Error-recovery and output-summary conventions (shared with the generic modes) li
 
 **Artifact directory:** generated files stay under the declared target root; write the durable handoff to `.agents/evidence/scaffold/<run-id>/` at the invocation root.
 **Filename convention:** required `receipt.json`; Domain-Slice mode additionally produces `docs/domains/<name>/manifest.yaml`; other filenames follow the selected scaffold mode.
-**Serialization/schema format:** `receipt.json` is JSON with `schema_version: 1`, `mode` (`domain|project|component|ci`), nonempty `target_root`, string arrays `files_created`/`files_modified`, a `validation` array of `{kind,command,exit_code}` covering `build`, `test`, and `lint`, optional string/null `commit`, verdict `PASS|WARN|FAIL`, and nonempty `next_action`.
-**Validator command:** with `OUT=.agents/evidence/scaffold/<run-id>`, run `jq -e '. as $r | .schema_version==1 and (["domain","project","component","ci"]|index($r.mode))!=null and ($r.target_root|type=="string" and length>0) and ($r.files_created|type=="array" and all(.[]; type=="string")) and ($r.files_modified|type=="array" and all(.[]; type=="string")) and (($r.files_created|length)+($r.files_modified|length)>0) and ($r.validation|type=="array" and length>0 and all(.[]; (.kind as $kind | (["build","test","lint"]|index($kind))!=null) and (.command|type=="string" and length>0) and (.exit_code|type=="number"))) and ((["build","test","lint"]-[$r.validation[].kind])|length==0) and (($r.commit==null) or ($r.commit|type=="string")) and (["PASS","WARN","FAIL"]|index($r.verdict))!=null and ($r.verdict != "PASS" or all($r.validation[]; .exit_code == 0)) and ($r.next_action|type=="string" and length>0)' "$OUT/receipt.json"`.
-**Downstream handoff:** pass the receipt path, declared target root, generated file list, validation evidence, commit (if any), verdict, and next action to the consuming operating-loop skill; a FAIL re-enters scaffold through the pawl.
+**Serialization/schema format:** `receipt.json` contains `schema_version: 1`,
+`mode`, `target_root`, `files_created`, `files_modified`, and factual
+`validation` entries of `{kind,command,exit_code}`. It contains no commit,
+verdict, next action, retry, or delivery state.
+**Validator command:** check the required fields and confirm every reported path
+is beneath `target_root`.
+**Output:** return the receipt path and stop.
 
 ## Quality Checklist
 
@@ -114,7 +123,7 @@ Error-recovery and output-summary conventions (shared with the generic modes) li
 - [ ] Files contain real behavior and at least one behavioral test—no placeholder-only green.
 - [ ] Build, tests, and lint are recorded with actual exit codes in `receipt.json`.
 - [ ] Domain manifests validate against `schemas/domain-slice-manifest.v1.schema.json` and retain their read fence.
-- [ ] Negative verdicts consult the pawl before any human andon; commits exclude unrelated paths and are never pushed.
+- [ ] The receipt contains facts only and leaves Git and continuation to the caller.
 
 ## References
 

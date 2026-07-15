@@ -39,21 +39,23 @@ if [[ -d "$REPO_ROOT/skills" ]]; then
   done < <(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d)
 fi
 
-# Find all markdown files in specified directories
+# Validate the public root, the published MkDocs nav, and every live skill
+# package. Historical and off-nav research remains readable evidence but is not
+# a maintained public link surface.
 md_files=()
-while IFS= read -r f; do
-  md_files+=("$f")
-done < <(find "$REPO_ROOT" -maxdepth 1 -name '*.md' -type f)
+for name in README.md PRODUCT.md GOALS.md PROGRAM.md AGENTS.md; do
+  [[ -f "$REPO_ROOT/$name" ]] && md_files+=("$REPO_ROOT/$name")
+done
 
-for dir in docs skills skills-codex cli; do
+while IFS= read -r rel; do
+  [[ -n "$rel" && -f "$REPO_ROOT/docs/$rel" ]] && md_files+=("$REPO_ROOT/docs/$rel")
+done < <(sed -nE 's/^[[:space:]]*-[[:space:]]+([^:]+:[[:space:]]+)?"?([^"[:space:]]+\.md)"?[[:space:]]*$/\2/p' "$REPO_ROOT/mkdocs.yml" | sort -u)
+
+for dir in skills skills-codex; do
   if [[ -d "$REPO_ROOT/$dir" ]]; then
-    # Skip cli/embedded/ — a generated verbatim mirror of skills/ synced by
-    # `make sync-hooks`. Its markdown sits deeper than the source, so
-    # source-correct relative links resolve wrong there. The source copies
-    # under skills/ are still validated; validating the mirror is a category error.
     while IFS= read -r f; do
       md_files+=("$f")
-    done < <(find "$REPO_ROOT/$dir" -name '*.md' -type f -not -path '*/.agents/*' -not -path '*/embedded/*')
+    done < <(find "$REPO_ROOT/$dir" -name '*.md' -type f -not -path '*/.agents/*')
   fi
 done
 
@@ -99,11 +101,12 @@ for file in "${md_files[@]}"; do
       # resolved path when the parent dir does not exist — do NOT use inline
       # short-circuit `|| canonical=...` because that never fires when the
       # outer assignment itself does not fail.
-      if resolved_parent="$(cd "$(dirname "$resolved")" 2>/dev/null && pwd)"; then
-        canonical="$resolved_parent/$(basename "$resolved")"
-      else
-        canonical="$resolved"
-      fi
+      canonical="$(python3 - "$resolved" <<'PY'
+import os
+import sys
+print(os.path.normpath(sys.argv[1]))
+PY
+)"
       if [[ -n "${generated_paths[$canonical]+x}" ]]; then
         generated=$((generated + 1))
         continue

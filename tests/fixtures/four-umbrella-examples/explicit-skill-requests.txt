@@ -1,6 +1,0 @@
-/discovery "shape one testable behavior"
-/premortem
-/crank
-/validate
-/learn
-/postmortem --quick

@@ -58,10 +58,7 @@ step() { # label cmd...
 
 if [[ "$MODE" == "regen" ]]; then
   echo "== regenerating derived artifacts (dependency order) =="
-  step "skill counts"          bash scripts/sync-skill-counts.sh
-  step "skill-domain-map"      bash scripts/generate-skill-domain-map.sh
-  step "SKU catalog (registry.json)" bash scripts/generate-registry.sh
-  step "context-map"           bash scripts/generate-context-map.sh
+  step "skill mesh"            python3 scripts/generate-skill-mesh.py
   step "embedded skills"       make -C cli sync-hooks
   step "cli reference (COMMANDS.md)" bash scripts/generate-cli-reference.sh
   step "command surfaces (cobra expectedCmds + heading counts)" bash scripts/regen-command-surfaces.sh
@@ -85,16 +82,12 @@ if [[ "$MODE" == "regen" ]]; then
   echo "  so the codex-hash step skips unrelated pre-existing drift instead of sweeping it in."
 else
   echo "== drift / gate sweep (no writes) =="
-  step "registry drift"        bash scripts/check-registry-drift.sh
-  step "skill-domain-map golden" bash scripts/generate-skill-domain-map.sh --check
-  step "write-surfaces"        bash scripts/check-agents-write-surfaces.sh
+  step "skill mesh"            python3 scripts/generate-skill-mesh.py --check
   step "codex parity"          bash scripts/audit-codex-parity.sh
   step "codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
   step "codex twins (no drift)" bash scripts/codex-sync.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "codex hashes (no drift)" bash scripts/regen-codex-hashes.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
-  step "SKU catalog drift"     bash scripts/validate-sku-catalog-drift.sh
   step "skill catalog drift"   bash scripts/check-skill-catalog-drift.sh
-  step "artifact-classification schema" bash scripts/validate-skill-disposition-schema.sh
   step "context-map drift"     bash scripts/validate-context-map-drift.sh
   step "command surfaces drift" bash scripts/regen-command-surfaces.sh --check
   step "doc-release gate"      bash tests/docs/validate-doc-release.sh

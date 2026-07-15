@@ -1,6 +1,5 @@
 ---
 name: premortem
-spine: true
 description: 'Use when: an exact plan needs a verdict. Stress-tests readiness before work with one fresh, independent judge.'
 practices:
 - adr
@@ -16,6 +15,10 @@ context_rel:
   with: standards
 skill_api_version: 1
 metadata:
+  capabilities: [premortem]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_strategy
   graph_root: true
   tier: judgment
   dependencies:

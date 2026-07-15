@@ -88,7 +88,6 @@ func runMeasureJSONWithScenarios(opts goals.MeasureOptions, goalsFile string) er
 	if err != nil {
 		return err
 	}
-	recordVerdictLedgerIterations(measureProjectRoot(), reports, opts.Stderr)
 	return emitMeasureScenarioJSON(realStdout, measureModeFull, &snap, reports)
 }
 
@@ -102,7 +101,6 @@ func runMeasureHumanWithScenarios(cmd *cobra.Command, opts goals.MeasureOptions,
 	if err != nil {
 		return err
 	}
-	recordVerdictLedgerIterations(measureProjectRoot(), reports, cmd.ErrOrStderr())
 	renderScenarioReports(cmd.OutOrStdout(), measureModeFull, reports)
 	return nil
 }

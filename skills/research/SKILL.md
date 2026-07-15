@@ -15,6 +15,10 @@ context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash, Write
 metadata:
+  capabilities: [research]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: execution
   dependencies: [cass, ms, reverse-engineer, codebase-recon, pattern-mining]
 context:

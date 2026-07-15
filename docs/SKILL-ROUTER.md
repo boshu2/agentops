@@ -1,91 +1,80 @@
+<!-- generated from skills/*/SKILL.md metadata -->
+
 # Skill Router
 
-Use this when you're not sure which skill to run. **Product map:**
-[Intent → Validated Code](architecture/intent-to-validated-code.md) ·
-[Skills Matrix](skills-matrix.md). The same tree is embedded in
-[`docs/SKILLS.md`](SKILLS.md) ("Skill Router (Start Here)") — keep the two in
-sync when skills are folded or renamed.
+50 live skills. Metadata is the sole inventory and graph source.
 
-To search skills by intent instead of reading this tree, use `ms search "<task>"`
-(or `mcp__ms__search`) — the skill-search engine over both corpora ([`skills/ms/SKILL.md`](../skills/ms/SKILL.md)).
+## keep
 
-```text
-What are you trying to do?
-│
-├─ "Run the full loop / first time"
-│   ├─ See the whole product ─────► docs: Intent → Validated Code + Skills Matrix
-│   ├─ One behavior end-to-end ───► /plan → /implement → /validate → /learn
-│   ├─ One tick wrapped ──────────► /rpi "goal"
-│   └─ Repo setup ────────────────► /bootstrap · ao quick-start · ao doctor
-│
-├─ "Prove it's done / validate" (the Membrane — needs acceptance behavior; no verdict = not done)
-│   ├─ Code ready to ship? ───────► /validate
-│   ├─ Deeper code audit? ────────► /validate --mode=post-impl
-│   ├─ Plan ready to build? ──────► /premortem
-│   ├─ Independent judges ────────► /council validate recent
-│   ├─ Adversarially probe it ────► /red-team  or  /review (bug-hunt mode)
-│   ├─ Optional high-assurance delivery ► /pawl-review (adapter; after Validate)
-│   ├─ Drive fixes to agreement ──► /converge
-│   ├─ Mid-epic drift check ──────► /reality-check
-│   ├─ Security + release gate ───► /security
-│   └─ Work ready to close? ──────► /validate, then /learn
-│
-├─ "Track it / bookkeep it" (the Bookkeeper)
-│   ├─ Break it into issues ──────► /plan
-│   ├─ Manage/close issues ───────► /beads-br
-│   ├─ Turn a goal into a loop-ready packet ─► /goal-design
-│   ├─ Shape a fuzzy idea ────────► /idea-genie → /discovery
-│   ├─ Build a single issue ──────► /implement
-│   ├─ Where was I? ──────────────► /status
-│   └─ Save for next session ─────► /handoff
-│
-├─ "Build a feature"
-│   ├─ Small (1-2 files) ─────────► /implement
-│   ├─ Medium (3-6 issues) ───────► /plan → /crank
-│   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
-│
-├─ "Now build it"
-│   ├─ Small/single issue ─────────► /implement
-│   ├─ Multi-issue epic ───────────► /crank <epic-id>
-│   └─ Full flow in one command ───► /rpi "goal"
-│
-├─ "Fix a bug"
-│   ├─ Already scoped? ────────────► /implement <issue-id>
-│   └─ Need to investigate? ───────► /review (bug-hunt mode)
-│
-├─ "Explore or research"
-│   ├─ Understand this codebase ──► /codebase-recon
-│   ├─ Compare approaches ────────► /council research <topic>
-│   ├─ Generate ideas ────────────► /idea-genie
-│   ├─ Contest a one-way-door choice ► /dueling-idea-genies
-│   └─ Research an external topic ► /research
-│
-├─ "Learn from past work"
-│   ├─ Extract a recurring code shape ─► /pattern-mining → /operationalize
-│   ├─ Turn the corpus into operator surfaces ─► /operationalize
-│   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
-│   ├─ Route validated observations ─► /learn
-│   └─ Answer a causal question ───► /postmortem
-│
-├─ "Parallelize work"
-│   ├─ Multiple independent tasks ► /swarm
-│   ├─ Full epic with waves ──────► /crank <epic-id>
-│   └─ Persistent pane roles/factory ► /agent-native + /ntm (+ /agent-mail on contention)
-│
-├─ "City-shaped multi-quest work" (gas city — operator choice, coexists with NTM; never auto-routed)
-│   ├─ Stand up / drive / admin / unstick a city ─► /using-gc
-│   └─ The close door + pawl-verdict.v1 internals ► gc-membrane (reference)
-│
-├─ "Ship a release"
-│   └─ Changelog + tag ──────────► /release <version>
-│
-├─ "Session management"
-│   ├─ Compile a reusable operator surface ► /operationalize
-│   ├─ Capture validated learning ───► /learn
-│   ├─ Where was I? ──────────────► /status
-│   ├─ Save for next session ─────► /handoff
-│   └─ Recover after compaction ──► /recover
-│
-└─ "First time here" ────────────► /plan → /implement → /validate → /learn
-                                   (maps: Intent → Validated Code · Skills Matrix)
-```
+`implement`, `plan`, `rpi`, `validate`
+
+## keep_off_path
+
+`learn`
+
+## keep_strategy
+
+`council`, `dueling-idea-genies`, `idea-genie`, `postmortem`, `premortem`, `reality-check`
+
+## keep_optional_adapter
+
+`agent-mail`, `agent-native`, `agy-native`, `automation-shape-routing`, `codex-exec`, `ntm`, `swarm`, `using-gc`
+
+## keep_specialist
+
+`account-rotation`, `bootstrap`, `cass`, `cc-hooks`, `codebase-recon`, `converter`, `dcg`, `doc`, `domain`, `goals`, `handoff`, `heal-skill`, `ms`, `operationalize`, `pattern-mining`, `product`, `rch`, `refactor`, `research`, `reverse-engineer`, `sbh`, `scaffold`, `scope`, `security`, `shared`, `skill-builder`, `standards`, `status`, `test`, `toil-mining`, `workflow-builder`
+
+## Complete inventory
+
+| Skill | Tier | Disposition | Hard dependencies | Capabilities | Effects |
+|---|---|---|---|---|---|
+| `account-rotation` | execution | `keep_specialist` | - | `account_rotation` | - |
+| `agent-mail` | execution | `keep_optional_adapter` | - | `agent_mail` | - |
+| `agent-native` | meta | `keep_optional_adapter` | `ntm`, `agent-mail` | `role_dispatch`, `observe_workers`, `handoff` | `manage_runtime_sessions` |
+| `agy-native` | cross-vendor | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `provide_fresh_context` | `start_agy_session` |
+| `automation-shape-routing` | meta | `keep_optional_adapter` | `skill-builder`, `workflow-builder`, `agent-native` | `automation_shape_routing` | - |
+| `bootstrap` | session | `keep_specialist` | `goals`, `product`, `doc`, `shared`, `scaffold` | `bootstrap` | - |
+| `cass` | execution | `keep_specialist` | - | `cass` | - |
+| `cc-hooks` | execution | `keep_specialist` | - | `cc_hooks` | - |
+| `codebase-recon` | execution | `keep_specialist` | `doc` | `codebase_recon` | - |
+| `codex-exec` | orchestration | `keep_optional_adapter` | - | `codex_exec` | - |
+| `converter` | cross-vendor | `keep_specialist` | - | `converter` | - |
+| `council` | judgment | `keep_strategy` | - | `collect_independent_judgments`, `synthesize_disagreement` | `write_advisory_council_report` |
+| `dcg` | execution | `keep_specialist` | - | `dcg` | - |
+| `doc` | product | `keep_specialist` | `standards`, `council` | `doc` | - |
+| `domain` | knowledge | `keep_specialist` | - | `domain` | - |
+| `dueling-idea-genies` | judgment | `keep_strategy` | `idea-genie` | `dueling_idea_genies` | - |
+| `goals` | product | `keep_specialist` | - | `goals` | - |
+| `handoff` | session | `keep_specialist` | - | `handoff` | - |
+| `heal-skill` | meta | `keep_specialist` | - | `heal_skill` | - |
+| `idea-genie` | execution | `keep_strategy` | `research` | `generate_evidenced_options` | `write_idea_portfolio` |
+| `implement` | execution | `keep` | - | `execute_one_experiment`, `collect_factual_evidence` | `modify_declared_subject`, `write_candidate_packet` |
+| `learn` | execution | `keep_off_path` | - | `analyze_verdict_collections` | `write_advisory_observations` |
+| `ms` | execution | `keep_specialist` | - | `ms` | - |
+| `ntm` | execution | `keep_optional_adapter` | - | `ntm` | - |
+| `operationalize` | meta | `keep_specialist` | - | `distill_expertise`, `propose_artifact_shape` | `write_advisory_proposal` |
+| `pattern-mining` | execution | `keep_specialist` | `operationalize` | `pattern_mining` | - |
+| `plan` | execution | `keep` | - | `shape_intent`, `define_acceptance`, `bound_write_scope` | `write_plan_packet` |
+| `postmortem` | judgment | `keep_strategy` | `council`, `toil-mining` | `postmortem` | - |
+| `premortem` | judgment | `keep_strategy` | `council` | `premortem` | - |
+| `product` | product | `keep_specialist` | - | `shape_product_boundary` | `write_product_document` |
+| `rch` | execution | `keep_specialist` | - | `rch` | - |
+| `reality-check` | judgment | `keep_strategy` | - | `compare_claim_to_evidence` | `write_advisory_gap_report` |
+| `refactor` | execution | `keep_specialist` | `standards`, `pattern-mining` | `refactor` | - |
+| `research` | execution | `keep_specialist` | `cass`, `ms`, `reverse-engineer`, `codebase-recon`, `pattern-mining` | `research` | - |
+| `reverse-engineer` | execution | `keep_specialist` | - | `reverse_engineer` | - |
+| `rpi` | meta | `keep` | `plan`, `implement`, `validate` | `orchestrate_once`, `report` | `dispatch_core_phases` |
+| `sbh` | execution | `keep_specialist` | - | `sbh` | - |
+| `scaffold` | execution | `keep_specialist` | `standards` | `scaffold` | - |
+| `scope` | meta | `keep_specialist` | - | `scope` | - |
+| `security` | product | `keep_specialist` | - | `security` | - |
+| `shared` | library | `keep_specialist` | - | `provide_reference_context` | - |
+| `skill-builder` | meta | `keep_specialist` | `heal-skill`, `converter` | `skill_builder` | - |
+| `standards` | knowledge | `keep_specialist` | - | `standards` | - |
+| `status` | session | `keep_specialist` | `sbh` | `status` | - |
+| `swarm` | execution | `keep_optional_adapter` | - | `dispatch_once` | `invoke_selected_executor` |
+| `test` | execution | `keep_specialist` | `standards` | `test` | - |
+| `toil-mining` | meta | `keep_specialist` | `automation-shape-routing` | `toil_mining` | - |
+| `using-gc` | execution | `keep_optional_adapter` | - | `dispatch_explicit_packet`, `observe_gc_runtime` | `operate_gas_city` |
+| `validate` | judgment | `keep` | - | `compute_subject_identity`, `judge_acceptance`, `persist_verdict` | `write_verdict_artifact` |
+| `workflow-builder` | meta | `keep_specialist` | - | `workflow_builder` | - |

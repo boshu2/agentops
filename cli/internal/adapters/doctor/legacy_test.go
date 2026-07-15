@@ -313,9 +313,9 @@ func TestCheckLaw0Guard(t *testing.T) {
 		name, status, detail string
 		environment          []string
 	}{
-		{name: "clean", environment: []string{"PAWL_NO_SERVICE=1"}, status: "pass", detail: "no reviewer path configured"},
+		{name: "clean", environment: []string{"AGENTOPS_MODE=local"}, status: "pass", detail: "no reviewer path configured"},
 		{name: "empty", status: "pass", detail: "no reviewer path configured"},
-		{name: "pawl print flag", environment: []string{"PAWL_REVIEWER_CMD=claude" + " -p review"}, status: "fail", detail: "unset PAWL_REVIEWER_CMD"},
+		{name: "review command print flag", environment: []string{"AGENTOPS_REVIEWER_CMD=claude" + " -p review"}, status: "fail", detail: "unset AGENTOPS_REVIEWER_CMD"},
 		{name: "reviewer print word", environment: []string{"MY_REVIEWER_BIN=claude" + " --print"}, status: "fail", detail: "unset MY_REVIEWER_BIN"},
 		{name: "unscoped ignored", environment: []string{"SHELL_HISTORY=claude -p review"}, status: "pass", detail: "no reviewer path configured"},
 	} {

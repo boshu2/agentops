@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
-	"github.com/boshu2/agentops/cli/internal/ratchet"
+	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
 )

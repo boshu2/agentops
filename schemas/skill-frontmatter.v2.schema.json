@@ -3,7 +3,7 @@
   "$id": "agentops:skill-frontmatter.v2",
   "practices": ["data-contracts", "design-by-contract"],
   "type": "object",
-  "required": ["name", "description", "hexagonal_role", "practices"],
+  "required": ["name", "description", "hexagonal_role", "practices", "metadata"],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -49,6 +49,19 @@
           "with": {"type": "string", "description": "skill slug"}
         }
       }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["tier", "dependencies", "capabilities", "effects", "canonical_status", "disposition"],
+      "properties": {
+        "tier": {"type": "string", "minLength": 1},
+        "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "effects": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "canonical_status": {"enum": ["canonical"]},
+        "disposition": {"enum": ["keep", "keep_off_path", "keep_strategy", "keep_optional_adapter", "keep_specialist"]}
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

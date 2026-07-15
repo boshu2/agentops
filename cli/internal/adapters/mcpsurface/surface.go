@@ -49,7 +49,6 @@ func ToolDescriptors() []ToolDescriptor {
 		{Name: "inject", Description: "Run `ao inject` — decay-ranked prior context for a query.", InputSchema: strProp("query", "Topic to retrieve context for"), HoldoutSensitive: true},
 		{Name: "corpus_inject", Description: "Run `ao corpus inject --query` — typed BC1 corpus retrieval.", InputSchema: strProp("query", "Corpus query"), HoldoutSensitive: true},
 		{Name: "standards", Description: "Load the standards checklist for the given filetypes.", InputSchema: strProp("filetypes", "Comma-separated filetypes")},
-		{Name: "validate", Description: "Run `ao validate --gate` over the target artifact.", InputSchema: strProp("target", "File or bead to gate"), HoldoutSensitive: true},
 		{Name: "goals_measure", Description: "Run `ao goals measure` — fitness gate snapshot.", InputSchema: empty},
 	}
 }
@@ -113,8 +112,8 @@ func Run(opts Options) error {
 }
 
 // RealExecutor shells the curated tool's underlying `ao` subcommand. Each tool
-// is read-mostly and deterministic. `standards` has no standalone command: the
-// standards checklist is enforced through `ao validate`, so it routes there.
+// is read-mostly and deterministic. `standards` resolves through the read-only
+// skill query surface.
 // Only reachable for non-denied calls (ToolDenied runs first).
 func RealExecutor(name string, args map[string]string) (string, error) {
 	return realExecutorWithDependencies(
@@ -196,10 +195,8 @@ func toolArgv(name string, args map[string]string) ([]string, error) {
 		return []string{"inject", "--query", args["query"]}, nil
 	case "corpus_inject":
 		return []string{"corpus", "inject", "--query", args["query"]}, nil
-	case "validate":
-		return []string{"validate", "--gate", "--changes", args["target"]}, nil
 	case "standards":
-		return []string{"validate", "--gate"}, nil // standards checklist runs via validate
+		return []string{"skills", "check", "--skill", "standards", "--json"}, nil
 	case "goals_measure":
 		return []string{"goals", "measure"}, nil
 	default:

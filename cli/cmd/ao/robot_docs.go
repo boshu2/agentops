@@ -73,7 +73,7 @@ ao capabilities                 # discover the contract
 ao status --json                # where am I, what's initialized
 ao doctor --robot-triage        # one-call health + remediation
 ao inject "<topic>"             # pull relevant prior knowledge
-ao gate check --fast --scope head   # the release gate before any push
+ao gate check --fast --scope head   # ordinary deterministic repository checks
 ` + "```" + `
 
 ## Environment

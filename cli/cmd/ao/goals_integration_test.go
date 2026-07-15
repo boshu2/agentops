@@ -40,27 +40,8 @@ func TestGoals_Integration_FullLifecycle(t *testing.T) {
 		t.Errorf("GOALS.md missing default directive, content:\n%s", content)
 	}
 
-	// Step 2: steer add appends a directive
-	cmd = exec.Command(bin, "goals", "steer", "add", "Improve coverage",
-		"--description", "Raise test coverage above 80%", "--steer", "increase")
-	cmd.Dir = tmp
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("goals steer add failed: %v\n%s", err, out)
-	}
-	if !strings.Contains(string(out), "Added directive #2") {
-		t.Errorf("expected 'Added directive #2' in output, got: %s", out)
-	}
-
-	content, err = os.ReadFile(goalsPath)
-	if err != nil {
-		t.Fatalf("read GOALS.md after steer add: %v", err)
-	}
-	if !strings.Contains(string(content), "Improve coverage") {
-		t.Errorf("GOALS.md missing added directive, content:\n%s", content)
-	}
-
-	// Step 3: measure runs checks
+	// Step 2: measurement remains read-only; recommendation and apply routing
+	// were removed by the Cathedral Cut.
 	cmd = exec.Command(bin, "goals", "measure")
 	cmd.Dir = tmp
 	out, err = cmd.CombinedOutput()
@@ -104,35 +85,6 @@ func TestGoals_Integration_MeasureNoGoalsFile(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error when no goals file exists, got nil")
-	}
-}
-
-func TestGoals_Integration_SteerAddInvalidSteer(t *testing.T) {
-	dir := chdirTemp(t)
-
-	// Create a valid GOALS.md first
-	_, err := captureStdout(t, func() error {
-		goalsInitNonInteractive = true
-		goalsInitTemplate = ""
-		defer func() { goalsInitNonInteractive = false }()
-		rootCmd.SetArgs([]string{"goals", "init", "--non-interactive"})
-		return rootCmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("goals init failed: %v", err)
-	}
-	_ = dir
-
-	// Try adding directive with invalid steer value
-	_, err = captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"goals", "steer", "add", "Bad directive", "--description", "test", "--steer", "bogus"})
-		return rootCmd.Execute()
-	})
-	if err == nil {
-		t.Fatal("expected error for invalid steer value, got nil")
-	}
-	if !strings.Contains(err.Error(), "invalid steer") {
-		t.Errorf("expected 'invalid steer' error, got: %v", err)
 	}
 }
 

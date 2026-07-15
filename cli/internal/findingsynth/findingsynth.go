@@ -1,9 +1,8 @@
 // Package findingsynth synthesizes review findings across N cross-family
 // reviewer lanes: it deduplicates findings that describe the same substance and
 // accumulates their cross-lane / cross-family attribution (corroboration). It is
-// the layer BENEATH the whole-change decision (planpawl.Decide) — the decision
-// stays where it is; this only reconciles the pile of per-lane finding notes into
-// one deduplicated, attribution-carrying list.
+// a pure reconciliation layer for optional multi-reviewer strategies. It does
+// not decide a verdict or control continuation.
 //
 // Typical use: fan a change out to several cross-family reviewer lanes, collect
 // each lane's findings into a LaneFindings, then Merge them:

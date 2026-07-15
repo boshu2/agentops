@@ -2,6 +2,6 @@
   "generator": "codex-sync",
   "source_skill": "skills/account-rotation",
   "layout": "modular",
-  "source_hash": "bc177fb5199548a622f856bdff91d216dd18c7cfa3297f0db4b4a9d3f12bff6f",
-  "generated_hash": "541e86a036feaa856af072a6225a3a627689daffcf3e912a095908345df681ae"
+  "source_hash": "90bde2ec42de7627904ce1467f2ea465f6ce1a00628194b0076908b9fcccdc8e",
+  "generated_hash": "a1e28f5109da08340fc22dbf3274d3a9958f72049cea78e0a69d1cd60dc62211"
 }

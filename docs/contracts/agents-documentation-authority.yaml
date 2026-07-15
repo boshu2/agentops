@@ -36,12 +36,10 @@ documents:
         - docs/agent-workflow-reference.md
         - docs/CI-CD.md
         - docs/contracts/codex-skill-api.md
-        - docs/contracts/repo-execution-profile.md
       consumers:
         - docs/agent-workflow-reference.md
         - docs/CI-CD.md
         - docs/contracts/codex-skill-api.md
-        - docs/contracts/repo-execution-profile.md
 
   - path: CLAUDE.md
     tracked: true
@@ -80,10 +78,10 @@ documents:
 
   - path: PROGRAM.md
     tracked: true
-    class: machine-consumed-controller-contract
-    disposition: retain-until-consumers-migrate
+    class: product-boundary
+    disposition: retain-and-tighten
     owner: PROGRAM.md
-    proof: cli/internal/autodev
+    proof: Cathedral Cut conformance
 
   - path: MEMORY.md
     tracked: true

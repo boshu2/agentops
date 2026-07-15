@@ -1,6 +1,6 @@
 # bootstrap
 
-Initialize AgentOps project files. Triggers: "initialize AgentOps", "bootstrap project files", "set up .agents scaffolding".
+Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.
 
 ## Instructions
 

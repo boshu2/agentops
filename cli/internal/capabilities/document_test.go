@@ -38,8 +38,8 @@ func TestServiceBuildsCompleteContractFromPorts(t *testing.T) {
 	if len(document.GlobalFlags) != 1 || len(document.CommandGroups) != 1 || len(document.Commands) != 1 {
 		t.Fatalf("surface projection incomplete: %+v", document)
 	}
-	if surface.exits["plan-pawl decide"]["5"] == "" || document.CommandExitCodes["pawl review"]["3"] == "" {
-		t.Fatal("typed command exit codes did not cross the surface port")
+	if len(surface.exits) != 0 || len(document.CommandExitCodes) != 0 {
+		t.Fatal("removed lifecycle exit contracts must not cross the surface port")
 	}
 	if len(document.OutputFormats) != 3 || document.ExitCodes["0"] != "success" {
 		t.Fatal("stable output and exit dictionaries are incomplete")

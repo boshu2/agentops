@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	ratchet "github.com/boshu2/agentops/cli/internal/evidence"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )

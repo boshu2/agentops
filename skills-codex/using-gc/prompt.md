@@ -1,6 +1,6 @@
 # using-gc
 
-Drive an explicitly selected Gas City factory: stand up a city, sling quests, watch the AgentOps membrane close gate, resolve stalls, and converge. Triggers: "using-gc", "gas city", "drive a gc city", "sling a quest", "gc stall".
+Operate an explicitly selected Gas City as an optional executor for supplied packets. Triggers: "using gc", "gas city", "dispatch through gc".
 
 ## Instructions
 

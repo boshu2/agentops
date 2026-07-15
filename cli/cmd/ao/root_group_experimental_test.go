@@ -25,10 +25,7 @@ func TestExperimentalHelpGroup(t *testing.T) {
 	// corpus + curate + defrag are archived behind //go:build flywheel (age-nzwo)
 	// so they are absent from the spine build; the flywheel-tagged sibling test
 	// asserts them.
-	demoted := []string{
-		"compile", "dedup", "flywheel",
-		"maturity", "pool", "ratchet", "store", "temper", "wiki",
-	}
+	demoted := []string{"flywheel", "store", "wiki"}
 	for _, name := range demoted {
 		cmd, _, err := rootCmd.Find([]string{name})
 		if err != nil || cmd == nil || cmd.Name() != name {

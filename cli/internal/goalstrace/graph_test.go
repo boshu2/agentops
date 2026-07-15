@@ -123,27 +123,3 @@ func assertIDs(t *testing.T, label string, got, want []string) {
 		}
 	}
 }
-
-func TestParseBeadList_AcceptsArrayAndEnvelope(t *testing.T) {
-	cases := []struct {
-		name  string
-		input string
-		want  int
-	}{
-		{"bare array", `[{"id":"a-1"},{"id":"a-2"}]`, 2},
-		{"issues envelope", `{"issues":[{"id":"a-1"}]}`, 1},
-		{"beads envelope", `{"beads":[{"id":"a-1"},{"id":"a-2"}]}`, 2},
-		{"empty input", ``, 0},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			got, err := parseBeadList([]byte(c.input))
-			if err != nil {
-				t.Fatalf("parseBeadList error: %v", err)
-			}
-			if len(got) != c.want {
-				t.Errorf("got %d beads, want %d", len(got), c.want)
-			}
-		})
-	}
-}

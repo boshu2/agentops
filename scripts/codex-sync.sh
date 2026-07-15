@@ -498,23 +498,6 @@ for name in source_skills:
     # generation trigger.
     in_ocat = any(e.get("name") == name for e in overrides_skills)
 
-    # Freeze ambient (non-spine) twins — age-focus-membrane-bookkeeper-m1wg.18.
-    # A source skill WITHOUT top-level `spine: true` whose twin already exists,
-    # is registered, and is complete is FROZEN: editing that ambient source must
-    # not restain its Codex twin (the ~70% regen cut). Frozen twins are skipped in
-    # BOTH --check (no drift reported) and regen (no refresh). Two escape hatches
-    # keep the rest of the workflow intact: a MISSING/incomplete twin (e.g. a
-    # brand-new skill) is still generated so validate-codex-override-coverage.sh
-    # stays satisfied, and `--force --only <slug>` still deliberately regenerates
-    # a frozen twin. (bespoke twins were already the opt-out above; this adds the
-    # parity_only ambient set, which is where the restain churn actually came from.)
-    spine = fm.get("spine") is True
-    twin_complete = (
-        skill_md.exists() and prompt_md.exists() and marker_path.exists() and in_ocat
-    )
-    if not spine and twin_complete and not force:
-        continue
-
     if check_only:
         # THE single drift gate for parity twins: the on-disk twin must EXACTLY
         # match what the generator would emit — presence + registration +

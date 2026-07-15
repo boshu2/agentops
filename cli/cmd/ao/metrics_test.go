@@ -498,10 +498,10 @@ func TestIsRetrievableArtifactPath(t *testing.T) {
 func TestRetrievableCitationStats(t *testing.T) {
 	baseDir := "/tmp/repo"
 	citations := []types.CitationEvent{
-		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md")},
-		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md")},
-		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "b.md")},
-		{ArtifactPath: filepath.Join(baseDir, ".agents", "patterns", "c.md")},
+		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md"), CitationType: types.CitationTypeHelpful},
+		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md"), CitationType: types.CitationTypeHelpful},
+		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "b.md"), CitationType: types.CitationTypeHelpful},
+		{ArtifactPath: filepath.Join(baseDir, ".agents", "patterns", "c.md"), CitationType: types.CitationTypeHelpful},
 		{ArtifactPath: filepath.Join(baseDir, ".agents", "research", "d.md")}, // not retrievable
 	}
 

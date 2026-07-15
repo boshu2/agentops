@@ -134,7 +134,7 @@ bash skills/heal-skill/scripts/heal.sh --strict
 bash tests/docs/validate-doc-release.sh
 
 # If you added or removed a skill directory
-scripts/sync-skill-counts.sh
+python3 scripts/generate-skill-mesh.py
 
 # Recommended fast gate before push
 scripts/pre-push-gate.sh --fast

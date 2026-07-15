@@ -4,14 +4,13 @@
 # Enforces the lean AGENTS.md orientation contract after the root sibling
 # cutover (docs authority migrate-then-delete for AGENTS-*).
 #   - AGENTS.md exists and is <=250 lines (orientation only)
-#   - AGENTS.md contains pointer links to the four detail owners
+#   - AGENTS.md contains pointer links to the three detail owners
 #   - Each owner exists and links back to AGENTS.md
 #
-# Owners (former AGENTS-WORKFLOW/CI/CODEX/RUNTIME siblings):
+# Owners:
 #   docs/agent-workflow-reference.md
 #   docs/CI-CD.md
 #   docs/contracts/codex-skill-api.md
-#   docs/contracts/repo-execution-profile.md
 #
 # Exit codes:
 #   0 — contract satisfied
@@ -28,7 +27,6 @@ readonly OWNERS=(
   docs/agent-workflow-reference.md
   docs/CI-CD.md
   docs/contracts/codex-skill-api.md
-  docs/contracts/repo-execution-profile.md
 )
 
 declare -i checks=0
@@ -92,7 +90,7 @@ done
 echo "validate-agents-split: scanned $checks checks"
 
 if [ "$failed" -eq 0 ]; then
-  echo "PASS — AGENTS.md ($lines lines) + 4 detail owners, links bidirectional; no root siblings."
+  echo "PASS — AGENTS.md ($lines lines) + 3 detail owners, links bidirectional; no root siblings."
   exit 0
 fi
 

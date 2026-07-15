@@ -1,1 +1,0 @@
-{"phase":"verify","manifest_present":true,"manifest_paths":["skills/learn/**"],"local_changes":[],"upstream_changes":[],"receipt_required":true,"receipt_present":true,"receipt_manifest_sha256":"old-digest","current_manifest_sha256":"current-digest","expected_pass":false}

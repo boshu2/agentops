@@ -234,9 +234,9 @@ func CheckLaw0Guard(environment []string) quality.Check {
 			}
 		}
 	}
-	return quality.Check{Name: "LAW-0 Guard", Status: "pass", Detail: "no reviewer path configured through claude print-mode (scanned PAWL_*/AGENTOPS_*/AO_*/*REVIEWER* env)", Required: true}
+	return quality.Check{Name: "LAW-0 Guard", Status: "pass", Detail: "no reviewer path configured through claude print-mode (scanned AGENTOPS_*/AO_*/*REVIEWER* env)", Required: true}
 }
 
 func law0RelevantEnv(name string) bool {
-	return strings.HasPrefix(name, "PAWL_") || strings.HasPrefix(name, "AGENTOPS_") || strings.HasPrefix(name, "AO_") || strings.Contains(name, "REVIEWER")
+	return strings.HasPrefix(name, "AGENTOPS_") || strings.HasPrefix(name, "AO_") || strings.Contains(name, "REVIEWER")
 }

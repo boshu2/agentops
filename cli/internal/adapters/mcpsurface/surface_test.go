@@ -13,7 +13,7 @@ import (
 
 func TestToolDescriptors_CuratedSurface(t *testing.T) {
 	tools := ToolDescriptors()
-	want := []string{"session_bootstrap", "inject", "corpus_inject", "standards", "validate", "goals_measure"}
+	want := []string{"session_bootstrap", "inject", "corpus_inject", "standards", "goals_measure"}
 	if len(tools) != len(want) {
 		t.Fatalf("descriptor count = %d, want %d", len(tools), len(want))
 	}
@@ -57,9 +57,9 @@ func TestToolDenied_PathEscape(t *testing.T) {
 }
 
 func TestToolDenied_CleanCallAllowed(t *testing.T) {
-	denied, reason := ToolDenied("validate", map[string]string{"target": "plan.md"})
+	denied, reason := ToolDenied("standards", map[string]string{"filetypes": "go"})
 	if denied {
-		t.Errorf("a clean validate call must be allowed, got denied: %s", reason)
+		t.Errorf("a clean standards call must be allowed, got denied: %s", reason)
 	}
 }
 
@@ -74,8 +74,8 @@ func TestPrintTools_JSON(t *testing.T) {
 	if err := json.Unmarshal([]byte(sb.String()), &doc); err != nil {
 		t.Fatalf("output is not valid JSON: %v", err)
 	}
-	if len(doc.Tools) != 6 {
-		t.Errorf("print-tools JSON listed %d tools, want 6", len(doc.Tools))
+	if len(doc.Tools) != 5 {
+		t.Errorf("print-tools JSON listed %d tools, want 5", len(doc.Tools))
 	}
 }
 

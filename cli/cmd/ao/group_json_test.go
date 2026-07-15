@@ -8,9 +8,9 @@ import (
 )
 
 func TestGroupJSON_ParentCommandEmitsJSON(t *testing.T) {
-	out, err := executeCommand("ratchet", "--json")
+	out, err := executeCommand("goals", "--json")
 	if err != nil {
-		t.Fatalf("ao ratchet --json returned error: %v", err)
+		t.Fatalf("ao goals --json returned error: %v", err)
 	}
 	var listing groupCommandListing
 	if jerr := json.Unmarshal([]byte(out), &listing); jerr != nil {
@@ -19,8 +19,8 @@ func TestGroupJSON_ParentCommandEmitsJSON(t *testing.T) {
 	if !listing.IsGroup {
 		t.Error("is_group should be true for a parent command")
 	}
-	if listing.Command != "ao ratchet" {
-		t.Errorf("command = %q, want %q", listing.Command, "ao ratchet")
+	if listing.Command != "ao goals" {
+		t.Errorf("command = %q, want %q", listing.Command, "ao goals")
 	}
 	if len(listing.Subcommands) == 0 {
 		t.Error("subcommands listing is empty")
@@ -28,11 +28,11 @@ func TestGroupJSON_ParentCommandEmitsJSON(t *testing.T) {
 }
 
 func TestGroupJSON_ParentCommandWithoutJSONStillShowsHelp(t *testing.T) {
-	out, err := executeCommand("ratchet")
+	out, err := executeCommand("goals")
 	if err != nil {
-		t.Fatalf("ao ratchet returned error: %v", err)
+		t.Fatalf("ao goals returned error: %v", err)
 	}
 	if strings.HasPrefix(strings.TrimSpace(out), "{") {
-		t.Errorf("ao ratchet (no --json) should print human help, not JSON: %s", out)
+		t.Errorf("ao goals (no --json) should print human help, not JSON: %s", out)
 	}
 }

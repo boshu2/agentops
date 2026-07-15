@@ -21,6 +21,10 @@ context:
     - HISTORY
   intel_scope: topic
 metadata:
+  capabilities: [doc]
+  effects: []
+  canonical_status: canonical
+  disposition: keep_specialist
   tier: product
   dependencies:
   - standards
