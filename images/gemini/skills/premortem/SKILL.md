@@ -18,7 +18,7 @@ metadata:
   graph_root: true
   tier: judgment
   dependencies: []
-output_contract: schemas/premortem-plan-review.v1.schema.json
+output_contract: skills/premortem/schemas/premortem-plan-review.v1.schema.json
 ---
 
 # Premortem

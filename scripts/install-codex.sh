@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# install-codex.sh — Install AgentOps into the local Codex native plugin cache
+# install-codex.sh — Legacy Codex plugin-cache compatibility installer.
+# New installs should clone AgentOps and run `ao skills link`.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
@@ -36,6 +37,9 @@ usage() {
 install-codex.sh
 
 Install AgentOps into the local Codex native plugin cache.
+
+DEPRECATED: retained for 3.x migration compatibility. New installs should use
+one canonical checkout plus `ao skills link`.
 
 Options:
   --help        Show this help

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# install-codex-plugin.sh — Install the AgentOps native Codex plugin into CODEX_HOME.
+# install-codex-plugin.sh — Legacy Codex plugin-cache compatibility helper.
+# New installs should clone AgentOps and run `ao skills link`.
 #
 # Usage:
 #   bash scripts/install-codex-plugin.sh
@@ -44,6 +45,9 @@ usage() {
 install-codex-plugin.sh
 
 Install the AgentOps native Codex plugin into CODEX_HOME.
+
+DEPRECATED: internal compatibility helper for 3.x plugin migrations. New
+installs should use one canonical checkout plus `ao skills link`.
 
 Options:
   --repo-root <dir>     AgentOps repo or extracted release bundle root

@@ -127,7 +127,7 @@
 | `rpi` | consumes | `implement` |
 | `rpi` | consumes | `validate` |
 | `rpi` | produces | `rpi-report.v1` |
-| `scaffold` | produces | `converted-skill` |
+| `scaffold` | produces | `project-scaffold` |
 | `scope` | consumes | `proposed-write-scope` |
 | `scope` | produces | `scope-review` |
 | `security` | consumes | `repo-context` |

@@ -54,6 +54,11 @@ func TestMain(m *testing.M) {
 	}
 	origTmuxDir, hadOrigTmuxDir := os.LookupEnv("TMUX_TMPDIR")
 	os.Setenv("TMUX_TMPDIR", tmpTmux)
+	origTmux, hadOrigTmux := os.LookupEnv("TMUX")
+	// TMUX identifies the parent client socket and takes precedence over
+	// TMUX_TMPDIR. Clear it so test subprocesses and cleanup can reach only the
+	// isolated socket created above, never the NTM or interactive parent server.
+	os.Unsetenv("TMUX")
 
 	code := m.Run()
 
@@ -66,6 +71,11 @@ func TestMain(m *testing.M) {
 		os.Setenv("TMUX_TMPDIR", origTmuxDir)
 	} else {
 		os.Unsetenv("TMUX_TMPDIR")
+	}
+	if hadOrigTmux {
+		os.Setenv("TMUX", origTmux)
+	} else {
+		os.Unsetenv("TMUX")
 	}
 
 	os.RemoveAll(tmpHome)

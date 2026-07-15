@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: 'Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.'
+description: 'Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: "bootstrap AgentOps", "initialize AgentOps docs".'
 practices:
 - hermetic-builds
 - code-complete

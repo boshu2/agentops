@@ -26,6 +26,10 @@ under `ao gate check`; semantic judgment is the Validate skill.
 | `ao worktree` | Use Git directly. |
 | `ao membrane` | Record observations as Validate findings or generic provenance. |
 | `ao crank` | Call an executor directly or use the optional `dispatch_once` adapter. |
+| `ao constraint` | Encode accepted mechanical policy in repository-owned linters or checks; AgentOps no longer promotes findings into blocking state. |
+| `ao skills edit` | Edit canonical `skills/<slug>/` sources directly; use normal repository Git policy outside `ao`. |
+| `ao goals trace` | Inspect current goal/scenario artifacts directly; the retired directive-to-bead lifecycle chain has no replacement. |
+| `ao session memory` | Use caller-authored `ao session handoff` evidence or maintain repository memory through the caller's own policy. |
 
 These major public names have inert, nonzero-exit tombstones for this cut
 release only. They do not forward to old code or mutate old state.
@@ -53,6 +57,33 @@ caller supplies another directory.
 Historical Pawl, queue, claim, landing, and lifecycle artifacts remain inert
 evidence. They no longer influence phase sequencing, verdict validity, or CLI
 outcomes.
+
+## Install migration
+
+AgentOps 4 uses one canonical checkout plus source symlinks. A plugin cache is
+not part of the active skill path.
+
+```bash
+git clone https://github.com/boshu2/agentops.git ~/.local/share/agentops
+cd ~/.local/share/agentops
+ao skills link --dry-run
+ao skills link
+```
+
+Remove a 3.x runtime plugin through that runtime before linking the checkout:
+
+- Claude Code: `claude plugin uninstall agentops@agentops-marketplace`, then
+  `claude plugin marketplace remove agentops-marketplace`.
+- Codex: remove `~/.codex/plugins/cache/agentops-marketplace` and
+  `~/.codex/.agentops-codex-install.json`, then remove the AgentOps plugin enable
+  entry from `~/.codex/config.toml`.
+- Gemini/Antigravity: `agy plugin disable agentops-core-gemini`, then
+  `agy plugin uninstall agentops-core-gemini`.
+
+`ao skills link` refuses to replace real directories and foreign links. Resolve
+each reported conflict deliberately; never delete a user-owned skill merely to
+make the counts match. Use `ao skills unlink` to remove only links that point
+into the current checkout.
 
 ## Optional runtimes
 

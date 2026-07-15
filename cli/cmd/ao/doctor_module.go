@@ -11,7 +11,7 @@ import (
 )
 
 func newLegacyDoctorService() doctorapp.LegacyService {
-	checks := doctoradapter.SystemLegacyChecks(version, IndexDir, IndexFileName, resolveLedgerPath, reviewerHealthService)
+	checks := doctoradapter.SystemLegacyChecks(version, resolveLedgerPath)
 	return doctorapp.NewLegacyService(version, checks)
 }
 

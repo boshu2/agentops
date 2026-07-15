@@ -39,9 +39,8 @@ type skillLinkResult struct {
 // corpus) is reported as a Conflict and never clobbered. When dryRun is true no
 // symlink is created, but the would-be links are still reported under Linked.
 //
-// Repairing an existing wrong or broken symlink is deliberately out of scope
-// (any symlink counts as Present); use dotfiles/bin/link-skill --relink for
-// that copy-verify-replace path.
+// Repairing an existing wrong or broken symlink is deliberately out of scope;
+// it is reported as a conflict so an operator can resolve ownership explicitly.
 func linkMissingSkills(srcDir, destDir string, dryRun bool) (skillLinkResult, error) {
 	res := skillLinkResult{Dest: destDir, DryRun: dryRun}
 
@@ -75,7 +74,20 @@ func linkMissingSkills(srcDir, destDir string, dryRun bool) (skillLinkResult, er
 		info, lerr := os.Lstat(tgt)
 		switch {
 		case lerr == nil && info.Mode()&os.ModeSymlink != 0:
-			res.Present = append(res.Present, name) // already live-linked
+			dst, readErr := os.Readlink(tgt)
+			if readErr != nil {
+				return res, fmt.Errorf("read link %s: %w", tgt, readErr)
+			}
+			if !filepath.IsAbs(dst) {
+				dst = filepath.Join(destDir, dst)
+			}
+			if filepath.Clean(dst) == filepath.Clean(src) {
+				res.Present = append(res.Present, name)
+			} else {
+				// A wrong or broken symlink is not healthy merely because it is a
+				// symlink. Report it without replacing an operator-owned path.
+				res.Conflicts = append(res.Conflicts, name)
+			}
 		case lerr == nil:
 			res.Conflicts = append(res.Conflicts, name) // real dir/file — foreign corpus
 		case os.IsNotExist(lerr):
@@ -101,28 +113,27 @@ func linkMissingSkills(srcDir, destDir string, dryRun bool) (skillLinkResult, er
 
 var skillsLinkCmd = &cobra.Command{
 	Use:   "link",
-	Short: "Symlink repo skills into every installed runtime's live tier (Claude, Codex, AGY, Cursor)",
+	Short: "Symlink repo skills into portable and installed runtime skill roots",
 	Long: `Scan skills/ and create a live-tier symlink for every skill dir that has
 no entry yet. By DEFAULT it links into EVERY agent runtime you have installed —
-~/.claude/skills, ~/.codex/skills, ~/.gemini/skills (AGY/Gemini), ~/.cursor/skills,
-and ~/.pi/skills — detected by the runtime's config dir existing under $HOME;
+~/.agents/skills, ~/.claude/skills, ~/.codex/skills, ~/.gemini/skills,
+~/.cursor/skills, and ~/.pi/skills — detected by the config root existing under $HOME;
 --dest overrides to a single dir. Idempotent and non-destructive: skills already
-linked are left alone, and a name owned by a real directory (a foreign corpus
-such as jsm) is reported as a conflict and never clobbered.
+linked to this repository are left alone. A wrong or broken symlink, or a name
+owned by a real directory, is reported as a conflict and never clobbered.
 
 This is the focused "a new skill landed but the agent can't see it" fix: merging
-a new skill dir to main puts files in the repo but mints no symlink, and
-/reload-skills only re-reads links that already exist. Run this and the new skill
-is live next session — in every runtime, not just Claude.
+a new skill dir to main puts files in the repo but mints no symlink. Run this and
+the new skill is live next session in every detected runtime.
 
 Track main (optional): this is how to follow the latest skills from a repo clone
 instead of waiting for a plugin release. Clone the repo, run this once, then
 'git pull && ao skills link' to keep up — the symlinks point at the repo, so
-edits are live with no reinstall. Additive to the plugin install, never a
-replacement; must be run from inside the agentops repo (guarded).
+edits are live with no reinstall or plugin cache. Run from inside the AgentOps
+repository so the source identity check can fail closed.
 
-Repairing an existing wrong/broken link is out of scope — use
-dotfiles/bin/link-skill --relink for that copy-verify-replace path.
+The command audits existing links but does not replace conflicts automatically;
+inspect and resolve the named operator-owned path explicitly.
 
   ao skills link                        # link missing into every installed runtime
   ao skills link --dry-run              # show what's missing without linking
@@ -134,7 +145,7 @@ dotfiles/bin/link-skill --relink for that copy-verify-replace path.
 
 func init() {
 	skillsCmd.AddCommand(skillsLinkCmd)
-	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Link into this single dir instead of the auto-detected runtimes (default: every installed runtime — ~/.claude, ~/.codex, ~/.gemini, ~/.cursor, ~/.pi)")
+	skillsLinkCmd.Flags().StringVar(&skillsLinkDest, "dest", "", "Link into this single dir instead of the auto-detected roots (default: ~/.agents plus every installed runtime)")
 	skillsLinkCmd.Flags().BoolVar(&skillsLinkJSON, "json", false, "Emit machine-readable JSON")
 }
 
@@ -176,9 +187,8 @@ var runtimeConfigDirs = []string{".claude", ".codex", ".gemini", ".cursor", ".pi
 
 // resolveTargetDests returns the skills dirs to link into. An explicit --dest
 // wins as the single target. Otherwise it returns <home>/<rt>/skills for every
-// runtime config dir that EXISTS under $HOME, so Codex and AGY users get live
-// skills too. Falls back to ~/.claude/skills when no runtime is detected (a sane
-// default rather than linking nothing).
+// runtime config dir that EXISTS under $HOME. The portable ~/.agents/skills root
+// is always included, even in a fresh home with no runtime configuration yet.
 func resolveTargetDests(explicitDest string) ([]string, error) {
 	if strings.TrimSpace(explicitDest) != "" {
 		return []string{explicitDest}, nil
@@ -187,14 +197,11 @@ func resolveTargetDests(explicitDest string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve home dir for default --dest: %w", err)
 	}
-	var dests []string
+	dests := []string{filepath.Join(home, ".agents", "skills")}
 	for _, rt := range runtimeConfigDirs {
 		if isDir(filepath.Join(home, rt)) {
 			dests = append(dests, filepath.Join(home, rt, "skills"))
 		}
-	}
-	if len(dests) == 0 {
-		dests = []string{filepath.Join(home, ".claude", "skills")}
 	}
 	return dests, nil
 }

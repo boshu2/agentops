@@ -39,7 +39,7 @@ if [[ -f "$CURSOR_RULE" ]]; then
         && pass "Cursor rule has YAML frontmatter" || fail "Cursor rule missing YAML frontmatter"
     grep -q '^alwaysApply: false$' "$CURSOR_RULE" \
         && pass "Cursor rule marks alwaysApply false" || fail "Cursor rule missing alwaysApply false"
-    grep -q '^# /converter' "$CURSOR_RULE" \
+    grep -q '^# Converter' "$CURSOR_RULE" \
         && pass "Cursor rule contains skill body" || fail "Cursor rule missing skill body"
 else
     fail "Cursor .mdc rule missing at $CURSOR_RULE"

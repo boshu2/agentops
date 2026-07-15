@@ -1,675 +1,104 @@
 #!/usr/bin/env bash
-# Release Smoke Test — validates ALL ao CLI commands before release
-#
-# Proves every registered command runs without panicking, produces expected
-# output, and exits cleanly. Any broken registration, flag parsing error,
-# or runtime panic is caught before tagging.
-#
-# Usage:
-#   bash scripts/release-smoke-test.sh              # build + test
-#   bash scripts/release-smoke-test.sh --skip-build # use existing cli/bin/ao
-#   AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1 bash scripts/release-smoke-test.sh
-#
-# Exit codes:
-#   0 = all tests passed
-#   1 = one or more tests failed
-
+# Release smoke for the retained AgentOps 4 CLI surface.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$REPO_ROOT"
-
-# ═══════════════════════════════════════════════════════
-#  Options
-# ═══════════════════════════════════════════════════════
-
-ORIGINAL_ARGS=("$@")
+AO="$REPO_ROOT/cli/bin/ao"
 SKIP_BUILD=false
-ALLOW_AGENT_MUTATIONS="${AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS:-0}"
 
-truthy() {
-    case "$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')" in
-        1|true|yes|y|on|always) return 0 ;;
-        *) return 1 ;;
-    esac
-}
+usage() {
+  cat <<'EOF'
+Usage: bash scripts/release-smoke-test.sh [--skip-build]
 
-release_smoke_mutation_args() {
-    local command_name="$1"
-
-    if truthy "$ALLOW_AGENT_MUTATIONS"; then
-        return 0
-    fi
-
-    case "$command_name" in
-        inject|lookup)
-            printf '%s\n' "--no-cite"
-            ;;
-        flywheel-close-loop)
-            printf '%s\n' "--dry-run"
-            ;;
-    esac
+Build the default ao binary, execute every generated leaf help path, exercise
+the retained read-only surface, and prove removed commands are inert failures.
+EOF
 }
 
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --skip-build)
-            SKIP_BUILD=true
-            shift
-            ;;
-        --allow-agent-mutations)
-            ALLOW_AGENT_MUTATIONS=1
-            shift
-            ;;
-        -h|--help)
-            echo "Usage: bash scripts/release-smoke-test.sh [--skip-build]"
-            echo ""
-            echo "Options:"
-            echo "  --skip-build   Use existing cli/bin/ao instead of rebuilding"
-            echo "  --allow-agent-mutations"
-            echo "                 Allow citation/finding metadata writes during smoke"
-            echo "  -h, --help     Show this help"
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1" >&2
-            exit 1
-            ;;
-    esac
+  case "$1" in
+    --skip-build) SKIP_BUILD=true; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
 done
-
-if ! truthy "$ALLOW_AGENT_MUTATIONS" && ! truthy "${AGENTOPS_RELEASE_METADATA_GUARD_ACTIVE:-0}"; then
-    AGENTOPS_RELEASE_METADATA_GUARD_ACTIVE=1 \
-        exec "$REPO_ROOT/scripts/check-release-agent-metadata-stable.sh" -- "$0" "${ORIGINAL_ARGS[@]}"
-fi
-
-# ═══════════════════════════════════════════════════════
-#  Colors & Counters
-# ═══════════════════════════════════════════════════════
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
 
 PASS=0
 FAIL=0
-SKIP=0
-TOTAL=0
+TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/ao-release-smoke.XXXXXX")"
+trap 'rm -rf "$TMP_ROOT"' EXIT
 
-pass() {
-    echo -e "${GREEN}  PASS${NC}  $1"
-    PASS=$((PASS + 1))
-    TOTAL=$((TOTAL + 1))
+pass() { printf 'PASS: %s\n' "$1"; PASS=$((PASS + 1)); }
+fail() { printf 'FAIL: %s\n' "$1" >&2; FAIL=$((FAIL + 1)); }
+
+run_ok() {
+  local label="$1"
+  shift
+  local output rc=0
+  output=$("$@" 2>&1) || rc=$?
+  if [[ "$rc" -eq 0 ]] && ! grep -Eq '(^panic:|runtime error:|^goroutine [0-9]+ \[)' <<<"$output"; then
+    pass "$label"
+  else
+    fail "$label (exit $rc)"
+    sed -n '1,8p' <<<"$output" >&2
+  fi
 }
 
-fail() {
-    echo -e "${RED}  FAIL${NC}  $1"
-    FAIL=$((FAIL + 1))
-    TOTAL=$((TOTAL + 1))
+run_json() {
+  local label="$1"
+  shift
+  local output rc=0
+  output=$("$@" 2>"$TMP_ROOT/stderr") || rc=$?
+  if [[ "$rc" -eq 0 ]] && jq -e . >/dev/null 2>&1 <<<"$output"; then
+    pass "$label"
+  else
+    fail "$label (exit $rc or invalid JSON)"
+    sed -n '1,8p' "$TMP_ROOT/stderr" >&2
+  fi
 }
 
-skip() {
-    echo -e "${YELLOW}  SKIP${NC}  $1"
-    SKIP=$((SKIP + 1))
-    TOTAL=$((TOTAL + 1))
+run_tombstone() {
+  local label="$1"
+  shift
+  local output rc=0 lines
+  output=$("$@" 2>&1) || rc=$?
+  lines=$(awk 'NF { count++ } END { print count+0 }' <<<"$output")
+  if [[ "$rc" -ne 0 && "$lines" -eq 1 ]] && grep -qiE 'removed|no longer' <<<"$output"; then
+    pass "$label"
+  else
+    fail "$label (expected one-line nonzero tombstone, got exit $rc and $lines lines)"
+    sed -n '1,8p' <<<"$output" >&2
+  fi
 }
 
-output_matches() {
-    local output="$1"
-    local pattern="$2"
-    grep -qEi "$pattern" <<<"$output"
-}
-
-output_word_matches() {
-    local output="$1"
-    local word="$2"
-    grep -qw -- "$word" <<<"$output"
-}
-
-print_output_head() {
-    local output="$1"
-    local lines="${2:-3}"
-    sed -n "1,${lines}p" <<<"$output" | sed 's/^/    /'
-}
-
-print_panic_lines() {
-    local output="$1"
-    awk '/panic:|runtime error:|goroutine/ { print; count++; if (count >= 5) exit }' <<<"$output" | sed 's/^/    /'
-}
-
-section() {
-    echo ""
-    echo -e "${BLUE}── $1 ──${NC}"
-}
-
-AO="$REPO_ROOT/cli/bin/ao"
-
-# ═══════════════════════════════════════════════════════
-#  Panic / Crash Detection
-# ═══════════════════════════════════════════════════════
-
-# Check output for Go panic/crash markers. Returns 0 if clean, 1 if crash detected.
-check_no_panic() {
-    local output="$1"
-    local label="$2"
-    if grep -qE '(^panic:|runtime error:|^goroutine [0-9]+ \[)' <<<"$output"; then
-        fail "$label — PANIC/CRASH DETECTED"
-        print_panic_lines "$output"
-        return 1
-    fi
-    return 0
-}
-
-# ═══════════════════════════════════════════════════════
-#  Test Helpers
-# ═══════════════════════════════════════════════════════
-
-# test_exec: Run a command, assert exit 0, check for panics.
-# Usage: test_exec "label" cmd [args...]
-test_exec() {
-    local label="$1"
-    shift
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0  # already counted as FAIL
-    fi
-
-    if [[ "$rc" -eq 0 ]]; then
-        pass "$label"
-    else
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-    fi
-}
-
-# test_exec_output: Run a command, assert exit 0, assert output matches pattern.
-# Usage: test_exec_output "label" "pattern" cmd [args...]
-test_exec_output() {
-    local label="$1"
-    local pattern="$2"
-    shift 2
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0
-    fi
-
-    if [[ "$rc" -ne 0 ]]; then
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-        return 0
-    fi
-
-    if output_matches "$output" "$pattern"; then
-        pass "$label"
-    else
-        fail "$label — output missing pattern: $pattern"
-        print_output_head "$output" 5
-    fi
-}
-
-# test_exec_exact: Run a command, assert output exactly equals expected string.
-# Usage: test_exec_exact "label" "expected" cmd [args...]
-test_exec_exact() {
-    local label="$1"
-    local expected="$2"
-    shift 2
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0
-    fi
-
-    if [[ "$rc" -ne 0 ]]; then
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-        return 0
-    fi
-
-    if [[ "$output" == "$expected" ]]; then
-        pass "$label"
-    else
-        fail "$label — expected exactly '$expected', got '$(sed -n '1p' <<<"$output")'"
-    fi
-}
-
-# test_help: Run --help, assert exit 0 and output contains Usage.
-# Usage: test_help "label" cmd [args...] --help
-test_help() {
-    local label="$1"
-    shift
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0
-    fi
-
-    if [[ "$rc" -ne 0 ]]; then
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-        return 0
-    fi
-
-    if output_matches "$output" '(Usage|usage|Available Commands|Flags)'; then
-        pass "$label"
-    else
-        fail "$label — help output missing Usage/Commands/Flags"
-        print_output_head "$output" 5
-    fi
-}
-
-# test_json: Run a command, assert exit 0 and output is valid JSON.
-# Usage: test_json "label" cmd [args...]
-test_json() {
-    local label="$1"
-    shift
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0
-    fi
-
-    if [[ "$rc" -ne 0 ]]; then
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-        return 0
-    fi
-
-    if jq . >/dev/null 2>&1 <<<"$output"; then
-        pass "$label"
-    else
-        fail "$label — output is not valid JSON"
-        print_output_head "$output" 3
-    fi
-}
-
-# test_exec_tolerant: Run a command, accept exit 0 or 1 (some commands exit 1
-# for "no data" which is acceptable), but fail on panic or exit >= 2.
-# Usage: test_exec_tolerant "label" cmd [args...]
-test_exec_tolerant() {
-    local label="$1"
-    shift
-    local output
-    local rc=0
-    output=$("$@" 2>&1) || rc=$?
-
-    if ! check_no_panic "$output" "$label"; then
-        return 0
-    fi
-
-    if [[ "$rc" -le 1 ]]; then
-        pass "$label"
-    else
-        fail "$label (exit $rc)"
-        print_output_head "$output" 3
-    fi
-}
-
-# ═══════════════════════════════════════════════════════
-#  Build
-# ═══════════════════════════════════════════════════════
-
-START_TIME=$(date +%s)
-
-echo ""
-echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Release Smoke Test — ao CLI Command Coverage${NC}"
-echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-
-section "Build"
-
-if [[ "$SKIP_BUILD" == "true" ]]; then
-    if [[ -x "$AO" ]]; then
-        pass "Using existing binary: $AO"
-    else
-        fail "Binary not found at $AO — run without --skip-build"
-        echo ""
-        echo -e "${RED}ABORT: No binary to test${NC}"
-        exit 1
-    fi
-else
-    if (cd "$REPO_ROOT/cli" && make build >/dev/null 2>&1); then
-        pass "Built ao binary"
-    else
-        fail "Build failed"
-        echo ""
-        echo -e "${RED}ABORT: Build failed${NC}"
-        exit 1
-    fi
+if [[ "$SKIP_BUILD" == "false" ]]; then
+  run_ok "build default ao binary" bash -c "cd '$REPO_ROOT/cli' && go build -o bin/ao ./cmd/ao"
 fi
+[[ -x "$AO" ]] || { echo "missing binary: $AO" >&2; exit 1; }
 
-# Verify binary is executable
-if "$AO" version >/dev/null 2>&1; then
-    pass "Binary executes successfully"
-else
-    fail "Binary fails to execute"
-    echo ""
-    echo -e "${RED}ABORT: Binary broken${NC}"
-    exit 1
-fi
+run_ok "root help" "$AO" --help
+run_json "version JSON" "$AO" version --json
+run_json "capabilities JSON" "$AO" capabilities --json
+run_ok "ao quick-start dry-run" "$AO" quick-start --dry-run
+run_ok "all generated leaf help paths" bash "$REPO_ROOT/tests/cli/test-all-leaf-help-smoke.sh" --skip-build --binary "$AO"
 
-# Codex bundle parity removed — skills-codex/ is manually maintained
-# test_exec "Codex release bundle parity" bash "$REPO_ROOT/scripts/validate-codex-install-bundle.sh"
+run_json "status JSON" "$AO" status --json
+run_json "skills list JSON" "$AO" skills list --json
+run_json "skills graph JSON" "$AO" skills graph --format json
+run_json "flywheel status JSON" "$AO" flywheel status --json
+run_json "goals validate JSON" "$AO" goals validate --json
+run_json "provenance list JSON" bash -c "cd '$TMP_ROOT' && '$AO' provenance list --json"
+run_json "source-link dry-run JSON" env HOME="$TMP_ROOT/home" "$AO" skills link --dest "$TMP_ROOT/skills" --dry-run --json
 
-# ═══════════════════════════════════════════════════════
-#  Exhaustive Leaf Help Smoke
-# ═══════════════════════════════════════════════════════
-
-section "All Leaf Commands (--help execution)"
-
-leaf_smoke_log="$(mktemp "${TMPDIR:-/tmp}/ao-leaf-help-smoke.XXXXXX")"
-if bash "$REPO_ROOT/tests/cli/test-all-leaf-help-smoke.sh" --skip-build --binary "$AO" >"$leaf_smoke_log" 2>&1; then
-    leaf_count=$(grep -E '^Leaf commands:' "$leaf_smoke_log" | awk '{print $3}' || true)
-    pass "All generated leaf commands run --help${leaf_count:+ ($leaf_count commands)}"
-else
-    fail "All generated leaf commands run --help"
-    tail -40 "$leaf_smoke_log" | sed 's/^/    /'
-fi
-rm -f "$leaf_smoke_log"
-
-# ═══════════════════════════════════════════════════════
-#  Safe Commands (read-only / reporting — actually execute)
-# ═══════════════════════════════════════════════════════
-
-section "Safe Commands (read-only execution)"
-
-# Core info
-test_exec_output "ao version" "version|Version" "$AO" version
-test_exec_output "ao status" "Status|AgentOps|Initialized" "$AO" status
-test_exec_tolerant "ao doctor" "$AO" doctor
-
-# Search
-test_exec "ao search 'test'" "$AO" search "test"
-# NOTE: the exact-[] no-match assertion lives in the Golden Path Fresh Repo
-# section — search tokenizes query fragments, so NO query is guaranteed empty
-# against a populated operator-local .agents corpus (age-z1pv).
-
-# Knowledge injection
-inject_mutation_args=()
-while IFS= read -r arg; do
-    [[ -n "$arg" ]] && inject_mutation_args+=("$arg")
-done < <(release_smoke_mutation_args inject)
-test_exec_tolerant "ao inject" "$AO" inject "${inject_mutation_args[@]}"
-test_exec_output "ao inject --index-only" "Knowledge Index|ID|Title" "$AO" inject --index-only "${inject_mutation_args[@]}"
-
-# Lookup
-lookup_mutation_args=()
-while IFS= read -r arg; do
-    [[ -n "$arg" ]] && lookup_mutation_args+=("$arg")
-done < <(release_smoke_mutation_args lookup)
-test_exec_tolerant "ao lookup --query 'test'" "$AO" lookup --query "test" "${lookup_mutation_args[@]}"
-test_exec_tolerant "ao findings list" "$AO" findings list
-test_exec_output "ao findings stats" "Total findings|By status|Most cited|Total hits" "$AO" findings stats
-
-# Metrics
-test_exec_output "ao metrics health" "sigma|rho|delta|retrieval|citation|decay" "$AO" metrics health
-test_exec_output "ao metrics report" "Flywheel|Metrics|Period|decay|retrieval|citation" "$AO" metrics report
-
-# Flywheel
-flywheel_close_loop_mutation_args=()
-while IFS= read -r arg; do
-    [[ -n "$arg" ]] && flywheel_close_loop_mutation_args+=("$arg")
-done < <(release_smoke_mutation_args flywheel-close-loop)
-test_exec_output "ao flywheel status" "Flywheel|status|COMPOUNDING|decay|retrieval" "$AO" flywheel status
-test_exec_output "ao flywheel close-loop" "Close-Loop|Summary|Pool|promote|Citation" "$AO" flywheel close-loop "${flywheel_close_loop_mutation_args[@]}"
-
-# Pool
-test_exec_tolerant "ao pool list" "$AO" pool list
-
-# Maturity
-test_exec_output "ao maturity --scan" "Maturity|Distribution|Provisional|Candidate|No learnings" "$AO" maturity --scan
-
-# Anti-patterns, constraints, contradict, dedup
-test_exec_tolerant "ao anti-patterns" "$AO" anti-patterns
-test_exec_tolerant "ao constraint list" "$AO" constraint list
-test_exec_tolerant "ao contradict" "$AO" contradict
-test_exec_output "ao dedup" "Dedup|Scan|Total|Duplicate|No learnings|No learning or pattern files" "$AO" dedup
-
-# Curate
-test_exec_tolerant "ao flywheel status" "$AO" flywheel status
-
-# Notebook and memory (quiet mode to avoid state changes)
-test_exec "ao notebook update --quiet" "$AO" notebook update --quiet
-test_exec_tolerant "ao session memory sync --quiet" "$AO" session memory sync --quiet
-
-# Trace (help only — requires artifact path arg)
-test_help "ao trace --help" "$AO" trace --help
-test_help "ao findings --help" "$AO" findings --help
-
-# Goals
-test_exec_output "ao goals validate" "VALID|goals|version" "$AO" goals validate
-test_exec_output "ao goals measure" "GOAL|RESULT|pass|fail" "$AO" goals measure --timeout 1
-
-# Ratchet
-test_exec_output "ao ratchet status" "Ratchet|Chain|Status|STEP" "$AO" ratchet status
-
-# (ao rpi removed in f61c5f0e7 / ADR-0009 — no live equivalent to smoke)
-
-# Badge
-test_exec_output "ao badge" "AGENTOPS|KNOWLEDGE|Sessions|Learnings|Citations" "$AO" badge
-
-# Context
-test_exec_tolerant "ao context status" "$AO" context status
-
-# Vibe-check (help only — actual execution takes a while)
-test_help "ao vibe-check --help" "$AO" vibe-check --help
-
-# ═══════════════════════════════════════════════════════
-#  Help-Only Commands (would modify state — test --help)
-# ═══════════════════════════════════════════════════════
-
-section "Help-Only Commands (state-modifying — --help only)"
-
-test_help "ao init --help" "$AO" init --help
-test_help "ao seed --help" "$AO" seed --help
-test_help "ao demo --help" "$AO" demo --help
-test_help "ao quick-start --help" "$AO" quick-start --help
-test_help "ao quickstart --help" "$AO" quickstart --help
-test_help "ao forge --help" "$AO" forge --help
-test_help "ao session --help" "$AO" session --help
-test_help "ao config --help" "$AO" config --help
-test_help "ao completion --help" "$AO" completion --help
-test_help "ao gate --help" "$AO" gate --help
-test_help "ao verify --help" "$AO" verify --help
-
-# ═══════════════════════════════════════════════════════
-#  Subcommand Help Coverage (verify subcommands exist)
-# ═══════════════════════════════════════════════════════
-
-section "Subcommand Help Coverage (verify command groups list subcommands)"
-
-test_help "ao goals --help" "$AO" goals --help
-test_help "ao ratchet --help" "$AO" ratchet --help
-test_help "ao metrics --help" "$AO" metrics --help
-test_help "ao pool --help" "$AO" pool --help
-test_help "ao constraint --help" "$AO" constraint --help
-test_help "ao session --help" "$AO" session --help
-test_help "ao flywheel --help" "$AO" flywheel --help
-test_help "ao maturity --help" "$AO" maturity --help
-test_help "ao session memory --help" "$AO" session memory --help
-test_help "ao notebook --help" "$AO" notebook --help
-test_help "ao trace --help" "$AO" trace --help
-test_help "ao findings --help" "$AO" findings --help
-test_help "ao validate --help" "$AO" validate --help
-
-# ═══════════════════════════════════════════════════════
-#  Flag Testing (verify key flags produce valid output)
-# ═══════════════════════════════════════════════════════
-
-section "Flag Testing (JSON output validation)"
-
-test_json "ao search --json 'test'" "$AO" search --json "test"
-test_json "ao search --json nonexistent => valid JSON" "$AO" search --json "nonexistent-xyz-12345"
-
-# Some commands support --json; test where available
-if "$AO" doctor --json >/dev/null 2>&1; then
-    test_json "ao doctor --json" "$AO" doctor --json
-else
-    skip "ao doctor --json (flag not supported)"
-fi
-
-if "$AO" pool list --json >/dev/null 2>&1; then
-    test_json "ao pool list --json" "$AO" pool list --json
-else
-    skip "ao pool list --json (flag not supported)"
-fi
-
-if "$AO" ratchet status --json >/dev/null 2>&1; then
-    test_json "ao ratchet status --json" "$AO" ratchet status --json
-else
-    skip "ao ratchet status --json (flag not supported)"
-fi
-
-if "$AO" flywheel status --json >/dev/null 2>&1; then
-    test_json "ao flywheel status --json" "$AO" flywheel status --json
-else
-    skip "ao flywheel status --json (flag not supported)"
-fi
-
-if "$AO" metrics health --json >/dev/null 2>&1; then
-    test_json "ao metrics health --json" "$AO" metrics health --json
-else
-    skip "ao metrics health --json (flag not supported)"
-fi
-
-if "$AO" constraint list --json >/dev/null 2>&1; then
-    test_json "ao constraint list --json" "$AO" constraint list --json
-else
-    skip "ao constraint list --json (flag not supported)"
-fi
-
-if "$AO" findings list --json >/dev/null 2>&1; then
-    test_json "ao findings list --json" "$AO" findings list --json
-else
-    skip "ao findings list --json (flag not supported)"
-fi
-
-if "$AO" findings stats --json >/dev/null 2>&1; then
-    test_json "ao findings stats --json" "$AO" findings stats --json
-else
-    skip "ao findings stats --json (flag not supported)"
-fi
-
-# ═══════════════════════════════════════════════════════
-#  Top-Level Help (catch unregistered commands)
-# ═══════════════════════════════════════════════════════
-
-section "Top-Level Help (catch registration issues)"
-
-test_help "ao --help" "$AO" --help
-
-# Verify expected command groups appear in top-level help
-TOP_HELP=$("$AO" --help 2>&1)
-EXPECTED_COMMANDS=(
-    doctor status version completion
-    search inject lookup forge trace findings
-    ratchet goals session verify
-    flywheel pool metrics gate maturity
-    config hooks notebook
-    demo init seed quick-start
-    badge constraint contradict dedup
-    anti-patterns vibe-check extract validate
-)
-
-for cmd in "${EXPECTED_COMMANDS[@]}"; do
-    if output_word_matches "$TOP_HELP" "$cmd"; then
-        pass "ao --help lists '$cmd'"
-    else
-        fail "ao --help missing '$cmd'"
-    fi
+for command in \
+  claim close constraint converge crank done governor land membrane next-work \
+  pawl plan-pawl reconcile state validate worktree yield; do
+  run_tombstone "ao $command tombstone" "$AO" "$command"
 done
+run_tombstone "ao goals trace tombstone" "$AO" goals trace
+run_tombstone "ao session memory tombstone" "$AO" session memory
+run_tombstone "ao skills edit tombstone" "$AO" skills edit
 
-section "Golden Path Fresh Repo Smoke"
-
-QUICKSTART_REPO="$(mktemp -d)"
-if git -C "$QUICKSTART_REPO" init >/dev/null 2>&1; then
-    QS_RC1=0
-    QS_OUT1=$(cd "$QUICKSTART_REPO" && "$AO" quick-start --no-beads 2>&1) || QS_RC1=$?
-    QS_RC2=0
-    QS_OUT2=$(cd "$QUICKSTART_REPO" && "$AO" quickstart --no-beads 2>&1) || QS_RC2=$?
-
-    if [[ "$QS_RC1" -eq 0 && "$QS_RC2" -eq 0 ]]; then
-        pass "ao quick-start/quickstart run twice in a fresh repo"
-    else
-        fail "ao quick-start/quickstart fresh repo rerun"
-        print_output_head "$QS_OUT1"$'\n'"$QS_OUT2" 8
-    fi
-
-    if [[ -f "$QUICKSTART_REPO/.gitignore" ]] && [[ "$(grep -c '^/\.agents/$' "$QUICKSTART_REPO/.gitignore")" -eq 1 ]]; then
-        pass "quickstart keeps .gitignore idempotent"
-    else
-        fail "quickstart keeps .gitignore idempotent"
-    fi
-
-    if [[ -f "$QUICKSTART_REPO/CLAUDE.md" ]] && [[ "$(grep -c '^## AgentOps Knowledge Flywheel$' "$QUICKSTART_REPO/CLAUDE.md")" -eq 1 ]]; then
-        pass "quickstart keeps instruction section idempotent"
-    else
-        fail "quickstart keeps instruction section idempotent"
-    fi
-
-    QS_SEARCH=$(cd "$QUICKSTART_REPO" && "$AO" search --json --local "nonexistent-xyz-12345" 2>/dev/null)
-    if [[ "$QS_SEARCH" == "[]" ]]; then
-        pass "ao search --json --local no-match => [] (fresh repo, empty corpus)"
-    else
-        fail "ao search --json --local no-match => [] (fresh repo, empty corpus)"
-        print_output_head "$QS_SEARCH" 4
-    fi
-
-    QS_JSON_RC=0
-    QS_JSON=$(cd "$QUICKSTART_REPO" && "$AO" quickstart --dry-run --json --no-beads 2>&1) || QS_JSON_RC=$?
-    if [[ "$QS_JSON_RC" -eq 0 ]] && (
-        command -v jq >/dev/null 2>&1 && jq -e '.dry_run == true and .readiness.items' >/dev/null <<<"$QS_JSON" ||
-        command -v python3 >/dev/null 2>&1 && python3 -m json.tool >/dev/null <<<"$QS_JSON"
-    ); then
-        pass "ao quickstart --dry-run --json is parseable"
-    else
-        fail "ao quickstart --dry-run --json is parseable"
-        print_output_head "$QS_JSON" 8
-    fi
-else
-    skip "quickstart fresh repo smoke (git init unavailable)"
-fi
-rm -rf "$QUICKSTART_REPO"
-
-# ═══════════════════════════════════════════════════════
-#  Summary
-# ═══════════════════════════════════════════════════════
-
-END_TIME=$(date +%s)
-ELAPSED=$((END_TIME - START_TIME))
-
-echo ""
-echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Release Smoke Test Results${NC}"
-echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  Total:   ${TOTAL}"
-echo -e "  ${GREEN}Passed:  ${PASS}${NC}"
-echo -e "  ${RED}Failed:  ${FAIL}${NC}"
-echo -e "  ${YELLOW}Skipped: ${SKIP}${NC}"
-echo -e "  Time:    ${ELAPSED}s"
-echo ""
-
-if [[ "$FAIL" -gt 0 ]]; then
-    echo -e "${RED}  RELEASE SMOKE TEST FAILED ($FAIL failure(s))${NC}"
-    echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}  RELEASE SMOKE TEST PASSED${NC}"
-echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-exit 0
+printf '\nRelease smoke: %d passed, %d failed\n' "$PASS" "$FAIL"
+[[ "$FAIL" -eq 0 ]]

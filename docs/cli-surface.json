@@ -45,38 +45,10 @@
     },
     {
       "category": "public-tested",
-      "command": "constraint activate",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered through constraint list behavior."
-    },
-    {
-      "category": "public-tested",
-      "command": "constraint list",
+      "command": "constraint",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "constraint publish",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "constraint retire",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered through constraint list behavior."
-    },
-    {
-      "category": "public-tested",
-      "command": "constraint review",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered through constraint list behavior."
     },
     {
       "category": "deprecated",
@@ -395,7 +367,7 @@
     },
     {
       "category": "public-tested",
-      "command": "session memory sync",
+      "command": "session memory",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -423,14 +395,7 @@
     },
     {
       "category": "public-tested",
-      "command": "skills edit digest",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "skills edit seal",
+      "command": "skills edit",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

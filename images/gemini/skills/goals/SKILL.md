@@ -1,6 +1,6 @@
 ---
 name: goals
-description: 'Measure declared project fitness goals without recommending or applying work.'
+description: 'Measure declared project fitness goals without recommending or applying work. Triggers: "measure goals", "check project fitness".'
 practices:
 - dora-metrics
 - lean-startup

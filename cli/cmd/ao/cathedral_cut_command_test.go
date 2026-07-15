@@ -37,3 +37,23 @@ func TestQuickStartNamesOnlySurvivingResponsibilities(t *testing.T) {
 		}
 	}
 }
+
+func TestCathedralCutNestedTombstonesAreInert(t *testing.T) {
+	removed := pruneToDefaultSpine(rootCmd)
+	t.Cleanup(func() { restorePrunedCommands(rootCmd, removed) })
+	for parentName, children := range removedChildCommands {
+		for name := range children {
+			command, _, err := rootCmd.Find([]string{parentName, name})
+			if err != nil {
+				t.Fatalf("%s %s tombstone missing: %v", parentName, name, err)
+			}
+			var output strings.Builder
+			command.SetErr(&output)
+			t.Cleanup(func() { command.SetErr(nil) })
+			err = command.RunE(command, nil)
+			if err == nil || !strings.Contains(output.String(), "no longer exists") {
+				t.Fatalf("%s %s result=%v output=%q", parentName, name, err, output.String())
+			}
+		}
+	}
+}

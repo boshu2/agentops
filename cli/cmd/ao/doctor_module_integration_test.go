@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/doctor"
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
 func TestDoctorModuleTableOutput(t *testing.T) {
@@ -28,7 +28,7 @@ func TestDoctorModuleTableOutput(t *testing.T) {
 	}
 }
 
-func TestDoctorModuleJSONOutputIsSingleReport(t *testing.T) {
+func TestDoctorModuleJSONOutputIsSingleHealthReport(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
 	t.Setenv("HOME", t.TempDir())
@@ -38,11 +38,11 @@ func TestDoctorModuleJSONOutputIsSingleReport(t *testing.T) {
 	command.SetErr(&output)
 	command.SetArgs([]string{"--json"})
 	_ = command.Execute()
-	var report doctor.Report
+	var report quality.DoctorOutput
 	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
 		t.Fatalf("json=%q err=%v", output.String(), err)
 	}
-	if report.SchemaVersion != doctor.SchemaVersion {
+	if len(report.Checks) == 0 || report.Result == "" {
 		t.Fatalf("report=%+v", report)
 	}
 }

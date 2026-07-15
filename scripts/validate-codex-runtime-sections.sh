@@ -41,7 +41,7 @@ while IFS= read -r file; do
 done < <(find skills-codex -type f -name "SKILL.md" | sort)
 
 if [[ ${#skill_files[@]} -eq 0 ]]; then
-  echo "No SKILL.md files found under skills-codex; skipping codex runtime section lint."
+  echo "No non-cross-runtime bespoke Codex twins; parity twins are covered by generated hash checks."
   exit 0
 fi
 

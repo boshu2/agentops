@@ -6,37 +6,30 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/reviewerhealth"
-	"github.com/boshu2/agentops/cli/internal/storage"
 )
-
-const reviewerTimeout = 10 * time.Second
 
 type LegacyChecks struct {
 	ToolVersion string
-	IndexDir    string
-	IndexFile   string
 	LedgerPath  func() string
-	Reviewers   reviewerhealth.Service
 	WorkingDir  func() (string, error)
+	HomeDir     func() (string, error)
 	Environment func() []string
-	LookPath    func(string) (string, error)
 	Now         func() time.Time
 }
 
-func (adapter LegacyChecks) Checks(ctx context.Context) []quality.Check {
+func (adapter LegacyChecks) Checks(_ context.Context) []quality.Check {
 	cwd, cwdErr := adapter.WorkingDir()
-	inRepo := false
+	repoRoot := ""
 	if cwdErr == nil {
-		_, inRepo = FindAgentopsRepoRoot(cwd)
+		repoRoot, _ = FindAgentopsRepoRoot(cwd)
 	}
 
 	var checks []quality.Check
@@ -49,52 +42,16 @@ func (adapter LegacyChecks) Checks(ctx context.Context) []quality.Check {
 		checks = append(checks, c)
 	}
 
-	// Installed-user: optional external tooling (gt/bd), reported as optional.
-	add(quality.CheckCLIDependencies(adapter.LookPath), quality.AudienceInstalledUser)
-
-	// Installed-user: local knowledge state.
-	if cwdErr != nil {
-		add(quality.Check{Name: "Knowledge Base", Status: "fail", Detail: "cannot determine working directory", Required: true}, quality.AudienceInstalledUser)
-		add(quality.Check{Name: "Knowledge Freshness", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
-		add(quality.Check{Name: "Search Index", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
-		add(quality.Check{Name: "Flywheel Health", Status: quality.StatusInfo, Detail: "cannot determine working directory"}, quality.AudienceInstalledUser)
-	} else {
-		base := filepath.Join(cwd, storage.DefaultBaseDir)
-		add(quality.CheckKnowledgeBase(base), quality.AudienceInstalledUser)
-		add(quality.CheckKnowledgeFreshness(filepath.Join(base, "sessions")), quality.AudienceInstalledUser)
-		add(quality.CheckSearchIndex(filepath.Join(cwd, adapter.IndexDir, adapter.IndexFile)), quality.AudienceInstalledUser)
-		add(quality.CheckFlywheelHealth(base), quality.AudienceInstalledUser)
+	// Doctor is installation health, not a second operating loop. It checks the
+	// live source-link contract and local integrity facts; tracker, reviewer,
+	// search, flywheel, plugin-cache, and repair policy belong to their own
+	// explicit commands or skills.
+	home := ""
+	if adapter.HomeDir != nil {
+		home, _ = adapter.HomeDir()
 	}
-
-	// Installed-user: optional cross-family review capability.
-	add(quality.CheckOptionalCLI("codex", "enables --mixed council review", "npm install -g @openai/codex"), quality.AudienceInstalledUser)
-	reviewerChecks, live := adapter.Reviewers.Check(ctx, reviewerTimeout)
-	for _, reviewerCheck := range reviewerChecks {
-		add(softenOptional(reviewerCheck), quality.AudienceInstalledUser)
-	}
-	add(CrossFamilyCheck(live), quality.AudienceInstalledUser)
-
-	// Repo-dev: skill/codex/plugin/binary hygiene — meaningful only inside a
-	// clone, where the remediations (heal.sh, refresh-codex-local.sh, rebuild)
-	// are runnable. Outside a clone, collapse to a single info line so a
-	// pristine install never sees repo-internal warnings.
-	if inRepo {
-		add(quality.CheckSkills(), quality.AudienceRepoDev)
-		add(quality.CheckCodexSync(), quality.AudienceRepoDev)
-		add(quality.CheckSkillIntegrity(), quality.AudienceRepoDev)
-		add(quality.CheckStaleReferences([]string{
-			"skills/*/SKILL.md", "skills/*/references/*.md", "skills-codex/*/SKILL.md",
-			"skills-codex-overrides/*/SKILL.md", "docs/*.md", "scripts/*.sh",
-			"docs/contracts/*.md", "docs/plans/*.md",
-		}), quality.AudienceRepoDev)
-		add(BinaryFreshnessCheck(cwd, adapter.ToolVersion), quality.AudienceRepoDev)
-	} else {
-		add(quality.Check{
-			Name:   "Repo-dev checks",
-			Status: quality.StatusInfo,
-			Detail: "skipped — outside an agentops repo clone (skill hygiene, codex sync, stale refs, plugin manifest, binary freshness)",
-		}, quality.AudienceRepoDev)
-	}
+	add(CheckSkillLinks(repoRoot, home), quality.AudienceInstalledUser)
+	add(BinaryFreshnessCheck(cwd, adapter.ToolVersion), quality.AudienceRepoDev)
 
 	// Installed-user: required integrity.
 	ledgerPath := ""
@@ -106,30 +63,159 @@ func (adapter LegacyChecks) Checks(ctx context.Context) []quality.Check {
 	return checks
 }
 
-// softenOptional downgrades an optional-capability check from "warn" to "info":
-// a missing optional reviewer CLI is expected on a fresh install and must not
-// read as something wrong. A pass/fail is left untouched.
-func softenOptional(check quality.Check) quality.Check {
-	if check.Status == quality.StatusWarn {
-		check.Status = quality.StatusInfo
+func SystemLegacyChecks(toolVersion string, ledgerPath func() string) LegacyChecks {
+	return LegacyChecks{
+		ToolVersion: toolVersion, LedgerPath: ledgerPath,
+		WorkingDir: os.Getwd, HomeDir: os.UserHomeDir, Environment: os.Environ, Now: time.Now,
 	}
+}
+
+var runtimeSkillRoots = []string{".claude", ".codex", ".gemini", ".cursor", ".pi"}
+
+// CheckSkillLinks verifies the v4 distribution contract: canonical skills are
+// consumed directly from one checkout through exact symlinks. Portable
+// ~/.agents/skills is always checked; installed runtime roots are checked when
+// their config directory exists. Plugin caches are intentionally irrelevant.
+func CheckSkillLinks(repoRoot, home string) quality.Check {
+	check := quality.Check{Name: "Skill Links", Required: false}
+	if home == "" {
+		check.Status = quality.StatusWarn
+		check.Detail = "cannot determine home directory"
+		return check
+	}
+	if repoRoot == "" {
+		portable := filepath.Join(home, ".agents", "skills")
+		live, broken := countLiveSkillLinks(portable)
+		if broken > 0 {
+			check.Status = quality.StatusWarn
+			check.Detail = fmt.Sprintf("%d live portable skill link(s), %d broken; run from the AgentOps checkout and inspect `ao skills link --dry-run`", live, broken)
+			return check
+		}
+		check.Status = quality.StatusInfo
+		check.Detail = fmt.Sprintf("%d live portable skill link(s); exact source identity is checked from an AgentOps checkout", live)
+		return check
+	}
+
+	source := filepath.Join(repoRoot, "skills")
+	names, err := canonicalSkillNames(source)
+	if err != nil {
+		check.Status = quality.StatusWarn
+		check.Detail = fmt.Sprintf("cannot read canonical skills: %v", err)
+		return check
+	}
+	dests := []string{filepath.Join(home, ".agents", "skills")}
+	for _, config := range runtimeSkillRoots {
+		if info, err := os.Stat(filepath.Join(home, config)); err == nil && info.IsDir() {
+			dests = append(dests, filepath.Join(home, config, "skills"))
+		}
+	}
+
+	missing, conflicts, stale := 0, 0, 0
+	for _, dest := range dests {
+		for _, name := range names {
+			path := filepath.Join(dest, name)
+			info, err := os.Lstat(path)
+			if os.IsNotExist(err) {
+				missing++
+				continue
+			}
+			if err != nil || info.Mode()&os.ModeSymlink == 0 || !linkTargets(path, filepath.Join(source, name)) {
+				conflicts++
+			}
+		}
+		stale += staleLinksToSource(dest, source, names)
+	}
+	if missing > 0 || conflicts > 0 || stale > 0 {
+		check.Status = quality.StatusWarn
+		check.Detail = fmt.Sprintf("%d expected link(s) across %d root(s): %d missing, %d conflicting, %d stale; inspect `ao skills link --dry-run`", len(names)*len(dests), len(dests), missing, conflicts, stale)
+		check.Fix = "ao skills link --dry-run"
+		return check
+	}
+	check.Status = quality.StatusPass
+	check.Detail = fmt.Sprintf("%d canonical skills live-linked across %d root(s)", len(names), len(dests))
 	return check
 }
 
-func SystemLegacyChecks(toolVersion, indexDir, indexFile string, ledgerPath func() string, reviewers reviewerhealth.Service) LegacyChecks {
-	return LegacyChecks{
-		ToolVersion: toolVersion, IndexDir: indexDir, IndexFile: indexFile, LedgerPath: ledgerPath, Reviewers: reviewers,
-		WorkingDir: os.Getwd, Environment: os.Environ, LookPath: exec.LookPath, Now: time.Now,
+func canonicalSkillNames(source string) ([]string, error) {
+	entries, err := os.ReadDir(source)
+	if err != nil {
+		return nil, err
 	}
+	var names []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		if info, err := os.Stat(filepath.Join(source, entry.Name(), "SKILL.md")); err == nil && info.Mode().IsRegular() {
+			names = append(names, entry.Name())
+		}
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
-func CrossFamilyCheck(live []string) quality.Check {
-	if len(live) > 0 {
-		return quality.Check{Name: "Cross-Family Review", Status: "pass", Detail: fmt.Sprintf("cross-family capable: yes (live families: %s)", strings.Join(live, ", ")), Audience: quality.AudienceInstalledUser}
+func linkTargets(path, want string) bool {
+	target, err := os.Readlink(path)
+	if err != nil {
+		return false
 	}
-	// Optional capability: no reviewer CLI is expected on a fresh install, so
-	// this is informational, not a warning.
-	return quality.Check{Name: "Cross-Family Review", Status: quality.StatusInfo, Detail: "cross-family capable: no (no reviewer CLI reachable) — install one to enable cross-family review", Audience: quality.AudienceInstalledUser, Fix: "npm install -g @openai/codex"}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(path), target)
+	}
+	return filepath.Clean(target) == filepath.Clean(want)
+}
+
+func staleLinksToSource(dest, source string, canonical []string) int {
+	wanted := make(map[string]bool, len(canonical))
+	for _, name := range canonical {
+		wanted[name] = true
+	}
+	entries, err := os.ReadDir(dest)
+	if err != nil {
+		return 0
+	}
+	stale := 0
+	for _, entry := range entries {
+		if wanted[entry.Name()] {
+			continue
+		}
+		path := filepath.Join(dest, entry.Name())
+		info, err := os.Lstat(path)
+		if err != nil || info.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		target, err := os.Readlink(path)
+		if err != nil {
+			continue
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(dest, target)
+		}
+		if filepath.Clean(filepath.Dir(target)) == filepath.Clean(source) {
+			stale++
+		}
+	}
+	return stale
+}
+
+func countLiveSkillLinks(dir string) (live, broken int) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, 0
+	}
+	for _, entry := range entries {
+		path := filepath.Join(dir, entry.Name())
+		info, err := os.Lstat(path)
+		if err != nil || info.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(path, "SKILL.md")); err != nil {
+			broken++
+		} else {
+			live++
+		}
+	}
+	return live, broken
 }
 
 const agentopsModuleLine = "module github.com/boshu2/agentops/cli"
@@ -148,6 +234,9 @@ func BinaryFreshnessCheck(dir, running string) quality.Check {
 	}
 	if repoVersion == running {
 		return quality.Check{Name: name, Status: "pass", Detail: fmt.Sprintf("ao %s matches the repo's declared version", running)}
+	}
+	if strings.TrimSuffix(repoVersion, "-rc") == running {
+		return quality.Check{Name: name, Status: "pass", Detail: fmt.Sprintf("ao %s is the release build for source series %s", running, repoVersion)}
 	}
 	return quality.Check{Name: name, Status: "warn", Detail: fmt.Sprintf("running ao %s but the repo declares %s (stale installed binary) — rebuild+install: scripts/preflight-uat-binary.sh (or: brew upgrade agentops)", running, repoVersion)}
 }
@@ -202,10 +291,10 @@ func CheckLedgerHealth(path string, now func() time.Time) quality.Check {
 	store := provenancegraph.NewStore(path)
 	result, err := store.VerifyFile()
 	if err != nil {
-		return quality.Check{Name: name, Status: "fail", Detail: fmt.Sprintf("cannot read ledger at %s (%v) — check the path and permissions: ls -l %s", path, err, path), Required: true}
+		return quality.Check{Name: name, Status: quality.StatusWarn, Detail: fmt.Sprintf("optional provenance ledger at %s is unreadable (%v)", path, err), Required: false}
 	}
 	if !result.Pass {
-		return quality.Check{Name: name, Status: "fail", Detail: fmt.Sprintf("chain breaks at line %d: %s — inspect: ao provenance verify", result.FirstBrokenLine, result.Message), Required: true}
+		return quality.Check{Name: name, Status: quality.StatusWarn, Detail: fmt.Sprintf("optional provenance chain breaks at line %d: %s — inspect: ao provenance verify", result.FirstBrokenLine, result.Message), Required: false}
 	}
 	if result.RecordCount == 0 {
 		return quality.Check{Name: name, Status: "pass", Detail: "no ledger records yet (an empty or absent ledger is an intact chain)"}

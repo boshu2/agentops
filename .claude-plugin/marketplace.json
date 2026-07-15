@@ -5,14 +5,14 @@
     "email": "fullerbt@users.noreply.github.com"
   },
   "metadata": {
-    "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
-    "version": "3.2.0"
+    "description": "Fresh-context validation for coding-agent work: one behavior, one bounded experiment, one independent verdict.",
+    "version": "4.0.0"
   },
   "plugins": [
     {
       "name": "agentops",
-      "description": "The operational layer for coding agents. Bookkeeping, validation, and flows that compound knowledge between sessions.",
-      "version": "3.2.0",
+      "description": "Fresh-context validation for coding-agent work: one behavior, one bounded experiment, one independent verdict.",
+      "version": "4.0.0",
       "source": "./",
       "author": {
         "name": "Boden Fuller",

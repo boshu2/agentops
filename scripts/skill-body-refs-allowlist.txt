@@ -15,8 +15,3 @@
 # (`ao loop-history`, `ao loop write`, `ao loop tail`) as good/bad naming
 # examples and future-subcommand placeholders — not real invocations.
 skills/standards/references/cli-wireup-template.md
-
-# Release notes: historical changelog prose that records commands as they
-# existed at a past release (e.g. `ao daemon status` from the daemon era).
-skills/release/references/release-notes.md
-skills-codex/release/references/release-notes.md

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# install-claude.sh - Install AgentOps for Claude Code through the marketplace plugin.
+# install-claude.sh - Legacy Claude marketplace compatibility installer.
+# New installs should clone AgentOps and run `ao skills link`.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --update
-#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --ref v3.2.0
+#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --ref v4.0.0
 
 set -euo pipefail
 shopt -s lastpipe 2>/dev/null || true
@@ -13,7 +14,7 @@ umask 022
 MARKETPLACE="${AGENTOPS_CLAUDE_MARKETPLACE:-boshu2/agentops}"
 MARKETPLACE_NAME="${AGENTOPS_CLAUDE_MARKETPLACE_NAME:-agentops-marketplace}"
 PLUGIN_KEY="${AGENTOPS_CLAUDE_PLUGIN_KEY:-agentops@agentops-marketplace}"
-# --ref pins the marketplace source to a tagged release (e.g. v3.2.0) for parity
+# --ref pins the marketplace source to a tagged release (e.g. v4.0.0) for parity
 # with install-agy.sh. Empty = track the marketplace's default branch.
 INSTALL_REF="${AGENTOPS_INSTALL_REF:-}"
 DRY_RUN=0
@@ -26,13 +27,16 @@ install-claude.sh
 
 Install AgentOps for Claude Code through the Claude plugin marketplace.
 
+DEPRECATED: retained for 3.x migration compatibility. New installs should use
+one canonical checkout plus `ao skills link`.
+
 Usage:
   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --update
 
 Options:
   --update      Update marketplace metadata and the installed plugin.
-  --ref <ref>   Pin the marketplace source to a git ref (e.g. v3.2.0).
+  --ref <ref>   Pin the marketplace source to a git ref (e.g. v4.0.0).
                 Defaults to AGENTOPS_INSTALL_REF or the marketplace default branch.
   --dry-run     Print the commands that would run without changing anything.
   --quiet       Reduce progress output.

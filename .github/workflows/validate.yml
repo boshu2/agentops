@@ -447,10 +447,6 @@ jobs:
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         run: bash tests/integration/test-cli-commands.sh
 
-      - name: Run v2.18 commands integration test
-        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
-        run: bash tests/integration/test-v218-commands.sh
-
       - name: Run release smoke test
         if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
         run: bash scripts/release-smoke-test.sh --skip-build

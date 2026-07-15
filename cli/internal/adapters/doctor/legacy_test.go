@@ -3,7 +3,6 @@ package doctor
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,33 +13,19 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/reviewerhealth"
 )
-
-type fakeReviewerProbe map[string]reviewerhealth.ProbeResult
-
-func (probe fakeReviewerProbe) Check(_ context.Context, reviewer reviewerhealth.Reviewer, _ time.Duration) reviewerhealth.ProbeResult {
-	return probe[reviewer.Name]
-}
 
 func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 	root := t.TempDir()
-	// Make root look like an agentops repo clone so repo-dev checks are shown
-	// rather than collapsed to a single info line (that collapse is covered by
-	// TestLegacyChecksCollapsesRepoDevOutsideClone).
 	writeFakeAgentopsRepo(t, root)
-	t.Chdir(root)
-	t.Setenv("HOME", t.TempDir())
-	reviewers := reviewerhealth.NewService(reviewerhealth.DefaultCatalog(), fakeReviewerProbe{
-		"codex": {Status: "pass", Detail: "reachable", Live: true},
-		"agy":   {Status: "warn", Detail: "missing"},
-	})
+	home := t.TempDir()
+	linkFixtureSkills(t, filepath.Join(root, "skills"), filepath.Join(home, ".agents", "skills"))
 	adapter := LegacyChecks{
-		ToolVersion: "1.0.0", IndexDir: ".agents/index", IndexFile: "index.json", Reviewers: reviewers,
+		ToolVersion: "1.0.0",
 		WorkingDir:  func() (string, error) { return root, nil },
+		HomeDir:     func() (string, error) { return home, nil },
 		LedgerPath:  func() string { return filepath.Join(root, "ledger.jsonl") },
 		Environment: func() []string { return nil },
-		LookPath:    func(string) (string, error) { return "", errors.New("missing") },
 		Now:         time.Now,
 	}
 	checks := adapter.Checks(context.Background())
@@ -48,40 +33,15 @@ func TestLegacyChecksIncludesEveryDoctorSafetySection(t *testing.T) {
 	for _, check := range checks {
 		byName[check.Name] = check.Status
 	}
-	for _, name := range []string{
-		"Plugin", "Codex Sync", "Skill Integrity", "Reviewer: codex", "Reviewer: agy",
-		"Cross-Family Review", "Binary Freshness", "Ledger Health", "LAW-0 Guard",
-	} {
+	for _, name := range []string{"Skill Links", "Binary Freshness", "Ledger Health", "LAW-0 Guard"} {
 		if _, ok := byName[name]; !ok {
 			t.Errorf("LegacyChecks missing %q: %v", name, byName)
 		}
 	}
-	// A missing optional reviewer is softened from "warn" to "info".
-	if byName["Reviewer: codex"] != "pass" || byName["Reviewer: agy"] != "info" || byName["Cross-Family Review"] != "pass" {
-		t.Fatalf("reviewer integration = %v", byName)
-	}
-}
-
-func TestCrossFamilyCheck(t *testing.T) {
-	for _, test := range []struct {
-		name, status, detail string
-		live                 []string
-	}{
-		{name: "both", live: []string{"codex", "agy"}, status: "pass", detail: "live families: codex, agy"},
-		{name: "one", live: []string{"agy"}, status: "pass", detail: "live families: agy"},
-		{name: "none", status: "info", detail: "cross-family capable: no"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			check := CrossFamilyCheck(test.live)
-			if check.Status != test.status || !strings.Contains(check.Detail, test.detail) {
-				t.Fatalf("check = %+v", check)
-			}
-		})
-	}
-	// When no reviewer is reachable the remediation is a runnable install
-	// command carried in Fix, not a repo-relative script.
-	if fix := CrossFamilyCheck(nil).Fix; fix != "npm install -g @openai/codex" {
-		t.Fatalf("cross-family fix = %q", fix)
+	for _, removed := range []string{"Plugin", "Codex Sync", "CLI Dependencies", "Reviewer: codex", "Cross-Family Review", "Search Index", "Flywheel Health"} {
+		if _, ok := byName[removed]; ok {
+			t.Errorf("retired doctor concern %q returned: %v", removed, byName)
+		}
 	}
 }
 
@@ -96,6 +56,31 @@ func writeFakeAgentopsRepo(t *testing.T, root string) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\nvar version = \"1.0.0\"\n"), 0o644); err != nil {
 		t.Fatal(err)
+	}
+	for _, name := range []string{"plan", "validate"} {
+		skillDir := filepath.Join(root, "skills", name)
+		if err := os.MkdirAll(skillDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte("# "+name+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func linkFixtureSkills(t *testing.T, source, dest string) {
+	t.Helper()
+	if err := os.MkdirAll(dest, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	names, err := canonicalSkillNames(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range names {
+		if err := os.Symlink(filepath.Join(source, name), filepath.Join(dest, name)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -115,24 +100,15 @@ func makeFakeAgentopsRepo(t *testing.T, declared string) string {
 	return root
 }
 
-// pristineAdapter builds a LegacyChecks configured to look like a pristine
-// install: an initialized-but-empty knowledge base, an empty ledger, and no
-// optional CLIs (gt, bd, codex) on PATH. cwd is the caller's fixture root.
 func pristineAdapter(t *testing.T, cwd string) LegacyChecks {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Join(cwd, ".agents", "ao", "sessions"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	reviewers := reviewerhealth.NewService(reviewerhealth.DefaultCatalog(), fakeReviewerProbe{
-		"codex": {Status: "warn", Detail: "not found"},
-		"agy":   {Status: "warn", Detail: "not found"},
-	})
+	home := t.TempDir()
 	return LegacyChecks{
-		ToolVersion: "1.0.0", IndexDir: ".agents/index", IndexFile: "index.json", Reviewers: reviewers,
+		ToolVersion: "1.0.0",
 		WorkingDir:  func() (string, error) { return cwd, nil },
+		HomeDir:     func() (string, error) { return home, nil },
 		LedgerPath:  func() string { return filepath.Join(cwd, "ledger.jsonl") },
 		Environment: func() []string { return nil },
-		LookPath:    func(string) (string, error) { return "", errors.New("not found") },
 		Now:         time.Now,
 	}
 }
@@ -167,8 +143,7 @@ var runnableFixPattern = regexp.MustCompile(`^(ao |br |brew |npm |curl |https://
 // never a repo-relative script path.
 func TestDoctor_FixStringsRunnableByAudience(t *testing.T) {
 	root := t.TempDir()
-	t.Chdir(root)
-	t.Setenv("HOME", t.TempDir())
+	writeFakeAgentopsRepo(t, root)
 	adapter := pristineAdapter(t, root)
 	checks := adapter.Checks(context.Background())
 	sawFix := false
@@ -220,34 +195,40 @@ func TestDoctor_PristineInstallGreen(t *testing.T) {
 	}
 }
 
-// TestLegacyChecksCollapseRepoDevOutsideClone: outside a clone the repo-dev
-// checks are collapsed to a single info line rather than emitting warnings.
-func TestLegacyChecksCollapseRepoDevOutsideClone(t *testing.T) {
+func TestLegacyChecksOutsideCloneRemainInformational(t *testing.T) {
 	root := t.TempDir()
-	t.Chdir(root)
-	t.Setenv("HOME", t.TempDir())
 	adapter := pristineAdapter(t, root)
 	checks := adapter.Checks(context.Background())
-	repoDev := 0
-	var collapse *quality.Check
-	for i, check := range checks {
-		if check.Audience == quality.AudienceRepoDev {
-			repoDev++
-			collapse = &checks[i]
+	for _, check := range checks {
+		if check.Name == "Skill Links" && check.Status != quality.StatusInfo {
+			t.Fatalf("outside-repo links = %+v", check)
+		}
+		if check.Status == quality.StatusWarn || check.Status == quality.StatusFail {
+			t.Errorf("outside-repo doctor should be green: %+v", check)
 		}
 	}
-	if repoDev != 1 {
-		t.Fatalf("expected exactly one repo-dev line outside a clone, got %d", repoDev)
+}
+
+func TestCheckSkillLinksExactMissingAndStale(t *testing.T) {
+	root := t.TempDir()
+	writeFakeAgentopsRepo(t, root)
+	home := t.TempDir()
+	dest := filepath.Join(home, ".agents", "skills")
+	linkFixtureSkills(t, filepath.Join(root, "skills"), dest)
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusPass || !strings.Contains(check.Detail, "2 canonical skills") {
+		t.Fatalf("exact links = %+v", check)
 	}
-	if collapse.Status != quality.StatusInfo || collapse.Name != "Repo-dev checks" {
-		t.Fatalf("collapse line = %+v", *collapse)
+	if err := os.Remove(filepath.Join(dest, "plan")); err != nil {
+		t.Fatal(err)
 	}
-	for _, name := range []string{"Plugin", "Codex Sync", "Skill Integrity", "Binary Freshness"} {
-		for _, check := range checks {
-			if check.Name == name {
-				t.Errorf("repo-dev check %q leaked outside a clone", name)
-			}
-		}
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusWarn || !strings.Contains(check.Detail, "1 missing") {
+		t.Fatalf("missing link = %+v", check)
+	}
+	if err := os.Symlink(filepath.Join(root, "skills", "retired"), filepath.Join(dest, "retired")); err != nil {
+		t.Fatal(err)
+	}
+	if check := CheckSkillLinks(root, home); check.Status != quality.StatusWarn || !strings.Contains(check.Detail, "1 stale") {
+		t.Fatalf("stale link = %+v", check)
 	}
 }
 
@@ -264,6 +245,10 @@ func TestBinaryFreshnessCheck(t *testing.T) {
 	}
 	if check := BinaryFreshnessCheck(t.TempDir(), "1.0.0"); check.Status != "pass" || !strings.Contains(check.Detail, "outside the agentops repo") {
 		t.Fatalf("outside-repo check = %+v", check)
+	}
+	rcRoot := makeFakeAgentopsRepo(t, "4.0.0-rc")
+	if check := BinaryFreshnessCheck(rcRoot, "4.0.0"); check.Status != "pass" || !strings.Contains(check.Detail, "release build") {
+		t.Fatalf("release build against rc source = %+v", check)
 	}
 }
 
@@ -303,7 +288,7 @@ func TestCheckLedgerHealthIntactMissingAndTampered(t *testing.T) {
 		t.Fatal(err)
 	}
 	check := CheckLedgerHealth(path, time.Now)
-	if check.Status != "fail" || !check.Required || !strings.Contains(check.Detail, "chain breaks at line 1") || !strings.Contains(check.Detail, "ao provenance verify") {
+	if check.Status != quality.StatusWarn || check.Required || !strings.Contains(check.Detail, "chain breaks at line 1") || !strings.Contains(check.Detail, "ao provenance verify") {
 		t.Fatalf("tampered ledger = %+v", check)
 	}
 }

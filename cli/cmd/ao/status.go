@@ -20,13 +20,13 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show AgentOps status",
-	Long: `Display the current state of AgentOps knowledge base.
+	Long: `Display local AgentOps evidence and optional knowledge observations.
 
 Shows:
   - Number of sessions indexed
   - Recent sessions
-  - Provenance statistics
-  - Flywheel health summary
+  - Optional provenance statistics
+  - Optional read-only flywheel summary
   - Storage locations
 
 Examples:
@@ -329,10 +329,11 @@ func outputStatus(status *statusOutput) error {
 	}
 
 	fmt.Println("\nCommands:")
-	fmt.Println("  ao forge transcript <path>  - Extract knowledge from transcript")
-	fmt.Println("  ao search <query>           - Search knowledge base")
-	fmt.Println("  ao trace <artifact>         - Trace provenance")
-	fmt.Println("  ao flywheel status          - Detailed flywheel metrics")
+	fmt.Println("  ao gate check               - Run deterministic repository checks")
+	fmt.Println("  ao skills list              - Inspect the canonical skill inventory")
+	fmt.Println("  ao skills link --dry-run    - Audit runtime source links")
+	fmt.Println("  ao provenance list          - Read optional evidence relationships")
+	fmt.Println("  ao flywheel status          - Inspect optional knowledge observations")
 
 	return nil
 }

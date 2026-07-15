@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AgentOps Installer
+# Legacy AgentOps multi-runtime plugin installer.
+# New installs should clone the repository and run `ao skills link` instead.
 # Usage: bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 #        bash scripts/install.sh --dev
 
@@ -25,6 +26,10 @@ Options:
               installs the whole bundle. Filters the Codex/AGY bundle installs;
               the Claude plugin path is whole-bundle (manifest split is future work).
   -h, --help  Show this help.
+
+Deprecated:
+  This 3.x compatibility installer is retained for one migration release. New
+  installs should use one canonical checkout plus `ao skills link`.
 EOF
 }
 

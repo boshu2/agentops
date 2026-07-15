@@ -21,7 +21,7 @@ else
     exit 1
 fi
 
-if assert_contains "$output" "decompos\|break\|task\|issue\|epic" "Describes task decomposition"; then
+if assert_contains "$output" "behavior\|acceptance\|scope\|evidence" "Describes one behavior contract"; then
     :
 else
     exit 1
@@ -29,12 +29,12 @@ fi
 
 echo ""
 
-# Test 2: Verify beads integration
-echo "Test 2: Beads integration..."
+# Test 2: Verify caller-owned scheduling boundary
+echo "Test 2: Caller-owned scheduling boundary..."
 
-output=$(run_claude "In /agentops:plan, how are beads issues used? Answer briefly." 60)
+output=$(run_claude "Does /agentops:plan claim work, assign owners, or create a queue? Answer briefly." 60)
 
-if assert_contains "$output" "bead\|issue\|bd\|track" "Mentions beads/issues"; then
+if assert_contains "$output" "no\|caller\|advisory\|not" "Keeps scheduling caller-owned"; then
     :
 else
     exit 1

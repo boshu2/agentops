@@ -11,7 +11,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Switch a caller-selected coding-agent account and report the observed identity.",
+      "description": "Switch a caller-selected coding-agent account and report the observed identity. Triggers: \"switch account\", \"rotate coding-agent account\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -41,7 +41,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers.",
+      "description": "Use Agent Mail as an optional messaging and file-reservation adapter for explicitly coordinated writers. Triggers: \"coordinate writers\", \"reserve files\".",
       "disposition": "keep_optional_adapter",
       "effects": [],
       "graph_root": false,
@@ -201,7 +201,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow.",
+      "description": "Initialize minimal AgentOps documentation and verdict storage without taking over repository workflow. Triggers: \"bootstrap AgentOps\", \"initialize AgentOps docs\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": true,
@@ -248,7 +248,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) \u2014 user-side, opt-in per host (AgentOps 3.0 ships none). Triggers: \"cc-hooks\", \"cc hooks\", \"configure claude code hooks pretooluse\".",
+      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification) as an opt-in host adapter; AgentOps installs none by default. Triggers: \"cc-hooks\", \"configure Claude Code hooks\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -320,7 +320,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Run one caller-supplied Codex worker or validator command non-interactively and capture evidence.",
+      "description": "Run one caller-supplied Codex command non-interactively and capture evidence. Triggers: \"run Codex headless\", \"capture Codex evidence\".",
       "disposition": "keep_optional_adapter",
       "effects": [],
       "graph_root": false,
@@ -442,7 +442,7 @@
       "produces": [
         "documentation"
       ],
-      "references_count": 15,
+      "references_count": 14,
       "tier": "product",
       "user_invocable": false
     },
@@ -455,7 +455,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Load the small AgentOps ubiquitous-language and bounded-context contracts when a term needs precise meaning.",
+      "description": "Load the AgentOps language and bounded-context contracts when a term needs precise meaning. Triggers: \"define this domain term\", \"check the bounded context\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -525,7 +525,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Measure declared project fitness goals without recommending or applying work.",
+      "description": "Measure declared project fitness goals without recommending or applying work. Triggers: \"measure goals\", \"check project fitness\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -989,7 +989,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Use RCH once to offload a build or collect remote-compilation diagnostics.",
+      "description": "Use RCH once to offload a build or collect remote-compilation diagnostics. Triggers: \"use RCH\", \"offload this build\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1050,7 +1050,7 @@
       ],
       "context_rel": [],
       "dependencies": [],
-      "description": "Execute one behavior-preserving structural transformation and report evidence.",
+      "description": "Execute one behavior-preserving structural transformation and report evidence. Triggers: \"refactor this\", \"simplify without changing behavior\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1183,7 +1183,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action.",
+      "description": "Inspect disk pressure with SBH and run one explicitly authorized recovery action. Triggers: \"check disk pressure\", \"run SBH\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1218,7 +1218,7 @@
         "hexagonal-architecture"
       ],
       "produces": [
-        "converted-skill"
+        "project-scaffold"
       ],
       "references_count": 3,
       "tier": "execution",
@@ -1359,7 +1359,7 @@
       "consumes": [],
       "context_rel": [],
       "dependencies": [],
-      "description": "Load only the language and risk standards relevant to a caller-supplied change, then report concrete findings.",
+      "description": "Load only the standards relevant to a caller-supplied change, then report concrete findings. Triggers: \"check standards\", \"which standards apply\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1476,7 +1476,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence.",
+      "description": "Mine caller-supplied usage history for repeated toil and emit ranked evidence. Triggers: \"mine toil\", \"find repeated operational work\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
@@ -1591,7 +1591,7 @@
         }
       ],
       "dependencies": [],
-      "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority.",
+      "description": "Scaffold an explicit one-shot workflow adapter without lifecycle authority. Triggers: \"build a workflow adapter\", \"scaffold a one-shot workflow\".",
       "disposition": "keep_specialist",
       "effects": [],
       "graph_root": false,
